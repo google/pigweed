@@ -4,7 +4,7 @@ namespace bt::l2cap::internal {
 
 bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
   if (rej_payload_buf.size() < sizeof(CommandRejectPayload)) {
-    bt_log(TRACE, "l2cap", "cmd: ignoring malformed Command Reject, size %zu (expected >= %zu)",
+    bt_log(DEBUG, "l2cap", "cmd: ignoring malformed Command Reject, size %zu (expected >= %zu)",
            rej_payload_buf.size(), sizeof(CommandRejectPayload));
     return false;
   }
@@ -13,7 +13,7 @@ bool CommandHandler::Response::ParseReject(const ByteBuffer& rej_payload_buf) {
 
   if (reject_reason() == RejectReason::kInvalidCID) {
     if (rej_payload_buf.size() - sizeof(CommandRejectPayload) < sizeof(InvalidCIDPayload)) {
-      bt_log(TRACE, "l2cap",
+      bt_log(DEBUG, "l2cap",
              "cmd: ignoring malformed Command Reject Invalid Channel ID, size %zu (expected %zu)",
              rej_payload_buf.size(), sizeof(CommandRejectPayload) + sizeof(InvalidCIDPayload));
       return false;
@@ -57,7 +57,7 @@ void CommandHandler::ServeDisconnectionRequest(DisconnectionRequestCallback cb) 
   auto on_discon_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
                                             SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(DisconnectionRequestPayload)) {
-      bt_log(TRACE, "l2cap", "cmd: rejecting malformed Disconnection Request, size %zu",
+      bt_log(DEBUG, "l2cap", "cmd: rejecting malformed Disconnection Request, size %zu",
              request_payload.size());
       sig_responder->RejectNotUnderstood();
       return;

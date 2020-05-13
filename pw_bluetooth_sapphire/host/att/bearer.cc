@@ -227,7 +227,7 @@ void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Ha
       break;
     }
 
-    bt_log(SPEW, "att", "Failed to start transaction: out of memory!");
+    bt_log(TRACE, "att", "Failed to start transaction: out of memory!");
     auto t = std::move(current_);
     t->error_callback(Status(HostError::kOutOfMemory), kInvalidHandle);
 
@@ -300,7 +300,7 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  bt_log(TRACE, "att", "bearer shutting down");
+  bt_log(DEBUG, "att", "bearer shutting down");
 
   rx_task_.Cancel();
   chan_closed_cb_.Cancel();
@@ -344,12 +344,12 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
                           ErrorCallback error_callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   if (!is_open()) {
-    bt_log(SPEW, "att", "bearer closed; cannot send packet");
+    bt_log(TRACE, "att", "bearer closed; cannot send packet");
     return false;
   }
 
   if (!IsPacketValid(*pdu)) {
-    bt_log(TRACE, "att", "packet has bad length!");
+    bt_log(DEBUG, "att", "packet has bad length!");
     return false;
   }
 
@@ -362,7 +362,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
     case MethodType::kCommand:
     case MethodType::kNotification:
       if (callback || error_callback) {
-        bt_log(TRACE, "att", "method not a transaction!");
+        bt_log(DEBUG, "att", "method not a transaction!");
         return false;
       }
 
@@ -377,12 +377,12 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback,
       tq = &indication_queue_;
       break;
     default:
-      bt_log(TRACE, "att", "invalid opcode: %#.2x", reader.opcode());
+      bt_log(DEBUG, "att", "invalid opcode: %#.2x", reader.opcode());
       return false;
   }
 
   if (!callback || !error_callback) {
-    bt_log(TRACE, "att", "transaction requires callbacks!");
+    bt_log(DEBUG, "att", "transaction requires callbacks!");
     return false;
   }
 
@@ -400,7 +400,7 @@ Bearer::HandlerId Bearer::RegisterHandler(OpCode opcode, Handler handler) {
     return kInvalidHandlerId;
 
   if (handlers_.find(opcode) != handlers_.end()) {
-    bt_log(TRACE, "att", "can only register one handler per opcode (%#.2x)", opcode);
+    bt_log(DEBUG, "att", "can only register one handler per opcode (%#.2x)", opcode);
     return kInvalidHandlerId;
   }
 
@@ -422,7 +422,7 @@ void Bearer::UnregisterHandler(HandlerId id) {
 
   auto iter = handler_id_map_.find(id);
   if (iter == handler_id_map_.end()) {
-    bt_log(TRACE, "att", "cannot unregister unknown handler id: %zu", id);
+    bt_log(DEBUG, "att", "cannot unregister unknown handler id: %zu", id);
     return;
   }
 
@@ -438,12 +438,12 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
     return false;
 
   if (!is_open()) {
-    bt_log(SPEW, "att", "bearer closed; cannot reply");
+    bt_log(TRACE, "att", "bearer closed; cannot reply");
     return false;
   }
 
   if (!IsPacketValid(*pdu)) {
-    bt_log(TRACE, "att", "invalid response PDU");
+    bt_log(DEBUG, "att", "invalid response PDU");
     return false;
   }
 
@@ -459,7 +459,7 @@ bool Bearer::Reply(TransactionId tid, ByteBufferPtr pdu) {
 
   OpCode pending_opcode = (*pending)->opcode;
   if (pending_opcode != MatchingTransactionCode(reader.opcode())) {
-    bt_log(TRACE, "att", "opcodes do not match (pending: %#.2x, given: %#.2x)", pending_opcode,
+    bt_log(DEBUG, "att", "opcodes do not match (pending: %#.2x, given: %#.2x)", pending_opcode,
            reader.opcode());
     return false;
   }
@@ -479,7 +479,7 @@ bool Bearer::ReplyWithError(TransactionId id, Handle handle, ErrorCode error_cod
 
   OpCode pending_opcode = (*pending)->opcode;
   if (pending_opcode == kIndication) {
-    bt_log(TRACE, "att", "cannot respond to an indication with error!");
+    bt_log(DEBUG, "att", "cannot respond to an indication with error!");
     return false;
   }
 
@@ -497,7 +497,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
   ZX_DEBUG_ASSERT(tq);
 
   if (!is_open()) {
-    bt_log(SPEW, "att", "Cannot process transactions; bearer is closed");
+    bt_log(TRACE, "att", "Cannot process transactions; bearer is closed");
     return;
   }
 
@@ -532,7 +532,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   ZX_DEBUG_ASSERT(tq);
 
   if (!tq->current()) {
-    bt_log(TRACE, "att", "received unexpected transaction PDU (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG, "att", "received unexpected transaction PDU (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
@@ -554,7 +554,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
       error_code = payload.error_code;
       attr_in_error = le16toh(payload.attribute_handle);
     } else {
-      bt_log(TRACE, "att", "received malformed error response");
+      bt_log(DEBUG, "att", "received malformed error response");
 
       // Invalid opcode will fail the opcode comparison below.
       target_opcode = kInvalidOpCode;
@@ -566,7 +566,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
   ZX_DEBUG_ASSERT(tq->current()->opcode != kInvalidOpCode);
 
   if (tq->current()->opcode != target_opcode) {
-    bt_log(TRACE, "att", "received bad transaction PDU (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG, "att", "received bad transaction PDU (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
@@ -590,7 +590,7 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
     return;
   }
 
-  bt_log(SPEW, "att",
+  bt_log(TRACE, "att",
          "Received security error for transaction %#.2hhx; requesting upgrade "
          "to level: %s",
          error_code, sm::LevelToString(security_requirement));
@@ -653,14 +653,14 @@ void Bearer::HandleBeginTransaction(RemoteTransaction* currently_pending,
   ZX_DEBUG_ASSERT(currently_pending);
 
   if (currently_pending->has_value()) {
-    bt_log(TRACE, "att", "A transaction is already pending! (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG, "att", "A transaction is already pending! (opcode: %#.2x)", packet.opcode());
     ShutDown();
     return;
   }
 
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(TRACE, "att", "no handler registered for opcode %#.2x", packet.opcode());
+    bt_log(DEBUG, "att", "no handler registered for opcode %#.2x", packet.opcode());
     SendErrorResponse(packet.opcode(), 0, ErrorCode::kRequestNotSupported);
     return;
   }
@@ -682,7 +682,7 @@ Bearer::RemoteTransaction* Bearer::FindRemoteTransaction(TransactionId id) {
     return &remote_indication_;
   }
 
-  bt_log(TRACE, "att", "id %zu does not match any transaction", id);
+  bt_log(DEBUG, "att", "id %zu does not match any transaction", id);
   return nullptr;
 }
 
@@ -691,7 +691,7 @@ void Bearer::HandlePDUWithoutResponse(const PacketReader& packet) {
 
   auto iter = handlers_.find(packet.opcode());
   if (iter == handlers_.end()) {
-    bt_log(TRACE, "att", "dropping unhandled packet (opcode: %#.2x)", packet.opcode());
+    bt_log(DEBUG, "att", "dropping unhandled packet (opcode: %#.2x)", packet.opcode());
     return;
   }
 
@@ -716,13 +716,13 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
 
   // An ATT PDU should at least contain the opcode.
   if (length < sizeof(OpCode)) {
-    bt_log(TRACE, "att", "PDU too short!");
+    bt_log(DEBUG, "att", "PDU too short!");
     ShutDown();
     return;
   }
 
   if (length > mtu_) {
-    bt_log(TRACE, "att", "PDU exceeds MTU!");
+    bt_log(DEBUG, "att", "PDU exceeds MTU!");
     ShutDown();
     return;
   }
@@ -746,7 +746,7 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
       HandlePDUWithoutResponse(packet);
       break;
     default:
-      bt_log(TRACE, "att", "Unsupported opcode: %#.2x", packet.opcode());
+      bt_log(DEBUG, "att", "Unsupported opcode: %#.2x", packet.opcode());
       SendErrorResponse(packet.opcode(), 0, ErrorCode::kRequestNotSupported);
       break;
   }

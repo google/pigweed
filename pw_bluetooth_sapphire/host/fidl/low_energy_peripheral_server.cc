@@ -74,14 +74,14 @@ zx_status_t LowEnergyPeripheralServer::AdvertisementInstance::Register(
   handle_closed_wait_.set_handler([this](auto*, auto*, zx_status_t status, const auto*) {
     // Don't do anything if the wait was explicitly canceled by us.
     if (status != ZX_ERR_CANCELED) {
-      bt_log(SPEW, LOG_TAG, "AdvertisingHandle closed");
+      bt_log(TRACE, LOG_TAG, "AdvertisingHandle closed");
       instance_.reset();
     }
   });
 
   zx_status_t status = handle_closed_wait_.Begin(async_get_default_dispatcher());
   if (status != ZX_OK) {
-    bt_log(TRACE, LOG_TAG, "failed to begin wait on AdvertisingHandle: %s",
+    bt_log(DEBUG, LOG_TAG, "failed to begin wait on AdvertisingHandle: %s",
            zx_status_get_string(status));
   }
   return status;
@@ -108,7 +108,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   }
 
   if (advertisement_) {
-    bt_log(TRACE, LOG_TAG, "reconfigure existing advertising instance");
+    bt_log(DEBUG, LOG_TAG, "reconfigure existing advertising instance");
     advertisement_.reset();
   }
 
@@ -118,7 +118,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
     adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
 
     if (parameters.data().has_tx_power_level()) {
-      bt_log(SPEW, LOG_TAG, "Including TX Power level at HCI layer");
+      bt_log(TRACE, LOG_TAG, "Including TX Power level at HCI layer");
       include_tx_power_level = true;
     }
   }
@@ -217,7 +217,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
   ZX_DEBUG_ASSERT(advertisement_id != bt::gap::kInvalidAdvertisementId);
 
   if (!advertisement_ || advertisement_->id() != advertisement_id) {
-    bt_log(TRACE, LOG_TAG, "dropping connection from unrecognized advertisement ID: %s",
+    bt_log(DEBUG, LOG_TAG, "dropping connection from unrecognized advertisement ID: %s",
            advertisement_id.ToString().c_str());
     return;
   }
@@ -225,7 +225,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
   zx::channel local, remote;
   zx_status_t status = zx::channel::create(0, &local, &remote);
   if (status != ZX_OK) {
-    bt_log(TRACE, LOG_TAG, "failed to create channel for Connection (%s)",
+    bt_log(DEBUG, LOG_TAG, "failed to create channel for Connection (%s)",
            zx_status_get_string(status));
     return;
   }
@@ -237,7 +237,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
       return;
     }
     if (!conn) {
-      bt_log(TRACE, LOG_TAG, "incoming connection rejected");
+      bt_log(DEBUG, LOG_TAG, "incoming connection rejected");
       return;
     }
 
@@ -245,7 +245,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     auto conn_handle =
         std::make_unique<LowEnergyConnectionServer>(std::move(conn), std::move(local));
     conn_handle->set_closed_handler([self, peer_id] {
-      bt_log(TRACE, LOG_TAG, "peer disconnected");
+      bt_log(DEBUG, LOG_TAG, "peer disconnected");
       if (self) {
         // Removing the connection
         self->connections_.erase(peer_id);
@@ -255,7 +255,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     auto* peer = self->adapter()->peer_cache()->FindById(peer_id);
     ZX_ASSERT(peer);
 
-    bt_log(TRACE, LOG_TAG, "central connected");
+    bt_log(DEBUG, LOG_TAG, "central connected");
     auto fidl_peer = fidl_helpers::PeerToFidlLe(*peer);
     self->binding()->events().OnPeerConnected(
         std::move(fidl_peer), fidl::InterfaceHandle<fble::Connection>(std::move(remote)));

@@ -70,7 +70,7 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
 void GattClientServer::ConnectToService(uint64_t id,
                                         ::fidl::InterfaceRequest<RemoteService> service) {
   if (connected_services_.count(id)) {
-    bt_log(TRACE, "bt-host", "service already requested");
+    bt_log(DEBUG, "bt-host", "service already requested");
     return;
   }
 
@@ -89,21 +89,21 @@ void GattClientServer::ConnectToService(uint64_t id,
     auto fail_cleanup = fit::defer([self, id] { self->connected_services_.erase(id); });
 
     if (!service) {
-      bt_log(TRACE, "bt-host", "failed to connect to service");
+      bt_log(DEBUG, "bt-host", "failed to connect to service");
       return;
     }
 
     // Clean up the server if either the peer device or the FIDL client
     // disconnects.
     auto error_cb = [self, id] {
-      bt_log(TRACE, "bt-host", "service disconnected");
+      bt_log(DEBUG, "bt-host", "service disconnected");
       if (self) {
         self->connected_services_.erase(id);
       }
     };
 
     if (!service->AddRemovedHandler(error_cb)) {
-      bt_log(TRACE, "bt-host", "failed to assign closed handler");
+      bt_log(DEBUG, "bt-host", "failed to assign closed handler");
       return;
     }
 

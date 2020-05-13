@@ -163,18 +163,18 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   ZX_DEBUG_ASSERT(address.type() != DeviceAddress::Type::kBREDR);
 
   if (adv_options.anonymous) {
-    bt_log(TRACE, "hci-le", "anonymous advertising not supported");
+    bt_log(DEBUG, "hci-le", "anonymous advertising not supported");
     callback(Status(HostError::kNotSupported));
     return;
   }
 
   if (advertising()) {
     if (address != advertised_) {
-      bt_log(TRACE, "hci-le", "already advertising");
+      bt_log(DEBUG, "hci-le", "already advertising");
       callback(Status(HostError::kNotSupported));
       return;
     }
-    bt_log(TRACE, "hci-le", "updating existing advertisement");
+    bt_log(DEBUG, "hci-le", "updating existing advertisement");
   }
 
   // If the TX Power Level is requested, ensure both buffers have enough space.
@@ -183,13 +183,13 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
     size_limit -= kTxPowerLevelTLVSize;
 
   if (data.CalculateBlockSize(/*include_flags=*/true) > size_limit) {
-    bt_log(TRACE, "hci-le", "advertising data too large");
+    bt_log(DEBUG, "hci-le", "advertising data too large");
     callback(Status(HostError::kAdvertisingDataTooLong));
     return;
   }
 
   if (scan_rsp.CalculateBlockSize() > size_limit) {
-    bt_log(TRACE, "hci-le", "scan response too large");
+    bt_log(DEBUG, "hci-le", "scan response too large");
     callback(Status(HostError::kScanResponseTooLong));
     return;
   }
@@ -291,7 +291,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertisingInternal() {
 
   if (!hci_cmd_runner_->IsReady()) {
     if (!starting_) {
-      bt_log(TRACE, "hci-le", "already stopping");
+      bt_log(DEBUG, "hci-le", "already stopping");
 
       // The advertised address must have been cleared in this state.
       ZX_DEBUG_ASSERT(!advertising());
@@ -343,12 +343,12 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
   auto link = Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_);
 
   if (!advertising()) {
-    bt_log(TRACE, "hci-le", "connection received without advertising!");
+    bt_log(DEBUG, "hci-le", "connection received without advertising!");
     return;
   }
 
   if (!connect_callback_) {
-    bt_log(TRACE, "hci-le", "connection received when not connectable!");
+    bt_log(DEBUG, "hci-le", "connection received when not connectable!");
     return;
   }
 

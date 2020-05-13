@@ -173,7 +173,7 @@ void Session::OpenRemoteChannel(ServerChannel server_channel,
   // first we've heard of this DLCI.
   auto chan_place = FindOrCreateChannel(dlci);
   if (chan_place.second) {
-    bt_log(TRACE, "rfcomm", "initialized new remote channel %u", dlci);
+    bt_log(DEBUG, "rfcomm", "initialized new remote channel %u", dlci);
   }
 
   // If we haven't negotiated initial parameters, queue this and possibly start.
@@ -198,14 +198,14 @@ void Session::OpenRemoteChannel(ServerChannel server_channel,
                 fbl::RefPtr<Channel> new_channel;
                 switch (type) {
                   case FrameType::kUnnumberedAcknowledgement: {
-                    bt_log(TRACE, "rfcomm", "channel %u started successfully", dlci);
+                    bt_log(DEBUG, "rfcomm", "channel %u started successfully", dlci);
                     new_channel = GetChannel(dlci);
                     ZX_DEBUG_ASSERT(new_channel);
                     new_channel->established_ = true;
                     break;
                   }
                   case FrameType::kDisconnectedMode:
-                    bt_log(TRACE, "rfcomm", "channel %u failed to start", dlci);
+                    bt_log(DEBUG, "rfcomm", "channel %u failed to start", dlci);
                     channels_.erase(dlci);
                     break;
                   default:
@@ -239,7 +239,7 @@ void Session::RxCallback(ByteBufferPtr sdu) {
     case FrameType::kDisconnectedMode: {
       auto callbacks_it = outstanding_frames_.find(dlci);
       if (callbacks_it == outstanding_frames_.end()) {
-        bt_log(TRACE, "rfcomm", "unsolicited UA or DM frame");
+        bt_log(DEBUG, "rfcomm", "unsolicited UA or DM frame");
         return;
       }
 
@@ -457,7 +457,7 @@ void Session::StartupMultiplexer() {
     return;
   }
 
-  bt_log(TRACE, "rfcomm", "starting multiplexer");
+  bt_log(DEBUG, "rfcomm", "starting multiplexer");
   FindOrCreateChannel(kMuxControlDLCI);
 
   role_ = Role::kNegotiating;
@@ -513,7 +513,7 @@ void Session::HandleSABM(DLCI dlci) {
         // multiplexer. Respond negatively and attempt startup again later. See
         // RFCOMM 5.2.1.
 
-        bt_log(TRACE, "rfcomm", "resolving multiplexer startup conflict");
+        bt_log(DEBUG, "rfcomm", "resolving multiplexer startup conflict");
 
         // "Undo" our multiplexer startup request by changing our role back,
         // cancelling timeout, and removing callbacks.
@@ -528,7 +528,7 @@ void Session::HandleSABM(DLCI dlci) {
             dispatcher_,
             [this] {
               if (!multiplexer_started()) {
-                bt_log(TRACE, "rfcomm", "retrying multiplexer startup");
+                bt_log(DEBUG, "rfcomm", "retrying multiplexer startup");
                 StartupMultiplexer();
               }
             },
@@ -568,7 +568,7 @@ void Session::HandleSABM(DLCI dlci) {
     // the Session. Send a DM and a DISC for that channel.
     // TODO(NET-1274): do we want to just shut down the whole session here?
     // Things would be in a nasty state at this point.
-    bt_log(TRACE, "rfcomm", "remote requested already open channel");
+    bt_log(DEBUG, "rfcomm", "remote requested already open channel");
     SendResponse(FrameType::kDisconnectedMode, dlci);
     SendCommand(FrameType::kDisconnect, dlci, [](auto response) {
       // TODO(NET-1273): implement clean channel close + state reset
@@ -634,7 +634,7 @@ void Session::HandleMuxCommand(std::unique_ptr<MuxCommand> mux_command) {
         if (chan->negotiation_state_ != ParameterNegotiationState::kNotNegotiated) {
           // RFCOMM 5.5.3 states that supporting re-negotiation of DLCIs is
           // optional, and we can just reply with our own parameters.
-          bt_log(TRACE, "rfcomm", "negotiate already-negotiated DLCI %u", received_params.dlci);
+          bt_log(DEBUG, "rfcomm", "negotiate already-negotiated DLCI %u", received_params.dlci);
           ParameterNegotiationParams our_params = GetIdealParameters(received_params.dlci);
           our_params.credit_based_flow_handshake = CreditBasedFlowHandshake::kSupportedResponse;
           our_params.maximum_frame_size = maximum_frame_size_;
@@ -649,7 +649,7 @@ void Session::HandleMuxCommand(std::unique_ptr<MuxCommand> mux_command) {
           // are unwilling to establish a connection. In this case, we use it to
           // reject any non-initial PN command which attempts to change the
           // maximum frame size.
-          bt_log(TRACE, "rfcomm",
+          bt_log(DEBUG, "rfcomm",
                  "peer requested different max frame size after initial "
                  "negotiation; rejecting");
           SendResponse(FrameType::kDisconnectedMode, received_params.dlci);
@@ -661,7 +661,7 @@ void Session::HandleMuxCommand(std::unique_ptr<MuxCommand> mux_command) {
       auto chan_place = FindOrCreateChannel(received_params.dlci);
       ZX_DEBUG_ASSERT(chan_place.second);
       chan = std::move(chan_place.first);
-      bt_log(TRACE, "rfcomm", "initialized DLCI %d for parameter negotiation",
+      bt_log(DEBUG, "rfcomm", "initialized DLCI %d for parameter negotiation",
              received_params.dlci);
 
       ParameterNegotiationParams ideal_params = GetIdealParameters(received_params.dlci);
@@ -709,7 +709,7 @@ void Session::HandleMuxCommand(std::unique_ptr<MuxCommand> mux_command) {
 
       // TODO(NET-1130): set priority if/when priority is implemented.
 
-      bt_log(TRACE, "rfcomm",
+      bt_log(DEBUG, "rfcomm",
              "parameters negotiated: DLCI %u, credit-based flow %s, "
              "(ours %u, theirs %u), priority %u, max frame size %u",
              negotiated_params.dlci,
@@ -738,7 +738,7 @@ void Session::SetMultiplexerStarted(Role role) {
   ZX_DEBUG_ASSERT(role == Role::kInitiator || role == Role::kResponder);
 
   role_ = role;
-  bt_log(TRACE, "rfcomm", "multiplexer started (role: %s)",
+  bt_log(DEBUG, "rfcomm", "multiplexer started (role: %s)",
          role == Role::kInitiator ? "initiator" : "responder");
 
   // Run any pending tasks.
@@ -751,7 +751,7 @@ void Session::SetMultiplexerStarted(Role role) {
 }
 
 void Session::Closedown() {
-  bt_log(TRACE, "rfcomm", "closing session");
+  bt_log(DEBUG, "rfcomm", "closing session");
   // Deactivates the channel.
   l2cap_channel_ = nullptr;
 }
@@ -791,7 +791,7 @@ void Session::RunInitialParameterNegotiation(DLCI dlci) {
 
     if (mux_command == nullptr) {
       // A response of nullptr signals a DM response from the peer.
-      bt_log(TRACE, "rfcomm", "PN command for DLCI %u rejected", dlci);
+      bt_log(DEBUG, "rfcomm", "PN command for DLCI %u rejected", dlci);
       return;
     }
 
@@ -803,7 +803,7 @@ void Session::RunInitialParameterNegotiation(DLCI dlci) {
     auto params = pn_response->params();
 
     if (dlci != params.dlci) {
-      bt_log(TRACE, "rfcomm", "remote changed DLCI in PN response");
+      bt_log(DEBUG, "rfcomm", "remote changed DLCI in PN response");
       SendCommand(FrameType::kDisconnect, dlci);
       // don't need to erase params.dlci, it's unknown.
       return;
@@ -812,7 +812,7 @@ void Session::RunInitialParameterNegotiation(DLCI dlci) {
     // TODO(gusss): currently we completely ignore priority (other than this
     // check)
     if (params.priority != priority)
-      bt_log(TRACE, "rfcomm", "remote changed priority in PN response");
+      bt_log(DEBUG, "rfcomm", "remote changed priority in PN response");
 
     if (params.maximum_frame_size > maximum_frame_size) {
       bt_log(WARN, "rfcomm", "peer's PN response contained an invalid max frame size");
@@ -847,7 +847,7 @@ void Session::RunInitialParameterNegotiation(DLCI dlci) {
     HandleReceivedCredits(dlci, params.initial_credits);
     chan->remote_credits_ = their_credits;
 
-    bt_log(TRACE, "rfcomm",
+    bt_log(DEBUG, "rfcomm",
            "parameters negotiated: DLCI %u, credit-based flow %s "
            "(ours %u, theirs %u), priority %u, max frame size %u",
            params.dlci, (credit_based_flow_ ? "on" : "off"), params.initial_credits, their_credits,
@@ -895,7 +895,7 @@ ParameterNegotiationParams Session::GetIdealParameters(DLCI dlci) const {
 }
 
 void Session::InitialParameterNegotiationComplete() {
-  bt_log(TRACE, "rfcomm", "initial parameter negotiation complete");
+  bt_log(DEBUG, "rfcomm", "initial parameter negotiation complete");
 
   initial_param_negotiation_state_ = ParameterNegotiationState::kNegotiated;
 

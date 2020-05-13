@@ -27,7 +27,7 @@
 //
 // or using the bt_log convenience macro:
 //
-//     bt_log(TRACE, "bt-host", "oops: %d", foo);
+//     bt_log(DEBUG, "bt-host", "oops: %d", foo);
 //
 // DRIVER MODE:
 //
@@ -98,10 +98,10 @@ enum class LogSeverity {
   INFO = 2,
 
   // Verbose messages for transactions and state changes
-  TRACE = 3,
+  DEBUG = 3,
 
   // Very verbose messages.
-  SPEW = 4,
+  TRACE = 4,
 };
 
 constexpr size_t kNumLogSeverities = 5;

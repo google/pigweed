@@ -84,7 +84,7 @@ void BrEdrConnectionRequest::CreateConnection(
 
 // Status is either a Success or an Error value
 Status BrEdrConnectionRequest::CompleteRequest(Status status) {
-  bt_log(TRACE, "hci-bredr", "connection complete - status: %s", bt_str(status));
+  bt_log(DEBUG, "hci-bredr", "connection complete - status: %s", bt_str(status));
   timeout_task_.Cancel();
 
   if (!status.is_success()) {

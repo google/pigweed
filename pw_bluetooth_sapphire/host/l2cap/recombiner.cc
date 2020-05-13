@@ -35,12 +35,12 @@ bool Recombiner::AddFragment(hci::ACLDataPacketPtr&& fragment) {
     ZX_DEBUG_ASSERT(!empty());
   } else {
     if (fragment->packet_boundary_flag() != hci::ACLPacketBoundaryFlag::kContinuingFragment) {
-      bt_log(SPEW, "l2cap", "expected continuing fragment!");
+      bt_log(TRACE, "l2cap", "expected continuing fragment!");
       return false;
     }
 
     if (cur_length_ + fragment->view().payload_size() > frame_length_) {
-      bt_log(SPEW, "l2cap", "continuing fragment too long!");
+      bt_log(TRACE, "l2cap", "continuing fragment too long!");
       return false;
     }
   }
@@ -100,14 +100,14 @@ bool Recombiner::ProcessFirstFragment(const hci::ACLDataPacket& fragment) {
   // should not be a continuation fragment.
   if (fragment.packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kContinuingFragment ||
       fragment.view().payload_size() < sizeof(BasicHeader)) {
-    bt_log(SPEW, "l2cap", "bad first fragment");
+    bt_log(TRACE, "l2cap", "bad first fragment");
     return false;
   }
 
   uint16_t frame_length = le16toh(GetBasicHeader(fragment).length) + sizeof(BasicHeader);
 
   if (fragment.view().payload_size() > frame_length) {
-    bt_log(SPEW, "l2cap", "fragment too long!");
+    bt_log(TRACE, "l2cap", "fragment too long!");
     return false;
   }
 

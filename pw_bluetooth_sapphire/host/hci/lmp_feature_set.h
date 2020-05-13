@@ -62,7 +62,7 @@ class LMPFeatureSet {
 
   inline void set_last_page_number(uint8_t page) {
     if (page > kMaxLastPageNumber) {
-      bt_log(SPEW, "hci", "attempt to set lmp last page number to %u, capping at %u", page,
+      bt_log(TRACE, "hci", "attempt to set lmp last page number to %u, capping at %u", page,
              kMaxLastPageNumber);
       last_page_number_ = kMaxLastPageNumber;
     } else {

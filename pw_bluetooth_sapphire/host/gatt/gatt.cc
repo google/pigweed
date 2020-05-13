@@ -55,7 +55,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
 
       initialized_ = true;
 
-      bt_log(TRACE, "gatt", "initialized");
+      bt_log(DEBUG, "gatt", "initialized");
     });
   }
 
@@ -63,7 +63,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
 
   // Called on the GATT runner as a result of ScheduleCleanUp().
   void CleanUp() {
-    bt_log(TRACE, "gatt", "shutting down");
+    bt_log(DEBUG, "gatt", "shutting down");
 
     initialized_ = false;
     connections_.clear();
@@ -73,7 +73,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
   }
 
   void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override {
-    bt_log(TRACE, "gatt", "add connection %s", bt_str(peer_id));
+    bt_log(DEBUG, "gatt", "add connection %s", bt_str(peer_id));
 
     PostMessage([this, peer_id, att_chan] {
       ZX_DEBUG_ASSERT(local_services_);
@@ -100,7 +100,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
   }
 
   void RemoveConnection(PeerId peer_id) override {
-    bt_log(TRACE, "gatt", "remove connection: %s", bt_str(peer_id));
+    bt_log(DEBUG, "gatt", "remove connection: %s", bt_str(peer_id));
     PostMessage([this, peer_id] {
       local_services_->DisconnectClient(peer_id);
       connections_.erase(peer_id);
@@ -115,7 +115,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
       IdType id;
 
       if (!initialized_) {
-        bt_log(TRACE, "gatt", "cannot register service after shutdown");
+        bt_log(DEBUG, "gatt", "cannot register service after shutdown");
         id = kInvalidId;
       } else {
         id = local_services_->RegisterService(std::move(svc), std::move(rh), std::move(wh),
@@ -140,27 +140,27 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
                         ::std::vector<uint8_t> value, bool indicate) override {
     PostMessage([this, svc_id = service_id, chrc_id, indicate, peer_id, value = std::move(value)] {
       if (!initialized_) {
-        bt_log(SPEW, "gatt", "cannot notify after shutdown");
+        bt_log(TRACE, "gatt", "cannot notify after shutdown");
         return;
       }
 
       // There is nothing to do if the requested peer is not connected.
       auto iter = connections_.find(peer_id);
       if (iter == connections_.end()) {
-        bt_log(SPEW, "gatt", "cannot notify disconnected peer: %s", bt_str(peer_id));
+        bt_log(TRACE, "gatt", "cannot notify disconnected peer: %s", bt_str(peer_id));
         return;
       }
 
       LocalServiceManager::ClientCharacteristicConfig config;
       if (!local_services_->GetCharacteristicConfig(svc_id, chrc_id, peer_id, &config)) {
-        bt_log(SPEW, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id));
+        bt_log(TRACE, "gatt", "peer has not configured characteristic: %s", bt_str(peer_id));
         return;
       }
 
       // Make sure that the client has subscribed to the requested protocol
       // method.
       if ((indicate & !config.indicate) || (!indicate && !config.notify)) {
-        bt_log(SPEW, "gatt", "peer has no configuration (%s): %s", (indicate ? "ind" : "not"),
+        bt_log(TRACE, "gatt", "peer has no configuration (%s): %s", (indicate ? "ind" : "not"),
                bt_str(peer_id));
         return;
       }
@@ -171,7 +171,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
   }
 
   void DiscoverServices(PeerId peer_id) override {
-    bt_log(TRACE, "gatt", "discover services: %s", bt_str(peer_id));
+    bt_log(DEBUG, "gatt", "discover services: %s", bt_str(peer_id));
 
     PostMessage([this, peer_id] {
       auto iter = connections_.find(peer_id);
@@ -224,7 +224,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
  private:
   // Called when a new remote GATT service is discovered.
   void OnServiceAdded(PeerId peer_id, fbl::RefPtr<RemoteService> svc) {
-    bt_log(TRACE, "gatt", "service added (peer_id: %s, handle: %#.4x, uuid: %s", bt_str(peer_id),
+    bt_log(DEBUG, "gatt", "service added (peer_id: %s, handle: %#.4x, uuid: %s", bt_str(peer_id),
            svc->handle(), bt_str(svc->uuid()));
     for (auto& handler : remote_service_callbacks_) {
       handler.Notify(peer_id, svc);

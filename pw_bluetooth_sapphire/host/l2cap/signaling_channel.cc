@@ -140,7 +140,7 @@ bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
     return true;
   }
 
-  bt_log(TRACE, "l2cap", "sig: ignoring unsupported code %#.2x", packet.header().code);
+  bt_log(DEBUG, "l2cap", "sig: ignoring unsupported code %#.2x", packet.header().code);
 
   return false;
 }
@@ -148,7 +148,7 @@ bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
 void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   auto iter = pending_commands_.find(packet.header().id);
   if (iter == pending_commands_.end()) {
-    bt_log(SPEW, "l2cap", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
+    bt_log(TRACE, "l2cap", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
@@ -270,7 +270,7 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
   } else if (!packet.header().id) {
     // "Signaling identifier 0x00 is an illegal identifier and shall never be
     // used in any command" (v5.0, Vol 3, Part A, Section 4).
-    bt_log(TRACE, "l2cap", "illegal signaling cmd ID: 0x00; reject");
+    bt_log(DEBUG, "l2cap", "illegal signaling cmd ID: 0x00; reject");
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
   } else if (!HandlePacket(packet)) {
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());

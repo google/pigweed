@@ -55,7 +55,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
 
     ZX_ASSERT(event.event_code() == hci::kLEMetaEventCode);
 
-    bt_log(SPEW, "gap-le", "LE read remote features complete (peer id: %s)",
+    bt_log(TRACE, "gap-le", "LE read remote features complete (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
     const auto* params = event.le_event_params<hci::LEReadRemoteFeaturesCompleteSubeventParams>();
@@ -69,7 +69,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
     peer->MutLe().SetFeatures(hci::LESupportedFeatures{params->le_features});
   };
 
-  bt_log(SPEW, "gap-le", "sending LE read remote features command (peer id: %s)",
+  bt_log(TRACE, "gap-le", "sending LE read remote features command (peer id: %s)",
          bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendLeAsyncCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
                                                hci::kLEReadRemoteFeaturesCompleteSubeventCode);

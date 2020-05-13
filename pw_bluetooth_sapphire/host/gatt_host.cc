@@ -88,7 +88,7 @@ void GattHost::BindGattServer(fidl::InterfaceRequest<fuchsia::bluetooth::gatt::S
     auto server = std::make_unique<GattServerServer>(gatt_, std::move(request));
     server->set_error_handler([self, server = server.get()](zx_status_t status) {
       if (self) {
-        bt_log(TRACE, "bt-host", "GATT server disconnected");
+        bt_log(DEBUG, "bt-host", "GATT server disconnected");
         self->server_servers_.erase(server);
       }
     });
@@ -110,7 +110,7 @@ void GattHost::BindGattClient(Token token, bt::gatt::PeerId peer_id,
     auto server = std::make_unique<GattClientServer>(peer_id, gatt_, std::move(request));
     server->set_error_handler([self, token](zx_status_t status) {
       if (self) {
-        bt_log(TRACE, "bt-host", "GATT client disconnected");
+        bt_log(DEBUG, "bt-host", "GATT client disconnected");
         self->client_servers_.erase(token);
       }
     });

@@ -22,14 +22,14 @@ void LESignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacketHa
   // (v5.0, Vol 3, Part A, Section 4).
   ZX_DEBUG_ASSERT(sdu);
   if (sdu->size() < sizeof(CommandHeader)) {
-    bt_log(TRACE, "l2cap-le", "sig: dropped malformed LE signaling packet");
+    bt_log(DEBUG, "l2cap-le", "sig: dropped malformed LE signaling packet");
     return;
   }
 
   SignalingPacket packet(sdu.get());
   uint16_t expected_payload_length = le16toh(packet.header().length);
   if (expected_payload_length != sdu->size() - sizeof(CommandHeader)) {
-    bt_log(TRACE, "l2cap-le", "sig: packet size mismatch (expected: %u, recv: %zu); drop",
+    bt_log(DEBUG, "l2cap-le", "sig: packet size mismatch (expected: %u, recv: %zu); drop",
            expected_payload_length, sdu->size() - sizeof(CommandHeader));
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;

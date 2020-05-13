@@ -62,7 +62,7 @@ ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
     return buffer;
   }
 
-  bt_log(SPEW, "hci", "ACLDataPacket slab allocators capacity exhausted");
+  bt_log(TRACE, "hci", "ACLDataPacket slab allocators capacity exhausted");
 
   // Fall back to system allocator.
   return std::make_unique<LargeACLDataPacket>(payload_size);

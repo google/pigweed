@@ -181,7 +181,7 @@ AttributeGrouping* Database::NewGrouping(const UUID& group_type, size_t attr_cou
     }
 
     if (pos == groupings_.end()) {
-      bt_log(TRACE, "att", "attribute database is out of space!");
+      bt_log(DEBUG, "att", "attribute database is out of space!");
       return nullptr;
     }
 
@@ -237,9 +237,9 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
   // is called once |count| reaches 0 or an error is received.
   WriteCallback f = [cb = std::move(callback), count = write_queue.size()](
                         Handle handle, ErrorCode ecode) mutable {
-    bt_log(TRACE, "att", "execute write result - handle: %#.4x, error: %#.2hhx", handle, ecode);
+    bt_log(DEBUG, "att", "execute write result - handle: %#.4x, error: %#.2hhx", handle, ecode);
     if (!cb) {
-      bt_log(SPEW, "att", "ignore execute write result - already responded");
+      bt_log(TRACE, "att", "ignore execute write result - already responded");
       return;
     }
 

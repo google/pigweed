@@ -154,7 +154,7 @@ bool Adapter::Initialize(InitializeCallback callback, fit::closure transport_clo
 
 void Adapter::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  bt_log(TRACE, "gap", "adapter shutting down");
+  bt_log(DEBUG, "gap", "adapter shutting down");
 
   if (IsInitializing()) {
     ZX_DEBUG_ASSERT(!init_seq_runner_->IsReady());
@@ -610,7 +610,7 @@ void Adapter::CleanUp() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (init_state_ == State::kNotInitialized) {
-    bt_log(TRACE, "gap", "clean up: not initialized");
+    bt_log(DEBUG, "gap", "clean up: not initialized");
     return;
   }
 
@@ -652,7 +652,7 @@ void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
   auto peer = peer_cache()->FindById(peer_id);
 
   if (peer && peer->le() && !peer->le()->should_auto_connect()) {
-    bt_log(TRACE, "gap", "ignoring auto-connection (peer->should_autoconnect() is false)");
+    bt_log(DEBUG, "gap", "ignoring auto-connection (peer->should_autoconnect() is false)");
     return;
   }
 

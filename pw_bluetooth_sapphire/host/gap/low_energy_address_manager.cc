@@ -33,7 +33,7 @@ LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
 
 void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
   if (enabled == privacy_enabled_) {
-    bt_log(TRACE, "gap-le", "privacy already %s", (enabled ? "enabled" : "disabled"));
+    bt_log(DEBUG, "gap-le", "privacy already %s", (enabled ? "enabled" : "disabled"));
     return;
   }
 
@@ -65,17 +65,17 @@ void LowEnergyAddressManager::EnsureLocalAddress(AddressCallback callback) {
 
 void LowEnergyAddressManager::TryRefreshRandomAddress() {
   if (!privacy_enabled_ || !needs_refresh_) {
-    bt_log(TRACE, "gap-le", "address does not need refresh");
+    bt_log(DEBUG, "gap-le", "address does not need refresh");
     return;
   }
 
   if (refreshing_) {
-    bt_log(TRACE, "gap-le", "address update in progress");
+    bt_log(DEBUG, "gap-le", "address update in progress");
     return;
   }
 
   if (!CanUpdateRandomAddress()) {
-    bt_log(TRACE, "gap-le", "deferring local address refresh due to ongoing procedures");
+    bt_log(DEBUG, "gap-le", "deferring local address refresh due to ongoing procedures");
     // Don't stall procedures that requested the current address while in this
     // state.
     ResolveAddressRequests();
@@ -106,14 +106,14 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     refreshing_ = false;
 
     if (!privacy_enabled_) {
-      bt_log(TRACE, "gap-le", "ignore random address result while privacy is disabled");
+      bt_log(DEBUG, "gap-le", "ignore random address result while privacy is disabled");
       return;
     }
 
     if (!hci_is_error(event, TRACE, "gap-le", "failed to update random address")) {
       needs_refresh_ = false;
       random_ = random_addr;
-      bt_log(TRACE, "gap-le", "random address updated: %s", random_->ToString().c_str());
+      bt_log(DEBUG, "gap-le", "random address updated: %s", random_->ToString().c_str());
 
       // Set the new random address to expire in kPrivateAddressTimeout.
       random_address_expiry_task_.set_handler([this](auto*, auto*, zx_status_t status) {
@@ -148,7 +148,7 @@ bool LowEnergyAddressManager::CanUpdateRandomAddress() const {
 
 void LowEnergyAddressManager::ResolveAddressRequests() {
   auto q = std::move(address_callbacks_);
-  bt_log(TRACE, "gap-le", "using local address %s", current_address().ToString().c_str());
+  bt_log(DEBUG, "gap-le", "using local address %s", current_address().ToString().c_str());
   while (!q.empty()) {
     q.front()(current_address());
     q.pop();

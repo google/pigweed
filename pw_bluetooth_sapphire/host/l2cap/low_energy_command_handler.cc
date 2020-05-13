@@ -47,7 +47,7 @@ void LowEnergyCommandHandler::ServeConnectionParameterUpdateRequest(
   auto on_param_update_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
                                                   SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(ConnectionParameterUpdateRequestPayload)) {
-      bt_log(TRACE, "l2cap-le",
+      bt_log(DEBUG, "l2cap-le",
              "cmd: rejecting malformed Connection Parameter Update Request, size %zu",
              request_payload.size());
       sig_responder->RejectNotUnderstood();

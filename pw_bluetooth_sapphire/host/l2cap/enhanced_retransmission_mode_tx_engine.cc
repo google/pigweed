@@ -65,7 +65,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   // TODO(BT-440): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
-    bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
+    bt_log(DEBUG, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
   }
 

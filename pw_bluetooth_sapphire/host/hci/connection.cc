@@ -280,7 +280,7 @@ void ConnectionImpl::Disconnect(StatusCode reason) {
   params->connection_handle = htole16(handle());
   params->reason = reason;
 
-  bt_log(TRACE, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2x)", handle(), reason);
+  bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2x)", handle(), reason);
 
   // Send HCI Disconnect.
   hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
@@ -290,7 +290,7 @@ void ConnectionImpl::Disconnect(StatusCode reason) {
 bool ConnectionImpl::StartEncryption() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   if (conn_state_ != Connection::State::kConnected) {
-    bt_log(TRACE, "hci", "connection closed; cannot start encryption");
+    bt_log(DEBUG, "hci", "connection closed; cannot start encryption");
     return false;
   }
 
@@ -299,12 +299,12 @@ bool ConnectionImpl::StartEncryption() {
   }
 
   if (role() != Role::kMaster) {
-    bt_log(TRACE, "hci", "only the master can start encryption");
+    bt_log(DEBUG, "hci", "only the master can start encryption");
     return false;
   }
 
   if (!ltk()) {
-    bt_log(TRACE, "hci", "connection has no LTK; cannot start encryption");
+    bt_log(DEBUG, "hci", "connection has no LTK; cannot start encryption");
     return false;
   }
 
@@ -316,7 +316,7 @@ bool ConnectionImpl::BrEdrStartEncryption() {
 
   ZX_ASSERT(ltk().has_value() == ltk_type().has_value());
   if (!ltk().has_value()) {
-    bt_log(TRACE, "hci", "connection link key type has not been set; not starting encryption");
+    bt_log(DEBUG, "hci", "connection link key type has not been set; not starting encryption");
     return false;
   }
 
@@ -335,7 +335,7 @@ bool ConnectionImpl::BrEdrStartEncryption() {
     const Status status = event.ToStatus();
     if (!bt_is_error(status, ERROR, "hci-bredr", "could not set encryption on link %#.04x",
                      handle)) {
-      bt_log(TRACE, "hci-bredr", "requested encryption start on %#.04x", handle);
+      bt_log(DEBUG, "hci-bredr", "requested encryption start on %#.04x", handle);
       return;
     }
 
@@ -369,7 +369,7 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
 
     const Status status = event.ToStatus();
     if (!bt_is_error(status, ERROR, "hci-le", "could not set encryption on link %#.04x", handle)) {
-      bt_log(TRACE, "hci-le", "requested encryption start on %#.04x", handle);
+      bt_log(DEBUG, "hci-le", "requested encryption start on %#.04x", handle);
       return;
     }
 
@@ -398,7 +398,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   }
 
   if (!encryption_change_callback()) {
-    bt_log(TRACE, "hci", "%#.4x: no encryption status callback assigned", handle());
+    bt_log(DEBUG, "hci", "%#.4x: no encryption status callback assigned", handle());
     return;
   }
 
@@ -424,7 +424,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
                      self->handle())) {
       const auto& return_params = *event.return_params<ReadEncryptionKeySizeReturnParams>();
       const auto key_size = return_params.key_size;
-      bt_log(SPEW, "hci", "%#.4x: encryption key size %hhu", self->handle(), key_size);
+      bt_log(TRACE, "hci", "%#.4x: encryption key size %hhu", self->handle(), key_size);
 
       if (key_size < hci::kMinEncryptionKeySize) {
         bt_log(WARN, "hci", "%#.4x: encryption key size %hhu insufficient", self->handle(),
@@ -458,14 +458,14 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
   }
 
   if (conn_state_ != Connection::State::kConnected) {
-    bt_log(TRACE, "hci", "encryption change ignored: connection closed");
+    bt_log(DEBUG, "hci", "encryption change ignored: connection closed");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
   Status status(params.status);
   bool enabled = params.encryption_enabled != EncryptionStatus::kOff;
 
-  bt_log(TRACE, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
+  bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          status.ToString().c_str());
 
   if (ll_type() == LinkType::kACL && status && enabled) {
@@ -499,13 +499,13 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshComple
   }
 
   if (conn_state_ != Connection::State::kConnected) {
-    bt_log(TRACE, "hci", "encryption key refresh ignored: connection closed");
+    bt_log(DEBUG, "hci", "encryption key refresh ignored: connection closed");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
   Status status(params.status);
 
-  bt_log(TRACE, "hci", "encryption key refresh %s", status.ToString().c_str());
+  bt_log(DEBUG, "hci", "encryption key refresh %s", status.ToString().c_str());
 
   // Report that encryption got disabled on failure status. The accuracy of this
   // isn't that important since the link will be disconnected.
@@ -541,7 +541,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
   uint64_t rand = le64toh(params->random_number);
   uint16_t ediv = le16toh(params->encrypted_diversifier);
 
-  bt_log(TRACE, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
+  bt_log(DEBUG, "hci", "LE LTK request - ediv: %#.4x, rand: %#.16lx", ediv, rand);
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     cmd = CommandPacket::New(kLELongTermKeyRequestReply,
                              sizeof(LELongTermKeyRequestReplyCommandParams));
@@ -550,7 +550,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
   } else {
-    bt_log(TRACE, "hci-le", "LTK request rejected");
+    bt_log(DEBUG, "hci-le", "LTK request rejected");
 
     cmd = CommandPacket::New(kLELongTermKeyRequestNegativeReply,
                              sizeof(LELongTermKeyRequestNegativeReplyCommandParams));

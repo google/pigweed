@@ -102,11 +102,11 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
   // Check if the scan request was canceled by StopScan() while we were waiting
   // for the local address.
   if (state() != State::kInitiating) {
-    bt_log(TRACE, "hci-le", "scan request was canceled while obtaining local address");
+    bt_log(DEBUG, "hci-le", "scan request was canceled while obtaining local address");
     return;
   }
 
-  bt_log(TRACE, "hci-le", "requesting scan (%s, address: %s, interval: %#.4x, window: %#.4x)",
+  bt_log(DEBUG, "hci-le", "requesting scan (%s, address: %s, interval: %#.4x, window: %#.4x)",
          (active ? "active" : "passive"), local_address.ToString().c_str(), scan_interval,
          scan_window);
 
@@ -139,7 +139,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 
     if (!status) {
       if (status.error() == HostError::kCanceled) {
-        bt_log(TRACE, "hci-le", "scan canceled");
+        bt_log(DEBUG, "hci-le", "scan canceled");
         return;
       }
 
@@ -172,7 +172,7 @@ bool LegacyLowEnergyScanner::StopScan() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (state() == State::kStopping || state() == State::kIdle) {
-    bt_log(TRACE, "hci-le", "cannot stop scan while in state: %s",
+    bt_log(DEBUG, "hci-le", "cannot stop scan while in state: %s",
            ScanStateToString(state()).c_str());
     return false;
   }
@@ -230,7 +230,7 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
 
 CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     const EventPacket& event) {
-  bt_log(SPEW, "hci-le", "received advertising report");
+  bt_log(TRACE, "hci-le", "received advertising report");
 
   // Drop the event if not requested to scan.
   if (!IsScanning())

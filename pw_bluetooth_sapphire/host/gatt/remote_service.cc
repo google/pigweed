@@ -204,7 +204,7 @@ void RemoteService::ReadCharacteristic(CharacteristicHandle id, ReadValueCallbac
     }
 
     if (!(chrc->info().properties & Property::kRead)) {
-      bt_log(TRACE, "gatt", "characteristic does not support \"read\"");
+      bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
       ReportValue(att::Status(HostError::kNotSupported), BufferView(), std::move(cb), dispatcher);
       return;
     }
@@ -226,13 +226,13 @@ void RemoteService::ReadLongCharacteristic(CharacteristicHandle id, uint16_t off
     }
 
     if (!(chrc->info().properties & Property::kRead)) {
-      bt_log(TRACE, "gatt", "characteristic does not support \"read\"");
+      bt_log(DEBUG, "gatt", "characteristic does not support \"read\"");
       ReportValue(att::Status(HostError::kNotSupported), BufferView(), std::move(cb), dispatcher);
       return;
     }
 
     if (max_bytes == 0) {
-      bt_log(SPEW, "gatt", "invalid value for |max_bytes|: 0");
+      bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
       ReportValue(att::Status(HostError::kInvalidParameters), BufferView(), std::move(cb),
                   dispatcher);
       return;
@@ -255,7 +255,7 @@ void RemoteService::ReadByType(const UUID& type, ReadByTypeCallback callback,
   RunGattTask([this, type, cb = std::move(callback), dispatcher]() mutable {
     // Caller should not request a UUID of an internal attribute (e.g. service declaration).
     if (IsInternalUuid(type)) {
-      bt_log(SPEW, "gatt", "ReadByType called with internal GATT type (type: %s)", bt_str(type));
+      bt_log(TRACE, "gatt", "ReadByType called with internal GATT type (type: %s)", bt_str(type));
       ReportValues(att::Status(HostError::kInvalidParameters), {}, std::move(cb), dispatcher);
       return;
     }
@@ -278,7 +278,7 @@ void RemoteService::WriteCharacteristic(CharacteristicHandle id, std::vector<uin
     }
 
     if (!(chrc->info().properties & Property::kWrite)) {
-      bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
+      bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
       ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
@@ -302,7 +302,7 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t of
     }
 
     if (!(chrc->info().properties & Property::kWrite)) {
-      bt_log(TRACE, "gatt", "characteristic does not support \"write\"");
+      bt_log(DEBUG, "gatt", "characteristic does not support \"write\"");
       ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
@@ -310,7 +310,7 @@ void RemoteService::WriteLongCharacteristic(CharacteristicHandle id, uint16_t of
     if ((mode == ReliableMode::kEnabled) &&
         ((!chrc->extended_properties().has_value()) ||
          (!(chrc->extended_properties().value() & ExtendedProperty::kReliableWrite)))) {
-      bt_log(TRACE, "gatt",
+      bt_log(DEBUG, "gatt",
              "characteristic does not support \"reliable write\"; attempting request anyway");
     }
 
@@ -330,7 +330,7 @@ void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
     }
 
     if (!(chrc->info().properties & Property::kWriteWithoutResponse)) {
-      bt_log(TRACE, "gatt", "characteristic does not support \"write without response\"");
+      bt_log(DEBUG, "gatt", "characteristic does not support \"write without response\"");
       return;
     }
 
@@ -366,7 +366,7 @@ void RemoteService::ReadLongDescriptor(DescriptorHandle id, uint16_t offset, siz
     }
 
     if (max_bytes == 0) {
-      bt_log(SPEW, "gatt", "invalid value for |max_bytes|: 0");
+      bt_log(TRACE, "gatt", "invalid value for |max_bytes|: 0");
       ReportValue(att::Status(HostError::kInvalidParameters), BufferView(), std::move(cb),
                   dispatcher);
       return;
@@ -397,7 +397,7 @@ void RemoteService::WriteDescriptor(DescriptorHandle id, std::vector<uint8_t> va
 
     // Do not allow writing to internally reserved descriptors.
     if (desc->type == types::kClientCharacteristicConfig) {
-      bt_log(TRACE, "gatt", "writing to CCC descriptor not allowed");
+      bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
       ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
       return;
     }
@@ -422,7 +422,7 @@ void RemoteService::WriteLongDescriptor(DescriptorHandle id, uint16_t offset,
 
         // Do not allow writing to internally reserved descriptors.
         if (desc->type == types::kClientCharacteristicConfig) {
-          bt_log(TRACE, "gatt", "writing to CCC descriptor not allowed");
+          bt_log(DEBUG, "gatt", "writing to CCC descriptor not allowed");
           ReportStatus(Status(HostError::kNotSupported), std::move(cb), dispatcher);
           return;
         }
@@ -501,7 +501,7 @@ void RemoteService::StartDescriptorDiscovery() {
       // Fall through and notify clients below.
     } else {
       ZX_DEBUG_ASSERT(!self->HasCharacteristics());
-      bt_log(TRACE, "gatt", "descriptor discovery failed %s", status.ToString().c_str());
+      bt_log(DEBUG, "gatt", "descriptor discovery failed %s", status.ToString().c_str());
       self->characteristics_.clear();
 
       // Fall through and notify the clients below.

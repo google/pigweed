@@ -56,7 +56,7 @@ void ServiceRecord::RemoveAttribute(AttributeId id) { attributes_.erase(id); }
 bool ServiceRecord::IsRegisterable() const {
   // Services must at least have a ServiceClassIDList (5.0, Vol 3, Part B, 5.1)
   if (!HasAttribute(kServiceClassIdList)) {
-    bt_log(SPEW, "sdp", "record missing ServiceClass");
+    bt_log(TRACE, "sdp", "record missing ServiceClass");
     return false;
   }
   // Class ID list is a data element sequence in which each data element is
@@ -64,7 +64,7 @@ bool ServiceRecord::IsRegisterable() const {
   // conforms to. (5.0, Vol 3, Part B, 5.1.2)
   const DataElement& class_id_list = GetAttribute(kServiceClassIdList);
   if (class_id_list.type() != DataElement::Type::kSequence) {
-    bt_log(SPEW, "sdp", "class ID list isn't a sequence");
+    bt_log(TRACE, "sdp", "class ID list isn't a sequence");
     return false;
   }
 
@@ -72,18 +72,18 @@ bool ServiceRecord::IsRegisterable() const {
   const DataElement* elem;
   for (idx = 0; nullptr != (elem = class_id_list.At(idx)); idx++) {
     if (elem->type() != DataElement::Type::kUuid) {
-      bt_log(SPEW, "sdp", "class ID list elements are not all UUIDs");
+      bt_log(TRACE, "sdp", "class ID list elements are not all UUIDs");
       return false;
     }
   }
 
   if (idx == 0) {
-    bt_log(SPEW, "sdp", "no elements in the Class ID list (need at least 1)");
+    bt_log(TRACE, "sdp", "no elements in the Class ID list (need at least 1)");
     return false;
   }
 
   if (!HasAttribute(kBrowseGroupList)) {
-    bt_log(SPEW, "sdp", "record isn't part of a browse group");
+    bt_log(TRACE, "sdp", "record isn't part of a browse group");
     return false;
   }
 

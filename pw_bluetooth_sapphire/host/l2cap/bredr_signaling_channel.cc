@@ -39,7 +39,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacke
   // 0x0001 (ACL-U) (v5.0, Vol 3, Part A, Section 4)"
   ZX_DEBUG_ASSERT(sdu);
   if (sdu->size() < sizeof(CommandHeader)) {
-    bt_log(TRACE, "l2cap-bredr", "sig: dropped malformed ACL signaling packet");
+    bt_log(DEBUG, "l2cap-bredr", "sig: dropped malformed ACL signaling packet");
     return;
   }
 
@@ -51,7 +51,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacke
     uint16_t expected_payload_length = le16toh(packet.header().length);
     size_t remaining_sdu_length = sdu->size() - sdu_offset - sizeof(CommandHeader);
     if (remaining_sdu_length < expected_payload_length) {
-      bt_log(TRACE, "l2cap-bredr", "sig: expected more bytes (%zu < %u); drop",
+      bt_log(DEBUG, "l2cap-bredr", "sig: expected more bytes (%zu < %u); drop",
              remaining_sdu_length, expected_payload_length);
       SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
       return;
@@ -64,7 +64,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacke
   }
 
   if (sdu_offset != sdu->size()) {
-    bt_log(TRACE, "l2cap-bredr",
+    bt_log(DEBUG, "l2cap-bredr",
            "sig: incomplete packet header "
            "(expected: %zu, left: %zu)",
            sizeof(CommandHeader), sdu->size() - sdu_offset);

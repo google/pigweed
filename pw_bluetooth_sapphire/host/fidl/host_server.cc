@@ -145,7 +145,7 @@ void HostServer::WatchState(WatchStateCallback callback) {
 
 void HostServer::SetLocalData(::fuchsia::bluetooth::control::HostData host_data) {
   if (host_data.irk) {
-    bt_log(TRACE, "bt-host", "assign IRK");
+    bt_log(DEBUG, "bt-host", "assign IRK");
     auto addr_mgr = adapter()->le_address_manager();
     if (addr_mgr) {
       addr_mgr->set_irk(fidl_helpers::LocalKeyFromFidl(*host_data.irk));
@@ -207,7 +207,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
         }
 
         if (!session) {
-          bt_log(TRACE, "bt-host", "failed to start LE discovery session");
+          bt_log(DEBUG, "bt-host", "failed to start LE discovery session");
           callback(fit::error(fsys::Error::FAILED));
           self->bredr_discovery_session_ = nullptr;
           self->requesting_discovery_ = false;
@@ -231,11 +231,11 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
 }
 
 void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
-  bt_log(TRACE, "bt-host", "StartDiscovery()");
+  bt_log(DEBUG, "bt-host", "StartDiscovery()");
   ZX_DEBUG_ASSERT(adapter());
 
   if (le_discovery_session_ || requesting_discovery_) {
-    bt_log(TRACE, "bt-host", "discovery already in progress");
+    bt_log(DEBUG, "bt-host", "discovery already in progress");
     callback(fit::error(fsys::Error::IN_PROGRESS));
     return;
   }
@@ -261,7 +261,7 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
         }
 
         if (!status || !session) {
-          bt_log(TRACE, "bt-host", "failed to start BR/EDR discovery session");
+          bt_log(DEBUG, "bt-host", "failed to start BR/EDR discovery session");
 
           fit::result<void, fsys::Error> result;
           if (!status) {
@@ -280,7 +280,7 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
 }
 
 void HostServer::StopDiscovery() {
-  bt_log(TRACE, "bt-host", "StopDiscovery()");
+  bt_log(DEBUG, "bt-host", "StopDiscovery()");
 
   bool discovering = le_discovery_session_ || bredr_discovery_session_;
   bredr_discovery_session_ = nullptr;
@@ -289,12 +289,12 @@ void HostServer::StopDiscovery() {
   if (discovering) {
     NotifyInfoChange();
   } else {
-    bt_log(TRACE, "bt-host", "no active discovery session");
+    bt_log(DEBUG, "bt-host", "no active discovery session");
   }
 }
 
 void HostServer::SetConnectable(bool connectable, SetConnectableCallback callback) {
-  bt_log(TRACE, "bt-host", "SetConnectable(%s)", connectable ? "true" : "false");
+  bt_log(DEBUG, "bt-host", "SetConnectable(%s)", connectable ? "true" : "false");
 
   auto bredr_conn_manager = adapter()->bredr_connection_manager();
   if (!bredr_conn_manager) {
@@ -308,7 +308,7 @@ void HostServer::SetConnectable(bool connectable, SetConnectableCallback callbac
 
 void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
                                   AddBondedDevicesCallback callback) {
-  bt_log(TRACE, "bt-host", "AddBondedDevices");
+  bt_log(DEBUG, "bt-host", "AddBondedDevices");
   if (bonds.empty()) {
     // A request to restore an empty list of bonds succeeds immediately, as there is nothing to do
     callback(Status());
@@ -382,7 +382,7 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
 }
 
 void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
-  bt_log(TRACE, "bt-host", "OnPeerBonded()");
+  bt_log(DEBUG, "bt-host", "OnPeerBonded()");
   binding()->events().OnNewBondingData(fidl_helpers::NewBondingData(*adapter(), peer));
 }
 
@@ -393,11 +393,11 @@ void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr 
   bt::PeerId id = conn_ref->peer_identifier();
   auto iter = le_connections_.find(id);
   if (iter != le_connections_.end()) {
-    bt_log(SPEW, "bt-host", "peer already connected; reference dropped");
+    bt_log(TRACE, "bt-host", "peer already connected; reference dropped");
     return;
   }
 
-  bt_log(TRACE, "bt-host", "LE peer connected (%s): %s ", (auto_connect ? "auto" : "direct"),
+  bt_log(DEBUG, "bt-host", "LE peer connected (%s): %s ", (auto_connect ? "auto" : "direct"),
          bt_str(id));
   conn_ref->set_closed_callback([self = weak_ptr_factory_.GetWeakPtr(), id] {
     if (self)
@@ -407,7 +407,7 @@ void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr 
 }
 
 void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback callback) {
-  bt_log(TRACE, "bt-host", "SetDiscoverable(%s)", discoverable ? "true" : "false");
+  bt_log(DEBUG, "bt-host", "SetDiscoverable(%s)", discoverable ? "true" : "false");
   // TODO(NET-830): advertise LE here
   if (!discoverable) {
     bredr_discoverable_session_ = nullptr;
@@ -416,7 +416,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
     return;
   }
   if (discoverable && requesting_discoverable_) {
-    bt_log(TRACE, "bt-host", "SetDiscoverable already in progress");
+    bt_log(DEBUG, "bt-host", "SetDiscoverable already in progress");
     callback(fit::error(fsys::Error::IN_PROGRESS));
     return;
   }
@@ -440,7 +440,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
         }
 
         if (!status || !session) {
-          bt_log(TRACE, "bt-host", "failed to set discoverable");
+          bt_log(DEBUG, "bt-host", "failed to set discoverable");
           fit::result<void, fsys::Error> result;
           if (!status) {
             result = StatusToFidl(status);
@@ -460,7 +460,7 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
 }
 
 void HostServer::EnableBackgroundScan(bool enabled) {
-  bt_log(TRACE, "bt-host", "%s background scan", (enabled ? "enable" : "disable"));
+  bt_log(DEBUG, "bt-host", "%s background scan", (enabled ? "enable" : "disable"));
   auto le_manager = adapter()->le_discovery_manager();
   if (le_manager) {
     le_manager->EnableBackgroundScan(enabled);
@@ -468,7 +468,7 @@ void HostServer::EnableBackgroundScan(bool enabled) {
 }
 
 void HostServer::EnablePrivacy(bool enabled) {
-  bt_log(TRACE, "bt-host", "%s LE privacy", (enabled ? "enable" : "disable"));
+  bt_log(DEBUG, "bt-host", "%s LE privacy", (enabled ? "enable" : "disable"));
   auto addr_mgr = adapter()->le_address_manager();
   if (addr_mgr) {
     addr_mgr->EnablePrivacy(enabled);
@@ -481,19 +481,19 @@ void HostServer::SetPairingDelegate(fsys::InputCapability input, fsys::OutputCap
   pairing_delegate_.Bind(std::move(delegate));
 
   if (cleared) {
-    bt_log(TRACE, "bt-host", "PairingDelegate cleared");
+    bt_log(DEBUG, "bt-host", "PairingDelegate cleared");
     ResetPairingDelegate();
     return;
   }
 
   io_capability_ = fidl_helpers::IoCapabilityFromFidl(input, output);
-  bt_log(TRACE, "bt-host", "PairingDelegate assigned (I/O capability: %s)",
+  bt_log(DEBUG, "bt-host", "PairingDelegate assigned (I/O capability: %s)",
          bt::sm::util::IOCapabilityToString(io_capability_).c_str());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   adapter()->SetPairingDelegate(self);
   pairing_delegate_.set_error_handler([self](zx_status_t status) {
-    bt_log(TRACE, "bt-host", "PairingDelegate disconnected");
+    bt_log(DEBUG, "bt-host", "PairingDelegate disconnected");
     if (self) {
       self->ResetPairingDelegate();
     }
@@ -542,7 +542,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [self, callback = std::move(callback), peer_id](auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect LE transport to peer (id %s)", bt_str(peer_id));
+      bt_log(DEBUG, "bt-host", "failed to connect LE transport to peer (id %s)", bt_str(peer_id));
       callback(fit::error(HostErrorToFidl(status.error())));
       return;
     }
@@ -567,7 +567,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
   auto on_complete = [callback = std::move(callback), peer_id](auto status, auto connection) {
     if (!status) {
       ZX_ASSERT(!connection);
-      bt_log(TRACE, "bt-host", "failed to connect BR/EDR transport to peer (id %s)",
+      bt_log(DEBUG, "bt-host", "failed to connect BR/EDR transport to peer (id %s)",
              bt_str(peer_id));
       callback(fit::error(HostErrorToFidl(status.error())));
       return;
@@ -589,7 +589,7 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
   bt::PeerId id{peer_id.value};
   auto peer = adapter()->peer_cache()->FindById(id);
   if (!peer) {
-    bt_log(TRACE, "bt-host", "peer %s to forget wasn't found", bt_str(id));
+    bt_log(DEBUG, "bt-host", "peer %s to forget wasn't found", bt_str(id));
     callback(fit::ok());
     return;
   }
@@ -692,7 +692,7 @@ void HostServer::RequestProfile(
 }
 
 void HostServer::Close() {
-  bt_log(TRACE, "bt-host", "closing FIDL handles");
+  bt_log(DEBUG, "bt-host", "closing FIDL handles");
 
   // Invalidate all weak pointers. This will guarantee that all pending tasks
   // that reference this HostServer will return early if they run in the future.
@@ -735,7 +735,7 @@ void HostServer::Close() {
 }
 
 void HostServer::GetInspectVmo(GetInspectVmoCallback callback) {
-  bt_log(TRACE, "bt-host", "Get Inspect Vmo");
+  bt_log(DEBUG, "bt-host", "Get Inspect Vmo");
   auto vmo = adapter()->InspectVmo();
   size_t vmo_size = 0;
   auto status = vmo.get_size(&vmo_size);
@@ -745,19 +745,19 @@ void HostServer::GetInspectVmo(GetInspectVmoCallback callback) {
 }
 
 bt::sm::IOCapability HostServer::io_capability() const {
-  bt_log(TRACE, "bt-host", "I/O capability: %s",
+  bt_log(DEBUG, "bt-host", "I/O capability: %s",
          bt::sm::util::IOCapabilityToString(io_capability_).c_str());
   return io_capability_;
 }
 
 void HostServer::CompletePairing(PeerId id, bt::sm::Status status) {
-  bt_log(TRACE, "bt-host", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
+  bt_log(DEBUG, "bt-host", "pairing complete for peer: %s, status: %s", bt_str(id), bt_str(status));
   ZX_DEBUG_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingComplete(fbt::PeerId{id.value()}, status.is_success());
 }
 
 void HostServer::ConfirmPairing(PeerId id, ConfirmCallback confirm) {
-  bt_log(TRACE, "bt-host", "pairing confirmation request for peer: %s", bt_str(id));
+  bt_log(DEBUG, "bt-host", "pairing confirmation request for peer: %s", bt_str(id));
   DisplayPairingRequest(id, std::nullopt, fsys::PairingMethod::CONSENT, std::move(confirm));
 }
 
@@ -765,16 +765,16 @@ void HostServer::DisplayPasskey(PeerId id, uint32_t passkey, DisplayMethod metho
                                 ConfirmCallback confirm) {
   auto fidl_method = fsys::PairingMethod::PASSKEY_DISPLAY;
   if (method == DisplayMethod::kComparison) {
-    bt_log(TRACE, "bt-host", "compare passkey %06u on peer: %s", passkey, bt_str(id));
+    bt_log(DEBUG, "bt-host", "compare passkey %06u on peer: %s", passkey, bt_str(id));
     fidl_method = fsys::PairingMethod::PASSKEY_COMPARISON;
   } else {
-    bt_log(TRACE, "bt-host", "enter passkey %06u on peer: %s", passkey, bt_str(id));
+    bt_log(DEBUG, "bt-host", "enter passkey %06u on peer: %s", passkey, bt_str(id));
   }
   DisplayPairingRequest(id, passkey, fidl_method, std::move(confirm));
 }
 
 void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
-  bt_log(TRACE, "bt-host", "passkey request for peer: %s", bt_str(id));
+  bt_log(DEBUG, "bt-host", "passkey request for peer: %s", bt_str(id));
   auto found_peer = adapter()->peer_cache()->FindById(id);
   ZX_ASSERT(found_peer);
   auto peer = fidl_helpers::PeerToFidl(*found_peer);
@@ -783,12 +783,12 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   pairing_delegate_->OnPairingRequest(
       std::move(peer), fsys::PairingMethod::PASSKEY_ENTRY, 0u,
       [respond = std::move(respond)](const bool accept, uint32_t entered_passkey) {
-        bt_log(TRACE, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
+        bt_log(DEBUG, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
                entered_passkey);
         if (!accept) {
           respond(-1);
         } else {
-          bt_log(SPEW, "bt-host", "got peer passkey: \"%u\"", entered_passkey);
+          bt_log(TRACE, "bt-host", "got peer passkey: \"%u\"", entered_passkey);
           respond(entered_passkey);
         }
       });
@@ -805,7 +805,7 @@ void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> pa
   pairing_delegate_->OnPairingRequest(
       std::move(peer), method, displayed_passkey,
       [confirm = std::move(confirm)](const bool accept, uint32_t entered_passkey) {
-        bt_log(TRACE, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
+        bt_log(DEBUG, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
                entered_passkey);
         confirm(accept);
       });

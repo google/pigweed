@@ -59,12 +59,12 @@ void Phase3::Start() {
   }
 
   if (role() == Role::kInitiator && !RequestedKeysObtained()) {
-    bt_log(TRACE, "sm", "waiting to receive keys from the responder");
+    bt_log(DEBUG, "sm", "waiting to receive keys from the responder");
     return;
   }
 
   if (!LocalKeysSent() && !SendLocalKeys()) {
-    bt_log(TRACE, "sm", "unable to send local keys");
+    bt_log(DEBUG, "sm", "unable to send local keys");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -78,7 +78,7 @@ void Phase3::Start() {
 void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Only allowed on the LE transport.
   if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm", "\"Encryption Information\" over BR/EDR not supported!");
+    bt_log(DEBUG, "sm", "\"Encryption Information\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -124,7 +124,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
 void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
   // Only allowed on the LE transport.
   if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm", "\"Master Identification\" over BR/EDR not supported!");
+    bt_log(DEBUG, "sm", "\"Master Identification\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -229,12 +229,12 @@ void Phase3::OnIdentityAddressInformation(const IdentityAddressInformationParams
 
 void Phase3::OnExpectedKeyReceived() {
   if (!RequestedKeysObtained()) {
-    bt_log(TRACE, "sm", "received one expected key, more keys pending");
+    bt_log(DEBUG, "sm", "received one expected key, more keys pending");
     return;
   }
 
   if (role() == Role::kInitiator && !LocalKeysSent() && !SendLocalKeys()) {
-    bt_log(TRACE, "sm", "unable to send local keys to peer");
+    bt_log(DEBUG, "sm", "unable to send local keys to peer");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -315,7 +315,7 @@ bool Phase3::SendEncryptionKey() {
 bool Phase3::SendIdentityInfo() {
   std::optional<IdentityInfo> maybe_id_info = listener()->OnIdentityRequest();
   if (!maybe_id_info.has_value()) {
-    bt_log(TRACE, "sm",
+    bt_log(DEBUG, "sm",
            "local identity information required but no longer "
            "available; abort pairing");
     return false;
@@ -323,7 +323,7 @@ bool Phase3::SendIdentityInfo() {
   auto id_info = *maybe_id_info;
 
   if (!id_info.address.IsStaticRandom() && !id_info.address.IsPublic()) {
-    bt_log(TRACE, "sm", "identity address must be public or static random!");
+    bt_log(DEBUG, "sm", "identity address must be public or static random!");
     return false;
   }
 

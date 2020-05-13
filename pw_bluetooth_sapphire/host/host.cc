@@ -25,7 +25,7 @@ bool Host::Initialize(InitCallback callback) {
   if (!hci)
     return false;
 
-  bt_log(TRACE, "bt-host", "initializing HCI");
+  bt_log(DEBUG, "bt-host", "initializing HCI");
   if (!hci->Initialize()) {
     bt_log(ERROR, "bt-host", "failed to initialize HCI transport");
     return false;
@@ -46,7 +46,7 @@ bool Host::Initialize(InitCallback callback) {
   // both sets up the HCI ACL data channel that L2CAP relies on and registers
   // L2CAP services.
   auto gap_init_callback = [gatt_host = gatt_host_, callback = std::move(callback)](bool success) {
-    bt_log(TRACE, "bt-host", "GAP init complete (%s)", (success ? "success" : "failure"));
+    bt_log(DEBUG, "bt-host", "GAP init complete (%s)", (success ? "success" : "failure"));
 
     if (success) {
       gatt_host->Initialize();
@@ -55,17 +55,17 @@ bool Host::Initialize(InitCallback callback) {
     callback(success);
   };
 
-  bt_log(TRACE, "bt-host", "initializing GAP");
+  bt_log(DEBUG, "bt-host", "initializing GAP");
   return gap_->Initialize(std::move(gap_init_callback),
-                          [] { bt_log(TRACE, "bt-host", "bt-host: HCI transport has closed"); });
+                          [] { bt_log(DEBUG, "bt-host", "bt-host: HCI transport has closed"); });
 }
 
 void Host::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  bt_log(TRACE, "bt-host", "shutting down");
+  bt_log(DEBUG, "bt-host", "shutting down");
 
   if (!gap_) {
-    bt_log(TRACE, "bt-host", "already shut down");
+    bt_log(DEBUG, "bt-host", "already shut down");
     return;
   }
 
@@ -95,7 +95,7 @@ void Host::BindHostInterface(zx::channel channel) {
   host_server_ = std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_host_);
   host_server_->set_error_handler([this](zx_status_t status) {
     ZX_DEBUG_ASSERT(host_server_);
-    bt_log(TRACE, "bt-host", "Host interface disconnected");
+    bt_log(DEBUG, "bt-host", "Host interface disconnected");
     host_server_ = nullptr;
   });
 }

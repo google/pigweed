@@ -219,7 +219,7 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
         break;
       }
       default:
-        bt_log(TRACE, "gap-le", "ignored advertising field (type %#.2x)",
+        bt_log(DEBUG, "gap-le", "ignored advertising field (type %#.2x)",
                static_cast<unsigned int>(type));
         break;
     }

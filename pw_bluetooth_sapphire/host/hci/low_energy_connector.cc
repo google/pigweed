@@ -85,7 +85,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     zx::duration timeout) {
   // Check if the connection request was canceled via Cancel().
   if (!pending_request_ || pending_request_->canceled) {
-    bt_log(TRACE, "hci-le", "connection request was canceled while obtaining local address");
+    bt_log(DEBUG, "hci-le", "connection request was canceled while obtaining local address");
     pending_request_.reset();
     return;
   }
@@ -166,7 +166,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   // request is outstanding. Otherwise there is no need to talk to the
   // controller.
   if (pending_request_->initiating) {
-    bt_log(TRACE, "hci-le", "telling controller to cancel LE connection attempt");
+    bt_log(DEBUG, "hci-le", "telling controller to cancel LE connection attempt");
     auto complete_cb = [](auto id, const EventPacket& event) {
       hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");
     };
@@ -175,7 +175,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
     return;
   }
 
-  bt_log(TRACE, "hci-le", "connection initiation aborted");
+  bt_log(DEBUG, "hci-le", "connection initiation aborted");
   OnCreateConnectionComplete(Status(HostError::kCanceled), nullptr);
 }
 
@@ -251,7 +251,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
 void LowEnergyConnector::OnCreateConnectionComplete(Status status, ConnectionPtr link) {
   ZX_DEBUG_ASSERT(pending_request_);
 
-  bt_log(TRACE, "hci-le", "connection complete - status: %s", status.ToString().c_str());
+  bt_log(DEBUG, "hci-le", "connection complete - status: %s", status.ToString().c_str());
 
   request_timeout_task_.Cancel();
 

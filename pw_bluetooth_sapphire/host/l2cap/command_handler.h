@@ -194,7 +194,7 @@ class CommandHandler {
       ResponseT rsp(status);
       if (status == Status::kReject) {
         if (!rsp.ParseReject(rsp_payload)) {
-          bt_log(TRACE, "l2cap", "cmd: ignoring malformed Command Reject, size %zu",
+          bt_log(DEBUG, "l2cap", "cmd: ignoring malformed Command Reject, size %zu",
                  rsp_payload.size());
           return ResponseHandlerAction::kCompleteOutboundTransaction;
         }
@@ -202,13 +202,13 @@ class CommandHandler {
       }
 
       if (rsp_payload.size() < sizeof(typename ResponseT::PayloadT)) {
-        bt_log(TRACE, "l2cap", "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
+        bt_log(DEBUG, "l2cap", "cmd: ignoring malformed \"%s\", size %zu (expected %zu)",
                ResponseT::kName, rsp_payload.size(), sizeof(typename ResponseT::PayloadT));
         return ResponseHandlerAction::kCompleteOutboundTransaction;
       }
 
       if (!rsp.Decode(rsp_payload)) {
-        bt_log(TRACE, "l2cap", "cmd: ignoring malformed \"%s\", could not decode",
+        bt_log(DEBUG, "l2cap", "cmd: ignoring malformed \"%s\", could not decode",
                ResponseT::kName);
         return ResponseHandlerAction::kCompleteOutboundTransaction;
       }

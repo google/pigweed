@@ -126,7 +126,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   // Called by FakeController on connection events.
   void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,
                                 bool connected, bool canceled) {
-    bt_log(TRACE, "gap-test",
+    bt_log(DEBUG, "gap-test",
            "OnConnectionStateChanged: %s (handle: %#.4x) (connected: %s) (canceled: %s):\n",
            address.ToString().c_str(), handle, (connected ? "true" : "false"),
            (canceled ? "true" : "false"));

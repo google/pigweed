@@ -63,7 +63,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv)
 
 void Peer::LowEnergyData::AppendScanResponse(int8_t rssi, const ByteBuffer& scan_response) {
   if (scan_response.size() == 0u) {
-    bt_log(SPEW, "gap-le", "ignored empty scan response");
+    bt_log(TRACE, "gap-le", "ignored empty scan response");
     return;
   }
 
@@ -108,12 +108,12 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
   ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
-    bt_log(TRACE, "gap-le", "LE connection state already \"%s\"!",
+    bt_log(DEBUG, "gap-le", "LE connection state already \"%s\"!",
            ConnectionStateToString(state).c_str());
     return;
   }
 
-  bt_log(TRACE, "gap-le", "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
+  bt_log(DEBUG, "gap-le", "peer (%s) LE connection state changed from \"%s\" to \"%s\"",
          bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
@@ -124,7 +124,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
   if (state == ConnectionState::kInitializing || state == ConnectionState::kConnected) {
     peer_->TryMakeNonTemporary();
   } else if (state == ConnectionState::kNotConnected && !peer_->identity_known()) {
-    bt_log(TRACE, "gap", "became temporary: %s:", bt_str(*peer_));
+    bt_log(DEBUG, "gap", "became temporary: %s:", bt_str(*peer_));
     peer_->temporary_.Set(true);
   }
 
@@ -211,12 +211,12 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
   ZX_DEBUG_ASSERT(peer_->connectable() || state == ConnectionState::kNotConnected);
 
   if (state == connection_state()) {
-    bt_log(TRACE, "gap-bredr", "BR/EDR connection state already \"%s\"",
+    bt_log(DEBUG, "gap-bredr", "BR/EDR connection state already \"%s\"",
            ConnectionStateToString(state).c_str());
     return;
   }
 
-  bt_log(TRACE, "gap-bredr", "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
+  bt_log(DEBUG, "gap-bredr", "peer (%s) BR/EDR connection state changed from \"%s\" to \"%s\"",
          bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
@@ -405,11 +405,11 @@ bool Peer::TryMakeNonTemporary() {
   // TODO(armansito): Since we don't currently support address resolution,
   // random addresses should never be persisted.
   if (!connectable()) {
-    bt_log(TRACE, "gap", "remains temporary: %s", bt_str(*this));
+    bt_log(DEBUG, "gap", "remains temporary: %s", bt_str(*this));
     return false;
   }
 
-  bt_log(TRACE, "gap", "became non-temporary: %s:", bt_str(*this));
+  bt_log(DEBUG, "gap", "became non-temporary: %s:", bt_str(*this));
 
   if (*temporary_) {
     temporary_.Set(false);

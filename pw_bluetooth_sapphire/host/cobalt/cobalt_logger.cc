@@ -53,7 +53,7 @@ void CobaltLogger::Bind(::fidl::InterfaceHandle<::fuchsia::cobalt::Logger> logge
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   logger_.Bind(std::move(logger));
   logger_.set_error_handler(
-      [](zx_status_t status) { bt_log(SPEW, "bt-host", "CobaltLogger disconnected"); });
+      [](zx_status_t status) { bt_log(TRACE, "bt-host", "CobaltLogger disconnected"); });
 }
 
 void CobaltLogger::ShutDown() {

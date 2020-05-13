@@ -103,7 +103,7 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
     return;
   }
 
-  bt_log(SPEW, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
+  bt_log(TRACE, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
   domain_->get().OpenL2capChannel(link().handle(), psm, params, std::move(cb));
 }
 
@@ -262,7 +262,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               l2cap::ChannelParameters params, SocketCallback cb) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
-    bt_log(SPEW, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
+    bt_log(TRACE, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
     return false;
   }
   auto& [handle, connection] = *conn_pair;
@@ -272,7 +272,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     auto self = weak_ptr_factory_.GetWeakPtr();
     auto retry_cb = [peer_id, psm, params, cb = std::move(cb), self](auto,
                                                                      hci::Status status) mutable {
-      bt_log(SPEW, "gap-bredr", "got pairing status %s, %sretrying socket to %s", bt_str(status),
+      bt_log(TRACE, "gap-bredr", "got pairing status %s, %sretrying socket to %s", bt_str(status),
              status ? "" : "not ", bt_str(peer_id));
       if (!status) {
         // Report the failure to the user with a ZX_HANDLE_INVALID socket.
@@ -286,7 +286,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     };
 
     if (!InitiatesPairing(peer_id, connection, handle, std::move(retry_cb))) {
-      bt_log(SPEW, "gap-bredr", "pairing ongoing to peer %s, waiting for result", bt_str(peer_id));
+      bt_log(TRACE, "gap-bredr", "pairing ongoing to peer %s, waiting for result", bt_str(peer_id));
     }
     return true;
   }
@@ -352,7 +352,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
         self->page_scan_interval_ = interval;
         self->page_scan_window_ = window;
 
-        bt_log(SPEW, "gap-bredr", "page scan activity updated");
+        bt_log(TRACE, "gap-bredr", "page scan activity updated");
       });
 
   auto write_type =
@@ -370,7 +370,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
         self->page_scan_type_ =
             (interlaced ? hci::PageScanType::kInterlacedScan : hci::PageScanType::kStandardScan);
 
-        bt_log(SPEW, "gap-bredr", "page scan type updated");
+        bt_log(TRACE, "gap-bredr", "page scan type updated");
       });
 
   hci_cmd_runner_->RunCommands(std::move(cb));
@@ -446,7 +446,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
       self->Disconnect(peer->identifier());
       return;
     }
-    bt_log(SPEW, "gap-bredr", "interrogation complete for %#.4x", handle);
+    bt_log(TRACE, "gap-bredr", "interrogation complete for %#.4x", handle);
     self->CompleteConnectionSetup(peer, handle);
   });
 
@@ -524,7 +524,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticatio
 
   auto iter = connections_.find(params.connection_handle);
   if (iter == connections_.end()) {
-    bt_log(SPEW, "gap-bredr", "ignoring authentication complete for %#.04x",
+    bt_log(TRACE, "gap-bredr", "ignoring authentication complete for %#.04x",
            params.connection_handle);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -541,7 +541,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   const auto& params = event.params<hci::ConnectionRequestEventParams>();
   std::string link_type_str = params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
 
-  bt_log(TRACE, "gap-bredr", "%s conn request from %s (%s)", link_type_str.c_str(),
+  bt_log(DEBUG, "gap-bredr", "%s conn request from %s (%s)", link_type_str.c_str(),
          params.bd_addr.ToString().c_str(), params.class_of_device.ToString().c_str());
 
   if (params.link_type == hci::LinkType::kACL) {
@@ -583,7 +583,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionCom
   auto connection_handle = letoh16(params.connection_handle);
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
-  bt_log(TRACE, "gap-bredr", "%s connection complete (status %#.2x, handle: %#.4x)",
+  bt_log(DEBUG, "gap-bredr", "%s connection complete (status %#.2x, handle: %#.4x)",
          bt_str(params.bd_addr), params.status, connection_handle);
 
   if (pending_request_ && pending_request_->peer_address() == addr) {
@@ -611,7 +611,7 @@ void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection)
 
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    bt_log(SPEW, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
+    bt_log(TRACE, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
     return;
   }
 
@@ -733,7 +733,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
-  bt_log(TRACE, "gap-bredr", "got link key (type %u) for address %s", params.key_type,
+  bt_log(DEBUG, "gap-bredr", "got link key (type %u) for address %s", params.key_type,
          addr.ToString().c_str());
 
   auto* peer = cache_->FindByAddress(addr);
@@ -920,7 +920,7 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
     return;
 
   if (connection_requests_.empty()) {
-    bt_log(SPEW, "gap-bredr", "no pending requests remaining");
+    bt_log(TRACE, "gap-bredr", "no pending requests remaining");
     return;
   }
 
@@ -1086,7 +1086,7 @@ bool BrEdrConnectionManager::InitiatesPairing(PeerId peer_id, BrEdrConnection* c
                                                 sizeof(hci::AuthenticationRequestedCommandParams));
     auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()->connection_handle =
         htole16(handle);
-    bt_log(SPEW, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
+    bt_log(TRACE, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
     hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_, nullptr);
     return true;
   }

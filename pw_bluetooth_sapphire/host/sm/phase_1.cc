@@ -74,7 +74,7 @@ void Phase1::InitiateFeatureExchange() {
   ZX_ASSERT(!feature_exchange_pending_);
   auto pdu = util::NewPdu(sizeof(PairingRequestParams));
   if (!pdu) {
-    bt_log(TRACE, "sm", "out of memory!");
+    bt_log(DEBUG, "sm", "out of memory!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
@@ -122,7 +122,7 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
       ResolveFeatures(false /* local_initiator */, req_params, *rsp_params);
   feature_exchange_pending_ = false;
   if (maybe_features.is_error()) {
-    bt_log(TRACE, "sm", "rejecting pairing features");
+    bt_log(DEBUG, "sm", "rejecting pairing features");
     Abort(maybe_features.error());
     return;
   }
@@ -196,7 +196,7 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
   // values (Vol 3, Part H, 2.3.4).
   uint8_t enc_key_size = std::min(preq.max_encryption_key_size, pres.max_encryption_key_size);
   if (enc_key_size < kMinEncryptionKeySize) {
-    bt_log(TRACE, "sm", "encryption key size too small! (%u)", enc_key_size);
+    bt_log(DEBUG, "sm", "encryption key size too small! (%u)", enc_key_size);
     return fit::error(ErrorCode::kEncryptionKeySize);
   }
 
@@ -268,13 +268,13 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
   // Support receiving a pairing response only as the initiator.
   if (role() == Role::kResponder) {
-    bt_log(TRACE, "sm", "received pairing response when acting as responder");
+    bt_log(DEBUG, "sm", "received pairing response when acting as responder");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }
 
   if (!feature_exchange_pending_) {
-    bt_log(TRACE, "sm", "ignoring unexpected \"Pairing Response\" packet");
+    bt_log(DEBUG, "sm", "ignoring unexpected \"Pairing Response\" packet");
     return;
   }
 
@@ -283,7 +283,7 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
       pairing_payload_buffer_.view(sizeof(Code)).As<PairingRequestParams>(), response_params);
   feature_exchange_pending_ = false;
   if (maybe_features.is_error()) {
-    bt_log(TRACE, "sm", "rejecting pairing features");
+    bt_log(DEBUG, "sm", "rejecting pairing features");
     Abort(maybe_features.error());
     return;
   }

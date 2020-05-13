@@ -33,7 +33,7 @@ PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback statu
   // Raise an error to only the initiator—and not others—if we can't pair because there's no pairing
   // delegate.
   if (!pairing_delegate()) {
-    bt_log(TRACE, "gap-bredr", "No pairing delegate for link %#.4x (id: %s); not pairing", handle(),
+    bt_log(DEBUG, "gap-bredr", "No pairing delegate for link %#.4x (id: %s); not pairing", handle(),
            bt_str(peer_id()));
     status_cb(handle(), hci::Status(HostError::kNotReady));
     return InitiatorAction::kDoNotSendAuthenticationRequest;
@@ -42,7 +42,7 @@ PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback statu
   if (state() == State::kIdle) {
     ZX_ASSERT(!is_pairing());
     current_pairing_ = Pairing::MakeInitiator(std::move(status_cb));
-    bt_log(TRACE, "gap-bredr", "Initiating pairing on %#.4x (id %s)", handle(), bt_str(peer_id()));
+    bt_log(DEBUG, "gap-bredr", "Initiating pairing on %#.4x (id %s)", handle(), bt_str(peer_id()));
     state_ = State::kInitiatorPairingStarted;
     return InitiatorAction::kSendAuthenticationRequest;
   }
@@ -52,7 +52,7 @@ PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback statu
   // own Authentication Request.
   if (is_pairing()) {
     ZX_ASSERT(state() != State::kIdle);
-    bt_log(TRACE, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
+    bt_log(DEBUG, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
            handle(), bt_str(peer_id()));
     current_pairing_->initiator_callbacks.push_back(std::move(status_cb));
   } else {
@@ -146,7 +146,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
         return;
       }
 
-      bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
+      bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
              bt_str(peer_id()), confirm ? "Confirm" : "Cancel");
       cb(confirm);
     };
@@ -159,7 +159,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
       if (!pairing) {
         return;
       }
-      bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
+      bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): %sing User Confirmation Request", handle(),
              bt_str(peer_id()), confirm ? "Confirm" : "Cancel");
       cb(confirm);
     };
@@ -168,7 +168,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
     ZX_ASSERT_MSG(current_pairing_->action == PairingAction::kAutomatic,
                   "%#.4x (id: %s): unexpected action %d", handle(), bt_str(peer_id()),
                   current_pairing_->action);
-    bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): automatically confirming User Confirmation Request",
+    bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): automatically confirming User Confirmation Request",
            handle(), bt_str(peer_id()));
     cb(true);
   }
@@ -194,7 +194,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
     if (!pairing) {
       return;
     }
-    bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): Replying %" PRId64 " to User Passkey Request",
+    bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): Replying %" PRId64 " to User Passkey Request",
            handle(), bt_str(peer_id()), passkey);
     if (passkey >= 0) {
       cb(static_cast<uint32_t>(passkey));
@@ -221,7 +221,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
     if (!pairing) {
       return;
     }
-    bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): Can't %s pairing from Passkey Notification side",
+    bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): Can't %s pairing from Passkey Notification side",
            handle(), bt_str(peer_id()), confirm ? "confirm" : "cancel");
   };
   pairing_delegate()->DisplayPasskey(
@@ -269,7 +269,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
       return;
     }
 
-    bt_log(TRACE, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
+    bt_log(DEBUG, "gap-bredr", "Changing link key on %#.4x (id: %s)", handle(), bt_str(peer_id()));
     link_->set_bredr_link_key(hci::LinkKey(link_key, 0, 0), key_type);
     return;
   } else if (state() != State::kWaitLinkKey) {
@@ -387,7 +387,7 @@ void PairingState::Pairing::ComputePairingData() {
   expected_event = GetExpectedEvent(local_iocap, peer_iocap);
   ZX_DEBUG_ASSERT(GetStateForPairingEvent(expected_event) != State::kFailed);
   authenticated = IsPairingAuthenticated(local_iocap, peer_iocap);
-  bt_log(TRACE, "gap-bredr",
+  bt_log(DEBUG, "gap-bredr",
          "As %s with local %hhu/peer %hhu capabilities, expecting an %sauthenticated %u pairing "
          "using %#x",
          initiator ? "initiator" : "responder", local_iocap, peer_iocap, authenticated ? "" : "un",
@@ -441,7 +441,7 @@ PairingState::State PairingState::GetStateForPairingEvent(hci::EventCode event_c
 }
 
 void PairingState::SignalStatus(hci::Status status) {
-  bt_log(SPEW, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
+  bt_log(TRACE, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
          bt_str(peer_id()), bt_str(status));
   std::vector<StatusCallback> callbacks_to_signal;
   if (is_pairing()) {

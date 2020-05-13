@@ -110,7 +110,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 
   ZX_DEBUG_ASSERT(!peer->temporary());
   ZX_DEBUG_ASSERT(peer->bonded());
-  bt_log(SPEW, "gap", "restored bonded peer: %s, id: %s", bt_str(bd.address),
+  bt_log(TRACE, "gap", "restored bonded peer: %s, id: %s", bt_str(bd.address),
          bt_str(bd.identifier));
 
   // Don't call UpdateExpiry(). Since a bonded peer starts out as
@@ -123,14 +123,14 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* peer = FindById(identifier);
   if (!peer) {
-    bt_log(TRACE, "gap-le", "failed to store bond for unknown peer: %s", bt_str(identifier));
+    bt_log(DEBUG, "gap-le", "failed to store bond for unknown peer: %s", bt_str(identifier));
     return false;
   }
 
   // Either a LTK or CSRK is mandatory for bonding (the former is needed for LE
   // Security Mode 1 and the latter is needed for Mode 2).
   if (!bond_data.ltk && !bond_data.csrk) {
-    bt_log(TRACE, "gap-le", "mandatory keys missing: no IRK or CSRK (id: %s)", bt_str(identifier));
+    bt_log(DEBUG, "gap-le", "mandatory keys missing: no IRK or CSRK (id: %s)", bt_str(identifier));
     return false;
   }
 
@@ -143,7 +143,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
       // TODO(armansito): Maybe expire the old address after a while?
       address_map_[*bond_data.identity_address] = identifier;
     } else if (*existing_id != identifier) {
-      bt_log(TRACE, "gap-le", "identity address %s for peer %s belongs to another peer %s!",
+      bt_log(DEBUG, "gap-le", "identity address %s for peer %s belongs to another peer %s!",
              bt_str(*bond_data.identity_address), bt_str(identifier), bt_str(*existing_id));
       return false;
     }
@@ -174,7 +174,7 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
   ZX_DEBUG_ASSERT(address.type() == DeviceAddress::Type::kBREDR);
   auto* peer = FindByAddress(address);
   if (!peer) {
-    bt_log(TRACE, "gap-bredr", "failed to store bond for unknown peer: %s",
+    bt_log(DEBUG, "gap-bredr", "failed to store bond for unknown peer: %s",
            address.ToString().c_str());
     return false;
   }
@@ -196,7 +196,7 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
     return false;
   }
 
-  bt_log(TRACE, "gap-le", "updated auto-connect behavior (disconnect) for peer: %s", bt_str(peer_id));
+  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (disconnect) for peer: %s", bt_str(peer_id));
 
   peer->MutLe().SetAutoConnectBehaviorForIntentionalDisconnect();
 
@@ -214,7 +214,7 @@ bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
     return false;
   }
 
-  bt_log(TRACE, "gap-le", "updated auto-connect behavior (connection) for peer: %s", bt_str(peer_id));
+  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (connection) for peer: %s", bt_str(peer_id));
 
   peer->MutLe().SetAutoConnectBehaviorForSuccessfulConnection();
 
@@ -353,7 +353,7 @@ void PeerCache::RemovePeer(Peer* peer) {
   ZX_DEBUG_ASSERT(peer_record_it->second.peer() == peer);
 
   PeerId id = peer->identifier();
-  bt_log(SPEW, "gap", "removing peer %s", bt_str(id));
+  bt_log(TRACE, "gap", "removing peer %s", bt_str(id));
   for (auto iter = address_map_.begin(); iter != address_map_.end();) {
     if (iter->second == id) {
       iter = address_map_.erase(iter);

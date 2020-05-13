@@ -642,7 +642,7 @@ TEST_F(RFCOMM_ChannelManagerTest, OpenIncomingChannel) {
   auto server_channel = channel_manager_->AllocateLocalChannel(
       [&channel](auto received_channel, auto) { channel = received_channel; }, dispatcher());
 
-  bt_log(SPEW, "unittests", "rfcomm allocated channel %d", server_channel);
+  bt_log(TRACE, "unittests", "rfcomm allocated channel %d", server_channel);
 
   OpenIncomingChannel(kHandle1, server_channel);
   RunLoopUntilIdle();

@@ -37,11 +37,11 @@ class Impl final : public Domain {
 
     l2cap_socket_factory_ = std::make_unique<internal::SocketFactory<l2cap::Channel>>();
 
-    bt_log(TRACE, "data-domain", "initialized");
+    bt_log(DEBUG, "data-domain", "initialized");
   }
 
   ~Impl() {
-    bt_log(TRACE, "data-domain", "shutting down");
+    bt_log(DEBUG, "data-domain", "shutting down");
     l2cap_socket_factory_ = nullptr;
 
     ZX_ASSERT(hci_->acl_data_channel());

@@ -30,7 +30,7 @@ fx_log_severity_t kDdkSeverities[kNumLogSeverities] = {
 };
 
 const char* const kLogSeverityNames[kNumLogSeverities] = {
-    "ERROR", "WARN", "INFO", "TRACE", "SPEW",
+    "ERROR", "WARN", "INFO", "DEBUG", "TRACE",
 };
 
 constexpr size_t LogSeverityToIndex(LogSeverity severity) {

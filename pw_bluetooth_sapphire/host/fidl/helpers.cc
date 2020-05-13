@@ -575,7 +575,7 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
     for (const auto& uuid_str : *fidl_filter.service_uuids) {
       bt::UUID uuid;
       if (!bt::StringToUuid(uuid_str, &uuid)) {
-        bt_log(TRACE, "bt-host", "invalid parameters given to scan filter");
+        bt_log(DEBUG, "bt-host", "invalid parameters given to scan filter");
         return false;
       }
       uuids.push_back(uuid);

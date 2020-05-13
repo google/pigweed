@@ -37,7 +37,7 @@ void Connection::Initialize() {
       // Signal a link error.
       att->ShutDown();
     } else {
-      bt_log(TRACE, "gatt", "primary service discovery complete");
+      bt_log(DEBUG, "gatt", "primary service discovery complete");
     }
   });
 }

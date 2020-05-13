@@ -68,7 +68,7 @@ class FakeDynamicChannel final : public DynamicChannel {
     open_ = false;
     connected_ = false;
 
-    bt_log(TRACE, "l2cap", "Got Disconnect %#.4x callback: %d", local_cid(), psm());
+    bt_log(DEBUG, "l2cap", "Got Disconnect %#.4x callback: %d", local_cid(), psm());
 
     ASSERT_FALSE(disconnect_done_callback_);
     if (defer_disconnect_done_callback_) {

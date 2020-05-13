@@ -128,7 +128,7 @@ void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
       return;
     }
 
-    bt_log(TRACE, "l2cap", "Failed to open dynamic channel %#.4x (remote %#.4x) for PSM %#.4x",
+    bt_log(DEBUG, "l2cap", "Failed to open dynamic channel %#.4x (remote %#.4x) for PSM %#.4x",
            channel->local_cid(), channel->remote_cid(), channel->psm());
 
     // TODO(NET-1084): Maybe negotiate channel parameters here? For now, just

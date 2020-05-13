@@ -196,9 +196,9 @@ GattServerServer::~GattServerServer() {
 
 void GattServerServer::RemoveService(uint64_t id) {
   if (services_.erase(id)) {
-    bt_log(TRACE, "bt-host", "service removed (id: %lu)", id);
+    bt_log(DEBUG, "bt-host", "service removed (id: %lu)", id);
   } else {
-    bt_log(TRACE, "bt-host", "service id not found: %lu", id);
+    bt_log(DEBUG, "bt-host", "service id not found: %lu", id);
   }
 }
 
@@ -283,7 +283,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     // This will be called if either the delegate or the service connection
     // closes.
     auto connection_error_cb = [self, id](zx_status_t status) {
-      bt_log(TRACE, "bt-host", "removing GATT service (id: %lu)", id);
+      bt_log(DEBUG, "bt-host", "removing GATT service (id: %lu)", id);
       if (self)
         self->RemoveService(id);
     };

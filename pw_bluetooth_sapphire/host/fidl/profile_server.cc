@@ -137,7 +137,7 @@ bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement*
 
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = fidlbredr::DataElement::New();
-  bt_log(SPEW, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
+  bt_log(TRACE, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
   ZX_DEBUG_ASSERT(in);
   switch (in->type()) {
     case bt::sdp::DataElement::Type::kUnsignedInt: {
@@ -244,7 +244,7 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
 void AddProtocolDescriptorList(
     bt::sdp::ServiceRecord* rec, bt::sdp::ServiceRecord::ProtocolListId id,
     const ::std::vector<fidlbredr::ProtocolDescriptor>& descriptor_list) {
-  bt_log(SPEW, "profile_server", "ProtocolDescriptorList %d", id);
+  bt_log(TRACE, "profile_server", "ProtocolDescriptorList %d", id);
   for (auto& descriptor : descriptor_list) {
     bt::sdp::DataElement protocol_params;
     if (descriptor.params.size() > 1) {
@@ -259,7 +259,7 @@ void AddProtocolDescriptorList(
       FidlToDataElement(descriptor.params.front(), &protocol_params);
     }
 
-    bt_log(SPEW, "profile_server", "%d : %s", fidl::ToUnderlying(descriptor.protocol),
+    bt_log(TRACE, "profile_server", "%d : %s", fidl::ToUnderlying(descriptor.protocol),
            protocol_params.ToString().c_str());
     rec->AddProtocolDescriptor(id, bt::UUID(static_cast<uint16_t>(descriptor.protocol)),
                                std::move(protocol_params));
@@ -310,7 +310,7 @@ void ProfileServer::Advertise(
 
     for (auto& uuid : definition.service_class_uuids()) {
       bt::UUID btuuid = fidl_helpers::UuidFromFidl(uuid);
-      bt_log(SPEW, "profile_server", "Setting Service Class UUID %s", bt_str(btuuid));
+      bt_log(TRACE, "profile_server", "Setting Service Class UUID %s", bt_str(btuuid));
       classes.emplace_back(std::move(btuuid));
     }
 
@@ -331,7 +331,7 @@ void ProfileServer::Advertise(
 
     if (definition.has_profile_descriptors()) {
       for (const auto& profile : definition.profile_descriptors()) {
-        bt_log(SPEW, "profile_server", "Adding Profile %#hx v%d.%d", profile.profile_id,
+        bt_log(TRACE, "profile_server", "Adding Profile %#hx v%d.%d", profile.profile_id,
                profile.major_version, profile.minor_version);
         rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
                        profile.minor_version);
@@ -356,7 +356,7 @@ void ProfileServer::Advertise(
         if (info.has_provider()) {
           provider = info.provider();
         }
-        bt_log(SPEW, "profile_server", "Adding Info (%s): (%s, %s, %s)", language.c_str(),
+        bt_log(TRACE, "profile_server", "Adding Info (%s): (%s, %s, %s)", language.c_str(),
                name.c_str(), description.c_str(), provider.c_str());
         rec.AddInfo(language, name, description, provider);
       }
@@ -366,7 +366,7 @@ void ProfileServer::Advertise(
       for (const auto& attribute : definition.additional_attributes()) {
         bt::sdp::DataElement elem;
         FidlToDataElement(attribute.element, &elem);
-        bt_log(SPEW, "profile_server", "Adding attribute %#x : %s", attribute.id,
+        bt_log(TRACE, "profile_server", "Adding attribute %#x : %s", attribute.id,
                elem.ToString().c_str());
         rec.SetAttribute(attribute.id, std::move(elem));
       }
@@ -435,7 +435,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
   bt::PeerId id{peer_id.value};
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
     if (!chan_sock) {
-      bt_log(SPEW, "profile_server", "Channel socket is empty, returning failed.");
+      bt_log(TRACE, "profile_server", "Channel socket is empty, returning failed.");
       cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
@@ -481,7 +481,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket 
 }
 
 void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
-  bt_log(SPEW, "profile_server", "Connection receiver closed, ending advertisement %lu", ad_id);
+  bt_log(TRACE, "profile_server", "Connection receiver closed, ending advertisement %lu", ad_id);
 
   auto it = current_advertised_.find(ad_id);
 
@@ -495,7 +495,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
 }
 
 void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) {
-  bt_log(SPEW, "profile_server", "Search result closed, ending search %lu reason %s", search_id,
+  bt_log(TRACE, "profile_server", "Search result closed, ending search %lu reason %s", search_id,
          zx_status_get_string(status));
 
   auto it = searches_.find(search_id);

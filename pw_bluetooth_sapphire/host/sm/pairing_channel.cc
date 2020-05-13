@@ -44,7 +44,7 @@ PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
 
 void PairingChannel::SetChannelHandler(fxl::WeakPtr<Handler> new_handler) {
   ZX_ASSERT(new_handler);
-  bt_log(SPEW, "sm", "changing pairing channel handler");
+  bt_log(TRACE, "sm", "changing pairing channel handler");
   handler_ = std::move(new_handler);
 }
 

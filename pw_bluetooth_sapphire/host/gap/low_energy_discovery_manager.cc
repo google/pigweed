@@ -127,7 +127,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
 
 void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
   if (background_scan_enabled_ == enable) {
-    bt_log(TRACE, "gap-le", "background scan already %s", (enable ? "enabled" : "disabled"));
+    bt_log(DEBUG, "gap-le", "background scan already %s", (enable ? "enabled" : "disabled"));
     return;
   }
 
@@ -178,7 +178,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (peer && connectable_cb_) {
-    bt_log(SPEW, "gap-le", "found connectable peer (id: %s)", bt_str(peer->identifier()));
+    bt_log(TRACE, "gap-le", "found connectable peer (id: %s)", bt_str(peer->identifier()));
     connectable_cb_(peer->identifier());
   }
 
@@ -190,7 +190,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
     if (result.scan_response) {
-      bt_log(TRACE, "gap-le", "scan response received from unknown peer: %s",
+      bt_log(DEBUG, "gap-le", "scan response received from unknown peer: %s",
              result.address.ToString().c_str());
       return;
     }
@@ -215,18 +215,18 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
 
   // TODO(NET-1572): Resolve the address in the host if it is random and
   // |result.resolved| is false.
-  bt_log(SPEW, "gap-le", "Received directed advertisement (address: %s, %s)",
+  bt_log(TRACE, "gap-le", "Received directed advertisement (address: %s, %s)",
          result.address.ToString().c_str(), (result.resolved ? "resolved" : "not resolved"));
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (!peer) {
-    bt_log(TRACE, "gap-le", "ignoring connection request from unknown peripheral: %s",
+    bt_log(DEBUG, "gap-le", "ignoring connection request from unknown peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
 
   if (!peer->le()) {
-    bt_log(TRACE, "gap-le", "rejecting connection request from non-LE peripheral: %s",
+    bt_log(DEBUG, "gap-le", "rejecting connection request from non-LE peripheral: %s",
            result.address.ToString().c_str());
     return;
   }
@@ -255,7 +255,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus s
       return;
     }
     case hci::LowEnergyScanner::ScanStatus::kPassive:
-      bt_log(SPEW, "gap-le", "passive scan started");
+      bt_log(TRACE, "gap-le", "passive scan started");
 
       // Stop the background scan if active scan was requested or background
       // scan was disabled while waiting for the scan to start. If an active
@@ -266,7 +266,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus s
       }
       return;
     case hci::LowEnergyScanner::ScanStatus::kActive:
-      bt_log(SPEW, "gap-le", "active scan started");
+      bt_log(TRACE, "gap-le", "active scan started");
 
       // Create and register all sessions before notifying the clients. We do
       // this so that the reference count is incremented for all new sessions
@@ -287,7 +287,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus s
       ZX_DEBUG_ASSERT(pending_.empty());
       return;
     case hci::LowEnergyScanner::ScanStatus::kStopped:
-      bt_log(TRACE, "gap-le", "stopped scanning");
+      bt_log(DEBUG, "gap-le", "stopped scanning");
 
       cached_scan_results_.clear();
 
@@ -295,25 +295,25 @@ void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus s
       // waiting for it to stop. Restart active scanning if that is the case.
       // Otherwise start a background scan, if enabled.
       if (!pending_.empty()) {
-        bt_log(TRACE, "gap-le", "initiate active scan");
+        bt_log(DEBUG, "gap-le", "initiate active scan");
         StartActiveScan();
       } else if (background_scan_enabled_) {
-        bt_log(TRACE, "gap-le", "initiate background scan");
+        bt_log(DEBUG, "gap-le", "initiate background scan");
         StartPassiveScan();
       }
       return;
     case hci::LowEnergyScanner::ScanStatus::kComplete:
-      bt_log(SPEW, "gap-le", "end of scan period");
+      bt_log(TRACE, "gap-le", "end of scan period");
       cached_scan_results_.clear();
 
       // If |sessions_| is empty this is because sessions were stopped while the
       // scanner was shutting down after the end of the scan period. Restart the
       // scan as long as clients are waiting for it.
       if (!sessions_.empty() || !pending_.empty()) {
-        bt_log(SPEW, "gap-le", "continuing periodic scan");
+        bt_log(TRACE, "gap-le", "continuing periodic scan");
         StartActiveScan();
       } else if (background_scan_enabled_) {
-        bt_log(SPEW, "gap-le", "continuing periodic background scan");
+        bt_log(TRACE, "gap-le", "continuing periodic background scan");
         StartPassiveScan();
       }
       return;

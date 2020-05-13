@@ -108,7 +108,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb,
           auto svc = fbl::AdoptRef(
               new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
           if (!svc) {
-            bt_log(TRACE, "gatt", "failed to allocate RemoteService");
+            bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
             return;
           }
 
@@ -172,7 +172,7 @@ void RemoteServiceManager::OnNotification(bool, att::Handle value_handle, const 
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (services_.empty()) {
-    bt_log(TRACE, "gatt", "ignoring notification from unknown service");
+    bt_log(DEBUG, "gatt", "ignoring notification from unknown service");
     return;
   }
 

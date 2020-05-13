@@ -222,7 +222,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
           case bt::HostError::kNoError:
             break;
           case bt::HostError::kInvalidParameters:
-            bt_log(TRACE, "bt-host",
+            bt_log(DEBUG, "bt-host",
                    "ReadByType called with invalid parameters, closing FIDL channel");
             self->binding()->Close(ZX_ERR_INVALID_ARGS);
             return;

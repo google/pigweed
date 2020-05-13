@@ -536,7 +536,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequest) {
     EXPECT_EQ(kServiceSearchResponse, packet.header().pdu_id);
     tid = betoh16(packet.header().tid);
     uint16_t len = betoh16(packet.header().param_length);
-    bt_log(SPEW, "unittest", "resize packet to %d", len);
+    bt_log(TRACE, "unittest", "resize packet to %d", len);
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
@@ -603,7 +603,7 @@ TEST_F(SDP_ServerTest, ServiceSearchRequestOneOfMany) {
     EXPECT_EQ(kServiceSearchResponse, packet.header().pdu_id);
     tid = betoh16(packet.header().tid);
     uint16_t len = betoh16(packet.header().param_length);
-    bt_log(SPEW, "unittests", "resizing packet to %d", len);
+    bt_log(TRACE, "unittests", "resizing packet to %d", len);
     packet.Resize(len);
     ServiceSearchResponse resp;
     auto status = resp.Parse(packet.payload_data());
@@ -1043,7 +1043,7 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
 
   // Register a service
   AddA2DPSink([&socks, &latest_handle](auto chan_sock, auto handle, const auto& protocol) {
-    bt_log(SPEW, "test", "Got socket for the a2dp sink");
+    bt_log(TRACE, "test", "Got socket for the a2dp sink");
     socks.emplace_back(std::move(chan_sock.socket));
     latest_handle = handle;
   });

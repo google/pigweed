@@ -124,7 +124,7 @@ void PairingState::Reset(IOCapability io_capability) {
 
 bool PairingState::AssignLongTermKey(const LTK& ltk) {
   if (legacy_state_) {
-    bt_log(TRACE, "sm", "Cannot directly assign LTK while pairing is in progress");
+    bt_log(DEBUG, "sm", "Cannot directly assign LTK while pairing is in progress");
     return false;
   }
 
@@ -142,7 +142,7 @@ bool PairingState::AssignLongTermKey(const LTK& ltk) {
 void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
   // If pairing is in progress then we queue the request.
   if (legacy_state_) {
-    bt_log(SPEW, "sm", "LE legacy pairing in progress; request queued");
+    bt_log(TRACE, "sm", "LE legacy pairing in progress; request queued");
     ZX_DEBUG_ASSERT(le_smp_->pairing_started());
     request_queue_.emplace(level, std::move(callback));
     return;
@@ -166,7 +166,7 @@ void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback
 
 void PairingState::SetSecurityProperties(const SecurityProperties& sec) {
   if (sec != le_sec_) {
-    bt_log(TRACE, "sm", "security properties changed - handle: %#.4x, new: %s, old: %s",
+    bt_log(DEBUG, "sm", "security properties changed - handle: %#.4x, new: %s, old: %s",
            le_link_->handle(), sec.ToString().c_str(), le_sec_.ToString().c_str());
     le_sec_ = sec;
     delegate_->OnNewSecurityProperties(le_sec_);
@@ -198,7 +198,7 @@ void PairingState::Abort() {
   if (!le_smp_->pairing_started())
     return;
 
-  bt_log(TRACE, "sm", "abort pairing");
+  bt_log(DEBUG, "sm", "abort pairing");
   if (legacy_state_) {
     AbortLegacyPairing(ErrorCode::kUnspecifiedReason);
   }
@@ -227,12 +227,12 @@ void PairingState::BeginLegacyPairingPhase2(const ByteBuffer& preq, const ByteBu
 
     auto* state = self->legacy_state_.get();
     if (!state || id != state->id) {
-      bt_log(TRACE, "sm", "ignoring TK callback for expired pairing: (id = %lu)", id);
+      bt_log(DEBUG, "sm", "ignoring TK callback for expired pairing: (id = %lu)", id);
       return;
     }
 
     if (!success) {
-      bt_log(TRACE, "sm", "TK delegate responded with error; aborting");
+      bt_log(DEBUG, "sm", "TK delegate responded with error; aborting");
       if (state->features->method == PairingMethod::kPasskeyEntryInput) {
         self->AbortLegacyPairing(ErrorCode::kPasskeyEntryFailed);
       } else {
@@ -303,7 +303,7 @@ void PairingState::EndLegacyPairingPhase2() {
   if (legacy_state_->InPhase3()) {
     if (legacy_state_->features->initiator && !legacy_state_->RequestedKeysObtained()) {
       ZX_DEBUG_ASSERT(le_smp_->role() == hci::Connection::Role::kMaster);
-      bt_log(TRACE, "sm", "waiting to receive keys from the responder");
+      bt_log(DEBUG, "sm", "waiting to receive keys from the responder");
       return;
     }
 
@@ -351,7 +351,7 @@ bool PairingState::SendLocalKeys() {
     ZX_DEBUG_ASSERT(delegate_);
     auto id_info = delegate_->OnIdentityInformationRequest();
     if (!id_info) {
-      bt_log(TRACE, "sm",
+      bt_log(DEBUG, "sm",
              "local identity information required but no longer "
              "available; abort pairing");
       return false;
@@ -386,7 +386,7 @@ void PairingState::CompleteLegacyPairing() {
     pairing_data.identity_address = legacy_state_->identity_address;
   }
 
-  bt_log(TRACE, "sm", "LE legacy pairing complete");
+  bt_log(DEBUG, "sm", "LE legacy pairing complete");
   // TODO(armansito): Report CSRK when we support it.
   ZX_DEBUG_ASSERT(delegate_);
   delegate_->OnPairingComplete(Status());
@@ -455,7 +455,7 @@ void PairingState::OnPairingFailed(Status status) {
 
 void PairingState::OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
                                      const ByteBuffer& pres) {
-  bt_log(SPEW, "sm", "obtained LE Pairing features");
+  bt_log(TRACE, "sm", "obtained LE Pairing features");
 
   if (!features.initiator) {
     if (legacy_state_) {
@@ -478,7 +478,7 @@ void PairingState::OnPairingConfirm(const UInt128& confirm) {
   // TODO(armansito): Have separate subroutines to handle this event for legacy
   // and secure connections.
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring confirm value received while not pairing");
+    bt_log(DEBUG, "sm", "ignoring confirm value received while not pairing");
     return;
   }
 
@@ -534,7 +534,7 @@ void PairingState::OnPairingRandom(const UInt128& random) {
   // TODO(armansito): Have separate subroutines to handle this event for legacy
   // and secure connections.
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring confirm value received while not pairing");
+    bt_log(DEBUG, "sm", "ignoring confirm value received while not pairing");
     return;
   }
 
@@ -643,7 +643,7 @@ void PairingState::OnPairingRandom(const UInt128& random) {
 
 void PairingState::OnLongTermKey(const UInt128& ltk) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring LTK received while not in legacy pairing");
+    bt_log(DEBUG, "sm", "ignoring LTK received while not in legacy pairing");
     return;
   }
 
@@ -696,7 +696,7 @@ void PairingState::OnLongTermKey(const UInt128& ltk) {
 
 void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring ediv/rand received while not in legacy pairing");
+    bt_log(DEBUG, "sm", "ignoring ediv/rand received while not in legacy pairing");
     return;
   }
 
@@ -747,7 +747,7 @@ void PairingState::OnMasterIdentification(uint16_t ediv, uint64_t random) {
 
 void PairingState::OnIdentityResolvingKey(const UInt128& irk) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring IRK received while not in legacy pairing!");
+    bt_log(DEBUG, "sm", "ignoring IRK received while not in legacy pairing!");
     return;
   }
 
@@ -781,7 +781,7 @@ void PairingState::OnIdentityResolvingKey(const UInt128& irk) {
 
 void PairingState::OnIdentityAddress(const DeviceAddress& identity_address) {
   if (!legacy_state_) {
-    bt_log(TRACE, "sm", "ignoring identity address received while not in legacy pairing");
+    bt_log(DEBUG, "sm", "ignoring identity address received while not in legacy pairing");
     return;
   }
 
@@ -842,7 +842,7 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
   // or reject the request.
   if (ltk_ && (ltk_->security().level() >= requested_level) && !(auth_req & AuthReq::kSC)) {
     // The existing key satisfies the security requirement.
-    bt_log(TRACE, "sm", "responding to security request using existing LTK");
+    bt_log(DEBUG, "sm", "responding to security request using existing LTK");
     ZX_DEBUG_ASSERT(le_link_->ltk());
     ZX_DEBUG_ASSERT(*le_link_->ltk() == ltk_->key());
     le_link_->StartEncryption();
@@ -851,7 +851,7 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
 
   // Initiate pairing.
   UpgradeSecurity(requested_level, [](Status status, const auto& security) {
-    bt_log(TRACE, "sm", "security request resolved - %s %s", status.ToString().c_str(),
+    bt_log(DEBUG, "sm", "security request resolved - %s %s", status.ToString().c_str(),
            security.ToString().c_str());
   });
 }
@@ -872,10 +872,10 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   }
 
   if (!enabled) {
-    bt_log(TRACE, "sm", "encryption disabled (handle: %#.4x)", le_link_->handle());
+    bt_log(DEBUG, "sm", "encryption disabled (handle: %#.4x)", le_link_->handle());
     SetSecurityProperties(sm::SecurityProperties());
   } else if (!legacy_state_) {
-    bt_log(TRACE, "sm", "encryption enabled while not pairing");
+    bt_log(DEBUG, "sm", "encryption enabled while not pairing");
     // If encryption was enabled while not pairing, then the link key must match
     // |ltk_|. We update the security properties based on that key. Otherwise,
     // we let the pairing handlers below determine the security properties (i.e.
@@ -900,7 +900,7 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   ZX_DEBUG_ASSERT(le_smp_->pairing_started());
 
   if (legacy_state_->InPhase2()) {
-    bt_log(TRACE, "sm", "link encrypted with STK");
+    bt_log(DEBUG, "sm", "link encrypted with STK");
     EndLegacyPairingPhase2();
   }
 }
@@ -911,7 +911,7 @@ void PairingState::OnExpectedKeyReceived() {
 
   if (!legacy_state_->RequestedKeysObtained()) {
     ZX_DEBUG_ASSERT(legacy_state_->InPhase3());
-    bt_log(TRACE, "sm", "more keys pending");
+    bt_log(DEBUG, "sm", "more keys pending");
     return;
   }
 

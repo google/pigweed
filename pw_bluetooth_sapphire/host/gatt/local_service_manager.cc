@@ -89,7 +89,7 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
   std::unordered_set<IdType> ids;
   for (const auto& chrc_ptr : service.characteristics()) {
     if (ids.count(chrc_ptr->id()) != 0u) {
-      bt_log(SPEW, "gatt", "server: repeated ID: %lu", chrc_ptr->id());
+      bt_log(TRACE, "gatt", "server: repeated ID: %lu", chrc_ptr->id());
       return false;
     }
 
@@ -108,7 +108,7 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
 
     for (const auto& desc_ptr : chrc_ptr->descriptors()) {
       if (ids.count(desc_ptr->id()) != 0u) {
-        bt_log(SPEW, "gatt", "server: repeated ID: %lu", desc_ptr->id());
+        bt_log(TRACE, "gatt", "server: repeated ID: %lu", desc_ptr->id());
         return false;
       }
 
@@ -116,7 +116,7 @@ bool ValidateService(const Service& service, size_t* out_attr_count) {
       if (desc_ptr->type() == types::kClientCharacteristicConfig ||
           desc_ptr->type() == types::kCharacteristicExtProperties ||
           desc_ptr->type() == types::kServerCharacteristicConfig) {
-        bt_log(SPEW, "gatt", "server: disallowed descriptor type: %s",
+        bt_log(TRACE, "gatt", "server: disallowed descriptor type: %s",
                desc_ptr->type().ToString().c_str());
         return false;
       }
@@ -478,7 +478,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
   ZX_DEBUG_ASSERT(ccc_callback);
 
   if (services_.find(next_service_id_) != services_.end()) {
-    bt_log(SPEW, "gatt", "server: Ran out of service IDs");
+    bt_log(TRACE, "gatt", "server: Ran out of service IDs");
     return kInvalidId;
   }
 
@@ -496,7 +496,7 @@ IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read
       db_->NewGrouping(service->primary() ? types::kPrimaryService : types::kSecondaryService,
                        attr_count, service_decl_value);
   if (!grouping) {
-    bt_log(TRACE, "gatt", "server: Failed to allocate attribute grouping for service");
+    bt_log(DEBUG, "gatt", "server: Failed to allocate attribute grouping for service");
     return kInvalidId;
   }
 

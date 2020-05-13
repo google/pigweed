@@ -59,7 +59,7 @@ void GenericAttributeService::Register() {
     if (svc_changed_handle_ == att::kInvalidHandle) {
       LocalServiceManager::ClientCharacteristicConfig config;
       if (!local_service_manager_->GetCharacteristicConfig(service_id, chrc_id, peer_id, &config)) {
-        bt_log(TRACE, "gatt", "service: Peer has not configured characteristic: %s",
+        bt_log(DEBUG, "gatt", "service: Peer has not configured characteristic: %s",
                bt_str(peer_id));
         return;
       }
@@ -67,10 +67,10 @@ void GenericAttributeService::Register() {
     }
     if (indicate) {
       subscribed_peers_.insert(peer_id);
-      bt_log(SPEW, "gatt", "service: Service Changed enabled for peer %s", bt_str(peer_id));
+      bt_log(TRACE, "gatt", "service: Service Changed enabled for peer %s", bt_str(peer_id));
     } else {
       subscribed_peers_.erase(peer_id);
-      bt_log(SPEW, "gatt", "service: Service Changed disabled for peer %s", bt_str(peer_id));
+      bt_log(TRACE, "gatt", "service: Service Changed disabled for peer %s", bt_str(peer_id));
     }
   };
 
@@ -101,7 +101,7 @@ void GenericAttributeService::OnServiceChanged(IdType service_id, att::Handle st
   value[3] = static_cast<uint8_t>(end >> 8);
 
   for (auto peer_id : subscribed_peers_) {
-    bt_log(SPEW, "gatt",
+    bt_log(TRACE, "gatt",
            "service: indicating peer %s of service(s) changed "
            "(start: %#.4x, end: %#.4x)",
            bt_str(peer_id), start, end);

@@ -15,7 +15,7 @@ namespace internal {
 bool BasicModeTxEngine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
   if (sdu->size() > max_tx_sdu_size_) {
-    bt_log(TRACE, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
+    bt_log(DEBUG, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
   }
   send_frame_callback_(std::move(sdu));

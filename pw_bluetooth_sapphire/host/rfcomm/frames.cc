@@ -104,7 +104,7 @@ Frame::Frame(Role role, CommandResponse command_response, DLCI dlci, uint8_t con
 // the needed information.
 std::unique_ptr<Frame> Frame::Parse(bool credit_based_flow, Role role, const ByteBuffer& buffer) {
   if (buffer.size() < kMinimumFrameSize) {
-    bt_log(TRACE, "rfcomm", "buffer size of %zu is less than minimum frame size (%zu)",
+    bt_log(DEBUG, "rfcomm", "buffer size of %zu is less than minimum frame size (%zu)",
            buffer.size(), kMinimumFrameSize);
     return nullptr;
   }
@@ -116,7 +116,7 @@ std::unique_ptr<Frame> Frame::Parse(bool credit_based_flow, Role role, const Byt
   FrameType frame_type = (FrameType)(buffer[kControlIndex] & kControlMask);
 
   if (!IsMultiplexerStarted(role) && !IsMuxStartupFrame(frame_type, dlci)) {
-    bt_log(TRACE, "rfcomm", "frame type %u before mux start", static_cast<uint8_t>(frame_type));
+    bt_log(DEBUG, "rfcomm", "frame type %u before mux start", static_cast<uint8_t>(frame_type));
     return nullptr;
   }
 

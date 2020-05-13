@@ -216,7 +216,7 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   std::lock_guard lock(mtx_);
 
   if (!link_ || !active_) {
-    bt_log(TRACE, "l2cap", "Ignoring security request on inactive channel");
+    bt_log(DEBUG, "l2cap", "Ignoring security request on inactive channel");
     return;
   }
 
@@ -261,7 +261,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     // link_ may be nullptr if a pdu is received after the channel has been deactivated but
     // before LogicalLink::RemoveChannel has been dispatched
     if (!link_) {
-      bt_log(SPEW, "l2cap", "ignoring pdu on deactivated channel");
+      bt_log(TRACE, "l2cap", "ignoring pdu on deactivated channel");
       return;
     }
 

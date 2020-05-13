@@ -102,7 +102,7 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
       OnReadFlushTimeoutOption(FlushTimeoutOption(option.payload_data()));
       return FlushTimeoutOption::kEncodedSize;
     default:
-      bt_log(TRACE, "l2cap", "decoded unsupported channel configuration option (type: %#.2x)",
+      bt_log(DEBUG, "l2cap", "decoded unsupported channel configuration option (type: %#.2x)",
              static_cast<uint8_t>(option.header().type));
 
       UnknownOption unknown_option(option.header().type, option.header().length,

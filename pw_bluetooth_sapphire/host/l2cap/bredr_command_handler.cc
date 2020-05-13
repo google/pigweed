@@ -61,12 +61,12 @@ bool BrEdrCommandHandler::InformationResponse::Decode(const ByteBuffer& payload_
       expected_size = sizeof(FixedChannelsSupported);
       break;
     default:
-      bt_log(TRACE, "l2cap-bredr",
+      bt_log(DEBUG, "l2cap-bredr",
              "cmd: passing Information Response with unknown type %#.4hx with %zu data bytes",
              type_, info_rsp.payload_size());
   }
   if (info_rsp.payload_size() < expected_size) {
-    bt_log(TRACE, "l2cap-bredr",
+    bt_log(DEBUG, "l2cap-bredr",
            "cmd: ignoring malformed Information Response, type %#.4hx with %zu data bytes", type_,
            info_rsp.payload_size());
     return false;
@@ -212,7 +212,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
   auto on_conn_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
                                           SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(ConnectionRequestPayload)) {
-      bt_log(TRACE, "l2cap-bredr", "cmd: rejecting malformed Connection Request, size %zu",
+      bt_log(DEBUG, "l2cap-bredr", "cmd: rejecting malformed Connection Request, size %zu",
              request_payload.size());
       sig_responder->RejectNotUnderstood();
       return;
@@ -227,7 +227,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
     // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
     // bit of the most significant byte shall be zero
     if (((psm & 0x0001) != 0x0001) || ((psm & 0x0100) != 0x0000)) {
-      bt_log(TRACE, "l2cap-bredr", "Rejecting connection for invalid PSM %#.4x from channel %#.4x",
+      bt_log(DEBUG, "l2cap-bredr", "Rejecting connection for invalid PSM %#.4x from channel %#.4x",
              psm, remote_cid);
       responder.Send(kInvalidChannelId, ConnectionResult::kPSMNotSupported,
                      ConnectionStatus::kNoInfoAvailable);
@@ -236,7 +236,7 @@ void BrEdrCommandHandler::ServeConnectionRequest(ConnectionRequestCallback cb) {
 
     // Check that source channel ID is in range (v5.0 Vol 3, Part A, Sec 2.1)
     if (remote_cid < kFirstDynamicChannelId) {
-      bt_log(TRACE, "l2cap-bredr", "Rejecting connection for PSM %#.4x from invalid channel %#.4x",
+      bt_log(DEBUG, "l2cap-bredr", "Rejecting connection for PSM %#.4x from invalid channel %#.4x",
              psm, remote_cid);
       responder.Send(kInvalidChannelId, ConnectionResult::kInvalidSourceCID,
                      ConnectionStatus::kNoInfoAvailable);
@@ -253,7 +253,7 @@ void BrEdrCommandHandler::ServeConfigurationRequest(ConfigurationRequestCallback
   auto on_config_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
                                             SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() < sizeof(ConfigurationRequestPayload)) {
-      bt_log(TRACE, "l2cap-bredr", "cmd: rejecting malformed Configuration Request, size %zu",
+      bt_log(DEBUG, "l2cap-bredr", "cmd: rejecting malformed Configuration Request, size %zu",
              request_payload.size());
       sig_responder->RejectNotUnderstood();
       return;
@@ -280,7 +280,7 @@ void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb)
   auto on_info_req = [cb = std::move(cb)](const ByteBuffer& request_payload,
                                           SignalingChannel::Responder* sig_responder) {
     if (request_payload.size() != sizeof(InformationRequestPayload)) {
-      bt_log(TRACE, "l2cap-bredr", "cmd: rejecting malformed Information Request, size %zu",
+      bt_log(DEBUG, "l2cap-bredr", "cmd: rejecting malformed Information Request, size %zu",
              request_payload.size());
       sig_responder->RejectNotUnderstood();
       return;

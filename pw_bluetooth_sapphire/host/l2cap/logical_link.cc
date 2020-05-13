@@ -168,7 +168,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   TRACE_DURATION("bluetooth", "LogicalLink::HandleRxPacket", "handle", handle_);
 
   if (!recombiner_.AddFragment(std::move(packet))) {
-    bt_log(TRACE, "l2cap", "ACL data packet rejected (handle: %#.4x)", handle_);
+    bt_log(DEBUG, "l2cap", "ACL data packet rejected (handle: %#.4x)", handle_);
     // TODO(armansito): This indicates that this connection is not reliable.
     // This needs to notify the channels of this state.
     return;
@@ -220,7 +220,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
     TRACE_FLOW_BEGIN("bluetooth", "LogicalLink::HandleRxPacket queued", pdu.trace_id());
     pp_iter->second.emplace_back(std::move(pdu));
 
-    bt_log(SPEW, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)", channel_id, handle_);
+    bt_log(TRACE, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)", channel_id, handle_);
     return;
   }
 
@@ -234,7 +234,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   ZX_DEBUG_ASSERT(dispatcher);
 
   if (closed_) {
-    bt_log(TRACE, "l2cap", "Ignoring security request on closed link");
+    bt_log(DEBUG, "l2cap", "Ignoring security request on closed link");
     return;
   }
 
@@ -248,7 +248,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
     return;
   }
 
-  bt_log(TRACE, "l2cap", "Security upgrade requested (level = %s)", sm::LevelToString(level));
+  bt_log(DEBUG, "l2cap", "Security upgrade requested (level = %s)", sm::LevelToString(level));
   security_callback_(handle_, level, std::move(status_cb));
 }
 
@@ -256,11 +256,11 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
-    bt_log(TRACE, "l2cap", "Ignoring security request on closed link");
+    bt_log(DEBUG, "l2cap", "Ignoring security request on closed link");
     return;
   }
 
-  bt_log(TRACE, "l2cap", "Link security updated (handle: %#.4x): %s", handle_,
+  bt_log(DEBUG, "l2cap", "Link security updated (handle: %#.4x): %s", handle_,
          security.ToString().c_str());
 
   std::lock_guard<std::mutex> lock(mtx_);
@@ -272,7 +272,7 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
-    bt_log(TRACE, "l2cap", "Drop out-bound packet on closed link");
+    bt_log(DEBUG, "l2cap", "Drop out-bound packet on closed link");
     return;
   }
 
@@ -318,7 +318,7 @@ void LogicalLink::RemoveChannel(Channel* chan) {
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
-    bt_log(TRACE, "l2cap", "Ignore RemoveChannel() on closed link");
+    bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
     return;
   }
 
@@ -354,7 +354,7 @@ void LogicalLink::SignalError() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (closed_) {
-    bt_log(TRACE, "l2cap", "Ignore SignalError() on closed link");
+    bt_log(DEBUG, "l2cap", "Ignore SignalError() on closed link");
     return;
   }
 
@@ -443,7 +443,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
 
   const ChannelId local_cid = dyn_chan->local_cid();
   const ChannelId remote_cid = dyn_chan->remote_cid();
-  bt_log(TRACE, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
+  bt_log(DEBUG, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
          local_cid, remote_cid);
 
   auto chan =
@@ -466,31 +466,31 @@ void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
     return;
   }
 
-  bt_log(SPEW, "l2cap", "Sent Fixed Channels Supported Information Request");
+  bt_log(TRACE, "l2cap", "Sent Fixed Channels Supported Information Request");
 }
 
 void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     const BrEdrCommandHandler::InformationResponse& rsp) {
   if (rsp.status() == BrEdrCommandHandler::Status::kReject) {
-    bt_log(SPEW, "l2cap", "Fixed Channels Supported Information Request rejected (reason %#.4hx)",
+    bt_log(TRACE, "l2cap", "Fixed Channels Supported Information Request rejected (reason %#.4hx)",
            rsp.reject_reason());
     return;
   }
 
   if (rsp.result() == InformationResult::kNotSupported) {
-    bt_log(SPEW, "l2cap",
+    bt_log(TRACE, "l2cap",
            "Received Fixed Channels Supported Information Response (result: Not Supported)");
     return;
   }
 
   if (rsp.type() != InformationType::kFixedChannelsSupported) {
-    bt_log(SPEW, "l2cap",
+    bt_log(TRACE, "l2cap",
            "Incorrect Fixed Channels Supported Information Response type (type: %#.4hx)",
            rsp.type());
     return;
   }
 
-  bt_log(SPEW, "l2cap", "Received Fixed Channels Supported Information Response (mask: %#016lx)",
+  bt_log(TRACE, "l2cap", "Received Fixed Channels Supported Information Response (mask: %#016lx)",
          rsp.fixed_channels());
 }
 
@@ -510,7 +510,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
         bool accepted = false;
 
         if (rsp.status() != LowEnergyCommandHandler::Status::kSuccess) {
-          bt_log(SPEW, "l2cap", "LE Connection Parameter Update Request rejected (reason: %#.4hx)",
+          bt_log(TRACE, "l2cap", "LE Connection Parameter Update Request rejected (reason: %#.4hx)",
                  rsp.reject_reason());
         } else {
           accepted = rsp.result() == ConnectionParameterUpdateResult::kAccepted;
@@ -537,7 +537,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Connection Parameter Update Request packet it shall respond with a Command
   // Reject Packet [...]" (v5.0, Vol 3, Part A, Section 4.20).
   if (role_ == hci::Connection::Role::kSlave) {
-    bt_log(TRACE, "l2cap", "rejecting conn. param. update request from master");
+    bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from master");
     responder->RejectNotUnderstood();
     return;
   }
@@ -551,22 +551,22 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
                                               timeout_multiplier);
 
   if (params.min_interval() > params.max_interval()) {
-    bt_log(TRACE, "l2cap", "conn. min interval larger than max");
+    bt_log(DEBUG, "l2cap", "conn. min interval larger than max");
     reject = true;
   } else if (params.min_interval() < hci::kLEConnectionIntervalMin) {
-    bt_log(TRACE, "l2cap", "conn. min interval outside allowed range: %#.4x",
+    bt_log(DEBUG, "l2cap", "conn. min interval outside allowed range: %#.4x",
            params.min_interval());
     reject = true;
   } else if (params.max_interval() > hci::kLEConnectionIntervalMax) {
-    bt_log(TRACE, "l2cap", "conn. max interval outside allowed range: %#.4x",
+    bt_log(DEBUG, "l2cap", "conn. max interval outside allowed range: %#.4x",
            params.max_interval());
     reject = true;
   } else if (params.max_latency() > hci::kLEConnectionLatencyMax) {
-    bt_log(TRACE, "l2cap", "conn. slave latency too large: %#.4x", params.max_latency());
+    bt_log(DEBUG, "l2cap", "conn. slave latency too large: %#.4x", params.max_latency());
     reject = true;
   } else if (params.supervision_timeout() < hci::kLEConnectionSupervisionTimeoutMin ||
              params.supervision_timeout() > hci::kLEConnectionSupervisionTimeoutMax) {
-    bt_log(TRACE, "l2cap", "conn supv. timeout outside allowed range: %#.4x",
+    bt_log(DEBUG, "l2cap", "conn supv. timeout outside allowed range: %#.4x",
            params.supervision_timeout());
     reject = true;
   }
@@ -577,7 +577,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
 
   if (!reject) {
     if (!connection_parameter_update_callback_) {
-      bt_log(TRACE, "l2cap", "no callback set for LE Connection Parameter Update Request");
+      bt_log(DEBUG, "l2cap", "no callback set for LE Connection Parameter Update Request");
       return;
     }
 

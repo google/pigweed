@@ -35,7 +35,7 @@ void Interrogator::Interrogation::Complete(hci::Status status) {
     return;
   }
 
-  bt_log(SPEW, "gap", "interrogation completed (status: %s, peer id: %s)", bt_str(status),
+  bt_log(TRACE, "gap", "interrogation completed (status: %s, peer id: %s)", bt_str(status),
          bt_str(peer_id_));
 
   result_cb_(status);
@@ -61,7 +61,7 @@ void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCal
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto result_cb_wrapped = [self, peer_id, cb = std::move(result_cb)](hci::Status status) mutable {
     if (!self) {
-      bt_log(TRACE, "gap",
+      bt_log(DEBUG, "gap",
              "Interrogator already destroyed in interrogation result callback (peer id: %s)",
              bt_str(peer_id));
       return;
@@ -76,7 +76,7 @@ void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCal
   auto [it, inserted] = pending_.try_emplace(peer_id, interrogation_ref->GetWeakPtr());
   ZX_ASSERT_MSG(inserted, "interrogating peer %s twice at once", bt_str(peer_id));
 
-  bt_log(SPEW, "gap", "started interrogating peer %s", bt_str(peer_id));
+  bt_log(TRACE, "gap", "started interrogating peer %s", bt_str(peer_id));
 
   SendCommands(std::move(interrogation_ref));
 }
@@ -120,7 +120,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
 
     ZX_ASSERT(event.event_code() == hci::kReadRemoteVersionInfoCompleteEventCode);
 
-    bt_log(SPEW, "gap", "read remote version info completed (peer id: %s)",
+    bt_log(TRACE, "gap", "read remote version info completed (peer id: %s)",
            bt_str(interrogation->peer_id()));
 
     const auto params = event.params<hci::ReadRemoteVersionInfoCompleteEventParams>();
@@ -133,7 +133,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
     peer->set_version(params.lmp_version, params.manufacturer_name, params.lmp_subversion);
   };
 
-  bt_log(SPEW, "gap", "asking for version info (peer id: %s)", bt_str(interrogation->peer_id()));
+  bt_log(TRACE, "gap", "asking for version info (peer id: %s)", bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
                                         hci::kReadRemoteVersionInfoCompleteEventCode);
 }

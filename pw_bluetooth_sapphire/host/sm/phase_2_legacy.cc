@@ -68,7 +68,7 @@ void Phase2Legacy::Start() {
 }
 
 void Phase2Legacy::MakeTemporaryKeyRequest() {
-  bt_log(TRACE, "sm", "TK request - method: %s",
+  bt_log(DEBUG, "sm", "TK request - method: %s",
          sm::util::PairingMethodToString(features_.method).c_str());
   ZX_ASSERT(listener());
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -112,7 +112,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
 
 void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
   if (!maybe_tk.has_value()) {
-    bt_log(TRACE, "sm", "TK listener() responded with error; aborting");
+    bt_log(DEBUG, "sm", "TK listener() responded with error; aborting");
     if (features_.method == PairingMethod::kPasskeyEntryInput) {
       Abort(ErrorCode::kPasskeyEntryFailed);
     } else {
@@ -147,7 +147,7 @@ void Phase2Legacy::SendConfirmValue() {
   ZX_ASSERT(local_confirm_.has_value());
   // Only allowed on the LE transport.
   if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm", "attempted to send confirm value over BR/EDR, not sending");
+    bt_log(DEBUG, "sm", "attempted to send confirm value over BR/EDR, not sending");
     return;
   }
 
@@ -250,7 +250,7 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
 ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
   // Only allowed on the LE transport.
   if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm", "\"Confirm value\" over BR/EDR not supported!");
+    bt_log(DEBUG, "sm", "\"Confirm value\" over BR/EDR not supported!");
     return ErrorCode::kCommandNotSupported;
   }
 
@@ -283,7 +283,7 @@ ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
 ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
   // Only allowed on the LE transport.
   if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
-    bt_log(TRACE, "sm", "\"Random value\" over BR/EDR not supported!");
+    bt_log(DEBUG, "sm", "\"Random value\" over BR/EDR not supported!");
     return ErrorCode::kCommandNotSupported;
   }
 

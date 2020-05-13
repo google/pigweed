@@ -44,7 +44,7 @@ class HostDevice final {
         .Open = OpenFidlOp,
     };
 
-    bt_log(TRACE, "bt-host", "fidl message");
+    bt_log(DEBUG, "bt-host", "fidl message");
     return fuchsia_hardware_bluetooth_Host_dispatch(ctx, txn, msg, &fidl_ops);
   }
 

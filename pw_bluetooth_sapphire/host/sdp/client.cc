@@ -231,7 +231,7 @@ void Impl::OnRxFrame(ByteBufferPtr data) {
     return;
   }
   if (transaction.response.complete()) {
-    bt_log(TRACE, "sdp", "Rx complete, finishing tid %u", tid);
+    bt_log(DEBUG, "sdp", "Rx complete, finishing tid %u", tid);
     Finish(tid);
   }
 }

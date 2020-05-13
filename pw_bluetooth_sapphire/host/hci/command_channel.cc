@@ -60,7 +60,7 @@ CommandChannel::TransactionData::~TransactionData() {
     return;
   }
 
-  bt_log(TRACE, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
+  bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
   auto event = EventPacket::New(sizeof(CommandStatusEventParams));
   auto* header = event->mutable_view()->mutable_header();
   auto* params = event->mutable_view()->mutable_payload<CommandStatusEventParams>();
@@ -135,7 +135,7 @@ void CommandChannel::Initialize() {
       channel_wait_.set_object(ZX_HANDLE_INVALID);
       return;
     }
-    bt_log(TRACE, "hci", "started I/O handler");
+    bt_log(DEBUG, "hci", "started I/O handler");
   };
 
   io_dispatcher_ = transport_->io_dispatcher();
@@ -161,7 +161,7 @@ void CommandChannel::ShutDown() {
 }
 
 void CommandChannel::ShutDownInternal() {
-  bt_log(TRACE, "hci", "removing I/O handler");
+  bt_log(DEBUG, "hci", "removing I/O handler");
 
   // Prevent new command packets from being queued.
   is_initialized_ = false;
@@ -223,7 +223,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     CommandCallback callback, const EventCode complete_event_code,
     std::optional<EventCode> subevent_code, std::unordered_set<OpCode> exclusions) {
   if (!is_initialized_) {
-    bt_log(TRACE, "hci", "can't send commands while uninitialized");
+    bt_log(DEBUG, "hci", "can't send commands while uninitialized");
     return 0u;
   }
 
@@ -244,7 +244,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     }
 
     if (handler && !handler->is_async()) {
-      bt_log(TRACE, "hci", "event handler already handling this event");
+      bt_log(DEBUG, "hci", "event handler already handling this event");
       return 0u;
     }
   }
@@ -280,7 +280,7 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
   auto it = std::find_if(send_queue_.begin(), send_queue_.end(),
                          [id](const auto& cmd) { return cmd.data->id() == id; });
   if (it != send_queue_.end()) {
-    bt_log(SPEW, "hci", "removing queued command id: %zu", id);
+    bt_log(TRACE, "hci", "removing queued command id: %zu", id);
     TransactionData& data = *it->data;
     data.Cancel();
     if (data.handler_id() != 0u) {
@@ -292,7 +292,7 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
   }
 
   // The transaction to remove has already finished or never existed.
-  bt_log(SPEW, "hci", "command to remove not found, id: %zu", id);
+  bt_log(TRACE, "hci", "command to remove not found, id: %zu", id);
   return false;
 }
 
@@ -374,7 +374,7 @@ void CommandChannel::RemoveEventHandlerInternal(EventHandlerId id) {
     auto* event_handlers =
         iter->second.is_le_meta_subevent ? &subevent_code_handlers_ : &event_code_handlers_;
 
-    bt_log(SPEW, "hci", "removing handler for %sevent code %#.2x",
+    bt_log(TRACE, "hci", "removing handler for %sevent code %#.2x",
            (iter->second.is_le_meta_subevent ? "LE " : ""), iter->second.event_code);
 
     auto range = event_handlers->equal_range(iter->second.event_code);
@@ -395,7 +395,7 @@ void CommandChannel::TrySendQueuedCommands() {
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
 
   if (allowed_command_packets_ == 0) {
-    bt_log(SPEW, "hci", "controller queue full, waiting");
+    bt_log(TRACE, "hci", "controller queue full, waiting");
     return;
   }
 
@@ -412,7 +412,7 @@ void CommandChannel::TrySendQueuedCommands() {
     bool excluded = false;
     for (const auto& excluded_opcode : data.exclusions()) {
       if (pending_transactions_.count(excluded_opcode) != 0) {
-        bt_log(SPEW, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
+        bt_log(TRACE, "hci", "pending command (%#.4x) delayed due to running opcode %#.4x",
                it->data->opcode(), excluded_opcode);
         excluded = true;
         break;
@@ -435,7 +435,7 @@ void CommandChannel::TrySendQueuedCommands() {
     // wait on the same completion event.
     if (!IsAsync(data.complete_event_code()) || data.handler_id() != 0 ||
         !waiting_for_other_transaction) {
-      bt_log(SPEW, "hci", "sending previously queued command id %zu", data.id());
+      bt_log(TRACE, "hci", "sending previously queued command id %zu", data.id());
       SendQueuedCommand(std::move(*it));
       it = send_queue_.erase(it);
       continue;
@@ -483,7 +483,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   // We already have a handler for this transaction, or another transaction
   // is already waiting and it will be queued.
   if (code_handlers->count(code)) {
-    bt_log(SPEW, "hci", "async command %zu: already has handler", data->id());
+    bt_log(TRACE, "hci", "async command %zu: already has handler", data->id());
     return;
   }
 
@@ -494,7 +494,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   ZX_ASSERT(id != 0u);
   data->set_handler_id(id);
   code_handlers->emplace(code, id);
-  bt_log(SPEW, "hci", "async command %zu assigned handler %zu", data->id(), id);
+  bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), id);
 }
 
 CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_code,
@@ -515,7 +515,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_c
   data.dispatcher = dispatcher;
   data.is_le_meta_subevent = is_le_meta;
 
-  bt_log(SPEW, "hci", "adding event handler %zu for %sevent code %#.2x", id,
+  bt_log(TRACE, "hci", "adding event handler %zu for %sevent code %#.2x", id,
          (is_le_meta ? "LE sub" : ""), event_code);
   ZX_DEBUG_ASSERT(event_handler_id_map_.find(id) == event_handler_id_map_.end());
   event_handler_id_map_[id] = std::move(data);
@@ -545,7 +545,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     allowed_command_packets_ = params.num_hci_command_packets;
     unregister_async_handler = params.status != StatusCode::kSuccess;
   }
-  bt_log(SPEW, "hci", "allowed packets update: %zu", allowed_command_packets_);
+  bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_);
 
   if (matching_opcode == kNoOp) {
     return;
@@ -578,7 +578,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
   // If an asynchronous command failed, then remove its event handler.
   if (unregister_async_handler) {
-    bt_log(SPEW, "hci", "async command failed; removing its handler");
+    bt_log(TRACE, "hci", "async command failed; removing its handler");
     RemoveEventHandlerInternal(pending->handler_id());
     pending_transactions_.erase(it);
   }
@@ -609,7 +609,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
 
     auto range = event_handlers->equal_range(event_code);
     if (range.first == range.second) {
-      bt_log(TRACE, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
+      bt_log(DEBUG, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
              event_code);
       return;
     }
@@ -617,7 +617,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     auto iter = range.first;
     while (iter != range.second) {
       EventHandlerId event_id = iter->second;
-      bt_log(SPEW, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
+      bt_log(TRACE, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
       auto handler_iter = event_handler_id_map_.find(event_id);
       ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
 
@@ -630,7 +630,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       ++iter;  // Advance so we don't point to an invalid iterator.
 
       if (handler.is_async()) {
-        bt_log(SPEW, "hci", "removing completed async handler (id %zu, event code: %#.2x)",
+        bt_log(TRACE, "hci", "removing completed async handler (id %zu, event code: %#.2x)",
                event_id, event_code);
         pending_transactions_.erase(handler.pending_opcode);
         RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
@@ -680,7 +680,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady", "signal->count", signal->count);
 
   if (status != ZX_OK) {
-    bt_log(TRACE, "hci", "channel error: %s", zx_status_get_string(status));
+    bt_log(DEBUG, "hci", "channel error: %s", zx_status_get_string(status));
     return;
   }
 
@@ -701,7 +701,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
                                             packet_bytes.size(), 0, &read_size, nullptr);
     if (read_status < 0) {
-      bt_log(TRACE, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
+      bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
       // Clear the handler so that we stop receiving events from it.
       // TODO(jamuraa): signal upper layers that we can't read the channel.
       return;
@@ -738,7 +738,7 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
 
   status = wait->Begin(dispatcher);
   if (status != ZX_OK) {
-    bt_log(TRACE, "hci", "wait error: %s", zx_status_get_string(status));
+    bt_log(DEBUG, "hci", "wait error: %s", zx_status_get_string(status));
   }
 }
 

@@ -66,7 +66,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
       channel_wait_.set_object(ZX_HANDLE_INVALID);
       return;
     }
-    bt_log(TRACE, "hci", "started I/O handler");
+    bt_log(DEBUG, "hci", "started I/O handler");
   };
 
   io_dispatcher_ = transport_->io_dispatcher();
@@ -99,7 +99,7 @@ void ACLDataChannel::ShutDown() {
   bt_log(INFO, "hci", "shutting down");
 
   auto handler_cleanup_task = [this] {
-    bt_log(TRACE, "hci", "removing I/O handler");
+    bt_log(DEBUG, "hci", "removing I/O handler");
     zx_status_t status = channel_wait_.Cancel();
     if (status != ZX_OK) {
       bt_log(WARN, "hci", "couldn't cancel wait on channel: %s", zx_status_get_string(status));
@@ -134,7 +134,7 @@ void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
 bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
                                 PacketPriority priority) {
   if (!is_initialized_) {
-    bt_log(TRACE, "hci", "cannot send packets while uninitialized");
+    bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
     return false;
   }
 
@@ -147,7 +147,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId c
   auto link_iter = registered_links_.find(handle);
 
   if (link_iter == registered_links_.end()) {
-    bt_log(SPEW, "hci", "dropping packet for unregistered connection (handle: %#.4x)", handle);
+    bt_log(TRACE, "hci", "dropping packet for unregistered connection (handle: %#.4x)", handle);
     return false;
   }
 
@@ -169,12 +169,12 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId c
 bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::ChannelId channel_id,
                                  PacketPriority priority) {
   if (!is_initialized_) {
-    bt_log(TRACE, "hci", "cannot send packets while uninitialized");
+    bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
     return false;
   }
 
   if (packets.is_empty()) {
-    bt_log(TRACE, "hci", "no packets to send!");
+    bt_log(DEBUG, "hci", "no packets to send!");
     return false;
   }
 
@@ -183,7 +183,7 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
   auto handle = packets.front().connection_handle();
 
   if (registered_links_.find(handle) == registered_links_.end()) {
-    bt_log(SPEW, "hci", "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
+    bt_log(TRACE, "hci", "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
            handle, packets.size_slow());
     return false;
   }
@@ -191,7 +191,7 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
   for (const auto& packet : packets) {
     // Make sure that all packets have registered connection handles.
     if (registered_links_.find(packet.connection_handle()) == registered_links_.end()) {
-      bt_log(SPEW, "hci",
+      bt_log(TRACE, "hci",
              "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
              packet.connection_handle(), packets.size_slow());
       return false;
@@ -220,7 +220,7 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
 
 void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) {
   std::lock_guard<std::mutex> lock(send_mutex_);
-  bt_log(TRACE, "hci", "ACL register link (handle: %#.4x)", handle);
+  bt_log(DEBUG, "hci", "ACL register link (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
   registered_links_[handle] = ll_type;
 }
@@ -228,7 +228,7 @@ void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle, Connection::Link
 void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
   std::lock_guard<std::mutex> lock(send_mutex_);
 
-  bt_log(TRACE, "hci", "ACL unregister link (handle: %#.4x)", handle);
+  bt_log(DEBUG, "hci", "ACL unregister link (handle: %#.4x)", handle);
 
   if (registered_links_.erase(handle) == 0) {
     // handle not registered
@@ -251,13 +251,13 @@ void ACLDataChannel::ClearControllerPacketCount(hci::ConnectionHandle handle) {
   // could be sent after clearing packet count, and the packet count could become corrupted.
   ZX_ASSERT(registered_links_.find(handle) == registered_links_.end());
 
-  bt_log(TRACE, "hci", "clearing pending packets (handle: %#.4x)", handle);
+  bt_log(DEBUG, "hci", "clearing pending packets (handle: %#.4x)", handle);
 
   // subtract removed packets from sent packet counts, because controller
   // does not send HCI Number of Completed Packets event for disconnected link
   auto iter = pending_links_.find(handle);
   if (iter == pending_links_.end()) {
-    bt_log(TRACE, "hci", "no pending packets on connection (handle: %#.4x)", handle);
+    bt_log(DEBUG, "hci", "no pending packets on connection (handle: %#.4x)", handle);
     return;
   }
 
@@ -286,7 +286,7 @@ void ACLDataChannel::DropQueuedPacketsLocked(ACLPacketPredicate predicate) {
   });
   const size_t removed_count = before_count - send_queue_.size();
   if (removed_count > 0) {
-    bt_log(SPEW, "hci", "packets dropped from send queue (count: %lu)", removed_count);
+    bt_log(TRACE, "hci", "packets dropped from send queue (count: %lu)", removed_count);
   }
 }
 
@@ -506,7 +506,7 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
                                             packet_bytes.size(), 0, &read_size, nullptr);
     if (read_status < 0) {
-      bt_log(TRACE, "hci", "failed to read RX bytes: %s", zx_status_get_string(status));
+      bt_log(DEBUG, "hci", "failed to read RX bytes: %s", zx_status_get_string(status));
       // Clear the handler so that we stop receiving events from it.
       // TODO(jamuraa): signal failure to the consumer so it can do something.
       return;

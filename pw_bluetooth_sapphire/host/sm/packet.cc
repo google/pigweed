@@ -39,17 +39,17 @@ fit::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(
   ZX_DEBUG_ASSERT(sdu);
   uint8_t length = sdu->size();
   if (length < sizeof(Code)) {
-    bt_log(TRACE, "sm", "PDU too short!");
+    bt_log(DEBUG, "sm", "PDU too short!");
     return fit::error(ErrorCode::kInvalidParameters);
   }
   auto reader = PacketReader(sdu.get());
   auto expected_payload_size = kCodeToPayloadSize.find(reader.code());
   if (expected_payload_size == kCodeToPayloadSize.end()) {
-    bt_log(TRACE, "sm", "smp code not recognized: %#.2X", reader.code());
+    bt_log(DEBUG, "sm", "smp code not recognized: %#.2X", reader.code());
     return fit::error(ErrorCode::kCommandNotSupported);
   }
   if (reader.payload_size() != expected_payload_size->second) {
-    bt_log(TRACE, "sm", "malformed packet with code %#.2X", reader.code());
+    bt_log(DEBUG, "sm", "malformed packet with code %#.2X", reader.code());
     return fit::error(ErrorCode::kInvalidParameters);
   }
   return fit::ok(ValidPacketReader(sdu.get()));

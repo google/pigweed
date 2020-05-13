@@ -20,21 +20,21 @@ namespace {
 
 LogSeverity FxlLogToBtLogLevel(fxl::LogSeverity severity) {
   switch (severity) {
-    case fxl::LOG_ERROR:
+    case syslog::LOG_ERROR:
       return LogSeverity::ERROR;
-    case fxl::LOG_WARNING:
+    case syslog::LOG_WARNING:
       return LogSeverity::WARN;
-    case fxl::LOG_INFO:
+    case syslog::LOG_INFO:
       return LogSeverity::INFO;
-    case -1:
+    case syslog::LOG_DEBUG:
+      return LogSeverity::DEBUG;
+    case syslog::LOG_TRACE:
       return LogSeverity::TRACE;
-    case -2:
-      return LogSeverity::SPEW;
     default:
       break;
   }
   if (severity < 0) {
-    return LogSeverity::SPEW;
+    return LogSeverity::TRACE;
   }
   return LogSeverity::ERROR;
 }

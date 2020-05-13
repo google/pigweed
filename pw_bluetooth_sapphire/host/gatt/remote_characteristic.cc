@@ -35,7 +35,7 @@ void NotifyValue(const ByteBuffer& value, RemoteCharacteristic::ValueCallback ca
     async::PostTask(dispatcher,
                     [callback = std::move(callback), val = std::move(buffer)] { callback(*val); });
   } else {
-    bt_log(TRACE, "gatt", "out of memory!");
+    bt_log(DEBUG, "gatt", "out of memory!");
   }
 }
 
@@ -134,14 +134,14 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
     if (desc.type == types::kClientCharacteristicConfig) {
       if (self->ccc_handle_ != att::kInvalidHandle) {
-        bt_log(TRACE, "gatt", "characteristic has more than one CCC descriptor!");
+        bt_log(DEBUG, "gatt", "characteristic has more than one CCC descriptor!");
         self->discovery_error_ = true;
         return;
       }
       self->ccc_handle_ = desc.handle;
     } else if (desc.type == types::kCharacteristicExtProperties) {
       if (self->ext_prop_handle_ != att::kInvalidHandle) {
-        bt_log(TRACE, "gatt", "characteristic has more than one Extended Prop descriptor!");
+        bt_log(DEBUG, "gatt", "characteristic has more than one Extended Prop descriptor!");
         self->discovery_error_ = true;
         return;
       }
@@ -151,7 +151,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       if (self->properties() & Property::kExtendedProperties) {
         self->ext_prop_handle_ = desc.handle;
       } else {
-        bt_log(TRACE, "gatt", "characteristic extended properties not set");
+        bt_log(DEBUG, "gatt", "characteristic extended properties not set");
       }
     }
 
@@ -223,7 +223,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
   if (!(info().properties & (Property::kNotify | Property::kIndicate)) ||
       ccc_handle_ == att::kInvalidHandle) {
-    bt_log(TRACE, "gatt", "characteristic does not support notifications");
+    bt_log(DEBUG, "gatt", "characteristic does not support notifications");
     ReportNotifyStatus(att::Status(HostError::kNotSupported), kInvalidId,
                        std::move(status_callback), dispatcher);
     return;
@@ -258,7 +258,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto ccc_write_cb = [self](att::Status status) {
-    bt_log(TRACE, "gatt", "CCC write status (enable): %s", status.ToString().c_str());
+    bt_log(DEBUG, "gatt", "CCC write status (enable): %s", status.ToString().c_str());
     if (self) {
       self->ResolvePendingNotifyRequests(status);
     }
@@ -273,7 +273,7 @@ bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
   ZX_DEBUG_ASSERT(!shut_down_);
 
   if (!notify_handlers_.erase(handler_id)) {
-    bt_log(SPEW, "gatt", "notify handler not found (id: %lu)", handler_id);
+    bt_log(TRACE, "gatt", "notify handler not found (id: %lu)", handler_id);
     return false;
   }
 
@@ -288,7 +288,7 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
   ZX_DEBUG_ASSERT(ccc_handle_ != att::kInvalidHandle);
 
   if (!client_) {
-    bt_log(SPEW, "gatt", "client bearer invalid!");
+    bt_log(TRACE, "gatt", "client bearer invalid!");
     return;
   }
 
@@ -297,7 +297,7 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
   ccc_value.SetToZeros();
 
   auto ccc_write_cb = [](att::Status status) {
-    bt_log(TRACE, "gatt", "CCC write status (disable): %s", status.ToString().c_str());
+    bt_log(DEBUG, "gatt", "CCC write status (disable): %s", status.ToString().c_str());
   };
 
   // We send the request without handling the status as there is no good way to

@@ -26,13 +26,13 @@ void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_
 // Finds the PSM that is specified in a ProtocolDescriptorList
 // Returns l2cap::kInvalidPSM if none is found or the list is invalid
 l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
-  bt_log(SPEW, "sdp", "Trying to find PSM from %s", protocol_list.ToString().c_str());
+  bt_log(TRACE, "sdp", "Trying to find PSM from %s", protocol_list.ToString().c_str());
   const auto* l2cap_protocol = protocol_list.At(0);
   ZX_DEBUG_ASSERT(l2cap_protocol);
   const auto* prot_uuid = l2cap_protocol->At(0);
   if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid ||
       *prot_uuid->Get<UUID>() != protocol::kL2CAP) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid or not L2CAP");
+    bt_log(TRACE, "sdp", "ProtocolDescriptorList is not valid or not L2CAP");
     return l2cap::kInvalidPSM;
   }
 
@@ -40,19 +40,19 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   if (psm_elem && psm_elem->type() == DataElement::Type::kUnsignedInt) {
     return *psm_elem->Get<uint16_t>();
   } else if (psm_elem) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList invalid L2CAP parameter type");
+    bt_log(TRACE, "sdp", "ProtocolDescriptorList invalid L2CAP parameter type");
     return l2cap::kInvalidPSM;
   }
 
   // The PSM is missing, determined by the next protocol.
   const auto* next_protocol = protocol_list.At(1);
   if (!next_protocol) {
-    bt_log(SPEW, "sdp", "L2CAP has no PSM and no additional protocol");
+    bt_log(TRACE, "sdp", "L2CAP has no PSM and no additional protocol");
     return l2cap::kInvalidPSM;
   }
   const auto* next_protocol_uuid = next_protocol->At(0);
   if (!next_protocol_uuid || next_protocol_uuid->type() != DataElement::Type::kUuid) {
-    bt_log(SPEW, "sdp", "L2CAP has no PSM and additional protocol invalid");
+    bt_log(TRACE, "sdp", "L2CAP has no PSM and additional protocol invalid");
     return l2cap::kInvalidPSM;
   }
   UUID protocol_uuid = *next_protocol_uuid->Get<UUID>();
@@ -61,20 +61,20 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   if (protocol_uuid == protocol::kRFCOMM) {
     return l2cap::kRFCOMM;
   }
-  bt_log(SPEW, "sdp", "Can't determine L2CAP PSM from protocol");
+  bt_log(TRACE, "sdp", "Can't determine L2CAP PSM from protocol");
   return l2cap::kInvalidPSM;
 }
 
 l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list) {
   const auto* primary_protocol = protocol_list->At(0);
   if (!primary_protocol) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not a sequence");
+    bt_log(TRACE, "sdp", "ProtocolDescriptorList is not a sequence");
     return l2cap::kInvalidPSM;
   }
 
   const auto* prot_uuid = primary_protocol->At(0);
   if (!prot_uuid || prot_uuid->type() != DataElement::Type::kUuid) {
-    bt_log(SPEW, "sdp", "ProtocolDescriptorList is not valid");
+    bt_log(TRACE, "sdp", "ProtocolDescriptorList is not valid");
     return l2cap::kInvalidPSM;
   }
 
@@ -85,7 +85,7 @@ l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protoco
 
   l2cap::PSM psm = FindProtocolListPSM(*protocol_list);
   if (psm == l2cap::kInvalidPSM) {
-    bt_log(SPEW, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
+    bt_log(TRACE, "sdp", "Couldn't find PSM from ProtocolDescriptorList");
     return l2cap::kInvalidPSM;
   }
 
@@ -157,7 +157,7 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
 Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
 
 bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
-  bt_log(TRACE, "sdp", "add connection handle %#.4x", channel->link_handle());
+  bt_log(DEBUG, "sdp", "add connection handle %#.4x", channel->link_handle());
 
   hci::ConnectionHandle handle = channel->link_handle();
   auto iter = channels_.find(channel->link_handle());
@@ -198,7 +198,7 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
     }
 
     if (psm_to_service_.count(psm)) {
-      bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+      bt_log(TRACE, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
       return false;
     }
 
@@ -216,7 +216,7 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
     // If `kAdditionalProtocolDescriptorList` exists, there should be at least one
     // protocol provided.
     if (!additional) {
-      bt_log(SPEW, "sdp", "AdditionalProtocolDescriptorList provided but empty");
+      bt_log(TRACE, "sdp", "AdditionalProtocolDescriptorList provided but empty");
       return false;
     }
 
@@ -229,7 +229,7 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
       }
 
       if (psm_to_service_.count(psm)) {
-        bt_log(SPEW, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+        bt_log(TRACE, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
         return false;
       }
 
@@ -307,11 +307,11 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   }
 
   for (const auto& psm : psms_to_register) {
-    bt_log(SPEW, "sdp", "Allocating PSM %#.4x for new service", psm);
+    bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
     data_domain_->RegisterService(
         psm, chan_params,
         [psm = psm, conn_cb = conn_cb.share()](auto chan_sock, auto handle) mutable {
-          bt_log(SPEW, "sdp", "Channel connected to %#.4x", psm);
+          bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;
           protocol_l2cap.emplace_back(DataElement(protocol::kL2CAP));
@@ -327,7 +327,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   for (auto& record : records) {
     auto placement = records_.emplace(record.handle(), std::move(record));
     ZX_DEBUG_ASSERT(placement.second);
-    bt_log(SPEW, "sdp", "registered service %#.8x, classes: %s", placement.first->second.handle(),
+    bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placement.first->second.handle(),
            placement.first->second.GetAttribute(kServiceClassIdList).ToString().c_str());
   }
 
@@ -350,13 +350,13 @@ bool Server::UnregisterService(RegistrationHandle handle) {
   for (const auto& svc_h : handles_it.mapped()) {
     ZX_ASSERT(svc_h != kSDPHandle);
     ZX_ASSERT(records_.find(svc_h) != records_.end());
-    bt_log(TRACE, "sdp", "unregistering service (handle: %#.8x)", svc_h);
+    bt_log(DEBUG, "sdp", "unregistering service (handle: %#.8x)", svc_h);
 
     // Unregister any service callbacks from L2CAP
     auto psms_it = service_to_psms_.extract(svc_h);
     if (psms_it) {
       for (const auto& psm : psms_it.mapped()) {
-        bt_log(TRACE, "sdp", "removing registration for psm %#.4x", psm);
+        bt_log(DEBUG, "sdp", "removing registration for psm %#.4x", psm);
         data_domain_->UnregisterService(psm);
         psm_to_service_.erase(psm);
       }
@@ -394,7 +394,7 @@ ServiceSearchResponse Server::SearchServices(const std::unordered_set<UUID>& pat
       matched.push_back(it.first);
     }
   }
-  bt_log(SPEW, "sdp", "ServiceSearch matched %zu records", matched.size());
+  bt_log(TRACE, "sdp", "ServiceSearch matched %zu records", matched.size());
   resp.set_service_record_handle_list(matched);
   return resp;
 }
@@ -409,7 +409,7 @@ ServiceAttributeResponse Server::GetServiceAttributes(
       resp.set_attribute(attr, record.GetAttribute(attr).Clone());
     }
   }
-  bt_log(SPEW, "sdp", "ServiceAttribute %zu attributes", resp.attributes().size());
+  bt_log(TRACE, "sdp", "ServiceAttribute %zu attributes", resp.attributes().size());
   return resp;
 }
 
@@ -429,7 +429,7 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
     }
   }
 
-  bt_log(SPEW, "sdp", "ServiceSearchAttribute %zu records", resp.num_attribute_lists());
+  bt_log(TRACE, "sdp", "ServiceSearchAttribute %zu records", resp.num_attribute_lists());
   return resp;
 }
 
@@ -441,13 +441,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
   TRACE_DURATION("bluetooth", "sdp::Server::OnRxBFrame");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
-    bt_log(TRACE, "sdp", "PDU too short; dropping");
+    bt_log(DEBUG, "sdp", "PDU too short; dropping");
     return;
   }
 
   auto it = channels_.find(handle);
   if (it == channels_.end()) {
-    bt_log(TRACE, "sdp", "can't find peer to respond to; dropping");
+    bt_log(DEBUG, "sdp", "can't find peer to respond to; dropping");
     return;
   }
 
@@ -457,7 +457,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
   uint16_t param_length = betoh16(packet.header().param_length);
 
   if (param_length != (sdu->size() - sizeof(Header))) {
-    bt_log(SPEW, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
+    bt_log(TRACE, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
            sdu->size() - sizeof(Header));
     SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidSize);
     return;
@@ -469,7 +469,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
     case kServiceSearchRequest: {
       ServiceSearchRequest request(packet.payload_data());
       if (!request.valid()) {
-        bt_log(TRACE, "sdp", "ServiceSearchRequest not valid");
+        bt_log(DEBUG, "sdp", "ServiceSearchRequest not valid");
         SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
@@ -487,13 +487,13 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
     case kServiceAttributeRequest: {
       ServiceAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
-        bt_log(SPEW, "sdp", "ServiceAttributeRequest not valid");
+        bt_log(TRACE, "sdp", "ServiceAttributeRequest not valid");
         SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
       auto handle = request.service_record_handle();
       if (records_.find(handle) == records_.end()) {
-        bt_log(SPEW, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
+        bt_log(TRACE, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
         SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRecordHandle);
         return;
       }
@@ -510,7 +510,7 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
     case kServiceSearchAttributeRequest: {
       ServiceSearchAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
-        bt_log(SPEW, "sdp", "ServiceSearchAttributeRequest not valid");
+        bt_log(TRACE, "sdp", "ServiceSearchAttributeRequest not valid");
         SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
         return;
       }
@@ -526,12 +526,12 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
       return;
     }
     case kErrorResponse: {
-      bt_log(SPEW, "sdp", "ErrorResponse isn't allowed as a request");
+      bt_log(TRACE, "sdp", "ErrorResponse isn't allowed as a request");
       SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
       return;
     }
     default: {
-      bt_log(SPEW, "sdp", "unhandled request, returning InvalidRequest");
+      bt_log(TRACE, "sdp", "unhandled request, returning InvalidRequest");
       SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
       return;
     }

@@ -22,7 +22,7 @@ namespace {
 template <typename EventParamType, typename ResultType>
 std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::EventPacket& event) {
   std::unordered_set<Peer*> updated;
-  bt_log(SPEW, "gap-bredr", "inquiry result received");
+  bt_log(TRACE, "gap-bredr", "inquiry result received");
 
   size_t result_size = event.view().payload_size() - sizeof(EventParamType);
   if ((result_size % sizeof(ResultType)) != 0) {
@@ -117,19 +117,19 @@ void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(callback);
 
-  bt_log(TRACE, "gap-bredr", "RequestDiscovery");
+  bt_log(DEBUG, "gap-bredr", "RequestDiscovery");
 
   // If we're already waiting on a callback, then scanning is already starting.
   // Queue this to create a session when the scanning starts.
   if (!pending_discovery_.empty()) {
-    bt_log(TRACE, "gap-bredr", "discovery starting, add to pending");
+    bt_log(DEBUG, "gap-bredr", "discovery starting, add to pending");
     pending_discovery_.push(std::move(callback));
     return;
   }
 
   // If we're already scanning, just add a session.
   if (!discovering_.empty() || !zombie_discovering_.empty()) {
-    bt_log(TRACE, "gap-bredr", "add to active sessions");
+    bt_log(DEBUG, "gap-bredr", "add to active sessions");
     auto session = AddDiscoverySession();
     callback(hci::Status(), std::move(session));
     return;
@@ -142,11 +142,11 @@ void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
 // Starts the inquiry procedure if any sessions exist or are waiting to start.
 void BrEdrDiscoveryManager::MaybeStartInquiry() {
   if (pending_discovery_.empty() && discovering_.empty()) {
-    bt_log(TRACE, "gap-bredr", "no sessions, not starting inquiry");
+    bt_log(DEBUG, "gap-bredr", "no sessions, not starting inquiry");
     return;
   }
 
-  bt_log(SPEW, "gap-bredr", "starting inquiry");
+  bt_log(TRACE, "gap-bredr", "starting inquiry");
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
@@ -204,12 +204,12 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         ZX_DEBUG_ASSERT(event.event_code() == hci::kInquiryCompleteEventCode);
         self->zombie_discovering_.clear();
 
-        if (bt_is_error(status, SPEW, "gap", "inquiry complete error")) {
+        if (bt_is_error(status, TRACE, "gap", "inquiry complete error")) {
           return;
         }
 
         // We've stopped scanning because we timed out.
-        bt_log(SPEW, "gap-bredr", "inquiry complete, restart");
+        bt_log(TRACE, "gap-bredr", "inquiry complete, restart");
         self->MaybeStartInquiry();
       },
       hci::kInquiryCompleteEventCode, {hci::kRemoteNameRequest});
@@ -218,7 +218,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 // Stops the inquiry procedure.
 void BrEdrDiscoveryManager::StopInquiry() {
   ZX_DEBUG_ASSERT(result_handler_id_);
-  bt_log(SPEW, "gap-bredr", "cancelling inquiry");
+  bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
   auto inq_cancel = hci::CommandPacket::New(hci::kInquiryCancel);
   hci_->command_channel()->SendCommand(
@@ -256,7 +256,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kExtendedInquiryResultEventCode);
 
-  bt_log(SPEW, "gap-bredr", "ExtendedInquiryResult received");
+  bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
   if (event.view().payload_size() != sizeof(hci::ExtendedInquiryResultEventParams)) {
     bt_log(WARN, "gap-bredr", "ignoring malformed result (%zu bytes)", event.view().payload_size());
     return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -339,7 +339,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::StatusCallbac
 
 void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   if (requesting_names_.count(id)) {
-    bt_log(SPEW, "gap-bredr", "already requesting name for %s", bt_str(id));
+    bt_log(TRACE, "gap-bredr", "already requesting name for %s", bt_str(id));
     return;
   }
   Peer* peer = cache_->FindById(id);
@@ -363,7 +363,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     if (!self) {
       return;
     }
-    if (hci_is_error(event, SPEW, "gap-bredr", "remote name request failed")) {
+    if (hci_is_error(event, TRACE, "gap-bredr", "remote name request failed")) {
       self->requesting_names_.erase(id);
       return;
     }
@@ -399,7 +399,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(callback);
 
-  bt_log(TRACE, "gap-bredr", "RequestDiscoverable");
+  bt_log(DEBUG, "gap-bredr", "RequestDiscoverable");
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, cb = callback.share()](const auto& status) {
@@ -407,14 +407,14 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   };
 
   if (!pending_discoverable_.empty()) {
-    bt_log(TRACE, "gap-bredr", "discoverable mode starting, add to pending");
+    bt_log(DEBUG, "gap-bredr", "discoverable mode starting, add to pending");
     pending_discoverable_.push(std::move(status_cb));
     return;
   }
 
   // If we're already discoverable, just add a session.
   if (!discoverable_.empty()) {
-    bt_log(TRACE, "gap-bredr", "add to active discoverable");
+    bt_log(DEBUG, "gap-bredr", "add to active discoverable");
     auto session = AddDiscoverableSession();
     callback(hci::Status(), std::move(session));
     return;
@@ -426,7 +426,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
 void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
-  bt_log(SPEW, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
+  bt_log(TRACE, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
@@ -503,7 +503,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
         if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan activity failed")) {
           return;
         }
-        bt_log(SPEW, "gap-bredr", "inquiry scan activity updated");
+        bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
       });
 
   auto write_type = hci::CommandPacket::New(hci::kWriteInquiryScanType,
@@ -517,12 +517,12 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
         if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan type failed")) {
           return;
         }
-        bt_log(SPEW, "gap-bredr", "inquiry scan type updated");
+        bt_log(TRACE, "gap-bredr", "inquiry scan type updated");
       });
 }
 
 std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySession() {
-  bt_log(SPEW, "gap-bredr", "adding discovery session");
+  bt_log(TRACE, "gap-bredr", "adding discovery session");
 
   // Cannot use make_unique here since BrEdrDiscoverySession has a private
   // constructor.
@@ -534,7 +534,7 @@ std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySessio
 }
 
 void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* session) {
-  bt_log(SPEW, "gap-bredr", "removing discovery session");
+  bt_log(TRACE, "gap-bredr", "removing discovery session");
 
   auto removed = discovering_.erase(session);
   // TODO(NET-619): Cancel the running inquiry with StopInquiry() instead.
@@ -544,7 +544,7 @@ void BrEdrDiscoveryManager::RemoveDiscoverySession(BrEdrDiscoverySession* sessio
 }
 
 std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverableSession() {
-  bt_log(SPEW, "gap-bredr", "adding discoverable session");
+  bt_log(TRACE, "gap-bredr", "adding discoverable session");
 
   // Cannot use make_unique here since BrEdrDiscoverableSession has a private
   // constructor.
@@ -556,7 +556,7 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
 }
 
 void BrEdrDiscoveryManager::RemoveDiscoverableSession(BrEdrDiscoverableSession* session) {
-  bt_log(SPEW, "gap-bredr", "removing discoverable session");
+  bt_log(TRACE, "gap-bredr", "removing discoverable session");
   discoverable_.erase(session);
   if (discoverable_.empty()) {
     SetInquiryScan();

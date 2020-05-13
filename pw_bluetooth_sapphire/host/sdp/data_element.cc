@@ -504,7 +504,7 @@ size_t DataElement::WriteSize() const {
 
 size_t DataElement::Write(MutableByteBuffer* buffer) const {
   if (buffer->size() < WriteSize()) {
-    bt_log(SPEW, "sdp", "not enough space in buffer (%zu < %zu)", buffer->size(), WriteSize());
+    bt_log(TRACE, "sdp", "not enough space in buffer (%zu < %zu)", buffer->size(), WriteSize());
     return 0;
   }
 
@@ -633,7 +633,7 @@ std::string DataElement::ToString() const {
       return fxl::StringPrintf("Alternatives { %s}", str.c_str());
     }
     default:
-      bt_log(SPEW, "sdp", "unhandled type (%hhu) in ToString()", type_);
+      bt_log(TRACE, "sdp", "unhandled type (%hhu) in ToString()", type_);
       // Fallthrough to unknown.
   }
 

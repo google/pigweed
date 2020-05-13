@@ -161,7 +161,7 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
       {BIND_BT_GATT_SVC_UUID128_4, 0, uuid04},
   };
 
-  bt_log(TRACE, "bt-host",
+  bt_log(DEBUG, "bt-host",
          "bt-gatt-svc binding to UUID16(%#04x), UUID128(1: %08x, 2: %08x,"
          " 3: %08x, 4: %08x), peer: %s",
          uuid16, uuid01, uuid02, uuid03, uuid04, bt_str(peer_id_));
@@ -192,7 +192,7 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
 }
 
 void GattRemoteServiceDevice::Unbind() {
-  bt_log(TRACE, "bt-host", "bt-gatt-svc: unbinding service");
+  bt_log(DEBUG, "bt-host", "bt-gatt-svc: unbinding service");
   async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
   loop_.JoinThreads();
 
@@ -252,7 +252,7 @@ void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb, v
             char_idx++;
           }
 
-          bt_log(TRACE, "bt-host", "bt-gatt-svc: connected; discovered %zu characteristics",
+          bt_log(DEBUG, "bt-host", "bt-gatt-svc: connected; discovered %zu characteristics",
                  char_idx);
           bt_gatt_status_t status = {.status = ZX_OK};
           connect_cb(cookie, &status, ddk_chars.get(), char_idx);

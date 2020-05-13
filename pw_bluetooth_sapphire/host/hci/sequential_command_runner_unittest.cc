@@ -267,7 +267,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // Sequence 2: Sequence will be cancelled after first command. This tests
   // canceling a sequence from a CommandCompleteCallback.
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), [&](const EventPacket& event) {
-    bt_log(SPEW, "hci-test", "callback called");
+    bt_log(TRACE, "hci-test", "callback called");
     cmd_runner.Cancel();
     EXPECT_TRUE(cmd_runner.IsReady());
     EXPECT_FALSE(cmd_runner.HasQueuedCommands());

@@ -52,7 +52,7 @@ void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::
                                  LinkErrorCallback link_error_cb,
                                  SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  bt_log(TRACE, "l2cap", "register ACL link (handle: %#.4x)", handle);
+  bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kACL, role, max_acl_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
@@ -64,7 +64,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
                                 LinkErrorCallback link_error_cb,
                                 SecurityUpgradeCallback security_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  bt_log(TRACE, "l2cap", "register LE link (handle: %#.4x)", handle);
+  bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
@@ -75,12 +75,12 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
 void ChannelManager::Unregister(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  bt_log(TRACE, "l2cap", "unregister link (handle: %#.4x)", handle);
+  bt_log(DEBUG, "l2cap", "unregister link (handle: %#.4x)", handle);
 
   pending_packets_.erase(handle);
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
-    bt_log(TRACE, "l2cap", "attempt to unregister unknown link (handle: %#.4x)", handle);
+    bt_log(DEBUG, "l2cap", "attempt to unregister unknown link (handle: %#.4x)", handle);
     return;
   }
 
@@ -94,11 +94,11 @@ void ChannelManager::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                                   sm::SecurityProperties security) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  bt_log(TRACE, "l2cap", "received new security properties (handle: %#.4x)", handle);
+  bt_log(DEBUG, "l2cap", "received new security properties (handle: %#.4x)", handle);
 
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
-    bt_log(TRACE, "l2cap", "ignoring new security properties on unknown link");
+    bt_log(DEBUG, "l2cap", "ignoring new security properties on unknown link");
     return;
   }
 
@@ -175,7 +175,7 @@ void ChannelManager::RequestConnectionParameterUpdate(
 
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
-    bt_log(TRACE, "l2cap", "ignoring Connection Parameter Update request on unknown link");
+    bt_log(DEBUG, "l2cap", "ignoring Connection Parameter Update request on unknown link");
     return;
   }
 
@@ -207,7 +207,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
     packet->set_trace_id(TRACE_NONCE());
     TRACE_FLOW_BEGIN("bluetooth", "ChannelMaager::OnDataReceived queued", packet->trace_id());
     pp_iter->second.push_back(std::move(packet));
-    bt_log(SPEW, "l2cap", "queued rx packet on handle: %#.4x", handle);
+    bt_log(TRACE, "l2cap", "queued rx packet on handle: %#.4x", handle);
     return;
   }
 
