@@ -56,9 +56,9 @@ static_library("gap") {
     "//src/lib/uuid",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
-    "//zircon/public/lib/inspect",
     "//zircon/public/lib/zx",
     "//zircon/system/fidl/fuchsia-io",
+    "//zircon/system/ulib/inspect",
   ]
 
   # TODO(46637): UBSan has found an instance of undefined behavior in this target.
