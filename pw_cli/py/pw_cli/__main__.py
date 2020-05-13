@@ -36,7 +36,7 @@ def main() -> NoReturn:
     if not args.no_banner:
         arguments.print_banner()
 
-    _LOG.debug('Executing the pw command from %s', args.directory.resolve())
+    _LOG.debug('Executing the pw command from %s', args.directory)
     os.chdir(args.directory)
 
     plugins.register(args.directory)

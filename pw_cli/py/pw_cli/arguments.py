@@ -70,11 +70,10 @@ def _parser() -> argparse.ArgumentParser:
 
     def directory(arg: str) -> Path:
         path = Path(arg)
-        if not path.is_dir():
-            raise argparse.ArgumentTypeError(
-                f'{path} is not a path to a directory')
+        if path.is_dir():
+            return path.resolve()
 
-        return path
+        raise argparse.ArgumentTypeError(f'{path} is not a directory')
 
     def log_level(arg: str) -> int:
         try:
