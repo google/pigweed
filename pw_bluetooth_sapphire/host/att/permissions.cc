@@ -24,7 +24,9 @@ ErrorCode CheckSecurity(const AccessRequirements& reqs, const sm::SecurityProper
     return ErrorCode::kInsufficientAuthentication;
   }
 
-  // TODO(armansito): Handle kInsufficientEncryptionKeySize.
+  if (reqs.encryption_required() && security.enc_key_size() < reqs.min_enc_key_size()) {
+    return ErrorCode::kInsufficientEncryptionKeySize;
+  }
 
   return ErrorCode::kNoError;
 }

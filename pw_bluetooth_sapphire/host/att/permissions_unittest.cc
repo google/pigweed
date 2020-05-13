@@ -13,12 +13,17 @@ namespace {
 const AccessRequirements kDisallowed;
 const AccessRequirements kNoSecurityReq(false, false, false);
 const AccessRequirements kEncryptionReq(true, false, false);
+const AccessRequirements kEncryptionWithMinKeySizeReq(true, false, false, 7);
 const AccessRequirements kAuthenticationReq(false, true, false);
 const AccessRequirements kAuthorizationReq(false, false, true);
+const AccessRequirements kAuthorizationWithMinKeySizeReq(false, false, true, 7);
 
 const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
 const sm::SecurityProperties kEncrypted(sm::SecurityLevel::kEncrypted, 16, false);
+const sm::SecurityProperties kEncryptedWithMinKeySize(sm::SecurityLevel::kEncrypted, 7, false);
 const sm::SecurityProperties kAuthenticated(sm::SecurityLevel::kAuthenticated, 16, false);
+const sm::SecurityProperties kAuthenticatedWithMinKeySize(sm::SecurityLevel::kAuthenticated, 7,
+                                                          false);
 
 TEST(ATT_PermissionsTest, ReadNotPermittedWhenDisallowed) {
   EXPECT_EQ(ErrorCode::kReadNotPermitted, CheckReadPermissions(kDisallowed, kNoSecurity));
@@ -68,6 +73,16 @@ TEST(ATT_PermissionsTest, LinkEncrypted) {
             CheckReadPermissions(kAuthorizationReq, kEncrypted));
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication,
             CheckWritePermissions(kAuthorizationReq, kEncrypted));
+
+  EXPECT_EQ(ErrorCode::kNoError,
+            CheckReadPermissions(kEncryptionWithMinKeySizeReq, kEncryptedWithMinKeySize));
+  EXPECT_EQ(ErrorCode::kNoError,
+            CheckWritePermissions(kEncryptionWithMinKeySizeReq, kEncryptedWithMinKeySize));
+
+  EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
+            CheckReadPermissions(kEncryptionReq, kEncryptedWithMinKeySize));
+  EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
+            CheckWritePermissions(kEncryptionReq, kEncryptedWithMinKeySize));
 }
 
 TEST(ATT_PermissionsTest, LinkAuthenticated) {
@@ -82,6 +97,11 @@ TEST(ATT_PermissionsTest, LinkAuthenticated) {
 
   EXPECT_EQ(ErrorCode::kNoError, CheckReadPermissions(kAuthorizationReq, kAuthenticated));
   EXPECT_EQ(ErrorCode::kNoError, CheckWritePermissions(kAuthorizationReq, kAuthenticated));
+
+  EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
+            CheckReadPermissions(kEncryptionReq, kAuthenticatedWithMinKeySize));
+  EXPECT_EQ(ErrorCode::kInsufficientEncryptionKeySize,
+            CheckWritePermissions(kEncryptionReq, kAuthenticatedWithMinKeySize));
 }
 
 }  // namespace

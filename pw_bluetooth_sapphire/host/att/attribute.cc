@@ -7,10 +7,11 @@
 namespace bt {
 namespace att {
 
-AccessRequirements::AccessRequirements() : value_(0u) {}
+AccessRequirements::AccessRequirements() : value_(0u), min_enc_key_size_(0u) {}
 
-AccessRequirements::AccessRequirements(bool encryption, bool authentication, bool authorization)
-    : value_(kAttributePermissionBitAllowed) {
+AccessRequirements::AccessRequirements(bool encryption, bool authentication, bool authorization,
+                                       uint8_t min_enc_key_size)
+    : value_(kAttributePermissionBitAllowed), min_enc_key_size_(min_enc_key_size) {
   if (encryption) {
     value_ |= kAttributePermissionBitEncryptionRequired;
   }

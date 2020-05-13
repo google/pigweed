@@ -5,17 +5,19 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_
 
-#include <fbl/macros.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include <memory>
 #include <vector>
 
+#include <fbl/macros.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt {
 namespace att {
@@ -27,7 +29,15 @@ class AccessRequirements final {
   AccessRequirements();
 
   // Enables access permission with the given requirements.
-  AccessRequirements(bool encryption, bool authentication, bool authorization);
+  // |min_enc_key_size| is the required minimum size of the key encrypting the connection in order
+  // to access an attribute where |encryption| is true.
+  //
+  // The default value of |min_enc_key_size| enforces maximum security, but could prevent devices
+  // that don't support |kMaxEncryptionKeySize| from accessing attributes that require encryption.
+  // In practice, it seems that most devices that access such attributes support
+  // |kMaxEncryptionKeySize|.
+  AccessRequirements(bool encryption, bool authentication, bool authorization,
+                     uint8_t min_enc_key_size = sm::kMaxEncryptionKeySize);
 
   // Returns true if this attribute can be accessed at all.
   inline bool allowed() const { return value_ & kAttributePermissionBitAllowed; }
@@ -49,10 +59,15 @@ class AccessRequirements final {
     return value_ & kAttributePermissionBitAuthorizationRequired;
   }
 
-  inline bool operator==(const AccessRequirements& other) const { return value_ == other.value_; }
+  inline uint8_t min_enc_key_size() const { return min_enc_key_size_; }
+
+  inline bool operator==(const AccessRequirements& other) const {
+    return value_ == other.value_ && min_enc_key_size_ == other.min_enc_key_size_;
+  }
 
  private:
   uint8_t value_;
+  uint8_t min_enc_key_size_;
 };
 
 class AttributeGrouping;

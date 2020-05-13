@@ -30,11 +30,19 @@ TEST(ATT_AttributeTest, AccessRequirementsDefault) {
 }
 
 TEST(ATT_AttributeTest, AccessRequirements) {
-  AccessRequirements reqs1(true, false, false);
+  AccessRequirements reqs0(true, false, false);
+  EXPECT_TRUE(reqs0.allowed());
+  EXPECT_TRUE(reqs0.encryption_required());
+  EXPECT_FALSE(reqs0.authentication_required());
+  EXPECT_FALSE(reqs0.authorization_required());
+  EXPECT_EQ(reqs0.min_enc_key_size(), sm::kMaxEncryptionKeySize);
+
+  AccessRequirements reqs1(true, false, false, 8);
   EXPECT_TRUE(reqs1.allowed());
   EXPECT_TRUE(reqs1.encryption_required());
   EXPECT_FALSE(reqs1.authentication_required());
   EXPECT_FALSE(reqs1.authorization_required());
+  EXPECT_EQ(reqs1.min_enc_key_size(), 8u);
 
   AccessRequirements reqs2(false, true, false);
   EXPECT_TRUE(reqs2.allowed());
