@@ -6,6 +6,7 @@
 
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fit/result.h>
+#include <lib/syslog/cpp/macros.h>
 #include <zircon/assert.h>
 
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
@@ -25,7 +26,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/lib/fxl/logging.h"
 #include "src/lib/fxl/strings/join_strings.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 #include "src/lib/fxl/strings/string_printf.h"
