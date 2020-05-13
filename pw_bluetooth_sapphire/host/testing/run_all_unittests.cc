@@ -18,7 +18,7 @@ using bt::LogSeverity;
 
 namespace {
 
-LogSeverity FxlLogToBtLogLevel(fxl::LogSeverity severity) {
+LogSeverity FxlLogToBtLogLevel(syslog::LogSeverity severity) {
   switch (severity) {
     case syslog::LOG_ERROR:
       return LogSeverity::ERROR;
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  fxl::LogSettings log_settings;
-  log_settings.min_log_level = fxl::LOG_ERROR;
+  syslog::LogSettings log_settings;
+  log_settings.min_log_level = syslog::LOG_ERROR;
   if (!fxl::ParseLogSettings(cl, &log_settings)) {
     return EXIT_FAILURE;
   }
