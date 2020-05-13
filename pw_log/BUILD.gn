@@ -30,25 +30,21 @@ pw_facade("pw_log") {
 }
 
 pw_test_group("tests") {
-  tests = []
-  if (dir_pw_log_backend != "") {
-    tests += [ ":basic_log_test" ]
-  }
+  tests = [ ":basic_log_test" ]
 }
 
-if (dir_pw_log_backend != "") {
-  pw_test("basic_log_test") {
-    deps = [
-      ":pw_log",
-      dir_pw_log_backend,
-      dir_pw_preprocessor,
-    ]
+pw_test("basic_log_test") {
+  enable_if = dir_pw_log_backend != ""
+  deps = [
+    ":pw_log",
+    dir_pw_log_backend,
+    dir_pw_preprocessor,
+  ]
 
-    sources = [
-      "basic_log_test.cc",
-      "basic_log_test_plain_c.c",
-    ]
-  }
+  sources = [
+    "basic_log_test.cc",
+    "basic_log_test_plain_c.c",
+  ]
 }
 
 pw_doc_group("docs") {

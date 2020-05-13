@@ -42,6 +42,17 @@ template("_pw_disableable_target") {
                              "enable_if",
                              "target_type",
                            ])
+
+    # Remove "" from dependencies. This allows disabling targets if a variable
+    # (e.g. a backend) is empty.
+    if (defined(public_deps)) {
+      public_deps += [ "" ]
+      public_deps -= [ "" ]
+    }
+    if (defined(deps)) {
+      deps += [ "" ]
+      deps -= [ "" ]
+    }
   }
 }
 
