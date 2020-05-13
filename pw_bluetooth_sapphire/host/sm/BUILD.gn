@@ -44,6 +44,8 @@ static_library("sm") {
     "sc_stage_1.h",
     "sc_stage_1_just_works_numeric_comparison.cc",
     "sc_stage_1_just_works_numeric_comparison.h",
+    "sc_stage_1_passkey.cc",
+    "sc_stage_1_passkey.h",
     "util.cc",
     "util.h",
   ]
@@ -73,6 +75,7 @@ source_set("tests") {
     "phase_2_legacy_unittest.cc",
     "phase_3_unittest.cc",
     "sc_stage_1_just_works_numeric_comparison_unittest.cc",
+    "sc_stage_1_passkey_unittest.cc",
     "types_unittest.cc",
     "util_unittest.cc",
   ]
