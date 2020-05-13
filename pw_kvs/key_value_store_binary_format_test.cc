@@ -1019,10 +1019,6 @@ class InitializedLazyRecoveryKvs : public ::testing::Test {
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
 
-// Block of data to use for entry value. Sized to 470 so the total entry results
-// in the 512 byte sector having 16 bytes remaining.
-constexpr uint8_t test_data[470] = {1, 2, 3, 4, 5, 6};
-
 // Test a KVS with a number of entries, several sectors that are nearly full
 // of stale (reclaimable) space, and not enough writable (free) space to add a
 // redundant copy for any of the entries. Tests that the add redundancy step of
@@ -1044,14 +1040,23 @@ TEST_F(InitializedLazyRecoveryKvs, AddRedundancyToKvsFullOfStaleData) {
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
-  // Add a near-sector size key entry to fill the KVS with a valid large entry
-  // and stale data.
+  // Block of data to use for entry value. Sized to 470 so the total entry
+  // results in the 512 byte sector having 16 bytes remaining.
+  uint8_t test_data[470] = {1, 2, 3, 4, 5, 6};
 
+  // Add a near-sector size key entry to fill the KVS with a valid large entry
+  // and stale data. Modify the value in between Puts so it actually writes
+  // (identical value writes are skipped).
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  test_data[0]++;
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  test_data[0]++;
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  test_data[0]++;
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  test_data[0]++;
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
+  test_data[0]++;
   EXPECT_EQ(Status::OK, kvs_.Put("big_key", test_data));
 
   // Instantiate a new KVS with redundancy of 2. This KVS should add an extra

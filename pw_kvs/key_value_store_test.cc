@@ -738,9 +738,8 @@ TEST(InMemoryKvs, WriteOneKeyValueMultipleTimes) {
   ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
-                                                          format);
+                                                          default_format);
   ASSERT_OK(kvs.Init());
 
   // Add one entry, with the same key and value, multiple times.

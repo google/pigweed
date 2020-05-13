@@ -459,7 +459,8 @@ class KeyValueStore {
 
   Status Repair();
 
-  internal::Entry CreateEntry(std::string_view key,
+  internal::Entry CreateEntry(Address address,
+                              std::string_view key,
                               span<const std::byte> value,
                               EntryState state);
 

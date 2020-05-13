@@ -158,8 +158,6 @@ class Entry {
 
   uint32_t magic() const { return header_.magic; }
 
-  uint32_t checksum() const { return header_.checksum; }
-
   uint32_t transaction_id() const { return header_.transaction_id; }
 
   // True if this is a tombstone entry.
