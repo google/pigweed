@@ -483,6 +483,12 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
     return;
   }
 
+  if (rsp.result() != InformationResult::kSuccess) {
+    bt_log(TRACE, "l2cap", "Received Fixed Channels Supported Information Response (result: %.4hx)",
+           static_cast<uint16_t>(rsp.result()));
+    return;
+  }
+
   if (rsp.type() != InformationType::kFixedChannelsSupported) {
     bt_log(TRACE, "l2cap",
            "Incorrect Fixed Channels Supported Information Response type (type: %#.4hx)",

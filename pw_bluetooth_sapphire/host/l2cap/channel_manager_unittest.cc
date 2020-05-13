@@ -2140,6 +2140,25 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotS
   RunLoopUntilIdle();
 }
 
+TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  // Handler should check for result and not crash from reading mask or type.
+  auto kPacket = StaticByteBuffer(
+      // ACL data header (handle: |link_handle|, length: 12 bytes)
+      LowerBits(kTestHandle1), UpperBits(kTestHandle1), 0x0c, 0x00,
+      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
+      0x08, 0x00, 0x01, 0x00,
+      // Information Response (type, ID, length: 4)
+      l2cap::kInformationResponse, cmd_ids.fixed_channels_supported_id, 0x04, 0x00,
+      // Type = Fixed Channels Supported
+      LowerBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
+      UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
+      // Invalid Result
+      0xFF, 0xFF);
+  ReceiveAclDataPacket(kPacket);
+  RunLoopUntilIdle();
+}
+
 TEST_F(L2CAP_ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   // Handler should check type and not attempt to read fixed channel mask.
