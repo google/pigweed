@@ -62,12 +62,12 @@ source_set("sources") {
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
     "//src/connectivity/bluetooth/fidl:host",
     "//src/connectivity/bluetooth/lib/fidl",
+    "//src/lib/ddk",
     "//src/lib/fxl",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/trace-driver",
     "//zircon/public/lib/zx",
-    "//zircon/system/ulib/ddk",
   ]
 }
 
