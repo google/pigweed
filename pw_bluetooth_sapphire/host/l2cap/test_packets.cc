@@ -270,9 +270,9 @@ DynamicByteBuffer AclConnectionParameterUpdateRsp(l2cap::CommandId id,
       LowerBits(static_cast<uint16_t>(result)), UpperBits(static_cast<uint16_t>(result))));
 }
 
-DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,
-                                         l2cap::ChannelId channel_id, uint8_t receive_seq_num,
-                                         bool is_poll_request, bool is_poll_response) {
+DynamicByteBuffer AclSFrame(hci::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
+                            l2cap::internal::SupervisoryFunction function, uint8_t receive_seq_num,
+                            bool is_poll_request, bool is_poll_response) {
   StaticByteBuffer acl_packet{
       // ACL data header (handle: |link handle|, length: 8 bytes)
       LowerBits(link_handle), UpperBits(link_handle), 0x08, 0x00,
@@ -280,9 +280,10 @@ DynamicByteBuffer AclSFrameReceiverReady(hci::ConnectionHandle link_handle,
       // L2CAP B-frame header: length 4, channel-id
       0x04, 0x00, LowerBits(channel_id), UpperBits(channel_id),
 
-      // Enhanced Control Field: F is_poll_response, P is_poll_request, Supervisory function 0 (RR),
+      // Enhanced Control Field: F is_poll_response, P is_poll_request, Supervisory function,
       // Type S-Frame, ReqSeq receive_seq_num
-      (is_poll_response ? 0b1000'0000 : 0) | (is_poll_request ? 0b1'0000 : 0) | 0b1,
+      (is_poll_response ? 0b1000'0000 : 0) | (is_poll_request ? 0b1'0000 : 0) |
+          (static_cast<uint8_t>(function) << 2) | 0b1,
       receive_seq_num & 0b11'1111,
 
       // Frame Check Sequence

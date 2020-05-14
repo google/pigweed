@@ -2080,6 +2080,50 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
   EXPECT_TRUE(link_error);
 }
 
+// Based on L2CAP Test Spec v5.0.2 L2CAP/ERM/BV-20-C, this test simulates the peer declaring that it
+// is busy by sending the ReceiverNotReady S-Frame, which prevents us from retransmitting an
+// unacknowledged outbound I-Frame.
+TEST_F(L2CAP_ChannelManagerTest, ErtmChannelDoesNotRetransmitUnacknowledgedIFrameDuringRemoteBusy) {
+  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
+                                                      kExtendedFeaturesBitEnhancedRetransmission));
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+    channel = std::move(opened_chan);
+  };
+  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  ASSERT_TRUE(channel);
+
+  const StaticByteBuffer payload('h', 'i');
+  EXPECT_ACL_PACKET_OUT(testing::AclIFrame(kTestHandle1, kRemoteId, /*receive_seq_num=*/0,
+                                           /*tx_seq=*/0, /*is_poll_response=*/false, payload),
+                        kLowPriority);
+  channel->Send(std::make_unique<DynamicByteBuffer>(payload));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  EXPECT_ACL_PACKET_OUT(testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId,
+                                                        /*receive_seq_num=*/0,
+                                                        /*is_poll_request=*/true,
+                                                        /*is_poll_response=*/false),
+                        kLowPriority);
+
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  ReceiveAclDataPacket(testing::AclSFrameReceiverNotReady(kTestHandle1, kLocalId,
+                                                          /*receive_seq_num=*/0,
+                                                          /*is_poll_request=*/false,
+                                                          /*is_poll_response=*/true));
+
+  // RNR sets our RemoteBusy flag, so we should not transmit anything.
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+}
+
 TEST_F(L2CAP_ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoesNotCrash) {
   // Packet for unregistered handle should be queued.
   ReceiveAclDataPacket(testing::AclConnectionReq(1, kTestHandle1, kRemoteId, kTestPsm));

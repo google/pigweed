@@ -31,6 +31,10 @@ MakeLinkedEnhancedRetransmissionModeEngines(
       fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::UpdateAckSeq));
   rx_engine->set_ack_seq_num_callback(
       fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::UpdateReqSeq));
+  rx_engine->set_remote_busy_set_callback(
+      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetRemoteBusy));
+  rx_engine->set_remote_busy_cleared_callback(
+      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::ClearRemoteBusy));
   return {std::move(rx_engine), std::move(tx_engine)};
 }
 
