@@ -24,6 +24,27 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_containers",
+    deps = [
+        ":vector",
+        ":intrusive_list",
+    ],
+)
+
+pw_cc_library(
+    name = "intrusive_list",
+    deps = [ "//pw_assert" ],
+    srcs = [
+        "intrusive_list.cc",
+        "public/pw_containers/internal/intrusive_list_impl.h",
+    ],
+    hdrs = [
+        "public/pw_containers/intrusive_list.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",
     ],
@@ -37,6 +58,17 @@ pw_cc_test(
     ],
     deps = [
         ":pw_containers",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "intrusive_list_test",
+    srcs = [
+        "intrusive_list_test.cc",
+    ],
+    deps = [
+        ":intrusive_list",
         "//pw_unit_test",
     ],
 )
