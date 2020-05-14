@@ -32,7 +32,7 @@
 // DRIVER MODE:
 //
 // By default, the log messages use <ddk/debug.h> as its backend. In this mode
-// the ERROR, WARN, INFO, TRACE, and SPEW severity levels directly correspond to
+// the ERROR, WARN, INFO, DEBUG and TRACE severity levels directly correspond to
 // the DDK severity levels. Log levels are supplied to the kernel commandline,
 // e.g. to disable INFO level and enable TRACE level messages in the bt-host
 // driver use the following:
