@@ -349,6 +349,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
   void ActivateOutboundErtmChannel(ChannelCallback activated_cb,
                                    hci::ConnectionHandle conn_handle = kTestHandle1,
+                                   uint8_t max_outbound_transmit = 3,
                                    Channel::ClosedCallback closed_cb = DoNothing,
                                    Channel::RxCallback rx_cb = NopRxCallback) {
     l2cap::ChannelParameters chan_params;
@@ -360,9 +361,8 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id, kMaxMTU, *chan_params.mode),
                           kHighPriority);
     const auto kInboundMtu = kDefaultMTU;
-    const auto kMaxOutboundTransmit = 1;
     EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu,
-                                                        chan_params.mode, kMaxOutboundTransmit),
+                                                        chan_params.mode, max_outbound_transmit),
                           kHighPriority);
 
     ActivateOutboundChannel(kTestPsm, chan_params, std::move(activated_cb), conn_handle,
@@ -370,7 +370,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
     ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
     ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId, kInboundMtu,
-                                                     chan_params.mode, kMaxOutboundTransmit));
+                                                     chan_params.mode, max_outbound_transmit));
     ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
   }
 
@@ -1997,7 +1997,7 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
   };
-  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1);
+  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1, 1);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(channel);
@@ -2044,7 +2044,7 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
     channel = std::move(opened_chan);
   };
-  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1);
+  ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1, 1);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(channel);
