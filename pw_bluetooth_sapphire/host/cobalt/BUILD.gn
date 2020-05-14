@@ -33,10 +33,10 @@ source_set("real") {
 
   public_deps = [
     ":base",
+    "//sdk/fidl/fuchsia.cobalt",
     "//sdk/lib/fidl/cpp",
     "//sdk/lib/sys/cpp",
     "//zircon/public/lib/fit",
-    "//zircon/system/fidl/fuchsia-cobalt",
   ]
 }
 
