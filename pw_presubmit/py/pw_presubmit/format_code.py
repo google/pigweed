@@ -384,7 +384,6 @@ def format_files(paths: Collection[Path],
     formatter = CodeFormatter(paths)
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
-    _LOG.debug('Files to format:\n%s', '\n'.join(str(f) for f in paths))
 
     for line in _file_summary(paths, repo if repo else Path.cwd()):
         print(line, file=sys.stderr)

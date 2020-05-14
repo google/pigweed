@@ -125,16 +125,22 @@ def make_tuple(value: Iterable[str]) -> Tuple[str, ...]:
     return tuple([value] if isinstance(value, str) else value)
 
 
+def _truncate(value, length: int = 60) -> str:
+    value = str(value)
+    return (value[:length - 5] + '[...]') if len(value) > length else value
+
+
+def format_command(args: Sequence, kwargs: dict) -> Tuple[str, str]:
+    attr = ', '.join(f'{k}={_truncate(v)}' for k, v in sorted(kwargs.items()))
+    return attr, shlex.join(str(arg) for arg in args)
+
+
 def log_run(args, **kwargs) -> subprocess.CompletedProcess:
     """Logs a command then runs it with subprocess.run.
 
     Takes the same arguments as subprocess.run.
     """
-    _LOG.debug(
-        '[COMMAND] %s\n%s',
-        ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items())),
-        args if isinstance(args, str) else ' '.join(
-            shlex.quote(str(arg)) for arg in args))
+    _LOG.debug('[COMMAND] %s\n%s', *format_command(args, kwargs))
     return subprocess.run(args, **kwargs)
 
 

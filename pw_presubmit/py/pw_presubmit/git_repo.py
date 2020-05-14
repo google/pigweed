@@ -70,9 +70,8 @@ def list_files(commit: Optional[str] = None,
         files = _ls_files(paths, repo)
 
     git_root = root(repo=repo).resolve()
-    return sorted(
-        file for file in files
-        if not any(e.search(str(file.relative_to(git_root))) for e in exclude))
+    return sorted(file for file in files if not any(
+        e.search(file.relative_to(git_root).as_posix()) for e in exclude))
 
 
 def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:

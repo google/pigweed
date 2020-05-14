@@ -48,7 +48,6 @@ import logging
 import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
 import time
 from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple
@@ -502,7 +501,6 @@ def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 
     for path in ctx.paths:
-        _LOG.debug('Checking %s', path)
         with open(path) as file:
             for line in file:
                 if line.startswith('#pragma once'):
@@ -513,8 +511,7 @@ def pragma_once(ctx: PresubmitContext) -> None:
 
 def call(*args, **kwargs) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
-    attributes = ', '.join(f'{k}={v}' for k, v in sorted(kwargs.items()))
-    command = ' '.join(shlex.quote(str(arg)) for arg in args)
+    attributes, command = tools.format_command(args, kwargs)
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
     process = subprocess.run(args,

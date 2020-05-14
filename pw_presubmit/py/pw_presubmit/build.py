@@ -17,10 +17,9 @@ import collections
 import logging
 import os
 from pathlib import Path
-import subprocess
 from typing import Container, Dict, Iterable, List, Mapping, Set, Tuple
 
-from pw_presubmit import call, log_run, plural
+from pw_presubmit import call, log_run, plural, PresubmitFailure, tools
 
 _LOG = logging.getLogger(__name__)
 
@@ -67,18 +66,21 @@ def env_with_clang_vars() -> Mapping[str, str]:
 
 def _get_paths_from_command(source_dir: Path, *args, **kwargs) -> Set[Path]:
     """Runs a command and reads Bazel or GN //-style paths from it."""
-    process = log_run(args,
-                      stdout=subprocess.PIPE,
-                      stderr=subprocess.DEVNULL,
-                      cwd=source_dir,
-                      **kwargs)
+    process = log_run(args, capture_output=True, cwd=source_dir, **kwargs)
+
+    if process.returncode:
+        _LOG.error('Build invocation failed with return code %d!',
+                   process.returncode)
+        _LOG.error('[COMMAND] %s\n%s\n%s', *tools.format_command(args, kwargs),
+                   process.stderr.decode())
+        raise PresubmitFailure
+
     files = set()
 
     for line in process.stdout.splitlines():
         path = line.strip().lstrip(b'/').replace(b':', b'/').decode()
         path = source_dir.joinpath(path)
         if path.is_file():
-            _LOG.debug('Found file %s', path)
             files.add(path)
 
     return files
