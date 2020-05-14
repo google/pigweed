@@ -349,17 +349,17 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallb
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduCallsSetRemoteBusyCallbackOnReceiverNotReady) {
+     ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReady) {
   Engine rx_engine(NopTxCallback);
 
-  bool ack_seq_num_called = false;
-  auto ack_seq_num_callback = [&ack_seq_num_called](uint8_t) { ack_seq_num_called = true; };
-  rx_engine.set_ack_seq_num_callback(ack_seq_num_callback);
+  bool receive_seq_num_called = false;
+  rx_engine.set_receive_seq_num_callback([&](uint8_t, bool) { receive_seq_num_called = true; });
 
   bool remote_busy_set_called = false;
-  auto remote_busy_set_callback = [&ack_seq_num_called, &remote_busy_set_called] {
-    // RemoteBusy state should be updated before AckSeqNum to immediately suppress retransmissions.
-    EXPECT_FALSE(ack_seq_num_called);
+  auto remote_busy_set_callback = [&receive_seq_num_called, &remote_busy_set_called] {
+    // RemoteBusy state should be updated before ReceiveSeqNum to immediately suppress
+    // retransmissions.
+    EXPECT_FALSE(receive_seq_num_called);
     remote_busy_set_called = true;
   };
   rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
@@ -370,6 +370,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
           .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
   EXPECT_FALSE(local_sdu);  // No payload in a ReceiverNotReady frame.
   EXPECT_TRUE(remote_busy_set_called);
+  EXPECT_TRUE(receive_seq_num_called);
 
   remote_busy_set_called = false;
   local_sdu = rx_engine.ProcessPdu(
@@ -382,7 +383,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduCallsSetRemoteBusyCallbackOnReceiverNotReadyAfterReceiverReadyClearedBusy) {
+     ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReadyAfterReceiverReadyClearedBusy) {
   Engine rx_engine(NopTxCallback);
 
   const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
@@ -413,21 +414,18 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduCallsClearRemoteBusyCallbackOnReceiverReadyAfterReceiverNotReady) {
+     ProcessPduCallsRemoteBusyClearedCallbackOnReceiverReadyAfterReceiverNotReady) {
   Engine rx_engine(NopTxCallback);
 
-  bool ack_seq_num_called = false;
-  auto ack_seq_num_callback = [&ack_seq_num_called](uint8_t) { ack_seq_num_called = true; };
-  rx_engine.set_ack_seq_num_callback(ack_seq_num_callback);
-
+  bool receive_seq_num_called = false;
   int remote_busy_set_calls = 0;
-  auto remote_busy_set_callback = [&remote_busy_set_calls] { remote_busy_set_calls++; };
-  rx_engine.set_remote_busy_set_callback(remote_busy_set_callback);
+  rx_engine.set_remote_busy_set_callback([&] { remote_busy_set_calls++; });
 
   int remote_busy_cleared_calls = 0;
-  auto remote_busy_cleared_callback = [&ack_seq_num_called, &remote_busy_cleared_calls] {
-    // RemoteBusy state should be updated before AckSeqNum to immediately resume retransmissions.
-    EXPECT_FALSE(ack_seq_num_called);
+  auto remote_busy_cleared_callback = [&receive_seq_num_called, &remote_busy_cleared_calls] {
+    // RemoteBusy state should be updated before ReceiveSeqNum to immediately resume
+    // retransmissions.
+    EXPECT_FALSE(receive_seq_num_called);
     remote_busy_cleared_calls++;
   };
   rx_engine.set_remote_busy_cleared_callback(remote_busy_cleared_callback);
@@ -441,6 +439,9 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_EQ(1, remote_busy_set_calls);
   EXPECT_EQ(0, remote_busy_cleared_calls);
 
+  // The RNR invokes this callback but we only care about the callback ordering of the next frame.
+  rx_engine.set_receive_seq_num_callback([&](uint8_t, bool) { receive_seq_num_called = true; });
+
   // This RR should clear RemoteBusy.
   const StaticByteBuffer receiver_ready(0b1, 0);
   local_sdu = rx_engine.ProcessPdu(
@@ -450,6 +451,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
   EXPECT_EQ(1, remote_busy_set_calls);
   EXPECT_EQ(1, remote_busy_cleared_calls);
+  EXPECT_TRUE(receive_seq_num_called);
 
   // Receive a second RR.
   local_sdu = rx_engine.ProcessPdu(
