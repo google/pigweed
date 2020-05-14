@@ -18,6 +18,6 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [
     "py/pw_presubmit/cli.py",
-    "py/pw_presubmit/tools.py",
+    "py/pw_presubmit/presubmit.py",
   ]
 }

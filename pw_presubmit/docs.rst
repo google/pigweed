@@ -66,8 +66,6 @@ Key members
 
 .. autofunction:: pw_presubmit.cli.run
 
-.. autofunction:: pw_presubmit.run_presubmit
-
 .. autodecorator:: pw_presubmit.filter_paths
 
 .. autofunction:: pw_presubmit.call

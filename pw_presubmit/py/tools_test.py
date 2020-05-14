@@ -12,7 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Tests for presubmit tools."""
+"""Tests for general purpose tools."""
 
 import unittest
 
@@ -43,45 +43,6 @@ class FlattenTest(unittest.TestCase):
         self.assertEqual(['a', 'bcd', 123, 45.6],
                          list(tools.flatten([('a', 'bcd')],
                                             [[[[123]]], 45.6])))
-
-
-def _fake_function_1(_):
-    """Fake presubmit function."""
-
-
-def _fake_function_2(_):
-    """Fake presubmit function."""
-
-
-class ProgramsTest(unittest.TestCase):
-    """Tests the presubmit Programs abstraction."""
-    def setUp(self):
-        self._programs = tools.Programs(
-            first=[_fake_function_1, (), [(_fake_function_1, )]],
-            second=[_fake_function_2],
-        )
-
-    def test_empty(self):
-        self.assertEqual({}, tools.Programs())
-
-    def test_access_present_members(self):
-        self.assertEqual('first', self._programs['first'].name)
-        self.assertEqual((_fake_function_1, _fake_function_1),
-                         tuple(self._programs['first']))
-
-        self.assertEqual('second', self._programs['second'].name)
-        self.assertEqual((_fake_function_2, ), tuple(self._programs['second']))
-
-    def test_access_missing_member(self):
-        with self.assertRaises(KeyError):
-            _ = self._programs['not_there']
-
-    def test_all_steps(self):
-        self.assertEqual(
-            {
-                '_fake_function_1': _fake_function_1,
-                '_fake_function_2': _fake_function_2,
-            }, self._programs.all_steps())
 
 
 if __name__ == '__main__':

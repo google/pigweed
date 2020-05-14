@@ -29,7 +29,7 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import call, filter_paths, PresubmitContext
+from pw_presubmit import call, filter_paths, git_repo
 
 _LOG = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ def run_module(*args, **kwargs):
 
 
 @filter_paths(endswith='.py')
-def test_python_packages(ctx: PresubmitContext):
-    packages = pw_presubmit.find_python_packages(ctx.paths, repo=ctx.repo_root)
+def test_python_packages(ctx: pw_presubmit.PresubmitContext):
+    packages = git_repo.find_python_packages(ctx.paths, repo=ctx.repo_root)
 
     if not packages:
         _LOG.info('No Python packages were found.')
@@ -51,7 +51,7 @@ def test_python_packages(ctx: PresubmitContext):
 
 
 @filter_paths(endswith='.py')
-def pylint(ctx: PresubmitContext):
+def pylint(ctx: pw_presubmit.PresubmitContext):
     disable_checkers = [
         # BUG(pwbug/22): Hanging indent check conflicts with YAPF 0.29. For
         # now, use YAPF's version even if Pylint is doing the correct thing
@@ -71,7 +71,7 @@ def pylint(ctx: PresubmitContext):
 
 
 @filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
-def mypy(ctx: PresubmitContext):
+def mypy(ctx: pw_presubmit.PresubmitContext):
     env = os.environ.copy()
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771

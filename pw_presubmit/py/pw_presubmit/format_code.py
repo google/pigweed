@@ -40,8 +40,8 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-import pw_presubmit.cli
-from pw_presubmit import file_summary, list_git_files, log_run, plural
+from pw_presubmit import cli, git_repo
+from pw_presubmit.tools import file_summary, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -358,17 +358,17 @@ def format_paths_in_repo(paths: Collection[Path],
                          base: str) -> int:
     """Checks or fixes formatting for files in a Git repo."""
     files = [path.resolve() for path in paths if path.is_file()]
-    repo = pw_presubmit.git_repo_path() if pw_presubmit.is_git_repo() else None
+    repo = git_repo.root() if git_repo.is_repo() else None
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if repo:
         _LOG.info(
             'Formatting %s',
-            pw_presubmit.describe_files_in_repo(repo, Path.cwd(), base, paths,
-                                                exclude))
+            git_repo.describe_files(repo, Path.cwd(), base, paths, exclude))
 
         # Add files from Git and remove duplicates.
-        files = sorted(set(list_git_files(base, paths, exclude)) | set(files))
+        files = sorted(
+            set(git_repo.list_files(base, paths, exclude)) | set(files))
     elif base:
         _LOG.critical(
             'A base commit may only be provided if running from a Git repo')
@@ -412,7 +412,7 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
 
     if git_paths:
-        pw_presubmit.cli.add_path_arguments(parser)
+        cli.add_path_arguments(parser)
     else:
 
         def existing_path(arg: str) -> Path:

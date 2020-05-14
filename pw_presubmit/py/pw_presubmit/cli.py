@@ -20,7 +20,7 @@ import re
 import shutil
 from typing import Callable, Optional, Sequence
 
-from pw_presubmit import tools
+from pw_presubmit import git_repo, presubmit
 
 _LOG = logging.getLogger(__name__)
 
@@ -53,8 +53,8 @@ def add_path_arguments(parser) -> None:
 
 
 def _add_programs_arguments(exclusive: argparse.ArgumentParser,
-                            programs: tools.Programs, default: str):
-    def presubmit_program(arg: str) -> tools.Program:
+                            programs: presubmit.Programs, default: str):
+    def presubmit_program(arg: str) -> presubmit.Program:
         if arg not in programs:
             raise argparse.ArgumentTypeError(
                 f'{arg} is not the name of a presubmit program')
@@ -94,7 +94,7 @@ def _add_programs_arguments(exclusive: argparse.ArgumentParser,
 
 
 def add_arguments(parser: argparse.ArgumentParser,
-                  programs: Optional[tools.Programs] = None,
+                  programs: Optional[presubmit.Programs] = None,
                   default: str = '') -> None:
     """Adds common presubmit check options to an argument parser."""
 
@@ -141,7 +141,7 @@ def run(
     """Processes all arguments from add_arguments and runs the presubmit."""
 
     if not output_directory:
-        output_directory = tools.git_repo_path('.presubmit', repo=repository)
+        output_directory = git_repo.path('.presubmit', repo=repository)
 
     _LOG.debug('Using environment at %s', output_directory)
 
@@ -154,10 +154,10 @@ def run(
 
         return 0
 
-    if tools.run_presubmit(program,
-                           repo_path=repository,
-                           output_directory=output_directory,
-                           **other_args):
+    if presubmit.run(program,
+                     repo_path=repository,
+                     output_directory=output_directory,
+                     **other_args):
         return 0
 
     return 1
