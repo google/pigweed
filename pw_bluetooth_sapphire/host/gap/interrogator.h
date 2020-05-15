@@ -62,7 +62,6 @@ class Interrogator {
   // have been dropped, |release_cb| is called, which calls Interrogation::Complete.
   class Interrogation : public fxl::RefCountedThreadSafe<Interrogation> {
    public:
-    using ReleaseCallback = fit::callback<void()>;
     Interrogation(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback result_cb);
     ~Interrogation();
 

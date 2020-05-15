@@ -546,9 +546,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   // either success of failure).
   auto pending_iter = pending_requests_.find(peer_id);
   if (pending_iter != pending_requests_.end()) {
-    ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
-    ZX_DEBUG_ASSERT(connector_->request_pending());
-
+    // TODO(52283): add connection state asserts for invariants
     pending_iter->second.AddCallback(std::move(callback));
     return true;
   }
@@ -837,6 +835,7 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id) {
   auto it = connections_.find(peer_id);
   if (it == connections_.end()) {
     bt_log(INFO, "gap", "OnInterrogationComplete called for non-connected peer");
+    return;
   }
   auto& conn = it->second;
 

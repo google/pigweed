@@ -31,6 +31,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt {
 namespace gap {
@@ -1956,6 +1957,43 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, CentralUpdatesConnectionParametersAft
   RunLoopFor(kLEConnectionPauseCentral);
   EXPECT_EQ(1u, hci_update_conn_param_count);
   EXPECT_TRUE(conn);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
+  // Set up a connection.
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer->le());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Prevent remote features event from being received.
+  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+
+  conn_mgr()->Connect(
+      peer->identifier(),
+      [&](auto, auto conn) {
+        if (conn) {
+          FAIL();
+        }
+      },
+      BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+  // Interrogation should not complete.
+  EXPECT_FALSE(peer->le()->features().has_value());
+
+  // Connect to same peer again, before interrogation has completed.
+  // No asserts should fail.
+  conn_mgr()->Connect(
+      peer->identifier(),
+      [&](auto, auto conn) {
+        if (conn) {
+          FAIL();
+        }
+      },
+      BondableMode::Bondable);
+  RunLoopUntilIdle();
 }
 
 // Tests for assertions that enforce invariants.

@@ -186,7 +186,6 @@ FakeController::FakeController()
 FakeController::~FakeController() { Stop(); }
 
 void FakeController::SetDefaultCommandStatus(hci::OpCode opcode, hci::StatusCode status) {
-  ZX_ASSERT(status != hci::StatusCode::kSuccess);
   default_command_status_map_[opcode] = status;
 }
 
