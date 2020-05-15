@@ -31,11 +31,13 @@ void RunTaskSync(fit::closure callback, async_dispatcher_t* dispatcher) {
   async::PostTask(dispatcher, [callback = std::move(callback), &mtx, &cv, &done] {
     callback();
 
-    {
-      std::lock_guard<std::mutex> lock(mtx);
-      done = true;
-    }
+    // We want the lock to live the whole lifetime of this closure. This is to ensure that we
+    // notify `cv` before dropping the lock, as otherwise the calling thread could wake up
+    // spuriously, *after* we set done but *before* we call notify. It would see that
+    // `done == true` and then return, destroying `cv` before we attempt to call notify on it
+    std::lock_guard<std::mutex> lock(mtx);
 
+    done = true;
     cv.notify_one();
   });
 
