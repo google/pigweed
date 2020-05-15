@@ -66,8 +66,8 @@ source_set("sources") {
     "//src/lib/fxl",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
-    "//zircon/public/lib/trace-driver",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/trace:trace-driver",
   ]
 }
 
