@@ -90,16 +90,15 @@ pw_test("find_test") {
 }
 
 pw_test("codegen_test") {
-  deps = [
-    ":codegen_test_protos_pwpb",
-    ":pw_protobuf",
-  ]
+  deps = [ ":codegen_test_protos_pwpb" ]
   sources = [ "codegen_test.cc" ]
 }
 
 pw_proto_library("codegen_test_protos") {
   sources = [
     "pw_protobuf_protos/test_protos/full_test.proto",
+    "pw_protobuf_protos/test_protos/imported.proto",
+    "pw_protobuf_protos/test_protos/importer.proto",
     "pw_protobuf_protos/test_protos/proto2.proto",
     "pw_protobuf_protos/test_protos/repeated.proto",
   ]

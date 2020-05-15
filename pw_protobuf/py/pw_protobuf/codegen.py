@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -21,18 +21,21 @@ protobuf messages in the pw_protobuf format.
 import os
 import sys
 
-from typing import List
+from typing import Iterable, List
 
 import google.protobuf.compiler.plugin_pb2 as plugin_pb2
 import google.protobuf.descriptor_pb2 as descriptor_pb2
 
 from pw_protobuf.methods import PROTO_FIELD_METHODS
-from pw_protobuf.proto_structures import ProtoEnum, ProtoMessage
+from pw_protobuf.proto_structures import ProtoEnum, ProtoExternal, ProtoMessage
 from pw_protobuf.proto_structures import ProtoMessageField, ProtoNode
 from pw_protobuf.proto_structures import ProtoPackage
 
 PLUGIN_NAME = 'pw_protobuf'
 PLUGIN_VERSION = '0.1.0'
+
+PROTO_H_EXTENSION = '.pwpb.h'
+PROTO_CC_EXTENSION = '.pwpb.cc'
 
 PROTOBUF_NAMESPACE = 'pw::protobuf'
 BASE_PROTO_CLASS = 'ProtoMessageEncoder'
@@ -209,9 +212,13 @@ def forward_declare(node: ProtoNode, root: ProtoNode,
     output.write_line(f'}}  // namespace {namespace}')
 
 
-# TODO(frolv): Right now, this plugin assumes that package is synonymous with
-# .proto file. This will need to be updated to handle compiling multiple files.
-def generate_code_for_package(package: ProtoNode, output: OutputFile) -> None:
+def _proto_filename_to_generated_header(proto_file: str) -> str:
+    """Returns the generated C++ header name for a .proto file."""
+    return os.path.splitext(proto_file)[0] + PROTO_H_EXTENSION
+
+
+def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
+                              output: OutputFile) -> None:
     """Generates code for a single .pb.h file corresponding to a .proto file."""
 
     assert package.type() == ProtoNode.Type.PACKAGE
@@ -223,8 +230,16 @@ def generate_code_for_package(package: ProtoNode, output: OutputFile) -> None:
     output.write_line('#include <cstdint>\n')
     output.write_line('#include "pw_protobuf/codegen.h"')
 
+    for imported_file in file_descriptor_proto.dependency:
+        generated_header = _proto_filename_to_generated_header(imported_file)
+        output.write_line(f'#include "{generated_header}"')
+
     if package.cpp_namespace():
-        output.write_line(f'\nnamespace {package.cpp_namespace()} {{')
+        file_namespace = package.cpp_namespace()
+        if file_namespace.startswith('::'):
+            file_namespace = file_namespace[2:]
+
+        output.write_line(f'\nnamespace {file_namespace} {{')
 
     for node in package:
         forward_declare(node, package, output)
@@ -258,8 +273,22 @@ def add_enum_fields(enum: ProtoNode, proto_enum) -> None:
         enum.add_value(value.name, value.number)
 
 
-def add_message_fields(root: ProtoNode, message: ProtoNode,
-                       proto_message) -> None:
+def create_external_nodes(root: ProtoNode, path: str) -> ProtoNode:
+    """Creates external nodes for a path starting from the given root."""
+
+    node = root
+    for part in path.split('.'):
+        child = node.find(part)
+        if not child:
+            child = ProtoExternal(part)
+            node.add_child(child)
+        node = child
+
+    return node
+
+
+def add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
+                       message: ProtoNode, proto_message) -> None:
     """Adds fields from a protobuf message descriptor to a message node."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
@@ -267,24 +296,24 @@ def add_message_fields(root: ProtoNode, message: ProtoNode,
         if field.type_name:
             # The "type_name" member contains the global .proto path of the
             # field's type object, for example ".pw.protobuf.test.KeyValuePair".
-            # Since only a single proto file is currently supported, the root
-            # node has the value of the file's package ("pw.protobuf.test").
-            # This must be stripped from the path to find the desired node
-            # within the tree.
-            #
-            # TODO(frolv): Once multiple files are supported, the root node
-            # should refer to the global namespace, and this should no longer
-            # be needed.
-            path = field.type_name
-            if path[0] == '.':
-                path = path[1:]
+            # Try to find the node for this object within the current context.
 
-            if path.startswith(root.name()):
-                relative_path = path[len(root.name()):].lstrip('.')
+            if field.type_name[0] == '.':
+                # Fully qualified path.
+                root_relative_path = field.type_name[1:]
+                search_root = global_root
             else:
-                relative_path = path
+                root_relative_path = field.type_name
+                search_root = package_root
 
-            type_node = root.find(relative_path)
+            type_node = search_root.find(root_relative_path)
+
+            if type_node is None:
+                # Create nodes for field types that don't exist within this
+                # compilation context, such as those imported from other .proto
+                # files.
+                type_node = create_external_nodes(search_root,
+                                                  root_relative_path)
         else:
             type_node = None
 
@@ -300,11 +329,12 @@ def add_message_fields(root: ProtoNode, message: ProtoNode,
             ))
 
 
-def populate_fields(proto_file, root: ProtoNode) -> None:
+def populate_fields(proto_file, global_root: ProtoNode,
+                    package_root: ProtoNode) -> None:
     """Traverses a proto file, adding all message and enum fields to a tree."""
     def populate_message(node, message):
         """Recursively populates nested messages and enums."""
-        add_message_fields(root, node, message)
+        add_message_fields(global_root, package_root, node, message)
 
         for enum in message.enum_type:
             add_enum_fields(node.find(enum.name), enum)
@@ -313,15 +343,21 @@ def populate_fields(proto_file, root: ProtoNode) -> None:
 
     # Iterate through the proto file, populating top-level enums and messages.
     for enum in proto_file.enum_type:
-        add_enum_fields(root.find(enum.name), enum)
+        add_enum_fields(package_root.find(enum.name), enum)
     for message in proto_file.message_type:
-        populate_message(root.find(message.name), message)
+        populate_message(package_root.find(message.name), message)
 
 
 def build_hierarchy(proto_file):
     """Creates a ProtoNode hierarchy from a proto file descriptor."""
 
-    root = ProtoPackage(proto_file.package)
+    root = ProtoPackage('')
+    package_root = root
+
+    for part in proto_file.package.split('.'):
+        package = ProtoPackage(part)
+        package_root.add_child(package)
+        package_root = package
 
     def build_message_subtree(proto_message):
         node = ProtoMessage(proto_message.name)
@@ -333,29 +369,29 @@ def build_hierarchy(proto_file):
         return node
 
     for enum in proto_file.enum_type:
-        root.add_child(ProtoEnum(enum.name))
+        package_root.add_child(ProtoEnum(enum.name))
 
     for message in proto_file.message_type:
-        root.add_child(build_message_subtree(message))
+        package_root.add_child(build_message_subtree(message))
 
-    return root
+    return root, package_root
 
 
-def process_proto_file(proto_file):
+def process_proto_file(proto_file) -> Iterable[OutputFile]:
     """Generates code for a single .proto file."""
 
     # Two passes are made through the file. The first builds the tree of all
     # message/enum nodes, then the second creates the fields in each. This is
     # done as non-primitive fields need pointers to their types, which requires
     # the entire tree to have been parsed into memory.
-    root = build_hierarchy(proto_file)
-    populate_fields(proto_file, root)
+    global_root, package_root = build_hierarchy(proto_file)
+    populate_fields(proto_file, global_root, package_root)
 
-    output_filename = os.path.splitext(proto_file.name)[0] + '.pwpb.h'
+    output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)
-    generate_code_for_package(root, output_file)
+    generate_code_for_package(proto_file, package_root, output_file)
 
-    return output_file
+    return [output_file]
 
 
 def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
@@ -372,10 +408,11 @@ def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
     for proto_file in req.proto_file:
         # TODO(frolv): Proto files are currently processed individually. Support
         # for multiple files with cross-dependencies should be added.
-        output_file = process_proto_file(proto_file)
-        fd = res.file.add()
-        fd.name = output_file.name()
-        fd.content = output_file.content()
+        output_files = process_proto_file(proto_file)
+        for output_file in output_files:
+            fd = res.file.add()
+            fd.name = output_file.name()
+            fd.content = output_file.content()
 
 
 def main() -> int:

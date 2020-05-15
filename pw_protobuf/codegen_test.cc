@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -23,6 +23,7 @@
 // generated C++ interface is valid rather than the correctness of the
 // low-level encoder.
 #include "pw_protobuf_protos/test_protos/full_test.pwpb.h"
+#include "pw_protobuf_protos/test_protos/importer.pwpb.h"
 #include "pw_protobuf_protos/test_protos/proto2.pwpb.h"
 #include "pw_protobuf_protos/test_protos/repeated.pwpb.h"
 
@@ -271,6 +272,27 @@ TEST(Codegen, Proto2) {
   EXPECT_EQ(proto.size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
             0);
+}
+
+TEST(Codegen, Import) {
+  std::byte encode_buffer[64];
+  NestedEncoder<1, 3> encoder(encode_buffer);
+
+  Period::Encoder period(&encoder);
+  {
+    imported::Timestamp::Encoder start = period.GetStartEncoder();
+    start.WriteSeconds(1589501793);
+    start.WriteNanoseconds(511613110);
+  }
+
+  {
+    imported::Timestamp::Encoder end = period.GetEndEncoder();
+    end.WriteSeconds(1589501841);
+    end.WriteNanoseconds(490367432);
+  }
+
+  span<const std::byte> proto;
+  EXPECT_EQ(encoder.Encode(&proto), Status::OK);
 }
 
 }  // namespace

@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -34,10 +34,12 @@ class ProtoNode(abc.ABC):
         PACKAGE maps to a C++ namespace.
         MESSAGE maps to a C++ "Encoder" class within its own namespace.
         ENUM maps to a C++ enum within its parent's namespace.
+        EXTERNAL represents a node defined within a different compilation unit.
         """
         PACKAGE = 1
         MESSAGE = 2
         ENUM = 3
+        EXTERNAL = 4
 
     def __init__(self, name: str):
         self._name: str = name
@@ -130,9 +132,10 @@ class ProtoNode(abc.ABC):
 
         # pylint: disable=protected-access
         for section in path.split('.'):
-            node = node._children[section]
-            if node is None:
+            child = node._children.get(section)
+            if child is None:
                 return None
+            node = child
         # pylint: enable=protected-access
 
         return node
@@ -224,6 +227,22 @@ class ProtoMessage(ProtoNode):
     def _supports_child(self, child: ProtoNode) -> bool:
         return (child.type() == self.Type.ENUM
                 or child.type() == self.Type.MESSAGE)
+
+
+class ProtoExternal(ProtoNode):
+    """A node from a different compilation unit.
+
+    An external node is one that isn't defined within the current compilation
+    unit, most likely as it comes from an imported proto file. Its type is not
+    known, so it does not have any members or additional data. Its purpose
+    within the node graph is to provide namespace resolution between compile
+    units.
+    """
+    def type(self) -> ProtoNode.Type:
+        return ProtoNode.Type.EXTERNAL
+
+    def _supports_child(self, child: ProtoNode) -> bool:
+        return True
 
 
 # This class is not a node and does not appear in the proto tree.

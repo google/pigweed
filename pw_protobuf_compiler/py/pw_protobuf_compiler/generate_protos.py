@@ -44,6 +44,9 @@ def argument_parser(
                         default=[],
                         type=lambda arg: arg.split(';'),
                         help='protoc include paths')
+    parser.add_argument('--include-file',
+                        type=argparse.FileType('r'),
+                        help='File containing additional protoc include paths')
     parser.add_argument('--out-dir',
                         required=True,
                         help='Output directory for generated code')
@@ -96,12 +99,15 @@ def main() -> int:
         return 1
 
     include_paths = [f'-I{path}' for path in args.include_paths]
+    include_paths += [f'-I{line.strip()}' for line in args.include_file]
 
     return pw_cli.process.run(
         'protoc',
-        *include_paths,
         '-I',
         args.module_path,
+        '-I',
+        args.out_dir,
+        *include_paths,
         *lang_args,
         *args.protos,
     ).returncode
