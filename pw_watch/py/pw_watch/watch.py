@@ -485,13 +485,14 @@ def watch(build_commands=None,
         gn_args_files = glob.glob('**/args.gn', recursive=True)
         for gn_args_file in gn_args_files:
             gn_build_dir = pathlib.Path(gn_args_file).parent
+            gn_build_dir = gn_build_dir.resolve().relative_to(cur_dir)
             if gn_build_dir.is_dir():
                 build_commands.append(BuildCommand(gn_build_dir))
     else:
         # Reformat the directory of build commands to be relative to the
         # currently directory.
         for i, build_target in enumerate(build_commands_tmp, 1):
-            build_target_dir = path_of_pigweed / build_target.build_dir
+            build_target_dir = build_target.build_dir
             build_commands.append(
                 BuildCommand(build_target_dir, build_target.targets))
 
