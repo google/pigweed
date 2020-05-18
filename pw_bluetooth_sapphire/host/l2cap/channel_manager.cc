@@ -170,7 +170,7 @@ void ChannelManager::UnregisterService(PSM psm) {
 
 void ChannelManager::RequestConnectionParameterUpdate(
     hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
-    ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
+    ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto iter = ll_map_.find(handle);
@@ -179,7 +179,7 @@ void ChannelManager::RequestConnectionParameterUpdate(
     return;
   }
 
-  iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb), dispatcher);
+  iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb));
 }
 
 // Called when an ACL data packet is received from the controller. This method

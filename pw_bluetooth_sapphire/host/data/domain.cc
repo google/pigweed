@@ -80,12 +80,10 @@ class Impl final : public Domain {
     channel_manager_->AssignLinkSecurityProperties(handle, security);
   }
 
-  void RequestConnectionParameterUpdate(hci::ConnectionHandle handle,
-                                        hci::LEPreferredConnectionParameters params,
-                                        l2cap::ConnectionParameterUpdateRequestCallback request_cb,
-                                        async_dispatcher_t* dispatcher) override {
-    channel_manager_->RequestConnectionParameterUpdate(handle, params, std::move(request_cb),
-                                                       dispatcher);
+  void RequestConnectionParameterUpdate(
+      hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
+      l2cap::ConnectionParameterUpdateRequestCallback request_cb) override {
+    channel_manager_->RequestConnectionParameterUpdate(handle, params, std::move(request_cb));
   }
 
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,

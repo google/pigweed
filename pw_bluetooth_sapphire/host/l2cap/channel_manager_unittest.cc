@@ -2332,7 +2332,7 @@ TEST_F(L2CAP_ChannelManagerTest,
 TEST_F(L2CAP_ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
   auto update_cb = [](auto) { ADD_FAILURE(); };
   chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, hci::LEPreferredConnectionParameters(),
-                                              std::move(update_cb), dispatcher());
+                                              std::move(update_cb));
   RunLoopUntilIdle();
 }
 
@@ -2358,7 +2358,7 @@ TEST_F(L2CAP_ChannelManagerTest,
       testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
                                                kIntervalMax, kSlaveLatency, kTimeoutMult),
       kHighPriority);
-  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb, dispatcher());
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
@@ -2376,8 +2376,7 @@ TEST_F(L2CAP_ChannelManagerTest,
       testing::AclConnectionParameterUpdateReq(param_update_req_id, kTestHandle1, kIntervalMin,
                                                kIntervalMax, kSlaveLatency, kTimeoutMult),
       kHighPriority);
-  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, std::move(request_cb),
-                                              dispatcher());
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, std::move(request_cb));
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
@@ -2407,7 +2406,7 @@ TEST_F(L2CAP_ChannelManagerTest, ConnParamUpdateRequestRejected) {
       testing::AclConnectionParameterUpdateReq(kParamUpdateReqId, kTestHandle1, kIntervalMin,
                                                kIntervalMax, kSlaveLatency, kTimeoutMult),
       kHighPriority);
-  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb, dispatcher());
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 

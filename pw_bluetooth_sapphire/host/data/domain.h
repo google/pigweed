@@ -104,12 +104,10 @@ class Domain : public fbl::RefCounted<Domain> {
   // (Core Spec v5.2  Vol 3, Part A, Sec 4.20). This should only be called when the local host is an
   // LE follower.
   //
-  // |request_cb| will be called on |dispatcher| when a response (indicating acceptance or
-  // rejection) is received.
+  // |request_cb| will be called when a response (indicating acceptance or rejection) is received.
   virtual void RequestConnectionParameterUpdate(
       hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
-      l2cap::ConnectionParameterUpdateRequestCallback request_cb,
-      async_dispatcher_t* dispatcher) = 0;
+      l2cap::ConnectionParameterUpdateRequestCallback request_cb) = 0;
 
   // Open an outbound dynamic channel against a peer's Protocol/Service
   // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel

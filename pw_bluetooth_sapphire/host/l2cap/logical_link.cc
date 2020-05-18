@@ -502,7 +502,7 @@ void LogicalLink::OnRxFixedChannelsSupportedInfoRsp(
 
 void LogicalLink::SendConnectionParameterUpdateRequest(
     hci::LEPreferredConnectionParameters params,
-    ConnectionParameterUpdateRequestCallback request_cb, async_dispatcher_t* dispatcher) {
+    ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(signaling_channel_);
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);
   ZX_ASSERT(role_ == hci::Connection::Role::kSlave);
@@ -511,8 +511,8 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
   cmd_handler.SendConnectionParameterUpdateRequest(
       params.min_interval(), params.max_interval(), params.max_latency(),
       params.supervision_timeout(),
-      [cb = std::move(request_cb),
-       dispatcher](const LowEnergyCommandHandler::ConnectionParameterUpdateResponse& rsp) mutable {
+      [cb = std::move(request_cb)](
+          const LowEnergyCommandHandler::ConnectionParameterUpdateResponse& rsp) mutable {
         bool accepted = false;
 
         if (rsp.status() != LowEnergyCommandHandler::Status::kSuccess) {
@@ -521,8 +521,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
         } else {
           accepted = rsp.result() == ConnectionParameterUpdateResult::kAccepted;
         }
-
-        RunOrPost(std::bind(std::move(cb), accepted), dispatcher);
+        cb(accepted);
       });
 }
 

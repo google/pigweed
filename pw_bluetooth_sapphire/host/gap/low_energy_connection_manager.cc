@@ -1208,8 +1208,7 @@ void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(
 
   // TODO(49717): don't send request until after kLEConnectionParameterTimeout of an l2cap conn
   // parameter update response being received (Core Spec v5.2, Vol 3, Part C, Sec 9.3.9).
-  data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb),
-                                                 dispatcher_);
+  data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb));
 }
 
 LowEnergyConnectionManager::ConnectionMap::iterator LowEnergyConnectionManager::FindConnection(

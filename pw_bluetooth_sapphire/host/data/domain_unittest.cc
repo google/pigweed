@@ -597,7 +597,7 @@ TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
                                            param_update_req_id, kLinkHandle, kIntervalMin,
                                            kIntervalMax, kSlaveLatency, kTimeoutMult));
-  domain()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb, dispatcher());
+  domain()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb);
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
