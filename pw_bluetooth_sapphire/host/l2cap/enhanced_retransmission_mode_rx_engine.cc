@@ -160,6 +160,19 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
 }
 
 ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu) {
+  // Signal changes to our RemoteBusy variable per Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.6.
+  const bool remote_is_busy = sframe.function() == SupervisoryFunction::ReceiverNotReady;
+  if (remote_is_busy && !remote_is_busy_) {
+    if (remote_busy_set_callback_) {
+      remote_busy_set_callback_();
+    }
+  } else if (!remote_is_busy && remote_is_busy_) {
+    if (remote_busy_cleared_callback_) {
+      remote_busy_cleared_callback_();
+    }
+  }
+  remote_is_busy_ = remote_is_busy;
+
   // Implements the "Send RRorRNR (F=1)" action of Core Spec, v5, Vol 3, Part A, Section 8.6.5.9,
   // Table 8.6, "Recv RNR (P=1)" and "Send IorRRorRNR(F=1)" action of "Recv RR(P=1)." In the latter
   // case, responding with an I-Frame (F=1) is indistinguishable from responding with an RR (F=1)
@@ -167,20 +180,6 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
   // or RNR (F=1), but not an I-Frame (F=1).
   if (sframe.function() == SupervisoryFunction::ReceiverReady ||
       sframe.function() == SupervisoryFunction::ReceiverNotReady) {
-    const bool remote_is_busy = sframe.function() == SupervisoryFunction::ReceiverNotReady;
-
-    // Signal changes to our RemoteBusy variable.
-    if (remote_is_busy && !remote_is_busy_) {
-      if (remote_busy_set_callback_) {
-        remote_busy_set_callback_();
-      }
-    } else if (!remote_is_busy && remote_is_busy_) {
-      if (remote_busy_cleared_callback_) {
-        remote_busy_cleared_callback_();
-      }
-    }
-    remote_is_busy_ = remote_is_busy;
-
     if (sframe.is_poll_request()) {
       // See Core Spec, v5, Vol 3, Part A, Section 8.6.5.9, Table 8.6, "Recv RR(P=1)".
       //

@@ -18,7 +18,10 @@ constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlPBitMask = 0b1001'0000;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
+constexpr uint8_t kExtendedControlReceiverReadyBits = 0b0000'0000;
 constexpr uint8_t kExtendedControlReceiverNotReadyBits = 0b0000'1000;
+constexpr uint8_t kExtendedControlRejectBits = 0b0000'0100;
+constexpr uint8_t kExtendedControlSelectiveRejectBits = 0b0000'1100;
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
@@ -413,8 +416,11 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   EXPECT_TRUE(remote_busy_set_called);
 }
 
-TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
-     ProcessPduCallsRemoteBusyClearedCallbackOnReceiverReadyAfterReceiverNotReady) {
+// Test parameter is a bitmask to the Extended Control Field.
+class ExtendedControlFieldBitsTest : public testing::TestWithParam<uint16_t> {};
+
+TEST_P(ExtendedControlFieldBitsTest,
+       ProcessPduCallsRemoteBusyClearedCallbackOnNonRnrSFrameAfterReceiverNotReady) {
   Engine rx_engine(NopTxCallback);
 
   bool receive_seq_num_called = false;
@@ -442,28 +448,35 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
   // The RNR invokes this callback but we only care about the callback ordering of the next frame.
   rx_engine.set_receive_seq_num_callback([&](uint8_t, bool) { receive_seq_num_called = true; });
 
-  // This RR should clear RemoteBusy.
-  const StaticByteBuffer receiver_ready(0b1, 0);
+  // This non-RNR S-Frame should clear RemoteBusy.
+  const uint16_t control_bits_to_set = GetParam();
+  const StaticByteBuffer non_rnr_s_frame(0b1 | LowerBits(control_bits_to_set), 0);
   local_sdu = rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
-          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
-  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverReady frame.
+          .BuildFrame(kTestChannelId, non_rnr_s_frame, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in an S-Frame.
 
   EXPECT_EQ(1, remote_busy_set_calls);
   EXPECT_EQ(1, remote_busy_cleared_calls);
   EXPECT_TRUE(receive_seq_num_called);
 
-  // Receive a second RR.
+  // Receive a second non-RNR.
   local_sdu = rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
-          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
-  EXPECT_FALSE(local_sdu);  // No payload in a ReceiverReady frame.
+          .BuildFrame(kTestChannelId, non_rnr_s_frame, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_FALSE(local_sdu);  // No payload in an S-Frame.
 
   EXPECT_EQ(1, remote_busy_set_calls);
   EXPECT_EQ(1, remote_busy_cleared_calls);
 
-  // Second RR shouldn't invoke either callback because RemoteBusy remains cleared.
+  // Second S-Frame shouldn't invoke either callback because RemoteBusy remains cleared.
 }
+
+INSTANTIATE_TEST_SUITE_P(L2CAP_EnhancedRetransmissionModeRxEngineTestNonRnrSFrames,
+                         ExtendedControlFieldBitsTest,
+                         testing::Values(kExtendedControlReceiverReadyBits,
+                                         kExtendedControlRejectBits,
+                                         kExtendedControlSelectiveRejectBits));
 
 }  // namespace
 }  // namespace internal
