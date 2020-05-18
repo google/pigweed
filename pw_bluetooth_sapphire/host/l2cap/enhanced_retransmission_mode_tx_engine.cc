@@ -237,7 +237,8 @@ Engine* Engine::RetransmitUnackedData() {
   // "Recv REJ (F=0)".
   ZX_DEBUG_ASSERT(!remote_is_busy_);
 
-  auto n_to_send = std::min(n_frames_in_tx_window_, NumUnackedFrames());
+  const auto n_to_send = NumUnackedFrames();
+  ZX_ASSERT(n_to_send <= n_frames_in_tx_window_);
   ZX_DEBUG_ASSERT(n_to_send <= pending_pdus_.size());
 
   auto cur_frame = pending_pdus_.begin();
