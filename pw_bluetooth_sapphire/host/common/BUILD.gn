@@ -48,10 +48,10 @@ source_set("common") {
     "//src/lib/ddk",
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
-    "//zircon/public/lib/async-default",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/async-default",
   ]
 
   # TODO(46637): UBSan has found an instance of undefined behavior in this target.

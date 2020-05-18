@@ -46,10 +46,10 @@ source_set("fake_controller") {
     "//src/lib/files",
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
-    "//zircon/public/lib/async-default",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
+    "//zircon/system/ulib/async-default",
   ]
 }
 
