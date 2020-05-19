@@ -125,7 +125,7 @@ section, and use the ``pw_test`` template to register your test code.
     sources = [ "foo_test.cc" ]
   }
 
-``pw_unit_test`` module provides a few optional libraries to simplify setup:
+The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
 
  - ``simple_printing_event_handler```: When running tests, output test results
    as plain text over ``pw_sys_io``.
@@ -135,6 +135,69 @@ section, and use the ``pw_test`` template to register your test code.
    plain text using pw_log (ensure your target has set a ``pw_log`` backend).
  - ``logging_main``: Implements a ``main()`` function that simply runs tests
    using the ``logging_event_handler``.
+
+
+pw_test template
+----------------
+
+``pw_test`` defines a single test binary. It wraps ``pw_executable`` and pulls
+in the test framework as well as the test entry point defined by the
+``pw_unit_test_main`` build variable.
+
+**Arguments**
+
+* All GN executable arguments are accepted and forwarded to the underlying
+  ``pw_executable``.
+* ``enable_if``: Boolean indicating whether the test should be built. If false,
+  replaces the test with an empty target. Default true.
+
+**Example**
+
+.. code::
+
+  import("$dir_pw_unit_test/test.gni")
+
+  pw_test("large_test") {
+    sources = [ "large_test.cc" ]
+    enable_if = device_has_1m_flash
+  }
+
+
+pw_test_group template
+----------------------
+
+``pw_test_group`` defines a collection of tests or other test groups. Each
+module should expose a ``pw_test_group`` called ``tests`` with the module's test
+binaries.
+
+**Arguments**
+
+* ``tests``: List of the ``pw_test`` targets in the group.
+* ``group_deps``: List of other ``pw_test_group`` targets on which this one
+  depends.
+* ``enable_if``: Boolean indicating whether the group target should be created.
+  If false, an empty GN group is created instead. Default true.
+
+**Example**
+
+.. code::
+
+  import("$dir_pw_unit_test/test.gni")
+
+  pw_test_group("tests") {
+    tests = [
+      ":bar_test",
+      ":foo_test",
+    ]
+  }
+
+  pw_test("foo_test") {
+    # ...
+  }
+
+  pw_test("bar_test") {
+    # ...
+  }
 
 
 .. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md

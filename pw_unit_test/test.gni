@@ -136,8 +136,10 @@ template("pw_test") {
 # pw_test_group targets output a JSON metadata file for the Pigweed test runner.
 #
 # Args:
-#  tests: List of pw_test targets for each of the tests in the group.
-#  group_deps: Optional pw_test_group targets on which this group depends.
+#   - tests: List of pw_test targets for each of the tests in the group.
+#   - group_deps: (optional) pw_test_group targets on which this group depends.
+#   - enable_if: (optional) Conditionally enables or disables this test group.
+#         If false, an empty group is created. Defaults to true.
 template("pw_test_group") {
   _group_target = target_name
   _group_deps_metadata = []
@@ -147,66 +149,82 @@ template("pw_test_group") {
     _deps = []
   }
 
-  if (defined(invoker.group_deps)) {
-    # If the group specified any other group dependencies, create a metadata
-    # entry for each of them indicating that they are another group and a group
-    # target to collect that metadata.
-    foreach(dep, invoker.group_deps) {
-      _group_deps_metadata += [
-        {
-          type = "dep"
-          group = get_path_info(dep, "abspath")
-        },
-      ]
+  _group_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+
+  if (_group_is_enabled) {
+    if (defined(invoker.group_deps)) {
+      # If the group specified any other group dependencies, create a metadata
+      # entry for each of them indicating that they are another group and a
+      # group target to collect that metadata.
+      foreach(dep, invoker.group_deps) {
+        _group_deps_metadata += [
+          {
+            type = "dep"
+            group = get_path_info(dep, "abspath")
+          },
+        ]
+      }
+
+      _deps += invoker.group_deps
     }
 
-    _deps += invoker.group_deps
-  }
+    _metadata_group_target = "${target_name}_pw_test_group_metadata"
+    group(_metadata_group_target) {
+      metadata = {
+        group_deps = _group_deps_metadata
+        self = [
+          {
+            type = "self"
+            name = get_path_info(":$_group_target", "abspath")
+          },
+        ]
 
-  _metadata_group_target = "${target_name}_pw_test_group_metadata"
-  group(_metadata_group_target) {
-    metadata = {
-      group_deps = _group_deps_metadata
-      self = [
-        {
-          type = "self"
-          name = get_path_info(":$_group_target", "abspath")
-        },
+        # Metadata from the group's own unit test targets is forwarded through
+        # the group dependencies group. This entry is listed as a "walk_key" in
+        # the generated file so that only test targets' metadata (not group
+        # targets) appear in the output.
+        if (defined(invoker.tests)) {
+          propagate_metadata_from = invoker.tests
+        }
+      }
+      deps = _deps
+    }
+
+    _test_group_deps = [ ":$_metadata_group_target" ]
+
+    generated_file(_group_target) {
+      outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
+      data_keys = [
+        "group_deps",
+        "self",
+        "tests",
       ]
+      walk_keys = [ "propagate_metadata_from" ]
+      output_conversion = "json"
+      deps = _test_group_deps
+    }
 
-      # Metadata from the group's own unit test targets is forwarded through
-      # the group dependencies group. This entry is listed as a "walk_key" in
-      # the generated file so that only test targets' metadata (not group
-      # targets) appear in the output.
-      if (defined(invoker.tests)) {
-        propagate_metadata_from = invoker.tests
+    # If automatic test running is enabled, create a *_run group that collects
+    # all of the individual *_run targets and groups.
+    if (pw_automatic_test_runner != "") {
+      group(_group_target + "_run") {
+        deps = [ ":$_group_target" ]
+        foreach(_target, _deps) {
+          deps += [ "${_target}_run" ]
+        }
       }
     }
-    deps = _deps
-  }
+  } else {  # _group_is_enabled
+    # Create empty groups for the tests to avoid pulling in any dependencies.
+    group(_group_target) {
+    }
 
-  _test_group_deps = [ ":$_metadata_group_target" ]
-
-  generated_file(_group_target) {
-    outputs = [ "$target_out_dir/$target_name.testinfo.json" ]
-    data_keys = [
-      "group_deps",
-      "self",
-      "tests",
-    ]
-    walk_keys = [ "propagate_metadata_from" ]
-    output_conversion = "json"
-    deps = _test_group_deps
-  }
-
-  # If automatic test running is enabled, create a *_run group that collects all
-  # of the individual *_run targets and groups.
-  if (pw_automatic_test_runner != "") {
-    group(_group_target + "_run") {
-      deps = [ ":$_group_target" ]
-      foreach(_target, _deps) {
-        deps += [ "${_target}_run" ]
+    if (pw_automatic_test_runner != "") {
+      group(_group_target + "_run") {
       }
     }
+
+    not_needed("*")
+    not_needed(invoker, "*")
   }
 }
