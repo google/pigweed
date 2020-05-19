@@ -19,7 +19,7 @@
 namespace pw::rpc::internal {
 
 Packet Packet::FromBuffer(span<const std::byte> data) {
-  PacketType type = PacketType::kRpc;
+  PacketType type = PacketType::RPC;
   uint32_t channel_id = 0;
   uint32_t service_id = 0;
   uint32_t method_id = 0;
@@ -33,24 +33,24 @@ Packet Packet::FromBuffer(span<const std::byte> data) {
     uint32_t proto_value = 0;
 
     switch (field) {
-      case RpcPacket::Fields::kType:
+      case RpcPacket::Fields::TYPE:
         decoder.ReadUint32(&proto_value);
         type = static_cast<PacketType>(proto_value);
         break;
 
-      case RpcPacket::Fields::kChannelId:
+      case RpcPacket::Fields::CHANNEL_ID:
         decoder.ReadUint32(&channel_id);
         break;
 
-      case RpcPacket::Fields::kServiceId:
+      case RpcPacket::Fields::SERVICE_ID:
         decoder.ReadUint32(&service_id);
         break;
 
-      case RpcPacket::Fields::kMethodId:
+      case RpcPacket::Fields::METHOD_ID:
         decoder.ReadUint32(&method_id);
         break;
 
-      case RpcPacket::Fields::kPayload:
+      case RpcPacket::Fields::PAYLOAD:
         decoder.ReadBytes(&payload);
         break;
     }

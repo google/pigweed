@@ -185,10 +185,6 @@ class ProtoPackage(ProtoNode):
 
 class ProtoEnum(ProtoNode):
     """Representation of an enum in a .proto file."""
-
-    # Prefix for names of values in C++ enums.
-    ENUM_PREFIX: str = 'k'
-
     def __init__(self, name: str):
         super().__init__(name)
         self._values: List[Tuple[str, int]] = []
@@ -200,9 +196,7 @@ class ProtoEnum(ProtoNode):
         return list(self._values)
 
     def add_value(self, name: str, value: int) -> None:
-        name = '{}{}'.format(ProtoEnum.ENUM_PREFIX,
-                             ProtoMessageField.canonicalize_name(name))
-        self._values.append((name, value))
+        self._values.append((ProtoMessageField.upper_snake_case(name), value))
 
     def _supports_child(self, child: ProtoNode) -> bool:
         # Enums cannot have nested children.
@@ -255,17 +249,17 @@ class ProtoMessageField:
                  field_type: int,
                  type_node: Optional[ProtoNode] = None,
                  repeated: bool = False):
-        self._name: str = self.canonicalize_name(field_name)
+        self._field_name = field_name
         self._number: int = field_number
         self._type: int = field_type
         self._type_node: Optional[ProtoNode] = type_node
         self._repeated: bool = repeated
 
     def name(self) -> str:
-        return self._name
+        return self.upper_camel_case(self._field_name)
 
     def enum_name(self) -> str:
-        return '{}{}'.format(ProtoEnum.ENUM_PREFIX, self._name)
+        return self.upper_snake_case(self._field_name)
 
     def number(self) -> int:
         return self._number
@@ -280,9 +274,14 @@ class ProtoMessageField:
         return self._repeated
 
     @staticmethod
-    def canonicalize_name(field_name: str) -> str:
+    def upper_camel_case(field_name: str) -> str:
         """Converts a field name to UpperCamelCase."""
         name_components = field_name.split('_')
         for i, _ in enumerate(name_components):
             name_components[i] = name_components[i].lower().capitalize()
         return ''.join(name_components)
+
+    @staticmethod
+    def upper_snake_case(field_name: str) -> str:
+        """Converts a field name to UPPER_SNAKE_CASE."""
+        return field_name.upper()

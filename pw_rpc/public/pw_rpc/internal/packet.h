@@ -30,14 +30,14 @@ class Packet {
 
   // Returns an empty packet with default values set.
   static constexpr Packet Empty() {
-    return Packet(PacketType::kRpc, 0, 0, 0, {});
+    return Packet(PacketType::RPC, 0, 0, 0, {});
   }
 
   // Encodes the packet into its wire format. Returns the encoded size.
   StatusWithSize Encode(span<std::byte> buffer) const;
 
   bool is_control() const { return !is_rpc(); }
-  bool is_rpc() const { return type_ == PacketType::kRpc; }
+  bool is_rpc() const { return type_ == PacketType::RPC; }
 
   PacketType type() const { return type_; }
   uint32_t channel_id() const { return channel_id_; }

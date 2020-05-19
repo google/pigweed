@@ -25,7 +25,7 @@ TEST(Packet, EncodeDecode) {
   constexpr byte payload[]{byte(0x00), byte(0x01), byte(0x02), byte(0x03)};
 
   Packet packet = Packet::Empty();
-  packet.set_type(PacketType::kRpc);
+  packet.set_type(PacketType::RPC);
   packet.set_channel_id(12);
   packet.set_service_id(0xdeadbeef);
   packet.set_method_id(0x03a82921);

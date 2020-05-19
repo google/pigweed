@@ -40,23 +40,23 @@ TEST(Codegen, Codegen) {
   pigweed.WriteMagicNumber(73);
   pigweed.WriteZiggy(-111);
   pigweed.WriteErrorMessage("not a typewriter");
-  pigweed.WriteBin(Pigweed::Protobuf::Binary::kZero);
+  pigweed.WriteBin(Pigweed::Protobuf::Binary::ZERO);
 
   {
     Pigweed::Pigweed::Encoder pigweed_pigweed = pigweed.GetPigweedEncoder();
-    pigweed_pigweed.WriteStatus(Bool::kFileNotFound);
+    pigweed_pigweed.WriteStatus(Bool::FILE_NOT_FOUND);
   }
 
   {
     Proto::Encoder proto = pigweed.GetProtoEncoder();
-    proto.WriteBin(Proto::Binary::kOff);
-    proto.WritePigweedPigweedBin(Pigweed::Pigweed::Binary::kZero);
-    proto.WritePigweedProtobufBin(Pigweed::Protobuf::Binary::kZero);
+    proto.WriteBin(Proto::Binary::OFF);
+    proto.WritePigweedPigweedBin(Pigweed::Pigweed::Binary::ZERO);
+    proto.WritePigweedProtobufBin(Pigweed::Protobuf::Binary::ZERO);
 
     {
       Pigweed::Protobuf::Compiler::Encoder meta = proto.GetMetaEncoder();
       meta.WriteFileName("/etc/passwd");
-      meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::kFubar);
+      meta.WriteStatus(Pigweed::Protobuf::Compiler::Status::FUBAR);
     }
 
     {
@@ -79,7 +79,7 @@ TEST(Codegen, Codegen) {
           attributes.WriteValue("left-soc");
         }
 
-        device_info.WriteStatus(DeviceInfo::DeviceStatus::kPanic);
+        device_info.WriteStatus(DeviceInfo::DeviceStatus::PANIC);
       }
     }
   }

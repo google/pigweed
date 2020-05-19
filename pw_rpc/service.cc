@@ -19,7 +19,7 @@
 namespace pw::rpc::internal {
 
 void Service::ProcessPacket(const Packet& request, Packet& response) {
-  response.set_type(PacketType::kRpc);
+  response.set_type(PacketType::RPC);
   response.set_service_id(id_);
 
   for (const Method& method : methods_) {

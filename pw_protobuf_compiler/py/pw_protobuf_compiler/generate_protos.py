@@ -101,7 +101,7 @@ def main() -> int:
     include_paths = [f'-I{path}' for path in args.include_paths]
     include_paths += [f'-I{line.strip()}' for line in args.include_file]
 
-    return pw_cli.process.run(
+    process = pw_cli.process.run(
         'protoc',
         '-I',
         args.module_path,
@@ -110,7 +110,12 @@ def main() -> int:
         *include_paths,
         *lang_args,
         *args.protos,
-    ).returncode
+    )
+
+    if process.returncode != 0:
+        print(process.output.decode(), file=sys.stderr)
+
+    return process.returncode
 
 
 if __name__ == '__main__':
