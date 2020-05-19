@@ -188,7 +188,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
     sock = std::move(chan_sock.socket);
   };
 
-  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
+  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb));
   RunLoopUntilIdle();
 
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
@@ -315,7 +315,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
     sock = std::move(chan_sock.socket);
   };
 
-  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb), dispatcher());
+  domain()->RegisterService(kPSM, kChannelParameters, std::move(sock_cb));
   RunLoopUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
@@ -452,7 +452,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     EXPECT_EQ(kLinkHandle, handle);
     sock0 = std::move(chan_sock.socket);
   };
-  domain()->RegisterService(kPSM0, kChannelParameters, sock_cb0, dispatcher());
+  domain()->RegisterService(kPSM0, kChannelParameters, sock_cb0);
 
   QueueInboundL2capConnection(kLinkHandle, kPSM0, kLocalId0, kRemoteId0);
 
@@ -565,7 +565,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
 
   std::optional<l2cap::ChannelSocket> chan;
   auto sock_cb = [&](auto cb_chan, auto /*handle*/) { chan.emplace(std::move(cb_chan)); };
-  domain()->RegisterService(kPSM, chan_params, sock_cb, dispatcher());
+  domain()->RegisterService(kPSM, chan_params, sock_cb);
 
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
 

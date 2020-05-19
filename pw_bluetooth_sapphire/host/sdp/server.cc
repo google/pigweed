@@ -142,13 +142,11 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
   // Register SDP
   l2cap::ChannelParameters sdp_chan_params;
   sdp_chan_params.mode = l2cap::ChannelMode::kBasic;
-  data_domain_->RegisterService(
-      l2cap::kSDP, sdp_chan_params,
-      [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
-        if (self)
-          self->AddConnection(channel);
-      },
-      async_get_default_dispatcher());
+  data_domain_->RegisterService(l2cap::kSDP, sdp_chan_params,
+                                [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
+                                  if (self)
+                                    self->AddConnection(channel);
+                                });
 
   // SDP is used by SDP server.
   psm_to_service_.emplace(l2cap::kSDP, std::unordered_set<ServiceHandle>({kSDPHandle}));
@@ -319,8 +317,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
           std::vector<DataElement> protocol;
           protocol.emplace_back(std::move(protocol_l2cap));
           conn_cb(std::move(chan_sock), handle, DataElement(std::move(protocol)));
-        },
-        async_get_default_dispatcher());
+        });
   }
 
   // Store the complete records.

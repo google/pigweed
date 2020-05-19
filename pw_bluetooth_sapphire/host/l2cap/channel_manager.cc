@@ -132,8 +132,7 @@ void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelP
   iter->second->OpenChannel(psm, params, std::move(cb));
 }
 
-bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb,
-                                     async_dispatcher_t* dispatcher) {
+bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
@@ -147,18 +146,7 @@ bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelC
     return false;
   }
 
-  // Bind |dispatcher| in callback that forwards the created channel to the
-  // service provider.
-  ChannelCallback pass_channel = [this, dispatcher,
-                                  cb = std::move(cb)](fbl::RefPtr<Channel> chan) mutable {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-
-    // Do not transfer ownership of |cb| when passing a channel to L2CAP.
-    // |chan| is safe to move because its lifetime spans each invocation.
-    async::PostTask(dispatcher, [cb = cb.share(), chan = std::move(chan)] { cb(std::move(chan)); });
-  };
-
-  services_.emplace(psm, ServiceInfo(params, std::move(pass_channel)));
+  services_.emplace(psm, ServiceInfo(params, std::move(cb)));
   return true;
 }
 

@@ -105,27 +105,19 @@ class Impl final : public Domain {
   }
 
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       l2cap::ChannelCallback callback, async_dispatcher_t* dispatcher) override {
-    const bool result =
-        channel_manager_->RegisterService(psm, params, std::move(callback), dispatcher);
+                       l2cap::ChannelCallback callback) override {
+    const bool result = channel_manager_->RegisterService(psm, params, std::move(callback));
     ZX_DEBUG_ASSERT(result);
   }
 
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       SocketCallback socket_callback, async_dispatcher_t* cb_dispatcher) override {
-    RegisterService(
-        psm, params,
-        [this, cb = std::move(socket_callback), cb_dispatcher](auto channel) mutable {
-          zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-          auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-          l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-          // Called every time the service is connected, cb must be shared.
-          async::PostTask(cb_dispatcher, [sock = std::move(chan_sock), cb = cb.share(),
-                                          handle = channel->link_handle()]() mutable {
-            cb(std::move(sock), handle);
-          });
-        },
-        dispatcher_);
+                       SocketCallback socket_callback) override {
+    RegisterService(psm, params, [this, cb = std::move(socket_callback)](auto channel) {
+      zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
+      auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
+      l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
+      cb(std::move(chan_sock), channel->link_handle());
+    });
   }
 
   void UnregisterService(l2cap::PSM psm) override { channel_manager_->UnregisterService(psm); }

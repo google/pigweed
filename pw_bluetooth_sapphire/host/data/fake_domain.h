@@ -72,10 +72,9 @@ class FakeDomain final : public Domain {
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                         l2cap::ChannelParameters params, SocketCallback socket_callback) override;
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       l2cap::ChannelCallback channel_callback,
-                       async_dispatcher_t* dispatcher) override;
+                       l2cap::ChannelCallback channel_callback) override;
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       SocketCallback socket_callback, async_dispatcher_t* dispatcher) override;
+                       SocketCallback socket_callback) override;
   void UnregisterService(l2cap::PSM psm) override;
 
   // Called when a new channel gets opened. Tests can use this to obtain a

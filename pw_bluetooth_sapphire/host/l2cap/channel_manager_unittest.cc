@@ -1584,10 +1584,9 @@ TEST_F(L2CAP_ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
     EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
   };
 
-  EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm0, ChannelParameters(), channel_cb, dispatcher()));
-  EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm1, ChannelParameters(), channel_cb, dispatcher()));
-  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, ChannelParameters(), std::move(channel_cb),
-                                         dispatcher()));
+  EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm0, ChannelParameters(), channel_cb));
+  EXPECT_FALSE(chanmgr()->RegisterService(kBadPsm1, ChannelParameters(), channel_cb));
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, ChannelParameters(), std::move(channel_cb)));
 
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(1), kHighPriority);
@@ -1854,8 +1853,7 @@ TEST_F(L2CAP_ChannelManagerTest, MtuInboundChannelConfiguration) {
     EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
   };
 
-  EXPECT_TRUE(
-      chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb), dispatcher()));
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb)));
 
   CommandId kPeerConnectionRequestId = 3;
   const auto config_req_id = NextCommandId();
@@ -1945,8 +1943,7 @@ TEST_F(L2CAP_ChannelManagerTest, InboundChannelConfigurationUsesChannelParameter
     EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
   };
 
-  EXPECT_TRUE(
-      chanmgr()->RegisterService(kTestPsm, chan_params, std::move(channel_cb), dispatcher()));
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, chan_params, std::move(channel_cb)));
 
   const auto config_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnReqId), kHighPriority);
@@ -2144,8 +2141,7 @@ TEST_F(L2CAP_ChannelManagerTest,
     EXPECT_TRUE(channel->ActivateWithDispatcher(NopRxCallback, DoNothing, dispatcher()));
   };
 
-  EXPECT_TRUE(
-      chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb), dispatcher()));
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, kChannelParams, std::move(channel_cb)));
 
   CommandId kPeerConnectionRequestId = 3;
   CommandId kLocalConfigRequestId = NextCommandId();

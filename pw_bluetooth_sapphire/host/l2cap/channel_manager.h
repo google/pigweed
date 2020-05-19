@@ -153,8 +153,7 @@ class ChannelManager final {
 
   // Register/Unregister a callback for incoming service connections.
   // Incoming channels will be configured using using the preferred parameters |params|.
-  bool RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb,
-                       async_dispatcher_t* dispatcher);
+  bool RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb);
   void UnregisterService(PSM psm);
 
   // Information stored and returned for registered services that is needed to configure and forward

@@ -115,16 +115,14 @@ class DataFuzzTest : public TestingBase {
 
   void RegisterService() {
     domain_->RegisterService(
-        l2cap::kAVDTP, l2cap::ChannelParameters(),
-        [this](fbl::RefPtr<l2cap::Channel> chan) {
+        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](fbl::RefPtr<l2cap::Channel> chan) {
           if (!chan) {
             return;
           }
           chan->ActivateOnDataDomain(/*rx_callback=*/[](auto) {}, /*closed_callback=*/
                                      [this, id = chan->id()] { channels_.erase(id); });
           channels_.emplace(chan->id(), std::move(chan));
-        },
-        dispatcher());
+        });
   }
 
   void ToggleConnection() {

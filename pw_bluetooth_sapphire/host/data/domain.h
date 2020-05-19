@@ -145,9 +145,8 @@ class Domain : public fbl::RefCounted<Domain> {
   // these channels using the preferred parameters |params|, but will accept different channel
   // parameters required by the peer if they are higher priority.
   //
-  // |cb| will be called on |dispatcher| with the channel created by each
-  // inbound connection request received. Handlers must be unregistered before
-  // they are replaced.
+  // |cb| will be called with the channel created by each inbound connection request received.
+  // Handlers must be unregistered before they are replaced.
   //
   // Returns false if |psm| is invalid or already has a handler registered.
   //
@@ -158,7 +157,7 @@ class Domain : public fbl::RefCounted<Domain> {
   //
   // TODO(xow): Dynamic PSMs may need their routing space (ACL or LE) identified
   virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                               l2cap::ChannelCallback callback, async_dispatcher_t* dispatcher) = 0;
+                               l2cap::ChannelCallback callback) = 0;
 
   // Similar to RegisterService, but instead of providing a l2cap::Channel,
   // provides a zx::socket which can be used to communicate on the channel.
@@ -172,7 +171,7 @@ class Domain : public fbl::RefCounted<Domain> {
   // channel configuration parameters (see NET-1084 and TODOs for
   // RegisterService above.
   virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                               SocketCallback socket_callback, async_dispatcher_t* dispatcher) = 0;
+                               SocketCallback socket_callback) = 0;
 
   // Removes the handler for inbound channel requests for the previously-
   // registered service identified by |psm|. This only prevents new inbound
