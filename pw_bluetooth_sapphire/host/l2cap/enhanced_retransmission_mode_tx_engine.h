@@ -9,6 +9,7 @@
 
 #include "lib/async/cpp/task.h"
 #include "lib/fit/function.h"
+#include "lib/fit/result.h"
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -109,13 +110,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   void SendPdu(PendingPdu* pdu);
 
-  // Retransmits frames from |pending_pdus_|. Returns |this| on success, or
-  // nullptr if a fatal error occurred.
+  // Retransmits frames from |pending_pdus_|. Invokes |connection_failure_callback_| on error and
+  // returns fit::error().
   //
   // Notes:
   // * The caller must ensure that !remote_is_busy_|.
-  // * When |nullptr| is returned, |this| may be invalid.
-  [[nodiscard]] EnhancedRetransmissionModeTxEngine* RetransmitUnackedData();
+  // * When return value is an error, |this| may be invalid.
+  [[nodiscard]] fit::result<> RetransmitUnackedData();
 
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;

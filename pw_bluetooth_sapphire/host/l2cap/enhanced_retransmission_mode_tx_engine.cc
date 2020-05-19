@@ -113,17 +113,16 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     monitor_task_.Cancel();
   }
 
-  auto self = this;
   if (is_poll_response && !remote_is_busy_) {
-    self = RetransmitUnackedData();
+    if (RetransmitUnackedData().is_error()) {
+      return;
+    }
   }
 
-  if (self) {
-    MaybeSendQueuedData();
+  MaybeSendQueuedData();
 
-    // TODO(quiche): Restart the receiver_ready_poll_task_, if there's any
-    // remaining unacknowledged data.
-  }
+  // TODO(quiche): Restart the receiver_ready_poll_task_, if there's any
+  // remaining unacknowledged data.
 }
 
 void Engine::UpdateReqSeq(uint8_t new_seq) {
@@ -230,7 +229,7 @@ void Engine::SendPdu(PendingPdu* pdu) {
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
-Engine* Engine::RetransmitUnackedData() {
+fit::result<> Engine::RetransmitUnackedData() {
   // The receive engine should have cleared the remote busy condition before
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
@@ -250,7 +249,7 @@ Engine* Engine::RetransmitUnackedData() {
       ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
-      return nullptr;
+      return fit::error();
     }
 
     // TODO(BT-860): If the task is already running, we should not restart it.
@@ -258,7 +257,7 @@ Engine* Engine::RetransmitUnackedData() {
     ++cur_frame;
   }
 
-  return this;
+  return fit::ok();
 }
 
 }  // namespace internal
