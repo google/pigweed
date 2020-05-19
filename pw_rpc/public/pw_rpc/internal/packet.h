@@ -30,7 +30,7 @@ class Packet {
 
   // Returns an empty packet with default values set.
   static constexpr Packet Empty() {
-    return Packet(PacketType::RPC, 0, 0, 0, {});
+    return Packet(PacketType::RPC, 0, 0, 0, {}, Status::OK);
   }
 
   // Encodes the packet into its wire format. Returns the encoded size.
@@ -44,30 +44,35 @@ class Packet {
   uint32_t service_id() const { return service_id_; }
   uint32_t method_id() const { return method_id_; }
   span<const std::byte> payload() const { return payload_; }
+  Status status() const { return status_; }
 
   void set_type(PacketType type) { type_ = type; }
   void set_channel_id(uint32_t channel_id) { channel_id_ = channel_id; }
   void set_service_id(uint32_t service_id) { service_id_ = service_id; }
   void set_method_id(uint32_t method_id) { method_id_ = method_id; }
   void set_payload(span<const std::byte> payload) { payload_ = payload; }
+  void set_status(Status status) { status_ = status; }
 
  private:
   constexpr Packet(PacketType type,
                    uint32_t channel_id,
                    uint32_t service_id,
                    uint32_t method_id,
-                   span<const std::byte> payload)
+                   span<const std::byte> payload,
+                   Status status)
       : type_(type),
         channel_id_(channel_id),
         service_id_(service_id),
         method_id_(method_id),
-        payload_(payload) {}
+        payload_(payload),
+        status_(status) {}
 
   PacketType type_;
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
   span<const std::byte> payload_;
+  Status status_;
 };
 
 }  // namespace pw::rpc::internal

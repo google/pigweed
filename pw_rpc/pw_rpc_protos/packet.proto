@@ -34,4 +34,7 @@ message RpcPacket {
 
   // The packet's payload.
   bytes payload = 5;
+
+  // RPC response status code.
+  uint32 status = 6;
 };

@@ -24,7 +24,9 @@ Packet Packet::FromBuffer(span<const std::byte> data) {
   uint32_t service_id = 0;
   uint32_t method_id = 0;
   span<const std::byte> payload;
+  Status status;
 
+  uint32_t value;
   protobuf::Decoder decoder(data);
 
   while (decoder.Next().ok()) {
@@ -53,10 +55,15 @@ Packet Packet::FromBuffer(span<const std::byte> data) {
       case RpcPacket::Fields::PAYLOAD:
         decoder.ReadBytes(&payload);
         break;
+
+      case RpcPacket::Fields::STATUS:
+        decoder.ReadUint32(&value);
+        status = static_cast<Status::Code>(value);
+        break;
     }
   }
 
-  return Packet(type, channel_id, service_id, method_id, payload);
+  return Packet(type, channel_id, service_id, method_id, payload, status);
 }
 
 StatusWithSize Packet::Encode(span<std::byte> buffer) const {
@@ -68,6 +75,7 @@ StatusWithSize Packet::Encode(span<std::byte> buffer) const {
   rpc_packet.WriteServiceId(service_id_);
   rpc_packet.WriteMethodId(method_id_);
   rpc_packet.WritePayload(payload_);
+  rpc_packet.WriteStatus(status_);
 
   span<const std::byte> proto;
   if (Status status = encoder.Encode(&proto); !status.ok()) {

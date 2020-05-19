@@ -30,6 +30,7 @@ TEST(Packet, EncodeDecode) {
   packet.set_service_id(0xdeadbeef);
   packet.set_method_id(0x03a82921);
   packet.set_payload(payload);
+  packet.set_status(Status::UNAVAILABLE);
 
   byte buffer[128];
   StatusWithSize sws = packet.Encode(buffer);
@@ -47,6 +48,7 @@ TEST(Packet, EncodeDecode) {
                         packet.payload().data(),
                         packet.payload().size()),
             0);
+  EXPECT_EQ(decoded.status(), Status::UNAVAILABLE);
 }
 
 }  // namespace
