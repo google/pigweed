@@ -32,6 +32,10 @@ size_t pw_VarintZigZagDecode(const void* input,
                              size_t input_size,
                              int64_t* output);
 
+// Returns the size of an when encoded as a varint.
+size_t pw_VarintEncodedSize(uint64_t integer);
+size_t pw_VarintZigZagEncodedSize(int64_t integer);
+
 #ifdef __cplusplus
 
 }  // extern "C"
@@ -127,6 +131,16 @@ inline size_t Decode(const span<const std::byte>& input, int64_t* value) {
 
 inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
   return pw_VarintDecode(input.data(), input.size(), value);
+}
+
+// Returns a size of an integer when encoded as a varint.
+inline size_t EncodedSize(uint64_t integer) {
+  return pw_VarintEncodedSize(integer);
+}
+
+// Returns a size of an signed integer when ZigZag encoded as a varint.
+inline size_t ZigZagEncodedSize(int64_t integer) {
+  return pw_VarintZigZagEncodedSize(integer);
 }
 
 }  // namespace varint

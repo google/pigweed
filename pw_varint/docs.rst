@@ -18,6 +18,18 @@ Compatibility
 * C
 * C++11 (with :doc:`../pw_polyfill/docs`)
 
+API
+===
+
+.. cpp:function:: size_t EncodedSize(uint64_t integer)
+
+Returns the size of an integer when encoded as a varint. Works on both signed
+and unsigned integers.
+
+.. cpp:function:: size_t ZigZagEncodedSize(int64_t integer)
+
+Returns the size of a signed integer when ZigZag encoded as a varint.
+
 Dependencies
 ============
 * ``pw_span``

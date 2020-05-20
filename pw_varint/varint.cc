@@ -83,5 +83,13 @@ extern "C" size_t pw_VarintZigZagDecode(const void* input,
   return bytes;
 }
 
+extern "C" size_t pw_VarintEncodedSize(uint64_t integer) {
+  return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
+}
+
+extern "C" size_t pw_VarintZigZagEncodedSize(int64_t integer) {
+  return pw_VarintEncodedSize(ZigZagEncode(integer));
+}
+
 }  // namespace varint
 }  // namespace pw
