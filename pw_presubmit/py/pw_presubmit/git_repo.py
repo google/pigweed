@@ -31,13 +31,14 @@ def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
 
 
 def _ls_files(args: Collection[PathOrStr], repo: Path) -> List[Path]:
+    repo = repo.resolve()
     return [
-        repo.joinpath(path).resolve() for path in git_stdout(
-            'ls-files', '--', *args, repo=repo).splitlines()
+        repo / path for path in git_stdout('ls-files', '--', *args,
+                                           repo=repo).splitlines()
     ]
 
 
-def _diff_names(commit: str, paths: Collection[PathOrStr],
+def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
                 repo: Path) -> List[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     git_root = root(repo)
@@ -48,26 +49,30 @@ def _diff_names(commit: str, paths: Collection[PathOrStr],
                                '--diff-filter=d',
                                commit,
                                '--',
-                               *paths,
+                               *pathspecs,
                                repo=repo).splitlines()
     ]
 
 
 def list_files(commit: Optional[str] = None,
-               paths: Collection[PathOrStr] = (),
+               pathspecs: Collection[PathOrStr] = (),
                exclude: Collection[Pattern[str]] = (),
                repo: Optional[Path] = None) -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
-    This function may only be called if repo points to a Git repository.
+    Args:
+      commit: commit to use as a base for git diff
+      pathspecs: Git pathspecs to use in git ls-files or diff
+      exclude: regular expressions for Posix-style paths to exclude
+      repo: repository path from which to run commands; defaults to Path.cwd()
     """
     if repo is None:
         repo = Path.cwd()
 
     if commit:
-        files = _diff_names(commit, paths, repo)
+        files = _diff_names(commit, pathspecs, repo)
     else:
-        files = _ls_files(paths, repo)
+        files = _ls_files(pathspecs, repo)
 
     git_root = root(repo=repo).resolve()
     return sorted(file for file in files if not any(
