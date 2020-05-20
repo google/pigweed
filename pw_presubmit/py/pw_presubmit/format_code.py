@@ -29,7 +29,7 @@ import re
 import subprocess
 import sys
 from typing import Callable, Collection, Dict, Iterable, List, NamedTuple
-from typing import Optional, Pattern, Sequence
+from typing import Optional, Pattern, Tuple
 
 try:
     import pw_presubmit
@@ -278,7 +278,7 @@ MARKDOWN_FORMAT: CodeFormat = CodeFormat('Markdown', ('.md', ),
                                          check_trailing_space,
                                          fix_trailing_space)
 
-CODE_FORMATS: Sequence[CodeFormat] = (
+CODE_FORMATS: Tuple[CodeFormat, ...] = (
     C_FORMAT,
     JAVA_FORMAT,
     JAVASCRIPT_FORMAT,
@@ -293,9 +293,11 @@ CODE_FORMATS: Sequence[CodeFormat] = (
 )
 
 
-def presubmit_check(code_format: CodeFormat) -> Callable:
+def presubmit_check(code_format: CodeFormat, **filter_paths_args) -> Callable:
     """Creates a presubmit check function from a CodeFormat object."""
-    @pw_presubmit.filter_paths(endswith=code_format.extensions)
+    filter_paths_args.setdefault('endswith', code_format.extensions)
+
+    @pw_presubmit.filter_paths(**filter_paths_args)
     def check_code_format(ctx: pw_presubmit.PresubmitContext):
         errors = code_format.check(ctx.paths)
         print_format_check(
@@ -312,8 +314,14 @@ def presubmit_check(code_format: CodeFormat) -> Callable:
     return check_code_format
 
 
-PRESUBMIT_CHECKS: Sequence[Callable] = tuple(
-    presubmit_check(code_format) for code_format in CODE_FORMATS)
+def presubmit_checks(**filter_paths_args) -> Tuple[Callable, ...]:
+    """Returns a tuple with all supported code format presubmit checks."""
+    return tuple(
+        presubmit_check(fmt, **filter_paths_args) for fmt in CODE_FORMATS)
+
+
+# TODO(hepler): Remove this teporary variable; always use the function instead.
+PRESUBMIT_CHECKS = presubmit_checks()
 
 
 class CodeFormatter:

@@ -337,19 +337,19 @@ QUICK = (
     init_cipd,
     init_virtualenv,
     copyright_notice,
-    format_code.PRESUBMIT_CHECKS,
+    format_code.presubmit_checks(),
     pw_presubmit.pragma_once,
     gn_clang_build,
     gn_arm_build,
     source_is_in_build_files,
-    python_checks.ALL,
+    python_checks.all_checks(),
 )
 
 FULL = (
     init_cipd,
     init_virtualenv,
     copyright_notice,
-    format_code.PRESUBMIT_CHECKS,
+    format_code.presubmit_checks(),
     pw_presubmit.pragma_once,
     gn_clang_build,
     gn_arm_build,
@@ -363,7 +363,7 @@ FULL = (
     cmake_tests if sys.platform != 'darwin' else (),
     bazel_test if sys.platform != 'darwin' else (),
     source_is_in_build_files,
-    python_checks.ALL,
+    python_checks.all_checks(),
     build_env_setup,
 )
 

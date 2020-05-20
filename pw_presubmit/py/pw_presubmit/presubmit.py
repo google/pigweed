@@ -42,7 +42,7 @@ import collections
 import contextlib
 import dataclasses
 import enum
-from inspect import signature
+from inspect import Parameter, signature
 import itertools
 import logging
 import os
@@ -452,15 +452,23 @@ class _Check:
         return self._check(ctx, *args, **kwargs)
 
 
+def _required_args(function: Callable) -> Iterable[Parameter]:
+    """Returns the required arguments for a function."""
+    optional_types = Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD
+
+    for param in signature(function).parameters.values():
+        if param.default is param.empty and param.kind not in optional_types:
+            yield param
+
+
 def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
     """Checks if a Callable can be used as a presubmit check."""
     try:
-        params = signature(check).parameters
+        required_args = tuple(_required_args(check))
     except (TypeError, ValueError):
         raise TypeError('Presubmit checks must be callable, but '
                         f'{check!r} is a {type(check).__name__}')
 
-    required_args = [p for p in params.values() if p.default == p.empty]
     if len(required_args) != 1:
         raise TypeError(
             f'Presubmit check functions must have exactly one required '
@@ -472,7 +480,7 @@ def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
 
 def filter_paths(endswith: Iterable[str] = (''),
                  exclude: Iterable[str] = (),
-                 always_run: bool = False):
+                 always_run: bool = False) -> Callable[[Callable], _Check]:
     """Decorator for filtering the paths list for a presubmit check function.
 
     Path filters only apply when the function is used as a presubmit check.

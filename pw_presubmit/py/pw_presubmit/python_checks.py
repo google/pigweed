@@ -17,6 +17,7 @@ These checks assume that they are running in a preconfigured Python environment.
 """
 
 import os
+import re
 import sys
 import logging
 
@@ -70,7 +71,10 @@ def pylint(ctx: pw_presubmit.PresubmitContext):
     )
 
 
-@filter_paths(endswith='.py', exclude=r'(?:.+/)?setup\.py')
+_SETUP_PY = re.compile(r'(?:.+/)?setup\.py')
+
+
+@filter_paths(endswith='.py')
 def mypy(ctx: pw_presubmit.PresubmitContext):
     env = os.environ.copy()
     # Use this environment variable to force mypy to colorize output.
@@ -79,7 +83,7 @@ def mypy(ctx: pw_presubmit.PresubmitContext):
 
     run_module(
         'mypy',
-        *ctx.paths,
+        *(p for p in ctx.paths if not _SETUP_PY.fullmatch(p.as_posix())),
         '--pretty',
         '--color-output',
         # TODO(pwbug/146): Some imports from installed packages fail. These
@@ -88,8 +92,17 @@ def mypy(ctx: pw_presubmit.PresubmitContext):
         env=env)
 
 
-ALL = (
+_ALL_CHECKS = (
     test_python_packages,
     pylint,
     mypy,
 )
+
+# TODO(hepler): Remove this teporary alias; use the function instead.
+ALL = _ALL_CHECKS
+
+
+def all_checks(endswith='.py', **filter_paths_args):
+    return tuple(
+        filter_paths(endswith=endswith, **filter_paths_args)(function)
+        for function in _ALL_CHECKS)
