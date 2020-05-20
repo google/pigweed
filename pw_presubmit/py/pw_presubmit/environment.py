@@ -17,6 +17,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+from typing import Iterable, Union
 
 from pw_presubmit import call
 
@@ -56,7 +57,11 @@ def init_cipd(pigweed_root: Path, output_directory: Path) -> None:
     _LOG.debug('PATH %s', os.environ['PATH'])
 
 
-def init_virtualenv(pigweed_root: Path, output_directory: Path) -> None:
+def init_virtualenv(
+        pigweed_root: Path,
+        output_directory: Path,
+        setup_py_roots: Iterable[Union[Path, str]] = (),
+) -> None:
     """Sets up a virtualenv, assumes recent Python 3 is already installed."""
     virtualenv_source = pigweed_root.joinpath('pw_env_setup', 'py',
                                               'pw_env_setup',
@@ -70,9 +75,8 @@ def init_virtualenv(pigweed_root: Path, output_directory: Path) -> None:
             'python3',
             virtualenv_source,
             f'--venv_path={output_directory}',
-            '--requirements={}'.format(
-                virtualenv_source.joinpath('requirements.txt')),
-            '--setup-py-roots={}'.format(pigweed_root),
+            f'--requirements={virtualenv_source / "requirements.txt"}',
+            *(f'--setup-py-root={p}' for p in [pigweed_root, *setup_py_roots]),
         )
 
     os.environ['PATH'] = os.pathsep.join((
