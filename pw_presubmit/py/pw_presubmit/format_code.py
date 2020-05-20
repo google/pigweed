@@ -320,10 +320,6 @@ def presubmit_checks(**filter_paths_args) -> Tuple[Callable, ...]:
         presubmit_check(fmt, **filter_paths_args) for fmt in CODE_FORMATS)
 
 
-# TODO(hepler): Remove this teporary variable; always use the function instead.
-PRESUBMIT_CHECKS = presubmit_checks()
-
-
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
     def __init__(self, files: Collection[Path]):

@@ -98,9 +98,6 @@ _ALL_CHECKS = (
     mypy,
 )
 
-# TODO(hepler): Remove this teporary alias; use the function instead.
-ALL = _ALL_CHECKS
-
 
 def all_checks(endswith='.py', **filter_paths_args):
     return tuple(
