@@ -1,4 +1,5 @@
 .. default-domain:: py
+
 .. highlight:: py
 
 .. _chapter-pw-protobuf-compiler:

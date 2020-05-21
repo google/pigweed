@@ -14,8 +14,10 @@ two components:
 1. The facade (this module) which is only a macro interface layer
 2. The backend, provided elsewhere, that implements the low level logging
 
-Basic usage example
--------------------
+Usage examples
+--------------
+Here is a typical usage example, showing setting the module name, and using the
+long-form names.
 
 .. code-block:: cpp
 
@@ -24,6 +26,7 @@ Basic usage example
 
   int main() {
     PW_LOG_INFO("Booting...");
+    PW_LOG_DEBUG("CPU temp: %.2f", cpu_temperature);
     if (BootFailed()) {
       PW_LOG_CRITICAL("Had trouble booting due to error %d", GetErrorCode());
       ReportErrorsAndHalt();
@@ -31,9 +34,65 @@ Basic usage example
     PW_LOG_INFO("Successfully booted");
   }
 
+In ``.cc`` files, it is possible to dispense with the ``PW_`` part of the log
+names and go for shorter log macros.
+
+.. code-block:: cpp
+
+  #define PW_LOG_MODULE_NAME "BLE"
+  #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+  #include "pw_log/log.h"
+
+  int main() {
+    INF("Booting...");
+    DBG("CPU temp: %.2f", cpu_temperature);
+    if (BootFailed()) {
+      CRT("Had trouble booting due to error %d", GetErrorCode());
+      ReportErrorsAndHalt();
+    }
+    INF("Successfully booted");
+  }
+
+Layer diagram example: ``stm32f429i-disc1``
+-------------------------------------------
+Below is an example diagram showing how the modules connect together for the
+``stm32f429i-disc1`` target, where the ``pw_log`` backend is ``pw_log_basic``.
+``pw_log_basic`` uses the ``pw_sys_io`` module to log in plaintext, which in
+turn outputs to the STM32F429 bare metal backend for ``pw_sys_io``, which is
+``pw_sys_io_baremetal_stm32f429i``.
+
+.. blockdiag::
+
+  blockdiag {
+    default_fontsize = 14;
+    orientation = portrait;
+
+    group {
+      color = "#AAAAAA";
+      label = "Microcontroller"
+
+      app       [label = "App code"];
+      facade    [label = "pw_log"];
+      backend   [label = "pw_log_basic"];
+      sys_io    [label = "pw_sys_io"];
+      sys_io_bm [label = "pw_sys_io_\nstm32f429"];
+      uart      [label = "UART pins"];
+    }
+    ftdi     [label = "FTDI cable"];
+    computer [label = "Minicom"];
+
+    app -> facade -> backend -> sys_io -> sys_io_bm -> uart -> ftdi -> computer;
+
+    //app -> facade [folded];
+    //backend -> sys_io [folded];
+    //uart -> ftdi [folded];
+  }
 
 Logging macros
 --------------
+
+These are the primary macros for logging information about the functioning of a
+system, intended to be used directly.
 
 .. cpp:function:: PW_LOG(level, flags, fmt, ...)
 
@@ -68,8 +127,9 @@ Logging macros
 
     ``PW_LOG()`` should not be used frequently; typically only when adding
     flags to a particular message to mark PII or to indicate delivery
-    guarantees.  For most cases, prefer to use the direct ``PW_LOG_DEBUG``
-    style macros, which are often implemented more efficiently in the backend.
+    guarantees.  For most cases, prefer to use the direct ``PW_LOG_INFO`` or
+    ``PW_LOG_DEBUG`` style macros, which are often implemented more efficiently
+    in the backend.
 
 
 .. cpp:function:: PW_LOG_DEBUG(fmt, ...)
@@ -104,3 +164,83 @@ the following attributes:
 Each backend may decide to capture different attributes to balance the tradeoff
 between call site code size, call site run time, wire format size, logging
 complexity, and more.
+
+Design discussion
+-----------------
+
+Why not use C++ style stream logging operators like Google Log?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+There are multiple reasons to avoid the C++ stream logging style in embedded,
+but the biggest reason is that C++ stream logging defeats log tokenization. By
+having the string literals broken up between ``<<`` operators, tokenization
+becomes impossible with current language features.
+
+Consider this example use of Google Log:
+
+.. code-block:: cpp
+
+  LOG(INFO) << "My temperature is " << temperature << ". State: " << state;
+
+This log statement has two string literals. It might seem like one could convert
+move to tokenization:
+
+.. code-block:: cpp
+
+  LOG(INFO) << TOKEN("My temperature is ") << temperature << TOKEN(". State: ") << state;
+
+However, this doesn't work. The key problem is that the tokenization system
+needs to allocate the string in a linker section that is excluded from the
+final binary, but is in the final ELF executable (and so can be extracted).
+Since there is no way to declare a string or array in a different section in
+the middle of an experession in C++, it is not possible to tokenize an
+expression like the above.
+
+In contrast, the ``printf``-style version is a single statement with a single
+string constant, which can be expanded by the preprocessor (as part of
+``pw_tokenizer``) into a constant array in a special section.
+
+.. code-block:: cpp
+
+  // Note: LOG_INFO can be tokenized behind the macro; transparent to users.
+  PW_LOG_INFO("My temperature is %d. State: %s", temperature, state);
+
+Additionally, while Pigweed is mostly C++, it a practical reality that at times
+projects using Pigweed will need to log from third-party libraries written in
+C. Thus, we also wanted to retain C compatibility.
+
+In summary, printf-style logging is better for Pigweed's target audience
+because it:
+
+- works with tokenization
+- is C compatibile
+- has smaller call sites
+
+The Pigweed authors additionally maintain a C++ stream-style embedded logging
+library for compatibility with non-embedded code. While it is effective for
+porting server code to microcontrollers quickly, we do not advise embedded
+projects use that approach unless absolutely necessary.
+
+- See also :ref:`chapter-pw-log-tokenized` for details on leveraging Pigweed's
+  tokenizer module for logging.
+- See also :ref:`chapter-pw-tokenizer` for details on Pigweed's tokenizer,
+  which is useful for more than just logging.
+
+Why does the facade use header redirection instead of C functions?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Without header redirection, it is not possible to do sophisticated macro
+transforms in the backkend. For example, to apply tokenization to log strings,
+the backend must define the handling macros. Additionally, compile-time
+filtering by log level or flags is not possible without header redirection.
+While it may be possible to do the filtering in the facade, that would imply
+having the same filtering implementation for all log handling, which is a
+restriction we want to avoid.
+
+Why is the module name done as a preprocessor define rather than an argument?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+APIs are a balance between power and ease of use. In the practical cases we
+have seen over the years, most translation units only need to log to one
+module, like ``"BLE"``, ``"PWR"``, ``"BAT"`` and so on. Thus, adding the
+argument to each macro call seemed like too much. On the other hand, flags are
+something that are typically added on a per-log-statement basis, and is why the
+flags are added on a per-call basis (though hidden through the high-level
+macros).

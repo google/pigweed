@@ -19,8 +19,16 @@
 # To help manage these files.
 pip-tools
 
-# For documentation generation.
-# TODO(frolv): Create a setup.py for pw_docgen and remove these.
+# The below modules are all for documentation generation.
+# TODO(pwbug/198): Create a setup.py for pw_docgen and remove these.
 sphinx
 sphinx-rtd-theme
+
+# Markdown to REST for documentation.
 m2r
+
+# Diagram generation modules.
+sphinxcontrib-actdiag
+sphinxcontrib-blockdiag
+sphinxcontrib-nwdiag
+sphinxcontrib-seqdiag

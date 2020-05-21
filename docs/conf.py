@@ -41,7 +41,17 @@ extensions = [
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
     'm2r',  # Converts Markdown to reStructuredText
+
+    # Blockdiag suite of diagram generators.
+    'sphinxcontrib.blockdiag',
+    'sphinxcontrib.nwdiag',
+    'sphinxcontrib.seqdiag',
+    'sphinxcontrib.actdiag',
+    'sphinxcontrib.rackdiag',
+    'sphinxcontrib.packetdiag',
 ]
+
+blockdiag_html_image_format = 'SVG'
 
 # Tell m2r to parse links to .md files and add them to the build.
 m2r_parse_relative_links = True

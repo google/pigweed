@@ -1,8 +1,8 @@
-.. _chapter-tokenizer:
-
 .. default-domain:: cpp
 
 .. highlight:: sh
+
+.. _chapter-pw-tokenizer:
 
 ------------
 pw_tokenizer

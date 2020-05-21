@@ -2,6 +2,8 @@
 
 .. highlight:: sh
 
+.. _chapter-pw-log-tokenized:
+
 ----------------
 pw_log_tokenized
 ----------------
