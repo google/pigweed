@@ -174,6 +174,13 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
     return;
   }
 
+  if (rsp.result() != InformationResult::kSuccess) {
+    bt_log(ERROR, "l2cap-bredr",
+           "Extended Features Information Response failure result (result: %#.4hx)",
+           static_cast<uint16_t>(rsp.result()));
+    return;
+  }
+
   if (rsp.type() != InformationType::kExtendedFeaturesSupported) {
     bt_log(ERROR, "l2cap-bredr",
            "Incorrect extended features information response type (type: %#.4hx)", rsp.type());

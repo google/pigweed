@@ -1628,6 +1628,17 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
   EXPECT_EQ(kExpectedExtendedFeatures, *registry()->extended_features());
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseInvalidFailureResult) {
+  constexpr auto kResult = static_cast<InformationResult>(0xFFFF);
+  const auto kInfoRsp = MakeExtendedFeaturesInfoRsp(kResult);
+
+  EXPECT_FALSE(registry()->extended_features());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess, kInfoRsp.view()}});
+  EXPECT_FALSE(registry()->extended_features());
+}
+
 TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeStartingConfigFlow) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
