@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
 
+#include <memory>
+
 #include <fbl/macros.h>
 #include <fbl/slab_allocator.h>
-
-#include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -94,6 +94,7 @@ template <typename HeaderType, size_t BufferSize>
 class FixedSizePacket : public Packet<HeaderType> {
  public:
   explicit FixedSizePacket(size_t payload_size = 0u) : Packet<HeaderType>() {
+    ZX_ASSERT(BufferSize >= sizeof(HeaderType) + payload_size);
     this->init_view(MutablePacketView<HeaderType>(&buffer_, payload_size));
   }
 

@@ -33,7 +33,7 @@ namespace {
 // Does not deallocate from a slab buffer when destroyed (unlike SlabPacket).
 using LargeACLDataPacket =
     slab_allocators::internal::FixedSizePacket<ACLDataHeader,
-                                               slab_allocators::kLargeACLDataPayloadSize>;
+                                               slab_allocators::kLargeACLDataPacketSize>;
 
 ACLDataPacketPtr NewACLDataPacket(size_t payload_size) {
   ZX_ASSERT_MSG(payload_size <= slab_allocators::kLargeACLDataPayloadSize,

@@ -89,6 +89,29 @@ TEST(HCI_SlabAllocatorsTest, ACLDataPacketFallBack) {
   packet->mutable_view()->mutable_data().Fill('m');
 }
 
+TEST(HCI_SlabAllocatorsTest, LargeACLDataPacketFallback) {
+  // Maximum number of packets we can expect to obtain from the large slab allocator.
+  const size_t kMaxSlabPackets = kMaxNumSlabs * kNumLargeACLDataPackets;
+  const size_t kPayloadSize = kLargeACLDataPayloadSize;
+  LinkedList<Packet<ACLDataHeader>> packets;
+
+  for (size_t num_packets = 0; num_packets < kMaxSlabPackets; num_packets++) {
+    auto packet = ACLDataPacket::New(kPayloadSize);
+    EXPECT_TRUE(packet);
+    packets.push_front(std::move(packet));
+  }
+
+  // ACL allocator can fall back on system allocator after slabs are exhausted.
+  auto packet = ACLDataPacket::New(kPayloadSize);
+  ASSERT_TRUE(packet);
+
+  // Fallback-allocated packet should still function as expected.
+  EXPECT_EQ(sizeof(ACLDataHeader) + kPayloadSize, packet->view().size());
+
+  // Write over the whole allocation (errors to be caught by sanitizer instrumentation).
+  packet->mutable_view()->mutable_data().Fill('m');
+}
+
 }  // namespace
 }  // namespace slab_allocators
 }  // namespace hci
