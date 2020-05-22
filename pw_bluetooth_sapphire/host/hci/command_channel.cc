@@ -6,10 +6,9 @@
 
 #include <endian.h>
 #include <lib/async/default.h>
+#include <lib/trace/event.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
-
-#include <trace/event.h>
 
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"

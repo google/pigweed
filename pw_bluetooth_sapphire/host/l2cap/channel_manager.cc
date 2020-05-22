@@ -4,9 +4,8 @@
 
 #include "channel_manager.h"
 
+#include <lib/trace/event.h>
 #include <zircon/assert.h>
-
-#include <trace/event.h>
 
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"

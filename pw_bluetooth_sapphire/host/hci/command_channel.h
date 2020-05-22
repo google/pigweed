@@ -9,6 +9,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/trace/event.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
 
@@ -21,7 +22,6 @@
 #include <unordered_set>
 
 #include <fbl/macros.h>
-#include <trace/event.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"

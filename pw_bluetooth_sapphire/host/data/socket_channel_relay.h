@@ -7,13 +7,13 @@
 
 #include <lib/async/cpp/wait.h>
 #include <lib/fit/function.h>
+#include <lib/trace/event.h>
 #include <zircon/status.h>
 
 #include <deque>
 
 #include <fbl/macros.h>
 #include <fbl/ref_ptr.h>
-#include <trace/event.h>
 
 #include "lib/zx/socket.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"

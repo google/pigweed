@@ -6,11 +6,11 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_PACKET_H_
 
 #include <lib/fit/function.h>
+#include <lib/trace/event.h>
 
 #include <memory>
 
 #include <fbl/macros.h>
-#include <trace/event.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
