@@ -2,7 +2,7 @@
   {
     "path": "gn/gn/${os}-${arch=amd64}",
     "tags": [
-      "git_revision:3cbdb62872734f3ca71c9571fe6876a15ca55984"
+      "git_revision:2c801de70b8ed3c8e404245d61d32a3d61b328d0"
     ]
   },
   {
