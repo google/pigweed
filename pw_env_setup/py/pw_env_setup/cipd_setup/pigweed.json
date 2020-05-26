@@ -72,7 +72,7 @@
     "_comment": "TODO(pwbug/66) Put openocd in cipd for Windows.",
     "path": "pigweed/third_party/openocd/${os=linux,mac}-${arch=amd64}",
     "tags": [
-      "git_revision:646566e006acd58fb9ac405511d3ecca79f26d55-2"
+      "git_revision:e41c0f4906e46d1076ce62a0da5518aa1ca280b8"
     ]
   },
   {
