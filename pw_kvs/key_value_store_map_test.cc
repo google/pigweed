@@ -28,8 +28,8 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
@@ -393,8 +393,8 @@ class KvsTester {
 
   static constexpr size_t kMaxValueLength = 64;
 
-  static FakeFlashBuffer<kParams.sector_size,
-                         (kParams.sector_count * kParams.redundancy)>
+  static FakeFlashMemoryBuffer<kParams.sector_size,
+                               (kParams.sector_count * kParams.redundancy)>
       flash_;
 
   FlashPartitionWithStatsBuffer<kMaxEntries> partition_;
@@ -406,11 +406,11 @@ class KvsTester {
 };
 
 template <const TestParameters& kParams>
-FakeFlashBuffer<kParams.sector_size,
-                (kParams.sector_count * kParams.redundancy)>
+FakeFlashMemoryBuffer<kParams.sector_size,
+                      (kParams.sector_count * kParams.redundancy)>
     KvsTester<kParams>::flash_ =
-        FakeFlashBuffer<kParams.sector_size,
-                        (kParams.sector_count * kParams.redundancy)>(
+        FakeFlashMemoryBuffer<kParams.sector_size,
+                              (kParams.sector_count * kParams.redundancy)>(
             kParams.sector_alignment);
 
 #define _TEST(fixture, test, ...) \

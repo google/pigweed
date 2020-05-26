@@ -14,7 +14,7 @@
 
 #define PW_LOG_MODULE_NAME "KVS"
 
-#include "pw_kvs/in_memory_fake_flash.h"
+#include "pw_kvs/fake_flash_memory.h"
 
 #include "pw_log/log.h"
 
@@ -55,7 +55,7 @@ Status FlashError::Check(FlashMemory::Address start_address, size_t size) {
   return status_;
 }
 
-Status InMemoryFakeFlash::Erase(Address address, size_t num_sectors) {
+Status FakeFlashMemory::Erase(Address address, size_t num_sectors) {
   if (address % sector_size_bytes() != 0) {
     PW_LOG_ERROR(
         "Attempted to erase sector at non-sector aligned boundary; address %zx",
@@ -77,8 +77,7 @@ Status InMemoryFakeFlash::Erase(Address address, size_t num_sectors) {
   return Status::OK;
 }
 
-StatusWithSize InMemoryFakeFlash::Read(Address address,
-                                       span<std::byte> output) {
+StatusWithSize FakeFlashMemory::Read(Address address, span<std::byte> output) {
   if (address + output.size() >= sector_count() * size_bytes()) {
     return StatusWithSize::OUT_OF_RANGE;
   }
@@ -89,8 +88,8 @@ StatusWithSize InMemoryFakeFlash::Read(Address address,
   return StatusWithSize(status, output.size());
 }
 
-StatusWithSize InMemoryFakeFlash::Write(Address address,
-                                        span<const std::byte> data) {
+StatusWithSize FakeFlashMemory::Write(Address address,
+                                      span<const std::byte> data) {
   if (address % alignment_bytes() != 0 ||
       data.size() % alignment_bytes() != 0) {
     PW_LOG_ERROR("Unaligned write; address %zx, size %zu B, alignment %zu",

@@ -20,9 +20,9 @@
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs_private/byte_utils.h"
 #include "pw_span/span.h"
 
@@ -35,7 +35,7 @@ using std::string_view;
 constexpr EntryFormat kFormat{0xbeef, nullptr};
 
 TEST(Entry, Size_RoundsUpToAlignment) {
-  FakeFlashBuffer<64, 2> flash(16);
+  FakeFlashMemoryBuffer<64, 2> flash(16);
 
   for (size_t alignment_bytes = 1; alignment_bytes <= 4096; ++alignment_bytes) {
     FlashPartition partition(&flash, 0, flash.sector_count(), alignment_bytes);
@@ -55,7 +55,7 @@ TEST(Entry, Size_RoundsUpToAlignment) {
 }
 
 TEST(Entry, Construct_ValidEntry) {
-  FakeFlashBuffer<64, 2> flash(16);
+  FakeFlashMemoryBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
   auto entry =
@@ -68,7 +68,7 @@ TEST(Entry, Construct_ValidEntry) {
 }
 
 TEST(Entry, Construct_Tombstone) {
-  FakeFlashBuffer<64, 2> flash(16);
+  FakeFlashMemoryBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
   auto entry = Entry::Tombstone(partition, 1, kFormat, "key", 123);
@@ -109,7 +109,7 @@ class ValidEntryInFlash : public ::testing::Test {
     EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
-  FakeFlashBuffer<1024, 4> flash_;
+  FakeFlashMemoryBuffer<1024, 4> flash_;
   FlashPartition partition_;
   Entry entry_;
 };
@@ -194,7 +194,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_PastEnd) {
 }
 
 TEST(ValidEntry, Write) {
-  FakeFlashBuffer<1024, 4> flash;
+  FakeFlashMemoryBuffer<1024, 4> flash;
   FlashPartition partition(&flash, 0, flash.sector_count(), 32);
 
   Entry entry = Entry::Valid(
@@ -225,7 +225,7 @@ class TombstoneEntryInFlash : public ::testing::Test {
     EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
-  FakeFlashBuffer<1024, 4> flash_;
+  FakeFlashMemoryBuffer<1024, 4> flash_;
   FlashPartition partition_;
   Entry entry_;
 };
@@ -261,7 +261,7 @@ TEST_F(TombstoneEntryInFlash, ReadValue) {
 }
 
 TEST(TombstoneEntry, Write) {
-  FakeFlashBuffer<1024, 4> flash;
+  FakeFlashMemoryBuffer<1024, 4> flash;
   FlashPartition partition(&flash);
   ChecksumCrc16 checksum;
 
@@ -278,7 +278,7 @@ TEST(TombstoneEntry, Write) {
 }
 
 TEST(Entry, Checksum_NoChecksumRequiresZero) {
-  FakeFlashBuffer<1024, 4> flash(kEntry1);
+  FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash);
   Entry entry;
 
@@ -297,7 +297,7 @@ TEST(Entry, Checksum_NoChecksumRequiresZero) {
 }
 
 TEST(Entry, Checksum_ChecksPadding) {
-  FakeFlashBuffer<1024, 4> flash(
+  FakeFlashMemoryBuffer<1024, 4> flash(
       AsBytes(kHeader1, kKey1, kValue1, ByteStr("\0\0\0\0\1")));
   FlashPartition partition(&flash);
   Entry entry;
@@ -441,7 +441,7 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSmallerAlignment) {
 
 TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
   // Use 32-bit alignment, the same as the original entry's alignment.
-  FakeFlashBuffer<1024, 4> flash(kEntry1);
+  FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 32);
   Entry entry;
   ASSERT_EQ(Status::OK, Entry::Read(partition, 0, kFormats, &entry));
@@ -467,7 +467,7 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
 
 TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatLargerAlignment) {
   // Use 64-bit alignment, larger than the original entry's alignment.
-  FakeFlashBuffer<1024, 4> flash(kEntry1);
+  FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 64);
   Entry entry;
   ASSERT_EQ(Status::OK, Entry::Read(partition, 0, kFormats, &entry));

@@ -18,8 +18,8 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/format.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_kvs_private/byte_utils.h"
@@ -171,7 +171,7 @@ class KvsErrorHandling : public ::testing::Test {
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
-  FakeFlashBuffer<512, 4> flash_;
+  FakeFlashMemoryBuffer<512, 4> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
@@ -378,7 +378,7 @@ class KvsErrorRecovery : public ::testing::Test {
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
-  FakeFlashBuffer<512, 4> flash_;
+  FakeFlashMemoryBuffer<512, 4> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };
@@ -635,7 +635,7 @@ class InitializedRedundantMultiMagicKvs : public ::testing::Test {
     EXPECT_EQ(Status::OK, kvs_.Init());
   }
 
-  FakeFlashBuffer<512, 4, 3> flash_;
+  FakeFlashMemoryBuffer<512, 4, 3> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2, 3> kvs_;
 };
@@ -869,7 +869,7 @@ class InitializedMultiMagicKvs : public ::testing::Test {
     EXPECT_EQ(Status::OK, kvs_.Init());
   }
 
-  FakeFlashBuffer<512, 4, 3> flash_;
+  FakeFlashMemoryBuffer<512, 4, 3> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 1, 3> kvs_;
 };
@@ -922,7 +922,7 @@ class InitializedRedundantLazyRecoveryKvs : public ::testing::Test {
     EXPECT_EQ(Status::OK, kvs_.Init());
   }
 
-  FakeFlashBuffer<512, 4, 3> flash_;
+  FakeFlashMemoryBuffer<512, 4, 3> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2> kvs_;
 };
@@ -1014,7 +1014,7 @@ class InitializedLazyRecoveryKvs : public ::testing::Test {
     EXPECT_EQ(Status::OK, kvs_.Init());
   }
 
-  FakeFlashBuffer<512, 8> flash_;
+  FakeFlashMemoryBuffer<512, 8> flash_;
   FlashPartition partition_;
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
 };

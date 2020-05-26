@@ -185,7 +185,7 @@ TEST(AlignedWriter, DestructorFlushes) {
 // Output class that can be programmed to fail for testing purposes.
 // TODO(hepler): If we create a general pw_io / pw_stream module, this and
 // InputWithErrorInjection should be made into generic test utility classes,
-// similar to InMemoryFakeFlash.
+// similar to FakeFlashMemory.
 struct OutputWithErrorInjection final : public Output {
  public:
   enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;

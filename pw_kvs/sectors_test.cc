@@ -15,7 +15,7 @@
 #include "pw_kvs/internal/sectors.h"
 
 #include "gtest/gtest.h"
-#include "pw_kvs/in_memory_fake_flash.h"
+#include "pw_kvs/fake_flash_memory.h"
 
 namespace pw::kvs::internal {
 namespace {
@@ -26,7 +26,7 @@ class SectorsTest : public ::testing::Test {
       : partition_(&flash_),
         sectors_(sector_descriptors_, partition_, nullptr) {}
 
-  FakeFlashBuffer<128, 16> flash_;
+  FakeFlashMemoryBuffer<128, 16> flash_;
   FlashPartition partition_;
   Vector<SectorDescriptor, 32> sector_descriptors_;
   Sectors sectors_;

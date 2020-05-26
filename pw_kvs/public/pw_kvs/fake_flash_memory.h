@@ -78,7 +78,7 @@ class FlashError {
 // This uses a buffer to mimic the behaviour of flash (requires erase before
 // write, checks alignments, and is addressed in sectors). The underlying buffer
 // is not initialized.
-class InMemoryFakeFlash : public FlashMemory {
+class FakeFlashMemory : public FlashMemory {
  private:
   static Vector<FlashError, 0> no_errors_;
 
@@ -88,12 +88,12 @@ class InMemoryFakeFlash : public FlashMemory {
 
   static constexpr std::byte kErasedValue = std::byte{0xff};
 
-  InMemoryFakeFlash(span<std::byte> buffer,
-                    size_t sector_size,
-                    size_t sector_count,
-                    size_t alignment_bytes = kDefaultAlignmentBytes,
-                    Vector<FlashError>& read_errors = no_errors_,
-                    Vector<FlashError>& write_errors = no_errors_)
+  FakeFlashMemory(span<std::byte> buffer,
+                  size_t sector_size,
+                  size_t sector_count,
+                  size_t alignment_bytes = kDefaultAlignmentBytes,
+                  Vector<FlashError>& read_errors = no_errors_,
+                  Vector<FlashError>& write_errors = no_errors_)
       : FlashMemory(sector_size, sector_count, alignment_bytes),
         buffer_(buffer),
         read_errors_(read_errors),
@@ -143,25 +143,27 @@ class InMemoryFakeFlash : public FlashMemory {
   Vector<FlashError>& write_errors_;
 };
 
-// Creates an InMemoryFakeFlash backed by a std::array. The array is initialized
+// Creates an FakeFlashMemory backed by a std::array. The array is initialized
 // to the erased value. A byte array to which to initialize the memory may be
 // provided.
 template <size_t kSectorSize, size_t kSectorCount, size_t kInjectedErrors = 8>
-class FakeFlashBuffer : public InMemoryFakeFlash {
+class FakeFlashMemoryBuffer : public FakeFlashMemory {
  public:
   // Creates a flash memory with no data written.
-  explicit FakeFlashBuffer(size_t alignment_bytes = kDefaultAlignmentBytes)
-      : FakeFlashBuffer(std::array<std::byte, 0>{}, alignment_bytes) {}
+  explicit FakeFlashMemoryBuffer(
+      size_t alignment_bytes = kDefaultAlignmentBytes)
+      : FakeFlashMemoryBuffer(std::array<std::byte, 0>{}, alignment_bytes) {}
 
   // Creates a flash memory initialized to the provided contents.
-  explicit FakeFlashBuffer(span<const std::byte> contents,
-                           size_t alignment_bytes = kDefaultAlignmentBytes)
-      : InMemoryFakeFlash(buffer_,
-                          kSectorSize,
-                          kSectorCount,
-                          alignment_bytes,
-                          read_errors_,
-                          write_errors_) {
+  explicit FakeFlashMemoryBuffer(
+      span<const std::byte> contents,
+      size_t alignment_bytes = kDefaultAlignmentBytes)
+      : FakeFlashMemory(buffer_,
+                        kSectorSize,
+                        kSectorCount,
+                        alignment_bytes,
+                        read_errors_,
+                        write_errors_) {
     std::memset(buffer_.data(), int(kErasedValue), buffer_.size());
     std::memcpy(buffer_.data(),
                 contents.data(),

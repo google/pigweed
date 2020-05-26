@@ -14,8 +14,8 @@
 
 #include "gtest/gtest.h"
 #include "pw_kvs/crc16_checksum.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/key_value_store.h"
 
 namespace pw::kvs {
@@ -32,7 +32,7 @@ constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
 // 4 x 4k sectors, 16 byte alignment
-FakeFlashBuffer<4 * 1024, 6> test_flash(16);
+FakeFlashMemoryBuffer<4 * 1024, 6> test_flash(16);
 
 FlashPartitionWithStatsBuffer<kMaxUsableSectors> test_partition(
     &test_flash, 0, test_flash.sector_count());

@@ -15,8 +15,8 @@
 #include "pw_kvs/internal/entry_cache.h"
 
 #include "gtest/gtest.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs_private/byte_utils.h"
@@ -282,7 +282,7 @@ class InitializedEntryCache : public EmptyEntryCache {
   }
 
   static constexpr size_t kTotalSectors = 128;
-  FakeFlashBuffer<kSectorSize, kTotalSectors> flash_;
+  FakeFlashMemoryBuffer<kSectorSize, kTotalSectors> flash_;
   FlashPartition partition_;
 
   Vector<SectorDescriptor, kTotalSectors> sector_descriptors_;

@@ -75,24 +75,30 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "test_utils",
+    name = "fake_flash",
     srcs = [
-        "in_memory_fake_flash.cc",
+        "fake_flash_memory.cc",
     ],
     hdrs = [
-        "public/pw_kvs/in_memory_fake_flash.h",
-        "pw_kvs_private/byte_utils.h",
+        "public/pw_kvs/fake_flash_memory.h",
     ],
-    includes = ["public"],
-    visibility = ["//visibility:private"],
     deps = [
+        ":pw_kvs",
         "//pw_containers",
-        "//pw_kvs",
         "//pw_log",
         "//pw_log:facade",
         "//pw_span",
         "//pw_status",
     ],
+)
+
+pw_cc_library(
+    name = "test_utils",
+    hdrs = [
+        "pw_kvs_private/byte_utils.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
 )
 
 pw_cc_library(

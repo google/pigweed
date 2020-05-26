@@ -16,9 +16,9 @@
 #define PW_KVS_RECORD_PARTITION_STATS 1
 
 #include "gtest/gtest.h"
+#include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_partition_with_stats.h"
-#include "pw_kvs/in_memory_fake_flash.h"
 #include "pw_kvs/key_value_store.h"
 #include "pw_log/log.h"
 
@@ -40,7 +40,7 @@ class WearTest : public ::testing::Test {
   static constexpr size_t kMaxEntries = 256;
   static constexpr size_t kTestPartitionSectorSize = 512;
 
-  FakeFlashBuffer<kTestPartitionSectorSize, kSectors> flash_;
+  FakeFlashMemoryBuffer<kTestPartitionSectorSize, kSectors> flash_;
   FlashPartitionWithStatsBuffer<kSectors> partition_;
 
   KeyValueStoreBuffer<kMaxEntries, kSectors> kvs_;

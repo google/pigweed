@@ -39,7 +39,7 @@
 #include "pw_string/string_builder.h"
 
 #if USE_MEMORY_BUFFER
-#include "pw_kvs/in_memory_fake_flash.h"
+#include "pw_kvs/fake_flash_memory.h"
 #endif  // USE_MEMORY_BUFFER
 
 namespace pw::kvs {
@@ -112,7 +112,7 @@ struct FlashWithPartitionFake {
   FlashWithPartitionFake(size_t alignment_bytes)
       : memory(alignment_bytes), partition(&memory, 0, memory.sector_count()) {}
 
-  FakeFlashBuffer<sector_size_bytes, sector_count> memory;
+  FakeFlashMemoryBuffer<sector_size_bytes, sector_count> memory;
   FlashPartition partition;
 
  public:
@@ -156,10 +156,10 @@ typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
 #if USE_MEMORY_BUFFER
 // Although it might be useful to test other configurations, some tests require
 // at least 3 sectors; therfore it should have this when checked in.
-FakeFlashBuffer<4 * 1024, 6> test_flash(
+FakeFlashMemoryBuffer<4 * 1024, 6> test_flash(
     16);  // 4 x 4k sectors, 16 byte alignment
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
-FakeFlashBuffer<1024, 60> large_test_flash(8);
+FakeFlashMemoryBuffer<1024, 60> large_test_flash(8);
 FlashPartition large_test_partition(&large_test_flash,
                                     0,
                                     large_test_flash.sector_count());
