@@ -70,11 +70,13 @@ StatusWithSize Packet::Encode(span<std::byte> buffer) const {
   pw::protobuf::NestedEncoder encoder(buffer);
   RpcPacket::Encoder rpc_packet(&encoder);
 
+  // The payload is encoded first, as it may share the encode buffer.
+  rpc_packet.WritePayload(payload_);
+
   rpc_packet.WriteType(type_);
   rpc_packet.WriteChannelId(channel_id_);
   rpc_packet.WriteServiceId(service_id_);
   rpc_packet.WriteMethodId(method_id_);
-  rpc_packet.WritePayload(payload_);
   rpc_packet.WriteStatus(status_);
 
   span<const std::byte> proto;

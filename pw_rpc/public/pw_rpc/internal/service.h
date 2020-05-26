@@ -42,7 +42,8 @@ class Service {
   // Handles an incoming packet and populates a response. Errors that occur
   // should be set within the response packet.
   void ProcessPacket(const internal::Packet& request,
-                     internal::Packet& response);
+                     internal::Packet& response,
+                     span<std::byte> payload_buffer);
 
  private:
   friend class internal::ServiceRegistry;

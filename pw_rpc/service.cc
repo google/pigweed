@@ -18,8 +18,9 @@
 
 namespace pw::rpc::internal {
 
-void Service::ProcessPacket(const Packet& request, Packet& response) {
-  response.set_type(PacketType::RPC);
+void Service::ProcessPacket(const Packet& request,
+                            Packet& response,
+                            span<std::byte> payload_buffer) {
   response.set_service_id(id_);
 
   for (const Method& method : methods_) {
@@ -28,6 +29,8 @@ void Service::ProcessPacket(const Packet& request, Packet& response) {
       response.set_method_id(method.id);
     }
   }
+
+  (void)payload_buffer;
 }
 
 }  // namespace pw::rpc::internal

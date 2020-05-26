@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "pw_assert/assert.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
@@ -40,16 +41,22 @@ class ChannelOutput {
 
 class Channel {
  public:
+  static constexpr uint32_t kUnassignedChannelId = 0;
+
   // Creates a dynamically assignable channel without a set ID or output.
   constexpr Channel() : id_(kUnassignedChannelId), output_(nullptr) {}
 
   // Creates a channel with a static ID. The channel's output can also be
   // static, or it can set to null to allow dynamically opening connections
   // through the channel.
-  constexpr Channel(uint32_t id, ChannelOutput* output)
-      : id_(id), output_(output) {}
+  template <uint32_t id>
+  static Channel Create(ChannelOutput* output) {
+    static_assert(id != kUnassignedChannelId, "Channel ID cannot be 0");
+    return Channel(id, output);
+  }
 
   constexpr uint32_t id() const { return id_; }
+  constexpr bool assigned() const { return id_ != kUnassignedChannelId; }
 
   span<std::byte> AcquireBuffer() const { return output_->AcquireBuffer(); }
   void SendAndReleaseBuffer(size_t size) const {
@@ -57,7 +64,13 @@ class Channel {
   }
 
  private:
-  static constexpr uint32_t kUnassignedChannelId = 0;
+  friend class Server;
+
+  constexpr Channel(uint32_t id, ChannelOutput* output)
+      : id_(id), output_(output) {
+    PW_CHECK_UINT_NE(id, kUnassignedChannelId);
+  }
+
   uint32_t id_;
   ChannelOutput* output_;
 };

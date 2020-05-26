@@ -62,7 +62,10 @@ pw_test_group("tests") {
 }
 
 pw_test("server_test") {
-  deps = [ ":pw_rpc" ]
+  deps = [
+    ":protos_pwpb",
+    ":pw_rpc",
+  ]
   sources = [ "server_test.cc" ]
 }
 

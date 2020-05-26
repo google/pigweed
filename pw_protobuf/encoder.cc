@@ -56,7 +56,10 @@ Status Encoder::WriteRawBytes(const std::byte* ptr, size_t size) {
     return encode_status_;
   }
 
-  memcpy(cursor_, ptr, size);
+  // Memmove the value into place as it's possible that it shares the encode
+  // buffer on a memory-constrained system.
+  std::memmove(cursor_, ptr, size);
+
   cursor_ += size;
   return Status::OK;
 }
@@ -167,7 +170,7 @@ Status Encoder::Encode(span<const std::byte>* out) {
       to_copy = end - read_cursor;
     }
 
-    memmove(write_cursor, read_cursor, to_copy);
+    std::memmove(write_cursor, read_cursor, to_copy);
     write_cursor += to_copy;
     read_cursor += to_copy;
 

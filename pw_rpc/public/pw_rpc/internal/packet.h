@@ -29,8 +29,8 @@ class Packet {
   static Packet FromBuffer(span<const std::byte> data);
 
   // Returns an empty packet with default values set.
-  static constexpr Packet Empty() {
-    return Packet(PacketType::RPC, 0, 0, 0, {}, Status::OK);
+  static constexpr Packet Empty(PacketType type) {
+    return Packet(type, 0, 0, 0, {}, Status::OK);
   }
 
   // Encodes the packet into its wire format. Returns the encoded size.

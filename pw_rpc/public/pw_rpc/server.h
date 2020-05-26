@@ -42,7 +42,18 @@ class Server {
   using Service = internal::Service;
   using ServiceRegistry = internal::ServiceRegistry;
 
-  Channel* FindChannel(uint32_t id);
+  void SendResponse(const Channel& channel,
+                    const internal::Packet& response,
+                    span<std::byte> response_buffer) const;
+
+  // Determines the space required to encode the packet proto fields for a
+  // response, and splits the buffer into reserved space and available space for
+  // the payload. Returns a subspan of the payload space.
+  span<std::byte> ResponsePayloadUsableSpace(const internal::Packet& request,
+                                             span<std::byte> buffer) const;
+
+  Channel* FindChannel(uint32_t id) const;
+  Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
   span<Channel> channels_;
   ServiceRegistry services_;
