@@ -42,6 +42,14 @@ template("host_gcc") {
     _cflags_list += invoker.toolchain_cflags
   }
 
+  if (host_os == "win") {
+    # MinGW can't handle %z format specifiers without this flag enabled. This
+    # flag is deprecated in future versions of MinGW, and should be replaced by
+    # setting __MINGW_FEATURES__=__MINGW_ANSI_STDIO__ when switching to a
+    # version of MinGW that uses the new flags.
+    _cflags_list += [ "-D__USE_MINGW_ANSI_STDIO=1" ]
+  }
+
   _toolchain_cflags = string_join(" ", _cflags_list)
 
   # Specify the default C++ version, which targets can override with a config.

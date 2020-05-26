@@ -46,8 +46,17 @@
 //     ... implementation here ...
 //   }
 //
+
+// When compiling for host using MinGW, use gnu_printf() rather than printf()
+// to support %z format specifiers.
+#if __USE_MINGW_ANSI_STDIO
+#define _PW_PRINTF_FORMAT_TYPE gnu_printf
+#else
+#define _PW_PRINTF_FORMAT_TYPE printf
+#endif  // __USE_MINGW_ANSI_STDIO
+
 #define PW_PRINTF_FORMAT(format_index, parameter_index) \
-  __attribute__((format(printf, format_index, parameter_index)))
+  __attribute__((format(_PW_PRINTF_FORMAT_TYPE, format_index, parameter_index)))
 
 // Places a variable in the specified linker section and directs the compiler
 // to keep the variable, even if it is not used. Depending on the linker
