@@ -87,6 +87,7 @@ pw_doc_gen("docs") {
     "$dir_pw_rpc:docs",
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",
+    "$dir_pw_stream:docs",
     "$dir_pw_string:docs",
     "$dir_pw_sys_io:docs",
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
