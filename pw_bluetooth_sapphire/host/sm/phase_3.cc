@@ -49,6 +49,7 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
 }
 
 void Phase3::Start() {
+  ZX_ASSERT(!has_failed());
   ZX_ASSERT(!KeyExchangeComplete());
   // TODO(fxbug.dev/49371): The spec allows both the initiator & responder to distribute distinct
   // LTKs in Legacy pairing, but our stack currently only supports a single responder LTK.

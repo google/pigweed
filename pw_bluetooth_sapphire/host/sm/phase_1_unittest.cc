@@ -358,6 +358,53 @@ TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
 }
 
+TEST_F(SMP_Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
+  Phase1Args args;
+  args.sc_supported = true;
+  NewPhase1(Role::kInitiator, args);
+  // clang-format off
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kSC | AuthReq::kBondingFlag,
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x03   // responder keys: enc key and identity info
+  );
+  const auto kResponse = StaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x00,  // IO cap.: DisplayOnly
+      0x00,  // OOB: not present
+      AuthReq::kSC | AuthReq::kBondingFlag,
+      0x07,  // encr. key size: 7 (default min)
+      0x00,  // initiator keys: none
+      KeyDistGen::kEncKey   // responder keys
+  );
+  // clang-format on
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+
+  EXPECT_TRUE(features().initiator);
+  EXPECT_TRUE(features().secure_connections);
+  // Even though both the pairing request and response had the EncKey bit set, because we
+  // resolved the features to secure connections, we zero the bit out.
+  EXPECT_FALSE(features().remote_key_distribution & KeyDistGen::kEncKey);
+  EXPECT_FALSE(features().remote_key_distribution & KeyDistGen::kEncKey);
+  ASSERT_TRUE(last_preq());
+  ASSERT_TRUE(last_pres());
+  EXPECT_TRUE(ContainersEqual(kRequest, *last_preq()));
+  EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
+}
+
 TEST_F(SMP_Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   Phase1Args args;
   args.sc_supported = true;

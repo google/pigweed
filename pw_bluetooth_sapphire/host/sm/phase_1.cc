@@ -260,6 +260,13 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
   if (!will_bond && (local_keys || remote_keys)) {
     return fit::error(ErrorCode::kInvalidParameters);
   }
+  // "In LE Secure Connections pairing, when SMP is running on the LE transport, then the EncKey
+  // field is ignored" (V5.0 Vol. 3 Part H 3.6.1). We ignore the Encryption Key bit here to allow
+  // for uniform handling of it later.
+  if (sc) {
+    local_keys &= ~KeyDistGen::kEncKey;
+    remote_keys &= ~KeyDistGen::kEncKey;
+  }
 
   return fit::ok(PairingFeatures(local_initiator, sc, will_bond, method, enc_key_size, local_keys,
                                  remote_keys));
