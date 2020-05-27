@@ -213,7 +213,7 @@ template("_pw_go_proto_library") {
 #  deps: List of other pw_proto_library dependencies.
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
-         "pw_proto_codegen requires .proto source files")
+         "pw_proto_library requires .proto source files")
 
   # For each proto target, create a file which collects the base directories of
   # all of its dependencies to list as include paths to protoc.
@@ -273,9 +273,37 @@ template("pw_proto_library") {
              string_join(
                  " ",
                  [
-                   "pw_proto_codegen doesn't know how to generate code for",
+                   "pw_proto_library doesn't know how to generate code for",
                    "generator '$_gen'. Please add support if you require it.",
                  ]))
+    }
+  }
+
+  # All supported pw_protobuf generators.
+  _protobuf_generators = [
+    "pwpb",
+    "nanopb",
+    "go",
+  ]
+
+  # Create stub versions of the proto library for other protobuf generators.
+  foreach(_gen, _protobuf_generators - pw_protobuf_generators) {
+    pw_python_script("${target_name}_${_gen}") {
+      script = string_join("/",
+                           [
+                             dir_pw_protobuf_compiler,
+                             "py",
+                             "pw_protobuf_compiler",
+                             "generator_not_selected.py",
+                           ])
+      args = [
+        "--library",
+        "${target_name}_${_gen}",
+        "--generator",
+        _gen,
+      ]
+      inputs = invoker.sources
+      stamp = true
     }
   }
 
