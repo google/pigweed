@@ -113,10 +113,17 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     monitor_task_.Cancel();
   }
 
-  if (is_poll_response && !remote_is_busy_) {
+  if (remote_is_busy_) {
+    return;
+  }
+
+  // TODO(1030): Don't retransmit for poll response if we already retransmitted during the poll
+  // period.
+  if (range_request_.has_value() || is_poll_response) {
     if (RetransmitUnackedData().is_error()) {
       return;
     }
+    range_request_.reset();
   }
 
   MaybeSendQueuedData();
@@ -141,6 +148,15 @@ void Engine::SetRemoteBusy() {
   // TODO(BT-774): Signal backpressure to the Channel.
   remote_is_busy_ = true;
   receiver_ready_poll_task_.Cancel();
+}
+
+void Engine::SetRangeRetransmit(bool is_poll_request) {
+  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  // Store REJ state for UpdateAckSeq to handle.
+  range_request_.emplace();
+
+  // TODO(1030): Store P bit to set appropriate F bit in retransmission.
+  static_cast<void>(is_poll_request);
 }
 
 void Engine::MaybeSendQueuedData() {

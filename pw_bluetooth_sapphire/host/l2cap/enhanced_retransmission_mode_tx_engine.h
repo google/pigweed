@@ -68,6 +68,10 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // this time.
   void SetRemoteBusy();
 
+  // Requests that the next UpdateAckSeq always retransmit starting at its |new_seq| parameter, even
+  // if it's not a poll response. This path fulfills the requirements of receiving the REJ function.
+  void SetRangeRetransmit(bool is_poll_request);
+
   // Transmits data that has been queued, but which has never been previously
   // sent to our peer. The transmissions are subject to remote-busy and transmit
   // window constraints.
@@ -78,6 +82,12 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
     PendingPdu(DynamicByteBuffer buf_in) : buf(std::move(buf_in)), tx_count(0){};
     DynamicByteBuffer buf;
     uint8_t tx_count;
+  };
+
+  // State of a request from a peer to retransmit a range of unacked data (REJ per Core Spec v5.0,
+  // Vol 3, Part A, Sec 8.6.1.2).
+  struct RangeRequest {
+    // TODO(BT-1030): Store P bit to set appropriate F bit in retransmission.
   };
 
   // Starts the receiver ready poll timer. If already running, the existing
@@ -159,6 +169,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // cases, the sequence number is a 6-bit counter that wraps on overflow. See
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t req_seqnum_;
+
+  // Filled by SetRangeRetransmit and cleared by UpdateAckSeq.
+  std::optional<RangeRequest> range_request_;
 
   uint8_t n_receiver_ready_polls_sent_;
   bool remote_is_busy_;
