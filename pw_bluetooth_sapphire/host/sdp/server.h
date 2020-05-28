@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 
 #include <lib/fit/function.h>
+#include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 
 #include <map>
@@ -30,9 +31,11 @@ namespace sdp {
 // TODO(jamuraa): make calls thread-safe or ensure single-threadedness
 class Server final {
  public:
+  static constexpr const char* kInspectNodeName = "sdp_server";
+
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
-  explicit Server(fbl::RefPtr<data::Domain> data_domain);
+  explicit Server(fbl::RefPtr<data::Domain> data_domain, inspect::Node node);
   ~Server();
 
   // Initialize a new SDP profile connection with |peer_id| on |channel|.
@@ -103,9 +106,34 @@ class Server final {
   void OnChannelClosed(const hci::ConnectionHandle& handle);
   void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
 
+  // Updates the property values associated with the |sdp_server_node_|.
+  void UpdateInspectProperties();
+
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.
   fbl::RefPtr<data::Domain> data_domain_;
+
+  struct InspectProperties {
+    InspectProperties(inspect::Node sdp_server_node)
+        : sdp_server_node(std::move(sdp_server_node)) {}
+
+    // Inspect hierarchy node representing the sdp server.
+    inspect::Node sdp_server_node;
+
+    // Each ServiceRecord has it's record and nodes associated wth the registered PSMs.
+    struct InspectServiceRecordProperties {
+      // The record description.
+      inspect::StringProperty record;
+      // The node for the registered PSMs.
+      inspect::Node psms;
+      // The currently registered PSMs.
+      std::vector<std::pair<inspect::Node, inspect::StringProperty>> psm_nodes;
+    };
+
+    // The currently registered ServiceRecords.
+    std::vector<std::pair<inspect::Node, InspectServiceRecordProperties>> svc_record_nodes;
+  };
+  InspectProperties inspect_properties_;
 
   std::unordered_map<hci::ConnectionHandle, l2cap::ScopedChannel> channels_;
   // The map of ServiceHandles that are associated with ServiceRecords.

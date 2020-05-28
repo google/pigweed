@@ -17,6 +17,10 @@ using RegistrationHandle = Server::RegistrationHandle;
 
 namespace {
 
+static constexpr const char* kInspectRegisteredPsmName = "registered_psms";
+static constexpr const char* kInspectPsmName = "psm";
+static constexpr const char* kInspectRecordName = "record";
+
 void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_sdu_size,
                        ErrorCode code) {
   ErrorResponse response(code);
@@ -130,8 +134,9 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   return sdp;
 }
 
-Server::Server(fbl::RefPtr<data::Domain> data_domain)
+Server::Server(fbl::RefPtr<data::Domain> data_domain, inspect::Node sdp_server_node)
     : data_domain_(data_domain),
+      inspect_properties_(InspectProperties(std::move(sdp_server_node))),
       next_handle_(kFirstUnreservedHandle),
       db_state_(0),
       weak_ptr_factory_(this) {
@@ -150,6 +155,10 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
 
   // SDP is used by SDP server.
   psm_to_service_.emplace(l2cap::kSDP, std::unordered_set<ServiceHandle>({kSDPHandle}));
+  service_to_psms_.emplace(kSDPHandle, std::unordered_set<l2cap::PSM>({l2cap::kSDP}));
+
+  // Update the inspect properties after Server initialization.
+  UpdateInspectProperties();
 }
 
 Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
@@ -331,6 +340,9 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   // Store the RegistrationHandle that represents the set of services that were registered.
   reg_to_service_[reg_handle] = std::move(assigned_handles);
 
+  // Update the inspect properties.
+  UpdateInspectProperties();
+
   return reg_handle;
 }
 
@@ -361,6 +373,9 @@ bool Server::UnregisterService(RegistrationHandle handle) {
 
     records_.erase(svc_h);
   }
+
+  // Update the inspect properties as the registered PSMs may have changed.
+  UpdateInspectProperties();
 
   return true;
 }
@@ -533,6 +548,39 @@ void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
       return;
     }
   }
+}
+
+void Server::UpdateInspectProperties() {
+  // Clear the previous inspect data.
+  inspect_properties_.svc_record_nodes.clear();
+
+  std::vector<std::pair<inspect::Node, InspectProperties::InspectServiceRecordProperties>> records;
+
+  for (const auto& svc_record : records_) {
+    auto record_node = inspect_properties_.sdp_server_node.CreateChild(
+        inspect_properties_.sdp_server_node.UniqueName(kInspectRecordName));
+    auto record_string = record_node.CreateString(kInspectRecordName, svc_record.second.ToString());
+
+    auto psms = record_node.CreateChild(kInspectRegisteredPsmName);
+    std::vector<std::pair<inspect::Node, inspect::StringProperty>> psm_nodes;
+
+    auto psm_set = service_to_psms_.find(svc_record.first);
+    if (psm_set != service_to_psms_.end()) {
+      for (const auto& psm : psm_set->second) {
+        auto psm_node = psms.CreateChild(psms.UniqueName(kInspectPsmName));
+        auto psm_uint = psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
+        psm_nodes.push_back(std::make_pair(std::move(psm_node), std::move(psm_uint)));
+      }
+    }
+
+    InspectProperties::InspectServiceRecordProperties svc_rec_props;
+    svc_rec_props.record = std::move(record_string);
+    svc_rec_props.psms = std::move(psms);
+    svc_rec_props.psm_nodes = std::move(psm_nodes);
+    records.push_back(std::make_pair(std::move(record_node), std::move(svc_rec_props)));
+  }
+
+  inspect_properties_.svc_record_nodes = std::move(records);
 }
 
 }  // namespace sdp

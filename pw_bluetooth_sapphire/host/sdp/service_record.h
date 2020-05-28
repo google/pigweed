@@ -99,6 +99,11 @@ class ServiceRecord {
   void set_security_level(SecurityLevel security_level) { security_level_ = security_level; }
   SecurityLevel security_level() const { return security_level_; }
 
+  // Debug representation of a service record used for Inspect.
+  // Only includes kBluetoothProfileDescriptorList and kServiceClassIdList to minimize
+  // log spam.
+  std::string ToString() const;
+
  private:
   ServiceHandle handle_;
 

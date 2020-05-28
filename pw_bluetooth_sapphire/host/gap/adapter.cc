@@ -509,7 +509,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
 
-    sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
+    sdp_server_ = std::make_unique<sdp::Server>(
+        data_domain_, adapter_node_.CreateChild(sdp::Server::kInspectNodeName));
   }
 
   // Update properties before callback called so properties can be verified in unit tests.

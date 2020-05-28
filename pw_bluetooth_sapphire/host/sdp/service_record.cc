@@ -9,6 +9,7 @@
 #include <set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/lib/fxl/strings/string_printf.h"
 #include "src/lib/uuid/uuid.h"
 
 namespace bt {
@@ -244,6 +245,22 @@ bool ServiceRecord::AddInfo(const std::string& language_code, const std::string&
 
   SetAttribute(kLanguageBaseAttributeIdList, DataElement(std::move(base_attr_list)));
   return true;
+}
+
+std::string ServiceRecord::ToString() const {
+  std::string str;
+
+  if (HasAttribute(kBluetoothProfileDescriptorList)) {
+    const DataElement& prof_desc = GetAttribute(kBluetoothProfileDescriptorList);
+    str += "Profile Descriptor: " + prof_desc.ToString() + "\n";
+  }
+
+  if (HasAttribute(kServiceClassIdList)) {
+    const DataElement& svc_class_list = GetAttribute(kServiceClassIdList);
+    str += "Service Class Id List: " + svc_class_list.ToString();
+  }
+
+  return str;
 }
 
 }  // namespace sdp

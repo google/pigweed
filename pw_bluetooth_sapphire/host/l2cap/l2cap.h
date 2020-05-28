@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <string>
 
 #include <fbl/macros.h>
 #include <zircon/compiler.h>
@@ -251,6 +252,44 @@ constexpr PSM kATT = 0x001F; // ATT
 constexpr PSM k3DSP = 0x0021; // 3D Synchronization Profile
 constexpr PSM kLE_IPSP = 0x0023; // Internet Protocol Support Profile
 constexpr PSM kOTS = 0x0025; // Object Transfer Service
+
+// Convenience function for visualizing a PSM. Used for Inspect and logging.
+// Returns string formatted |psm| if not recognized.
+inline std::string PsmToString(l2cap::PSM psm) {
+  switch (psm) {
+    case l2cap::kInvalidPSM:
+      return "InvalidPSM";
+    case l2cap::kSDP:
+      return "SDP";
+    case l2cap::kRFCOMM:
+      return "RFCOMM";
+    case l2cap::kTCSBIN:
+      return "TCSBIN";
+    case l2cap::kTCSBINCordless:
+      return "TCSBINCordless";
+    case l2cap::kBNEP:
+      return "BNEP";
+    case l2cap::kHIDControl:
+      return "HIDControl";
+    case l2cap::kHIDInteerup:
+      return "HIDInteerup";
+    case l2cap::kAVCTP:
+      return "AVCTP";
+    case l2cap::kAVDTP:
+      return "AVDTP";
+    case l2cap::kAVCTP_Browse:
+      return "AVCTP_Browse";
+    case l2cap::kATT:
+      return "ATT";
+    case l2cap::k3DSP:
+      return "3DSP";
+    case l2cap::kLE_IPSP:
+      return "LE_IPSP";
+    case l2cap::kOTS:
+      return "OTS";
+  }
+  return "PSM:" + std::to_string(psm);
+}
 
 // Identifier assigned to each signaling transaction. This is used to match each
 // signaling channel request with a response.

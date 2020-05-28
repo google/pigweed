@@ -323,6 +323,27 @@ TEST_F(SDP_ServiceRecordTest, IsRegisterable) {
   EXPECT_TRUE(record.IsRegisterable());
 }
 
+// Test: ToString
+// - The ToString() method correctly formats the fields.
+TEST_F(SDP_ServiceRecordTest, ToString) {
+  ServiceRecord record;
+  EXPECT_EQ("", record.ToString());
+
+  record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
+
+  EXPECT_EQ(
+      "Profile Descriptor: Sequence { Sequence { UUID(0000110d-0000-1000-8000-00805f9b34fb) "
+      "UnsignedInt:2(259) } }\n",
+      record.ToString());
+
+  record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
+  EXPECT_EQ(
+      "Profile Descriptor: Sequence { Sequence { UUID(0000110d-0000-1000-8000-00805f9b34fb) "
+      "UnsignedInt:2(259) } }\nService Class Id List: Sequence { "
+      "UUID(0000110c-0000-1000-8000-00805f9b34fb) }",
+      record.ToString());
+}
+
 }  // namespace
 }  // namespace sdp
 }  // namespace bt
