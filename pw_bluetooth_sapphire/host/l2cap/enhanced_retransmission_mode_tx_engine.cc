@@ -120,7 +120,8 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   // TODO(1030): Don't retransmit for poll response if we already retransmitted during the poll
   // period.
   if (range_request_.has_value() || is_poll_response) {
-    if (RetransmitUnackedData().is_error()) {
+    const bool set_is_poll_response = range_request_.value_or(RangeRequest{}).is_poll_request;
+    if (RetransmitUnackedData(set_is_poll_response).is_error()) {
       return;
     }
     range_request_.reset();
@@ -153,10 +154,7 @@ void Engine::SetRemoteBusy() {
 void Engine::SetRangeRetransmit(bool is_poll_request) {
   ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
   // Store REJ state for UpdateAckSeq to handle.
-  range_request_.emplace();
-
-  // TODO(1030): Store P bit to set appropriate F bit in retransmission.
-  static_cast<void>(is_poll_request);
+  range_request_ = RangeRequest{.is_poll_request = is_poll_request};
 }
 
 void Engine::MaybeSendQueuedData() {
@@ -245,7 +243,7 @@ void Engine::SendPdu(PendingPdu* pdu) {
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
-fit::result<> Engine::RetransmitUnackedData() {
+fit::result<> Engine::RetransmitUnackedData(bool set_is_poll_response) {
   // The receive engine should have cleared the remote busy condition before
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
@@ -268,8 +266,19 @@ fit::result<> Engine::RetransmitUnackedData() {
       return fit::error();
     }
 
+    const auto control_field = cur_frame->buf.As<EnhancedControlField>();
+    if (set_is_poll_response) {
+      cur_frame->buf.AsMutable<EnhancedControlField>().set_is_poll_response();
+
+      // Per "Retransmit-I-frames" of Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6, "[t]he F-bit of all
+      // other [than the first] unacknowledged I-frames sent shall be 0," so clear this for
+      // subsequent iterations.
+      set_is_poll_response = false;
+    }
+
     // TODO(BT-860): If the task is already running, we should not restart it.
     SendPdu(&*cur_frame);
+    cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
     ++cur_frame;
   }
 

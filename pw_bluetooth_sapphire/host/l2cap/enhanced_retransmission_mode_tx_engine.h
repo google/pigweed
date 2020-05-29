@@ -70,6 +70,10 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   // Requests that the next UpdateAckSeq always retransmit starting at its |new_seq| parameter, even
   // if it's not a poll response. This path fulfills the requirements of receiving the REJ function.
+  //
+  // |is_poll_request| should be set if the request to retransmit has its P bit set and will cause
+  // the first retransmitted frame to have its |is_poll_response| bit (F bit) set per the
+  // Retransmit-I-frames action in Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6.
   void SetRangeRetransmit(bool is_poll_request);
 
   // Transmits data that has been queued, but which has never been previously
@@ -87,7 +91,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // State of a request from a peer to retransmit a range of unacked data (REJ per Core Spec v5.0,
   // Vol 3, Part A, Sec 8.6.1.2).
   struct RangeRequest {
-    // TODO(BT-1030): Store P bit to set appropriate F bit in retransmission.
+    // True if the request to retransmit has its P bit set.
+    bool is_poll_request;
   };
 
   // Starts the receiver ready poll timer. If already running, the existing
@@ -123,10 +128,13 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Retransmits frames from |pending_pdus_|. Invokes |connection_failure_callback_| on error and
   // returns fit::error().
   //
+  // If |set_is_poll_response| is true, then the first frame to be sent will have its
+  // |is_poll_response| field set.
+  //
   // Notes:
   // * The caller must ensure that !remote_is_busy_|.
   // * When return value is an error, |this| may be invalid.
-  [[nodiscard]] fit::result<> RetransmitUnackedData();
+  [[nodiscard]] fit::result<> RetransmitUnackedData(bool set_is_poll_response);
 
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;
