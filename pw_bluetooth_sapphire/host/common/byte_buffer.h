@@ -12,12 +12,11 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
 #include <fbl/macros.h>
-
-#include "src/lib/fxl/strings/string_view.h"
 
 namespace bt {
 
@@ -106,7 +105,7 @@ class ByteBuffer {
 
   // Returns the contents of this buffer as a C++ string-like object without
   // copying its contents.
-  fxl::StringView AsString() const;
+  std::string_view AsString() const;
 
   // Returns the contents of this buffer as a C++ string after copying its
   // contents.
@@ -307,7 +306,7 @@ class BufferView final : public ByteBuffer {
 
   explicit BufferView(const ByteBuffer& buffer,
                       size_t size = std::numeric_limits<std::size_t>::max());
-  explicit BufferView(const fxl::StringView& string);
+  explicit BufferView(std::string_view string);
   explicit BufferView(const std::vector<uint8_t>& vec);
 
   // The default constructor initializes this to an empty buffer.

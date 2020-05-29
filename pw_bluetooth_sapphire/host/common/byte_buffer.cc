@@ -27,11 +27,11 @@ const BufferView ByteBuffer::view(size_t pos, size_t size) const {
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
 
-fxl::StringView ByteBuffer::AsString() const {
-  return fxl::StringView(reinterpret_cast<const char*>(data()), size());
+std::string_view ByteBuffer::AsString() const {
+  return std::string_view(reinterpret_cast<const char*>(data()), size());
 }
 
-std::string ByteBuffer::ToString() const { return AsString().ToString(); }
+std::string ByteBuffer::ToString() const { return std::string(AsString()); }
 
 std::vector<uint8_t> ByteBuffer::ToVector() const {
   std::vector<uint8_t> vec(size());
@@ -121,7 +121,7 @@ ByteBuffer::const_iterator DynamicByteBuffer::cend() const { return buffer_.get(
 
 BufferView::BufferView(const ByteBuffer& buffer, size_t size) { *this = buffer.view(0u, size); }
 
-BufferView::BufferView(const fxl::StringView& string) {
+BufferView::BufferView(std::string_view string) {
   size_ = string.size();
   bytes_ = reinterpret_cast<const uint8_t*>(string.data());
 }

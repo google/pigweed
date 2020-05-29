@@ -118,7 +118,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
           break;
 
         auto name = data.AsString();
-        name_ok = (name.find(name_substring_) != fxl::StringView::npos);
+        name_ok = (name.find(name_substring_) != std::string_view::npos);
         break;
       }
       case DataType::kManufacturerSpecificData:

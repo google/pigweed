@@ -173,7 +173,7 @@ std::optional<bt::DeviceAddressBytes> AddressBytesFromString(const std::string& 
   if (addr.size() != 17)
     return std::nullopt;
 
-  auto split = fxl::SplitString(fxl::StringView(addr.data(), addr.size()), ":",
+  auto split = fxl::SplitString(std::string_view(addr.data(), addr.size()), ":",
                                 fxl::kKeepWhitespace, fxl::kSplitWantAll);
   if (split.size() != 6)
     return std::nullopt;
