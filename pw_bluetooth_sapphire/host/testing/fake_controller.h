@@ -474,6 +474,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   bool auto_completed_packets_event_enabled_;
   bool auto_disconnection_complete_event_enabled_;
 
+  // Keep this as the last member to make sure that all weak pointers are
+  // invalidated before other members get destroyed.
+  fxl::WeakPtrFactory<FakeController> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
 

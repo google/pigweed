@@ -181,7 +181,8 @@ FakeController::FakeController()
       data_callback_(nullptr),
       data_dispatcher_(nullptr),
       auto_completed_packets_event_enabled_(true),
-      auto_disconnection_complete_event_enabled_(true) {}
+      auto_disconnection_complete_event_enabled_(true),
+      weak_ptr_factory_(this) {}
 
 FakeController::~FakeController() { Stop(); }
 
@@ -740,20 +741,31 @@ void FakeController::OnLECreateConnectionCommandReceived(
   if (peer->force_pending_connect())
     return;
 
-  pending_le_connect_rsp_.Reset([response, peer, this] {
-    le_connect_pending_ = false;
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  pending_le_connect_rsp_.Reset([response, address = peer_address, self] {
+    if (!self) {
+      // The fake controller has been removed; nothing to be done
+      return;
+    }
+    auto peer = self->FindPeer(address);
+    if (!peer) {
+      // The peer has been removed; Ignore this response
+      return;
+    }
+
+    self->le_connect_pending_ = false;
 
     if (response.status == hci::StatusCode::kSuccess) {
-      bool notify = !peer->connected();
+      bool not_previously_connected = !peer->connected();
       hci::ConnectionHandle handle = le16toh(response.connection_handle);
       peer->AddLink(handle);
-      if (notify && peer->connected()) {
-        NotifyConnectionState(peer->address(), handle, /*connected=*/true);
+      if (not_previously_connected && peer->connected()) {
+        self->NotifyConnectionState(peer->address(), handle, /*connected=*/true);
       }
     }
 
-    SendLEMetaEvent(hci::kLEConnectionCompleteSubeventCode,
-                    BufferView(&response, sizeof(response)));
+    self->SendLEMetaEvent(hci::kLEConnectionCompleteSubeventCode,
+                          BufferView(&response, sizeof(response)));
   });
   async::PostDelayedTask(
       dispatcher(), [cb = pending_le_connect_rsp_.callback()] { cb(); },
