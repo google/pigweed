@@ -73,6 +73,7 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       role_(role),
       closed_(false),
       fragmenter_(handle, max_acl_payload_size),
+      recombiner_(handle),
       send_packets_cb_(std::move(send_packets_cb)),
       drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
       query_service_cb_(std::move(query_service_cb)),
@@ -161,33 +162,25 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
 
 void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(!recombiner_.ready());
   ZX_DEBUG_ASSERT(packet);
   ZX_DEBUG_ASSERT(!closed_);
 
   TRACE_DURATION("bluetooth", "LogicalLink::HandleRxPacket", "handle", handle_);
 
-  if (!recombiner_.AddFragment(std::move(packet))) {
-    bt_log(DEBUG, "l2cap", "ACL data packet rejected (handle: %#.4x)", handle_);
-    // TODO(armansito): This indicates that this connection is not reliable.
-    // This needs to notify the channels of this state.
+  auto result = recombiner_.ConsumeFragment(std::move(packet));
+  if (result.frames_dropped) {
+    bt_log(TRACE, "l2cap", "Frame(s) dropped due to recombination error");
+  }
+
+  if (!result.pdu) {
+    // Either a partial fragment was received, which was buffered for recombination, or the packet
+    // was dropped.
     return;
   }
 
-  // |recombiner_| should have taken ownership of |packet|.
-  ZX_DEBUG_ASSERT(!packet);
-  ZX_DEBUG_ASSERT(!recombiner_.empty());
+  ZX_DEBUG_ASSERT(result.pdu->is_valid());
 
-  // Wait for continuation fragments if a partial fragment was received.
-  if (!recombiner_.ready())
-    return;
-
-  PDU pdu;
-  recombiner_.Release(&pdu);
-
-  ZX_DEBUG_ASSERT(pdu.is_valid());
-
-  uint16_t channel_id = pdu.channel_id();
+  uint16_t channel_id = result.pdu->channel_id();
   auto iter = channels_.find(channel_id);
   PendingPduMap::iterator pp_iter;
 
@@ -216,15 +209,15 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
   }
 
   if (pp_iter != pending_pdus_.end()) {
-    pdu.set_trace_id(TRACE_NONCE());
-    TRACE_FLOW_BEGIN("bluetooth", "LogicalLink::HandleRxPacket queued", pdu.trace_id());
-    pp_iter->second.emplace_back(std::move(pdu));
+    result.pdu->set_trace_id(TRACE_NONCE());
+    TRACE_FLOW_BEGIN("bluetooth", "LogicalLink::HandleRxPacket queued", result.pdu->trace_id());
+    pp_iter->second.emplace_back(std::move(*result.pdu));
 
     bt_log(TRACE, "l2cap", "PDU buffered (channel: %#.4x, ll: %#.4x)", channel_id, handle_);
     return;
   }
 
-  iter->second->HandleRxPdu(std::move(pdu));
+  iter->second->HandleRxPdu(std::move(*result.pdu));
 }
 
 void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,

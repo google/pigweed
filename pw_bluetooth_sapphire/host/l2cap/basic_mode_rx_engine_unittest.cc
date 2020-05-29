@@ -37,16 +37,16 @@ TEST(L2CAP_BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);
   hci_packet->InitializeFromBuffer();
 
-  Recombiner recombiner;
-  ASSERT_TRUE(recombiner.AddFragment(std::move(hci_packet)));
+  Recombiner recombiner(kTestHandle);
+  auto result = recombiner.ConsumeFragment(std::move(hci_packet));
+  EXPECT_FALSE(result.frames_dropped);
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  ASSERT_TRUE(recombiner.Release(&pdu));
-  ASSERT_TRUE(pdu.is_valid());
-  ASSERT_EQ(1u, pdu.fragment_count());
-  ASSERT_EQ(0u, pdu.length());
+  ASSERT_TRUE(result.pdu->is_valid());
+  ASSERT_EQ(1u, result.pdu->fragment_count());
+  ASSERT_EQ(0u, result.pdu->length());
 
-  const ByteBufferPtr sdu = BasicModeRxEngine().ProcessPdu(std::move(pdu));
+  const ByteBufferPtr sdu = BasicModeRxEngine().ProcessPdu(std::move(*result.pdu));
   ASSERT_TRUE(sdu);
   EXPECT_EQ(0u, sdu->size());
 }

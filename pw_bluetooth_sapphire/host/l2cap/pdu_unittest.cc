@@ -29,7 +29,7 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
 }
 
 TEST(L2CAP_PduTest, CanCopyEmptyBody) {
-  Recombiner recombiner;
+  Recombiner recombiner(0x0001);
 
   // clang-format off
 
@@ -43,10 +43,10 @@ TEST(L2CAP_PduTest, CanCopyEmptyBody) {
 
   // clang-format on
 
-  ASSERT_TRUE(recombiner.AddFragment(std::move(packet)));
+  auto result = recombiner.ConsumeFragment(std::move(packet));
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  ASSERT_TRUE(recombiner.Release(&pdu));
+  PDU pdu = std::move(*result.pdu);
   ASSERT_TRUE(pdu.is_valid());
   ASSERT_EQ(1u, pdu.fragment_count());
   ASSERT_EQ(0u, pdu.length());
@@ -56,11 +56,11 @@ TEST(L2CAP_PduTest, CanCopyEmptyBody) {
 }
 
 TEST(L2CAP_PduTest, Move) {
-  Recombiner recombiner;
+  Recombiner recombiner(0x0001);
 
   // clang-format off
 
-  auto packet0 = PacketFromBytes(
+  auto packet = PacketFromBytes(
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
@@ -70,10 +70,10 @@ TEST(L2CAP_PduTest, Move) {
 
   // clang-format on
 
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet0)));
+  auto result = recombiner.ConsumeFragment(std::move(packet));
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  EXPECT_TRUE(recombiner.Release(&pdu));
+  PDU pdu = std::move(*result.pdu);
   EXPECT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
@@ -105,11 +105,11 @@ TEST(L2CAP_PduTest, Move) {
 }
 
 TEST(L2CAP_PduTest, ReleaseFragments) {
-  Recombiner recombiner;
+  Recombiner recombiner(0x0001);
 
   // clang-format off
 
-  auto packet0 = PacketFromBytes(
+  auto packet = PacketFromBytes(
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
@@ -119,10 +119,10 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
 
   // clang-format on
 
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet0)));
+  auto result = recombiner.ConsumeFragment(std::move(packet));
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  EXPECT_TRUE(recombiner.Release(&pdu));
+  PDU pdu = std::move(*result.pdu);
   EXPECT_TRUE(pdu.is_valid());
   EXPECT_EQ(1u, pdu.fragment_count());
 
@@ -150,11 +150,11 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
 }
 
 TEST(L2CAP_PduTest, ReadSingleFragment) {
-  Recombiner recombiner;
+  Recombiner recombiner(0x0001);
 
   // clang-format off
 
-  auto packet0 = PacketFromBytes(
+  auto packet = PacketFromBytes(
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
@@ -164,10 +164,10 @@ TEST(L2CAP_PduTest, ReadSingleFragment) {
 
   // clang-format on
 
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet0)));
+  auto result = recombiner.ConsumeFragment(std::move(packet));
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  EXPECT_TRUE(recombiner.Release(&pdu));
+  PDU pdu = std::move(*result.pdu);
   EXPECT_TRUE(pdu.is_valid());
 
   StaticByteBuffer<4> pdu_data;
@@ -193,7 +193,7 @@ TEST(L2CAP_PduTest, ReadSingleFragment) {
 }
 
 TEST(L2CAP_PduTest, ReadMultipleFragments) {
-  Recombiner recombiner;
+  Recombiner recombiner(0x0001);
 
   // clang-format off
 
@@ -233,13 +233,14 @@ TEST(L2CAP_PduTest, ReadMultipleFragments) {
     '!'
   );
 
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet0)));
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet1)));
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet2)));
-  EXPECT_TRUE(recombiner.AddFragment(std::move(packet3)));
+  EXPECT_FALSE(recombiner.ConsumeFragment(std::move(packet0)).frames_dropped);
+  EXPECT_FALSE(recombiner.ConsumeFragment(std::move(packet1)).frames_dropped);
+  EXPECT_FALSE(recombiner.ConsumeFragment(std::move(packet2)).frames_dropped);
+  auto result = recombiner.ConsumeFragment(std::move(packet3));
+  EXPECT_FALSE(result.frames_dropped);
+  ASSERT_TRUE(result.pdu);
 
-  PDU pdu;
-  EXPECT_TRUE(recombiner.Release(&pdu));
+  PDU pdu = std::move(*result.pdu);
   EXPECT_TRUE(pdu.is_valid());
   EXPECT_EQ(4u, pdu.fragment_count());
 
