@@ -69,7 +69,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
     bt_log(DEBUG, "hci", "started I/O handler");
   };
 
-  io_dispatcher_ = transport_->io_dispatcher();
+  io_dispatcher_ = async_get_default_dispatcher();
   RunTaskSync(setup_handler_task, io_dispatcher_);
 
   // TODO(jamuraa): return whether we successfully initialized?

@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 
-#include <fbl/macros.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
@@ -14,6 +13,8 @@
 #include <atomic>
 #include <memory>
 #include <thread>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -43,18 +44,10 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
  public:
   static fxl::RefPtr<Transport> Create(std::unique_ptr<DeviceWrapper> hci_device);
 
-  // Initializes the HCI command channel and starts the I/O event loop.
-  // I/O events are run on the dispatcher given, or a new I/O thread
-  // is started if one is not given.
-  //
   // The ACLDataChannel will be left uninitialized. The ACLDataChannel must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  //
-  // This method is NOT thread-safe! Care must be taken such that the public
-  // methods of this class and those of the individual channel classes are not
-  // called in a manner that would race with the execution of Initialize().
-  bool Initialize(async_dispatcher_t* dispatcher = nullptr);
+  bool Initialize();
 
   // Initializes the ACL data channel with the given parameters. Returns false
   // if an error occurs during initialization. Initialize() must have been
@@ -80,10 +73,6 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
 
   // Returns a pointer to the HCI ACL data flow control handler.
   ACLDataChannel* acl_data_channel() const { return acl_data_channel_.get(); }
-
-  // Returns the I/O thread dispatcher. If this is called when this Transport
-  // instance is not initialized, the return value will be nullptr.
-  async_dispatcher_t* io_dispatcher() const { return io_dispatcher_; }
 
   // Set a callback that should be invoked when any one of the underlying
   // channels gets closed for any reason (e.g. the HCI device has disappeared)
@@ -122,16 +111,9 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   // The state of the initialization sequence.
   std::atomic_bool is_initialized_;
 
-  // The loop that performs all HCI I/O operations. This is initialized with its
-  // own separate thread.
-  std::unique_ptr<async::Loop> io_loop_;
-
   // async::Waits for the command and ACL channels
   Waiter cmd_channel_wait_{this};
   Waiter acl_channel_wait_{this};
-
-  // The dispatcher used for posting tasks on the HCI transport I/O thread.
-  async_dispatcher_t* io_dispatcher_;
 
   // The ACL data flow control handler.
   std::unique_ptr<ACLDataChannel> acl_data_channel_;

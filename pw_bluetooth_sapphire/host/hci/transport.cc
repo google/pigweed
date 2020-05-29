@@ -9,9 +9,8 @@
 #include <zircon/assert.h>
 #include <zircon/status.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
 #include "device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt {
 namespace hci {
@@ -22,11 +21,8 @@ fxl::RefPtr<Transport> Transport::Create(std::unique_ptr<DeviceWrapper> hci_devi
 }
 
 Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
-    : hci_device_(std::move(hci_device)),
-      is_initialized_(false),
-      io_dispatcher_(nullptr),
-      closed_cb_dispatcher_(nullptr) {
-  ZX_DEBUG_ASSERT(hci_device_);
+    : hci_device_(std::move(hci_device)), is_initialized_(false), closed_cb_dispatcher_(nullptr) {
+  ZX_ASSERT(hci_device_);
 }
 
 Transport::~Transport() {
@@ -34,7 +30,7 @@ Transport::~Transport() {
   // from any thread and calling ShutDown() would be unsafe.
 }
 
-bool Transport::Initialize(async_dispatcher_t* dispatcher) {
+bool Transport::Initialize() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(hci_device_);
   ZX_DEBUG_ASSERT(!command_channel_);
@@ -46,14 +42,6 @@ bool Transport::Initialize(async_dispatcher_t* dispatcher) {
   if (!channel.is_valid()) {
     bt_log(ERROR, "hci", "failed to obtain command channel handle");
     return false;
-  }
-
-  if (dispatcher) {
-    io_dispatcher_ = dispatcher;
-  } else {
-    io_loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToCurrentThread);
-    io_loop_->StartThread("hci-transport-io");
-    io_dispatcher_ = io_loop_->dispatcher();
   }
 
   // We watch for handle errors and closures to perform the necessary clean up.
@@ -110,44 +98,27 @@ void Transport::ShutDown() {
     command_channel_->ShutDown();
   }
 
-  async::PostTask(io_dispatcher_, [this] {
-    cmd_channel_wait_.Cancel();
-    if (acl_data_channel_) {
-      acl_channel_wait_.Cancel();
-    }
-    if (io_loop_) {
-      io_loop_->Quit();
-    }
-  });
-
-  if (io_loop_) {
-    io_loop_->JoinThreads();
+  cmd_channel_wait_.Cancel();
+  if (acl_data_channel_) {
+    acl_channel_wait_.Cancel();
   }
 
   // We avoid deallocating the channels here as they *could* still be accessed
-  // by other threads. It's OK to clear |io_dispatcher_| as the channels hold
-  // their own references to it.
-  //
-  // Once |io_loop_| joins above, |io_dispatcher_| may be defunct. However,
-  // the channels are allowed to keep posting tasks on it (which will never
-  // execute).
-  io_dispatcher_ = nullptr;
+  // by other threads.
   is_initialized_ = false;
-  bt_log(INFO, "hci", "I/O loop exited");
+  bt_log(INFO, "hci", "transport shut down complete");
 }
 
 bool Transport::IsInitialized() const { return is_initialized_; }
 
 void Transport::WatchChannelClosed(const zx::channel& channel, Waiter& wait) {
-  async::PostTask(io_dispatcher_, [handle = channel.get(), &wait, ref = fxl::Ref(this)] {
-    wait.set_object(handle);
-    wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
-    zx_status_t status = wait.Begin(async_get_default_dispatcher());
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed to set up closed handler: %s", zx_status_get_string(status));
-      wait.set_object(ZX_HANDLE_INVALID);
-    }
-  });
+  wait.set_object(channel.get());
+  wait.set_trigger(ZX_CHANNEL_PEER_CLOSED);
+  zx_status_t status = wait.Begin(async_get_default_dispatcher());
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "failed to set up closed handler: %s", zx_status_get_string(status));
+    wait.set_object(ZX_HANDLE_INVALID);
+  }
 }
 
 void Transport::OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait,

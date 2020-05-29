@@ -137,7 +137,7 @@ void CommandChannel::Initialize() {
     bt_log(DEBUG, "hci", "started I/O handler");
   };
 
-  io_dispatcher_ = transport_->io_dispatcher();
+  io_dispatcher_ = async_get_default_dispatcher();
   RunTaskSync(setup_handler_task, io_dispatcher_);
 
   if (channel_wait_.object() == ZX_HANDLE_INVALID)

@@ -51,7 +51,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   // TestBase overrides:
   void SetUp() override {
     transport_ = hci::Transport::Create(FakeControllerTest<FakeControllerType>::SetUpTestDevice());
-    transport_->Initialize(dispatcher());
+    transport_->Initialize();
   }
 
   void TearDown() override {
