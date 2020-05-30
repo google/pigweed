@@ -28,7 +28,7 @@ namespace {
 
 // This procedure can continue to operate independently of the existence of an
 // BrEdrConnectionManager instance, which will begin to disable Page Scan as it shuts down.
-void SetPageScanEnabled(bool enabled, fxl::RefPtr<hci::Transport> hci,
+void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
                         async_dispatcher_t* dispatcher, hci::StatusCallback cb) {
   ZX_DEBUG_ASSERT(cb);
   auto read_enable = hci::CommandPacket::New(hci::kReadScanEnable);
@@ -124,11 +124,11 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
   return event_id;
 }
 
-BrEdrConnectionManager::BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci,
+BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                                                PeerCache* peer_cache, DeviceAddress local_address,
                                                fbl::RefPtr<data::Domain> data_domain,
                                                bool use_interlaced_scan)
-    : hci_(hci),
+    : hci_(std::move(hci)),
       cache_(peer_cache),
       local_address_(local_address),
       data_domain_(data_domain),

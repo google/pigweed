@@ -15,50 +15,56 @@
 namespace bt {
 namespace hci {
 
-// static
-fxl::RefPtr<Transport> Transport::Create(std::unique_ptr<DeviceWrapper> hci_device) {
-  return AdoptRef(new Transport(std::move(hci_device)));
+fit::result<std::unique_ptr<Transport>> Transport::Create(
+    std::unique_ptr<DeviceWrapper> hci_device) {
+  auto transport = std::unique_ptr<Transport>(new Transport(std::move(hci_device)));
+  if (!transport->command_channel()) {
+    return fit::error();
+  }
+  return fit::ok(std::move(transport));
 }
 
 Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
-    : hci_device_(std::move(hci_device)), is_initialized_(false), closed_cb_dispatcher_(nullptr) {
+    : hci_device_(std::move(hci_device)), closed_cb_dispatcher_(nullptr), weak_ptr_factory_(this) {
   ZX_ASSERT(hci_device_);
-}
 
-Transport::~Transport() {
-  // Do nothing. Since Transport is shared across threads, this can be called
-  // from any thread and calling ShutDown() would be unsafe.
-}
-
-bool Transport::Initialize() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(hci_device_);
-  ZX_DEBUG_ASSERT(!command_channel_);
-  ZX_DEBUG_ASSERT(!acl_data_channel_);
-  ZX_DEBUG_ASSERT(!IsInitialized());
+  bt_log(INFO, "hci", "initializing HCI");
 
   // Obtain command channel handle.
   zx::channel channel = hci_device_->GetCommandChannel();
   if (!channel.is_valid()) {
     bt_log(ERROR, "hci", "failed to obtain command channel handle");
-    return false;
+    return;
   }
 
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, cmd_channel_wait_);
   command_channel_ = std::make_unique<CommandChannel>(this, std::move(channel));
   command_channel_->Initialize();
+}
 
-  is_initialized_ = true;
+Transport::~Transport() {
+  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  return true;
+  bt_log(INFO, "hci", "transport shutting down");
+
+  if (acl_data_channel_) {
+    acl_data_channel_->ShutDown();
+  }
+  if (command_channel_) {
+    command_channel_->ShutDown();
+  }
+
+  cmd_channel_wait_.Cancel();
+  if (acl_data_channel_) {
+    acl_channel_wait_.Cancel();
+  }
+
+  bt_log(INFO, "hci", "transport shut down complete");
 }
 
 bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                          const DataBufferInfo& le_buffer_info) {
-  ZX_DEBUG_ASSERT(hci_device_);
-  ZX_DEBUG_ASSERT(IsInitialized());
-
   // Obtain ACL data channel handle.
   zx::channel channel = hci_device_->GetACLDataChannel();
   if (!channel.is_valid()) {
@@ -84,32 +90,6 @@ void Transport::SetTransportClosedCallback(fit::closure callback, async_dispatch
   closed_cb_ = std::move(callback);
   closed_cb_dispatcher_ = dispatcher;
 }
-
-void Transport::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(IsInitialized());
-
-  bt_log(INFO, "hci", "transport shutting down");
-
-  if (acl_data_channel_) {
-    acl_data_channel_->ShutDown();
-  }
-  if (command_channel_) {
-    command_channel_->ShutDown();
-  }
-
-  cmd_channel_wait_.Cancel();
-  if (acl_data_channel_) {
-    acl_channel_wait_.Cancel();
-  }
-
-  // We avoid deallocating the channels here as they *could* still be accessed
-  // by other threads.
-  is_initialized_ = false;
-  bt_log(INFO, "hci", "transport shut down complete");
-}
-
-bool Transport::IsInitialized() const { return is_initialized_; }
 
 void Transport::WatchChannelClosed(const zx::channel& channel, Waiter& wait) {
   wait.set_object(channel.get());

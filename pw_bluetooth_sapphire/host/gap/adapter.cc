@@ -27,13 +27,13 @@
 namespace bt {
 namespace gap {
 
-Adapter::Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
+Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
                  std::optional<fbl::RefPtr<data::Domain>> data_domain)
     : inspector_(),
       adapter_node_(inspector_.GetRoot().CreateChild("adapter")),
       identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
-      hci_(hci),
+      hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
       peer_cache_(adapter_node_.CreateChild(PeerCache::kInspectNodeName)),
@@ -634,11 +634,7 @@ void Adapter::CleanUp() {
 
   data_domain_ = nullptr;
 
-  // TODO(armansito): hci::Transport::ShutDown() should send a shutdown message
-  // to the bt-hci device, which would be responsible for sending HCI_Reset upon
-  // exit.
-  if (hci_->IsInitialized())
-    hci_->ShutDown();
+  hci_ = nullptr;
 }
 
 void Adapter::OnTransportClosed() {

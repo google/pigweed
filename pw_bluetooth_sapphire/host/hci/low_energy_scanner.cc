@@ -33,12 +33,12 @@ LowEnergyScanResult::LowEnergyScanResult(const DeviceAddress& address, bool reso
                       "cannot be both connectable and a scan response");
 }
 
-LowEnergyScanner::LowEnergyScanner(fxl::RefPtr<Transport> hci, async_dispatcher_t* dispatcher)
+LowEnergyScanner::LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher_t* dispatcher)
     : state_(State::kIdle),
       active_scan_requested_(false),
       delegate_(nullptr),
       dispatcher_(dispatcher),
-      transport_(hci) {
+      transport_(std::move(hci)) {
   ZX_DEBUG_ASSERT(transport_);
   ZX_DEBUG_ASSERT(dispatcher_);
 

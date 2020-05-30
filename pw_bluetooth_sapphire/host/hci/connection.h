@@ -87,14 +87,12 @@ class Connection {
   static std::unique_ptr<Connection> CreateLE(ConnectionHandle handle, Role role,
                                               const DeviceAddress& local_address,
                                               const DeviceAddress& peer_address,
-                                              const LEConnectionParameters& params,
-                                              fxl::RefPtr<Transport> hci);
+                                              const LEConnectionParameters& params, fxl::WeakPtr<Transport> hci);
 
   // Initializes this as a BR/EDR ACL connection.
   static std::unique_ptr<Connection> CreateACL(ConnectionHandle handle, Role role,
                                                const DeviceAddress& local_address,
-                                               const DeviceAddress& peer_address,
-                                               fxl::RefPtr<Transport> hci);
+                                               const DeviceAddress& peer_address, fxl::WeakPtr<Transport> hci);
 
   // The destructor closes this connection.
   virtual ~Connection() = default;

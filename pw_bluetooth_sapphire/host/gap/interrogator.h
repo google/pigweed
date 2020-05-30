@@ -42,7 +42,7 @@ namespace gap {
 class Interrogator {
  public:
   // |cache| must live longer than this object.
-  Interrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
+  Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
 
   // Will cancel all uncompleted interrogations.
   virtual ~Interrogator();
@@ -98,7 +98,7 @@ class Interrogator {
   // A copy of |interrogation| must be passed to all command callbacks to detect when they complete.
   virtual void SendCommands(InterrogationRefPtr interrogation) = 0;
 
-  hci::Transport* hci() const { return hci_.get(); }
+  fxl::WeakPtr<hci::Transport> hci() const { return hci_; }
 
   PeerCache* peer_cache() const { return cache_; }
 
@@ -111,7 +111,7 @@ class Interrogator {
 
  private:
   // The hci transport to use.
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
 
   // The dispatcher we use.
   async_dispatcher_t* const dispatcher_;

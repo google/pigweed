@@ -57,7 +57,7 @@ class LowEnergyConnector : public LocalAddressClient {
   using IncomingConnectionDelegate = fit::function<void(
       ConnectionHandle handle, Connection::Role role, const DeviceAddress& peer_address,
       const LEConnectionParameters& conn_params)>;
-  LowEnergyConnector(fxl::RefPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
+  LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
                      async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate);
 
   // Deleting an instance cancels any pending connection request.
@@ -135,7 +135,7 @@ class LowEnergyConnector : public LocalAddressClient {
   async_dispatcher_t* dispatcher_;
 
   // The HCI transport.
-  fxl::RefPtr<Transport> hci_;
+  fxl::WeakPtr<Transport> hci_;
 
   // Used to obtain the local device address type to use during initiation.
   LocalAddressDelegate* local_addr_delegate_;  // weak

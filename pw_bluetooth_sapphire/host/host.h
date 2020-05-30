@@ -71,6 +71,8 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
 
   bt_hci_protocol_t hci_proto_;
 
+  std::unique_ptr<bt::hci::Transport> hci_;
+
   std::unique_ptr<bt::gap::Adapter> gap_;
 
   // The GATT profile layer and bus.

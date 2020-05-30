@@ -41,9 +41,9 @@ void Interrogator::Interrogation::Complete(hci::Status status) {
   result_cb_(status);
 }
 
-Interrogator::Interrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci,
+Interrogator::Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
                            async_dispatcher_t* dispatcher)
-    : hci_(hci), dispatcher_(dispatcher), cache_(cache), weak_ptr_factory_(this) {
+    : hci_(std::move(hci)), dispatcher_(dispatcher), cache_(cache), weak_ptr_factory_(this) {
   ZX_ASSERT(hci_);
   ZX_ASSERT(dispatcher_);
   ZX_ASSERT(cache_);

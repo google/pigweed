@@ -48,12 +48,13 @@ class ConnectionTest : public TestingBase {
 
   ConnectionPtr NewLEConnection(Connection::Role role = Connection::Role::kMaster,
                                 ConnectionHandle handle = kTestHandle) {
-    return Connection::CreateLE(handle, role, kLEAddress1, kLEAddress2, kTestParams, transport());
+    return Connection::CreateLE(handle, role, kLEAddress1, kLEAddress2, kTestParams,
+                                transport()->WeakPtr());
   }
 
   ConnectionPtr NewACLConnection(Connection::Role role = Connection::Role::kMaster,
                                  ConnectionHandle handle = kTestHandle) {
-    return Connection::CreateACL(handle, role, kACLAddress1, kACLAddress2, transport());
+    return Connection::CreateACL(handle, role, kACLAddress1, kACLAddress2, transport()->WeakPtr());
   }
 };
 

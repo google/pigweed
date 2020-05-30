@@ -15,8 +15,11 @@ namespace data {
 
 class Impl final : public Domain {
  public:
-  Impl(fxl::RefPtr<hci::Transport> hci, inspect::Node node)
-      : Domain(), dispatcher_(async_get_default_dispatcher()), node_(std::move(node)), hci_(hci) {
+  Impl(fxl::WeakPtr<hci::Transport> hci, inspect::Node node)
+      : Domain(),
+        dispatcher_(async_get_default_dispatcher()),
+        node_(std::move(node)),
+        hci_(std::move(hci)) {
     ZX_ASSERT(hci_);
     ZX_ASSERT(hci_->acl_data_channel());
     const auto& acl_buffer_info = hci_->acl_data_channel()->GetBufferInfo();
@@ -129,7 +132,7 @@ class Impl final : public Domain {
   inspect::Node node_;
 
   // Handle to the underlying HCI transport.
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
 
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
 
@@ -140,7 +143,7 @@ class Impl final : public Domain {
 };
 
 // static
-fbl::RefPtr<Domain> Domain::Create(fxl::RefPtr<hci::Transport> hci, inspect::Node node) {
+fbl::RefPtr<Domain> Domain::Create(fxl::WeakPtr<hci::Transport> hci, inspect::Node node) {
   ZX_DEBUG_ASSERT(hci);
   return AdoptRef(new Impl(hci, std::move(node)));
 }

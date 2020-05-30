@@ -88,7 +88,7 @@ class BrEdrConnection final {
 // the internal |connections_| map.
 class BrEdrConnectionManager final {
  public:
-  BrEdrConnectionManager(fxl::RefPtr<hci::Transport> hci, PeerCache* peer_cache,
+  BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
                          DeviceAddress local_address, fbl::RefPtr<data::Domain> data_domain,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
@@ -259,7 +259,7 @@ class BrEdrConnectionManager final {
 
   using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
 
   // The pairing delegate used for authentication challenges. If nullptr, all

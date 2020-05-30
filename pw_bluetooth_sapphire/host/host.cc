@@ -21,21 +21,19 @@ Host::~Host() {}
 
 bool Host::Initialize(InitCallback callback) {
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_);
-  auto hci = hci::Transport::Create(std::move(dev));
-  if (!hci)
-    return false;
 
-  bt_log(DEBUG, "bt-host", "initializing HCI");
-  if (!hci->Initialize()) {
+  auto hci_result = hci::Transport::Create(std::move(dev));
+  if (hci_result.is_error()) {
     bt_log(ERROR, "bt-host", "failed to initialize HCI transport");
     return false;
   }
+  hci_ = hci_result.take_value();
 
   gatt_host_ = GattHost::Create("bt-host (gatt)");
   if (!gatt_host_)
     return false;
 
-  gap_ = std::make_unique<gap::Adapter>(hci, gatt_host_->profile(), std::nullopt);
+  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
   if (!gap_)
     return false;
 
@@ -80,6 +78,9 @@ void Host::ShutDown() {
   // as it is not thread-safe.
   gap_ = nullptr;
   gatt_host_ = nullptr;
+
+  // Shuts down HCI command channel and ACL data channel.
+  hci_ = nullptr;
 }
 
 void Host::BindHostInterface(zx::channel channel) {

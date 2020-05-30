@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADDRESS_MANAGER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_ADDRESS_MANAGER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 
 #include <optional>
 #include <queue>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
@@ -71,7 +72,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   using StateQueryDelegate = fit::function<bool()>;
 
   LowEnergyAddressManager(const DeviceAddress& public_address, StateQueryDelegate delegate,
-                          fxl::RefPtr<hci::Transport> hci);
+                          fxl::WeakPtr<hci::Transport> hci);
   ~LowEnergyAddressManager();
 
   // Assigns the IRK to generate a RPA for the next address refresh when privacy
@@ -114,7 +115,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   void ResolveAddressRequests();
 
   StateQueryDelegate delegate_;
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
   bool privacy_enabled_;
 
   // The public device address (i.e. BD_ADDR) that is assigned to the

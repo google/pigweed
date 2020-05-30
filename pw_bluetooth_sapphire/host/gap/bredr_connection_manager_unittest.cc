@@ -529,10 +529,9 @@ class BrEdrConnectionManagerTest : public TestingBase {
     peer_cache_ =
         std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
     data_domain_ = data::testing::FakeDomain::Create();
-    auto hci = transport();
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci, peer_cache_.get(), kLocalDevAddr, data_domain_, true);
+        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, data_domain_, true);
 
     StartTestDevice();
 

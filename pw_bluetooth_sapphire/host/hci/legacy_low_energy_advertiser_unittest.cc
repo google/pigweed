@@ -59,7 +59,7 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
     settings.bd_addr = kPublicAddress;
     test_device()->set_settings(settings);
 
-    advertiser_ = std::make_unique<LegacyLowEnergyAdvertiser>(transport());
+    advertiser_ = std::make_unique<LegacyLowEnergyAdvertiser>(transport()->WeakPtr());
 
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());

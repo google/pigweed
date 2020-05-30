@@ -455,13 +455,13 @@ void LowEnergyConnectionManager::PendingRequestData::NotifyCallbacks(hci::Status
   }
 }
 
-LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transport> hci,
+LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                                                        hci::LocalAddressDelegate* addr_delegate,
                                                        hci::LowEnergyConnector* connector,
                                                        PeerCache* peer_cache,
                                                        fbl::RefPtr<data::Domain> data_domain,
                                                        fbl::RefPtr<gatt::GATT> gatt)
-    : hci_(hci),
+    : hci_(std::move(hci)),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
@@ -469,7 +469,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::RefPtr<hci::Transpor
       gatt_(gatt),
       connector_(connector),
       local_address_delegate_(addr_delegate),
-      interrogator_(peer_cache, hci, dispatcher_),
+      interrogator_(peer_cache, hci_, dispatcher_),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(peer_cache_);

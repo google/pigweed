@@ -48,7 +48,7 @@ class LowEnergyConnectorTest : public TestingBase {
 
     fake_address_delegate_.set_local_address(kLocalAddress);
     connector_ = std::make_unique<LowEnergyConnector>(
-        transport(), &fake_address_delegate_, dispatcher(),
+        transport()->WeakPtr(), &fake_address_delegate_, dispatcher(),
         fit::bind_member(this, &LowEnergyConnectorTest::OnIncomingConnectionCreated));
 
     test_device()->set_connection_state_callback(

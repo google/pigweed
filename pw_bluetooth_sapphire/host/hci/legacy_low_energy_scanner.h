@@ -30,7 +30,7 @@ class LocalAddressDelegate;
 //     - HCI_LE_Advertising_Report event
 class LegacyLowEnergyScanner : public LowEnergyScanner {
  public:
-  LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate, fxl::RefPtr<Transport> hci,
+  LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate, fxl::WeakPtr<Transport> hci,
                          async_dispatcher_t* dispatcher);
   ~LegacyLowEnergyScanner() override;
 

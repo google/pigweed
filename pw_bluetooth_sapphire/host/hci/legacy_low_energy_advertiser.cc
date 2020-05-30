@@ -90,8 +90,8 @@ std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
 
 }  // namespace
 
-LegacyLowEnergyAdvertiser::LegacyLowEnergyAdvertiser(fxl::RefPtr<Transport> hci)
-    : hci_(hci), starting_(false), connect_callback_(nullptr) {
+LegacyLowEnergyAdvertiser::LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
+    : hci_(std::move(hci)), starting_(false), connect_callback_(nullptr) {
   hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(async_get_default_dispatcher(), hci_);
 }
 

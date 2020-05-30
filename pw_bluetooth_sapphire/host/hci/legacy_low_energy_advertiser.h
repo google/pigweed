@@ -17,7 +17,7 @@ class Transport;
 
 class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  LegacyLowEnergyAdvertiser(fxl::RefPtr<Transport> hci);
+  LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
   ~LegacyLowEnergyAdvertiser() override;
 
   // LowEnergyAdvertiser overrides:
@@ -60,7 +60,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   bool advertising() const { return advertised_ != DeviceAddress(); }
 
   // The transport that's used to issue commands
-  fxl::RefPtr<Transport> hci_;
+  fxl::WeakPtr<Transport> hci_;
 
   // |hci_cmd_runner_| will be running when a start or stop is pending.
   // |starting_| is set to true if a start is pending.

@@ -58,8 +58,8 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ =
-        Domain::Create(transport(), inspector_.GetRoot().CreateChild(Domain::kInspectNodeName));
+    domain_ = Domain::Create(transport()->WeakPtr(),
+                             inspector_.GetRoot().CreateChild(Domain::kInspectNodeName));
 
     StartTestDevice();
 

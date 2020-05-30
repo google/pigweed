@@ -40,10 +40,8 @@ class LowEnergyInterrogatorTest : public TestingBase {
 
     peer_cache_ =
         std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
-    auto hci = transport();
-
-    interrogator_ = std::make_unique<LowEnergyInterrogator>(peer_cache_.get(), hci,
-                                                            async_get_default_dispatcher());
+    interrogator_ = std::make_unique<LowEnergyInterrogator>(
+        peer_cache_.get(), transport()->WeakPtr(), async_get_default_dispatcher());
 
     StartTestDevice();
   }

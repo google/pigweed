@@ -16,7 +16,7 @@ namespace gap {
 
 LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
                                                  StateQueryDelegate delegate,
-                                                 fxl::RefPtr<hci::Transport> hci)
+                                                 fxl::WeakPtr<hci::Transport> hci)
     : delegate_(std::move(delegate)),
       hci_(std::move(hci)),
       privacy_enabled_(false),

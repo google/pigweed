@@ -96,7 +96,7 @@ class LowEnergyScanner : public LocalAddressClient {
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result);
   };
 
-  LowEnergyScanner(fxl::RefPtr<Transport> hci, async_dispatcher_t* dispatcher);
+  LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher_t* dispatcher);
   virtual ~LowEnergyScanner() = default;
 
   // Returns the current Scan state.
@@ -177,7 +177,7 @@ class LowEnergyScanner : public LocalAddressClient {
 
  protected:
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
-  Transport* transport() const { return transport_.get(); }
+  fxl::WeakPtr<Transport> transport() const { return transport_; }
   SequentialCommandRunner* hci_cmd_runner() const { return hci_cmd_runner_.get(); }
   Delegate* delegate() const {
     ZX_DEBUG_ASSERT(delegate_);
@@ -201,7 +201,7 @@ class LowEnergyScanner : public LocalAddressClient {
   async_dispatcher_t* dispatcher_;
 
   // The HCI transport.
-  fxl::RefPtr<Transport> transport_;
+  fxl::WeakPtr<Transport> transport_;
 
   // Command runner for all HCI commands sent out by implementations.
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;

@@ -50,7 +50,7 @@ class DataFuzzTest : public TestingBase {
     InitializeACLDataChannel(bredr_buffer_info);
 
     domain_ = data::Domain::Create(
-        transport(), inspector_.GetRoot().CreateChild(data::Domain::kInspectNodeName));
+        transport()->WeakPtr(), inspector_.GetRoot().CreateChild(data::Domain::kInspectNodeName));
 
     StartTestDevice();
   };

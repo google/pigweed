@@ -50,19 +50,13 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
  protected:
   // TestBase overrides:
   void SetUp() override {
-    transport_ = hci::Transport::Create(FakeControllerTest<FakeControllerType>::SetUpTestDevice());
-    transport_->Initialize();
+    transport_ = hci::Transport::Create(FakeControllerTest<FakeControllerType>::SetUpTestDevice())
+                     .take_value();
   }
 
   void TearDown() override {
     if (!transport_)
       return;
-
-    if (transport_->IsInitialized()) {
-      transport_->ShutDown();
-    }
-
-    RunLoopUntilIdle();
 
     transport_ = nullptr;
     test_device_ = nullptr;
@@ -99,12 +93,14 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     data_received_callback_ = std::move(callback);
   }
 
-  fxl::RefPtr<hci::Transport> transport() const { return transport_; }
+  hci::Transport* transport() const { return transport_.get(); }
   hci::CommandChannel* cmd_channel() const { return transport_->command_channel(); }
   hci::ACLDataChannel* acl_data_channel() const { return transport_->acl_data_channel(); }
 
   // Deletes |test_device_| and resets the pointer.
   void DeleteTestDevice() { test_device_ = nullptr; }
+
+  void DeleteTransport() { transport_ = nullptr; }
 
   // Getters for internal fields frequently used by tests.
   FakeControllerType* test_device() const { return test_device_.get(); }
@@ -152,7 +148,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   }
 
   std::unique_ptr<FakeControllerType> test_device_;
-  fxl::RefPtr<hci::Transport> transport_;
+  std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerTest);

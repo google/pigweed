@@ -45,7 +45,7 @@ class AdapterTest : public TestingBase {
     transport_closed_called_ = false;
 
     auto data_domain = data::testing::FakeDomain::Create();
-    adapter_ = std::make_unique<Adapter>(transport(), gatt::testing::FakeLayer::Create(),
+    adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt::testing::FakeLayer::Create(),
                                          std::optional(std::move(data_domain)));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());

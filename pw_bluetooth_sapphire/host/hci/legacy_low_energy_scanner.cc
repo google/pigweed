@@ -43,9 +43,9 @@ std::string ScanStateToString(LowEnergyScanner::State state) {
 }  // namespace
 
 LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
-                                               fxl::RefPtr<Transport> hci,
+                                               fxl::WeakPtr<Transport> hci,
                                                async_dispatcher_t* dispatcher)
-    : LowEnergyScanner(hci, dispatcher), local_addr_delegate_(local_addr_delegate) {
+    : LowEnergyScanner(std::move(hci), dispatcher), local_addr_delegate_(local_addr_delegate) {
   ZX_DEBUG_ASSERT(local_addr_delegate_);
   event_handler_id_ = transport()->command_channel()->AddLEMetaEventHandler(
       kLEAdvertisingReportSubeventCode,

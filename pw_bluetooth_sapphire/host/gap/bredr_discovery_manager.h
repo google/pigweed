@@ -104,8 +104,7 @@ class BrEdrDiscoverableSession final {
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci, hci::InquiryMode mode,
-                        PeerCache* peer_cache);
+  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci::InquiryMode mode, PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
 
@@ -182,7 +181,7 @@ class BrEdrDiscoveryManager final {
   void UpdateEIRResponseData(std::string name, hci::StatusCallback callback);
 
   // The HCI Transport
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
 
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;

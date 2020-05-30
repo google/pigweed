@@ -58,7 +58,7 @@ class Transport;
 // SequentialCommandRunner is being constructed.
 class SequentialCommandRunner final {
  public:
-  SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::RefPtr<Transport> transport);
+  SequentialCommandRunner(async_dispatcher_t* dispatcher, fxl::WeakPtr<Transport> transport);
   ~SequentialCommandRunner();
 
   // Adds a HCI command packet to the queue.
@@ -121,7 +121,7 @@ class SequentialCommandRunner final {
   void NotifyStatusAndReset(Status status);
 
   async_dispatcher_t* dispatcher_;
-  fxl::RefPtr<Transport> transport_;
+  fxl::WeakPtr<Transport> transport_;
 
   struct QueuedCommand {
     std::unique_ptr<CommandPacket> packet;

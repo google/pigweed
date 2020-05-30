@@ -10,7 +10,7 @@
 
 namespace bt::gap {
 
-LowEnergyInterrogator::LowEnergyInterrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci,
+LowEnergyInterrogator::LowEnergyInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
                                              async_dispatcher_t* dispatcher)
     : Interrogator(cache, std::move(hci), dispatcher), weak_ptr_factory_(this) {}
 

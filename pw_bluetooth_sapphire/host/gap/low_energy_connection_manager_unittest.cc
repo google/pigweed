@@ -73,11 +73,11 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     l2cap_ = data::testing::FakeDomain::Create();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
-        transport(), &addr_delegate_, dispatcher(),
+        transport()->WeakPtr(), &addr_delegate_, dispatcher(),
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
+        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
         gatt::testing::FakeLayer::Create());
 
     test_device()->set_connection_state_callback(
@@ -86,8 +86,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   }
 
   void TearDown() override {
-    if (conn_mgr_)
+    if (conn_mgr_) {
       conn_mgr_ = nullptr;
+    }
+    connector_ = nullptr;
     peer_cache_ = nullptr;
 
     l2cap_ = nullptr;
@@ -121,7 +123,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     // Create a production connection object that can interact with the fake
     // controller.
     last_remote_initiated_ = hci::Connection::CreateLE(handle, role, local_address, peer_address,
-                                                       conn_params, transport());
+                                                       conn_params, transport()->WeakPtr());
   }
 
   // Called by FakeController on connection events.

@@ -22,8 +22,7 @@ LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_add
                                                    StatusCallback status_callback)
     : peer_address(peer_address), status_callback(std::move(status_callback)) {}
 
-LowEnergyConnector::LowEnergyConnector(fxl::RefPtr<Transport> hci,
-                                       LocalAddressDelegate* local_addr_delegate,
+LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
                                        async_dispatcher_t* dispatcher,
                                        IncomingConnectionDelegate delegate)
     : dispatcher_(dispatcher),

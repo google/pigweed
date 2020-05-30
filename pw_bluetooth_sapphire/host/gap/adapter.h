@@ -68,10 +68,9 @@ class Adapter final {
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
   //
-  // This will take ownership of |hci|.
   // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
-  explicit Adapter(fxl::RefPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
+  explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
                    std::optional<fbl::RefPtr<data::Domain>> data_domain);
   ~Adapter();
 
@@ -250,7 +249,7 @@ class Adapter final {
   AdapterId identifier_;
 
   async_dispatcher_t* dispatcher_;
-  fxl::RefPtr<hci::Transport> hci_;
+  fxl::WeakPtr<hci::Transport> hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
   fit::closure transport_closed_cb_;

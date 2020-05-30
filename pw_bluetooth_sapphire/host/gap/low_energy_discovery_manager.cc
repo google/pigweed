@@ -60,7 +60,7 @@ void LowEnergyDiscoverySession::NotifyError() {
     error_callback_();
 }
 
-LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::RefPtr<hci::Transport> hci,
+LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
                                                      hci::LowEnergyScanner* scanner,
                                                      PeerCache* peer_cache)
     : dispatcher_(async_get_default_dispatcher()),

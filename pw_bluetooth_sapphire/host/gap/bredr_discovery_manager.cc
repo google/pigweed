@@ -76,9 +76,9 @@ BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
   manager_->RemoveDiscoverableSession(this);
 }
 
-BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::RefPtr<hci::Transport> hci, hci::InquiryMode mode,
-                                             PeerCache* peer_cache)
-    : hci_(hci),
+BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
+                                             hci::InquiryMode mode, PeerCache* peer_cache)
+    : hci_(std::move(hci)),
       dispatcher_(async_get_default_dispatcher()),
       cache_(peer_cache),
       result_handler_id_(0u),

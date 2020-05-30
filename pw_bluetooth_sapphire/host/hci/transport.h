@@ -9,6 +9,7 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
+#include <lib/fit/result.h>
 
 #include <atomic>
 #include <memory>
@@ -32,41 +33,29 @@ class DeviceWrapper;
 // and SCO channels and provides the necessary control-flow mechanisms to send
 // and receive HCI packets from the underlying Bluetooth controller.
 //
-// Transport expects to be initialized and shut down (via Initialize() and
-// ShutDown()) on the same thread. ShutDown() MUST be called to guarantee clean
-// up.
-//
 // TODO(armansito): This object has become too heavy-weight. I think it will be
 // cleaner to have CommandChannel and ACLDataChannel each be owned directly by
 // the main and L2CAP domains. Transport should go away as part of the HCI layer
 // clean up (and also NET-388).
-class Transport final : public fxl::RefCountedThreadSafe<Transport> {
+class Transport final {
  public:
-  static fxl::RefPtr<Transport> Create(std::unique_ptr<DeviceWrapper> hci_device);
-
-  // The ACLDataChannel will be left uninitialized. The ACLDataChannel must be
+  // Initializes the command channel.
+  //
+  // NOTE: The ACLDataChannel will be left uninitialized. The ACLDataChannel must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  bool Initialize();
+  static fit::result<std::unique_ptr<Transport>> Create(std::unique_ptr<DeviceWrapper> hci_device);
+
+  // TODO(armansito): hci::Transport::~Transport() should send a shutdown message
+  // to the bt-hci device, which would be responsible for sending HCI_Reset upon
+  // exit.
+  ~Transport();
 
   // Initializes the ACL data channel with the given parameters. Returns false
   // if an error occurs during initialization. Initialize() must have been
   // called successfully prior to calling this method.
   bool InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info);
-
-  // Cleans up all transport channels, stops the I/O event loop, and joins the
-  // I/O thread. Once a Transport has been shut down, it cannot be
-  // re-initialized.
-  //
-  // NOTE: Care must be taken such that this method is not called from a thread
-  // that would race with a call to Initialize(). ShutDown() is not thread-safe;
-  // Initialize(), InitializeACLDataChannel(), and ShutDown() MUST be called on
-  // the same thread.
-  void ShutDown();
-
-  // Returns true if this Transport has been fully initialized and running.
-  bool IsInitialized() const;
 
   // Returns a pointer to the HCI command and event flow control handler.
   CommandChannel* command_channel() const { return command_channel_.get(); }
@@ -84,11 +73,10 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   // calling ShutDown() and/or deleting it.
   void SetTransportClosedCallback(fit::closure callback, async_dispatcher_t* dispatcher);
 
- private:
-  FRIEND_REF_COUNTED_THREAD_SAFE(Transport);
+  fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
+ private:
   explicit Transport(std::unique_ptr<DeviceWrapper> hci_device);
-  ~Transport();
 
   // Channel closed callback.
   void OnChannelClosed(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
@@ -108,9 +96,6 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   // The Bluetooth HCI device file descriptor.
   std::unique_ptr<DeviceWrapper> hci_device_;
 
-  // The state of the initialization sequence.
-  std::atomic_bool is_initialized_;
-
   // async::Waits for the command and ACL channels
   Waiter cmd_channel_wait_{this};
   Waiter acl_channel_wait_{this};
@@ -125,6 +110,8 @@ class Transport final : public fxl::RefCountedThreadSafe<Transport> {
   // its dispatcher.
   fit::closure closed_cb_;
   async_dispatcher_t* closed_cb_dispatcher_;
+
+  fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };

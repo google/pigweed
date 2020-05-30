@@ -23,7 +23,7 @@ class ConnectionImpl final : public Connection {
  public:
   ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
                  const DeviceAddress& local_address, const DeviceAddress& peer_address,
-                 fxl::RefPtr<Transport> hci);
+                 fxl::WeakPtr<Transport> hci);
   ~ConnectionImpl() override;
 
   // Connection overrides:
@@ -70,7 +70,7 @@ class ConnectionImpl final : public Connection {
   // This method is static so that it can be called in an event handler
   // after this object has been destroyed.
   static CommandChannel::EventCallbackResult OnDisconnectionComplete(
-      fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::RefPtr<Transport> hci,
+      fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::WeakPtr<Transport> hci,
       const EventPacket& event);
 
   fxl::ThreadChecker thread_checker_;
@@ -81,7 +81,7 @@ class ConnectionImpl final : public Connection {
   CommandChannel::EventHandlerId le_ltk_request_id_;
 
   // The underlying HCI transport.
-  fxl::RefPtr<Transport> hci_;
+  fxl::WeakPtr<Transport> hci_;
 
   State conn_state_;
 
@@ -130,11 +130,11 @@ std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role r
                                                  const DeviceAddress& local_address,
                                                  const DeviceAddress& peer_address,
                                                  const LEConnectionParameters& params,
-                                                 fxl::RefPtr<Transport> hci) {
+                                                 fxl::WeakPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
   auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kLE, role, local_address,
-                                               peer_address, hci);
+                                               peer_address, std::move(hci));
   conn->set_low_energy_parameters(params);
   return conn;
 }
@@ -143,11 +143,11 @@ std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role r
 std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role role,
                                                   const DeviceAddress& local_address,
                                                   const DeviceAddress& peer_address,
-                                                  fxl::RefPtr<Transport> hci) {
+                                                  fxl::WeakPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kACL, role, local_address,
-                                               peer_address, hci);
+                                               peer_address, std::move(hci));
   return conn;
 }
 
@@ -176,9 +176,9 @@ std::string Connection::ToString() const {
 
 ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
-                               const DeviceAddress& peer_address, fxl::RefPtr<Transport> hci)
+                               const DeviceAddress& peer_address, fxl::WeakPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
-      hci_(hci),
+      hci_(std::move(hci)),
       conn_state_(State::kConnected),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
@@ -199,7 +199,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
       BindEventHandler<&ConnectionImpl::OnLELongTermKeyRequestEvent>(self),
       async_get_default_dispatcher());
 
-  auto disconn_complete_handler = [self, handle, hci](auto& event) {
+  auto disconn_complete_handler = [self, handle, hci = hci_](auto& event) {
     return ConnectionImpl::OnDisconnectionComplete(self, handle, hci, event);
   };
 
@@ -207,7 +207,7 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
       kDisconnectionCompleteEventCode, disconn_complete_handler, async_get_default_dispatcher());
 
   // Allow packets to be sent on this link immediately.
-  hci->acl_data_channel()->RegisterLink(handle, ll_type);
+  hci_->acl_data_channel()->RegisterLink(handle, ll_type);
 }
 
 ConnectionImpl::~ConnectionImpl() {
@@ -224,7 +224,7 @@ ConnectionImpl::~ConnectionImpl() {
 fxl::WeakPtr<Connection> ConnectionImpl::WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
-    fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::RefPtr<Transport> hci,
+    fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::WeakPtr<Transport> hci,
     const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kDisconnectionCompleteEventCode);
 

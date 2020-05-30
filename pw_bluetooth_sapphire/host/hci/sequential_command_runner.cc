@@ -12,9 +12,9 @@ namespace bt {
 namespace hci {
 
 SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
-                                                 fxl::RefPtr<Transport> transport)
+                                                 fxl::WeakPtr<Transport> transport)
     : dispatcher_(dispatcher),
-      transport_(transport),
+      transport_(std::move(transport)),
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {

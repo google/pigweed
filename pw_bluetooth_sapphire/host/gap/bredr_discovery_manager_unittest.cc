@@ -76,7 +76,8 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     test_device()->QueueCommandTransaction(
         CommandTransaction(kWriteInquiryType, {&kWriteInquiryTypeRsp}));
 
-    discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(transport(), mode, &peer_cache_);
+    discovery_manager_ =
+        std::make_unique<BrEdrDiscoveryManager>(transport()->WeakPtr(), mode, &peer_cache_);
 
     RunLoopUntilIdle();
   }

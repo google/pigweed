@@ -13,7 +13,7 @@
 namespace bt {
 namespace gap {
 
-BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache, fxl::RefPtr<hci::Transport> hci,
+BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
                                      async_dispatcher_t* dispatcher)
     : Interrogator(cache, std::move(hci), dispatcher), weak_ptr_factory_(this) {}
 
@@ -96,7 +96,8 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
     peer->SetName(std::string(params.remote_name, params.remote_name + len));
   };
 
-  bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)", bt_str(interrogation->peer_id()));
+  bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)",
+         bt_str(interrogation->peer_id()));
   hci()->command_channel()->SendExclusiveCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
                                                  hci::kRemoteNameRequestCompleteEventCode,
                                                  {hci::kInquiry});
