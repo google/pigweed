@@ -45,6 +45,7 @@ static_library("gap") {
   ]
 
   public_deps = [
+    "//sdk/fidl/fuchsia.io",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/data",
     "//src/connectivity/bluetooth/core/bt-host/gatt",
@@ -57,7 +58,6 @@ static_library("gap") {
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
-    "//zircon/system/fidl/fuchsia-io",
     "//zircon/system/ulib/inspect",
   ]
 
