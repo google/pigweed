@@ -18,6 +18,11 @@ import("$dir_pw_build/python_script.gni")
 _gen_script_path =
     "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
 
+_forwarded_vars = [
+  "testonly",
+  "visibility",
+]
+
 # Generates pw_protobuf C++ code for proto files, creating a source_set of the
 # generated files. This is internal and should not be used outside of this file.
 # Use pw_proto_library instead.
@@ -37,6 +42,7 @@ template("_pw_pwpb_proto_library") {
 
   _gen_target = "${target_name}_gen"
   pw_python_script(_gen_target) {
+    forward_variables_from(invoker, _forwarded_vars)
     script = _gen_script_path
     args = [
              "--language",
@@ -107,6 +113,7 @@ template("_pw_nanopb_proto_library") {
   # generate the C proto sources.
   _gen_target = "${target_name}_gen"
   pw_python_script(_gen_target) {
+    forward_variables_from(invoker, _forwarded_vars)
     script = _gen_script_path
     args = [
              "--language",
@@ -164,6 +171,7 @@ template("_pw_go_proto_library") {
   _rebased_gopath = rebase_path(_proto_gopath)
 
   pw_python_script(target_name) {
+    forward_variables_from(invoker, _forwarded_vars)
     metadata = {
       gopath = [ "GOPATH+=$_rebased_gopath" ]
       external_deps = [
@@ -245,6 +253,7 @@ template("pw_proto_library") {
       }
 
       _pw_pwpb_proto_library(_lang_target) {
+        forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
         deps = [ ":$_include_metadata_target" ]
         include_file = _include_metadata_file
@@ -256,6 +265,7 @@ template("pw_proto_library") {
       }
     } else if (_gen == "nanopb") {
       _pw_nanopb_proto_library(_lang_target) {
+        forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
         deps = [ ":$_include_metadata_target" ]
         include_file = _include_metadata_file
@@ -263,6 +273,7 @@ template("pw_proto_library") {
       }
     } else if (_gen == "go") {
       _pw_go_proto_library(_lang_target) {
+        forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
         deps = [ ":$_include_metadata_target" ]
         include_file = _include_metadata_file
@@ -289,6 +300,7 @@ template("pw_proto_library") {
   # Create stub versions of the proto library for other protobuf generators.
   foreach(_gen, _protobuf_generators - pw_protobuf_generators) {
     pw_python_script("${target_name}_${_gen}") {
+      forward_variables_from(invoker, _forwarded_vars)
       script = string_join("/",
                            [
                              dir_pw_protobuf_compiler,
