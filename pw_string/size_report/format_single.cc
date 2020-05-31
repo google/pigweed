@@ -42,7 +42,7 @@ unsigned OutputStringsToBuffer() {
   // The code for using pw::string::Format is much simpler and safer.
   return Format(span(buffer, buffer_size), "hello %s %d", get_buffer, get_size)
       .size();
-#else   // std::snprintf
+#else  // std::snprintf
   if (buffer_size == 0u) {
     return 0;
   }

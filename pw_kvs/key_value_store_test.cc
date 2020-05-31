@@ -163,7 +163,7 @@ FakeFlashMemoryBuffer<1024, 60> large_test_flash(8);
 FlashPartition large_test_partition(&large_test_flash,
                                     0,
                                     large_test_flash.sector_count());
-#else   // TODO: Test with real flash
+#else  // TODO: Test with real flash
 FlashPartition& test_partition = FlashExternalTestPartition();
 #endif  // USE_MEMORY_BUFFER
 

@@ -364,7 +364,7 @@ TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
 }
 
-#else   // PW_ASSERT_ENABLE_DCHECK
+#else  // PW_ASSERT_ENABLE_DCHECK
 
 // When DCHECKs are disabled, they should not trip, and their arguments
 // shouldn't be evaluated.
