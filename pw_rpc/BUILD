@@ -25,6 +25,8 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_rpc",
     srcs = [
+        "base_server_writer.cc",
+        "public/pw_rpc/internal/base_server_writer.h",
         "public/pw_rpc/internal/service.h",
         "public/pw_rpc/internal/service_registry.h",
         "server.cc",
@@ -72,6 +74,27 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_utils",
+    hdrs = ["pw_rpc_private/test_utils.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":common",
+        "//pw_span",
+    ],
+)
+
+pw_cc_test(
+    name = "base_server_writer_test",
+    srcs = [
+        "base_server_writer_test.cc",
+    ],
+    deps = [
+        ":pw_rpc",
+        ":test_utils",
+    ],
+)
+
 pw_cc_test(
     name = "packet_test",
     srcs = [
@@ -97,6 +120,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_rpc",
+        ":test_utils",
         "//pw_assert",
     ],
 )

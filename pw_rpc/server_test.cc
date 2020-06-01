@@ -21,6 +21,7 @@
 #include "pw_assert/assert.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/service.h"
+#include "pw_rpc_private/test_utils.h"
 
 namespace pw::rpc {
 namespace {
@@ -30,24 +31,6 @@ using std::byte;
 using internal::Method;
 using internal::Packet;
 using internal::PacketType;
-
-template <size_t buffer_size>
-class TestOutput : public ChannelOutput {
- public:
-  constexpr TestOutput(uint32_t id) : ChannelOutput(id), sent_packet_({}) {}
-
-  span<byte> AcquireBuffer() override { return buffer_; }
-
-  void SendAndReleaseBuffer(size_t size) override {
-    sent_packet_ = {buffer_, size};
-  }
-
-  span<const byte> sent_packet() const { return sent_packet_; }
-
- private:
-  byte buffer_[buffer_size];
-  span<const byte> sent_packet_;
-};
 
 class TestService : public internal::Service {
  public:

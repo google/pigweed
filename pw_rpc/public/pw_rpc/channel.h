@@ -20,6 +20,11 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
+namespace internal {
+
+class BaseServerWriter;
+
+}  // namespace internal
 
 class ChannelOutput {
  public:
@@ -60,6 +65,7 @@ class Channel {
 
  private:
   friend class Server;
+  friend class internal::BaseServerWriter;
 
   span<std::byte> AcquireBuffer() const { return output_->AcquireBuffer(); }
   void SendAndReleaseBuffer(size_t size) const {

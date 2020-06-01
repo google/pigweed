@@ -52,6 +52,8 @@ template("_pw_rpc_server_library") {
       "public/pw_rpc/server_context.h",
     ]
     sources = [
+      "base_server_writer.cc",
+      "public/pw_rpc/internal/base_server_writer.h",
       "public/pw_rpc/internal/service.h",
       "public/pw_rpc/internal/service_registry.h",
       "server.cc",
@@ -83,6 +85,15 @@ source_set("common") {
   visibility = [ ":*" ]
 }
 
+source_set("test_utils") {
+  public = [ "pw_rpc_private/test_utils.h" ]
+  public_deps = [
+    ":common",
+    dir_pw_span,
+  ]
+  visibility = [ ":*" ]
+}
+
 pw_proto_library("protos") {
   sources = [ "pw_rpc_protos/packet.proto" ]
 }
@@ -93,6 +104,7 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
   tests = [
+    ":base_server_writer_test",
     ":packet_test",
     ":server_test",
   ]
@@ -116,6 +128,14 @@ source_set("test_method") {
   visibility = [ ":test_server" ]
 }
 
+pw_test("base_server_writer_test") {
+  deps = [
+    ":test_server",
+    ":test_utils",
+  ]
+  sources = [ "base_server_writer_test.cc" ]
+}
+
 pw_test("packet_test") {
   deps = [
     ":common",
@@ -128,6 +148,7 @@ pw_test("server_test") {
   deps = [
     ":protos_pwpb",
     ":test_server",
+    ":test_utils",
     dir_pw_assert,
   ]
   sources = [ "server_test.cc" ]
