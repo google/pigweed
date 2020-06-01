@@ -18,12 +18,14 @@
 
 namespace pw::rpc::internal {
 
-Packet Packet::FromBuffer(span<const std::byte> data) {
+using std::byte;
+
+Packet Packet::FromBuffer(span<const byte> data) {
   PacketType type = PacketType::RPC;
   uint32_t channel_id = 0;
   uint32_t service_id = 0;
   uint32_t method_id = 0;
-  span<const std::byte> payload;
+  span<const byte> payload;
   Status status;
 
   uint32_t value;
@@ -66,7 +68,7 @@ Packet Packet::FromBuffer(span<const std::byte> data) {
   return Packet(type, channel_id, service_id, method_id, payload, status);
 }
 
-StatusWithSize Packet::Encode(span<std::byte> buffer) const {
+StatusWithSize Packet::Encode(span<byte> buffer) const {
   pw::protobuf::NestedEncoder encoder(buffer);
   RpcPacket::Encoder rpc_packet(&encoder);
 
@@ -79,12 +81,35 @@ StatusWithSize Packet::Encode(span<std::byte> buffer) const {
   rpc_packet.WriteMethodId(method_id_);
   rpc_packet.WriteStatus(status_);
 
-  span<const std::byte> proto;
+  span<const byte> proto;
   if (Status status = encoder.Encode(&proto); !status.ok()) {
     return StatusWithSize(status, 0);
   }
 
   return StatusWithSize(proto.size());
+}
+
+span<byte> Packet::PayloadUsableSpace(span<byte> buffer) const {
+  size_t reserved_size = 0;
+
+  reserved_size += 1;  // channel_id key
+  reserved_size += varint::EncodedSize(channel_id());
+  reserved_size += 1;  // service_id key
+  reserved_size += varint::EncodedSize(service_id());
+  reserved_size += 1;  // method_id key
+  reserved_size += varint::EncodedSize(method_id());
+
+  // Packet type always takes two bytes to encode (varint key + varint enum).
+  reserved_size += 2;
+
+  // Status field always takes two bytes to encode (varint key + varint status).
+  reserved_size += 2;
+
+  // Payload field takes at least two bytes to encode (varint key + length).
+  reserved_size += 2;
+
+  return reserved_size <= buffer.size() ? buffer.subspan(reserved_size)
+                                        : span<byte>();
 }
 
 }  // namespace pw::rpc::internal

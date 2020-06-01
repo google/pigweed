@@ -24,17 +24,32 @@ namespace pw::rpc::internal {
 
 class Packet {
  public:
+  static constexpr uint32_t kUnassignedId = 0;
+
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.
   static Packet FromBuffer(span<const std::byte> data);
 
-  // Returns an empty packet with default values set.
-  static constexpr Packet Empty(PacketType type) {
-    return Packet(type, 0, 0, 0, {}, Status::OK);
-  }
+  constexpr Packet(PacketType type,
+                   uint32_t channel_id = kUnassignedId,
+                   uint32_t service_id = kUnassignedId,
+                   uint32_t method_id = kUnassignedId,
+                   span<const std::byte> payload = {},
+                   Status status = Status::OK)
+      : type_(type),
+        channel_id_(channel_id),
+        service_id_(service_id),
+        method_id_(method_id),
+        payload_(payload),
+        status_(status) {}
 
   // Encodes the packet into its wire format. Returns the encoded size.
   StatusWithSize Encode(span<std::byte> buffer) const;
+
+  // Determines the space required to encode the packet proto fields for a
+  // response, and splits the buffer into reserved space and available space for
+  // the payload. Returns a subspan of the payload space.
+  span<std::byte> PayloadUsableSpace(span<std::byte> buffer) const;
 
   bool is_control() const { return !is_rpc(); }
   bool is_rpc() const { return type_ == PacketType::RPC; }
@@ -43,7 +58,7 @@ class Packet {
   uint32_t channel_id() const { return channel_id_; }
   uint32_t service_id() const { return service_id_; }
   uint32_t method_id() const { return method_id_; }
-  span<const std::byte> payload() const { return payload_; }
+  const span<const std::byte>& payload() const { return payload_; }
   Status status() const { return status_; }
 
   void set_type(PacketType type) { type_ = type; }
@@ -54,19 +69,6 @@ class Packet {
   void set_status(Status status) { status_ = status; }
 
  private:
-  constexpr Packet(PacketType type,
-                   uint32_t channel_id,
-                   uint32_t service_id,
-                   uint32_t method_id,
-                   span<const std::byte> payload,
-                   Status status)
-      : type_(type),
-        channel_id_(channel_id),
-        service_id_(service_id),
-        method_id_(method_id),
-        payload_(payload),
-        status_(status) {}
-
   PacketType type_;
   uint32_t channel_id_;
   uint32_t service_id_;

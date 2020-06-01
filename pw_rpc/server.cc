@@ -38,7 +38,7 @@ void Server::ProcessPacket(span<const std::byte> data,
     return;
   }
 
-  Packet response = Packet::Empty(PacketType::RPC);
+  Packet response(PacketType::RPC);
 
   Channel* channel = FindChannel(packet.channel_id());
   if (channel == nullptr) {
@@ -56,8 +56,7 @@ void Server::ProcessPacket(span<const std::byte> data,
   }
 
   span<std::byte> response_buffer = channel->AcquireBuffer();
-  span<std::byte> payload_buffer =
-      ResponsePayloadUsableSpace(packet, response_buffer);
+  span<std::byte> payload_buffer = packet.PayloadUsableSpace(response_buffer);
 
   response.set_channel_id(channel->id());
 
@@ -105,26 +104,6 @@ void Server::SendResponse(const Channel& channel,
   }
 
   channel.SendAndReleaseBuffer(sws.size());
-}
-
-span<std::byte> Server::ResponsePayloadUsableSpace(
-    const Packet& request, span<std::byte> buffer) const {
-  size_t reserved_size = 0;
-
-  reserved_size += 1;  // channel_id key
-  reserved_size += varint::EncodedSize(request.channel_id());
-  reserved_size += 1;  // service_id key
-  reserved_size += varint::EncodedSize(request.service_id());
-  reserved_size += 1;  // method_id key
-  reserved_size += varint::EncodedSize(request.method_id());
-
-  // Packet type always takes two bytes to encode (varint key + varint enum).
-  reserved_size += 2;
-
-  // Status field always takes two bytes to encode (varint key + varint status).
-  reserved_size += 2;
-
-  return buffer.subspan(reserved_size);
 }
 
 }  // namespace pw::rpc

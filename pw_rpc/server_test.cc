@@ -46,7 +46,7 @@ Packet MakePacket(uint32_t channel_id,
                   uint32_t service_id,
                   uint32_t method_id,
                   span<const byte> payload) {
-  Packet packet = Packet::Empty(PacketType::RPC);
+  Packet packet(PacketType::RPC);
   packet.set_channel_id(channel_id);
   packet.set_service_id(service_id);
   packet.set_method_id(method_id);
