@@ -98,5 +98,6 @@ pw_doc_gen("docs") {
     "$dir_pw_unit_test:docs",
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",
+    "$dir_pw_web_ui:docs",
   ]
 }

@@ -51,3 +51,7 @@ pw_env_setup/.env_setup.sh
 pw_env_setup/.env_setup.bat
 .cipd
 .cargo
+
+# Web Tools
+node_modules
+yarn-error.log

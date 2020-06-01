@@ -222,6 +222,8 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.rst$',
     r'\brequirements.txt$',
     r'\bgo.(mod|sum)$',
+    r'\bpackage.json$',
+    r'\byarn.lock$',
 )
 
 
