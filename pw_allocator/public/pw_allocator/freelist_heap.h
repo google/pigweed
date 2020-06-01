@@ -28,6 +28,8 @@ class FreeListHeap {
 
   void* Allocate(size_t size);
   void Free(void* ptr);
+  void* Realloc(void* ptr, size_t size);
+  void* Calloc(size_t num, size_t size);
 
  private:
   span<std::byte> BlockToSpan(Block* block) {
@@ -49,6 +51,8 @@ class FreeListHeapBuffer {
 
   void* Allocate(size_t size) { return heap_.Allocate(size); }
   void Free(void* ptr) { heap_.Free(ptr); }
+  void* Realloc(void* ptr, size_t size) { return heap_.Realloc(ptr, size); }
+  void* Calloc(size_t num, size_t size) { return heap_.Calloc(num, size); }
 
  private:
   FreeListBuffer<N> freelist_;

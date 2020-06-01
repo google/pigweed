@@ -14,6 +14,8 @@
 
 #include "pw_allocator/freelist_heap.h"
 
+#include <cstring>
+
 namespace pw::allocator {
 
 FreeListHeap::FreeListHeap(span<std::byte> region, FreeList& freelist)
@@ -33,7 +35,6 @@ void* FreeListHeap::Allocate(size_t size) {
   if (chunk.data() == nullptr) {
     return nullptr;
   }
-
   freelist_.RemoveChunk(chunk);
 
   Block* chunk_block = Block::FromUsableSpace(chunk.data());
@@ -58,12 +59,11 @@ void FreeListHeap::Free(void* ptr) {
   }
 
   Block* chunk_block = Block::FromUsableSpace(bytes);
-
   // Ensure that the block is in-use
   if (!chunk_block->Used()) {
     return;
   }
-
+  chunk_block->MarkFree();
   // Can we combine with the left or right blocks?
   Block* prev = chunk_block->PrevBlock();
   Block* next = nullptr;
@@ -85,9 +85,60 @@ void FreeListHeap::Free(void* ptr) {
     freelist_.RemoveChunk(BlockToSpan(next));
     chunk_block->MergeNext();
   }
-
   // Add back to the freelist
   freelist_.AddChunk(BlockToSpan(chunk_block));
+}
+
+// Follows constract of the C standard realloc() function
+// If ptr is free'd, will return nullptr.
+void* FreeListHeap::Realloc(void* ptr, size_t size) {
+  if (size == 0) {
+    Free(ptr);
+    return nullptr;
+  }
+
+  // If the pointer is nullptr, allocate a new memory.
+  if (ptr == nullptr) {
+    return Allocate(size);
+  }
+
+  std::byte* bytes = reinterpret_cast<std::byte*>(ptr);
+
+  // TODO(chenghanzh): Enhance with debug information for out-of-range and more.
+  if (bytes < region_.data() || bytes >= region_.data() + region_.size()) {
+    return nullptr;
+  }
+
+  Block* chunk_block = Block::FromUsableSpace(bytes);
+  if (!chunk_block->Used()) {
+    return nullptr;
+  }
+  size_t old_size = chunk_block->InnerSize();
+
+  // Do nothing and return ptr if the required memory size is smaller than
+  // the current size.
+  // TODO: Currently do not support shrink of memory chunk.
+  if (old_size >= size) {
+    return ptr;
+  }
+
+  void* new_ptr = Allocate(size);
+  // Don't invalidate ptr if Allocate(size) fails to initilize the memory.
+  if (new_ptr == nullptr) {
+    return nullptr;
+  }
+  memcpy(new_ptr, ptr, old_size);
+
+  Free(ptr);
+  return new_ptr;
+}
+
+void* FreeListHeap::Calloc(size_t num, size_t size) {
+  void* ptr = Allocate(num * size);
+  if (ptr != nullptr) {
+    memset(ptr, 0, num * size);
+  }
+  return ptr;
 }
 
 }  // namespace pw::allocator
