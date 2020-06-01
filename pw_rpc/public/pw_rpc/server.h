@@ -19,6 +19,12 @@
 #include "pw_rpc/internal/service_registry.h"
 
 namespace pw::rpc {
+namespace internal {
+
+class Method;
+class Packet;
+
+}  // namespace internal
 
 class Server {
  public:
@@ -42,7 +48,12 @@ class Server {
   using Service = internal::Service;
   using ServiceRegistry = internal::ServiceRegistry;
 
-  void SendResponse(const Channel& channel,
+  void InvokeMethod(const internal::Packet& request,
+                    Channel& channel,
+                    internal::Packet& response,
+                    span<std::byte> buffer) const;
+
+  void SendResponse(const Channel& output,
                     const internal::Packet& response,
                     span<std::byte> response_buffer) const;
 

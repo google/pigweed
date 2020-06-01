@@ -11,21 +11,30 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_rpc/internal/service.h"
-
-#include <type_traits>
+#include <cstddef>
+#include <cstdint>
 
 namespace pw::rpc::internal {
 
-const Method* Service::FindMethod(uint32_t method_id) const {
-  for (const Method& method : methods_) {
-    if (method.id() == method_id) {
-      return &method;
-    }
-  }
+// RPC server implementations provide a Method class in the
+// pw_rpc/internal/method.h header that is derived from BaseMethod.
+class BaseMethod {
+ public:
+  constexpr uint32_t id() const { return id_; }
 
-  return nullptr;
-}
+  // Implementations must provide the Invoke method, which the Server calls:
+  //
+  // StatusWithSize Invoke(ServerContext& context,
+  //                       span<const std::byte> request,
+  //                       span<std::byte> payload_buffer) const;
+
+ protected:
+  constexpr BaseMethod(uint32_t id) : id_(id) {}
+
+ private:
+  uint32_t id_;
+};
 
 }  // namespace pw::rpc::internal

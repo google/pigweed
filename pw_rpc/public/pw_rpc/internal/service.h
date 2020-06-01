@@ -14,39 +14,29 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
+#include "pw_rpc/internal/method.h"
 #include "pw_span/span.h"
-#include "pw_status/status.h"
 
 namespace pw::rpc::internal {
 
-// Forward-declare Packet instead of including it to avoid exposing the internal
-// dependency on pw_protobuf.
-class Packet;
-
-class ServiceRegistry;
-
-// Base class for all RPC services. This is not meant to be instantiated
-// directly; use a generated subclass instead.
+// Base class for all RPC services. This cannot be instantiated directly; use a
+// generated subclass instead.
 class Service {
  public:
-  struct Method {
-    uint32_t id;
-  };
-
-  Service(uint32_t id, span<const Method> methods)
-      : id_(id), methods_(methods), next_(nullptr) {}
-
   uint32_t id() const { return id_; }
 
-  // Handles an incoming packet and populates a response. Errors that occur
-  // should be set within the response packet.
-  void ProcessPacket(const internal::Packet& request,
-                     internal::Packet& response,
-                     span<std::byte> payload_buffer);
+  // Finds the method with the provided method_id. Returns nullptr if no match.
+  const Method* FindMethod(uint32_t method_id) const;
+
+ protected:
+  template <typename T>
+  constexpr Service(uint32_t id, T&& methods)
+      : id_(id), methods_(std::forward<T>(methods)), next_(nullptr) {}
 
  private:
-  friend class internal::ServiceRegistry;
+  friend class ServiceRegistry;
 
   uint32_t id_;
   span<const Method> methods_;

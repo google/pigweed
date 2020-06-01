@@ -58,13 +58,13 @@ class Channel {
   constexpr uint32_t id() const { return id_; }
   constexpr bool assigned() const { return id_ != kUnassignedChannelId; }
 
+ private:
+  friend class Server;
+
   span<std::byte> AcquireBuffer() const { return output_->AcquireBuffer(); }
   void SendAndReleaseBuffer(size_t size) const {
     output_->SendAndReleaseBuffer(size);
   }
-
- private:
-  friend class Server;
 
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : id_(id), output_(output) {

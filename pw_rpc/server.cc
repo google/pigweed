@@ -15,15 +15,19 @@
 #include "pw_rpc/server.h"
 
 #include "pw_log/log.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/server_context.h"
 
 namespace pw::rpc {
 
+using std::byte;
+
+using internal::Method;
 using internal::Packet;
 using internal::PacketType;
 
-void Server::ProcessPacket(span<const std::byte> data,
-                           ChannelOutput& interface) {
+void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
   Packet packet = Packet::FromBuffer(data);
   if (packet.is_control()) {
     // TODO(frolv): Handle control packets.
@@ -55,22 +59,46 @@ void Server::ProcessPacket(span<const std::byte> data,
     }
   }
 
-  span<std::byte> response_buffer = channel->AcquireBuffer();
-  span<std::byte> payload_buffer = packet.PayloadUsableSpace(response_buffer);
-
   response.set_channel_id(channel->id());
+  const span<byte> response_buffer = channel->AcquireBuffer();
 
-  Service* service = services_.Find(packet.service_id());
+  // Invoke the method with matching service and method IDs, if any.
+  InvokeMethod(packet, *channel, response, response_buffer);
+  SendResponse(*channel, response, response_buffer);
+}
+
+void Server::InvokeMethod(const Packet& request,
+                          Channel& channel,
+                          internal::Packet& response,
+                          span<std::byte> buffer) const {
+  Service* service = services_.Find(request.service_id());
   if (service == nullptr) {
     // Couldn't find the requested service. Reply with a NOT_FOUND response
-    // without the server_id field set.
+    // without the service_id field set.
     response.set_status(Status::NOT_FOUND);
-    SendResponse(*channel, response, response_buffer);
     return;
   }
 
-  service->ProcessPacket(packet, response, payload_buffer);
-  SendResponse(*channel, response, response_buffer);
+  response.set_service_id(service->id());
+
+  const internal::Method* method = service->FindMethod(request.method_id());
+
+  if (method == nullptr) {
+    // Couldn't find the requested method. Reply with a NOT_FOUND response
+    // without the method_id field set.
+    response.set_status(Status::NOT_FOUND);
+    return;
+  }
+
+  response.set_method_id(method->id());
+
+  ServerContext context(channel, *service, *method);
+
+  span<byte> response_buffer = request.PayloadUsableSpace(buffer);
+  StatusWithSize result =
+      method->Invoke(context, request.payload(), response_buffer);
+  response.set_status(result.status());
+  response.set_payload(response_buffer.first(result.size()));
 }
 
 Channel* Server::FindChannel(uint32_t id) const {
@@ -94,7 +122,7 @@ Channel* Server::AssignChannel(uint32_t id, ChannelOutput& interface) {
 
 void Server::SendResponse(const Channel& channel,
                           const Packet& response,
-                          span<std::byte> response_buffer) const {
+                          span<byte> response_buffer) const {
   StatusWithSize sws = response.Encode(response_buffer);
   if (!sws.ok()) {
     // TODO(frolv): What should be done here?
@@ -105,5 +133,9 @@ void Server::SendResponse(const Channel& channel,
 
   channel.SendAndReleaseBuffer(sws.size());
 }
+
+static_assert(std::is_base_of<internal::BaseMethod, internal::Method>(),
+              "The Method implementation must be derived from "
+              "pw::rpc::internal::BaseMethod");
 
 }  // namespace pw::rpc

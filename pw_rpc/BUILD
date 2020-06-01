@@ -24,26 +24,61 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_rpc",
+    srcs = [
+        "public/pw_rpc/internal/service.h",
+        "public/pw_rpc/internal/service_registry.h",
+        "server.cc",
+        "service.cc",
+        "service_registry.cc",
+    ],
+    hdrs = [
+        "public/pw_rpc/server.h",
+        "public/pw_rpc/server_context.h",
+        # TODO(hepler): Only building the test version of the server for now.
+        "test_public/pw_rpc/internal/method.h",
+    ],
+    includes = [
+        "public",
+        "test_public",
+    ],
+    deps = [
+        ":common",
+        "//pw_assert",
+        "//pw_log",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "common",
+    srcs = [
+        "channel.cc",
+        "packet.cc",
+    ],
     hdrs = [
         "public/pw_rpc/channel.h",
+        "public/pw_rpc/internal/base_method.h",
+        "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/server.h",
     ],
     includes = ["public"],
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_assert",
         "//pw_log",
         "//pw_span",
         "//pw_status",
     ],
+)
+
+pw_cc_test(
+    name = "packet_test",
     srcs = [
-      "channel.cc",
-      "packet.cc",
-      "public/pw_rpc/internal/packet.h",
-      "public/pw_rpc/internal/service.h",
-      "public/pw_rpc/internal/service_registry.h",
-      "server.cc",
-      "service.cc",
-      "service_registry.cc",
+        "packet_test.cc",
+    ],
+    deps = [
+        ":common",
     ],
 )
 
@@ -54,15 +89,6 @@ pw_cc_test(
     ],
     deps = [
         ":pw_rpc",
-    ],
-)
-
-pw_cc_test(
-    name = "packet_test",
-    srcs = [
-        "packet_test.cc",
-    ],
-    deps = [
-        ":pw_rpc",
+        "//pw_assert",
     ],
 )
