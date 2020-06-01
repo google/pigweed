@@ -41,6 +41,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       next_tx_seq_(0),
       last_tx_seq_(0),
       req_seqnum_(0),
+      retransmitted_during_poll_(false),
       n_receiver_ready_polls_sent_(0),
       remote_is_busy_(false) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
@@ -109,22 +110,41 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     receiver_ready_poll_task_.Cancel();
   }
 
+  const auto range_request = std::exchange(range_request_, std::nullopt);
+
+  // RemoteBusy is cleared as the first action to take when receiving a REJ per Core Spec v5.0 Vol
+  // 3, Part A, Sec 8.6.5.9–11, so their corresponding member variables shouldn't be both set.
+  ZX_ASSERT(!(range_request.has_value() && remote_is_busy_));
+  bool should_retransmit = range_request.has_value();
+
+  // This implements the logic for RejActioned in the Recv {I,RR,REJ} (F=1) event for all of the
+  // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
   if (is_poll_response) {
     monitor_task_.Cancel();
+    if (retransmitted_during_poll_) {
+      should_retransmit = false;
+      retransmitted_during_poll_ = false;
+    } else {
+      should_retransmit = true;
+    }
   }
 
   if (remote_is_busy_) {
     return;
   }
 
-  // TODO(1030): Don't retransmit for poll response if we already retransmitted during the poll
-  // period.
-  if (range_request_.has_value() || is_poll_response) {
-    const bool set_is_poll_response = range_request_.value_or(RangeRequest{}).is_poll_request;
+  // This implements the logic for PbitOutstanding in the Recv REJ (F=0) event for all of the
+  // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  if (range_request.has_value() && !is_poll_response && monitor_task_.is_pending()) {
+    retransmitted_during_poll_ = true;
+  }
+
+  if (should_retransmit) {
+    monitor_task_.Cancel();
+    const bool set_is_poll_response = range_request.value_or(RangeRequest{}).is_poll_request;
     if (RetransmitUnackedData(set_is_poll_response).is_error()) {
       return;
     }
-    range_request_.reset();
   }
 
   MaybeSendQueuedData();

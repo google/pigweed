@@ -74,6 +74,9 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // |is_poll_request| should be set if the request to retransmit has its P bit set and will cause
   // the first retransmitted frame to have its |is_poll_response| bit (F bit) set per the
   // Retransmit-I-frames action in Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6.
+  //
+  // ClearRemoteBusy should be called if necessary because RemoteBusy is cleared as the first action
+  // to take when receiving a REJ per Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11.
   void SetRangeRetransmit(bool is_poll_request);
 
   // Transmits data that has been queued, but which has never been previously
@@ -180,6 +183,11 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   // Filled by SetRangeRetransmit and cleared by UpdateAckSeq.
   std::optional<RangeRequest> range_request_;
+
+  // True if we retransmitted unacked data after sending a poll request but before receiving a poll
+  // response. Corresponds to the RejActioned variable defined in Core Spec v5.0 Vol 3, Part A, Sec
+  // 8.6.5.3.
+  bool retransmitted_during_poll_;
 
   uint8_t n_receiver_ready_polls_sent_;
   bool remote_is_busy_;

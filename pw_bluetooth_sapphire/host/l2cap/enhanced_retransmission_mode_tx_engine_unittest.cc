@@ -1032,7 +1032,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-       FinalUpdateAckSeqDoesNotTransmitQueudFramesWhenRemoteIsBusy) {
+       FinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
   auto tx_callback = [&](auto pdu) { ++n_pdus; };
@@ -1406,6 +1406,35 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, RetransmissionOfPduIncludes
   EXPECT_EQ(10u, outbound_req_seq);
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, PollTaskLoopsEvenWhenRemoteIsBusy) {
+  size_t n_pdus = 0;
+  auto tx_callback = [&](auto pdu) { ++n_pdus; };
+  bool failure = false;
+  auto connection_failure_callback = [&] { failure = true; };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/2, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/connection_failure_callback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_pdus);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_EQ(2u, n_pdus);
+
+  // Receive a "set RemoteBusy" in the poll response (RNR with F=1).
+  n_pdus = 0;
+  tx_engine.SetRemoteBusy();
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+  ASSERT_EQ(0u, n_pdus);
+
+  // No polls should have been sent out and the monitor task should not have fired.
+  RunLoopFor(zx::sec(12));
+  EXPECT_EQ(0u, n_pdus);
+  EXPECT_FALSE(failure);
+}
+
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        SetRangeRetransmitCausesUpdateAckSeqToRetransmit) {
   size_t n_info_frames = 0;
@@ -1468,6 +1497,126 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   tx_engine.SetRangeRetransmit(/*is_poll_request=*/true);
   tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
   EXPECT_EQ(4u, n_info_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetRangeRetransmitAfterPollTaskSuppressesSubsequentRetransmitByPollResponse) {
+  size_t n_info_frames = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Request a retransmission of unacked data starting with TxSeq=0.
+  tx_engine.SetRangeRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Don't acknowledge data at TxSeq=0 again in the poll response, which _would_ retransmit them if
+  // they hadn't already been retransmitted.
+  n_info_frames = 0;
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+  EXPECT_EQ(0u, n_info_frames);
+
+  // And further non-acknowledgments that don't call for retransmission shouldn't cause
+  // retransmission.
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  EXPECT_EQ(0u, n_info_frames);
+
+  // Or further acknowledgments, for that matter.
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+  EXPECT_EQ(0u, n_info_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetRangeRetransmitWithPollResponseSetDoesNotSuppressSubsequentRetransmissions) {
+  size_t n_info_frames = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Request a retransmission of unacked data starting with TxSeq=0 that also acknowledges the poll.
+  tx_engine.SetRangeRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Don't acknowledge data at TxSeq=0 again in the next poll response, which causes another
+  // retransmission.
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+  EXPECT_EQ(3u, n_info_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetRangeRetransmitSuppressesRetransmissionsByRetransmitRangeWithPollResponse) {
+  size_t n_info_frames = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(1u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  // Request a retransmission of unacked data starting with TxSeq=0.
+  tx_engine.SetRangeRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Request retransmission _and_ don't acknowledge data at TxSeq=0, which _would_ retransmit them
+  // if they hadn't already been retransmitted.
+  n_info_frames = 0;
+  tx_engine.SetRangeRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+  EXPECT_EQ(0u, n_info_frames);
+
+  // And further non-acknowledgments that don't call for retransmission shouldn't cause
+  // retransmission.
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  EXPECT_EQ(0u, n_info_frames);
+
+  // Or further acknowledgments, for that matter.
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+  EXPECT_EQ(0u, n_info_frames);
 }
 
 }  // namespace
