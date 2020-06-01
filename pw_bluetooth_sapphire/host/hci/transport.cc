@@ -39,8 +39,12 @@ Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
 
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, cmd_channel_wait_);
-  command_channel_ = std::make_unique<CommandChannel>(this, std::move(channel));
-  command_channel_->Initialize();
+
+  auto command_channel_result = CommandChannel::Create(this, std::move(channel));
+  if (command_channel_result.is_error()) {
+    return;
+  }
+  command_channel_ = command_channel_result.take_value();
 }
 
 Transport::~Transport() {

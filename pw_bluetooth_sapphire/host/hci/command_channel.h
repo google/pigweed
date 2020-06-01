@@ -9,6 +9,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/result.h>
 #include <lib/trace/event.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
@@ -44,21 +45,22 @@ class Transport;
 // threaded and removing the locks.
 class CommandChannel final {
  public:
+  // Starts listening on the HCI command channel and starts handling commands
+  // and events.
+  //
   // |hci_command_channel| is a Zircon channel construct that can receive
   // Bluetooth HCI command and event packets, in which the remote end is
   // implemented by the underlying Bluetooth HCI device driver.
   //
   // |transport| is the Transport instance that owns this CommandChannel.
-  CommandChannel(Transport* transport, zx::channel hci_command_channel);
+  static fit::result<std::unique_ptr<CommandChannel>> Create(Transport* transport,
+                                                             zx::channel hci_command_channel);
+
   ~CommandChannel();
 
-  // Starts listening on the HCI command channel and starts handling commands
-  // and events.
-  void Initialize();
-
   // Unregisters event handlers and cleans up.
-  // NOTE: Initialize() and ShutDown() MUST be called on the same thread. These
-  // methods are not thread-safe.
+  // TODO(667): Remove ShutDown and move logic to destructor. Let Transport destroy CommandChannel
+  // to initiate shut down.
   void ShutDown();
 
   // Used to identify an individual HCI command<->event transaction.
@@ -212,6 +214,8 @@ class CommandChannel final {
   const zx::channel& channel() const { return channel_; }
 
  private:
+  CommandChannel(Transport* transport, zx::channel hci_command_channel);
+
   TransactionId SendExclusiveCommandInternal(std::unique_ptr<CommandPacket> command_packet,
                                              async_dispatcher_t* dispatcher,
                                              CommandCallback callback,
@@ -382,12 +386,8 @@ class CommandChannel final {
   // Wait object for |channel_|
   async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};
 
-  // True if this CommandChannel has been initialized through a call to
-  // Initialize().
+  // True if channel initialization succeeded and ShutDown() has not been called yet.
   std::atomic_bool is_initialized_;
-
-  // The dispatcher used for posting tasks on the HCI transport I/O thread.
-  async_dispatcher_t* io_dispatcher_;
 
   // Guards |send_queue_|. |send_queue_| can get accessed by threads that call
   // SendCommand() as well as from |io_thread_|.

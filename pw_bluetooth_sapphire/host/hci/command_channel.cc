@@ -106,6 +106,17 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
+fit::result<std::unique_ptr<CommandChannel>> CommandChannel::Create(
+    Transport* transport, zx::channel hci_command_channel) {
+  auto channel = std::unique_ptr<CommandChannel>(
+      new CommandChannel(transport, std::move(hci_command_channel)));
+
+  if (!channel->is_initialized_) {
+    return fit::error();
+  }
+  return fit::ok(std::move(channel));
+}
+
 CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_channel)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
@@ -114,38 +125,23 @@ CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_cha
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
       is_initialized_(false),
       allowed_command_packets_(1u) {
-  ZX_DEBUG_ASSERT(transport_);
-  ZX_DEBUG_ASSERT(channel_.is_valid());
+  ZX_ASSERT(transport_);
+  ZX_ASSERT(channel_.is_valid());
+
+  zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
+  if (status != ZX_OK) {
+    bt_log(ERROR, "hci", "failed channel setup: %s", zx_status_get_string(status));
+    channel_wait_.set_object(ZX_HANDLE_INVALID);
+    return;
+  }
+  bt_log(INFO, "hci", "initialized");
+
+  is_initialized_ = true;
 }
 
 CommandChannel::~CommandChannel() {
   // Do nothing. Since Transport is shared across threads, this can be called
   // from any thread and calling ShutDown() would be unsafe.
-}
-
-void CommandChannel::Initialize() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(!is_initialized_);
-
-  auto setup_handler_task = [this] {
-    zx_status_t status = channel_wait_.Begin(async_get_default_dispatcher());
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed channel setup: %s", zx_status_get_string(status));
-      channel_wait_.set_object(ZX_HANDLE_INVALID);
-      return;
-    }
-    bt_log(DEBUG, "hci", "started I/O handler");
-  };
-
-  io_dispatcher_ = async_get_default_dispatcher();
-  RunTaskSync(setup_handler_task, io_dispatcher_);
-
-  if (channel_wait_.object() == ZX_HANDLE_INVALID)
-    return;
-
-  is_initialized_ = true;
-
-  bt_log(INFO, "hci", "initialized");
 }
 
 void CommandChannel::ShutDown() {
@@ -155,8 +151,7 @@ void CommandChannel::ShutDown() {
 
   bt_log(INFO, "hci", "shutting down");
 
-  RunTaskSync([this] { ShutDownInternal(); }, io_dispatcher_);
-  io_dispatcher_ = nullptr;
+  ShutDownInternal();
 }
 
 void CommandChannel::ShutDownInternal() {
@@ -267,7 +262,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   send_queue_.push_back(std::move(command));
-  async::PostTask(io_dispatcher_, std::bind(&CommandChannel::TrySendQueuedCommands, this));
+
+  async::PostTask(async_get_default_dispatcher(),
+                  std::bind(&CommandChannel::TrySendQueuedCommands, this));
 
   return id;
 }
@@ -391,8 +388,6 @@ void CommandChannel::TrySendQueuedCommands() {
   if (!is_initialized_)
     return;
 
-  ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
-
   if (allowed_command_packets_ == 0) {
     bt_log(TRACE, "hci", "controller queue full, waiting");
     return;
@@ -459,8 +454,9 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
   transaction->Start(
       [this, id = cmd.data->id()] {
         bt_log(ERROR, "hci", "command %zu timed out, shutting down", id);
+        // TODO(667): Notify Transport of error and let Transport destroy CommandChannel to perform
+        // shut down.
         ShutDownInternal();
-        // TODO(jamuraa): Have Transport notice we've shutdown. (NET-620)
       },
       kCommandTimeout);
 
@@ -673,7 +669,6 @@ void CommandChannel::ExecuteEventCallback(EventCallback cb, EventHandlerId id,
 
 void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,
                                     zx_status_t status, const zx_packet_signal_t* signal) {
-  ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
   TRACE_DURATION("bluetooth", "CommandChannel::OnChannelReady", "signal->count", signal->count);
