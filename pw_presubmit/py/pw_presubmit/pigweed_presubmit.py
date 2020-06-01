@@ -208,20 +208,20 @@ COPYRIGHT_LINES = tuple("""\
 """.splitlines(True))
 
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
-    r'(?:.+/)?\..+',
-    r'AUTHORS',
-    r'LICENSE',
-    r'OWNERS',
-    r'PW_PLUGINS',
-    r'.*\.elf',
-    r'.*\.gif',
-    r'.*\.jpg',
-    r'.*\.json',
-    r'.*\.md',
-    r'.*\.png',
-    r'.*\.rst',
-    r'(?:.+/)?requirements.txt',
-    r'(.+/)?go.(mod|sum)',
+    r'^(?:.+/)?\..+$',
+    r'\bAUTHORS$',
+    r'\bLICENSE$',
+    r'\bOWNERS$',
+    r'\bPW_PLUGINS$',
+    r'\.elf$',
+    r'\.gif$',
+    r'\.jpg$',
+    r'\.json$',
+    r'\.md$',
+    r'\.png$',
+    r'\.rst$',
+    r'\brequirements.txt$',
+    r'\bgo.(mod|sum)$',
 )
 
 
