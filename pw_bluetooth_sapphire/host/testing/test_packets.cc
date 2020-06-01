@@ -195,6 +195,13 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandl
       ));
 }
 
+DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
+      0x03,  // parameter total size (3 bytes)
+      LowerBits(conn), UpperBits(conn), static_cast<uint8_t>(enable)));
+}
+
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kLEReadRemoteFeatures), UpperBits(hci::kLEReadRemoteFeatures),
@@ -215,6 +222,20 @@ DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci::ConnectionHandle conn,
                                             // bit mask of LE features
                                             features[0], features[1], features[2], features[3],
                                             features[4], features[5], features[6], features[7]));
+}
+
+DynamicByteBuffer LEStartEncryptionPacket(hci::ConnectionHandle conn, uint64_t random_number,
+                                          uint16_t encrypted_diversifier, UInt128 ltk) {
+  const BufferView rand(&random_number, sizeof(random_number));
+  return DynamicByteBuffer(
+      StaticByteBuffer(LowerBits(hci::kLEStartEncryption), UpperBits(hci::kLEStartEncryption),
+                       0x1c,                              // parameter total size (28 bytes)
+                       LowerBits(conn), UpperBits(conn),  // Connection_handle
+                       rand[0], rand[1], rand[2], rand[3], rand[4], rand[5], rand[6], rand[7],
+                       LowerBits(encrypted_diversifier), UpperBits(encrypted_diversifier),
+                       // LTK
+                       ltk[0], ltk[1], ltk[2], ltk[3], ltk[4], ltk[5], ltk[6], ltk[7], ltk[8],
+                       ltk[9], ltk[10], ltk[11], ltk[12], ltk[13], ltk[14], ltk[15]));
 }
 
 DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn) {

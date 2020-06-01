@@ -58,6 +58,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     if (!transport_)
       return;
 
+    RunLoopUntilIdle();
     transport_ = nullptr;
     test_device_ = nullptr;
   }
