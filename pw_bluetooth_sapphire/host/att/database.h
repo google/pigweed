@@ -166,7 +166,7 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   // non-overlapping handle range. Successive groupings don't necessarily
   // represent contiguous handle ranges as any grouping can be removed.
   //
-  // Note: This uses a std::list because fbl::lower_bound doesn't work with a
+  // Note: This uses a std::list because std::lower_bound doesn't work with a
   // LinkedList (aka fbl::DoublyLinkedList). This is only marginally
   // less space efficient.
   GroupingList groupings_;
