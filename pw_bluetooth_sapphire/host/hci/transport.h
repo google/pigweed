@@ -71,7 +71,7 @@ class Transport final {
   // packet processing is no longer guaranteed to work. It is the responsibility
   // of the callback implementation to clean up this Transport instance by
   // calling ShutDown() and/or deleting it.
-  void SetTransportClosedCallback(fit::closure callback, async_dispatcher_t* dispatcher);
+  void SetTransportClosedCallback(fit::closure callback);
 
   fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
@@ -88,6 +88,9 @@ class Transport final {
 
   // Notifies the closed callback.
   void NotifyClosedCallback();
+
+  // Callback called by CommandChannel or ACLDataChannel on errors.
+  void OnChannelError();
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
@@ -106,10 +109,8 @@ class Transport final {
   // The HCI command and event flow control handler.
   std::unique_ptr<CommandChannel> command_channel_;
 
-  // Callback invoked when the transport is closed (due to a channel error) and
-  // its dispatcher.
+  // Callback invoked when the transport is closed (due to a channel error).
   fit::closure closed_cb_;
-  async_dispatcher_t* closed_cb_dispatcher_;
 
   fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 

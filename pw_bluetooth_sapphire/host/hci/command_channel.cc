@@ -453,10 +453,10 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
 
   transaction->Start(
       [this, id = cmd.data->id()] {
-        bt_log(ERROR, "hci", "command %zu timed out, shutting down", id);
-        // TODO(667): Notify Transport of error and let Transport destroy CommandChannel to perform
-        // shut down.
-        ShutDownInternal();
+        bt_log(ERROR, "hci", "command %zu timed out, notifying error", id);
+        if (channel_timeout_cb_) {
+          channel_timeout_cb_();
+        }
       },
       kCommandTimeout);
 

@@ -1181,14 +1181,14 @@ TEST_F(HCI_CommandChannelTest, TransportClosedCallback) {
 
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
-  transport()->SetTransportClosedCallback(closed_cb, dispatcher());
+  transport()->SetTransportClosedCallback(closed_cb);
 
   async::PostTask(dispatcher(), [this] { test_device()->CloseCommandChannel(); });
   RunLoopUntilIdle();
   EXPECT_TRUE(closed_cb_called);
 }
 
-TEST_F(HCI_CommandChannelTest, CommandTimeout) {
+TEST_F(HCI_CommandChannelTest, CommandTimeoutCallback) {
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
   auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
@@ -1200,35 +1200,68 @@ TEST_F(HCI_CommandChannelTest, CommandTimeout) {
   test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
   StartTestDevice();
 
-  size_t cb_count = 0;
-  CommandChannel::TransactionId id1, id2;
-  auto cb = [&cb_count, &id1, &id2](CommandChannel::TransactionId callback_id,
-                                    const EventPacket& event) {
-    cb_count++;
-    EXPECT_TRUE(callback_id == id1 || callback_id == id2);
-    EXPECT_EQ(kCommandStatusEventCode, event.event_code());
+  size_t timeout_cb_count = 0;
+  auto timeout_cb = [&] { timeout_cb_count++; };
+  cmd_channel()->set_channel_timeout_cb(timeout_cb);
 
-    const auto params = event.params<CommandStatusEventParams>();
-    EXPECT_EQ(StatusCode::kUnspecifiedError, params.status);
-    EXPECT_EQ(kReset, params.command_opcode);
-  };
+  size_t cmd_cb_count = 0;
+  auto cb = [&](auto, auto&) { cmd_cb_count++; };
 
   auto packet = CommandPacket::New(kReset);
-  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  CommandChannel::TransactionId id1 =
+      cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
   ASSERT_NE(0u, id1);
 
   packet = CommandPacket::New(kReset);
-  id2 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  CommandChannel::TransactionId id2 =
+      cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
   ASSERT_NE(0u, id2);
 
   // Run the loop until the command timeout task gets scheduled.
   RunLoopUntilIdle();
-  ASSERT_EQ(0u, cb_count);
+  EXPECT_EQ(0u, timeout_cb_count);
+  EXPECT_EQ(0u, cmd_cb_count);
 
   RunLoopFor(kCommandTimeout);
-  ;
 
-  EXPECT_EQ(2u, cb_count);
+  EXPECT_EQ(1u, timeout_cb_count);
+  EXPECT_EQ(0u, cmd_cb_count);
+}
+
+TEST_F(HCI_CommandChannelTest, DestroyChannelInTimeoutCallback) {
+  constexpr zx::duration kCommandTimeout = zx::sec(12);
+
+  auto req_reset = CreateStaticByteBuffer(LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
+                                          0x00  // parameter_total_size
+  );
+
+  // Expect the HCI_Reset command but dont send a reply back to make the command
+  // time out.
+  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  StartTestDevice();
+
+  size_t timeout_cb_count = 0;
+  auto timeout_cb = [&] {
+    timeout_cb_count++;
+    DeleteTransport();
+  };
+  cmd_channel()->set_channel_timeout_cb(timeout_cb);
+
+  size_t cmd_cb_count = 0;
+  auto cb = [&](auto, auto&) { cmd_cb_count++; };
+
+  auto packet = CommandPacket::New(kReset);
+  CommandChannel::TransactionId id1 =
+      cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  ASSERT_NE(0u, id1);
+
+  packet = CommandPacket::New(kReset);
+  CommandChannel::TransactionId id2 =
+      cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  ASSERT_NE(0u, id2);
+
+  RunLoopFor(kCommandTimeout);
+  EXPECT_EQ(1u, timeout_cb_count);
 }
 
 // Tests:

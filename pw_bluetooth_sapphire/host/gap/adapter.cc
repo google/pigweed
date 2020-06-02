@@ -50,12 +50,11 @@ Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  hci_->SetTransportClosedCallback(
-      [self] {
-        if (self)
-          self->OnTransportClosed();
-      },
-      dispatcher_);
+  hci_->SetTransportClosedCallback([self] {
+    if (self) {
+      self->OnTransportClosed();
+    }
+  });
 }
 
 Adapter::~Adapter() {

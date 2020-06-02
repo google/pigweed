@@ -213,6 +213,12 @@ class CommandChannel final {
   // Returns the underlying channel handle.
   const zx::channel& channel() const { return channel_; }
 
+  // Set callback that will be called when a command times out after kCommandTimeout. This is
+  // distinct from channel closure.
+  void set_channel_timeout_cb(fit::closure timeout_cb) {
+    channel_timeout_cb_ = std::move(timeout_cb);
+  }
+
  private:
   CommandChannel(Transport* transport, zx::channel hci_command_channel);
 
@@ -382,6 +388,9 @@ class CommandChannel final {
 
   // The channel we use to send/receive HCI commands/events.
   zx::channel channel_;
+
+  // Callback called when a command times out.
+  fit::closure channel_timeout_cb_;
 
   // Wait object for |channel_|
   async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};

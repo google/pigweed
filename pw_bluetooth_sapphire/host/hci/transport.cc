@@ -25,7 +25,7 @@ fit::result<std::unique_ptr<Transport>> Transport::Create(
 }
 
 Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
-    : hci_device_(std::move(hci_device)), closed_cb_dispatcher_(nullptr), weak_ptr_factory_(this) {
+    : hci_device_(std::move(hci_device)), weak_ptr_factory_(this) {
   ZX_ASSERT(hci_device_);
 
   bt_log(INFO, "hci", "initializing HCI");
@@ -45,6 +45,7 @@ Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
     return;
   }
   command_channel_ = command_channel_result.take_value();
+  command_channel_->set_channel_timeout_cb(fit::bind_member(this, &Transport::OnChannelError));
 }
 
 Transport::~Transport() {
@@ -85,14 +86,10 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   return true;
 }
 
-void Transport::SetTransportClosedCallback(fit::closure callback, async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(callback);
-  ZX_DEBUG_ASSERT(dispatcher);
-  ZX_DEBUG_ASSERT(!closed_cb_);
-  ZX_DEBUG_ASSERT(!closed_cb_dispatcher_);
-
+void Transport::SetTransportClosedCallback(fit::closure callback) {
+  ZX_ASSERT(callback);
+  ZX_ASSERT(!closed_cb_);
   closed_cb_ = std::move(callback);
-  closed_cb_dispatcher_ = dispatcher;
 }
 
 void Transport::WatchChannelClosed(const zx::channel& channel, Waiter& wait) {
@@ -124,8 +121,22 @@ void Transport::NotifyClosedCallback() {
 
   bt_log(INFO, "hci", "channel(s) were closed");
   if (closed_cb_) {
-    async::PostTask(closed_cb_dispatcher_, closed_cb_.share());
+    closed_cb_();
   }
+}
+
+void Transport::OnChannelError() {
+  bt_log(ERROR, "hci", "channel error");
+
+  // TODO(52588): remove calls to ShutDown() here as Host will destroy Transport in closed callback
+  if (acl_data_channel_) {
+    acl_data_channel_->ShutDown();
+  }
+  if (command_channel_) {
+    command_channel_->ShutDown();
+  }
+
+  NotifyClosedCallback();
 }
 
 }  // namespace hci

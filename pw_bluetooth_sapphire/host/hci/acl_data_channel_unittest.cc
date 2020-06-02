@@ -911,7 +911,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallback) {
 
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
-  transport()->SetTransportClosedCallback(closed_cb, dispatcher());
+  transport()->SetTransportClosedCallback(closed_cb);
 
   async::PostTask(dispatcher(), [this] { test_device()->CloseACLDataChannel(); });
   RunLoopUntilIdle();
@@ -923,7 +923,7 @@ TEST_F(HCI_ACLDataChannelTest, TransportClosedCallbackBothChannels) {
 
   int closed_cb_count = 0;
   auto closed_cb = [&closed_cb_count] { closed_cb_count++; };
-  transport()->SetTransportClosedCallback(closed_cb, dispatcher());
+  transport()->SetTransportClosedCallback(closed_cb);
 
   // We'll send closed events for both channels. The closed callback should get
   // invoked only once.

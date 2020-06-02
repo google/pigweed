@@ -107,6 +107,7 @@ source_set("tests") {
     "sequential_command_runner_unittest.cc",
     "slab_allocators_unittest.cc",
     "status_unittest.cc",
+    "transport_unittest.cc",
     "util_unittest.cc",
   ]
 
