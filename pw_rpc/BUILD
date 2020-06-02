@@ -37,11 +37,11 @@ pw_cc_library(
         "public/pw_rpc/server.h",
         "public/pw_rpc/server_context.h",
         # TODO(hepler): Only building the test version of the server for now.
-        "test_public/pw_rpc/internal/method.h",
+        "test_impl/public_overrides/pw_rpc/internal/method.h",
     ],
     includes = [
         "public",
-        "test_public",
+        "test_impl/public_overrides/",
     ],
     deps = [
         ":common",
@@ -84,6 +84,17 @@ pw_cc_library(
     ],
 )
 
+# TODO(hepler): Cannot build nanopb-dependent code in Bazel at the moment. Need
+# to determine how best to support Nanopb builds and protobuf generation.
+filegroup(
+    name = "nanopb",
+    srcs = [
+        "nanopb/method.cc",
+        "nanopb/method_test.cc",
+        "nanopb/public_overrides/pw_rpc/internal/method.h",
+    ],
+)
+
 pw_cc_test(
     name = "base_server_writer_test",
     srcs = [
@@ -109,9 +120,8 @@ proto_library(
     name = "packet_proto",
     srcs = [
         "pw_rpc_protos/packet.proto",
-    ]
+    ],
 )
-
 
 pw_cc_test(
     name = "server_test",

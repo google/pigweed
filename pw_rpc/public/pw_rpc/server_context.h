@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 #include "pw_assert/assert.h"
@@ -38,7 +39,9 @@ class ServerContext {
  private:
   friend class Server;
   friend class internal::BaseServerWriter;
-  template <typename, uint32_t, uint32_t>
+
+  // Allow ServerContexts to be created in tests.
+  template <typename, size_t, uint32_t, uint32_t>
   friend class ServerContextForTest;
 
   constexpr ServerContext()

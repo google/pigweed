@@ -14,8 +14,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/packet.h"
 #include "pw_span/span.h"
 
 namespace pw::rpc {
@@ -44,7 +46,10 @@ class Method;
 
 }  // namespace internal
 
-template <typename Service, uint32_t channel_id = 99, uint32_t service_id = 16>
+template <typename Service,
+          size_t output_buffer_size = 128,
+          uint32_t channel_id = 99,
+          uint32_t service_id = 16>
 class ServerContextForTest {
  public:
   static constexpr uint32_t kChannelId = channel_id;
@@ -58,11 +63,21 @@ class ServerContextForTest {
 
   ServerContextForTest() : ServerContextForTest(service_.method) {}
 
+  // Creates a packet for this context's channel, service, and method.
+  internal::Packet packet(span<const std::byte> payload) const {
+    return internal::Packet(internal::PacketType::RPC,
+                            kChannelId,
+                            kServiceId,
+                            context_.method_->id(),
+                            payload,
+                            Status::OK);
+  }
+
   ServerContext& get() { return context_; }
   const auto& output() const { return output_; }
 
  private:
-  TestOutput<128> output_;
+  TestOutput<output_buffer_size> output_;
   Channel channel_;
   Service service_;
 

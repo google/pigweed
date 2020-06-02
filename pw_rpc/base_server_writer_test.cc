@@ -19,7 +19,6 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/service.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc_private/test_utils.h"
@@ -96,13 +95,7 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   ASSERT_EQ(Status::OK, writer.Write(data));
 
   byte encoded[64];
-  auto sws = Packet(PacketType::RPC,
-                    context.kChannelId,
-                    context.kServiceId,
-                    8,
-                    data,
-                    Status::OK)
-                 .Encode(encoded);
+  auto sws = context.packet(data).Encode(encoded);
   ASSERT_EQ(Status::OK, sws.status());
 
   EXPECT_EQ(sws.size(), context.output().sent_packet().size());
