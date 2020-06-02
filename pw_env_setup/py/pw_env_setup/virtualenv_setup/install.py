@@ -78,9 +78,14 @@ def _check_call(args, **kwargs):
 def _find_files_by_name(roots, name):
     matches = []
     for root in roots:
-        for dirpart, _, files in os.walk(root):
+        for dirpart, dirs, files in os.walk(root):
             if name in files:
                 matches.append(os.path.join(dirpart, name))
+
+            # Filter directories starting with . to avoid searching unnecessary
+            # paths and finding files that should be hidden.
+            for index in (i for i, d in enumerate(dirs) if d.startswith('.')):
+                del dirs[index]
     return matches
 
 

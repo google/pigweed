@@ -69,7 +69,7 @@ def init_virtualenv(
 
     # TODO(pwbug/138): find way to support dependent project requirements.
 
-    # For speed, don't build the venv if it exists. Use --clear-py to rebuild.
+    # For speed, don't build the venv if it exists. Use --clean to rebuild.
     if not output_directory.joinpath('pyvenv.cfg').is_file():
         call(
             'python3',

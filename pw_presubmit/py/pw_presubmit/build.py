@@ -29,16 +29,20 @@ def gn_args(**kwargs) -> str:
     return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
 
 
-def gn_gen(gn_source_dir: Path, gn_output_dir: Path, *args: str,
+def gn_gen(gn_source_dir: Path,
+           gn_output_dir: Path,
+           *args: str,
+           gn_check: bool = True,
            **gn_arguments) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
     args_option = (gn_args(**gn_arguments), ) if gn_arguments else ()
+    check_option = ['--check'] if gn_check else []
 
     call('gn',
          'gen',
          gn_output_dir,
          '--color=always',
-         '--check',
+         *check_option,
          *args,
          *args_option,
          cwd=gn_source_dir)
