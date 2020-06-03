@@ -535,3 +535,63 @@ Python 3
 ========
 Pigweed uses Python 3. Some modules may offer limited support for Python 2, but
 Python 3.6 or newer is required for most Pigweed code.
+
+---------------
+Build files: GN
+---------------
+
+Each Pigweed source module will require a build file named BUILD.gn which
+encapsulates the build targets and specifies their sources and dependencies.
+The format of this file is simlar in structure to the
+`Bazel/Blaze format <https://docs.bazel.build/versions/3.2.0/build-ref.html>`_
+(Googlers may also review `go/build-style <go/build-style>`_), but with
+nomenclature specific to Pigweed. For each target specified within the build
+file there are a list of depdency fields. Those fields, in their expected
+order, are:
+
+  * ``<public_config>`` -- external build configuration
+  * ``<public_deps>`` -- necessary public dependencies (ie: Pigweed headers)
+  * ``<public>`` -- exposed package public interface header files
+  * ``<config>`` -- package build configuration
+  * ``<sources>`` -- package source code
+  * ``<deps>`` -- package necessary local dependencies
+
+Assets within each field must be listed in alphabetical order
+
+.. code-block:: cpp
+
+  # Here is a brief example of a GN build file.
+
+  import("$dir_pw_unit_test/test.gni")
+
+  config("default_config") {
+    include_dirs = [ "public" ]
+  }
+
+  source_set("pw_sample_module") {
+    public_configs = [ ":default_config" ]
+    public_deps = [
+      dir_pw_spam,
+      dir_pw_status,
+    ]
+    public = [ "public/pw_sample_module/sample_module.h" ]
+    sources = [
+      "public/pw_sample_module/internal/sample_module.h",
+      "sample_module.cc",
+      "used_by_sample_module.cc",
+    ]
+    deps = [ dir_pw_varint ]
+  }
+
+  pw_test_group("tests") {
+    tests = [ ":sample_module_test" ]
+  }
+
+  pw_test("sample_module_test") {
+    deps = [ ":sample_module" ]
+    sources = [ "sample_module_test.cc" ]
+  }
+
+  pw_doc_group("docs") {
+    sources = [ "docs.rst" ]
+  }
