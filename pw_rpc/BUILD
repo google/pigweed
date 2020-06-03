@@ -82,6 +82,14 @@ pw_cc_test(
     ],
 )
 
+proto_library(
+    name = "packet_proto",
+    srcs = [
+        "pw_rpc_protos/packet.proto",
+    ]
+)
+
+
 pw_cc_test(
     name = "server_test",
     srcs = [
