@@ -87,8 +87,6 @@ source_set("testing") {
     "fake_channel_test.h",
     "fake_signaling_channel.cc",
     "fake_signaling_channel.h",
-    "pdu_generator.cc",
-    "pdu_generator.h",
     "test_packets.cc",
     "test_packets.h",
   ]
@@ -125,7 +123,6 @@ source_set("tests") {
     "frame_headers_unittest.cc",
     "le_signaling_channel_unittest.cc",
     "low_energy_command_handler_unittest.cc",
-    "pdu_generator_unittest.cc",
     "pdu_unittest.cc",
     "recombiner_unittest.cc",
     "scoped_channel_unittest.cc",
@@ -150,8 +147,8 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
   ]
 }
 
-fuzzer("enhanced_retransmission_mode_rx_engine_fuzzer") {
-  sources = [ "enhanced_retransmission_mode_rx_engine_fuzztest.cc" ]
+fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
+  sources = [ "enhanced_retransmission_mode_engines_fuzztest.cc" ]
   deps = [
     ":l2cap",
     ":testing",
