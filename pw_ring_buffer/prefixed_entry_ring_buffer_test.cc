@@ -151,7 +151,9 @@ TEST(PrefixedEntryRingBuffer, SingleEntryWriteReadYesUserData) {
   SingleEntryWriteReadTest(true);
 }
 
-constexpr size_t kOuterCycles = 5000u;
+// TODO(pwbug/196): Increase this to 5000 once we have a way to detect targets
+// with more computation and memory oomph.
+constexpr size_t kOuterCycles = 50u;
 constexpr size_t kCountingUpMaxExpectedEntries =
     single_entry_test_buffer_size / single_entry_total_size;
 
@@ -295,7 +297,9 @@ void DeringTest(bool preload) {
   auto entry_data = span(single_entry_buffer);
   size_t i;
 
-  size_t loop_goal = preload ? 500 : 1;
+  // TODO(pwbug/196): Increase this to 500 once we have a way to detect targets
+  // with more computation and memory oomph.
+  size_t loop_goal = preload ? 50 : 1;
 
   for (size_t main_loop_count = 0; main_loop_count < loop_goal;
        main_loop_count++) {
