@@ -31,10 +31,10 @@ pw_facade("pw_assert") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":assert_facade_test" ]
-  if (dir_pw_assert_backend != "") {
-    tests += [ ":assert_backend_compile_test" ]
-  }
+  tests = [
+    ":assert_backend_compile_test",
+    ":assert_facade_test",
+  ]
 }
 
 # The assert facade test doesn't require a backend since a fake one is
@@ -50,17 +50,16 @@ pw_test("assert_facade_test") {
   ]
 }
 
-if (dir_pw_assert_backend != "") {
-  pw_test("assert_backend_compile_test") {
-    deps = [
-      ":pw_assert",
-      dir_pw_assert_backend,
-    ]
-    sources = [
-      "assert_backend_compile_test.c",
-      "assert_backend_compile_test.cc",
-    ]
-  }
+pw_test("assert_backend_compile_test") {
+  enable_if = dir_pw_assert_backend != ""
+  deps = [
+    ":pw_assert",
+    dir_pw_assert_backend,
+  ]
+  sources = [
+    "assert_backend_compile_test.c",
+    "assert_backend_compile_test.cc",
+  ]
 }
 
 pw_doc_group("docs") {
