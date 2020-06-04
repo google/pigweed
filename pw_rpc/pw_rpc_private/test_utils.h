@@ -25,7 +25,8 @@ namespace pw::rpc {
 template <size_t buffer_size>
 class TestOutput : public ChannelOutput {
  public:
-  constexpr TestOutput(uint32_t id) : ChannelOutput(id), sent_packet_{} {}
+  constexpr TestOutput(const char* name = "TestOutput")
+      : ChannelOutput(name), sent_packet_{} {}
 
   span<std::byte> AcquireBuffer() override { return buffer_; }
 
@@ -56,8 +57,7 @@ class ServerContextForTest {
   static constexpr uint32_t kServiceId = service_id;
 
   ServerContextForTest(const internal::Method& method)
-      : output_(32),
-        channel_(Channel::Create<kChannelId>(&output_)),
+      : channel_(Channel::Create<kChannelId>(&output_)),
         service_(kServiceId),
         context_(channel_, service_, method) {}
 

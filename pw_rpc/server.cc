@@ -37,8 +37,8 @@ void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
   if (packet.channel_id() == Channel::kUnassignedChannelId ||
       packet.service_id() == 0 || packet.method_id() == 0) {
     // Malformed packet; don't even try to process it.
-    PW_LOG_ERROR("Received incomplete RPC packet on interface %u",
-                 unsigned(interface.id()));
+    PW_LOG_ERROR("Received incomplete RPC packet on interface %s",
+                 interface.name());
     return;
   }
 

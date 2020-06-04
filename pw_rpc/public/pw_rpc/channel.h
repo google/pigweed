@@ -28,9 +28,13 @@ class BaseServerWriter;
 
 class ChannelOutput {
  public:
-  constexpr ChannelOutput(uint32_t id) : id_(id) {}
+  // Creates a channel output with the provided name. The name is used for
+  // logging only.
+  constexpr ChannelOutput(const char* name) : name_(name) {}
 
   virtual ~ChannelOutput() = default;
+
+  constexpr const char* name() const { return name_; }
 
   // Acquire a buffer into which to write an outgoing RPC packet.
   virtual span<std::byte> AcquireBuffer() = 0;
@@ -38,10 +42,8 @@ class ChannelOutput {
   // Sends the contents of the buffer from AcquireBuffer().
   virtual void SendAndReleaseBuffer(size_t size) = 0;
 
-  uint32_t id() const { return id_; }
-
  private:
-  uint32_t id_;
+  const char* name_;
 };
 
 class Channel {

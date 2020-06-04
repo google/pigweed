@@ -61,8 +61,7 @@ class BasicServer : public ::testing::Test {
       byte(0x82), byte(0x02), byte(0xff), byte(0xff)};
 
   BasicServer()
-      : output_(1),
-        channels_{
+      : channels_{
             Channel::Create<1>(&output_),
             Channel::Create<2>(&output_),
             Channel(),  // available for assignment
@@ -158,7 +157,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidService_SendsNotFound) {
 }
 
 TEST_F(BasicServer, ProcessPacket_UnassignedChannel_AssignsToAvalableSlot) {
-  TestOutput<128> unassigned_output(2);
+  TestOutput<128> unassigned_output;
   server_.ProcessPacket(
       EncodeRequest(PacketType::RPC, /*channel_id=*/99, 42, 27),
       unassigned_output);
