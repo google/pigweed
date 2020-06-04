@@ -82,6 +82,7 @@ generate_toolchains("cortex_m3") {
     "-mthumb",
     "-specs=nano.specs",
     "-specs=nosys.specs",
+    "-u _printf_float",
   ]
 
   common_toolchain_ldflags = [
@@ -130,6 +131,7 @@ generate_toolchains("cortex_m4") {
     "-mthumb",
     "-specs=nano.specs",
     "-specs=nosys.specs",
+    "-u _printf_float",
   ]
 
   common_toolchain_ldflags = [
