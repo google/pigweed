@@ -60,7 +60,7 @@ class LocalEcdhKey : public EcdhKey {
   LocalEcdhKey& operator=(LocalEcdhKey&& other) noexcept;
 
   // Returns a 256-bit DHKey calculated from our private key and the peer public key.
-  UInt256 CalculateDhKey(const EcdhKey& peer_public_key);
+  UInt256 CalculateDhKey(const EcdhKey& peer_public_key) const;
 
   // Used to verify correct DHKey calculation with known, non-random private and public keys.
   void SetPrivateKeyForTesting(const UInt256& private_key);

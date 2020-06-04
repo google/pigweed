@@ -116,7 +116,7 @@ std::optional<LocalEcdhKey> LocalEcdhKey::Create() {
   return new_key;
 }
 
-UInt256 LocalEcdhKey::CalculateDhKey(const EcdhKey& peer_public_key) {
+UInt256 LocalEcdhKey::CalculateDhKey(const EcdhKey& peer_public_key) const {
   UInt256 out{0};
   bool success = ECDH_compute_key(out.data(), out.size(),
                                   EC_KEY_get0_public_key(peer_public_key.boringssl_key()),
