@@ -78,11 +78,11 @@ architecture-specific registers, using the generic exception handler functions
 is preferred.
 
 However, some projects may need to explicitly access architecture-specific
-registers to attempt to recover from a CPU exception. ``CpuState`` provides
-access to the captured CPU state at the time of the fault. When the
-application-provided ``HandleCpuException()`` function returns, the CPU state is
-restored. This allows the exception handler to modify the captured state so that
-execution can safely continue.
+registers to attempt to recover from a CPU exception. ``pw_CpuExceptionState``
+provides access to the captured CPU state at the time of the fault. When the
+application-provided ``pw_CpuExceptionDefaultHandler()`` function returns, the
+CPU state is restored. This allows the exception handler to modify the captured
+state so that execution can safely continue.
 
 Expected Behavior
 -----------------

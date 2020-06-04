@@ -84,12 +84,12 @@ PW_PACKED(struct) ArmV7mExtraRegisters {
   uint32_t r11;
 };
 
-PW_PACKED(struct) CpuState {
-  ArmV7mExtraRegisters extended;
-  ArmV7mFaultRegisters base;
+}  // namespace pw::cpu_exception
+
+PW_PACKED(struct) pw_CpuExceptionState {
+  pw::cpu_exception::ArmV7mExtraRegisters extended;
+  pw::cpu_exception::ArmV7mFaultRegisters base;
   // TODO(amontanez): FPU registers may or may not be here as well. Make the
   // availability of the FPU registers a compile-time configuration when FPU
   // register support is added.
 };
-
-}  // namespace pw::cpu_exception

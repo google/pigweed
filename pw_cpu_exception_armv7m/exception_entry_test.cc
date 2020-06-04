@@ -17,7 +17,9 @@
 #include <type_traits>
 
 #include "gtest/gtest.h"
-#include "pw_cpu_exception/cpu_exception.h"
+#include "pw_cpu_exception/entry.h"
+#include "pw_cpu_exception/handler.h"
+#include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_armv7m/cpu_state.h"
 
 namespace pw::cpu_exception {
@@ -132,10 +134,10 @@ constexpr size_t kMaxFaultDepth = 2;
 // Variable to prevent more than kMaxFaultDepth nested crashes.
 size_t current_fault_depth = 0;
 
-// Faulting CpuState is copied here so values can be validated after exiting
-// exception handler.
-CpuState captured_states[kMaxFaultDepth] = {};
-CpuState& captured_state = captured_states[0];
+// Faulting pw_CpuExceptionState is copied here so values can be validated after
+// exiting exception handler.
+pw_CpuExceptionState captured_states[kMaxFaultDepth] = {};
+pw_CpuExceptionState& captured_state = captured_states[0];
 
 // Flag used to check if the contents of std::span matches the captured state.
 bool span_matches = false;
@@ -147,10 +149,10 @@ bool span_matches = false;
 // point support for double.
 volatile float float_test_value;
 
-// Magic pattern to help identify if the exception handler's CpuState pointer
-// was pointing to captured CPU state that was pushed onto the stack when
-// the faulting context uses the VFP. Has to be computed at runtime
-// because it uses values only available at link time.
+// Magic pattern to help identify if the exception handler's
+// pw_CpuExceptionState pointer was pointing to captured CPU state that was
+// pushed onto the stack when the faulting context uses the VFP. Has to be
+// computed at runtime because it uses values only available at link time.
 const float kFloatTestPattern = 12.345f * 67.89f;
 
 volatile float fpu_lhs_val = 12.345f;
@@ -159,13 +161,14 @@ volatile float fpu_rhs_val = 67.89f;
 // This macro provides a calculation that equals kFloatTestPattern.
 #define _PW_TEST_FPU_OPERATION (fpu_lhs_val * fpu_rhs_val)
 
-// Magic pattern to help identify if the exception handler's CpuState pointer
-// was pointing to captured CPU state that was pushed onto the stack.
+// Magic pattern to help identify if the exception handler's
+// pw_CpuExceptionState pointer was pointing to captured CPU state that was
+// pushed onto the stack.
 constexpr uint32_t kMagicPattern = 0xDEADBEEF;
 
 // This pattern serves a purpose similar to kMagicPattern, but is used for
-// testing a nested fault to ensure both CpuState objects are correctly
-// captured.
+// testing a nested fault to ensure both pw_CpuExceptionState objects are
+// correctly captured.
 constexpr uint32_t kNestedMagicPattern = 0x900DF00D;
 
 // The manually captured PC won't be the exact same as the faulting PC. This is
@@ -175,6 +178,9 @@ constexpr int32_t kMaxPcDistance = 4;
 // In-memory interrupt service routine vector table.
 using InterruptVectorTable = std::aligned_storage_t<512, 512>;
 InterruptVectorTable ram_vector_table;
+
+// Forward declaration of the exception handler.
+void TestingExceptionHandler(pw_CpuExceptionState*);
 
 // Populate the device's registers with testable values, then trigger exception.
 void BeginBaseFaultTest() {
@@ -337,7 +343,7 @@ void InstallVectorTableEntries() {
 
   // Override exception handling vector table entries.
   uint32_t* exception_entry_addr =
-      reinterpret_cast<uint32_t*>(pw::cpu_exception::pw_CpuExceptionEntry);
+      reinterpret_cast<uint32_t*>(pw_CpuExceptionEntry);
   uint32_t** interrupts = reinterpret_cast<uint32_t**>(&ram_vector_table);
   interrupts[kHardFaultIsrNum] = exception_entry_addr;
   interrupts[kMemFaultIsrNum] = exception_entry_addr;
@@ -364,6 +370,7 @@ void Setup(bool use_fpu) {
   } else {
     DisableFpu();
   }
+  pw_CpuExceptionSetHandler(TestingExceptionHandler);
   EnableAllFaultHandlers();
   InstallVectorTableEntries();
   exceptions_handled = 0;
@@ -546,9 +553,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
 
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 
-}  // namespace
-
-void HandleCpuException(CpuState* state) {
+void TestingExceptionHandler(pw_CpuExceptionState* state) {
   if (++current_fault_depth > kMaxFaultDepth) {
     volatile bool loop = true;
     while (loop) {
@@ -571,7 +576,9 @@ void HandleCpuException(CpuState* state) {
 
   if (arm_v7m_cfsr & kUnalignedFaultMask) {
     // Copy captured state to check later.
-    std::memcpy(&captured_states[exceptions_handled], state, sizeof(CpuState));
+    std::memcpy(&captured_states[exceptions_handled],
+                state,
+                sizeof(pw_CpuExceptionState));
 
     // Disable unaligned read/write trapping to "handle" exception.
     arm_v7m_ccr &= ~kUnalignedTrapEnableMask;
@@ -580,11 +587,13 @@ void HandleCpuException(CpuState* state) {
     return;
   } else if (arm_v7m_cfsr & kDivByZeroFaultMask) {
     // Copy captured state to check later.
-    std::memcpy(&captured_states[exceptions_handled], state, sizeof(CpuState));
+    std::memcpy(&captured_states[exceptions_handled],
+                state,
+                sizeof(pw_CpuExceptionState));
 
     // Ensure std::span compares to be the same.
     std::span<const uint8_t> state_span = RawFaultingCpuState(*state);
-    EXPECT_EQ(state_span.size(), sizeof(CpuState));
+    EXPECT_EQ(state_span.size(), sizeof(pw_CpuExceptionState));
     if (std::memcmp(state, state_span.data(), state_span.size()) == 0) {
       span_matches = true;
     } else {
@@ -603,4 +612,5 @@ void HandleCpuException(CpuState* state) {
   }
 }
 
+}  // namespace
 }  // namespace pw::cpu_exception

@@ -12,9 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <cstdint>
+#include "pw_cpu_exception/entry.h"
 
-#include "pw_cpu_exception/cpu_exception.h"
+#include <cstdint>
+#include <cstring>
+
+#include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception_armv7m/cpu_state.h"
 #include "pw_preprocessor/compiler.h"
 
@@ -57,13 +60,13 @@ constexpr uint32_t kInvalidRegisterValue = 0xFFFFFFFF;
 
 // Checks exc_return in the captured CPU state to determine which stack pointer
 // was in use prior to entering the exception handler.
-bool PspWasActive(const CpuState& cpu_state) {
+bool PspWasActive(const pw_CpuExceptionState& cpu_state) {
   return cpu_state.extended.exc_return & kExcReturnStackMask;
 }
 
 // Checks exc_return to determine if FPU state was pushed to the stack in
 // addition to the base CPU context frame.
-bool FpuStateWasPushed(const CpuState& cpu_state) {
+bool FpuStateWasPushed(const pw_CpuExceptionState& cpu_state) {
   return !(cpu_state.extended.exc_return & kExcReturnBasicFrameMask);
 }
 
@@ -71,7 +74,7 @@ bool FpuStateWasPushed(const CpuState& cpu_state) {
 //
 // For more information see (See ARMv7-M Section B1.5.11, derived exceptions
 // on exception entry).
-void CloneBaseRegistersFromPsp(CpuState* cpu_state) {
+void CloneBaseRegistersFromPsp(pw_CpuExceptionState* cpu_state) {
   // If CPU succeeded in pushing context to PSP, copy it to the MSP.
   if (!(cpu_state->extended.cfsr & kStkErrMask) &&
       !(cpu_state->extended.cfsr & kMStkErrMask)) {
@@ -97,7 +100,7 @@ void CloneBaseRegistersFromPsp(CpuState* cpu_state) {
 //
 // For more information see (See ARMv7-M Section B1.5.11, derived exceptions
 // on exception entry).
-void RestoreBaseRegistersToPsp(CpuState* cpu_state) {
+void RestoreBaseRegistersToPsp(pw_CpuExceptionState* cpu_state) {
   // If CPU succeeded in pushing context to PSP on exception entry, restore the
   // contents of cpu_state to the CPU-pushed register frame so the CPU can
   // continue. Otherwise, don't attempt as we'll likely end up in an escalated
@@ -111,7 +114,7 @@ void RestoreBaseRegistersToPsp(CpuState* cpu_state) {
 }
 
 // Determines the size of the CPU-pushed context frame.
-uint32_t CpuContextSize(const CpuState& cpu_state) {
+uint32_t CpuContextSize(const pw_CpuExceptionState& cpu_state) {
   uint32_t cpu_context_size = sizeof(ArmV7mFaultRegisters);
   if (FpuStateWasPushed(cpu_state)) {
     cpu_context_size += sizeof(ArmV7mFaultRegistersFpu);
@@ -128,7 +131,7 @@ uint32_t CpuContextSize(const CpuState& cpu_state) {
 // On exception entry, the Program Stack Pointer is patched to reflect the state
 // at exception-time. On exception return, it is restored to the appropriate
 // location. This calculates the delta that is used for these patch operations.
-uint32_t CalculatePspDelta(const CpuState& cpu_state) {
+uint32_t CalculatePspDelta(const pw_CpuExceptionState& cpu_state) {
   // If CPU context was not pushed to program stack (because program stack
   // wasn't in use, or an error occurred when pushing context), the PSP doesn't
   // need to be shifted.
@@ -143,7 +146,7 @@ uint32_t CalculatePspDelta(const CpuState& cpu_state) {
 // On exception entry, the Main Stack Pointer is patched to reflect the state
 // at exception-time. On exception return, it is restored to the appropriate
 // location. This calculates the delta that is used for these patch operations.
-uint32_t CalculateMspDelta(const CpuState& cpu_state) {
+uint32_t CalculateMspDelta(const pw_CpuExceptionState& cpu_state) {
   if (PspWasActive(cpu_state)) {
     // TODO(amontanez): Since FPU state isn't captured at this time, we ignore
     //                  it when patching MSP. To add FPU capture support,
@@ -161,7 +164,7 @@ extern "C" {
 
 // Collect remaining CPU state (memory mapped registers), populate memory mapped
 // registers, and call application exception handler.
-PW_USED void pw_PackageAndHandleCpuException(CpuState* cpu_state) {
+PW_USED void pw_PackageAndHandleCpuException(pw_CpuExceptionState* cpu_state) {
   // Capture memory mapped registers.
   cpu_state->extended.cfsr = arm_v7m_cfsr;
   cpu_state->extended.icsr = arm_v7m_icsr;
@@ -169,9 +172,9 @@ PW_USED void pw_PackageAndHandleCpuException(CpuState* cpu_state) {
   cpu_state->extended.mmfar = arm_v7m_mmfar;
 
   // CPU may have automatically pushed state to the program stack. If it did,
-  // the values can be copied into in the CpuState struct that is passed
-  // to HandleCpuException(). The cpu_state passed to the handler is ALWAYS
-  // stored on the main stack (MSP).
+  // the values can be copied into in the pw_CpuExceptionState struct that is
+  // passed to HandleCpuException(). The cpu_state passed to the handler is
+  // ALWAYS stored on the main stack (MSP).
   if (PspWasActive(*cpu_state)) {
     CloneBaseRegistersFromPsp(cpu_state);
     // If PSP wasn't active, this delta is 0.
@@ -182,7 +185,7 @@ PW_USED void pw_PackageAndHandleCpuException(CpuState* cpu_state) {
   cpu_state->extended.msp += CalculateMspDelta(*cpu_state);
 
   // Call application-level exception handler.
-  HandleCpuException(cpu_state);
+  pw_HandleCpuException(cpu_state);
 
   // Restore program stack pointer so exception return can restore state if
   // needed.

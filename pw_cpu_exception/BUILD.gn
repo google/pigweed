@@ -22,15 +22,73 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-pw_facade("pw_cpu_exception") {
-  backend = pw_cpu_exception_BACKEND
+group("pw_cpu_exception") {
+  public_deps = [
+    ":entry",
+    ":handler",
+  ]
+}
+
+# This module has three facades, each of whose backends are set with a
+# different GN variable.
+#
+# - entry: This is the library that handles early exception entry and prepares
+#   any CPU state that must be available to the exception handler via the
+#   pw_CpuState object. The backend for this facade will be architecture-
+#   specific.
+#   Set this facade's backend via `pw_cpu_exception_ENTRY_BACKEND`
+#
+# - handler: This facade is backed by an application-specific handler that
+#   determines what to do when an exception is encountered. This may be
+#   capturing a crash report before resetting the device, or in some cases
+#   handling the exception to allow execution to continue.
+#   Set this facade's backend via `pw_cpu_exception_HANDLER_BACKEND`
+#
+# - support: This facade provides architecture-independent functions that may be
+#   helpful for dumping CPU state in various forms. This allows an application
+#   to create an application-specific handler that is portable across multiple
+#   architectures.
+#   Set this facade's backend via `pw_cpu_exception_SUPPORT_BACKEND`
+
+pw_facade("entry") {
+  backend = pw_cpu_exception_ENTRY_BACKEND
+  facade_name = "entry_facade"
+  public_configs = [ ":default_config" ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+  deps = [ ":handler_facade" ]
+  public = [ "public/pw_cpu_exception/entry.h" ]
+}
+
+pw_facade("handler") {
+  backend = pw_cpu_exception_HANDLER_BACKEND
+  facade_name = "handler_facade"
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_span",
-    "$dir_pw_string",
   ]
-  public = [ "public/pw_cpu_exception/cpu_exception.h" ]
+  sources = [ "start_exception_handler.cc" ]
+  public = [ "public/pw_cpu_exception/handler.h" ]
+}
+
+# This library is technically optional. It is recommended to use `support` when
+# doing basic dumps of CPU state. As an alternative, projects may choose to
+# directly depend on the entry backend if they require direct access to
+# pw_CpuExceptionState members.
+pw_facade("support") {
+  backend = pw_cpu_exception_SUPPORT_BACKEND
+  facade_name = "support_facade"
+  public_configs = [ ":default_config" ]
+  public_deps = [ "$dir_pw_span" ]
+  public = [ "public/pw_cpu_exception/support.h" ]
+}
+
+pw_source_set("basic_handler") {
+  deps = [
+    ":handler_facade",
+    dir_pw_log,
+  ]
+  sources = [ "basic_handler.cc" ]
 }
 
 pw_doc_group("docs") {

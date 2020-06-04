@@ -19,6 +19,10 @@ licenses(["notice"])  # Apache License 2.0
 filegroup(
     name = "pw_cpu_exception",
     srcs = [
-        "public/pw_cpu_exception/cpu_exception.h",
+        "basic_handler.cc",
+        "public/pw_cpu_exception/entry.h",
+        "public/pw_cpu_exception/handler.h",
+        "public/pw_cpu_exception/support.h",
+        "start_exception_handler.cc",
     ],
 )

@@ -14,5 +14,7 @@
 
 declare_args() {
   # Backend for the pw_cpu_exception module.
-  pw_cpu_exception_BACKEND = ""
+  pw_cpu_exception_ENTRY_BACKEND = ""
+  pw_cpu_exception_HANDLER_BACKEND = ""
+  pw_cpu_exception_SUPPORT_BACKEND = ""
 }

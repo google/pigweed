@@ -185,7 +185,7 @@ if (current_toolchain != default_toolchain) {
     import("$dir_pw_cpu_exception/backend.gni")
 
     # TODO(pwbug/17): Re-think when Pigweed config system is added.
-    if (pw_cpu_exception_BACKEND == dir_pw_cpu_exception_armv7m) {
+    if (pw_cpu_exception_ENTRY_BACKEND == dir_pw_cpu_exception_armv7m) {
       group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
     }
 
