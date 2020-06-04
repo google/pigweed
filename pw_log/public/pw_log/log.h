@@ -64,38 +64,65 @@
 #endif  // PW_LOG_MODULE_NAME
 
 // Default: Flags
-#ifndef PW_LOG_NO_FLAGS
-#define PW_LOG_NO_FLAGS 0
-#endif  // PW_LOG_NO_FLAGS
+// For log statements like LOG_INFO that don't have an explicit argument, this
+// is used for the flags value.
+#ifndef PW_LOG_DEFAULT_FLAGS
+#define PW_LOG_DEFAULT_FLAGS 0
+#endif  // PW_LOG_DEFAULT_FLAGS
 
-// Note: The filtering semantics are likely to change.
+// Default: Log level filtering
+//
+// All log statements have a level, and this define is the default filtering.
+// This is compile-time filtering if the level is a constant.
+//
+// TODO(pwbug/17): Convert this to the config system when available.
+#ifndef PW_LOG_LEVEL
+#define PW_LOG_LEVEL PW_LOG_LEVEL_DEBUG
+#endif  // PW_LOG_LEVEL
+
+// Default: Log enabled expression
+//
+// This expression determines whether or not the statement is enabled and
+// should be passed to the backend.
+#ifndef PW_LOG_ENABLE_IF
+#define PW_LOG_ENABLE_IF(level, flags) ((level) >= PW_LOG_LEVEL)
+#endif  // PW_LOG_ENABLE_IF
+
+#ifndef PW_LOG
+#define PW_LOG(level, flags, message, ...)               \
+  do {                                                   \
+    if (PW_LOG_ENABLE_IF(level, flags)) {                \
+      PW_HANDLE_LOG(level, flags, message, __VA_ARGS__); \
+    }                                                    \
+  } while (0)
+#endif  // PW_LOG_DEBUG
 
 // For backends that elect to only provide the general PW_LOG() macro and not
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
 // of the general PW_LOG().
 #ifndef PW_LOG_DEBUG
 #define PW_LOG_DEBUG(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_DEBUG
 
 #ifndef PW_LOG_INFO
 #define PW_LOG_INFO(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_INFO
 
 #ifndef PW_LOG_WARN
 #define PW_LOG_WARN(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_WARN
 
 #ifndef PW_LOG_ERROR
 #define PW_LOG_ERROR(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_ERROR
 
 #ifndef PW_LOG_CRITICAL
 #define PW_LOG_CRITICAL(message, ...) \
-  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_NO_FLAGS, message, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
 // Define short, usable names if requested.

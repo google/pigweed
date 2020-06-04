@@ -120,7 +120,7 @@ system, intended to be used directly.
 
   .. code-block:: cpp
 
-    PW_LOG(PW_NO_FLAGS, PW_LOG_LEVEL_INFO, "Temperature is %d degrees", temp);
+    PW_LOG(PW_LOG_DEFAULT_FLAGS, PW_LOG_LEVEL_INFO, "Temp is %d degrees", temp);
     PW_LOG(UNRELIABLE_DELIVERY, PW_LOG_LEVEL_ERROR, "It didn't work!");
 
   .. note::
@@ -138,7 +138,69 @@ system, intended to be used directly.
 .. cpp:function:: PW_LOG_ERROR(fmt, ...)
 .. cpp:function:: PW_LOG_CRITICAL(fmt, ...)
 
-  Shorthand for `PW_LOG(PW_LOG_NO_FLAGS, <level>, fmt, ...)`.
+  Shorthand for `PW_LOG(PW_LOG_DEFAULT_FLAGS, <level>, fmt, ...)`.
+
+Filtering logs
+--------------
+
+``pw_log`` supports compile time filtering of logs through two mechanisms.
+
+1. Filter by level. Source files that define ``PW_LOG_LEVEL`` will display all
+   logs at or above the chosen level.
+
+   Example:
+
+   .. code-block:: cpp
+
+     #include "pw_log/log.h"
+
+     #define PW_LOG_LEVEL PW_LOG_LEVEL_INFO
+
+     void DoSomething() {
+       PW_LOG_DEBUG("This won't be logged at all");
+       PW_LOG_INFO("This is INFO level, and will display");
+       PW_LOG_WARN("This is above INFO level, and will display");
+     }
+
+2. Filter by arbitrary expression based on ``level`` and ``flags``. Source
+   files that define ``PW_LOG_ENABLE_IF(level, flags)`` will display if the
+   given expression returns true.
+
+   Example:
+
+   .. code-block:: cpp
+
+     #include "pw_log/log.h"
+
+     // This define might be supplied by the build system.
+     #define MY_PRODUCT_LOG_PII_ENABLED false
+
+     // This is the PII mask bit selected by the application.
+     #define MY_PRODUCT_PII_MASK (1 << 5)
+
+     // Pigweed's log facade will call this macro to decide to log or not. In
+     // this case, it will drop logs with the PII flag set if display of PII is
+     // not enabled for the application.
+     #define PW_LOG_ENABLE_IF(level, flags) \
+         (level >= PW_LOG_INFO && \
+          !((flags & MY_PRODUCT_PII_MASK) && MY_PRODUCT_LOG_PII_ENABLED)
+
+     void DoSomethingWithSensitiveInfo() {
+       PW_LOG_DEBUG("This won't be logged at all");
+       PW_LOG_INFO("This is INFO level, and will display");
+
+       // In this example, this will not be logged since logging with PII
+       // is disabled by the above macros.
+       PW_LOG(PW_LOG_LEVEL_INFO,
+              MY_PRODUCT_PII_MASK,
+              "Sensitive: %d",
+              sensitive_info);
+     }
+
+.. attention::
+
+  At this time, only compile time filtering is supported. In the future, we
+  plan to add support for runtime filtering.
 
 Logging attributes
 ------------------
