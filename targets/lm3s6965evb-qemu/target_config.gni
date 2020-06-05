@@ -58,9 +58,14 @@ pw_executable_config.bloaty_config_file =
 # Facade backends
 dir_pw_assert_backend = dir_pw_assert_basic
 dir_pw_boot_backend = dir_pw_boot_armv7m
-dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
 dir_pw_log_backend = dir_pw_log_basic
 dir_pw_sys_io_backend = dir_pw_sys_io_baremetal_lm3s6965evb
+
+# pw_cpu_exception_armv7m test do not work as expected in QEMU. It does not appear
+# the divide-by-zero traps as expected when enabled, which prevents the module
+# from triggering a recoverable exception. Since pw_cpu_exception is not fully
+# set up on this target, disable it for now.
+# dir_pw_cpu_exception_backend = dir_pw_cpu_exception_armv7m
 
 # Tell QEMU to shut down after running a binary.
 pw_boot_armv7m_qemu_shutdown = true
