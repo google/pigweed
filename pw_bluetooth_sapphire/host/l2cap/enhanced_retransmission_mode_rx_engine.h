@@ -55,6 +55,16 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
     remote_busy_cleared_callback_ = std::move(remote_busy_cleared_callback);
   }
 
+  // Set a callback to be invoked when a Reject function (Core Spec v5.0, Vol 3, Part A, Sec
+  // 8.6.1.2) is received. This invocation precedes the ReceiveSeqNumCallback invocation, which
+  // delivers the SeqNum that the TxEngine is expected to retransmit first.
+  //
+  // |is_poll_request| reflects the 'P' bit in the header of the received frame.
+  using RangeRetransmitSetCallback = fit::function<void(bool is_poll_request)>;
+  void set_range_retransmit_set_callback(RangeRetransmitSetCallback range_retransmit_set_callback) {
+    range_retransmit_set_callback_ = std::move(range_retransmit_set_callback);
+  }
+
  private:
   ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
   ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
@@ -73,10 +83,12 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
 
   SendFrameCallback send_frame_callback_;
 
+  // TODO(52554): Refactor these delegates into a single interface for TxEngine to implement.
   ReceiveSeqNumCallback receive_seq_num_callback_;
   AckSeqNumCallback ack_seq_num_callback_;
   RemoteBusyChangedCallback remote_busy_set_callback_;
   RemoteBusyChangedCallback remote_busy_cleared_callback_;
+  RangeRetransmitSetCallback range_retransmit_set_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };

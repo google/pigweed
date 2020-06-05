@@ -197,7 +197,15 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
     }
   }
 
-  // TODO(1030): Implement handling of REJ.
+  // REJ S-Frames will still result in forwarding the acknowledgment via ReceiveSeqNumCallback after
+  // this call, per "PassToTx" actions for "Recv REJ" events in Core Spec v5.0, Vol 3, Part A,
+  // Sec 8.6.5.9–11.
+  if (sframe.function() == SupervisoryFunction::Reject) {
+    if (range_retransmit_set_callback_) {
+      range_retransmit_set_callback_(sframe.is_poll_request());
+    }
+  }
+
   // TODO(1034): Implement handling of SREJ.
   return nullptr;
 }
