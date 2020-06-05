@@ -31,7 +31,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
     entry_points={
-        'console_scripts': ['pw_protobuf_codegen = pw_protobuf.codegen:main']
+        'console_scripts': ['pw_protobuf_codegen = pw_protobuf.plugin:main']
     },
     install_requires=[
         'protobuf',

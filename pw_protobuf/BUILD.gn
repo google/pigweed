@@ -58,9 +58,9 @@ pw_doc_group("docs") {
 # Source files for pw_protobuf's protoc plugin.
 pw_input_group("codegen_protoc_plugin") {
   inputs = [
-    "py/pw_protobuf/codegen.py",
-    "py/pw_protobuf/methods.py",
-    "py/pw_protobuf/proto_structures.py",
+    "py/pw_protobuf/codegen_pwpb.py",
+    "py/pw_protobuf/plugin.py",
+    "py/pw_protobuf/proto_tree.py",
   ]
 }
 

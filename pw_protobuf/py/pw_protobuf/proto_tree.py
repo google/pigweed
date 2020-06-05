@@ -18,6 +18,9 @@ import collections
 import enum
 
 from typing import Callable, Dict, Iterator, List, Optional, Tuple, TypeVar
+from typing import cast
+
+import google.protobuf.descriptor_pb2 as descriptor_pb2
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 
@@ -35,11 +38,13 @@ class ProtoNode(abc.ABC):
         MESSAGE maps to a C++ "Encoder" class within its own namespace.
         ENUM maps to a C++ enum within its parent's namespace.
         EXTERNAL represents a node defined within a different compilation unit.
+        SERVICE represents an RPC service definition.
         """
         PACKAGE = 1
         MESSAGE = 2
         ENUM = 3
         EXTERNAL = 4
+        SERVICE = 5
 
     def __init__(self, name: str):
         self._name: str = name
@@ -223,6 +228,25 @@ class ProtoMessage(ProtoNode):
                 or child.type() == self.Type.MESSAGE)
 
 
+class ProtoService(ProtoNode):
+    """Representation of a service in a .proto file."""
+    def __init__(self, name: str):
+        super().__init__(name)
+        self._methods: List['ProtoServiceMethod'] = []
+
+    def type(self) -> ProtoNode.Type:
+        return ProtoNode.Type.SERVICE
+
+    def methods(self) -> List['ProtoServiceMethod']:
+        return list(self._methods)
+
+    def add_method(self, method: 'ProtoServiceMethod') -> None:
+        self._methods.append(method)
+
+    def _supports_child(self, child: ProtoNode) -> bool:
+        return False
+
+
 class ProtoExternal(ProtoNode):
     """A node from a different compilation unit.
 
@@ -285,3 +309,192 @@ class ProtoMessageField:
     def upper_snake_case(field_name: str) -> str:
         """Converts a field name to UPPER_SNAKE_CASE."""
         return field_name.upper()
+
+
+class ProtoServiceMethod:
+    """A method defined in a protobuf service."""
+    class Type(enum.Enum):
+        UNARY = 0
+        SERVER_STREAMING = 1
+        CLIENT_STREAMING = 2
+        BIDIRECTIONAL_STREAMING = 3
+
+    def __init__(self, name: str, method_type: Type, request_type: ProtoNode,
+                 response_type: ProtoNode):
+        self._name = name
+        self._type = method_type
+        self._request_type = request_type
+        self._response_type = response_type
+
+    def name(self) -> str:
+        return self._name
+
+
+def _add_enum_fields(enum_node: ProtoNode, proto_enum) -> None:
+    """Adds fields from a protobuf enum descriptor to an enum node."""
+    assert enum_node.type() == ProtoNode.Type.ENUM
+    enum_node = cast(ProtoEnum, enum_node)
+
+    for value in proto_enum.value:
+        enum_node.add_value(value.name, value.number)
+
+
+def _create_external_nodes(root: ProtoNode, path: str) -> ProtoNode:
+    """Creates external nodes for a path starting from the given root."""
+
+    node = root
+    for part in path.split('.'):
+        child = node.find(part)
+        if not child:
+            child = ProtoExternal(part)
+            node.add_child(child)
+        node = child
+
+    return node
+
+
+def _find_or_create_node(global_root: ProtoNode, package_root: ProtoNode,
+                         path: str) -> ProtoNode:
+    """Searches the proto tree for a node by path, creating it if not found."""
+
+    if path[0] == '.':
+        # Fully qualified path.
+        root_relative_path = path[1:]
+        search_root = global_root
+    else:
+        root_relative_path = path
+        search_root = package_root
+
+    node = search_root.find(root_relative_path)
+    if node is None:
+        # Create nodes for field types that don't exist within this
+        # compilation context, such as those imported from other .proto
+        # files.
+        node = _create_external_nodes(search_root, root_relative_path)
+
+    return node
+
+
+def _add_message_fields(global_root: ProtoNode, package_root: ProtoNode,
+                        message: ProtoNode, proto_message) -> None:
+    """Adds fields from a protobuf message descriptor to a message node."""
+    assert message.type() == ProtoNode.Type.MESSAGE
+    message = cast(ProtoMessage, message)
+
+    type_node: Optional[ProtoNode]
+
+    for field in proto_message.field:
+        if field.type_name:
+            # The "type_name" member contains the global .proto path of the
+            # field's type object, for example ".pw.protobuf.test.KeyValuePair".
+            # Try to find the node for this object within the current context.
+            type_node = _find_or_create_node(global_root, package_root,
+                                             field.type_name)
+        else:
+            type_node = None
+
+        repeated = \
+            field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED
+        message.add_field(
+            ProtoMessageField(
+                field.name,
+                field.number,
+                field.type,
+                type_node,
+                repeated,
+            ))
+
+
+def _add_service_methods(global_root: ProtoNode, package_root: ProtoNode,
+                         service: ProtoNode, proto_service) -> None:
+    assert service.type() == ProtoNode.Type.SERVICE
+    service = cast(ProtoService, service)
+
+    for method in proto_service.method:
+        if method.client_streaming and method.server_streaming:
+            method_type = ProtoServiceMethod.Type.BIDIRECTIONAL_STREAMING
+        elif method.client_streaming:
+            method_type = ProtoServiceMethod.Type.CLIENT_STREAMING
+        elif method.server_streaming:
+            method_type = ProtoServiceMethod.Type.SERVER_STREAMING
+        else:
+            method_type = ProtoServiceMethod.Type.UNARY
+
+        request_node = _find_or_create_node(global_root, package_root,
+                                            method.input_type)
+        response_node = _find_or_create_node(global_root, package_root,
+                                             method.output_type)
+
+        service.add_method(
+            ProtoServiceMethod(method.name, method_type, request_node,
+                               response_node))
+
+
+def _populate_fields(proto_file, global_root: ProtoNode,
+                     package_root: ProtoNode) -> None:
+    """Traverses a proto file, adding all message and enum fields to a tree."""
+    def populate_message(node, message):
+        """Recursively populates nested messages and enums."""
+        _add_message_fields(global_root, package_root, node, message)
+
+        for proto_enum in message.enum_type:
+            _add_enum_fields(node.find(proto_enum.name), proto_enum)
+        for msg in message.nested_type:
+            populate_message(node.find(msg.name), msg)
+
+    # Iterate through the proto file, populating top-level objects.
+    for proto_enum in proto_file.enum_type:
+        enum_node = package_root.find(proto_enum.name)
+        assert enum_node is not None
+        _add_enum_fields(enum_node, proto_enum)
+
+    for message in proto_file.message_type:
+        populate_message(package_root.find(message.name), message)
+
+    for service in proto_file.service:
+        service_node = package_root.find(service.name)
+        assert service_node is not None
+        _add_service_methods(global_root, package_root, service_node, service)
+
+
+def _build_hierarchy(proto_file):
+    """Creates a ProtoNode hierarchy from a proto file descriptor."""
+
+    root = ProtoPackage('')
+    package_root = root
+
+    for part in proto_file.package.split('.'):
+        package = ProtoPackage(part)
+        package_root.add_child(package)
+        package_root = package
+
+    def build_message_subtree(proto_message):
+        node = ProtoMessage(proto_message.name)
+        for proto_enum in proto_message.enum_type:
+            node.add_child(ProtoEnum(proto_enum.name))
+        for submessage in proto_message.nested_type:
+            node.add_child(build_message_subtree(submessage))
+
+        return node
+
+    for proto_enum in proto_file.enum_type:
+        package_root.add_child(ProtoEnum(proto_enum.name))
+
+    for message in proto_file.message_type:
+        package_root.add_child(build_message_subtree(message))
+
+    for service in proto_file.service:
+        package_root.add_child(ProtoService(service.name))
+
+    return root, package_root
+
+
+def build_node_tree(file_descriptor_proto) -> Tuple[ProtoNode, ProtoNode]:
+    """Constructs a tree of proto nodes from a file descriptor.
+
+    Returns the root node of the entire proto package tree and the node
+    representing the file's package.
+    """
+    global_root, package_root = _build_hierarchy(file_descriptor_proto)
+    _populate_fields(file_descriptor_proto, global_root, package_root)
+    return global_root, package_root
