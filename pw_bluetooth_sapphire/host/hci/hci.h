@@ -612,13 +612,13 @@ struct ReadInquiryScanActivityReturnParams {
 constexpr OpCode kWriteInquiryScanActivity = ControllerAndBasebandOpCode(0x001E);
 
 struct WriteInquiryScanActivityCommandParams {
-  // Page_Scan_Interval, in time slices (0.625ms)
+  // Inquiry_Scan_Interval, in time slices (0.625ms)
   // Valid Range: kInquiryScanIntervalMin - kInquiryScanIntervalMax in
   // hci_constants.h
   uint16_t inquiry_scan_interval;
 
-  // Page_Scan_Window, in time slices
-  // Valid Range: kPageScanWindowMin - kPageScanWindowMax in hci_constants.h
+  // Inquiry_Scan_Window, in time slices
+  // Valid Range: kInquiryScanWindowMin - kInquiryScanWindowMax in hci_constants.h
   uint16_t inquiry_scan_window;
 } __PACKED;
 
@@ -3511,7 +3511,7 @@ struct LESetPrivacyModeCommandParams {
 // The OGF of 0x3F is reserved for vendor-specific debug commands (see Core Spec
 // v5.0, Vol 2, Part E, Section 5.4.1).
 constexpr uint8_t kVendorOGF = 0x3F;
-constexpr OpCode VendorOpCode(const uint8_t ocf) { return DefineOpCode(kVendorOGF, ocf); }
+constexpr OpCode VendorOpCode(const uint16_t ocf) { return DefineOpCode(kVendorOGF, ocf); }
 
 }  // namespace hci
 }  // namespace bt

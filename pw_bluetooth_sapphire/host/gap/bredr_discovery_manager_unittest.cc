@@ -33,8 +33,8 @@ using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>
 const auto kWriteInquiryActivity = CreateStaticByteBuffer(
     LowerBits(hci::kWriteInquiryScanActivity), UpperBits(hci::kWriteInquiryScanActivity),
     0x04, // Param total size
-    0xE1, 0x01, // Inquiry Scan Interval
-    0x12, 0x00 // Inquiry Scan Window
+    LowerBits(kInquiryScanInterval), UpperBits(kInquiryScanInterval),
+    LowerBits(kInquiryScanWindow), UpperBits(kInquiryScanWindow)
 );
 
 const auto kWriteInquiryActivityRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryScanActivity);

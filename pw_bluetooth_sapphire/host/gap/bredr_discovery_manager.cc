@@ -103,7 +103,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
   ZX_DEBUG_ASSERT(eir_handler_id_);
 
   // Set the Inquiry Scan Settings
-  WriteInquiryScanSettings(0x01E1, 0x0012, true);
+  WriteInquiryScanSettings(kInquiryScanInterval, kInquiryScanWindow, true);
 }
 
 BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {

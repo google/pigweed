@@ -40,6 +40,11 @@ constexpr char kDefaultLocalName[] = "fuchsia";
 // This is in 1.28s time slice units, and is 10.24 seconds.
 constexpr uint8_t kInquiryLengthDefault = 0x08;
 
+// The inquiry scan interval and window used by our stack. The unit for these values is
+// controller timeslices (N) where Time in ms = N * 0.625ms
+constexpr uint16_t kInquiryScanInterval = 0x01E0;  // 300 ms
+constexpr uint16_t kInquiryScanWindow = 0x0012;    // 11.25 ms
+
 // Constants used in Low Energy (see Core Spec v5.0, Vol 3, Part C, Appendix A).
 
 constexpr zx::duration kLEGeneralDiscoveryScanMin = zx::msec(10240);
