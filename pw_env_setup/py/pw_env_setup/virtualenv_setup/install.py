@@ -84,8 +84,7 @@ def _find_files_by_name(roots, name):
 
             # Filter directories starting with . to avoid searching unnecessary
             # paths and finding files that should be hidden.
-            for index in (i for i, d in enumerate(dirs) if d.startswith('.')):
-                del dirs[index]
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
     return matches
 
 

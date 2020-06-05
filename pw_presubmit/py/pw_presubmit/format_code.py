@@ -242,7 +242,8 @@ class CodeFormat(NamedTuple):
 
 
 C_FORMAT: CodeFormat = CodeFormat(
-    'C and C++', frozenset(['.h', '.hh', '.hpp', '.c', '.cc', '.cpp']),
+    'C and C++',
+    frozenset(['.h', '.hh', '.hpp', '.c', '.cc', '.cpp', '.inc', '.inl']),
     clang_format_check, clang_format_fix)
 
 PROTO_FORMAT: CodeFormat = CodeFormat('Protocol buffer', ('.proto', ),
