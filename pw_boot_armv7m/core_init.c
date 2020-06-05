@@ -80,6 +80,9 @@ void StaticInit(void) {
          0,
          &_pw_zero_init_ram_end - &_pw_zero_init_ram_start);
 
+  // Run any init that must be done before C++ static constructors.
+  pw_PreStaticConstructorInit();
+
   // Call static constructors.
   __libc_init_array();
 }

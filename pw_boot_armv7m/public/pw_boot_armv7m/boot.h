@@ -41,6 +41,8 @@
 // In pw_BootEntry():
 //   Initialize memory -> pw_PreMainInit() -> main()
 
+#include <stdint.h>
+
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
@@ -80,6 +82,13 @@ int main();
 // function. This function is implemented by pw_boot_armv7m, and does early
 // memory initialization.
 PW_NO_PROLOGUE void pw_BootEntry();
+
+// This function is called just after zero initialization of RAM and loading
+// values into static memory (commonly labeled as the .data section in an ELF
+// file). Per the naming, this function is called just before C++ static
+// constructors are initialized. It is safe to run C code, but NOT safe to call
+// out to any C++ code.
+void pw_PreStaticConstructorInit();
 
 // This function is called by pw_BootEntry() after memory initialization but
 // before main. This allows targets to have pre-main initialization of the

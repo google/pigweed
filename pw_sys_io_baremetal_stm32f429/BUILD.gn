@@ -24,7 +24,10 @@ if (dir_pw_sys_io_backend == dir_pw_sys_io_baremetal_stm32f429) {
       "$dir_pw_sys_io:default_putget_bytes",
       "$dir_pw_sys_io:facade",
     ]
-    sources = [ "sys_io_baremetal.cc" ]
+    sources = [
+      "early_boot.c",
+      "sys_io_baremetal.cc",
+    ]
   }
 }
 

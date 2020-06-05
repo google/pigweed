@@ -19,6 +19,7 @@ licenses(["notice"])  # Apache License 2.0
 filegroup(
     name = "pw_sys_io_baremetal_stm32f429",
     srcs = [
+        "early_boot.c",
         "sys_io_baremetal.cc",
     ],
 )

@@ -202,19 +202,6 @@ extern "C" void pw_PreMainInit() {
   usart1.baud_rate = CalcBaudRegister(kSystemCoreClock, /*target_baud=*/115200);
 
   usart1.config1 = kEnableUsart | kReceiveEnable | kTransmitEnable;
-
-// TODO(pwbug/17): Replace when Pigweed config system is added.
-#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
-  // Enable FPU if built using hardware FPU instructions.
-  // CPCAR mask that enables FPU. (ARMv7-M Section B3.2.20)
-  constexpr uint32_t kFpuEnableMask = (0xFu << 20);
-
-  // Memory mapped register to enable FPU. (ARMv7-M Section B3.2.2, Table B3-4)
-  volatile uint32_t& arm_v7m_cpacr =
-      *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
-
-  arm_v7m_cpacr |= kFpuEnableMask;
-#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 }
 
 namespace pw::sys_io {

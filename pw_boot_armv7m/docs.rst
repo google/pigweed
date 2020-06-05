@@ -34,6 +34,11 @@ User-Implemented Functions
 This module expects two extern "C" functions to be defined outside this module.
 
  - ``int main()``: This is where applications reside.
+ - ``void pw_PreStaticConstructorInit()``: This function executes just before
+   C++ static constructors are called. At this point, other static memory has
+   been zero or data initialized. This function should set up any early
+   initialization that should be done before C++ static constructors are run
+   (e.g. enabling FPU).
  - ``void pw_PreMainInit()``: This function executes just before main, and
    can be used for any device initialization that isn't application specific.
    Depending on your platform, this might be turning on a UART, setting up
