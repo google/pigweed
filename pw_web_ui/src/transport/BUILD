@@ -19,32 +19,61 @@ load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
 
 
 ts_library(
-    name = "transport_lib",
+    name = "device_transport_lib",
     srcs = [
-        "web_serial_transport.ts",
+        "device_transport.ts",
     ],
-    deps = [],
+    deps = [
+        "@npm//rxjs",
+    ],
 )
 
 ts_library(
-    name = "transport_lib_test",
+    name = "serial_mock_lib",
+    srcs = [
+        "serial_mock.ts",
+    ],
+    deps = [
+        "//pw_web_ui/types:serial_lib",
+        "@npm//jasmine",
+        "@npm//@types/jasmine",
+        "@npm//rxjs",
+    ],
+)
+
+ts_library(
+    name = "web_serial_transport_lib",
+    srcs = [
+        "web_serial_transport.ts",
+    ],
+    deps = [
+        ":device_transport_lib",
+        "//pw_web_ui/types:serial_lib",
+        "@npm//rxjs",
+    ],
+)
+
+ts_library(
+    name = "web_serial_transport_lib_test",
     testonly = True,
     srcs = [
         "web_serial_transport_test.ts",
     ],
     deps = [
-        ":transport_lib",
+        ":serial_mock_lib",
+        ":web_serial_transport_lib",
         "@npm//jasmine",
         "@npm//@types/jasmine",
+        "@npm//rxjs",
     ],
 )
 
 jasmine_node_test(
     name = "test",
     srcs = [
-        ":transport_lib_test",
+        ":web_serial_transport_lib_test",
     ],
     deps = [
-        ":transport_lib",
+        ":web_serial_transport_lib",
     ],
 )

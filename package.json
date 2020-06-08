@@ -9,6 +9,7 @@
     "@bazel/typescript": "^1.7.0",
     "@types/jasmine": "^3.5.10",
     "jasmine": "^3.5.0",
+    "rxjs": "^6.5.5",
     "typescript": "^3.9.3"
   }
 }
