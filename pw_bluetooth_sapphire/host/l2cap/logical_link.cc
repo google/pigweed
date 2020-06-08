@@ -107,7 +107,10 @@ void LogicalLink::Initialize() {
   }
 }
 
-LogicalLink::~LogicalLink() { ZX_DEBUG_ASSERT(closed_); }
+LogicalLink::~LogicalLink() {
+  bt_log(DEBUG, "l2cap", "LogicalLink destroyed (handle: %#.4x)", handle_);
+  ZX_ASSERT(closed_);
+}
 
 fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
@@ -127,7 +130,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
     return nullptr;
   }
 
-  auto chan = ChannelImpl::CreateFixedChannel(id, fbl::RefPtr(this));
+  auto chan = ChannelImpl::CreateFixedChannel(id, GetWeakPtr());
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -440,7 +443,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
          local_cid, remote_cid);
 
   auto chan =
-      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, fbl::RefPtr(this), dyn_chan->info());
+      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), dyn_chan->info());
   channels_[local_cid] = chan;
   open_cb(std::move(chan));
 }

@@ -214,10 +214,10 @@ class LogicalLink;
 class ChannelImpl : public Channel {
  public:
   static fbl::RefPtr<ChannelImpl> CreateFixedChannel(ChannelId id,
-                                                     fbl::RefPtr<internal::LogicalLink> link);
+                                                     fxl::WeakPtr<internal::LogicalLink> link);
 
   static fbl::RefPtr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
-                                                       fbl::RefPtr<internal::LogicalLink> link,
+                                                       fxl::WeakPtr<internal::LogicalLink> link,
                                                        ChannelInfo info);
 
   // Called by |link_| to notify us when the channel can no longer process data.
@@ -243,7 +243,7 @@ class ChannelImpl : public Channel {
  private:
   friend class fbl::RefPtr<ChannelImpl>;
 
-  ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
+  ChannelImpl(ChannelId id, ChannelId remote_id, fxl::WeakPtr<internal::LogicalLink> link,
               ChannelInfo info);
   ~ChannelImpl() override = default;
 
@@ -263,7 +263,7 @@ class ChannelImpl : public Channel {
   // because when a LogicalLink is torn down, it will notify all of its
   // associated channels by calling OnLinkClosed() which sets |link_| to
   // nullptr.
-  fbl::RefPtr<internal::LogicalLink> link_ __TA_GUARDED(mtx_);
+  fxl::WeakPtr<internal::LogicalLink> link_ __TA_GUARDED(mtx_);
 
   // The engine which processes received PDUs, and converts them to SDUs for
   // upper layers.

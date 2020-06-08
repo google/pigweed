@@ -2413,6 +2413,32 @@ TEST_F(L2CAP_ChannelManagerTest, ConnParamUpdateRequestRejected) {
   EXPECT_FALSE(accepted.value());
 }
 
+TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+  auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
+  ASSERT_TRUE(link);
+
+  bool closed = false;
+  auto closed_cb = [&] { closed = true; };
+
+  auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1, closed_cb);
+  ASSERT_TRUE(chan);
+  ASSERT_FALSE(closed);
+
+  TearDown();  // Destroys channel manager
+  RunLoopUntilIdle();
+  EXPECT_TRUE(closed);
+  // If link is still valid, there may be a memory leak.
+  EXPECT_FALSE(link);
+
+  // If the above fails, check if the channel was holding a strong reference to the link.
+  chan = nullptr;
+  RunLoopUntilIdle();
+  EXPECT_TRUE(closed);
+  EXPECT_FALSE(link);
+}
+
 }  // namespace
 }  // namespace l2cap
 }  // namespace bt

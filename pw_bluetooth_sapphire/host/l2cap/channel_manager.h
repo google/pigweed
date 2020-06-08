@@ -173,6 +173,12 @@ class ChannelManager final {
                                         hci::LEPreferredConnectionParameters params,
                                         ConnectionParameterUpdateRequestCallback request_cb);
 
+  // Returns a pointer to the internal LogicalLink with the corresponding link |handle|, or nullptr
+  // if none exists.
+  // NOTE: This is intended ONLY for unit tests. Clients should use the other public methods to
+  // interact with the link.
+  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(hci::ConnectionHandle handle);
+
  private:
   // Called when an ACL data packet is received from the controller. This method
   // is responsible for routing the packet to the corresponding LogicalLink.

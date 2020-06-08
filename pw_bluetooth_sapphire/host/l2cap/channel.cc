@@ -4,6 +4,7 @@
 
 #include "channel.h"
 
+#include <lib/async/default.h>
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 
@@ -36,7 +37,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 namespace internal {
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
-                                                         fbl::RefPtr<internal::LogicalLink> link) {
+                                                         fxl::WeakPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
   return fbl::AdoptRef(
@@ -44,13 +45,13 @@ fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
 }
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
-                                                           fbl::RefPtr<internal::LogicalLink> link,
+                                                           fxl::WeakPtr<internal::LogicalLink> link,
                                                            ChannelInfo info) {
   return fbl::AdoptRef(new ChannelImpl(id, peer_id, link, info));
 }
 
-ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal::LogicalLink> link,
-                         ChannelInfo info)
+ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
+                         fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       dispatcher_(nullptr),
@@ -66,8 +67,10 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
                                             : FrameCheckSequenceOption::kNoFcs;
   auto send_cb = [rid = remote_id, link, fcs_option](auto pdu) {
     async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
-      // |link| is expected to ignore this call and drop the packet if it has been closed.
-      link->SendFrame(rid, *pdu, fcs_option);
+      if (link) {
+        // |link| is expected to ignore this call and drop the packet if it has been closed.
+        link->SendFrame(rid, *pdu, fcs_option);
+      }
     });
   };
 
@@ -83,9 +86,11 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, fbl::RefPtr<internal
       // Deactivate, so even without taking |mutex_| we know that the channel is active. However,
       // this may be called from a locked context in HandleRxPdu, so defer the signal to after the
       // critical section so that we don't deadlock when removing this channel.
-      async::PostTask(link->dispatcher(), [link] {
-        // |link| is expected to ignore this call if it has been closed.
-        link->SignalError();
+      async::PostTask(async_get_default_dispatcher(), [link] {
+        if (link) {
+          // |link| is expected to ignore this call if it has been closed.
+          link->SignalError();
+        }
       });
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
@@ -153,6 +158,7 @@ bool ChannelImpl::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback cl
 
 void ChannelImpl::Deactivate() {
   std::lock_guard lock(mtx_);
+  bt_log(TRACE, "l2cap", "deactivating channel (link: %#.4x, id: %#.4x)", link_handle(), id());
 
   // De-activating on a closed link has no effect.
   if (!link_ || !active_) {
@@ -169,8 +175,10 @@ void ChannelImpl::Deactivate() {
 
   // Tell the link to release this channel on its thread.
   async::PostTask(link_->dispatcher(), [this, link = link_] {
-    // |link| is expected to ignore this call if it has been closed.
-    link->RemoveChannel(this);
+    if (link) {
+      // |link| is expected to ignore this call if it has been closed.
+      link->RemoveChannel(this);
+    }
   });
 
   link_ = nullptr;
@@ -183,9 +191,11 @@ void ChannelImpl::SignalLinkError() {
   if (!link_ || !active_)
     return;
 
-  async::PostTask(link_->dispatcher(), [link = link_] {
-    // |link| is expected to ignore this call if it has been closed.
-    link->SignalError();
+  async::PostTask(async_get_default_dispatcher(), [link = link_] {
+    if (link) {
+      // |link| is expected to ignore this call if it has been closed.
+      link->SignalError();
+    }
   });
 }
 
@@ -221,7 +231,9 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
 
   async::PostTask(link_->dispatcher(),
                   [link = link_, level, callback = std::move(callback), dispatcher]() mutable {
-                    link->UpgradeSecurity(level, std::move(callback), dispatcher);
+                    if (link) {
+                      link->UpgradeSecurity(level, std::move(callback), dispatcher);
+                    }
                   });
 }
 
@@ -231,6 +243,7 @@ void ChannelImpl::OnClosed() {
 
   {
     std::lock_guard lock(mtx_);
+    bt_log(TRACE, "l2cap", "channel closed (link: %#.4x, id: %#.4x)", link_handle(), id());
 
     if (!link_ || !active_) {
       link_ = nullptr;
@@ -243,6 +256,8 @@ void ChannelImpl::OnClosed() {
     active_ = false;
     link_ = nullptr;
     dispatcher_ = nullptr;
+    rx_engine_ = nullptr;
+    tx_engine_ = nullptr;
   }
 
   RunOrPost(std::move(task), dispatcher);

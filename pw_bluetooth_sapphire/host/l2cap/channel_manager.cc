@@ -169,6 +169,15 @@ void ChannelManager::RequestConnectionParameterUpdate(
   iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb));
 }
 
+fxl::WeakPtr<internal::LogicalLink> ChannelManager::LogicalLinkForTesting(
+    hci::ConnectionHandle handle) {
+  auto iter = ll_map_.find(handle);
+  if (iter == ll_map_.end()) {
+    return nullptr;
+  }
+  return iter->second->GetWeakPtr();
+}
+
 // Called when an ACL data packet is received from the controller. This method
 // is responsible for routing the packet to the corresponding LogicalLink.
 void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
