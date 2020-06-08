@@ -196,6 +196,7 @@ def cipd_versions(ctx: DoctorContext):
         return  # This case is handled elsewhere.
 
     versions_path = root.joinpath('.cipd', 'pigweed', '.versions')
+    # Deliberately not checking luci.json--it's not required to be up-to-date.
     json_path = root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
                               'cipd_setup', 'pigweed.json')
 
