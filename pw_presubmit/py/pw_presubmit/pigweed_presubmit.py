@@ -200,6 +200,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bgo.(mod|sum)$',
     r'\bpackage.json$',
     r'\byarn.lock$',
+    r'\bpw_web_ui/types/serial.d.ts$',
 )
 
 
