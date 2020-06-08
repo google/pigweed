@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Sequence
+from typing import Sequence, IO, Tuple, Optional
 
 try:
     import pw_presubmit
@@ -157,8 +157,12 @@ def clang_tidy(ctx: PresubmitContext):
         *ctx.paths)
 
 
-COPYRIGHT_FIRST_LINE = re.compile(
-    r'^(#|//| \*|REM|::) Copyright 20\d\d The Pigweed Authors$')
+# The first line must be regex because of the '20\d\d' date
+COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The Pigweed Authors'
+COPYRIGHT_COMMENTS = r'(#|//| \*|REM|::)'
+COPYRIGHT_BLOCK_COMMENTS = (
+    # HTML comments
+    (r'<!--', r'-->'), )
 
 COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
     '#!',
@@ -170,18 +174,18 @@ COPYRIGHT_FIRST_LINE_EXCEPTIONS = (
 
 COPYRIGHT_LINES = tuple("""\
 
- Licensed under the Apache License, Version 2.0 (the "License"); you may not
- use this file except in compliance with the License. You may obtain a copy of
- the License at
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
 
-     https://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- License for the specific language governing permissions and limitations under
- the License.
-""".splitlines(True))
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+""".splitlines())
 
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'^(?:.+/)?\..+$',
@@ -204,39 +208,83 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
 )
 
 
+def match_block_comment_start(line: str) -> Optional[str]:
+    """Matches the start of a block comment and returns the end."""
+    for block_comment in COPYRIGHT_BLOCK_COMMENTS:
+        if re.match(block_comment[0], line):
+            # Return the end of the block comment
+            return block_comment[1]
+    return None
+
+
+def copyright_read_first_line(
+        file: IO) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Reads the file until it reads a valid first copyright line.
+
+    Returns (comment, block_comment, line). comment and block_comment are
+    mutually exclusive and refer to the comment character sequence and whether
+    they form a block comment or a line comment. line is the first line of
+    the copyright, and is used for error reporting.
+    """
+    line = file.readline()
+    first_line_matcher = re.compile(COPYRIGHT_COMMENTS + ' ' +
+                                    COPYRIGHT_FIRST_LINE)
+    while line:
+        end_block_comment = match_block_comment_start(line)
+        if end_block_comment:
+            next_line = file.readline()
+            copyright_line = re.match(COPYRIGHT_FIRST_LINE, next_line)
+            if not copyright_line:
+                return (None, None, line)
+            return (None, end_block_comment, line)
+
+        first_line = first_line_matcher.match(line)
+        if first_line:
+            return (first_line.group(1), None, line)
+
+        if (line.strip()
+                and not line.startswith(COPYRIGHT_FIRST_LINE_EXCEPTIONS)):
+            return (None, None, line)
+
+        line = file.readline()
+    return (None, None, None)
+
+
 @filter_paths(exclude=_EXCLUDE_FROM_COPYRIGHT_NOTICE)
 def copyright_notice(ctx: PresubmitContext):
     """Checks that the Pigweed copyright notice is present."""
-
     errors = []
 
     for path in ctx.paths:
         _LOG.debug('Checking %s', path)
         with open(path) as file:
-            line = file.readline()
-            first_line = None
-            while line:
-                first_line = COPYRIGHT_FIRST_LINE.match(line)
-                if first_line:
-                    break
+            (comment, end_block_comment,
+             line) = copyright_read_first_line(file)
 
-                if (line.strip() and
-                        not line.startswith(COPYRIGHT_FIRST_LINE_EXCEPTIONS)):
-                    break
+            if not line:
+                _LOG.debug('%s: invalid first line', path)
+                errors.append(path)
+                continue
 
-                line = file.readline()
-
-            if not first_line:
+            if not (comment or end_block_comment):
                 _LOG.debug('%s: invalid first line %r', path, line)
                 errors.append(path)
                 continue
 
-            comment = first_line.group(1)
+            if end_block_comment:
+                expected_lines = COPYRIGHT_LINES + (end_block_comment, )
+            else:
+                expected_lines = COPYRIGHT_LINES
 
-            for expected, actual in zip(COPYRIGHT_LINES, file):
-                if comment + expected != actual:
+            for expected, actual in zip(expected_lines, file):
+                if end_block_comment:
+                    expected_line = expected + '\n'
+                elif comment:
+                    expected_line = (comment + ' ' + expected).rstrip() + '\n'
+
+                if expected_line != actual:
                     _LOG.debug('  bad line: %r', actual)
-                    _LOG.debug('  expected: %r', comment + expected)
+                    _LOG.debug('  expected: %r', expected_line)
                     errors.append(path)
                     break
 
