@@ -12,31 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-{
-  "compilerOptions": {
-    "target": "es5",
-    "downlevelIteration": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "jsx": "react",
-    "sourceMap": true,
-    "plugins": [
-      {
-        "name": "@bazel/tsetse",
-        "disabledRules": [
-          "must-use-promises"
-        ]
-      }
-    ]
-  },
-}
+import { Observable, BehaviorSubject } from "rxjs";
+
+
+export default interface DeviceTransport {
+  chunks: Observable<Uint8Array>;
+  connected: BehaviorSubject<boolean>;
+  sendChunk(chunk: Uint8Array): Promise<void>;
+};

@@ -12,16 +12,77 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import 'jasmine';
 import { WebSerialTransport } from './web_serial_transport';
+import { SerialMock } from './serial_mock';
+import { take, last } from 'rxjs/operators';
 
 
 describe('WebSerialTransport', () => {
+  let serialMock: SerialMock;
+  beforeEach(() => {
+    serialMock = new SerialMock();
+  });
 
-  it('tests stuff correctly', () => {
-    // This is currently a dummy test used to test the
-    // test system.
-    const transport = new WebSerialTransport();
-    expect(transport.foo).toEqual('foo');
+  it('is disconnected before connecting', () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    expect(transport.connected.getValue()).toBeFalse();
+  });
+
+  it('reports that it has connected', async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+    expect(serialMock.serialPort.open).toHaveBeenCalled();
+    expect(transport.connected.getValue()).toBeTrue();
+  });
+
+  it('emits chunks as they arrive from the device', async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+    const data = new Uint8Array([1, 2, 3]);
+    const emitted = transport.chunks.pipe(take(1)).toPromise();
+    serialMock.dataFromDevice(data);
+
+    expect(await emitted).toEqual(data);
+    expect(transport.connected.getValue()).toBeTrue();
+    expect(serialMock.serialPort.readable.locked).toBeTrue();
+    expect(serialMock.serialPort.writable.locked).toBeTrue();
+  });
+
+  it('stops reading when it reaches the final chunk', async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+    const closePromise = transport.connected.pipe(take(2), last()).toPromise();
+    serialMock.closeFromDevice();
+
+    expect(await closePromise).toBeFalse();
+  });
+
+  it('waits for the writer to be ready', async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+    const data = new Uint8Array([1, 2, 3]);
+
+    const dataToDevice = serialMock.dataToDevice.pipe(take(1)).toPromise();
+
+    let writtenData: Uint8Array | undefined = undefined;
+    dataToDevice.then((data) => {
+      writtenData = data;
+    });
+
+    const sendPromise = transport.sendChunk(data);
+    expect(writtenData).toBeUndefined();
+    await sendPromise;
+    expect(writtenData).toBeDefined();
+  });
+
+  it('sends chunks to the device', async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+    const data = new Uint8Array([1, 2, 3]);
+
+    const dataToDevice = serialMock.dataToDevice.pipe(take(1)).toPromise();
+
+    await transport.sendChunk(data);
+    expect(await dataToDevice).toEqual(data);
   });
 });

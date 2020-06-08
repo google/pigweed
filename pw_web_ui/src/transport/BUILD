@@ -16,7 +16,8 @@ package(default_visibility = ["//visibility:public"])
 
 load("@npm_bazel_typescript//:index.bzl", "ts_library")
 load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
-
+load("//pw_web_ui:web_bundle.bzl", "web_bundle")
+load("@npm_bazel_karma//:index.bzl", "karma_web_test")
 
 ts_library(
     name = "device_transport_lib",
@@ -55,7 +56,6 @@ ts_library(
 
 ts_library(
     name = "web_serial_transport_lib_test",
-    testonly = True,
     srcs = [
         "web_serial_transport_test.ts",
     ],
@@ -68,12 +68,18 @@ ts_library(
     ],
 )
 
-jasmine_node_test(
-    name = "test",
-    srcs = [
+web_bundle(
+    name = "web_serial_transport_lib_test_bundle",
+    deps = [
         ":web_serial_transport_lib_test",
     ],
-    deps = [
-        ":web_serial_transport_lib",
+    entry_point = "web_serial_transport_test.ts",
+)
+
+
+karma_web_test(
+    name = "web_test",
+    srcs = [
+        ":web_serial_transport_lib_test_bundle"
     ],
 )

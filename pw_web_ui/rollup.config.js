@@ -12,31 +12,21 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-{
-  "compilerOptions": {
-    "target": "es5",
-    "downlevelIteration": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "jsx": "react",
-    "sourceMap": true,
-    "plugins": [
-      {
-        "name": "@bazel/tsetse",
-        "disabledRules": [
-          "must-use-promises"
-        ]
-      }
-    ]
-  },
+import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import builtins from 'rollup-plugin-node-builtins';
+import nodeGlobals from 'rollup-plugin-node-globals';
+import sourcemaps from 'rollup-plugin-sourcemaps'
+
+export default {
+  plugins:
+      [
+        resolve({
+          browser: true,
+        }),
+        commonjs(),
+        builtins(),
+        nodeGlobals(),
+        sourcemaps(),
+      ]
 }

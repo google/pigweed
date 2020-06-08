@@ -25,8 +25,8 @@ http_archive(
     urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.6.0/rules_nodejs-1.6.0.tar.gz"],
 )
 
+# Get the latest LTS version of Node
 load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories")
-
 node_repositories(package_json = ["//:package.json"])
 
 # Install packages with yarn
@@ -42,6 +42,21 @@ load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
 install_bazel_dependencies()
 
 
-# Setup TypeScript
+# Set up TypeScript
 load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
 ts_setup_workspace()
+
+# Set up Karma
+load("@npm_bazel_karma//:package.bzl", "npm_bazel_karma_dependencies")
+npm_bazel_karma_dependencies()
+
+load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+web_test_repositories()
+
+load("@io_bazel_rules_webtesting//web/versioned:browsers-0.3.2.bzl", "browser_repositories")
+
+browser_repositories(
+    chromium = True,
+    firefox = True,
+)
+
