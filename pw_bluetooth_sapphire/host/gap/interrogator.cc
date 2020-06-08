@@ -134,7 +134,7 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
   };
 
   bt_log(TRACE, "gap", "asking for version info (peer id: %s)", bt_str(interrogation->peer_id()));
-  hci()->command_channel()->SendCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
+  hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
                                         hci::kReadRemoteVersionInfoCompleteEventCode);
 }
 

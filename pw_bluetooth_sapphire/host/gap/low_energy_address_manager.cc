@@ -129,8 +129,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     ResolveAddressRequests();
   };
 
-  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
-                                       std::move(cmd_complete_cb));
+  hci_->command_channel()->SendCommand(std::move(cmd), std::move(cmd_complete_cb));
 }
 
 void LowEnergyAddressManager::CleanUpPrivacyState() {

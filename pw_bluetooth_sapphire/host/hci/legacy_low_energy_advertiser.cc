@@ -266,8 +266,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
                                std::move(staged_params.callback));
     };
 
-    hci_->command_channel()->SendCommand(BuildReadAdvertisingTxPower(),
-                                         async_get_default_dispatcher(), std::move(power_cb));
+    hci_->command_channel()->SendCommand(BuildReadAdvertisingTxPower(), std::move(power_cb));
     return;
   }
 

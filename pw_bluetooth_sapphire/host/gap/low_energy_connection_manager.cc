@@ -482,14 +482,12 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   conn_update_cmpl_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      hci::kLEConnectionUpdateCompleteSubeventCode,
-      [self](const auto& event) {
+      hci::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
         if (self) {
           return self->OnLEConnectionUpdateComplete(event);
         }
         return hci::CommandChannel::EventCallbackResult::kRemove;
-      },
-      dispatcher_);
+      });
 }
 
 LowEnergyConnectionManager::~LowEnergyConnectionManager() {
@@ -1189,8 +1187,8 @@ void LowEnergyConnectionManager::UpdateConnectionParams(
     }
   };
 
-  hci_->command_channel()->SendCommand(std::move(command), dispatcher_,
-                                       std::move(status_cb_wrapper), hci::kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(command), std::move(status_cb_wrapper),
+                                       hci::kCommandStatusEventCode);
 }
 
 void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(

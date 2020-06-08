@@ -98,7 +98,7 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
 
   bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)",
          bt_str(interrogation->peer_id()));
-  hci()->command_channel()->SendExclusiveCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
+  hci()->command_channel()->SendExclusiveCommand(std::move(packet), std::move(cmd_cb),
                                                  hci::kRemoteNameRequestCompleteEventCode,
                                                  {hci::kInquiry});
 }
@@ -147,7 +147,7 @@ void BrEdrInterrogator::ReadRemoteFeatures(InterrogationRefPtr interrogation) {
 
   bt_log(TRACE, "gap-bredr", "asking for supported features (peer id: %s)",
          bt_str(interrogation->peer_id()));
-  hci()->command_channel()->SendCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
+  hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
                                         hci::kReadRemoteSupportedFeaturesCompleteEventCode);
 }
 
@@ -209,7 +209,7 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
 
   bt_log(TRACE, "gap-bredr", "requesting extended features page %u (peer id: %s)", page,
          bt_str(interrogation->peer_id()));
-  hci()->command_channel()->SendCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
+  hci()->command_channel()->SendCommand(std::move(packet), std::move(cmd_cb),
                                         hci::kReadRemoteExtendedFeaturesCompleteEventCode);
 }  // namespace gap
 

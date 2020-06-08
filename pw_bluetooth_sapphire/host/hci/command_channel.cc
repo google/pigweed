@@ -39,23 +39,20 @@ CommandChannel::TransactionData::TransactionData(TransactionId id, OpCode opcode
                                                  EventCode complete_event_code,
                                                  std::optional<EventCode> subevent_code,
                                                  std::unordered_set<OpCode> exclusions,
-                                                 CommandCallback callback,
-                                                 async_dispatcher_t* dispatcher)
+                                                 CommandCallback callback)
     : id_(id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
       subevent_code_(subevent_code),
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
-      dispatcher_(dispatcher),
       handler_id_(0u) {
   ZX_DEBUG_ASSERT(id != 0u);
-  ZX_DEBUG_ASSERT(dispatcher_);
   exclusions_.insert(opcode_);
 }
 
 CommandChannel::TransactionData::~TransactionData() {
-  if (!callback_ || !dispatcher_) {
+  if (!callback_) {
     return;
   }
 
@@ -88,7 +85,7 @@ void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> even
   if (!callback_) {
     return;
   }
-  async::PostTask(dispatcher_,
+  async::PostTask(async_get_default_dispatcher(),
                   [event = std::move(event), callback = std::move(callback_),
                    transaction_id = id_]() mutable { callback(transaction_id, *event); });
   callback_ = nullptr;
@@ -182,40 +179,37 @@ void CommandChannel::ShutDownInternal() {
 }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
-    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
-    CommandCallback callback, const EventCode complete_event_code) {
-  return SendExclusiveCommand(std::move(command_packet), dispatcher, std::move(callback),
-                              complete_event_code);
+    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    const EventCode complete_event_code) {
+  return SendExclusiveCommand(std::move(command_packet), std::move(callback), complete_event_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
-    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
-    CommandCallback callback, EventCode le_meta_subevent_code) {
-  return SendLeAsyncExclusiveCommand(std::move(command_packet), dispatcher, std::move(callback),
+    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    EventCode le_meta_subevent_code) {
+  return SendLeAsyncExclusiveCommand(std::move(command_packet), std::move(callback),
                                      le_meta_subevent_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
-    CommandCallback callback, const EventCode complete_event_code,
-    std::unordered_set<OpCode> exclusions) {
-  return SendExclusiveCommandInternal(std::move(command_packet), dispatcher, std::move(callback),
+    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    const EventCode complete_event_code, std::unordered_set<OpCode> exclusions) {
+  return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
                                       complete_event_code, std::nullopt, std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
-    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
-    CommandCallback callback, std::optional<EventCode> le_meta_subevent_code,
-    std::unordered_set<OpCode> exclusions) {
-  return SendExclusiveCommandInternal(std::move(command_packet), dispatcher, std::move(callback),
+    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    std::optional<EventCode> le_meta_subevent_code, std::unordered_set<OpCode> exclusions) {
+  return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
                                       hci::kLEMetaEventCode, le_meta_subevent_code,
                                       std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
-    std::unique_ptr<CommandPacket> command_packet, async_dispatcher_t* dispatcher,
-    CommandCallback callback, const EventCode complete_event_code,
-    std::optional<EventCode> subevent_code, std::unordered_set<OpCode> exclusions) {
+    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    const EventCode complete_event_code, std::optional<EventCode> subevent_code,
+    std::unordered_set<OpCode> exclusions) {
   if (!is_initialized_) {
     bt_log(DEBUG, "hci", "can't send commands while uninitialized");
     return 0u;
@@ -250,9 +244,9 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   TransactionId id = next_transaction_id_++;
-  auto data = std::make_unique<TransactionData>(id, command_packet->opcode(), complete_event_code,
-                                                subevent_code, std::move(exclusions),
-                                                std::move(callback), dispatcher);
+  auto data =
+      std::make_unique<TransactionData>(id, command_packet->opcode(), complete_event_code,
+                                        subevent_code, std::move(exclusions), std::move(callback));
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 
@@ -293,8 +287,7 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_code,
-                                                               EventCallback event_callback,
-                                                               async_dispatcher_t* dispatcher) {
+                                                               EventCallback event_callback) {
   if (event_code == kCommandStatusEventCode || event_code == kCommandCompleteEventCode ||
       event_code == kLEMetaEventCode) {
     return 0u;
@@ -308,14 +301,13 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_c
     return 0u;
   }
 
-  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp, std::move(event_callback),
-                            dispatcher);
+  auto id = NewEventHandler(event_code, false /* is_le_meta */, kNoOp, std::move(event_callback));
   event_code_handlers_.emplace(event_code, id);
   return id;
 }
 
-CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    EventCode subevent_code, EventCallback event_callback, async_dispatcher_t* dispatcher) {
+CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(EventCode subevent_code,
+                                                                     EventCallback event_callback) {
   std::lock_guard<std::mutex> lock(event_handler_mutex_);
 
   auto* handler = FindLEMetaEventHandler(subevent_code);
@@ -326,8 +318,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
     return 0u;
   }
 
-  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp, std::move(event_callback),
-                            dispatcher);
+  auto id = NewEventHandler(subevent_code, true /* is_le_meta */, kNoOp, std::move(event_callback));
   subevent_code_handlers_.emplace(subevent_code, id);
   return id;
 }
@@ -483,8 +474,7 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   }
 
   // The handler hasn't been added yet.
-  EventHandlerId id =
-      NewEventHandler(code, is_le_meta, data->opcode(), data->MakeCallback(), data->dispatcher());
+  EventHandlerId id = NewEventHandler(code, is_le_meta, data->opcode(), data->MakeCallback());
 
   ZX_ASSERT(id != 0u);
   data->set_handler_id(id);
@@ -495,11 +485,9 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
 CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_code,
                                                                bool is_le_meta,
                                                                OpCode pending_opcode,
-                                                               EventCallback event_callback,
-                                                               async_dispatcher_t* dispatcher) {
+                                                               EventCallback event_callback) {
   ZX_DEBUG_ASSERT(event_code);
   ZX_DEBUG_ASSERT(event_callback);
-  ZX_DEBUG_ASSERT(dispatcher);
 
   auto id = next_event_handler_id_++;
   EventHandlerData data;
@@ -507,7 +495,6 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(EventCode event_c
   data.event_code = event_code;
   data.pending_opcode = pending_opcode;
   data.event_callback = std::move(event_callback);
-  data.dispatcher = dispatcher;
   data.is_le_meta_subevent = is_le_meta;
 
   bt_log(TRACE, "hci", "adding event handler %zu for %sevent code %#.2x", id,
@@ -583,7 +570,6 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   struct PendingCallback {
     EventCallback callback;
     EventHandlerId id;
-    async_dispatcher_t* dispatcher;
   };
   std::vector<PendingCallback> pending_callbacks;
 
@@ -620,7 +606,6 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       ZX_DEBUG_ASSERT(handler.event_code == event_code);
 
       EventCallback callback = handler.event_callback.share();
-      async_dispatcher_t* const dispatcher = handler.dispatcher;
 
       ++iter;  // Advance so we don't point to an invalid iterator.
 
@@ -631,7 +616,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
         RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
       }
 
-      pending_callbacks.push_back({std::move(callback), event_id, dispatcher});
+      pending_callbacks.push_back({std::move(callback), event_id});
     }
   }
 
@@ -651,20 +636,16 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       event->view().data().Copy(&buf);
     }
 
-    ExecuteEventCallback(std::move(it->callback), it->id, std::move(ev), it->dispatcher);
+    ExecuteEventCallback(std::move(it->callback), it->id, std::move(ev));
   }
 }
 
 void CommandChannel::ExecuteEventCallback(EventCallback cb, EventHandlerId id,
-                                          std::unique_ptr<EventPacket> event,
-                                          async_dispatcher_t* dispatcher) {
-  auto task = [this, cb = std::move(cb), id, ev = std::move(event)]() {
-    auto result = cb(*ev);
-    if (result == EventCallbackResult::kRemove) {
-      RemoveEventHandler(id);
-    }
-  };
-  RunOrPost(std::move(task), dispatcher);
+                                          std::unique_ptr<EventPacket> event) {
+  auto result = cb(*event);
+  if (result == EventCallbackResult::kRemove) {
+    RemoveEventHandler(id);
+  }
 }
 
 void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait,

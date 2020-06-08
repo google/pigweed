@@ -78,8 +78,7 @@ void BrEdrConnectionRequest::CreateConnection(
 
   auto packet = CreateConnectionPacket(peer_address_, page_scan_repetition_mode, clock_offset);
 
-  command_channel->SendCommand(std::move(packet), dispatcher, std::move(complete_cb),
-                               kCommandStatusEventCode);
+  command_channel->SendCommand(std::move(packet), std::move(complete_cb), kCommandStatusEventCode);
 }
 
 // Status is either a Success or an Error value

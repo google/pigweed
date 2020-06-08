@@ -51,11 +51,11 @@ TEST_F(HCI_TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosed
   };
 
   auto packet = CommandPacket::New(kReset);
-  id1 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  id1 = cmd_channel()->SendCommand(std::move(packet), cb);
   ASSERT_NE(0u, id1);
 
   packet = CommandPacket::New(kReset);
-  id2 = cmd_channel()->SendCommand(std::move(packet), dispatcher(), cb);
+  id2 = cmd_channel()->SendCommand(std::move(packet), cb);
   ASSERT_NE(0u, id2);
 
   // Run the loop until the command timeout task gets scheduled.

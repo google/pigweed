@@ -32,7 +32,7 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
                         async_dispatcher_t* dispatcher, hci::StatusCallback cb) {
   ZX_DEBUG_ASSERT(cb);
   auto read_enable = hci::CommandPacket::New(hci::kReadScanEnable);
-  auto finish_enable_cb = [enabled, dispatcher, hci, finish_cb = std::move(cb)](
+  auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
                               auto, const hci::EventPacket& event) mutable {
     if (hci_is_error(event, WARN, "gap-bredr", "read scan enable failed")) {
       finish_cb(event.ToStatus());
@@ -50,11 +50,10 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
         hci::CommandPacket::New(hci::kWriteScanEnable, sizeof(hci::WriteScanEnableCommandParams));
     write_enable->mutable_payload<hci::WriteScanEnableCommandParams>()->scan_enable = scan_type;
     hci->command_channel()->SendCommand(
-        std::move(write_enable), dispatcher,
+        std::move(write_enable),
         [cb = std::move(finish_cb)](auto, const hci::EventPacket& event) { cb(event.ToStatus()); });
   };
-  hci->command_channel()->SendCommand(std::move(read_enable), dispatcher,
-                                      std::move(finish_enable_cb));
+  hci->command_channel()->SendCommand(std::move(read_enable), std::move(finish_enable_cb));
 }
 
 }  // namespace
@@ -111,14 +110,12 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci::EventCode& code, hci::CommandChannel::EventCallback cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto event_id = hci_->command_channel()->AddEventHandler(
-      code,
-      [self, callback = std::move(cb)](const auto& event) {
+      code, [self, callback = std::move(cb)](const auto& event) {
         if (self) {
           return callback(event);
         }
         return hci::CommandChannel::EventCallbackResult::kRemove;
-      },
-      dispatcher_);
+      });
   ZX_DEBUG_ASSERT(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
@@ -556,8 +553,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
     accept_params->bd_addr = params.bd_addr;
     accept_params->role = hci::ConnectionRole::kMaster;
 
-    hci_->command_channel()->SendCommand(std::move(accept), dispatcher_, nullptr,
-                                         hci::kCommandStatusEventCode);
+    hci_->command_channel()->SendCommand(std::move(accept), nullptr, hci::kCommandStatusEventCode);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -570,8 +566,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   reject_params->bd_addr = params.bd_addr;
   reject_params->reason = hci::StatusCode::kConnectionRejectedBadBdAddr;
 
-  hci_->command_channel()->SendCommand(std::move(reject), dispatcher_, nullptr,
-                                       hci::kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(reject), nullptr, hci::kCommandStatusEventCode);
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -996,10 +991,9 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress add
                                         sizeof(hci::CreateConnectionCancelCommandParams));
   auto params = cancel->mutable_payload<hci::CreateConnectionCancelCommandParams>();
   params->bd_addr = addr.value();
-  hci_->command_channel()->SendCommand(
-      std::move(cancel), dispatcher_, [](auto, const hci::EventPacket& event) {
-        hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
-      });
+  hci_->command_channel()->SendCommand(std::move(cancel), [](auto, const hci::EventPacket& event) {
+    hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
+  });
 }
 
 void BrEdrConnectionManager::SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
@@ -1073,8 +1067,7 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
       cb(event.ToStatus());
     };
   }
-  hci_->command_channel()->SendCommand(std::move(command_packet), dispatcher_,
-                                       std::move(command_cb));
+  hci_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
 }
 
 bool BrEdrConnectionManager::InitiatesPairing(PeerId peer_id, BrEdrConnection* connection,
@@ -1087,7 +1080,7 @@ bool BrEdrConnectionManager::InitiatesPairing(PeerId peer_id, BrEdrConnection* c
     auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()->connection_handle =
         htole16(handle);
     bt_log(TRACE, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
-    hci_->command_channel()->SendCommand(std::move(auth_request), dispatcher_, nullptr);
+    hci_->command_channel()->SendCommand(std::move(auth_request), nullptr);
     return true;
   }
   return false;

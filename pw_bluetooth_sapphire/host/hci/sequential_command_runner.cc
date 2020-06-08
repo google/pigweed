@@ -107,7 +107,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Status status) {
   };
 
   running_commands_++;
-  if (!transport_->command_channel()->SendCommand(std::move(next.packet), dispatcher_,
+  if (!transport_->command_channel()->SendCommand(std::move(next.packet),
                                                   std::move(command_callback))) {
     NotifyStatusAndReset(Status(HostError::kFailed));
   } else {

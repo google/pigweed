@@ -208,8 +208,7 @@ void Adapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback
   write_dev_class->mutable_payload<hci::WriteClassOfDeviceCommandParams>()->class_of_device =
       dev_class;
   hci_->command_channel()->SendCommand(
-      std::move(write_dev_class), dispatcher_,
-      [cb = std::move(callback)](auto, const hci::EventPacket& event) {
+      std::move(write_dev_class), [cb = std::move(callback)](auto, const hci::EventPacket& event) {
         hci_is_error(event, WARN, "gap", "set device class failed");
         cb(event.ToStatus());
       });

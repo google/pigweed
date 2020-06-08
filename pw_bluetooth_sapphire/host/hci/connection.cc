@@ -186,25 +186,22 @@ ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role r
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   enc_change_id_ = hci_->command_channel()->AddEventHandler(
-      kEncryptionChangeEventCode, BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self),
-      async_get_default_dispatcher());
+      kEncryptionChangeEventCode, BindEventHandler<&ConnectionImpl::OnEncryptionChangeEvent>(self));
 
   enc_key_refresh_cmpl_id_ = hci_->command_channel()->AddEventHandler(
       kEncryptionKeyRefreshCompleteEventCode,
-      BindEventHandler<&ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent>(self),
-      async_get_default_dispatcher());
+      BindEventHandler<&ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent>(self));
 
   le_ltk_request_id_ = hci_->command_channel()->AddLEMetaEventHandler(
       kLELongTermKeyRequestSubeventCode,
-      BindEventHandler<&ConnectionImpl::OnLELongTermKeyRequestEvent>(self),
-      async_get_default_dispatcher());
+      BindEventHandler<&ConnectionImpl::OnLELongTermKeyRequestEvent>(self));
 
   auto disconn_complete_handler = [self, handle, hci = hci_](auto& event) {
     return ConnectionImpl::OnDisconnectionComplete(self, handle, hci, event);
   };
 
-  hci_->command_channel()->AddEventHandler(
-      kDisconnectionCompleteEventCode, disconn_complete_handler, async_get_default_dispatcher());
+  hci_->command_channel()->AddEventHandler(kDisconnectionCompleteEventCode,
+                                           disconn_complete_handler);
 
   // Allow packets to be sent on this link immediately.
   hci_->acl_data_channel()->RegisterLink(handle, ll_type);
@@ -283,8 +280,8 @@ void ConnectionImpl::Disconnect(StatusCode reason) {
   bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2x)", handle(), reason);
 
   // Send HCI Disconnect.
-  hci_->command_channel()->SendCommand(std::move(disconn), async_get_default_dispatcher(),
-                                       std::move(status_cb), kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(disconn), std::move(status_cb),
+                                       kCommandStatusEventCode);
 }
 
 bool ConnectionImpl::StartEncryption() {
@@ -344,8 +341,8 @@ bool ConnectionImpl::BrEdrStartEncryption() {
     }
   };
 
-  return hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
-                                              std::move(status_cb), kCommandStatusEventCode) != 0u;
+  return hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb),
+                                              kCommandStatusEventCode) != 0u;
 }
 
 bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
@@ -378,8 +375,8 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
     }
   };
 
-  return hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
-                                              std::move(status_cb), kCommandStatusEventCode) != 0u;
+  return hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb),
+                                              kCommandStatusEventCode) != 0u;
 }
 
 void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
@@ -435,8 +432,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
     valid_cb(status);
   };
 
-  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
-                                       std::move(status_cb));
+  hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb));
 }
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
@@ -561,8 +557,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
   auto status_cb = [](auto id, const EventPacket& event) {
     hci_is_error(event, TRACE, "hci-le", "failed to reply to LTK request");
   };
-  hci_->command_channel()->SendCommand(std::move(cmd), async_get_default_dispatcher(),
-                                       std::move(status_cb));
+  hci_->command_channel()->SendCommand(std::move(cmd), std::move(status_cb));
   return CommandChannel::EventCallbackResult::kContinue;
 }
 

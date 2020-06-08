@@ -71,7 +71,7 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
 
   bt_log(TRACE, "gap-le", "sending LE read remote features command (peer id: %s)",
          bt_str(interrogation->peer_id()));
-  hci()->command_channel()->SendLeAsyncCommand(std::move(packet), dispatcher(), std::move(cmd_cb),
+  hci()->command_channel()->SendLeAsyncCommand(std::move(packet), std::move(cmd_cb),
                                                hci::kLEReadRemoteFeaturesCompleteSubeventCode);
 }
 

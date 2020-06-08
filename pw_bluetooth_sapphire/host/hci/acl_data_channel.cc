@@ -78,12 +78,12 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
 
   num_completed_packets_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       kNumberOfCompletedPacketsEventCode,
-      fit::bind_member(this, &ACLDataChannel::NumberOfCompletedPacketsCallback), io_dispatcher_);
+      fit::bind_member(this, &ACLDataChannel::NumberOfCompletedPacketsCallback));
   ZX_DEBUG_ASSERT(num_completed_packets_event_handler_id_);
 
   data_buffer_overflow_event_handler_id_ = transport_->command_channel()->AddEventHandler(
       kDataBufferOverflowEventCode,
-      fit::bind_member(this, &ACLDataChannel::DataBufferOverflowCallback), io_dispatcher_);
+      fit::bind_member(this, &ACLDataChannel::DataBufferOverflowCallback));
   ZX_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = true;

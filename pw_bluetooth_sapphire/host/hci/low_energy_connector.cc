@@ -22,7 +22,8 @@ LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_add
                                                    StatusCallback status_callback)
     : peer_address(peer_address), status_callback(std::move(status_callback)) {}
 
-LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
+LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
+                                       LocalAddressDelegate* local_addr_delegate,
                                        async_dispatcher_t* dispatcher,
                                        IncomingConnectionDelegate delegate)
     : dispatcher_(dispatcher),
@@ -37,14 +38,12 @@ LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddress
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      kLEConnectionCompleteSubeventCode,
-      [self](const auto& event) {
+      kLEConnectionCompleteSubeventCode, [self](const auto& event) {
         if (self) {
           return self->OnConnectionCompleteEvent(event);
         }
         return CommandChannel::EventCallbackResult::kRemove;
-      },
-      dispatcher_);
+      });
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
@@ -137,8 +136,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     self->request_timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
   };
 
-  hci_->command_channel()->SendCommand(std::move(request), dispatcher_, complete_cb,
-                                       kCommandStatusEventCode);
+  hci_->command_channel()->SendCommand(std::move(request), complete_cb, kCommandStatusEventCode);
 }
 
 void LowEnergyConnector::Cancel() { CancelInternal(false); }
@@ -170,7 +168,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
       hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");
     };
     auto cancel = CommandPacket::New(kLECreateConnectionCancel);
-    hci_->command_channel()->SendCommand(std::move(cancel), dispatcher_, complete_cb);
+    hci_->command_channel()->SendCommand(std::move(cancel), complete_cb);
     return;
   }
 
