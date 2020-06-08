@@ -165,17 +165,11 @@ void CommandChannel::ShutDownInternal() {
 
   // Drop all queued commands and event handlers. Pending HCI commands will be
   // resolved with an "UnspecifiedError" error code upon destruction.
-  {
-    std::lock_guard<std::mutex> lock(send_queue_mutex_);
-    send_queue_ = std::list<QueuedCommand>();
-  }
-  {
-    std::lock_guard<std::mutex> lock(event_handler_mutex_);
-    event_handler_id_map_.clear();
-    event_code_handlers_.clear();
-    subevent_code_handlers_.clear();
-    pending_transactions_.clear();
-  }
+  send_queue_ = std::list<QueuedCommand>();
+  event_handler_id_map_.clear();
+  event_code_handlers_.clear();
+  subevent_code_handlers_.clear();
+  pending_transactions_.clear();
 }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
@@ -220,8 +214,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
                 "only LE Meta Event subevents are supported");
 
   if (IsAsync(complete_event_code)) {
-    std::lock_guard<std::mutex> lock(event_handler_mutex_);
-
     // Cannot send an asynchronous command if there's an external event handler
     // registered for the completion event.
     EventHandlerData* handler = nullptr;
@@ -237,8 +229,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     }
   }
 
-  std::lock_guard<std::mutex> lock(send_queue_mutex_);
-
   if (next_transaction_id_ == 0u) {
     next_transaction_id_++;
   }
@@ -251,7 +241,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   QueuedCommand command(std::move(command_packet), std::move(data));
 
   if (IsAsync(complete_event_code)) {
-    std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
     MaybeAddTransactionHandler(command.data.get());
   }
 
@@ -265,7 +254,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
 
 bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
   ZX_ASSERT(id != 0u);
-  std::lock_guard<std::mutex> lock(send_queue_mutex_);
 
   auto it = std::find_if(send_queue_.begin(), send_queue_.end(),
                          [id](const auto& cmd) { return cmd.data->id() == id; });
@@ -274,7 +262,6 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId id) {
     TransactionData& data = *it->data;
     data.Cancel();
     if (data.handler_id() != 0u) {
-      std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
       RemoveEventHandlerInternal(data.handler_id());
     }
     send_queue_.erase(it);
@@ -293,7 +280,6 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_c
     return 0u;
   }
 
-  std::lock_guard<std::mutex> lock(event_handler_mutex_);
   auto* handler = FindEventHandler(event_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci", "async event handler %zu already registered for event code %#.2x",
@@ -308,8 +294,6 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(EventCode event_c
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(EventCode subevent_code,
                                                                      EventCallback event_callback) {
-  std::lock_guard<std::mutex> lock(event_handler_mutex_);
-
   auto* handler = FindLEMetaEventHandler(subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
@@ -324,8 +308,6 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(EventCode s
 }
 
 void CommandChannel::RemoveEventHandler(EventHandlerId id) {
-  std::lock_guard<std::mutex> lock(event_handler_mutex_);
-
   // If the ID doesn't exist or it is internal. it can't be removed.
   auto iter = event_handler_id_map_.find(id);
   if (iter == event_handler_id_map_.end() || iter->second.is_async()) {
@@ -384,12 +366,8 @@ void CommandChannel::TrySendQueuedCommands() {
     return;
   }
 
-  std::lock_guard<std::mutex> lock(send_queue_mutex_);
-
   // Walk the waiting and see if any are sendable.
   for (auto it = send_queue_.begin(); allowed_command_packets_ > 0 && it != send_queue_.end();) {
-    std::lock_guard<std::mutex> event_lock(event_handler_mutex_);
-
     // Care must be taken not to dangle this reference if its owner QueuedCommand is destroyed.
     const TransactionData& data = *it->data;
 
@@ -533,7 +511,6 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  std::lock_guard<std::mutex> lock(event_handler_mutex_);
   auto it = pending_transactions_.find(matching_opcode);
   if (it == pending_transactions_.end()) {
     bt_log(ERROR, "hci", "update for unexpected opcode: %#.4x", matching_opcode);
@@ -573,51 +550,48 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   };
   std::vector<PendingCallback> pending_callbacks;
 
-  {
-    EventCode event_code;
-    const std::unordered_multimap<EventCode, EventHandlerId>* event_handlers;
-    std::lock_guard<std::mutex> lock(event_handler_mutex_);
+  EventCode event_code;
+  const std::unordered_multimap<EventCode, EventHandlerId>* event_handlers;
 
-    bool is_le_event = false;
-    if (event->event_code() == kLEMetaEventCode) {
-      is_le_event = true;
-      event_code = event->params<LEMetaEventParams>().subevent_code;
-      event_handlers = &subevent_code_handlers_;
-    } else {
-      event_code = event->event_code();
-      event_handlers = &event_code_handlers_;
-    }
+  bool is_le_event = false;
+  if (event->event_code() == kLEMetaEventCode) {
+    is_le_event = true;
+    event_code = event->params<LEMetaEventParams>().subevent_code;
+    event_handlers = &subevent_code_handlers_;
+  } else {
+    event_code = event->event_code();
+    event_handlers = &event_code_handlers_;
+  }
 
-    auto range = event_handlers->equal_range(event_code);
-    if (range.first == range.second) {
-      bt_log(DEBUG, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
+  auto range = event_handlers->equal_range(event_code);
+  if (range.first == range.second) {
+    bt_log(DEBUG, "hci", "%sevent %#.2x received with no handler", (is_le_event ? "LE " : ""),
+           event_code);
+    return;
+  }
+
+  auto iter = range.first;
+  while (iter != range.second) {
+    EventHandlerId event_id = iter->second;
+    bt_log(TRACE, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
+    auto handler_iter = event_handler_id_map_.find(event_id);
+    ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
+
+    auto& handler = handler_iter->second;
+    ZX_DEBUG_ASSERT(handler.event_code == event_code);
+
+    EventCallback callback = handler.event_callback.share();
+
+    ++iter;  // Advance so we don't point to an invalid iterator.
+
+    if (handler.is_async()) {
+      bt_log(TRACE, "hci", "removing completed async handler (id %zu, event code: %#.2x)", event_id,
              event_code);
-      return;
+      pending_transactions_.erase(handler.pending_opcode);
+      RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
     }
 
-    auto iter = range.first;
-    while (iter != range.second) {
-      EventHandlerId event_id = iter->second;
-      bt_log(TRACE, "hci", "notifying handler (id %zu) for event code %#.2x", event_id, event_code);
-      auto handler_iter = event_handler_id_map_.find(event_id);
-      ZX_DEBUG_ASSERT(handler_iter != event_handler_id_map_.end());
-
-      auto& handler = handler_iter->second;
-      ZX_DEBUG_ASSERT(handler.event_code == event_code);
-
-      EventCallback callback = handler.event_callback.share();
-
-      ++iter;  // Advance so we don't point to an invalid iterator.
-
-      if (handler.is_async()) {
-        bt_log(TRACE, "hci", "removing completed async handler (id %zu, event code: %#.2x)",
-               event_id, event_code);
-        pending_transactions_.erase(handler.pending_opcode);
-        RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
-      }
-
-      pending_callbacks.push_back({std::move(callback), event_id});
-    }
+    pending_callbacks.push_back({std::move(callback), event_id});
   }
 
   // Process queue so callbacks can't add a handler if another queued command

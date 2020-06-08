@@ -14,10 +14,8 @@
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
 
-#include <atomic>
 #include <list>
 #include <memory>
-#include <mutex>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -39,10 +37,6 @@ class Transport;
 
 // Represents the HCI Bluetooth command channel. Manages HCI command and event
 // packet control flow.
-//
-// TODO(armansito): I don't imagine many cases in which we will want to queue up
-// HCI commands from the data thread. Consider making this class fully single
-// threaded and removing the locks.
 class CommandChannel final {
  public:
   // Starts listening on the HCI command channel and starts handling commands
@@ -281,7 +275,7 @@ class CommandChannel final {
   // Adds an internal event handler for |data| if one does not exist yet and
   // another transaction is not waiting on the same event.
   // Used to add expiring event handlers for asynchronous commands.
-  void MaybeAddTransactionHandler(TransactionData* data) __TA_REQUIRES(event_handler_mutex_);
+  void MaybeAddTransactionHandler(TransactionData* data);
 
   // Represents a queued command packet.
   struct QueuedCommand {
@@ -312,29 +306,28 @@ class CommandChannel final {
     bool is_async() const { return pending_opcode != kNoOp; }
   };
 
-  void ShutDownInternal() __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
+  void ShutDownInternal();
 
   // Finds the event handler for |code|.  Returns nullptr if one doesn't exist.
-  EventHandlerData* FindEventHandler(EventCode code) __TA_REQUIRES(event_handler_mutex_);
+  EventHandlerData* FindEventHandler(EventCode code);
 
   // Finds the LE Meta Event handler for |subevent_code|.  Returns nullptr if one doesn't exist.
-  EventHandlerData* FindLEMetaEventHandler(EventCode subevent_code)
-      __TA_REQUIRES(event_handler_mutex_);
+  EventHandlerData* FindLEMetaEventHandler(EventCode subevent_code);
 
   // Removes internal event handler structures for |id|.
-  void RemoveEventHandlerInternal(EventHandlerId id) __TA_REQUIRES(event_handler_mutex_);
+  void RemoveEventHandlerInternal(EventHandlerId id);
 
   // Sends any queued commands that can be processed unambiguously
   // and complete.
-  void TrySendQueuedCommands() __TA_EXCLUDES(send_queue_mutex_, event_handler_mutex_);
+  void TrySendQueuedCommands();
 
   // Sends |command|, adding an internal event handler if asynchronous.
-  void SendQueuedCommand(QueuedCommand&& cmd) __TA_REQUIRES(event_handler_mutex_);
+  void SendQueuedCommand(QueuedCommand&& cmd);
 
   // Creates a new event handler entry in the event handler map and returns its
   // ID. If |is_le_meta|, then |event_code| should be the LE Meta Event subevent code.
   EventHandlerId NewEventHandler(EventCode event_code, bool is_le_meta, OpCode pending_opcode,
-                                 EventCallback event_callback) __TA_REQUIRES(event_handler_mutex_);
+                                 EventCallback event_callback);
 
   // Notifies any matching event handler for |event|.
   void NotifyEventHandler(std::unique_ptr<EventPacket> event);
@@ -355,14 +348,13 @@ class CommandChannel final {
   // Opcodes of commands that we have sent to the controller but not received a
   // status update from.  New commands with these opcodes can't be sent because
   // they are indistinguishable from ones we need to get the result of.
-  std::unordered_map<OpCode, std::unique_ptr<TransactionData>> pending_transactions_
-      __TA_GUARDED(event_handler_mutex_);
+  std::unordered_map<OpCode, std::unique_ptr<TransactionData>> pending_transactions_;
 
   // TransactionId counter.
-  std::atomic_size_t next_transaction_id_ __TA_GUARDED(send_queue_mutex_);
+  size_t next_transaction_id_;
 
   // EventHandlerId counter.
-  std::atomic_size_t next_event_handler_id_ __TA_GUARDED(event_handler_mutex_);
+  size_t next_event_handler_id_;
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
@@ -381,17 +373,13 @@ class CommandChannel final {
   async::WaitMethod<CommandChannel, &CommandChannel::OnChannelReady> channel_wait_{this};
 
   // True if channel initialization succeeded and ShutDown() has not been called yet.
-  std::atomic_bool is_initialized_;
-
-  // Guards |send_queue_|. |send_queue_| can get accessed by threads that call
-  // SendCommand() as well as from |io_thread_|.
-  std::mutex send_queue_mutex_;
+  bool is_initialized_;
 
   // The HCI command queue.
   // This queue is not necessarily sent in order, but commands with the same
   // opcode or that wait on the same completion event code are sent first-in,
   // first-out.
-  std::list<QueuedCommand> send_queue_ __TA_GUARDED(send_queue_mutex_);
+  std::list<QueuedCommand> send_queue_;
 
   // Contains the current count of commands we ae allowed to send to the
   // controller.  This is decremented when we send a command and updated
@@ -401,23 +389,16 @@ class CommandChannel final {
   // Accessed only from the I/O thread and thus not guarded.
   size_t allowed_command_packets_;
 
-  // Guards |event_handler_id_map_|, |event_code_handlers_|, and |subevent_code_handlers_|, which
-  // can be accessed by both the public EventHandler methods and |io_thread_|.
-  std::mutex event_handler_mutex_;
-
   // Mapping from event handler IDs to handler data.
-  std::unordered_map<EventHandlerId, EventHandlerData> event_handler_id_map_
-      __TA_GUARDED(event_handler_mutex_);
+  std::unordered_map<EventHandlerId, EventHandlerData> event_handler_id_map_;
 
   // Mapping from event code to the event handlers that were registered to
   // handle that event code.
-  std::unordered_multimap<EventCode, EventHandlerId> event_code_handlers_
-      __TA_GUARDED(event_handler_mutex_);
+  std::unordered_multimap<EventCode, EventHandlerId> event_code_handlers_;
 
   // Mapping from LE Meta Event Subevent code to the event handlers that were
   // registered to handle that event code.
-  std::unordered_multimap<EventCode, EventHandlerId> subevent_code_handlers_
-      __TA_GUARDED(event_handler_mutex_);
+  std::unordered_multimap<EventCode, EventHandlerId> subevent_code_handlers_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
 };
