@@ -175,9 +175,14 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
   }
 
   if (rsp.result() != InformationResult::kSuccess) {
-    bt_log(ERROR, "l2cap-bredr",
+    bt_log(DEBUG, "l2cap-bredr",
            "Extended Features Information Response failure result (result: %#.4hx)",
            static_cast<uint16_t>(rsp.result()));
+    // Treat failure result as if feature mask indicated no ERTM support so that configuration can
+    // fall back to basic mode.
+    ForEach([](DynamicChannel* chan) {
+      static_cast<BrEdrDynamicChannel*>(chan)->SetEnhancedRetransmissionSupport(false);
+    });
     return;
   }
 
@@ -853,8 +858,8 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
   }
 
   if (rsp.result() == ConnectionResult::kPending) {
-    bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Remote is pending open, status %#.4hx", local_cid(),
-           rsp.conn_status());
+    bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Remote is pending open, status %#.4hx",
+           local_cid(), rsp.conn_status());
 
     if (rsp.remote_cid() == kInvalidChannelId) {
       return ResponseHandlerAction::kExpectAdditionalResponse;

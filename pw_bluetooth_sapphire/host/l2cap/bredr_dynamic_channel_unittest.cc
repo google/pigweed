@@ -1639,7 +1639,11 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ExtendedFeaturesResponseInvalidFailureResu
   EXPECT_FALSE(registry()->extended_features());
 }
 
-TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeStartingConfigFlow) {
+class InformationResultTest : public L2CAP_BrEdrDynamicChannelTest,
+                              public ::testing::WithParamInterface<InformationResult> {};
+
+TEST_P(InformationResultTest,
+       ERTMChannelWaitsForExtendedFeaturesResultBeforeFallingBackToBasicModeAndStartingConfigFlow) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
 
@@ -1654,6 +1658,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeS
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
 
+  const auto kExtendedFeaturesInfoRsp = MakeExtendedFeaturesInfoRsp(GetParam());
   sig()->ReceiveResponses(ext_info_transaction_id(),
                           {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
 
@@ -1668,6 +1673,11 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTMChannelWaitsForExtendedFeaturesBeforeS
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
+
+INSTANTIATE_TEST_SUITE_P(L2CAP_BrEdrDynamicChannelTest, InformationResultTest,
+                         ::testing::Values(InformationResult::kSuccess,
+                                           InformationResult::kNotSupported,
+                                           static_cast<InformationResult>(0xFFFF)));
 
 TEST_F(L2CAP_BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspReceived) {
   auto conn_id = EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(), {});
