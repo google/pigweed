@@ -311,6 +311,7 @@ _WATCH_PATTERNS = (
     '*.hpp',
     '*.ld',
     '*.md',
+    '*.options',
     '*.proto',
     '*.py',
     '*.rst',

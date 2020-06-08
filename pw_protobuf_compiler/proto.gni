@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_script.gni")
 
 # Python script that invokes protoc.
@@ -219,6 +220,7 @@ template("_pw_go_proto_library") {
 # Args:
 #  sources: List of input .proto files.
 #  deps: List of other pw_proto_library dependencies.
+#  inputs: Other files on which the protos depend (e.g. nanopb .options files).
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
          "pw_proto_library requires .proto source files")
@@ -243,6 +245,17 @@ template("pw_proto_library") {
     }
   }
 
+  _deps = [ ":$_include_metadata_target" ]
+
+  if (defined(invoker.inputs)) {
+    # Toss any additional inputs into an input group dependency.
+    _input_target_name = "${target_name}_inputs"
+    pw_input_group(_input_target_name) {
+      inputs = invoker.inputs
+    }
+    _deps += [ ":$_input_target_name" ]
+  }
+
   foreach(_gen, pw_protobuf_generators) {
     _lang_target = "${target_name}_${_gen}"
 
@@ -255,7 +268,7 @@ template("pw_proto_library") {
       _pw_pwpb_proto_library(_lang_target) {
         forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
-        deps = [ ":$_include_metadata_target" ]
+        deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
 
@@ -267,7 +280,7 @@ template("pw_proto_library") {
       _pw_nanopb_proto_library(_lang_target) {
         forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
-        deps = [ ":$_include_metadata_target" ]
+        deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
       }
@@ -275,7 +288,7 @@ template("pw_proto_library") {
       _pw_go_proto_library(_lang_target) {
         forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
-        deps = [ ":$_include_metadata_target" ]
+        deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
       }
