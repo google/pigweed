@@ -12,13 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+/* eslint-env browser */
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { App } from './app';
-
+import {App} from './app';
 
 // Bootstrap the app and append it to the DOM
-ReactDOM.render(
-    <App />,
-    document.getElementById("react-root")
-)
+ReactDOM.render(<App />, document.getElementById('react-root'));

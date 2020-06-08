@@ -16,7 +16,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import builtins from 'rollup-plugin-node-builtins';
 import nodeGlobals from 'rollup-plugin-node-globals';
-import sourcemaps from 'rollup-plugin-sourcemaps'
+import sourcemaps from 'rollup-plugin-sourcemaps';
 
 export default {
   plugins:
@@ -28,5 +28,5 @@ export default {
         builtins(),
         nodeGlobals(),
         sourcemaps(),
-      ]
-}
+      ],
+};

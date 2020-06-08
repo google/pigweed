@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { BehaviorSubject, Subject } from 'rxjs';
-import DeviceTransport from "./device_transport";
-
+/* eslint-env browser */
+import {BehaviorSubject, Subject} from 'rxjs';
+import DeviceTransport from './device_transport';
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions = {
   baudrate: 921600,
@@ -32,13 +32,15 @@ export class WebSerialTransport implements DeviceTransport {
   connected = new BehaviorSubject<boolean>(false);
   private writer?: WritableStreamDefaultWriter<Uint8Array>;
 
-  constructor(private serial: Serial = navigator.serial,
+  constructor(
+    private serial: Serial = navigator.serial,
     private filters: SerialPortFilter[] = [],
-    private serialOptions = DEFAULT_SERIAL_OPTIONS) { }
+    private serialOptions = DEFAULT_SERIAL_OPTIONS
+  ) {}
 
   /**
    * Send a UInt8Array chunk of data to the connected device.
-   * @param {Uint8Array} chunk
+   * @param {Uint8Array} chunk The chunk to send
    */
   async sendChunk(chunk: Uint8Array): Promise<void> {
     if (this.writer !== undefined && this.connected.getValue()) {
@@ -53,11 +55,10 @@ export class WebSerialTransport implements DeviceTransport {
    * asking the user to select a serial port and should only
    * be called in response to user interaction.
    */
-  async connect() {
+  async connect(): Promise<void> {
     let port: SerialPort;
     try {
-      port = await this.serial.requestPort(
-        { filters: this.filters });
+      port = await this.serial.requestPort({filters: this.filters});
     } catch (e) {
       // Ignore errors where the user did not select a port.
       if (!(e instanceof DOMException)) {
@@ -73,19 +74,23 @@ export class WebSerialTransport implements DeviceTransport {
   }
 
   private getChunks(port: SerialPort) {
-    port.readable.pipeTo(new WritableStream({
-      write: chunk => { this.chunks.next(chunk); },
-      close: () => {
-        port.close();
-        this.writer?.releaseLock();
-        this.connected.next(false);
-      },
-      abort: () => {
-        // Reconnect to the port
-        this.connected.next(false);
-        this.getChunks(port);
-      }
-    }));
+    port.readable.pipeTo(
+      new WritableStream({
+        write: chunk => {
+          this.chunks.next(chunk);
+        },
+        close: () => {
+          port.close();
+          this.writer?.releaseLock();
+          this.connected.next(false);
+        },
+        abort: () => {
+          // Reconnect to the port
+          this.connected.next(false);
+          this.getChunks(port);
+        },
+      })
+    );
     this.connected.next(true);
   }
 }

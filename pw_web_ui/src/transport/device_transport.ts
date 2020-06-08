@@ -12,11 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { Observable, BehaviorSubject } from "rxjs";
-
+import {BehaviorSubject, Observable} from 'rxjs';
 
 export default interface DeviceTransport {
   chunks: Observable<Uint8Array>;
   connected: BehaviorSubject<boolean>;
   sendChunk(chunk: Uint8Array): Promise<void>;
-};
+}

@@ -13,8 +13,11 @@
     "@rollup/plugin-commonjs": "^13.0.0",
     "@rollup/plugin-node-resolve": "^8.0.1",
     "@types/jasmine": "^3.5.10",
+    "@types/node": "^13.11.1",
     "@types/react": "^16.9.36",
     "@types/react-dom": "^16.9.8",
+    "eslint-plugin-react": "^7.20.0",
+    "gts": "^2.0.2",
     "jasmine": "^3.5.0",
     "jasmine-core": "^3.5.0",
     "karma": "5.0.2",
@@ -33,5 +36,9 @@
     "rxjs": "^6.5.5",
     "tmp": "0.1.0",
     "typescript": "^3.9.3"
+  },
+  "scripts": {
+    "check": "gts check",
+    "fix": "gts fix"
   }
 }

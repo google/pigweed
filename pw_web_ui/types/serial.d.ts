@@ -15,7 +15,7 @@
  */
 
 /** @see https://wicg.github.io/serial/#paritytype-enum */
-type ParityType = 'none' | 'even' | 'odd';
+type ParityType = 'none'|'even'|'odd';
 
 /** @see https://wicg.github.io/serial/#serialoptions-dictionary */
 interface SerialOptions {
@@ -36,23 +36,31 @@ declare class SerialPort {
   close(): void;
 }
 
-/** @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_filter.idl */
+/**
+ * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_filter.idl
+ */
 interface SerialPortFilter {
   usbVendorId?: number;
   usbProductId?: number;
 }
 
-/** @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_request_options.idl */
+/**
+ * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_port_request_options.idl
+ */
 interface SerialPortRequestOptions {
   filters?: SerialPortFilter[];
 }
 
-/** @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event_init.idl */
+/**
+ * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event_init.idl
+ */
 interface SerialConnectionEventInit extends EventInit {
   port: SerialPort;
 }
 
-/** @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event.idl */
+/**
+ * @see https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/modules/serial/serial_connection_event.idl
+ */
 declare class SerialConnectionEvent extends Event {
   constructor(type: string, eventInitDict: SerialConnectionEventInit);
   readonly port: SerialPort;
@@ -60,26 +68,26 @@ declare class SerialConnectionEvent extends Event {
 
 /** @see https://wicg.github.io/serial/#serial-interface */
 declare class Serial extends EventTarget {
-  onconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null;
-  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any) | null;
+  onconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null;
+  ondisconnect(): ((this: this, ev: SerialConnectionEvent) => any)|null;
   getPorts(): Promise<SerialPort[]>;
   requestPort(options?: SerialPortRequestOptions): Promise<SerialPort>;
   addEventListener(
-      type: 'connect' | 'disconnect',
+      type: 'connect'|'disconnect',
       listener: (this: this, ev: SerialConnectionEvent) => any,
       useCapture?: boolean): void;
   addEventListener(
       type: string,
-      listener: EventListenerOrEventListenerObject | null,
-      options?: boolean | AddEventListenerOptions): void;
+      listener: EventListenerOrEventListenerObject|null,
+      options?: boolean|AddEventListenerOptions): void;
   removeEventListener(
-      type: 'connect' | 'disconnect',
+      type: 'connect'|'disconnect',
       callback: (this: this, ev: SerialConnectionEvent) => any,
       useCapture?: boolean): void;
   removeEventListener(
       type: string,
-      callback: EventListenerOrEventListenerObject | null,
-      options?: EventListenerOptions | boolean): void;
+      callback: EventListenerOrEventListenerObject|null,
+      options?: EventListenerOptions|boolean): void;
 }
 
 /** @see https://wicg.github.io/serial/#extensions-to-the-navigator-interface */
@@ -87,7 +95,9 @@ interface Navigator {
   readonly serial: Serial;
 }
 
-/** @see https://wicg.github.io/serial/#extensions-to-workernavigator-interface */
+/**
+ * @see https://wicg.github.io/serial/#extensions-to-workernavigator-interface
+ */
 interface WorkerNavigator {
   readonly serial: Serial;
 }

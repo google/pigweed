@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { WebSerialTransport } from './web_serial_transport';
-import { SerialMock } from './serial_mock';
-import { take, last } from 'rxjs/operators';
-
+/* eslint-env browser, jasmine */
+import {last, take} from 'rxjs/operators';
+import {SerialMock} from './serial_mock';
+import {WebSerialTransport} from './web_serial_transport';
 
 describe('WebSerialTransport', () => {
   let serialMock: SerialMock;
@@ -65,7 +65,7 @@ describe('WebSerialTransport', () => {
     const dataToDevice = serialMock.dataToDevice.pipe(take(1)).toPromise();
 
     let writtenData: Uint8Array | undefined = undefined;
-    dataToDevice.then((data) => {
+    dataToDevice.then(data => {
       writtenData = data;
     });
 

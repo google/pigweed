@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { Subject } from 'rxjs';
-
+/* eslint-env browser, jasmine */
+import {Subject} from 'rxjs';
 
 /**
  * AsyncQueue is a queue that allows values to be dequeued
@@ -46,7 +46,7 @@ class AsyncQueue<T> {
     if (val !== undefined) {
       return val;
     } else {
-      const queuePromise = new Promise<T>((resolve) => {
+      const queuePromise = new Promise<T>(resolve => {
         this.requestQueue.push(resolve);
       });
       return queuePromise;
@@ -60,23 +60,25 @@ class AsyncQueue<T> {
  * only implements that subset.
  */
 class SerialPortMock implements SerialPort {
-  private deviceData = new AsyncQueue<{ data?: Uint8Array, done?: boolean, error?: Error }>();
+  private deviceData = new AsyncQueue<{
+    data?: Uint8Array;
+    done?: boolean;
+    error?: Error;
+  }>();
 
   /**
    * Simulate the device sending data to the browser.
    * @param {Uint8Array} data
    */
   dataFromDevice(data: Uint8Array) {
-    this.deviceData.enqueue({ data });
+    this.deviceData.enqueue({data});
   }
 
   /**
    * Simulate the device closing the connection with the browser.
    */
   closeFromDevice() {
-    this.deviceData.enqueue({
-      done: true
-    });
+    this.deviceData.enqueue({done: true});
   }
 
   /**
@@ -84,9 +86,7 @@ class SerialPortMock implements SerialPort {
    * @param {Error} error
    */
   errorFromDevice(error: Error) {
-    this.deviceData.enqueue({
-      error
-    });
+    this.deviceData.enqueue({error});
   }
 
   /**
@@ -98,8 +98,8 @@ class SerialPortMock implements SerialPort {
    * The ReadableStream of bytes from the device.
    */
   readable = new ReadableStream<Uint8Array>({
-    pull: async (controller) => {
-      const { data, done, error } = await this.deviceData.dequeue();
+    pull: async controller => {
+      const {data, done, error} = await this.deviceData.dequeue();
       if (done) {
         controller.close();
         return;
@@ -117,36 +117,41 @@ class SerialPortMock implements SerialPort {
    * The WritableStream of bytes to the device.
    */
   writable = new WritableStream<Uint8Array>({
-    write: (chunk) => {
+    write: chunk => {
       this.dataToDevice.next(chunk);
-    }
+    },
   });
 
   /**
    * A spy for opening the serial port.
    */
-  open = jasmine.createSpy('openSpy', async (options?: SerialOptions) => { });
+  open = jasmine.createSpy('openSpy', async (options?: SerialOptions) => {});
 
   /**
    * A spy for closing the serial port.
    */
-  close = jasmine.createSpy('closeSpy', () => { });
+  close = jasmine.createSpy('closeSpy', () => {});
 }
-
 
 export class SerialMock implements Serial {
   serialPort = new SerialPortMock();
   dataToDevice = this.serialPort.dataToDevice;
-  dataFromDevice = (data: Uint8Array) => { this.serialPort.dataFromDevice(data); };
-  closeFromDevice = () => { this.serialPort.closeFromDevice(); };
-  errorFromDevice = (error: Error) => { this.serialPort.errorFromDevice(error); }
+  dataFromDevice = (data: Uint8Array) => {
+    this.serialPort.dataFromDevice(data);
+  };
+  closeFromDevice = () => {
+    this.serialPort.closeFromDevice();
+  };
+  errorFromDevice = (error: Error) => {
+    this.serialPort.errorFromDevice(error);
+  };
 
   /**
    * Request the port from the browser.
    */
   async requestPort(options?: SerialPortRequestOptions) {
     return this.serialPort;
-  };
+  }
 
   // The rest of the methods are unimplemented
   // and only exist to ensure SerialMock implements Serial
@@ -163,25 +168,33 @@ export class SerialMock implements Serial {
     throw new Error('Method not implemented.');
   }
 
-  addEventListener(type: 'connect' | 'disconnect',
+  addEventListener(
+    type: 'connect' | 'disconnect',
     listener: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean): void;
+    useCapture?: boolean
+  ): void;
 
-  addEventListener(type: string,
+  addEventListener(
+    type: string,
     listener: EventListener | EventListenerObject | null,
-    options?: boolean | AddEventListenerOptions): void;
+    options?: boolean | AddEventListenerOptions
+  ): void;
 
   addEventListener(type: any, listener: any, options?: any) {
     throw new Error('Method not implemented.');
   }
 
-  removeEventListener(type: 'connect' | 'disconnect',
+  removeEventListener(
+    type: 'connect' | 'disconnect',
     callback: (this: this, ev: SerialConnectionEvent) => any,
-    useCapture?: boolean): void;
+    useCapture?: boolean
+  ): void;
 
-  removeEventListener(type: string,
+  removeEventListener(
+    type: string,
     callback: EventListener | EventListenerObject | null,
-    options?: boolean | EventListenerOptions): void;
+    options?: boolean | EventListenerOptions
+  ): void;
 
   removeEventListener(type: any, callback: any, options?: any) {
     throw new Error('Method not implemented.');
