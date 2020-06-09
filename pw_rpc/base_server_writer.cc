@@ -44,7 +44,7 @@ span<std::byte> BaseServerWriter::AcquireBuffer() {
   }
 
   PW_DCHECK(response_.empty());
-  response_ = context_.channel_->AcquireBuffer();
+  response_ = context_.channel().AcquireBuffer();
 
   // Reserve space for the RPC packet header.
   return packet().PayloadUsableSpace(response_);
@@ -61,19 +61,19 @@ Status BaseServerWriter::SendAndReleaseBuffer(span<const std::byte> payload) {
   response_ = {};
 
   if (!encoded.ok()) {
-    context_.channel_->SendAndReleaseBuffer(0);
+    context_.channel().SendAndReleaseBuffer(0);
     return Status::INTERNAL;
   }
 
   // TODO(hepler): Should Channel::SendAndReleaseBuffer return Status?
-  context_.channel_->SendAndReleaseBuffer(encoded.size());
+  context_.channel().SendAndReleaseBuffer(encoded.size());
   return Status::OK;
 }
 
 Packet BaseServerWriter::packet() const {
   return Packet(PacketType::RPC,
                 context_.channel_id(),
-                context_.service_->id(),
+                context_.service().id(),
                 method().id());
 }
 

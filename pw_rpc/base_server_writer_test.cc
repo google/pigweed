@@ -58,8 +58,7 @@ TEST(BaseServerWriter, Move_ClosesOriginal) {
 
 class FakeServerWriter : public BaseServerWriter {
  public:
-  constexpr FakeServerWriter(ServerContext& context)
-      : BaseServerWriter(context) {}
+  constexpr FakeServerWriter(ServerCall& context) : BaseServerWriter(context) {}
 
   constexpr FakeServerWriter() = default;
 

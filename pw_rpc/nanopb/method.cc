@@ -56,7 +56,7 @@ StatusWithSize Method::EncodeResponse(const void* proto_struct,
   return StatusWithSize::INTERNAL;
 }
 
-StatusWithSize Method::CallUnary(ServerContext& context,
+StatusWithSize Method::CallUnary(ServerCall& call,
                                  span<const byte> request_buffer,
                                  span<byte> response_buffer,
                                  void* request_struct,
@@ -66,7 +66,7 @@ StatusWithSize Method::CallUnary(ServerContext& context,
     return StatusWithSize(status, 0);
   }
 
-  status = function_.unary(context, request_struct, response_struct);
+  status = function_.unary(call.context(), request_struct, response_struct);
 
   StatusWithSize encoded = EncodeResponse(response_struct, response_buffer);
   if (encoded.ok()) {
@@ -75,7 +75,7 @@ StatusWithSize Method::CallUnary(ServerContext& context,
   return encoded;
 }
 
-StatusWithSize Method::CallServerStreaming(ServerContext& context,
+StatusWithSize Method::CallServerStreaming(ServerCall& call,
                                            span<const byte> request_buffer,
                                            void* request_struct) const {
   Status status = DecodeRequest(request_buffer, request_struct);
@@ -83,9 +83,10 @@ StatusWithSize Method::CallServerStreaming(ServerContext& context,
     return StatusWithSize(status, 0);
   }
 
-  internal::BaseServerWriter server_writer(context);
+  internal::BaseServerWriter server_writer(call);
   return StatusWithSize(
-      function_.server_streaming(context, request_struct, server_writer), 0);
+      function_.server_streaming(call.context(), request_struct, server_writer),
+      0);
 }
 
 }  // namespace pw::rpc::internal

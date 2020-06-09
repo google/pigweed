@@ -16,48 +16,38 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_assert/assert.h"
-#include "pw_rpc/channel.h"
+#include "pw_rpc/internal/call.h"
 
 namespace pw::rpc {
-namespace internal {
 
-class Method;
-class Service;
-class BaseServerWriter;
-
-}  // namespace internal
-
-// The ServerContext collects context for an RPC being invoked on a server.
-class ServerContext {
+// The ServerContext collects context for an RPC being invoked on a server. The
+// ServerContext is passed into RPC functions and is user-facing.
+//
+// The ServerContext is a public-facing view of the internal::ServerCall class.
+// It uses inheritance to avoid copying or creating an extra reference to the
+// underlying ServerCall. Private inheritance prevents exposing the
+// internal-facing ServerCall interface.
+class ServerContext : private internal::ServerCall {
  public:
-  uint32_t channel_id() const {
-    PW_DCHECK_NOTNULL(channel_);
-    return channel_->id();
-  }
+  // Returns the ID for the channel this RPC is using.
+  uint32_t channel_id() const { return channel().id(); }
 
- private:
-  friend class Server;
-  friend class internal::BaseServerWriter;
+  constexpr ServerContext() = delete;
 
-  // Allow ServerContexts to be created in tests.
-  template <typename, size_t, uint32_t, uint32_t>
-  friend class ServerContextForTest;
+  constexpr ServerContext(const ServerContext&) = delete;
+  constexpr ServerContext& operator=(const ServerContext&) = delete;
 
-  constexpr ServerContext()
-      : channel_(nullptr), service_(nullptr), method_(nullptr) {}
+  constexpr ServerContext(ServerContext&&) = delete;
+  constexpr ServerContext& operator=(ServerContext&&) = delete;
 
-  constexpr ServerContext(Channel& channel,
-                          internal::Service& service,
-                          const internal::Method& method)
-      : channel_(&channel), service_(&service), method_(&method) {}
-
-  constexpr ServerContext(const ServerContext&) = default;
-  constexpr ServerContext& operator=(const ServerContext&) = default;
-
-  Channel* channel_;
-  internal::Service* service_;
-  const internal::Method* method_;
+  friend class internal::ServerCall;  // Allow down-casting from ServerCall.
 };
 
+namespace internal {
+
+inline ServerContext& ServerCall::context() {
+  return static_cast<ServerContext&>(*this);
+}
+
+}  // namespace internal
 }  // namespace pw::rpc

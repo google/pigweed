@@ -136,10 +136,10 @@ class Method : public BaseMethod {
   // The pw::rpc::Server calls method.Invoke to call a user-defined RPC. Invoke
   // calls the invoker function, which encodes and decodes the request and
   // response (if any) and calls the user-defined RPC function.
-  StatusWithSize Invoke(ServerContext& context,
+  StatusWithSize Invoke(ServerCall& call,
                         span<const std::byte> request,
                         span<std::byte> payload_buffer) const {
-    return invoker_(*this, context, request, payload_buffer);
+    return invoker_(*this, call, request, payload_buffer);
   }
 
   // Decodes a request protobuf with Nanopb to the provided buffer.
@@ -186,7 +186,7 @@ class Method : public BaseMethod {
   // RPC according to its type (unary, server streaming, etc.). The Invoker
   // returns the number of bytes written to the response buffer, if any.
   using Invoker = StatusWithSize (&)(const Method&,
-                                     ServerContext&,
+                                     ServerCall&,
                                      span<const std::byte>,
                                      span<std::byte>);
 
@@ -201,13 +201,13 @@ class Method : public BaseMethod {
         request_fields_(request),
         response_fields_(response) {}
 
-  StatusWithSize CallUnary(ServerContext& context,
+  StatusWithSize CallUnary(ServerCall& call,
                            span<const std::byte> request_buffer,
                            span<std::byte> response_buffer,
                            void* request_struct,
                            void* response_struct) const;
 
-  StatusWithSize CallServerStreaming(ServerContext& context,
+  StatusWithSize CallServerStreaming(ServerCall& call,
                                      span<const std::byte> request_buffer,
                                      void* request_struct) const;
 
@@ -218,7 +218,7 @@ class Method : public BaseMethod {
   // this function for each request/response type.
   template <size_t request_size, size_t response_size>
   static StatusWithSize UnaryInvoker(const Method& method,
-                                     ServerContext& context,
+                                     ServerCall& call,
                                      span<const std::byte> request_buffer,
                                      span<std::byte> response_buffer) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
@@ -226,7 +226,7 @@ class Method : public BaseMethod {
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
         response_struct{};
 
-    return method.CallUnary(context,
+    return method.CallUnary(call,
                             request_buffer,
                             response_buffer,
                             &request_struct,
@@ -239,13 +239,13 @@ class Method : public BaseMethod {
   template <size_t request_size>
   static StatusWithSize ServerStreamingInvoker(
       const Method& method,
-      ServerContext& context,
+      ServerCall& call,
       span<const std::byte> request_buffer,
       span<std::byte> /* payload not used */) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 
-    return method.CallServerStreaming(context, request_buffer, &request_struct);
+    return method.CallServerStreaming(call, request_buffer, &request_struct);
   }
 
   // Allocates memory for the request/response structs and invokes the

@@ -32,8 +32,9 @@ config("default_config") {
 template("_pw_rpc_server_library") {
   assert(defined(invoker.implementation),
          "_pw_rpc_server_library requires an implementation to be set")
+  _target_name = target_name
 
-  source_set(target_name) {
+  source_set(_target_name) {
     forward_variables_from(invoker, "*")
 
     public_configs = [ ":default_config" ]
@@ -63,6 +64,17 @@ template("_pw_rpc_server_library") {
     allow_circular_includes_from = [ implementation ]
     friend = [ "./*" ]
   }
+
+  source_set("test_utils_$_target_name") {
+    public = [ "pw_rpc_private/test_utils.h" ]
+    public_configs = [ ":private_includes" ]
+    public_deps = [
+      ":$_target_name",
+      ":common",
+      dir_pw_span,
+    ]
+    visibility = [ "./*" ]
+  }
 }
 
 # Classes with no dependencies on the protobuf library for method invocations.
@@ -79,6 +91,7 @@ source_set("common") {
     "channel.cc",
     "packet.cc",
     "public/pw_rpc/internal/base_method.h",
+    "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/packet.h",
   ]
   friend = [ "./*" ]
@@ -93,17 +106,7 @@ _pw_rpc_server_library("nanopb_server") {
 
 config("private_includes") {
   include_dirs = [ "." ]
-  visibility = [ ":test_utils" ]
-}
-
-source_set("test_utils") {
-  public = [ "pw_rpc_private/test_utils.h" ]
-  public_configs = [ ":private_includes" ]
-  public_deps = [
-    ":common",
-    dir_pw_span,
-  ]
-  visibility = [ "./*" ]
+  visibility = [ ":*" ]
 }
 
 pw_proto_library("protos") {
@@ -137,7 +140,7 @@ pw_proto_library("test_protos") {
 pw_test("base_server_writer_test") {
   deps = [
     ":test_server",
-    ":test_utils",
+    ":test_utils_test_server",
   ]
   sources = [ "base_server_writer_test.cc" ]
 }
@@ -154,7 +157,7 @@ pw_test("server_test") {
   deps = [
     ":protos_pwpb",
     ":test_server",
-    ":test_utils",
+    ":test_utils_test_server",
     dir_pw_assert,
   ]
   sources = [ "server_test.cc" ]

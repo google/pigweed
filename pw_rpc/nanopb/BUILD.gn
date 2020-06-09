@@ -41,7 +41,7 @@ pw_test("method_test") {
   deps = [
     "..:nanopb_server",
     "..:test_protos_nanopb",
-    "..:test_utils",
+    "..:test_utils_nanopb_server",
   ]
   sources = [ "method_test.cc" ]
   enable_if = dir_third_party_nanopb != ""

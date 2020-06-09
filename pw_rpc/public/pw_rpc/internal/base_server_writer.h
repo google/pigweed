@@ -33,7 +33,7 @@ class Packet;
 // cancelling / terminating ongoing streaming RPCs.
 class BaseServerWriter {
  public:
-  constexpr BaseServerWriter(ServerContext& context)
+  constexpr BaseServerWriter(ServerCall& context)
       : context_(context), state_{kOpen} {}
 
   BaseServerWriter(BaseServerWriter&& other) { *this = std::move(other); }
@@ -51,7 +51,7 @@ class BaseServerWriter {
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
 
-  const Method& method() const { return *context_.method_; }
+  const Method& method() const { return context_.method(); }
 
   span<std::byte> AcquireBuffer();
 
@@ -60,7 +60,7 @@ class BaseServerWriter {
  private:
   Packet packet() const;
 
-  ServerContext context_;
+  ServerCall context_;
   span<std::byte> response_;
   enum { kClosed, kOpen } state_;
 };

@@ -70,8 +70,8 @@ void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
 void Server::InvokeMethod(const Packet& request,
                           Channel& channel,
                           internal::Packet& response,
-                          span<std::byte> buffer) const {
-  Service* service = services_.Find(request.service_id());
+                          span<std::byte> buffer) {
+  internal::Service* service = services_.Find(request.service_id());
   if (service == nullptr) {
     // Couldn't find the requested service. Reply with a NOT_FOUND response
     // without the service_id field set.
@@ -92,11 +92,12 @@ void Server::InvokeMethod(const Packet& request,
 
   response.set_method_id(method->id());
 
-  ServerContext context(channel, *service, *method);
-
   span<byte> response_buffer = request.PayloadUsableSpace(buffer);
+
+  internal::ServerCall call(*this, channel, *service, *method);
   StatusWithSize result =
-      method->Invoke(context, request.payload(), response_buffer);
+      method->Invoke(call, request.payload(), response_buffer);
+
   response.set_status(result.status());
   response.set_payload(response_buffer.first(result.size()));
 }

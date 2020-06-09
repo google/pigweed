@@ -61,6 +61,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/channel.h",
         "public/pw_rpc/internal/base_method.h",
+        "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/server.h",
     ],

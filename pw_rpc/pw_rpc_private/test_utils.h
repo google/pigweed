@@ -17,7 +17,9 @@
 #include <cstdint>
 
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/server.h"
 #include "pw_span/span.h"
 
 namespace pw::rpc {
@@ -41,12 +43,6 @@ class TestOutput : public ChannelOutput {
   span<const std::byte> sent_packet_;
 };
 
-namespace internal {
-
-class Method;
-
-}  // namespace internal
-
 template <typename Service,
           size_t output_buffer_size = 128,
           uint32_t channel_id = 99,
@@ -58,8 +54,11 @@ class ServerContextForTest {
 
   ServerContextForTest(const internal::Method& method)
       : channel_(Channel::Create<kChannelId>(&output_)),
+        server_(span(&channel_, 1)),
         service_(kServiceId),
-        context_(channel_, service_, method) {}
+        context_(server_, channel_, service_, method) {
+    server_.RegisterService(service_);
+  }
 
   ServerContextForTest() : ServerContextForTest(service_.method) {}
 
@@ -68,20 +67,21 @@ class ServerContextForTest {
     return internal::Packet(internal::PacketType::RPC,
                             kChannelId,
                             kServiceId,
-                            context_.method_->id(),
+                            context_.method().id(),
                             payload,
                             Status::OK);
   }
 
-  ServerContext& get() { return context_; }
+  internal::ServerCall& get() { return context_; }
   const auto& output() const { return output_; }
 
  private:
   TestOutput<output_buffer_size> output_;
   Channel channel_;
+  Server server_;
   Service service_;
 
-  ServerContext context_;
+  internal::ServerCall context_;
 };
 
 }  // namespace pw::rpc

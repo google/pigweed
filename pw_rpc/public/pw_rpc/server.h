@@ -45,13 +45,10 @@ class Server {
   constexpr size_t channel_count() const { return channels_.size(); }
 
  private:
-  using Service = internal::Service;
-  using ServiceRegistry = internal::ServiceRegistry;
-
   void InvokeMethod(const internal::Packet& request,
                     Channel& channel,
                     internal::Packet& response,
-                    span<std::byte> buffer) const;
+                    span<std::byte> buffer);
 
   void SendResponse(const Channel& output,
                     const internal::Packet& response,
@@ -61,7 +58,7 @@ class Server {
   Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
   span<Channel> channels_;
-  ServiceRegistry services_;
+  internal::ServiceRegistry services_;
 };
 
 }  // namespace pw::rpc

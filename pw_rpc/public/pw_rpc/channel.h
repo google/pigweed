@@ -57,7 +57,7 @@ class Channel {
   // static, or it can set to null to allow dynamically opening connections
   // through the channel.
   template <uint32_t id>
-  static Channel Create(ChannelOutput* output) {
+  constexpr static Channel Create(ChannelOutput* output) {
     static_assert(id != kUnassignedChannelId, "Channel ID cannot be 0");
     return Channel(id, output);
   }

@@ -29,10 +29,10 @@ class Method : public BaseMethod {
  public:
   constexpr Method(uint32_t id) : BaseMethod(id), last_channel_id_(0) {}
 
-  StatusWithSize Invoke(ServerContext& context,
+  StatusWithSize Invoke(ServerCall& call,
                         span<const std::byte> request,
                         span<std::byte> payload_buffer) const {
-    last_channel_id_ = context.channel_id();
+    last_channel_id_ = call.channel_id();
     last_request_ = request;
     last_payload_buffer_ = payload_buffer;
 
