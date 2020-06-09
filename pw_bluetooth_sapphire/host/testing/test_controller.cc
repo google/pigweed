@@ -120,7 +120,7 @@ void TestController::ClearTransactionCallback() {
 }
 
 void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
-  uint16_t opcode = command_packet.header().opcode;
+  uint16_t opcode = le16toh(command_packet.header().opcode);
   uint8_t ogf = hci::GetOGF(opcode);
   uint16_t ocf = hci::GetOCF(opcode);
 
@@ -128,16 +128,24 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
   // char for printing
   ASSERT_FALSE(cmd_transactions_.empty())
       << "Received unexpected command packet with OGF: 0x" << std::hex << static_cast<uint16_t>(ogf)
-      << ", OCF: 0x" << std::hex << ocf;
+      << ", OCF: 0x" << ocf;
 
-  auto& current = cmd_transactions_.front();
-  ASSERT_TRUE(current.Match(command_packet.data()));
+  auto& expected = cmd_transactions_.front();
+  const hci::OpCode expected_opcode =
+    le16toh(expected.expected().data.As<hci::OpCode>());
+  uint8_t expected_ogf = hci::GetOGF(expected_opcode);
+  uint16_t expected_ocf = hci::GetOCF(expected_opcode);
 
-  while (!current.replies().empty()) {
-    auto& reply = current.replies().front();
+  ASSERT_TRUE(expected.Match(command_packet.data()))
+      << " Expected command packet with OGF: 0x" << std::hex << static_cast<uint16_t>(expected_ogf)
+      << ", OCF: 0x" << expected_ocf << ". Received command packet with OGF: 0x"
+      << static_cast<uint16_t>(ogf) << ", OCF: 0x" << ocf;
+
+  while (!expected.replies().empty()) {
+    auto& reply = expected.replies().front();
     auto status = SendCommandChannelPacket(reply);
     ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
-    current.replies().pop();
+    expected.replies().pop();
   }
   cmd_transactions_.pop();
 
@@ -153,14 +161,14 @@ void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
     ASSERT_FALSE(data_transactions_.empty()) << "Received unexpected acl data packet: { "
                                              << ByteContainerToString(acl_data_packet) << "}";
 
-    auto& current = data_transactions_.front();
-    ASSERT_TRUE(current.Match(acl_data_packet.view()));
+    auto& expected = data_transactions_.front();
+    ASSERT_TRUE(expected.Match(acl_data_packet.view()));
 
-    while (!current.replies().empty()) {
-      auto& reply = current.replies().front();
+    while (!expected.replies().empty()) {
+      auto& reply = expected.replies().front();
       auto status = SendACLDataChannelPacket(reply);
       ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
-      current.replies().pop();
+      expected.replies().pop();
     }
     data_transactions_.pop();
   }
