@@ -18,6 +18,22 @@
 #include "pb_encode.h"
 
 namespace pw::rpc::internal {
+namespace {
+
+// Nanopb 3 uses pb_field_s and Nanopb 4 uses pb_msgdesc_s for fields. The
+// Nanopb version macro is difficult to use, so deduce the correct type from the
+// pb_decode function.
+template <typename DecodeFunction>
+struct NanopbTraits;
+
+template <typename FieldsType>
+struct NanopbTraits<bool(pb_istream_t*, FieldsType, void*)> {
+  using Fields = FieldsType;
+};
+
+using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
+
+}  // namespace
 
 using std::byte;
 
@@ -25,15 +41,16 @@ Status Method::DecodeRequest(span<const byte> buffer,
                              void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
-  return pb_decode(&input, request_fields_, proto_struct) ? Status::OK
-                                                          : Status::INTERNAL;
+  return pb_decode(&input, static_cast<Fields>(request_fields_), proto_struct)
+             ? Status::OK
+             : Status::INTERNAL;
 }
 
 StatusWithSize Method::EncodeResponse(const void* proto_struct,
                                       span<byte> buffer) const {
   auto output = pb_ostream_from_buffer(
       reinterpret_cast<pb_byte_t*>(buffer.data()), buffer.size());
-  if (pb_encode(&output, response_fields_, proto_struct)) {
+  if (pb_encode(&output, static_cast<Fields>(response_fields_), proto_struct)) {
     return StatusWithSize(output.bytes_written);
   }
   return StatusWithSize::INTERNAL;

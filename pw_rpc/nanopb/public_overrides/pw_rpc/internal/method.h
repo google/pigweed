@@ -24,10 +24,6 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-// Forward declare Nanopb types to avoid exposing Nanopb headers.
-extern "C" struct pb_field_s;
-extern "C" struct pb_msgdesc_s;
-
 namespace pw::rpc {
 
 // Define the Nanopb version of the the ServerWriter class.
@@ -48,9 +44,8 @@ class ServerWriter : public internal::BaseServerWriter {
 
 namespace internal {
 
-// TODO(hepler): Nanopb 4 uses pb_msgdesc_s instead of pb_field_s.
-// using NanopbMessageDescriptor = const pb_msgdesc_s*;
-using NanopbMessageDescriptor = const pb_field_s*;
+// Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
+using NanopbMessageDescriptor = const void*;
 
 // Extracts the request and response proto types from a method.
 template <typename Method>
