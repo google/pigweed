@@ -76,10 +76,8 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
       return false;
     }
 
-    transport_->acl_data_channel()->SetDataRxHandler(
-        std::bind(&FakeControllerTest<FakeControllerType>::OnDataReceived, this,
-                  std::placeholders::_1),
-        dispatcher());
+    transport_->acl_data_channel()->SetDataRxHandler(std::bind(
+        &FakeControllerTest<FakeControllerType>::OnDataReceived, this, std::placeholders::_1));
 
     return true;
   }

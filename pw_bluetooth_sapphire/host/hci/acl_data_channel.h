@@ -97,9 +97,9 @@ class ACLDataChannel final {
   // methods are not thread-safe.
   void ShutDown();
 
-  // Assigns a handler callback for received ACL data packets. |rx_callback| will be posted on
-  // |dispatcher| and shall take ownership of each packet received from the controller.
-  void SetDataRxHandler(ACLPacketHandler rx_callback, async_dispatcher_t* rx_dispatcher);
+  // Assigns a handler callback for received ACL data packets. |rx_callback| will shall take
+  // ownership of each packet received from the controller.
+  void SetDataRxHandler(ACLPacketHandler rx_callback);
 
   // Queues the given ACL data packet to be sent to the controller. Returns
   // false if the packet cannot be queued up, e.g. if the size of |data_packet|
@@ -268,11 +268,8 @@ class ACLDataChannel final {
   // The dispatcher used for posting tasks on the HCI transport I/O thread.
   async_dispatcher_t* io_dispatcher_;
 
-  // The current handler for incoming data and the dispatcher on which to run
-  // it.
-  std::mutex rx_mutex_;
-  ACLPacketHandler rx_callback_ __TA_GUARDED(rx_mutex_);
-  async_dispatcher_t* rx_dispatcher_ __TA_GUARDED(rx_mutex_);
+  // The current handler for incoming data.
+  ACLPacketHandler rx_callback_;
 
   // BR/EDR data buffer information. This buffer will not be available on
   // LE-only controllers.

@@ -35,8 +35,7 @@ class Impl final : public Domain {
     channel_manager_ = std::make_unique<l2cap::ChannelManager>(
         acl_buffer_info.max_data_length(), le_buffer_info.max_data_length(),
         std::move(send_packets), std::move(drop_queued_acl), dispatcher_);
-    hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler(),
-                                               dispatcher_);
+    hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
     l2cap_socket_factory_ = std::make_unique<internal::SocketFactory<l2cap::Channel>>();
 
@@ -48,7 +47,7 @@ class Impl final : public Domain {
     l2cap_socket_factory_ = nullptr;
 
     ZX_ASSERT(hci_->acl_data_channel());
-    hci_->acl_data_channel()->SetDataRxHandler(nullptr, nullptr);
+    hci_->acl_data_channel()->SetDataRxHandler(nullptr);
 
     channel_manager_ = nullptr;
   }

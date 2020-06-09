@@ -36,7 +36,6 @@ ACLDataChannel::ACLDataChannel(Transport* transport, zx::channel hci_acl_channel
       num_completed_packets_event_handler_id_(0u),
       data_buffer_overflow_event_handler_id_(0u),
       io_dispatcher_(nullptr),
-      rx_dispatcher_(nullptr),
       num_sent_packets_(0u),
       le_num_sent_packets_(0u) {
   // TODO(armansito): We'll need to pay attention to ZX_CHANNEL_WRITABLE as
@@ -121,14 +120,11 @@ void ACLDataChannel::ShutDown() {
   io_dispatcher_ = nullptr;
   num_completed_packets_event_handler_id_ = 0u;
   data_buffer_overflow_event_handler_id_ = 0u;
-  SetDataRxHandler(nullptr, nullptr);
+  SetDataRxHandler(nullptr);
 }
 
-void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback,
-                                      async_dispatcher_t* rx_dispatcher) {
-  std::lock_guard<std::mutex> lock(rx_mutex_);
+void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback) {
   rx_callback_ = std::move(rx_callback);
-  rx_dispatcher_ = rx_dispatcher;
 }
 
 bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
@@ -487,8 +483,6 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   ZX_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   ZX_DEBUG_ASSERT(signal->observed & ZX_CHANNEL_READABLE);
 
-  std::lock_guard<std::mutex> lock(rx_mutex_);
-
   for (size_t count = 0; count < signal->count; count++) {
     TRACE_DURATION("bluetooth", "ACLDataChannel::OnChannelReady read packet");
     if (!rx_callback_) {
@@ -531,16 +525,10 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
     }
 
     packet->InitializeFromBuffer();
-
-    ZX_DEBUG_ASSERT(rx_dispatcher_);
-    trace_flow_id_t trace_id = TRACE_NONCE();
-    TRACE_FLOW_BEGIN("bluetooth", "ACLDataChannel::OnChannelReady rx_callback", trace_id);
-    async::PostTask(rx_dispatcher_, [cb = rx_callback_.share(), packet = std::move(packet),
-                                     trace_id]() mutable {
+    {
       TRACE_DURATION("bluetooth", "ACLDataChannel->rx_callback_");
-      TRACE_FLOW_END("bluetooth", "ACLDataChannel::OnChannelReady rx_callback", trace_id);
-      cb(std::move(packet));
-    });
+      rx_callback_(std::move(packet));
+    }
   }
 
   status = wait->Begin(dispatcher);
