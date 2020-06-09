@@ -111,7 +111,12 @@ void ACLDataChannel::ShutDown() {
   transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
 
   is_initialized_ = false;
-  send_queue_.clear();
+
+  {
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    send_queue_.clear();
+  }
+
   io_dispatcher_ = nullptr;
   num_completed_packets_event_handler_id_ = 0u;
   data_buffer_overflow_event_handler_id_ = 0u;
@@ -133,6 +138,8 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId c
 
   const auto handle = data_packet->connection_handle();
 
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
   auto link_iter = registered_links_.find(handle);
 
   if (link_iter == registered_links_.end()) {
@@ -150,7 +157,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId c
   send_queue_.insert(SendQueueInsertLocationForPriority(priority),
                      QueuedDataPacket(ll_type, channel_id, priority, std::move(data_packet)));
 
-  TrySendNextQueuedPackets();
+  TrySendNextQueuedPacketsLocked();
 
   return true;
 }
@@ -166,6 +173,8 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
     bt_log(DEBUG, "hci", "no packets to send!");
     return false;
   }
+
+  std::lock_guard<std::mutex> lock(send_mutex_);
 
   auto handle = packets.front().connection_handle();
 
@@ -200,18 +209,21 @@ bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::Chann
     send_queue_.insert(insert_iter, std::move(queue_packet));
   }
 
-  TrySendNextQueuedPackets();
+  TrySendNextQueuedPacketsLocked();
 
   return true;
 }
 
 void ACLDataChannel::RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
   bt_log(DEBUG, "hci", "ACL register link (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
   registered_links_[handle] = ll_type;
 }
 
 void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
   bt_log(DEBUG, "hci", "ACL unregister link (handle: %#.4x)", handle);
 
   if (registered_links_.erase(handle) == 0) {
@@ -225,10 +237,12 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
   auto filter = [handle](const ACLDataPacketPtr& packet, l2cap::ChannelId channel_id) {
     return packet->connection_handle() == handle;
   };
-  DropQueuedPackets(filter);
+  DropQueuedPacketsLocked(filter);
 }
 
 void ACLDataChannel::ClearControllerPacketCount(hci::ConnectionHandle handle) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+
   // Ensure link has already been unregistered. Otherwise, queued packets for this handle
   // could be sent after clearing packet count, and the packet count could become corrupted.
   ZX_ASSERT(registered_links_.find(handle) == registered_links_.end());
@@ -245,18 +259,23 @@ void ACLDataChannel::ClearControllerPacketCount(hci::ConnectionHandle handle) {
 
   const PendingPacketData& data = iter->second;
   if (data.ll_type == Connection::LinkType::kLE) {
-    DecrementLETotalNumPackets(data.count);
+    DecrementLETotalNumPacketsLocked(data.count);
   } else {
-    DecrementTotalNumPackets(data.count);
+    DecrementTotalNumPacketsLocked(data.count);
   }
 
   pending_links_.erase(iter);
 
   // Try sending the next batch of packets in case buffer space opened up.
-  TrySendNextQueuedPackets();
+  TrySendNextQueuedPacketsLocked();
 }
 
 void ACLDataChannel::DropQueuedPackets(ACLPacketPredicate predicate) {
+  std::lock_guard<std::mutex> lock(send_mutex_);
+  DropQueuedPacketsLocked(std::move(predicate));
+}
+
+void ACLDataChannel::DropQueuedPacketsLocked(ACLPacketPredicate predicate) {
   const size_t before_count = send_queue_.size();
   send_queue_.remove_if([&predicate](const QueuedDataPacket& packet) {
     return predicate(packet.packet, packet.channel_id);
@@ -291,6 +310,8 @@ CommandChannel::EventCallbackResult ACLDataChannel::NumberOfCompletedPacketsCall
   const auto& payload = event.params<NumberOfCompletedPacketsEventParams>();
   size_t total_comp_packets = 0;
   size_t le_total_comp_packets = 0;
+
+  std::lock_guard<std::mutex> lock(send_mutex_);
 
   for (uint8_t i = 0; i < payload.number_of_handles; ++i) {
     const NumberOfCompletedPacketsEventData* data = payload.data + i;
@@ -331,18 +352,18 @@ CommandChannel::EventCallbackResult ACLDataChannel::NumberOfCompletedPacketsCall
     }
   }
 
-  DecrementTotalNumPackets(total_comp_packets);
-  DecrementLETotalNumPackets(le_total_comp_packets);
-  TrySendNextQueuedPackets();
+  DecrementTotalNumPacketsLocked(total_comp_packets);
+  DecrementLETotalNumPacketsLocked(le_total_comp_packets);
+  TrySendNextQueuedPacketsLocked();
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-void ACLDataChannel::TrySendNextQueuedPackets() {
+void ACLDataChannel::TrySendNextQueuedPacketsLocked() {
   if (!is_initialized_)
     return;
 
-  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
-  size_t avail_le_packets = GetNumFreeLEPackets();
+  size_t avail_bredr_packets = GetNumFreeBREDRPacketsLocked();
+  size_t avail_le_packets = GetNumFreeLEPacketsLocked();
 
   // Based on what we know about controller buffer availability, we process
   // packets that are currently in |send_queue_|. The packets that can be sent
@@ -400,31 +421,31 @@ void ACLDataChannel::TrySendNextQueuedPackets() {
     to_send.pop_front();
   }
 
-  IncrementTotalNumPackets(bredr_packets_sent);
-  IncrementLETotalNumPackets(le_packets_sent);
+  IncrementTotalNumPacketsLocked(bredr_packets_sent);
+  IncrementLETotalNumPacketsLocked(le_packets_sent);
 }
 
-size_t ACLDataChannel::GetNumFreeBREDRPackets() const {
+size_t ACLDataChannel::GetNumFreeBREDRPacketsLocked() const {
   ZX_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= num_sent_packets_);
   return bredr_buffer_info_.max_num_packets() - num_sent_packets_;
 }
 
-size_t ACLDataChannel::GetNumFreeLEPackets() const {
+size_t ACLDataChannel::GetNumFreeLEPacketsLocked() const {
   if (!le_buffer_info_.IsAvailable())
-    return GetNumFreeBREDRPackets();
+    return GetNumFreeBREDRPacketsLocked();
 
   ZX_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= le_num_sent_packets_);
   return le_buffer_info_.max_num_packets() - le_num_sent_packets_;
 }
 
-void ACLDataChannel::DecrementTotalNumPackets(size_t count) {
+void ACLDataChannel::DecrementTotalNumPacketsLocked(size_t count) {
   ZX_DEBUG_ASSERT(num_sent_packets_ >= count);
   num_sent_packets_ -= count;
 }
 
-void ACLDataChannel::DecrementLETotalNumPackets(size_t count) {
+void ACLDataChannel::DecrementLETotalNumPacketsLocked(size_t count) {
   if (!le_buffer_info_.IsAvailable()) {
-    DecrementTotalNumPackets(count);
+    DecrementTotalNumPacketsLocked(count);
     return;
   }
 
@@ -432,14 +453,14 @@ void ACLDataChannel::DecrementLETotalNumPackets(size_t count) {
   le_num_sent_packets_ -= count;
 }
 
-void ACLDataChannel::IncrementTotalNumPackets(size_t count) {
+void ACLDataChannel::IncrementTotalNumPacketsLocked(size_t count) {
   ZX_DEBUG_ASSERT(num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
   num_sent_packets_ += count;
 }
 
-void ACLDataChannel::IncrementLETotalNumPackets(size_t count) {
+void ACLDataChannel::IncrementLETotalNumPacketsLocked(size_t count) {
   if (!le_buffer_info_.IsAvailable()) {
-    IncrementTotalNumPackets(count);
+    IncrementTotalNumPacketsLocked(count);
     return;
   }
 
