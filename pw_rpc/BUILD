@@ -34,6 +34,8 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/server.h",
         "public/pw_rpc/server_context.h",
+        "public/pw_rpc/internal/channel.h",
+        "public/pw_rpc/internal/server.h",
         # TODO(hepler): Only building the test version of the server for now.
         "test_impl/public_overrides/pw_rpc/internal/method.h",
     ],
@@ -102,6 +104,15 @@ pw_cc_test(
     deps = [
         ":pw_rpc",
         ":test_utils",
+    ],
+)
+
+pw_cc_test(
+    name = "channel_test",
+    srcs = ["channel_test.cc"],
+    deps = [
+        ":common",
+        ":test_utils_test_server",
     ],
 )
 

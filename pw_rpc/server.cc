@@ -19,13 +19,13 @@
 #include "pw_log/log.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/server.h"
 #include "pw_rpc/server_context.h"
 
 namespace pw::rpc {
 
 using std::byte;
 
-using internal::Method;
 using internal::Packet;
 using internal::PacketType;
 
@@ -46,7 +46,7 @@ void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
 
   Packet response(PacketType::RPC);
 
-  Channel* channel = FindChannel(packet.channel_id());
+  internal::Channel* channel = FindChannel(packet.channel_id());
   if (channel == nullptr) {
     // If the requested channel doesn't exist, try to dynamically assign one.
     channel = AssignChannel(packet.channel_id(), interface);
@@ -54,25 +54,26 @@ void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
       // If a channel can't be assigned, send back a response indicating that
       // the server cannot process the request. The channel_id in the response
       // is not set, to allow clients to detect this error case.
-      Channel temp_channel(packet.channel_id(), &interface);
+      internal::Channel temp_channel(packet.channel_id(), &interface);
       response.set_status(Status::RESOURCE_EXHAUSTED);
-      SendResponse(temp_channel, response, temp_channel.AcquireBuffer());
+      auto response_buffer = temp_channel.AcquireBuffer();
+      temp_channel.Send(response_buffer, response);
       return;
     }
   }
 
   response.set_channel_id(channel->id());
-  const span<byte> response_buffer = channel->AcquireBuffer();
+  auto response_buffer = channel->AcquireBuffer();
 
   // Invoke the method with matching service and method IDs, if any.
-  InvokeMethod(packet, *channel, response, response_buffer);
-  SendResponse(*channel, response, response_buffer);
+  InvokeMethod(packet, *channel, response, response_buffer.payload(response));
+  channel->Send(response_buffer, response);
 }
 
 void Server::InvokeMethod(const Packet& request,
                           Channel& channel,
                           internal::Packet& response,
-                          span<std::byte> buffer) {
+                          span<std::byte> payload_buffer) {
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
     return s.id() == request.service_id();
   });
@@ -97,18 +98,19 @@ void Server::InvokeMethod(const Packet& request,
 
   response.set_method_id(method->id());
 
-  span<byte> response_buffer = request.PayloadUsableSpace(buffer);
-
-  internal::ServerCall call(*this, channel, *service, *method);
+  internal::ServerCall call(static_cast<internal::Server&>(*this),
+                            static_cast<internal::Channel&>(channel),
+                            *service,
+                            *method);
   StatusWithSize result =
-      method->Invoke(call, request.payload(), response_buffer);
+      method->Invoke(call, request.payload(), payload_buffer);
 
   response.set_status(result.status());
-  response.set_payload(response_buffer.first(result.size()));
+  response.set_payload(payload_buffer.first(result.size()));
 }
 
-Channel* Server::FindChannel(uint32_t id) const {
-  for (Channel& c : channels_) {
+internal::Channel* Server::FindChannel(uint32_t id) const {
+  for (internal::Channel& c : channels_) {
     if (c.id() == id) {
       return &c;
     }
@@ -116,28 +118,15 @@ Channel* Server::FindChannel(uint32_t id) const {
   return nullptr;
 }
 
-Channel* Server::AssignChannel(uint32_t id, ChannelOutput& interface) {
-  Channel* channel = FindChannel(Channel::kUnassignedChannelId);
+internal::Channel* Server::AssignChannel(uint32_t id,
+                                         ChannelOutput& interface) {
+  internal::Channel* channel = FindChannel(Channel::kUnassignedChannelId);
   if (channel == nullptr) {
     return nullptr;
   }
 
-  *channel = Channel(id, &interface);
+  *channel = internal::Channel(id, &interface);
   return channel;
-}
-
-void Server::SendResponse(const Channel& channel,
-                          const Packet& response,
-                          span<byte> response_buffer) const {
-  StatusWithSize sws = response.Encode(response_buffer);
-  if (!sws.ok()) {
-    // TODO(frolv): What should be done here?
-    channel.SendAndReleaseBuffer(0);
-    PW_LOG_ERROR("Failed to encode response packet to channel buffer");
-    return;
-  }
-
-  channel.SendAndReleaseBuffer(sws.size());
 }
 
 static_assert(std::is_base_of<internal::BaseMethod, internal::Method>(),

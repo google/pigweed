@@ -32,7 +32,7 @@ class Method : public BaseMethod {
   StatusWithSize Invoke(ServerCall& call,
                         span<const std::byte> request,
                         span<std::byte> payload_buffer) const {
-    last_channel_id_ = call.channel_id();
+    last_channel_id_ = call.channel().id();
     last_request_ = request;
     last_payload_buffer_ = payload_buffer;
 

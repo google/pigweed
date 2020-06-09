@@ -63,11 +63,11 @@ class FakeServerWriter : public BaseServerWriter {
   constexpr FakeServerWriter() = default;
 
   Status Write(span<const byte> response) {
-    span buffer = AcquireBuffer();
+    span buffer = AcquirePayloadBuffer();
     std::memcpy(buffer.data(),
                 response.data(),
                 std::min(buffer.size(), response.size()));
-    return SendAndReleaseBuffer(buffer.first(response.size()));
+    return ReleasePayloadBuffer(buffer.first(response.size()));
   }
 };
 
@@ -82,7 +82,7 @@ TEST(ServerWriter, Close) {
   FakeServerWriter writer(context.get());
 
   ASSERT_TRUE(writer.open());
-  writer.close();
+  writer.Finish();
   EXPECT_FALSE(writer.open());
 }
 
@@ -107,7 +107,7 @@ TEST(ServerWriter, Closed_IgnoresPacket) {
   ServerContextForTest<TestService> context;
   FakeServerWriter writer(context.get());
 
-  writer.close();
+  writer.Finish();
 
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
   EXPECT_EQ(Status::FAILED_PRECONDITION, writer.Write(data));

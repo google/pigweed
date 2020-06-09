@@ -47,9 +47,9 @@ class Packet {
   StatusWithSize Encode(span<std::byte> buffer) const;
 
   // Determines the space required to encode the packet proto fields for a
-  // response, and splits the buffer into reserved space and available space for
-  // the payload. Returns a subspan of the payload space.
-  span<std::byte> PayloadUsableSpace(span<std::byte> buffer) const;
+  // response. This may be used to split the buffer into reserved space and
+  // available space for the payload.
+  size_t MinEncodedSizeBytes() const;
 
   bool is_control() const { return !is_rpc(); }
   bool is_rpc() const { return type_ == PacketType::RPC; }

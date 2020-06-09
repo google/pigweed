@@ -55,6 +55,7 @@ template("_pw_rpc_server_library") {
     sources = [
       "base_server_writer.cc",
       "public/pw_rpc/internal/base_server_writer.h",
+      "public/pw_rpc/internal/server.h",
       "public/pw_rpc/internal/service.h",
       "server.cc",
       "service.cc",
@@ -94,6 +95,7 @@ pw_source_set("common") {
   public_deps = [
     ":protos_pwpb",
     dir_pw_assert,
+    dir_pw_log,
     dir_pw_span,
     dir_pw_status,
   ]
@@ -103,6 +105,7 @@ pw_source_set("common") {
     "packet.cc",
     "public/pw_rpc/internal/base_method.h",
     "public/pw_rpc/internal/call.h",
+    "public/pw_rpc/internal/channel.h",
     "public/pw_rpc/internal/packet.h",
   ]
   friend = [ "./*" ]
@@ -131,9 +134,10 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":base_server_writer_test",
-    "nanopb:method_test",
+    ":channel_test",
     ":packet_test",
     ":server_test",
+    "nanopb:method_test",
   ]
 }
 
@@ -154,6 +158,14 @@ pw_test("base_server_writer_test") {
     ":test_utils_test_server",
   ]
   sources = [ "base_server_writer_test.cc" ]
+}
+
+pw_test("channel_test") {
+  deps = [
+    ":common",
+    ":test_utils_test_server",
+  ]
+  sources = [ "channel_test.cc" ]
 }
 
 pw_test("packet_test") {

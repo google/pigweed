@@ -13,13 +13,14 @@
 // the License.
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_rpc/channel.h"
+#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/server.h"
+#include "pw_rpc/internal/server.h"
 #include "pw_span/span.h"
 
 namespace pw::rpc {
@@ -33,13 +34,15 @@ class TestOutput : public ChannelOutput {
   span<std::byte> AcquireBuffer() override { return buffer_; }
 
   void SendAndReleaseBuffer(size_t size) override {
-    sent_packet_ = {buffer_, size};
+    sent_packet_ = span(buffer_.data(), size);
   }
+
+  span<const std::byte> buffer() const { return buffer_; }
 
   const span<const std::byte>& sent_packet() const { return sent_packet_; }
 
  private:
-  std::byte buffer_[buffer_size];
+  std::array<std::byte, buffer_size> buffer_;
   span<const std::byte> sent_packet_;
 };
 
@@ -56,7 +59,10 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(span(&channel_, 1)),
         service_(kServiceId),
-        context_(server_, channel_, service_, method) {
+        context_(static_cast<internal::Server&>(server_),
+                 static_cast<internal::Channel&>(channel_),
+                 service_,
+                 method) {
     server_.RegisterService(service_);
   }
 

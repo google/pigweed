@@ -12,6 +12,33 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/channel.h"
+#include "pw_rpc/internal/channel.h"
 
-namespace pw::rpc {}  // namespace pw::rpc
+#include "pw_log/log.h"
+#include "pw_rpc/internal/packet.h"
+
+namespace pw::rpc::internal {
+
+using std::byte;
+
+span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
+  const size_t reserved_size = packet.MinEncodedSizeBytes();
+  return reserved_size <= buffer_.size() ? buffer_.subspan(reserved_size)
+                                         : span<byte>();
+}
+
+Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
+  StatusWithSize encoded = packet.Encode(buffer.buffer_);
+  buffer.buffer_ = {};
+
+  if (!encoded.ok()) {
+    PW_LOG_ERROR("Failed to encode response packet to channel buffer");
+    output().SendAndReleaseBuffer(0);
+    return Status::INTERNAL;
+  }
+
+  output().SendAndReleaseBuffer(encoded.size());
+  return Status::OK;
+}
+
+}  // namespace pw::rpc::internal

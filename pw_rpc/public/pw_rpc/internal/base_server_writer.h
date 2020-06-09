@@ -16,8 +16,8 @@
 #include <cstddef>
 #include <utility>
 
-#include "pw_rpc/channel.h"
-#include "pw_rpc/server_context.h"
+#include "pw_rpc/internal/call.h"
+#include "pw_rpc/internal/channel.h"
 #include "pw_span/span.h"
 
 namespace pw::rpc::internal {
@@ -33,35 +33,36 @@ class Packet;
 // cancelling / terminating ongoing streaming RPCs.
 class BaseServerWriter {
  public:
-  constexpr BaseServerWriter(ServerCall& context)
-      : context_(context), state_{kOpen} {}
-
-  BaseServerWriter(BaseServerWriter&& other) { *this = std::move(other); }
-  BaseServerWriter& operator=(BaseServerWriter&& other);
+  constexpr BaseServerWriter(ServerCall& call) : call_(call), state_(kOpen) {}
 
   BaseServerWriter(const BaseServerWriter&) = delete;
+
+  BaseServerWriter(BaseServerWriter&& other) { *this = std::move(other); }
+
   BaseServerWriter& operator=(const BaseServerWriter&) = delete;
+
+  BaseServerWriter& operator=(BaseServerWriter&& other);
 
   // True if the ServerWriter is active and ready to send responses.
   bool open() const { return state_ == kOpen; }
 
   // Closes the ServerWriter, if it is open.
-  void close();
+  void Finish();
 
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
 
-  const Method& method() const { return context_.method(); }
+  const Method& method() const { return call_.method(); }
 
-  span<std::byte> AcquireBuffer();
+  span<std::byte> AcquirePayloadBuffer();
 
-  Status SendAndReleaseBuffer(span<const std::byte> payload);
+  Status ReleasePayloadBuffer(span<const std::byte> payload);
 
  private:
-  Packet packet() const;
+  Packet packet(span<const std::byte> payload = {}) const;
 
-  ServerCall context_;
-  span<std::byte> response_;
+  ServerCall call_;
+  Channel::OutputBuffer response_;
   enum { kClosed, kOpen } state_;
 };
 

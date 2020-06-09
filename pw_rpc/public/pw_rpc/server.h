@@ -17,22 +17,17 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
+#include "pw_rpc/internal/base_server_writer.h"
+#include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/service.h"
 
 namespace pw::rpc {
-namespace internal {
-
-class Method;
-class Packet;
-
-}  // namespace internal
 
 class Server {
  public:
-  constexpr Server(span<Channel> channels) : channels_(channels) {}
-
-  Server(const Server& other) = delete;
-  Server& operator=(const Server& other) = delete;
+  constexpr Server(span<Channel> channels)
+      : channels_(static_cast<internal::Channel*>(channels.data()),
+                  channels.size()) {}
 
   // Registers a service with the server. This should not be called directly
   // with an internal::Service; instead, use a generated class which inherits
@@ -51,14 +46,10 @@ class Server {
                     internal::Packet& response,
                     span<std::byte> buffer);
 
-  void SendResponse(const Channel& output,
-                    const internal::Packet& response,
-                    span<std::byte> response_buffer) const;
+  internal::Channel* FindChannel(uint32_t id) const;
+  internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
-  Channel* FindChannel(uint32_t id) const;
-  Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
-
-  span<Channel> channels_;
+  span<internal::Channel> channels_;
   IntrusiveList<internal::Service> services_;
 };
 

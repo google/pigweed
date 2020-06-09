@@ -65,20 +65,18 @@ class Channel {
   constexpr uint32_t id() const { return id_; }
   constexpr bool assigned() const { return id_ != kUnassignedChannelId; }
 
- private:
-  friend class Server;
-  friend class internal::BaseServerWriter;
-
-  span<std::byte> AcquireBuffer() const { return output_->AcquireBuffer(); }
-  void SendAndReleaseBuffer(size_t size) const {
-    output_->SendAndReleaseBuffer(size);
-  }
-
+ protected:
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : id_(id), output_(output) {
     PW_CHECK_UINT_NE(id, kUnassignedChannelId);
   }
 
+  ChannelOutput& output() const {
+    PW_CHECK_NOTNULL(output_);
+    return *output_;
+  }
+
+ private:
   uint32_t id_;
   ChannelOutput* output_;
 };

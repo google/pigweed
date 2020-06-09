@@ -55,10 +55,6 @@ constexpr byte kEncoded[] = {
     byte{0x00},
 };
 
-constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +
-                                 2 /* service */ + 2 /* method */ +
-                                 2 /* payload key */ + 2 /* status */;
-
 TEST(Packet, Encode) {
   byte buffer[64];
 
@@ -110,45 +106,18 @@ TEST(Packet, EncodeDecode) {
   EXPECT_EQ(decoded.status(), Status::UNAVAILABLE);
 }
 
-TEST(Packet, PayloadUsableSpace_EmptyBuffer) {
-  Packet packet(PacketType::RPC, 1, 42, 100, kPayload);
-  EXPECT_TRUE(packet.PayloadUsableSpace(span<byte>()).empty());
-}
-
-TEST(Packet, PayloadUsableSpace_TooSmall) {
-  Packet packet(PacketType::RPC, 1, 42, 100, kPayload);
-
-  byte buffer[10];
-  EXPECT_TRUE(packet.PayloadUsableSpace(buffer).empty());
-}
+constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +
+                                 2 /* service */ + 2 /* method */ +
+                                 2 /* payload key */ + 2 /* status */;
 
 TEST(Packet, PayloadUsableSpace_ExactFit) {
-  byte buffer[kReservedSize];
-  const span payload =
-      Packet(PacketType::RPC, 1, 42, 100).PayloadUsableSpace(buffer);
-
-  EXPECT_EQ(payload.size(), sizeof(buffer) - kReservedSize);
-  EXPECT_EQ(buffer + kReservedSize, payload.data());
-}
-
-TEST(Packet, PayloadUsableSpace_ExtraRoom) {
-  byte buffer[kReservedSize * 3];
-  const span payload =
-      Packet(PacketType::RPC, 1, 42, 100).PayloadUsableSpace(buffer);
-
-  EXPECT_EQ(payload.size(), sizeof(buffer) - kReservedSize);
-  EXPECT_EQ(buffer + kReservedSize, payload.data());
+  EXPECT_EQ(kReservedSize,
+            Packet(PacketType::RPC, 1, 42, 100).MinEncodedSizeBytes());
 }
 
 TEST(Packet, PayloadUsableSpace_LargerVarints) {
-  byte buffer[kReservedSize * 3];
-  const span payload =
-      Packet(PacketType::RPC, 17000, 200, 200).PayloadUsableSpace(buffer);
-
-  constexpr size_t expected_size = kReservedSize + 2 + 1 + 1;
-
-  EXPECT_EQ(payload.size(), sizeof(buffer) - expected_size);
-  EXPECT_EQ(buffer + expected_size, payload.data());
+  EXPECT_EQ(kReservedSize + 2 + 1 + 1,
+            Packet(PacketType::RPC, 17000, 200, 200).MinEncodedSizeBytes());
 }
 
 }  // namespace

@@ -1,0 +1,69 @@
+// Copyright 2020 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+#include "pw_rpc/channel.h"
+#include "pw_span/span.h"
+#include "pw_status/status.h"
+
+namespace pw::rpc::internal {
+
+class Packet;
+
+class Channel : public rpc::Channel {
+ public:
+  Channel() = delete;
+
+  constexpr Channel(uint32_t id, ChannelOutput* output)
+      : rpc::Channel(id, output) {}
+
+  class OutputBuffer {
+   public:
+    constexpr OutputBuffer() = default;
+
+    OutputBuffer(const OutputBuffer&) = delete;
+
+    OutputBuffer(OutputBuffer&& other) { *this = std::move(other); }
+
+    ~OutputBuffer() { PW_DCHECK(buffer_.empty()); }
+
+    OutputBuffer& operator=(const OutputBuffer&) = delete;
+
+    OutputBuffer& operator=(OutputBuffer&& other) {
+      PW_DCHECK(buffer_.empty());
+      buffer_ = other.buffer_;
+      other.buffer_ = {};
+      return *this;
+    }
+
+    // Returns a portion of this OutputBuffer to use as the packet payload.
+    span<std::byte> payload(const Packet& packet) const;
+
+   private:
+    friend class Channel;
+
+    explicit constexpr OutputBuffer(span<std::byte> buffer) : buffer_(buffer) {}
+
+    span<std::byte> buffer_;
+  };
+
+  // Acquires a buffer for the packet.
+  OutputBuffer AcquireBuffer() const {
+    return OutputBuffer(output().AcquireBuffer());
+  }
+
+  Status Send(OutputBuffer& output, const internal::Packet& packet);
+};
+
+}  // namespace pw::rpc::internal

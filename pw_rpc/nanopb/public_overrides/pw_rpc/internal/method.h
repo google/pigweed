@@ -264,14 +264,13 @@ class Method : public BaseMethod {
 
 template <typename T>
 Status ServerWriter<T>::Write(const T& response) {
-  // TODO(hepler): Need to think about what Status this returns. Should channels
-  // return a status for their SendAndReleaseBuffer?
-  span<std::byte> buffer = AcquireBuffer();
+  span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (auto result = method().EncodeResponse(&response, buffer); result.ok()) {
-    return SendAndReleaseBuffer(buffer.first(result.size()));
+    return ReleasePayloadBuffer(buffer.first(result.size()));
   }
 
+  ReleasePayloadBuffer({});
   return Status::INTERNAL;
 }
 

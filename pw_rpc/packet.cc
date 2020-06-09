@@ -89,7 +89,7 @@ StatusWithSize Packet::Encode(span<byte> buffer) const {
   return StatusWithSize(proto.size());
 }
 
-span<byte> Packet::PayloadUsableSpace(span<byte> buffer) const {
+size_t Packet::MinEncodedSizeBytes() const {
   size_t reserved_size = 0;
 
   reserved_size += 1;  // channel_id key
@@ -108,8 +108,7 @@ span<byte> Packet::PayloadUsableSpace(span<byte> buffer) const {
   // Payload field takes at least two bytes to encode (varint key + length).
   reserved_size += 2;
 
-  return reserved_size <= buffer.size() ? buffer.subspan(reserved_size)
-                                        : span<byte>();
+  return reserved_size;
 }
 
 }  // namespace pw::rpc::internal

@@ -14,7 +14,6 @@
 
 #include "pw_rpc/internal/base_server_writer.h"
 
-#include "pw_assert/assert.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/server.h"
@@ -22,59 +21,47 @@
 namespace pw::rpc::internal {
 
 BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
-  context_ = std::move(other.context_);
+  call_ = std::move(other.call_);
   response_ = std::move(other.response_);
   state_ = std::move(other.state_);
+
   other.state_ = kClosed;
   return *this;
 }
 
-void BaseServerWriter::close() {
-  if (open()) {
-    // TODO(hepler): Send a control packet indicating that the stream has
-    // terminated, and remove this ServerWriter from the Server's list.
-
-    state_ = kClosed;
+void BaseServerWriter::Finish() {
+  if (!open()) {
+    return;
   }
+
+  // TODO(hepler): Send a control packet indicating that the stream has
+  // terminated.
+
+  state_ = kClosed;
 }
 
-span<std::byte> BaseServerWriter::AcquireBuffer() {
+span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   if (!open()) {
     return {};
   }
 
-  PW_DCHECK(response_.empty());
-  response_ = context_.channel().AcquireBuffer();
-
-  // Reserve space for the RPC packet header.
-  return packet().PayloadUsableSpace(response_);
+  response_ = call_.channel().AcquireBuffer();
+  return response_.payload(packet());
 }
 
-Status BaseServerWriter::SendAndReleaseBuffer(span<const std::byte> payload) {
+Status BaseServerWriter::ReleasePayloadBuffer(span<const std::byte> payload) {
   if (!open()) {
     return Status::FAILED_PRECONDITION;
   }
-
-  Packet response_packet = packet();
-  response_packet.set_payload(payload);
-  StatusWithSize encoded = response_packet.Encode(response_);
-  response_ = {};
-
-  if (!encoded.ok()) {
-    context_.channel().SendAndReleaseBuffer(0);
-    return Status::INTERNAL;
-  }
-
-  // TODO(hepler): Should Channel::SendAndReleaseBuffer return Status?
-  context_.channel().SendAndReleaseBuffer(encoded.size());
-  return Status::OK;
+  return call_.channel().Send(response_, packet(payload));
 }
 
-Packet BaseServerWriter::packet() const {
+Packet BaseServerWriter::packet(span<const std::byte> payload) const {
   return Packet(PacketType::RPC,
-                context_.channel_id(),
-                context_.service().id(),
-                method().id());
+                call_.channel().id(),
+                call_.service().id(),
+                method().id(),
+                payload);
 }
 
 }  // namespace pw::rpc::internal
