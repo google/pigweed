@@ -35,7 +35,12 @@ std::optional<EcdhKey> EcdhKey::ParseFromPublicKey(sm::PairingPublicKeyParams pu
   BN_init(&y);
   BN_le2bn(pub_key.x, sizeof(pub_key.x), &x);
   BN_le2bn(pub_key.y, sizeof(pub_key.y), &y);
-  if (EC_KEY_set_public_key_affine_coordinates(new_key.key_, &x, &y) == 1) {
+
+  // One potential cause of failure is if pub_key is not a valid ECDH key on the P-256 curve.
+  int success = (EC_KEY_set_public_key_affine_coordinates(new_key.key_, &x, &y) == 1);
+  BN_free(&x);
+  BN_free(&y);
+  if (success) {
     return new_key;
   }
   return std::nullopt;
@@ -58,6 +63,8 @@ sm::PairingPublicKeyParams EcdhKey::GetSerializedPublicKey() const {
                 EC_KEY_get0_group(key_), EC_KEY_get0_public_key(key_), &x, &y, nullptr) == 1);
   ZX_ASSERT(BN_bn2le_padded(params.x, sizeof(params.x), &x) == 1);
   ZX_ASSERT(BN_bn2le_padded(params.y, sizeof(params.y), &y) == 1);
+  BN_free(&x);
+  BN_free(&y);
   return params;
 }
 
@@ -71,6 +78,7 @@ UInt256 EcdhKey::GetPublicKeyX() const {
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &x) == 1;
   ZX_ASSERT(success);
+  BN_free(&x);
   return out;
 }
 
@@ -84,6 +92,7 @@ UInt256 EcdhKey::GetPublicKeyY() const {
   UInt256 out{};
   success = BN_bn2le_padded(out.data(), out.size(), &y) == 1;
   ZX_ASSERT(success);
+  BN_free(&y);
   return out;
 }
 
@@ -132,6 +141,7 @@ void LocalEcdhKey::SetPrivateKeyForTesting(const UInt256& private_key) {
   BN_le2bn(private_key.data(), private_key.size(), &pkey);
   ZX_ASSERT_MSG(EC_KEY_set_private_key(mut_boringssl_key(), &pkey) == 1,
                 "Could not set private key in test");
+  BN_free(&pkey);
 }
 
 }  // namespace sm
