@@ -20,12 +20,12 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-from typing import Sequence
+from typing import Sequence, Union
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def git_repo_root(path) -> Path:
+def git_repo_root(path: Union[Path, str]) -> Path:
     return Path(
         subprocess.run(['git', '-C', path, 'rev-parse', '--show-toplevel'],
                        check=True,
@@ -35,7 +35,7 @@ def git_repo_root(path) -> Path:
 def install_hook(script,
                  hook: str,
                  args: Sequence[str] = (),
-                 repository='.') -> None:
+                 repository: Union[Path, str] = '.') -> None:
     """Installs a simple Git hook that calls a script with arguments."""
     root = git_repo_root(repository).resolve()
     script = os.path.relpath(script, root)

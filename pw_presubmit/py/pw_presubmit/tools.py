@@ -20,7 +20,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-from typing import Any, Dict, Iterable, Iterator, List, Sequence, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Sequence, Pattern, Tuple
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -121,8 +121,24 @@ def file_summary(paths: Iterable[Path],
     return output
 
 
-def make_tuple(value: Iterable[str]) -> Tuple[str, ...]:
-    return tuple([value] if isinstance(value, str) else value)
+def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:
+    """Returns relative Paths calculated with os.path.relpath."""
+    for path in paths:
+        yield Path(os.path.relpath(path, start))
+
+
+def exclude_paths(exclusions: Iterable[Pattern[str]],
+                  paths: Iterable[Path],
+                  relative_to: Path = None) -> Iterable[Path]:
+    """Excludes paths based on a series of regular expressions."""
+    if relative_to:
+        relpath = lambda path: Path(os.path.relpath(path, relative_to))
+    else:
+        relpath = lambda path: path
+
+    for path in paths:
+        if not any(e.search(relpath(path).as_posix()) for e in exclusions):
+            yield path
 
 
 def _truncate(value, length: int = 60) -> str:

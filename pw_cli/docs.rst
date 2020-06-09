@@ -58,7 +58,6 @@ built-in commands. Since they are accessed by module name, plugins must be
 defined in Python packages that are installed in the Pigweed virtual
 environment.
 
-
 Plugin registrations in a ``PW_PLUGINS`` file apply to the their directory and
 all subdirectories, similarly to configuration files like ``.clang-format``.
 Registered plugins appear as commands in the ``pw`` tool when ``pw`` is run from

@@ -13,7 +13,6 @@
 # the License.
 """Tools for running presubmit checks in a Git repository.
 
-
 Presubmit checks are defined as a function or other callable. The function may
 take either no arguments or a list of the paths on which to run. Presubmit
 checks communicate failure by raising any exception.
@@ -50,8 +49,8 @@ from pathlib import Path
 import re
 import subprocess
 import time
-from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple
-from typing import Optional, Pattern, Sequence, Tuple
+from typing import Callable, Collection, Dict, Iterable, Iterator, List
+from typing import NamedTuple, Optional, Pattern, Sequence, Set, Tuple
 
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
@@ -138,6 +137,9 @@ class Program(collections.abc.Sequence):
     def __str__(self):
         return self.name
 
+    def title(self):
+        return f'{self.name if self.name else ""} presubmit checks'.strip()
+
 
 class Programs(collections.abc.Mapping):
     """A mapping of presubmit check programs.
@@ -171,38 +173,54 @@ class Programs(collections.abc.Mapping):
 @dataclasses.dataclass(frozen=True)
 class PresubmitContext:
     """Context passed into presubmit checks."""
-    repo_root: Path
+    root: Path
+    repos: Tuple[Path, ...]
     output_dir: Path
-    paths: Sequence[Path]
+    paths: Tuple[Path, ...]
+
+    def relative_paths(self, start: Optional[Path] = None):
+        return tuple(
+            tools.relative_paths(self.paths, start if start else self.root))
+
+
+class _Filter(NamedTuple):
+    endswith: Tuple[str, ...] = ('', )
+    exclude: Tuple[Pattern[str], ...] = ()
+
+    def matches(self, path: str) -> bool:
+        return (any(path.endswith(end) for end in self.endswith)
+                and not any(exp.search(path) for exp in self.exclude))
 
 
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
-    def __init__(self, repository_root: Path, output_directory: Path,
-                 paths: Sequence[Path]):
-        self._repository_root = repository_root
-        self._output_directory = output_directory
-        self._paths = paths
+    def __init__(self, root: Path, repos: Sequence[Path],
+                 output_directory: Path, paths: Sequence[Path]):
+        self._root = root.resolve()
+        self._repos = tuple(repos)
+        self._output_directory = output_directory.resolve()
+        self._paths = tuple(paths)
+        self._relative_paths = tuple(
+            tools.relative_paths(self._paths, self._root))
 
     def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
-        title = f'{program.name if program.name else ""} presubmit checks'
-        checks = _apply_filters(program, self._paths)
+        checks = self._apply_filters(program)
 
-        _LOG.debug('Running %s for %s', title, self._repository_root.name)
-        print(_title(f'{self._repository_root.name}: {title}'))
+        _LOG.debug('Running %s for %s', program.title(), self._root.name)
+        print(_title(f'{self._root.name}: {program.title()}'))
 
         _LOG.info('%d of %d checks apply to %s in %s', len(checks),
-                  len(program), plural(self._paths,
-                                       'file'), self._repository_root)
+                  len(program), plural(self._paths, 'file'), self._root)
 
         print()
-        for line in tools.file_summary(self._paths):
+        for line in tools.file_summary(self._relative_paths):
             print(line)
         print()
 
-        _LOG.debug('Paths:\n%s', '\n'.join(str(path) for path in self._paths))
+        _LOG.debug('Paths, relative to %s:\n%s', self._root,
+                   '\n'.join(p.as_posix() for p in self._relative_paths))
         if not self._paths:
             print(color_yellow('No files are being checked!'))
 
@@ -213,6 +231,40 @@ class Presubmit:
         self._log_summary(time.time() - start_time, passed, failed, skipped)
 
         return not failed and not skipped
+
+    def _apply_filters(
+            self, program: Sequence[Callable]
+    ) -> List[Tuple['_Check', Sequence[Path]]]:
+        """Returns list of (check, paths) for checks that should run."""
+        checks = [c if isinstance(c, _Check) else _Check(c) for c in program]
+        filter_to_checks: Dict[_Filter,
+                               List[_Check]] = collections.defaultdict(list)
+
+        for check in checks:
+            filter_to_checks[check.filter].append(check)
+
+        check_to_paths = self._map_checks_to_paths(filter_to_checks)
+        return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
+
+    def _map_checks_to_paths(
+        self, filter_to_checks: Dict[_Filter, List['_Check']]
+    ) -> Dict['_Check', Sequence[Path]]:
+        checks_to_paths: Dict[_Check, Sequence[Path]] = {}
+
+        posix_paths = tuple(p.as_posix() for p in self._relative_paths)
+
+        for filt, checks in filter_to_checks.items():
+            filtered_paths = tuple(
+                path for path, filter_path in zip(self._paths, posix_paths)
+                if filt.matches(filter_path))
+
+            for check in checks:
+                if filtered_paths or check.always_run:
+                    checks_to_paths[check] = filtered_paths
+                else:
+                    _LOG.debug('Skipping "%s": no relevant files', check.name)
+
+        return checks_to_paths
 
     def _log_summary(self, time_s: float, passed: int, failed: int,
                      skipped: int) -> None:
@@ -239,7 +291,7 @@ class Presubmit:
                 _format_time(time_s)))
 
     @contextlib.contextmanager
-    def _context(self, name: str, paths: Sequence[Path]):
+    def _context(self, name: str, paths: Tuple[Path, ...]):
         # There are many characters banned from filenames on Windows. To
         # simplify things, just strip everything that's not a letter, digit,
         # or underscore.
@@ -255,8 +307,9 @@ class Presubmit:
             _LOG.addHandler(handler)
 
             yield PresubmitContext(
-                repo_root=self._repository_root.absolute(),
-                output_dir=output_directory.absolute(),
+                root=self._root,
+                repos=self._repos,
+                output_dir=output_directory,
                 paths=paths,
             )
 
@@ -269,7 +322,6 @@ class Presubmit:
         passed = failed = 0
 
         for i, (check, paths) in enumerate(program, 1):
-            paths = [self._repository_root.joinpath(p) for p in paths]
             with self._context(check.name, paths) as ctx:
                 result = check.run(ctx, i, len(program))
 
@@ -285,55 +337,43 @@ class Presubmit:
         return passed, failed, len(program) - passed - failed
 
 
-class _Filter(NamedTuple):
-    endswith: Tuple[str, ...] = ('', )
-    exclude: Tuple[str, ...] = ()
+def _process_pathspecs(repos: Iterable[Path],
+                       pathspecs: Iterable[str]) -> Dict[Path, List[str]]:
+    pathspecs_by_repo: Dict[Path, List[str]] = {repo: [] for repo in repos}
+    repos_with_paths: Set[Path] = set()
 
+    for pathspec in pathspecs:
+        # If the pathspec is a path to an existing file, only use it for the
+        # repo it is in.
+        if os.path.exists(pathspec):
+            # Raise an exception if the path exists but is not in a known repo.
+            repo = git_repo.within_repo(pathspec)
+            if repo not in pathspecs_by_repo:
+                raise ValueError(
+                    f'{pathspec} is not in a Git repository in this presubmit')
 
-def _apply_filters(
-        program: Sequence[Callable],
-        paths: Sequence[Path]) -> List[Tuple['_Check', Sequence[Path]]]:
-    """Returns a list of (check, paths_to_check) for checks that should run."""
-    checks = [c if isinstance(c, _Check) else _Check(c) for c in program]
-    filter_to_checks: Dict[_Filter,
-                           List[_Check]] = collections.defaultdict(list)
+            # Make the path relative to the repo's root.
+            pathspecs_by_repo[repo].append(os.path.relpath(pathspec, repo))
+            repos_with_paths.add(repo)
+        else:
+            # Pathspecs that are not paths (e.g. '*.h') are used for all repos.
+            for patterns in pathspecs_by_repo.values():
+                patterns.append(pathspec)
 
-    for check in checks:
-        filter_to_checks[check.filter].append(check)
+    # If any paths were specified, only search for paths in those repos.
+    if repos_with_paths:
+        for repo in set(pathspecs_by_repo) - repos_with_paths:
+            del pathspecs_by_repo[repo]
 
-    check_to_paths = _map_checks_to_paths(filter_to_checks, paths)
-    return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
-
-
-def _map_checks_to_paths(
-        filter_to_checks: Dict[_Filter, List['_Check']],
-        paths: Sequence[Path]) -> Dict['_Check', Sequence[Path]]:
-    checks_to_paths: Dict[_Check, Sequence[Path]] = {}
-
-    str_paths = [path.as_posix() for path in paths]
-
-    for filt, checks in filter_to_checks.items():
-        exclude = [re.compile(exp) for exp in filt.exclude]
-
-        filtered_paths = tuple(
-            Path(path) for path in str_paths
-            if any(path.endswith(end) for end in filt.endswith) and not any(
-                exp.search(path) for exp in exclude))
-
-        for check in checks:
-            if filtered_paths or check.always_run:
-                checks_to_paths[check] = filtered_paths
-            else:
-                _LOG.debug('Skipping "%s": no relevant files', check.name)
-
-    return checks_to_paths
+    return pathspecs_by_repo
 
 
 def run(program: Sequence[Callable],
+        root: Path,
+        repos: Collection[Path] = (),
         base: Optional[str] = None,
-        paths: Sequence[Path] = (),
+        paths: Sequence[str] = (),
         exclude: Sequence[Pattern] = (),
-        repo_path: Path = Optional[None],
         output_directory: Optional[Path] = None,
         keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
@@ -341,42 +381,50 @@ def run(program: Sequence[Callable],
     This changes the directory to the root of the Git repository after listing
     paths, so all presubmit checks can assume they run from there.
 
+    The paths argument contains Git pathspecs. If no pathspecs are provided, all
+    paths in all repos are included. If paths to files or directories are
+    provided, only files within those repositories are searched. Patterns are
+    searched across all repositories. For example, if the pathspecs "my_module/"
+    and "*.h", paths under "my_module/" in the containing repo and paths in all
+    repos matching "*.h" will be included in the presubmit.
+
     Args:
         program: list of presubmit check functions to run
+        root: root path of the project
+        repos: paths to the roots of Git repositories to check
         name: name to use to refer to this presubmit check run
         base: optional base Git commit to list files against
-        paths: optional list of paths to run the presubmit checks against
-        exclude: regular expressions of paths to exclude from checks
-        repo_path: path in the git repository to check
+        paths: optional list of Git pathspecs to run the checks against
+        exclude: regular expressions for Posix-style paths to exclude
         output_directory: where to place output files
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
         True if all presubmit checks succeeded
     """
-    if repo_path is None:
-        repo_path = Path.cwd()
+    repos = [repo.resolve() for repo in repos]
 
-    if not git_repo.is_repo(repo_path):
-        _LOG.critical('Presubmit checks must be run from a Git repo')
-        return False
+    for repo in repos:
+        if git_repo.root(repo) != repo:
+            raise ValueError(f'{repo} is not the root of a Git repo; '
+                             'presubmit checks must be run from a Git repo')
 
-    files = git_repo.list_files(base, paths, exclude, repo_path)
-    root = git_repo.root(repo=repo_path)
+    pathspecs_by_repo = _process_pathspecs(repos, paths)
 
-    _LOG.info('Checking %s',
-              git_repo.describe_files(root, repo_path, base, paths, exclude))
+    files: List[Path] = []
 
-    files = [path.relative_to(root) for path in files]
+    for repo, pathspecs in pathspecs_by_repo.items():
+        files += tools.exclude_paths(
+            exclude, git_repo.list_files(base, pathspecs, repo), root)
+
+        _LOG.info(
+            'Checking %s',
+            git_repo.describe_files(repo, repo, base, pathspecs, exclude))
 
     if output_directory is None:
-        output_directory = root.joinpath('.presubmit')
+        output_directory = root / '.presubmit'
 
-    presubmit = Presubmit(
-        repository_root=root,
-        output_directory=Path(output_directory),
-        paths=files,
-    )
+    presubmit = Presubmit(root, repos, output_directory, files)
 
     if not isinstance(program, Program):
         program = Program('', program)
@@ -478,6 +526,10 @@ def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
              if required_args else ''))
 
 
+def _make_str_tuple(value: Iterable[str]) -> Tuple[str, ...]:
+    return tuple([value] if isinstance(value, str) else value)
+
+
 def filter_paths(endswith: Iterable[str] = (''),
                  exclude: Iterable[str] = (),
                  always_run: bool = False) -> Callable[[Callable], _Check]:
@@ -497,8 +549,8 @@ def filter_paths(endswith: Iterable[str] = (''),
     """
     def filter_paths_for_function(function: Callable):
         return _Check(function,
-                      _Filter(tools.make_tuple(endswith),
-                              tools.make_tuple(exclude)),
+                      _Filter(_make_str_tuple(endswith),
+                              tuple(re.compile(e) for e in exclude)),
                       always_run=always_run)
 
     return filter_paths_for_function

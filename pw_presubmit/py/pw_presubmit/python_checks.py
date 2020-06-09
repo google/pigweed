@@ -16,10 +16,12 @@
 These checks assume that they are running in a preconfigured Python environment.
 """
 
+import logging
 import os
+from pathlib import Path
 import re
 import sys
-import logging
+from typing import List
 
 try:
     import pw_presubmit
@@ -41,14 +43,16 @@ def run_module(*args, **kwargs):
 
 @filter_paths(endswith='.py')
 def test_python_packages(ctx: pw_presubmit.PresubmitContext):
-    packages = git_repo.find_python_packages(ctx.paths, repo=ctx.repo_root)
+    packages: List[Path] = []
+    for repo in ctx.repos:
+        packages += git_repo.find_python_packages(ctx.paths, repo=repo)
 
     if not packages:
         _LOG.info('No Python packages were found.')
         return
 
     for package in packages:
-        call('python', os.path.join(package, 'setup.py'), 'test', cwd=package)
+        call('python', package / 'setup.py', 'test', cwd=package)
 
 
 @filter_paths(endswith='.py')
@@ -67,7 +71,7 @@ def pylint(ctx: pw_presubmit.PresubmitContext):
         '--jobs=0',
         f'--disable={",".join(disable_checkers)}',
         *ctx.paths,
-        cwd=ctx.repo_root,
+        cwd=ctx.root,
     )
 
 

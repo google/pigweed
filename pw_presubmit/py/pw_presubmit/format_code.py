@@ -29,7 +29,7 @@ import re
 import subprocess
 import sys
 from typing import Callable, Collection, Dict, Iterable, List, NamedTuple
-from typing import Optional, Pattern, Tuple
+from typing import Optional, Pattern, Tuple, Union
 
 try:
     import pw_presubmit
@@ -41,7 +41,7 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import cli, git_repo
-from pw_presubmit.tools import file_summary, log_run, plural
+from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -323,13 +323,14 @@ def presubmit_checks(**filter_paths_args) -> Tuple[Callable, ...]:
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self, files: Collection[Path]):
+    def __init__(self, files: Iterable[Path]):
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
 
-        for path in files:
+        for path in self.paths:
             for code_format in CODE_FORMATS:
-                if any(str(path).endswith(e) for e in code_format.extensions):
+                if any(path.as_posix().endswith(e)
+                       for e in code_format.extensions):
                     self._formats[code_format].append(path)
 
     def check(self) -> Dict[Path, str]:
@@ -350,19 +351,19 @@ class CodeFormatter:
                       plural(files, code_format.language + ' file'))
 
 
-def _file_summary(files: Iterable[Path], base: Path) -> List[str]:
+def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> List[str]:
     try:
-        return file_summary(f.resolve().relative_to(base.resolve())
-                            for f in files)
+        return file_summary(
+            Path(f).resolve().relative_to(base.resolve()) for f in files)
     except ValueError:
         return []
 
 
-def format_paths_in_repo(paths: Collection[Path],
+def format_paths_in_repo(paths: Collection[Union[Path, str]],
                          exclude: Collection[Pattern[str]], fix: bool,
                          base: str) -> int:
     """Checks or fixes formatting for files in a Git repo."""
-    files = [path.resolve() for path in paths if path.is_file()]
+    files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
@@ -373,7 +374,8 @@ def format_paths_in_repo(paths: Collection[Path],
 
         # Add files from Git and remove duplicates.
         files = sorted(
-            set(git_repo.list_files(base, paths, exclude)) | set(files))
+            set(exclude_paths(exclude, git_repo.list_files(base, paths)))
+            | set(files))
     elif base:
         _LOG.critical(
             'A base commit may only be provided if running from a Git repo')
@@ -382,11 +384,11 @@ def format_paths_in_repo(paths: Collection[Path],
     return format_files(files, fix, repo=repo)
 
 
-def format_files(paths: Collection[Path],
+def format_files(paths: Collection[Union[Path, str]],
                  fix: bool,
                  repo: Optional[Path] = None) -> int:
     """Checks or fixes formatting for the specified files."""
-    formatter = CodeFormatter(paths)
+    formatter = CodeFormatter(Path(p) for p in paths)
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
 

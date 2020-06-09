@@ -16,7 +16,7 @@
 import collections
 from pathlib import Path
 import subprocess
-from typing import Collection, Dict, Iterable, Iterator, List, Optional
+from typing import Collection, Dict, Iterable, List, Optional
 from typing import Pattern, Union
 
 from pw_presubmit.tools import log_run, plural
@@ -24,59 +24,56 @@ from pw_presubmit.tools import log_run, plural
 PathOrStr = Union[Path, str]
 
 
-def git_stdout(*args: PathOrStr, repo: PathOrStr = '.') -> str:
+def git_stdout(*args: PathOrStr,
+               show_stderr=False,
+               repo: PathOrStr = '.') -> str:
     return log_run(['git', '-C', repo, *args],
                    stdout=subprocess.PIPE,
+                   stderr=None if show_stderr else subprocess.DEVNULL,
                    check=True).stdout.decode().strip()
 
 
-def _ls_files(args: Collection[PathOrStr], repo: Path) -> List[Path]:
-    repo = repo.resolve()
-    return [
-        repo / path for path in git_stdout('ls-files', '--', *args,
-                                           repo=repo).splitlines()
-    ]
+def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
+    """Returns results of git ls-files as absolute paths."""
+    git_root = repo.resolve()
+    for file in git_stdout('ls-files', '--', *args, repo=repo).splitlines():
+        yield git_root / file
 
 
 def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
-                repo: Path) -> List[Path]:
+                repo: Path) -> Iterable[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     git_root = root(repo)
-    return [
-        git_root.joinpath(path).resolve()
-        for path in git_stdout('diff',
-                               '--name-only',
-                               '--diff-filter=d',
-                               commit,
-                               '--',
-                               *pathspecs,
-                               repo=repo).splitlines()
-    ]
+    for file in git_stdout('diff',
+                           '--name-only',
+                           '--diff-filter=d',
+                           commit,
+                           '--',
+                           *pathspecs,
+                           repo=repo).splitlines():
+        yield git_root / file
 
 
 def list_files(commit: Optional[str] = None,
                pathspecs: Collection[PathOrStr] = (),
-               exclude: Collection[Pattern[str]] = (),
-               repo: Optional[Path] = None) -> List[Path]:
+               repo_path: Optional[Path] = None) -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
     Args:
       commit: commit to use as a base for git diff
       pathspecs: Git pathspecs to use in git ls-files or diff
-      exclude: regular expressions for Posix-style paths to exclude
-      repo: repository path from which to run commands; defaults to Path.cwd()
+      repo_path: repo path from which to run commands; defaults to Path.cwd()
+
+    Returns:
+      A sorted list of absolute paths
     """
-    if repo is None:
-        repo = Path.cwd()
+    if repo_path is None:
+        repo_path = Path.cwd()
 
     if commit:
-        files = _diff_names(commit, pathspecs, repo)
-    else:
-        files = _ls_files(pathspecs, repo)
+        return sorted(_diff_names(commit, pathspecs, repo_path))
 
-    git_root = root(repo=repo).resolve()
-    return sorted(file for file in files if not any(
-        e.search(file.relative_to(git_root).as_posix()) for e in exclude))
+    return sorted(_ls_files(pathspecs, repo_path))
 
 
 def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
@@ -98,7 +95,7 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
 def _describe_constraints(git_root: Path, repo_path: Path,
                           commit: Optional[str],
                           pathspecs: Collection[PathOrStr],
-                          exclude: Collection[Pattern]) -> Iterator[str]:
+                          exclude: Collection[Pattern[str]]) -> Iterable[str]:
     if not git_root.samefile(repo_path):
         yield (
             f'under the {repo_path.resolve().relative_to(git_root.resolve())} '
@@ -132,14 +129,35 @@ def describe_files(git_root: Path, repo_path: Path, commit: Optional[str],
     return msg + ''.join(f'\n    - {line}' for line in constraints)
 
 
+def root(repo_path: PathOrStr = '.', *, show_stderr: bool = True) -> Path:
+    """Returns the repository root as an absolute path.
+
+    Raises:
+      FileNotFoundError: the path does not exist
+      subprocess.CalledProcessError: the path is not in a Git repo
+    """
+    repo_path = Path(repo_path)
+    if not repo_path.exists():
+        raise FileNotFoundError(f'{repo_path} does not exist')
+
+    return Path(
+        git_stdout('rev-parse',
+                   '--show-toplevel',
+                   repo=repo_path,
+                   show_stderr=show_stderr))
+
+
+def within_repo(repo_path: PathOrStr = '.') -> Optional[Path]:
+    """Similar to root(repo_path), returns None if the path is not in a repo."""
+    try:
+        return root(repo_path, show_stderr=False)
+    except subprocess.CalledProcessError:
+        return None
+
+
 def is_repo(repo_path: PathOrStr = '.') -> bool:
-    return not subprocess.run(['git', '-C', repo_path, 'rev-parse'],
-                              stderr=subprocess.DEVNULL).returncode
-
-
-def root(repo: PathOrStr = '.') -> Path:
-    """Returns the repository root as an absolute path."""
-    return Path(git_stdout('rev-parse', '--show-toplevel', repo=repo))
+    """True if the path is tracked by a Git repo."""
+    return within_repo(repo_path) is not None
 
 
 def path(repo_path: PathOrStr,

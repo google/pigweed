@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 import re
 import shutil
-from typing import Callable, Optional, Sequence
+from typing import Callable, Collection, Optional, Sequence
 
 from pw_presubmit import git_repo, presubmit
 
@@ -32,24 +32,24 @@ def add_path_arguments(parser) -> None:
         'paths',
         metavar='pathspec',
         nargs='*',
-        type=Path,
-        help=('Paths to which to restrict the checks. These are interpreted '
-              'as Git pathspecs. If --base is provided, only paths changed '
-              'since that commit are checked.'))
+        help=('Paths or patterns to which to restrict the checks. These are '
+              'interpreted as Git pathspecs. If --base is provided, only '
+              'paths changed since that commit are checked.'))
     parser.add_argument(
         '-b',
         '--base',
-        metavar='COMMIT',
+        metavar='commit',
         help=('Git revision against which to diff for changed files. '
               'If none is provided, the entire repository is used.'))
     parser.add_argument(
         '-e',
         '--exclude',
-        metavar='REGULAR_EXPRESSION',
+        metavar='regular_expression',
         default=[],
         action='append',
         type=re.compile,
-        help='Exclude paths matching any of these regular expressions.')
+        help=('Exclude paths matching any of these regular expressions, '
+              "which are interpreted relative to each Git repository's root."))
 
 
 def _add_programs_arguments(exclusive: argparse.ArgumentParser,
@@ -99,13 +99,6 @@ def add_arguments(parser: argparse.ArgumentParser,
     """Adds common presubmit check options to an argument parser."""
 
     add_path_arguments(parser)
-    parser.add_argument(
-        '--repository',
-        default=Path.cwd(),
-        type=Path,
-        help=(
-            'Change to this directory before resolving paths or running the '
-            'presubmit. Presubmit checks must be run from a Git repository.'))
     parser.add_argument('-k',
                         '--keep-going',
                         action='store_true',
@@ -132,16 +125,36 @@ def add_arguments(parser: argparse.ArgumentParser,
 
 
 def run(
-    program: Sequence[Callable],
-    clear: bool,
-    repository: Path,
-    output_directory: Path,
-    **other_args,
+        program: Sequence[Callable],
+        output_directory: Path,
+        clear: bool,
+        root: Path = None,
+        repositories: Collection[Path] = (),
+        **other_args,
 ) -> int:
-    """Processes all arguments from add_arguments and runs the presubmit."""
+    """Processes arguments from add_arguments and runs the presubmit.
+
+    Args:
+      root: base path from which to run presubmit checks; defaults to the root
+          of the current directory's repository
+      repositories: roots of Git repositories on which to run presubmit checks;
+          defaults to the root of the current directory's repository
+      program: from the --program option
+      output_directory: from --output-directory option
+      clear: from the --clear option
+      **other_args: remaining arguments defined by by add_arguments
+
+    Returns:
+      exit code for sys.exit; 0 if succesful, 1 if an error occurred
+    """
+    if root is None:
+        root = git_repo.root()
+
+    if not repositories:
+        repositories = [root]
 
     if not output_directory:
-        output_directory = git_repo.path('.presubmit', repo=repository)
+        output_directory = root / '.presubmit'
 
     _LOG.debug('Using environment at %s', output_directory)
 
@@ -155,7 +168,8 @@ def run(
         return 0
 
     if presubmit.run(program,
-                     repo_path=repository,
+                     root,
+                     repositories,
                      output_directory=output_directory,
                      **other_args):
         return 0

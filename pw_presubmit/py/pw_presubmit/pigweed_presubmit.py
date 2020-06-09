@@ -44,11 +44,11 @@ _LOG = logging.getLogger(__name__)
 # Initialization
 #
 def init_cipd(ctx: PresubmitContext):
-    environment.init_cipd(ctx.repo_root, ctx.output_dir)
+    environment.init_cipd(ctx.root, ctx.output_dir)
 
 
 def init_virtualenv(ctx: PresubmitContext):
-    environment.init_cipd(ctx.repo_root, ctx.output_dir)
+    environment.init_cipd(ctx.root, ctx.output_dir)
 
 
 #
@@ -63,14 +63,14 @@ _DOCS_GEN_ARGS = build.gn_args(
 
 
 def gn_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root, ctx.output_dir, _CLANG_GEN_ARGS)
+    build.gn_gen(ctx.root, ctx.output_dir, _CLANG_GEN_ARGS)
     build.ninja(ctx.output_dir)
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(
-        ctx.repo_root, ctx.output_dir,
+        ctx.root, ctx.output_dir,
         build.gn_args(pw_target_config='"//targets/host/target_config.gni"',
                       pw_target_toolchain='"//pw_toolchain:host_gcc_os"'))
     build.ninja(ctx.output_dir)
@@ -82,7 +82,7 @@ _ARM_GEN_ARGS = build.gn_args(
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root, ctx.output_dir, _ARM_GEN_ARGS)
+    build.gn_gen(ctx.root, ctx.output_dir, _ARM_GEN_ARGS)
     build.ninja(ctx.output_dir)
 
 
@@ -92,17 +92,17 @@ _QEMU_GEN_ARGS = build.gn_args(
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_qemu_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root, ctx.output_dir, _QEMU_GEN_ARGS)
+    build.gn_gen(ctx.root, ctx.output_dir, _QEMU_GEN_ARGS)
     build.ninja(ctx.output_dir)
 
 
 def gn_docs_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root, ctx.output_dir, _DOCS_GEN_ARGS)
+    build.gn_gen(ctx.root, ctx.output_dir, _DOCS_GEN_ARGS)
     build.ninja(ctx.output_dir, 'docs:docs')
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root,
+    build.gn_gen(ctx.root,
                  ctx.output_dir,
                  pw_target_config='"//targets/host/target_config.gni"',
                  pw_target_toolchain='"//pw_toolchain:host_clang_os"',
@@ -112,7 +112,7 @@ def gn_host_tools(ctx: PresubmitContext):
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def oss_fuzz_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root,
+    build.gn_gen(ctx.root,
                  ctx.output_dir,
                  oss_fuzz_enabled='true',
                  pw_target_toolchain='"//pw_toolchain:host_clang_og"',
@@ -123,7 +123,7 @@ def oss_fuzz_build(ctx: PresubmitContext):
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
-    build.cmake(ctx.repo_root, ctx.output_dir, env=build.env_with_clang_vars())
+    build.cmake(ctx.root, ctx.output_dir, env=build.env_with_clang_vars())
     build.ninja(ctx.output_dir, 'pw_run_tests.modules')
 
 
@@ -138,7 +138,7 @@ def bazel_test(ctx: PresubmitContext):
              '--worker_verbose',
              '--symlink_prefix',
              ctx.output_dir.joinpath('bazel-'),
-             cwd=ctx.repo_root,
+             cwd=ctx.root,
              env=build.env_with_clang_vars())
     except:
         _LOG.info('If the Bazel build inexplicably fails while the '
@@ -157,7 +157,7 @@ _CLANG_TIDY_CHECKS = ('modernize-use-override', )
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(ctx: PresubmitContext):
-    build.gn_gen(ctx.repo_root, ctx.output_dir, '--export-compile-commands',
+    build.gn_gen(ctx.root, ctx.output_dir, '--export-compile-commands',
                  _CLANG_GEN_ARGS)
     build.ninja(ctx.output_dir)
     build.ninja(ctx.output_dir, '-t', 'compdb', 'objcxx', 'cxx')
@@ -284,13 +284,13 @@ def source_is_in_build_files(ctx: PresubmitContext):
     )
 
     for directory, args in gn_gens_to_run:
-        build.gn_gen(ctx.repo_root, directory, args)
+        build.gn_gen(ctx.root, directory, args)
 
     missing = build.check_builds_for_files(_SOURCES_IN_BUILD,
                                            ctx.paths,
-                                           bazel_dirs=[ctx.repo_root],
+                                           bazel_dirs=[ctx.root],
                                            gn_dirs=[
-                                               (ctx.repo_root, path)
+                                               (ctx.root, path)
                                                for path, _ in gn_gens_to_run
                                            ])
 
@@ -306,11 +306,11 @@ def build_env_setup(ctx: PresubmitContext):
             'Skipping build_env_setup since PW_CARGO_SETUP is not set')
         return
 
-    tmpl = ctx.repo_root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl.tmpl')
+    tmpl = ctx.root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl.tmpl')
     out = ctx.output_dir.joinpath('pyoxidizer.bzl')
 
     with open(tmpl, 'r') as ins:
-        cfg = ins.read().replace('${PW_ROOT}', str(ctx.repo_root))
+        cfg = ins.read().replace('${PW_ROOT}', str(ctx.root))
         with open(out, 'w') as outs:
             outs.write(cfg)
 
@@ -385,16 +385,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run(install: bool, repository: Path, **presubmit_args) -> int:
+def run(install: bool, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
         install_hook(__file__, 'pre-push',
                      ['--base', 'origin/master..HEAD', '--program', 'quick'],
-                     repository)
+                     Path.cwd())
         return 0
 
-    return cli.run(repository=repository, **presubmit_args)
+    return cli.run(**presubmit_args)
 
 
 def main() -> int:
