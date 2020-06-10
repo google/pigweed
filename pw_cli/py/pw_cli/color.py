@@ -30,11 +30,13 @@ def _make_color(*codes):
     return lambda msg: f'{start}{msg}{reset}'
 
 
-# TODO(keir): Totally replace this object with something more complete like the
-# 'colorful' module.
-class _Color:  # pylint: disable=too-few-public-methods
+# TODO(keir): Replace this with something like the 'colorful' module.
+class _Color:
+    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-instance-attributes
     """Helpers to surround text with ASCII color escapes"""
     def __init__(self):
+        self.none = str
         self.red = _make_color(31, 1)
         self.bold_red = _make_color(30, 41)
         self.yellow = _make_color(33, 1)

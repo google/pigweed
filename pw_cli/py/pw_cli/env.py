@@ -49,6 +49,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_VIRTUALENV_SETUP_PY_ROOTS')
     parser.add_var('PW_CARGO_PACKAGE_FILES')
 
+    parser.add_var('PW_BRANDING_BANNER')
+    parser.add_var('PW_BRANDING_BANNER_COLOR', default='magenta')
+
     return parser
 
 

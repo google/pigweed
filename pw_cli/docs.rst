@@ -173,3 +173,99 @@ The function is now available through the ``pw`` command, and will be listed in
   optional arguments:
     -h, --help       show this help message and exit
     --device DEVICE  Set which device to target
+
+Branding Pigweed's tooling
+==========================
+An important part of starting a new project is picking a name, and in the case
+of Pigweed, designing a banner for the project. Pigweed supports configuring
+the banners by setting environment variables:
+
+* ``PW_BRANDING_BANNER`` - Absolute path to a filename containing a banner to
+  display when running the ``pw`` commands. See the example below.
+* ``PW_BRANDING_BANNER_COLOR`` - Color of the banner. Possible values include:
+  ``red``, ``bold_red``, ``yellow``, ``bold_yellow``, ``green``,
+  ``bold_green``, ``blue``, ``cyan``, ``magenta``, ``bold_white``,
+  ``black_on_white``. See ``pw_cli.colors`` for details.
+
+The below example shows how to manually change the branding at the command
+line. However, these environment variables should be set in the project root's
+``bootstrap.sh`` before delegating to Pigweed's upstream ``bootstrap.sh``.
+
+.. code-block:: text
+
+  $ cat foo-banner.txt
+
+   ▒██████  ░▓██▓░  ░▓██▓░
+    ▒█░    ▒█   ▒█ ▒█   ▒█
+    ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
+    ▒█▀    ▒█   ▒█ ▒█   ▒█
+    ▒█      ░▓██▓░  ░▓██▓░
+
+  $ export PW_BRANDING_BANNER="$(pwd)/foo-banner.txt"
+  $ export PW_BRANDING_BANNER_COLOR="bold_red"
+  $ pw logdemo
+
+   ▒██████  ░▓██▓░  ░▓██▓░
+    ▒█░    ▒█   ▒█ ▒█   ▒█
+    ▒█▄▄▄▄ ▒█ █ ▒█ ▒█ █ ▒█
+    ▒█▀    ▒█   ▒█ ▒█   ▒█
+    ▒█      ░▓██▓░  ░▓██▓░
+
+  20200610 12:03:44 CRT This is a critical message
+  20200610 12:03:44 ERR There was an error on our last operation
+  20200610 12:03:44 WRN Looks like something is amiss; consider investigating
+  20200610 12:03:44 INF The operation went as expected
+  20200610 12:03:44 OUT Standard output of subprocess
+
+The branding is not purely visual; it serves to make it clear which project an
+engineer is working with.
+
+Making the ASCII / ANSI art
+---------------------------
+The most direct way to make the ASCII art is to create it with a text editor.
+However, there are some tools to make the process faster and easier.
+
+* `Patorjk's ASCII art generator <http://patorjk.com/software/taag/>`_ - A
+  great starting place, since you can copy and paste straight from the browser
+  into a file, and then point ``PW_BRANDING_BANNER`` at it.  Most of the fonts
+  use normal ASCII characters; and fonts with extended ASCII characters use the
+  Unicode versions of them (needed for modern terminals).
+* `Online ANSII Edit by Andy Herbert
+  <http://andyherbert.github.io/ansiedit/public/index.html>`_ - Browser based
+  editor that can export to mixed UTF-8 and ANSII color. It's also `open source
+  <https://github.com/andyherbert/ansiedit>`_. What's nice about this editor is
+  that you can create a multi-color banner, and save it with the ``File`` -->
+  ``Export as ANSi (UTF-8)`` option, and use it directly as a Pigweed banner.
+  One caveat is that the editor uses UTF-8 box drawing characters, which don't
+  work well with all terminals. However, the box drawing characters look so
+  slick on terminals that support them that we feel this is a worthwhile
+  tradeoff.
+
+There are other options, but these require additional work to put into Pigweed
+since they only export in the traditional ANS or ICE formats. The old ANS
+formats do not have a converter (contributions welcome!). Here are some of the
+options as of mid-2020:
+
+* `Playscii <http://vectorpoem.com/playscii/>`_ - Actively maintained.
+* `Moebius <https://github.com/blocktronics/moebius>`_ - Actively maintained.
+* `SyncDraw <http://syncdraw.bbsdev.net/>`_ - Actively maintained, in 2020, in
+  a CVS repository.
+* `PabloDraw <http://picoe.ca/products/pablodraw/>`_ - Works on most desktop
+  machines thanks to being written in .NET. Not maintained, but works well. Has
+  an impresive brush system for organic style drawing.
+* `TheDraw <https://en.wikipedia.org/wiki/TheDraw>`_ - One of the most popular
+  ANSI art editors back in the 90s. Requires DOSBox to run on modern machines,
+  but otherwise works. It has some of the most impressive capabilities,
+  including supporting full-color multi-character fonts.
+
+Future branding improvements
+----------------------------
+Branding the ``pw`` tool is a great start, but more changes are planned:
+
+- Supporting branding the ``bootstrap/activate`` banner, which for technical
+  reasons is not the same code as the banner printing from the Python tooling.
+  These will use the same ``PW_BRANDING_BANNER`` and
+  ``PW_BRANDING_BANNER_COLOR`` environment variables.
+- Supporting renaming the ``pw`` command to something project specific, like
+  ``foo`` in this case.
+- Re-coloring the log headers from the ``pw`` tool.

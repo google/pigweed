@@ -30,6 +30,7 @@ from watchdog.observers import Observer
 from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
+import pw_cli.branding
 import pw_cli.color
 import pw_cli.env
 import pw_cli.plugins
@@ -39,14 +40,6 @@ from pw_watch.debounce import DebouncedFunction, Debouncer
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 _ERRNO_INOTIFY_LIMIT_REACHED = 28
-
-_BUILD_MESSAGE = """
- ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
-"""
 
 _PASS_MESSAGE = """
   ██████╗  █████╗ ███████╗███████╗██╗
@@ -213,7 +206,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         # Clear the screen and show a banner indicating the build is starting.
         print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
-        print(_COLOR.magenta(_BUILD_MESSAGE))
+        print(pw_cli.branding.banner())
         print(
             _COLOR.green(
                 '  Watching for changes. Ctrl-C to exit; enter to rebuild'))

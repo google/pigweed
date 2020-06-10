@@ -20,15 +20,7 @@ import sys
 from typing import NoReturn
 
 from pw_cli import plugins
-from pw_cli.color import colors
-
-_PIGWEED_BANNER = '''
- ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
-  ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
-  ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
-  ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
-  ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
-'''
+from pw_cli.branding import banner
 
 _HELP_HEADER = '''The Pigweed command line interface (CLI).
 
@@ -43,8 +35,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def print_banner() -> None:
-    """Prints the colorful PIGWEED banner to stderr."""
-    print(colors().magenta(_PIGWEED_BANNER), file=sys.stderr)
+    """Prints the PIGWEED (or project specific) banner to stderr."""
+    print(banner(), file=sys.stderr)
 
 
 def format_help() -> str:
