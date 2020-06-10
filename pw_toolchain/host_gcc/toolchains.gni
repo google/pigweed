@@ -31,27 +31,35 @@ _configs = [
   "$dir_pw_toolchain/host_gcc:mingw_z_format",
 ]
 
-# Describes host Linux GCC toolchains.
-host_gcc_toolchains = [
-  {
-    name = "host_gcc_og"
+pw_toolchain_host_gcc = {
+  debug = {
+    name = "host_gcc_debug"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
       default_configs = _configs + [ "$dir_pw_build:optimize_debugging" ]
     }
-  },
-  {
-    name = "host_gcc_o2"
+  }
+
+  speed_optimized = {
+    name = "host_gcc_speed_optimized"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
       default_configs = _configs + [ "$dir_pw_build:optimize_speed" ]
     }
-  },
-  {
-    name = "host_gcc_os"
+  }
+
+  size_optimized = {
+    name = "host_gcc_size_optimized"
     forward_variables_from(_host_gcc_toolchain, "*")
     defaults = {
       default_configs = _configs + [ "$dir_pw_build:optimize_size" ]
     }
-  },
+  }
+}
+
+# Describes host Linux GCC toolchains.
+pw_toolchain_host_gcc_list = [
+  pw_toolchain_host_gcc.debug,
+  pw_toolchain_host_gcc.speed_optimized,
+  pw_toolchain_host_gcc.size_optimized,
 ]

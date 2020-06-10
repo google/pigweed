@@ -66,34 +66,38 @@ _defaults = {
   }
 }
 
-host_clang_og = {
-  name = "host_clang_og"
-  forward_variables_from(_host_clang_toolchain, "*")
-  defaults = {
-    forward_variables_from(_defaults, "*")
-    default_configs += [ "$dir_pw_build:optimize_debugging" ]
+pw_toolchain_host_clang = {
+  debug = {
+    name = "host_clang_debug"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+      default_configs += [ "$dir_pw_build:optimize_debugging" ]
+    }
   }
-}
 
-host_clang_o2 = {
-  name = "host_clang_o2"
-  forward_variables_from(_host_clang_toolchain, "*")
-  defaults = {
-    forward_variables_from(_defaults, "*")
-    default_configs += [ "$dir_pw_build:optimize_speed" ]
+  speed_optimized = {
+    name = "host_clang_speed_optimized"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+      default_configs += [ "$dir_pw_build:optimize_speed" ]
+    }
   }
-}
 
-# Describes host clang toolchains.
-host_clang_toolchains = [
-  host_clang_og,
-  host_clang_o2,
-  {
-    name = "host_clang_os"
+  size_optimized = {
+    name = "host_clang_size_optimized"
     forward_variables_from(_host_clang_toolchain, "*")
     defaults = {
       forward_variables_from(_defaults, "*")
       default_configs += [ "$dir_pw_build:optimize_size" ]
     }
-  },
+  }
+}
+
+# Describes host clang toolchains.
+pw_toolchain_host_clang_list = [
+  pw_toolchain_host_clang.debug,
+  pw_toolchain_host_clang.speed_optimized,
+  pw_toolchain_host_clang.size_optimized,
 ]

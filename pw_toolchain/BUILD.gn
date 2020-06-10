@@ -34,12 +34,12 @@ generate_toolchains("arm_gcc_suite") {
 
 # Generate Host GCC toolchains
 generate_toolchains("host_gcc_suite") {
-  toolchains = host_gcc_toolchains
+  toolchains = pw_toolchain_host_gcc_list
 }
 
 # Generate Host Clang toolchains
 generate_toolchains("host_clang_suite") {
-  toolchains = host_clang_toolchains
+  toolchains = pw_toolchain_host_clang_list
 }
 
 pw_doc_group("docs") {

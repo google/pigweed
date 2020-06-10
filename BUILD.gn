@@ -28,10 +28,19 @@ declare_args() {
 
 # Enumerate all of the different targets that Pigweed will build.
 group("default") {
-  _host_target = "$dir_pigweed/targets/host/linux:clang_og"
+  # Auto select a toolchain based on host.
+  if (host_os == "linux") {
+    _host_target_toolchain = "$dir_pigweed/targets/host:gcc_debug"
+  } else if (host_os == "mac") {
+    _host_target_toolchain = "$dir_pigweed/targets/host:clang_debug"
+  } else if (host_os == "win") {
+    _host_target_toolchain = "$dir_pigweed/targets/host:gcc_debug"
+  } else {
+    assert(false, "Please define a host config for your system: $host_os")
+  }
 
   deps = [
-    ":pigweed_default($_host_target)",
+    ":pigweed_default($_host_target_toolchain)",
     ":pigweed_default($dir_pigweed/targets/docs)",
   ]
 }
