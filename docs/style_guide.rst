@@ -571,7 +571,7 @@ Assets within each field must be listed in alphabetical order
   source_set("pw_sample_module") {
     public_configs = [ ":default_config" ]
     public_deps = [
-      dir_pw_spam,
+      dir_pw_span,
       dir_pw_status,
     ]
     public = [ "public/pw_sample_module/sample_module.h" ]
@@ -588,8 +588,8 @@ Assets within each field must be listed in alphabetical order
   }
 
   pw_test("sample_module_test") {
-    deps = [ ":sample_module" ]
     sources = [ "sample_module_test.cc" ]
+    deps = [ ":sample_module" ]
   }
 
   pw_doc_group("docs") {
