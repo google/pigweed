@@ -9,8 +9,6 @@
 
 #include <ddk/driver.h>
 
-#include "src/lib/fxl/compiler_specific.h"
-
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a
 // driver) and printf (when it's used in unit tests and command-line tools).
@@ -107,8 +105,8 @@ enum class LogSeverity {
 constexpr size_t kNumLogSeverities = 5;
 
 bool IsLogLevelEnabled(LogSeverity severity);
-void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
-                ...) FXL_PRINTF_FORMAT(5, 6);
+[[gnu::format(printf, 5, 6)]] void LogMessage(const char* file, int line, LogSeverity severity,
+                                              const char* tag, const char* fmt, ...);
 
 void UsePrintf(LogSeverity min_severity);
 

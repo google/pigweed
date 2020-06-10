@@ -148,8 +148,9 @@ class Status {
     return is_error;
   }
 
-  bool TestForErrorAndLogF(LogSeverity severity, const char* tag, const char* file, int line,
-                           const char* fmt, ...) const FXL_PRINTF_FORMAT(6, 7) {
+  [[gnu::format(printf, 6, 7)]] bool TestForErrorAndLogF(LogSeverity severity, const char* tag,
+                                                         const char* file, int line,
+                                                         const char* fmt, ...) const {
     va_list args;
     va_start(args, fmt);
     std::string msg = fxl::StringVPrintf(fmt, args);
