@@ -20,14 +20,16 @@ import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 declare_args() {
-  # TODO(frolv): Move this into the pw_boot module.
+  # TODO(frolv): Move this into pw_boot module when it is created.
   pw_boot_BACKEND = ""
 
-  # Module configuration options for pw_boot_armv7m.
-  pw_boot_armv7m_CONFIG = {
-    # C Preprocessor defines used for linker script configuration.
-    defines = []
-  }
+  # Whether or not to include code that signals to QEMU to shut down the
+  # emulator. This should only be enabled on QEMU targets.
+  pw_boot_armv7m_QEMU_SHUTDOWN = false
+
+  # This list should contain the necessary defines for setting pw_boot linker
+  # script memory regions.
+  pw_boot_armv7m_LINK_CONFIG_DEFINES = []
 }
 
 if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
@@ -36,8 +38,9 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
   }
 
   pw_linker_script("armv7m_linker_script") {
-    # pw_boot_armv7m_CONFIG is a scope provided by the target.
-    defines = pw_boot_armv7m_CONFIG.defines
+    # pw_boot_armv7m_LINK_CONFIG_DEFINES is a list of defines provided by the
+    # target.
+    defines = pw_boot_armv7m_LINK_CONFIG_DEFINES
     linker_script = "basic_armv7m.ld"
   }
 
@@ -47,7 +50,7 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
       ":armv7m_linker_script",
       "$dir_pw_preprocessor",
     ]
-    if (defined(pw_boot_armv7m_qemu_shutdown) && pw_boot_armv7m_qemu_shutdown) {
+    if (pw_boot_armv7m_QEMU_SHUTDOWN) {
       defines = [ "PW_BOOT_ARMV7M_QEMU_SHUTDOWN=1" ]
     }
     public = [ "public/pw_boot_armv7m/boot.h" ]

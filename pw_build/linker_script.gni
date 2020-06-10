@@ -18,12 +18,9 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/exec.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 
 # Preprocess a linker script and turn it into a target.
-#
-# Note: to use this template, pw_cc_command must be specified in your target's
-# config. It should match the name of the C compiler your target uses (e.g.
-# arm-none-eabi-gcc).
 #
 # In lieu of direct GN support for linker scripts, this template makes it
 # possible to run the C Preprocessor on a linker script file so defines can
@@ -54,11 +51,6 @@ import("$dir_pw_build/target_types.gni")
 #
 template("pw_linker_script") {
   assert(
-      defined(pw_cc_command) && pw_cc_command != "",
-      "pw_cc_command has not been properly configured. This variable must be " +
-          "defined to enable linker script preprocessing.")
-
-  assert(
       defined(invoker.linker_script) && invoker.linker_script != "",
       "$target_name did not set `linker_script` to refer to a valid linker " +
           "script. This variable is required for linker script targets.")
@@ -68,7 +60,7 @@ template("pw_linker_script") {
   # This action invokes the C compiler provided by the target to preprocess the
   # linker script.
   pw_exec("${target_name}_preprocess") {
-    program = pw_cc_command
+    program = pw_toolchain_SCOPE.cxx
     inputs = [ invoker.linker_script ]
     args = [
       # Run compiler in preprocessor-only mode.

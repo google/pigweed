@@ -29,7 +29,7 @@ import("host_gcc/toolchains.gni")
 
 # Generate ARM GCC toolchains
 generate_toolchains("arm_gcc_suite") {
-  toolchains = arm_gcc_toolchains
+  toolchains = pw_toolchain_arm_gcc_list
 }
 
 # Generate Host GCC toolchains

@@ -41,7 +41,7 @@ config("cortex_common") {
     "-mthumb",
     "-specs=nano.specs",
     "-specs=nosys.specs",
-    "-u _printf_float",
+    "-u_printf_float",
   ]
   ldflags = cflags + [
               "-lnosys",

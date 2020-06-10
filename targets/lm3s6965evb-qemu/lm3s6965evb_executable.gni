@@ -15,18 +15,13 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
-import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
-pw_source_set("pw_sys_io_baremetal_lm3s6965evb") {
-  public_deps = [ "$dir_pw_boot_armv7m" ]
-  deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_sys_io:default_putget_bytes",
-    "$dir_pw_sys_io:facade",
-  ]
-  sources = [
-    "early_boot.c",
-    "sys_io_baremetal.cc",
-  ]
+# Executable wrapper that includes some baremetal startup code.
+template("lm3s6965evb_executable") {
+  target("executable", target_name) {
+    forward_variables_from(invoker, "*")
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ dir_pw_sys_io_baremetal_lm3s6965evb ]
+  }
 }

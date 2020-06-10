@@ -42,6 +42,8 @@ group("default") {
   deps = [
     ":pigweed_default($_host_target_toolchain)",
     ":pigweed_default($dir_pigweed/targets/docs)",
+    ":pigweed_default($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_debug)",
+    ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_debug)",
   ]
 }
 

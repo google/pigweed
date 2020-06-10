@@ -21,6 +21,17 @@ declare_args() {
   # be imported at the top of the target configuration file to make it globally
   # available.
   pw_build_EXECUTABLE_TARGET_TYPE = "executable"
+
+  # The path to the .gni file that defines pw_build_EXECUTABLE_TARGET_TYPE.
+  #
+  # If pw_build_EXECUTABLE_TARGET_TYPE is not the default of `executable`, this
+  # .gni file is imported to provide the template definition.
+  pw_build_EXECUTABLE_TARGET_TYPE_FILE = ""
+}
+
+if (pw_build_EXECUTABLE_TARGET_TYPE != "executable" &&
+    pw_build_EXECUTABLE_TARGET_TYPE_FILE != "") {
+  import(pw_build_EXECUTABLE_TARGET_TYPE_FILE)
 }
 
 # TODO(frolv): The code in all of the templates below is duplicated, with the

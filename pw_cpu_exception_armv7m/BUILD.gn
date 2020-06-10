@@ -45,9 +45,6 @@ pw_test("cpu_exception_entry_test") {
     "$dir_pw_cpu_exception",
   ]
   sources = [ "exception_entry_test.cc" ]
-
-  # TODO(frolv): Fix this test on the QEMU target.
-  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "lm3s6965evb_executable"
 }
 
 pw_doc_group("docs") {
