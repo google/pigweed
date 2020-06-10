@@ -12,7 +12,6 @@
 #include <zircon/compiler.h>
 
 #include <list>
-#include <mutex>
 #include <queue>
 #include <unordered_map>
 
@@ -196,10 +195,6 @@ class ACLDataChannel final {
     ACLDataPacketPtr packet;
   };
 
-  // Drops all packets that |predicate| returns true for. This locked version is required for
-  // UnregisterLink to call this method.
-  void DropQueuedPacketsLocked(ACLPacketPredicate predicate) __TA_REQUIRES(send_mutex_);
-
   // Returns the data buffer MTU for the given connection.
   size_t GetBufferMTU(Connection::LinkType ll_type) const;
 
@@ -210,31 +205,28 @@ class ACLDataChannel final {
   // Tries to send the next batch of queued data packets if the controller has
   // any space available. All packets in higher priority queues will be sent before packets in lower
   // priority queues.
-  void TrySendNextQueuedPacketsLocked() __TA_REQUIRES(send_mutex_);
+  void TrySendNextQueuedPackets();
 
   // Returns the number of BR/EDR packets for which the controller has available
   // space to buffer.
-  size_t GetNumFreeBREDRPacketsLocked() const __TA_REQUIRES(send_mutex_);
+  size_t GetNumFreeBREDRPackets() const;
 
   // Returns the number of LE packets for which controller has available space
-  // to buffer. Must be called from a locked context.
-  size_t GetNumFreeLEPacketsLocked() const __TA_REQUIRES(send_mutex_);
+  // to buffer.
+  size_t GetNumFreeLEPackets() const;
 
-  // Decreases the total number of sent packets count by the given amount. Must
-  // be called from a locked context.
-  void DecrementTotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
+  // Decreases the total number of sent packets count by the given amount.
+  void DecrementTotalNumPackets(size_t count);
 
   // Decreases the total number of sent packets count for LE by the given
-  // amount. Must be called from a locked context.
-  void DecrementLETotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
+  // amount.
+  void DecrementLETotalNumPackets(size_t count);
 
-  // Increments the total number of sent packets count by the given amount. Must
-  // be called from a locked context.
-  void IncrementTotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
+  // Increments the total number of sent packets count by the given amount.
+  void IncrementTotalNumPackets(size_t count);
 
   // Increments the total number of sent LE packets count by the given amount.
-  // Must be called from a locked context.
-  void IncrementLETotalNumPacketsLocked(size_t count) __TA_REQUIRES(send_mutex_);
+  void IncrementLETotalNumPackets(size_t count);
 
   // Read Ready Handler for |channel_|
   void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
@@ -281,14 +273,11 @@ class ACLDataChannel final {
   // then the BR/EDR buffer MUST be available.
   DataBufferInfo le_buffer_info_;
 
-  // Mutex that guards access to data transmission related members below.
-  std::mutex send_mutex_;
-
   // The current count of the number of ACL data packets that have been sent to
   // the controller. |le_num_sent_packets_| is ignored if the controller uses
   // one buffer for LE and BR/EDR.
-  size_t num_sent_packets_ __TA_GUARDED(send_mutex_);
-  size_t le_num_sent_packets_ __TA_GUARDED(send_mutex_);
+  size_t num_sent_packets_;
+  size_t le_num_sent_packets_;
 
   // The ACL data packet queue contains the data packets that are waiting to be
   // sent to the controller.
@@ -300,14 +289,13 @@ class ACLDataChannel final {
   //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
   using DataPacketQueue = std::list<QueuedDataPacket>;
-  DataPacketQueue send_queue_ __TA_GUARDED(send_mutex_);
+  DataPacketQueue send_queue_;
 
   // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
   // their |priority|:
   // If |priority| is |kLow|: returns past-the-end of |send_queue_|.
   // If |priority| is |kHigh|: returns the location of the first |kLow| priority packet.
-  DataPacketQueue::iterator SendQueueInsertLocationForPriority(PacketPriority priority)
-      __TA_REQUIRES(send_mutex_);
+  DataPacketQueue::iterator SendQueueInsertLocationForPriority(PacketPriority priority);
 
   // Stores the link type of connections on which we have a pending packet that
   // has been sent to the controller. Entries are removed on the HCI Number Of
@@ -322,11 +310,10 @@ class ACLDataChannel final {
     Connection::LinkType ll_type;
     size_t count;
   };
-  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_ __TA_GUARDED(send_mutex_);
+  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_;
 
   // Stores links registered by RegisterLink
-  std::unordered_map<hci::ConnectionHandle, Connection::LinkType> registered_links_
-      __TA_GUARDED(send_mutex_);
+  std::unordered_map<hci::ConnectionHandle, Connection::LinkType> registered_links_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
 };
