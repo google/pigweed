@@ -19,12 +19,17 @@ import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  # Backend for the pw_trace module.
+  pw_trace_BACKEND = ""
+}
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
 
 pw_facade("pw_trace") {
-  backend = dir_pw_trace_backend
+  backend = pw_trace_BACKEND
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_trace/internal/trace_internal.h",
@@ -35,7 +40,7 @@ pw_facade("pw_trace") {
 
 pw_test_group("tests") {
   tests = [ ":trace_facade_test" ]
-  if (dir_pw_trace_backend != "") {
+  if (pw_trace_BACKEND != "") {
     tests += [ ":trace_backend_compile_test" ]
   }
 }
@@ -56,11 +61,11 @@ pw_test("trace_facade_test") {
 }
 
 pw_test("trace_backend_compile_test") {
-  enable_if = dir_pw_trace_backend != ""
+  enable_if = pw_trace_BACKEND != ""
 
   deps = [
     ":pw_trace",
-    dir_pw_trace_backend,
+    pw_trace_BACKEND,
   ]
 
   sources = [

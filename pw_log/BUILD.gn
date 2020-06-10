@@ -15,16 +15,20 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  # Backend for the pw_log module.
+  pw_log_BACKEND = ""
+}
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
 
 pw_facade("pw_log") {
-  backend = dir_pw_log_backend
+  backend = pw_log_BACKEND
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_log/levels.h",
@@ -37,11 +41,11 @@ pw_test_group("tests") {
 }
 
 pw_test("basic_log_test") {
-  enable_if = dir_pw_log_backend != ""
+  enable_if = pw_log_BACKEND != ""
   deps = [
     ":pw_log",
-    dir_pw_log_backend,
     dir_pw_preprocessor,
+    pw_log_BACKEND,
   ]
 
   sources = [

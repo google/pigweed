@@ -15,7 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
@@ -24,8 +23,8 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-_compiling_for_nanopb = pw_protobuf_generators + [ "nanopb" ] - [ "nanopb" ] !=
-                        pw_protobuf_generators
+_compiling_for_nanopb = pw_protobuf_GENERATORS + [ "nanopb" ] - [ "nanopb" ] !=
+                        pw_protobuf_GENERATORS
 
 pw_test_group("tests") {
   tests = []

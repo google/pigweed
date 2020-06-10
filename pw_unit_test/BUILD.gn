@@ -15,7 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -69,25 +68,23 @@ pw_doc_group("docs") {
 }
 
 # Library providing an event handler which logs using pw_log.
-if (dir_pw_log_backend != "") {
-  pw_source_set("logging_event_handler") {
-    public_deps = [
-      ":pw_unit_test",
-      "$dir_pw_log",
-      "$dir_pw_preprocessor",
-    ]
-    public = [ "public/pw_unit_test/logging_event_handler.h" ]
-    sources = [ "logging_event_handler.cc" ] + public
-  }
+pw_source_set("logging_event_handler") {
+  public_deps = [
+    ":pw_unit_test",
+    "$dir_pw_log",
+    "$dir_pw_preprocessor",
+  ]
+  public = [ "public/pw_unit_test/logging_event_handler.h" ]
+  sources = [ "logging_event_handler.cc" ] + public
+}
 
-  pw_source_set("logging_main") {
-    public_deps = [ ":pw_unit_test" ]
-    deps = [
-      ":logging_event_handler",
-      "$dir_pw_sys_io",
-    ]
-    sources = [ "logging_main.cc" ]
-  }
+pw_source_set("logging_main") {
+  public_deps = [ ":pw_unit_test" ]
+  deps = [
+    ":logging_event_handler",
+    "$dir_pw_sys_io",
+  ]
+  sources = [ "logging_main.cc" ]
 }
 
 pw_test("framework_test") {

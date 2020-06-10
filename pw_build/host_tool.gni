@@ -14,7 +14,12 @@
 
 import("python_script.gni")
 
-if (pw_build_host_tools) {
+declare_args() {
+  # Whether to build host-side tooling.
+  pw_build_HOST_TOOLS = false
+}
+
+if (pw_build_HOST_TOOLS) {
   # Defines a Pigweed host tool and installs it into the host_tools directory.
   #
   # Args:
@@ -70,4 +75,4 @@ if (pw_build_host_tools) {
     group(target_name) {
     }
   }
-}  # pw_build_host_tools
+}  # pw_build_HOST_TOOLS

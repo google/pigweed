@@ -14,8 +14,14 @@
 
 # gn-format disable
 import("//build_overrides/pigweed.gni")
-
-import("$dir_pigweed/legacy_target.gni")
+declare_args() {
+  # The name of the GN target type used to build Pigweed executables.
+  #
+  # If this is a custom template, the .gni file containing the template must
+  # be imported at the top of the target configuration file to make it globally
+  # available.
+  pw_build_EXECUTABLE_TARGET_TYPE = "executable"
+}
 
 # TODO(frolv): The code in all of the templates below is duplicated, with the
 # exception of the target type. This file could be auto-generated with Python.
@@ -150,7 +156,7 @@ template("pw_shared_library") {
 template("pw_executable") {
   import("$dir_pw_build/defaults.gni")
 
-  target(pw_executable_config.target_type, target_name) {
+  target(pw_build_EXECUTABLE_TARGET_TYPE, target_name) {
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (defined(pw_build_defaults.configs)) {

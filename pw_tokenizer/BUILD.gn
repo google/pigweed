@@ -21,6 +21,7 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
+import("backend.gni")
 config("default_config") {
   include_dirs = [ "public" ]
 }
@@ -55,16 +56,16 @@ pw_source_set("pw_tokenizer") {
 # As a temporary workaround, if no backend is set, use an empty test backend so
 # that the test can define the handler function.
 # TODO(hepler): Switch this to a facade test when available.
-if (dir_pw_tokenizer_global_handler_backend == "" &&
-    dir_pw_tokenizer_global_handler_with_payload_backend == "") {
+if (pw_tokenizer_GLOBAL_HANDLER_BACKEND == "" &&
+    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND == "") {
   # This is an empty library to use as the backend for global_handler and
   # global_handler_with_payload tests.
   pw_source_set("test_backend") {
     visibility = [ ":*" ]
   }
 
-  dir_pw_tokenizer_global_handler_backend = ":test_backend"
-  dir_pw_tokenizer_global_handler_with_payload_backend = ":test_backend"
+  pw_tokenizer_GLOBAL_HANDLER_BACKEND = ":test_backend"
+  pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = ":test_backend"
 
   enable_global_handler_test = true
 } else {
@@ -73,7 +74,7 @@ if (dir_pw_tokenizer_global_handler_backend == "" &&
 
 pw_facade("global_handler") {
   facade_name = "global_handler_facade"
-  backend = dir_pw_tokenizer_global_handler_backend
+  backend = pw_tokenizer_GLOBAL_HANDLER_BACKEND
 
   public_configs = [ ":default_config" ]
   public = [ "public/pw_tokenizer/tokenize_to_global_handler.h" ]
@@ -83,7 +84,7 @@ pw_facade("global_handler") {
 
 pw_facade("global_handler_with_payload") {
   facade_name = "global_handler_with_payload_facade"
-  backend = dir_pw_tokenizer_global_handler_with_payload_backend
+  backend = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND
 
   public_configs = [ ":default_config" ]
   public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
@@ -309,26 +310,26 @@ pw_fuzzer("detokenize_fuzzer") {
 }
 
 declare_args() {
-  # pw_java_native_interface_include_dirs specifies the paths to use for
+  # pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS specifies the paths to use for
   # building Java Native Interface libraries. If no paths are provided, targets
   # that require JNI may not build correctly.
   #
   # Example JNI include paths for a Linux system:
   #
-  #   pw_java_native_interface_include_dirs = [
+  #   pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS = [
   #     "/usr/local/buildtools/java/jdk/include/",
   #     "/usr/local/buildtools/java/jdk/include/linux",
   #   ]
   #
-  pw_java_native_interface_include_dirs = []
+  pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS = []
 }
 
 # Create a shared library for the tokenizer JNI wrapper. The include paths for
 # the JNI headers must be available in the system or provided with the
-# pw_java_native_interface_include_dirs variable.
+# pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS variable.
 pw_shared_library("detokenizer_jni") {
   public_configs = [ ":default_config" ]
-  include_dirs = pw_java_native_interface_include_dirs
+  include_dirs = pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS
   sources = [ "java/dev/pigweed/tokenizer/detokenizer.cc" ]
   public_deps = [
     ":decoder",

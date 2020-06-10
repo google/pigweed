@@ -19,7 +19,7 @@ import("$dir_pigweed/legacy_target.gni")
 declare_args() {
   # Scope defining the current toolchain. Contains all of the arguments required
   # by the generate_toolchain template.
-  pw_toolchain_scope = {
+  pw_toolchain_SCOPE = {
   }
 }
 
@@ -213,14 +213,14 @@ template("generate_toolchain") {
       #     in this toolchain. It is analogous to $pw_target_defaults in
       #     $dir_pigweed/pw_vars_default.gni.
       #
-      #   pw_toolchain_scope: A copy of the invoker scope that defines the
+      #   pw_toolchain_SCOPE: A copy of the invoker scope that defines the
       #     toolchain. Used for generating derivative toolchains.
       #
       assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
       toolchain_args = {
-        pw_toolchain_scope = {
+        pw_toolchain_SCOPE = {
         }
-        pw_toolchain_scope = {
+        pw_toolchain_SCOPE = {
           forward_variables_from(invoker, "*")
         }
         forward_variables_from(invoker.defaults, "*")

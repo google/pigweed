@@ -15,16 +15,20 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  # Backend for the pw_assert module.
+  pw_assert_BACKEND = ""
+}
+
 config("default_config") {
   include_dirs = [ "public" ]
 }
 
 pw_facade("pw_assert") {
-  backend = dir_pw_assert_backend
+  backend = pw_assert_BACKEND
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_assert/assert.h",
@@ -54,15 +58,15 @@ pw_test("assert_facade_test") {
   deps = [ dir_pw_status ]
 
   # TODO(frolv): Fix this test on the QEMU target.
-  enable_if = pw_executable_config.target_type != "lm3s6965evb_executable"
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "lm3s6965evb_executable"
 }
 
 pw_test("assert_backend_compile_test") {
-  enable_if = dir_pw_assert_backend != ""
+  enable_if = pw_assert_BACKEND != ""
   deps = [
     ":pw_assert",
-    dir_pw_assert_backend,
     dir_pw_status,
+    pw_assert_BACKEND,
   ]
   sources = [
     "assert_backend_compile_test.c",

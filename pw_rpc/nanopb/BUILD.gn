@@ -15,8 +15,8 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_protobuf_compiler/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 config("config") {
   include_dirs = [ "public_overrides" ]
@@ -34,8 +34,8 @@ pw_source_set("nanopb") {
     dir_pw_status,
   ]
 
-  if (dir_third_party_nanopb != "") {
-    public_deps += [ dir_third_party_nanopb ]
+  if (dir_pw_third_party_nanopb != "") {
+    public_deps += [ dir_pw_third_party_nanopb ]
   }
 
   visibility = [ "../*" ]
@@ -48,5 +48,5 @@ pw_test("method_test") {
     "..:test_utils_nanopb_server",
   ]
   sources = [ "method_test.cc" ]
-  enable_if = dir_third_party_nanopb != ""
+  enable_if = dir_pw_third_party_nanopb != ""
 }

@@ -15,125 +15,142 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
+import("$dir_pigweed/modules.gni")
+import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  pw_IS_HOST_TOOLCHAIN = false
+}
+
+# Enumerate all of the different targets that Pigweed will build.
 group("default") {
-  deps = [ ":pigweed_default($pw_target_toolchain)" ]
+  _host_target = "$dir_pigweed/targets/host/linux:clang_og"
+
+  deps = [ ":pigweed_default($_host_target)" ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.
 group("pigweed_default") {
   deps = []
-  if (defined(pw_is_docs_target) && pw_is_docs_target) {
-    deps += [ "$dir_pigweed/docs" ]
-  } else {
-    if (pw_automatic_test_runner == "") {
-      # Without a test runner defined, build the tests but don't run them.
-      deps += [ ":pw_module_tests" ]
+
+  # Prevent the default toolchain from parsing any other BUILD.gn files.
+  if (current_toolchain != default_toolchain) {
+    if (defined(pw_is_docs_target) && pw_is_docs_target) {
+      deps += [ "$dir_pigweed/docs" ]
     } else {
-      # With a test runner, depend on the run targets so they run with the
-      # build.
-      deps += [ ":pw_module_tests_run" ]
+      if (pw_unit_test_AUTOMATIC_RUNNER == "") {
+        # Without a test runner defined, build the tests but don't run them.
+        deps += [ ":pw_module_tests" ]
+      } else {
+        # With a test runner, depend on the run targets so they run with the
+        # build.
+        deps += [ ":pw_module_tests_run" ]
+      }
+    }
+    if (pw_IS_HOST_TOOLCHAIN) {
+      deps += [ ":host_tools" ]
     }
   }
-  if (pw_build_host_tools) {
-    deps += [ ":host_tools" ]
-  }
 }
 
-group("host_tools") {
-  deps = [
-    "$dir_pw_target_runner/go:simple_client",
-    "$dir_pw_target_runner/go:simple_server",
-  ]
-}
-
-group("pw_facades") {
-  deps = [
-    "$dir_pw_cpu_exception",
-    "$dir_pw_sys_io",
-  ]
-}
-
-# All Pigweed modules that can be built using gn. This is not built by default.
-group("pw_modules") {
-  deps = [
-    "$dir_pigweed/docs",
-    "$dir_pw_allocator",
-    "$dir_pw_base64",
-    "$dir_pw_checksum",
-    "$dir_pw_polyfill",
-    "$dir_pw_preprocessor",
-    "$dir_pw_protobuf",
-    "$dir_pw_result",
-    "$dir_pw_span",
-    "$dir_pw_status",
-    "$dir_pw_stream",
-    "$dir_pw_string",
-    "$dir_pw_trace",
-    "$dir_pw_unit_test",
-    "$dir_pw_varint",
-  ]
-
-  if (host_os != "win") {
-    deps += [
-      # TODO(frolv): Remove these two when new KVS is ready.
-      "$dir_pw_kvs",
-      "$dir_pw_minimal_cpp_stdlib",
-
-      # TODO(pwbug/111): Remove this when building successfully on Windows.
-      "$dir_pw_tokenizer",
+# Prevent the default toolchain from parsing any other BUILD.gn files.
+if (current_toolchain != default_toolchain) {
+  group("host_tools") {
+    deps = [
+      "$dir_pw_target_runner/go:simple_client",
+      "$dir_pw_target_runner/go:simple_server",
     ]
   }
-}
 
-# Targets for all module unit test groups.
-pw_test_group("pw_module_tests") {
-  group_deps = [
-    "$dir_pw_allocator:tests",
-    "$dir_pw_assert:tests",
-    "$dir_pw_base64:tests",
-    "$dir_pw_checksum:tests",
-    "$dir_pw_containers:tests",
-    "$dir_pw_fuzzer:tests",
-    "$dir_pw_log:tests",
-    "$dir_pw_log_tokenized:tests",
-    "$dir_pw_polyfill:tests",
-    "$dir_pw_preprocessor:tests",
-    "$dir_pw_protobuf:tests",
-    "$dir_pw_protobuf_compiler:tests",
-    "$dir_pw_result:tests",
-    "$dir_pw_ring_buffer:tests",
-    "$dir_pw_rpc:tests",
-    "$dir_pw_span:tests",
-    "$dir_pw_status:tests",
-    "$dir_pw_stream:tests",
-    "$dir_pw_string:tests",
-    "$dir_pw_tokenizer:tests",
-    "$dir_pw_trace:tests",
-    "$dir_pw_unit_test:tests",
-    "$dir_pw_varint:tests",
-  ]
-
-  # TODO(pwbug/17): Re-think when Pigweed config system is added.
-  if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
-    group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
+  group("pw_facades") {
+    deps = [
+      "$dir_pw_cpu_exception",
+      "$dir_pw_sys_io",
+    ]
   }
 
-  if (pw_build_host_tools) {
-    # TODO(pwbug/196): KVS tests are not compatible with device builds as they
-    # use features such as std::map and are computationally expensive. Solving
-    # this requires a more complex capabilities-based build and configuration
-    # system which allowing enabling specific tests for targets that support
-    # them and modifying test parameters for different targets.
-    #
-    # Checking for pw_build_host_tools (which is only set by the host) is a
-    # temporary fix until the problem can be properly solved.
-    group_deps += [ "$dir_pw_kvs:tests" ]
+  # All Pigweed modules that can be built using gn. This is not built by default.
+  group("pw_modules") {
+    deps = [
+      "$dir_pigweed/docs",
+      "$dir_pw_allocator",
+      "$dir_pw_base64",
+      "$dir_pw_checksum",
+      "$dir_pw_polyfill",
+      "$dir_pw_preprocessor",
+      "$dir_pw_protobuf",
+      "$dir_pw_result",
+      "$dir_pw_span",
+      "$dir_pw_status",
+      "$dir_pw_stream",
+      "$dir_pw_string",
+      "$dir_pw_trace",
+      "$dir_pw_unit_test",
+      "$dir_pw_varint",
+    ]
+
+    if (host_os != "win") {
+      deps += [
+        # TODO(frolv): Remove these two when new KVS is ready.
+        "$dir_pw_kvs",
+        "$dir_pw_minimal_cpp_stdlib",
+
+        # TODO(pwbug/111): Remove this when building successfully on Windows.
+        "$dir_pw_tokenizer",
+      ]
+    }
   }
 
-  if (host_os != "win") {
-    # TODO(amontanez): pw_minimal_cpp_stdlib tests do not build on windows.
-    group_deps += [ "$dir_pw_minimal_cpp_stdlib:tests" ]
+  # Targets for all module unit test groups.
+  pw_test_group("pw_module_tests") {
+    group_deps = [
+      "$dir_pw_allocator:tests",
+      "$dir_pw_assert:tests",
+      "$dir_pw_base64:tests",
+      "$dir_pw_checksum:tests",
+      "$dir_pw_containers:tests",
+      "$dir_pw_fuzzer:tests",
+      "$dir_pw_log:tests",
+      "$dir_pw_log_tokenized:tests",
+      "$dir_pw_polyfill:tests",
+      "$dir_pw_preprocessor:tests",
+      "$dir_pw_protobuf:tests",
+      "$dir_pw_protobuf_compiler:tests",
+      "$dir_pw_result:tests",
+      "$dir_pw_ring_buffer:tests",
+      "$dir_pw_rpc:tests",
+      "$dir_pw_span:tests",
+      "$dir_pw_status:tests",
+      "$dir_pw_stream:tests",
+      "$dir_pw_string:tests",
+      "$dir_pw_tokenizer:tests",
+      "$dir_pw_trace:tests",
+      "$dir_pw_unit_test:tests",
+      "$dir_pw_varint:tests",
+    ]
+
+    import("$dir_pw_cpu_exception/backend.gni")
+
+    # TODO(pwbug/17): Re-think when Pigweed config system is added.
+    if (pw_cpu_exception_BACKEND == dir_pw_cpu_exception_armv7m) {
+      group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
+    }
+
+    if (pw_build_HOST_TOOLS) {
+      # TODO(pwbug/196): KVS tests are not compatible with device builds as they
+      # use features such as std::map and are computationally expensive. Solving
+      # this requires a more complex capabilities-based build and configuration
+      # system which allowing enabling specific tests for targets that support
+      # them and modifying test parameters for different targets.
+      #
+      # Checking for pw_build_host_tools (which is only set by the host) is a
+      # temporary fix until the problem can be properly solved.
+      group_deps += [ "$dir_pw_kvs:tests" ]
+    }
+
+    if (host_os != "win") {
+      # TODO(amontanez): pw_minimal_cpp_stdlib tests do not build on windows.
+      group_deps += [ "$dir_pw_minimal_cpp_stdlib:tests" ]
+    }
   }
 }

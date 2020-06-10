@@ -16,30 +16,13 @@
 # new project, you'll need to copy this file to your project and then modify it
 # to fit your needs. Due to the way Pigweed handles file imports, you won't be
 # able to simply import this file in your own BUILDCONFIG.gn.
-#
-# Keep in mind when importing .gni files that `gn format` will try to
-# alphabetically sort imports unless they're separated by comments. For this
-# file, import order matters (modules.gni MUST be imported first).
 
 # This is imported into a scope so as not to pollute the global variable space.
 _pigweed_directory = {
   import("//build_overrides/pigweed.gni")
 }
 
-_pigweed_modules = {
-  # Import target configuration. This is what "completes" a Pigweed
-  # configuration. This file should set a default toolchain, configure
-  # pw_executable, select backends to build against, and provide target-specific
-  # build arguments.
-  import("${_pigweed_directory.dir_pigweed}/legacy_target.gni")
-}
-
-# Ensure some sort of default toolchain was provided by the target, and then
-# set the default toolchain.
-assert(_pigweed_modules.pw_target_toolchain != "",
-       "Build target must provide its own toolchain.")
-
 # The default toolchain is not used in Pigweed builds, so it is set to a dummy
 # toolchain. The top-level BUILD.gn should stamp a group with all of the build
 # targets and their toolchains.
-set_default_toolchain("${_pigweed_modules.dir_pw_toolchain}/dummy")
+set_default_toolchain("${_pigweed_directory.dir_pw_toolchain}/dummy")

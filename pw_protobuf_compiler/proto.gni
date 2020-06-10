@@ -19,6 +19,17 @@ import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
+declare_args() {
+  # Generators with which to compile protobuf code. These are used by the
+  # pw_proto_library template to determine which build targets to create.
+  #
+  # Supported generators:
+  #   "pwpb", "nanopb", "go"
+  pw_protobuf_GENERATORS = [
+    "pwpb",
+    "go",
+  ]
+}
 
 # Python script that invokes protoc.
 _gen_script_path =
@@ -93,8 +104,8 @@ template("_pw_pwpb_proto_library") {
 # Args:
 #  protos: List of input .proto files.
 template("_pw_nanopb_proto_library") {
-  assert(defined(dir_third_party_nanopb) && dir_third_party_nanopb != "",
-         "\$dir_third_party_nanopb must be set to compile nanopb protobufs")
+  assert(defined(dir_pw_third_party_nanopb) && dir_pw_third_party_nanopb != "",
+         "\$dir_pw_third_party_nanopb must be set to compile nanopb protobufs")
 
   _proto_gen_dir = "$root_gen_dir/protos"
   _module_path = get_path_info(".", "abspath")
@@ -110,7 +121,7 @@ template("_pw_nanopb_proto_library") {
     ]
   }
 
-  _nanopb_plugin = "$dir_third_party_nanopb/generator/protoc-gen-nanopb"
+  _nanopb_plugin = "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb"
   if (host_os == "win") {
     _nanopb_plugin += ".bat"
   }
@@ -127,7 +138,7 @@ template("_pw_nanopb_proto_library") {
              "--module-path",
              _module_path,
              "--include-paths",
-             "$dir_third_party_nanopb/generator/proto",
+             "$dir_pw_third_party_nanopb/generator/proto",
              "--include-file",
              invoker.include_file,
              "--out-dir",
@@ -160,7 +171,7 @@ template("_pw_nanopb_proto_library") {
   pw_source_set(target_name) {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ]
-    public_deps = [ dir_third_party_nanopb ] + invoker.gen_deps
+    public_deps = [ dir_pw_third_party_nanopb ] + invoker.gen_deps
     sources = get_target_outputs(":$_gen_target")
     public = filter_include(sources, [ "*.pb.h" ])
   }
@@ -204,14 +215,14 @@ template("_pw_go_proto_library") {
 
 # Generates protobuf code from .proto definitions for various languages.
 #
-# The generators to use are defined in the pw_protobuf_generators build
+# The generators to use are defined in the pw_protobuf_GENERATORS build
 # variable. Each listed generator creates a generated code target called
 #
 #   <target_name>_<generator>
 #
 # For example, with the following definitions:
 #
-#   pw_protobuf_generators = [ "pwpb", "py" ]
+#   pw_protobuf_GENERATORS = [ "pwpb", "py" ]
 #
 #   pw_proto_library("my_protos") {
 #     sources = [ "foo.proto" ]
@@ -261,7 +272,7 @@ template("pw_proto_library") {
     _deps += [ ":$_input_target_name" ]
   }
 
-  foreach(_gen, pw_protobuf_generators) {
+  foreach(_gen, pw_protobuf_GENERATORS) {
     _lang_target = "${target_name}_${_gen}"
     _gen_deps = []
     if (defined(invoker.deps)) {
@@ -315,7 +326,7 @@ template("pw_proto_library") {
   ]
 
   # Create stub versions of the proto library for other protobuf generators.
-  foreach(_gen, _protobuf_generators - pw_protobuf_generators) {
+  foreach(_gen, _protobuf_generators - pw_protobuf_GENERATORS) {
     pw_python_script("${target_name}_${_gen}") {
       forward_variables_from(invoker, _forwarded_vars)
       script = string_join("/",
@@ -353,7 +364,7 @@ template("pw_proto_library") {
              get_path_info(".", "abspath"),
              "--root",
              "//",
-           ] + pw_protobuf_generators
+           ] + pw_protobuf_GENERATORS
     stamp = true
   }
 }

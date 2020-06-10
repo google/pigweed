@@ -19,16 +19,25 @@ import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-if (dir_pw_boot_backend == dir_pw_boot_armv7m) {
+declare_args() {
+  # TODO(frolv): Move this into the pw_boot module.
+  pw_boot_BACKEND = ""
+
+  # Module configuration options for pw_boot_armv7m.
+  pw_boot_armv7m_CONFIG = {
+    # C Preprocessor defines used for linker script configuration.
+    defines = []
+  }
+}
+
+if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
   config("default_config") {
     include_dirs = [ "public" ]
   }
 
   pw_linker_script("armv7m_linker_script") {
-    # pw_boot_armv7m_config is a scope provided by the target.
-    assert(defined(pw_boot_armv7m_config),
-           "pw_boot_armv7m depends on pw_boot_armv7m_config being defined!")
-    defines = pw_boot_armv7m_config.defines
+    # pw_boot_armv7m_CONFIG is a scope provided by the target.
+    defines = pw_boot_armv7m_CONFIG.defines
     linker_script = "basic_armv7m.ld"
   }
 

@@ -14,26 +14,14 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/pw_vars_default.gni")
-
-declare_args() {
-  pw_build_host_tools = false
-  dir_third_party_nanopb = ""
-}
-
-# Allow nanopb to be toggled via a build arg on host for easy testing.
-if (dir_third_party_nanopb != "") {
-  pw_protobuf_generators += [ "nanopb" ]
-}
-
 # Use logging-based test output on host.
-pw_unit_test_main = "$dir_pw_unit_test:logging_main"
+pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
 
 # Configure backend for assert facade.
-dir_pw_assert_backend = "$dir_pw_assert_basic"
+pw_assert_BACKEND = "$dir_pw_assert_basic"
 
 # Configure backend for logging facade.
-dir_pw_log_backend = "$dir_pw_log_basic"
+pw_log_BACKEND = "$dir_pw_log_basic"
 
 # Configure backend for pw_sys_io facade.
-dir_pw_sys_io_backend = "$dir_pw_sys_io_stdio"
+pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"

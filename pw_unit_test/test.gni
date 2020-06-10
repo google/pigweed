@@ -15,9 +15,22 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
+declare_args() {
+  # Path to a test runner to automatically run unit tests after they are built.
+  #
+  # If set, the pw_test() template creates an action that invokes the test runner
+  # on each test executable. If unset, the pw_test() template only creates a test
+  # executable target.
+  #
+  # This should only be enabled for targets which support parallelized running of
+  # unit tests, such as desktops with multiple cores.
+  pw_unit_test_AUTOMATIC_RUNNER = ""
+
+  # Implementation of a main function for "pw_test" unit test binaries.
+  pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
+}
 
 # Defines a target if enable_if is true. Otherwise, it defines that target as
 # <target_name>_DISABLED and creates an empty <target_name> group. This can be
@@ -62,7 +75,7 @@ template("_pw_disableable_target") {
 
 # Creates an executable target for a unit test.
 #
-# If the pw_automatic_test_runner variable is set, this template also creates a
+# If the pw_unit_test_AUTOMATIC_RUNNER variable is set, this template also creates a
 # "${test_name}_run" target which runs the unit test executable after building
 # it.
 #
@@ -102,10 +115,10 @@ template("pw_test") {
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ pw_unit_test_main ]
+    deps += [ pw_unit_test_MAIN ]
   }
 
-  if (pw_automatic_test_runner != "") {
+  if (pw_unit_test_AUTOMATIC_RUNNER != "") {
     # When the automatic runner is set, create an action which runs the unit
     # test executable using the test runner script.
     if (_test_is_enabled) {
@@ -122,11 +135,11 @@ template("pw_test") {
 
     pw_python_script(_test_to_run + "_run") {
       deps = [ ":$_test_target_name" ]
-      inputs = [ pw_automatic_test_runner ]
+      inputs = [ pw_unit_test_AUTOMATIC_RUNNER ]
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
       args = [
         "--runner",
-        pw_automatic_test_runner,
+        pw_unit_test_AUTOMATIC_RUNNER,
         "--test",
         get_path_info("$target_out_dir:$_test_to_run", "abspath"),
       ]
@@ -210,7 +223,7 @@ template("pw_test_group") {
 
     # If automatic test running is enabled, create a *_run group that collects
     # all of the individual *_run targets and groups.
-    if (pw_automatic_test_runner != "") {
+    if (pw_unit_test_AUTOMATIC_RUNNER != "") {
       group(_group_target + "_run") {
         deps = [ ":$_group_target" ]
         foreach(_target, _deps) {
@@ -223,7 +236,7 @@ template("pw_test_group") {
     group(_group_target) {
     }
 
-    if (pw_automatic_test_runner != "") {
+    if (pw_unit_test_AUTOMATIC_RUNNER != "") {
       group(_group_target + "_run") {
       }
     }

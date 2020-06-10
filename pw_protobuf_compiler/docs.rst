@@ -24,9 +24,9 @@ Protobuf code generation is currently supported for the following generators:
 | Go          | ``go``     | Compiles using the standard Go protobuf plugin    |
 |             |            | with gRPC service support.                        |
 +-------------+------------+---------------------------------------------------+
-| Nanopb      | ``nanopb`` | Compiles using Nanopb. The build variable         |
-|             |            | ``dir_third_party_nanopb`` must be set to point   |
-|             |            | to a local nanopb installation.                   |
+| Nanopb      | ``nanopb`` | Compiles using Nanopb. The build argument         |
+|             |            | ``dir_pw_third_party_nanopb`` must be set to      |
+|             |            | point to a local nanopb installation.             |
 +-------------+------------+---------------------------------------------------+
 
 The build variable ``pw_protobuf_generators`` tells the module the generators
