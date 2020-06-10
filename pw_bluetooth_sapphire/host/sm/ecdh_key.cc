@@ -33,8 +33,10 @@ std::optional<EcdhKey> EcdhKey::ParseFromPublicKey(sm::PairingPublicKeyParams pu
   BIGNUM x, y;
   BN_init(&x);
   BN_init(&y);
-  BN_le2bn(pub_key.x, sizeof(pub_key.x), &x);
-  BN_le2bn(pub_key.y, sizeof(pub_key.y), &y);
+  // Assert on le2bn output. le2bn "returns NULL on allocation failure", but allocation should
+  // never fail on Fuchsia per overcommit semantics.
+  ZX_ASSERT(BN_le2bn(pub_key.x, sizeof(pub_key.x), &x));
+  ZX_ASSERT(BN_le2bn(pub_key.y, sizeof(pub_key.y), &y));
 
   // One potential cause of failure is if pub_key is not a valid ECDH key on the P-256 curve.
   int success = (EC_KEY_set_public_key_affine_coordinates(new_key.key_, &x, &y) == 1);
