@@ -52,7 +52,8 @@ _defaults = {
     "$dir_pw_toolchain/host_clang:xcode_sysroot",
   ]
   if (pw_toolchain_SANITIZER != "") {
-    configs += [ "$dir_pw_toolchain/host_clang:sanitize_$pw_toolchain_SANITIZER" ]
+    configs +=
+        [ "$dir_pw_toolchain/host_clang:sanitize_$pw_toolchain_SANITIZER" ]
   }
   if (pw_toolchain_OSS_FUZZ_ENABLED) {
     default_configs += oss_fuzz_added_configs

@@ -15,47 +15,39 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+config("default_config") {
+  include_dirs = [ "public" ]
+}
 
-# TODO(pwbug/17): Replace when Pigweed config system is added.
-# This if statement allows docs to always build even if the target isn't
-# compatible with this backend.
-if (dir_pw_cpu_exception_backend == dir_pw_cpu_exception_armv7m) {
-  config("default_config") {
-    include_dirs = [ "public" ]
-  }
+pw_source_set("pw_cpu_exception_armv7m") {
+  public_configs = [ ":default_config" ]
+  deps = [
+    "$dir_pw_cpu_exception:facade",
+    "$dir_pw_preprocessor",
+  ]
+  public = [ "public/pw_cpu_exception_armv7m/cpu_state.h" ]
+  sources = [
+    "cpu_exception_entry.cc",
+    "cpu_state.cc",
+  ]
+}
 
-  pw_source_set("pw_cpu_exception_armv7m") {
-    public_configs = [ ":default_config" ]
-    deps = [
-      "$dir_pw_cpu_exception:facade",
-      "$dir_pw_preprocessor",
-    ]
-    public = [ "public/pw_cpu_exception_armv7m/cpu_state.h" ]
-    sources = [
-      "cpu_exception_entry.cc",
-      "cpu_state.cc",
-    ]
-    sources += public
-  }
+pw_test_group("tests") {
+  tests = [ ":cpu_exception_entry_test" ]
+}
 
-  pw_test_group("tests") {
-    tests = [ ":cpu_exception_entry_test" ]
-  }
+pw_test("cpu_exception_entry_test") {
+  deps = [
+    ":pw_cpu_exception_armv7m",
+    "$dir_pw_cpu_exception",
+  ]
+  sources = [ "exception_entry_test.cc" ]
 
-  pw_test("cpu_exception_entry_test") {
-    deps = [
-      ":pw_cpu_exception_armv7m",
-      "$dir_pw_cpu_exception",
-    ]
-    sources = [ "exception_entry_test.cc" ]
-
-    # TODO(frolv): Fix this test on the QEMU target.
-    enable_if = pw_executable_config.target_type != "lm3s6965evb_executable"
-  }
+  # TODO(frolv): Fix this test on the QEMU target.
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "lm3s6965evb_executable"
 }
 
 pw_doc_group("docs") {

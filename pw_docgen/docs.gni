@@ -18,6 +18,10 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_script.gni")
+declare_args() {
+  # Whether or not the current target should build docs.
+  pw_docgen_BUILD_DOCS = false
+}
 
 # Defines a group of documentation files and assets.
 #
@@ -86,9 +90,9 @@ template("pw_doc_gen") {
 
   _script_args = [
     "--gn-root",
-    rebase_path("//", root_out_dir),
+    rebase_path("//", root_build_dir),
     "--gn-gen-root",
-    rebase_path(root_gen_dir, root_out_dir) + "/",
+    rebase_path(root_gen_dir, root_build_dir) + "/",
     "--sphinx-build-dir",
     get_path_info("$target_gen_dir/pw_docgen_tree", "abspath"),
     "--conf",
@@ -106,8 +110,7 @@ template("pw_doc_gen") {
     _script_args += [ get_path_info(path, "abspath") ]
   }
 
-  # TODO(frolv): Have a way of indicating that a toolchain should build docs.
-  if (current_toolchain == default_toolchain) {
+  if (pw_docgen_BUILD_DOCS) {
     pw_python_script(target_name) {
       script = "$dir_pw_docgen/py/docgen.py"
       args = _script_args

@@ -17,16 +17,20 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
-
 linux_toolchains = [
   {
     name = "clang_og"
-    forward_variables_from(host_clang_og, "*", [ "defaults", "name" ])
+    forward_variables_from(host_clang_og,
+                           "*",
+                           [
+                             "defaults",
+                             "name",
+                           ])
     defaults = {
       forward_variables_from(host_clang_og.defaults, "*")
       import("linux.gni")
     }
-  }
+  },
 ]
 
 generate_toolchains("linux") {

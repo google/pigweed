@@ -48,6 +48,14 @@ _cortex_m4f = [
   "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu",
 ]
 
+arm_gcc_cortex_m4_os = {
+  name = "arm_gcc_cortex_m4_os"
+  forward_variables_from(arm_gcc_toolchain_tools, "*")
+  defaults = {
+    default_configs = _arm_gcc + _cortex_m4 + [ "$dir_pw_build:optimize_size" ]
+  }
+}
+
 # Describes ARM GCC toolchains for specific targets.
 arm_gcc_toolchains = [
   {

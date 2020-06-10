@@ -17,7 +17,11 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/modules.gni")
 import("$dir_pw_build/host_tool.gni")
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+
+# Main build file for upstream Pigweed.
+
 declare_args() {
   pw_IS_HOST_TOOLCHAIN = false
 }
@@ -26,7 +30,10 @@ declare_args() {
 group("default") {
   _host_target = "$dir_pigweed/targets/host/linux:clang_og"
 
-  deps = [ ":pigweed_default($_host_target)" ]
+  deps = [
+    ":pigweed_default($_host_target)",
+    ":pigweed_default($dir_pigweed/targets/docs)",
+  ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.
@@ -35,7 +42,7 @@ group("pigweed_default") {
 
   # Prevent the default toolchain from parsing any other BUILD.gn files.
   if (current_toolchain != default_toolchain) {
-    if (defined(pw_is_docs_target) && pw_is_docs_target) {
+    if (pw_docgen_BUILD_DOCS) {
       deps += [ "$dir_pigweed/docs" ]
     } else {
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {

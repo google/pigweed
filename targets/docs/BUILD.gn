@@ -15,8 +15,50 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
+
+# Toolchain for generating upstream Pigweed documentation.
+generate_toolchain("docs") {
+  # Use the Cortex M4 toolchain for regular pw_size_report targets.
+  forward_variables_from(arm_gcc_cortex_m4_os,
+                         "*",
+                         [
+                           "defaults",
+                           "name",
+                         ])
+  defaults = {
+    forward_variables_from(arm_gcc_cortex_m4_os.defaults, "*")
+
+    # This is the docs target.
+    pw_docgen_BUILD_DOCS = true
+
+    _arm_bloaty_config = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
+
+    pw_bloat_BLOATY_CONFIG = _arm_bloaty_config
+
+    # Toolchains to compare in documentation size reports.
+    pw_bloat_TOOLCHAINS = [
+      {
+        name = "arm-none-eabi-gcc -Og -mcpu=cortex-m4"
+        target = "$dir_pw_toolchain:arm_gcc_cortex_m4_og"
+        bloaty_config = _arm_bloaty_config
+      },
+      {
+        name = "arm-none-eabi-gcc -Os -mcpu=cortex-m4"
+        target = "$dir_pw_toolchain:arm_gcc_cortex_m4_os"
+        bloaty_config = _arm_bloaty_config
+      },
+      {
+        name = "arm-none-eabi-gcc -O2 -mcpu=cortex-m4"
+        target = "$dir_pw_toolchain:arm_gcc_cortex_m4_o2"
+        bloaty_config = _arm_bloaty_config
+      },
+    ]
+  }
+}
+
 pw_doc_group("target_docs") {
   sources = [ "target_docs.rst" ]
 }
