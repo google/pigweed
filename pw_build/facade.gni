@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/python_script.gni")
+import("$dir_pw_build/target_types.gni")
 
 # Declare a facade.
 # A Pigweed facade is an API layer that has a single implementation it must link
@@ -57,7 +58,7 @@ template("pw_facade") {
   #     sources = [ "foo.cc" ]
   #   }
   #
-  #   source_set("foo_backend_bar") {
+  #   pw_source_set("foo_backend_bar") {
   #     deps = [ ":facade" ]
   #     sources = [ "bar.cc" ]
   #   }
@@ -75,7 +76,7 @@ template("pw_facade") {
     "public_deps",
     "public",
   ]
-  source_set(_facade_name) {
+  pw_source_set(_facade_name) {
     forward_variables_from(invoker, _facade_vars)
   }
 
@@ -97,7 +98,7 @@ template("pw_facade") {
   # Create a target that defines the main facade library. Always emit this
   # target, even if the backend isn't defined, so that the dependency graph is
   # correctly expressed for gn check.
-  source_set(target_name) {
+  pw_source_set(target_name) {
     # The main library contains everything else specified in the template.
     _ignore_vars = [ "backend" ] + _facade_vars
     forward_variables_from(invoker, "*", _ignore_vars)

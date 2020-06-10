@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -19,7 +20,7 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("pw_kvs") {
+pw_source_set("pw_kvs") {
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_kvs/alignment.h",
@@ -59,7 +60,7 @@ source_set("pw_kvs") {
   friend = [ ":*" ]
 }
 
-source_set("crc16") {
+pw_source_set("crc16") {
   public = [ "public/pw_kvs/crc16_checksum.h" ]
   public_deps = [
     ":pw_kvs",
@@ -67,7 +68,7 @@ source_set("crc16") {
   ]
 }
 
-source_set("fake_flash") {
+pw_source_set("fake_flash") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/fake_flash_memory.h" ]
   sources = [ "fake_flash_memory.cc" ]
@@ -80,13 +81,13 @@ source_set("fake_flash") {
   deps = [ dir_pw_log ]
 }
 
-source_set("test_utils") {
+pw_source_set("test_utils") {
   public_configs = [ ":default_config" ]
   public = [ "pw_kvs_private/byte_utils.h" ]
   visibility = [ ":*" ]
 }
 
-source_set("test_partition") {
+pw_source_set("test_partition") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/flash_partition_with_stats.h" ]
   sources = [ "flash_partition_with_stats.cc" ]

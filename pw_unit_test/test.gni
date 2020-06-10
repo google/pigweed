@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/pw_executable.gni")
 import("$dir_pw_build/python_script.gni")
+import("$dir_pw_build/target_types.gni")
 
 # Defines a target if enable_if is true. Otherwise, it defines that target as
 # <target_name>_DISABLED and creates an empty <target_name> group. This can be

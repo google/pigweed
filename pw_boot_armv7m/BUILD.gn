@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/linker_script.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
 if (dir_pw_boot_backend == dir_pw_boot_armv7m) {
@@ -28,7 +29,7 @@ if (dir_pw_boot_backend == dir_pw_boot_armv7m) {
     linker_script = "basic_armv7m.ld"
   }
 
-  source_set("pw_boot_armv7m") {
+  pw_source_set("pw_boot_armv7m") {
     public_configs = [ ":default_config" ]
     deps = [
       ":armv7m_linker_script",

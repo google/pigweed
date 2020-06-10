@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -21,7 +22,7 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("pw_tokenizer") {
+pw_source_set("pw_tokenizer") {
   public_configs = [ ":default_config" ]
   public_deps = [
     dir_pw_preprocessor,
@@ -55,7 +56,7 @@ if (dir_pw_tokenizer_global_handler_backend == "" &&
     dir_pw_tokenizer_global_handler_with_payload_backend == "") {
   # This is an empty library to use as the backend for global_handler and
   # global_handler_with_payload tests.
-  source_set("test_backend") {
+  pw_source_set("test_backend") {
     visibility = [ ":*" ]
   }
 
@@ -87,7 +88,7 @@ pw_facade("global_handler_with_payload") {
   public_deps = [ ":pw_tokenizer" ]
 }
 
-source_set("base64") {
+pw_source_set("base64") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_tokenizer/base64.h" ]
   sources = [ "base64.cc" ]
@@ -98,7 +99,7 @@ source_set("base64") {
   deps = [ dir_pw_base64 ]
 }
 
-source_set("decoder") {
+pw_source_set("decoder") {
   public_configs = [ ":default_config" ]
   public_deps = [ dir_pw_span ]
   deps = [ dir_pw_varint ]
@@ -322,7 +323,7 @@ declare_args() {
 # Create a shared library for the tokenizer JNI wrapper. The include paths for
 # the JNI headers must be available in the system or provided with the
 # pw_java_native_interface_include_dirs variable.
-shared_library("detokenizer_jni") {
+pw_shared_library("detokenizer_jni") {
   public_configs = [ ":default_config" ]
   include_dirs = pw_java_native_interface_include_dirs
   sources = [ "java/dev/pigweed/tokenizer/detokenizer.cc" ]

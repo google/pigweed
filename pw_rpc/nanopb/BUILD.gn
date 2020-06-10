@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("config") {
@@ -19,7 +20,7 @@ config("config") {
   visibility = [ ":*" ]
 }
 
-source_set("nanopb") {
+pw_source_set("nanopb") {
   public_configs = [ ":config" ]
   public = [ "public_overrides/pw_rpc/internal/method.h" ]
   sources = [ "method.cc" ]

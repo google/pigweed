@@ -44,17 +44,30 @@ Pigweed.
 Templates
 ---------
 
-pw_executable
-^^^^^^^^^^^^^
+Target types
+^^^^^^^^^^^^
 .. code::
 
-  import("$dir_pw_build/pw_executable.gni")
+  import("$dir_pw_build/target_types.gni")
 
-The ``pw_executable`` template is a wrapper around executable targets which
-builds for a globally-defined target type. This is controlled by the build
-variable ``pw_executable_config.target_type``. For example, setting this
-variable to ``stm32f429i_executable`` causes all executable targets to build
-using that template.
+  pw_source_set("my_library") {
+    sources = [ "lib.cc" ]
+  }
+
+Pigweed defines wrappers around the four basic GN binary types ``source_set``,
+``executable``, ``static_library``, and ``shared_library``. These wrappers apply
+default arguments to each target as specified in the ``default_configs`` and
+``default_public_deps`` build args. Additionally, they allow defaults to be
+removed on a per-target basis using ``remove_configs`` and
+``remove_public_deps`` variables, respectively.
+
+The ``pw_executable`` template provides additional functionality around building
+complete binaries. As Pigweed is a collection of libraries, it does not know how
+its final targets are built. ``pw_executable`` solves this by letting each user
+of Pigweed specify a global executable template for their target, and have
+Pigweed build against it. This is controlled by the build variable
+``pw_executable_config.target_type``, specifying the name of the executable
+template for a project.
 
 .. tip::
 
@@ -63,8 +76,8 @@ using that template.
 
 **Arguments**
 
-``pw_executable`` accepts any arguments, as it simply forwards them through to
-the specified custom template.
+All of the ``pw_*`` target type overrides accept any arguments, as they simply
+forward them through to the underlying target.
 
 pw_python_script
 ^^^^^^^^^^^^^^^^

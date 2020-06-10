@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -24,7 +24,7 @@ config("default_config") {
 }
 
 # pw_unit_test core library.
-source_set("pw_unit_test") {
+pw_source_set("pw_unit_test") {
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_polyfill",
@@ -40,7 +40,7 @@ source_set("pw_unit_test") {
 }
 
 # Library providing an event handler which outputs human-readable text.
-source_set("simple_printing_event_handler") {
+pw_source_set("simple_printing_event_handler") {
   public_deps = [
     ":pw_unit_test",
     "$dir_pw_preprocessor",
@@ -52,7 +52,7 @@ source_set("simple_printing_event_handler") {
 # Library providing a standard desktop main function for the pw_unit_test
 # framework. Unit test files can link against this library to build runnable
 # unit test executables.
-source_set("simple_printing_main") {
+pw_source_set("simple_printing_main") {
   public_deps = [ ":pw_unit_test" ]
   deps = [
     ":simple_printing_event_handler",
@@ -67,7 +67,7 @@ pw_doc_group("docs") {
 
 # Library providing an event handler which logs using pw_log.
 if (dir_pw_log_backend != "") {
-  source_set("logging_event_handler") {
+  pw_source_set("logging_event_handler") {
     public_deps = [
       ":pw_unit_test",
       "$dir_pw_log",
@@ -77,7 +77,7 @@ if (dir_pw_log_backend != "") {
     sources = [ "logging_event_handler.cc" ] + public
   }
 
-  source_set("logging_main") {
+  pw_source_set("logging_main") {
     public_deps = [ ":pw_unit_test" ]
     deps = [
       ":logging_event_handler",

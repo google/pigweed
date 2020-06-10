@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -19,7 +20,7 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("pw_result") {
+pw_source_set("pw_result") {
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_status" ]
   public = [ "public/pw_result/result.h" ]

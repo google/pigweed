@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -34,7 +35,7 @@ template("_pw_rpc_server_library") {
          "_pw_rpc_server_library requires an implementation to be set")
   _target_name = target_name
 
-  source_set(_target_name) {
+  pw_source_set(_target_name) {
     forward_variables_from(invoker, "*")
 
     public_configs = [ ":default_config" ]
@@ -78,7 +79,7 @@ template("_pw_rpc_server_library") {
 }
 
 # Classes with no dependencies on the protobuf library for method invocations.
-source_set("common") {
+pw_source_set("common") {
   public_configs = [ ":default_config" ]
   public_deps = [
     ":protos_pwpb",

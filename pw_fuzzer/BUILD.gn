@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_fuzzer/oss_fuzz.gni")
@@ -64,7 +65,7 @@ config("oss_fuzz_extra") {
   ldflags = oss_fuzz_extra_ldflags
 }
 
-source_set("pw_fuzzer") {
+pw_source_set("pw_fuzzer") {
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_fuzzer/asan_interface.h",

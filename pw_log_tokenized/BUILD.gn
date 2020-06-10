@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -23,7 +24,7 @@ config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
 
-source_set("pw_log_tokenized") {
+pw_source_set("pw_log_tokenized") {
   public_configs = [
     ":backend_config",
     ":default_config",
@@ -36,7 +37,7 @@ source_set("pw_log_tokenized") {
   ]
 }
 
-source_set("core") {
+pw_source_set("core") {
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_log:facade",

@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
 config("default_config") {
@@ -29,7 +30,7 @@ pw_facade("pw_sys_io") {
   public = [ "public/pw_sys_io/sys_io.h" ]
 }
 
-source_set("default_putget_bytes") {
+pw_source_set("default_putget_bytes") {
   deps = [ ":facade" ]
   sources = [ "sys_io.cc" ]
 }

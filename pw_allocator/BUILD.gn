@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -27,7 +28,7 @@ group("pw_allocator") {
   ]
 }
 
-source_set("block") {
+pw_source_set("block") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
@@ -37,7 +38,7 @@ source_set("block") {
   sources = [ "block.cc" ]
 }
 
-source_set("freelist") {
+pw_source_set("freelist") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/freelist.h" ]
   public_deps = [
@@ -48,7 +49,7 @@ source_set("freelist") {
   sources = [ "freelist.cc" ]
 }
 
-source_set("freelist_heap") {
+pw_source_set("freelist_heap") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [

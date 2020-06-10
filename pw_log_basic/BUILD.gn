@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 
 config("default_config") {
@@ -23,7 +24,7 @@ config("backend_config") {
 }
 
 if (dir_pw_log_backend == dir_pw_log_basic) {
-  source_set("pw_log_basic") {
+  pw_source_set("pw_log_basic") {
     public_configs = [
       ":backend_config",
       ":default_config",
@@ -33,7 +34,7 @@ if (dir_pw_log_backend == dir_pw_log_basic) {
   }
 }
 
-source_set("core") {
+pw_source_set("core") {
   public_configs = [ ":default_config" ]
   public_deps = [ dir_pw_preprocessor ]
   deps = [

@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -26,12 +27,12 @@ group("pw_containers") {
   ]
 }
 
-source_set("vector") {
+pw_source_set("vector") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_containers/vector.h" ]
 }
 
-source_set("intrusive_list") {
+pw_source_set("intrusive_list") {
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_containers/internal/intrusive_list_impl.h",

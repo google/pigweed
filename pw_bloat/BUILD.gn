@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("bloat.gni")
 
@@ -22,7 +22,7 @@ config("default_config") {
 
 # Library which uses standard C/C++ functions such as memcpy to prevent them
 # from showing up within bloat diff reports.
-source_set("bloat_this_binary") {
+pw_source_set("bloat_this_binary") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_bloat/bloat_this_binary.h" ]
   sources = [ "bloat_this_binary.cc" ] + public

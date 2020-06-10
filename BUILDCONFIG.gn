@@ -48,66 +48,8 @@ import(pw_target_config)
 # set the default toolchain.
 assert(pw_target_toolchain != "",
        "Build target must provide its own toolchain.")
+
+# The default toolchain is not used in Pigweed builds, so it is set to a dummy
+# toolchain. The top-level BUILD.gn should stamp a group with all of the build
+# targets and their toolchains.
 set_default_toolchain("$dir_pw_toolchain/dummy")
-
-# Override the built-in build targets to add default compilation options.
-# TODO(pwbug/72): Move this code to a .gni file for easier reuse.
-template("_pw_override_target_with_defaults") {
-  # Set the default variables for GN targets.
-  import("$dir_pw_build/defaults.gni")
-  target(invoker._target_type, target_name) {
-    _supported_default_variables = [
-      "configs",
-      "public_deps",
-    ]
-    forward_variables_from(invoker,
-                           "*",
-                           [ "_target_type" ] + _supported_default_variables)
-
-    if (defined(pw_build_defaults.configs)) {
-      configs = pw_build_defaults.configs
-    } else {
-      configs = []
-    }
-    if (defined(remove_configs)) {
-      if (remove_configs[0] == "*") {
-        configs = []
-      } else {
-        configs -= remove_configs
-      }
-    }
-    if (defined(invoker.configs)) {
-      configs += invoker.configs
-    }
-
-    if (defined(pw_build_defaults.public_deps)) {
-      public_deps = pw_build_defaults.public_deps
-    } else {
-      public_deps = []
-    }
-    if (defined(remove_public_deps)) {
-      if (remove_public_deps[0] == "*") {
-        public_deps = []
-      } else {
-        public_deps -= remove_public_deps
-      }
-    }
-    if (defined(invoker.public_deps)) {
-      public_deps += invoker.public_deps
-    }
-  }
-}
-
-foreach(_target_type,
-        [
-          "source_set",
-          "executable",
-          "shared_library",
-          "static_library",
-        ]) {
-  template(_target_type) {
-    _pw_override_target_with_defaults(target_name) {
-      forward_variables_from(invoker, "*")
-    }
-  }
-}

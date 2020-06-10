@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_build/exec.gni")
+import("$dir_pw_build/target_types.gni")
 
 # Preprocess a linker script and turn it into a target.
 #
@@ -111,7 +112,7 @@ template("pw_linker_script") {
 
   # The target that adds the linker script config to this library and everything
   # that depends on it.
-  source_set(target_name) {
+  pw_source_set(target_name) {
     inputs = [ _final_linker_script ]
     if (defined(invoker.inputs)) {
       inputs += invoker.inputs

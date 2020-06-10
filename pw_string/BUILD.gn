@@ -13,6 +13,7 @@
 # the License.
 
 import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -20,7 +21,7 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-source_set("pw_string") {
+pw_source_set("pw_string") {
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_string/format.h",

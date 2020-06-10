@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/pw_executable.gni")
+import("$dir_pw_build/target_types.gni")
 
 pw_executable("single_write_snprintf") {
   sources = [ "format_single.cc" ]
