@@ -12,13 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Importing this file provides the $pw_build_defaults scope.
-# This includes target-agnostic default variables. It may also includes
-# target-specific default variables if $pw_target_toolchain or
-# $pw_target_defaults is set (and recognized).
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/modules.gni")
-
+import("$dir_pigweed/legacy_target.gni")
 declare_args() {
   # Default configs and dependencies targets provided by the toolchain. These
   # are applied to all of the pw_* target types. They are set from a toolchain's

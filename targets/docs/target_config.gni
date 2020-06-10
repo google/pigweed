@@ -12,8 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/pw_vars_default.gni")
+# Get location of dir_pigweed.
+import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/pw_vars_default.gni")
 _arm_bloaty_config = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
 
 # Targets are required to set a default toolchain. Use the Cortex M4 ARM

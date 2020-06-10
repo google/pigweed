@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 # This file defines default values for all of the build variables used by
 # Pigweed.
 #

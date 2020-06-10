@@ -19,8 +19,10 @@
 # testing/development and should eventually point to something more
 # sophisticated.
 
-import("$dir_pigweed/pw_vars_default.gni")
+# Get location of dir_pigweed.
+import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/pw_vars_default.gni")
 declare_args() {
   # Specifies the toolchain to use for this build.
   pw_target_toolchain = "$dir_pw_toolchain:arm_gcc_cortex_m3_og"

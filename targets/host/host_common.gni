@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 import("$dir_pigweed/pw_vars_default.gni")
 
 declare_args() {

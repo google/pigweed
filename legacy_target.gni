@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,18 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
-import("docs.gni")
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+# This file uses the old method of declaring targets via global defines in a
+# .gni file. We're transitioning to declaring all target config options as
+# individual build args that toolchains can manage.
+
+declare_args() {
+  # Path to the Pigweed variables config file for the build target.
+  #
+  # When this is changed, you must run `ninja -t clean` to remove any files from
+  # the previous target's build before building again.
+  pw_target_config = "$dir_pigweed/targets/host/target_config.gni"
 }
+
+import(pw_target_config)

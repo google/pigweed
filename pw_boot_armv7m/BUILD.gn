@@ -12,10 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+# gn-format disable
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-
 if (dir_pw_boot_backend == dir_pw_boot_armv7m) {
   config("default_config") {
     include_dirs = [ "public" ]

@@ -12,54 +12,57 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# This file defines a directory variable for each of Pigweed's modules. This
-# allows modules to be moved or swapped out without breaking existing builds.
-# All module variables are prefixed with dir_.
-
-dir_pw_allocator = "$dir_pigweed/pw_allocator"
-dir_pw_assert = "$dir_pigweed/pw_assert"
-dir_pw_assert_basic = "$dir_pigweed/pw_assert_basic"
-dir_pw_base64 = "$dir_pigweed/pw_base64"
-dir_pw_bloat = "$dir_pigweed/pw_bloat"
-dir_pw_boot_armv7m = "$dir_pigweed/pw_boot_armv7m"
-dir_pw_build = "$dir_pigweed/pw_build"
-dir_pw_checksum = "$dir_pigweed/pw_checksum"
-dir_pw_cli = "$dir_pigweed/pw_cli"
-dir_pw_containers = "$dir_pigweed/pw_containers"
-dir_pw_cpu_exception = "$dir_pigweed/pw_cpu_exception"
-dir_pw_cpu_exception_armv7m = "$dir_pigweed/pw_cpu_exception_armv7m"
-dir_pw_docgen = "$dir_pigweed/pw_docgen"
-dir_pw_doctor = "$dir_pigweed/pw_doctor"
-dir_pw_env_setup = "$dir_pigweed/pw_env_setup"
-dir_pw_kvs = "$dir_pigweed/pw_kvs"
-dir_pw_log = "$dir_pigweed/pw_log"
-dir_pw_log_basic = "$dir_pigweed/pw_log_basic"
-dir_pw_log_tokenized = "$dir_pigweed/pw_log_tokenized"
-dir_pw_minimal_cpp_stdlib = "$dir_pigweed/pw_minimal_cpp_stdlib"
-dir_pw_module = "$dir_pigweed/pw_module"
-dir_pw_fuzzer = "$dir_pigweed/pw_fuzzer"
-dir_pw_polyfill = "$dir_pigweed/pw_polyfill"
-dir_pw_preprocessor = "$dir_pigweed/pw_preprocessor"
-dir_pw_presubmit = "$dir_pigweed/pw_presubmit"
-dir_pw_protobuf = "$dir_pigweed/pw_protobuf"
-dir_pw_protobuf_compiler = "$dir_pigweed/pw_protobuf_compiler"
-dir_pw_result = "$dir_pigweed/pw_result"
-dir_pw_ring_buffer = "$dir_pigweed/pw_ring_buffer"
-dir_pw_rpc = "$dir_pigweed/pw_rpc"
-dir_pw_span = "$dir_pigweed/pw_span"
-dir_pw_status = "$dir_pigweed/pw_status"
-dir_pw_stream = "$dir_pigweed/pw_stream"
-dir_pw_string = "$dir_pigweed/pw_string"
-dir_pw_sys_io = "$dir_pigweed/pw_sys_io"
-dir_pw_sys_io_baremetal_lm3s6965evb =
-    "$dir_pigweed/pw_sys_io_baremetal_lm3s6965evb"
-dir_pw_sys_io_baremetal_stm32f429 = "$dir_pigweed/pw_sys_io_baremetal_stm32f429"
-dir_pw_sys_io_stdio = "$dir_pigweed/pw_sys_io_stdio"
-dir_pw_target_runner = "$dir_pigweed/pw_target_runner"
-dir_pw_tokenizer = "$dir_pigweed/pw_tokenizer"
-dir_pw_toolchain = "$dir_pigweed/pw_toolchain"
-dir_pw_trace = "$dir_pigweed/pw_trace"
-dir_pw_unit_test = "$dir_pigweed/pw_unit_test"
-dir_pw_varint = "$dir_pigweed/pw_varint"
-dir_pw_watch = "$dir_pigweed/pw_watch"
-dir_pw_web_ui = "$dir_pigweed/pw_web_ui"
+declare_args() {
+  # This file defines a directory variable for each of Pigweed's modules. This
+  # allows modules to be moved or swapped out without breaking existing builds.
+  # All module variables are prefixed with dir_.
+  dir_pw_allocator = get_path_info("pw_allocator", "abspath")
+  dir_pw_assert = get_path_info("pw_assert", "abspath")
+  dir_pw_assert_basic = get_path_info("pw_assert_basic", "abspath")
+  dir_pw_base64 = get_path_info("pw_base64", "abspath")
+  dir_pw_bloat = get_path_info("pw_bloat", "abspath")
+  dir_pw_boot_armv7m = get_path_info("pw_boot_armv7m", "abspath")
+  dir_pw_build = get_path_info("pw_build", "abspath")
+  dir_pw_checksum = get_path_info("pw_checksum", "abspath")
+  dir_pw_cli = get_path_info("pw_cli", "abspath")
+  dir_pw_containers = get_path_info("pw_containers", "abspath")
+  dir_pw_cpu_exception = get_path_info("pw_cpu_exception", "abspath")
+  dir_pw_cpu_exception_armv7m =
+      get_path_info("pw_cpu_exception_armv7m", "abspath")
+  dir_pw_docgen = get_path_info("pw_docgen", "abspath")
+  dir_pw_doctor = get_path_info("pw_doctor", "abspath")
+  dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
+  dir_pw_kvs = get_path_info("pw_kvs", "abspath")
+  dir_pw_log = get_path_info("pw_log", "abspath")
+  dir_pw_log_basic = get_path_info("pw_log_basic", "abspath")
+  dir_pw_log_tokenized = get_path_info("pw_log_tokenized", "abspath")
+  dir_pw_minimal_cpp_stdlib = get_path_info("pw_minimal_cpp_stdlib", "abspath")
+  dir_pw_module = get_path_info("pw_module", "abspath")
+  dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")
+  dir_pw_polyfill = get_path_info("pw_polyfill", "abspath")
+  dir_pw_preprocessor = get_path_info("pw_preprocessor", "abspath")
+  dir_pw_presubmit = get_path_info("pw_presubmit", "abspath")
+  dir_pw_protobuf = get_path_info("pw_protobuf", "abspath")
+  dir_pw_protobuf_compiler = get_path_info("pw_protobuf_compiler", "abspath")
+  dir_pw_result = get_path_info("pw_result", "abspath")
+  dir_pw_ring_buffer = get_path_info("pw_ring_buffer", "abspath")
+  dir_pw_rpc = get_path_info("pw_rpc", "abspath")
+  dir_pw_span = get_path_info("pw_span", "abspath")
+  dir_pw_status = get_path_info("pw_status", "abspath")
+  dir_pw_stream = get_path_info("pw_stream", "abspath")
+  dir_pw_string = get_path_info("pw_string", "abspath")
+  dir_pw_sys_io = get_path_info("pw_sys_io", "abspath")
+  dir_pw_sys_io_baremetal_lm3s6965evb =
+      get_path_info("pw_sys_io_baremetal_lm3s6965evb", "abspath")
+  dir_pw_sys_io_baremetal_stm32f429 =
+      get_path_info("pw_sys_io_baremetal_stm32f429", "abspath")
+  dir_pw_sys_io_stdio = get_path_info("pw_sys_io_stdio", "abspath")
+  dir_pw_target_runner = get_path_info("pw_target_runner", "abspath")
+  dir_pw_tokenizer = get_path_info("pw_tokenizer", "abspath")
+  dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
+  dir_pw_trace = get_path_info("pw_trace", "abspath")
+  dir_pw_unit_test = get_path_info("pw_unit_test", "abspath")
+  dir_pw_varint = get_path_info("pw_varint", "abspath")
+  dir_pw_watch = get_path_info("pw_watch", "abspath")
+  dir_pw_web_ui = get_path_info("pw_web_ui", "abspath")
+}

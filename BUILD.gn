@@ -12,8 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_unit_test/test.gni")
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/legacy_target.gni")
+import("$dir_pw_unit_test/test.gni")
 group("default") {
   deps = [ ":pigweed_default($pw_target_toolchain)" ]
 }
@@ -28,7 +31,8 @@ group("pigweed_default") {
       # Without a test runner defined, build the tests but don't run them.
       deps += [ ":pw_module_tests" ]
     } else {
-      # With a test runner, depend on the run targets so they run with the build.
+      # With a test runner, depend on the run targets so they run with the
+      # build.
       deps += [ ":pw_module_tests_run" ]
     }
   }

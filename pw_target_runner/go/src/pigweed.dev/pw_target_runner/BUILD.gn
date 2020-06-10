@@ -12,8 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pw_build/go.gni")
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/legacy_target.gni")
+import("$dir_pw_build/go.gni")
 pw_go_package("pw_target_runner") {
   sources = [
     "exec_runner.go",

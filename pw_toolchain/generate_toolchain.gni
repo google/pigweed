@@ -12,8 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("$dir_pigweed/modules.gni")
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
+import("$dir_pigweed/legacy_target.gni")
 declare_args() {
   # Scope defining the current toolchain. Contains all of the arguments required
   # by the generate_toolchain template.

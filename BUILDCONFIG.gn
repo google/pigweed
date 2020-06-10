@@ -21,35 +21,25 @@
 # alphabetically sort imports unless they're separated by comments. For this
 # file, import order matters (modules.gni MUST be imported first).
 
-declare_args() {
-  # Location of the Pigweed modules directory (defaults to the directory of
-  # this file). When copying this buildconfig into a new project, this should
-  # be modified to point to the location of the Pigweed repository.
-  dir_pigweed = get_path_info(get_path_info("BUILDCONFIG.gn", "abspath"), "dir")
-
-  # Path to the Pigweed variables config file for the build target.
-  #
-  # When this is changed, you must run `ninja -t clean` to remove any files from
-  # the previous target's build before building again.
-  pw_target_config = "$dir_pigweed/targets/host/target_config.gni"
+# This is imported into a scope so as not to pollute the global variable space.
+_pigweed_directory = {
+  import("//build_overrides/pigweed.gni")
 }
 
-# Import variables that provide paths to modules. Pigweed's GN build requires
-# that this file is imported, and it MUST be imported before any other Pigweed
-# .gni files (as they depend on the dir_[module] variables).
-import("$dir_pigweed/modules.gni")
-
-# Import target configuration. This is what "completes" a Pigweed configuration.
-# This file should set a default toolchain, configure pw_executable, select
-# backends to build against, and provide target-specific build arguments.
-import(pw_target_config)
+_pigweed_modules = {
+  # Import target configuration. This is what "completes" a Pigweed
+  # configuration. This file should set a default toolchain, configure
+  # pw_executable, select backends to build against, and provide target-specific
+  # build arguments.
+  import("${_pigweed_directory.dir_pigweed}/legacy_target.gni")
+}
 
 # Ensure some sort of default toolchain was provided by the target, and then
 # set the default toolchain.
-assert(pw_target_toolchain != "",
+assert(_pigweed_modules.pw_target_toolchain != "",
        "Build target must provide its own toolchain.")
 
 # The default toolchain is not used in Pigweed builds, so it is set to a dummy
 # toolchain. The top-level BUILD.gn should stamp a group with all of the build
 # targets and their toolchains.
-set_default_toolchain("$dir_pw_toolchain/dummy")
+set_default_toolchain("${_pigweed_modules.dir_pw_toolchain}/dummy")
