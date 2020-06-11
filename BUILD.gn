@@ -22,28 +22,67 @@ import("$dir_pw_unit_test/test.gni")
 # Main build file for upstream Pigweed.
 
 declare_args() {
+  # The optimization level to use when building upstream Pigweed targets.
+  #
+  # Choices:
+  #   debug
+  #   size_optimized
+  #   speed_optimized
+  pw_optimization_level = "debug"
+
+  # Whether or not the current toolchain is targeting a host. When possible,
+  # avoid depending on this arg. This is mostly just used to decide whether to
+  # build host tools.
+  #
+  # TODO(amontanez): This should probably be moved to a GNI file.
   pw_IS_HOST_TOOLCHAIN = false
 }
 
-# Enumerate all of the different targets that Pigweed will build.
+# Enumerate all of the different targets that upstream Pigweed will build by
+# default. Downstream projects should not depend on this target; this target is
+# exclusively to facilitate easy upstream development and testing.
 group("default") {
-  # Auto select a toolchain based on host.
+  deps = [
+    ":docs",
+    ":host",
+  ]
+}
+
+# Below are a list of GN targets you can build to force Pigweed to build for a
+# specific Pigweed target.
+group("host") {
+  # Auto select a toolchain based on host OS.
   if (host_os == "linux") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:host_gcc_debug"
+    _default_host_toolchain = ":host_clang"
   } else if (host_os == "mac") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:host_clang_debug"
+    _default_host_toolchain = ":host_clang"
   } else if (host_os == "win") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:host_gcc_debug"
+    _default_host_toolchain = ":host_gcc"
   } else {
     assert(false, "Please define a host config for your system: $host_os")
   }
 
-  deps = [
-    ":pigweed_default($_host_target_toolchain)",
-    ":pigweed_default($dir_pigweed/targets/docs)",
-    ":pigweed_default($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_debug)",
-    ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_debug)",
-  ]
+  deps = [ _default_host_toolchain ]
+}
+
+group("host_clang") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/host:host_clang_$pw_optimization_level)" ]
+}
+
+group("host_gcc") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/host:host_gcc_$pw_optimization_level)" ]
+}
+
+group("stm32f429i") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_optimization_level)" ]
+}
+
+group("qemu") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_$pw_optimization_level)" ]
+}
+
+group("docs") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/docs)" ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.
