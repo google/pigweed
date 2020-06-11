@@ -62,16 +62,16 @@ _os_specific_config = {
 }
 
 pw_target_toolchain_host = {
+  _excluded_members = [
+    "defaults",
+    "name",
+  ]
+
   clang_debug = {
-    name = "clang_debug"
-    forward_variables_from(pw_toolchain_host_clang.debug,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_clang_debug"
+    _toolchain_base = pw_toolchain_host_clang.debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_clang.debug
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -79,15 +79,10 @@ pw_target_toolchain_host = {
   }
 
   clang_speed_optimized = {
-    name = "clang_speed_optimized"
-    forward_variables_from(pw_toolchain_host_clang.speed_optimized,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_clang_speed_optimized"
+    _toolchain_base = pw_toolchain_host_clang.speed_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_clang.speed_optimized
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -95,15 +90,10 @@ pw_target_toolchain_host = {
   }
 
   clang_size_optimized = {
-    name = "clang_size_optimized"
-    forward_variables_from(pw_toolchain_host_clang.size_optimized,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_clang_size_optimized"
+    _toolchain_base = pw_toolchain_host_clang.size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_clang.size_optimized
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -111,15 +101,10 @@ pw_target_toolchain_host = {
   }
 
   gcc_debug = {
-    name = "gcc_debug"
-    forward_variables_from(pw_toolchain_host_gcc.debug,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_gcc_debug"
+    _toolchain_base = pw_toolchain_host_gcc.debug
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_gcc.debug
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -127,15 +112,10 @@ pw_target_toolchain_host = {
   }
 
   gcc_speed_optimized = {
-    name = "gcc_speed_optimized"
-    forward_variables_from(pw_toolchain_host_gcc.speed_optimized,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_gcc_speed_optimized"
+    _toolchain_base = pw_toolchain_host_gcc.speed_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_gcc.speed_optimized
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -143,15 +123,10 @@ pw_target_toolchain_host = {
   }
 
   gcc_size_optimized = {
-    name = "gcc_size_optimized"
-    forward_variables_from(pw_toolchain_host_gcc.size_optimized,
-                           "*",
-                           [
-                             "defaults",
-                             "name",
-                           ])
+    name = "host_gcc_size_optimized"
+    _toolchain_base = pw_toolchain_host_gcc.size_optimized
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
     defaults = {
-      _toolchain_base = pw_toolchain_host_gcc.size_optimized
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
@@ -159,6 +134,9 @@ pw_target_toolchain_host = {
   }
 }
 
+# This list just contains the members of the above scope for convenience to make
+# it trivial to generate all the toolchains in this file via a
+# `generate_toolchains` target.
 pw_target_toolchain_host_list = [
   pw_target_toolchain_host.clang_debug,
   pw_target_toolchain_host.clang_speed_optimized,

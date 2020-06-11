@@ -29,11 +29,11 @@ declare_args() {
 group("default") {
   # Auto select a toolchain based on host.
   if (host_os == "linux") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:gcc_debug"
+    _host_target_toolchain = "$dir_pigweed/targets/host:host_gcc_debug"
   } else if (host_os == "mac") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:clang_debug"
+    _host_target_toolchain = "$dir_pigweed/targets/host:host_clang_debug"
   } else if (host_os == "win") {
-    _host_target_toolchain = "$dir_pigweed/targets/host:gcc_debug"
+    _host_target_toolchain = "$dir_pigweed/targets/host:host_gcc_debug"
   } else {
     assert(false, "Please define a host config for your system: $host_os")
   }
