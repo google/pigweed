@@ -103,7 +103,7 @@ group("pigweed_default") {
         deps += [ ":pw_module_tests_run" ]
       }
     }
-    if (pw_IS_HOST_TOOLCHAIN) {
+    if (pw_IS_HOST_TOOLCHAIN && pw_build_HOST_TOOLS) {
       deps += [ ":host_tools" ]
     }
   }
@@ -192,7 +192,7 @@ if (current_toolchain != default_toolchain) {
       group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
     }
 
-    if (pw_build_HOST_TOOLS) {
+    if (pw_IS_HOST_TOOLCHAIN) {
       # TODO(pwbug/196): KVS tests are not compatible with device builds as they
       # use features such as std::map and are computationally expensive. Solving
       # this requires a more complex capabilities-based build and configuration

@@ -110,8 +110,9 @@ template("generate_toolchain") {
       tool("alink") {
         command = "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
         description = "ar {{target_output_name}}{{output_extension}}"
-        outputs =
-            [ "{{target_out_dir}}/lib/{{target_output_name}}{{output_extension}}" ]
+        outputs = [
+          "{{target_out_dir}}/lib/{{target_output_name}}{{output_extension}}",
+        ]
         default_output_extension = ".a"
       }
 

@@ -92,7 +92,7 @@ set_target_properties(pw_tokenizer.elf_reader_test_binary PROPERTIES
 
 pw_add_test(pw_tokenizer.argument_types_test
   SOURCES
-    argument_types_test.c
+    argument_types_test_c.c
     argument_types_test.cc
   DEPS
     pw_tokenizer
@@ -134,7 +134,7 @@ pw_add_test(pw_tokenizer.detokenize_test
 
 pw_add_test(pw_tokenizer.global_handlers_test
   SOURCES
-    global_handlers_test.c
+    global_handlers_test_c.c
     global_handlers_test.cc
   DEPS
     pw_tokenizer.global_handler
@@ -166,7 +166,7 @@ pw_add_test(pw_tokenizer.token_database_test
 
 pw_add_test(pw_tokenizer.tokenize_test
   SOURCES
-    tokenize_test.c
+    tokenize_test_c.c
     tokenize_test.cc
   DEPS
     pw_varint

@@ -68,8 +68,8 @@ pw_test("trace_backend_compile_test") {
   ]
 
   sources = [
-    "trace_backend_compile_test.c",
     "trace_backend_compile_test.cc",
+    "trace_backend_compile_test_c.c",
   ]
 }
 

@@ -15,6 +15,8 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_protobuf_compiler/nanopb.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
 _host_common = {
@@ -29,6 +31,13 @@ _host_common = {
 
   # Configure backend for pw_sys_io facade.
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
+
+  # Allow nanopb to be toggled via a build arg on host for easy testing.
+  if (dir_pw_third_party_nanopb != "") {
+    pw_protobuf_GENERATORS += [ "nanopb" ]
+  }
+
+  pw_IS_HOST_TOOLCHAIN = true
 }
 
 # Linux-specific target configuration.

@@ -54,70 +54,46 @@ def init_virtualenv(ctx: PresubmitContext):
 #
 # Build presubmit checks
 #
-_CLANG_GEN_ARGS = build.gn_args(
-    pw_target_config='"//targets/host/target_config.gni"',
-    pw_target_toolchain='"//pw_toolchain:host_clang_os"')
-
-_DOCS_GEN_ARGS = build.gn_args(
-    pw_target_config='"//targets/docs/target_config.gni"')
-
-
 def gn_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, _CLANG_GEN_ARGS)
-    build.ninja(ctx.output_dir)
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, "host_clang")
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_gcc_build(ctx: PresubmitContext):
-    build.gn_gen(
-        ctx.root, ctx.output_dir,
-        build.gn_args(pw_target_config='"//targets/host/target_config.gni"',
-                      pw_target_toolchain='"//pw_toolchain:host_gcc_os"'))
-    build.ninja(ctx.output_dir)
-
-
-_ARM_GEN_ARGS = build.gn_args(
-    pw_target_config='"//targets/stm32f429i-disc1/target_config.gni"')
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, "host_gcc")
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_arm_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, _ARM_GEN_ARGS)
-    build.ninja(ctx.output_dir)
-
-
-_QEMU_GEN_ARGS = build.gn_args(
-    pw_target_config='"//targets/lm3s6965evb-qemu/target_config.gni"')
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, "stm32f429i")
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def gn_qemu_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, _QEMU_GEN_ARGS)
-    build.ninja(ctx.output_dir)
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, "qemu")
 
 
 def gn_docs_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, _DOCS_GEN_ARGS)
-    build.ninja(ctx.output_dir, 'docs:docs')
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'docs')
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 pw_target_config='"//targets/host/target_config.gni"',
-                 pw_target_toolchain='"//pw_toolchain:host_clang_os"',
-                 pw_build_host_tools='true')
-    build.ninja(ctx.output_dir, 'host_tools')
+    build.gn_gen(ctx.root, ctx.output_dir, pw_build_HOST_TOOLS='true')
+    build.ninja(ctx.output_dir)
 
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def oss_fuzz_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root,
                  ctx.output_dir,
-                 oss_fuzz_enabled='true',
-                 pw_target_toolchain='"//pw_toolchain:host_clang_og"',
-                 pw_sanitizer='"address"')
-    build.ninja(ctx.output_dir)
+                 pw_toolchain_OSS_FUZZ_ENABLED='true',
+                 pw_toolchain_SANITIZER='"address"')
+    build.ninja(ctx.output_dir, "host_clang")
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
@@ -157,8 +133,7 @@ _CLANG_TIDY_CHECKS = ('modernize-use-override', )
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def clang_tidy(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, '--export-compile-commands',
-                 _CLANG_GEN_ARGS)
+    build.gn_gen(ctx.root, ctx.output_dir, '--export-compile-commands')
     build.ninja(ctx.output_dir)
     build.ninja(ctx.output_dir, '-t', 'compdb', 'objcxx', 'cxx')
 
@@ -276,23 +251,13 @@ _SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
 @filter_paths(endswith=(*_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
-    gn_gens_to_run = (
-        (ctx.output_dir.joinpath('arm'), _ARM_GEN_ARGS),
-        (ctx.output_dir.joinpath('clang'), _CLANG_GEN_ARGS),
-        (ctx.output_dir.joinpath('docs'), _DOCS_GEN_ARGS),
-        (ctx.output_dir.joinpath('qemu'), _QEMU_GEN_ARGS),
-    )
-
-    for directory, args in gn_gens_to_run:
-        build.gn_gen(ctx.root, directory, args)
+    gn_path = ctx.output_dir.joinpath('default')
+    build.gn_gen(ctx.root, gn_path, pw_build_HOST_TOOLS='true')
 
     missing = build.check_builds_for_files(_SOURCES_IN_BUILD,
                                            ctx.paths,
                                            bazel_dirs=[ctx.root],
-                                           gn_dirs=[
-                                               (ctx.root, path)
-                                               for path, _ in gn_gens_to_run
-                                           ])
+                                           gn_dirs=[(ctx.root, gn_path)])
 
     if missing:
         _LOG.warning(

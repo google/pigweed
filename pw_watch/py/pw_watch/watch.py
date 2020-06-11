@@ -478,7 +478,7 @@ def watch(build_commands=None,
         _LOG.info('Searching for GN build dirs...')
         gn_args_files = []
         if os.path.isfile('out/args.gn'):
-          gn_args_files += ['out/args.gn']
+            gn_args_files += ['out/args.gn']
         gn_args_files += glob.glob('out/*/args.gn')
 
         for gn_args_file in gn_args_files:
