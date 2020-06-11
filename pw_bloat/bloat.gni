@@ -68,133 +68,138 @@ declare_args() {
 #   }
 #
 template("pw_size_report") {
-  if (defined(invoker.base)) {
-    _global_base = invoker.base
-    _all_target_dependencies = [ _global_base ]
-  } else {
-    _all_target_dependencies = []
-  }
-
-  if (defined(invoker.title)) {
-    _title = invoker.title
-  } else {
-    _title = target_name
-  }
-
-  # This template creates an action which invokes a Python script to run a size
-  # report on each of the provided targets. Each of the targets is listed as a
-  # dependency of the action so that the report gets updated when anything is
-  # changed. Most of the code below builds the command-line arguments to pass
-  # each of the targets into the script.
-
-  _binary_paths = []
-  _binary_labels = []
-  _bloaty_configs = []
-
-  # Process each of the binaries, resolving their full output paths and building
-  # them into a list of command-line arguments to the bloat script.
-  foreach(binary, invoker.binaries) {
-    assert(defined(binary.label) && defined(binary.target),
-           "Size report binaries must define 'label' and 'target' variables")
-    _all_target_dependencies += [ binary.target ]
-
-    _target_dir = get_label_info(binary.target, "target_out_dir")
-    _target_name = get_label_info(binary.target, "name")
-    _binary_path = get_path_info(_target_dir, "abspath") + ":$_target_name"
-
-    # If the binary defines its own base, use that instead of the global base.
-    if (defined(binary.base)) {
-      _binary_base = binary.base
-      _all_target_dependencies += [ _binary_base ]
-    } else if (defined(_global_base)) {
-      _binary_base = _global_base
+  if (pw_bloat_BLOATY_CONFIG != "") {
+    if (defined(invoker.base)) {
+      _global_base = invoker.base
+      _all_target_dependencies = [ _global_base ]
     } else {
-      assert(false, "pw_size_report requires a 'base' file")
+      _all_target_dependencies = []
     }
 
-    # Allow each binary to override the global bloaty config.
-    if (defined(binary.bloaty_config)) {
-      _bloaty_configs += [ get_path_info(binary.bloaty_config, "abspath") ]
+    if (defined(invoker.title)) {
+      _title = invoker.title
     } else {
-      assert(pw_bloat_BLOATY_CONFIG != "",
-             "Target must provide a default bloaty config")
-      _bloaty_configs += [ get_path_info(pw_bloat_BLOATY_CONFIG, "abspath") ]
+      _title = target_name
     }
 
-    _base_dir = get_label_info(_binary_base, "target_out_dir")
-    _base_name = get_label_info(_binary_base, "name")
-    _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
+    # This template creates an action which invokes a Python script to run a
+    # size report on each of the provided targets. Each of the targets is listed
+    # as a dependency of the action so that the report gets updated when
+    # anything is changed. Most of the code below builds the command-line
+    # arguments to pass each of the targets into the script.
 
-    _binary_paths += [ _binary_path ]
-    _binary_labels += [ binary.label ]
-  }
+    _binary_paths = []
+    _binary_labels = []
+    _bloaty_configs = []
 
-  _bloat_script_args = [
-    "--bloaty-config",
-    string_join(";", _bloaty_configs),
-    "--out-dir",
-    target_gen_dir,
-    "--target",
-    target_name,
-    "--title",
-    _title,
-    "--labels",
-    string_join(";", _binary_labels),
-  ]
+    # Process each of the binaries, resolving their full output paths and
+    # building them into a list of command-line arguments to the bloat script.
+    foreach(binary, invoker.binaries) {
+      assert(defined(binary.label) && defined(binary.target),
+             "Size report binaries must define 'label' and 'target' variables")
+      _all_target_dependencies += [ binary.target ]
 
-  if (defined(invoker.full_report) && invoker.full_report) {
-    _bloat_script_args += [ "--full" ]
-  }
+      _target_dir = get_label_info(binary.target, "target_out_dir")
+      _target_name = get_label_info(binary.target, "name")
+      _binary_path = get_path_info(_target_dir, "abspath") + ":$_target_name"
 
-  if (defined(invoker.source_filter)) {
-    _bloat_script_args += [
-      "--source-filter",
-      invoker.source_filter,
+      # If the binary defines its own base, use that instead of the global base.
+      if (defined(binary.base)) {
+        _binary_base = binary.base
+        _all_target_dependencies += [ _binary_base ]
+      } else if (defined(_global_base)) {
+        _binary_base = _global_base
+      } else {
+        assert(false, "pw_size_report requires a 'base' file")
+      }
+
+      # Allow each binary to override the global bloaty config.
+      if (defined(binary.bloaty_config)) {
+        _bloaty_configs += [ get_path_info(binary.bloaty_config, "abspath") ]
+      } else {
+        _bloaty_configs += [ get_path_info(pw_bloat_BLOATY_CONFIG, "abspath") ]
+      }
+
+      _base_dir = get_label_info(_binary_base, "target_out_dir")
+      _base_name = get_label_info(_binary_base, "name")
+      _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
+
+      _binary_paths += [ _binary_path ]
+      _binary_labels += [ binary.label ]
+    }
+
+    _bloat_script_args = [
+      "--bloaty-config",
+      string_join(";", _bloaty_configs),
+      "--out-dir",
+      target_gen_dir,
+      "--target",
+      target_name,
+      "--title",
+      _title,
+      "--labels",
+      string_join(";", _binary_labels),
     ]
-  }
 
-  _doc_rst_output = "$target_gen_dir/${target_name}"
-
-  # TODO(frolv): Size reports are temporarily disabled pending the toolchain
-  # refactor.
-  if (true || host_os == "win") {
-    # Bloaty is not yet packaged for Windows systems; display a message
-    # indicating this.
-    not_needed("*")
-    not_needed(invoker, "*")
-
-    pw_python_script(target_name) {
-      metadata = {
-        pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
-      }
-      script = "$dir_pw_bloat/py/no_bloaty.py"
-      args = [ _doc_rst_output ]
-      outputs = [ _doc_rst_output ]
+    if (defined(invoker.full_report) && invoker.full_report) {
+      _bloat_script_args += [ "--full" ]
     }
 
-    group(target_name + "_UNUSED_DEPS") {
-      deps = _all_target_dependencies
+    if (defined(invoker.source_filter)) {
+      _bloat_script_args += [
+        "--source-filter",
+        invoker.source_filter,
+      ]
+    }
+
+    _doc_rst_output = "$target_gen_dir/${target_name}"
+
+    # TODO(frolv): Size reports are temporarily disabled pending the toolchain
+    # refactor.
+    if (true || host_os == "win") {
+      # Bloaty is not yet packaged for Windows systems; display a message
+      # indicating this.
+      not_needed("*")
+      not_needed(invoker, "*")
+
+      pw_python_script(target_name) {
+        metadata = {
+          pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
+        }
+        script = "$dir_pw_bloat/py/no_bloaty.py"
+        args = [ _doc_rst_output ]
+        outputs = [ _doc_rst_output ]
+      }
+
+      group(target_name + "_UNUSED_DEPS") {
+        deps = _all_target_dependencies
+      }
+    } else {
+      # Create an action which runs the size report script on the provided
+      # targets.
+      pw_python_script(target_name) {
+        metadata = {
+          pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
+        }
+        script = "$dir_pw_bloat/py/bloat.py"
+        inputs = [
+                   "$dir_pw_bloat/py/binary_diff.py",
+                   "$dir_pw_bloat/py/bloat_output.py",
+                 ] + _bloaty_configs
+        outputs = [
+          "$target_gen_dir/${target_name}.txt",
+          _doc_rst_output,
+        ]
+        deps = _all_target_dependencies
+        args = _bloat_script_args + _binary_paths
+
+        # Print size reports to stdout when they are generated.
+        capture_output = false
+      }
     }
   } else {
-    # Create an action which runs the size report script on the provided targets.
-    pw_python_script(target_name) {
-      metadata = {
-        pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
-      }
-      script = "$dir_pw_bloat/py/bloat.py"
-      inputs = [
-                 "$dir_pw_bloat/py/binary_diff.py",
-                 "$dir_pw_bloat/py/bloat_output.py",
-               ] + _bloaty_configs
-      outputs = [
-        "$target_gen_dir/${target_name}.txt",
-        _doc_rst_output,
-      ]
-      deps = _all_target_dependencies
-      args = _bloat_script_args + _binary_paths
-
-      # Print size reports to stdout when they are generated.
-      capture_output = false
+    not_needed(invoker, "*")
+    group(target_name) {
     }
   }
 }
