@@ -4,9 +4,8 @@
 
 #include "manufacturer_names.h"
 
+#include <iterator>
 #include <map>
-
-#include "src/lib/fxl/arraysize.h"
 
 namespace bt {
 namespace {
@@ -1206,7 +1205,7 @@ const char* kManufacturers[] = {
 }  // namespace
 
 std::string GetManufacturerName(uint16_t manufacturer_id) {
-  if (manufacturer_id >= arraysize(kManufacturers))
+  if (manufacturer_id >= std::size(kManufacturers))
     return "";
   return kManufacturers[manufacturer_id];
 }

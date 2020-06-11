@@ -6,7 +6,6 @@
 
 #include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/lib/fxl/arraysize.h"
 
 namespace bt {
 namespace l2cap {
