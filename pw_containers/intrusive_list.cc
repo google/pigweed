@@ -18,74 +18,44 @@
 
 namespace pw::intrusive_list_impl {
 
-void List::push_back(Item& item) {
-  // The incoming item's next is always nullptr, because item is added at the
-  // end of the list.
-  PW_CHECK_PTR_EQ(item.next_, nullptr);
-
-  if (head_ == nullptr) {
-    head_ = &item;
-    return;
-  }
-
-  Item* current = head_;
-
-  while (current->next_ != nullptr) {
-    current = current->next_;
-  }
-
-  current->next_ = &item;
-}
-
-List::Item& List::insert_after(Item* pos, Item& item) {
-  if (pos == nullptr) {
-    push_back(item);
-    return item;
-  }
-
-  // If `next_` of the incoming element is not null, the item is in use and
-  // can't be added to this list.
-  PW_CHECK_PTR_EQ(item.next_,
-                  nullptr,
-                  "Cannot add an item to a pw::IntrusiveList when it "
-                  "exists in another list");
+void List::insert_after(Item* pos, Item& item) {
+  PW_CHECK_PTR_EQ(
+      item.next_,
+      nullptr,
+      "Cannot add an item to a pw::IntrusiveList that is already in a list");
   item.next_ = pos->next_;
   pos->next_ = &item;
-  return item;
 }
 
-void List::push_front(Item& item) {
-  // If `next_` of the incoming element is not null, the item is in use and
-  // can't be added to this list.
-  PW_CHECK_PTR_EQ(item.next_,
-                  nullptr,
-                  "Cannot add an item to a pw::IntrusiveList when it "
-                  "exists in another list");
-  item.next_ = head_;
-  head_ = &item;
+void List::erase_after(Item* pos) {
+  Item* const item_to_remove = pos->next_;
+  pos->next_ = item_to_remove->next_;
+  item_to_remove->next_ = nullptr;
 }
 
-void List::pop_front() {
-  if (head_ == nullptr) {
-    return;
+List::Item* List::before_end() noexcept {
+  Item* pos = before_begin();
+  while (pos->next_ != end()) {
+    pos = pos->next_;
   }
-  Item* old_head = head_;
-  head_ = head_->next_;
-  old_head->next_ = nullptr;
+  return pos;
 }
 
 void List::clear() {
-  if (head_ == nullptr) {
-    return;
+  while (!empty()) {
+    erase_after(before_begin());
+  }
+}
+
+bool List::remove(const Item& item_to_remove) {
+  for (Item* pos = before_begin(); pos->next_ != end(); pos = pos->next_) {
+    if (pos->next_ == &item_to_remove) {
+      erase_after(pos);
+      return true;
+    }
   }
 
-  while (head_->next_ != nullptr) {
-    Item* item_to_remove = head_->next_;
-    head_->next_ = item_to_remove->next_;
-    item_to_remove->next_ = nullptr;
-  }
-
-  head_ = nullptr;
+  return false;
 }
 
 }  // namespace pw::intrusive_list_impl

@@ -15,15 +15,23 @@
 
 #include <iterator>
 
-namespace pw::intrusive_list_impl {
+namespace pw {
+
+template <typename>
+class IntrusiveList;
+
+namespace intrusive_list_impl {
 
 template <typename T, typename I>
 class Iterator {
  public:
+  using difference_type = void;
+  using value_type = std::remove_cv_t<T>;
+  using pointer = T*;
+  using reference = T&;
   using iterator_category = std::forward_iterator_tag;
 
   constexpr explicit Iterator() : item_(nullptr) {}
-  constexpr explicit Iterator(I* item) : item_{item} {}
 
   constexpr Iterator& operator++() {
     item_ = static_cast<I*>(item_->next_);
@@ -50,6 +58,12 @@ class Iterator {
   }
 
  private:
+  template <typename>
+  friend class ::pw::IntrusiveList;
+
+  // Only allow IntrusiveList to create iterators that point to something.
+  constexpr explicit Iterator(I* item) : item_{item} {}
+
   I* item_;
 };
 
@@ -57,7 +71,7 @@ class List {
  public:
   class Item {
    protected:
-    constexpr Item() : next_(nullptr) {}
+    constexpr Item() : Item(nullptr) {}
 
    private:
     friend class List;
@@ -65,27 +79,76 @@ class List {
     template <typename T, typename I>
     friend class Iterator;
 
+    constexpr Item(Item* next) : next_(next) {}
+
     Item* next_;
   };
 
-  constexpr List() : head_(nullptr) {}
+  constexpr List() : head_(end()) {}
 
-  void push_back(Item& item);
+  template <typename Iterator>
+  List(Iterator first, Iterator last) : List() {
+    AssignFromIterator(first, last);
+  }
 
-  Item& insert_after(Item* pos, Item& item);
+  // Intrusive lists cannot be copied, since each Item can only be in one list.
+  List(const List&) = delete;
+  List& operator=(const List&) = delete;
 
-  void push_front(Item& item);
+  ~List() { clear(); }
 
-  void pop_front();
+  template <typename Iterator>
+  void assign(Iterator first, Iterator last) {
+    clear();
+    AssignFromIterator(first, last);
+  }
+
+  bool empty() const noexcept { return begin() == end(); }
+
+  static void insert_after(Item* pos, Item& item);
+
+  static void erase_after(Item* pos);
 
   void clear();
 
-  Item* begin() noexcept { return head_; }
-  const Item* begin() const noexcept { return head_; }
-  const Item* cbegin() const noexcept { return head_; }
+  bool remove(const Item& item_to_remove);
+
+  constexpr Item* before_begin() noexcept { return &head_; }
+  constexpr const Item* before_begin() const noexcept { return &head_; }
+
+  constexpr Item* begin() noexcept { return head_.next_; }
+  constexpr const Item* begin() const noexcept { return head_.next_; }
+
+  Item* before_end() noexcept;
+
+  constexpr Item* end() noexcept { return &head_; }
+  constexpr const Item* end() const noexcept { return &head_; }
 
  private:
-  Item* head_;
+  template <typename Iterator>
+  void AssignFromIterator(Iterator first, Iterator last);
+
+  // Use an Item for the head pointer. This gives simpler logic for inserting
+  // elements compared to using an Item*. It also makes it possible to use
+  // &head_ for end(), rather than nullptr. This makes end() unique for each
+  // List and ensures that items already in a list cannot be added to another.
+  Item head_;
 };
 
-}  // namespace pw::intrusive_list_impl
+template <typename Iterator>
+void List::AssignFromIterator(Iterator first, Iterator last) {
+  Item* current = &head_;
+
+  for (Iterator it = first; it != last; ++it) {
+    if constexpr (std::is_pointer<std::remove_reference_t<decltype(*it)>>()) {
+      insert_after(current, **it);
+      current = *it;
+    } else {
+      insert_after(current, *it);
+      current = &(*it);
+    }
+  }
+}
+
+}  // namespace intrusive_list_impl
+}  // namespace pw

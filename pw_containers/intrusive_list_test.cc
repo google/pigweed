@@ -14,6 +14,7 @@
 
 #include "pw_containers/intrusive_list.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -27,12 +28,117 @@ class TestItem : public IntrusiveList<TestItem>::Item {
  public:
   TestItem() : number_(0) {}
   TestItem(int number) : number_(number) {}
+
   int GetNumber() const { return number_; }
   void SetNumber(int num) { number_ = num; }
+
+  // Add equality comparison to ensure comparisons are done by identity rather
+  // than equality for the remove function.
+  bool operator==(const TestItem& other) const {
+    return number_ == other.number_;
+  }
 
  private:
   int number_;
 };
+
+TEST(IntrusiveList, Construct_InitializerList_Empty) {
+  IntrusiveList<TestItem> list({});
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(IntrusiveList, Construct_InitializerList_One) {
+  TestItem one(1);
+  IntrusiveList<TestItem> list({&one});
+
+  EXPECT_EQ(&one, &list.front());
+}
+
+TEST(IntrusiveList, Construct_InitializerList_Multiple) {
+  TestItem one(1);
+  TestItem two(2);
+  TestItem thr(3);
+
+  IntrusiveList<TestItem> list({&one, &two, &thr});
+  auto it = list.begin();
+  EXPECT_EQ(&one, &(*it++));
+  EXPECT_EQ(&two, &(*it++));
+  EXPECT_EQ(&thr, &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
+
+TEST(IntrusiveList, Construct_ObjectIterator_Empty) {
+  std::array<TestItem, 0> array;
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(IntrusiveList, Construct_ObjectIterator_One) {
+  std::array<TestItem, 1> array{{{1}}};
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+
+  EXPECT_EQ(&array.front(), &list.front());
+}
+
+TEST(IntrusiveList, Construct_ObjectIterator_Multiple) {
+  std::array<TestItem, 3> array{{{1}, {2}, {3}}};
+
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+  auto it = list.begin();
+  EXPECT_EQ(&array[0], &(*it++));
+  EXPECT_EQ(&array[1], &(*it++));
+  EXPECT_EQ(&array[2], &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
+
+TEST(IntrusiveList, Construct_PointerIterator_Empty) {
+  std::array<TestItem*, 0> array;
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(IntrusiveList, Construct_PointerIterator_One) {
+  std::array<TestItem, 1> array{{{1}}};
+  std::array<TestItem*, 1> ptrs{{&array[0]}};
+
+  IntrusiveList<TestItem> list(ptrs.begin(), ptrs.end());
+
+  EXPECT_EQ(ptrs[0], &list.front());
+}
+
+TEST(IntrusiveList, Construct_PointerIterator_Multiple) {
+  std::array<TestItem, 3> array{{{1}, {2}, {3}}};
+  std::array<TestItem*, 3> ptrs{{&array[0], &array[1], &array[2]}};
+
+  IntrusiveList<TestItem> list(ptrs.begin(), ptrs.end());
+  auto it = list.begin();
+  EXPECT_EQ(ptrs[0], &(*it++));
+  EXPECT_EQ(ptrs[1], &(*it++));
+  EXPECT_EQ(ptrs[2], &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
+
+TEST(IntrusiveList, Assign_ReplacesPriorContents) {
+  std::array<TestItem, 3> array{{{0}, {100}, {200}}};
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+
+  list.assign(array.begin() + 1, array.begin() + 2);
+
+  auto it = list.begin();
+  EXPECT_EQ(&array[1], &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
+
+TEST(IntrusiveList, Assign_EmptyRange) {
+  std::array<TestItem, 3> array{{{0}, {100}, {200}}};
+  IntrusiveList<TestItem> list(array.begin(), array.end());
+
+  list.assign(array.begin() + 1, array.begin() + 1);
+
+  EXPECT_TRUE(list.empty());
+}
 
 TEST(IntrusiveList, PushOne) {
   constexpr int kMagicValue = 31;
@@ -216,8 +322,6 @@ TEST(IntrusiveList, PopFrontAndReinsert) {
 TEST(IntrusiveList, ListFront) {
   IntrusiveList<TestItem> test_items;
 
-  EXPECT_EQ(&test_items.front(), nullptr);
-
   TestItem item1(1);
   TestItem item2(0);
   TestItem item3(0xffff);
@@ -287,7 +391,131 @@ TEST(IntrusiveList, ConstIteratorModify) {
     it++;
   }
 }
+
 #endif  // NO_COMPILE_TESTS
+
+// TODO(pwbug/88): These tests should trigger a CHECK failure. This requires
+// using a testing version of pw_assert.
+#if TESTING_CHECK_FAILURES_IS_SUPPORTED
+
+TEST(IntrusiveList, Construct_DuplicateItems) {
+  TestItem item(1);
+  IntrusiveList<TestItem> list({&item, &item});
+}
+
+TEST(IntrusiveList, InsertAfter_SameItem) {
+  TestItem item(1);
+  IntrusiveList<TestItem> list({&item});
+
+  list.insert_after(list.begin(), item);
+}
+
+TEST(IntrusiveList, InsertAfter_SameItemAfterEnd) {
+  TestItem item(1);
+  IntrusiveList<TestItem> list({&item});
+
+  list.insert_after(list.end(), item);
+}
+
+TEST(IntrusiveList, PushBack_SameItem) {
+  TestItem item(1);
+  IntrusiveList<TestItem> list({&item});
+
+  list.push_back(item);
+}
+
+TEST(IntrusiveList, PushFront_SameItem) {
+  TestItem item(1);
+  IntrusiveList<TestItem> list({&item});
+
+  list.push_front(item);
+}
+
+#endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
+
+TEST(IntrusiveList, EraseAfter_FirstItem) {
+  std::array<TestItem, 3> items{{{0}, {1}, {2}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  auto it = list.erase_after(list.before_begin());
+  EXPECT_EQ(list.begin(), it);
+  EXPECT_EQ(&items[1], &list.front());
+}
+
+TEST(IntrusiveList, EraseAfter_LastItem) {
+  std::array<TestItem, 3> items{{{0}, {1}, {2}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  auto it = list.begin();
+  ++it;
+
+  it = list.erase_after(it);
+  EXPECT_EQ(list.end(), it);
+
+  it = list.begin();
+  ++it;
+
+  EXPECT_EQ(&items[1], &(*it));
+}
+
+TEST(IntrusiveList, EraseAfter_AllItems) {
+  std::array<TestItem, 3> items{{{0}, {1}, {2}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  list.erase_after(list.begin());
+  list.erase_after(list.begin());
+  auto it = list.erase_after(list.before_begin());
+
+  EXPECT_EQ(list.end(), it);
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(IntrusiveList, Remove_EmptyList) {
+  std::array<TestItem, 1> items{{{3}}};
+  IntrusiveList<TestItem> list(items.begin(), items.begin());  // Add nothing!
+
+  EXPECT_TRUE(list.empty());
+  EXPECT_FALSE(list.remove(items[0]));
+}
+
+TEST(IntrusiveList, Remove_SingleItem_NotPresent) {
+  std::array<TestItem, 1> items{{{1}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  EXPECT_FALSE(list.remove(TestItem(1)));
+  EXPECT_EQ(&items.front(), &list.front());
+}
+
+TEST(IntrusiveList, Remove_SingleItem_Removed) {
+  std::array<TestItem, 1> items{{{1}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  EXPECT_TRUE(list.remove(items[0]));
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(IntrusiveList, Remove_MultipleItems_NotPresent) {
+  std::array<TestItem, 5> items{{{1}, {1}, {2}, {3}, {4}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  EXPECT_FALSE(list.remove(TestItem(1)));
+}
+
+TEST(IntrusiveList, Remove_MultipleItems_RemoveAndPushBack) {
+  std::array<TestItem, 5> items{{{1}, {1}, {2}, {3}, {4}}};
+  IntrusiveList<TestItem> list(items.begin(), items.end());
+
+  EXPECT_TRUE(list.remove(items[0]));
+  EXPECT_TRUE(list.remove(items[3]));
+  list.push_back(items[0]);  // Make sure can add the item after removing it.
+
+  auto it = list.begin();
+  EXPECT_EQ(&items[1], &(*it++));
+  EXPECT_EQ(&items[2], &(*it++));
+  EXPECT_EQ(&items[4], &(*it++));
+  EXPECT_EQ(&items[0], &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
 
 }  // namespace
 }  // namespace pw

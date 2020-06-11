@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <initializer_list>
 #include <type_traits>
 
 #include "pw_containers/internal/intrusive_list_impl.h"
@@ -51,7 +52,7 @@ template <typename T>
 class IntrusiveList {
  public:
   class Item : public intrusive_list_impl::List::Item {
-   public:
+   protected:
     constexpr Item() = default;
   };
 
@@ -63,35 +64,84 @@ class IntrusiveList {
   using const_iterator =
       intrusive_list_impl::Iterator<std::add_const_t<T>, const Item>;
 
-  [[nodiscard]] bool empty() const noexcept { return list_.begin() == nullptr; }
+  constexpr IntrusiveList() = default;
 
-  void push_back(T& item) { list_.push_back(item); }
+  // Constructs an IntrusiveList from an iterator over Items. The iterator may
+  // dereference as either Item& (e.g. from std::array<Item>) or Item* (e.g.
+  // from std::initializer_list<Item*>).
+  template <typename Iterator>
+  IntrusiveList(Iterator first, Iterator last) : list_(first, last) {}
 
-  void push_front(T& item) { list_.push_front(item); }
+  // Constructs an IntrusiveList from a std::initializer_list of pointers to
+  // items.
+  IntrusiveList(std::initializer_list<Item*> items)
+      : list_(items.begin(), items.end()) {}
 
-  iterator insert_after(iterator pos, T& item) {
-    return iterator(static_cast<Item*>(&list_.insert_after(&(*pos), item)));
+  template <typename Iterator>
+  void assign(Iterator first, Iterator last) {
+    list_.assign(first, last);
   }
 
-  void pop_front() { list_.pop_front(); }
+  void assign(std::initializer_list<Item*> items) {
+    list_.assign(items.begin(), items.end());
+  }
 
+  [[nodiscard]] bool empty() const noexcept { return list_.empty(); }
+
+  void push_front(T& item) { list_.insert_after(list_.before_begin(), item); }
+
+  void push_back(T& item) { list_.insert_after(list_.before_end(), item); }
+
+  iterator insert_after(iterator pos, T& item) {
+    list_.insert_after(&(*pos), item);
+    return iterator(&item);
+  }
+
+  // Removes the first item in the list. The list must not be empty.
+  void pop_front() { list_.erase_after(list_.before_begin()); }
+
+  // Removes the item following pos from the list. The item is not destructed.
+  iterator erase_after(iterator pos) {
+    list_.erase_after(&(*pos));
+    return ++pos;
+  }
+
+  // Removes all items from the list. The items themselves are not destructed.
   void clear() { list_.clear(); }
 
+  // Removes this specific item from the list, if it is present. Finds the item
+  // by identity (address comparison) rather than value equality. Returns true
+  // if the item was removed; false if it was not present.
+  bool remove(const T& item) { return list_.remove(item); }
+
+  // Reference to the first element in the list. Undefined behavior if empty().
   T& front() { return *static_cast<T*>(list_.begin()); }
+
+  // Reference to the last element in the list. Undefined behavior if empty().
+  T& back() { return *static_cast<T*>(list_.before_end()); }
+
+  // As in std::forward_list, returns the iterator before the begin() iterator.
+  iterator before_begin() noexcept {
+    return iterator(static_cast<Item*>(list_.before_begin()));
+  }
+  const_iterator before_begin() const noexcept {
+    return const_iterator(static_cast<const Item*>(list_.before_begin()));
+  }
+  const_iterator cbefore_begin() const noexcept { return before_begin(); }
 
   iterator begin() noexcept {
     return iterator(static_cast<Item*>(list_.begin()));
   }
   const_iterator begin() const noexcept {
-    return const_iterator(static_cast<const Item*>(list_.cbegin()));
+    return const_iterator(static_cast<const Item*>(list_.begin()));
   }
-  const_iterator cbegin() const noexcept {
-    return const_iterator(static_cast<const Item*>(list_.cbegin()));
-  }
+  const_iterator cbegin() const noexcept { return begin(); }
 
-  iterator end() noexcept { return iterator(); }
-  const_iterator end() const noexcept { return const_iterator(); }
-  const_iterator cend() const noexcept { return const_iterator(); }
+  iterator end() noexcept { return iterator(static_cast<Item*>(list_.end())); }
+  const_iterator end() const noexcept {
+    return const_iterator(static_cast<const Item*>(list_.end()));
+  }
+  const_iterator cend() const noexcept { return end(); }
 
  private:
   intrusive_list_impl::List list_;
