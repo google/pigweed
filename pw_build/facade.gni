@@ -14,7 +14,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
 

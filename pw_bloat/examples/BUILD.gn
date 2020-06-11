@@ -15,7 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("../bloat.gni")
 pw_toolchain_size_report("simple_bloat_loop") {
   base_executable = {

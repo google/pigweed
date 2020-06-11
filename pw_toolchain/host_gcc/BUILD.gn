@@ -15,8 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
-
 # Disable obnoxious ABI warning.
 #
 # GCC 7.1 adds an over-zealous ABI warning with little useful information

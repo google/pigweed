@@ -15,7 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/python_script.gni")
 declare_args() {
   # Path to the Bloaty configuration file that defines the memory layout and

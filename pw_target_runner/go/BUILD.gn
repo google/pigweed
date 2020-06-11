@@ -15,7 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
 import("$dir_pw_build/go.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_docgen/docs.gni")

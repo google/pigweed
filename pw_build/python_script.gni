@@ -15,8 +15,6 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pigweed/legacy_target.gni")
-
 # Defines an action to run a Python script.
 #
 # This wraps a regular Python script action with an invocation of a script-
