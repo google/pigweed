@@ -28,10 +28,8 @@ pw_cc_library(
         "base_server_writer.cc",
         "public/pw_rpc/internal/base_server_writer.h",
         "public/pw_rpc/internal/service.h",
-        "public/pw_rpc/internal/service_registry.h",
         "server.cc",
         "service.cc",
-        "service_registry.cc",
     ],
     hdrs = [
         "public/pw_rpc/server.h",

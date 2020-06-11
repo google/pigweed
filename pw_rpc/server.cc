@@ -14,6 +14,8 @@
 
 #include "pw_rpc/server.h"
 
+#include <algorithm>
+
 #include "pw_log/log.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
@@ -71,8 +73,11 @@ void Server::InvokeMethod(const Packet& request,
                           Channel& channel,
                           internal::Packet& response,
                           span<std::byte> buffer) {
-  internal::Service* service = services_.Find(request.service_id());
-  if (service == nullptr) {
+  auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
+    return s.id() == request.service_id();
+  });
+
+  if (service == services_.end()) {
     // Couldn't find the requested service. Reply with a NOT_FOUND response
     // without the service_id field set.
     response.set_status(Status::NOT_FOUND);

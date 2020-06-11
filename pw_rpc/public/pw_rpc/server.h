@@ -15,8 +15,9 @@
 
 #include <cstddef>
 
+#include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/service_registry.h"
+#include "pw_rpc/internal/service.h"
 
 namespace pw::rpc {
 namespace internal {
@@ -37,7 +38,7 @@ class Server {
   // with an internal::Service; instead, use a generated class which inherits
   // from it.
   void RegisterService(internal::Service& service) {
-    services_.Register(service);
+    services_.push_front(service);
   }
 
   void ProcessPacket(span<const std::byte> packet, ChannelOutput& interface);
@@ -58,7 +59,7 @@ class Server {
   Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
   span<Channel> channels_;
-  internal::ServiceRegistry services_;
+  IntrusiveList<internal::Service> services_;
 };
 
 }  // namespace pw::rpc

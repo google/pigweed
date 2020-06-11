@@ -27,12 +27,7 @@ pw_source_set("nanopb") {
   public_configs = [ ":config" ]
   public = [ "public_overrides/pw_rpc/internal/method.h" ]
   sources = [ "method.cc" ]
-  public_deps = [
-    "../:common",
-    dir_pw_assert,
-    dir_pw_span,
-    dir_pw_status,
-  ]
+  public_deps = [ "..:server_library_deps" ]
 
   if (dir_pw_third_party_nanopb != "") {
     public_deps += [ dir_pw_third_party_nanopb ]

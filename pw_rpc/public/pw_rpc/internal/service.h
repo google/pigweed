@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_span/span.h"
 
@@ -23,7 +24,7 @@ namespace pw::rpc::internal {
 
 // Base class for all RPC services. This cannot be instantiated directly; use a
 // generated subclass instead.
-class Service {
+class Service : public IntrusiveList<Service>::Item {
  public:
   uint32_t id() const { return id_; }
 
@@ -33,14 +34,13 @@ class Service {
  protected:
   template <typename T>
   constexpr Service(uint32_t id, T&& methods)
-      : id_(id), methods_(std::forward<T>(methods)), next_(nullptr) {}
+      : id_(id), methods_(std::forward<T>(methods)) {}
 
  private:
   friend class ServiceRegistry;
 
   uint32_t id_;
   span<const Method> methods_;
-  Service* next_;
 };
 
 }  // namespace pw::rpc::internal

@@ -40,11 +40,8 @@ template("_pw_rpc_server_library") {
   pw_source_set(_target_name) {
     forward_variables_from(invoker, "*")
 
-    public_configs = [ ":default_config" ]
     public_deps = [
-      ":common",
-      dir_pw_span,
-      dir_pw_status,
+      ":server_library_deps",
       implementation,
     ]
     deps = [
@@ -59,10 +56,8 @@ template("_pw_rpc_server_library") {
       "base_server_writer.cc",
       "public/pw_rpc/internal/base_server_writer.h",
       "public/pw_rpc/internal/service.h",
-      "public/pw_rpc/internal/service_registry.h",
       "server.cc",
       "service.cc",
-      "service_registry.cc",
     ]
     allow_circular_includes_from = [ implementation ]
     friend = [ "./*" ]
@@ -78,6 +73,19 @@ template("_pw_rpc_server_library") {
     ]
     visibility = [ "./*" ]
   }
+}
+
+# Put these dependencies into a group since they need to be shared by the server
+# library and its implementation library.
+group("server_library_deps") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    ":common",
+    "$dir_pw_containers:intrusive_list",
+    dir_pw_span,
+    dir_pw_status,
+  ]
+  visibility = [ "./*" ]
 }
 
 # Classes with no dependencies on the protobuf library for method invocations.

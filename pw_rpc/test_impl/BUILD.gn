@@ -25,6 +25,6 @@ config("config") {
 pw_source_set("test_impl") {
   public_configs = [ ":config" ]
   public = [ "public_overrides/pw_rpc/internal/method.h" ]
-  public_deps = [ "../:common" ]
+  public_deps = [ "../:server_library_deps" ]
   visibility = [ "..:*" ]
 }
