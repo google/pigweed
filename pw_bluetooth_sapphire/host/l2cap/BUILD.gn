@@ -154,3 +154,11 @@ fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
     ":testing",
   ]
 }
+
+fuzzer("bredr_dynamic_channel_registry_fuzzer") {
+  sources = [ "bredr_dynamic_channel_registry_fuzztest.cc" ]
+  deps = [
+    ":l2cap",
+    ":testing",
+  ]
+}

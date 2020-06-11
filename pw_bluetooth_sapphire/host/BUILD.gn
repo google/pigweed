@@ -161,5 +161,6 @@ fuzzers_package("fuzzers") {
     "data:data_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
+    "l2cap:bredr_dynamic_channel_registry_fuzzer",
   ]
 }
