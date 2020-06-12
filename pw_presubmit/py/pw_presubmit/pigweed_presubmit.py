@@ -32,7 +32,8 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
-from pw_presubmit import build, cli, environment, format_code, python_checks
+from pw_presubmit import build, cli, environment, format_code, git_repo
+from pw_presubmit import python_checks
 from pw_presubmit import call, filter_paths, PresubmitContext, PresubmitFailure
 from pw_presubmit import Programs
 from pw_presubmit.install_hook import install_hook
@@ -251,13 +252,12 @@ _SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
 @filter_paths(endswith=(*_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
-    gn_path = ctx.output_dir.joinpath('default')
-    build.gn_gen(ctx.root, gn_path, pw_build_HOST_TOOLS='true')
-
-    missing = build.check_builds_for_files(_SOURCES_IN_BUILD,
-                                           ctx.paths,
-                                           bazel_dirs=[ctx.root],
-                                           gn_dirs=[(ctx.root, gn_path)])
+    missing = build.check_builds_for_files(
+        _SOURCES_IN_BUILD,
+        ctx.paths,
+        bazel_dirs=[ctx.root],
+        gn_build_files=git_repo.list_files(
+            pathspecs=['BUILD.gn', '*BUILD.gn']))
 
     if missing:
         _LOG.warning(

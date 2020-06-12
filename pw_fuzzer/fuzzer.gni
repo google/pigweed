@@ -82,14 +82,7 @@ template("pw_fuzzer") {
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
       sources += [ "$dir_pw_fuzzer/pw_fuzzer_disabled.cc" ]
-      if (!defined(configs)) {
-        configs = []
-      }
-      configs += [ "$dir_pw_fuzzer:default_config" ]
-      deps += [
-        "$dir_pw_log",
-        "$dir_pw_unit_test",
-      ]
+      deps += [ "$dir_pw_fuzzer:run_as_unit_test" ]
     }
   }
 }

@@ -48,19 +48,22 @@ pw_test_group("tests") {
   ]
 }
 
-template("preprocessor_test") {
-  not_needed([ "invoker" ])
-  pw_test(target_name) {
-    deps = [ ":pw_preprocessor" ]
-    sources = [ "$target_name.cc" ]
-  }
+pw_test("boolean_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "boolean_test.cc" ]
 }
 
-preprocessor_test("boolean_test") {
+pw_test("concat_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "concat_test.cc" ]
 }
-preprocessor_test("concat_test") {
+
+pw_test("macro_arg_count_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "macro_arg_count_test.cc" ]
 }
-preprocessor_test("macro_arg_count_test") {
-}
-preprocessor_test("util_test") {
+
+pw_test("util_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "util_test.cc" ]
 }

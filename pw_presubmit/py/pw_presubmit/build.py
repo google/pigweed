@@ -17,6 +17,7 @@ import collections
 import logging
 import os
 from pathlib import Path
+import re
 from typing import Container, Dict, Iterable, List, Mapping, Set, Tuple
 
 from pw_presubmit import call, log_run, plural, PresubmitFailure, tools
@@ -90,11 +91,26 @@ def _get_paths_from_command(source_dir: Path, *args, **kwargs) -> Set[Path]:
     return files
 
 
+# Finds string literals with '.' in them.
+_MAYBE_A_PATH = re.compile(r'"([^\n"]+\.[^\n"]+)"')
+
+
+def _search_files_for_paths(build_files: Iterable[Path]) -> Iterable[Path]:
+    for build_file in build_files:
+        directory = build_file.parent
+
+        for string in _MAYBE_A_PATH.finditer(build_file.read_text()):
+            path = directory / string.group(1)
+            if path.is_file():
+                yield path
+
+
 def check_builds_for_files(
         extensions_to_check: Container[str],
         files: Iterable[Path],
         bazel_dirs: Iterable[Path] = (),
         gn_dirs: Iterable[Tuple[Path, Path]] = (),
+        gn_build_files: Iterable[Path] = (),
 ) -> Dict[str, List[Path]]:
     """Checks that source files are in the GN and Bazel builds.
 
@@ -103,6 +119,7 @@ def check_builds_for_files(
         files: the files that should be checked
         bazel_dirs: directories in which to run bazel query
         gn_dirs: (source_dir, output_dir) tuples with which to run gn desc
+        gn_build_files: paths to BUILD.gn files to directly search for paths
 
     Returns:
         a dictionary mapping build system ('Bazel' or 'GN' to a list of missing
@@ -123,6 +140,8 @@ def check_builds_for_files(
         gn_builds.update(
             _get_paths_from_command(source_dir, 'gn', 'desc', output_dir, '*'))
 
+    gn_builds.update(_search_files_for_paths(gn_build_files))
+
     missing: Dict[str, List[Path]] = collections.defaultdict(list)
 
     for path in (p for p in files if p.suffix in extensions_to_check):
@@ -130,7 +149,7 @@ def check_builds_for_files(
             # TODO(pwbug/176) Replace this workaround for fuzzers.
             if 'fuzz' not in str(path):
                 missing['Bazel'].append(path)
-        if gn_dirs and path not in gn_builds:
+        if (gn_dirs or gn_build_files) and path not in gn_builds:
             missing['GN'].append(path)
 
     for builder, paths in missing.items():
