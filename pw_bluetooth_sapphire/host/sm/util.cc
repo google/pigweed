@@ -139,6 +139,17 @@ std::string PairingMethodToString(PairingMethod method) {
   return "(unknown)";
 }
 
+std::string DisplayMethodToString(Delegate::DisplayMethod method) {
+  switch (method) {
+    case Delegate::DisplayMethod::kComparison:
+      return "Numeric Comparison";
+    case Delegate::DisplayMethod::kPeerEntry:
+      return "Peer Passkey Entry";
+    default:
+      return "(unknown)";
+  }
+}
+
 MutableByteBufferPtr NewPdu(size_t param_size) {
   auto pdu = NewSlabBuffer(sizeof(Header) + param_size);
   if (!pdu) {

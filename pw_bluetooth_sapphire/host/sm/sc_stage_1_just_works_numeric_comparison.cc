@@ -7,6 +7,7 @@
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
@@ -145,7 +146,8 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
     // The code displayed to the user is the least significant 6 digits of the G2 function.
     uint32_t comparison_code = *g2_result % 1000000;
     listener_->DisplayPasskey(
-        comparison_code, true /* is_numeric_comparison */, [self, results](bool passkey_confirmed) {
+        comparison_code, Delegate::DisplayMethod::kComparison,
+        [self, results](bool passkey_confirmed) {
           if (self) {
             passkey_confirmed ? self->on_complete_(fit::ok(results))
                               : self->on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));

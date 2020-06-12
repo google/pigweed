@@ -410,7 +410,7 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x05,  // AuthReq: bonding, MITM (Authenticated)
+      0x0D,  // AuthReq: bonding, MITM (Authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x03   // responder keys: enc key and identity info
@@ -451,7 +451,7 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x01,  // AuthReq: bonding, no MITM (not authenticated)
+      0x09,  // AuthReq: bonding, no MITM (not authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x03   // responder keys: enc key and identity info
@@ -493,7 +493,7 @@ TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x04,  // AuthReq: no bonding, MITM (authenticated)
+      0x0C,  // AuthReq: no bonding, MITM (authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x00   // responder keys: none

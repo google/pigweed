@@ -131,8 +131,8 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
   std::optional<uint32_t> compare = std::nullopt;
   ConfirmCallback user_confirm = nullptr;
   listener()->set_display_delegate(
-      [&](uint32_t cmp, bool is_numeric_comparison, ConfirmCallback cb) {
-        ASSERT_TRUE(is_numeric_comparison);
+      [&](uint32_t cmp, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kComparison, method);
         compare = cmp;
         user_confirm = std::move(cb);
       });
@@ -225,8 +225,8 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   std::optional<uint32_t> compare = std::nullopt;
   ConfirmCallback user_confirm = nullptr;
   listener()->set_display_delegate(
-      [&](uint32_t cmp, bool is_numeric_comparison, ConfirmCallback cb) {
-        ASSERT_TRUE(is_numeric_comparison);
+      [&](uint32_t cmp, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kComparison, method);
         compare = cmp;
         user_confirm = std::move(cb);
       });
@@ -294,10 +294,11 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ListenerRejectsNumericCompari
   args.method = PairingMethod::kNumericComparison;
   NewScStage1JustWorksNumericComparison(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_display_delegate([&](uint32_t, bool is_numeric_comparison, ConfirmCallback cb) {
-    ASSERT_TRUE(is_numeric_comparison);
-    user_confirm = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kComparison, method);
+        user_confirm = std::move(cb);
+      });
 
   stage_1()->Run();
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
@@ -332,10 +333,11 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingFor
   args.method = PairingMethod::kNumericComparison;
   NewScStage1JustWorksNumericComparison(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_display_delegate([&](uint32_t, bool is_numeric_comparison, ConfirmCallback cb) {
-    ASSERT_TRUE(is_numeric_comparison);
-    user_confirm = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kComparison, method);
+        user_confirm = std::move(cb);
+      });
 
   stage_1()->Run();
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());

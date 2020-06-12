@@ -9,78 +9,37 @@
 
 #include <memory>
 #include <queue>
+#include <variant>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/bearer.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/idle_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/phase_1.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_legacy.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/phase_3.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
 namespace bt {
 namespace sm {
 
 // Represents the pairing state of a connected peer. The peer device must be a
 // LE or a BR/EDR/LE device.
-class PairingState final : public Bearer::Listener {
+class PairingState final : public PairingPhase::Listener {
  public:
-  // Delegate interface for pairing and bonding events.
-  class Delegate {
-   public:
-    virtual ~Delegate() = default;
-
-    // Called to obtain a Temporary Key during legacy pairing. This should
-    // return a TK by invoking the |tk_response| parameter.
-    //
-    // If the delegate fails to obtain the TK, it should signal this by setting
-    // the |success| parameter to false. This will abort the pairing procedure.
-    //
-    // The delegate should use the following algorithm to provide a temporary
-    // key:
-    //
-    //   1. If |method| is kJustWorks, the |tk| should be set to 0. Depending on
-    //   the I/O capabilities the user should be asked to confirm or reject the
-    //   pairing.
-    //
-    //   2. If |method| is kPasskeyEntryDisplay, the |tk| should be set to a
-    //   random integer between 0 and 999,999. This should be displayed to the
-    //   user until the user has finished entering the passkey on the peer
-    //   device.
-    //   TODO(armansito): Notify the delegate on SMP keypress events to
-    //   automatically dismiss the dialog.
-    //
-    //   3. If |method| is kPasskeyEntryInput, the user should be prompted to
-    //   enter a 6-digit passkey. The |tk| should be set to this passkey.
-    using TkResponse = fit::function<void(bool success, uint32_t tk)>;
-    virtual void OnTemporaryKeyRequest(PairingMethod method, TkResponse response) = 0;
-
-    // Called to obtain the local identity information to distribute to the
-    // peer. The delegate should return std::nullopt if there is no identity
-    // information to share. Otherwise, the delegate should return the IRK and
-    // the identity address to distribute.
-    virtual std::optional<IdentityInfo> OnIdentityInformationRequest() = 0;
-
-    // Called when an ongoing pairing is completed with the given |status|.
-    virtual void OnPairingComplete(Status status) = 0;
-
-    // Called when new pairing data has been obtained for this peer.
-    virtual void OnNewPairingData(const PairingData& data) = 0;
-
-    // Called when the link layer authentication procedure fails. This likely
-    // indicates that the LTK or STK used to encrypt the connection was rejected
-    // by the peer device.
-    //
-    // The underlying link will disconnect after this callback runs.
-    virtual void OnAuthenticationFailure(hci::Status status) = 0;
-
-    // Called when the security properties of the link change.
-    virtual void OnNewSecurityProperties(const SecurityProperties& sec) = 0;
-  };
-
   // |link|: The LE logical link over which pairing procedures occur.
   // |smp|: The L2CAP LE SMP fixed channel that operates over |link|.
   // |ioc|: The initial I/O capability.
-  // |delegate|: Delegate responsible for handling authentication challenges and
-  //             storing pairing information.
+  // |delegate|: Delegate which handles SMP interactions with the rest of the Bluetooth stack.
   PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
                BondableMode bondable_mode);
@@ -89,38 +48,34 @@ class PairingState final : public Bearer::Listener {
   // Returns the current security properties of the LE link.
   const SecurityProperties& security() const { return le_sec_; }
 
-  // Assigns the requested |ltk| to this connection, adopting the security
-  // properties of |ltk|. If the local device is the master of the underlying
-  // link, then the link layer authentication procedure will be initiated.
+  // Assigns the requested |ltk| to this connection, adopting the security properties of |ltk|. If
+  // the local device is the master of the underlying link, then the link layer authentication
+  // procedure will be initiated.
   //
-  // Returns false if a pairing procedure is in progress when this method is
-  // called. If the link layer authentication procedure fails, then the link
-  // will be disconnected by the controller (Vol 2, Part E, 7.8.24;
-  // hci::Connection guarantees this by severing the link directly).
+  // Returns false if a pairing procedure is in progress when this method is called. If the link
+  // layer authentication procedure fails, then the link will be disconnected by the controller
+  // (Vol 2, Part E, 7.8.24; hci::Connection guarantees this by severing the link directly).
   //
-  // This function is mainly intended to assign an existing LTK to a connection
-  // (e.g. from bonding data). This function overwrites any previously assigned
-  // LTK.
+  // This function is mainly intended to assign an existing LTK to a connection (e.g. from bonding
+  // data). This function overwrites any previously assigned LTK.
   bool AssignLongTermKey(const LTK& ltk);
 
-  // TODO(armansito): Add function to register a BR/EDR link and SMP channel.
+  // TODO(52937): Add function to register a BR/EDR link and SMP channel.
 
-  // Attempt to raise the security level of a the connection to the desired
-  // |level| and notify the result in |callback|.
+  // Attempt to raise the security level of the connection to the desired |level| and notify the
+  // result in |callback|.
   //
-  // If the desired security properties are already satisfied, this procedure
-  // will succeed immediately (|callback| will be run with the current security
-  // properties).
+  // If the desired security properties are already satisfied, this procedure will succeed
+  // immediately (|callback| will be run with the current security properties).
   //
-  // If a pairing procedure has already been initiated (either by us or the
-  // peer), the request will be queued and |callback| will be notified when the
-  // procedure completes. If the resulting security level does not satisfy
-  // |level|, pairing will be re-initiated.
+  // If a pairing procedure has already been initiated (either by us or the peer), the request will
+  // be queued and |callback| will be notified when the procedure completes. If the resulting
+  // security level does not satisfy |level|, pairing will be re-initiated. Note that this means
+  // security requests of different |level|s may not complete in the order they are made.
   //
   // If no pairing is in progress then the local device will initiate pairing.
   //
-  // If pairing fails |callback| will be called with a |status| that represents
-  // the error.
+  // If pairing fails |callback| will be called with a |status| that represents the error.
   using PairingCallback = fit::function<void(Status status, const SecurityProperties& sec_props)>;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback);
 
@@ -128,99 +83,18 @@ class PairingState final : public Bearer::Listener {
   // up the I/O capabilities to use for future requests.
   void Reset(IOCapability io_capability);
 
-  // Abort all ongoing pairing procedures and notify pairing callbacks with an
-  // error.
-  void Abort();
+  // Abort all ongoing pairing procedures and notify pairing callbacks with the provided error.
+  void Abort(ErrorCode ecode = ErrorCode::kUnspecifiedReason);
 
-  // Returns whether or not the pairing state is in bondable mode. Note that being in bondable
-  // mode does not guarantee that pairing will necessarily bond.
-  BondableMode bondable_mode() const {
-    ZX_DEBUG_ASSERT(le_smp_);
-    return le_smp_->bondable_mode();
-  }
+  // Returns whether or not the pairing state is in bondable mode. Note that being in bondable mode
+  // does not guarantee that pairing will necessarily bond.
+  BondableMode bondable_mode() const { return bondable_mode_; }
 
-  void set_bondable_mode(sm::BondableMode mode) { le_smp_->set_bondable_mode(mode); }
+  // Sets the bondable mode of the pairing state. Any in-progress pairings will not be affected -
+  // if bondable mode needs to be reset during a pairing Reset() or Abort() must be called first.
+  void set_bondable_mode(sm::BondableMode mode) { bondable_mode_ = mode; }
 
  private:
-  static constexpr size_t kPairingRequestSize = sizeof(Header) + sizeof(PairingRequestParams);
-
-  // Represents the state for LE legacy pairing.
-  struct LegacyState final {
-    // |id| uniquely identifies the pairing procedure that this state object is
-    // tied to. This is generated by PairingState.
-    explicit LegacyState(uint64_t id);
-
-    // We are in Phase 1 if pairing features have not been obtained.
-    bool InPhase1() const;
-
-    // We are in Phase 2 if we have obtained the TK and waiting for STK
-    // encryption.
-    bool InPhase2() const;
-
-    // We are in Phase 3 if the link is encrypted with the STK but not all
-    // requested keys have been obtained.
-    bool InPhase3() const;
-
-    bool IsComplete() const;
-
-    // True if we are in the beginning of Phase 2 where we have not obtained the
-    // TK yet.
-    bool WaitingForTK() const;
-
-    // True if all keys that are expected from the remote have been received.
-    bool RequestedKeysObtained() const;
-
-    // True if all local keys that were agreed to be distributed have been sent
-    // to the peer.
-    bool LocalKeysSent() const;
-
-    bool KeyExchangeComplete() const { return RequestedKeysObtained() && LocalKeysSent(); }
-
-    bool ShouldReceiveLTK() const;       // True if peer should send the LTK
-    bool ShouldReceiveIdentity() const;  // True if peer should send identity
-    bool ShouldSendLTK() const;          // True if we should send the LTK
-    bool ShouldSendIdentity() const;     // True if we should send identity info
-
-    // A unique token for this pairing state.
-    uint64_t id;
-
-    // The pairing features obtained during Phase 1. If invalid, we're in
-    // Phase 1. Otherwise, we're in Phase 2.
-    std::optional<PairingFeatures> features;
-
-    // True if the link has been encrypted with the STK. This means that we're
-    // in Phase 3. Otherwise we're in Phase 1 or 2.
-    bool stk_encrypted;
-
-    // The remote keys that have been obtained so far.
-    KeyDistGenField obtained_remote_keys;
-
-    // True, if all local keys have been sent to the peer.
-    bool sent_local_keys;
-
-    // Data used to generate STK and confirm values in Phase 2.
-    bool has_tk;
-    bool has_peer_confirm;
-    bool has_peer_rand;
-    bool sent_local_confirm;
-    bool sent_local_rand;
-    UInt128 tk;
-    UInt128 local_confirm;
-    UInt128 peer_confirm;
-    UInt128 local_rand;
-    UInt128 peer_rand;
-    StaticByteBuffer<kPairingRequestSize> preq;
-    StaticByteBuffer<kPairingRequestSize> pres;
-
-    // Data from the peer tracked during Phase 3. Parts of LTK are received in
-    // separate events.
-    bool has_ltk;
-    bool has_irk;
-    UInt128 ltk_bytes;  // LTK without ediv/rand
-    UInt128 irk;
-    DeviceAddress identity_address;
-  };
-
   // Represents a pending request to update the security level.
   struct PendingRequest {
     PendingRequest(SecurityLevel level, PairingCallback callback);
@@ -231,93 +105,124 @@ class PairingState final : public Bearer::Listener {
     PairingCallback callback;
   };
 
-  // Assign the current security properties and notify the delegate of the
-  // change.
-  void SetSecurityProperties(const SecurityProperties& sec);
+  // Puts the pairing state machine back into the idle i.e. non-pairing state.
+  void GoToIdlePhase();
 
-  // Aborts an ongoing legacy pairing procedure.
-  void AbortLegacyPairing(ErrorCode error_code);
+  // Called when we receive a peer security request as initiator, will start Phase 1.
+  void OnSecurityRequest(AuthReqField auth_req);
 
-  // Begin Phase 1 of LE legacy pairing with the given |level|.
-  void BeginLegacyPairingPhase1(SecurityLevel level);
+  // Called when we receive a peer pairing request as responder, will start Phase 1.
+  void OnPairingRequest(const PairingRequestParams& req_params);
 
-  // Begin Phase 2 of LE legacy pairing. This is called after LE pairing
-  // features have been exchanged and results (asynchronously) in the generation
-  // and encryption of a link using the STK. This follows (roughly) the
-  // following steps:
-  //    1. Asynchronously obtain the TK.
-  //    2. Generate the local confirm/rand values.
-  //    3. If initiator, start the exchange, otherwise wait for the peer to send
-  //    its confirm value.
-  void BeginLegacyPairingPhase2(const ByteBuffer& preq, const ByteBuffer& pres);
-  void LegacySendConfirmValue();
-  void LegacySendRandomValue();
+  // Causes the LE pairing process to begin - called when we require a security level higher than
+  // the current security level.
+  void StartPairing(SecurityLevel level);
 
-  // Called when the link is encrypted with the STK at the end of Legacy
-  // Pairing Phase 2.
-  void EndLegacyPairingPhase2();
+  // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
+  // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
+  // calculations in Phase 2. Causes a state transition from Phase 1 to Phase 2
+  void OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
+                         PairingResponseParams pres);
 
-  // Called to send all agreed upon keys to the peer during Phase 3. Returns
-  // false if an error occurs and pairing should be aborted.
-  bool SendLocalKeys();
-
-  // Completes the legacy pairing process by cleaning up pairing state, updates
-  // the current security level, and notifies parties that have requested
-  // security.
-  void CompleteLegacyPairing();
-
-  // Directly assigns the current |ltk_| and the underlying |le_link_|'s link
-  // key. This function does not initiation link layer encryption and can be
-  // called during and outside of pairing.
-  void AssignLongTermKeyInternal(const LTK& ltk);
-
-  // Bearer::Listener overrides:
-  void OnPairingFailed(Status status) override;
-  void OnFeatureExchange(const PairingFeatures& features, const ByteBuffer& preq,
-                         const ByteBuffer& pres) override;
-  void OnPairingConfirm(const UInt128& confirm) override;
-  void OnPairingRandom(const UInt128& random) override;
-  void OnLongTermKey(const UInt128& ltk) override;
-  void OnMasterIdentification(uint16_t ediv, uint64_t random) override;
-  void OnIdentityResolvingKey(const UInt128& irk) override;
-  void OnIdentityAddress(const DeviceAddress& address) override;
-  void OnSecurityRequest(AuthReqField auth_req) override;
-  bool HasIdentityInformation() override;
+  // Called when Phase 2 generates an encryption key, so the link can be encrypted with it.
+  void OnPhase2EncryptionKey(const UInt128& new_key);
 
   // Called when the encryption state of the LE link changes.
   void OnEncryptionChange(hci::Status status, bool enabled);
 
-  // Called when an expected key was received from the peer during Phase 3 of
-  // legacy pairing. Completes the ongoing pairing procedure if all expected
-  // keys have been received. If a LTK was obtained then the link is encrypted
-  // before pairing is complete.
-  void OnExpectedKeyReceived();
+  // Called when the link is encrypted at the end of pairing Phase 2.
+  void EndPhase2();
 
-  // Returns pointers to the initiator and responder addresses. This can be
-  // called after pairing Phase 1.
-  void LEPairingAddresses(const DeviceAddress** out_initiator, const DeviceAddress** out_responder);
+  // Cleans up pairing state, updates the current security level, and notifies parties that
+  // requested security of the link's updated security properties.
+  void OnPairingComplete(PairingData data);
 
-  // The ID that will be assigned to the next pairing state.
-  unsigned int next_pairing_id_;
+  // Assign the current security properties and notify the delegate of the
+  // change.
+  void SetSecurityProperties(const SecurityProperties& sec);
 
+  // PairingPhase::Listener overrides:
+  //
+  // Directly assigns the current |ltk_| and the underlying |le_link_|'s link key. This function
+  // does not initiate link layer encryption and can be called during and outside of pairing.
+  void OnNewLongTermKey(const LTK& ltk) override;
+  void OnPairingFailed(Status status) override;
+  std::optional<IdentityInfo> OnIdentityRequest() override;
+  void ConfirmPairing(ConfirmCallback confirm) override;
+  void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
+                      ConfirmCallback cb) override;
+  void RequestPasskey(PasskeyResponseCallback respond) override;
+
+  // Starts the SMP timer. Stops and cancels any in-progress timers.
+  bool StartNewTimer();
+  // Stops and resets the SMP Pairing Timer.
+  void StopTimer();
+  // Called when the pairing timer expires, forcing the pairing process to stop
+  void OnPairingTimeout();
+
+  // Returns a std::pair<InitiatorAddress, ResponderAddress>. Will assert if called outside active
+  // pairing or before Phase 1 is complete.
+  std::pair<DeviceAddress, DeviceAddress> LEPairingAddresses();
+
+  // Puts the class into a non-pairing state.
+  void ResetState();
+
+  // Returns true if the pairing state machine is currently in Phase 2 of pairing.
+  bool InPhase2() const {
+    return std::holds_alternative<Phase2Legacy>(current_phase_) ||
+           std::holds_alternative<Phase2SecureConnections>(current_phase_);
+  }
+
+  // Validates that both SM and the link have stored LTKs, and that these values match. Disconnects
+  // the link if it finds an issue. Should only be called when an LTK is expected to exists.
+  Status ValidateExistingLocalLtk();
+
+  // The ID that will be assigned to the next pairing operation.
+  PairingProcedureId next_pairing_id_;
+
+  // The higher-level class acting as a delegate for operations outside of SMP.
   fxl::WeakPtr<Delegate> delegate_;
 
   // Data for the currently registered LE-U link, if any.
   fxl::WeakPtr<hci::Connection> le_link_;
-  std::unique_ptr<Bearer> le_smp_;  // SMP data bearer for the LE-U link.
-  SecurityProperties le_sec_;       // Current security properties of the LE-U link.
+
+  // The IO capabilities of the device
+  IOCapability io_cap_;
+
+  // The operating bondable mode of the device.
+  BondableMode bondable_mode_;
+
+  SecurityProperties le_sec_;  // Current security properties of the LE-U link.
 
   // The current LTK assigned to this connection. This can be assigned directly
   // by calling AssignLongTermKey() or as a result of a pairing procedure.
   std::optional<LTK> ltk_;
 
-  // The state of the LE legacy pairing procedure, if any.
-  std::unique_ptr<LegacyState> legacy_state_;
+  // If a pairing is in progress and Phase 1 (feature exchange) has completed, this will store the
+  // result of that feature exchange. Otherwise, this will be std::nullopt.
+  std::optional<PairingFeatures> features_;
 
   // The pending security requests added via UpgradeSecurity().
   std::queue<PendingRequest> request_queue_;
 
-  // TODO(armansito): Support SMP over ACL-U for LE Secure Connections.
+  // Fixed SMP Channel used to send/receive packets
+  std::unique_ptr<PairingChannel> sm_chan_;
+
+  // The role of the local device in pairing.
+  Role role_;
+
+  async::TaskClosureMethod<PairingState, &PairingState::OnPairingTimeout> timeout_task_{this};
+
+  // The presence of a particular phase in this variant indicates that the pairing state machine is
+  // currently in that phase. `weak_ptr_factory_` must be the last declared member so that all weak
+  // pointers to PairingState are invalidated at the beginning of destruction, but all of the Phase
+  // class ctors take a WeakPtr<PairingState>. Thus, we include std::monostate in the variant so
+  // `current_phase_` can be default-constructible in the initializer list, and construct an Idle
+  // Phase in the PairingState ctor.
+  // TODO(fxbug.dev/53946): Clean up usage of PairingPhases, especially re:std::monostate.
+  std::variant<std::monostate, IdlePhase, std::unique_ptr<Phase1>, Phase2Legacy,
+               Phase2SecureConnections, Phase3>
+      current_phase_;
 
   fxl::WeakPtrFactory<PairingState> weak_ptr_factory_;
 

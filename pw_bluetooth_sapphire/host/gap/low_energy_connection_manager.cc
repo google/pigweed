@@ -48,7 +48,7 @@ namespace internal {
 // Represents the state of an active connection. Each instance is owned
 // and managed by a LowEnergyConnectionManager and is kept alive as long as
 // there is at least one LowEnergyConnectionRef that references it.
-class LowEnergyConnection final : public sm::PairingState::Delegate {
+class LowEnergyConnection final : public sm::Delegate {
  public:
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       async_dispatcher_t* dispatcher,
@@ -241,7 +241,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     gatt_->DiscoverServices(peer_id());
   }
 
-  // sm::PairingState::Delegate override:
+  // sm::Delegate override:
   void OnNewPairingData(const sm::PairingData& pairing_data) override {
     // Consider the pairing temporary if no link key was received. This
     // means we'll remain encrypted with the STK without creating a bond and
@@ -267,7 +267,7 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     }
   }
 
-  // sm::PairingState::Delegate override:
+  // sm::Delegate override:
   void OnPairingComplete(sm::Status status) override {
     bt_log(DEBUG, "gap-le", "pairing complete: %s", status.ToString().c_str());
 
@@ -277,21 +277,21 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     }
   }
 
-  // sm::PairingState::Delegate override:
+  // sm::Delegate override:
   void OnAuthenticationFailure(hci::Status status) override {
     // TODO(armansito): Clear bonding data from the remote peer cache as any
     // stored link key is not valid.
     bt_log(ERROR, "gap-le", "link layer authentication failed: %s", status.ToString().c_str());
   }
 
-  // sm::PairingState::Delegate override:
+  // sm::Delegate override:
   void OnNewSecurityProperties(const sm::SecurityProperties& sec) override {
     bt_log(DEBUG, "gap-le", "new link security properties: %s", sec.ToString().c_str());
     // Update the data plane with the correct link security level.
     data_domain_->AssignLinkSecurityProperties(link_->handle(), sec);
   }
 
-  // sm::PairingState::Delegate override:
+  // sm::Delegate override:
   std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override {
     if (!conn_mgr_->local_address_delegate()->irk()) {
       bt_log(TRACE, "gap-le", "no local identity information to exchange");
@@ -306,53 +306,45 @@ class LowEnergyConnection final : public sm::PairingState::Delegate {
     return id_info;
   }
 
-  // sm::PairingState::Delegate override:
-  void OnTemporaryKeyRequest(sm::PairingMethod method,
-                             sm::PairingState::Delegate::TkResponse responder) override {
-    bt_log(DEBUG, "gap-le", "TK request - method: %s",
-           sm::util::PairingMethodToString(method).c_str());
+  // sm::Delegate override:
+  void ConfirmPairing(ConfirmCallback confirm) override {
+    bt_log(DEBUG, "gap-le", "pairing delegate request for pairing confirmation w/ no passkey");
 
-    auto delegate = conn_mgr_->pairing_delegate();
+    auto* delegate = conn_mgr_->pairing_delegate();
     if (!delegate) {
       bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
-      responder(false, 0);
-      return;
+      confirm(false);
+    } else {
+      delegate->ConfirmPairing(peer_id(), std::move(confirm));
     }
+  }
 
-    if (method == sm::PairingMethod::kPasskeyEntryInput) {
-      // The TK will be provided by the user.
-      delegate->RequestPasskey(peer_id(), [responder = std::move(responder)](int64_t passkey) {
-        if (passkey < 0) {
-          responder(false, 0);
-        } else {
-          responder(true, static_cast<uint32_t>(passkey));
-        }
-      });
-      return;
+  // sm::Delegate override:
+  void DisplayPasskey(uint32_t passkey, sm::Delegate::DisplayMethod method,
+                      ConfirmCallback confirm) override {
+    bt_log(TRACE, "gap-le", "pairing delegate request for %s",
+           sm::util::DisplayMethodToString(method).c_str());
+
+    auto* delegate = conn_mgr_->pairing_delegate();
+    if (!delegate) {
+      bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
+      confirm(false);
+    } else {
+      delegate->DisplayPasskey(peer_id(), passkey, method, std::move(confirm));
     }
+  }
 
-    if (method == sm::PairingMethod::kPasskeyEntryDisplay) {
-      // Randomly generate a 6 digit passkey.
-      // TODO(armansito): Use a uniform prng.
-      uint32_t passkey;
-      zx_cprng_draw(&passkey, sizeof(passkey));
-      passkey = passkey % 1000000;
-      delegate->DisplayPasskey(peer_id(), passkey, PairingDelegate::DisplayMethod::kPeerEntry,
-                               [passkey, responder = std::move(responder)](bool confirm) {
-                                 responder(confirm, passkey);
-                               });
-      return;
+  // sm::Delegate override:
+  void RequestPasskey(PasskeyResponseCallback respond) override {
+    bt_log(TRACE, "gap-le", "pairing delegate request for passkey entry");
+
+    auto* delegate = conn_mgr_->pairing_delegate();
+    if (!delegate) {
+      bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
+      respond(-1);
+    } else {
+      delegate->RequestPasskey(peer_id(), std::move(respond));
     }
-
-    // TODO(armansito): Support providing a TK out of band.
-    // OnTKRequest() should only be called for legacy pairing.
-    ZX_DEBUG_ASSERT(method == sm::PairingMethod::kJustWorks);
-
-    delegate->ConfirmPairing(peer_id(), [responder = std::move(responder)](bool confirm) {
-      // The TK for Just Works pairing is 0 (Vol 3,
-      // Part H, 2.3.5.2).
-      responder(confirm, 0);
-    });
   }
 
   void CloseRefs() {

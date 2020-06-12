@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -46,7 +47,7 @@ class PairingPhase {
 
     // Show the user the 6-digit |passkey| that should be compared to the peer's passkey or entered
     // into the peer. |confirm| may be called to accept a comparison or to reject the pairing.
-    virtual void DisplayPasskey(uint32_t passkey, bool is_numeric_comparison,
+    virtual void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
                                 ConfirmCallback confirm) = 0;
 
     // Ask the user to enter a 6-digit passkey or reject pairing. Reports the result by invoking

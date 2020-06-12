@@ -8,6 +8,7 @@
 #include <lib/fit/function.h>
 
 #include <optional>
+#include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -208,6 +209,8 @@ enum class Role {
   // The LMP Slave device is always kResponder (V5.0 Vol. 3 Part H Appendix C.1).
   kResponder
 };
+
+using PairingProcedureId = uint64_t;
 
 // Used by Phase 2 classes to notify their owner that a new encryption key is ready. For Legacy
 // Pairing, this is the STK which may only be used for the current session. For Secure Connections,

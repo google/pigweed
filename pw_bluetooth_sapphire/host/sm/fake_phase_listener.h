@@ -35,10 +35,10 @@ class FakeListener : public PairingPhase::Listener {
   }
 
   // PairingPhase::Listener override:
-  void DisplayPasskey(uint32_t passkey, bool is_numeric_comparison,
+  void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
                       ConfirmCallback confirm) override {
     if (display_delegate_) {
-      display_delegate_(passkey, is_numeric_comparison, std::move(confirm));
+      display_delegate_(passkey, method, std::move(confirm));
     } else {
       ADD_FAILURE() << "No passkey display delegate set for pairing";
     }
@@ -72,7 +72,7 @@ class FakeListener : public PairingPhase::Listener {
   using ConfirmDelegate = fit::function<void(ConfirmCallback)>;
   void set_confirm_delegate(ConfirmDelegate delegate) { confirm_delegate_ = std::move(delegate); }
 
-  using DisplayDelegate = fit::function<void(uint32_t, bool, ConfirmCallback)>;
+  using DisplayDelegate = fit::function<void(uint32_t, Delegate::DisplayMethod, ConfirmCallback)>;
   void set_display_delegate(DisplayDelegate delegate) { display_delegate_ = std::move(delegate); }
 
   // sm::Delegate override:

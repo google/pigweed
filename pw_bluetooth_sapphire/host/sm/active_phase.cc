@@ -26,10 +26,11 @@ void ActivePhase::OnFailure(Status status) {
 
 void ActivePhase::Abort(ErrorCode ecode) {
   ZX_ASSERT(!has_failed());
-  bt_log(WARN, "sm", "abort pairing");
+  Status status(ecode);
+  bt_log(INFO, "sm", "abort pairing: %s", bt_str(status));
 
   SendPairingFailed(ecode);
-  OnFailure(Status(ecode));
+  OnFailure(status);
 }
 
 void ActivePhase::OnPairingTimeout() {

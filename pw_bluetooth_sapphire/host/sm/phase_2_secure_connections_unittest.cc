@@ -425,11 +425,12 @@ TEST_F(SMP_Phase2SecureConnectionsTest, Stage1PasskeyErrorPropagates) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kPasskeyEntryDisplay);
   uint32_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate([&](uint32_t disp_passkey, bool is_nc, ConfirmCallback cb) {
-    ASSERT_FALSE(is_nc);
-    confirm_cb = std::move(cb);
-    passkey = disp_passkey;
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        confirm_cb = std::move(cb);
+        passkey = disp_passkey;
+      });
   FastForwardPublicKeyExchange();
 
   ASSERT_TRUE(confirm_cb);
@@ -512,10 +513,11 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessJustWorks) {
 TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessNumericComparison) {
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kNumericComparison);
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate([&](uint32_t, bool is_nc, ConfirmCallback cb) {
-    ASSERT_TRUE(is_nc);
-    confirm_cb = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kComparison, method);
+        confirm_cb = std::move(cb);
+      });
   FastForwardPublicKeyExchange();
 
   Code sent_code = kPairingFailed;
@@ -549,11 +551,12 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorFlowSuccessPasskeyEntryDisplay)
   NewPhase2SecureConnections(Role::kInitiator, PairingMethod::kPasskeyEntryDisplay);
   uint32_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate([&](uint32_t disp_passkey, bool is_nc, ConfirmCallback cb) {
-    ASSERT_FALSE(is_nc);
-    confirm_cb = std::move(cb);
-    passkey = disp_passkey;
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        confirm_cb = std::move(cb);
+        passkey = disp_passkey;
+      });
   FastForwardPublicKeyExchange();
   ASSERT_TRUE(confirm_cb);
   Code sent_code = kPairingFailed;

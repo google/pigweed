@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
@@ -68,7 +69,7 @@ void ScStage1Passkey::Run() {
     uint32_t passkey;
     zx_cprng_draw(&passkey, sizeof(passkey));
     passkey = passkey % 1000000;
-    listener_->DisplayPasskey(passkey, false /* is_numeric_comparison */,
+    listener_->DisplayPasskey(passkey, Delegate::DisplayMethod::kPeerEntry,
                               [responder = std::move(passkey_responder), passkey](bool confirm) {
                                 std::optional<uint32_t> passkey_response = passkey;
                                 if (!confirm) {

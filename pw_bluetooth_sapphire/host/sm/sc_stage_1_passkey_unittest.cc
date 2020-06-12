@@ -114,11 +114,12 @@ TEST_F(SMP_ScStage1PasskeyTest, InitiatorPasskeyEntryDisplay) {
   NewScStage1Passkey(args);
   uint64_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate([&](uint64_t disp_passkey, bool is_nc, ConfirmCallback cb) {
-    ASSERT_FALSE(is_nc);
-    confirm_cb = std::move(cb);
-    passkey = disp_passkey;
-  });
+  listener()->set_display_delegate(
+      [&](uint64_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        confirm_cb = std::move(cb);
+        passkey = disp_passkey;
+      });
   stage_1()->Run();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);
@@ -227,10 +228,11 @@ TEST_F(SMP_ScStage1PasskeyTest, ListenerRejectsPasskeyEntryDisplay) {
   args.method = PairingMethod::kPasskeyEntryDisplay;
   NewScStage1Passkey(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_display_delegate([&](uint32_t, bool is_numeric_comparison, ConfirmCallback cb) {
-    ASSERT_FALSE(is_numeric_comparison);
-    user_confirm = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        user_confirm = std::move(cb);
+      });
 
   stage_1()->Run();
   ASSERT_TRUE(user_confirm);
@@ -262,10 +264,11 @@ TEST_F(SMP_ScStage1PasskeyTest, StageDestroyedWhileWaitingForPasskeyEntryDisplay
   args.method = PairingMethod::kPasskeyEntryDisplay;
   NewScStage1Passkey(args);
   ConfirmCallback user_confirm = nullptr;
-  listener()->set_display_delegate([&](uint32_t, bool is_numeric_comparison, ConfirmCallback cb) {
-    ASSERT_FALSE(is_numeric_comparison);
-    user_confirm = std::move(cb);
-  });
+  listener()->set_display_delegate(
+      [&](uint32_t, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        user_confirm = std::move(cb);
+      });
 
   stage_1()->Run();
   ASSERT_TRUE(user_confirm);
@@ -302,11 +305,12 @@ TEST_F(SMP_ScStage1PasskeyTest, ResponderPasskeyEntryDisplay) {
   NewScStage1Passkey(args);
   uint64_t passkey;
   ConfirmCallback confirm_cb = nullptr;
-  listener()->set_display_delegate([&](uint64_t disp_passkey, bool is_nc, ConfirmCallback cb) {
-    ASSERT_FALSE(is_nc);
-    confirm_cb = std::move(cb);
-    passkey = disp_passkey;
-  });
+  listener()->set_display_delegate(
+      [&](uint64_t disp_passkey, Delegate::DisplayMethod method, ConfirmCallback cb) {
+        ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
+        confirm_cb = std::move(cb);
+        passkey = disp_passkey;
+      });
   stage_1()->Run();
   ASSERT_TRUE(confirm_cb);
   confirm_cb(true);

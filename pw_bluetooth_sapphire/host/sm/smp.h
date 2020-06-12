@@ -20,9 +20,6 @@ namespace bt {
 namespace sm {
 
 // v5.0, Vol 3, Part H, 3.2
-// TODO(fxbug.dev/769): Delete kLEMTU & kBREDR MTU when Bearer is deprecated.
-constexpr uint16_t kLEMTU = 23;
-constexpr uint16_t kBREDRMTU = 65;
 constexpr uint16_t kNoSecureConnectionsMtu = 23;
 constexpr uint16_t kLeSecureConnectionsMtu = 65;
 

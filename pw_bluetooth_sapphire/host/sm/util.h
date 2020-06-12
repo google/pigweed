@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -28,6 +29,9 @@ constexpr size_t PacketSize() {
 
 // Returns a string representation of a given pairing method.
 std::string PairingMethodToString(PairingMethod method);
+
+// Returns a string representation of a PairingDelegate display method.
+std::string DisplayMethodToString(Delegate::DisplayMethod method);
 
 // Returns a string representation of a given IOCapability.
 std::string IOCapabilityToString(IOCapability capability);

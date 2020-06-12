@@ -1237,7 +1237,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x01,  // AuthReq: bonding, no MITM
+      0x09,  // AuthReq: bonding, no MITM, Secure Connections
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x03   // responder keys: enc key and identity info
@@ -1295,7 +1295,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
       0x01,  // code: "Pairing Request"
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      0x00,  // AuthReq: bonding, no MITM
+      0x08,  // AuthReq: non-bondable, no MITM, Secure Connections
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x00   // responder keys: enc key and identity info

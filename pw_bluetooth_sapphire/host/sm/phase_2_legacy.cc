@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -91,7 +92,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
     zx_cprng_draw(&passkey, sizeof(passkey));
     passkey = passkey % 1000000;
     listener()->DisplayPasskey(
-        passkey, false /* is_numeric_comparison */, [passkey, self](bool confirm) {
+        passkey, Delegate::DisplayMethod::kPeerEntry, [passkey, self](bool confirm) {
           if (!self) {
             return;
           }
