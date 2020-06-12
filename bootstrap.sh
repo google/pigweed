@@ -18,6 +18,19 @@ _pw_abspath () {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
 
+
+# Note: Colors are unfortunately duplicated in several places; and removing the
+# duplication is not easy. Their locations are:
+#
+#   - bootstrap.sh
+#   - pw_cli/color.py
+#   - pw_env_setup/py/pw_env_setup/colors.py
+#
+# So please keep them matching then modifying them.
+_pw_none() {
+  echo -e "$*"
+}
+
 _pw_red() {
   echo -e "\033[0;31m$*\033[0m"
 }
@@ -26,15 +39,47 @@ _pw_bold_red() {
   echo -e "\033[1;31m$*\033[0m"
 }
 
+_pw_yellow() {
+  echo -e "\033[0;33m$*\033[0m"
+}
+
+_pw_bold_yellow() {
+  echo -e "\033[1;33m$*\033[0m"
+}
+
 _pw_green() {
   echo -e "\033[0;32m$*\033[0m"
 }
 
-_pw_bright_magenta() {
+_pw_bold_green() {
+  echo -e "\033[1;32m$*\033[0m"
+}
+
+_pw_blue() {
+  echo -e "\033[1;34m$*\033[0m"
+}
+
+_pw_cyan() {
+  echo -e "\033[1;36m$*\033[0m"
+}
+
+_pw_magenta() {
   echo -e "\033[0;35m$*\033[0m"
 }
 
-_PIGWEED_BANNER=$(cat <<EOF
+_pw_bold_white() {
+  echo -e "\033[1;37m$*\033[0m"
+}
+
+# Note: This banner is duplicated in three places; which is a lesser evil than
+# the contortions that would be needed to share this snippet acros shell,
+# batch, and Python. Locations:
+#
+#   - bootstrap.sh
+#   - pw_cli/branding.py
+#   - pw_env_setup/py/pw_env_setup/windows_env_start.py
+#
+_PW_BANNER=$(cat <<EOF
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
   ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
   ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
@@ -42,6 +87,14 @@ _PIGWEED_BANNER=$(cat <<EOF
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 EOF
 )
+
+# Support customizing the branding with a different banner and color.
+if test -f "$PW_BRANDING_BANNER"; then
+  _PW_BANNER=$(cat $PW_BRANDING_BANNER)
+fi
+if test -z "$PW_BRANDING_BANNER_COLOR"; then
+  PW_BRANDING_BANNER_COLOR=magenta
+fi
 
 # Users are not expected to set PW_CHECKOUT_ROOT, it's only used because it
 # seems to be impossible to reliably determine the path to a sourced file in
@@ -116,7 +169,7 @@ SETUP_SH="$PW_ROOT/pw_env_setup/.env_setup.sh"
 
 if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
   _pw_green "\n  WELCOME TO...\n"
-  _pw_bright_magenta "$_PIGWEED_BANNER\n"
+  "_pw_$PW_BRANDING_BANNER_COLOR" "$_PW_BANNER\n"
 fi
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
@@ -203,7 +256,7 @@ fi
 unset _PW_ENV_SETUP
 unset _PW_IS_BOOTSTRAP
 unset _PW_NAME
-unset _PIGWEED_BANNER
+unset _PW_BANNER
 unset _PW_OLD_CIPD_PACKAGE_FILES
 unset _PW_OLD_VIRTUALENV_REQUIREMENTS
 unset _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS
@@ -212,5 +265,5 @@ unset _pw_abspath
 unset _pw_red
 unset _pw_bold_red
 unset _pw_green
-unset _pw_bright_magenta
+unset _pw_magenta
 unset _pw_sourced
