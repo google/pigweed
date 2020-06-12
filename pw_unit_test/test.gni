@@ -95,6 +95,13 @@ template("pw_test") {
 
   _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
 
+  # Always set the output_dir as pigweed is not compatible with shared
+  # bin directories for tests.
+  _test_output_dir = target_out_dir
+  if (defined(invoker.output_dir)) {
+    _test_output_dir = invoker.output_dir
+  }
+
   _pw_disableable_target(_test_target_name) {
     target_type = "pw_executable"
     enable_if = _test_is_enabled
@@ -105,7 +112,7 @@ template("pw_test") {
         {
           type = "test"
           test_name = _test_target_name
-          test_directory = rebase_path(target_out_dir, root_build_dir)
+          test_directory = rebase_path(_test_output_dir, root_build_dir)
         },
       ]
     }
@@ -116,6 +123,8 @@ template("pw_test") {
       deps = []
     }
     deps += [ pw_unit_test_MAIN ]
+
+    output_dir = _test_output_dir
   }
 
   if (pw_unit_test_AUTOMATIC_RUNNER != "") {
@@ -141,7 +150,7 @@ template("pw_test") {
         "--runner",
         pw_unit_test_AUTOMATIC_RUNNER,
         "--test",
-        get_path_info("$target_out_dir:$_test_to_run", "abspath"),
+        get_path_info("$_test_output_dir:$_test_to_run", "abspath"),
       ]
       stamp = true
     }
