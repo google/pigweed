@@ -65,6 +65,17 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
     range_retransmit_set_callback_ = std::move(range_retransmit_set_callback);
   }
 
+  // Set a callback to be invoked when a Selective Reject function (Core Spec v5.0, Vol 3, Part A,
+  // Sec 8.6.1.4) is received. This invocation precedes the ReceiveSeqNumCallback invocation, which
+  // delivers the SeqNum of the I-Frame that the TxEngine is expected to retransmit.
+  //
+  // |is_poll_request| reflects the 'P' bit in the header of the received frame.
+  using SingleRetransmitSetCallback = fit::function<void(bool is_poll_request)>;
+  void set_single_retransmit_set_callback(
+      SingleRetransmitSetCallback single_retransmit_set_callback) {
+    single_retransmit_set_callback_ = std::move(single_retransmit_set_callback);
+  }
+
  private:
   ByteBufferPtr ProcessFrame(const SimpleInformationFrameHeader, PDU);
   ByteBufferPtr ProcessFrame(const SimpleStartOfSduFrameHeader, PDU);
@@ -89,6 +100,7 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   RemoteBusyChangedCallback remote_busy_set_callback_;
   RemoteBusyChangedCallback remote_busy_cleared_callback_;
   RangeRetransmitSetCallback range_retransmit_set_callback_;
+  SingleRetransmitSetCallback single_retransmit_set_callback_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(EnhancedRetransmissionModeRxEngine);
 };

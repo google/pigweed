@@ -498,10 +498,38 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
   // Send a REJ S-frame containing acknowledgment up to the 3rd frame that we transmitted.
   // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
-  auto rej_frame = StaticByteBuffer(0b101, 3, 'h', 'e', 'l', 'l', 'o');
+  auto rej_frame = StaticByteBuffer(0b1 | kExtendedControlRejectBits, 3);
   rx_engine.ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, rej_frame, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_TRUE(receive_seq_num.has_value());
+  EXPECT_TRUE(receive_is_poll_response.has_value());
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+     ProcessPduCallsSingleRetransmitSetCallbackThenReceiveSeqNumCallbackOnSelectiveReject) {
+  Engine rx_engine(NopTxCallback);
+
+  std::optional<bool> receive_is_poll_request;
+  rx_engine.set_single_retransmit_set_callback(
+      [&](bool is_poll_request) { receive_is_poll_request = is_poll_request; });
+
+  std::optional<uint8_t> receive_seq_num;
+  std::optional<bool> receive_is_poll_response;
+  auto receive_seq_num_callback = [&](uint8_t seq_num, bool is_poll_response) {
+    // SingleRetransmitCallback should be called before ReceiveSeqNumCallback.
+    EXPECT_TRUE(receive_is_poll_request.has_value());
+    receive_seq_num = seq_num;
+    receive_is_poll_response = is_poll_response;
+  };
+  rx_engine.set_receive_seq_num_callback(receive_seq_num_callback);
+
+  // Send an SREJ S-frame containing acknowledgment up to the 3rd frame that we transmitted.
+  // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for the first two bytes.
+  auto srej_frame = StaticByteBuffer(0b1 | kExtendedControlSelectiveRejectBits, 3);
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, srej_frame, FrameCheckSequenceOption::kIncludeFcs));
   EXPECT_TRUE(receive_seq_num.has_value());
   EXPECT_TRUE(receive_is_poll_response.has_value());
 }
