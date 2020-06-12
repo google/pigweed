@@ -311,7 +311,7 @@ TEST_F(EmptyInitializedKvs, PutAndGetByValue_Span) {
 
 TEST_F(EmptyInitializedKvs, PutAndGetByValue_NotConvertibleToSpan) {
   struct TestStruct {
-    double a;
+    float a;
     bool b;
   };
   const TestStruct input{-1234.5, true};
