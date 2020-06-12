@@ -102,6 +102,11 @@ template("pw_test") {
     _test_output_dir = invoker.output_dir
   }
 
+  _test_main = pw_unit_test_MAIN
+  if (defined(invoker.test_main)) {
+    _test_main = invoker.test_main
+  }
+
   _pw_disableable_target(_test_target_name) {
     target_type = "pw_executable"
     enable_if = _test_is_enabled
@@ -122,7 +127,9 @@ template("pw_test") {
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ pw_unit_test_MAIN ]
+    if (_test_main != "") {
+      deps += [ _test_main ]
+    }
 
     output_dir = _test_output_dir
   }

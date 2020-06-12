@@ -150,6 +150,9 @@ in the test framework as well as the test entry point defined by the
   ``pw_executable``.
 * ``enable_if``: Boolean indicating whether the test should be built. If false,
   replaces the test with an empty target. Default true.
+* ``test_main``: Target label to add to the tests's dependencies to provide the
+  ``main()`` function. Defaults to ``pw_unit_test_MAIN``. Set to ``""`` if
+  ``main()`` is implemented in the test's ``sources``.
 
 **Example**
 
