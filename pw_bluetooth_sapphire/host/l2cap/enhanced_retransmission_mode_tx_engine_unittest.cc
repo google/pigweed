@@ -1691,6 +1691,51 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(4u, n_info_frames);
 }
 
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetSingleRetransmitOnlyAcksIFramesIfPollRequestIsSet) {
+  size_t n_info_frames = 0;
+  std::optional<uint8_t> tx_seq;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+      tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/2,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  // TxWindow prevents third I-Frame from going out.
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1, not a poll request.
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+
+  // Only the second I-Frame is retransmitted.
+  EXPECT_EQ(1u, n_info_frames);
+  EXPECT_EQ(1u, tx_seq.value_or(0));
+
+  // Request a retransmission of unacked data with TxSeq=1, this time a poll request.
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/true);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+
+  // The first frame is acked, the second I-Frame is retransmitted, and the third frame (which was
+  // pending because of TxWindow) is transmitted for the first time.
+  EXPECT_EQ(2u, n_info_frames);
+  EXPECT_EQ(2u, tx_seq.value_or(0));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

@@ -104,8 +104,12 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     if (RetransmitUnackedData(new_seq, single_request->is_poll_request).is_error()) {
       return;
     }
-    // TODO(xow): Don't return if poll request is true because there are more actions to take.
-    return;
+
+    // Only "single requests" that are poll requests acknowledge previous I-Frames and cause initial
+    // transmission of queued SDUs, per Core Spec v5.0, Vol 3, Part A, Sec 8.6.1.4.
+    if (!single_request->is_poll_request) {
+      return;
+    }
   }
 
   auto n_frames_to_discard = n_frames_acked;
