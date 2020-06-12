@@ -114,7 +114,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // State of a request from a peer to retransmit a frame of unacked data (SREJ per Core Spec v5.0,
   // Vol 3, Part A, Sec 8.6.1.4).
   struct SingleRetransmitRequest {
-    // TODO(xow): Store whether the request to retransmit has its P bit set.
+    // True if the request to retransmit has its P bit set.
+    bool is_poll_request;
   };
 
   // State of a request from a peer to retransmit a range of unacked data (REJ per Core Spec v5.0,

@@ -1479,7 +1479,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
     if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
         pdu->As<EnhancedControlField>().designates_information_frame() &&
         pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
-      // We send two I-Frames to start, then retransmit both but the second one is in response to a
+      // We send two I-Frames to start, then retransmit both but the third frame is in response to a
       // poll request so its and only its poll response bit should be set.
       SCOPED_TRACE(n_info_frames);
       EXPECT_EQ(n_info_frames == 2, pdu->As<EnhancedControlField>().is_poll_response());
@@ -1655,6 +1655,40 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   n_info_frames = 0;
   tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
   EXPECT_EQ(0u, n_info_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetSingleRetransmitWithPollRequestTriggersPollResponseOnIFrame) {
+  size_t n_info_frames = 0;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      // We send two I-Frames to start, then retransmit both but the third frame is in response to a
+      // poll request so its and only its poll response bit should be set.
+      SCOPED_TRACE(n_info_frames);
+      EXPECT_EQ(n_info_frames == 2, pdu->As<EnhancedControlField>().is_poll_response());
+      ++n_info_frames;
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/3, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Request a retransmission of unacked data with TxSeq=0 (first frame).
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/true);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  EXPECT_EQ(3u, n_info_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1 (second frame).
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/false);
+  EXPECT_EQ(4u, n_info_frames);
 }
 
 }  // namespace

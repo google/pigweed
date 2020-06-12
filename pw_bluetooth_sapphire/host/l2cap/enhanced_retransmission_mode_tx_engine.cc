@@ -101,8 +101,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   if (auto single_request = std::exchange(single_request_, std::nullopt);
       single_request.has_value()) {
     ZX_ASSERT(!(single_request.has_value() && remote_is_busy_));
-    // TODO(xow): Set poll response bit if the peer had sent a poll request.
-    if (RetransmitUnackedData(new_seq, false).is_error()) {
+    if (RetransmitUnackedData(new_seq, single_request->is_poll_request).is_error()) {
       return;
     }
     // TODO(xow): Don't return if poll request is true because there are more actions to take.
@@ -188,7 +187,7 @@ void Engine::SetSingleRetransmit(bool is_poll_request) {
   ZX_ASSERT(!single_request_.has_value());
   ZX_ASSERT(!range_request_.has_value());
   // Store SREJ state for UpdateAckSeq to handle.
-  single_request_ = SingleRetransmitRequest();
+  single_request_ = SingleRetransmitRequest{.is_poll_request = is_poll_request};
 }
 
 void Engine::SetRangeRetransmit(bool is_poll_request) {
