@@ -86,7 +86,7 @@ template("pw_source_set") {
 template("pw_static_library") {
   import("$dir_pw_build/defaults.gni")
 
-  _library_output_dir = target_out_dir
+  _library_output_dir = "${target_out_dir}/lib"
   if (defined(invoker.output_dir)) {
     _library_output_dir = invoker.output_dir
   }
@@ -134,7 +134,7 @@ template("pw_static_library") {
 template("pw_shared_library") {
   import("$dir_pw_build/defaults.gni")
 
-  _library_output_dir = target_out_dir
+  _library_output_dir = "${target_out_dir}/lib"
   if (defined(invoker.output_dir)) {
     _library_output_dir = invoker.output_dir
   }
@@ -184,7 +184,7 @@ template("pw_shared_library") {
 template("pw_executable") {
   import("$dir_pw_build/defaults.gni")
 
-  _executable_output_dir = target_out_dir
+  _executable_output_dir = "${target_out_dir}/bin"
   if (defined(invoker.output_dir)) {
     _executable_output_dir = invoker.output_dir
   }

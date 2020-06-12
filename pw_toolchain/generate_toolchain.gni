@@ -111,7 +111,7 @@ template("generate_toolchain") {
         command = "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
         description = "ar {{target_output_name}}{{output_extension}}"
         outputs =
-            [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+            [ "{{target_out_dir}}/lib/{{target_output_name}}{{output_extension}}" ]
         default_output_extension = ".a"
       }
 
@@ -174,7 +174,7 @@ template("generate_toolchain") {
         command = _link_command
         description = "ld $_link_outfile"
         outputs = [ _link_outfile ]
-        default_output_dir = "{{target_out_dir}}"
+        default_output_dir = "{{target_out_dir}}/bin"
 
         if (is_host_toolchain && host_os == "win") {
           default_output_extension = ".exe"
@@ -187,7 +187,7 @@ template("generate_toolchain") {
         command = _link_command + " -shared"
         description = "ld -shared $_link_outfile"
         outputs = [ _link_outfile ]
-        default_output_dir = "{{target_out_dir}}"
+        default_output_dir = "{{target_out_dir}}/lib"
         default_output_extension = ".so"
       }
 

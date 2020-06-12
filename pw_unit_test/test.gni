@@ -97,7 +97,7 @@ template("pw_test") {
 
   # Always set the output_dir as pigweed is not compatible with shared
   # bin directories for tests.
-  _test_output_dir = target_out_dir
+  _test_output_dir = "${target_out_dir}/test"
   if (defined(invoker.output_dir)) {
     _test_output_dir = invoker.output_dir
   }
