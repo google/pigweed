@@ -43,7 +43,7 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
                std::optional<PairingRequestParams> preq, IOCapability io_capability,
                BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete)
     : ActivePhase(std::move(chan), std::move(listener), role),
-      peer_request_params_(preq),
+      preq_(preq),
       oob_available_(false),
       mitm_required_(mitm_required),
       feature_exchange_pending_(false),
@@ -51,19 +51,19 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(!(role == Role::kInitiator && peer_request_params_.has_value()));
-  ZX_ASSERT(!(role == Role::kResponder && !peer_request_params_.has_value()));
+  ZX_ASSERT(!(role == Role::kInitiator && preq.has_value()));
+  ZX_ASSERT(!(role == Role::kResponder && !preq.has_value()));
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void Phase1::Start() {
   ZX_ASSERT(!has_failed());
   if (role() == Role::kResponder) {
-    ZX_ASSERT(peer_request_params_.has_value());
-    RespondToPairingRequest(*peer_request_params_);
+    ZX_ASSERT(preq_.has_value());
+    RespondToPairingRequest(*preq_);
     return;
   }
-  ZX_ASSERT(!peer_request_params_.has_value());
+  ZX_ASSERT(!preq_.has_value());
   InitiateFeatureExchange();
 }
 
@@ -80,17 +80,14 @@ void Phase1::InitiateFeatureExchange() {
   }
 
   LocalPairingParams preq_values = BuildPairingParameters();
+  preq_ = PairingRequestParams{.io_capability = preq_values.io_capability,
+                               .oob_data_flag = preq_values.oob_data_flag,
+                               .auth_req = preq_values.auth_req,
+                               .max_encryption_key_size = preq_values.max_encryption_key_size,
+                               .initiator_key_dist_gen = preq_values.local_keys,
+                               .responder_key_dist_gen = preq_values.remote_keys};
   PacketWriter writer(kPairingRequest, pdu.get());
-  *writer.mutable_payload<PairingRequestParams>() =
-      PairingRequestParams{.io_capability = preq_values.io_capability,
-                           .oob_data_flag = preq_values.oob_data_flag,
-                           .auth_req = preq_values.auth_req,
-                           .max_encryption_key_size = preq_values.max_encryption_key_size,
-                           .initiator_key_dist_gen = preq_values.local_keys,
-                           .responder_key_dist_gen = preq_values.remote_keys};
-
-  // Cache the pairing request. This will be passed out when Phase 1 completes.
-  pdu->Copy(&pairing_payload_buffer_);
+  *writer.mutable_payload<PairingRequestParams>() = *preq_;
   feature_exchange_pending_ = true;
   sm_chan()->Send(std::move(pdu));
 }
@@ -100,26 +97,21 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // responder.
   ZX_ASSERT(role() == Role::kResponder);
   ZX_ASSERT(!feature_exchange_pending_);
+  ZX_ASSERT(preq_.has_value());
   feature_exchange_pending_ = true;
 
-  auto pdu = util::NewPdu(sizeof(PairingResponseParams));
-  PacketWriter writer(kPairingResponse, pdu.get());
-  auto* rsp_params = writer.mutable_payload<PairingResponseParams>();
-
   LocalPairingParams pres_values = BuildPairingParameters();
-  *rsp_params = PairingResponseParams{
-      .io_capability = pres_values.io_capability,
-      .oob_data_flag = pres_values.oob_data_flag,
-      .auth_req = pres_values.auth_req,
-      .max_encryption_key_size = pres_values.max_encryption_key_size,
-  };
+  pres_ = PairingResponseParams{.io_capability = pres_values.io_capability,
+                                .oob_data_flag = pres_values.oob_data_flag,
+                                .auth_req = pres_values.auth_req,
+                                .max_encryption_key_size = pres_values.max_encryption_key_size};
   // The keys that will be exchanged correspond to the intersection of what the
   // initiator requests and we support.
-  rsp_params->initiator_key_dist_gen = pres_values.remote_keys & req_params.initiator_key_dist_gen;
-  rsp_params->responder_key_dist_gen = pres_values.local_keys & req_params.responder_key_dist_gen;
+  pres_->initiator_key_dist_gen = pres_values.remote_keys & req_params.initiator_key_dist_gen;
+  pres_->responder_key_dist_gen = pres_values.local_keys & req_params.responder_key_dist_gen;
 
   fit::result<PairingFeatures, ErrorCode> maybe_features =
-      ResolveFeatures(false /* local_initiator */, req_params, *rsp_params);
+      ResolveFeatures(false /* local_initiator */, req_params, *pres_);
   feature_exchange_pending_ = false;
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
@@ -130,20 +122,16 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // If we've accepted a non-bondable pairing request in bondable mode as indicated by setting
   // features.will_bond false, we should reflect that in the rsp_params we send to the peer.
   if (!features.will_bond && bondable_mode_ == BondableMode::Bondable) {
-    rsp_params->auth_req &= ~AuthReq::kBondingFlag;
+    pres_->auth_req &= ~AuthReq::kBondingFlag;
   }
-  // Copy the pairing response so that it's available after moving |pdu|. We want to ensure we
-  // send the response before calling on_complete_, which can trigger other SMP transactions. The
-  // copied |pres| value will be used for crypto functions in Phase 2.
-  pdu->Copy(&pairing_payload_buffer_);
+
+  auto pdu = util::NewPdu(sizeof(PairingResponseParams));
+  PacketWriter writer(kPairingResponse, pdu.get());
+  *writer.mutable_payload<PairingResponseParams>() = *pres_;
+
   sm_chan()->Send(std::move(pdu));
 
-  StaticByteBuffer<util::PacketSize<PairingRequestParams>()> preq;
-  PacketWriter preq_writer(kPairingRequest, &preq);
-  auto* params = preq_writer.mutable_payload<PairingRequestParams>();
-  *params = req_params;
-
-  on_complete_(features, preq, pairing_payload_buffer_);
+  on_complete_(features, *preq_, *pres_);
 }
 
 LocalPairingParams Phase1::BuildPairingParameters() {
@@ -280,14 +268,13 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
     return;
   }
 
-  if (!feature_exchange_pending_) {
+  if (!preq_.has_value() || pres_.has_value()) {
     bt_log(DEBUG, "sm", "ignoring unexpected \"Pairing Response\" packet");
     return;
   }
 
-  fit::result<PairingFeatures, ErrorCode> maybe_features = ResolveFeatures(
-      true /* local_initiator */,
-      pairing_payload_buffer_.view(sizeof(Code)).As<PairingRequestParams>(), response_params);
+  fit::result<PairingFeatures, ErrorCode> maybe_features =
+      ResolveFeatures(true /* local_initiator */, *preq_, response_params);
   feature_exchange_pending_ = false;
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
@@ -295,11 +282,8 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
     return;
   }
   PairingFeatures features = maybe_features.value();
-
-  StaticByteBuffer<util::PacketSize<PairingRequestParams>()> pres_buffer;
-  auto writer = PacketWriter(kPairingResponse, &pres_buffer);
-  *writer.mutable_payload<PairingResponseParams>() = response_params;
-  on_complete_(features, pairing_payload_buffer_, pres_buffer);
+  pres_ = response_params;
+  on_complete_(features, *preq_, *pres_);
 }
 
 void Phase1::OnRxBFrame(ByteBufferPtr sdu) {

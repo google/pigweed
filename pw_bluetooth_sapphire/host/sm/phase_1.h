@@ -28,8 +28,8 @@ class Phase1 final : public ActivePhase, public PairingChannelHandler {
   // Called when Phase 1 completes successfully. |features| are the negotiated features. |preq| and
   // |pres| are the SMP "Pairing Request" and "Pairing Response" payloads exchanged by the devices,
   // which are returned for use in Phase 2 crypto calculations.
-  using CompleteCallback = fit::function<void(const PairingFeatures& features,
-                                              const ByteBuffer& preq, const ByteBuffer& pres)>;
+  using CompleteCallback = fit::function<void(PairingFeatures features, PairingRequestParams preq,
+                                              PairingResponseParams pres)>;
 
   // Returns a Phase 1 in the initiator role. Note the lack of a `preq` parameter: Phase 1 builds &
   // sends the Pairing Request as initiator. See private ctor for parameter descriptions.
@@ -94,18 +94,16 @@ class Phase1 final : public ActivePhase, public PairingChannelHandler {
     return weak_ptr_factory_.GetWeakPtr();
   }
 
-  // Only passed in when acting in the responder role.
-  std::optional<PairingRequestParams> peer_request_params_;
+  // If acting as the Responder to a peer-initiatied pairing, then |preq_| is the |preq| ctor
+  // parameter. Otherwise, these are generated and exchanged during Phase 1.
+  std::optional<PairingRequestParams> preq_;
+  std::optional<PairingResponseParams> pres_;
   // Local feature flags that determine the feature exchange negotiation with the peer.
   bool oob_available_;
   bool mitm_required_;
   bool feature_exchange_pending_;
   IOCapability io_capability_;
   BondableMode bondable_mode_;
-
-  // This buffer stores pairing request & response PDUs for later crypto operations, i.e. the
-  // "preq" and "pres" payloads needed for Phase 2 (see V5.1 Vol 3, Part H, 2.2.3 for specifics).
-  StaticByteBuffer<util::PacketSize<PairingRequestParams>()> pairing_payload_buffer_;
 
   CompleteCallback on_complete_;
 

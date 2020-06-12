@@ -54,26 +54,26 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
     listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    auto complete_cb = [this](PairingFeatures features, PairingRequestParams preq,
+                              PairingResponseParams pres) {
+      feature_exchange_count_++;
+      features_ = features;
+      last_pairing_req_ = util::NewPdu(sizeof(PairingRequestParams));
+      last_pairing_res_ = util::NewPdu(sizeof(PairingResponseParams));
+      PacketWriter preq_writer(kPairingRequest, last_pairing_req_.get());
+      PacketWriter pres_writer(kPairingResponse, last_pairing_res_.get());
+      *preq_writer.mutable_payload<PairingRequestParams>() = preq;
+      *pres_writer.mutable_payload<PairingResponseParams>() = pres;
+    };
     if (role == Role::kInitiator) {
-      phase_1_ = Phase1::CreatePhase1Initiator(
-          sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), phase_args.io_capability,
-          phase_args.bondable_mode, phase_args.mitm_required,
-          [this](const PairingFeatures& features, const ByteBuffer& preq, const ByteBuffer& pres) {
-            feature_exchange_count_++;
-            features_ = features;
-            last_pairing_req_ = std::make_unique<DynamicByteBuffer>(preq);
-            last_pairing_res_ = std::make_unique<DynamicByteBuffer>(pres);
-          });
+      phase_1_ = Phase1::CreatePhase1Initiator(sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(),
+                                               phase_args.io_capability, phase_args.bondable_mode,
+                                               phase_args.mitm_required, std::move(complete_cb));
     } else {
-      phase_1_ = Phase1::CreatePhase1Responder(
-          sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), phase_args.preq,
-          phase_args.io_capability, phase_args.bondable_mode, phase_args.mitm_required,
-          [this](const PairingFeatures& features, const ByteBuffer& preq, const ByteBuffer& pres) {
-            feature_exchange_count_++;
-            features_ = features;
-            last_pairing_req_ = std::make_unique<DynamicByteBuffer>(preq);
-            last_pairing_res_ = std::make_unique<DynamicByteBuffer>(pres);
-          });
+      phase_1_ = Phase1::CreatePhase1Responder(sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(),
+                                               phase_args.preq, phase_args.io_capability,
+                                               phase_args.bondable_mode, phase_args.mitm_required,
+                                               std::move(complete_cb));
     }
   }
 
@@ -94,8 +94,8 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
 
   int feature_exchange_count_ = 0;
   PairingFeatures features_;
-  ByteBufferPtr last_pairing_req_;
-  ByteBufferPtr last_pairing_res_;
+  MutableByteBufferPtr last_pairing_req_;
+  MutableByteBufferPtr last_pairing_res_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_Phase1Test);
 };
