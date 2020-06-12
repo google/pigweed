@@ -476,7 +476,11 @@ def watch(build_commands=None,
     build_commands = []
     if not build_commands_tmp:
         _LOG.info('Searching for GN build dirs...')
-        gn_args_files = glob.glob('**/args.gn', recursive=True)
+        gn_args_files = []
+        if os.path.isfile('out/args.gn'):
+          gn_args_files += ['out/args.gn']
+        gn_args_files += glob.glob('out/*/args.gn')
+
         for gn_args_file in gn_args_files:
             gn_build_dir = pathlib.Path(gn_args_file).parent
             gn_build_dir = gn_build_dir.resolve().relative_to(cur_dir)
