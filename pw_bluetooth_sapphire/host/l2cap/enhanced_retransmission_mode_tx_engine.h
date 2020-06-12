@@ -68,8 +68,28 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // this time.
   void SetRemoteBusy();
 
+  // Requests that the next UpdateAckSeq always retransmit the frame identified by its |new_seq|
+  // parameter, even if it's not a poll response. This path fulfills the requirements of receiving
+  // the SREJ function.
+  //
+  // Only one of Set{Single,Range}Retransmit can be called before each UpdateAckSeq.
+  //
+  // |is_poll_request| should be set if the request to retransmit has its P bit set and will cause
+  // the first retransmitted frame to have its |is_poll_response| bit (F bit) set per the
+  // Retransmit-Requested-I-frame action in Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6.
+  //
+  // If |is_poll_request| is false, UpdateAckSeq will be inhibited from dropping the unacked packets
+  // from ExpectedAckSeq to |new_seq| because this action is used to selectively retransmit missing
+  // frames that precede frames that the peer has already received.
+  //
+  // ClearRemoteBusy should be called if necessary because RemoteBusy is cleared as the first action
+  // to take when receiving an SREJ per Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11.
+  void SetSingleRetransmit(bool is_poll_request);
+
   // Requests that the next UpdateAckSeq always retransmit starting at its |new_seq| parameter, even
   // if it's not a poll response. This path fulfills the requirements of receiving the REJ function.
+  //
+  // Only one of Set{Single,Range}Retransmit can be called before each UpdateAckSeq.
   //
   // |is_poll_request| should be set if the request to retransmit has its P bit set and will cause
   // the first retransmitted frame to have its |is_poll_response| bit (F bit) set per the
@@ -91,9 +111,15 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
     uint8_t tx_count;
   };
 
+  // State of a request from a peer to retransmit a frame of unacked data (SREJ per Core Spec v5.0,
+  // Vol 3, Part A, Sec 8.6.1.4).
+  struct SingleRetransmitRequest {
+    // TODO(xow): Store whether the request to retransmit has its P bit set.
+  };
+
   // State of a request from a peer to retransmit a range of unacked data (REJ per Core Spec v5.0,
   // Vol 3, Part A, Sec 8.6.1.2).
-  struct RangeRequest {
+  struct RangeRetransmitRequest {
     // True if the request to retransmit has its P bit set.
     bool is_poll_request;
   };
@@ -131,13 +157,16 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Retransmits frames from |pending_pdus_|. Invokes |connection_failure_callback_| on error and
   // returns fit::error().
   //
+  // If |only_with_seq| is set, then only the unacked frame with that TxSeq will be retransmitted.
+  //
   // If |set_is_poll_response| is true, then the first frame to be sent will have its
   // |is_poll_response| field set.
   //
   // Notes:
-  // * The caller must ensure that !remote_is_busy_|.
+  // * The caller must ensure that |!remote_is_busy_|.
   // * When return value is an error, |this| may be invalid.
-  [[nodiscard]] fit::result<> RetransmitUnackedData(bool set_is_poll_response);
+  [[nodiscard]] fit::result<> RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
+                                                    bool set_is_poll_response);
 
   const uint8_t max_transmissions_;
   const uint8_t n_frames_in_tx_window_;
@@ -181,8 +210,11 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Core Spec v5.0, Vol 3, Part A, Secs 5.7 and 8.3.
   uint8_t req_seqnum_;
 
+  // Filled by SetSingleRetransmit and cleared by UpdateAckSeq.
+  std::optional<SingleRetransmitRequest> single_request_;
+
   // Filled by SetRangeRetransmit and cleared by UpdateAckSeq.
-  std::optional<RangeRequest> range_request_;
+  std::optional<RangeRetransmitRequest> range_request_;
 
   // True if we retransmitted unacked data after sending a poll request but before receiving a poll
   // response. Corresponds to the RejActioned variable defined in Core Spec v5.0 Vol 3, Part A, Sec

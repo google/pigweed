@@ -1454,15 +1454,17 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  ASSERT_EQ(2u, n_info_frames);
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(3u, n_info_frames);
 
-  // Request a retransmission of unacked data starting with TxSeq=1 (so just the second frame).
+  // Request a retransmission of unacked data starting with TxSeq=1 (so the second and third
+  // frames).
   n_info_frames = 0;
   tx_seq.reset();
   tx_engine.SetRangeRetransmit(/*is_poll_request=*/false);
   tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
-  EXPECT_EQ(1u, n_info_frames);
-  EXPECT_EQ(1u, tx_seq.value_or(0));
+  EXPECT_EQ(2u, n_info_frames);
+  EXPECT_EQ(2u, tx_seq.value_or(0));
 
   // Subsequent UpdateAckSeqs do not perform retransmission.
   n_info_frames = 0;
@@ -1615,6 +1617,42 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(0u, n_info_frames);
 
   // Or further acknowledgments, for that matter.
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+  EXPECT_EQ(0u, n_info_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetSingleRetransmitCausesUpdateAckSeqToRetransmit) {
+  size_t n_info_frames = 0;
+  std::optional<uint8_t> tx_seq;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField) &&
+        pdu->As<EnhancedControlField>().designates_information_frame() &&
+        pdu->size() >= sizeof(SimpleInformationFrameHeader)) {
+      ++n_info_frames;
+      tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(3u, n_info_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1 (so only the second frame).
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+  EXPECT_EQ(1u, n_info_frames);
+  EXPECT_EQ(1u, tx_seq.value_or(0));
+
+  // Subsequent UpdateAckSeqs do not perform retransmission.
+  n_info_frames = 0;
   tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
   EXPECT_EQ(0u, n_info_frames);
 }

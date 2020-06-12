@@ -93,8 +93,19 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   const auto n_frames_acked = NumFramesBetween(expected_ack_seq_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
-    // TODO(quiche): Consider the best error handling strategy here. Should we
-    // drop the connection entirely?
+    // TODO(53889): Peer is attempting acknowledge frames we haven't sent, so disconnect.
+    return;
+  }
+
+  ZX_ASSERT(!(range_request_.has_value() && single_request_.has_value()));
+  if (auto single_request = std::exchange(single_request_, std::nullopt);
+      single_request.has_value()) {
+    ZX_ASSERT(!(single_request.has_value() && remote_is_busy_));
+    // TODO(xow): Set poll response bit if the peer had sent a poll request.
+    if (RetransmitUnackedData(new_seq, false).is_error()) {
+      return;
+    }
+    // TODO(xow): Don't return if poll request is true because there are more actions to take.
     return;
   }
 
@@ -141,8 +152,9 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   if (should_retransmit) {
     monitor_task_.Cancel();
-    const bool set_is_poll_response = range_request.value_or(RangeRequest{}).is_poll_request;
-    if (RetransmitUnackedData(set_is_poll_response).is_error()) {
+    const bool set_is_poll_response =
+        range_request.value_or(RangeRetransmitRequest{}).is_poll_request;
+    if (RetransmitUnackedData(std::nullopt, set_is_poll_response).is_error()) {
       return;
     }
   }
@@ -171,10 +183,20 @@ void Engine::SetRemoteBusy() {
   receiver_ready_poll_task_.Cancel();
 }
 
+void Engine::SetSingleRetransmit(bool is_poll_request) {
+  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(!single_request_.has_value());
+  ZX_ASSERT(!range_request_.has_value());
+  // Store SREJ state for UpdateAckSeq to handle.
+  single_request_ = SingleRetransmitRequest();
+}
+
 void Engine::SetRangeRetransmit(bool is_poll_request) {
   ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(!single_request_.has_value());
+  ZX_ASSERT(!range_request_.has_value());
   // Store REJ state for UpdateAckSeq to handle.
-  range_request_ = RangeRequest{.is_poll_request = is_poll_request};
+  range_request_ = RangeRetransmitRequest{.is_poll_request = is_poll_request};
 }
 
 void Engine::MaybeSendQueuedData() {
@@ -263,7 +285,8 @@ void Engine::SendPdu(PendingPdu* pdu) {
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
 
-fit::result<> Engine::RetransmitUnackedData(bool set_is_poll_response) {
+fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
+                                            bool set_is_poll_response) {
   // The receive engine should have cleared the remote busy condition before
   // calling any method that would cause us (the transmit engine) to retransmit
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
@@ -276,8 +299,13 @@ fit::result<> Engine::RetransmitUnackedData(bool set_is_poll_response) {
 
   auto cur_frame = pending_pdus_.begin();
   auto last_frame = std::next(cur_frame, n_to_send);
-  while (cur_frame != last_frame) {
+  for (; cur_frame != last_frame; cur_frame++) {
     ZX_DEBUG_ASSERT(cur_frame != pending_pdus_.end());
+
+    const auto control_field = cur_frame->buf.As<SimpleInformationFrameHeader>();
+    if (only_with_seq.has_value() && control_field.tx_seq() != *only_with_seq) {
+      continue;
+    }
 
     if (cur_frame->tx_count >= max_transmissions_) {
       ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
@@ -286,7 +314,6 @@ fit::result<> Engine::RetransmitUnackedData(bool set_is_poll_response) {
       return fit::error();
     }
 
-    const auto control_field = cur_frame->buf.As<EnhancedControlField>();
     if (set_is_poll_response) {
       cur_frame->buf.AsMutable<EnhancedControlField>().set_is_poll_response();
 
@@ -299,7 +326,6 @@ fit::result<> Engine::RetransmitUnackedData(bool set_is_poll_response) {
     // TODO(BT-860): If the task is already running, we should not restart it.
     SendPdu(&*cur_frame);
     cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
-    ++cur_frame;
   }
 
   return fit::ok();
