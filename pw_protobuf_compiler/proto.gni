@@ -258,13 +258,12 @@ template("pw_proto_library") {
 
   foreach(_gen, pw_protobuf_generators) {
     _lang_target = "${target_name}_${_gen}"
+    _gen_deps = []
+    if (defined(invoker.deps)) {
+      _gen_deps = process_file_template(invoker.deps, "{{source}}_${_gen}")
+    }
 
     if (_gen == "pwpb") {
-      _gen_deps = []
-      if (defined(invoker.deps)) {
-        _gen_deps = process_file_template(invoker.deps, "{{source}}_${_gen}")
-      }
-
       _pw_pwpb_proto_library(_lang_target) {
         forward_variables_from(invoker, _forwarded_vars)
         protos = invoker.sources
