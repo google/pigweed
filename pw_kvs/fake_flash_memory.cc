@@ -58,17 +58,17 @@ Status FlashError::Check(FlashMemory::Address start_address, size_t size) {
 Status FakeFlashMemory::Erase(Address address, size_t num_sectors) {
   if (address % sector_size_bytes() != 0) {
     PW_LOG_ERROR(
-        "Attempted to erase sector at non-sector aligned boundary; address %zx",
-        size_t(address));
+        "Attempted to erase sector at non-sector aligned boundary; address %x",
+        unsigned(address));
     return Status::INVALID_ARGUMENT;
   }
   const size_t sector_id = address / sector_size_bytes();
   if (address / sector_size_bytes() + num_sectors > sector_count()) {
     PW_LOG_ERROR(
         "Tried to erase a sector at an address past flash end; "
-        "address: %zx, sector implied: %zu",
-        size_t(address),
-        sector_id);
+        "address: %x, sector implied: %u",
+        unsigned(address),
+        unsigned(sector_id));
     return Status::OUT_OF_RANGE;
   }
 
@@ -92,34 +92,34 @@ StatusWithSize FakeFlashMemory::Write(Address address,
                                       span<const std::byte> data) {
   if (address % alignment_bytes() != 0 ||
       data.size() % alignment_bytes() != 0) {
-    PW_LOG_ERROR("Unaligned write; address %zx, size %zu B, alignment %zu",
-                 size_t(address),
-                 data.size(),
-                 alignment_bytes());
+    PW_LOG_ERROR("Unaligned write; address %x, size %u B, alignment %u",
+                 unsigned(address),
+                 unsigned(data.size()),
+                 unsigned(alignment_bytes()));
     return StatusWithSize::INVALID_ARGUMENT;
   }
 
   if (data.size() > sector_size_bytes() - (address % sector_size_bytes())) {
-    PW_LOG_ERROR("Write crosses sector boundary; address %zx, size %zu B",
-                 size_t(address),
-                 data.size());
+    PW_LOG_ERROR("Write crosses sector boundary; address %x, size %u B",
+                 unsigned(address),
+                 unsigned(data.size()));
     return StatusWithSize::INVALID_ARGUMENT;
   }
 
   if (address + data.size() > sector_count() * sector_size_bytes()) {
     PW_LOG_ERROR(
-        "Write beyond end of memory; address %zx, size %zu B, max address %zx",
-        size_t(address),
-        data.size(),
-        sector_count() * sector_size_bytes());
+        "Write beyond end of memory; address %x, size %u B, max address %x",
+        unsigned(address),
+        unsigned(data.size()),
+        unsigned(sector_count() * sector_size_bytes()));
     return StatusWithSize::OUT_OF_RANGE;
   }
 
   // Check in erased state
   for (unsigned i = 0; i < data.size(); i++) {
     if (buffer_[address + i] != kErasedValue) {
-      PW_LOG_ERROR("Writing to previously written address: %zx",
-                   size_t(address));
+      PW_LOG_ERROR("Writing to previously written address: %x",
+                   unsigned(address));
       return StatusWithSize::UNKNOWN;
     }
   }

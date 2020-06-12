@@ -237,14 +237,14 @@ Status Entry::VerifyChecksumInFlash() const {
 
 void Entry::DebugLog() const {
   PW_LOG_DEBUG("Entry [%s]: ", deleted() ? "tombstone" : "present");
-  PW_LOG_DEBUG("   Address      = 0x%zx", size_t(address_));
-  PW_LOG_DEBUG("   Transaction  = %zu", size_t(transaction_id()));
-  PW_LOG_DEBUG("   Magic        = 0x%zx", size_t(magic()));
-  PW_LOG_DEBUG("   Checksum     = 0x%zx", size_t(header_.checksum));
-  PW_LOG_DEBUG("   Key length   = 0x%zx", size_t(key_length()));
-  PW_LOG_DEBUG("   Value length = 0x%zx", size_t(value_size()));
-  PW_LOG_DEBUG("   Entry size   = 0x%zx", size_t(size()));
-  PW_LOG_DEBUG("   Alignment    = 0x%zx", size_t(alignment_bytes()));
+  PW_LOG_DEBUG("   Address      = 0x%x", unsigned(address_));
+  PW_LOG_DEBUG("   Transaction  = %u", unsigned(transaction_id()));
+  PW_LOG_DEBUG("   Magic        = 0x%x", unsigned(magic()));
+  PW_LOG_DEBUG("   Checksum     = 0x%x", unsigned(header_.checksum));
+  PW_LOG_DEBUG("   Key length   = 0x%x", unsigned(key_length()));
+  PW_LOG_DEBUG("   Value length = 0x%x", unsigned(value_size()));
+  PW_LOG_DEBUG("   Entry size   = 0x%x", unsigned(size()));
+  PW_LOG_DEBUG("   Alignment    = 0x%x", unsigned(alignment_bytes()));
 }
 
 span<const byte> Entry::CalculateChecksum(const string_view key,

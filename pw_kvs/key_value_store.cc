@@ -63,10 +63,10 @@ Status KeyValueStore::Init() {
 
   INF("Initializing key value store");
   if (partition_.sector_count() > sectors_.max_size()) {
-    ERR("KVS init failed: kMaxUsableSectors (=%zu) must be at least as "
-        "large as the number of sectors in the flash partition (=%zu)",
-        sectors_.max_size(),
-        partition_.sector_count());
+    ERR("KVS init failed: kMaxUsableSectors (=%u) must be at least as "
+        "large as the number of sectors in the flash partition (=%u)",
+        unsigned(sectors_.max_size()),
+        unsigned(partition_.sector_count()));
     return Status::FAILED_PRECONDITION;
   }
 
@@ -74,10 +74,10 @@ Status KeyValueStore::Init() {
 
   // TODO: investigate doing this as a static assert/compile-time check.
   if (sector_size_bytes > SectorDescriptor::max_sector_size()) {
-    ERR("KVS init failed: sector_size_bytes (=%zu) is greater than maximum "
-        "allowed sector size (=%zu)",
-        sector_size_bytes,
-        SectorDescriptor::max_sector_size());
+    ERR("KVS init failed: sector_size_bytes (=%u) is greater than maximum "
+        "allowed sector size (=%u)",
+        unsigned(sector_size_bytes),
+        unsigned(SectorDescriptor::max_sector_size()));
     return Status::FAILED_PRECONDITION;
   }
 
@@ -112,12 +112,12 @@ Status KeyValueStore::Init() {
     }
   }
 
-  INF("KeyValueStore init complete: active keys %zu, deleted keys %zu, sectors "
-      "%zu, logical sector size %zu bytes",
-      size(),
-      (entry_cache_.total_entries() - size()),
-      sectors_.size(),
-      partition_.sector_size_bytes());
+  INF("KeyValueStore init complete: active keys %u, deleted keys %u, sectors "
+      "%u, logical sector size %u bytes",
+      unsigned(size()),
+      unsigned(entry_cache_.total_entries() - size()),
+      unsigned(sectors_.size()),
+      unsigned(partition_.sector_size_bytes()));
 
   // Report any corruption was not repaired.
   if (error_detected_) {
@@ -203,9 +203,9 @@ Status KeyValueStore::InitializeMetadata() {
       sector.mark_corrupt();
       error_detected_ = true;
 
-      WRN("Sector %u contains %zuB of corrupt data",
+      WRN("Sector %u contains %uB of corrupt data",
           sectors_.Index(sector),
-          sector_corrupt_bytes);
+          unsigned(sector_corrupt_bytes));
     }
 
     if (sector.Empty(sector_size_bytes)) {
@@ -273,18 +273,18 @@ Status KeyValueStore::InitializeMetadata() {
     error_detected_ = true;
 
     if (!other_errors && entry_copies_missing == entry_cache_.total_entries()) {
-      INF("KVS configuration changed to redundancy of %zu total copies per key",
-          redundancy());
+      INF("KVS configuration changed to redundancy of %u total copies per key",
+          unsigned(redundancy()));
       return Status::OUT_OF_RANGE;
     }
   }
 
   if (error_detected_) {
-    WRN("Corruption detected. Found %zu corrupt bytes, %zu corrupt entries, "
-        "and %zu keys missing redundant copies.",
-        total_corrupt_bytes,
-        corrupt_entries,
-        entry_copies_missing);
+    WRN("Corruption detected. Found %u corrupt bytes, %u corrupt entries, "
+        "and %u keys missing redundant copies.",
+        unsigned(total_corrupt_bytes),
+        unsigned(corrupt_entries),
+        unsigned(entry_copies_missing));
     return Status::FAILED_PRECONDITION;
   }
   return Status::OK;
@@ -405,14 +405,14 @@ StatusWithSize KeyValueStore::Get(string_view key,
 
 Status KeyValueStore::PutBytes(string_view key, span<const byte> value) {
   TRY(CheckWriteOperation(key));
-  DBG("Writing key/value; key length=%zu, value length=%zu",
-      key.size(),
-      value.size());
+  DBG("Writing key/value; key length=%u, value length=%u",
+      unsigned(key.size()),
+      unsigned(value.size()));
 
   if (Entry::size(partition_, key, value) > partition_.sector_size_bytes()) {
-    DBG("%zu B value with %zu B key cannot fit in one sector",
-        value.size(),
-        key.size());
+    DBG("%u B value with %u B key cannot fit in one sector",
+        unsigned(value.size()),
+        unsigned(key.size()));
     return Status::INVALID_ARGUMENT;
   }
 
@@ -421,9 +421,9 @@ Status KeyValueStore::PutBytes(string_view key, span<const byte> value) {
 
   if (status.ok()) {
     // TODO: figure out logging how to support multiple addresses.
-    DBG("Overwriting entry for key 0x%08" PRIx32 " in %zu sectors including %u",
-        metadata.hash(),
-        metadata.addresses().size(),
+    DBG("Overwriting entry for key 0x%08x in %u sectors including %u",
+        unsigned(metadata.hash()),
+        unsigned(metadata.addresses().size()),
         sectors_.Index(metadata.first_address()));
     return WriteEntryForExistingKey(metadata, EntryState::kValid, key, value);
   }
@@ -442,9 +442,9 @@ Status KeyValueStore::Delete(string_view key) {
   TRY(FindExisting(key, &metadata));
 
   // TODO: figure out logging how to support multiple addresses.
-  DBG("Writing tombstone for key 0x%08" PRIx32 " in %zu sectors including %u",
-      metadata.hash(),
-      metadata.addresses().size(),
+  DBG("Writing tombstone for key 0x%08x in %u sectors including %u",
+      unsigned(metadata.hash()),
+      unsigned(metadata.addresses().size()),
       sectors_.Index(metadata.first_address()));
   return WriteEntryForExistingKey(metadata, EntryState::kDeleted, key, {});
 }
@@ -570,7 +570,9 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
   TRY_ASSIGN(const size_t actual_size, ValueSize(metadata));
 
   if (actual_size != size_bytes) {
-    DBG("Requested %zu B read, but value is %zu B", size_bytes, actual_size);
+    DBG("Requested %u B read, but value is %u B",
+        unsigned(size_bytes),
+        unsigned(actual_size));
     return Status::INVALID_ARGUMENT;
   }
 
@@ -626,8 +628,8 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
 Status KeyValueStore::WriteEntryForNewKey(string_view key,
                                           span<const byte> value) {
   if (entry_cache_.full()) {
-    WRN("KVS full: trying to store a new entry, but can't. Have %zu entries",
-        entry_cache_.total_entries());
+    WRN("KVS full: trying to store a new entry, but can't. Have %u entries",
+        unsigned(entry_cache_.total_entries()));
     return Status::RESOURCE_EXHAUSTED;
   }
 
@@ -767,7 +769,7 @@ Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
   }
 
   if (!result.ok()) {
-    WRN("Unable to find sector to write %zu B", entry_size);
+    WRN("Unable to find sector to write %u B", unsigned(entry_size));
   }
   return result;
 }
@@ -790,10 +792,10 @@ Status KeyValueStore::AppendEntry(const Entry& entry,
   SectorDescriptor& sector = sectors_.FromAddress(entry.address());
 
   if (!result.ok()) {
-    ERR("Failed to write %zu bytes at %#zx. %zu actually written",
-        entry.size(),
-        size_t(entry.address()),
-        result.size());
+    ERR("Failed to write %u bytes at %#x. %u actually written",
+        unsigned(entry.size()),
+        unsigned(entry.address()),
+        unsigned(result.size()));
     TRY(MarkSectorCorruptIfNotOk(result.status(), &sector));
   }
 
@@ -979,8 +981,8 @@ Status KeyValueStore::GarbageCollectSector(
 
   if (sector_to_gc.valid_bytes() != 0) {
     ERR("  Failed to relocate valid entries from sector being garbage "
-        "collected, %zu valid bytes remain",
-        sector_to_gc.valid_bytes());
+        "collected, %u valid bytes remain",
+        unsigned(sector_to_gc.valid_bytes()));
     return Status::INTERNAL;
   }
 
@@ -1231,16 +1233,16 @@ void KeyValueStore::LogDebugInfo() const {
   DBG("====================== KEY VALUE STORE DUMP =========================");
   DBG(" ");
   DBG("Flash partition:");
-  DBG("  Sector count     = %zu", partition_.sector_count());
-  DBG("  Sector max count = %zu", sectors_.max_size());
-  DBG("  Sectors in use   = %zu", sectors_.size());
-  DBG("  Sector size      = %zu", sector_size_bytes);
-  DBG("  Total size       = %zu", partition_.size_bytes());
-  DBG("  Alignment        = %zu", partition_.alignment_bytes());
+  DBG("  Sector count     = %u", unsigned(partition_.sector_count()));
+  DBG("  Sector max count = %u", unsigned(sectors_.max_size()));
+  DBG("  Sectors in use   = %u", unsigned(sectors_.size()));
+  DBG("  Sector size      = %u", unsigned(sector_size_bytes));
+  DBG("  Total size       = %u", unsigned(partition_.size_bytes()));
+  DBG("  Alignment        = %u", unsigned(partition_.alignment_bytes()));
   DBG(" ");
   DBG("Key descriptors:");
-  DBG("  Entry count     = %zu", entry_cache_.total_entries());
-  DBG("  Max entry count = %zu", entry_cache_.max_entries());
+  DBG("  Entry count     = %u", unsigned(entry_cache_.total_entries()));
+  DBG("  Max entry count = %u", unsigned(entry_cache_.max_entries()));
   DBG(" ");
   DBG("      #     hash        version    address   address (hex)");
   size_t count = 0;
@@ -1273,7 +1275,7 @@ void KeyValueStore::LogDebugInfo() const {
     std::array<byte, 500> raw_sector_data;  // TODO!!!
     StatusWithSize sws =
         partition_.Read(sector_id * sector_size_bytes, raw_sector_data);
-    DBG("Read: %zu bytes", sws.size());
+    DBG("Read: %u bytes", unsigned(sws.size()));
 
     DBG("  base    addr  offs   0  1  2  3  4  5  6  7");
     for (size_t i = 0; i < sector_size_bytes; i += 8) {
@@ -1302,24 +1304,24 @@ void KeyValueStore::LogDebugInfo() const {
 }
 
 void KeyValueStore::LogSectors() const {
-  DBG("Sector descriptors: count %zu", sectors_.size());
+  DBG("Sector descriptors: count %u", unsigned(sectors_.size()));
   for (auto& sector : sectors_) {
-    DBG("  - Sector %u: valid %zu, recoverable %zu, free %zu",
+    DBG("  - Sector %u: valid %u, recoverable %u, free %u",
         sectors_.Index(sector),
-        sector.valid_bytes(),
-        sector.RecoverableBytes(partition_.sector_size_bytes()),
-        sector.writable_bytes());
+        unsigned(sector.valid_bytes()),
+        unsigned(sector.RecoverableBytes(partition_.sector_size_bytes())),
+        unsigned(sector.writable_bytes()));
   }
 }
 
 void KeyValueStore::LogKeyDescriptor() const {
-  DBG("Key descriptors: count %zu", entry_cache_.total_entries());
+  DBG("Key descriptors: count %u", unsigned(entry_cache_.total_entries()));
   for (const EntryMetadata& metadata : entry_cache_) {
-    DBG("  - Key: %s, hash %#zx, transaction ID %zu, first address %#zx",
+    DBG("  - Key: %s, hash %#x, transaction ID %u, first address %#x",
         metadata.state() == EntryState::kDeleted ? "Deleted" : "Valid",
-        static_cast<size_t>(metadata.hash()),
-        static_cast<size_t>(metadata.transaction_id()),
-        static_cast<size_t>(metadata.first_address()));
+        unsigned(metadata.hash()),
+        unsigned(metadata.transaction_id()),
+        unsigned(metadata.first_address()));
   }
 }
 

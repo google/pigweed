@@ -60,8 +60,8 @@ Status Sectors::Find(FindMode find_mode,
     temp_sectors_to_skip_[sectors_to_skip++] = &FromAddress(address);
   }
 
-  DBG("Find sector with %zu bytes available, starting with sector %u, %s",
-      size,
+  DBG("Find sector with %u bytes available, starting with sector %u, %s",
+      unsigned(size),
       Index(last_new_),
       (find_mode == kAppendEntry) ? "Append" : "GC");
   for (size_t i = 0; i < sectors_to_skip; ++i) {
@@ -143,9 +143,9 @@ Status Sectors::Find(FindMode find_mode,
   // bytes
   if (non_empty_least_reclaimable_sector != nullptr) {
     *found_sector = non_empty_least_reclaimable_sector;
-    DBG("  Found a usable sector %u, with %zu B recoverable, in GC",
+    DBG("  Found a usable sector %u, with %u B recoverable, in GC",
         Index(*found_sector),
-        (*found_sector)->RecoverableBytes(sector_size_bytes));
+        unsigned((*found_sector)->RecoverableBytes(sector_size_bytes)));
     return Status::OK;
   }
 
@@ -218,9 +218,9 @@ SectorDescriptor* Sectors::FindSectorToGarbageCollect(
   }
 
   if (sector_candidate != nullptr) {
-    DBG("Found sector %u to Garbage Collect, %zu recoverable bytes",
+    DBG("Found sector %u to Garbage Collect, %u recoverable bytes",
         Index(sector_candidate),
-        sector_candidate->RecoverableBytes(sector_size_bytes));
+        unsigned(sector_candidate->RecoverableBytes(sector_size_bytes)));
   } else {
     DBG("Unable to find sector to garbage collect!");
   }
