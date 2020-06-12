@@ -31,13 +31,13 @@ TEST(Macros, ArraySize) {
 
   struct Object {
     int a;
-    uint64_t array[2048];
+    uint64_t array[7];
   };
-  Object objects[404];
+  Object objects[9];
 
-  static_assert(PW_ARRAY_SIZE(objects) == 404);
-  static_assert(PW_ARRAY_SIZE(Object::array) == 2048);
-  static_assert(PW_ARRAY_SIZE(objects[1].array) == 2048);
+  static_assert(PW_ARRAY_SIZE(objects) == 9);
+  static_assert(PW_ARRAY_SIZE(Object::array) == 7);
+  static_assert(PW_ARRAY_SIZE(objects[1].array) == 7);
 }
 
 TEST(Macros, UnusedVariable) {
