@@ -36,8 +36,8 @@ pw_test_group("tests") {
 pw_test("ccitt_crc16_test") {
   deps = [ ":pw_checksum" ]
   sources = [
-    "ccitt_crc16_test.c",
     "ccitt_crc16_test.cc",
+    "ccitt_crc16_test_c.c",
   ]
 }
 

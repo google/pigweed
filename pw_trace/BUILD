@@ -52,7 +52,7 @@ pw_cc_test(
     name = "trace_backend_compile_test",
     srcs = [
         "trace_backend_compile_test.cc",
-        "trace_backend_compile_test.c",
+        "trace_backend_compile_test_c.c",
     ],
     deps = [
         ":backend",

@@ -169,8 +169,8 @@ pw_test_group("tests") {
 
 pw_test("argument_types_test") {
   sources = [
-    "argument_types_test.c",
     "argument_types_test.cc",
+    "argument_types_test_c.c",
     "pw_tokenizer_private/argument_types_test.h",
     "tokenize_test_fakes.cc",
   ]
@@ -201,8 +201,8 @@ pw_test("detokenize_test") {
 
 pw_test("global_handlers_test") {
   sources = [
-    "global_handlers_test.c",
     "global_handlers_test.cc",
+    "global_handlers_test_c.c",
     "pw_tokenizer_private/tokenize_test.h",
   ]
   deps = [
@@ -280,8 +280,8 @@ pw_test("token_database_test") {
 pw_test("tokenize_test") {
   sources = [
     "pw_tokenizer_private/tokenize_test.h",
-    "tokenize_test.c",
     "tokenize_test.cc",
+    "tokenize_test_c.c",
   ]
   deps = [
     ":pw_tokenizer",

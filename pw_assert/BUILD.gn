@@ -69,8 +69,8 @@ pw_test("assert_backend_compile_test") {
     pw_assert_BACKEND,
   ]
   sources = [
-    "assert_backend_compile_test.c",
     "assert_backend_compile_test.cc",
+    "assert_backend_compile_test_c.c",
   ]
 }
 

@@ -41,8 +41,8 @@ pw_test_group("tests") {
 pw_test("status_test") {
   deps = [ ":pw_status" ]
   sources = [
-    "status_test.c",
     "status_test.cc",
+    "status_test_c.c",
   ]
 }
 

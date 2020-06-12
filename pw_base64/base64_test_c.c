@@ -17,9 +17,9 @@
 //
 // The encoded / decoded size macros are tested in the main C++ tests.
 
-#include "pw_base64/base64.h"
-
 #include <stddef.h>
+
+#include "pw_base64/base64.h"
 
 void pw_Base64CallEncode(const void* binary_data,
                          const size_t binary_size_bytes,

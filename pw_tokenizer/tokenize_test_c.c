@@ -15,9 +15,8 @@
 // This function tests the C implementation of tokenization API. These functions
 // are called from the main C++ test file.
 
-#include "pw_tokenizer_private/tokenize_test.h"
-
 #include "pw_tokenizer/tokenize.h"
+#include "pw_tokenizer_private/tokenize_test.h"
 
 #ifdef __cplusplus
 #error "This is a test of C code and must be compiled as C, not C++."

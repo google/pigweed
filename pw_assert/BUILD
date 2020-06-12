@@ -73,7 +73,7 @@ pw_cc_test(
 pw_cc_test(
     name = "assert_backend_compile_test",
     srcs = [
-        "assert_backend_compile_test.c",
+        "assert_backend_compile_test_c.c",
         "assert_backend_compile_test.cc",
     ],
     deps = [

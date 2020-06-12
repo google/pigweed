@@ -150,7 +150,7 @@ cc_binary(
 pw_cc_test(
     name = "argument_types_test",
     srcs = [
-        "argument_types_test.c",
+        "argument_types_test_c.c",
         "argument_types_test.cc",
         "pw_tokenizer_private/argument_types_test.h",
         "tokenize_test_fakes.cc",
@@ -202,7 +202,7 @@ pw_cc_test(
 pw_cc_test(
     name = "global_handlers_test",
     srcs = [
-        "global_handlers_test.c",
+        "global_handlers_test_c.c",
         "global_handlers_test.cc",
         "pw_tokenizer_private/tokenize_test.h",
     ],
@@ -252,7 +252,7 @@ pw_cc_test(
     name = "tokenize_test",
     srcs = [
         "pw_tokenizer_private/tokenize_test.h",
-        "tokenize_test.c",
+        "tokenize_test_c.c",
         "tokenize_test.cc",
     ],
     deps = [

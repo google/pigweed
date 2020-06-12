@@ -15,9 +15,9 @@
 // These tests call the pw_varint module API from C. The return values are
 // checked in the main C++ tests.
 
-#include "pw_varint/varint.h"
-
 #include <stddef.h>
+
+#include "pw_varint/varint.h"
 
 size_t pw_VarintCallEncode(uint64_t integer, void* output, size_t output_size) {
   return pw_VarintEncode(integer, output, output_size);

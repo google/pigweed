@@ -38,8 +38,8 @@ pw_test_group("tests") {
 pw_test("base64_test") {
   deps = [ ":pw_base64" ]
   sources = [
-    "base64_test.c",
     "base64_test.cc",
+    "base64_test_c.c",
   ]
 }
 

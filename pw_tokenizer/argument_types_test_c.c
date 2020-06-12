@@ -15,10 +15,10 @@
 // This C source file tests that the tokenizer argument type encoding works
 // correctly in C. These functions are called from the main C++ test file
 // argument_types_test.cc.
-#include "pw_tokenizer_private/argument_types_test.h"
-
 #include <assert.h>
 #include <stddef.h>
+
+#include "pw_tokenizer_private/argument_types_test.h"
 
 #ifdef __cplusplus
 #error "This is a test of C code and must be compiled as C, not C++."

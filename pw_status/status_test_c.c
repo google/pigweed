@@ -12,9 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_status/status.h"
-
 #include <string.h>
+
+#include "pw_status/status.h"
 
 pw_Status PassStatusFromC(pw_Status status) { return status; }
 

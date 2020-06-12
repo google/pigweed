@@ -37,7 +37,7 @@ pw_cc_library(
 pw_cc_test(
     name = "ccitt_crc16_test",
     srcs = [
-        "ccitt_crc16_test.c",
+        "ccitt_crc16_test_c.c",
         "ccitt_crc16_test.cc",
     ],
     deps = [
