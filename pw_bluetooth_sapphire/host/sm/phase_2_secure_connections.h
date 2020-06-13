@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
@@ -31,9 +30,9 @@ namespace sm {
 //
 // This class is not thread safe and is meant to be accessed on the thread it was created on. All
 // callbacks will be run by the default dispatcher of a Phase2SecureConnections's creation thread.
-class Phase2SecureConnections final : public ActivePhase, public PairingChannelHandler {
+class Phase2SecureConnections final : public PairingPhase, public PairingChannelHandler {
  public:
-  // |chan|, |listener|, and |role|: used to construct the base ActivePhase
+  // |chan|, |listener|, and |role|: used to construct the base PairingPhase
   // |features|: features negotiated in Phase 1 of pairing
   // |preq, pres|: Exchanged in Phase 1, these are used to generate the DHKey Check value E.
   // |initiator_addr|, |responder_addr|: 48-bit bd-address of the initiator and responder, used
@@ -81,7 +80,7 @@ class Phase2SecureConnections final : public ActivePhase, public PairingChannelH
 
   // l2cap::Channel callback
   void OnRxBFrame(ByteBufferPtr sdu) final;
-  void OnChannelClosed() final { ActivePhase::HandleChannelClosed(); }
+  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase override
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {

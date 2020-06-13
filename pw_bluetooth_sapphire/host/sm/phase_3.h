@@ -10,8 +10,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -30,7 +30,7 @@ namespace sm {
 
 using Phase3CompleteCallback = fit::function<void(PairingData)>;
 
-class Phase3 final : public ActivePhase, public PairingChannelHandler {
+class Phase3 final : public PairingPhase, public PairingChannelHandler {
  public:
   // Initializes Phase3 with the following parameters:
   //   - |chan|: The L2CAP SMP fixed channel.
@@ -78,7 +78,7 @@ class Phase3 final : public ActivePhase, public PairingChannelHandler {
   void SignalComplete();
 
   // l2cap::Channel callbacks:
-  void OnChannelClosed() final { ActivePhase::HandleChannelClosed(); };
+  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); };
   void OnRxBFrame(ByteBufferPtr sdu) final;
 
   // True if all keys that are expected from the remote have been received.

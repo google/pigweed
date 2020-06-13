@@ -375,7 +375,7 @@ void PairingState::Abort(ErrorCode ecode) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
           arg->Abort(ecode);
-        } else if constexpr (std::is_base_of_v<ActivePhase, T>) {
+        } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.Abort(ecode);
         } else {
           ZX_PANIC("cannot abort during IdlePhase or when current_phase_ is std::monostate!");
@@ -477,7 +477,7 @@ void PairingState::OnPairingTimeout() {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
           arg->OnPairingTimeout();
-        } else if constexpr (std::is_base_of_v<ActivePhase, T>) {
+        } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.OnPairingTimeout();
         } else {
           ZX_PANIC("cannot timeout during IdlePhase or when current_phase_ is std::monostate!");
@@ -502,8 +502,7 @@ void PairingState::OnNewLongTermKey(const LTK& ltk) {
 }
 
 void PairingState::GoToIdlePhase() {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  current_phase_.emplace<IdlePhase>(sm_chan_->GetWeakPtr(), self, role_,
+  current_phase_.emplace<IdlePhase>(sm_chan_->GetWeakPtr(), role_,
                                     fit::bind_member(this, &PairingState::OnPairingRequest),
                                     fit::bind_member(this, &PairingState::OnSecurityRequest));
 }

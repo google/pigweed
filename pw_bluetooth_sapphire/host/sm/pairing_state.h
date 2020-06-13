@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/idle_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"

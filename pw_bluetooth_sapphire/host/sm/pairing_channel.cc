@@ -18,7 +18,15 @@ namespace sm {
 
 PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
     : chan_(std::move(chan)), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(chan_);
+  ZX_ASSERT(chan_);
+  ZX_ASSERT(async_get_default_dispatcher());
+  if (chan_->link_type() == hci::Connection::LinkType::kLE) {
+    ZX_ASSERT(chan_->id() == l2cap::kLESMPChannelId);
+  } else if (chan_->link_type() == hci::Connection::LinkType::kACL) {
+    ZX_ASSERT(chan_->id() == l2cap::kSMPChannelId);
+  } else {
+    ZX_PANIC("unsupported link type for SMP!");
+  }
   auto self = weak_ptr_factory_.GetWeakPtr();
   chan_->ActivateWithDispatcher(
       [self](ByteBufferPtr sdu) {

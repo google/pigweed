@@ -17,20 +17,22 @@ namespace bt {
 
 namespace sm {
 
-IdlePhase::IdlePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+IdlePhase::IdlePhase(fxl::WeakPtr<PairingChannel> chan, Role role,
                      PairingRequestCallback on_pairing_req, SecurityRequestCallback on_security_req)
-    : PairingPhase(std::move(chan), std::move(listener), role),
-      weak_ptr_factory_(this),
+    : sm_chan_(std::move(chan)),
+      role_(role),
       on_pairing_req_(std::move(on_pairing_req)),
-      on_security_req_(std::move(on_security_req)) {
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+      on_security_req_(std::move(on_security_req)),
+      weak_ptr_factory_(this) {
+  ZX_ASSERT(sm_chan_);
+  sm_chan_->SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
 void IdlePhase::OnPairingRequest(PairingRequestParams req_params) {
   // Only the initiator may send the Pairing Request (V5.0 Vol. 3 Part H 3.5.1).
-  if (role() == Role::kInitiator) {
+  if (role_ == Role::kInitiator) {
     bt_log(DEBUG, "sm", "rejecting \"Pairing Request\" as initiator");
-    sm_chan().SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
+    sm_chan_->SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
   on_pairing_req_(req_params);
@@ -38,9 +40,9 @@ void IdlePhase::OnPairingRequest(PairingRequestParams req_params) {
 
 void IdlePhase::OnSecurityRequest(AuthReqField req) {
   // Only the responder may send the Security Request (V5.0 Vol. 3 Part H 2.4.6).
-  if (role() == Role::kResponder) {
+  if (role_ == Role::kResponder) {
     bt_log(DEBUG, "sm", "rejecting \"Security Request\" as responder");
-    sm_chan().SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
+    sm_chan_->SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
   on_security_req_(req);

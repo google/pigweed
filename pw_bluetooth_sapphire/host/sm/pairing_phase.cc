@@ -4,45 +4,48 @@
 
 #include "pairing_phase.h"
 
-#include <lib/async/default.h>
-#include <zircon/assert.h>
-
-#include <unordered_map>
-
-#include "lib/fit/result.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
 namespace bt {
+
 namespace sm {
 
 PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
                            Role role)
-    : chan_(std::move(chan)), listener_(std::move(listener)), role_(role) {
+    : sm_chan_(std::move(chan)), listener_(std::move(listener)), role_(role), has_failed_(false) {}
+
+void PairingPhase::OnFailure(Status status) {
+  ZX_ASSERT(!has_failed());
+  bt_log(WARN, "sm", "pairing failed: %s", bt_str(status));
+  has_failed_ = true;
   ZX_ASSERT(listener_);
-  ZX_ASSERT(chan_);
-  ZX_ASSERT_MSG(async_get_default_dispatcher(), "default dispatcher required!");
-  const PairingChannel& initialized_chan = *chan_;
-  if (initialized_chan->link_type() == hci::Connection::LinkType::kLE) {
-    ZX_ASSERT(initialized_chan->id() == l2cap::kLESMPChannelId);
-  } else if (initialized_chan->link_type() == hci::Connection::LinkType::kACL) {
-    ZX_ASSERT(initialized_chan->id() == l2cap::kSMPChannelId);
-  } else {
-    ZX_PANIC("unsupported link type!");
-  }
+  listener_->OnPairingFailed(status);
 }
 
-void PairingPhase::SendPairingFailed(ErrorCode ecode) {
-  auto pdu = util::NewPdu(sizeof(ErrorCode));
-  PacketWriter writer(kPairingFailed, pdu.get());
-  *writer.mutable_payload<PairingFailedParams>() = ecode;
-  sm_chan()->Send(std::move(pdu));
+void PairingPhase::Abort(ErrorCode ecode) {
+  ZX_ASSERT(!has_failed());
+  Status status(ecode);
+  bt_log(INFO, "sm", "abort pairing: %s", bt_str(status));
+
+  sm_chan().SendMessage(kPairingFailed, ecode);
+  OnFailure(status);
 }
 
+void PairingPhase::OnPairingTimeout() {
+  ZX_ASSERT(!has_failed());
+  // Pairing is no longer allowed. Disconnect the link.
+  bt_log(WARN, "sm", "pairing timed out! disconnecting link");
+  (*sm_chan_)->SignalLinkError();
+
+  OnFailure(Status(HostError::kTimedOut));
+}
+
+void PairingPhase::HandleChannelClosed() {
+  bt_log(WARN, "sm", "channel closed while pairing");
+
+  OnFailure(Status(HostError::kLinkDisconnected));
+}
 }  // namespace sm
 }  // namespace bt

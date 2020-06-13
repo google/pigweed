@@ -7,7 +7,7 @@
 
 #include <lib/fit/function.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -22,16 +22,15 @@ namespace sm {
 using PairingRequestCallback = fit::function<void(PairingRequestParams)>;
 using SecurityRequestCallback = fit::function<void(AuthReqField)>;
 
-class IdlePhase final : public PairingPhase, public PairingChannelHandler {
+class IdlePhase final : public PairingChannel::Handler {
  public:
   // Initializes this IdlePhase with the following parameters:
   //   - |chan|: The L2CAP SMP fixed channel.
-  //   - |listener|: The Listener implementer
   //   - |role|: The local connection role.
   //   - |on_pairing_req|: callback which signals the receiption of an SMP Pairing Request.
   //   - |on_security_req|: callback which handles the reception of an SMP Security Request.
-  IdlePhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
-            PairingRequestCallback on_pairing_req, SecurityRequestCallback on_security_req);
+  IdlePhase(fxl::WeakPtr<PairingChannel> chan, Role role, PairingRequestCallback on_pairing_req,
+            SecurityRequestCallback on_security_req);
 
   ~IdlePhase() override = default;
 
@@ -44,14 +43,12 @@ class IdlePhase final : public PairingPhase, public PairingChannelHandler {
   void OnRxBFrame(ByteBufferPtr sdu) override;
   void OnChannelClosed() override;
 
-  // PairingPhase override
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() override {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
-  fxl::WeakPtrFactory<IdlePhase> weak_ptr_factory_;
+  fxl::WeakPtr<PairingChannel> sm_chan_;
+  Role role_;
   PairingRequestCallback on_pairing_req_;
   SecurityRequestCallback on_security_req_;
+
+  fxl::WeakPtrFactory<IdlePhase> weak_ptr_factory_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IdlePhase);
 };
 

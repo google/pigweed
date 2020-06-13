@@ -15,9 +15,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1_just_works_numeric_comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1_passkey.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -35,7 +35,7 @@ Phase2SecureConnections::Phase2SecureConnections(
     PairingFeatures features, PairingRequestParams preq, PairingResponseParams pres,
     const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
     OnPhase2KeyGeneratedCallback cb)
-    : ActivePhase(std::move(chan), std::move(listener), role),
+    : PairingPhase(std::move(chan), std::move(listener), role),
       sent_local_ecdh_(false),
       local_ecdh_(),
       peer_ecdh_(),

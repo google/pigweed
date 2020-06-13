@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -42,11 +41,10 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
     ChannelOptions options(cid);
     options.link_type = ll_type;
 
-    listener_ = std::make_unique<FakeListener>();
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
     idle_phase_ = std::make_unique<IdlePhase>(
-        sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(), role,
+        sm_chan_->GetWeakPtr(), role,
         [this](PairingRequestParams preq) { last_pairing_req_ = preq; },
         [this](AuthReqField auth_req) { last_security_req_ = auth_req; });
   }
@@ -58,7 +56,6 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
   std::optional<AuthReqField> last_security_req() { return last_security_req_; }
 
  private:
-  std::unique_ptr<FakeListener> listener_;
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<IdlePhase> idle_phase_;

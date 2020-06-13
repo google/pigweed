@@ -4,16 +4,14 @@
 
 #include "pairing_phase.h"
 
-#include <algorithm>
 #include <memory>
 
 #include <fbl/macros.h>
 #include <gtest/gtest.h>
 
-#include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
@@ -42,12 +40,13 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
     return weak_ptr_factory_.GetWeakPtr();
   }
 
-  // PairingChannelHandler overrides
-  void OnRxBFrame(ByteBufferPtr sdu) override { sdu->Copy(&last_rx_packet_); }
-  void OnChannelClosed() override {}
+  // PairingPhase override, not tested as PairingPhase does not implement this pure virtual
+  // function.
+  void Start() override {}
 
-  // Expose protected methods for testing.
-  void SendPairingFailed(ErrorCode ecode) { PairingPhase::SendPairingFailed(ecode); }
+  // PairingChannelHandler override
+  void OnChannelClosed() override { PairingPhase::HandleChannelClosed(); }
+  void OnRxBFrame(ByteBufferPtr sdu) override { sdu->Copy(&last_rx_packet_); }
 
   const ByteBuffer& last_rx_packet() { return last_rx_packet_; }
 
@@ -93,25 +92,67 @@ class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_PairingPhaseTest);
 };
 
-TEST_F(SMP_PairingPhaseTest, SendPairingFailed) {
-  ErrorCode ecode = ErrorCode::kConfirmValueFailed;
-  ByteBufferPtr tx_sdu = nullptr;
-  int tx_count = 0;
-  fake_chan()->SetSendCallback(
-      [&](ByteBufferPtr sdu) {
-        tx_sdu = std::move(sdu);
-        tx_count++;
-      },
-      dispatcher());
-  pairing_phase()->SendPairingFailed(ecode);
+using SMP_PairingPhaseDeathTest = SMP_PairingPhaseTest;
+
+TEST_F(SMP_PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
+  pairing_phase()->Abort(ErrorCode::kUnspecifiedReason);
+  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnPairingTimeout(), ".*failed.*");
+}
+
+TEST_F(SMP_PairingPhaseTest, ChannelClosedNotifiesListener) {
+  ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
+  ASSERT_EQ(listener()->pairing_error_count(), 0);
+  fake_chan()->Close();
   RunLoopUntilIdle();
-  ASSERT_TRUE(tx_sdu);
-  ASSERT_EQ(tx_count, 1);
-  auto reader = PacketReader(tx_sdu.get());
-  ASSERT_EQ(reader.payload_size(), 1ul);
-  ASSERT_EQ(reader.code(), kPairingFailed);
-  ErrorCode tx_code = reader.payload<ErrorCode>();
-  ASSERT_EQ(ecode, tx_code);
+  ASSERT_EQ(listener()->pairing_error_count(), 1);
+  ASSERT_EQ(listener()->last_error().error(), HostError::kLinkDisconnected);
+}
+
+TEST_F(SMP_PairingPhaseTest, OnFailureNotifiesListener) {
+  auto ecode = ErrorCode::kDHKeyCheckFailed;
+  ASSERT_EQ(listener()->last_error().error(), HostError::kNoError);
+  ASSERT_EQ(listener()->pairing_error_count(), 0);
+  pairing_phase()->OnFailure(Status(ecode));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(listener()->last_error().is_protocol_error());
+  ASSERT_EQ(listener()->last_error().protocol_error(), ecode);
+  ASSERT_EQ(listener()->pairing_error_count(), 1);
+}
+
+TEST_F(SMP_PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
+  ByteBufferPtr msg_sent = nullptr;
+  fake_chan()->SetSendCallback([&msg_sent](ByteBufferPtr sdu) { msg_sent = std::move(sdu); },
+                               dispatcher());
+  ASSERT_EQ(0, listener()->pairing_error_count());
+
+  pairing_phase()->Abort(ErrorCode::kDHKeyCheckFailed);
+  RunLoopUntilIdle();
+
+  // Check the PairingFailed message was sent to the channel
+  ASSERT_TRUE(msg_sent);
+  auto reader = PacketReader(msg_sent.get());
+  ASSERT_EQ(ErrorCode::kDHKeyCheckFailed, reader.payload<ErrorCode>());
+
+  // Check the listener PairingFailed callback was made.
+  ASSERT_EQ(1, listener()->pairing_error_count());
+  Status failure_status = listener()->last_error();
+  ASSERT_TRUE(failure_status.is_protocol_error());
+  ASSERT_EQ(ErrorCode::kDHKeyCheckFailed, failure_status.protocol_error());
+}
+
+TEST_F(SMP_PairingPhaseTest, PairingTimeoutDisconnectsLinkAndFails) {
+  bool link_disconnected = false;
+  fake_chan()->SetLinkErrorCallback([&link_disconnected]() { link_disconnected = true; });
+  ASSERT_EQ(0, listener()->pairing_error_count());
+
+  pairing_phase()->OnPairingTimeout();
+
+  ASSERT_TRUE(link_disconnected);
+
+  // Check the listener PairingFailed callback was made.
+  ASSERT_EQ(1, listener()->pairing_error_count());
+  Status failure_status = listener()->last_error();
+  ASSERT_EQ(HostError::kTimedOut, failure_status.error());
 }
 
 }  // namespace

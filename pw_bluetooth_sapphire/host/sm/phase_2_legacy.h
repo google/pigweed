@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -23,9 +23,9 @@ namespace sm {
 //
 // This class is not thread safe and is meant to be accessed on the thread it was created on. All
 // callbacks will be run by the default dispatcher of a Phase2Legacy's creation thread.
-class Phase2Legacy final : public ActivePhase, public PairingChannelHandler {
+class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
  public:
-  // |chan|, |listener|, and |role|: used to construct the base ActivePhase
+  // |chan|, |listener|, and |role|: used to construct the base PairingPhase
   // |id|: unique id of this pairing instance for differentiating between Pairing Delegate responses
   // |features|: features negotiated in Phase 1 of pairing
   // |preq|, |pres|: Byte representation of Pairing Request/Response exchanged in Phase 1, used for
@@ -69,7 +69,7 @@ class Phase2Legacy final : public ActivePhase, public PairingChannelHandler {
 
   // l2cap::Channel callbacks
   void OnRxBFrame(ByteBufferPtr sdu) final;
-  void OnChannelClosed() final { ActivePhase::HandleChannelClosed(); }
+  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase override
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {

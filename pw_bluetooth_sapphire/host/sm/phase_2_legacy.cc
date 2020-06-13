@@ -12,9 +12,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
@@ -35,7 +35,7 @@ Phase2Legacy::Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
                            Role role, PairingFeatures features, const ByteBuffer& preq,
                            const ByteBuffer& pres, const DeviceAddress& initiator_add,
                            const DeviceAddress& responder_add, OnPhase2KeyGeneratedCallback cb)
-    : ActivePhase(std::move(chan), std::move(listener), role),
+    : PairingPhase(std::move(chan), std::move(listener), role),
       sent_local_confirm_(false),
       sent_local_rand_(false),
       tk_(std::nullopt),

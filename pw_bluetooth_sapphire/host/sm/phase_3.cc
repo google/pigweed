@@ -14,8 +14,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -27,7 +27,7 @@ namespace sm {
 Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
                PairingFeatures features, SecurityProperties le_sec,
                Phase3CompleteCallback on_complete)
-    : ActivePhase(std::move(chan), std::move(listener), role),
+    : PairingPhase(std::move(chan), std::move(listener), role),
       features_(features),
       le_sec_(le_sec),
       obtained_remote_keys_(0),

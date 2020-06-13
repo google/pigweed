@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/active_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
@@ -23,7 +23,7 @@ namespace sm {
 //
 // This class is not thread safe and is meant to be accessed on the thread it was created on. All
 // callbacks will be run by the default dispatcher of a Phase1's creation thread.
-class Phase1 final : public ActivePhase, public PairingChannelHandler {
+class Phase1 final : public PairingPhase, public PairingChannelHandler {
  public:
   // Called when Phase 1 completes successfully. |features| are the negotiated features. |preq| and
   // |pres| are the SMP "Pairing Request" and "Pairing Response" payloads exchanged by the devices,
@@ -53,7 +53,7 @@ class Phase1 final : public ActivePhase, public PairingChannelHandler {
   void Start() final;
 
  private:
-  //   |chan|, |listener|, and |role|: used to construct the base ActivePhase
+  //   |chan|, |listener|, and |role|: used to construct the base PairingPhase
   //   |preq|: If empty, the device is in the initiator role and starts the pairing.
   //           If present, the device is in the responder role, and will respond to |preq|, the
   //           peer initiator's pairing request.
@@ -87,7 +87,7 @@ class Phase1 final : public ActivePhase, public PairingChannelHandler {
 
   // PairingChannelHandler callbacks:
   void OnRxBFrame(ByteBufferPtr sdu) final;
-  void OnChannelClosed() final { ActivePhase::HandleChannelClosed(); }
+  void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase override
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {

@@ -42,7 +42,7 @@ std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
 Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
                std::optional<PairingRequestParams> preq, IOCapability io_capability,
                BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete)
-    : ActivePhase(std::move(chan), std::move(listener), role),
+    : PairingPhase(std::move(chan), std::move(listener), role),
       preq_(preq),
       oob_available_(false),
       mitm_required_(mitm_required),

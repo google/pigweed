@@ -21,8 +21,6 @@ source_set("definitions") {
 
 static_library("sm") {
   sources = [
-    "active_phase.cc",
-    "active_phase.h",
     "ecdh_key.cc",
     "ecdh_key.h",
     "idle_phase.cc",
@@ -62,7 +60,6 @@ source_set("tests") {
   testonly = true
 
   sources = [
-    "active_phase_unittest.cc",
     "ecdh_key_unittest.cc",
     "fake_phase_listener.h",
     "idle_phase_unittest.cc",
