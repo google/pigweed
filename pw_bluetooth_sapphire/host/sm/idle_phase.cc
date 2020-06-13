@@ -30,7 +30,7 @@ void IdlePhase::OnPairingRequest(PairingRequestParams req_params) {
   // Only the initiator may send the Pairing Request (V5.0 Vol. 3 Part H 3.5.1).
   if (role() == Role::kInitiator) {
     bt_log(DEBUG, "sm", "rejecting \"Pairing Request\" as initiator");
-    SendPairingFailed(ErrorCode::kCommandNotSupported);
+    sm_chan().SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
   on_pairing_req_(req_params);
@@ -40,7 +40,7 @@ void IdlePhase::OnSecurityRequest(AuthReqField req) {
   // Only the responder may send the Security Request (V5.0 Vol. 3 Part H 2.4.6).
   if (role() == Role::kResponder) {
     bt_log(DEBUG, "sm", "rejecting \"Security Request\" as responder");
-    SendPairingFailed(ErrorCode::kCommandNotSupported);
+    sm_chan().SendMessage(kPairingFailed, ErrorCode::kCommandNotSupported);
     return;
   }
   on_security_req_(req);

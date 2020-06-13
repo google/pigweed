@@ -5,9 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_
 
+#include <unordered_map>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -46,6 +50,18 @@ class PairingChannel {
   l2cap::Channel* operator->() const { return get(); }
 
   ~PairingChannel() = default;
+
+  // Wrapper which abstracts some of the boilerplate around sending a SMP object.
+  template <typename PayloadType>
+  void SendMessage(Code message_code, const PayloadType& payload) {
+    auto kExpectedSize = kCodeToPayloadSize.find(message_code);
+    ZX_ASSERT(kExpectedSize != kCodeToPayloadSize.end());
+    ZX_ASSERT(sizeof(PayloadType) == kExpectedSize->second);
+    auto pdu = util::NewPdu(sizeof(PayloadType));
+    PacketWriter writer(message_code, pdu.get());
+    *writer.mutable_payload<PayloadType>() = payload;
+    chan_->Send(std::move(pdu));
+  }
 
  private:
   // Used to delegate the L2CAP callbacks to the current handler

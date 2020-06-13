@@ -8,26 +8,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace sm {
-
-namespace {
-const std::unordered_map<Code, size_t> kCodeToPayloadSize{
-    {kSecurityRequest, sizeof(AuthReqField)},
-    {kPairingRequest, sizeof(PairingRequestParams)},
-    {kPairingResponse, sizeof(PairingResponseParams)},
-    {kPairingConfirm, sizeof(PairingConfirmValue)},
-    {kPairingRandom, sizeof(PairingRandomValue)},
-    {kPairingFailed, sizeof(PairingFailedParams)},
-    {kEncryptionInformation, sizeof(EncryptionInformationParams)},
-    {kMasterIdentification, sizeof(MasterIdentificationParams)},
-    {kIdentityInformation, sizeof(IRK)},
-    {kIdentityAddressInformation, sizeof(IdentityAddressInformationParams)},
-    {kPairingPublicKey, sizeof(PairingPublicKeyParams)},
-    {kPairingDHKeyCheck, sizeof(PairingDHKeyCheckValueE)},
-};
-}  // namespace
 
 PacketReader::PacketReader(const ByteBuffer* buffer)
     : PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}

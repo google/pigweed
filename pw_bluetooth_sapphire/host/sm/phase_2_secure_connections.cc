@@ -68,10 +68,7 @@ void Phase2SecureConnections::SendLocalPublicKey() {
   // before we've received the peer's is a programmer error.
   ZX_ASSERT(role() == Role::kInitiator || peer_ecdh_.has_value());
 
-  auto pdu = util::NewPdu(sizeof(PairingPublicKeyParams));
-  PacketWriter writer(kPairingPublicKey, pdu.get());
-  *writer.mutable_payload<PairingPublicKeyParams>() = local_ecdh_->GetSerializedPublicKey();
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingPublicKey, local_ecdh_->GetSerializedPublicKey());
   sent_local_ecdh_ = true;
   bt_log(DEBUG, "sm", "sent ecdh public key to peer");
   if (role() == Role::kResponder) {
@@ -220,10 +217,7 @@ void Phase2SecureConnections::SendDhKeyCheckE() {
   ZX_ASSERT(local_dhkey_check_.has_value());
 
   // Send local DHKey Check
-  auto pdu = util::NewPdu(sizeof(PairingDHKeyCheckValueE));
-  PacketWriter writer(kPairingDHKeyCheck, pdu.get());
-  *writer.mutable_payload<PairingDHKeyCheckValueE>() = *local_dhkey_check_;
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingDHKeyCheck, *local_dhkey_check_);
   sent_local_dhkey_check_ = true;
   if (role() == Role::kResponder) {
     // As responder, we should only send the local DHKey check after receiving and validating the

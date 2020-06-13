@@ -152,10 +152,7 @@ void Phase2Legacy::SendConfirmValue() {
     return;
   }
 
-  auto pdu = util::NewPdu(sizeof(PairingConfirmValue));
-  PacketWriter writer(kPairingConfirm, pdu.get());
-  *writer.mutable_payload<PairingConfirmValue>() = local_confirm_.value();
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingConfirm, *local_confirm_);
   sent_local_confirm_ = true;
 }
 
@@ -195,10 +192,7 @@ void Phase2Legacy::SendRandomValue() {
     return;
   }
 
-  auto pdu = util::NewPdu(sizeof(PairingRandomValue));
-  PacketWriter writer(kPairingRandom, pdu.get());
-  *writer.mutable_payload<PairingRandomValue>() = local_rand_.value();
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingRandom, *local_rand_);
   sent_local_rand_ = true;
 }
 

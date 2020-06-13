@@ -29,7 +29,7 @@ void ActivePhase::Abort(ErrorCode ecode) {
   Status status(ecode);
   bt_log(INFO, "sm", "abort pairing: %s", bt_str(status));
 
-  SendPairingFailed(ecode);
+  sm_chan().SendMessage(kPairingFailed, ecode);
   OnFailure(status);
 }
 

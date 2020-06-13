@@ -9,6 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -65,6 +66,24 @@ TEST_F(SMP_PairingChannelDeathTest, L2capChannelMtuTooSmallDies) {
   ASSERT_DEATH_IF_SUPPORTED(
       NewPairingChannel(hci::Connection::LinkType::kLE, kNoSecureConnectionsMtu - 1),
       ".*max.*_sdu_size.*");
+}
+
+TEST_F(SMP_PairingChannelDeathTest, SendInvalidMessageDies) {
+  // Tests that an invalid SMP code aborts the process
+  EXPECT_DEATH_IF_SUPPORTED(sm_chan()->SendMessage(0xFF, ErrorCode::kUnspecifiedReason), ".*end.*");
+
+  // Tests that a valid SMP code with a mismatched payload aborts the process
+  EXPECT_DEATH_IF_SUPPORTED(sm_chan()->SendMessage(kPairingFailed, PairingRequestParams{}),
+                            ".*sizeof.*");
+}
+
+TEST_F(SMP_PairingChannelTest, SendMessageWorks) {
+  PairingRandomValue kExpectedPayload = {1, 2, 3, 4, 5};
+  StaticByteBuffer<util::PacketSize<PairingRandomValue>()> kExpectedPacket;
+  PacketWriter w(kPairingRandom, &kExpectedPacket);
+  *w.mutable_payload<PairingRandomValue>() = kExpectedPayload;
+  sm_chan()->SendMessage(kPairingRandom, kExpectedPayload);
+  Expect(kExpectedPacket);
 }
 
 // This checks that PairingChannel doesn't crash when receiving events without a handler set.

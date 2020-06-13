@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -17,6 +18,21 @@
 
 namespace bt {
 namespace sm {
+
+const std::unordered_map<Code, size_t> kCodeToPayloadSize{
+    {kSecurityRequest, sizeof(AuthReqField)},
+    {kPairingRequest, sizeof(PairingRequestParams)},
+    {kPairingResponse, sizeof(PairingResponseParams)},
+    {kPairingConfirm, sizeof(PairingConfirmValue)},
+    {kPairingRandom, sizeof(PairingRandomValue)},
+    {kPairingFailed, sizeof(PairingFailedParams)},
+    {kEncryptionInformation, sizeof(EncryptionInformationParams)},
+    {kMasterIdentification, sizeof(MasterIdentificationParams)},
+    {kIdentityInformation, sizeof(IRK)},
+    {kIdentityAddressInformation, sizeof(IdentityAddressInformationParams)},
+    {kPairingPublicKey, sizeof(PairingPublicKeyParams)},
+    {kPairingDHKeyCheck, sizeof(PairingDHKeyCheckValueE)},
+};
 
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {

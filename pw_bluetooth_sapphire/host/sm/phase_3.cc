@@ -286,29 +286,12 @@ bool Phase3::SendEncryptionKey() {
   ZX_DEBUG_ASSERT(listener());
   listener()->OnNewLongTermKey(*ltk_);
 
-  auto enc_info_pdu = util::NewPdu(sizeof(EncryptionInformationParams));
-  auto master_id_pdu = util::NewPdu(sizeof(MasterIdentificationParams));
-  if (!enc_info_pdu || !master_id_pdu) {
-    bt_log(ERROR, "sm", "out of memory!");
-    Abort(ErrorCode::kUnspecifiedReason);
-    return false;
-  }
-
   // Send LTK
-  {
-    PacketWriter writer(kEncryptionInformation, enc_info_pdu.get());
-    *writer.mutable_payload<EncryptionInformationParams>() = link_key.value();
-    sm_chan()->Send(std::move(enc_info_pdu));
-  }
-
+  sm_chan().SendMessage(kEncryptionInformation, link_key.value());
   // Send EDiv & Rand
-  {
-    PacketWriter writer(kMasterIdentification, master_id_pdu.get());
-    auto* params = writer.mutable_payload<MasterIdentificationParams>();
-    params->ediv = htole16(link_key.ediv());
-    params->rand = htole64(link_key.rand());
-    sm_chan()->Send(std::move(master_id_pdu));
-  }
+  sm_chan().SendMessage(kMasterIdentification,
+                        MasterIdentificationParams{.ediv = htole16(link_key.ediv()),
+                                                   .rand = htole64(link_key.rand())});
 
   return true;
 }
@@ -328,30 +311,14 @@ bool Phase3::SendIdentityInfo() {
     return false;
   }
 
-  auto id_info_pdu = util::NewPdu(sizeof(UInt128));
-  auto id_addr_info_pdu = util::NewPdu(sizeof(IdentityAddressInformationParams));
-  if (!id_info_pdu || !id_addr_info_pdu) {
-    bt_log(ERROR, "sm", "out of memory!");
-    Abort(ErrorCode::kUnspecifiedReason);
-    return false;
-  }
-
   // Send IRK
-  {
-    PacketWriter writer(kIdentityInformation, id_info_pdu.get());
-    *writer.mutable_payload<UInt128>() = id_info.irk;
-    sm_chan()->Send(std::move(id_info_pdu));
-  }
-
+  sm_chan().SendMessage(kIdentityInformation, id_info.irk);
   // Send identity address
-  {
-    PacketWriter writer(kIdentityAddressInformation, id_addr_info_pdu.get());
-    auto* params = writer.mutable_payload<IdentityAddressInformationParams>();
-    params->type =
-        (id_info.address.IsStaticRandom()) ? AddressType::kStaticRandom : AddressType::kPublic;
-    params->bd_addr = id_info.address.value();
-    sm_chan()->Send(std::move(id_addr_info_pdu));
-  }
+  sm_chan().SendMessage(kIdentityAddressInformation,
+                        IdentityAddressInformationParams{
+                            .type = (id_info.address.IsStaticRandom() ? AddressType::kStaticRandom
+                                                                      : AddressType::kPublic),
+                            .bd_addr = id_info.address.value()});
 
   return true;
 }
@@ -400,7 +367,7 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
       break;
     default:
       bt_log(INFO, "sm", "received unexpected code %d when in Pairing Phase 3", smp_code);
-      SendPairingFailed(ErrorCode::kUnspecifiedReason);
+      sm_chan().SendMessage(kPairingFailed, ErrorCode::kUnspecifiedReason);
   }
 }
 

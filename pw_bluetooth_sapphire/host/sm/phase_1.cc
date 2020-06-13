@@ -72,13 +72,6 @@ void Phase1::InitiateFeatureExchange() {
   ZX_ASSERT(role() == Role::kInitiator);
   // Pairing should not be in progress when this function is called
   ZX_ASSERT(!feature_exchange_pending_);
-  auto pdu = util::NewPdu(sizeof(PairingRequestParams));
-  if (!pdu) {
-    bt_log(DEBUG, "sm", "out of memory!");
-    Abort(ErrorCode::kCommandNotSupported);
-    return;
-  }
-
   LocalPairingParams preq_values = BuildPairingParameters();
   preq_ = PairingRequestParams{.io_capability = preq_values.io_capability,
                                .oob_data_flag = preq_values.oob_data_flag,
@@ -86,10 +79,8 @@ void Phase1::InitiateFeatureExchange() {
                                .max_encryption_key_size = preq_values.max_encryption_key_size,
                                .initiator_key_dist_gen = preq_values.local_keys,
                                .responder_key_dist_gen = preq_values.remote_keys};
-  PacketWriter writer(kPairingRequest, pdu.get());
-  *writer.mutable_payload<PairingRequestParams>() = *preq_;
   feature_exchange_pending_ = true;
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingRequest, *preq_);
 }
 
 void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
@@ -125,11 +116,7 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
     pres_->auth_req &= ~AuthReq::kBondingFlag;
   }
 
-  auto pdu = util::NewPdu(sizeof(PairingResponseParams));
-  PacketWriter writer(kPairingResponse, pdu.get());
-  *writer.mutable_payload<PairingResponseParams>() = *pres_;
-
-  sm_chan()->Send(std::move(pdu));
+  sm_chan().SendMessage(kPairingResponse, *pres_);
 
   on_complete_(features, *preq_, *pres_);
 }
