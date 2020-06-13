@@ -356,10 +356,6 @@ void LogicalLink::SignalError() {
 
   bt_log(INFO, "l2cap", "Signal upper layer error on link %#.4x; closing all channels", handle());
 
-  if (link_error_cb_) {
-    link_error_cb_();
-  }
-
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
     auto& [_, channel] = *channel_iter++;
 
@@ -368,6 +364,14 @@ void LogicalLink::SignalError() {
 
     // This erases from |channel_| and invalidates any iterator pointing to |channel|.
     RemoveChannel(channel.get());
+  }
+
+  if (link_error_cb_) {
+    // TODO(53985): This should be removed when l2cap::Channel is no longer a thread-safe
+    // message-passing interface. But while it is, the above channel teardown work will be posting
+    // L2CAP Signaling Channel Disconnection Requests that must go out before we request a GAP
+    // disconnection of the underlying link with this callback.
+    async::PostTask(dispatcher(), link_error_cb_.share());
   }
 
   // Link is expected to be closed by its owner.

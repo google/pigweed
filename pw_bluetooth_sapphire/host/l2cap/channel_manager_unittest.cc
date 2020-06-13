@@ -1083,7 +1083,17 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
 }
 
 TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
-  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  bool link_error = false;
+  auto link_error_cb = [this, &link_error] {
+    // This callback is run after the expectation for OutboundDisconnectionRequest is set, so this
+    // tests that L2CAP-level teardown happens before ChannelManager requests a link teardown.
+    ASSERT_TRUE(AllExpectedPacketsSent());
+    link_error = true;
+
+    // Simulate closing the link.
+    chanmgr()->Unregister(kTestHandle1);
+  };
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, link_error_cb);
 
   const auto conn_req_id = NextCommandId();
   const auto config_req_id = NextCommandId();
@@ -1120,18 +1130,13 @@ TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   auto fixed_channel =
       ActivateNewFixedChannel(kSMPChannelId, kTestHandle1,
                               /*closed_cb=*/[&fixed_channel_closed] { fixed_channel_closed++; });
+
+  ASSERT_FALSE(link_error);
   fixed_channel->SignalLinkError();
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_EQ(1, fixed_channel_closed);
-  EXPECT_EQ(1, dynamic_channel_closed);
-
-  // Simulate closing the link.
-  chanmgr()->Unregister(kTestHandle1);
-
-  RETURN_IF_FATAL(RunLoopUntilIdle());
-
+  EXPECT_TRUE(link_error);
   EXPECT_EQ(1, fixed_channel_closed);
   EXPECT_EQ(1, dynamic_channel_closed);
 }
