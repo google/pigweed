@@ -11,6 +11,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 
 namespace bthost {
+namespace {
+
+// bt-gatt-svc devices are published for HID-over-GATT only.
+constexpr bt::UUID kHogUuid(uint16_t(0x1812));
+
+}  // namespace
 
 HostDevice::HostDevice(zx_device_t* device)
     : dev_(nullptr), parent_(device), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
@@ -175,6 +181,11 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
 
 void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                           fbl::RefPtr<bt::gatt::RemoteService> service) {
+  // Only publish children for HID-over-GATT.
+  if (service->uuid() != kHogUuid) {
+    return;
+  }
+
   std::lock_guard<std::mutex> lock(mtx_);
 
   // Ignore the event if our bt-host device has been removed (this is likely during shut down).
