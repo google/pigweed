@@ -143,7 +143,6 @@ executable("tests") {
     "gatt:tests",
     "hci:tests",
     "l2cap:tests",
-    "rfcomm:tests",
     "sdp:tests",
     "sm:tests",
     "testing:gtest_main",

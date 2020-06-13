@@ -350,7 +350,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                     DataElement());
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                    DataElement(uint16_t(5)));
+                                    DataElement(uint16_t(7)));
 
   std::vector<ServiceRecord> records4;
   records4.emplace_back(std::move(psm_rfcomm2));
