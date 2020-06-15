@@ -1736,6 +1736,56 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(2u, tx_seq.value_or(0));
 }
 
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeTxEngineTest,
+    SetSingleRetransmitDuringPollRequestThenAgainWithPollResponseAndDifferentAckSeqBothCauseRetransmit) {
+  size_t n_info_frames = 0;
+  size_t n_supervisory_frames = 0;
+  std::optional<uint8_t> tx_seq;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
+      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+        ++n_info_frames;
+        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        ++n_supervisory_frames;
+      }
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_EQ(1U, n_supervisory_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1, not a poll response.
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+
+  // The second I-Frame is retransmitted.
+  EXPECT_EQ(1u, n_info_frames);
+  EXPECT_EQ(1u, tx_seq.value_or(0));
+
+  // Request a retransmission of unacked data with TxSeq=0, this time a poll response.
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(0u, /*is_poll_response=*/true);
+
+  // The first I-Frame is retransmitted.
+  EXPECT_EQ(1u, n_info_frames);
+  EXPECT_EQ(0u, tx_seq.value_or(1));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace l2cap

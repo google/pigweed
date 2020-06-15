@@ -154,7 +154,6 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   }
 
   if (should_retransmit) {
-    monitor_task_.Cancel();
     const bool set_is_poll_response =
         range_request.value_or(RangeRetransmitRequest{}).is_poll_request;
     if (RetransmitUnackedData(std::nullopt, set_is_poll_response).is_error()) {
@@ -295,6 +294,15 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
   // unacked data. See, e.g., Core Spec v5.0, Volume 3, Part A, Table 8.6, row
   // "Recv REJ (F=0)".
   ZX_DEBUG_ASSERT(!remote_is_busy_);
+
+  // Any peer actions that cause retransmission indicate the peer is alive. This is in conflict with
+  // Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.8, which only stops the MonitorTimer when a poll
+  // response is received and omits what to do when REJ or SREJ cause retransmission. However, this
+  // behavior of canceling the MonitorTimer "early" is in line with Sequence Diagram Fig 4.94, L2CAP
+  // Test Spec v5.0.2 Section 4.9.7.24, among others that show REJ or SREJ causing the receiver to
+  // cancel its MonitorTimer. We follow the latter behavior because (1) it's less ambiguous (2) it
+  // makes sense and (3) we need to pass those tests.
+  monitor_task_.Cancel();
 
   const auto n_to_send = NumUnackedFrames();
   ZX_ASSERT(n_to_send <= n_frames_in_tx_window_);

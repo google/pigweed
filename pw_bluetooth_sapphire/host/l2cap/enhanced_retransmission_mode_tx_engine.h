@@ -156,7 +156,7 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   void SendPdu(PendingPdu* pdu);
 
   // Retransmits frames from |pending_pdus_|. Invokes |connection_failure_callback_| on error and
-  // returns fit::error().
+  // returns fit::error(). Cancels |monitor_task_| if it's running.
   //
   // If |only_with_seq| is set, then only the unacked frame with that TxSeq will be retransmitted.
   //
