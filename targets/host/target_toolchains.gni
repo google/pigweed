@@ -33,7 +33,9 @@ _host_common = {
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
   # Allow nanopb to be toggled via a build arg on host for easy testing.
-  if (dir_pw_third_party_nanopb != "") {
+  _has_nanopb = pw_protobuf_GENERATORS + [ "nanopb" ] - [ "nanopb" ] !=
+                pw_protobuf_GENERATORS
+  if (dir_pw_third_party_nanopb != "" && !_has_nanopb) {
     pw_protobuf_GENERATORS += [ "nanopb" ]
   }
 
