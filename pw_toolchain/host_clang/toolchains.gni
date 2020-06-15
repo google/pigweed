@@ -60,7 +60,7 @@ _defaults = {
     # Add the configs to be removed. They will be de-duplicated, and this
     # ensures they are present to be removed.
     default_configs += oss_fuzz_removed_configs
-    remove_configs = oss_fuzz_removed_configs
+    remove_default_configs = oss_fuzz_removed_configs
   }
 }
 

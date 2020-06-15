@@ -24,6 +24,7 @@ declare_args() {
   # The default toolchain is never used.
   default_configs = []
   default_public_deps = []
+  remove_default_configs = []
 }
 
 # Combine target-specifc and target-agnostic default variables.
@@ -45,10 +46,10 @@ _pw_build_defaults = {
 # One more pass, to remove configs
 pw_build_defaults = {
   configs = []
-  forward_variables_from(_pw_build_defaults, "*", [ "remove_configs" ])
-  if (defined(_pw_build_defaults.remove_configs)) {
+  forward_variables_from(_pw_build_defaults, "*")
+  if (remove_default_configs != []) {
     # Add them first to ensure they are present to be removed.
-    configs += _pw_build_defaults.remove_configs
-    configs -= _pw_build_defaults.remove_configs
+    configs += remove_default_configs
+    configs -= remove_default_configs
   }
 }
