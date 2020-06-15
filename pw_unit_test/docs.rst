@@ -113,7 +113,7 @@ framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
 Build system integration
 ^^^^^^^^^^^^^^^^^^^^^^^^
 ``pw_unit_test`` integrates directly into Pigweed's GN build system. To define
-simple unit tests, set the ``pw_unit_test_main`` build variable to a target
+simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a target
 which configures the test framework as described in the :ref:`running-tests`
 section, and use the ``pw_test`` template to register your test code.
 

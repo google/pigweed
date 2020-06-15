@@ -33,21 +33,17 @@ $ source ./bootstrap.sh
 ...
 ```
 
-(3) Configure the three target GN builds: host, device, and docs.
+(3) Configure the GN build.
 
 ```bash
-$ gn gen out/host
-Done. Made 275 targets from 67 files in 417ms
-$ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
-Done. Made 220 targets from 65 files in 424ms
-$ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
-Done. Made 284 targets from 65 files in 415ms
+$ gn gen out
+Done. Made 1047 targets from 91 files in 114ms
 ```
 
 (4) Start the watcher. The watcher will invoke Ninja to build all the targets
 
 ```bash
-$ pw watch
+$ pw watch out#default#stm32f429i
 
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
   ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
@@ -177,22 +173,23 @@ with the GN build. We strongly recommend you stick to the GN build system.
 GN (Generate Ninja) just does what it says on the tin; GN generates
 [Ninja](https://ninja-build.org/) build files.
 
-The default GN configuration generates build files that will result in
-executables that can be run on your host machine.
+The default GN configuration generates build files that allow you to build host
+binaries, device binaries, and upstream documentation all in one Ninja
+invocation.
 
 Run GN as seen below:
 
 ```bash
-$ gn gen out/host
+$ gn gen out
 ```
 
-Note that `out/host` is simply the directory the build files are saved to.
-Unless this directory is deleted or you desire to do a clean build, there's no
-need to run GN again; just rebuild using Ninja directly.
+Note that `out` is simply the directory the build files are saved to. Unless
+this directory is deleted or you desire to do a clean build, there's no need to
+run GN again; just rebuild using Ninja directly.
 
 Now that we have build files, it's time to build Pigweed!
 
-Now you *could* manually invoke the host build using `ninja -C out/host` every
+Now you *could* manually invoke the host build using `ninja -C out` every
 time you make a change, but that's tedious. Instead, let's use `pw_watch`.
 
 Go ahead and start `pw_watch`:
@@ -202,7 +199,7 @@ $ pw watch
 ```
 
 When `pw_watch` starts up, it will automatically build the directory we
-generated in `out/host`. Additionally, `pw_watch` watches source code files for
+generated in `out`. Additionally, `pw_watch` watches source code files for
 changes, and triggers a Ninja build whenever it notices a file has been saved.
 You might be surprised how much time it can save you!
 
@@ -232,34 +229,36 @@ be re-built and re-run.
 
 Try running the `pw_status` test manually:
 ```bash
-$ ./out/host/obj/pw_status/status_test
+$ ./host_[compiler]/obj/pw_status/status_test
 ```
+
+Depending on your host OS, `[compiler]` will default to either Clang or GCC.
 
 ## Building for a Device
 
 As mentioned previously, Pigweed builds for host by default. In the context of
-Pigweed, a Pigweed "target" is a build configuration that sets a toolchain,
-default library configurations, and more to result in binaries that may be run
+Pigweed, a Pigweed "target" is a build configuration that includes a toolchain,
+default library configurations, and more to result in binaries that run
 natively on the target.
 
-Let's generate another build directory, but this time specifying a different
-target:
-
-**Linux/macOS**
-```bash
-$ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
-```
-
-**Windows**
-```batch
-> gn gen --args="pw_target_config = ""//targets/stm32f429i-disc1/target_config.gni""" out/disco
-```
-
-Switch to the window running `pw_watch`, and quit using `ctrl+c`.
-To get `pw_watch` to build the new directory as well, re-launch it:
+Switch to the window running `pw_watch`, and quit using `ctrl+c`. To get
+`pw_watch` to build the new STM32F429I-DISC1 target, re-launch by specifying
+which Ninja targets to build:
 
 ```bash
-$ pw watch
+$ pw watch out#default#stm32f429i
+```
+
+This is equivalent to the following Ninja invocation:
+
+```bash
+$ ninja -C out default stm32f429i
+```
+
+Or since the "default" target builds host and docs,
+
+```bash
+$ ninja -C out host docs stm32f429i
 ```
 
 Now `pw_watch` is building for host and a device!
@@ -296,7 +295,7 @@ need to relaunch this server.
 ### 3. Configure GN
 
 We can tell GN to use the testing server by enabling a build arg specific to
-the stm32f429i-disc1.
+the stm32f429i-disc1 target.
 
 ```shell
 $ gn args out/disco
@@ -316,23 +315,15 @@ See the demo below for an example of what this all looks like put together:
 
 ## Building the Documentation
 
-In addition to the markdown documentation, pigweed has a collection of
-information-rich RST files that can be built by adding another build target.
+In addition to the markdown documentation, Pigweed has a collection of
+information-rich RST files that are built by the default invocation of GN. You
+will find the documents at `out/docs/gen/docs/html`.
 
-To generate documentation build files, invoke GN again:
+You can build the documentation manually by with the command below.
 
-**Linux/macOS**
-```bash
-$ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
+```shell
+$ ninja -C out docs
 ```
-
-**Windows**
-```batch
-> gn gen --args="pw_target_config = ""//targets/docs/target_config.gni""" out/docs
-```
-
-Once again, either restart `pw_watch`, or manually run `ninja -C out/docs`. When
-the build completes, you will find the documents at `out/docs/gen/docs/html`.
 
 ## Next steps
 

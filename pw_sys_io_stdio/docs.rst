@@ -26,8 +26,7 @@ Setup
 This module requires relatively minimal setup:
 
   1. Write code against the ``pw_sys_io`` facade.
-  2. Specify the ``dir_pw_sys_io_backend`` GN global variable to point to this
-     backend.
+  2. Direct the ``pw_sys_io_BACKEND`` GN build arg to point to this backend.
 
 Module usage
 ============

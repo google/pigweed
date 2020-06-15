@@ -115,8 +115,9 @@ stack. This might not be the only stack in the system.
 
 Configuration
 =============
-These configuration options can be controlled by appending to
-``pw_boot_armv7m_config.defines`` as part of a Pigweed target config file.
+These configuration options can be controlled by appending list items to
+``pw_boot_armv7m_LINK_CONFIG_DEFINES`` as part of a Pigweed target
+configuration.
 
 ``PW_BOOT_HEAP_SIZE`` (required):
 How much memory (in bytes) to reserve for the heap. This can be zero.

@@ -12,34 +12,23 @@ primary target for on-device testing and development.
 
 Building
 ========
-To build for this target, change the ``pw_target_config`` GN build arg to point
-to this target's configuration file.
+To build for this Pigweed target, simply build the top-level "stm32f429i" Ninja
+target.
 
 .. code:: sh
 
-  $ gn gen --args='pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"' out/disco
-  $ ninja -C out/disco
-
-or
-
-.. code:: sh
-
-  $ gn gen out/disco
-  $ gn args
-  # Modify and save the args file to update the pw_target_config.
-  pw_target_config = "//targets/stm32f429i-disc1/target_config.gni"
-  $ ninja -C out/disco
+  $ ninja -C out stm32f429i
 
 Testing
 =======
-The default Pigweed build target will build all Pigweed modules' unit tests.
+When working in upstream Pigweed, building this target will build all Pigweed modules' unit tests.
 These tests can be run on-device in a few different ways.
 
 Run a unit test
 ---------------
 If using ``out/disco`` as a build directory, tests will be located in
-``out/disco/obj/[module name]/[test_name].elf``. To run these on device, the
-stm32f429i-disc1 target provides a helper script that flashes the test to a
+``out/stm32f429i/obj/[module name]/[test_name].elf``. To run these on device,
+the stm32f429i-disc1 target provides a helper script that flashes the test to a
 device and then runs it.
 
 .. code:: sh
@@ -63,7 +52,7 @@ specified with the ``--test`` option.
   # Setup Pigweed environment.
   $ . pw_env_setup/setup.sh
   # Run test.
-  $ pw test --root out/disco/ --runner stm32f429i_disc1_unit_test_runner
+  $ pw test --root out/stm32f429i/ --runner stm32f429i_disc1_unit_test_runner
 
 Run tests affected by code changes
 ----------------------------------
@@ -108,6 +97,6 @@ tells GN to send requests to a running ``stm32f429i_disc1_test_server``.
 
 Step 3: Build changes
 ^^^^^^^^^^^^^^^^^^^^^
-Whenever you run ``ninja -C out/disco``, affected tests will be built and run on
-the attached device(s). Alternatively, you may use ``pw watch`` to set up
+Whenever you run ``ninja -C out stm32f429i``, affected tests will be built and
+run on the attached device(s). Alternatively, you may use ``pw watch`` to set up
 Pigweed to build/test whenever it sees changes to source files.

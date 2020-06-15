@@ -11,5 +11,5 @@ pw_assert_basic
 --------
 Overview
 --------
-This is a simple assert backend to complement the ``pw_assert`` facade.
+This is a simple assert backend to implement the ``pw_assert`` facade.
 

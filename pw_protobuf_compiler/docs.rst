@@ -29,7 +29,7 @@ Protobuf code generation is currently supported for the following generators:
 |             |            | point to a local nanopb installation.             |
 +-------------+------------+---------------------------------------------------+
 
-The build variable ``pw_protobuf_generators`` tells the module the generators
+The build variable ``pw_protobuf_GENERATORS`` tells the module the generators
 for which it should compile code. It is defined as a list of generator codes.
 
 GN template
@@ -45,7 +45,7 @@ For example, given the definitions:
 
 .. code::
 
-  pw_protobuf_generators = [ "pwpb", "py" ]
+  pw_protobuf_GENERATORS = [ "pwpb", "py" ]
 
   pw_proto_library("test_protos") {
     sources = [ "test.proto" ]

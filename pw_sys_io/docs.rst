@@ -35,8 +35,8 @@ Setup
 This module requires relatively minimal setup:
 
   1. Chose a ``pw_sys_io`` backend, or write one yourself.
-  2. If using GN build, Specify the ``dir_pw_sys_io_backend`` GN global
-     variable to point to your ``pw_sys_io`` backend.
+  2. If using GN build, Specify the ``pw_sys_io_BACKEND`` GN build arg to point
+     the library that provides a ``pw_sys_io`` backend.
 
 Module usage
 ============

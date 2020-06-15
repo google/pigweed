@@ -129,7 +129,7 @@ This results in 9 different trace calls:
 .. cpp:function:: PW_TRACE_END(label, group_label, trace_id)
 
 Modules
----------
+-------
 In addition to these arguments, traces can be grouped into modules similar to
 logging. This is done by redefining the ``PW_TRACE_MODULE_NAME``.
 
@@ -199,9 +199,9 @@ label. It still can optionally be provided a *group_id*.
 .. cpp:function:: PW_TRACE_FUNCTION()
 .. cpp:function:: PW_TRACE_FUNCTION(group_label)
 
--------------
+-----------
 Backend API
--------------
+-----------
 Each of the trace event macros get sent to one of two macros which are
 implemented by the backend:
 

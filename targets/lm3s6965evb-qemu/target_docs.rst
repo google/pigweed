@@ -16,27 +16,15 @@ development board.
 
 Building
 ========
-To build for this target, change the ``pw_target_config`` GN build arg to point
-to this target's configuration file.
+To build for this Pigweed target, simply build the top-level "qemu" Ninja
+target.
 
 .. code:: sh
 
-  $ gn gen --args='pw_target_config = "//targets/lm3s6965evb-qemu/target_config.gni"' out/qemu
-  $ ninja -C out/qemu
-
-or
-
-.. code:: sh
-
-  $ gn gen out/qemu
-  $ gn args
-  # Modify and save the args file to update the pw_target_config.
-  pw_target_config = "//targets/lm3s6965evb-qemu/target_config.gni"
-  $ ninja -C out/qemu
+  $ ninja -C out qemu
 
 Testing
 =======
-
 This target does not yet support automatic test running (though it would be
 relatively easy to do so). To run a QEMU binary, see the instructions below.
 
@@ -44,8 +32,6 @@ Executing Binaries
 ==================
 When running a QEMU binary, you may chose to run it interactively with GDB, or
 allow the binary to run in a hands-off manner.
-
-Note: qemu-system-arm is not currently provided by the Pigweed environment.
 
 Running Without GDB
 -------------------
