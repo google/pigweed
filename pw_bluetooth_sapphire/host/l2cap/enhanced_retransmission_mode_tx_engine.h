@@ -125,6 +125,18 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
     bool is_poll_request;
   };
 
+  // Actions to take with a new AckSeq from the peer.
+  enum class UpdateAckSeqAction {
+    kConsumeAckSeq,        // Done with the received AckSeq.
+    kDiscardAcknowledged,  // Discard frames prior to AckSeq then send pending frames.
+  };
+
+  // Called from UpdateAckSeq to check if a SingleRetransmitRequest is pending. Retransmits if
+  // necessary and returns the action to take with |new_seq|.
+  //
+  // This call clears |single_request_| if set, so it is not idempotent.
+  UpdateAckSeqAction ProcessSingleRetransmitRequest(uint8_t new_seq, bool is_poll_response);
+
   // Starts the receiver ready poll timer. If already running, the existing
   // timer is cancelled, and a new timer is started.
   // Notes:
@@ -217,10 +229,15 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
   // Filled by SetRangeRetransmit and cleared by UpdateAckSeq.
   std::optional<RangeRetransmitRequest> range_request_;
 
-  // True if we retransmitted unacked data after sending a poll request but before receiving a poll
-  // response. Corresponds to the RejActioned variable defined in Core Spec v5.0 Vol 3, Part A, Sec
-  // 8.6.5.3.
-  bool retransmitted_during_poll_;
+  // Set to AckSeq of the most recent frame retransmitted after sending a poll request but before
+  // receiving a poll response. Corresponds to the SrejActioned and SrejSaveReqSeq variables defined
+  // in Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.3.
+  std::optional<uint8_t> retransmitted_single_during_poll_;
+
+  // True if we retransmitted a range of unacked data after sending a poll request but before
+  // receiving a poll response. Corresponds to the RejActioned variable defined in Core Spec v5.0
+  // Vol 3, Part A, Sec 8.6.5.3.
+  bool retransmitted_range_during_poll_;
 
   uint8_t n_receiver_ready_polls_sent_;
   bool remote_is_busy_;

@@ -41,7 +41,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       next_tx_seq_(0),
       last_tx_seq_(0),
       req_seqnum_(0),
-      retransmitted_during_poll_(false),
+      retransmitted_range_during_poll_(false),
       n_receiver_ready_polls_sent_(0),
       remote_is_busy_(false) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
@@ -97,19 +97,15 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
     return;
   }
 
-  ZX_ASSERT(!(range_request_.has_value() && single_request_.has_value()));
-  if (auto single_request = std::exchange(single_request_, std::nullopt);
-      single_request.has_value()) {
-    ZX_ASSERT(!(single_request.has_value() && remote_is_busy_));
-    if (RetransmitUnackedData(new_seq, single_request->is_poll_request).is_error()) {
-      return;
-    }
+  // Perform Stop-MonitorTimer when "F = 1," per Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.7–8.
+  if (is_poll_response) {
+    monitor_task_.Cancel();
+  }
 
-    // Only "single requests" that are poll requests acknowledge previous I-Frames and cause initial
-    // transmission of queued SDUs, per Core Spec v5.0, Vol 3, Part A, Sec 8.6.1.4.
-    if (!single_request->is_poll_request) {
-      return;
-    }
+  ZX_ASSERT(!(range_request_.has_value() && single_request_.has_value()));
+  if (ProcessSingleRetransmitRequest(new_seq, is_poll_response) ==
+      UpdateAckSeqAction::kConsumeAckSeq) {
+    return;
   }
 
   auto n_frames_to_discard = n_frames_acked;
@@ -134,10 +130,9 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   // This implements the logic for RejActioned in the Recv {I,RR,REJ} (F=1) event for all of the
   // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
   if (is_poll_response) {
-    monitor_task_.Cancel();
-    if (retransmitted_during_poll_) {
+    if (retransmitted_range_during_poll_) {
       should_retransmit = false;
-      retransmitted_during_poll_ = false;
+      retransmitted_range_during_poll_ = false;
     } else {
       should_retransmit = true;
     }
@@ -150,7 +145,7 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
   // This implements the logic for PbitOutstanding in the Recv REJ (F=0) event for all of the
   // receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
   if (range_request.has_value() && !is_poll_response && monitor_task_.is_pending()) {
-    retransmitted_during_poll_ = true;
+    retransmitted_range_during_poll_ = true;
   }
 
   if (should_retransmit) {
@@ -224,6 +219,47 @@ void Engine::MaybeSendQueuedData() {
     last_tx_seq_ = it->buf.As<SimpleInformationFrameHeader>().tx_seq();
     ++it;
   }
+}
+
+Engine::UpdateAckSeqAction Engine::ProcessSingleRetransmitRequest(uint8_t new_seq,
+                                                                  bool is_poll_response) {
+  const auto single_request = std::exchange(single_request_, std::nullopt);
+  ZX_ASSERT(!(single_request.has_value() && remote_is_busy_));
+  if (!single_request.has_value()) {
+    return UpdateAckSeqAction::kDiscardAcknowledged;
+  }
+
+  // This implements the logic for SrejActioned=TRUE in the Recv SREJ (P=0) (F=1) event for all of
+  // the receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  if (is_poll_response && retransmitted_single_during_poll_.has_value() &&
+      new_seq == *retransmitted_single_during_poll_) {
+    // Only a SREJ (F=1) with a matching AckSeq can clear this state, so if this duplicate
+    // suppression isn't performed it sticks around even when we sent the next poll request.
+    // AckSeq is modulo kMaxSeqNum + 1 so it'll roll over and potentially suppress retransmission
+    // of a different (non-duplicate) packet in a later poll request-response cycle. Unfortunately
+    // this isn't fixed as of Core Spec v5.2 so it's implemented as written.
+    retransmitted_single_during_poll_.reset();
+
+    // Return early to suppress duplicate retransmission.
+    return UpdateAckSeqAction::kConsumeAckSeq;
+  }
+
+  // This implements the logic for PbitOutstanding in the Recv SREJ (P=0) (F=0) and Recv SREJ(P=1)
+  // events for all of the receiver states (Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.9–11).
+  if (!is_poll_response && monitor_task_.is_pending()) {
+    retransmitted_single_during_poll_ = new_seq;
+  }
+
+  if (RetransmitUnackedData(new_seq, single_request->is_poll_request).is_error()) {
+    return UpdateAckSeqAction::kConsumeAckSeq;
+  }
+
+  // Only "single requests" that are poll requests acknowledge previous I-Frames and cause initial
+  // transmission of queued SDUs, per Core Spec v5.0, Vol 3, Part A, Sec 8.6.1.4.
+  if (single_request->is_poll_request) {
+    return UpdateAckSeqAction::kDiscardAcknowledged;
+  }
+  return UpdateAckSeqAction::kConsumeAckSeq;
 }
 
 void Engine::StartReceiverReadyPollTimer() {

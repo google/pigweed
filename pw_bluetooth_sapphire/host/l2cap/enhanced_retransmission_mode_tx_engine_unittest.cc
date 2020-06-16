@@ -1784,6 +1784,126 @@ TEST_F(
   // The first I-Frame is retransmitted.
   EXPECT_EQ(1u, n_info_frames);
   EXPECT_EQ(0u, tx_seq.value_or(1));
+
+  // Test that the second poll request stopped the MonitorTimer by checking that the ReceiverReady
+  // poll was sent.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  EXPECT_EQ(2U, n_supervisory_frames);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetSingleRetransmitDuringPollRequestSuppressesSingleRetransmitPollResponseWithSameAckSeq) {
+  size_t n_info_frames = 0;
+  size_t n_supervisory_frames = 0;
+  std::optional<uint8_t> tx_seq;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
+      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+        ++n_info_frames;
+        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        ++n_supervisory_frames;
+      }
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_EQ(1U, n_supervisory_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1, not a poll response.
+  n_info_frames = 0;
+  tx_seq.reset();
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+
+  // The second I-Frame is retransmitted.
+  EXPECT_EQ(1u, n_info_frames);
+  EXPECT_EQ(1u, tx_seq.value_or(0));
+
+  // Request a retransmission of unacked data with TxSeq=1, this time a poll response.
+  n_info_frames = 0;
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/true);
+  EXPECT_EQ(0u, n_info_frames);  // No duplicate retransmission occurs.
+
+  // Test that the second poll request stopped the MonitorTimer by checking that the ReceiverReady
+  // poll was sent.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  EXPECT_EQ(2U, n_supervisory_frames);
+}
+
+// This is a possible bug introduced by implementing SrejActioned to the letter per Core Spec
+// v5.{0–2} Vol 3, Part A, Sec 8.6.5.9–11.
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       SetSingleRetransmitDuringPollRequestSuppressesRetransmissionErroneously) {
+  size_t n_info_frames = 0;
+  size_t n_supervisory_frames = 0;
+  std::optional<uint8_t> tx_seq;
+  auto tx_callback = [&](ByteBufferPtr pdu) {
+    if (pdu && pdu->size() >= sizeof(EnhancedControlField)) {
+      if (pdu->As<EnhancedControlField>().designates_information_frame()) {
+        ++n_info_frames;
+        tx_seq = pdu->As<SimpleInformationFrameHeader>().tx_seq();
+      } else if (pdu->As<EnhancedControlField>().designates_supervisory_frame()) {
+        ++n_supervisory_frames;
+      }
+    }
+  };
+  TxEngine tx_engine(/*channel_id=*/kTestChannelId, /*max_tx_sdu_size=*/kDefaultMTU,
+                     /*max_transmissions=*/4, /*n_frames_in_tx_windows=*/kDefaultTxWindow,
+                     /*send_frame_callback=*/tx_callback,
+                     /*connection_failure_callback=*/NoOpFailureCallback);
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  ASSERT_EQ(2u, n_info_frames);
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+  ASSERT_EQ(1U, n_supervisory_frames);
+
+  // Request a retransmission of unacked data with TxSeq=1, not a poll response.
+  n_info_frames = 0;
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/false);
+  ASSERT_EQ(1u, n_info_frames);
+
+  // Ack the first frame and complete the poll.
+  n_info_frames = 0;
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/true);
+  ASSERT_EQ(1u, n_info_frames);  // Retransmission is not suppressed.
+
+  // Send and acknowledge enough frames to roll over AckSeq.
+  n_info_frames = 0;
+  for (size_t i = 0; i < EnhancedControlField::kMaxSeqNum + 1; i++) {
+    const auto ack_seq = (tx_seq.value() + 1) % (EnhancedControlField::kMaxSeqNum + 1);
+    tx_engine.UpdateAckSeq(ack_seq, /*is_poll_response=*/false);
+    tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  }
+
+  // Now there's a new frame with TxSeq=1.
+  ASSERT_EQ(uintmax_t{EnhancedControlField::kMaxSeqNum} + 1, n_info_frames);
+  ASSERT_EQ(1u, tx_seq.value());
+
+  // Let receiver_ready_poll_task_ fire, to transmit the poll.
+  ASSERT_TRUE(RunLoopFor(zx::sec(2)));
+
+  n_info_frames = 0;
+  tx_engine.SetSingleRetransmit(/*is_poll_request=*/false);
+  tx_engine.UpdateAckSeq(1u, /*is_poll_response=*/true);
+
+  // Even though this is a different frame than the first retransmission in this test, the latter's
+  // SrejActioned state suppresses this retransmission.
+  EXPECT_EQ(0u, n_info_frames);
 }
 
 }  // namespace
