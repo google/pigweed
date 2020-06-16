@@ -217,8 +217,9 @@ TEST(ToString, Status) {
 }
 
 TEST(ToString, StatusCode) {
-  EXPECT_EQ(2u, ToString(Status::UNAVAILABLE, buffer).size());
-  EXPECT_STREQ("14", buffer);
+  EXPECT_EQ(sizeof("UNAVAILABLE") - 1,
+            ToString(Status::UNAVAILABLE, buffer).size());
+  EXPECT_STREQ("UNAVAILABLE", buffer);
 }
 
 TEST(ToString, StdArrayAsBuffer) {
