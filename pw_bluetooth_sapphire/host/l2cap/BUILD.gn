@@ -122,6 +122,7 @@ source_set("tests") {
     "fragmenter_unittest.cc",
     "frame_headers_unittest.cc",
     "le_signaling_channel_unittest.cc",
+    "logical_link_unittest.cc",
     "low_energy_command_handler_unittest.cc",
     "pdu_unittest.cc",
     "recombiner_unittest.cc",

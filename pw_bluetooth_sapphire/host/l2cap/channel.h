@@ -222,6 +222,12 @@ class LogicalLink;
 // Channel implementation used in production.
 class ChannelImpl : public Channel {
  public:
+  // Many core-spec protocols which operate over fixed channels (e.g. v5.2 Vol. 3 Parts F (ATT) and
+  // H (SMP)) define service-specific MTU values. Channels created with `CreateFixedChannel` do not
+  // check against these service-specific MTUs. Thus `bt-host` local services which operate over
+  // fixed channels are required to respect their MTU internally by:
+  //   1.) never sending packets larger than their spec-defined MTU.
+  //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   static fbl::RefPtr<ChannelImpl> CreateFixedChannel(ChannelId id,
                                                      fxl::WeakPtr<internal::LogicalLink> link);
 

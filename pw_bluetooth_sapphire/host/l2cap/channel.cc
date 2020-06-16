@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
@@ -39,9 +40,12 @@ namespace internal {
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
                                                          fxl::WeakPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
-  // Signaling channels use the default MTU (Core Spec v5.1, Vol 3, Part A, Section 4).
-  return fbl::AdoptRef(
-      new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU)));
+  // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
+  // services which operate over fixed channels. Such services often define minimum MTU values in
+  // their specification, so they are required to respect these MTUs internally by:
+  //   1.) never sending packets larger than their spec-defined MTU.
+  //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
+  return fbl::AdoptRef(new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU)));
 }
 
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, ChannelId peer_id,
