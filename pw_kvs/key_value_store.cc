@@ -70,6 +70,13 @@ Status KeyValueStore::Init() {
     return Status::FAILED_PRECONDITION;
   }
 
+  if (partition_.sector_count() < 2) {
+    ERR("KVS init failed: FlashParition sector count (=%u) must be at 2. KVS "
+        "requires at least 1 working sector + 1 free/reserved sector",
+        unsigned(partition_.sector_count()));
+    return Status::FAILED_PRECONDITION;
+  }
+
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
   // TODO: investigate doing this as a static assert/compile-time check.

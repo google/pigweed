@@ -157,14 +157,14 @@ constexpr auto kEntry4 = MakeValidEntry(kMagic, 5, "4k", ByteStr("value4"));
 constexpr auto kEmpty32Bytes = InitializedBytes<32>(0xff);
 static_assert(sizeof(kEmpty32Bytes) == 32);
 
+EntryFormat default_format = {.magic = kMagic, .checksum = &default_checksum};
+
 class KvsErrorHandling : public ::testing::Test {
  protected:
   KvsErrorHandling()
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_),
-        kvs_(&partition_,
-             {.magic = kMagic, .checksum = &default_checksum},
-             kNoGcOptions) {}
+        kvs_(&partition_, default_format, kNoGcOptions) {}
 
   void InitFlashTo(span<const byte> contents) {
     partition_.Erase();

@@ -630,6 +630,45 @@ TEST_F(EmptyInitializedKvs, Basic) {
   EXPECT_EQ(kvs_.size(), 0u);
 }
 
+TEST(InitCheck, TooFewSectors) {
+  // Use test flash with 1 x 4k sectors, 16 byte alignment
+  FakeFlashMemoryBuffer<4 * 1024, 1> test_flash(16);
+  FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
+
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&test_partition,
+                                                          format);
+
+  EXPECT_EQ(kvs.Init(), Status::FAILED_PRECONDITION);
+}
+
+TEST(InitCheck, ZeroSectors) {
+  // Use test flash with 1 x 4k sectors, 16 byte alignment
+  FakeFlashMemoryBuffer<4 * 1024, 1> test_flash(16);
+
+  // Set FlashPartition to have 0 sectors.
+  FlashPartition test_partition(&test_flash, 0, 0);
+
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&test_partition,
+                                                          format);
+
+  EXPECT_EQ(kvs.Init(), Status::FAILED_PRECONDITION);
+}
+
+TEST(InitCheck, TooManySectors) {
+  // Use test flash with 1 x 4k sectors, 16 byte alignment
+  FakeFlashMemoryBuffer<4 * 1024, 5> test_flash(16);
+
+  // Set FlashPartition to have 0 sectors.
+  FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
+
+  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  KeyValueStoreBuffer<kMaxEntries, 2> kvs(&test_partition, format);
+
+  EXPECT_EQ(kvs.Init(), Status::FAILED_PRECONDITION);
+}
+
 #define ASSERT_OK(expr) ASSERT_EQ(Status::OK, expr)
 #define EXPECT_OK(expr) EXPECT_EQ(Status::OK, expr)
 
