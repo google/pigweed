@@ -181,6 +181,8 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
 
 void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                           fbl::RefPtr<bt::gatt::RemoteService> service) {
+  TRACE_DURATION("bluetooth", "HostDevice::OnRemoteGattServiceAdded");
+
   // Only publish children for HID-over-GATT.
   if (service->uuid() != kHogUuid) {
     return;

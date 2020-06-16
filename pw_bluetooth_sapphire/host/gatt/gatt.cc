@@ -227,6 +227,7 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
     bt_log(DEBUG, "gatt", "service added (peer_id: %s, handle: %#.4x, uuid: %s", bt_str(peer_id),
            svc->handle(), bt_str(svc->uuid()));
     for (auto& handler : remote_service_callbacks_) {
+      TRACE_DURATION("bluetooth", "GATT::OnServiceAdded handler.Notify()");
       handler.Notify(peer_id, svc);
     }
   }

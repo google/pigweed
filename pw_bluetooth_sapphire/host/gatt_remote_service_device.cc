@@ -178,7 +178,9 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
       .flags = 0,
   };
 
+  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::Bind device_add");
   zx_status_t status = device_add(parent, &args, &dev_);
+  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::Bind device_add");
   if (status != ZX_OK) {
     dev_ = nullptr;
     bt_log(ERROR, "bt-host", "bt-gatt-svc: failed to publish child gatt device: %s",
@@ -186,7 +188,9 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
     return status;
   }
 
+  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::Bind StartThread");
   loop_.StartThread("bt-host bt-gatt-svc");
+  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::Bind StartThread");
 
   return status;
 }

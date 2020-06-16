@@ -4,6 +4,7 @@
 
 #include "client.h"
 
+#include <lib/trace/event.h>
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
@@ -206,6 +207,8 @@ class Impl final : public Client {
         BindCallback([this, svc_cb = std::move(svc_callback),
                       res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
           ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
+          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverPrimaryServicesInternal rsp_cb",
+                         "size", rsp.size());
 
           if (rsp.payload_size() < sizeof(att::ReadByGroupTypeResponseParams)) {
             // Received malformed response. Disconnect the link.
@@ -327,7 +330,8 @@ class Impl final : public Client {
           size_t payload_size = rsp.payload_size();
           if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
             // Received malformed response. Disconnect the link.
-            bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu", payload_size);
+            bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
+                   payload_size);
             att_->ShutDown();
             res_cb(att::Status(HostError::kPacketMalformed));
             return;
@@ -417,6 +421,7 @@ class Impl final : public Client {
                                 res_cb =
                                     status_callback.share()](const att::PacketReader& rsp) mutable {
       ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByTypeResponse);
+      TRACE_DURATION("bluetooth", "gatt::Client::DiscoverCharacteristics rsp_cb");
 
       if (rsp.payload_size() < sizeof(att::ReadByTypeResponseParams)) {
         bt_log(DEBUG, "gatt", "received malformed Read By Type response");
@@ -551,53 +556,54 @@ class Impl final : public Client {
     params->start_handle = htole16(range_start);
     params->end_handle = htole16(range_end);
 
-    auto rsp_cb =
-        BindCallback([this, range_start, range_end, desc_cb = std::move(desc_callback),
-                      res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
+    auto rsp_cb = BindCallback([this, range_start, range_end, desc_cb = std::move(desc_callback),
+                                res_cb =
+                                    status_callback.share()](const att::PacketReader& rsp) mutable {
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindInformationResponse);
+      TRACE_DURATION("bluetooth", "gatt::Client::DiscoverDescriptors rsp_cb", "size", rsp.size());
 
-          if (rsp.payload_size() < sizeof(att::FindInformationResponseParams)) {
-            bt_log(DEBUG, "gatt", "received malformed Find Information response");
-            att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
-            return;
-          }
+      if (rsp.payload_size() < sizeof(att::FindInformationResponseParams)) {
+        bt_log(DEBUG, "gatt", "received malformed Find Information response");
+        att_->ShutDown();
+        res_cb(att::Status(HostError::kPacketMalformed));
+        return;
+      }
 
-          const auto& rsp_params = rsp.payload<att::FindInformationResponseParams>();
-          BufferView entries = rsp.payload_data().view(sizeof(rsp_params.format));
+      const auto& rsp_params = rsp.payload<att::FindInformationResponseParams>();
+      BufferView entries = rsp.payload_data().view(sizeof(rsp_params.format));
 
-          att::Handle last_handle;
-          bool result;
-          switch (rsp_params.format) {
-            case att::UUIDType::k16Bit:
-              result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k16Bit>(
-                  range_start, range_end, entries, desc_cb.share(), &last_handle);
-              break;
-            case att::UUIDType::k128Bit:
-              result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k128Bit>(
-                  range_start, range_end, entries, desc_cb.share(), &last_handle);
-              break;
-            default:
-              bt_log(DEBUG, "gatt", "invalid information data format");
-              result = false;
-              break;
-          }
+      att::Handle last_handle;
+      bool result;
+      switch (rsp_params.format) {
+        case att::UUIDType::k16Bit:
+          result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k16Bit>(
+              range_start, range_end, entries, desc_cb.share(), &last_handle);
+          break;
+        case att::UUIDType::k128Bit:
+          result = ProcessDescriptorDiscoveryResponse<att::UUIDType::k128Bit>(
+              range_start, range_end, entries, desc_cb.share(), &last_handle);
+          break;
+        default:
+          bt_log(DEBUG, "gatt", "invalid information data format");
+          result = false;
+          break;
+      }
 
-          if (!result) {
-            att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
-            return;
-          }
+      if (!result) {
+        att_->ShutDown();
+        res_cb(att::Status(HostError::kPacketMalformed));
+        return;
+      }
 
-          // The procedure is over if we have reached the end of the handle range.
-          if (last_handle == range_end) {
-            res_cb(att::Status());
-            return;
-          }
+      // The procedure is over if we have reached the end of the handle range.
+      if (last_handle == range_end) {
+        res_cb(att::Status());
+        return;
+      }
 
-          // Request the next batch.
-          DiscoverDescriptors(last_handle + 1, range_end, std::move(desc_cb), std::move(res_cb));
-        });
+      // Request the next batch.
+      DiscoverDescriptors(last_handle + 1, range_end, std::move(desc_cb), std::move(res_cb));
+    });
 
     auto error_cb = BindErrorCallback(
         [res_cb = status_callback.share()](att::Status status, att::Handle handle) {

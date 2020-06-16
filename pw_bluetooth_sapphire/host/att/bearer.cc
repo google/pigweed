@@ -710,9 +710,9 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame");
-
   uint16_t length = sdu->size();
+
+  TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", length);
 
   // An ATT PDU should at least contain the opcode.
   if (length < sizeof(OpCode)) {

@@ -20,6 +20,8 @@ RemoteServiceManager::ServiceListRequest::ServiceListRequest(ServiceListCallback
 
 void RemoteServiceManager::ServiceListRequest::Complete(att::Status status,
                                                         const ServiceMap& services) {
+  TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::ServiceListRequest::Complete");
+
   ServiceList result;
 
   if (!status || services.empty()) {
@@ -67,13 +69,13 @@ RemoteServiceManager::~RemoteServiceManager() {
   }
 }
 
-void RemoteServiceManager::Initialize(att::StatusCallback cb,
-                                              std::optional<UUID> service_uuid) {
+void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID> service_uuid) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   auto init_cb = [self, user_init_cb = std::move(cb)](att::Status status) {
+    TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::init_cb");
     if (!self)
       return;
 
@@ -89,61 +91,62 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb,
   };
 
   // Start out with the MTU exchange.
-  client_->ExchangeMTU(
-      [self, init_cb = std::move(init_cb), service_uuid](att::Status status, uint16_t mtu) mutable {
-        if (!self) {
-          init_cb(att::Status(HostError::kFailed));
-          return;
+  client_->ExchangeMTU([self, init_cb = std::move(init_cb), service_uuid](att::Status status,
+                                                                          uint16_t mtu) mutable {
+    if (!self) {
+      init_cb(att::Status(HostError::kFailed));
+      return;
+    }
+
+    if (bt_is_error(status, TRACE, "gatt", "MTU exchange failed")) {
+      init_cb(status);
+      return;
+    }
+
+    auto svc_cb = [self](const ServiceData& service_data) {
+      if (!self)
+        return;
+
+      auto svc = fbl::AdoptRef(
+          new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
+      if (!svc) {
+        bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
+        return;
+      }
+
+      self->services_[svc->handle()] = svc;
+    };
+
+    auto status_cb = [self, init_cb = std::move(init_cb)](att::Status status) {
+      TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::MTUCallback::status_cb");
+      if (!self) {
+        init_cb(att::Status(HostError::kFailed));
+        return;
+      }
+
+      // Service discovery support is mandatory for servers (v5.0, Vol 3,
+      // Part G, 4.2).
+      if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
+        // Clear services that were buffered so far.
+        self->ClearServices();
+      } else if (self->svc_watcher_) {
+        // Notify all discovered services here.
+        for (auto& iter : self->services_) {
+          TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::svc_watcher_");
+          self->svc_watcher_(iter.second);
         }
+      }
 
-        if (bt_is_error(status, TRACE, "gatt", "MTU exchange failed")) {
-          init_cb(status);
-          return;
-        }
+      init_cb(status);
+    };
 
-        auto svc_cb = [self](const ServiceData& service_data) {
-          if (!self)
-            return;
-
-          auto svc = fbl::AdoptRef(
-              new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
-          if (!svc) {
-            bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
-            return;
-          }
-
-          self->services_[svc->handle()] = svc;
-        };
-
-        auto status_cb = [self, init_cb = std::move(init_cb)](att::Status status) {
-          if (!self) {
-            init_cb(att::Status(HostError::kFailed));
-            return;
-          }
-
-          // Service discovery support is mandatory for servers (v5.0, Vol 3,
-          // Part G, 4.2).
-          if (bt_is_error(status, TRACE, "gatt", "failed to discover services")) {
-            ;
-            // Clear services that were buffered so far.
-            self->ClearServices();
-          } else if (self->svc_watcher_) {
-            // Notify all discovered services here.
-            for (auto& iter : self->services_) {
-              self->svc_watcher_(iter.second);
-            }
-          }
-
-          init_cb(status);
-        };
-
-        if (service_uuid) {
-          self->client_->DiscoverPrimaryServicesByUUID(std::move(svc_cb), std::move(status_cb),
-                                                       service_uuid.value());
-        } else {
-          self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
-        }
-      });
+    if (service_uuid) {
+      self->client_->DiscoverPrimaryServicesByUUID(std::move(svc_cb), std::move(status_cb),
+                                                   service_uuid.value());
+    } else {
+      self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
+    }
+  });
 }
 
 void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,

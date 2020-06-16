@@ -5,6 +5,7 @@
 #include "server.h"
 
 #include <lib/fit/function.h>
+#include <lib/trace/event.h>
 #include <zircon/assert.h>
 
 #include "gatt_defs.h"
@@ -112,6 +113,7 @@ void Server::OnExchangeMTU(att::Bearer::TransactionId tid, const att::PacketRead
 
 void Server::OnFindInformation(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kFindInformationRequest);
+  TRACE_DURATION("bluetooth", "gatt::Server::OnFindInformation");
 
   if (packet.payload_size() != sizeof(att::FindInformationRequestParams)) {
     att_->ReplyWithError(tid, att::kInvalidHandle, att::ErrorCode::kInvalidPDU);
@@ -260,6 +262,7 @@ void Server::OnFindByTypeValueRequest(att::Bearer::TransactionId tid,
 
 void Server::OnReadByGroupType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByGroupTypeRequest);
+  TRACE_DURATION("bluetooth", "gatt::Server::OnReadByGroupType");
 
   att::Handle start, end;
   UUID group_type;
@@ -331,6 +334,7 @@ void Server::OnReadByGroupType(att::Bearer::TransactionId tid, const att::Packet
 
 void Server::OnReadByType(att::Bearer::TransactionId tid, const att::PacketReader& packet) {
   ZX_DEBUG_ASSERT(packet.opcode() == att::kReadByTypeRequest);
+  TRACE_DURATION("bluetooth", "gatt::Server::OnReadByType");
 
   att::Handle start, end;
   UUID type;
