@@ -40,10 +40,6 @@ class FakePeer {
   // Toggles whether the address of this device represents a resolved RPA.
   void set_address_resolved(bool value) { address_resolved_ = value; }
 
-  bool has_advertising_reports() const {
-    return (adv_data_.size() > 0) || (scan_rsp_.size() > 0) || directed_;
-  }
-
   bool has_inquiry_response() {
     // All BR/EDR devices have inquiry responses.
     return address().type() == DeviceAddress::Type::kBREDR;

@@ -175,11 +175,12 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
 void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& result,
                                             const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  bt_log(DEBUG, "gap-le", "peer found: %s", bt_str(result.address));
 
   auto peer = peer_cache_->FindByAddress(result.address);
-  if (peer && connectable_cb_) {
+  if (peer && peer->connectable() && peer->le() && connectable_cb_) {
     bt_log(TRACE, "gap-le", "found connectable peer (id: %s)", bt_str(peer->identifier()));
-    connectable_cb_(peer->identifier());
+    connectable_cb_(peer);
   }
 
   // Do not process further during a passive scan.
@@ -213,8 +214,6 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-  // TODO(NET-1572): Resolve the address in the host if it is random and
-  // |result.resolved| is false.
   bt_log(TRACE, "gap-le", "Received directed advertisement (address: %s, %s)",
          result.address.ToString().c_str(), (result.resolved ? "resolved" : "not resolved"));
 
@@ -231,8 +230,8 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
     return;
   }
 
-  if (connectable_cb_) {
-    connectable_cb_(peer->identifier());
+  if (peer->connectable() && connectable_cb_) {
+    connectable_cb_(peer);
   }
 }
 

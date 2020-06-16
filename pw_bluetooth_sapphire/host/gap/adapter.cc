@@ -641,24 +641,24 @@ void Adapter::OnTransportClosed() {
     transport_closed_cb_();
 }
 
-void Adapter::OnLeAutoConnectRequest(PeerId peer_id) {
+void Adapter::OnLeAutoConnectRequest(Peer* peer) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
+  ZX_DEBUG_ASSERT(peer);
+  ZX_DEBUG_ASSERT(peer->le());
 
-  auto peer = peer_cache()->FindById(peer_id);
-
-  if (peer && peer->le() && !peer->le()->should_auto_connect()) {
-    bt_log(DEBUG, "gap", "ignoring auto-connection (peer->should_autoconnect() is false)");
+  if (!peer->le()->should_auto_connect()) {
+    bt_log(TRACE, "gap", "ignoring auto-connection (peer->should_auto_connect() is false)");
     return;
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  le_connection_manager_->Connect(peer_id, [self](auto status, auto conn) {
+  le_connection_manager_->Connect(peer->identifier(), [self](auto status, auto conn) {
     if (!self) {
-      bt_log(INFO, "gap", "ignoring auto-connection (adapter destroyed)");
+      bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
       return;
     }
 
-    if (bt_is_error(status, INFO, "gap", "failed to auto-connect")) {
+    if (bt_is_error(status, ERROR, "gap", "failed to auto-connect")) {
       return;
     }
 

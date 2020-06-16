@@ -224,7 +224,7 @@ class Adapter final {
   // which is handled by routing the request to |le_connection_manager_| to
   // initiate a Direct Connection Establishment procedure (Vol 3, Part C,
   // 9.3.8).
-  void OnLeAutoConnectRequest(PeerId peer_id);
+  void OnLeAutoConnectRequest(Peer* peer);
 
   // Called by |le_address_manager_| to query whether it is currently allowed to
   // reconfigure the LE random address.

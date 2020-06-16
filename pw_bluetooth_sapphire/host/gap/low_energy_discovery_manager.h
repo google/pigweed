@@ -196,11 +196,14 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   bool discovering() const { return !sessions_.empty(); }
 
   // Registers a callback which runs when a connectable advertisement is
-  // received from a bonded peer.
+  // received from known peer which was previously observed to be connectable during general
+  // discovery. The |peer| argument is guaranteed to be valid until the callback returns.
+  // The callback can also assume that LE transport information (i.e. |peer->le()|) will be present
+  // and accessible.
   //
   // Note: this callback can be triggered during a background scan as well as
   // general discovery.
-  using PeerConnectableCallback = fit::function<void(PeerId id)>;
+  using PeerConnectableCallback = fit::function<void(Peer* peer)>;
   void set_peer_connectable_callback(PeerConnectableCallback callback) {
     connectable_cb_ = std::move(callback);
   }
