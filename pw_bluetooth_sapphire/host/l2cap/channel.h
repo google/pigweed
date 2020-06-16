@@ -92,6 +92,15 @@ class Channel : public fbl::RefCounted<Channel> {
 
   ChannelMode mode() const { return info().mode; }
 
+  // These accessors define the concept of a Maximum Transmission Unit (MTU) as a maximum inbound
+  // (rx) and outbound (tx) packet size for the L2CAP implementation (see v5.2, Vol. 3, Part A
+  // 5.1). L2CAP requires that channel MTUs are at least 23 bytes for LE-U links and 48 bytes for
+  // ACL-U links. A further requirement is that "[t]he minimum MTU for a channel is the larger of
+  // the L2CAP minimum [...] and any MTU explicitly required by the protocols and profiles using
+  // that channel." `max_rx_sdu_size` is always determined by the capabilities of the local
+  // implementation. For dynamic channels, `max_tx_sdu_size` is determined through a configuration
+  // procedure with the peer (v5.2 Vol. 3 Part A 7.1). For fixed channels, this is always the
+  // maximum allowable L2CAP packet size, not a protocol-specific MTU.
   uint16_t max_rx_sdu_size() const { return info().max_rx_sdu_size; }
   uint16_t max_tx_sdu_size() const { return info().max_tx_sdu_size; }
 
