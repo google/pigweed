@@ -73,8 +73,8 @@ template("generate_toolchain") {
                               [
                                 invoker.cc,
                                 "-MMD -MF $depfile",  # Write out dependencies.
-                                "{{cflags_c}}",
                                 "{{cflags}}",
+                                "{{cflags_c}}",  # Must come after {{cflags}}.
                                 "{{defines}}",
                                 "{{include_dirs}}",
                                 "-c {{source}}",
@@ -94,8 +94,8 @@ template("generate_toolchain") {
                               [
                                 invoker.cxx,
                                 "-MMD -MF $depfile",  # Write out dependencies.
-                                "{{cflags_cc}}",
                                 "{{cflags}}",
+                                "{{cflags_cc}}",  # Must come after {{cflags}}.
                                 "{{defines}}",
                                 "{{include_dirs}}",
                                 "-c {{source}}",
