@@ -76,9 +76,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         transport()->WeakPtr(), &addr_delegate_, dispatcher(),
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
+    gatt_ = gatt::testing::FakeLayer::Create();
+
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
-        gatt::testing::FakeLayer::Create());
+        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_, gatt_);
 
     test_device()->set_connection_state_callback(
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));
@@ -103,6 +104,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   PeerCache* peer_cache() const { return peer_cache_.get(); }
   LowEnergyConnectionManager* conn_mgr() const { return conn_mgr_.get(); }
   data::testing::FakeDomain* fake_l2cap() const { return l2cap_.get(); }
+  gatt::testing::FakeLayer* fake_gatt() { return gatt_.get(); }
 
   // Addresses of currently connected fake peers.
   using PeerList = std::unordered_set<DeviceAddress>;
@@ -152,6 +154,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;
+  fbl::RefPtr<gatt::testing::FakeLayer> gatt_;
 
   // The most recent remote-initiated connection reported by |connector_|.
   hci::ConnectionPtr last_remote_initiated_;
@@ -1344,6 +1347,75 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::NonBondable,
                    [](sm::Status cb_status) {});
   RunLoopUntilIdle();
+  ASSERT_TRUE(cb_called);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+
+  bool cb_called = false;
+  auto expect_uuid = [&cb_called](PeerId peer_id, std::optional<UUID> uuid) {
+    ASSERT_FALSE(uuid);
+    cb_called = true;
+  };
+  fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  LowEnergyConnectionManager::ConnectionOptions connection_options(sm::BondableMode::Bondable,
+                                                                   std::nullopt);
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback, connection_options));
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status);
+  ASSERT_TRUE(cb_called);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUUID) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+
+  UUID expected_uuid({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+  bool cb_called = false;
+  auto expect_uuid = [&cb_called, expected_uuid](PeerId peer_id, std::optional<UUID> uuid) {
+    ASSERT_TRUE(uuid);
+    ASSERT_EQ(uuid.value(), expected_uuid);
+    cb_called = true;
+  };
+  fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  LowEnergyConnectionManager::ConnectionOptions connection_options(sm::BondableMode::Bondable,
+                                                                   std::optional(expected_uuid));
+  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback, connection_options));
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(status);
   ASSERT_TRUE(cb_called);
 }
 

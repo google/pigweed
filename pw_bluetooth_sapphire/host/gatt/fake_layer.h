@@ -30,11 +30,15 @@ class FakeLayer final : public GATT {
   void UnregisterService(IdType service_id) override;
   void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override;
-  void DiscoverServices(PeerId peer_id) override;
+  void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
                                     async_dispatcher_t* dispatcher) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
+
+  // Unit test callbacks
+  using DiscoverServicesCallback = fit::function<void(PeerId, std::optional<UUID>)>;
+  void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
  private:
   friend class fbl::RefPtr<FakeLayer>;
@@ -43,6 +47,8 @@ class FakeLayer final : public GATT {
 
   RemoteServiceWatcher remote_service_watcher_;
   async_dispatcher_t* remote_service_watcher_dispatcher_;
+
+  DiscoverServicesCallback discover_services_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };

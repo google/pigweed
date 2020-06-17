@@ -30,16 +30,21 @@ Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 
-void Connection::Initialize() {
+void Connection::Initialize(std::optional<UUID> optional_service_uuid) {
   ZX_DEBUG_ASSERT(remote_service_manager_);
-  remote_service_manager_->Initialize([att = att_](att::Status status) {
-    if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
-      // Signal a link error.
-      att->ShutDown();
-    } else {
-      bt_log(DEBUG, "gatt", "primary service discovery complete");
-    }
-  });
+  remote_service_manager_->Initialize(
+      [att = att_, optional_service_uuid](att::Status status) {
+        if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
+          // Signal a link error.
+          att->ShutDown();
+        } else if (optional_service_uuid) {
+          bt_log(DEBUG, "gatt", "primary service discovery complete for services with UUID %s",
+                 optional_service_uuid.value().ToString().c_str());
+        } else {
+          bt_log(DEBUG, "gatt", "primary service discovery complete");
+        }
+      },
+      optional_service_uuid);
 }
 
 }  // namespace internal

@@ -5,11 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CONNECTION_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 
 #include <memory>
+
+#include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
@@ -56,7 +57,9 @@ class Connection final {
   // Initiate MTU exchange followed by primary service discovery. On failure,
   // signals a link error through the ATT channel (which is expected to
   // disconnect the link).
-  void Initialize();
+  // |If optional_service_uud| is set, discovery is only performed for services
+  // with that UUID.
+  void Initialize(std::optional<UUID> optional_service_uud = std::nullopt);
 
  private:
   fxl::RefPtr<att::Bearer> att_;

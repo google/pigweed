@@ -5,10 +5,11 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_GATT_H_
 
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/vector.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
@@ -125,7 +126,10 @@ class GATT : public fbl::RefCounted<GATT> {
 
   // Perform service discovery and initialize remote services for the peer with
   // the given |peer_id|.
-  virtual void DiscoverServices(PeerId peer_id) = 0;
+
+  // If optional_service_uuid is set, only discover services with the given UUID.
+  virtual void DiscoverServices(
+      PeerId teer_id, std::optional<UUID> optional_service_uuid = std::optional<UUID>()) = 0;
 
   // Register a handler that will be notified when a remote service gets
   // discovered on a connected peer.

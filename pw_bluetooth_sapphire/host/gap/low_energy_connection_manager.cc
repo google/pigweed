@@ -1,4 +1,4 @@
-// Copyright 2017 The Fuchsia Authors. All rights reserved.
+// Copyright 2017 The Fuchsia Authors.All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -109,7 +109,8 @@ class LowEnergyConnection final : public sm::Delegate {
   // Registers this connection with L2CAP and initializes the fixed channel
   // protocols.
   void InitializeFixedChannels(l2cap::LEConnectionParameterUpdateCallback cp_cb,
-                               l2cap::LinkErrorCallback link_error_cb, BondableMode bondable_mode) {
+                               l2cap::LinkErrorCallback link_error_cb,
+                               LowEnergyConnectionManager::ConnectionOptions connection_options) {
     auto self = weak_ptr_factory_.GetWeakPtr();
     auto fixed_channels = data_domain_->AddLEConnection(
         link_->handle(), link_->role(), std::move(link_error_cb), std::move(cp_cb),
@@ -122,7 +123,7 @@ class LowEnergyConnection final : public sm::Delegate {
         });
 
     OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
-                               bondable_mode);
+                               connection_options);
   }
 
   // Tells the connection's pairing state to UpgradeSecurity to the desired level.
@@ -201,8 +202,9 @@ class LowEnergyConnection final : public sm::Delegate {
  private:
   // Called by the L2CAP layer once the link has been registered and the fixed
   // channels have been opened.
-  void OnL2capFixedChannelsOpened(fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
-                                  BondableMode bondable_mode) {
+  void OnL2capFixedChannelsOpened(
+      fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
+      LowEnergyConnectionManager::ConnectionOptions connection_options) {
     if (!att || !smp) {
       bt_log(DEBUG, "gap-le", "link was closed before opening fixed channels");
       return;
@@ -228,7 +230,8 @@ class LowEnergyConnection final : public sm::Delegate {
     }
 
     pairing_ = std::make_unique<sm::PairingState>(link_->WeakPtr(), std::move(smp), io_cap,
-                                                  weak_ptr_factory_.GetWeakPtr(), bondable_mode);
+                                                  weak_ptr_factory_.GetWeakPtr(),
+                                                  connection_options.bondable_mode());
 
     // Encrypt the link with the current LTK if it exists.
     if (ltk) {
@@ -238,7 +241,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
-    gatt_->DiscoverServices(peer_id());
+    gatt_->DiscoverServices(peer_id(), connection_options.optional_service_uuid());
   }
 
   // sm::Delegate override:
@@ -434,8 +437,8 @@ BondableMode LowEnergyConnectionRef::bondable_mode() const {
 
 LowEnergyConnectionManager::PendingRequestData::PendingRequestData(
     const DeviceAddress& address, ConnectionResultCallback first_callback,
-    BondableMode bondable_mode)
-    : address_(address), bondable_mode_(bondable_mode) {
+    ConnectionOptions connection_options)
+    : address_(address), connection_options_(connection_options) {
   callbacks_.push_back(std::move(first_callback));
 }
 
@@ -509,7 +512,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
 }
 
 bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallback callback,
-                                         BondableMode bondable_mode) {
+                                         ConnectionOptions connection_options) {
   if (!connector_) {
     bt_log(WARN, "gap-le", "connect called during shutdown!");
     return false;
@@ -562,7 +565,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
   pending_requests_[peer_id] =
-      PendingRequestData(peer->address(), std::move(callback), bondable_mode);
+      PendingRequestData(peer->address(), std::move(callback), connection_options);
 
   TryCreateNextConnection();
 
@@ -609,7 +612,7 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
 }
 
 void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
-                                                             BondableMode bondable_mode,
+                                                             sm::BondableMode bondable_mode,
                                                              ConnectionResultCallback callback) {
   ZX_DEBUG_ASSERT(link);
   bt_log(DEBUG, "gap-le", "new remote-initiated link (local addr: %s): %s",
@@ -618,10 +621,12 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
 
+  ConnectionOptions connection_options(bondable_mode, std::nullopt);
+
   // TODO(armansito): Use own address when storing the connection (NET-321).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
-  InitializeConnection(peer_id, std::move(link), bondable_mode,
+  InitializeConnection(peer_id, std::move(link), connection_options,
                        [peer_id, cb = std::move(callback), this](
                            hci::Status status, LowEnergyConnectionRefPtr conn_ref) {
                          auto peer = peer_cache_->FindById(peer_id);
@@ -694,7 +699,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
     const auto& next_peer_addr = iter.second.address();
     Peer* peer = peer_cache_->FindByAddress(next_peer_addr);
     if (peer) {
-      RequestCreateConnection(peer, iter.second.bondable_mode());
+      RequestCreateConnection(peer, iter.second.connection_options());
       break;
     }
 
@@ -707,7 +712,8 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
   }
 }
 
-void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer, BondableMode bondable_mode) {
+void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer,
+                                                         ConnectionOptions connection_options) {
   ZX_DEBUG_ASSERT(peer);
 
   // During the initial connection to a peripheral we use the initial high
@@ -724,10 +730,10 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer, BondableMod
                                                       hci::defaults::kLESupervisionTimeout);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [bondable_mode, self, peer_id = peer->identifier()](hci::Status status,
-                                                                       auto link) {
+  auto status_cb = [connection_options, self, peer_id = peer->identifier()](hci::Status status,
+                                                                            auto link) {
     if (self)
-      self->OnConnectResult(peer_id, status, std::move(link), bondable_mode);
+      self->OnConnectResult(peer_id, status, std::move(link), connection_options);
   };
 
   // We set the scan window and interval to the same value for continuous
@@ -738,7 +744,7 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer, BondableMod
 
 void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
                                                       std::unique_ptr<hci::Connection> link,
-                                                      BondableMode bondable_mode,
+                                                      ConnectionOptions connection_options,
                                                       ConnectionResultCallback callback) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
@@ -775,8 +781,9 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   auto conn = std::make_unique<internal::LowEnergyConnection>(peer_id, std::move(link), dispatcher_,
                                                               self, data_domain_, gatt_);
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
-                                bondable_mode);
+                                connection_options);
   conn->StartConnectionPausePeripheralTimeout();
+
   auto first_ref = conn->AddRef();
   connections_[peer_id] = std::move(conn);
 
@@ -861,7 +868,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
 }
 
 void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci::Connection> link,
-                                                            BondableMode bondable_mode) {
+                                                            ConnectionOptions connection_options) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
   bt_log(INFO, "gap-le", "new connection %s", bt_str(*link));
@@ -872,7 +879,7 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci:
   // On successful initialization, this reference lasts until this method returns to prevent it from
   // dropping to 0 due to an unclaimed reference while notifying pending callbacks and listeners
   // below.
-  InitializeConnection(peer->identifier(), std::move(link), bondable_mode,
+  InitializeConnection(peer->identifier(), std::move(link), connection_options,
                        [this, peer_id = peer->identifier()](hci::Status status,
                                                             LowEnergyConnectionRefPtr first_ref) {
                          OnLocalInitiatedLinkInitialized(status, std::move(first_ref), peer_id);
@@ -941,12 +948,12 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link
 
 void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status status,
                                                  hci::ConnectionPtr link,
-                                                 BondableMode bondable_mode) {
+                                                 ConnectionOptions connection_options) {
   ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
 
   if (status) {
-    bt_log(DEBUG, "gap-le", "connection request successful");
-    RegisterLocalInitiatedLink(std::move(link), bondable_mode);
+    bt_log(TRACE, "gap-le", "connection request successful");
+    RegisterLocalInitiatedLink(std::move(link), connection_options);
     return;
   }
 
@@ -967,6 +974,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
 
   // Process the next pending attempt.
   ZX_DEBUG_ASSERT(!connector_->request_pending());
+  
   TryCreateNextConnection();
 }
 

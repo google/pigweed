@@ -53,8 +53,9 @@ void FakeLayer::SendNotification(IdType service_id, IdType chrc_id, PeerId peer_
   // TODO: implement
 }
 
-void FakeLayer::DiscoverServices(PeerId peer_id) {
-  // TODO: implement
+void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) {
+  if (discover_services_cb_) { discover_services_cb_(peer_id, optional_service_uuid); }
+  // TODO: implement the rest
 }
 
 void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
@@ -70,6 +71,10 @@ void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
 
 void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) {
   // TODO: implement
+}
+
+void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
+ discover_services_cb_ = std::move(cb);
 }
 
 }  // namespace testing

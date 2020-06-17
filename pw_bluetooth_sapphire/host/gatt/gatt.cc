@@ -170,17 +170,16 @@ class Impl final : public GATT, TaskDomain<Impl, GATT> {
     });
   }
 
-  void DiscoverServices(PeerId peer_id) override {
-    bt_log(DEBUG, "gatt", "discover services: %s", bt_str(peer_id));
+  void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override {
+    bt_log(TRACE, "gatt", "discover services: %s", bt_str(peer_id));
 
-    PostMessage([this, peer_id] {
+    PostMessage([this, peer_id, optional_service_uuid] {
       auto iter = connections_.find(peer_id);
       if (iter == connections_.end()) {
         bt_log(WARN, "gatt", "unknown peer: %s", bt_str(peer_id));
         return;
       }
-
-      iter->second.Initialize();
+      iter->second.Initialize(optional_service_uuid);
     });
   }
 

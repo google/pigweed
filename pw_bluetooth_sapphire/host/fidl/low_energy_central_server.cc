@@ -202,8 +202,15 @@ void LowEnergyCentralServer::ConnectPeripheral(
       (!connection_options.has_bondable_mode() || connection_options.bondable_mode())
           ? BondableMode::Bondable
           : BondableMode::NonBondable;
-  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb), bondable_mode)) {
-    bt_log(DEBUG, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
+  std::optional<bt::UUID> service_uuid =
+      connection_options.has_service_filter()
+          ? std::optional(fidl_helpers::UuidFromFidl(connection_options.service_filter()))
+          : std::nullopt;
+  bt::gap::LowEnergyConnectionManager::ConnectionOptions mgr_connection_options(bondable_mode,
+                                                                                service_uuid);
+  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb),
+                                                   mgr_connection_options)) {
+    bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;
   }
