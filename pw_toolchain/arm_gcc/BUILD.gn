@@ -33,13 +33,15 @@ config("disable_psabi_warning") {
 }
 
 config("cortex_common") {
-  cflags = [
+  asmflags = [
     "-mabi=aapcs",
     "-mthumb",
-    "-specs=nano.specs",
-    "-specs=nosys.specs",
-    "-u_printf_float",
   ]
+  cflags = asmflags + [
+             "-specs=nano.specs",
+             "-specs=nosys.specs",
+             "-u_printf_float",
+           ]
   ldflags = cflags + [
               "-lnosys",
               "-lc",
@@ -48,16 +50,19 @@ config("cortex_common") {
 
 config("cortex_m3") {
   cflags = [ "-mcpu=cortex-m3" ]
+  asmflags = cflags
   ldflags = cflags
 }
 
 config("cortex_m4") {
   cflags = [ "-mcpu=cortex-m4" ]
+  asmflags = cflags
   ldflags = cflags
 }
 
 config("cortex_software_fpu") {
   cflags = [ "-mfloat-abi=soft" ]
+  asmflags = cflags
   ldflags = cflags
 }
 
@@ -66,6 +71,7 @@ config("cortex_hardware_fpu") {
     "-mfloat-abi=hard",
     "-mfpu=fpv4-sp-d16",
   ]
+  asmflags = cflags
   defines = [ "PW_ARMV7M_ENABLE_FPU=1" ]
   ldflags = cflags
 }
