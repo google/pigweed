@@ -33,6 +33,8 @@ declare_args() {
 #     binaries.
 #   link_whole_archive: (optional) Boolean indicating if the linker should load
 #     all object files when resolving symbols.
+#   link_group: (optional) Boolean indicating if the linker should use
+#     a group to resolve circular dependencies between artifacts.
 #   defaults: (required) A scope setting defaults to apply to GN
 #     targets in this toolchain, as described in pw_vars_default.gni
 #
@@ -149,6 +151,11 @@ template("generate_toolchain") {
         ]
       }
 
+      _link_group =
+          defined(invoker.link_group) && invoker.link_group && host_os != "mac"
+      if (_link_group) {
+        _link_flags += [ "-Wl,--start-group" ]
+      }
       _link_flags += [ "{{inputs}}" ]
 
       if (defined(invoker.link_whole_archive) && invoker.link_whole_archive) {
@@ -169,6 +176,9 @@ template("generate_toolchain") {
         _link_flags += [ "{{libs}}" ]
       }
 
+      if (_link_group) {
+        _link_flags += [ "-Wl,--end-group" ]
+      }
       _link_flags += [ "-o $_link_outfile" ]
 
       _link_command = string_join(" ", _link_flags)
