@@ -209,7 +209,7 @@ class EnvSetup(object):
         steps = [
             ('CIPD package manager', self.cipd),
             ('Python environment', self.virtualenv),
-            ('Pigweed host tools', self.host_tools),
+            ('Host tools', self.host_tools),
         ]
 
         # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
