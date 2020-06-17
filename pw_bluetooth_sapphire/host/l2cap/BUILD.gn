@@ -136,6 +136,7 @@ source_set("tests") {
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
 }

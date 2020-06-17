@@ -4,6 +4,7 @@
 
 #include "enhanced_retransmission_mode_engines.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "lib/gtest/test_loop_fixture.h"
@@ -23,7 +24,9 @@ constexpr size_t kTxWindow = 63;
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
+constexpr uint8_t kExtendedControlPBitMask = 0b0001'0000;
 constexpr uint8_t kExtendedControlRejFunctionMask = 0b0000'0100;
+constexpr uint8_t kExtendedControlSrejFunctionMask = 0b0000'1100;
 
 void NoOpTxCallback(ByteBufferPtr){};
 void NoOpFailureCallback(){};
@@ -70,7 +73,6 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   ASSERT_TRUE(tx_engine);
 
   tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'p', 'i', 'n', 'g'}));
-  RunLoopUntilIdle();
   EXPECT_EQ(1, tx_count);
 
   // Receive an I-frame containing an acknowledgment including the frame that we transmitted.
@@ -79,11 +81,9 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   EXPECT_TRUE(rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kIncludeFcs)));
-  RunLoopUntilIdle();
   EXPECT_EQ(2, tx_count);
 
   tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'b', 'y', 'e', 'e'}));
-  RunLoopUntilIdle();
   EXPECT_EQ(3, tx_count);
 }
 
@@ -125,12 +125,112 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingReje
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, reject, FrameCheckSequenceOption::kIncludeFcs));
-  RunLoopUntilIdle();
 
   // Check that this caused a retransmission of the two I-Frames.
   EXPECT_EQ(4, tx_count);
   EXPECT_EQ(2, iframe_0_tx_count);
   EXPECT_EQ(2, iframe_1_tx_count);
+}
+
+// This tests the integration of receiving Selective Reject frames that are poll requests,
+// triggering retransmission as well as acknowledgment that frees up transmit window. This mirrors
+// the L2CAP Test Specification v5.0.2 L2CAP/ERM/BV-14-C.
+TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+       RetransmitAfterReceivingSelectiveRejectPollRequestSFrame) {
+  int tx_count = 0;
+  std::array<int, 4> iframe_tx_counts{};
+  auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
+    tx_count++;
+    ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
+    iframe_tx_counts[header.tx_seq()]++;
+  };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
+      NoOpFailureCallback);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  for (int i = 0; i < 4; i++) {
+    tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a' + i)));
+  }
+
+  // TxWindow caps transmissions.
+  EXPECT_EQ(3, tx_count);
+  EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 1, 1, 0));
+
+  // Receive an S-frame containing a poll request retransmission request for seq = 1. See Core Spec
+  // v5.0, Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
+  auto selective_reject =
+      StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask | kExtendedControlPBitMask, 1);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
+
+  // Check that this caused a retransmission of I-Frames 1 and 3 because the poll request
+  // acknowledged I-Frame 0, freeing up space in the transmit window.
+  EXPECT_EQ(5, tx_count);
+  EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 2, 1, 1));
+}
+
+// This tests the integration of receiving Selective Reject frames that are not poll requests,
+// triggering retransmission only. This mirrors the L2CAP Test Specification v5.0.2
+// L2CAP/ERM/BV-15-C.
+TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSelectiveRejectSFrame) {
+  int tx_count = 0;
+  std::array<int, 4> iframe_tx_counts{};
+  auto tx_callback = [&tx_count, &iframe_tx_counts](ByteBufferPtr pdu) {
+    tx_count++;
+    ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    ASSERT_GT(iframe_tx_counts.size(), header.tx_seq());
+    iframe_tx_counts[header.tx_seq()]++;
+  };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, /*n_frames_in_tx_window=*/3, tx_callback,
+      NoOpFailureCallback);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  for (int i = 0; i < 4; i++) {
+    tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a' + i)));
+  }
+
+  // TxWindow caps transmissions.
+  EXPECT_EQ(3, tx_count);
+  EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 1, 1, 0));
+
+  // Receive an S-frame containing a retransmission request for seq = 1. See Core Spec v5.0, Vol 3,
+  // Part A, Section 3.3.2 S-Frame Enhanced Control Field.
+  auto selective_reject = StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask, 1);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
+
+  // Check that this caused a retransmission of I-Frame 1 only.
+  EXPECT_EQ(4, tx_count);
+  EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 2, 1, 0));
+
+  // Receive an S-frame containing an acknowledgment up to seq = 3.
+  auto ack_3 = StaticByteBuffer(0b1, 3);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, ack_3, FrameCheckSequenceOption::kIncludeFcs));
+
+  // Initial transmission of I-Frame 3 after the acknowledgment freed up transmit window capacity.
+  EXPECT_EQ(5, tx_count);
+  EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 2, 1, 1));
+
+  // Receive an S-frame containing an acknowledgment up to seq = 3.
+  auto ack_4 = StaticByteBuffer(0b1, 4);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, ack_4, FrameCheckSequenceOption::kIncludeFcs));
+
+  EXPECT_EQ(5, tx_count);
 }
 
 // This tests the integration of receiving an acknowledgment sequence with triggering retransmission
@@ -157,7 +257,6 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   ASSERT_TRUE(tx_engine);
 
   tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'a'}));
-  RunLoopUntilIdle();
   EXPECT_EQ(1, tx_count);
 
   ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
@@ -169,10 +268,79 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
-  RunLoopUntilIdle();
 
   // Check that this caused a retransmission of the initial I-Frame.
   EXPECT_EQ(3, tx_count);
+}
+
+// This tests that explicitly a requested selective retransmission and another for the same I-Frame
+// that is a poll response causes only one retransmission. This mirrors the L2CAP Test Specification
+// v5.0.2 L2CAP/ERM/BI-03-C.
+TEST_F(
+    L2CAP_EnhancedRetransmissionModeEnginesTest,
+    RetransmitOnlyOnceAfterReceivingDuplicateSelectiveRejectSFramesForSameIFrameDuringReceiverReadyPoll) {
+  int tx_count = 0;
+  int iframe_0_tx_count = 0;
+  int iframe_1_tx_count = 0;
+  auto tx_callback = [&tx_count, &iframe_0_tx_count, &iframe_1_tx_count](ByteBufferPtr pdu) {
+    tx_count++;
+
+    // After outbound I-Frames, expect an outbound poll request S-Frame.
+    if (tx_count == 3) {
+      ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+      return;
+    }
+
+    ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+    ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+    const auto& header = pdu->As<SimpleInformationFrameHeader>();
+    if (header.tx_seq() == 0) {
+      iframe_0_tx_count++;
+    } else if (header.tx_seq() == 1) {
+      iframe_1_tx_count++;
+    }
+  };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer('a')));
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer('b')));
+  EXPECT_EQ(2, tx_count);
+  EXPECT_EQ(1, iframe_0_tx_count);
+  EXPECT_EQ(1, iframe_1_tx_count);
+
+  ASSERT_TRUE(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_EQ(3, tx_count);
+
+  // Receive an S-frame containing a retransmission request for I-Frame 0. See Core Spec v5.0, Vol
+  // 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
+  auto selective_reject = StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask, 0);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
+
+  // Receive an S-frame containing a retransmission request for I-Frame 0 and a poll response.
+  auto selective_reject_f =
+      StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask | kExtendedControlFBitMask, 0);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, selective_reject_f, FrameCheckSequenceOption::kIncludeFcs));
+
+  // Check that these two SREJs caused a retransmission of I-Frame 0 only once.
+  EXPECT_EQ(4, tx_count);
+  EXPECT_EQ(2, iframe_0_tx_count);
+  EXPECT_EQ(1, iframe_1_tx_count);
+
+  // Acknowledge all of the outbound I-Frames per the specification's sequence diagram.
+  auto receiver_ready_2 = StaticByteBuffer(0b1, 2);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready_2, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_EQ(4, tx_count);
 }
 
 // This tests that explicitly requested retransmission and receiving a poll response that doesn't

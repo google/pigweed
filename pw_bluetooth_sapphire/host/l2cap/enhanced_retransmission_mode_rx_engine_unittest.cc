@@ -16,7 +16,7 @@ namespace {
 
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
 constexpr ChannelId kTestChannelId = 0x0001;
-constexpr uint8_t kExtendedControlPBitMask = 0b1001'0000;
+constexpr uint8_t kExtendedControlPBitMask = 0b0001'0000;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
 constexpr uint8_t kExtendedControlReceiverReadyBits = 0b0000'0000;
 constexpr uint8_t kExtendedControlReceiverNotReadyBits = 0b0000'1000;

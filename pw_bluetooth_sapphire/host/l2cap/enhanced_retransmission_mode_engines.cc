@@ -35,6 +35,8 @@ MakeLinkedEnhancedRetransmissionModeEngines(
       fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetRemoteBusy));
   rx_engine->set_remote_busy_cleared_callback(
       fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::ClearRemoteBusy));
+  rx_engine->set_single_retransmit_set_callback(
+      fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetSingleRetransmit));
   rx_engine->set_range_retransmit_set_callback(
       fit::bind_member(tx_engine.get(), &EnhancedRetransmissionModeTxEngine::SetRangeRetransmit));
   return {std::move(rx_engine), std::move(tx_engine)};
