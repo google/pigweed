@@ -46,6 +46,12 @@ class TestOutput : public ChannelOutput {
   span<const std::byte> sent_packet_;
 };
 
+// Version of the internal::Server with extra methods exposed for testing.
+class TestServer : public internal::Server {
+ public:
+  using internal::Server::writers;
+};
+
 template <typename Service,
           size_t output_buffer_size = 128,
           uint32_t channel_id = 99,
@@ -80,6 +86,7 @@ class ServerContextForTest {
 
   internal::ServerCall& get() { return context_; }
   const auto& output() const { return output_; }
+  TestServer& server() { return static_cast<TestServer&>(server_); }
 
  private:
   TestOutput<output_buffer_size> output_;

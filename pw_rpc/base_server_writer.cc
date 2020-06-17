@@ -16,9 +16,14 @@
 
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_rpc/server.h"
+#include "pw_rpc/internal/server.h"
 
 namespace pw::rpc::internal {
+
+BaseServerWriter::BaseServerWriter(ServerCall& call)
+    : call_(call), state_(kOpen) {
+  call_.server().RegisterWriter(*this);
+}
 
 BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
   call_ = std::move(other.call_);
@@ -33,6 +38,8 @@ void BaseServerWriter::Finish() {
   if (!open()) {
     return;
   }
+
+  call_.server().RemoveWriter(*this);
 
   // TODO(hepler): Send a control packet indicating that the stream has
   // terminated.

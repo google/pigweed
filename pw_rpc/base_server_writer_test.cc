@@ -58,7 +58,7 @@ TEST(BaseServerWriter, Move_ClosesOriginal) {
 
 class FakeServerWriter : public BaseServerWriter {
  public:
-  constexpr FakeServerWriter(ServerCall& context) : BaseServerWriter(context) {}
+  FakeServerWriter(ServerCall& context) : BaseServerWriter(context) {}
 
   constexpr FakeServerWriter() = default;
 
@@ -75,6 +75,35 @@ TEST(ServerWriter, DefaultConstruct_Closed) {
   FakeServerWriter writer;
 
   EXPECT_FALSE(writer.open());
+}
+
+TEST(ServerWriter, Construct_RegistersWithServer) {
+  ServerContextForTest<TestService> context;
+  FakeServerWriter writer(context.get());
+
+  auto& writers = context.server().writers();
+  EXPECT_FALSE(writers.empty());
+  auto it = std::find_if(
+      writers.begin(), writers.end(), [&](auto& w) { return &w == &writer; });
+  ASSERT_NE(it, writers.end());
+}
+
+TEST(ServerWriter, Destruct_RemovesFromServer) {
+  ServerContextForTest<TestService> context;
+  { FakeServerWriter writer(context.get()); }
+
+  auto& writers = context.server().writers();
+  EXPECT_TRUE(writers.empty());
+}
+
+TEST(ServerWriter, Finish_RemovesFromServer) {
+  ServerContextForTest<TestService> context;
+  FakeServerWriter writer(context.get());
+
+  writer.Finish();
+
+  auto& writers = context.server().writers();
+  EXPECT_TRUE(writers.empty());
 }
 
 TEST(ServerWriter, Close) {

@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_span/span.h"
@@ -28,16 +29,15 @@ class Packet;
 // Internal ServerWriter base class. ServerWriters are used to stream responses.
 // Implementations must provide a derived class that provides the interface for
 // sending responses.
-//
-// TODO(hepler): ServerWriters need to be tracked by the server to support
-// cancelling / terminating ongoing streaming RPCs.
-class BaseServerWriter {
+class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
  public:
-  constexpr BaseServerWriter(ServerCall& call) : call_(call), state_(kOpen) {}
+  BaseServerWriter(ServerCall& call);
 
   BaseServerWriter(const BaseServerWriter&) = delete;
 
   BaseServerWriter(BaseServerWriter&& other) { *this = std::move(other); }
+
+  ~BaseServerWriter() { Finish(); }
 
   BaseServerWriter& operator=(const BaseServerWriter&) = delete;
 

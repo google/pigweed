@@ -20,6 +20,14 @@ namespace pw::rpc::internal {
 class Server : public rpc::Server {
  public:
   Server() = delete;
+
+  void RegisterWriter(BaseServerWriter& writer) {
+    writers().push_front(writer);
+  }
+
+  void RemoveWriter(const BaseServerWriter& writer) {
+    writers().remove(writer);
+  }
 };
 
 }  // namespace pw::rpc::internal

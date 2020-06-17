@@ -40,6 +40,9 @@ class Server {
 
   constexpr size_t channel_count() const { return channels_.size(); }
 
+ protected:
+  IntrusiveList<internal::BaseServerWriter>& writers() { return writers_; }
+
  private:
   void InvokeMethod(const internal::Packet& request,
                     Channel& channel,
@@ -51,6 +54,7 @@ class Server {
 
   span<internal::Channel> channels_;
   IntrusiveList<internal::Service> services_;
+  IntrusiveList<internal::BaseServerWriter> writers_;
 };
 
 }  // namespace pw::rpc
