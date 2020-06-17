@@ -146,9 +146,8 @@ pw_test_group("tests") {
     ":channel_test",
     ":packet_test",
     ":server_test",
-    "nanopb:codegen_test",
-    "nanopb:method_test",
   ]
+  group_deps = [ "nanopb:tests" ]
 }
 
 # RPC server for tests only. A mock method implementation is used.

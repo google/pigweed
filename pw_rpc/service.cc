@@ -16,6 +16,8 @@
 
 #include <type_traits>
 
+#include "pw_rpc/internal/method.h"
+
 namespace pw::rpc::internal {
 
 const Method* Service::FindMethod(uint32_t method_id) const {

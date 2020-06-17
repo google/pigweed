@@ -20,11 +20,6 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
-namespace internal {
-
-class BaseServerWriter;
-
-}  // namespace internal
 
 class ChannelOutput {
  public:

@@ -71,11 +71,6 @@ class BasicServer : public ::testing::Test {
     server_.RegisterService(service_);
   }
 
-  TestOutput<128> output_;
-  std::array<Channel, 3> channels_;
-  Server server_;
-  TestService service_;
-
   std::span<const byte> EncodeRequest(
       PacketType type,
       uint32_t channel_id,
@@ -87,6 +82,11 @@ class BasicServer : public ::testing::Test {
     EXPECT_EQ(Status::OK, sws.status());
     return std::span(request_buffer_, sws.size());
   }
+
+  TestOutput<128> output_;
+  std::array<Channel, 3> channels_;
+  Server server_;
+  TestService service_;
 
  private:
   byte request_buffer_[64];
@@ -108,6 +108,7 @@ TEST_F(BasicServer, ProcessPacket_ValidMethod_SendsOkResponse) {
   server_.ProcessPacket(EncodeRequest(PacketType::RPC, 1, 42, 100), output_);
 
   Packet packet = Packet::FromBuffer(output_.sent_packet());
+  EXPECT_EQ(packet.type(), PacketType::RPC);
   EXPECT_EQ(packet.channel_id(), 1u);
   EXPECT_EQ(packet.service_id(), 42u);
   EXPECT_EQ(packet.method_id(), 100u);
@@ -131,6 +132,15 @@ TEST_F(BasicServer, ProcessPacket_ValidMethod_SendsErrorResponse) {
   EXPECT_EQ(std::memcmp(packet.payload().data(), resp, sizeof(resp)), 0);
 }
 
+TEST_F(BasicServer, ProcessPacket_IncompletePacket_NothingIsInvoked) {
+  server_.ProcessPacket(EncodeRequest(PacketType::RPC, 0, 42, 101), output_);
+  server_.ProcessPacket(EncodeRequest(PacketType::RPC, 1, 0, 101), output_);
+  server_.ProcessPacket(EncodeRequest(PacketType::RPC, 1, 42, 0), output_);
+
+  EXPECT_EQ(0u, service_.method(100).last_channel_id());
+  EXPECT_EQ(0u, service_.method(200).last_channel_id());
+}
+
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
   server_.ProcessPacket(EncodeRequest(PacketType::RPC, 1, 42, 101), output_);
 
@@ -142,6 +152,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsNotFound) {
   server_.ProcessPacket(EncodeRequest(PacketType::RPC, 1, 42, 27), output_);
 
   Packet packet = Packet::FromBuffer(output_.sent_packet());
+  EXPECT_EQ(packet.type(), PacketType::RPC);
   EXPECT_EQ(packet.channel_id(), 1u);
   EXPECT_EQ(packet.service_id(), 42u);
   EXPECT_EQ(packet.method_id(), 0u);  // No method ID 27
@@ -183,6 +194,45 @@ TEST_F(BasicServer,
   EXPECT_EQ(packet.channel_id(), 0u);
   EXPECT_EQ(packet.service_id(), 0u);
   EXPECT_EQ(packet.method_id(), 0u);
+}
+
+TEST_F(BasicServer, ProcessPacket_Cancel_ClosesServerWriter) {
+  // Set up a fake ServerWriter representing an ongoing RPC.
+  internal::ServerCall call(static_cast<internal::Server&>(server_),
+                            static_cast<internal::Channel&>(channels_[0]),
+                            service_,
+                            service_.method(100));
+  internal::BaseServerWriter writer(call);
+  ASSERT_TRUE(writer.open());
+
+  server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 100), output_);
+
+  EXPECT_FALSE(writer.open());
+
+  Packet packet = Packet::FromBuffer(output_.sent_packet());
+  EXPECT_EQ(packet.type(), PacketType::CANCEL);
+  EXPECT_EQ(packet.channel_id(), 1u);
+  EXPECT_EQ(packet.service_id(), 42u);
+  EXPECT_EQ(packet.method_id(), 100u);
+  EXPECT_TRUE(packet.payload().empty());
+  EXPECT_EQ(packet.status(), Status::OK);
+}
+
+TEST_F(BasicServer, ProcessPacket_Cancel_UnknownIdIsIgnored) {
+  internal::ServerCall call(static_cast<internal::Server&>(server_),
+                            static_cast<internal::Channel&>(channels_[0]),
+                            service_,
+                            service_.method(100));
+  internal::BaseServerWriter writer(call);
+  ASSERT_TRUE(writer.open());
+
+  // Send packets with incorrect channel, service, and method ID.
+  server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 2, 42, 100), output_);
+  server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 43, 100), output_);
+  server_.ProcessPacket(EncodeRequest(PacketType::CANCEL, 1, 42, 101), output_);
+
+  EXPECT_TRUE(writer.open());
+  EXPECT_TRUE(output_.sent_packet().empty());
 }
 
 }  // namespace

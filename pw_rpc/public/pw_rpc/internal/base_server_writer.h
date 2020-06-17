@@ -20,6 +20,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/service.h"
 
 namespace pw::rpc::internal {
 
@@ -46,6 +47,10 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   // True if the ServerWriter is active and ready to send responses.
   bool open() const { return state_ == kOpen; }
 
+  uint32_t channel_id() const { return call_.channel().id(); }
+  uint32_t service_id() const { return call_.service().id(); }
+  uint32_t method_id() const;
+
   // Closes the ServerWriter, if it is open.
   void Finish();
 
@@ -59,7 +64,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
  private:
-  Packet packet(std::span<const std::byte> payload = {}) const;
+  Packet RpcPacket(std::span<const std::byte> payload = {}) const;
 
   ServerCall call_;
   Channel::OutputBuffer response_;

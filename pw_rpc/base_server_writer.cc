@@ -43,17 +43,23 @@ BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
   return *this;
 }
 
+uint32_t BaseServerWriter::method_id() const { return call_.method().id(); }
+
 void BaseServerWriter::Finish() {
   if (!open()) {
     return;
   }
 
   call_.server().RemoveWriter(*this);
-
-  // TODO(hepler): Send a control packet indicating that the stream has
-  // terminated.
-
   state_ = kClosed;
+
+  // Send a control packet indicating that the stream has terminated.
+  auto response = call_.channel().AcquireBuffer();
+  call_.channel().Send(response,
+                       Packet(PacketType::CANCEL,
+                              call_.channel().id(),
+                              call_.service().id(),
+                              method().id()));
 }
 
 std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
@@ -62,7 +68,7 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   }
 
   response_ = call_.channel().AcquireBuffer();
-  return response_.payload(packet());
+  return response_.payload(RpcPacket());
 }
 
 Status BaseServerWriter::ReleasePayloadBuffer(
@@ -70,10 +76,10 @@ Status BaseServerWriter::ReleasePayloadBuffer(
   if (!open()) {
     return Status::FAILED_PRECONDITION;
   }
-  return call_.channel().Send(response_, packet(payload));
+  return call_.channel().Send(response_, RpcPacket(payload));
 }
 
-Packet BaseServerWriter::packet(std::span<const std::byte> payload) const {
+Packet BaseServerWriter::RpcPacket(std::span<const std::byte> payload) const {
   return Packet(PacketType::RPC,
                 call_.channel().id(),
                 call_.service().id(),

@@ -18,9 +18,10 @@
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
-#include "pw_rpc/internal/method.h"
 
 namespace pw::rpc::internal {
+
+class Method;
 
 // Base class for all RPC services. This cannot be instantiated directly; use a
 // generated subclass instead.

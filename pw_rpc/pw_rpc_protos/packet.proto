@@ -15,7 +15,16 @@ syntax = "proto3";
 
 package pw.rpc.internal;
 
-enum PacketType { RPC = 0; };
+enum PacketType {
+  // RPC packets correspond with an RPC request or response.
+  RPC = 0;
+
+  // CANCEL packets indicate cancellation of an ongoing streaming RPC. They are
+  // sent by the client to request cancellation and by the server to signal that
+  // an RPC was cancelled. The server sends a CANCEL packet when an RPC is
+  // cancelled server-side and in response to a client's request.
+  CANCEL = 1;
+}
 
 message RpcPacket {
   // The type of packet. Either a general RPC packet or a specific control
@@ -37,4 +46,4 @@ message RpcPacket {
 
   // RPC response status code.
   uint32 status = 6;
-};
+}

@@ -106,6 +106,21 @@ TEST(ServerWriter, Finish_RemovesFromServer) {
   EXPECT_TRUE(writers.empty());
 }
 
+TEST(ServerWriter, Finish_SendsCancellationPacket) {
+  ServerContextForTest<TestService> context;
+  FakeServerWriter writer(context.get());
+
+  writer.Finish();
+
+  Packet packet = Packet::FromBuffer(context.output().sent_packet());
+  EXPECT_EQ(packet.type(), PacketType::CANCEL);
+  EXPECT_EQ(packet.channel_id(), context.kChannelId);
+  EXPECT_EQ(packet.service_id(), context.kServiceId);
+  EXPECT_EQ(packet.method_id(), context.get().method().id());
+  EXPECT_TRUE(packet.payload().empty());
+  EXPECT_EQ(packet.status(), Status::OK);
+}
+
 TEST(ServerWriter, Close) {
   ServerContextForTest<TestService> context;
   FakeServerWriter writer(context.get());

@@ -36,14 +36,11 @@ pw_source_set("nanopb") {
   visibility = [ "../*" ]
 }
 
-pw_test("method_test") {
-  deps = [
-    "..:nanopb_server",
-    "..:test_protos_nanopb",
-    "..:test_utils_nanopb_server",
+pw_test_group("tests") {
+  tests = [
+    ":codegen_test",
+    ":method_test",
   ]
-  sources = [ "method_test.cc" ]
-  enable_if = dir_pw_third_party_nanopb != ""
 }
 
 pw_test("codegen_test") {
@@ -52,5 +49,15 @@ pw_test("codegen_test") {
     "..:test_protos_nanopb_rpc",
   ]
   sources = [ "codegen_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("method_test") {
+  deps = [
+    "..:nanopb_server",
+    "..:test_protos_nanopb",
+    "..:test_utils_nanopb_server",
+  ]
+  sources = [ "method_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }

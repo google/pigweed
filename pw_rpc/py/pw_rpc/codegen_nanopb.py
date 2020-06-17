@@ -164,6 +164,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#pragma once\n')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>\n')
+    output.write_line('#include "pw_rpc/server_context.h"')
+    output.write_line('#include "pw_rpc/internal/method.h"')
     output.write_line('#include "pw_rpc/internal/service.h"')
 
     # Include the corresponding nanopb header file for this proto file, in which

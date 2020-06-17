@@ -39,21 +39,15 @@ Server::~Server() {
 
 void Server::ProcessPacket(std::span<const byte> data,
                            ChannelOutput& interface) {
+  // TODO(hepler): Update the packet parsing code to report when decoding fails.
   Packet packet = Packet::FromBuffer(data);
-  if (packet.is_control()) {
-    // TODO(frolv): Handle control packets.
-    return;
-  }
 
   if (packet.channel_id() == Channel::kUnassignedChannelId ||
       packet.service_id() == 0 || packet.method_id() == 0) {
     // Malformed packet; don't even try to process it.
-    PW_LOG_ERROR("Received incomplete RPC packet on interface %s",
-                 interface.name());
+    PW_LOG_WARN("Received incomplete packet on interface %s", interface.name());
     return;
   }
-
-  Packet response(PacketType::RPC);
 
   internal::Channel* channel = FindChannel(packet.channel_id());
   if (channel == nullptr) {
@@ -64,6 +58,10 @@ void Server::ProcessPacket(std::span<const byte> data,
       // the server cannot process the request. The channel_id in the response
       // is not set, to allow clients to detect this error case.
       internal::Channel temp_channel(packet.channel_id(), &interface);
+
+      // TODO(hepler): Add a new PacketType for errors like this, rather than
+      // using PacketType::RPC.
+      Packet response(PacketType::RPC);
       response.set_status(Status::RESOURCE_EXHAUSTED);
       auto response_buffer = temp_channel.AcquireBuffer();
       temp_channel.Send(response_buffer, response);
@@ -71,12 +69,40 @@ void Server::ProcessPacket(std::span<const byte> data,
     }
   }
 
-  response.set_channel_id(channel->id());
-  auto response_buffer = channel->AcquireBuffer();
+  switch (packet.type()) {
+    case PacketType::RPC:
+      HandleRpcPacket(packet, *channel);
+      break;
+    case PacketType::CANCEL:
+      HandleCancelPacket(packet);
+      break;
+  }
+}
+
+void Server::HandleRpcPacket(const internal::Packet& request,
+                             internal::Channel& channel) {
+  Packet response(PacketType::RPC);
+
+  response.set_channel_id(channel.id());
+  auto response_buffer = channel.AcquireBuffer();
 
   // Invoke the method with matching service and method IDs, if any.
-  InvokeMethod(packet, *channel, response, response_buffer.payload(response));
-  channel->Send(response_buffer, response);
+  InvokeMethod(request, channel, response, response_buffer.payload(response));
+  channel.Send(response_buffer, response);
+}
+
+void Server::HandleCancelPacket(const internal::Packet& request) {
+  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
+    return w.channel_id() == request.channel_id() &&
+           w.service_id() == request.service_id() &&
+           w.method_id() == request.method_id();
+  });
+
+  if (writer == writers_.end()) {
+    PW_LOG_WARN("Received CANCEL packet for unknown method");
+  } else {
+    writer->Finish();
+  }
 }
 
 void Server::InvokeMethod(const Packet& request,
