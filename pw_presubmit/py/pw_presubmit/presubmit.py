@@ -219,8 +219,6 @@ class Presubmit:
             print(line)
         print()
 
-        _LOG.debug('Paths, relative to %s:\n%s', self._root,
-                   '\n'.join(p.as_posix() for p in self._relative_paths))
         if not self._paths:
             print(color_yellow('No files are being checked!'))
 
