@@ -213,7 +213,7 @@ class EnvSetup(object):
         ]
 
         # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
-        if not self._is_windows:
+        if not self._is_windows and os.environ.get('PW_CARGO_SETUP', ''):
             steps.append(("Rust cargo", self.cargo))
 
         self._log(
