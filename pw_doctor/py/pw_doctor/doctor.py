@@ -259,7 +259,7 @@ def doctor(strict=False, checks=None):
     if ctx.failures:
         ctx.info('Failed checks: %s', ', '.join(ctx.failures))
     else:
-        ctx.info('Pigweed environment passes all checks!')
+        ctx.info('Environment passes all checks!')
     return len(ctx.failures)
 
 
