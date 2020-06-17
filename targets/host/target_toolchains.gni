@@ -38,8 +38,6 @@ _host_common = {
   if (dir_pw_third_party_nanopb != "" && !_has_nanopb) {
     pw_protobuf_GENERATORS += [ "nanopb" ]
   }
-
-  pw_IS_HOST_TOOLCHAIN = true
 }
 
 # Linux-specific target configuration.

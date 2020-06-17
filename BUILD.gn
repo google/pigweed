@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Main build file for upstream Pigweed.
@@ -29,13 +30,6 @@ declare_args() {
   #   size_optimized
   #   speed_optimized
   pw_optimization_level = "debug"
-
-  # Whether or not the current toolchain is targeting a host. When possible,
-  # avoid depending on this arg. This is mostly just used to decide whether to
-  # build host tools.
-  #
-  # TODO(amontanez): This should probably be moved to a GNI file.
-  pw_IS_HOST_TOOLCHAIN = false
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by
@@ -103,7 +97,8 @@ group("pigweed_default") {
         deps += [ ":pw_module_tests_run" ]
       }
     }
-    if (pw_IS_HOST_TOOLCHAIN && pw_build_HOST_TOOLS) {
+    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+        pw_toolchain_SCOPE.is_host_toolchain && pw_build_HOST_TOOLS) {
       deps += [ ":host_tools" ]
     }
   }
@@ -194,7 +189,8 @@ if (current_toolchain != default_toolchain) {
       group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
     }
 
-    if (pw_IS_HOST_TOOLCHAIN) {
+    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+        pw_toolchain_SCOPE.is_host_toolchain) {
       # TODO(pwbug/196): KVS tests are not compatible with device builds as they
       # use features such as std::map and are computationally expensive. Solving
       # this requires a more complex capabilities-based build and configuration

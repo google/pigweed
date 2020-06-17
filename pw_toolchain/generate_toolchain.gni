@@ -29,6 +29,8 @@ declare_args() {
 #   cxx: (required) String indicating the C++ compiler to use.
 #   is_host_toolchain: (optional) Boolean indicating if the outputs are meant
 #     for the $host_os.
+#   final_binary_extension: (optional) The extension to apply to final linked
+#     binaries.
 #   link_whole_archive: (optional) Boolean indicating if the linker should load
 #     all object files when resolving symbols.
 #   defaults: (required) A scope setting defaults to apply to GN
@@ -177,7 +179,9 @@ template("generate_toolchain") {
         outputs = [ _link_outfile ]
         default_output_dir = "{{target_out_dir}}/bin"
 
-        if (is_host_toolchain && host_os == "win") {
+        if (defined(invoker.final_binary_extension)) {
+          default_output_extension = invoker.final_binary_extension
+        } else if (is_host_toolchain && host_os == "win") {
           default_output_extension = ".exe"
         } else {
           default_output_extension = ""
