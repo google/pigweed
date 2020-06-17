@@ -24,7 +24,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   uint8_t tx_window = std::max(provider.ConsumeIntegral<uint8_t>(), static_cast<uint8_t>(1u));
 
   uint8_t max_transmissions = provider.ConsumeIntegral<uint8_t>();
-  uint8_t max_tx_sdu_size = std::max(provider.ConsumeIntegral<uint16_t>(), bt::l2cap::kMinACLMTU);
+  uint16_t max_tx_sdu_size = std::max(provider.ConsumeIntegral<uint16_t>(), bt::l2cap::kMinACLMTU);
 
   bool failure = false;
   auto failure_cb = [&failure] { failure = true; };
