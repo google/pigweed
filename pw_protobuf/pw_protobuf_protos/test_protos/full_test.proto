@@ -31,7 +31,7 @@ message Pigweed {
     enum Binary {
       ZERO = 0;
       ONE = 1;
-    };
+    }
 
     Bool status = 1;
   }
@@ -40,7 +40,7 @@ message Pigweed {
     enum Binary {
       ONE = 0;
       ZERO = 1;
-    };
+    }
 
     // We must go deeper.
     message Compiler {
@@ -81,7 +81,7 @@ message Proto {
   enum Binary {
     OFF = 0;
     ON = 1;
-  };
+  }
 
   message ID {
     uint32 id = 1;
