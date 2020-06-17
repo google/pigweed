@@ -17,20 +17,10 @@ to this target's configuration file.
 
 .. code:: sh
 
-  $ gn gen --args='pw_target_config = "//targets/docs/target_config.gni"' out/docs
-  $ ninja -C out/docs
-
-or
-
-.. code:: sh
-
-  $ gn gen out/docs
-  $ gn args
-  # Modify and save the args file to update the pw_target_config.
-  pw_target_config = "//targets/docs/target_config.gni"
-  $ ninja -C out/docs
+  $ gn gen out
+  $ ninja -C out docs
 
 Output
 ======
-Final HTML documentation will be placed in the ``gen/docs/html`` directory of
-the build.
+Final HTML documentation will be placed in the ``out/docs/gen/docs/html``
+directory of the build.

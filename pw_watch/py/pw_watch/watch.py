@@ -327,19 +327,23 @@ def add_parser_arguments(parser):
                         help=('directories to ignore during pw watch'),
                         default=[])
 
-    def build_dir_and_target(arg: str) -> BuildCommand:
-        args = arg.split('#')
-        return BuildCommand(pathlib.Path(args[0]), tuple(args[1:]))
+    parser.add_argument(
+        'build_targets',
+        nargs='*',
+        default=[],
+        help=('A Ninja directory to build, followed by specific targets to '
+              'build. For example, `out host docs` builds the `host` and '
+              '`docs` Ninja targets in the `out` directory. To build '
+              'additional directories, use `--build-directory`.'))
 
     parser.add_argument(
-        'build_commands',
-        nargs='*',
-        type=build_dir_and_target,
-        help=('Ninja directory to build. Can be specified multiple times to '
-              'build multiple configurations. Build targets may optionally be '
-              'specified by appending #TARGET to the directory. For example, '
-              'out/build_dir#pw_module#tests builds the pw_module and tests '
-              'targets in out/build_dir.'))
+        '--build-directory',
+        nargs='+',
+        action='append',
+        default=[],
+        metavar=('dir', 'target'),
+        help=('Allows additional build directories to be specified. Uses the '
+              'same syntax as `build_targets`.'))
 
 
 def _exit(code):
@@ -446,7 +450,8 @@ def get_exclude_list(exclude_list):
     return exclude_list + pigweed_exclude_list
 
 
-def watch(build_commands=None,
+def watch(build_targets=None,
+          build_directory=None,
           patterns=None,
           ignore_patterns=None,
           exclude_list=None):
@@ -472,9 +477,8 @@ def watch(build_commands=None,
     # If no build directory was specified, search the tree for GN build
     # directories and try to build them all. In the future this may cause
     # slow startup, but for now this is fast enough.
-    build_commands_tmp = build_commands
     build_commands = []
-    if not build_commands_tmp:
+    if not build_targets and not build_directory:
         _LOG.info('Searching for GN build dirs...')
         gn_args_files = []
         if os.path.isfile('out/args.gn'):
@@ -487,12 +491,14 @@ def watch(build_commands=None,
             if gn_build_dir.is_dir():
                 build_commands.append(BuildCommand(gn_build_dir))
     else:
+        if build_targets:
+            build_directory.append(build_targets)
         # Reformat the directory of build commands to be relative to the
         # currently directory.
-        for i, build_target in enumerate(build_commands_tmp, 1):
-            build_target_dir = build_target.build_dir
+        for build_target in build_directory:
             build_commands.append(
-                BuildCommand(build_target_dir, build_target.targets))
+                BuildCommand(pathlib.Path(build_target[0]),
+                             tuple(build_target[1:])))
 
     # Make sure we found something; if not, bail.
     if not build_commands:

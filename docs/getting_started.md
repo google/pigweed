@@ -43,7 +43,7 @@ Done. Made 1047 targets from 91 files in 114ms
 (4) Start the watcher. The watcher will invoke Ninja to build all the targets
 
 ```bash
-$ pw watch out#default#stm32f429i
+$ pw watch out default stm32f429i
 
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
   ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
@@ -246,7 +246,7 @@ Switch to the window running `pw_watch`, and quit using `ctrl+c`. To get
 which Ninja targets to build:
 
 ```bash
-$ pw watch out#default#stm32f429i
+$ pw watch out default stm32f429i
 ```
 
 This is equivalent to the following Ninja invocation:
