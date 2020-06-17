@@ -43,9 +43,8 @@ _supported_toolchain_defaults = [
 ]
 
 template("pw_source_set") {
-  import("$dir_pw_build/defaults.gni")
-
   source_set(target_name) {
+    import("$dir_pw_build/defaults.gni")
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (!defined(configs)) {
@@ -84,14 +83,13 @@ template("pw_source_set") {
 }
 
 template("pw_static_library") {
-  import("$dir_pw_build/defaults.gni")
-
   _library_output_dir = "${target_out_dir}/lib"
   if (defined(invoker.output_dir)) {
     _library_output_dir = invoker.output_dir
   }
 
   static_library(target_name) {
+    import("$dir_pw_build/defaults.gni")
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (!defined(configs)) {
@@ -132,14 +130,13 @@ template("pw_static_library") {
 }
 
 template("pw_shared_library") {
-  import("$dir_pw_build/defaults.gni")
-
   _library_output_dir = "${target_out_dir}/lib"
   if (defined(invoker.output_dir)) {
     _library_output_dir = invoker.output_dir
   }
 
   shared_library(target_name) {
+    import("$dir_pw_build/defaults.gni")
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (!defined(configs)) {
@@ -182,14 +179,13 @@ template("pw_shared_library") {
 # Wrapper for Pigweed executable build targets which uses a globally-defined,
 # configurable target type.
 template("pw_executable") {
-  import("$dir_pw_build/defaults.gni")
-
   _executable_output_dir = "${target_out_dir}/bin"
   if (defined(invoker.output_dir)) {
     _executable_output_dir = invoker.output_dir
   }
 
   target(pw_build_EXECUTABLE_TARGET_TYPE, target_name) {
+    import("$dir_pw_build/defaults.gni")
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (!defined(configs)) {
