@@ -52,7 +52,7 @@ void* FreeListHeap::Allocate(size_t size) {
 }
 
 void FreeListHeap::Free(void* ptr) {
-  std::byte* bytes = reinterpret_cast<std::byte*>(ptr);
+  std::byte* bytes = static_cast<std::byte*>(ptr);
 
   if (bytes < region_.data() || bytes >= region_.data() + region_.size()) {
     return;
@@ -102,7 +102,7 @@ void* FreeListHeap::Realloc(void* ptr, size_t size) {
     return Allocate(size);
   }
 
-  std::byte* bytes = reinterpret_cast<std::byte*>(ptr);
+  std::byte* bytes = static_cast<std::byte*>(ptr);
 
   // TODO(chenghanzh): Enhance with debug information for out-of-range and more.
   if (bytes < region_.data() || bytes >= region_.data() + region_.size()) {
