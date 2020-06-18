@@ -38,6 +38,8 @@ declare_args() {
   dir_pw_log = get_path_info("pw_log", "abspath")
   dir_pw_log_basic = get_path_info("pw_log_basic", "abspath")
   dir_pw_log_tokenized = get_path_info("pw_log_tokenized", "abspath")
+  dir_pw_malloc = get_path_info("pw_malloc", "abspath")
+  dir_pw_malloc_freelist = get_path_info("pw_malloc_freelist", "abspath")
   dir_pw_minimal_cpp_stdlib = get_path_info("pw_minimal_cpp_stdlib", "abspath")
   dir_pw_module = get_path_info("pw_module", "abspath")
   dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")

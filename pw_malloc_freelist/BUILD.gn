@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,29 +14,40 @@
 
 # gn-format disable
 import("//build_overrides/pigweed.gni")
+import("$dir_pw_malloc/backend.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_malloc/backend.gni")
-config("pw_malloc_active") {
-  if (pw_malloc_BACKEND != "") {
-    defines = [ "PW_MALLOC_ACTIVE=1" ]
-  }
+import("$dir_pw_unit_test/test.gni")
+config("default_config") {
+  include_dirs = [ "public" ]
 }
 
-pw_source_set("pw_sys_io_baremetal_stm32f429") {
-  configs = [ ":pw_malloc_active" ]
-  public_deps = [ "$dir_pw_boot_armv7m" ]
+pw_source_set("pw_malloc_freelist") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_malloc_freelist/freelist_malloc.h" ]
   deps = [
-    "$dir_pw_malloc",
+    "$dir_pw_allocator:block",
+    "$dir_pw_allocator:freelist_heap",
+    "$dir_pw_boot_armv7m",
+    "$dir_pw_malloc:facade",
     "$dir_pw_preprocessor",
-    "$dir_pw_sys_io:default_putget_bytes",
-    "$dir_pw_sys_io:facade",
+    "$dir_pw_span",
   ]
-  sources = [
-    "early_boot.c",
-    "sys_io_baremetal.cc",
+  sources = [ "freelist_malloc.cc" ]
+}
+
+pw_test_group("tests") {
+  enable_if = pw_malloc_BACKEND == dir_pw_malloc_freelist
+  tests = [ ":freelist_malloc_test" ]
+}
+
+pw_test("freelist_malloc_test") {
+  deps = [
+    "$dir_pw_allocator",
+    "$dir_pw_malloc",
   ]
+  sources = [ "freelist_malloc_test.cc" ]
 }
 
 pw_doc_group("docs") {

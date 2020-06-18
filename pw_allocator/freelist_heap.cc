@@ -19,7 +19,7 @@
 namespace pw::allocator {
 
 FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
-    : freelist_(freelist) {
+    : freelist_(freelist), heap_stats_() {
   Block* block;
   Block::Init(region, &block);
 
@@ -30,6 +30,7 @@ FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
 
 void* FreeListHeap::Allocate(size_t size) {
   // Find a chunk in the freelist. Split it if needed, then return
+
   auto chunk = freelist_.FindChunk(size);
 
   if (chunk.data() == nullptr) {
@@ -47,7 +48,8 @@ void* FreeListHeap::Allocate(size_t size) {
   }
 
   chunk_block->MarkUsed();
-
+  heap_stats_.bytes_allocated += size;
+  heap_stats_.cumulative_allocated += size;
   return chunk_block->UsableSpace();
 }
 
@@ -59,6 +61,7 @@ void FreeListHeap::Free(void* ptr) {
   }
 
   Block* chunk_block = Block::FromUsableSpace(bytes);
+  size_t size_freed = chunk_block->InnerSize();
   // Ensure that the block is in-use
   if (!chunk_block->Used()) {
     return;
@@ -87,6 +90,8 @@ void FreeListHeap::Free(void* ptr) {
   }
   // Add back to the freelist
   freelist_.AddChunk(BlockToSpan(chunk_block));
+  heap_stats_.bytes_allocated -= size_freed;
+  heap_stats_.cumulative_freed += size_freed;
 }
 
 // Follows constract of the C standard realloc() function

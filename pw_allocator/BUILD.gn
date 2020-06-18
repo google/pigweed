@@ -23,7 +23,7 @@ config("default_config") {
 }
 
 group("pw_allocator") {
-  deps = [
+  public_deps = [
     ":block",
     ":freelist",
     ":freelist_heap",
@@ -44,7 +44,7 @@ pw_source_set("freelist") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_allocator/freelist.h" ]
   public_deps = [
-    "$dir_pw_containers",
+    "$dir_pw_containers:vector",
     "$dir_pw_span",
     "$dir_pw_status",
   ]

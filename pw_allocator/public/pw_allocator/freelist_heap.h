@@ -24,6 +24,13 @@ namespace pw::allocator {
 
 class FreeListHeap {
  public:
+  template <size_t N>
+  friend class FreeListHeapBuffer;
+  struct HeapStats {
+    size_t bytes_allocated;
+    size_t cumulative_allocated;
+    size_t cumulative_freed;
+  };
   FreeListHeap(std::span<std::byte> region, FreeList& freelist);
 
   void* Allocate(size_t size);
@@ -38,6 +45,7 @@ class FreeListHeap {
 
   std::span<std::byte> region_;
   FreeList& freelist_;
+  HeapStats heap_stats_;
 };
 
 template <size_t N = 6>
@@ -53,6 +61,10 @@ class FreeListHeapBuffer {
   void Free(void* ptr) { heap_.Free(ptr); }
   void* Realloc(void* ptr, size_t size) { return heap_.Realloc(ptr, size); }
   void* Calloc(size_t num, size_t size) { return heap_.Calloc(num, size); }
+
+  const FreeListHeap::HeapStats& heap_stats() const {
+    return heap_.heap_stats_;
+  };
 
  private:
   FreeListBuffer<N> freelist_;
