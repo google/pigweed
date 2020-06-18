@@ -16,15 +16,8 @@
 
 namespace pw {
 
-void ByteBuilder::clear() {
-  size_ = 0;
-  status_ = Status::OK;
-  last_status_ = Status::OK;
-}
-
 ByteBuilder& ByteBuilder::append(size_t count, std::byte b) {
   std::byte* const append_destination = &buffer_[size_];
-
   std::memset(append_destination, static_cast<int>(b), ResizeForAppend(count));
   return *this;
 }
@@ -36,36 +29,27 @@ ByteBuilder& ByteBuilder::append(const void* bytes, size_t count) {
 }
 
 size_t ByteBuilder::ResizeForAppend(size_t bytes_to_append) {
-  const size_t copied = std::min(bytes_to_append, max_size() - size());
-  size_ += copied;
-
-  if (buffer_.empty() || bytes_to_append != copied) {
-    SetErrorStatus(Status::RESOURCE_EXHAUSTED);
-  } else {
-    last_status_ = Status::OK;
+  if (!status_.ok()) {
+    return 0;
   }
 
-  return copied;
+  if (bytes_to_append > max_size() - size()) {
+    status_ = Status::RESOURCE_EXHAUSTED;
+    return 0;
+  }
+
+  size_ += bytes_to_append;
+  status_ = Status::OK;
+  return bytes_to_append;
 }
 
 void ByteBuilder::resize(size_t new_size) {
   if (new_size <= size_) {
     size_ = new_size;
-    last_status_ = Status::OK;
+    status_ = Status::OK;
   } else {
-    SetErrorStatus(Status::OUT_OF_RANGE);
+    status_ = Status::OUT_OF_RANGE;
   }
-}
-
-void ByteBuilder::CopySizeAndStatus(const ByteBuilder& other) {
-  size_ = other.size_;
-  status_ = other.status_;
-  last_status_ = other.last_status_;
-}
-
-void ByteBuilder::SetErrorStatus(Status status) {
-  last_status_ = status;
-  status_ = status;
 }
 
 }  // namespace pw
