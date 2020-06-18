@@ -42,7 +42,8 @@ class SignalingChannel;
 
 // Represents a controller logical link. Each instance aids in mapping L2CAP channels to their
 // corresponding controller logical link and vice versa. This owns each link's signaling fixed
-// channel and the dynamic channel logic that operates on that channel.
+// channel and the dynamic channel logic that operates on that channel. A LogicalLink must be
+// explicitly `Close`d before destruction, and will assert on this behavior in its destructor.
 //
 // Instances are created and owned by a ChannelManager.
 class LogicalLink final : public fbl::RefCounted<LogicalLink> {

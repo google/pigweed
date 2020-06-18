@@ -25,8 +25,10 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
  protected:
   void SetUp() override { NewLogicalLink(); }
   void TearDown() override {
-    link_->Close();
-    link_ = nullptr;
+    if (link_) {
+      link_->Close();
+      link_ = nullptr;
+    }
   }
   void NewLogicalLink(Conn::LinkType type = Conn::LinkType::kLE) {
     const hci::ConnectionHandle kConnHandle = 0x0001;
@@ -39,10 +41,18 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
                              std::move(query_service_cb));
   }
   LogicalLink* link() const { return link_.get(); }
+  void DeleteLink() { link_ = nullptr; }
 
  private:
   fbl::RefPtr<LogicalLink> link_;
 };
+
+using L2CAP_LogicalLinkDeathTest = L2CAP_LogicalLinkTest;
+
+TEST_F(L2CAP_LogicalLinkDeathTest, DestructedWithoutClosingDies) {
+  // Deleting the link without calling `Close` on it should trigger an assertion.
+  ASSERT_DEATH_IF_SUPPORTED(DeleteLink(), ".*closed.*");
+}
 
 TEST_F(L2CAP_LogicalLinkTest, FixedChannelHasCorrectMtu) {
   fbl::RefPtr<Channel> fixed_chan = link()->OpenFixedChannel(kATTChannelId);
