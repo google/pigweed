@@ -257,7 +257,7 @@ template("pw_proto_library") {
 
     # Indicate this library's base directory for its dependents.
     metadata = {
-      protoc_includes = [ rebase_path(".", root_out_dir) ]
+      protoc_includes = [ rebase_path(".") ]
     }
   }
 
