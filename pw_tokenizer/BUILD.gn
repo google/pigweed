@@ -121,7 +121,7 @@ pw_source_set("decoder") {
 
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.
-executable("generate_decoding_test_data") {
+pw_executable("generate_decoding_test_data") {
   deps = [
     ":decoder",
     ":pw_tokenizer",
@@ -135,7 +135,7 @@ executable("generate_decoding_test_data") {
 
 # Executable for generating a test ELF file for elf_reader_test.py. A host
 # version of this binary is checked in for use in elf_reader_test.py.
-executable("elf_reader_test_binary") {
+pw_executable("elf_reader_test_binary") {
   deps = [
     ":pw_tokenizer",
     "$dir_pw_varint",

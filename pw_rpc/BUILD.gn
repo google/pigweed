@@ -63,7 +63,7 @@ template("_pw_rpc_server_library") {
     friend = [ "./*" ]
   }
 
-  source_set("test_utils_$_target_name") {
+  pw_source_set("test_utils_$_target_name") {
     public = [ "pw_rpc_private/test_utils.h" ]
     public_configs = [ ":private_includes" ]
     public_deps = [
