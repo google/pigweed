@@ -254,21 +254,3 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
-
-# TODO: This binary is not building due to a linker error. The error does not occur in GN Builds.
-# A filegroup is used below so that the file is included in the Bazel build.
-# cc_binary(
-#     name = "debug_cli",
-#     srcs = ["debug_cli.cc"],
-#     copts = ["-std=c++17"],
-#     deps = [
-#         ":crc16",
-#         ":pw_kvs",
-#         ":test_utils",
-#     ],
-# )
-
-filegroup(
-    name = "debug_cli",
-    srcs = ["debug_cli.cc"],
-)

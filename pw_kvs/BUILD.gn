@@ -101,15 +101,6 @@ pw_source_set("test_partition") {
   ]
 }
 
-executable("debug_cli") {
-  sources = [ "debug_cli.cc" ]
-  deps = [
-    ":crc16",
-    ":fake_flash",
-    ":pw_kvs",
-  ]
-}
-
 pw_test_group("tests") {
   tests = [
     ":alignment_test",
