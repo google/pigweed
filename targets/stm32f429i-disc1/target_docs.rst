@@ -26,7 +26,7 @@ These tests can be run on-device in a few different ways.
 
 Run a unit test
 ---------------
-If using ``out/disco`` as a build directory, tests will be located in
+If using ``out`` as a build directory, tests will be located in
 ``out/stm32f429i/obj/[module name]/[test_name].elf``. To run these on device,
 the stm32f429i-disc1 target provides a helper script that flashes the test to a
 device and then runs it.
@@ -91,7 +91,7 @@ tells GN to send requests to a running ``stm32f429i_disc1_test_server``.
 
 .. code:: sh
 
-  $ gn args out/disco
+  $ gn args out
   # Modify and save the args file to use pw_target_runner.
   pw_use_test_server = true
 
