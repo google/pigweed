@@ -63,6 +63,8 @@ _toolchain_properties = {
   final_binary_extension = ".elf"
 }
 
+_target_default_configs = [ "$dir_pw_toolchain/arm_gcc:enable_float_printf" ]
+
 pw_target_toolchain_stm32f429i_disc1 = {
   _excluded_members = [
     "defaults",
@@ -77,6 +79,7 @@ pw_target_toolchain_stm32f429i_disc1 = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -88,6 +91,7 @@ pw_target_toolchain_stm32f429i_disc1 = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -99,6 +103,7 @@ pw_target_toolchain_stm32f429i_disc1 = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 }

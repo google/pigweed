@@ -60,6 +60,8 @@ _target_config = {
   ]
 }
 
+_target_default_configs = [ "$dir_pw_toolchain/arm_gcc:enable_float_printf" ]
+
 pw_target_toolchain_lm3s6965evb_qemu = {
   _excluded_members = [
     "defaults",
@@ -73,6 +75,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -83,6 +86,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -93,6 +97,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      default_configs += _target_default_configs
     }
   }
 }

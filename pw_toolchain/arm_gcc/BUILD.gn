@@ -40,12 +40,16 @@ config("cortex_common") {
   cflags = asmflags + [
              "-specs=nano.specs",
              "-specs=nosys.specs",
-             "-u_printf_float",
            ]
   ldflags = cflags + [
               "-lnosys",
               "-lc",
             ]
+}
+
+config("enable_float_printf") {
+  cflags = [ "-u_printf_float" ]
+  ldflags = cflags
 }
 
 config("cortex_m3") {
