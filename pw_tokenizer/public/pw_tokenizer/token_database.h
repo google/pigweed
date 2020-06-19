@@ -98,7 +98,11 @@ class TokenDatabase {
       }
       return *this;
     }
-    constexpr Iterator operator++(int) { return operator++(); }
+    constexpr Iterator operator++(int) {
+      Iterator previous(raw_, string_);
+      operator++();
+      return previous;
+    }
     constexpr bool operator==(const Iterator& rhs) const {
       return raw_ == rhs.raw_;
     }

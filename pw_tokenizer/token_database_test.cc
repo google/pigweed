@@ -150,6 +150,20 @@ TEST(TokenDatabase, Iterator) {
             kBasicDatabase.size());
 }
 
+TEST(TokenDatabase, Iterator_PreIncrement) {
+  auto it = kBasicDatabase.begin();
+  EXPECT_EQ((++it)->token, 2u);
+  EXPECT_STREQ(it.entry().string, "goodbye");
+}
+
+TEST(TokenDatabase, Iterator_PostIncrement) {
+  auto it = kBasicDatabase.begin();
+  EXPECT_EQ((it++)->token, 1u);
+
+  EXPECT_EQ(it->token, 2u);
+  EXPECT_STREQ(it.entry().string, "goodbye");
+}
+
 TEST(TokenDatabase, SingleEntryLookup_FirstEntry) {
   auto match = kBasicDatabase.Find(1);
   ASSERT_EQ(match.size(), 1u);
