@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
+#include "fuchsia/bluetooth/host/cpp/fidl.h"
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
@@ -108,6 +109,9 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
   fuchsia::bluetooth::host::Host* host_client() const { return host_.get(); }
 
+  // Mutable reference to the Host client interface pointer.
+  fuchsia::bluetooth::host::HostPtr& host_client_ptr() { return host_; }
+
   // Create and bind a MockPairingDelegate and attach it to the HostServer under test. It is
   // heap-allocated to permit its explicit destruction.
   [[nodiscard]] std::unique_ptr<MockPairingDelegate> SetMockPairingDelegate(
@@ -156,6 +160,48 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   fuchsia::bluetooth::host::HostPtr host_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest);
+};
+
+// The main role of this sub-suite is improved test object lifecycle management (see TearDown for
+// more details). An additional convenience it provides is fake peer/channel and mock pairing
+// delegate setup, which all tests of the full pairing stack need.
+class FIDL_HostServerPairingTest : public FIDL_HostServerTest {
+ public:
+  void SetUp() override {
+    FIDL_HostServerTest::SetUp();
+    NewPairingTest(fsys::InputCapability::NONE, fsys::OutputCapability::NONE);
+  }
+
+  void NewPairingTest(fsys::InputCapability input_cap, fsys::OutputCapability output_cap,
+                      bool is_le = true) {
+    pairing_delegate_ = SetMockPairingDelegate(input_cap, output_cap);
+    if (!fake_peer_ || !fake_chan_) {
+      ASSERT_FALSE(fake_peer_);
+      ASSERT_FALSE(fake_chan_);
+      std::tie(fake_peer_, fake_chan_) = ConnectFakePeer(is_le);
+      ASSERT_TRUE(fake_peer_);
+      ASSERT_TRUE(fake_chan_);
+      ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, fake_peer_->le()->connection_state());
+    }
+  }
+
+  // With the base HostServerTest, it is too easy to set up callbacks related to fake channels or
+  // the mock pairing delegate that lead to unexpected failure callbacks, or worse, use-after-
+  // frees. These failures mostly stem from the Host server notifying the client upon pairing
+  // delegate destruction, which is not important behavior for many tests.
+  void TearDown() override {
+    fake_chan_->SetSendCallback(nullptr, nullptr);
+    host_client_ptr().Unbind();
+    FIDL_HostServerTest::TearDown();
+  }
+
+  bt::gap::Peer* peer() { return fake_peer_; }
+  FakeChannel* fake_chan() { return fake_chan_; }
+
+ private:
+  std::unique_ptr<MockPairingDelegate> pairing_delegate_;
+  bt::gap::Peer* fake_peer_ = nullptr;
+  FakeChannel* fake_chan_ = nullptr;
 };
 
 TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
@@ -404,11 +450,11 @@ TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
   EXPECT_FALSE(info->discoverable());
 }
 
-TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
+TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
   // clang-format off
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
-      0x03,  // IO cap.: NoInputNoOutput
+      0x04,  // IO cap.: KeyboardDisplay
       0x00,  // OOB: not present
       0x0D,  // AuthReq: bonding, MITM (Authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
@@ -417,10 +463,8 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
   );
   // clang-format on
 
-  auto [peer, fake_chan] = ConnectFakePeer();
-  ASSERT_TRUE(peer);
-  ASSERT_TRUE(fake_chan);
-  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+  // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.
+  NewPairingTest(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   bool pairing_request_sent = false;
   // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
@@ -430,11 +474,11 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
   std::optional<fit::result<void, fsys::Error>> pair_result;
   fctrl::PairingOptions opts;
-  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+  host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
                       [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
 
@@ -445,7 +489,7 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeDefault) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
-TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
+TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
   // clang-format off
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
@@ -458,11 +502,6 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
   );
   // clang-format on
 
-  auto [peer, fake_chan] = ConnectFakePeer();
-  ASSERT_TRUE(peer);
-  ASSERT_TRUE(fake_chan);
-  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
-
   bool pairing_request_sent = false;
   // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
   // the call to Pair is only responsible for starting pairing, not for completing it.
@@ -471,12 +510,12 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
   std::optional<fit::result<void, fsys::Error>> pair_result;
   fctrl::PairingOptions opts;
   opts.set_le_security_level(fctrl::PairingSecurityLevel::ENCRYPTED);
-  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+  host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
                       [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
 
@@ -487,11 +526,11 @@ TEST_F(FIDL_HostServerTest, InitiatePairingLeEncrypted) {
   ASSERT_TRUE(pairing_request_sent);
 }
 
-TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
+TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
   // clang-format off
   const auto kExpected = CreateStaticByteBuffer(
       0x01,  // code: "Pairing Request"
-      0x03,  // IO cap.: NoInputNoOutput
+      0x04,  // IO cap.: KeyboardDisplay
       0x00,  // OOB: not present
       0x0C,  // AuthReq: no bonding, MITM (authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
@@ -500,10 +539,8 @@ TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
   );
   // clang-format on
 
-  auto [peer, fake_chan] = ConnectFakePeer();
-  ASSERT_TRUE(peer);
-  ASSERT_TRUE(fake_chan);
-  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
+  // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.
+  NewPairingTest(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
 
   bool pairing_request_sent = false;
   // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
@@ -513,12 +550,12 @@ TEST_F(FIDL_HostServerTest, InitiatePairingNonBondableLe) {
     ASSERT_EQ(*sent, kExpected);
     pairing_request_sent = true;
   };
-  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  fake_chan()->SetSendCallback(expect_default_bytebuffer, dispatcher());
 
   std::optional<fit::result<void, fsys::Error>> pair_result;
   fctrl::PairingOptions opts;
   opts.set_non_bondable(true);
-  host_client()->Pair(fbt::PeerId{peer->identifier().value()}, std::move(opts),
+  host_client()->Pair(fbt::PeerId{peer()->identifier().value()}, std::move(opts),
                       [&](auto result) { pair_result = std::move(result); });
   RunLoopUntilIdle();
 
