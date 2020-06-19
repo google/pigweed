@@ -207,7 +207,7 @@ class DoubleMethod(WriteMethod):
 class PackedDoubleMethod(PackedMethod):
     """Method which writes a packed list of doubles."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const double>', 'values')]
+        return [('std::span<const double>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedDouble'
@@ -225,7 +225,7 @@ class FloatMethod(WriteMethod):
 class PackedFloatMethod(PackedMethod):
     """Method which writes a packed list of floats."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const float>', 'values')]
+        return [('std::span<const float>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFloat'
@@ -243,7 +243,7 @@ class Int32Method(WriteMethod):
 class PackedInt32Method(PackedMethod):
     """Method which writes a packed list of int32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedInt32'
@@ -261,7 +261,7 @@ class Sint32Method(WriteMethod):
 class PackedSint32Method(PackedMethod):
     """Method which writes a packed list of sint32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint32'
@@ -279,7 +279,7 @@ class Sfixed32Method(WriteMethod):
 class PackedSfixed32Method(PackedMethod):
     """Method which writes a packed list of sfixed32."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int32_t>', 'values')]
+        return [('std::span<const int32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSfixed32'
@@ -297,7 +297,7 @@ class Int64Method(WriteMethod):
 class PackedInt64Method(PackedMethod):
     """Method which writes a proto int64 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedInt64'
@@ -315,7 +315,7 @@ class Sint64Method(WriteMethod):
 class PackedSint64Method(PackedMethod):
     """Method which writes a proto sint64 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSint64'
@@ -333,7 +333,7 @@ class Sfixed64Method(WriteMethod):
 class PackedSfixed64Method(PackedMethod):
     """Method which writes a proto sfixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const int64_t>', 'values')]
+        return [('std::span<const int64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedSfixed4'
@@ -351,7 +351,7 @@ class Uint32Method(WriteMethod):
 class PackedUint32Method(PackedMethod):
     """Method which writes a proto uint32 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const uint32_t>', 'values')]
+        return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint32'
@@ -369,7 +369,7 @@ class Fixed32Method(WriteMethod):
 class PackedFixed32Method(PackedMethod):
     """Method which writes a proto fixed32 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const uint32_t>', 'values')]
+        return [('std::span<const uint32_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed32'
@@ -387,7 +387,7 @@ class Uint64Method(WriteMethod):
 class PackedUint64Method(PackedMethod):
     """Method which writes a proto uint64 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const uint64_t>', 'values')]
+        return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedUint64'
@@ -405,7 +405,7 @@ class Fixed64Method(WriteMethod):
 class PackedFixed64Method(PackedMethod):
     """Method which writes a proto fixed64 value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const uint64_t>', 'values')]
+        return [('std::span<const uint64_t>', 'values')]
 
     def _encoder_fn(self) -> str:
         return 'WritePackedFixed64'
@@ -423,7 +423,7 @@ class BoolMethod(WriteMethod):
 class BytesMethod(WriteMethod):
     """Method which writes a proto bytes value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('span<const std::byte>', 'value')]
+        return [('std::span<const std::byte>', 'value')]
 
     def _encoder_fn(self) -> str:
         return 'WriteBytes'
@@ -682,7 +682,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line(f'// on {datetime.now()}')
     output.write_line('#pragma once\n')
     output.write_line('#include <cstddef>')
-    output.write_line('#include <cstdint>\n')
+    output.write_line('#include <cstdint>')
+    output.write_line('#include <span>\n')
     output.write_line('#include "pw_protobuf/codegen.h"')
 
     for imported_file in file_descriptor_proto.dependency:

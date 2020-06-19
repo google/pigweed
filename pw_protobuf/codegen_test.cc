@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#include <span>
 
 #include "gtest/gtest.h"
 #include "pw_protobuf/encoder.h"
@@ -24,6 +25,7 @@
 // low-level encoder.
 #include "pw_protobuf_protos/test_protos/full_test.pwpb.h"
 #include "pw_protobuf_protos/test_protos/importer.pwpb.h"
+#include "pw_protobuf_protos/test_protos/non_pw_package.pwpb.h"
 #include "pw_protobuf_protos/test_protos/proto2.pwpb.h"
 #include "pw_protobuf_protos/test_protos/repeated.pwpb.h"
 
@@ -290,6 +292,19 @@ TEST(Codegen, Import) {
     end.WriteSeconds(1589501841);
     end.WriteNanoseconds(490367432);
   }
+
+  span<const std::byte> proto;
+  EXPECT_EQ(encoder.Encode(&proto), Status::OK);
+}
+
+TEST(Codegen, NonPigweedPackage) {
+  using namespace non::pigweed::package::name;
+  std::byte encode_buffer[64];
+  std::array<const int64_t, 2> repeated = {0, 1};
+  NestedEncoder<1, 2> encoder(encode_buffer);
+  Packed::Encoder packed(&encoder);
+  packed.WriteRep(std::span<const int64_t>(repeated));
+  packed.WritePacked("packed");
 
   span<const std::byte> proto;
   EXPECT_EQ(encoder.Encode(&proto), Status::OK);
