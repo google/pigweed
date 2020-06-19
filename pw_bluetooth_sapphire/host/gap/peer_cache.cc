@@ -61,7 +61,8 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
                   bd.address.value() == bd.le_pairing_data.identity_address->value());
   ZX_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
-  const bool bond_le = bd.le_pairing_data.ltk || bd.le_pairing_data.csrk;
+  const bool bond_le =
+      bd.le_pairing_data.peer_ltk || bd.le_pairing_data.local_ltk || bd.le_pairing_data.csrk;
   const bool bond_bredr = bd.bredr_link_key.has_value();
 
   // |bd.le_pairing_data| must contain either a LTK or CSRK for LE
@@ -129,8 +130,8 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
 
   // Either a LTK or CSRK is mandatory for bonding (the former is needed for LE
   // Security Mode 1 and the latter is needed for Mode 2).
-  if (!bond_data.ltk && !bond_data.csrk) {
-    bt_log(DEBUG, "gap-le", "mandatory keys missing: no IRK or CSRK (id: %s)", bt_str(identifier));
+  if (!bond_data.peer_ltk && !bond_data.local_ltk && !bond_data.csrk) {
+    bt_log(DEBUG, "gap-le", "mandatory keys missing: no LTK or CSRK (id: %s)", bt_str(identifier));
     return false;
   }
 

@@ -336,7 +336,7 @@ TEST_F(SMP_Phase3Test, MasterIdentificationReceivedTwice) {
 }
 
 // Pairing completes after obtaining encryption information only.
-TEST_F(SMP_Phase3Test, InitiatorCompleteWithEncKey) {
+TEST_F(SMP_Phase3Test, InitiatorReceivesEncKey) {
   const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
   Phase3Args args;
   args.features.initiator = true;
@@ -353,22 +353,19 @@ TEST_F(SMP_Phase3Test, InitiatorCompleteWithEncKey) {
   ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
   RunLoopUntilIdle();
 
-  // We should have notified the listener that we received the LTK
-  ASSERT_EQ(1, listener()->ltk_count());
-  EXPECT_EQ(kExpectedLtk, listener()->ltk());
-
   // We were not supposed to distribute any keys in Phase 3
   EXPECT_EQ(0u, sent_msg_count);
 
   // Pairing should have succeeded
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, phase_3_complete_count());
-  ASSERT_TRUE(pairing_data().ltk.has_value());
-  EXPECT_EQ(kExpectedLtk, *pairing_data().ltk);
+  ASSERT_TRUE(pairing_data().peer_ltk.has_value());
+  EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
 }
 
 TEST_F(SMP_Phase3Test, InitiatorSendsLocalIdKey) {
   Phase3Args args;
+  args.features.initiator = true;
   args.features.local_key_distribution = KeyDistGen::kIdKey;
   args.features.remote_key_distribution = 0u;
   args.le_props = kDefaultProperties;
@@ -392,7 +389,64 @@ TEST_F(SMP_Phase3Test, InitiatorSendsLocalIdKey) {
   // We should have stored no PairingData, as the peer did not send us any
   ASSERT_FALSE(pairing_data().identity_address.has_value());
   ASSERT_FALSE(pairing_data().irk.has_value());
-  ASSERT_FALSE(pairing_data().ltk.has_value());
+  ASSERT_FALSE(pairing_data().peer_ltk.has_value());
+  ASSERT_FALSE(pairing_data().local_ltk.has_value());
+}
+
+TEST_F(SMP_Phase3Test, InitiatorSendsEncKey) {
+  Phase3Args args;
+  args.features.initiator = true;
+  args.features.local_key_distribution = KeyDistGen::kEncKey;
+  args.features.remote_key_distribution = 0u;
+  args.le_props = kDefaultProperties;
+  NewPhase3(args);
+  std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
+  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  fake_chan()->SetSendCallback(
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      dispatcher());
+  phase_3()->Start();
+  RunLoopUntilIdle();
+
+  // Local LTK should be sent to the peer & pairing should be complete
+  EXPECT_EQ(1, phase_3_complete_count());
+  ASSERT_TRUE(ltk_bytes.has_value());
+  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key(),
+            hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+}
+
+TEST_F(SMP_Phase3Test, InitiatorReceivesThenSendsEncKey) {
+  const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
+  Phase3Args args;
+  args.features.initiator = true;
+  args.features.local_key_distribution = KeyDistGen::kEncKey;
+  args.features.remote_key_distribution = KeyDistGen::kEncKey;
+  args.le_props = kExpectedLtk.security();
+  NewPhase3(args);
+  std::optional<EncryptionInformationParams> ltk_bytes = std::nullopt;
+  std::optional<MasterIdentificationParams> master_id = std::nullopt;
+  fake_chan()->SetSendCallback(
+      [&](ByteBufferPtr sdu) { ExpectEncryptionInfo(std::move(sdu), &ltk_bytes, &master_id); },
+      dispatcher());
+  phase_3()->Start();
+  Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
+  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  RunLoopUntilIdle();
+
+  // Local LTK should be sent to the peer & pairing should be complete
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, phase_3_complete_count());
+
+  ASSERT_TRUE(ltk_bytes.has_value());
+  ASSERT_TRUE(master_id.has_value());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key(),
+            hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+
+  ASSERT_TRUE(pairing_data().peer_ltk.has_value());
+  EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
 }
 
 // Tests that pairing aborts if the local ID key doesn't exist but we'd already agreed to send it.
@@ -539,18 +593,14 @@ TEST_F(SMP_Phase3Test, InitiatorCompleteWithEncAndIdKey) {
   ReceiveIdentityAddress(kSampleDeviceAddress);
   RunLoopUntilIdle();
 
-  // We should have notified the listener that we received the LTK
-  ASSERT_EQ(1, listener()->ltk_count());
-  EXPECT_EQ(kExpectedLtk, listener()->ltk());
-
   // We were not supposed to distribute any keys in Phase 3
   EXPECT_EQ(0u, sent_msg_count);
 
   // Pairing should have succeeded
   EXPECT_EQ(0, listener()->pairing_error_count());
   EXPECT_EQ(1, phase_3_complete_count());
-  ASSERT_TRUE(pairing_data().ltk.has_value());
-  EXPECT_EQ(kExpectedLtk, *pairing_data().ltk);
+  ASSERT_TRUE(pairing_data().peer_ltk.has_value());
+  EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
   ASSERT_TRUE(pairing_data().irk.has_value());
   EXPECT_EQ(kIrk, *pairing_data().irk);
 }
@@ -573,14 +623,40 @@ TEST_F(SMP_Phase3Test, ResponderLTKDistributionNoRemoteKeys) {
   // We should have sent both the Encryption Info and Master ID to the peer
   ASSERT_TRUE(ltk_bytes.has_value());
   ASSERT_TRUE(master_id.has_value());
-  // We should have notified the listener that a new LTK was ready
-  ASSERT_EQ(1, listener()->ltk_count());
+
   // We should have notified the callback with the LTK
-  ASSERT_TRUE(pairing_data().ltk.has_value());
-  // The LTK we notified the callback with should match what we notified the listener with
-  ASSERT_EQ(*pairing_data().ltk, listener()->ltk());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
   // The LTK we sent to the peer should match the one we notified callbacks with
-  ASSERT_EQ(pairing_data().ltk->key(), hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv));
+  ASSERT_EQ(hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+            pairing_data().local_ltk->key());
+}
+
+TEST_F(SMP_Phase3Test, ResponderAcceptsInitiatorEncKey) {
+  const LTK kExpectedLtk = LTK(kDefaultProperties, kSampleLinkKey);
+  Phase3Args args;
+  args.features.initiator = false;
+  args.features.secure_connections = false;
+  args.features.local_key_distribution = 0u;
+  args.features.remote_key_distribution = KeyDistGen::kEncKey;
+  args.le_props = kExpectedLtk.security();
+  NewPhase3(args);
+
+  size_t sent_msg_count = 0;
+  fake_chan()->SetSendCallback([&](ByteBufferPtr /*ignore*/) { sent_msg_count++; }, dispatcher());
+
+  phase_3()->Start();
+  Receive128BitCmd(kEncryptionInformation, kExpectedLtk.key().value());
+  ReceiveMasterIdentification(kExpectedLtk.key().rand(), kExpectedLtk.key().ediv());
+  RunLoopUntilIdle();
+
+  // We were not supposed to distribute any keys in Phase 3
+  EXPECT_EQ(0u, sent_msg_count);
+
+  // Pairing should have succeeded
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, phase_3_complete_count());
+  ASSERT_TRUE(pairing_data().peer_ltk.has_value());
+  EXPECT_EQ(kExpectedLtk, *pairing_data().peer_ltk);
 }
 
 TEST_F(SMP_Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
@@ -602,11 +678,9 @@ TEST_F(SMP_Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   // We should have sent the Encryption Info and Master ID & be waiting for the peer's IRK
   ASSERT_TRUE(ltk_bytes.has_value());
   ASSERT_TRUE(master_id.has_value());
-  // We should have notified the listener with a new LTK (but not the Phase 3 complete cb).
-  ASSERT_EQ(1, listener()->ltk_count());
-  ASSERT_EQ(hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv), listener()->ltk().key());
   ASSERT_EQ(0, phase_3_complete_count());
 
+  const hci::LinkKey kExpectedKey = hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv);
   // Reset ltk_bytes & master_id to verify that we don't send any further messages
   ltk_bytes.reset();
   master_id.reset();
@@ -614,12 +688,13 @@ TEST_F(SMP_Phase3Test, ResponderLTKDistributionWithRemoteKeys) {
   ReceiveIdentityAddress(kSampleDeviceAddress);
   RunLoopUntilIdle();
 
+  ASSERT_FALSE(ltk_bytes.has_value());
+  ASSERT_FALSE(master_id.has_value());
   // We should have notified the callback with the LTK & IRK
-  ASSERT_TRUE(pairing_data().ltk.has_value());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
   ASSERT_TRUE(pairing_data().irk.has_value());
-  // The LTK given to the callback should match what we given to the listener, which we also
-  // checked was equal to the one we sent
-  ASSERT_EQ(listener()->ltk(), *pairing_data().ltk);
+  // The LTK we sent to the peer should be equal to the one provided to the callback.
+  ASSERT_EQ(kExpectedKey, pairing_data().local_ltk->key());
   // The IRK we notified the callback with should match the one we sent.
   ASSERT_EQ(kIrk, *pairing_data().irk);
 }
@@ -644,14 +719,12 @@ TEST_F(SMP_Phase3Test, ResponderLocalLTKMaxLength) {
   // Local LTK, EDiv, and Rand should be sent to the peer & listener should be notified.
   ASSERT_TRUE(ltk_bytes.has_value());
   ASSERT_TRUE(master_id.has_value());
-  ASSERT_EQ(1, listener()->ltk_count());
-  EXPECT_EQ(*ltk_bytes, listener()->ltk().key().value());
-  EXPECT_EQ(master_id->ediv, listener()->ltk().key().ediv());
-  EXPECT_EQ(master_id->rand, listener()->ltk().key().rand());
   EXPECT_EQ(1, phase_3_complete_count());
+  EXPECT_EQ(hci::LinkKey(*ltk_bytes, master_id->rand, master_id->ediv),
+            pairing_data().local_ltk->key());
 
   // Ensure that most significant (16 - kNegotiatedMaxKeySize) bytes are zero.
-  auto ltk = pairing_data().ltk->key().value();
+  auto ltk = pairing_data().local_ltk->key().value();
   for (auto i = kNegotiatedMaxKeySize; i < ltk.size(); i++) {
     EXPECT_TRUE(ltk[i] == 0);
   }

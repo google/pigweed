@@ -139,15 +139,11 @@ LocalPairingParams Phase1::BuildPairingParameters() {
       local_params.local_keys |= KeyDistGen::kIdKey;
     }
 
-    // When we are the initiator, we request that the peer send us encryption information as it is
-    // required to do so (Vol 3, Part H, 2.4.2.3). Otherwise we always request to distribute it.
-    // Per spec Vol. 3 Part H Section 3.6.1, the initiator may distribute the LTK as well, but
-    // Fuchsia does not yet handle this case - see TODO(fxbug.dev/49371).
-    if (role() == Role::kInitiator) {
-      local_params.remote_keys |= KeyDistGen::kEncKey;
-    } else {
-      local_params.local_keys |= KeyDistGen::kEncKey;
-    }
+    // For the current connection, the responder-generated encryption keys (LTK) is always used. As
+    // device roles may change in future connections, Fuchsia supports distribution and generation
+    // of LTKs by both the local and remote device (V5.0 Vol. 3 Part H 2.4.2.3).
+    local_params.remote_keys |= KeyDistGen::kEncKey;
+    local_params.local_keys |= KeyDistGen::kEncKey;
   }
   if (sm_chan().SupportsSecureConnections()) {
     local_params.auth_req |= AuthReq::kSC;

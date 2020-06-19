@@ -32,10 +32,6 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       le_sec_(le_sec),
       obtained_remote_keys_(0),
       sent_local_keys_(false),
-      ltk_bytes_(std::nullopt),
-      ltk_(std::nullopt),
-      irk_(std::nullopt),
-      identity_address_(std::nullopt),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
   // LTKs may not be distributed during Secure Connections.
@@ -51,13 +47,6 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
 void Phase3::Start() {
   ZX_ASSERT(!has_failed());
   ZX_ASSERT(!KeyExchangeComplete());
-  // TODO(fxbug.dev/49371): The spec allows both the initiator & responder to distribute distinct
-  // LTKs in Legacy pairing, but our stack currently only supports a single responder LTK.
-  if (role() == Role::kInitiator ? ShouldSendLtk() : ShouldReceiveLtk()) {
-    bt_log(WARN, "sm", "We do not support to distributing LTK from initiator to responder");
-    Abort(ErrorCode::kCommandNotSupported);
-    return;
-  }
 
   if (role() == Role::kInitiator && !RequestedKeysObtained()) {
     bt_log(DEBUG, "sm", "waiting to receive keys from the responder");
@@ -91,7 +80,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   }
 
   // abort pairing if we received a second LTK from the peer.
-  if (ltk_bytes_.has_value() || ltk_.has_value()) {
+  if (peer_ltk_bytes_.has_value() || peer_ltk_.has_value()) {
     bt_log(ERROR, "sm", "already received LTK! aborting");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
@@ -117,7 +106,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   }
 
   ZX_DEBUG_ASSERT(!(obtained_remote_keys_ & KeyDistGen::kEncKey));
-  ltk_bytes_ = ltk;
+  peer_ltk_bytes_ = ltk;
 
   // Wait to receive EDiv and Rand
 }
@@ -137,11 +126,9 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
-  // We only support receiving encryption information as initiator
-  ZX_ASSERT(role() == Role::kInitiator);
 
   // EDIV and Rand must be sent AFTER the LTK (Vol 3, Part H, 3.6.1).
-  if (!ltk_bytes_.has_value()) {
+  if (!peer_ltk_bytes_.has_value()) {
     bt_log(ERROR, "sm", "received EDIV and Rand before LTK!");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
@@ -162,9 +149,7 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
 
   // The security properties of the LTK are determined by the current link
   // properties (i.e. the properties of the STK).
-  ZX_DEBUG_ASSERT(listener());
-  ltk_ = LTK(le_sec_, hci::LinkKey(*ltk_bytes_, random, ediv));
-  listener()->OnNewLongTermKey(*ltk_);
+  peer_ltk_ = LTK(le_sec_, hci::LinkKey(*peer_ltk_bytes_, random, ediv));
   obtained_remote_keys_ |= KeyDistGen::kEncKey;
 
   // "EncKey" received. Complete pairing if possible.
@@ -276,22 +261,16 @@ bool Phase3::SendEncryptionKey() {
     view.SetToZeros();
   }
 
-  // Generate completely random values for EDiv and Rand, use masked Ltk.
-  hci::LinkKey link_key(ltk_bytes, Random<uint64_t>(), Random<uint16_t>());
-
+  // Generate completely random values for EDiv and Rand, use masked LTK.
   // The LTK inherits the security properties of the STK currently encrypting the link.
-  ltk_ = LTK(le_sec_, link_key);
-
-  // Assign the link key to make it available in case the initiator starts encryption.
-  ZX_DEBUG_ASSERT(listener());
-  listener()->OnNewLongTermKey(*ltk_);
+  local_ltk_ = LTK(le_sec_, hci::LinkKey(ltk_bytes, Random<uint64_t>(), Random<uint16_t>()));
 
   // Send LTK
-  sm_chan().SendMessage(kEncryptionInformation, link_key.value());
+  sm_chan().SendMessage(kEncryptionInformation, local_ltk_->key().value());
   // Send EDiv & Rand
   sm_chan().SendMessage(kMasterIdentification,
-                        MasterIdentificationParams{.ediv = htole16(link_key.ediv()),
-                                                   .rand = htole64(link_key.rand())});
+                        MasterIdentificationParams{.ediv = htole16(local_ltk_->key().ediv()),
+                                                   .rand = htole64(local_ltk_->key().rand())});
 
   return true;
 }
@@ -329,7 +308,8 @@ void Phase3::SignalComplete() {
   // The security properties of all keys are determined by the security properties of the link used
   // to distribute them. This is already reflected by |le_sec_|.
   PairingData pairing_data;
-  pairing_data.ltk = ltk_;
+  pairing_data.peer_ltk = peer_ltk_;
+  pairing_data.local_ltk = local_ltk_;
 
   if (irk_.has_value()) {
     // If there is an IRK there must also be an identity address.

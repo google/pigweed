@@ -424,7 +424,8 @@ TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
   EXPECT_FALSE(peer()->le()->should_auto_connect());
 
   sm::PairingData data;
-  data.ltk = sm::LTK();
+  data.peer_ltk = sm::LTK();
+  data.local_ltk = sm::LTK();
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
@@ -448,7 +449,8 @@ TEST_F(GAP_PeerCacheTest, AutoConnectReenabledAfterSuccessfulConnect) {
 
   // Only bonded peers are eligible for autoconnect.
   sm::PairingData data;
-  data.ltk = sm::LTK();
+  data.peer_ltk = sm::LTK();
+  data.local_ltk = sm::LTK();
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
@@ -498,7 +500,8 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_FALSE(
       cache()->AddBondedPeer(BondingData{peer()->identifier(), kAddrLeRandom, {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
@@ -506,7 +509,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingId) {
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingAddress) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_FALSE(cache()->AddBondedPeer(BondingData{kId, peer()->address(), {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
@@ -514,7 +518,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithExistingAddress) {
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedLowEnergyPeerFailsWithExistingBrEdrAliasAddress) {
   EXPECT_TRUE(NewPeer(kAddrBrEdr, true));
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_FALSE(cache()->AddBondedPeer(BondingData{kId, kAddrLeAlias, {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
@@ -528,14 +533,16 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedBrEdrPeerFailsWithExistingLowEner
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerFailsWithoutMandatoryKeys) {
   sm::PairingData data;
   EXPECT_FALSE(cache()->AddBondedPeer(BondingData{kId, kAddrLeAlias, {}, data, kBrEdrKey}));
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_FALSE(cache()->AddBondedPeer(BondingData{kId, kAddrBrEdr, {}, data, {}}));
   EXPECT_FALSE(bonded_callback_called());
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddLowEnergyBondedPeerSuccess) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
 
   EXPECT_TRUE(cache()->AddBondedPeer(BondingData{kId, kAddrLeRandom, kName, data, {}}));
   auto* peer = cache()->FindById(kId);
@@ -583,7 +590,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
 
 TEST_F(GAP_PeerCacheTest_BondingTest, AddBondedPeerWithIrkIsAddedToResolvingList) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
 
   EXPECT_TRUE(cache()->AddBondedPeer(BondingData{kId, kAddrLeRandom, {}, data, {}}));
@@ -604,7 +612,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondFailsWithNoKeys) {
 
 TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondPeerUnknown) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_FALSE(cache()->StoreLowEnergyBond(kId, data));
 }
 
@@ -614,7 +623,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithLtk) {
   ASSERT_FALSE(peer()->le()->bonded());
 
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
   EXPECT_TRUE(bonded_callback_called());
@@ -647,7 +657,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingDifferentIde
 
   // Assign the other peer's address as identity.
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   data.identity_address = peer()->address();
   EXPECT_FALSE(cache()->StoreLowEnergyBond(p->identifier(), data));
   EXPECT_FALSE(p->le()->bonded());
@@ -662,7 +673,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentityMatchingE
   ASSERT_FALSE(peer()->identity_known());
 
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   // new identity address is same as another peer's BR/EDR identity
   data.identity_address = kAddrLeAlias;
   const auto old_address = peer()->address();
@@ -676,7 +688,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentityMatchingE
 // matches the target peer.
 TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithExistingMatchingIdentity) {
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   data.identity_address = peer()->address();
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
   EXPECT_TRUE(peer()->le()->bonded());
@@ -688,7 +701,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithNewIdentity) {
   ASSERT_FALSE(peer()->identity_known());
 
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   data.identity_address = kAddrLeRandom2;  // assign a new identity address
   const auto old_address = peer()->address();
   ASSERT_EQ(peer(), cache()->FindByAddress(old_address));
@@ -712,7 +726,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvin
   ASSERT_FALSE(peer()->identity_known());
 
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   data.identity_address = kAddrLeRandom;
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
 
@@ -765,7 +780,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
   EXPECT_FALSE(peer()->le()->bonded());
 
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
 
   EXPECT_FALSE(peer()->temporary());
@@ -805,7 +821,8 @@ class DualModeBondingTest : public GAP_PeerCacheTest_BondingTest,
 TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
   PeerId kId(5);
   sm::PairingData data;
-  data.ltk = kLTK;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
 
   const DeviceAddress& address = GetParam();
   EXPECT_TRUE(cache()->AddBondedPeer(BondingData{kId, address, kName, data, kBrEdrKey}));

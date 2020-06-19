@@ -44,9 +44,6 @@ class PairingPhase {
     using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
     virtual void RequestPasskey(PasskeyResponseCallback respond) = 0;
 
-    // Called when a new LTK is available from legacy pairing phase 3.
-    virtual void OnNewLongTermKey(const LTK& ltk) = 0;
-
     // Called when an on-going pairing procedure terminates with an error. This method should
     // destroy the Phase that calls it. |status| will never indicate success.
     virtual void OnPairingFailed(Status status) = 0;

@@ -17,6 +17,7 @@
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
@@ -218,8 +219,12 @@ class LowEnergyConnection final : public sm::Delegate {
     ZX_DEBUG_ASSERT_MSG(peer, "connected peer must be present in cache!");
 
     if (peer->le() && peer->le()->bond_data()) {
-      // |ltk| will remain as std::nullopt if bonding data contains no LTK.
-      ltk = peer->le()->bond_data()->ltk;
+      // Legacy pairing allows both devices to generate and exchange LTKs. "The master device must
+      // have the [...] (LTK, EDIV, and Rand) distributed by the slave device in LE legacy [...] to
+      // setup an encrypted session" (V5.0 Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
+      // and local_ltk will be equal, so this check is unnecessary but correct.
+      ltk = (link()->role() == hci::Connection::Role::kMaster) ? peer->le()->bond_data()->peer_ltk
+                                                               : peer->le()->bond_data()->local_ltk;
     }
 
     // Obtain the local I/O capabilities from the delegate. Default to
@@ -233,7 +238,8 @@ class LowEnergyConnection final : public sm::Delegate {
                                                   weak_ptr_factory_.GetWeakPtr(),
                                                   connection_options.bondable_mode());
 
-    // Encrypt the link with the current LTK if it exists.
+    // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
+    // will start encryption if the local device is the link-layer master.
     if (ltk) {
       bt_log(INFO, "gap-le", "assigning existing LTK");
       pairing_->AssignLongTermKey(*ltk);
@@ -246,24 +252,25 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // sm::Delegate override:
   void OnNewPairingData(const sm::PairingData& pairing_data) override {
+    const std::optional<sm::LTK> ltk =
+        pairing_data.peer_ltk ? pairing_data.peer_ltk : pairing_data.local_ltk;
     // Consider the pairing temporary if no link key was received. This
     // means we'll remain encrypted with the STK without creating a bond and
     // reinitiate pairing when we reconnect in the future.
-    // TODO(armansito): Support bonding with just the CSRK for LE security mode
-    // 2.
-    if (!pairing_data.ltk) {
+    if (!ltk.has_value()) {
       bt_log(INFO, "gap-le", "temporarily paired with peer (id: %s)", bt_str(peer_id()));
       return;
     }
 
-    bt_log(INFO, "gap-le", "new pairing data [%s%s%s%sid: %s]", pairing_data.ltk ? "ltk " : "",
-           pairing_data.irk ? "irk " : "",
-           pairing_data.identity_address
-               ? fxl::StringPrintf("(identity: %s) ",
-                                   pairing_data.identity_address->ToString().c_str())
-                     .c_str()
-               : "",
-           pairing_data.csrk ? "csrk " : "", bt_str(peer_id()));
+    bt_log(
+        INFO, "gap-le", "new %s pairing data [%s%s%s%s%sid: %s]",
+        ltk->security().secure_connections() ? "secure connections" : "legacy",
+        pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
+        pairing_data.irk ? "irk " : "",
+        pairing_data.identity_address
+            ? fxl::StringPrintf("(identity: %s) ", bt_str(*pairing_data.identity_address)).c_str()
+            : "",
+        pairing_data.csrk ? "csrk " : "", bt_str(peer_id()));
 
     if (!conn_mgr_->peer_cache()->StoreLowEnergyBond(peer_id_, pairing_data)) {
       bt_log(ERROR, "gap-le", "failed to cache bonding data (id: %s)", bt_str(peer_id()));

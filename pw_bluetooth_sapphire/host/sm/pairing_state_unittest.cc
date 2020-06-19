@@ -341,7 +341,8 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
   int new_sec_props_count() const { return new_sec_props_count_; }
   const SecurityProperties& new_sec_props() const { return new_sec_props_; }
 
-  const std::optional<LTK>& ltk() const { return pairing_data_.ltk; }
+  const std::optional<LTK>& peer_ltk() const { return pairing_data_.peer_ltk; }
+  const std::optional<LTK>& local_ltk() const { return pairing_data_.local_ltk; }
   const std::optional<Key>& irk() const { return pairing_data_.irk; }
   const std::optional<DeviceAddress>& identity() const { return pairing_data_.identity_address; }
   const std::optional<Key>& csrk() const { return pairing_data_.csrk; }
@@ -1673,7 +1674,7 @@ TEST_F(SMP_InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
 
   // Pairing should succeed without any pairing data.
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_FALSE(ltk());
+  EXPECT_FALSE(peer_ltk());
   EXPECT_FALSE(irk());
   EXPECT_FALSE(identity());
   EXPECT_FALSE(csrk());
@@ -1717,8 +1718,9 @@ TEST_F(SMP_InitiatorPairingTest, ScPhase3CompleteWithoutKeyExchange) {
   // Pairing should succeed with the LTK as the SC pairing is bondable, even though no keys need to
   // be distributed in Phase 3.
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_TRUE(ltk().has_value());
-  EXPECT_EQ(kExpectedLtk, ltk());
+  EXPECT_TRUE(peer_ltk().has_value());
+  EXPECT_EQ(kExpectedLtk, peer_ltk());
+  EXPECT_EQ(peer_ltk(), local_ltk());
   EXPECT_FALSE(irk());
   EXPECT_FALSE(identity());
   EXPECT_FALSE(csrk());
@@ -1748,10 +1750,11 @@ TEST_F(SMP_InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   UInt128 ltk_bytes;
   const SecurityProperties kExpectedSecurity(SecurityLevel::kEncrypted, kMaxEncryptionKeySize,
                                              true /* secure connections */);
-  // We will request the EncKey bit that's set and the peer will respond that it is capable of
+  // We will request the EncKey from the peer and the peer will respond that it is capable of
   // sending it, but as this is SC pairing that should not occur.
-  FastForwardToScLtk(&ltk_bytes, kExpectedSecurity.level(), KeyDistGen::kEncKey /*peer_keys*/,
-                     KeyDistGenField{0}, BondableMode::Bondable);
+  KeyDistGenField remote_keys{KeyDistGen::kEncKey}, local_keys{0};
+  FastForwardToScLtk(&ltk_bytes, kExpectedSecurity.level(), remote_keys, local_keys,
+                     BondableMode::Bondable);
 
   const LTK kExpectedLtk(kExpectedSecurity, hci::LinkKey(ltk_bytes, 0, 0));
   ASSERT_TRUE(fake_link()->ltk());
@@ -1763,11 +1766,11 @@ TEST_F(SMP_InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
   fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
   RunLoopUntilIdle();
 
-  // Pairing should succeed with the LTK as the SC pairing is bondable, even though no keys need to
-  // be distributed in Phase 3.
+  // Pairing should succeed without any messages being sent in "Phase 3". The LTK was generated in
+  // SC Phase 2, and as the pairing is bondable, it is included in the callback.
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_TRUE(ltk().has_value());
-  EXPECT_EQ(kExpectedLtk, ltk());
+  EXPECT_TRUE(peer_ltk().has_value());
+  EXPECT_EQ(kExpectedLtk, peer_ltk());
   EXPECT_FALSE(irk());
   EXPECT_FALSE(identity());
   EXPECT_FALSE(csrk());
@@ -1993,13 +1996,13 @@ TEST_F(SMP_InitiatorPairingTest, Phase3MasterIdentificationReceivedTwice) {
   EXPECT_EQ(1, pairing_data_callback_count());
   EXPECT_TRUE(pairing_status().is_success());
   EXPECT_EQ(pairing_status(), pairing_complete_status());
-  ASSERT_TRUE(pairing_data().ltk);
-  EXPECT_EQ(kEdiv, pairing_data().ltk->key().ediv());
-  EXPECT_EQ(kRand, pairing_data().ltk->key().rand());
+  ASSERT_TRUE(pairing_data().peer_ltk.has_value());
+  EXPECT_EQ(kEdiv, pairing_data().peer_ltk->key().ediv());
+  EXPECT_EQ(kRand, pairing_data().peer_ltk->key().rand());
 }
 
-// Pairing completes after obtaining encryption information only.
-TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
+// Pairing completes after obtaining peer encryption information only.
+TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithReceivingEncKey) {
   UInt128 stk;
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       KeyDistGen::kEncKey);
@@ -2044,18 +2047,47 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithEncKey) {
 
   // Should have notified the LTK.
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(ltk());
+  ASSERT_TRUE(peer_ltk());
   ASSERT_FALSE(irk());
   ASSERT_FALSE(identity());
   ASSERT_FALSE(csrk());
-  EXPECT_EQ(sec_props(), ltk()->security());
-  EXPECT_EQ(kLTK, ltk()->key().value());
-  EXPECT_EQ(kRand, ltk()->key().rand());
-  EXPECT_EQ(kEDiv, ltk()->key().ediv());
+  EXPECT_EQ(sec_props(), peer_ltk()->security());
+  EXPECT_EQ(kLTK, peer_ltk()->key().value());
+  EXPECT_EQ(kRand, peer_ltk()->key().rand());
+  EXPECT_EQ(kEDiv, peer_ltk()->key().ediv());
 
   // No security property update should have been sent for the LTK. This is
   // because the LTK and the STK are expected to have the same properties.
   EXPECT_EQ(1, new_sec_props_count());
+}
+
+TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithSendingEncKey) {
+  UInt128 stk;
+  KeyDistGenField remote_keys{0u}, local_keys{KeyDistGen::kEncKey};
+  FastForwardToPhase3(&stk, false, SecurityLevel::kEncrypted, remote_keys, local_keys);
+  RunLoopUntilIdle();
+
+  // Pairing should have succeeded.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, pairing_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(pairing_status());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+
+  // Only the STK should be assigned to the link, as the distributed LTK was initiator-generated.
+  // This means it can only be used to encrypt future connections where the roles are reversed.
+  EXPECT_EQ(stk, fake_link()->ltk()->value());
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+
+  // Should have been called at least once to determine local identity availability.
+  EXPECT_NE(0, local_id_info_callback_count());
+
+  // Should have notified pairing data callback with the LTK.
+  EXPECT_EQ(1, pairing_data_callback_count());
+  ASSERT_TRUE(local_ltk());
+
+  // LTK sent OTA should match what we notified the pairing data callback with.
+  EXPECT_EQ(local_ltk()->key(), hci::LinkKey(enc_info(), rand(), ediv()));
 }
 
 // Pairing completes after obtaining short encryption information only.
@@ -2106,14 +2138,14 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithShortEncKey) {
 
   // Should have notified the LTK.
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(ltk());
+  ASSERT_TRUE(peer_ltk());
   ASSERT_FALSE(irk());
   ASSERT_FALSE(identity());
   ASSERT_FALSE(csrk());
-  EXPECT_EQ(sec_props(), ltk()->security());
-  EXPECT_EQ(kLTK, ltk()->key().value());
-  EXPECT_EQ(kRand, ltk()->key().rand());
-  EXPECT_EQ(kEDiv, ltk()->key().ediv());
+  EXPECT_EQ(sec_props(), peer_ltk()->security());
+  EXPECT_EQ(kLTK, peer_ltk()->key().value());
+  EXPECT_EQ(kRand, peer_ltk()->key().rand());
+  EXPECT_EQ(kEDiv, peer_ltk()->key().ediv());
 
   // No security property update should have been sent for the LTK. This is
   // because the LTK and the STK are expected to have the same properties.
@@ -2293,7 +2325,7 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithIdKey) {
   EXPECT_FALSE(sec_props().secure_connections());
 
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_FALSE(ltk());
+  ASSERT_FALSE(peer_ltk());
   ASSERT_TRUE(irk());
   ASSERT_TRUE(identity());
   ASSERT_FALSE(csrk());
@@ -2321,15 +2353,10 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   ReceiveMasterIdentification(kRand, kEDiv);
   RunLoopUntilIdle();
 
-  // Pairing still pending. SMP should have assigned the LTK to the link without
-  // requesting to re-encrypt with the LTK (i.e. the link should remain
-  // encrypted with the STK until pairing is complete).
+  // Pairing still pending. SMP does not assign the LTK to the link until pairing completes.
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(0, pairing_callback_count());
   EXPECT_EQ(0, pairing_complete_count());
-  EXPECT_TRUE(fake_link()->ltk());
-  EXPECT_EQ(kLTK, fake_link()->ltk()->value());
-  EXPECT_EQ(1, fake_link()->start_encryption_count());
 
   // Receive IdKey
   ReceiveIdentityResolvingKey(kIRK);
@@ -2359,14 +2386,14 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithAllKeys) {
 
   // Should have notified the LTK.
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(ltk());
+  ASSERT_TRUE(peer_ltk());
   ASSERT_TRUE(irk());
   ASSERT_TRUE(identity());
   ASSERT_FALSE(csrk());
-  EXPECT_EQ(sec_props(), ltk()->security());
-  EXPECT_EQ(kLTK, ltk()->key().value());
-  EXPECT_EQ(kRand, ltk()->key().rand());
-  EXPECT_EQ(kEDiv, ltk()->key().ediv());
+  EXPECT_EQ(sec_props(), peer_ltk()->security());
+  EXPECT_EQ(kLTK, peer_ltk()->key().value());
+  EXPECT_EQ(kRand, peer_ltk()->key().rand());
+  EXPECT_EQ(kEDiv, peer_ltk()->key().ediv());
   EXPECT_EQ(sec_props(), irk()->security());
   EXPECT_EQ(kIRK, irk()->value());
   EXPECT_EQ(kPeerAddr, *identity());
@@ -2432,7 +2459,7 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveSecurityRequestWhenPaired) {
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_complete_count());
   ASSERT_TRUE(pairing_status());
-  ASSERT_TRUE(ltk());
+  ASSERT_TRUE(peer_ltk());
   ASSERT_EQ(SecurityLevel::kEncrypted, sec_props().level());
   ASSERT_EQ(1, fake_link()->start_encryption_count());  // Once for the STK
   ASSERT_EQ(1, pairing_request_count());
@@ -2722,8 +2749,9 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(0, master_ident_count());
 
   UInt128 stk;
-  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
-                      KeyDistGenField{0}, KeyDistGen::kEncKey);
+  KeyDistGenField remote_keys{0}, local_keys{KeyDistGen::kEncKey};
+  FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted, remote_keys,
+                      local_keys);
 
   // Local LTK, EDiv, and Rand should be sent to the peer.
   EXPECT_EQ(1, enc_info_count());
@@ -2744,8 +2772,8 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionNoRemoteKeys) {
   EXPECT_EQ(1, pairing_data_callback_count());
 
   // Nonetheless the link should have been assigned the LTK.
-  ASSERT_TRUE(pairing_data().ltk);
-  EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 
   // Make sure that an encryption change has no effect.
   fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true /* enabled */);
@@ -2766,13 +2794,10 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys)
                       KeyDistGen::kIdKey,    // remote keys
                       KeyDistGen::kEncKey);  // local keys
 
-  // Local LTK, EDiv, and Rand should be sent to the peer.
+  // Local LTK, EDiv, and Rand should be sent to the peer - we don't assign the new LTK to the link
+  // until pairing is complete.
   EXPECT_EQ(1, enc_info_count());
   EXPECT_EQ(1, master_ident_count());
-  ASSERT_TRUE(fake_link()->ltk());
-  EXPECT_EQ(enc_info(), fake_link()->ltk()->value());
-  EXPECT_EQ(ediv(), fake_link()->ltk()->ediv());
-  EXPECT_EQ(rand(), fake_link()->ltk()->rand());
 
   // No local identity information should have been sent.
   EXPECT_EQ(0, id_info_count());
@@ -2803,8 +2828,8 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKDistributionWithRemoteKeys)
   EXPECT_EQ(kPeerAddr, *pairing_data().identity_address);
 
   // Nonetheless the link should have been assigned the LTK.
-  ASSERT_TRUE(pairing_data().ltk);
-  EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 }
 
 // Locally generated ltk length should match max key length specified
@@ -2839,15 +2864,52 @@ TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalLTKMaxLength) {
   EXPECT_EQ(1, pairing_data_callback_count());
 
   // The link should have been assigned the LTK.
-  ASSERT_TRUE(pairing_data().ltk);
-  EXPECT_EQ(fake_link()->ltk(), pairing_data().ltk->key());
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(fake_link()->ltk(), pairing_data().local_ltk->key());
 
   // Ensure that most significant (16 - max_key_size) bytes are zero. The key
   // should be generated up to the max_key_size.
-  auto ltk = pairing_data().ltk->key().value();
+  auto ltk = pairing_data().local_ltk->key().value();
   for (auto i = max_key_size; i < ltk.size(); i++) {
     EXPECT_TRUE(ltk[i] == 0);
   }
+}
+
+TEST_F(SMP_ResponderPairingTest, LegacyPhase3ReceiveInitiatorEncKey) {
+  UInt128 stk;
+  KeyDistGenField remote_keys{KeyDistGen::kEncKey}, local_keys{0u};
+  FastForwardToPhase3(&stk, false, SecurityLevel::kEncrypted, remote_keys, local_keys);
+
+  const uint64_t kRand = 5;
+  const uint16_t kEDiv = 20;
+  const hci::LinkKey kLTK({1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}, kRand, kEDiv);
+
+  ReceiveEncryptionInformation(kLTK.value());
+  ReceiveMasterIdentification(kRand, kEDiv);
+  RunLoopUntilIdle();
+
+  // Pairing should have succeeded.
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(pairing_status());
+  EXPECT_EQ(pairing_status(), pairing_complete_status());
+
+  // No pairing callbacks needed as this is a peer-initiated pairing.
+  EXPECT_EQ(0, pairing_callback_count());
+
+  // Only the STK should be assigned to the link, as the distributed LTK was initiator-generated.
+  // This means it can only be used to encrypt future connections where the roles are reversed.
+  EXPECT_EQ(stk, fake_link()->ltk()->value());
+
+  // Should have been called at least once to determine local identity availability.
+  EXPECT_NE(0, local_id_info_callback_count());
+
+  // Should have notified pairing data callback with the LTK.
+  EXPECT_EQ(1, pairing_data_callback_count());
+  ASSERT_TRUE(peer_ltk());
+
+  // LTK received OTA should match what we notified the pairing data callback with.
+  EXPECT_EQ(kLTK, peer_ltk()->key());
 }
 
 TEST_F(SMP_ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
@@ -2964,7 +3026,7 @@ TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
                       kMaxEncryptionKeySize, BondableMode::Bondable);
 
   // The link should have been assigned the LTK.
-  EXPECT_TRUE(pairing_data().ltk);
+  EXPECT_TRUE(pairing_data().local_ltk.has_value());
 }
 
 // Test that LTK is not passed up to PairingState when local side requests non-bondable mode and
@@ -2978,7 +3040,7 @@ TEST_F(SMP_ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
                       kMaxEncryptionKeySize, BondableMode::Bondable);
 
   // The link should not have been assigned the LTK.
-  EXPECT_FALSE(pairing_data().ltk);
+  EXPECT_FALSE(pairing_data().local_ltk.has_value() || pairing_data().peer_ltk.has_value());
 }
 
 // Test that LTK is not passed up to PairingState when local side requests bondable mode and peer
@@ -2992,7 +3054,7 @@ TEST_F(SMP_ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
                       kMaxEncryptionKeySize, BondableMode::NonBondable);
 
   // The link should not have been assigned the LTK.
-  EXPECT_FALSE(pairing_data().ltk);
+  EXPECT_FALSE(pairing_data().local_ltk.has_value() || pairing_data().peer_ltk.has_value());
 }
 
 // Test that LTK is not generated and passed up to PairingState when both sides request
@@ -3006,7 +3068,7 @@ TEST_F(SMP_ResponderPairingTest, BothSidesRequestNonBondableNoLTKCreated) {
                       kMaxEncryptionKeySize, BondableMode::NonBondable);
 
   // The link should not have been assigned the LTK.
-  EXPECT_FALSE(pairing_data().ltk);
+  EXPECT_FALSE(pairing_data().local_ltk.has_value() || pairing_data().peer_ltk.has_value());
 }
 
 TEST_F(SMP_ResponderPairingTest, PairingRequestStartsPairingTimer) {
@@ -3036,8 +3098,9 @@ TEST_F(SMP_ResponderPairingTest, SecureConnectionsWorks) {
   // Pairing should succeed with the LTK as the SC pairing is bondable, even though no keys need to
   // be distributed in Phase 3.
   EXPECT_EQ(1, pairing_data_callback_count());
-  EXPECT_TRUE(ltk().has_value());
-  EXPECT_EQ(kExpectedLtk, ltk());
+  EXPECT_TRUE(local_ltk().has_value());
+  EXPECT_EQ(kExpectedLtk, local_ltk());
+  EXPECT_EQ(local_ltk(), peer_ltk());
   EXPECT_FALSE(irk());
   EXPECT_FALSE(identity());
   EXPECT_FALSE(csrk());

@@ -772,7 +772,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConn
   };
 
   sm::PairingData data;
-  data.ltk = sm::LTK();
+  data.peer_ltk = sm::LTK();
+  data.local_ltk = sm::LTK();
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
@@ -804,7 +805,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncidentalDisconnectDoesNotAffectAuto
   };
 
   sm::PairingData data;
-  data.ltk = sm::LTK();
+  data.peer_ltk = sm::LTK();
+  data.local_ltk = sm::LTK();
   data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
   EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(peer->identifier(), data));
 
@@ -1242,7 +1244,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
       0x00,  // OOB: not present
       0x09,  // AuthReq: bonding, no MITM, Secure Connections
       0x10,  // encr. key size: 16 (default max)
-      0x00,  // initiator keys: none
+      0x01,  // initiator keys: enc key
       0x03   // responder keys: enc key and identity info
   );
 

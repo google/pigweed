@@ -52,11 +52,6 @@ class FakeListener : public PairingPhase::Listener {
       ADD_FAILURE() << "No passkey entry delegate set for passkey entry pairing";
     }
   }
-  // PairingPhase::Listener override:
-  void OnNewLongTermKey(const LTK& ltk) override {
-    ltk_count_++;
-    ltk_ = ltk;
-  }
 
   // PairingPhase::Listener override:
   void OnPairingFailed(Status error) override {
@@ -84,9 +79,6 @@ class FakeListener : public PairingPhase::Listener {
   int pairing_error_count() const { return pairing_error_count_; }
   Status last_error() const { return last_error_; }
 
-  int ltk_count() const { return ltk_count_; }
-  const LTK& ltk() const { return ltk_; }
-
  private:
   std::optional<IdentityInfo> identity_info_ = std::nullopt;
   int identity_info_count_ = 0;
@@ -95,9 +87,6 @@ class FakeListener : public PairingPhase::Listener {
   ConfirmDelegate confirm_delegate_;
   DisplayDelegate display_delegate_;
   RequestPasskeyDelegate request_passkey_delegate_;
-
-  int ltk_count_ = 0;
-  LTK ltk_;
 
   int pairing_error_count_ = 0;
   Status last_error_;

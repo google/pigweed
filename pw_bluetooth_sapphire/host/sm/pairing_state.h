@@ -140,11 +140,11 @@ class PairingState final : public PairingPhase::Listener {
   // change.
   void SetSecurityProperties(const SecurityProperties& sec);
 
-  // PairingPhase::Listener overrides:
-  //
   // Directly assigns the current |ltk_| and the underlying |le_link_|'s link key. This function
   // does not initiate link layer encryption and can be called during and outside of pairing.
-  void OnNewLongTermKey(const LTK& ltk) override;
+  void OnNewLongTermKey(const LTK& ltk);
+
+  // PairingPhase::Listener overrides:
   void OnPairingFailed(Status status) override;
   std::optional<IdentityInfo> OnIdentityRequest() override;
   void ConfirmPairing(ConfirmCallback confirm) override;

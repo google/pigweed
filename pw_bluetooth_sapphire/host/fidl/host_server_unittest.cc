@@ -458,7 +458,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
       0x00,  // OOB: not present
       0x0D,  // AuthReq: bonding, MITM (Authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
-      0x00,  // initiator keys: none
+      0x01,  // initiator keys: enc key
       0x03   // responder keys: enc key and identity info
   );
   // clang-format on
@@ -497,7 +497,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
       0x00,  // OOB: not present
       0x09,  // AuthReq: bonding, no MITM (not authenticated), Secure Connections
       0x10,  // encr. key size: 16 (default max)
-      0x00,  // initiator keys: none
+      0x01,  // initiator keys: enc key
       0x03   // responder keys: enc key and identity info
   );
   // clang-format on

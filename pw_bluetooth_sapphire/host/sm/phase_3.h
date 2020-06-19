@@ -109,10 +109,13 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   // True if all the local keys in features_ have been sent to the peer.
   bool sent_local_keys_;
 
+  // Generated and distributed if the EncKey bit of the local device's KeyDistGenField is set.
+  std::optional<LTK> local_ltk_;
+
   // Data from the peer tracked during Phase 3. Parts of the LTK are received in separate events.
   // The LTK is only received in Legacy pairing.
-  std::optional<UInt128> ltk_bytes_;  // LTK without ediv/rand.
-  std::optional<LTK> ltk_;            // Full LTK with ediv/rand
+  std::optional<UInt128> peer_ltk_bytes_;  // LTK without ediv/rand.
+  std::optional<LTK> peer_ltk_;            // Full LTK with ediv/rand
   std::optional<IRK> irk_;
   std::optional<DeviceAddress> identity_address_;
 

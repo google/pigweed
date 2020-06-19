@@ -316,7 +316,8 @@ bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {
   result.identity_address = bt::DeviceAddress(BondingAddrTypeFromFidl(data.address_type), *addr);
 
   if (data.ltk) {
-    result.ltk = LtkFromFidl(*data.ltk);
+    result.local_ltk = LtkFromFidl(*data.ltk);
+    result.peer_ltk = result.local_ltk;
   }
   if (data.irk) {
     result.irk = KeyFromFidl(*data.irk);
@@ -475,9 +476,23 @@ fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap
     // this as empty as |services| is not nullable.
     out_data.le->services.resize(0);
 
-    if (le_data.ltk) {
+    // If only one LTK is present, we store that LTK in out_data.
+    if (le_data.local_ltk) {
       out_data.le->ltk = fctrl::LTK::New();
-      *out_data.le->ltk = LtkToFidl(*le_data.ltk);
+      *out_data.le->ltk = LtkToFidl(*le_data.local_ltk);
+    }
+    // For Secure Connections pairing, both LTKs will be present and equal, so it is safe to
+    // arbitrarily overwrite the out_data LTK with the peer_ltk. If both LTKs are present in Legacy
+    // pairing, we prefer to store the peer LTK as we generally expect to connect as link-level
+    // master, which encrypts with a previously-paired device using the peer LTK.
+    //
+    // TODO(35008, 49371): Migrate from fuchsia.bluetooth.control to fuchsia.bluetooth.sys, which
+    // has support for peer/local LTKs so we can avoid potentially losing the local_ltk bond.
+    if (le_data.peer_ltk) {
+      ZX_ASSERT(!le_data.peer_ltk->security().secure_connections() ||
+                le_data.peer_ltk == le_data.local_ltk);
+      out_data.le->ltk = fctrl::LTK::New();
+      *out_data.le->ltk = LtkToFidl(*le_data.peer_ltk);
     }
     if (le_data.irk) {
       out_data.le->irk = fctrl::RemoteKey::New();
