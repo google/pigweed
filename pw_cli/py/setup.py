@@ -13,14 +13,7 @@
 # the License.
 """pw_cli"""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_cli module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_cli',
@@ -29,6 +22,5 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed swiss-army knife',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     entry_points={'console_scripts': ['pw = pw_cli.__main__:main']},
 )

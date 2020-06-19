@@ -13,14 +13,7 @@
 # the License.
 """The pw_doctor package."""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_doctor module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_doctor',
@@ -29,5 +22,4 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Environment check script for Pigweed',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
 )

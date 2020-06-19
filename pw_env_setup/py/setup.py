@@ -13,14 +13,7 @@
 # the License.
 """env_setup module definition for PyOxidizer."""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for env_setup module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_env_setup',
@@ -29,7 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Environment setup for Pigweed',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     entry_points={
         'console_scripts': ['_pw_env_setup = pw_env_setup.env_setup:main'],
     },

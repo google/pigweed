@@ -13,14 +13,7 @@
 # the License.
 """pw_protobuf"""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_protobuf module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_protobuf',
@@ -29,7 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Lightweight streaming protobuf implementation',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     entry_points={
         'console_scripts': ['pw_protobuf_codegen = pw_protobuf.plugin:main']
     },

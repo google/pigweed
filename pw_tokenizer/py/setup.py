@@ -13,13 +13,7 @@
 # the License.
 """The pw_tokenizer package."""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_tokenizer',

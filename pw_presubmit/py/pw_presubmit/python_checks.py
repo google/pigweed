@@ -21,7 +21,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import List
+from typing import Callable, Iterable, List, Tuple
 
 try:
     import pw_presubmit
@@ -42,7 +42,16 @@ def run_module(*args, **kwargs):
 
 
 @filter_paths(endswith='.py')
-def test_python_packages(ctx: pw_presubmit.PresubmitContext):
+def test_python_packages(ctx: pw_presubmit.PresubmitContext,
+                         patterns: Iterable[str] = '*_test.py') -> None:
+    """Finds and runs test files in Python package directories.
+
+    Finds the Python packages containing the affected paths, then searches
+    within that package for test files. All files matching the provided patterns
+    are executed with Python.
+    """
+    test_globs = [patterns] if isinstance(patterns, str) else list(patterns)
+
     packages: List[Path] = []
     for repo in ctx.repos:
         packages += git_repo.find_python_packages(ctx.paths, repo=repo)
@@ -52,11 +61,13 @@ def test_python_packages(ctx: pw_presubmit.PresubmitContext):
         return
 
     for package in packages:
-        call('python', package / 'setup.py', 'test', cwd=package)
+        for test in git_repo.list_files(pathspecs=test_globs,
+                                        repo_path=package):
+            call('python', test)
 
 
 @filter_paths(endswith='.py')
-def pylint(ctx: pw_presubmit.PresubmitContext):
+def pylint(ctx: pw_presubmit.PresubmitContext) -> None:
     disable_checkers = [
         # BUG(pwbug/22): Hanging indent check conflicts with YAPF 0.29. For
         # now, use YAPF's version even if Pylint is doing the correct thing
@@ -79,7 +90,7 @@ _SETUP_PY = re.compile(r'(?:.+/)?setup\.py')
 
 
 @filter_paths(endswith='.py')
-def mypy(ctx: pw_presubmit.PresubmitContext):
+def mypy(ctx: pw_presubmit.PresubmitContext) -> None:
     env = os.environ.copy()
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771
@@ -90,6 +101,7 @@ def mypy(ctx: pw_presubmit.PresubmitContext):
         *(p for p in ctx.paths if not _SETUP_PY.fullmatch(p.as_posix())),
         '--pretty',
         '--color-output',
+        '--show-error-codes',
         # TODO(pwbug/146): Some imports from installed packages fail. These
         # imports should be fixed and this option removed.
         '--ignore-missing-imports',
@@ -103,7 +115,8 @@ _ALL_CHECKS = (
 )
 
 
-def all_checks(endswith='.py', **filter_paths_args):
+def all_checks(endswith: str = '.py',
+               **filter_paths_args) -> Tuple[Callable, ...]:
     return tuple(
         filter_paths(endswith=endswith, **filter_paths_args)(function)
         for function in _ALL_CHECKS)

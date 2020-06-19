@@ -13,14 +13,7 @@
 # the License.
 """stm32f429i_disc1_utils"""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for stm32f429i_disc1_utils."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='stm32f429i_disc1_utils',
@@ -30,7 +23,6 @@ setuptools.setup(
     description=
     'Target-specific python scripts for the stm32f429i-disc1 target',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     entry_points={
         'console_scripts': [
             'stm32f429i_disc1_unit_test_runner = '

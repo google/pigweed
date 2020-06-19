@@ -13,14 +13,7 @@
 # the License.
 """pw_unit_test"""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_unit_test module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_unit_test',
@@ -29,7 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Unit tests for Pigweed projects',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     install_requires=[
         'pw_cli',
     ],

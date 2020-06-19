@@ -13,14 +13,7 @@
 # the License.
 """The pw_presubmit package."""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_module module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_presubmit',
@@ -34,5 +27,4 @@ setuptools.setup(
         'yapf==0.30.0',
     ],
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
 )

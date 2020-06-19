@@ -13,14 +13,7 @@
 # the License.
 """pw_watch"""
 
-import unittest
 import setuptools
-
-
-def test_suite():
-    """Test suite for pw_watch module."""
-    return unittest.TestLoader().discover('./', pattern='*_test.py')
-
 
 setuptools.setup(
     name='pw_watch',
@@ -29,7 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed automatic builder',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
     install_requires=[
         'watchdog',
     ],
