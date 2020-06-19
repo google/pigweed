@@ -377,8 +377,10 @@ void PairingState::Abort(ErrorCode ecode) {
           arg->Abort(ecode);
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.Abort(ecode);
+        } else if constexpr (std::is_same_v<IdlePhase, T>) {
+          bt_log(DEBUG, "sm", "abort called with no in-progress security upgrade");
         } else {
-          ZX_PANIC("cannot abort during IdlePhase or when current_phase_ is std::monostate!");
+          ZX_PANIC("cannot abort when current_phase_ is std::monostate!");
         }
       },
       current_phase_);
