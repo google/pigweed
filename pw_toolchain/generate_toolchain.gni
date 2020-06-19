@@ -216,7 +216,30 @@ template("generate_toolchain") {
       }
 
       tool("copy") {
-        command = "cp -af {{source}} {{output}}"
+        if (host_os != "win") {
+          # Use a hard link if possible as this is faster. Also, Mac doesn't
+          # preserve timestamps properly with cp -af.
+          fallback_command = string_join(" ",
+                                         [
+                                           "rm -rf",
+                                           "{{output}}",
+                                           "&&",
+                                           "cp -af",
+                                           "{{source}}",
+                                           "{{output}}",
+                                         ])
+          command = string_join(" ",
+                                [
+                                  "ln -f",
+                                  "{{source}}",
+                                  "{{output}}",
+                                  "2>/dev/null",
+                                  "||",
+                                  "($fallback_command)",
+                                ])
+        } else {
+          command = "cp -af {{source}} {{output}}"
+        }
         description = "cp {{source}} {{output}}"
       }
 
