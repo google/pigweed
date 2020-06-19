@@ -172,8 +172,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceivesConfirmTwice
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
-// This test uses the initiator flow, but the behavior under test is the same for responder.
-TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ReceiveRandomOutOfOrder) {
+TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOrder) {
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(Random<PairingRandomValue>());
@@ -266,6 +265,14 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceivesConfirmFails
   stage_1()->Run();
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingConfirm(Random<PairingConfirmValue>());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+}
+
+TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomOutOfOrder) {
+  NewScStage1JustWorksNumericComparison(ScStage1Args{.role = Role::kResponder});
+  // `stage_1_` was not `Run`, so the Pairing Confirm hasn't been sent and the peer should not have
+  // sent the Pairing Random.
+  stage_1()->OnPairingRandom(Random<PairingRandomValue>());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
