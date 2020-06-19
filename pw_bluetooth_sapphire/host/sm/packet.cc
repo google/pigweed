@@ -20,9 +20,9 @@ ValidPacketReader::ValidPacketReader(const ByteBuffer* buffer) : PacketReader(bu
 
 fit::result<ValidPacketReader, sm::ErrorCode> ValidPacketReader::ParseSdu(
     const ByteBufferPtr& sdu) {
-  ZX_DEBUG_ASSERT(sdu);
-  uint8_t length = sdu->size();
-  if (length < sizeof(Code)) {
+  ZX_ASSERT(sdu);
+  size_t length = sdu->size();
+  if (length < sizeof(Header)) {
     bt_log(DEBUG, "sm", "PDU too short!");
     return fit::error(ErrorCode::kInvalidParameters);
   }

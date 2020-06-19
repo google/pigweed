@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+
 namespace bt {
 namespace sm {
 namespace {
@@ -37,6 +39,21 @@ TEST(SMP_PacketTest, UnknownSMPCodeGivesError) {
   ByteBufferPtr unknown_code_packet_ptr = std::make_unique<DynamicByteBuffer>(kUnknownCodePacket);
   fit::result<ValidPacketReader, ErrorCode> maybe_reader =
       ValidPacketReader::ParseSdu(unknown_code_packet_ptr);
+  ASSERT_TRUE(maybe_reader.is_error());
+  ErrorCode ecode = maybe_reader.error();
+  ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
+}
+
+// This tests a case where the `size_t` packet size was stored into a `uint8_t`. If the packet size
+// modulo 2^8 was 0, the length would overflow the `uint8_t` and the packet would be incorrectly
+// recognized as having 0 length, leading to the wrong error being returned (and logged).
+TEST(SMP_PacketTest, Mod256Equals0LengthPacketGivesCorrectError) {
+  constexpr size_t k2ToThe8Size = 256;
+  Code kInvalidSmpCode = 0xFF;
+  StaticByteBuffer<k2ToThe8Size> unfortunately_sized_packet;
+  PacketWriter(kInvalidSmpCode, &unfortunately_sized_packet);
+  ByteBufferPtr p = std::make_unique<DynamicByteBuffer>(unfortunately_sized_packet);
+  fit::result<ValidPacketReader, ErrorCode> maybe_reader = ValidPacketReader::ParseSdu(p);
   ASSERT_TRUE(maybe_reader.is_error());
   ErrorCode ecode = maybe_reader.error();
   ASSERT_EQ(ecode, ErrorCode::kCommandNotSupported);
