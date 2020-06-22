@@ -21,10 +21,10 @@ namespace pw::rpc::internal {
 
 using std::byte;
 
-span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
+std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
   const size_t reserved_size = packet.MinEncodedSizeBytes();
   return reserved_size <= buffer_.size() ? buffer_.subspan(reserved_size)
-                                         : span<byte>();
+                                         : std::span<byte>();
 }
 
 Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {

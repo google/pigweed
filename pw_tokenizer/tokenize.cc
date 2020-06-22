@@ -40,11 +40,11 @@ extern "C" void _pw_TokenizeToBuffer(void* buffer,
 
   va_list args;
   va_start(args, types);
-  const size_t encoded_bytes =
-      EncodeArgs(types,
-                 args,
-                 span<uint8_t>(static_cast<uint8_t*>(buffer) + sizeof(token),
-                               *buffer_size_bytes - sizeof(token)));
+  const size_t encoded_bytes = EncodeArgs(
+      types,
+      args,
+      std::span<uint8_t>(static_cast<uint8_t*>(buffer) + sizeof(token),
+                         *buffer_size_bytes - sizeof(token)));
   va_end(args);
 
   *buffer_size_bytes = sizeof(token) + encoded_bytes;

@@ -26,12 +26,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "pw_span/span.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/token_database.h"
 
@@ -44,8 +44,8 @@ using TokenizedStringEntry = std::pair<FormatString, uint32_t /*date removed*/>;
 class DetokenizedString {
  public:
   DetokenizedString(uint32_t token,
-                    const span<const TokenizedStringEntry>& entries,
-                    const span<const uint8_t>& arguments);
+                    const std::span<const TokenizedStringEntry>& entries,
+                    const std::span<const uint8_t>& arguments);
 
   DetokenizedString() : has_token_(false) {}
 
@@ -80,14 +80,15 @@ class Detokenizer {
 
   // Decodes and detokenizes the encoded message. Returns a DetokenizedString
   // that stores all possible detokenized string results.
-  DetokenizedString Detokenize(const span<const uint8_t>& encoded) const;
+  DetokenizedString Detokenize(const std::span<const uint8_t>& encoded) const;
 
   DetokenizedString Detokenize(const std::string_view& encoded) const {
     return Detokenize(encoded.data(), encoded.size());
   }
 
   DetokenizedString Detokenize(const void* encoded, size_t size_bytes) const {
-    return Detokenize(span(static_cast<const uint8_t*>(encoded), size_bytes));
+    return Detokenize(
+        std::span(static_cast<const uint8_t*>(encoded), size_bytes));
   }
 
  private:

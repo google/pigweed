@@ -154,7 +154,8 @@ extern "C" bool pw_Base64IsValid(const char* base64_data, size_t base64_size) {
   return true;
 }
 
-size_t Encode(span<const std::byte> binary, span<char> output_buffer) {
+size_t Encode(std::span<const std::byte> binary,
+              std::span<char> output_buffer) {
   const size_t required_size = EncodedSize(binary.size_bytes());
   if (output_buffer.size_bytes() < required_size) {
     return 0;
@@ -163,7 +164,7 @@ size_t Encode(span<const std::byte> binary, span<char> output_buffer) {
   return required_size;
 }
 
-size_t Decode(std::string_view base64, span<std::byte> output_buffer) {
+size_t Decode(std::string_view base64, std::span<std::byte> output_buffer) {
   if (output_buffer.size_bytes() < MaxDecodedSize(base64.size()) ||
       !IsValid(base64)) {
     return 0;

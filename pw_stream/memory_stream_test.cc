@@ -47,7 +47,7 @@ TEST(MemoryWriter, ValidateContents) {
   EXPECT_TRUE(
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct)).ok());
 
-  span<const std::byte> written_data = memory_writer.WrittenData();
+  std::span<const std::byte> written_data = memory_writer.WrittenData();
   EXPECT_EQ(written_data.size_bytes(), sizeof(kExpectedStruct));
   TestStruct temp;
   std::memcpy(&temp, written_data.data(), written_data.size_bytes());
@@ -65,7 +65,8 @@ TEST(MemoryWriter, MultipleWrites) {
     for (size_t i = 0; i < sizeof(buffer); ++i) {
       buffer[i] = std::byte(counter++);
     }
-  } while (memory_writer.Write(span(buffer)) != Status::RESOURCE_EXHAUSTED);
+  } while (memory_writer.Write(std::span(buffer)) !=
+           Status::RESOURCE_EXHAUSTED);
 
   // Ensure that we counted up to at least the sink buffer size. This can be
   // more since we write to the sink via in intermediate buffer.

@@ -34,7 +34,7 @@ uint16_t pw_ChecksumCcittCrc16(const void* data,
 #ifdef __cplusplus
 }  // extern "C"
 
-#include "pw_span/span.h"
+#include <span>
 
 namespace pw::checksum {
 
@@ -43,7 +43,7 @@ inline constexpr uint16_t kCcittCrc16DefaultInitialValue = 0xFFFF;
 // Calculates the CCITT CRC16 for the provided data. To update an existing CRC,
 // pass the previous value as the initial_value argument.
 inline uint16_t CcittCrc16(
-    span<const std::byte> data,
+    std::span<const std::byte> data,
     uint16_t initial_value = kCcittCrc16DefaultInitialValue) {
   return pw_ChecksumCcittCrc16(data.data(), data.size_bytes(), initial_value);
 }

@@ -125,11 +125,11 @@ constexpr std::string_view kData =
     "123456789_123456789_123456789_123456789_123456789_"   //  50
     "123456789_123456789_123456789_123456789_123456789_";  // 100
 
-const span<const byte> kBytes = as_bytes(span(kData));
+const std::span<const byte> kBytes = std::as_bytes(std::span(kData));
 
 // The output function checks that the data is properly aligned and matches
 // the expected value (should always be 123456789_...).
-OutputToFunction check_against_data([](span<const byte> data) {
+OutputToFunction check_against_data([](std::span<const byte> data) {
   EXPECT_EQ(data.size() % kAlignment, 0u);
   EXPECT_EQ(kData.substr(0, data.size()),
             std::string_view(reinterpret_cast<const char*>(data.data()),
@@ -168,14 +168,14 @@ TEST(AlignedWriter, DestructorFlushes) {
   static size_t called_with_bytes;
   called_with_bytes = 0;
 
-  OutputToFunction output([](span<const byte> data) {
+  OutputToFunction output([](std::span<const byte> data) {
     called_with_bytes += data.size();
     return StatusWithSize(data.size());
   });
 
   {
     AlignedWriterBuffer<64> writer(3, output);
-    writer.Write(as_bytes(span("What is this?")));
+    writer.Write(std::as_bytes(std::span("What is this?")));
     EXPECT_EQ(called_with_bytes, 0u);  // Buffer not full; no output yet.
   }
 
@@ -191,7 +191,7 @@ struct OutputWithErrorInjection final : public Output {
   enum { kKeepGoing, kBreakOnNext, kBroken } state = kKeepGoing;
 
  private:
-  StatusWithSize DoWrite(span<const byte> data) override {
+  StatusWithSize DoWrite(std::span<const byte> data) override {
     switch (state) {
       case kKeepGoing:
         return StatusWithSize(data.size());
@@ -211,10 +211,11 @@ TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
 
   {
     AlignedWriterBuffer<4> writer(3, output);
-    writer.Write(as_bytes(span("Everything is fine.")));
+    writer.Write(std::as_bytes(std::span("Everything is fine.")));
     output.state = OutputWithErrorInjection::kBreakOnNext;
     EXPECT_EQ(Status::UNKNOWN,
-              writer.Write(as_bytes(span("No more writes, okay?"))).status());
+              writer.Write(std::as_bytes(std::span("No more writes, okay?")))
+                  .status());
     writer.Flush();
   }
 }
@@ -223,34 +224,36 @@ TEST(AlignedWriter, Write_ReturnsTotalBytesWritten) {
   static Status return_status;
   return_status = Status::OK;
 
-  OutputToFunction output([](span<const byte> data) {
+  OutputToFunction output([](std::span<const byte> data) {
     return StatusWithSize(return_status, data.size());
   });
 
   AlignedWriterBuffer<22> writer(10, output);
 
-  StatusWithSize result = writer.Write(as_bytes(span("12345678901"sv)));
+  StatusWithSize result =
+      writer.Write(std::as_bytes(std::span("12345678901"sv)));
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(0u, result.size());  // No writes; haven't filled buffer.
 
-  result = writer.Write(as_bytes(span("2345678901"sv)));
+  result = writer.Write(std::as_bytes(std::span("2345678901"sv)));
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(20u, result.size());
 
   return_status = Status::PERMISSION_DENIED;
 
-  result = writer.Write(as_bytes(span("2345678901234567890"sv)));
+  result = writer.Write(std::as_bytes(std::span("2345678901234567890"sv)));
   EXPECT_EQ(Status::PERMISSION_DENIED, result.status());
   EXPECT_EQ(40u, result.size());
 }
 
 TEST(AlignedWriter, Flush_Ok_ReturnsTotalBytesWritten) {
   OutputToFunction output(
-      [](span<const byte> data) { return StatusWithSize(data.size()); });
+      [](std::span<const byte> data) { return StatusWithSize(data.size()); });
 
   AlignedWriterBuffer<4> writer(2, output);
 
-  EXPECT_EQ(Status::OK, writer.Write(as_bytes(span("12345678901"sv))).status());
+  EXPECT_EQ(Status::OK,
+            writer.Write(std::as_bytes(std::span("12345678901"sv))).status());
 
   StatusWithSize result = writer.Flush();
   EXPECT_EQ(Status::OK, result.status());
@@ -258,13 +261,13 @@ TEST(AlignedWriter, Flush_Ok_ReturnsTotalBytesWritten) {
 }
 
 TEST(AlignedWriter, Flush_Error_ReturnsTotalBytesWritten) {
-  OutputToFunction output([](span<const byte> data) {
+  OutputToFunction output([](std::span<const byte> data) {
     return StatusWithSize(Status::ABORTED, data.size());
   });
 
   AlignedWriterBuffer<20> writer(10, output);
 
-  EXPECT_EQ(0u, writer.Write(as_bytes(span("12345678901"sv))).size());
+  EXPECT_EQ(0u, writer.Write(std::as_bytes(std::span("12345678901"sv))).size());
 
   StatusWithSize result = writer.Flush();
   EXPECT_EQ(Status::ABORTED, result.status());
@@ -277,7 +280,7 @@ class InputWithErrorInjection final : public Input {
   void BreakOnIndex(size_t index) { break_on_index_ = index; }
 
  private:
-  StatusWithSize DoRead(span<byte> data) override {
+  StatusWithSize DoRead(std::span<byte> data) override {
     EXPECT_LE(index_ + data.size(), kBytes.size());
 
     if (index_ + data.size() > kBytes.size()) {

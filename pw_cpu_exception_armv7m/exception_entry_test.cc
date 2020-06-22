@@ -13,12 +13,12 @@
 // the License.
 
 #include <cstdint>
+#include <span>
 #include <type_traits>
 
 #include "gtest/gtest.h"
 #include "pw_cpu_exception/cpu_exception.h"
 #include "pw_cpu_exception_armv7m/cpu_state.h"
-#include "pw_span/span.h"
 
 namespace pw::cpu_exception {
 namespace {
@@ -137,7 +137,7 @@ size_t current_fault_depth = 0;
 CpuState captured_states[kMaxFaultDepth] = {};
 CpuState& captured_state = captured_states[0];
 
-// Flag used to check if the contents of span matches the captured state.
+// Flag used to check if the contents of std::span matches the captured state.
 bool span_matches = false;
 
 // Variable to be manipulated by function that uses floating
@@ -582,8 +582,8 @@ void HandleCpuException(CpuState* state) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled], state, sizeof(CpuState));
 
-    // Ensure span compares to be the same.
-    span<const uint8_t> state_span = RawFaultingCpuState(*state);
+    // Ensure std::span compares to be the same.
+    std::span<const uint8_t> state_span = RawFaultingCpuState(*state);
     EXPECT_EQ(state_span.size(), sizeof(CpuState));
     if (std::memcmp(state, state_span.data(), state_span.size()) == 0) {
       span_matches = true;

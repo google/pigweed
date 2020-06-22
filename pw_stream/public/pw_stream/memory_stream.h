@@ -15,19 +15,19 @@
 
 #include <array>
 #include <cstddef>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_stream/stream.h"
 
 namespace pw::stream {
 
 class MemoryWriter : public Writer {
  public:
-  MemoryWriter(span<std::byte> dest) : dest_(dest) {}
+  MemoryWriter(std::span<std::byte> dest) : dest_(dest) {}
 
   size_t bytes_written() const { return bytes_written_; }
 
-  span<const std::byte> WrittenData() const {
+  std::span<const std::byte> WrittenData() const {
     return dest_.first(bytes_written_);
   }
 
@@ -38,9 +38,9 @@ class MemoryWriter : public Writer {
   //
   // If the in-memory buffer is exhausted in the middle of a write, this will
   // perform a partial write and Status::RESOURCE_EXHAUSTED will be returned.
-  Status DoWrite(span<const std::byte> data) override;
+  Status DoWrite(std::span<const std::byte> data) override;
 
-  span<std::byte> dest_;
+  std::span<std::byte> dest_;
   size_t bytes_written_ = 0;
 };
 

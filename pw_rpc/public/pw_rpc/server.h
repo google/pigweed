@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
@@ -25,7 +26,7 @@ namespace pw::rpc {
 
 class Server {
  public:
-  constexpr Server(span<Channel> channels)
+  constexpr Server(std::span<Channel> channels)
       : channels_(static_cast<internal::Channel*>(channels.data()),
                   channels.size()) {}
 
@@ -36,7 +37,8 @@ class Server {
     services_.push_front(service);
   }
 
-  void ProcessPacket(span<const std::byte> packet, ChannelOutput& interface);
+  void ProcessPacket(std::span<const std::byte> packet,
+                     ChannelOutput& interface);
 
   constexpr size_t channel_count() const { return channels_.size(); }
 
@@ -47,12 +49,12 @@ class Server {
   void InvokeMethod(const internal::Packet& request,
                     Channel& channel,
                     internal::Packet& response,
-                    span<std::byte> buffer);
+                    std::span<std::byte> buffer);
 
   internal::Channel* FindChannel(uint32_t id) const;
   internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
-  span<internal::Channel> channels_;
+  std::span<internal::Channel> channels_;
   IntrusiveList<internal::Service> services_;
   IntrusiveList<internal::BaseServerWriter> writers_;
 };

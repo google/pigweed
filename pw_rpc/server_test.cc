@@ -76,15 +76,16 @@ class BasicServer : public ::testing::Test {
   Server server_;
   TestService service_;
 
-  span<const byte> EncodeRequest(PacketType type,
-                                 uint32_t channel_id,
-                                 uint32_t service_id,
-                                 uint32_t method_id,
-                                 span<const byte> payload = kDefaultPayload) {
+  std::span<const byte> EncodeRequest(
+      PacketType type,
+      uint32_t channel_id,
+      uint32_t service_id,
+      uint32_t method_id,
+      std::span<const byte> payload = kDefaultPayload) {
     auto sws = Packet(type, channel_id, service_id, method_id, payload)
                    .Encode(request_buffer_);
     EXPECT_EQ(Status::OK, sws.status());
-    return span(request_buffer_, sws.size());
+    return std::span(request_buffer_, sws.size());
   }
 
  private:

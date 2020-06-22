@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 
 #include "pw_assert/assert.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -37,7 +37,7 @@ class ChannelOutput {
   constexpr const char* name() const { return name_; }
 
   // Acquire a buffer into which to write an outgoing RPC packet.
-  virtual span<std::byte> AcquireBuffer() = 0;
+  virtual std::span<std::byte> AcquireBuffer() = 0;
 
   // Sends the contents of the buffer from AcquireBuffer().
   virtual void SendAndReleaseBuffer(size_t size) = 0;

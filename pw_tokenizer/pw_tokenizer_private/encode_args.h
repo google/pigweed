@@ -16,8 +16,8 @@
 #include <array>
 #include <cstdarg>
 #include <cstddef>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_tokenizer/config.h"
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/internal/tokenize_string.h"
@@ -38,7 +38,7 @@ static_assert(offsetof(EncodedMessage, args) == sizeof(EncodedMessage::token),
 // parameter specifies the argument types, in place of a format string.
 size_t EncodeArgs(pw_TokenizerArgTypes types,
                   va_list args,
-                  span<uint8_t> output);
+                  std::span<uint8_t> output);
 
 }  // namespace tokenizer
 }  // namespace pw

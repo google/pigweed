@@ -29,7 +29,8 @@ using std::byte;
 using internal::Packet;
 using internal::PacketType;
 
-void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
+void Server::ProcessPacket(std::span<const byte> data,
+                           ChannelOutput& interface) {
   Packet packet = Packet::FromBuffer(data);
   if (packet.is_control()) {
     // TODO(frolv): Handle control packets.
@@ -73,7 +74,7 @@ void Server::ProcessPacket(span<const byte> data, ChannelOutput& interface) {
 void Server::InvokeMethod(const Packet& request,
                           Channel& channel,
                           internal::Packet& response,
-                          span<std::byte> payload_buffer) {
+                          std::span<std::byte> payload_buffer) {
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
     return s.id() == request.service_id();
   });

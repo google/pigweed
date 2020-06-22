@@ -14,6 +14,7 @@
 
 #include "pw_kvs/internal/entry.h"
 
+#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
@@ -24,7 +25,6 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
 #include "pw_kvs_private/byte_utils.h"
-#include "pw_span/span.h"
 
 namespace pw::kvs::internal {
 namespace {
@@ -58,8 +58,8 @@ TEST(Entry, Construct_ValidEntry) {
   FakeFlashMemoryBuffer<64, 2> flash(16);
   FlashPartition partition(&flash, 0, flash.sector_count());
 
-  auto entry =
-      Entry::Valid(partition, 1, kFormat, "k", as_bytes(span("123")), 9876);
+  auto entry = Entry::Valid(
+      partition, 1, kFormat, "k", std::as_bytes(std::span("123")), 9876);
 
   EXPECT_FALSE(entry.deleted());
   EXPECT_EQ(entry.magic(), kFormat.magic);
@@ -138,7 +138,7 @@ TEST_F(ValidEntryInFlash, ReadKey) {
 
 TEST_F(ValidEntryInFlash, ReadValue) {
   char value[32] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)));
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)));
 
   ASSERT_EQ(Status::OK, result.status());
   EXPECT_EQ(result.size(), entry_.value_size());
@@ -147,7 +147,7 @@ TEST_F(ValidEntryInFlash, ReadValue) {
 
 TEST_F(ValidEntryInFlash, ReadValue_BufferTooSmall) {
   char value[3] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)));
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)));
 
   ASSERT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
   EXPECT_EQ(3u, result.size());
@@ -158,7 +158,7 @@ TEST_F(ValidEntryInFlash, ReadValue_BufferTooSmall) {
 
 TEST_F(ValidEntryInFlash, ReadValue_WithOffset) {
   char value[3] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 3);
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 3);
 
   ASSERT_EQ(Status::OK, result.status());
   EXPECT_EQ(3u, result.size());
@@ -169,7 +169,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset) {
 
 TEST_F(ValidEntryInFlash, ReadValue_WithOffset_BufferTooSmall) {
   char value[1] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 4);
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 4);
 
   ASSERT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
   EXPECT_EQ(1u, result.size());
@@ -178,7 +178,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_BufferTooSmall) {
 
 TEST_F(ValidEntryInFlash, ReadValue_WithOffset_EmptyRead) {
   char value[16] = {'?'};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 6);
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 6);
 
   ASSERT_EQ(Status::OK, result.status());
   EXPECT_EQ(0u, result.size());
@@ -187,7 +187,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_EmptyRead) {
 
 TEST_F(ValidEntryInFlash, ReadValue_WithOffset_PastEnd) {
   char value[16] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)), 7);
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 7);
 
   EXPECT_EQ(Status::OUT_OF_RANGE, result.status());
   EXPECT_EQ(0u, result.size());
@@ -254,7 +254,7 @@ TEST_F(TombstoneEntryInFlash, ReadKey) {
 
 TEST_F(TombstoneEntryInFlash, ReadValue) {
   char value[32] = {};
-  auto result = entry_.ReadValue(as_writable_bytes(span(value)));
+  auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)));
 
   ASSERT_EQ(Status::OK, result.status());
   EXPECT_EQ(0u, result.size());
@@ -366,7 +366,7 @@ TEST_F(ValidEntryInFlash, Copy_ReadError) {
   EXPECT_EQ(0u, result.size());
 }
 
-constexpr uint32_t ByteSum(span<const byte> bytes, uint32_t value = 0) {
+constexpr uint32_t ByteSum(std::span<const byte> bytes, uint32_t value = 0) {
   for (byte b : bytes) {
     value += unsigned(b);
   }
@@ -376,11 +376,12 @@ constexpr uint32_t ByteSum(span<const byte> bytes, uint32_t value = 0) {
 // Sums the bytes, adding one to each byte so that zeroes change the checksum.
 class ChecksumSummation final : public ChecksumAlgorithm {
  public:
-  ChecksumSummation() : ChecksumAlgorithm(as_bytes(span(&sum_, 1))), sum_(0) {}
+  ChecksumSummation()
+      : ChecksumAlgorithm(std::as_bytes(std::span(&sum_, 1))), sum_(0) {}
 
   void Reset() override { sum_ = 0; }
 
-  void Update(span<const byte> data) override {
+  void Update(std::span<const byte> data) override {
     for (byte b : data) {
       sum_ += unsigned(b) + 1;  // Add 1 so zero-value bytes affect checksum.
     }

@@ -14,8 +14,9 @@
 
 #include "pw_tokenizer/base64.h"
 
+#include <span>
+
 #include "pw_base64/base64.h"
-#include "pw_span/span.h"
 
 namespace pw::tokenizer {
 
@@ -33,9 +34,9 @@ extern "C" size_t pw_TokenizerPrefixedBase64Encode(
   char* output = static_cast<char*>(output_buffer);
   output[0] = kBase64Prefix;
 
-  base64::Encode(
-      span(static_cast<const std::byte*>(binary_message), binary_size_bytes),
-      &output[1]);
+  base64::Encode(std::span(static_cast<const std::byte*>(binary_message),
+                           binary_size_bytes),
+                 &output[1]);
 
   return encoded_size;
 }
@@ -52,7 +53,7 @@ extern "C" size_t pw_TokenizerPrefixedBase64Decode(const void* base64_message,
 
   return base64::Decode(
       std::string_view(&base64[1], base64_size_bytes - 1),
-      span(static_cast<std::byte*>(output_buffer), output_buffer_size));
+      std::span(static_cast<std::byte*>(output_buffer), output_buffer_size));
 }
 
 }  // namespace pw::tokenizer

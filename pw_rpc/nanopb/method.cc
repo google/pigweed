@@ -37,7 +37,7 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 using std::byte;
 
-Status Method::DecodeRequest(span<const byte> buffer,
+Status Method::DecodeRequest(std::span<const byte> buffer,
                              void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
@@ -47,7 +47,7 @@ Status Method::DecodeRequest(span<const byte> buffer,
 }
 
 StatusWithSize Method::EncodeResponse(const void* proto_struct,
-                                      span<byte> buffer) const {
+                                      std::span<byte> buffer) const {
   auto output = pb_ostream_from_buffer(
       reinterpret_cast<pb_byte_t*>(buffer.data()), buffer.size());
   if (pb_encode(&output, static_cast<Fields>(response_fields_), proto_struct)) {
@@ -57,8 +57,8 @@ StatusWithSize Method::EncodeResponse(const void* proto_struct,
 }
 
 StatusWithSize Method::CallUnary(ServerCall& call,
-                                 span<const byte> request_buffer,
-                                 span<byte> response_buffer,
+                                 std::span<const byte> request_buffer,
+                                 std::span<byte> response_buffer,
                                  void* request_struct,
                                  void* response_struct) const {
   Status status = DecodeRequest(request_buffer, request_struct);
@@ -76,7 +76,7 @@ StatusWithSize Method::CallUnary(ServerCall& call,
 }
 
 StatusWithSize Method::CallServerStreaming(ServerCall& call,
-                                           span<const byte> request_buffer,
+                                           std::span<const byte> request_buffer,
                                            void* request_struct) const {
   Status status = DecodeRequest(request_buffer, request_struct);
   if (!status.ok()) {

@@ -30,7 +30,7 @@ Status Encoder::WriteVarint(uint64_t value) {
     return encode_status_;
   }
 
-  span varint_buf = buffer_.last(RemainingSize());
+  std::span varint_buf = buffer_.last(RemainingSize());
   if (varint_buf.empty()) {
     encode_status_ = Status::RESOURCE_EXHAUSTED;
     return encode_status_;
@@ -126,9 +126,9 @@ Status Encoder::Pop() {
   return Status::OK;
 }
 
-Status Encoder::Encode(span<const std::byte>* out) {
+Status Encoder::Encode(std::span<const std::byte>* out) {
   if (!encode_status_.ok()) {
-    *out = span<const std::byte>();
+    *out = std::span<const std::byte>();
     return encode_status_;
   }
 
@@ -152,7 +152,7 @@ Status Encoder::Encode(span<const std::byte>* out) {
   while (read_cursor < cursor_) {
     SizeType nested_size = *size_cursor;
 
-    span<std::byte> varint_buf(write_cursor, sizeof(*size_cursor));
+    std::span<std::byte> varint_buf(write_cursor, sizeof(*size_cursor));
     size_t varint_size =
         pw::varint::EncodeLittleEndianBase128(nested_size, varint_buf);
 

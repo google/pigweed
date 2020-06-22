@@ -13,8 +13,9 @@
 // the License.
 #pragma once
 
+#include <span>
+
 #include "pw_rpc/channel.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {
@@ -48,14 +49,15 @@ class Channel : public rpc::Channel {
     }
 
     // Returns a portion of this OutputBuffer to use as the packet payload.
-    span<std::byte> payload(const Packet& packet) const;
+    std::span<std::byte> payload(const Packet& packet) const;
 
    private:
     friend class Channel;
 
-    explicit constexpr OutputBuffer(span<std::byte> buffer) : buffer_(buffer) {}
+    explicit constexpr OutputBuffer(std::span<std::byte> buffer)
+        : buffer_(buffer) {}
 
-    span<std::byte> buffer_;
+    std::span<std::byte> buffer_;
   };
 
   // Acquires a buffer for the packet.

@@ -15,9 +15,9 @@
 
 #include <cstddef>
 #include <cstring>
+#include <span>
 
 #include "pw_protobuf/wire_format.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_varint/varint.h"
 
@@ -31,9 +31,9 @@ class Encoder {
   // message. This can be templated to minimize the overhead.
   using SizeType = size_t;
 
-  constexpr Encoder(span<std::byte> buffer,
-                    span<SizeType*> locations,
-                    span<SizeType*> stack)
+  constexpr Encoder(std::span<std::byte> buffer,
+                    std::span<SizeType*> locations,
+                    std::span<SizeType*> stack)
       : buffer_(buffer),
         cursor_(buffer.data()),
         blob_locations_(locations),
@@ -59,7 +59,8 @@ class Encoder {
   }
 
   // Writes a repeated uint32 using packed encoding.
-  Status WritePackedUint32(uint32_t field_number, span<const uint32_t> values) {
+  Status WritePackedUint32(uint32_t field_number,
+                           std::span<const uint32_t> values) {
     return WritePackedVarints(field_number, values, /*zigzag=*/false);
   }
 
@@ -67,7 +68,8 @@ class Encoder {
   Status WriteUint64(uint32_t field_number, uint64_t value);
 
   // Writes a repeated uint64 using packed encoding.
-  Status WritePackedUint64(uint64_t field_number, span<const uint64_t> values) {
+  Status WritePackedUint64(uint64_t field_number,
+                           std::span<const uint64_t> values) {
     return WritePackedVarints(field_number, values, /*zigzag=*/false);
   }
 
@@ -77,10 +79,12 @@ class Encoder {
   }
 
   // Writes a repeated int32 using packed encoding.
-  Status WritePackedInt32(uint32_t field_number, span<const int32_t> values) {
+  Status WritePackedInt32(uint32_t field_number,
+                          std::span<const int32_t> values) {
     return WritePackedVarints(
         field_number,
-        span(reinterpret_cast<const uint32_t*>(values.data()), values.size()),
+        std::span(reinterpret_cast<const uint32_t*>(values.data()),
+                  values.size()),
         /*zigzag=*/false);
   }
 
@@ -90,10 +94,12 @@ class Encoder {
   }
 
   // Writes a repeated int64 using packed encoding.
-  Status WritePackedInt64(uint32_t field_number, span<const int64_t> values) {
+  Status WritePackedInt64(uint32_t field_number,
+                          std::span<const int64_t> values) {
     return WritePackedVarints(
         field_number,
-        span(reinterpret_cast<const uint64_t*>(values.data()), values.size()),
+        std::span(reinterpret_cast<const uint64_t*>(values.data()),
+                  values.size()),
         /*zigzag=*/false);
   }
 
@@ -103,10 +109,12 @@ class Encoder {
   }
 
   // Writes a repeated sint32 using packed encoding.
-  Status WritePackedSint32(uint32_t field_number, span<const int32_t> values) {
+  Status WritePackedSint32(uint32_t field_number,
+                           std::span<const int32_t> values) {
     return WritePackedVarints(
         field_number,
-        span(reinterpret_cast<const uint32_t*>(values.data()), values.size()),
+        std::span(reinterpret_cast<const uint32_t*>(values.data()),
+                  values.size()),
         /*zigzag=*/true);
   }
 
@@ -116,10 +124,12 @@ class Encoder {
   }
 
   // Writes a repeated sint64 using packed encoding.
-  Status WritePackedSint64(uint32_t field_number, span<const int64_t> values) {
+  Status WritePackedSint64(uint32_t field_number,
+                           std::span<const int64_t> values) {
     return WritePackedVarints(
         field_number,
-        span(reinterpret_cast<const uint64_t*>(values.data()), values.size()),
+        std::span(reinterpret_cast<const uint64_t*>(values.data()),
+                  values.size()),
         /*zigzag=*/true);
   }
 
@@ -139,8 +149,8 @@ class Encoder {
 
   // Writes a repeated fixed32 field using packed encoding.
   Status WritePackedFixed32(uint32_t field_number,
-                            span<const uint32_t> values) {
-    return WriteBytes(field_number, as_bytes(values));
+                            std::span<const uint32_t> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto fixed64 key-value pair.
@@ -154,8 +164,8 @@ class Encoder {
 
   // Writes a repeated fixed64 field using packed encoding.
   Status WritePackedFixed64(uint32_t field_number,
-                            span<const uint64_t> values) {
-    return WriteBytes(field_number, as_bytes(values));
+                            std::span<const uint64_t> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto sfixed32 key-value pair.
@@ -165,8 +175,8 @@ class Encoder {
 
   // Writes a repeated sfixed32 field using packed encoding.
   Status WritePackedSfixed32(uint32_t field_number,
-                             span<const int32_t> values) {
-    return WriteBytes(field_number, as_bytes(values));
+                             std::span<const int32_t> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto sfixed64 key-value pair.
@@ -176,8 +186,8 @@ class Encoder {
 
   // Writes a repeated sfixed64 field using packed encoding.
   Status WritePackedSfixed64(uint32_t field_number,
-                             span<const int64_t> values) {
-    return WriteBytes(field_number, as_bytes(values));
+                             std::span<const int64_t> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto float key-value pair.
@@ -192,8 +202,9 @@ class Encoder {
   }
 
   // Writes a repeated float field using packed encoding.
-  Status WritePackedFloat(uint32_t field_number, span<const float> values) {
-    return WriteBytes(field_number, as_bytes(values));
+  Status WritePackedFloat(uint32_t field_number,
+                          std::span<const float> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto double key-value pair.
@@ -208,12 +219,13 @@ class Encoder {
   }
 
   // Writes a repeated double field using packed encoding.
-  Status WritePackedDouble(uint32_t field_number, span<const double> values) {
-    return WriteBytes(field_number, as_bytes(values));
+  Status WritePackedDouble(uint32_t field_number,
+                           std::span<const double> values) {
+    return WriteBytes(field_number, std::as_bytes(values));
   }
 
   // Writes a proto bytes key-value pair.
-  Status WriteBytes(uint32_t field_number, span<const std::byte> value) {
+  Status WriteBytes(uint32_t field_number, std::span<const std::byte> value) {
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kDelimited);
     WriteVarint(value.size_bytes());
@@ -224,7 +236,7 @@ class Encoder {
 
   // Writes a proto string key-value pair.
   Status WriteString(uint32_t field_number, const char* value, size_t size) {
-    return WriteBytes(field_number, as_bytes(span(value, size)));
+    return WriteBytes(field_number, std::as_bytes(std::span(value, size)));
   }
 
   Status WriteString(uint32_t field_number, const char* value) {
@@ -254,7 +266,7 @@ class Encoder {
 
   // Runs a final encoding pass over the intermediary data and returns the
   // encoded protobuf message.
-  Status Encode(span<const std::byte>* out);
+  Status Encode(std::span<const std::byte>* out);
 
  private:
   constexpr bool ValidFieldNumber(uint32_t field_number) const {
@@ -291,7 +303,7 @@ class Encoder {
   // If zigzag is true, zig-zag encodes each of the varints.
   template <typename T>
   Status WritePackedVarints(uint32_t field_number,
-                            span<T> values,
+                            std::span<T> values,
                             bool zigzag) {
     if (Status status = Push(field_number); !status.ok()) {
       return status;
@@ -328,16 +340,16 @@ class Encoder {
   }
 
   // The buffer into which the proto is encoded.
-  span<std::byte> buffer_;
+  std::span<std::byte> buffer_;
   std::byte* cursor_;
 
   // List of pointers to sub-messages' delimiting size fields.
-  span<SizeType*> blob_locations_;
+  std::span<SizeType*> blob_locations_;
   size_t blob_count_;
 
   // Stack of current nested message size locations. Push() operations add a new
   // entry to this stack and Pop() operations remove one.
-  span<SizeType*> blob_stack_;
+  std::span<SizeType*> blob_stack_;
   size_t depth_;
 
   Status encode_status_;
@@ -347,7 +359,8 @@ class Encoder {
 template <size_t kMaxNestedDepth = 1, size_t kMaxBlobs = 1>
 class NestedEncoder : public Encoder {
  public:
-  NestedEncoder(span<std::byte> buffer) : Encoder(buffer, blobs_, stack_) {}
+  NestedEncoder(std::span<std::byte> buffer)
+      : Encoder(buffer, blobs_, stack_) {}
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   NestedEncoder(const NestedEncoder& other) = delete;

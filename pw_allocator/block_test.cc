@@ -14,8 +14,9 @@
 
 #include "pw_allocator/block.h"
 
+#include <span>
+
 #include "gtest/gtest.h"
-#include "pw_span/span.h"
 
 using std::byte;
 
@@ -26,7 +27,7 @@ TEST(Block, CanCreateSingleBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  auto status = Block::Init(span(bytes, kN), &block);
+  auto status = Block::Init(std::span(bytes, kN), &block);
 
   ASSERT_EQ(status, Status::OK);
   EXPECT_EQ(block->OuterSize(), kN);
@@ -45,7 +46,7 @@ TEST(Block, CannotCreateUnalignedSingleBlock) {
   byte* byte_ptr = bytes;
 
   Block* block = nullptr;
-  auto status = Block::Init(span(byte_ptr + 1, kN - 1), &block);
+  auto status = Block::Init(std::span(byte_ptr + 1, kN - 1), &block);
 
   EXPECT_EQ(status, Status::INVALID_ARGUMENT);
 }
@@ -54,7 +55,7 @@ TEST(Block, CannotCreateTooSmallBlock) {
   constexpr size_t kN = 2;
   alignas(Block*) byte bytes[kN];
   Block* block = nullptr;
-  auto status = Block::Init(span(bytes, kN), &block);
+  auto status = Block::Init(std::span(bytes, kN), &block);
 
   EXPECT_EQ(status, Status::INVALID_ARGUMENT);
 }
@@ -65,7 +66,7 @@ TEST(Block, CanSplitBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -96,7 +97,7 @@ TEST(Block, CanSplitBlockUnaligned) {
   uintptr_t split_len = split_addr - (uintptr_t)&bytes;
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -126,7 +127,7 @@ TEST(Block, CanSplitMidBlock) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* block2 = nullptr;
   block->Split(kSplit1, &block2);
@@ -146,7 +147,7 @@ TEST(Block, CannotSplitBlockWithoutHeaderSpace) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
@@ -161,7 +162,7 @@ TEST(Block, MustProvideNextBlockPointer) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   auto status = block->Split(kSplitN, nullptr);
   EXPECT_EQ(status, Status::INVALID_ARGUMENT);
@@ -173,7 +174,7 @@ TEST(Block, CannotMakeBlockLargerInSplit) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(block->InnerSize() + 1, &next_block);
@@ -187,7 +188,7 @@ TEST(Block, CanMakeZeroSizeFirstBlock) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(0, &next_block);
@@ -202,7 +203,7 @@ TEST(Block, CanMakeZeroSizeSecondBlock) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   auto status = block->Split(block->InnerSize() - sizeof(Block), &next_block);
@@ -216,7 +217,7 @@ TEST(Block, CanMarkBlockUsed) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   block->MarkUsed();
   EXPECT_EQ(block->Used(), true);
@@ -234,7 +235,7 @@ TEST(Block, CannotSplitUsedBlock) {
   alignas(Block*) byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   block->MarkUsed();
 
@@ -252,7 +253,7 @@ TEST(Block, CanMergeWithNextBlock) {
   byte bytes[kN];
 
   Block* block = nullptr;
-  Block::Init(pw::span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* block2 = nullptr;
   block->Split(kSplit1, &block2);
@@ -278,7 +279,7 @@ TEST(Block, CannotMergeWithFirstOrLastBlock) {
   // Do a split, just to sanity check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   block->Split(512, &next_block);
@@ -294,7 +295,7 @@ TEST(Block, CannotMergeUsedBlock) {
   // Do a split, just to sanity check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
-  Block::Init(span(bytes, kN), &block);
+  Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
   block->Split(512, &next_block);

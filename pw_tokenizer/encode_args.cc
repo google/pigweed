@@ -73,15 +73,15 @@ static_assert(0b01u == static_cast<uint8_t>(ArgType::kInt64));
 static_assert(0b10u == static_cast<uint8_t>(ArgType::kDouble));
 static_assert(0b11u == static_cast<uint8_t>(ArgType::kString));
 
-size_t EncodeInt(int value, const span<uint8_t>& output) {
-  return varint::Encode(value, pw::as_writable_bytes(output));
+size_t EncodeInt(int value, const std::span<uint8_t>& output) {
+  return varint::Encode(value, std::as_writable_bytes(output));
 }
 
-size_t EncodeInt64(int64_t value, const span<uint8_t>& output) {
-  return varint::Encode(value, pw::as_writable_bytes(output));
+size_t EncodeInt64(int64_t value, const std::span<uint8_t>& output) {
+  return varint::Encode(value, std::as_writable_bytes(output));
 }
 
-size_t EncodeFloat(float value, const span<uint8_t>& output) {
+size_t EncodeFloat(float value, const std::span<uint8_t>& output) {
   if (output.size() < sizeof(value)) {
     return 0;
   }
@@ -89,7 +89,7 @@ size_t EncodeFloat(float value, const span<uint8_t>& output) {
   return sizeof(value);
 }
 
-size_t EncodeString(const char* string, const span<uint8_t>& output) {
+size_t EncodeString(const char* string, const std::span<uint8_t>& output) {
   // The top bit of the status byte indicates if the string was truncated.
   static constexpr size_t kMaxStringLength = 0x7Fu;
 
@@ -126,7 +126,7 @@ size_t EncodeString(const char* string, const span<uint8_t>& output) {
 
 size_t EncodeArgs(pw_TokenizerArgTypes types,
                   va_list args,
-                  span<uint8_t> output) {
+                  std::span<uint8_t> output) {
   size_t arg_count = types & PW_TOKENIZER_TYPE_COUNT_MASK;
   types >>= PW_TOKENIZER_TYPE_COUNT_SIZE_BITS;
 

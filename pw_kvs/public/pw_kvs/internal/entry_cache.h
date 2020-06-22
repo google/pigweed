@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 #include <type_traits>
 
@@ -23,7 +24,6 @@
 #include "pw_kvs/format.h"
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/internal/sectors.h"
-#include "pw_span/span.h"
 
 namespace pw::kvs::internal {
 
@@ -45,7 +45,7 @@ class EntryMetadata {
   uint32_t first_address() const { return addresses_[0]; }
 
   // All addresses for this entry, including redundant entries, if any.
-  const span<Address>& addresses() const { return addresses_; }
+  const std::span<Address>& addresses() const { return addresses_; }
 
   // True if the KeyDesctiptor's transaction ID is newer than the specified ID.
   bool IsNewerThan(uint32_t other_transaction_id) const {
@@ -57,7 +57,7 @@ class EntryMetadata {
   // than allowed by the redundancy.
   void AddNewAddress(Address address) {
     addresses_[addresses_.size()] = address;
-    addresses_ = span(addresses_.begin(), addresses_.size() + 1);
+    addresses_ = std::span(addresses_.begin(), addresses_.size() + 1);
   }
 
   // Remove an address from the entry metadata.
@@ -70,11 +70,12 @@ class EntryMetadata {
  private:
   friend class EntryCache;
 
-  constexpr EntryMetadata(KeyDescriptor& descriptor, span<Address> addresses)
+  constexpr EntryMetadata(KeyDescriptor& descriptor,
+                          std::span<Address> addresses)
       : descriptor_(&descriptor), addresses_(addresses) {}
 
   KeyDescriptor* descriptor_;
-  span<Address> addresses_;
+  std::span<Address> addresses_;
 };
 
 // Tracks entry metadata. Combines KeyDescriptors and with their associated
@@ -215,8 +216,8 @@ class EntryCache {
   // address slot available.
   void AddAddressIfRoom(size_t descriptor_index, Address address) const;
 
-  // Returns a span of the valid addresses for the descriptor.
-  span<Address> addresses(size_t descriptor_index) const;
+  // Returns a std::span of the valid addresses for the descriptor.
+  std::span<Address> addresses(size_t descriptor_index) const;
 
   Address* first_address(size_t descriptor_index) const {
     return &addresses_[descriptor_index * redundancy_];

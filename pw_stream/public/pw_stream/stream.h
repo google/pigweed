@@ -15,9 +15,9 @@
 
 #include <array>
 #include <cstddef>
+#include <span>
 
 #include "pw_assert/assert.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::stream {
@@ -36,12 +36,12 @@ class Writer {
   //
   // Derived classes should NOT try to override these public write methods.
   // Instead, provide an implementation by overriding DoWrite().
-  Status Write(span<const std::byte> data) {
+  Status Write(std::span<const std::byte> data) {
     PW_DCHECK(data.empty() || data.data() != nullptr);
     return DoWrite(data);
   }
   Status Write(const void* data, size_t size_bytes) {
-    return Write(span(static_cast<const std::byte*>(data), size_bytes));
+    return Write(std::span(static_cast<const std::byte*>(data), size_bytes));
   }
 
   // Flush any buffered data, finalizing all writes.
@@ -52,7 +52,7 @@ class Writer {
   virtual Status Flush() { return Status::OK; }
 
  private:
-  virtual Status DoWrite(span<const std::byte> data) = 0;
+  virtual Status DoWrite(std::span<const std::byte> data) = 0;
 };
 
 }  // namespace pw::stream

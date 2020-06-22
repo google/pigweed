@@ -16,10 +16,10 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
-#include "pw_span/span.h"
 
 namespace pw::kvs::internal {
 
@@ -159,7 +159,7 @@ class Sectors {
   // least 1 empty sector. Addresses in reserved_addresses are avoided.
   Status FindSpace(SectorDescriptor** found_sector,
                    size_t size,
-                   span<const Address> reserved_addresses) {
+                   std::span<const Address> reserved_addresses) {
     return Find(kAppendEntry, found_sector, size, {}, reserved_addresses);
   }
 
@@ -168,8 +168,8 @@ class Sectors {
   Status FindSpaceDuringGarbageCollection(
       SectorDescriptor** found_sector,
       size_t size,
-      span<const Address> addresses_to_skip,
-      span<const Address> reserved_addresses) {
+      std::span<const Address> addresses_to_skip,
+      std::span<const Address> reserved_addresses) {
     return Find(kGarbageCollect,
                 found_sector,
                 size,
@@ -180,7 +180,7 @@ class Sectors {
   // Finds a sector that is ready to be garbage collected. Returns nullptr if no
   // sectors can / need to be garbage collected.
   SectorDescriptor* FindSectorToGarbageCollect(
-      span<const Address> addresses_to_avoid) const;
+      std::span<const Address> addresses_to_avoid) const;
 
   // The number of sectors in use.
   size_t size() const { return descriptors_.size(); }
@@ -210,8 +210,8 @@ class Sectors {
   Status Find(FindMode find_mode,
               SectorDescriptor** found_sector,
               size_t size,
-              span<const Address> addresses_to_skip,
-              span<const Address> reserved_addresses);
+              std::span<const Address> addresses_to_skip,
+              std::span<const Address> reserved_addresses);
 
   SectorDescriptor& WearLeveledSectorFromIndex(size_t idx) const;
 

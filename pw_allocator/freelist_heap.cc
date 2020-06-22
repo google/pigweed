@@ -18,7 +18,7 @@
 
 namespace pw::allocator {
 
-FreeListHeap::FreeListHeap(span<std::byte> region, FreeList& freelist)
+FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
     : freelist_(freelist) {
   Block* block;
   Block::Init(region, &block);

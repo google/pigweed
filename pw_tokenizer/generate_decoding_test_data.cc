@@ -25,8 +25,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <random>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_varint/varint.h"
@@ -168,7 +168,7 @@ class TestDataFile {
 
 // Writes a decoding test case to the file.
 void TestCase(TestDataFile* file,
-              pw::span<const uint8_t> buffer,
+              std::span<const uint8_t> buffer,
               const char* format,
               const char* formatted) {
   file->printf(R"(TestCase("%s", "%s", %s)",
@@ -189,7 +189,7 @@ void TestCase(TestDataFile* file,
               const char (&buffer)[kSize],
               const char* formatted) {
   TestCase(file,
-           pw::span(reinterpret_cast<const uint8_t*>(buffer), kSize - 1),
+           std::span(reinterpret_cast<const uint8_t*>(buffer), kSize - 1),
            format,
            formatted);
 }
@@ -204,7 +204,7 @@ void TestCase(TestDataFile* file,
     std::array<char, 128> formatted = {};                                     \
     std::snprintf(formatted.data(), formatted.size(), format, ##__VA_ARGS__); \
     TestCase(file,                                                            \
-             pw::span(buffer).first(size).subspan(4), /* skip the token */    \
+             std::span(buffer).first(size).subspan(4), /* skip the token */   \
              format,                                                          \
              formatted.data());                                               \
   } while (0)
@@ -382,7 +382,8 @@ void OutputVarintTest(TestDataFile* file, T i) {
 
   std::array<uint8_t, 10> buffer;
   // All integers are encoded as signed for tokenization.
-  size_t size = pw::varint::Encode(i, pw::as_writable_bytes(pw::span(buffer)));
+  size_t size =
+      pw::varint::Encode(i, std::as_writable_bytes(std::span(buffer)));
 
   for (size_t i = 0; i < size; ++i) {
     file->printf("\\x%02x", buffer[i]);

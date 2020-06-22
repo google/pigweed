@@ -91,7 +91,7 @@ TEST(Packet, EncodeDecode) {
   StatusWithSize sws = packet.Encode(buffer);
   ASSERT_EQ(sws.status(), Status::OK);
 
-  span<byte> packet_data(buffer, sws.size());
+  std::span<byte> packet_data(buffer, sws.size());
   Packet decoded = Packet::FromBuffer(packet_data);
 
   EXPECT_EQ(decoded.type(), packet.type());

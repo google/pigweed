@@ -15,9 +15,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "pw_rpc_protos/packet.pwpb.h"
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {
@@ -28,13 +28,13 @@ class Packet {
 
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.
-  static Packet FromBuffer(span<const std::byte> data);
+  static Packet FromBuffer(std::span<const std::byte> data);
 
   constexpr Packet(PacketType type,
                    uint32_t channel_id = kUnassignedId,
                    uint32_t service_id = kUnassignedId,
                    uint32_t method_id = kUnassignedId,
-                   span<const std::byte> payload = {},
+                   std::span<const std::byte> payload = {},
                    Status status = Status::OK)
       : type_(type),
         channel_id_(channel_id),
@@ -44,7 +44,7 @@ class Packet {
         status_(status) {}
 
   // Encodes the packet into its wire format. Returns the encoded size.
-  StatusWithSize Encode(span<std::byte> buffer) const;
+  StatusWithSize Encode(std::span<std::byte> buffer) const;
 
   // Determines the space required to encode the packet proto fields for a
   // response. This may be used to split the buffer into reserved space and
@@ -58,14 +58,14 @@ class Packet {
   uint32_t channel_id() const { return channel_id_; }
   uint32_t service_id() const { return service_id_; }
   uint32_t method_id() const { return method_id_; }
-  const span<const std::byte>& payload() const { return payload_; }
+  const std::span<const std::byte>& payload() const { return payload_; }
   Status status() const { return status_; }
 
   void set_type(PacketType type) { type_ = type; }
   void set_channel_id(uint32_t channel_id) { channel_id_ = channel_id; }
   void set_service_id(uint32_t service_id) { service_id_ = service_id; }
   void set_method_id(uint32_t method_id) { method_id_ = method_id; }
-  void set_payload(span<const std::byte> payload) { payload_ = payload; }
+  void set_payload(std::span<const std::byte> payload) { payload_ = payload; }
   void set_status(Status status) { status_ = status; }
 
  private:
@@ -73,7 +73,7 @@ class Packet {
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
-  span<const std::byte> payload_;
+  std::span<const std::byte> payload_;
   Status status_;
 };
 

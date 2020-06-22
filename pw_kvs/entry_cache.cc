@@ -44,7 +44,7 @@ void EntryMetadata::RemoveAddress(Address address_to_remove) {
 
       // Remove the back entry of the address list.
       addresses_.back() = kNoAddress;
-      addresses_ = span(addresses_.begin(), addresses_.size() - 1);
+      addresses_ = std::span(addresses_.begin(), addresses_.size() - 1);
       break;
     }
   }
@@ -123,7 +123,7 @@ EntryMetadata EntryCache::AddNew(const KeyDescriptor& descriptor,
   // TODO(hepler): DCHECK(!full());
   Address* first_address = ResetAddresses(descriptors_.size(), entry_address);
   descriptors_.push_back(descriptor);
-  return EntryMetadata(descriptors_.back(), span(first_address, 1));
+  return EntryMetadata(descriptors_.back(), std::span(first_address, 1));
 }
 
 // TODO: This method is the trigger of the O(valid_entries * all_entries) time
@@ -214,7 +214,8 @@ void EntryCache::AddAddressIfRoom(size_t descriptor_index,
   }
 }
 
-span<EntryCache::Address> EntryCache::addresses(size_t descriptor_index) const {
+std::span<EntryCache::Address> EntryCache::addresses(
+    size_t descriptor_index) const {
   Address* const addresses = first_address(descriptor_index);
 
   size_t size = 0;
@@ -222,7 +223,7 @@ span<EntryCache::Address> EntryCache::addresses(size_t descriptor_index) const {
     size += 1;
   }
 
-  return span(addresses, size);
+  return std::span(addresses, size);
 }
 
 EntryCache::Address* EntryCache::ResetAddresses(size_t descriptor_index,

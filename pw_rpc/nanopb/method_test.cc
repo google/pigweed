@@ -36,14 +36,15 @@ using std::byte;
 
 #define _ENCODE_PB_IMPL(proto, init, result, unique)              \
   std::array<pb_byte_t, 2 * sizeof(proto)> _pb_buffer_##unique{}; \
-  const span result =                                             \
+  const std::span result =                                        \
       EncodeProtobuf<proto, proto##_fields>(proto init, _pb_buffer_##unique)
 
 template <typename T, auto fields>
-span<const byte> EncodeProtobuf(const T& protobuf, span<pb_byte_t> buffer) {
+std::span<const byte> EncodeProtobuf(const T& protobuf,
+                                     std::span<pb_byte_t> buffer) {
   auto output = pb_ostream_from_buffer(buffer.data(), buffer.size());
   EXPECT_TRUE(pb_encode(&output, fields, &protobuf));
-  return as_bytes(buffer.first(output.bytes_written));
+  return std::as_bytes(buffer.first(output.bytes_written));
 }
 
 class FakeGeneratedService : public Service {

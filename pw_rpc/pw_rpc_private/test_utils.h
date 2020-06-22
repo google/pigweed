@@ -16,12 +16,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
-#include "pw_span/span.h"
 
 namespace pw::rpc {
 
@@ -31,19 +31,19 @@ class TestOutput : public ChannelOutput {
   constexpr TestOutput(const char* name = "TestOutput")
       : ChannelOutput(name), sent_packet_{} {}
 
-  span<std::byte> AcquireBuffer() override { return buffer_; }
+  std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
   void SendAndReleaseBuffer(size_t size) override {
-    sent_packet_ = span(buffer_.data(), size);
+    sent_packet_ = std::span(buffer_.data(), size);
   }
 
-  span<const std::byte> buffer() const { return buffer_; }
+  std::span<const std::byte> buffer() const { return buffer_; }
 
-  const span<const std::byte>& sent_packet() const { return sent_packet_; }
+  const std::span<const std::byte>& sent_packet() const { return sent_packet_; }
 
  private:
   std::array<std::byte, buffer_size> buffer_;
-  span<const std::byte> sent_packet_;
+  std::span<const std::byte> sent_packet_;
 };
 
 // Version of the internal::Server with extra methods exposed for testing.
@@ -63,7 +63,7 @@ class ServerContextForTest {
 
   ServerContextForTest(const internal::Method& method)
       : channel_(Channel::Create<kChannelId>(&output_)),
-        server_(span(&channel_, 1)),
+        server_(std::span(&channel_, 1)),
         service_(kServiceId),
         context_(static_cast<internal::Server&>(server_),
                  static_cast<internal::Channel&>(channel_),
@@ -75,7 +75,7 @@ class ServerContextForTest {
   ServerContextForTest() : ServerContextForTest(service_.method) {}
 
   // Creates a packet for this context's channel, service, and method.
-  internal::Packet packet(span<const std::byte> payload) const {
+  internal::Packet packet(std::span<const std::byte> payload) const {
     return internal::Packet(internal::PacketType::RPC,
                             kChannelId,
                             kServiceId,

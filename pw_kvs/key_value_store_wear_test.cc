@@ -63,7 +63,7 @@ TEST_F(WearTest, RepeatedLargeEntry) {
     // written.
     test_data[0]++;
 
-    EXPECT_TRUE(kvs_.Put("large_entry", span(test_data)).ok());
+    EXPECT_TRUE(kvs_.Put("large_entry", std::span(test_data)).ok());
   }
 
   // Ensure every sector has been erased at several times due to garbage
@@ -91,7 +91,8 @@ TEST_F(WearTest, TwoPassFillWithLargeAndLarger) {
 
     EXPECT_EQ(
         Status::OK,
-        kvs_.Put("key", as_bytes(span(test_data, sizeof(test_data) - 70))));
+        kvs_.Put("key",
+                 std::as_bytes(std::span(test_data, sizeof(test_data) - 70))));
   }
 
   // Add many copies of a differently sized entry that is larger than the

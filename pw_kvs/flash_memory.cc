@@ -28,13 +28,13 @@ namespace pw::kvs {
 
 using std::byte;
 
-StatusWithSize FlashPartition::Output::DoWrite(span<const byte> data) {
+StatusWithSize FlashPartition::Output::DoWrite(std::span<const byte> data) {
   TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();
   return StatusWithSize(data.size());
 }
 
-StatusWithSize FlashPartition::Input::DoRead(span<byte> data) {
+StatusWithSize FlashPartition::Input::DoRead(std::span<byte> data) {
   StatusWithSize result = flash_.Read(address_, data);
   address_ += result.size();
   return result;
@@ -49,12 +49,13 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
   return flash_.Erase(PartitionToFlashAddress(address), num_sectors);
 }
 
-StatusWithSize FlashPartition::Read(Address address, span<byte> output) {
+StatusWithSize FlashPartition::Read(Address address, std::span<byte> output) {
   TRY_WITH_SIZE(CheckBounds(address, output.size()));
   return flash_.Read(PartitionToFlashAddress(address), output);
 }
 
-StatusWithSize FlashPartition::Write(Address address, span<const byte> data) {
+StatusWithSize FlashPartition::Write(Address address,
+                                     std::span<const byte> data) {
   if (permission_ == PartitionPermission::kReadOnly) {
     return StatusWithSize::PERMISSION_DENIED;
   }
@@ -102,7 +103,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   return Status::OK;
 }
 
-bool FlashPartition::AppearsErased(span<const byte> data) const {
+bool FlashPartition::AppearsErased(std::span<const byte> data) const {
   for (byte b : data) {
     if (b != flash_.erased_memory_content()) {
       return false;

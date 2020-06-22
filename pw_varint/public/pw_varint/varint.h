@@ -40,10 +40,10 @@ size_t pw_VarintZigZagEncodedSize(int64_t integer);
 
 }  // extern "C"
 
+#include <span>
 #include <type_traits>
 
 #include "pw_polyfill/language_features.h"
-#include "pw_span/span.h"
 
 namespace pw {
 namespace varint {
@@ -82,7 +82,7 @@ constexpr std::make_signed_t<T> ZigZagDecode(T n)
 
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
 inline size_t EncodeLittleEndianBase128(uint64_t integer,
-                                        const span<std::byte>& output) {
+                                        const std::span<std::byte>& output) {
   return pw_VarintEncode(integer, output.data(), output.size());
 }
 
@@ -97,7 +97,7 @@ inline size_t EncodeLittleEndianBase128(uint64_t integer,
 // Returns the number of bytes written or 0 if the result didn't fit in the
 // encoding buffer.
 template <typename T>
-size_t Encode(T integer, const span<std::byte>& output) {
+size_t Encode(T integer, const std::span<std::byte>& output) {
   if (std::is_signed<T>()) {
     return pw_VarintZigZagEncode(integer, output.data(), output.size());
   } else {
@@ -125,11 +125,11 @@ size_t Encode(T integer, const span<std::byte>& output) {
 //     data = data.subspan(bytes)
 //   }
 //
-inline size_t Decode(const span<const std::byte>& input, int64_t* value) {
+inline size_t Decode(const std::span<const std::byte>& input, int64_t* value) {
   return pw_VarintZigZagDecode(input.data(), input.size(), value);
 }
 
-inline size_t Decode(const span<const std::byte>& input, uint64_t* value) {
+inline size_t Decode(const std::span<const std::byte>& input, uint64_t* value) {
   return pw_VarintDecode(input.data(), input.size(), value);
 }
 

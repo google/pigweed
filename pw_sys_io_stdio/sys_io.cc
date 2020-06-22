@@ -40,7 +40,7 @@ Status WriteByte(std::byte b) {
 
 StatusWithSize WriteLine(const std::string_view& s) {
   size_t chars_written = 0;
-  StatusWithSize size_result = WriteBytes(as_bytes(span(s)));
+  StatusWithSize size_result = WriteBytes(std::as_bytes(std::span(s)));
   if (!size_result.ok()) {
     return size_result;
   }

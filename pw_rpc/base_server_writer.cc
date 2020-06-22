@@ -47,7 +47,7 @@ void BaseServerWriter::Finish() {
   state_ = kClosed;
 }
 
-span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
+std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   if (!open()) {
     return {};
   }
@@ -56,14 +56,15 @@ span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   return response_.payload(packet());
 }
 
-Status BaseServerWriter::ReleasePayloadBuffer(span<const std::byte> payload) {
+Status BaseServerWriter::ReleasePayloadBuffer(
+    std::span<const std::byte> payload) {
   if (!open()) {
     return Status::FAILED_PRECONDITION;
   }
   return call_.channel().Send(response_, packet(payload));
 }
 
-Packet BaseServerWriter::packet(span<const std::byte> payload) const {
+Packet BaseServerWriter::packet(std::span<const std::byte> payload) const {
   return Packet(PacketType::RPC,
                 call_.channel().id(),
                 call_.service().id(),

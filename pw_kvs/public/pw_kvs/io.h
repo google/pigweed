@@ -14,9 +14,9 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <type_traits>
 
-#include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw {
@@ -34,41 +34,43 @@ struct FunctionTraits<ReturnType (T::*)(Args...)> {
 }  // namespace internal
 
 // Writes bytes to an unspecified output. Provides a Write function that takes a
-// span of bytes and returns a Status.
+// std::span of bytes and returns a Status.
 class Output {
  public:
-  StatusWithSize Write(span<const std::byte> data) { return DoWrite(data); }
+  StatusWithSize Write(std::span<const std::byte> data) {
+    return DoWrite(data);
+  }
 
   // Convenience wrapper for writing data from a pointer and length.
   StatusWithSize Write(const void* data, size_t size_bytes) {
-    return Write(span(static_cast<const std::byte*>(data), size_bytes));
+    return Write(std::span(static_cast<const std::byte*>(data), size_bytes));
   }
 
  protected:
   ~Output() = default;
 
  private:
-  virtual StatusWithSize DoWrite(span<const std::byte> data) = 0;
+  virtual StatusWithSize DoWrite(std::span<const std::byte> data) = 0;
 };
 
 class Input {
  public:
-  StatusWithSize Read(span<std::byte> data) { return DoRead(data); }
+  StatusWithSize Read(std::span<std::byte> data) { return DoRead(data); }
 
   // Convenience wrapper for reading data from a pointer and length.
   StatusWithSize Read(void* data, size_t size_bytes) {
-    return Read(span(static_cast<std::byte*>(data), size_bytes));
+    return Read(std::span(static_cast<std::byte*>(data), size_bytes));
   }
 
  protected:
   ~Input() = default;
 
  private:
-  virtual StatusWithSize DoRead(span<std::byte> data) = 0;
+  virtual StatusWithSize DoRead(std::span<std::byte> data) = 0;
 };
 
-// Output adapter that calls a method on a class with a span of bytes. If the
-// method returns void instead of the expected Status, Write always returns
+// Output adapter that calls a method on a class with a std::span of bytes. If
+// the method returns void instead of the expected Status, Write always returns
 // Status::OK.
 template <auto kMethod>
 class OutputToMethod final : public Output {
@@ -78,7 +80,7 @@ class OutputToMethod final : public Output {
   constexpr OutputToMethod(Class* object) : object_(*object) {}
 
  private:
-  StatusWithSize DoWrite(span<const std::byte> data) override {
+  StatusWithSize DoWrite(std::span<const std::byte> data) override {
     using Return = typename internal::FunctionTraits<decltype(kMethod)>::Return;
 
     if constexpr (std::is_void_v<Return>) {
@@ -96,15 +98,15 @@ class OutputToMethod final : public Output {
 // Output adapter that calls a free function.
 class OutputToFunction final : public Output {
  public:
-  OutputToFunction(StatusWithSize (*function)(span<const std::byte>))
+  OutputToFunction(StatusWithSize (*function)(std::span<const std::byte>))
       : function_(function) {}
 
  private:
-  StatusWithSize DoWrite(span<const std::byte> data) override {
+  StatusWithSize DoWrite(std::span<const std::byte> data) override {
     return function_(data);
   }
 
-  StatusWithSize (*function_)(span<const std::byte>);
+  StatusWithSize (*function_)(std::span<const std::byte>);
 };
 
 }  // namespace pw

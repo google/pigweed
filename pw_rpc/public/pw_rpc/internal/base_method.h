@@ -27,8 +27,8 @@ class BaseMethod {
   // Implementations must provide the Invoke method, which the Server calls:
   //
   // StatusWithSize Invoke(ServerCall& call,
-  //                       span<const std::byte> request,
-  //                       span<std::byte> payload_buffer) const;
+  //                       std::span<const std::byte> request,
+  //                       std::span<std::byte> payload_buffer) const;
 
  protected:
   constexpr BaseMethod(uint32_t id) : id_(id) {}

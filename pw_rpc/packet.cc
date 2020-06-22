@@ -20,12 +20,12 @@ namespace pw::rpc::internal {
 
 using std::byte;
 
-Packet Packet::FromBuffer(span<const byte> data) {
+Packet Packet::FromBuffer(std::span<const byte> data) {
   PacketType type = PacketType::RPC;
   uint32_t channel_id = 0;
   uint32_t service_id = 0;
   uint32_t method_id = 0;
-  span<const byte> payload;
+  std::span<const byte> payload;
   Status status;
 
   uint32_t value;
@@ -68,7 +68,7 @@ Packet Packet::FromBuffer(span<const byte> data) {
   return Packet(type, channel_id, service_id, method_id, payload, status);
 }
 
-StatusWithSize Packet::Encode(span<byte> buffer) const {
+StatusWithSize Packet::Encode(std::span<byte> buffer) const {
   pw::protobuf::NestedEncoder encoder(buffer);
   RpcPacket::Encoder rpc_packet(&encoder);
 
@@ -81,7 +81,7 @@ StatusWithSize Packet::Encode(span<byte> buffer) const {
   rpc_packet.WriteMethodId(method_id_);
   rpc_packet.WriteStatus(status_);
 
-  span<const byte> proto;
+  std::span<const byte> proto;
   if (Status status = encoder.Encode(&proto); !status.ok()) {
     return StatusWithSize(status, 0);
   }

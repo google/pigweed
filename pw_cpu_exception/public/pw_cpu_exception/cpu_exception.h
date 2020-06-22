@@ -28,9 +28,9 @@
 //            some part of your application.
 
 #include <cstdint>
+#include <span>
 
 #include "pw_preprocessor/compiler.h"
-#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
@@ -40,7 +40,7 @@ struct CpuState;
 
 // Gets raw CPU state as a single contiguous block of data. The particular
 // contents will depend on the specific backend and platform.
-span<const uint8_t> RawFaultingCpuState(const CpuState& cpu_state);
+std::span<const uint8_t> RawFaultingCpuState(const CpuState& cpu_state);
 
 // Writes CPU state as a formatted string to a string builder.
 // NEVER depend on the format of this output. This is exclusively FYI human

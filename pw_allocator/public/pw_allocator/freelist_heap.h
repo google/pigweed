@@ -15,16 +15,16 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 
 #include "pw_allocator/block.h"
 #include "pw_allocator/freelist.h"
-#include "pw_span/span.h"
 
 namespace pw::allocator {
 
 class FreeListHeap {
  public:
-  FreeListHeap(span<std::byte> region, FreeList& freelist);
+  FreeListHeap(std::span<std::byte> region, FreeList& freelist);
 
   void* Allocate(size_t size);
   void Free(void* ptr);
@@ -32,11 +32,11 @@ class FreeListHeap {
   void* Calloc(size_t num, size_t size);
 
  private:
-  span<std::byte> BlockToSpan(Block* block) {
-    return span<std::byte>(block->UsableSpace(), block->InnerSize());
+  std::span<std::byte> BlockToSpan(Block* block) {
+    return std::span<std::byte>(block->UsableSpace(), block->InnerSize());
   }
 
-  span<std::byte> region_;
+  std::span<std::byte> region_;
   FreeList& freelist_;
 };
 
@@ -46,7 +46,7 @@ class FreeListHeapBuffer {
   static constexpr std::array<size_t, N> defaultBuckets{
       16, 32, 64, 128, 256, 512};
 
-  FreeListHeapBuffer(span<std::byte> region)
+  FreeListHeapBuffer(std::span<std::byte> region)
       : freelist_(defaultBuckets), heap_(region, freelist_) {}
 
   void* Allocate(size_t size) { return heap_.Allocate(size); }

@@ -20,7 +20,7 @@
 
 namespace pw::kvs {
 
-Status FlashError::Check(span<FlashError> errors,
+Status FlashError::Check(std::span<FlashError> errors,
                          FlashMemory::Address address,
                          size_t size) {
   for (auto& error : errors) {
@@ -77,7 +77,8 @@ Status FakeFlashMemory::Erase(Address address, size_t num_sectors) {
   return Status::OK;
 }
 
-StatusWithSize FakeFlashMemory::Read(Address address, span<std::byte> output) {
+StatusWithSize FakeFlashMemory::Read(Address address,
+                                     std::span<std::byte> output) {
   if (address + output.size() >= sector_count() * size_bytes()) {
     return StatusWithSize::OUT_OF_RANGE;
   }
@@ -89,7 +90,7 @@ StatusWithSize FakeFlashMemory::Read(Address address, span<std::byte> output) {
 }
 
 StatusWithSize FakeFlashMemory::Write(Address address,
-                                      span<const std::byte> data) {
+                                      std::span<const std::byte> data) {
   if (address % alignment_bytes() != 0 ||
       data.size() % alignment_bytes() != 0) {
     PW_LOG_ERROR("Unaligned write; address %x, size %u B, alignment %u",

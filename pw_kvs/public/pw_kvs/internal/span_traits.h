@@ -18,12 +18,13 @@
 namespace pw::kvs {
 
 namespace internal {
-template <typename T, typename = decltype(span(std::declval<T>()))>
+template <typename T, typename = decltype(std::span(std::declval<T>()))>
 constexpr bool ConvertsToSpan(int) {
   return true;
 }
 
-// If the expression span(T) fails, then the type can't be converted to a span.
+// If the expression std::span(T) fails, then the type can't be converted to a
+// std::span.
 template <typename T>
 constexpr bool ConvertsToSpan(...) {
   return false;
@@ -31,7 +32,7 @@ constexpr bool ConvertsToSpan(...) {
 
 }  // namespace internal
 
-// Traits class to detect if the type converts to a span.
+// Traits class to detect if the type converts to a std::span.
 template <typename T>
 struct ConvertsToSpan
     : public std::bool_constant<

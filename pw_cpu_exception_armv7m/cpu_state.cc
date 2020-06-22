@@ -16,15 +16,16 @@
 
 #include <cinttypes>
 #include <cstdint>
+#include <span>
 
 #include "pw_cpu_exception/cpu_exception.h"
-#include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
 
-span<const uint8_t> RawFaultingCpuState(const CpuState& cpu_state) {
-  return span(reinterpret_cast<const uint8_t*>(&cpu_state), sizeof(cpu_state));
+std::span<const uint8_t> RawFaultingCpuState(const CpuState& cpu_state) {
+  return std::span(reinterpret_cast<const uint8_t*>(&cpu_state),
+                   sizeof(cpu_state));
 }
 
 // Using this function adds approximately 100 bytes to binary size.

@@ -14,8 +14,8 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw {
@@ -32,7 +32,7 @@ namespace ring_buffer {
 // room. Entries are internally wrapped around as needed.
 class PrefixedEntryRingBuffer {
  public:
-  typedef Status (*ReadOutput)(span<const std::byte>);
+  typedef Status (*ReadOutput)(std::span<const std::byte>);
 
   PrefixedEntryRingBuffer(bool user_preamble = false)
       : buffer_(nullptr),
@@ -47,7 +47,7 @@ class PrefixedEntryRingBuffer {
   // Return values:
   // OK - successfully set the raw buffer.
   // INVALID_ARGUMENT - Argument was nullptr, size zero, or too large.
-  Status SetBuffer(span<std::byte> buffer);
+  Status SetBuffer(std::span<std::byte> buffer);
 
   // Removes all data from the ring buffer.
   void Clear();
@@ -65,7 +65,7 @@ class PrefixedEntryRingBuffer {
   // INVALID_ARGUMENT - Size of data to write is zero bytes
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - Size of data is greater than buffer size.
-  Status PushBack(span<const std::byte> data,
+  Status PushBack(std::span<const std::byte> data,
                   std::byte user_preamble_data = std::byte(0)) {
     return InternalPushBack(data, user_preamble_data, true);
   }
@@ -83,29 +83,29 @@ class PrefixedEntryRingBuffer {
   // OUT_OF_RANGE - Size of data is greater than buffer size.
   // RESOURCE_EXHAUSTED - The ring buffer doesn't have space for the data
   // without popping off existing elements.
-  Status TryPushBack(span<const std::byte> data,
+  Status TryPushBack(std::span<const std::byte> data,
                      std::byte user_preamble_data = std::byte(0)) {
     return InternalPushBack(data, user_preamble_data, false);
   }
 
   // Read the oldest stored data chunk of data from the ring buffer to
-  // the provided destination span. The number of bytes read is written to
+  // the provided destination std::span. The number of bytes read is written to
   // bytes_read
   //
   // Return values:
   // OK - Data successfully read from the ring buffer.
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - No entries in ring buffer to read.
-  // RESOURCE_EXHAUSTED - Destination data span was smaller number of bytes than
-  // the data size of the data chunk being read.  Available destination bytes
-  // were filled, remaining bytes of the data chunk were ignored.
-  Status PeekFront(span<std::byte> data, size_t* bytes_read);
+  // RESOURCE_EXHAUSTED - Destination data std::span was smaller number of bytes
+  // than the data size of the data chunk being read.  Available destination
+  // bytes were filled, remaining bytes of the data chunk were ignored.
+  Status PeekFront(std::span<std::byte> data, size_t* bytes_read);
 
   Status PeekFront(ReadOutput output);
 
   // Same as Read but includes the entry's preamble of optional user value and
   // the varint of the data size
-  Status PeekFrontWithPreamble(span<std::byte> data, size_t* bytes_read);
+  Status PeekFrontWithPreamble(std::span<std::byte> data, size_t* bytes_read);
 
   Status PeekFrontWithPreamble(ReadOutput output);
 
@@ -157,7 +157,7 @@ class PrefixedEntryRingBuffer {
 
   // Push back implementation, which optionally discards front elements to fit
   // the incoming element.
-  Status InternalPushBack(span<const std::byte> data,
+  Status InternalPushBack(std::span<const std::byte> data,
                           std::byte user_preamble_data,
                           bool pop_front_if_needed);
 
@@ -173,7 +173,7 @@ class PrefixedEntryRingBuffer {
   // Do the basic write of the specified number of bytes starting at the last
   // write index of the ring buffer to the destination, handing any wrap-around
   // of the ring buffer. This is basic, raw operation with no safety checks.
-  void RawWrite(span<const std::byte> source);
+  void RawWrite(std::span<const std::byte> source);
 
   // Do the basic read of the specified number of bytes starting at the given
   // index of the ring buffer to the destination, handing any wrap-around of

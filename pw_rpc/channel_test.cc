@@ -27,7 +27,7 @@ TEST(ChannelOutput, Name) {
   class NameTester : public ChannelOutput {
    public:
     NameTester(const char* name) : ChannelOutput(name) {}
-    span<std::byte> AcquireBuffer() override { return {}; }
+    std::span<std::byte> AcquireBuffer() override { return {}; }
     void SendAndReleaseBuffer(size_t) override {}
   };
 
@@ -67,7 +67,7 @@ TEST(Channel, OutputBuffer_ExactFit) {
   internal::Channel channel(100, &output);
 
   Channel::OutputBuffer output_buffer(channel.AcquireBuffer());
-  const span payload = output_buffer.payload(kTestPacket);
+  const std::span payload = output_buffer.payload(kTestPacket);
 
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
@@ -93,7 +93,7 @@ TEST(Channel, OutputBuffer_ExtraRoom) {
   internal::Channel channel(100, &output);
 
   Channel::OutputBuffer output_buffer = channel.AcquireBuffer();
-  const span payload = output_buffer.payload(kTestPacket);
+  const std::span payload = output_buffer.payload(kTestPacket);
 
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());

@@ -16,11 +16,11 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/server_context.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -137,17 +137,18 @@ class Method : public BaseMethod {
   // calls the invoker function, which encodes and decodes the request and
   // response (if any) and calls the user-defined RPC function.
   StatusWithSize Invoke(ServerCall& call,
-                        span<const std::byte> request,
-                        span<std::byte> payload_buffer) const {
+                        std::span<const std::byte> request,
+                        std::span<std::byte> payload_buffer) const {
     return invoker_(*this, call, request, payload_buffer);
   }
 
   // Decodes a request protobuf with Nanopb to the provided buffer.
-  Status DecodeRequest(span<const std::byte> buffer, void* proto_struct) const;
+  Status DecodeRequest(std::span<const std::byte> buffer,
+                       void* proto_struct) const;
 
   // Encodes a response protobuf with Nanopb to the provided buffer.
   StatusWithSize EncodeResponse(const void* proto_struct,
-                                span<std::byte> buffer) const;
+                                std::span<std::byte> buffer) const;
 
  private:
   // Generic version of the unary RPC function signature:
@@ -187,8 +188,8 @@ class Method : public BaseMethod {
   // returns the number of bytes written to the response buffer, if any.
   using Invoker = StatusWithSize (&)(const Method&,
                                      ServerCall&,
-                                     span<const std::byte>,
-                                     span<std::byte>);
+                                     std::span<const std::byte>,
+                                     std::span<std::byte>);
 
   constexpr Method(Function function,
                    Invoker invoker,
@@ -202,13 +203,13 @@ class Method : public BaseMethod {
         response_fields_(response) {}
 
   StatusWithSize CallUnary(ServerCall& call,
-                           span<const std::byte> request_buffer,
-                           span<std::byte> response_buffer,
+                           std::span<const std::byte> request_buffer,
+                           std::span<std::byte> response_buffer,
                            void* request_struct,
                            void* response_struct) const;
 
   StatusWithSize CallServerStreaming(ServerCall& call,
-                                     span<const std::byte> request_buffer,
+                                     std::span<const std::byte> request_buffer,
                                      void* request_struct) const;
 
   // TODO(hepler): Add CallClientStreaming and CallBidiStreaming
@@ -219,8 +220,8 @@ class Method : public BaseMethod {
   template <size_t request_size, size_t response_size>
   static StatusWithSize UnaryInvoker(const Method& method,
                                      ServerCall& call,
-                                     span<const std::byte> request_buffer,
-                                     span<std::byte> response_buffer) {
+                                     std::span<const std::byte> request_buffer,
+                                     std::span<std::byte> response_buffer) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
@@ -240,8 +241,8 @@ class Method : public BaseMethod {
   static StatusWithSize ServerStreamingInvoker(
       const Method& method,
       ServerCall& call,
-      span<const std::byte> request_buffer,
-      span<std::byte> /* payload not used */) {
+      std::span<const std::byte> request_buffer,
+      std::span<std::byte> /* payload not used */) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 
@@ -264,7 +265,7 @@ class Method : public BaseMethod {
 
 template <typename T>
 Status ServerWriter<T>::Write(const T& response) {
-  span<std::byte> buffer = AcquirePayloadBuffer();
+  std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (auto result = method().EncodeResponse(&response, buffer); result.ok()) {
     return ReleasePayloadBuffer(buffer.first(result.size()));

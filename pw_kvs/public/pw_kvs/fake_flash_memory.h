@@ -17,10 +17,10 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <span>
 
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::kvs {
@@ -50,7 +50,7 @@ class FlashError {
   Status Check(FlashMemory::Address start_address, size_t size);
 
   // Determines if any of a series of FlashErrors applies to the operation.
-  static Status Check(span<FlashError> errors,
+  static Status Check(std::span<FlashError> errors,
                       FlashMemory::Address address,
                       size_t size);
 
@@ -88,7 +88,7 @@ class FakeFlashMemory : public FlashMemory {
 
   static constexpr std::byte kErasedValue = std::byte{0xff};
 
-  FakeFlashMemory(span<std::byte> buffer,
+  FakeFlashMemory(std::span<std::byte> buffer,
                   size_t sector_size,
                   size_t sector_count,
                   size_t alignment_bytes = kDefaultAlignmentBytes,
@@ -110,16 +110,17 @@ class FakeFlashMemory : public FlashMemory {
   Status Erase(Address address, size_t num_sectors) override;
 
   // Reads bytes from flash into buffer.
-  StatusWithSize Read(Address address, span<std::byte> output) override;
+  StatusWithSize Read(Address address, std::span<std::byte> output) override;
 
   // Writes bytes to flash.
-  StatusWithSize Write(Address address, span<const std::byte> data) override;
+  StatusWithSize Write(Address address,
+                       std::span<const std::byte> data) override;
 
   // Testing API
 
   // Access the underlying buffer for testing purposes. Not part of the
   // FlashMemory API.
-  span<std::byte> buffer() const { return buffer_; }
+  std::span<std::byte> buffer() const { return buffer_; }
 
   bool InjectReadError(const FlashError& error) {
     if (read_errors_.full()) {
@@ -138,7 +139,7 @@ class FakeFlashMemory : public FlashMemory {
   }
 
  private:
-  const span<std::byte> buffer_;
+  const std::span<std::byte> buffer_;
   Vector<FlashError>& read_errors_;
   Vector<FlashError>& write_errors_;
 };
@@ -156,7 +157,7 @@ class FakeFlashMemoryBuffer : public FakeFlashMemory {
 
   // Creates a flash memory initialized to the provided contents.
   explicit FakeFlashMemoryBuffer(
-      span<const std::byte> contents,
+      std::span<const std::byte> contents,
       size_t alignment_bytes = kDefaultAlignmentBytes)
       : FakeFlashMemory(buffer_,
                         kSectorSize,

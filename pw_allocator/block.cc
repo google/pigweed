@@ -16,7 +16,7 @@
 
 namespace pw::allocator {
 
-Status Block::Init(const span<std::byte> region, Block** block) {
+Status Block::Init(const std::span<std::byte> region, Block** block) {
   // Ensure the region we're given is aligned and sized accordingly
   if (reinterpret_cast<uintptr_t>(region.data()) % alignof(Block) != 0) {
     return Status::INVALID_ARGUMENT;

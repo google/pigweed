@@ -63,7 +63,7 @@ TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
       for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
         ASSERT_EQ(Status::OK,
                   kvs_.Put(std::string_view(value, key_size),
-                           as_bytes(span(value, value_size))));
+                           std::as_bytes(std::span(value, value_size))));
       }
     }
   }

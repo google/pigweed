@@ -21,7 +21,7 @@
 
 namespace pw::stream {
 
-Status MemoryWriter::DoWrite(span<const std::byte> data) {
+Status MemoryWriter::DoWrite(std::span<const std::byte> data) {
   size_t bytes_to_write =
       std::min(data.size_bytes(), dest_.size_bytes() - bytes_written_);
   std::memcpy(dest_.data() + bytes_written_, data.data(), bytes_to_write);

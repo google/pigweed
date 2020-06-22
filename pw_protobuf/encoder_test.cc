@@ -93,7 +93,7 @@ TEST(Encoder, EncodePrimitives) {
   EXPECT_EQ(encoder.WriteString(kTestProtoErrorMessageField, "broken 💩"),
             Status::OK);
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
@@ -115,7 +115,7 @@ TEST(Encoder, EncodeInsufficientSpace) {
   EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034),
             Status::RESOURCE_EXHAUSTED);
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::RESOURCE_EXHAUSTED);
   EXPECT_EQ(encoded.size(), 0u);
 }
@@ -133,7 +133,7 @@ TEST(Encoder, EncodeInvalidArguments) {
   encoder.Clear();
 
   EXPECT_EQ(encoder.WriteBool(19091, false), Status::INVALID_ARGUMENT);
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::INVALID_ARGUMENT);
   EXPECT_EQ(encoded.size(), 0u);
 }
@@ -213,7 +213,7 @@ TEST(Encoder, Nested) {
   };
   // clang-format on
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
@@ -273,7 +273,7 @@ TEST(Encoder, RepeatedField) {
   constexpr uint8_t encoded_proto[] = {
       0x08, 0x00, 0x08, 0x32, 0x08, 0x64, 0x08, 0x96, 0x01, 0x08, 0xc8, 0x01};
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
@@ -291,7 +291,7 @@ TEST(Encoder, PackedVarint) {
       0x0a, 0x07, 0x00, 0x32, 0x64, 0x96, 0x01, 0xc8, 0x01};
   //  key   size  v[0]  v[1]  v[2]  v[3]        v[4]
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
@@ -304,7 +304,7 @@ TEST(Encoder, PackedVarintInsufficientSpace) {
   constexpr uint32_t values[] = {0, 50, 100, 150, 200};
   encoder.WritePackedUint32(1, values);
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::RESOURCE_EXHAUSTED);
   EXPECT_EQ(encoded.size(), 0u);
 }
@@ -326,7 +326,7 @@ TEST(Encoder, PackedFixed) {
       0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x00, 0xc8, 0x00, 0x00, 0x00,
       0x12, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01};
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);
@@ -343,7 +343,7 @@ TEST(Encoder, PackedZigzag) {
   constexpr uint8_t encoded_proto[] = {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
 
-  span<const std::byte> encoded;
+  std::span<const std::byte> encoded;
   EXPECT_EQ(encoder.Encode(&encoded), Status::OK);
   EXPECT_EQ(encoded.size(), sizeof(encoded_proto));
   EXPECT_EQ(std::memcmp(encoded.data(), encoded_proto, encoded.size()), 0);

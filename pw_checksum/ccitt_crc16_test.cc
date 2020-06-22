@@ -35,7 +35,7 @@ constexpr std::string_view kString =
 constexpr uint16_t kStringCrc = 0xC184;
 
 TEST(Crc16, Empty) {
-  EXPECT_EQ(CcittCrc16(span<std::byte>()), kCcittCrc16DefaultInitialValue);
+  EXPECT_EQ(CcittCrc16(std::span<std::byte>()), kCcittCrc16DefaultInitialValue);
 }
 
 TEST(Crc16, ByteByByte) {
@@ -47,11 +47,11 @@ TEST(Crc16, ByteByByte) {
 }
 
 TEST(Crc16, Buffer) {
-  EXPECT_EQ(CcittCrc16(as_bytes(span(kBytes))), kBufferCrc);
+  EXPECT_EQ(CcittCrc16(std::as_bytes(std::span(kBytes))), kBufferCrc);
 }
 
 TEST(Crc16, String) {
-  EXPECT_EQ(CcittCrc16(as_bytes(span(kString))), kStringCrc);
+  EXPECT_EQ(CcittCrc16(std::as_bytes(std::span(kString))), kStringCrc);
 }
 
 extern "C" uint16_t CallChecksumCcittCrc16(const void* data, size_t size_bytes);

@@ -14,12 +14,12 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
-#include "pw_span/span.h"
 
 namespace pw::rpc::internal {
 
@@ -54,12 +54,12 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   const Method& method() const { return call_.method(); }
 
-  span<std::byte> AcquirePayloadBuffer();
+  std::span<std::byte> AcquirePayloadBuffer();
 
-  Status ReleasePayloadBuffer(span<const std::byte> payload);
+  Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
  private:
-  Packet packet(span<const std::byte> payload = {}) const;
+  Packet packet(std::span<const std::byte> payload = {}) const;
 
   ServerCall call_;
   Channel::OutputBuffer response_;

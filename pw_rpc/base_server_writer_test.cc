@@ -28,7 +28,7 @@ namespace pw::rpc {
 class TestService : public internal::Service {
  public:
   constexpr TestService(uint32_t id)
-      : Service(id, span(&method, 1)), method(8) {}
+      : Service(id, std::span(&method, 1)), method(8) {}
 
   internal::Method method;
 };
@@ -62,8 +62,8 @@ class FakeServerWriter : public BaseServerWriter {
 
   constexpr FakeServerWriter() = default;
 
-  Status Write(span<const byte> response) {
-    span buffer = AcquirePayloadBuffer();
+  Status Write(std::span<const byte> response) {
+    std::span buffer = AcquirePayloadBuffer();
     std::memcpy(buffer.data(),
                 response.data(),
                 std::min(buffer.size(), response.size()));

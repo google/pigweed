@@ -14,11 +14,11 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/method.h"
-#include "pw_span/span.h"
 
 namespace pw::rpc::internal {
 
@@ -40,7 +40,7 @@ class Service : public IntrusiveList<Service>::Item {
   friend class ServiceRegistry;
 
   uint32_t id_;
-  span<const Method> methods_;
+  std::span<const Method> methods_;
 };
 
 }  // namespace pw::rpc::internal

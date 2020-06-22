@@ -33,7 +33,7 @@ using std::string_view;
 constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
-constexpr uint32_t SimpleChecksum(span<const byte> data, uint32_t state) {
+constexpr uint32_t SimpleChecksum(std::span<const byte> data, uint32_t state) {
   for (byte b : data) {
     state += uint32_t(b);
   }
@@ -43,18 +43,19 @@ constexpr uint32_t SimpleChecksum(span<const byte> data, uint32_t state) {
 template <typename State>
 class ChecksumFunction final : public ChecksumAlgorithm {
  public:
-  ChecksumFunction(State (&algorithm)(span<const byte>, State))
-      : ChecksumAlgorithm(as_bytes(span(&state_, 1))), algorithm_(algorithm) {}
+  ChecksumFunction(State (&algorithm)(std::span<const byte>, State))
+      : ChecksumAlgorithm(std::as_bytes(std::span(&state_, 1))),
+        algorithm_(algorithm) {}
 
   void Reset() override { state_ = {}; }
 
-  void Update(span<const byte> data) override {
+  void Update(std::span<const byte> data) override {
     state_ = algorithm_(data, state_);
   }
 
  private:
   State state_;
-  State (&algorithm_)(span<const byte>, State);
+  State (&algorithm_)(std::span<const byte>, State);
 };
 
 ChecksumFunction<uint32_t> default_checksum(SimpleChecksum);
@@ -68,7 +69,8 @@ constexpr auto EntryPadding() {
 }
 
 // Creates a buffer containing a valid entry at compile time.
-template <uint32_t (*kChecksum)(span<const byte>, uint32_t) = &SimpleChecksum,
+template <uint32_t (*kChecksum)(std::span<const byte>,
+                                uint32_t) = &SimpleChecksum,
           size_t kAlignmentBytes = sizeof(internal::EntryHeader),
           size_t kKeyLengthWithNull,
           size_t kValueSize>
@@ -85,7 +87,7 @@ constexpr auto MakeValidEntry(uint32_t magic,
                       uint16_t(kValueSize),
                       id,
                       ByteStr(key),
-                      span(value),
+                      std::span(value),
                       EntryPadding<kAlignmentBytes, kKeyLength, kValueSize>());
 
   // Calculate the checksum
@@ -99,7 +101,8 @@ constexpr auto MakeValidEntry(uint32_t magic,
 }
 
 // Creates a buffer containing a deleted entry at compile time.
-template <uint32_t (*kChecksum)(span<const byte>, uint32_t) = &SimpleChecksum,
+template <uint32_t (*kChecksum)(std::span<const byte>,
+                                uint32_t) = &SimpleChecksum,
           size_t kAlignmentBytes = sizeof(internal::EntryHeader),
           size_t kKeyLengthWithNull>
 constexpr auto MakeDeletedEntry(uint32_t magic,
@@ -166,7 +169,7 @@ class KvsErrorHandling : public ::testing::Test {
         partition_(&flash_),
         kvs_(&partition_, default_format, kNoGcOptions) {}
 
-  void InitFlashTo(span<const byte> contents) {
+  void InitFlashTo(std::span<const byte> contents) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
@@ -329,7 +332,7 @@ TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
 
   EXPECT_EQ(1u, kvs_.size());
 
-  auto result = kvs_.Get("my_key", as_writable_bytes(span(buffer)));
+  auto result = kvs_.Get("my_key", std::as_writable_bytes(std::span(buffer)));
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(sizeof("version 7") - 1, result.size());
   EXPECT_STREQ("version 7", buffer);
@@ -346,7 +349,7 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
   EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
 
-  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", span<byte>()).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", std::span<byte>()).status());
   ASSERT_TRUE(kvs_.empty());
 
   auto stats = kvs_.GetStorageStats();
@@ -373,7 +376,7 @@ class KvsErrorRecovery : public ::testing::Test {
              {.magic = kMagic, .checksum = &default_checksum},
              kRecoveryNoGcOptions) {}
 
-  void InitFlashTo(span<const byte> contents) {
+  void InitFlashTo(std::span<const byte> contents) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
@@ -549,7 +552,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptKey_RevertsToPreviousVersion) {
 
   EXPECT_EQ(1u, kvs_.size());
 
-  auto result = kvs_.Get("my_key", as_writable_bytes(span(buffer)));
+  auto result = kvs_.Get("my_key", std::as_writable_bytes(std::span(buffer)));
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(sizeof("version 7") - 1, result.size());
   EXPECT_STREQ("version 7", buffer);
@@ -567,7 +570,7 @@ TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
   EXPECT_EQ(true, kvs_.error_detected());
 
-  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", span<byte>()).status());
+  EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", std::span<byte>()).status());
   ASSERT_TRUE(kvs_.empty());
 
   auto stats = kvs_.GetStorageStats();
@@ -591,7 +594,7 @@ TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
 constexpr uint32_t kAltMagic = 0xbadD00D;
 
-constexpr uint32_t AltChecksum(span<const byte> data, uint32_t state) {
+constexpr uint32_t AltChecksum(std::span<const byte> data, uint32_t state) {
   for (byte b : data) {
     state = (state << 8) | uint32_t(byte(state >> 24) ^ b);
   }
@@ -603,7 +606,7 @@ ChecksumFunction<uint32_t> alt_checksum(AltChecksum);
 constexpr auto kAltEntry =
     MakeValidEntry<AltChecksum>(kAltMagic, 32, "A Key", ByteStr("XD"));
 
-constexpr uint32_t NoChecksum(span<const byte>, uint32_t) { return 0; }
+constexpr uint32_t NoChecksum(std::span<const byte>, uint32_t) { return 0; }
 constexpr uint32_t kNoChecksumMagic = 0x6000061e;
 
 constexpr auto kNoChecksumEntry =
@@ -640,13 +643,14 @@ class InitializedRedundantMultiMagicKvs : public ::testing::Test {
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors, 2, 3> kvs_;
 };
 
-#define ASSERT_CONTAINS_ENTRY(key, str_value)                          \
-  do {                                                                 \
-    char val[sizeof(str_value)] = {};                                  \
-    StatusWithSize stat = kvs_.Get(key, as_writable_bytes(span(val))); \
-    ASSERT_EQ(Status::OK, stat.status());                              \
-    ASSERT_EQ(sizeof(str_value) - 1, stat.size());                     \
-    ASSERT_STREQ(str_value, val);                                      \
+#define ASSERT_CONTAINS_ENTRY(key, str_value)                  \
+  do {                                                         \
+    char val[sizeof(str_value)] = {};                          \
+    StatusWithSize stat =                                      \
+        kvs_.Get(key, std::as_writable_bytes(std::span(val))); \
+    ASSERT_EQ(Status::OK, stat.status());                      \
+    ASSERT_EQ(sizeof(str_value) - 1, stat.size());             \
+    ASSERT_STREQ(str_value, val);                              \
   } while (0)
 
 TEST_F(InitializedRedundantMultiMagicKvs, AllEntriesArePresent) {
@@ -756,8 +760,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
   char val[20] = {};
-  EXPECT_EQ(Status::OK,
-            kvs_.Get("new key", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(
+      Status::OK,
+      kvs_.Get("new key", std::as_writable_bytes(std::span(val))).status());
 
   EXPECT_EQ(Status::OK, kvs_.FullMaintenance());
   stats = kvs_.GetStorageStats();
@@ -767,8 +772,9 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   EXPECT_EQ(stats.corrupt_sectors_recovered, 0u);
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 
-  EXPECT_EQ(Status::OK,
-            kvs_.Get("new key", as_writable_bytes(span(val))).status());
+  EXPECT_EQ(
+      Status::OK,
+      kvs_.Get("new key", std::as_writable_bytes(std::span(val))).status());
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
@@ -776,15 +782,15 @@ TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
 
   char val[20] = {};
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("key1", as_writable_bytes(span(val))).status());
+            kvs_.Get("key1", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("k2", as_writable_bytes(span(val))).status());
+            kvs_.Get("k2", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("k3y", as_writable_bytes(span(val))).status());
+            kvs_.Get("k3y", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("A Key", as_writable_bytes(span(val))).status());
+            kvs_.Get("A Key", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("kee", as_writable_bytes(span(val))).status());
+            kvs_.Get("kee", std::as_writable_bytes(std::span(val))).status());
 
   EXPECT_EQ(true, kvs_.error_detected());
 
@@ -820,13 +826,14 @@ TEST_F(InitializedRedundantMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
   ASSERT_CONTAINS_ENTRY("A Key", "New value!");
 }
 
-#define ASSERT_KVS_CONTAINS_ENTRY(kvs, key, str_value)                \
-  do {                                                                \
-    char val[sizeof(str_value)] = {};                                 \
-    StatusWithSize stat = kvs.Get(key, as_writable_bytes(span(val))); \
-    ASSERT_EQ(Status::OK, stat.status());                             \
-    ASSERT_EQ(sizeof(str_value) - 1, stat.size());                    \
-    ASSERT_STREQ(str_value, val);                                     \
+#define ASSERT_KVS_CONTAINS_ENTRY(kvs, key, str_value)        \
+  do {                                                        \
+    char val[sizeof(str_value)] = {};                         \
+    StatusWithSize stat =                                     \
+        kvs.Get(key, std::as_writable_bytes(std::span(val))); \
+    ASSERT_EQ(Status::OK, stat.status());                     \
+    ASSERT_EQ(sizeof(str_value) - 1, stat.size());            \
+    ASSERT_STREQ(str_value, val);                             \
   } while (0)
 
 TEST_F(InitializedRedundantMultiMagicKvs, UpdateEntryFormat) {
@@ -932,13 +939,13 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, WriteAfterDataLoss) {
 
   char val[20] = {};
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("key1", as_writable_bytes(span(val))).status());
+            kvs_.Get("key1", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("k2", as_writable_bytes(span(val))).status());
+            kvs_.Get("k2", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("k3y", as_writable_bytes(span(val))).status());
+            kvs_.Get("k3y", std::as_writable_bytes(std::span(val))).status());
   EXPECT_EQ(Status::DATA_LOSS,
-            kvs_.Get("4k", as_writable_bytes(span(val))).status());
+            kvs_.Get("4k", std::as_writable_bytes(std::span(val))).status());
 
   EXPECT_EQ(true, kvs_.error_detected());
 
