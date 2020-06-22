@@ -12,13 +12,27 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// pw::span is DEPRECATED. Instead of using pw::span from pw_span/span.h, use
-// std::span from <span>. pw_span/span.h and pw::span will be removed once code
-// has been migrated to std::span.
+// std::span is a stand-in for C++20's std::span. Do NOT include this header
+// directly; instead, include it as <span>.
 //
-// This code is a copy of the std::span code in pw_span/internal/span.h.
-// pw::span cannot be an alias of std::span because class template argument
-// deduction does not work with aliases.
+// A span is a non-owning array view class. It refers to an external array by
+// storing a pointer and length. Unlike std::array, the size does not have to be
+// a template parameter, so this class can be used to without stating its size.
+//
+// This file a modified version of base::span from Chromium:
+//   https://chromium.googlesource.com/chromium/src/+/d93ae920e4309682deb9352a4637cfc2941c1d1f/base/containers/span.h
+//
+// In order to minimize changes from the original, this file does NOT fully
+// adhere to Pigweed's style guide.
+//
+// A few changes were made to the Chromium version of span. These include:
+//   - Use std::data and std::size instead of base::* versions.
+//   - Rename base namespace to std.
+//   - Rename internal namespace to pw_span_internal.
+//   - Remove uses of checked_iterators.h and CHECK.
+//   - Replace make_span functions with C++17 class template deduction guides.
+//   - Use std::byte instead of uint8_t for compatibility with std::span.
+//
 #pragma once
 
 #include <algorithm>
@@ -34,7 +48,7 @@
 // Pigweed: Disable the asserts from Chromium for now.
 #define _PW_SPAN_ASSERT(arg)
 
-namespace pw {
+namespace std {
 
 // [views.constants]
 constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
@@ -42,7 +56,7 @@ constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
 template <typename T, size_t Extent = dynamic_extent>
 class span;
 
-namespace span_internal {
+namespace pw_span_internal {
 
 template <typename T>
 struct ExtentImpl : std::integral_constant<size_t, dynamic_extent> {};
@@ -54,7 +68,7 @@ template <typename T, size_t N>
 struct ExtentImpl<std::array<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T, size_t N>
-struct ExtentImpl<pw::span<T, N>> : std::integral_constant<size_t, N> {};
+struct ExtentImpl<std::span<T, N>> : std::integral_constant<size_t, N> {};
 
 template <typename T>
 using Extent = ExtentImpl<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -101,7 +115,7 @@ using EnableIfLegalSpanConversion =
 template <typename Array, typename T, size_t Extent>
 using EnableIfSpanCompatibleArray =
     std::enable_if_t<(Extent == dynamic_extent ||
-                      Extent == span_internal::Extent<Array>::value) &&
+                      Extent == pw_span_internal::Extent<Array>::value) &&
                      ContainerHasConvertibleData<Array, T>::value>;
 
 // SFINAE check if Container can be converted to a span<T>.
@@ -145,7 +159,7 @@ struct ExtentStorage<dynamic_extent> {
   size_t size_;
 };
 
-}  // namespace span_internal
+}  // namespace pw_span_internal
 
 // A span is a value type that represents an array of elements of type T. Since
 // it only consists of a pointer to memory with an associated size, it is very
@@ -183,12 +197,12 @@ struct ExtentStorage<dynamic_extent> {
 //
 // With span:
 //   Read-Only:
-//     // std::string HexEncode(pw::span<const uint8_t> data);
+//     // std::string HexEncode(std::span<const uint8_t> data);
 //     std::vector<uint8_t> data_buffer = GenerateData();
 //     std::string r = HexEncode(data_buffer);
 //
 //  Mutable:
-//     // ssize_t SafeSNPrintf(pw::span<char>, const char* fmt, Args...);
+//     // ssize_t SafeSNPrintf(std::span<char>, const char* fmt, Args...);
 //     char str_buffer[100];
 //     SafeSNPrintf(str_buffer, "Pi ~= %lf", 3.14);
 //
@@ -198,9 +212,9 @@ struct ExtentStorage<dynamic_extent> {
 // Const and pointers can get confusing. Here are vectors of pointers and their
 // corresponding spans:
 //
-//   const std::vector<int*>        =>  pw::span<int* const>
-//   std::vector<const int*>        =>  pw::span<const int*>
-//   const std::vector<const int*>  =>  pw::span<const int* const>
+//   const std::vector<int*>        =>  std::span<int* const>
+//   std::vector<const int*>        =>  std::span<const int*>
+//   const std::vector<const int*>  =>  std::span<const int* const>
 //
 // Differences from the C++20 draft
 // --------------------------------
@@ -219,9 +233,9 @@ struct ExtentStorage<dynamic_extent> {
 
 // [span], class template span
 template <typename T, size_t Extent>
-class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
+class span : public pw_span_internal::ExtentStorage<Extent> {
  private:
-  using ExtentStorage = span_internal::ExtentStorage<Extent>;
+  using ExtentStorage = pw_span_internal::ExtentStorage<Extent>;
 
  public:
   using element_type = T;
@@ -251,21 +265,22 @@ class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
     _PW_SPAN_ASSERT(begin <= end);
   }
 
-  template <size_t N,
-            typename =
-                span_internal::EnableIfSpanCompatibleArray<T (&)[N], T, Extent>>
+  template <
+      size_t N,
+      typename =
+          pw_span_internal::EnableIfSpanCompatibleArray<T (&)[N], T, Extent>>
   constexpr span(T (&array)[N]) noexcept : span(std::data(array), N) {}
 
   template <typename U,
             size_t N,
-            typename = span_internal::
+            typename = pw_span_internal::
                 EnableIfSpanCompatibleArray<std::array<U, N>&, T, Extent>>
   constexpr span(std::array<U, N>& array) noexcept
       : span(std::data(array), N) {}
 
   template <typename U,
             size_t N,
-            typename = span_internal::
+            typename = pw_span_internal::
                 EnableIfSpanCompatibleArray<const std::array<U, N>&, T, Extent>>
   constexpr span(const std::array<U, N>& array) noexcept
       : span(std::data(array), N) {}
@@ -273,7 +288,7 @@ class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
   // Conversion from a container that has compatible std::data() and integral
   // std::size().
   template <typename Container,
-            typename = span_internal::
+            typename = pw_span_internal::
                 EnableIfSpanCompatibleContainerAndSpanIsDynamic<Container&,
                                                                 T,
                                                                 Extent>>
@@ -282,10 +297,10 @@ class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
 
   template <
       typename Container,
-      typename = span_internal::EnableIfSpanCompatibleContainerAndSpanIsDynamic<
-          const Container&,
-          T,
-          Extent>>
+      typename = pw_span_internal::
+          EnableIfSpanCompatibleContainerAndSpanIsDynamic<const Container&,
+                                                          T,
+                                                          Extent>>
   constexpr span(const Container& container) noexcept
       : span(std::data(container), std::size(container)) {}
 
@@ -294,11 +309,10 @@ class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
   // Conversions from spans of compatible types and extents: this allows a
   // span<T> to be seamlessly used as a span<const T>, but not the other way
   // around. If extent is not dynamic, OtherExtent has to be equal to Extent.
-  template <
-      typename U,
-      size_t OtherExtent,
-      typename =
-          span_internal::EnableIfLegalSpanConversion<U, OtherExtent, T, Extent>>
+  template <typename U,
+            size_t OtherExtent,
+            typename = pw_span_internal::
+                EnableIfLegalSpanConversion<U, OtherExtent, T, Extent>>
   constexpr span(const span<U, OtherExtent>& other)
       : span(other.data(), other.size()) {}
 
@@ -401,8 +415,8 @@ class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
 
 // span<T, Extent>::extent can not be declared inline prior to C++17, hence this
 // definition is required.
-template <class T, size_t Extent>
-constexpr size_t span<T, Extent>::extent;
+// template <class T, size_t Extent>
+// constexpr size_t span<T, Extent>::extent;
 
 // [span.objectrep], views of object representation
 template <typename T, size_t X>
@@ -433,7 +447,7 @@ span(std::array<T, N>&) -> span<T, N>;
 template <class T, std::size_t N>
 span(const std::array<T, N>&) -> span<const T, N>;
 
-namespace internal {
+namespace pw_span_internal {
 
 // Containers can be mutable or const and have mutable or const members. Check
 // the type of the accessed elements to determine which type of span should be
@@ -441,17 +455,17 @@ namespace internal {
 template <typename T>
 using ValueType = std::remove_reference_t<decltype(std::declval<T>()[0])>;
 
-}  // namespace internal
+}  // namespace pw_span_internal
 
 // This diverges a little from the standard, which uses std::ranges.
 template <class Container>
-span(Container&) -> span<internal::ValueType<Container>>;
+span(Container&) -> span<pw_span_internal::ValueType<Container>>;
 
 template <class Container>
-span(const Container&) -> span<internal::ValueType<const Container>>;
+span(const Container&) -> span<pw_span_internal::ValueType<const Container>>;
 
 #endif  // __cpp_deduction_guides
 
-}  // namespace pw
+}  // namespace std
 
 #undef _PW_SPAN_ASSERT

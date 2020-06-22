@@ -24,7 +24,11 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_span",
-    hdrs = ["public/pw_span/span.h"],
+    srcs = ["public/pw_span/internal/span.h"],
+    hdrs = [
+        "public/pw_span/span.h",
+        "public_overrides/span",
+    ],
     includes = ["public"],
     deps = ["//pw_polyfill"],
 )
@@ -32,6 +36,15 @@ pw_cc_library(
 pw_cc_test(
     name = "span_test",
     srcs = ["span_test.cc"],
+    deps = [
+        ":pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "pw_span_test",
+    srcs = ["pw_span_test.cc"],
     deps = [
         ":pw_span",
         "//pw_unit_test",

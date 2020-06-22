@@ -12,16 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// This is the base::span unit test from Chromium, with small modifications.
-// Modifications are noted with "Pigweed:" comments.
-//
-// Original file:
-//   https://chromium.googlesource.com/chromium/src/+/ef71f9c29f0dc6eddae474879c4ca5232ca93a6c/base/containers/span_unittest.cc
-//
-// In order to minimize changes from the original, this file does NOT fully
-// adhere to Pigweed's style guide.
-#include "pw_span/span.h"
-
+// This file is a copy of the tests for std::span. It tests pw::span, which is a
+// temporary copy of std::span for compatibility purposes. The pw::span class,
+// and this test, will be deleted as soon as projects fully migrate to
+// std::span.
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -31,6 +25,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "pw_span/span.h"
 
 // Pigweed: gMock matchers are not yet supported.
 #if 0
@@ -39,7 +34,7 @@ using ::testing::Eq;
 using ::testing::Pointwise;
 #endif  // 0
 
-namespace std {
+namespace pw {
 
 namespace {
 
@@ -1683,4 +1678,4 @@ TEST(SpanTest, IteratorConversions) {
                 "Error: const iterator should not be convertible to iterator");
 }
 
-}  // namespace std
+}  // namespace pw

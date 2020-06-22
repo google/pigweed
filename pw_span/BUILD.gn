@@ -19,23 +19,37 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 config("default_config") {
-  include_dirs = [ "public" ]
+  include_dirs = [
+    "public",
+    "public_overrides",
+  ]
 }
 
 pw_source_set("pw_span") {
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_polyfill" ]
-  public = [ "public/pw_span/span.h" ]
-  sources = public
+  public = [
+    "public/pw_span/span.h",
+    "public_overrides/span",
+  ]
+  sources = [ "public/pw_span/internal/span.h" ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":test" ]
+  tests = [
+    ":test",
+    ":pw_span_test",
+  ]
 }
 
 pw_test("test") {
   deps = [ ":pw_span" ]
   sources = [ "span_test.cc" ]
+}
+
+pw_test("pw_span_test") {
+  deps = [ ":pw_span" ]
+  sources = [ "pw_span_test.cc" ]
 }
 
 pw_doc_group("docs") {
