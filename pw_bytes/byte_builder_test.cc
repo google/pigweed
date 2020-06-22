@@ -163,7 +163,7 @@ TEST(ByteBuilder, Resize_Smaller) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<8> bb;
 
-  EXPECT_TRUE(bb.append(buffer.data(), 3).ok());
+  EXPECT_TRUE(bb.append(buffer).ok());
 
   bb.resize(1);
   EXPECT_TRUE(bb.ok());
@@ -175,7 +175,7 @@ TEST(ByteBuilder, Resize_Clear) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<8> bb;
 
-  EXPECT_TRUE(bb.append(buffer.data(), 3).ok());
+  EXPECT_TRUE(bb.append(buffer).ok());
 
   bb.resize(0);
   EXPECT_TRUE(bb.ok());
@@ -187,7 +187,7 @@ TEST(ByteBuilder, Resize_Larger_Fails) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<8> bb;
 
-  EXPECT_TRUE(bb.append(buffer.data(), 3).ok());
+  EXPECT_TRUE(bb.append(buffer).ok());
 
   EXPECT_EQ(3u, bb.size());
   bb.resize(5);
@@ -204,7 +204,7 @@ TEST(ByteBuilder, Status_StatusUpdate) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<2> bb;
 
-  EXPECT_FALSE(bb.append(buffer.data(), 3).ok());
+  EXPECT_FALSE(bb.append(buffer).ok());
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
 
   bb.resize(4);
@@ -218,7 +218,7 @@ TEST(ByteBuilder, Status_ClearStatus_SetsStatusToOk) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<2> bb;
 
-  EXPECT_FALSE(bb.append(buffer.data(), 3).ok());
+  EXPECT_FALSE(bb.append(buffer).ok());
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
 
   bb.clear_status();
@@ -345,7 +345,7 @@ TEST(ByteBuilder, ResizeError_NoDataAddedAfter) {
   std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
   ByteBuffer<8> bb;
 
-  EXPECT_TRUE(bb.append(buffer.data(), 3).ok());
+  EXPECT_TRUE(bb.append(buffer).ok());
 
   EXPECT_EQ(3u, bb.size());
   bb.resize(5);
@@ -528,6 +528,250 @@ TEST(ByteBuffer, PuttingInts_MixedTypes_MixedEndian) {
   EXPECT_EQ(byte{0xFB}, bb.data()[15]);
 
   EXPECT_EQ(Status::OK, bb.status());
+}
+
+TEST(ByteBuffer, Iterator) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it = bb.begin();
+  EXPECT_EQ(*it, byte{0x01});
+
+  ++it;
+  EXPECT_EQ(*it, byte{0x02});
+  EXPECT_EQ(it - bb.begin(), 1);
+
+  ++it;
+  EXPECT_EQ(*it, byte{0x03});
+  EXPECT_EQ(it - bb.begin(), 2);
+
+  ++it;
+  EXPECT_EQ(it, bb.end());
+  EXPECT_EQ(static_cast<size_t>(it - bb.begin()), bb.size());
+}
+
+TEST(ByteBuffer, Iterator_PreIncrement) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it = bb.begin();
+  EXPECT_EQ(*(++it), byte{0x02});
+}
+
+TEST(ByteBuffer, Iterator_PostIncrement) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it = bb.begin();
+  EXPECT_EQ(*(it++), byte{0x01});
+  EXPECT_EQ(*it, byte{0x02});
+  EXPECT_EQ(*(it++), byte{0x02});
+  EXPECT_EQ(*it, byte{0x03});
+}
+
+TEST(ByteBuffer, Iterator_PreDecrement) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  EXPECT_EQ(*it, byte{0x01});
+  ++it;
+  EXPECT_EQ(*it, byte{0x02});
+  ++it;
+  EXPECT_EQ(*it, byte{0x03});
+  ++it;
+  EXPECT_EQ(it, bb.end());
+
+  --it;
+  EXPECT_EQ(*it, byte{0x03});
+  --it;
+  EXPECT_EQ(*it, byte{0x02});
+  --it;
+  EXPECT_EQ(*it, byte{0x01});
+  EXPECT_EQ(it, bb.begin());
+}
+
+TEST(ByteBuffer, Iterator_PostDecrement) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  it += 2;
+  EXPECT_EQ(*it, byte{0x03});
+
+  EXPECT_EQ(*(it--), byte{0x03});
+  EXPECT_EQ(*it, byte{0x02});
+  EXPECT_EQ(*(it--), byte{0x02});
+  EXPECT_EQ(*it, byte{0x01});
+}
+
+TEST(ByteBuffer, Iterator_PlusEquals) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  it += 2;
+  EXPECT_EQ(*it, byte{0x03});
+
+  it += -1;
+  EXPECT_EQ(*it, byte{0x02});
+
+  it += 1;
+  EXPECT_EQ(*it, byte{0x03});
+
+  it += -2;
+  EXPECT_EQ(*it, byte{0x01});
+}
+
+TEST(ByteBuffer, Iterator_MinusEquals) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  it -= -2;
+  EXPECT_EQ(*it, byte{0x03});
+
+  it -= +1;
+  EXPECT_EQ(*it, byte{0x02});
+
+  it -= -1;
+  EXPECT_EQ(*it, byte{0x03});
+
+  it -= +2;
+  EXPECT_EQ(*it, byte{0x01});
+}
+
+TEST(ByteBuffer, Iterator_Plus) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  auto test = it + 2;
+  EXPECT_EQ(*test, byte{0x03});
+
+  test = test + -1;
+  EXPECT_EQ(*test, byte{0x02});
+
+  test = test + 1;
+  EXPECT_EQ(*test, byte{0x03});
+
+  test = test + (-2);
+  EXPECT_EQ(*test, byte{0x01});
+}
+
+TEST(ByteBuffer, Iterator_Minus) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+  auto it = bb.begin();
+
+  auto test = it - (-2);
+  EXPECT_EQ(*test, byte{0x03});
+
+  test = test - 1;
+  EXPECT_EQ(*test, byte{0x02});
+
+  test = test - (-1);
+  EXPECT_EQ(*test, byte{0x03});
+
+  test = test - 2;
+  EXPECT_EQ(*test, byte{0x01});
+}
+
+TEST(ByteBuffer, Iterator_LessThan) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it_1 = bb.begin();
+  auto it_2 = it_1 + 2;
+  EXPECT_EQ(*it_1, byte{0x01});
+  EXPECT_EQ(*it_2, byte{0x03});
+  EXPECT_TRUE(it_1 < it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x02});
+  EXPECT_EQ(*it_2, byte{0x02});
+  EXPECT_FALSE(it_1 < it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x03});
+  EXPECT_EQ(*it_2, byte{0x01});
+  EXPECT_FALSE(it_1 < it_2);
+  EXPECT_TRUE(it_2 < it_1);
+}
+
+TEST(ByteBuffer, Iterator_GreaterThan) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it_1 = bb.begin();
+  auto it_2 = it_1 + 2;
+  EXPECT_EQ(*it_1, byte{0x01});
+  EXPECT_EQ(*it_2, byte{0x03});
+  EXPECT_FALSE(it_1 > it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x02});
+  EXPECT_EQ(*it_2, byte{0x02});
+  EXPECT_FALSE(it_1 > it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x03});
+  EXPECT_EQ(*it_2, byte{0x01});
+  EXPECT_TRUE(it_1 > it_2);
+  EXPECT_FALSE(it_2 > it_1);
+}
+
+TEST(ByteBuffer, Iterator_LessThanEqual_GreaterThanEqual) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it_1 = bb.begin();
+  auto it_2 = it_1 + 2;
+  EXPECT_EQ(*it_1, byte{0x01});
+  EXPECT_EQ(*it_2, byte{0x03});
+  EXPECT_FALSE(it_1 >= it_2);
+  EXPECT_TRUE(it_1 <= it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x02});
+  EXPECT_EQ(*it_2, byte{0x02});
+  EXPECT_TRUE(it_1 >= it_2);
+  EXPECT_TRUE(it_1 <= it_2);
+
+  it_1++;
+  it_2--;
+  EXPECT_EQ(*it_1, byte{0x03});
+  EXPECT_EQ(*it_2, byte{0x01});
+  EXPECT_FALSE(it_1 <= it_2);
+  EXPECT_TRUE(it_1 >= it_2);
+}
+
+TEST(ByteBuffer, Iterator_Indexing) {
+  std::array<byte, 3> buffer = MakeBytes(0x01, 0x02, 0x03);
+  ByteBuffer<8> bb;
+  EXPECT_TRUE(bb.append(buffer).ok());
+
+  auto it = bb.begin();
+  EXPECT_EQ(it[0], byte{0x01});
+  EXPECT_EQ(it[1], byte{0x02});
+  EXPECT_EQ(it[2], byte{0x03});
 }
 
 }  // namespace

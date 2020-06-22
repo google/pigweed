@@ -42,6 +42,97 @@ inline constexpr ByteOrder kSystemEndianness =
 // allocates a buffer alongside a ByteBuilder.
 class ByteBuilder {
  public:
+  // iterator class will allow users of ByteBuilder and ByteBuffer to access
+  // the data stored in the buffer. It has the functionality of C++'s
+  // random access iterator.
+  class iterator {
+   public:
+    using difference_type = ptrdiff_t;
+    using value_type = std::byte;
+    using pointer = std::byte*;
+    using reference = std::byte&;
+    using iterator_category = std::random_access_iterator_tag;
+
+    explicit constexpr iterator(const std::byte* byte_ptr) : byte_(byte_ptr) {}
+
+    constexpr iterator& operator++() {
+      byte_ += 1;
+      return *this;
+    }
+
+    constexpr iterator operator++(int) {
+      iterator previous(byte_);
+      operator++();
+      return previous;
+    }
+
+    constexpr iterator& operator--() {
+      byte_ -= 1;
+      return *this;
+    }
+
+    constexpr iterator operator--(int) {
+      iterator previous(byte_);
+      operator--();
+      return previous;
+    }
+
+    constexpr iterator operator+=(int n) {
+      byte_ += n;
+      return *this;
+    }
+
+    constexpr iterator operator+(int n) const { return iterator(byte_ + n); }
+
+    constexpr iterator operator-=(int n) { return operator+=(-n); }
+
+    constexpr iterator operator-(int n) const { return iterator(byte_ - n); }
+
+    constexpr ptrdiff_t operator-(const iterator& rhs) const {
+      return byte_ - rhs.byte_;
+    }
+
+    constexpr bool operator==(const iterator& rhs) const {
+      return byte_ == rhs.byte_;
+    }
+
+    constexpr bool operator!=(const iterator& rhs) const {
+      return byte_ != rhs.byte_;
+    }
+
+    constexpr bool operator<(const iterator& rhs) const {
+      return byte_ < rhs.byte_;
+    }
+
+    constexpr bool operator>(const iterator& rhs) const {
+      return byte_ > rhs.byte_;
+    }
+
+    constexpr bool operator<=(const iterator& rhs) const {
+      return !operator>(rhs);
+    }
+
+    constexpr bool operator>=(const iterator& rhs) const {
+      return !operator<(rhs);
+    }
+
+    constexpr const std::byte& operator*() const { return *byte_; }
+
+    constexpr const std::byte& operator[](int index) const {
+      return byte_[index];
+    }
+
+   private:
+    const std::byte* byte_;
+  };
+
+  using element_type = const std::byte;
+  using value_type = std::byte;
+  using pointer = std::byte*;
+  using reference = std::byte&;
+  using iterator = iterator;
+  using const_iterator = iterator;
+
   // Creates an empty ByteBuilder.
   constexpr ByteBuilder(span<std::byte> buffer) : buffer_(buffer), size_(0) {}
 
@@ -100,6 +191,18 @@ class ByteBuilder {
   void pop_back() PW_NO_SANITIZE("unsigned-integer-overflow") {
     resize(size() - 1);
   }
+
+  // Root of bytebuffer wrapped in iterator type
+  const_iterator begin() const { return iterator(data()); }
+  const_iterator cbegin() const { return begin(); }
+
+  // End of bytebuffer wrapped in iterator type
+  const_iterator end() const { return iterator(data() + size()); }
+  const_iterator cend() const { return end(); }
+
+  // Front and Back C++ container functions
+  const std::byte& front() const { return buffer_[0]; }
+  const std::byte& back() const { return buffer_[size() - 1]; }
 
   // Appends the provided byte count times.
   ByteBuilder& append(size_t count, std::byte b);
