@@ -47,7 +47,7 @@ constexpr std::array<uint64_t, 20> kPowersOf10{
     10000000000000000000ull,  // 10^19
 };
 
-StatusWithSize HandleExhaustedBuffer(const span<char>& buffer) {
+StatusWithSize HandleExhaustedBuffer(std::span<char> buffer) {
   if (!buffer.empty()) {
     buffer[0] = '\0';
   }
@@ -72,7 +72,7 @@ uint_fast8_t DecimalDigitCount(uint64_t integer) {
 // DecimalDigitCount and its table). I didn't measure performance, but I don't
 // think std::to_chars will be faster, so I kept this implementation for now.
 template <>
-StatusWithSize IntToString(uint64_t value, const span<char>& buffer) {
+StatusWithSize IntToString(uint64_t value, std::span<char> buffer) {
   constexpr uint32_t base = 10;
   constexpr uint32_t max_uint32_base_power = 1'000'000'000;
   constexpr uint_fast8_t max_uint32_base_power_exponent = 9;
@@ -110,7 +110,7 @@ StatusWithSize IntToString(uint64_t value, const span<char>& buffer) {
   return StatusWithSize(total_digits);
 }
 
-StatusWithSize IntToHexString(uint64_t value, const span<char>& buffer) {
+StatusWithSize IntToHexString(uint64_t value, std::span<char> buffer) {
   const uint_fast8_t digits = HexDigitCount(value);
 
   if (digits >= buffer.size()) {
@@ -127,7 +127,7 @@ StatusWithSize IntToHexString(uint64_t value, const span<char>& buffer) {
 }
 
 template <>
-StatusWithSize IntToString(int64_t value, const span<char>& buffer) {
+StatusWithSize IntToString(int64_t value, std::span<char> buffer) {
   if (value >= 0) {
     return IntToString<uint64_t>(value, buffer);
   }
@@ -146,7 +146,7 @@ StatusWithSize IntToString(int64_t value, const span<char>& buffer) {
 
 // TODO(hepler): Look into using the float overload of std::to_chars when it is
 //     available.
-StatusWithSize FloatAsIntToString(float value, const span<char>& buffer) {
+StatusWithSize FloatAsIntToString(float value, std::span<char> buffer) {
   // If it's finite and fits in an int64_t, print it as a rounded integer.
   if (std::isfinite(value) &&
       std::abs(value) <
@@ -167,11 +167,11 @@ StatusWithSize FloatAsIntToString(float value, const span<char>& buffer) {
   return HandleExhaustedBuffer(buffer);
 }
 
-StatusWithSize BoolToString(bool value, const span<char>& buffer) {
+StatusWithSize BoolToString(bool value, std::span<char> buffer) {
   return CopyEntireString(value ? "true" : "false", buffer);
 }
 
-StatusWithSize PointerToString(const void* pointer, const span<char>& buffer) {
+StatusWithSize PointerToString(const void* pointer, std::span<char> buffer) {
   if (pointer == nullptr) {
     return CopyEntireString(kNullPointerString, buffer);
   }
@@ -179,7 +179,7 @@ StatusWithSize PointerToString(const void* pointer, const span<char>& buffer) {
 }
 
 StatusWithSize CopyString(const std::string_view& value,
-                          const span<char>& buffer) {
+                          std::span<char> buffer) {
   if (buffer.empty()) {
     return StatusWithSize::RESOURCE_EXHAUSTED;
   }
@@ -192,7 +192,7 @@ StatusWithSize CopyString(const std::string_view& value,
 }
 
 StatusWithSize CopyEntireString(const std::string_view& value,
-                                const span<char>& buffer) {
+                                std::span<char> buffer) {
   if (value.size() >= buffer.size()) {
     return HandleExhaustedBuffer(buffer);
   }

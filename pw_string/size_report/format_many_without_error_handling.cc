@@ -43,7 +43,7 @@ volatile unsigned get_size;
 
 void OutputStringsToBuffer() {
 #if USE_FORMAT
-  auto buffer = pw::span(get_buffer, get_size);
+  auto buffer = std::span(get_buffer, get_size);
 #else
   char* buffer = get_buffer;
   unsigned buffer_size = get_size;

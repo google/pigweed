@@ -21,8 +21,8 @@
 // buffer has room.
 //
 // ToString functions may be defined for any type. This is done by providing a
-// ToString overload in the pw namespace. The overload must follow ToString's
-// semantics:
+// ToString template specialization in the pw namespace. The specialization must
+// follow ToString's semantics:
 //
 //   1. Always null terminate if the output buffer has room.
 //   2. Return the number of characters written, excluding the null terminator,
@@ -31,13 +31,14 @@
 //      with the number of characters written and a status of
 //      RESOURCE_EXHAUSTED. Other status codes may be used for different errors.
 //
-// For example, providing the following overload would allow ToString, and any
-// classes that use it, to print instances of a custom type:
+// For example, providing the following specialization would allow ToString, and
+// any classes that use it, to print instances of a custom type:
 //
 //   namespace pw {
 //
-//   inline StatusWithSize ToString(const SomeCustomType& value,
-//                                  const std::span<char>& buffer) {
+//   template <>
+//   StatusWithSize ToString<SomeCustomType>(const SomeCustomType& value,
+//                           std::span<char> buffer) {
 //     return /* ... implementation ... */;
 //   }
 //
@@ -51,10 +52,10 @@
 // StringBuilder may be easier to work with. StringBuilder's operator<< may be
 // overloaded for custom types.
 
+#include <span>
 #include <string_view>
 #include <type_traits>
 
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_string/type_to_string.h"
 
@@ -63,7 +64,7 @@ namespace pw {
 // This function provides string printing numeric types, enums, and anything
 // that convertible to a std::string_view, such as std::string.
 template <typename T>
-StatusWithSize ToString(const T& value, const span<char>& buffer) {
+StatusWithSize ToString(const T& value, std::span<char> buffer) {
   if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>) {
     return string::BoolToString(value, buffer);
   } else if constexpr (std::is_same_v<std::remove_cv_t<T>, char>) {
@@ -85,17 +86,18 @@ StatusWithSize ToString(const T& value, const span<char>& buffer) {
   }
 }
 
-// ToString overloads for custom types may be provided.
-inline StatusWithSize ToString(Status status, const span<char>& buffer) {
+// ToString overloads for Pigweed types. To override ToString for a custom type,
+// specialize the ToString template function.
+inline StatusWithSize ToString(Status status, std::span<char> buffer) {
   return string::CopyString(status.str(), buffer);
 }
 
-inline StatusWithSize ToString(pw_Status status, const span<char>& buffer) {
+inline StatusWithSize ToString(pw_Status status, std::span<char> buffer) {
   return ToString(Status(status), buffer);
 }
 
-inline StatusWithSize ToString(std::byte byte, const span<char>& buffer) {
-  return string::IntToHexString(static_cast<uint64_t>(byte), buffer);
+inline StatusWithSize ToString(std::byte byte, std::span<char> buffer) {
+  return string::IntToHexString(static_cast<unsigned>(byte), buffer);
 }
 
 }  // namespace pw

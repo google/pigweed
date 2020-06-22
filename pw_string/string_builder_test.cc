@@ -12,18 +12,19 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_string//string_builder.h"
+#include "pw_string/string_builder.h"
 
 #include <cinttypes>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <span>
 #include <string_view>
 
 #include "gtest/gtest.h"
 #include "pw_string/format.h"
 
-namespace {
+namespace this_pw_test {
 
 struct CustomType {
   uint32_t a;
@@ -38,18 +39,25 @@ struct CustomType {
   CustomType& operator=(const CustomType&) = delete;
 };
 
-}  // namespace
+}  // namespace this_pw_test
 
 namespace pw {
 
-StatusWithSize ToString(const ::CustomType&, const span<char>& buffer) {
-  return string::Format(buffer, ::CustomType::kToString);
+template <>
+StatusWithSize ToString<this_pw_test::CustomType>(
+    const this_pw_test::CustomType&, std::span<char> buffer) {
+  return string::Format(buffer, this_pw_test::CustomType::kToString);
 }
 
+}  // namespace pw
+
+namespace pw {
 namespace {
 
+using this_pw_test::CustomType;
+
 TEST(StringBuilder, EmptyBuffer_SizeAndMaxSizeAreCorrect) {
-  StringBuilder sb(span<char>{});
+  StringBuilder sb(std::span<char>{});
 
   EXPECT_TRUE(sb.empty());
   EXPECT_EQ(0u, sb.size());
@@ -64,7 +72,7 @@ TEST(StringBuilder, EmptyBuffer_StreamOutput_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(span(buffer, 0));
+  StringBuilder sb(std::span(buffer, 0));
 
   sb << CustomType() << " is " << 12345;
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
@@ -75,7 +83,7 @@ TEST(StringBuilder, EmptyBuffer_Append_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(span(buffer, 0));
+  StringBuilder sb(std::span(buffer, 0));
 
   EXPECT_FALSE(sb.append("Hello").ok());
   EXPECT_EQ(kNoTouch, std::string_view(buffer, sizeof(buffer)));
@@ -85,7 +93,7 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
   char buffer[kNoTouch.size()];
   std::memcpy(buffer, kNoTouch.data(), sizeof(buffer));
 
-  StringBuilder sb(span(buffer, 0));
+  StringBuilder sb(std::span(buffer, 0));
 
   sb.resize(0);
   EXPECT_TRUE(sb.ok());
@@ -93,7 +101,7 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
 }
 
 TEST(StringBuilder, EmptyBuffer_AppendEmpty_ResourceExhausted) {
-  StringBuilder sb(span<char>{});
+  StringBuilder sb(std::span<char>{});
   EXPECT_EQ(Status::OK, sb.last_status());
   EXPECT_EQ(Status::OK, sb.status());
 
@@ -422,6 +430,14 @@ TEST(StringBuffer, CopyConstructFromSmaller) {
 
   EXPECT_STREQ("You are t", two.data());
   EXPECT_EQ(Status::RESOURCE_EXHAUSTED, two.status());
+}
+
+TEST(StringBuilder, Object) {
+  StringBuffer<64> sb;
+  sb << CustomType();
+
+  EXPECT_STREQ(CustomType::kToString, sb.data());
+  EXPECT_EQ(std::strlen(CustomType::kToString), sb.size());
 }
 
 TEST(MakeString, Object) {

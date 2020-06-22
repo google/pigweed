@@ -107,47 +107,47 @@ class TestWithBuffer : public ::testing::Test {
 class IntToStringTest : public TestWithBuffer {};
 
 TEST_F(IntToStringTest, Unsigned_EmptyBuffer_WritesNothing) {
-  auto result = IntToString(9u, span(buffer_, 0));
+  auto result = IntToString(9u, std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(IntToStringTest, Unsigned_TooSmall_1Char_OnlyNullTerminates) {
-  auto result = IntToString(9u, span(buffer_, 1));
+  auto result = IntToString(9u, std::span(buffer_, 1));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(IntToStringTest, Unsigned_TooSmall_2Chars_OnlyNullTerminates) {
-  auto result = IntToString(10u, span(buffer_, 2));
+  auto result = IntToString(10u, std::span(buffer_, 2));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(IntToStringTest, Unsigned_TooSmall_3Chars_OnlyNullTerminates) {
-  auto result = IntToString(123u, span(buffer_, 3));
+  auto result = IntToString(123u, std::span(buffer_, 3));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(IntToStringTest, Unsigned_1Char_FitsExactly) {
-  auto result = IntToString(0u, span(buffer_, 2));
+  auto result = IntToString(0u, std::span(buffer_, 2));
   EXPECT_EQ(1u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("0", buffer_);
 
-  result = IntToString(9u, span(buffer_, 2));
+  result = IntToString(9u, std::span(buffer_, 2));
   EXPECT_EQ(1u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("9", buffer_);
 }
 
 TEST_F(IntToStringTest, Unsigned_2Chars_FitsExactly) {
-  auto result = IntToString(10u, span(buffer_, 3));
+  auto result = IntToString(10u, std::span(buffer_, 3));
   EXPECT_EQ(2u, result.size());
   EXPECT_STREQ("10", buffer_);
 }
@@ -155,44 +155,44 @@ TEST_F(IntToStringTest, Unsigned_2Chars_FitsExactly) {
 TEST_F(IntToStringTest, Unsigned_MaxFitsExactly) {
   EXPECT_EQ(20u,
             IntToString(std::numeric_limits<uint64_t>::max(),
-                        span(buffer_, sizeof(kUint64Max)))
+                        std::span(buffer_, sizeof(kUint64Max)))
                 .size());
   EXPECT_STREQ(kUint64Max, buffer_);
 }
 
 TEST_F(IntToStringTest, SignedPositive_EmptyBuffer_WritesNothing) {
-  auto result = IntToString(9, span(buffer_, 0));
+  auto result = IntToString(9, std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(IntToStringTest, SignedPositive_TooSmall_NullTerminates) {
-  auto result = IntToString(9, span(buffer_, 1));
+  auto result = IntToString(9, std::span(buffer_, 1));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(IntToStringTest, SignedPositive_TooSmall_DoesNotWritePastEnd) {
-  EXPECT_EQ(0u, IntToString(9, span(buffer_, 1)).size());
+  EXPECT_EQ(0u, IntToString(9, std::span(buffer_, 1)).size());
   EXPECT_EQ(0, std::memcmp("\0@#$%^&*()!@#$%^&*()", buffer_, sizeof(buffer_)));
 }
 
 TEST_F(IntToStringTest, SignedPositive_1Char_FitsExactly) {
-  auto result = IntToString(0, span(buffer_, 2));
+  auto result = IntToString(0, std::span(buffer_, 2));
   EXPECT_EQ(1u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("0", buffer_);
 
-  result = IntToString(9, span(buffer_, 2));
+  result = IntToString(9, std::span(buffer_, 2));
   EXPECT_EQ(1u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("9", buffer_);
 }
 
 TEST_F(IntToStringTest, SignedPositive_2Chars_FitsExactly) {
-  auto result = IntToString(10, span(buffer_, 4));
+  auto result = IntToString(10, std::span(buffer_, 4));
   EXPECT_EQ(2u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("10", buffer_);
@@ -200,20 +200,20 @@ TEST_F(IntToStringTest, SignedPositive_2Chars_FitsExactly) {
 
 TEST_F(IntToStringTest, SignedPositive_MaxFitsExactly) {
   auto result = IntToString(std::numeric_limits<int64_t>::max(),
-                            span(buffer_, sizeof(kInt64Min)));
+                            std::span(buffer_, sizeof(kInt64Min)));
   EXPECT_EQ(19u, result.size());
   EXPECT_STREQ(kInt64Max, buffer_);
 }
 
 TEST_F(IntToStringTest, SignedNegative_EmptyBuffer_WritesNothing) {
-  auto result = IntToString(-9, span(buffer_, 0));
+  auto result = IntToString(-9, std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(IntToStringTest, SignedNegative_TooSmall_NullTerminates) {
-  auto result = IntToString(-9, span(buffer_, 1));
+  auto result = IntToString(-9, std::span(buffer_, 1));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
@@ -221,25 +221,25 @@ TEST_F(IntToStringTest, SignedNegative_TooSmall_NullTerminates) {
 
 TEST_F(IntToStringTest, SignedNegative_TooSmall_DoesNotWritePastEnd) {
   // Note that two \0 are written due to the unsigned IntToString call.
-  EXPECT_EQ(0u, IntToString(-9, span(buffer_, 2)).size());
+  EXPECT_EQ(0u, IntToString(-9, std::span(buffer_, 2)).size());
   EXPECT_EQ(0, std::memcmp("\0\0#$%^&*()!@#$%^&*()", buffer_, sizeof(buffer_)));
 }
 
 TEST_F(IntToStringTest, SignedNegative_FitsExactly) {
-  auto result = IntToString(-9, span(buffer_, 3));
+  auto result = IntToString(-9, std::span(buffer_, 3));
   EXPECT_EQ(2u, result.size());
   EXPECT_STREQ("-9", buffer_);
-  result = IntToString(-99, span(buffer_, 4));
+  result = IntToString(-99, std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_STREQ("-99", buffer_);
-  result = IntToString(-123, span(buffer_, 5));
+  result = IntToString(-123, std::span(buffer_, 5));
   EXPECT_EQ(4u, result.size());
   EXPECT_STREQ("-123", buffer_);
 }
 
 TEST_F(IntToStringTest, SignedNegative_MinFitsExactly) {
   auto result = IntToString(std::numeric_limits<int64_t>::min(),
-                            span(buffer_, sizeof(kInt64Min)));
+                            std::span(buffer_, sizeof(kInt64Min)));
   EXPECT_EQ(20u, result.size());
   EXPECT_STREQ(kInt64Min, buffer_);
 }
@@ -304,14 +304,14 @@ TEST_F(IntToHexStringTest, Uint64Max) {
 }
 
 TEST_F(IntToHexStringTest, EmptyBuffer_WritesNothing) {
-  auto result = IntToHexString(0xbeef, span(buffer_, 0));
+  auto result = IntToHexString(0xbeef, std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(IntToHexStringTest, TooSmall_Truncates) {
-  auto result = IntToHexString(0xbeef, span(buffer_, 3));
+  auto result = IntToHexString(0xbeef, std::span(buffer_, 3));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
@@ -381,21 +381,21 @@ TEST_F(FloatAsIntToStringTest, SmallerThanInteger) {
 }
 
 TEST_F(FloatAsIntToStringTest, TooSmall_Numeric_NullTerminates) {
-  auto result = FloatAsIntToString(-3.14e20f, span(buffer_, 1));
+  auto result = FloatAsIntToString(-3.14e20f, std::span(buffer_, 1));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(FloatAsIntToStringTest, TooSmall_Infinity_NullTerminates) {
-  auto result = FloatAsIntToString(-INFINITY, span(buffer_, 3));
+  auto result = FloatAsIntToString(-INFINITY, std::span(buffer_, 3));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(FloatAsIntToStringTest, TooSmall_NaN_NullTerminates) {
-  auto result = FloatAsIntToString(NAN, span(buffer_, 2));
+  auto result = FloatAsIntToString(NAN, std::span(buffer_, 2));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
@@ -411,28 +411,28 @@ TEST_F(CopyStringTest, EmptyStringView_WritesNullTerminator) {
 }
 
 TEST_F(CopyStringTest, EmptyBuffer_WritesNothing) {
-  auto result = CopyString("Hello", span(buffer_, 0));
+  auto result = CopyString("Hello", std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(CopyStringTest, TooSmall_Truncates) {
-  auto result = CopyString("Hi!", span(buffer_, 3));
+  auto result = CopyString("Hi!", std::span(buffer_, 3));
   EXPECT_EQ(2u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("Hi", buffer_);
 }
 
 TEST_F(CopyStringTest, ExactFit) {
-  auto result = CopyString("Hi!", span(buffer_, 4));
+  auto result = CopyString("Hi!", std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("Hi!", buffer_);
 }
 
 TEST_F(CopyStringTest, NullTerminatorsInString) {
-  ASSERT_EQ(4u, CopyString("\0!\0\0"sv, span(buffer_, 5)).size());
+  ASSERT_EQ(4u, CopyString("\0!\0\0"sv, std::span(buffer_, 5)).size());
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 
@@ -444,35 +444,35 @@ TEST_F(CopyEntireStringTest, EmptyStringView_WritesNullTerminator) {
 }
 
 TEST_F(CopyEntireStringTest, EmptyBuffer_WritesNothing) {
-  auto result = CopyEntireString("Hello", span(buffer_, 0));
+  auto result = CopyEntireString("Hello", std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
 TEST_F(CopyEntireStringTest, TooSmall_WritesNothing) {
-  auto result = CopyEntireString("Hi!", span(buffer_, 3));
+  auto result = CopyEntireString("Hi!", std::span(buffer_, 3));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(CopyEntireStringTest, ExactFit) {
-  auto result = CopyEntireString("Hi!", span(buffer_, 4));
+  auto result = CopyEntireString("Hi!", std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("Hi!", buffer_);
 }
 
 TEST_F(CopyEntireStringTest, NullTerminatorsInString) {
-  ASSERT_EQ(4u, CopyEntireString("\0!\0\0"sv, span(buffer_, 5)).size());
+  ASSERT_EQ(4u, CopyEntireString("\0!\0\0"sv, std::span(buffer_, 5)).size());
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 
 class PointerToStringTest : public TestWithBuffer {};
 
 TEST_F(PointerToStringTest, Nullptr_WritesNull) {
-  EXPECT_EQ(6u, PointerToString(nullptr, span(buffer_, 7)).size());
+  EXPECT_EQ(6u, PointerToString(nullptr, std::span(buffer_, 7)).size());
   EXPECT_STREQ("(null)", buffer_);
 }
 
@@ -485,32 +485,32 @@ TEST_F(PointerToStringTest, WritesAddress) {
 class BoolToStringTest : public TestWithBuffer {};
 
 TEST_F(BoolToStringTest, ExactFit) {
-  EXPECT_EQ(4u, BoolToString(true, span(buffer_, 5)).size());
+  EXPECT_EQ(4u, BoolToString(true, std::span(buffer_, 5)).size());
   EXPECT_STREQ("true", buffer_);
 
-  EXPECT_EQ(5u, BoolToString(false, span(buffer_, 6)).size());
+  EXPECT_EQ(5u, BoolToString(false, std::span(buffer_, 6)).size());
   EXPECT_STREQ("false", buffer_);
 }
 
 TEST_F(BoolToStringTest, True_TooSmall_WritesNullTerminator) {
-  auto result = BoolToString(true, span(buffer_, 4));
+  auto result = BoolToString(true, std::span(buffer_, 4));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(BoolToStringTest, False_TooSmall_WritesNullTerminator) {
-  auto result = BoolToString(false, span(buffer_, 5));
+  auto result = BoolToString(false, std::span(buffer_, 5));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
 TEST_F(BoolToStringTest, EmptyBuffer_WritesNothing) {
-  EXPECT_EQ(0u, BoolToString(true, span(buffer_, 0)).size());
+  EXPECT_EQ(0u, BoolToString(true, std::span(buffer_, 0)).size());
   EXPECT_STREQ(kStartingString, buffer_);
 
-  EXPECT_EQ(0u, BoolToString(false, span(buffer_, 0)).size());
+  EXPECT_EQ(0u, BoolToString(false, std::span(buffer_, 0)).size());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
