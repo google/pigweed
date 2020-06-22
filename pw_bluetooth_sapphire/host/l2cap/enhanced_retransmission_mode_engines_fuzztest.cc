@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <lib/async-testing/test_loop.h>
+
 #include <algorithm>
 
 #include <fuzzer/FuzzedDataProvider.h>
@@ -20,6 +22,9 @@ void NoOpTxCallback(bt::ByteBufferPtr){};
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);
+
+  // Sets default dispatcher needed for timeouts.
+  async::TestLoop loop;
 
   uint8_t tx_window = std::max(provider.ConsumeIntegral<uint8_t>(), static_cast<uint8_t>(1u));
 
@@ -48,6 +53,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       auto pdu = fragmenter.BuildFrame(kTestChannelId, bt::BufferView(bytes), fcs);
       rx_engine->ProcessPdu(std::move(pdu));
     }
+
+    // Run for 0-255 seconds, which is enough to trigger poll timer and monitor timer.
+    auto run_duration = zx::sec(provider.ConsumeIntegral<uint8_t>());
+    loop.RunFor(run_duration);
   }
 
   return 0;
