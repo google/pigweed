@@ -95,7 +95,7 @@
       PW_HANDLE_LOG(level, flags, message, __VA_ARGS__); \
     }                                                    \
   } while (0)
-#endif  // PW_LOG_DEBUG
+#endif  // PW_LOG
 
 // For backends that elect to only provide the general PW_LOG() macro and not
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
