@@ -34,8 +34,8 @@ except ImportError:
 
 from pw_presubmit import build, cli, environment, format_code, git_repo
 from pw_presubmit import python_checks
-from pw_presubmit import call, filter_paths, PresubmitContext, PresubmitFailure
-from pw_presubmit import Programs
+from pw_presubmit import call, filter_paths, plural, PresubmitContext
+from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
@@ -290,8 +290,7 @@ def copyright_notice(ctx: PresubmitContext):
 
     if errors:
         _LOG.warning('%s with a missing or incorrect copyright notice:\n%s',
-                     pw_presubmit.plural(errors, 'file'),
-                     '\n'.join(str(e) for e in errors))
+                     plural(errors, 'file'), '\n'.join(str(e) for e in errors))
         raise PresubmitFailure
 
 
@@ -331,6 +330,54 @@ def build_env_setup(ctx: PresubmitContext):
     call('pyoxidizer', 'build', cwd=ctx.output_dir)
 
 
+def commit_message_format(_: PresubmitContext):
+    """Checks that the top commit's message is correctly formatted."""
+    lines = git_repo.commit_message().splitlines()
+
+    if not lines:
+        _LOG.error('The commit message is too short!')
+        raise PresubmitFailure
+
+    errors = 0
+
+    if len(lines[0]) > 50:
+        _LOG.warning("The commit message's first line must be no longer than "
+                     '50 characters.')
+        _LOG.warning('The first line is %d characters:\n  %s', len(lines[0]),
+                     lines[0])
+        errors += 1
+
+    if lines[0].endswith('.'):
+        _LOG.warning(
+            "The commit message's first line must not end with a period:\n %s",
+            lines[0])
+        errors += 1
+
+    if len(lines) > 1 and lines[1]:
+        _LOG.warning("The commit message's second line must be blank.")
+        _LOG.warning('The second line has %d characters:\n  %s', len(lines[1]),
+                     lines[1])
+        errors += 1
+
+    # Check that the lines are 72 characters or less, but skip any lines that
+    # might possibly have a URL, path, or metadata in them. Also skip any lines
+    # with non-ASCII characters.
+    for i, line in enumerate(lines[2:], 3):
+        if ':' in line or '/' in line or not line.isascii():
+            continue
+
+        if len(line) > 72:
+            _LOG.warning(
+                'Commit message lines must be no longer than 72 characters.')
+            _LOG.warning('Line %d has %d characters:\n  %s', i, len(line),
+                         line)
+            errors += 1
+
+    if errors:
+        _LOG.error('Found %s in the commit message', plural(errors, 'error'))
+        raise PresubmitFailure
+
+
 #
 # Presubmit check programs
 #
@@ -350,6 +397,7 @@ BROKEN = (
 )
 
 QUICK = (
+    commit_message_format,
     init_cipd,
     init_virtualenv,
     copyright_notice,

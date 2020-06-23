@@ -186,3 +186,7 @@ def find_python_packages(python_paths: Iterable[PathOrStr],
             continue
 
     return package_dirs
+
+
+def commit_message(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
+    return git_stdout('log', '--format=%B', '-n1', commit, repo=repo)
