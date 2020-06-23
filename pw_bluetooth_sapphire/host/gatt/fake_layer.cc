@@ -13,21 +13,7 @@ void FakeLayer::NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> s
     return;
   }
 
-  if (!remote_service_watcher_dispatcher_) {
-    remote_service_watcher_(peer_id, std::move(service));
-  } else {
-    async::PostTask(remote_service_watcher_dispatcher_,
-                    [watcher = remote_service_watcher_.share(), peer_id, svc = std::move(service)] {
-                      watcher(peer_id, std::move(svc));
-                    });
-  }
-}
-void FakeLayer::Initialize() {
-  // TODO: implement
-}
-
-void FakeLayer::ShutDown() {
-  // TODO: implement
+  remote_service_watcher_(peer_id, std::move(service));
 }
 
 void FakeLayer::AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) {
@@ -58,10 +44,8 @@ void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_se
   // TODO: implement the rest
 }
 
-void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
-                                             async_dispatcher_t* dispatcher) {
+void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) {
   remote_service_watcher_ = std::move(callback);
-  remote_service_watcher_dispatcher_ = dispatcher;
 }
 
 void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,

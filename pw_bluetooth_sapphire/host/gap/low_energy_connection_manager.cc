@@ -54,7 +54,7 @@ class LowEnergyConnection final : public sm::Delegate {
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       async_dispatcher_t* dispatcher,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      fbl::RefPtr<data::Domain> data_domain, fbl::RefPtr<gatt::GATT> gatt)
+                      fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt)
       : peer_id_(peer_id),
         link_(std::move(link)),
         dispatcher_(dispatcher),
@@ -376,7 +376,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Reference to the GATT profile layer is used to initiate service discovery
   // and register the link.
-  fbl::RefPtr<gatt::GATT> gatt_;
+  fxl::WeakPtr<gatt::GATT> gatt_;
 
   // SMP pairing manager.
   std::unique_ptr<sm::PairingState> pairing_;
@@ -462,7 +462,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
                                                        hci::LowEnergyConnector* connector,
                                                        PeerCache* peer_cache,
                                                        fbl::RefPtr<data::Domain> data_domain,
-                                                       fbl::RefPtr<gatt::GATT> gatt)
+                                                       fxl::WeakPtr<gatt::GATT> gatt)
     : hci_(std::move(hci)),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),

@@ -97,7 +97,7 @@ void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers)
 }
 
 HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
-                       fbl::RefPtr<GattHost> gatt_host)
+                       fxl::WeakPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
       gatt_host_(gatt_host),

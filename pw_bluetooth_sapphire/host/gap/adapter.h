@@ -70,7 +70,7 @@ class Adapter final {
   //
   // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
-  explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fbl::RefPtr<gatt::GATT> gatt,
+  explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
                    std::optional<fbl::RefPtr<data::Domain>> data_domain);
   ~Adapter();
 
@@ -281,7 +281,7 @@ class Adapter final {
 
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.
-  fbl::RefPtr<gatt::GATT> gatt_;
+  fxl::WeakPtr<gatt::GATT> gatt_;
 
   // Objects that abstract the controller for connection and advertising
   // procedures.

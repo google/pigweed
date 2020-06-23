@@ -8,7 +8,6 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 
-#include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/vector.h"
@@ -18,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -32,22 +32,13 @@ namespace gatt {
 //   * A single local attribute database
 //   * All client and server data bearers
 //   * L2CAP ATT fixed channels
-//
-// GATT requires an dispatcher on initialization which will be used to
-// serialize all internal GATT tasks.
-//
-// All public functions are asynchronous and thread-safe.
-class GATT : public fbl::RefCounted<GATT> {
+class GATT {
  public:
-  // Constructs a GATT object.
-  static fbl::RefPtr<GATT> Create(async_dispatcher_t* gatt_dispatcher);
+  // Constructs a production GATT object.
+  static std::unique_ptr<GATT> Create();
 
-  // Initialize/ShutDown the GATT profile. It is safe for the caller to drop its
-  // reference after ShutDown.
-  //
-  // The owner MUST call ShutDown() to properly clean up the object.
-  virtual void Initialize() = 0;
-  virtual void ShutDown() = 0;
+  GATT();
+  virtual ~GATT() = default;
 
   // Registers the given connection with the GATT profile without initiating
   // service discovery. Once a connection is registered with GATT, the peer can
@@ -80,12 +71,11 @@ class GATT : public fbl::RefCounted<GATT> {
   // |write_handler|.
   //
   // The provided handlers will be called to handle remote initiated
-  // transactions targeting the service. These handlers will be run on the
-  // on the GATT dispatcher.
+  // transactions targeting the service.
   //
   // This method returns an opaque identifier on successful registration,
   // which can be used by the caller to refer to the service in the future. This
-  // ID will be returned via |callback| which run on the GATT dispatcher.
+  // ID will be returned via |callback|.
   //
   // Returns |kInvalidId| on failure. Registration can fail if the attribute
   // database has run out of handles or if the hierarchy contains
@@ -109,8 +99,6 @@ class GATT : public fbl::RefCounted<GATT> {
   // |value|: The attribute value that will be included in the notification.
   // |indicate|: If true, an indication will be sent.
   //
-  // This method can only be called on the GATT task runner.
-  //
   // TODO(armansito): Revise this API to involve fewer lookups (NET-483).
   // TODO(armansito): Fix this to notify all registered peers when |peer_id| is
   // empty (NET-589).
@@ -133,37 +121,30 @@ class GATT : public fbl::RefCounted<GATT> {
 
   // Register a handler that will be notified when a remote service gets
   // discovered on a connected peer.
-  //
-  // |watcher| will be posted on an dispatcher if one is provided.
-  // Otherwise, it will run on an internal thread and the client is responsible
-  // for synchronization.
   using RemoteServiceWatcher =
       fit::function<void(PeerId peer_id, fbl::RefPtr<RemoteService> service)>;
-  virtual void RegisterRemoteServiceWatcher(RemoteServiceWatcher watcher,
-                                            async_dispatcher_t* dispatcher = nullptr) = 0;
+  virtual void RegisterRemoteServiceWatcher(RemoteServiceWatcher watcher) = 0;
 
   // Returns the list of remote services that were found on the device with
   // |peer_id|. If |peer_id| was registered but DiscoverServices() has not been
   // called yet, this request will be buffered until remote services have been
   // discovered. If the connection is removed without discovery services,
-  // |callback| will be called with an error status. |callback| will always run
-  // on the GATT loop.
+  // |callback| will be called with an error status.
   virtual void ListServices(PeerId peer_id, std::vector<UUID> uuids,
                             ServiceListCallback callback) = 0;
 
   // Connects the RemoteService with the given identifier found on the
-  // device with |peer_id|. Returns nullptr if the service is not found.
-  // |callback| will be run on the given task runner.
+  // device with |peer_id|. |callback| will be called with a reference to the service if it exists,
+  // or nullptr otherwise.
   //
   // TODO(armansito): Change this to ConnectToService().
   virtual void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) = 0;
 
- protected:
-  friend class fbl::RefPtr<GATT>;
-  GATT() = default;
-  virtual ~GATT() = default;
+  fxl::WeakPtr<GATT> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  fxl::WeakPtrFactory<GATT> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT);
 };
 

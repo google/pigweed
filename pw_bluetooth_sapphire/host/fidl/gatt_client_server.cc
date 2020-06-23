@@ -21,7 +21,7 @@ using fuchsia::bluetooth::gatt::ServiceInfoPtr;
 
 namespace bthost {
 
-GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
+GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, fxl::WeakPtr<bt::gatt::GATT> gatt,
                                    fidl::InterfaceRequest<Client> request)
     : GattServerBase(gatt, this, std::move(request)), peer_id_(peer_id), weak_ptr_factory_(this) {}
 

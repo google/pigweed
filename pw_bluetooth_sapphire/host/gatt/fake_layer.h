@@ -15,14 +15,13 @@ namespace testing {
 // tests.
 class FakeLayer final : public GATT {
  public:
-  inline static fbl::RefPtr<FakeLayer> Create() { return fbl::AdoptRef(new FakeLayer()); }
+  FakeLayer() = default;
+  ~FakeLayer() override = default;
 
   // Notifies the remote service watcher if one is registered.
   void NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> service);
 
   // GATT overrides:
-  void Initialize() override;
-  void ShutDown() override;
   void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
   void RemoveConnection(PeerId peer_id) override;
   void RegisterService(ServicePtr service, ServiceIdCallback callback, ReadHandler read_handler,
@@ -31,8 +30,7 @@ class FakeLayer final : public GATT {
   void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override;
   void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override;
-  void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback,
-                                    async_dispatcher_t* dispatcher) override;
+  void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
 
@@ -41,12 +39,7 @@ class FakeLayer final : public GATT {
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
  private:
-  friend class fbl::RefPtr<FakeLayer>;
-  FakeLayer() = default;
-  ~FakeLayer() override = default;
-
   RemoteServiceWatcher remote_service_watcher_;
-  async_dispatcher_t* remote_service_watcher_dispatcher_;
 
   DiscoverServicesCallback discover_services_cb_;
 

@@ -81,14 +81,14 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   void SetUp() override {
     AdapterTestFixture::SetUp();
 
-    gatt_host_ = GattHost::CreateForTesting(dispatcher(), gatt());
+    gatt_host_ = std::make_unique<GattHost>(take_gatt());
     ResetHostServer();
   }
 
   void ResetHostServer() {
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_host_);
+                                                adapter()->AsWeakPtr(), gatt_host_->AsWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 
@@ -97,10 +97,8 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
     host_ = nullptr;
     host_server_ = nullptr;
-    gatt_host_->ShutDown();
     gatt_host_ = nullptr;
 
-    RunLoopUntilIdle();
     AdapterTestFixture::TearDown();
   }
 
@@ -156,7 +154,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
  private:
   std::unique_ptr<HostServer> host_server_;
-  fbl::RefPtr<GattHost> gatt_host_;
+  std::unique_ptr<GattHost> gatt_host_;
   fuchsia::bluetooth::host::HostPtr host_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest);

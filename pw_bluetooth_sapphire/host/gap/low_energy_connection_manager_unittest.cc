@@ -76,10 +76,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         transport()->WeakPtr(), &addr_delegate_, dispatcher(),
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
-    gatt_ = gatt::testing::FakeLayer::Create();
-
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_, gatt_);
+        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
+        gatt_->AsWeakPtr());
 
     test_device()->set_connection_state_callback(
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));
@@ -90,6 +90,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     if (conn_mgr_) {
       conn_mgr_ = nullptr;
     }
+    gatt_ = nullptr;
     connector_ = nullptr;
     peer_cache_ = nullptr;
 
@@ -153,8 +154,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;
+  std::unique_ptr<gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;
-  fbl::RefPtr<gatt::testing::FakeLayer> gatt_;
 
   // The most recent remote-initiated connection reported by |connector_|.
   hci::ConnectionPtr last_remote_initiated_;

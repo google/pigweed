@@ -45,7 +45,8 @@ class AdapterTest : public TestingBase {
     transport_closed_called_ = false;
 
     auto data_domain = data::testing::FakeDomain::Create();
-    adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt::testing::FakeLayer::Create(),
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+    adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(),
                                          std::optional(std::move(data_domain)));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
@@ -57,6 +58,7 @@ class AdapterTest : public TestingBase {
     }
 
     adapter_ = nullptr;
+    gatt_ = nullptr;
     TestingBase::TearDown();
   }
 
@@ -81,6 +83,7 @@ class AdapterTest : public TestingBase {
 
  private:
   bool transport_closed_called_;
+  std::unique_ptr<gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<Adapter> adapter_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);

@@ -59,8 +59,8 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   // Binds the given |channel| to a Host FIDL interface server.
   void BindHostInterface(zx::channel channel);
 
-  // Returns a reference to the GATT host.
-  fbl::RefPtr<GattHost> gatt_host() const { return gatt_host_; }
+  // Returns a pointer to the GATT host. Must not be called after ShutDown().
+  GattHost* gatt_host() const { return gatt_host_.get(); }
 
  private:
   FRIEND_MAKE_REF_COUNTED(Host);
@@ -76,7 +76,7 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   std::unique_ptr<bt::gap::Adapter> gap_;
 
   // The GATT profile layer and bus.
-  fbl::RefPtr<GattHost> gatt_host_;
+  std::unique_ptr<GattHost> gatt_host_;
 
   // Currently connected Host interface handle. A Host allows only one of these
   // to be connected at a time.

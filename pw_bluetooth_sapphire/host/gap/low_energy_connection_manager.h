@@ -106,9 +106,10 @@ class LowEnergyConnectionManager final {
   //                 connection and bonding state of a peer via the cache.
   // |data_domain|: Used to interact with the L2CAP layer.
   // |gatt|: Used to interact with the GATT profile layer.
-  LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
+  LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
+                             hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
-                             fbl::RefPtr<data::Domain> data_domain, fbl::RefPtr<gatt::GATT> gatt);
+                             fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt);
   ~LowEnergyConnectionManager();
 
   // Options for the |Connect| method.
@@ -422,7 +423,7 @@ class LowEnergyConnectionManager final {
 
   // The GATT layer reference, used to add and remove ATT data bearers and
   // service discovery.
-  fbl::RefPtr<gatt::GATT> gatt_;
+  fxl::WeakPtr<gatt::GATT> gatt_;
 
   // Local GATT service registry.
   std::unique_ptr<gatt::LocalServiceManager> gatt_registry_;

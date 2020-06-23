@@ -19,28 +19,28 @@ class GattHostTest : public ::gtest::TestLoopFixture {
 
  protected:
   void SetUp() override {
-    fake_domain_ = bt::gatt::testing::FakeLayer::Create();
-    gatt_host_ = GattHost::CreateForTesting(dispatcher(), fake_domain_);
+    auto fake_domain = std::make_unique<bt::gatt::testing::FakeLayer>();
+    fake_domain_ = fake_domain.get();
+    gatt_host_ = std::make_unique<GattHost>(std::move(fake_domain));
   }
 
   void TearDown() override {
-    gatt_host_->ShutDown();
+    gatt_host_ = nullptr;
+    fake_domain_ = nullptr;
     RunLoopUntilIdle();  // Run all pending tasks.
   }
 
-  bt::gatt::testing::FakeLayer* fake_domain() const { return fake_domain_.get(); }
+  bt::gatt::testing::FakeLayer* fake_domain() const { return fake_domain_; }
   GattHost* gatt_host() const { return gatt_host_.get(); }
 
  private:
-  fbl::RefPtr<bt::gatt::testing::FakeLayer> fake_domain_;
-  fbl::RefPtr<GattHost> gatt_host_;
+  bt::gatt::testing::FakeLayer* fake_domain_;
+  std::unique_ptr<GattHost> gatt_host_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(GattHostTest);
 };
 
 TEST_F(GattHostTest, RemoteServiceWatcher) {
-  gatt_host()->Initialize();
-
   bool called = false;
   gatt_host()->SetRemoteServiceWatcher([&](auto peer_id, auto svc) {
     called = true;

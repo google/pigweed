@@ -57,7 +57,7 @@ void NopStatusCallback(bt::att::Status) {}
 }  // namespace
 
 GattRemoteServiceServer::GattRemoteServiceServer(
-    fbl::RefPtr<bt::gatt::RemoteService> service, fbl::RefPtr<bt::gatt::GATT> gatt,
+    fbl::RefPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),

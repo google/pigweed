@@ -185,7 +185,7 @@ class GattServerServer::LocalServiceImpl
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceImpl);
 };
 
-GattServerServer::GattServerServer(fbl::RefPtr<bt::gatt::GATT> gatt,
+GattServerServer::GattServerServer(fxl::WeakPtr<bt::gatt::GATT> gatt,
                                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request)
     : GattServerBase(gatt, this, std::move(request)), weak_ptr_factory_(this) {}
 

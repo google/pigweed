@@ -14,8 +14,9 @@ void AdapterTestFixture::SetUp() {
   TestingBase::SetUp();
 
   data_plane_ = bt::data::testing::FakeDomain::Create();
-  gatt_ = bt::gatt::testing::FakeLayer::Create();
-  adapter_ = std::make_unique<bt::gap::Adapter>(transport()->WeakPtr(), gatt_, data_plane_);
+  gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+  adapter_ =
+      std::make_unique<bt::gap::Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(), data_plane_);
 
   FakeController::Settings settings;
   settings.ApplyDualModeDefaults();

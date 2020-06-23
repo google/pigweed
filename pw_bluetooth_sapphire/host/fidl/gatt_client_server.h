@@ -5,8 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_CLIENT_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_CLIENT_SERVER_H_
 
-#include <fbl/macros.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
+
+#include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_remote_service_server.h"
@@ -18,7 +19,7 @@ namespace bthost {
 // Implements the gatt::Client FIDL interface.
 class GattClientServer : public GattServerBase<fuchsia::bluetooth::gatt::Client> {
  public:
-  GattClientServer(bt::gatt::PeerId peer_id, fbl::RefPtr<bt::gatt::GATT> gatt,
+  GattClientServer(bt::gatt::PeerId peer_id, fxl::WeakPtr<bt::gatt::GATT> gatt,
                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
   ~GattClientServer() override = default;
 

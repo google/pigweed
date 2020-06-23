@@ -5,8 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_SERVER_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_GATT_SERVER_SERVER_H_
 
-#include <fbl/macros.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
+
+#include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
@@ -21,7 +22,7 @@ class GattServerServer : public GattServerBase<fuchsia::bluetooth::gatt::Server>
  public:
   // |adapter_manager| is used to lazily request a handle to the corresponding
   // adapter. It MUST out-live this GattServerServer instance.
-  GattServerServer(fbl::RefPtr<bt::gatt::GATT> gatt,
+  GattServerServer(fxl::WeakPtr<bt::gatt::GATT> gatt,
                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request);
 
   ~GattServerServer() override;

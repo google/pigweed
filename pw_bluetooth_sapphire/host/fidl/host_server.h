@@ -75,7 +75,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
                    public bt::gap::PairingDelegate {
  public:
   HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
-             fbl::RefPtr<GattHost> gatt_host);
+             fxl::WeakPtr<GattHost> gatt_host);
   ~HostServer() override;
 
   // ::fuchsia::bluetooth::host::Host overrides:
@@ -174,8 +174,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   fuchsia::bluetooth::sys::PairingDelegatePtr pairing_delegate_;
 
-  // We hold a reference to GattHost for dispatching GATT FIDL requests.
-  fbl::RefPtr<GattHost> gatt_host_;
+  // We hold a weak pointer to GattHost for dispatching GATT FIDL requests.
+  fxl::WeakPtr<GattHost> gatt_host_;
 
   bool requesting_discovery_;
   std::unique_ptr<bt::gap::LowEnergyDiscoverySession> le_discovery_session_;

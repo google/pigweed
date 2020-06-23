@@ -22,7 +22,7 @@ namespace bthost {
 class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::RemoteService> {
  public:
   GattRemoteServiceServer(fbl::RefPtr<bt::gatt::RemoteService> service,
-                          fbl::RefPtr<bt::gatt::GATT> gatt,
+                          fxl::WeakPtr<bt::gatt::GATT> gatt,
                           fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request);
   ~GattRemoteServiceServer() override;
 

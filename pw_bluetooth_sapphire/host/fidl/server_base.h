@@ -97,7 +97,7 @@ class AdapterServerBase : public ServerBase<Interface> {
 template <typename Interface>
 class GattServerBase : public ServerBase<Interface> {
  public:
-  GattServerBase(fbl::RefPtr<bt::gatt::GATT> gatt, Interface* impl,
+  GattServerBase(fxl::WeakPtr<bt::gatt::GATT> gatt, Interface* impl,
                  fidl::InterfaceRequest<Interface> request)
       : ServerBase<Interface>(impl, std::move(request)), gatt_(gatt) {
     ZX_DEBUG_ASSERT(gatt_);
@@ -106,10 +106,10 @@ class GattServerBase : public ServerBase<Interface> {
   ~GattServerBase() override = default;
 
  protected:
-  fbl::RefPtr<bt::gatt::GATT> gatt() const { return gatt_; }
+  fxl::WeakPtr<bt::gatt::GATT> gatt() const { return gatt_; }
 
  private:
-  fbl::RefPtr<bt::gatt::GATT> gatt_;
+  fxl::WeakPtr<bt::gatt::GATT> gatt_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerBase);
 };

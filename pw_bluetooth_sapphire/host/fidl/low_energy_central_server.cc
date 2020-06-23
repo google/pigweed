@@ -22,7 +22,7 @@ namespace bthost {
 
 LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                                                fidl::InterfaceRequest<Central> request,
-                                               fbl::RefPtr<GattHost> gatt_host)
+                                               fxl::WeakPtr<GattHost> gatt_host)
     : AdapterServerBase(adapter, this, std::move(request)),
       gatt_host_(gatt_host),
       requesting_scan_(false),

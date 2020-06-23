@@ -25,7 +25,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
  public:
   LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                          ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
-                         fbl::RefPtr<GattHost> gatt_host);
+                         fxl::WeakPtr<GattHost> gatt_host);
   ~LowEnergyCentralServer() override;
 
   // If we have connected to the |identifier|-associated peer, this function returns the pointer
@@ -57,7 +57,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   void NotifyPeripheralDisconnected(bt::PeerId peer_id);
 
   // The GATT host is used to instantiate GATT Clients upon connection.
-  fbl::RefPtr<GattHost> gatt_host_;
+  fxl::WeakPtr<GattHost> gatt_host_;
 
   // The currently active LE discovery session. This is initialized when a
   // client requests to perform a scan.

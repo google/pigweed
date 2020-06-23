@@ -38,8 +38,9 @@ class FIDL_GattRemoteServiceServerTest : public TestingBase {
         bt::gatt::ServiceData(kServiceStartHandle, kServiceEndHandle, kServiceUuid));
 
     fidl::InterfaceHandle<fbgatt::RemoteService> handle;
-    server_ = std::make_unique<GattRemoteServiceServer>(
-        service_, /*gatt=*/bt::gatt::testing::FakeLayer::Create(), handle.NewRequest());
+    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
+    server_ = std::make_unique<GattRemoteServiceServer>(service_, gatt_->AsWeakPtr(),
+                                                        handle.NewRequest());
     proxy_.Bind(std::move(handle));
   }
 
@@ -73,6 +74,7 @@ class FIDL_GattRemoteServiceServerTest : public TestingBase {
   fbgatt::RemoteServicePtr& service_proxy() { return proxy_; }
 
  private:
+  std::unique_ptr<bt::gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<GattRemoteServiceServer> server_;
   fbgatt::RemoteServicePtr proxy_;
 
