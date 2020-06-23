@@ -44,10 +44,10 @@ void ScStage1JustWorksNumericComparison::Run() {
       on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
       return;
     }
-    confirm_ = *maybe_confirm;
+    responder_confirm_ = *maybe_confirm;
     auto sdu = util::NewPdu(sizeof(PairingConfirmValue));
     auto writer = PacketWriter(kPairingConfirm, sdu.get());
-    *writer.mutable_payload<PairingConfirmValue>() = *confirm_;
+    *writer.mutable_payload<PairingConfirmValue>() = *responder_confirm_;
     send_cb_(std::move(sdu));
     sent_pairing_confirm_ = true;
   }
@@ -61,13 +61,13 @@ void ScStage1JustWorksNumericComparison::OnPairingConfirm(PairingConfirmValue co
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
-  if (confirm_.has_value()) {
+  if (responder_confirm_.has_value()) {
     bt_log(WARN, "sm",
            "received multiple Pairing Confirm values in SC Numeric Comparison/Just Works");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
-  confirm_ = confirm;
+  responder_confirm_ = confirm;
   // We already know that we're the initiator at this point, which sends the Random immediately
   // after receiving the Confirm.
   SendPairingRandom();
@@ -75,7 +75,7 @@ void ScStage1JustWorksNumericComparison::OnPairingConfirm(PairingConfirmValue co
 
 void ScStage1JustWorksNumericComparison::SendPairingRandom() {
   // The random value is always sent after the confirm exchange (Vol 3, Part H, 2.3.5.6.2).
-  ZX_ASSERT(confirm_.has_value());
+  ZX_ASSERT(responder_confirm_.has_value());
   ZX_ASSERT(!sent_local_rand_);
   if (role_ == Role::kResponder) {
     ZX_ASSERT(peer_rand_.has_value());
@@ -91,8 +91,13 @@ void ScStage1JustWorksNumericComparison::SendPairingRandom() {
 }
 
 void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand) {
-  if (!confirm_.has_value()) {
+  if (!responder_confirm_.has_value()) {
     bt_log(WARN, "sm", "received Pairing Random before the confirm value was exchanged");
+    on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
+    return;
+  }
+  if (peer_rand_.has_value()) {
+    bt_log(WARN, "sm", "received multiple Pairing Random values from peer");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
     return;
   }
@@ -101,7 +106,7 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
     SendPairingRandom();
     return;
   }
-  // Otherwise, we're the initiator & we must validate the |confirm_| sent by the peer w/ |rand|.
+  // Otherwise, we're the initiator & we must validate the |responder_confirm_| with |rand|.
   if (!sent_local_rand_) {
     bt_log(WARN, "sm", "received peer random before sending our own as initiator");
     on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
@@ -114,7 +119,7 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
     on_complete_(fit::error(ErrorCode::kConfirmValueFailed));
     return;
   }
-  if (*maybe_confirm_check != *confirm_) {
+  if (*maybe_confirm_check != *responder_confirm_) {
     bt_log(WARN, "sm", "peer SC confirm value did not match check, aborting");
     on_complete_(fit::error(ErrorCode::kConfirmValueFailed));
     return;
@@ -123,7 +128,7 @@ void ScStage1JustWorksNumericComparison::OnPairingRandom(PairingRandomValue rand
 }
 
 void ScStage1JustWorksNumericComparison::CompleteStage1() {
-  ZX_ASSERT(confirm_.has_value());
+  ZX_ASSERT(responder_confirm_.has_value());
   ZX_ASSERT(peer_rand_.has_value());
   ZX_ASSERT(sent_local_rand_);
   const auto& [initiator_rand, responder_rand] = util::MapToRoles(local_rand_, *peer_rand_, role_);

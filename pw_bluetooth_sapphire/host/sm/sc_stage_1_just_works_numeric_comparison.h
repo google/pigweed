@@ -49,11 +49,15 @@ class ScStage1JustWorksNumericComparison final : public ScStage1 {
   UInt256 peer_public_key_x_;
   PairingMethod method_;
 
-  std::optional<PairingConfirmValue> confirm_;
+  // In Just Works/Numeric Comparison SC pairing, only the responder sends the Pairing Confirm (see
+  // V5.0 Vol. 3 Part H 2.3.5.6.2, Figure 2.3). This member stores the locally generated Pairing
+  // Confirm when acting as responder, or the received Pairing Confirm when acting as initiator.
+  std::optional<PairingConfirmValue> responder_confirm_;
   bool sent_pairing_confirm_;
 
   PairingRandomValue local_rand_;
   bool sent_local_rand_;
+  // The presence of |peer_rand_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingRandomValue> peer_rand_;
 
   // Callback allowing this Stage 1 class to send messages to the L2CAP SM channel

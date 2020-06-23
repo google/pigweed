@@ -179,6 +179,19 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorReceiveRandomOutOfOr
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
 }
 
+// Test to demonstrate receiving random twice for responder causes pairing to fail.
+TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderReceiveRandomTwiceFails) {
+  ScStage1Args args;
+  args.role = Role::kResponder;
+  NewScStage1JustWorksNumericComparison(args);
+
+  stage_1()->Run();
+  ASSERT_FALSE(last_results().has_value());
+  stage_1()->OnPairingRandom(Random<PairingRandomValue>());
+  stage_1()->OnPairingRandom(Random<PairingRandomValue>());
+  EXPECT_EQ(ErrorCode::kUnspecifiedReason, last_results()->error());
+}
+
 TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAndRand) {
   ScStage1Args args;
   args.role = Role::kInitiator;

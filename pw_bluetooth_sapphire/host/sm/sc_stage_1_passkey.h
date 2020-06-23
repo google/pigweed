@@ -52,15 +52,18 @@ class ScStage1Passkey final : public ScStage1 {
   UInt256 peer_public_key_x_;
   PairingMethod method_;
 
+  // This member is set when the PairingPhase::Listener request for the Passkey completes.
   std::optional<uint32_t> passkey_;
   size_t passkey_bit_location_;
 
   PairingConfirmValue local_confirm_;
   bool sent_local_confirm_;
+  // The presence of |peer_confirm_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingConfirmValue> peer_confirm_;
 
   PairingRandomValue local_rand_;
   bool sent_local_rand_;
+  // The presence of |peer_rand_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingRandomValue> peer_rand_;
 
   // Callback allowing this Stage 1 class to send messages to the L2CAP SM channel
