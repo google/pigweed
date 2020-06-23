@@ -26,9 +26,11 @@ pw_cc_library(
     name = "pw_checksum",
     srcs = [
         "ccitt_crc16.cc",
+        "crc32.cc"
     ],
     hdrs = [
         "public/pw_checksum/ccitt_crc16.h",
+        "public/pw_checksum/crc32.h"
     ],
     includes = ["public"],
     deps = ["//pw_span"],
@@ -39,6 +41,18 @@ pw_cc_test(
     srcs = [
         "ccitt_crc16_test_c.c",
         "ccitt_crc16_test.cc",
+    ],
+    deps = [
+        ":pw_checksum",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "crc32_test",
+    srcs = [
+        "crc32_test_c.c",
+        "crc32_test.cc",
     ],
     deps = [
         ":pw_checksum",
