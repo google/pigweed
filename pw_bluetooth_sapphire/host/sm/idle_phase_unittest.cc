@@ -9,11 +9,13 @@
 #include <fbl/macros.h>
 #include <gtest/gtest.h>
 
+#include "lib/async/cpp/task.h"
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -43,8 +45,9 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
 
     fake_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    fake_listener_ = std::make_unique<FakeListener>();
     idle_phase_ = std::make_unique<IdlePhase>(
-        sm_chan_->GetWeakPtr(), role,
+        sm_chan_->GetWeakPtr(), fake_listener_->as_weak_ptr(), role,
         [this](PairingRequestParams preq) { last_pairing_req_ = preq; },
         [this](AuthReqField auth_req) { last_security_req_ = auth_req; });
   }
@@ -58,6 +61,7 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
+  std::unique_ptr<FakeListener> fake_listener_;
   std::unique_ptr<IdlePhase> idle_phase_;
 
   std::optional<PairingRequestParams> last_pairing_req_;
@@ -65,6 +69,41 @@ class SMP_IdlePhaseTest : public l2cap::testing::FakeChannelTest {
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_IdlePhaseTest);
 };
+
+using SMP_IdlePhaseDeathTest = SMP_IdlePhaseTest;
+
+TEST_F(SMP_IdlePhaseDeathTest, MakeInvalidSecurityRequestsDies) {
+  // Only the SMP responder may send the Security Request
+  NewIdlePhase(Role::kInitiator);
+  EXPECT_DEATH_IF_SUPPORTED(
+      idle_phase()->MakeSecurityRequest(SecurityLevel::kEncrypted, BondableMode::Bondable),
+      ".*Responder.*");
+  // Security Requests must actually be requesting a level of security
+  NewIdlePhase(Role::kResponder);
+  EXPECT_DEATH_IF_SUPPORTED(
+      idle_phase()->MakeSecurityRequest(SecurityLevel::kNoSecurity, BondableMode::Bondable),
+      ".*Encrypted.*");
+}
+
+TEST_F(SMP_IdlePhaseTest, MakeEncryptedBondableSecurityRequest) {
+  NewIdlePhase(Role::kResponder);
+  StaticByteBuffer kExpectedReq = {kSecurityRequest, AuthReq::kBondingFlag};
+  async::PostTask(dispatcher(), [this] {
+    idle_phase()->MakeSecurityRequest(SecurityLevel::kEncrypted, BondableMode::Bondable);
+  });
+  ASSERT_TRUE(Expect(kExpectedReq));
+  EXPECT_EQ(SecurityLevel::kEncrypted, *idle_phase()->pending_security_request());
+}
+
+TEST_F(SMP_IdlePhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
+  NewIdlePhase(Role::kResponder);
+  StaticByteBuffer kExpectedReq = {kSecurityRequest, AuthReq::kMITM};
+  async::PostTask(dispatcher(), [this] {
+    idle_phase()->MakeSecurityRequest(SecurityLevel::kAuthenticated, BondableMode::NonBondable);
+  });
+  ASSERT_TRUE(Expect(kExpectedReq));
+  EXPECT_EQ(SecurityLevel::kAuthenticated, *idle_phase()->pending_security_request());
+}
 
 TEST_F(SMP_IdlePhaseTest, HandlesChannelClosedGracefully) {
   fake_chan()->Close();

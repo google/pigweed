@@ -29,7 +29,7 @@ struct Phase1Args {
   PairingRequestParams preq = PairingRequestParams();
   IOCapability io_capability = IOCapability::kNoInputNoOutput;
   BondableMode bondable_mode = BondableMode::Bondable;
-  bool mitm_required = false;
+  SecurityLevel level = SecurityLevel::kEncrypted;
   bool sc_supported = false;
 };
 
@@ -68,11 +68,11 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
     if (role == Role::kInitiator) {
       phase_1_ = Phase1::CreatePhase1Initiator(sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(),
                                                phase_args.io_capability, phase_args.bondable_mode,
-                                               phase_args.mitm_required, std::move(complete_cb));
+                                               phase_args.level, std::move(complete_cb));
     } else {
       phase_1_ = Phase1::CreatePhase1Responder(sm_chan_->GetWeakPtr(), listener_->as_weak_ptr(),
                                                phase_args.preq, phase_args.io_capability,
-                                               phase_args.bondable_mode, phase_args.mitm_required,
+                                               phase_args.bondable_mode, phase_args.level,
                                                std::move(complete_cb));
     }
   }
@@ -121,7 +121,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartDefaultParams) {
 TEST_F(SMP_Phase1Test, FeatureExchangeStartCustomParams) {
   auto phase_args = Phase1Args{.io_capability = IOCapability::kDisplayYesNo,
                                .bondable_mode = BondableMode::NonBondable,
-                               .mitm_required = true,
+                               .level = SecurityLevel::kAuthenticated,
                                .sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
 
@@ -971,6 +971,81 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderMITM) {
 
   // We should have set bondable mode as both sides enabled it
   EXPECT_TRUE(features().will_bond);
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Response
+      0x01,  // IO cap.: KeyboardDisplay
+      0x00,  // OOB: not present
+      0x09,  // AuthReq: bondable mode, MITM not required, SC
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x01  // responder keys: enc key
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x01,  // IO cap.: KeyboardDisplay
+      0x00,  // OOB: not present
+      0x0D,  // AuthReq: bonding, MITM required, SC
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x01   // responder keys: enc key
+  );
+  // clang-format on
+  auto reader = PacketReader(&kRequest);
+  auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
+                               .io_capability = IOCapability::kDisplayYesNo,
+                               .level = SecurityLevel::kAuthenticated,
+                               .sc_supported = true};
+
+  NewPhase1(Role::kResponder, phase_args);
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kResponse));
+
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().secure_connections);
+  // We requested authenticated security, which led to Numeric Comparison as the pairing method.
+  EXPECT_EQ(PairingMethod::kNumericComparison, features().method);
+  ASSERT_TRUE(last_preq());
+  ASSERT_TRUE(last_pres());
+  EXPECT_TRUE(ContainersEqual(kRequest, *last_preq()));
+  EXPECT_TRUE(ContainersEqual(kResponse, *last_pres()));
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecurity) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Response
+      0x01,  // IO cap.: DisplayYesNo
+      0x00,  // OOB: not present
+      0x01,  // AuthReq: bondable mode, MITM not required, SC not supported
+      0x10,  // encr. key size: 16 (default max)
+      0x00,  // initiator keys: none
+      0x01  // responder keys: enc key
+  );
+  const auto kFailure = CreateStaticByteBuffer(
+    kPairingFailed,
+    ErrorCode::kAuthenticationRequirements
+  );
+  // clang-format on
+  auto reader = PacketReader(&kRequest);
+  auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
+                               .io_capability = IOCapability::kDisplayYesNo,
+                               .level = SecurityLevel::kAuthenticated,
+                               .sc_supported = true};
+
+  NewPhase1(Role::kResponder, phase_args);
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  // Both devices have DisplayYesNo IOCap, but the initiator does not support Secure Connections so
+  // Numeric Comparison cannot be used. Neither device has a keyboard, so Passkey Entry cannot be
+  // used. Thus authenticated pairing, the desired level, cannot be met and we fail.
+  ASSERT_TRUE(Expect(kFailure));
+
+  EXPECT_EQ(1, listener()->pairing_error_count());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
 TEST_F(SMP_Phase1Test, UnsupportedCommandDuringPairing) {

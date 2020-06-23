@@ -31,20 +31,20 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   using CompleteCallback = fit::function<void(PairingFeatures features, PairingRequestParams preq,
                                               PairingResponseParams pres)>;
 
-  // Returns a Phase 1 in the initiator role. Note the lack of a `preq` parameter: Phase 1 builds &
-  // sends the Pairing Request as initiator. See private ctor for parameter descriptions.
+  // Returns a Phase 1 that starts pairing to |requested_level|. Note the lack of a `preq`
+  // parameter: Phase 1 builds & sends the Pairing Request as initiator.
   static std::unique_ptr<Phase1> CreatePhase1Initiator(fxl::WeakPtr<PairingChannel> chan,
                                                        fxl::WeakPtr<Listener> listener,
                                                        IOCapability io_capability,
                                                        BondableMode bondable_mode,
-                                                       bool mitm_required,
+                                                       SecurityLevel requested_level,
                                                        CompleteCallback on_complete);
 
   // Returns a Phase 1 in the responder role. Note the `preq` parameter: Phase 1 is supplied the
   // Pairing Request from the remote as responder. See private ctor for parameter descriptions.
   static std::unique_ptr<Phase1> CreatePhase1Responder(
       fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, PairingRequestParams preq,
-      IOCapability io_capability, BondableMode bondable_mode, bool mitm_required,
+      IOCapability io_capability, BondableMode bondable_mode, SecurityLevel requested_level,
       CompleteCallback on_complete);
 
   ~Phase1() override = default;
@@ -58,10 +58,13 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   //           If present, the device is in the responder role, and will respond to |preq|, the
   //           peer initiator's pairing request.
   //   |bondable_mode|: the bondable mode of the local device (see V5.1 Vol. 3 Part C Section 9.4).
+  //   |requested_level|: The minimum security level required by the local device for this pairing.
+  //                      Must be at least SecurityLevel::kEncrypted. If authenticated, the ctor
+  //                      ASSERTs that |io_capabilities| can perform authenticated pairing.
   //   |on_complete|: called at the end of Phase 1 with the resulting features.
   Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
          std::optional<PairingRequestParams> preq, IOCapability io_capability,
-         BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete);
+         BondableMode bondable_mode, SecurityLevel requested_level, CompleteCallback on_complete);
 
   // Start the feature exchange by sending the Pairing Request. The local device must be in the SMP
   // initiator role (V5.1 Vol 3, Part H, 2.3).
@@ -98,10 +101,13 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   // parameter. Otherwise, these are generated and exchanged during Phase 1.
   std::optional<PairingRequestParams> preq_;
   std::optional<PairingResponseParams> pres_;
+
+  // Phase 1 ensures that the feature exchange results in a pairing that supports this level of
+  // security. If this is impossible, pairing will abort.
+  SecurityLevel requested_level_;
+
   // Local feature flags that determine the feature exchange negotiation with the peer.
   bool oob_available_;
-  bool mitm_required_;
-  bool feature_exchange_pending_;
   IOCapability io_capability_;
   BondableMode bondable_mode_;
 

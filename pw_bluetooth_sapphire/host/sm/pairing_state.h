@@ -113,9 +113,9 @@ class PairingState final : public PairingPhase::Listener {
   // Called when we receive a peer pairing request as responder, will start Phase 1.
   void OnPairingRequest(const PairingRequestParams& req_params);
 
-  // Causes the LE pairing process to begin - called when we require a security level higher than
-  // the current security level.
-  void StartPairing(SecurityLevel level);
+  // Pulls the next PendingRequest off |request_queue_| and starts a security upgrade to that
+  // |level| by either sending a Pairing Request as initiator or a Security Request as responder.
+  void UpgradeSecurityInternal();
 
   // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
   // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
@@ -135,6 +135,11 @@ class PairingState final : public PairingPhase::Listener {
   // Cleans up pairing state, updates the current security level, and notifies parties that
   // requested security of the link's updated security properties.
   void OnPairingComplete(PairingData data);
+
+  // After a call to UpgradeSecurity results in an increase of the link security level (through
+  // pairing completion or SMP Security Requested encryption), this method notifies all the
+  // callbacks associated with SecurityUpgrade requests.
+  void NotifySecurityCallbacks();
 
   // Assign the current security properties and notify the delegate of the
   // change.

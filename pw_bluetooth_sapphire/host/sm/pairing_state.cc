@@ -25,6 +25,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "util.h"
 
@@ -59,6 +60,7 @@ PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap
       le_link_(std::move(link)),
       io_cap_(io_capability),
       bondable_mode_(bondable_mode),
+      le_sec_(SecurityProperties()),
       sm_chan_(std::make_unique<PairingChannel>(smp)),
       role_(le_link_->role() == hci::Connection::Role::kMaster ? Role::kInitiator
                                                                : Role::kResponder),
@@ -113,8 +115,10 @@ void PairingState::OnSecurityRequest(AuthReqField auth_req) {
 
 void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
   // If pairing is in progress then we queue the request.
-  if (!std::holds_alternative<IdlePhase>(current_phase_)) {
-    bt_log(TRACE, "sm", "LE legacy pairing in progress; request queued");
+  IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
+  if (!idle_phase || idle_phase->pending_security_request().has_value()) {
+    bt_log(TRACE, "sm", "LE security upgrade in progress; request for %s security queued",
+           LevelToString(level));
     request_queue_.emplace(level, std::move(callback));
     return;
   }
@@ -123,43 +127,59 @@ void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback
     callback(Status(), le_sec_);
     return;
   }
-
-  // TODO(853): Support initiating a security upgrade using the SMP Security Request.
-  if (role_ != Role::kInitiator) {
-    callback(Status(HostError::kNotSupported), SecurityProperties());
-    return;
-  }
-
+  // |request_queue| must be empty if there is no active security upgrade request, which is
+  // equivalent to being in idle phase with no pending security request.
+  ZX_ASSERT(request_queue_.empty());
   request_queue_.emplace(level, std::move(callback));
-  StartPairing(level);
+  UpgradeSecurityInternal();
 }
 
 void PairingState::OnPairingRequest(const PairingRequestParams& req_params) {
-  ZX_ASSERT(std::holds_alternative<IdlePhase>(current_phase_));
+  IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
+  ZX_ASSERT(idle_phase);
   ZX_ASSERT(role_ == Role::kResponder);
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Pairing Request command, the
   // Security Manager Timer shall be reset and started."
   StartNewTimer();
-  auto self = weak_ptr_factory_.GetWeakPtr();
+
+  // We only require authentication as Responder if there is a pending Security Request for it.
+  // TODO(52999): This will need to be modified to support Secure Connections Only mode.
+  auto required_level = idle_phase->pending_security_request().value_or(SecurityLevel::kEncrypted);
+
   current_phase_ = Phase1::CreatePhase1Responder(
-      sm_chan_->GetWeakPtr(), self, req_params, io_cap_, bondable_mode_, false /* mitm_required */,
-      fit::bind_member(this, &PairingState::OnFeatureExchange));
+      sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode_,
+      required_level, fit::bind_member(this, &PairingState::OnFeatureExchange));
   std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
 }
 
-void PairingState::StartPairing(SecurityLevel level) {
-  ZX_ASSERT_MSG(std::holds_alternative<IdlePhase>(current_phase_), "already pairing!");
-  ZX_ASSERT(role_ == Role::kInitiator);
+void PairingState::UpgradeSecurityInternal() {
+  IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
+  ZX_ASSERT_MSG(idle_phase, "cannot upgrade security while security upgrade already in progress!");
+  const PendingRequest& next_req = request_queue_.front();
+  if (next_req.level >= SecurityLevel::kAuthenticated &&
+      io_cap_ == IOCapability::kNoInputNoOutput) {
+    bt_log(WARN, "sm",
+           "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
+    next_req.callback(Status(ErrorCode::kAuthenticationRequirements), le_sec_);
+    request_queue_.pop();
+    if (!request_queue_.empty()) {
+      UpgradeSecurityInternal();
+    }
+    return;
+  }
 
   // V5.1 Vol. 3 Part H Section 3.4: "Upon transmission of the Pairing Request command [...] the
-  // [SM] Timer shall be [..] started", Phase1Initiator will send this command.
+  // [SM] Timer shall be [..] started" and "Upon transmission of the Security Request command [...]
+  // the [SM] Timer shall be reset and restarted".
   StartNewTimer();
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  bool mitm_required = level == SecurityLevel::kAuthenticated;
-  current_phase_ = Phase1::CreatePhase1Initiator(
-      sm_chan_->GetWeakPtr(), self, io_cap_, bondable_mode_, mitm_required,
-      fit::bind_member(this, &PairingState::OnFeatureExchange));
-  std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
+  if (role_ == Role::kInitiator) {
+    current_phase_ = Phase1::CreatePhase1Initiator(
+        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode_,
+        next_req.level, fit::bind_member(this, &PairingState::OnFeatureExchange));
+    std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
+  } else {
+    idle_phase->MakeSecurityRequest(next_req.level, bondable_mode_);
+  }
 }
 
 void PairingState::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
@@ -223,28 +243,40 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
     delegate_->OnAuthenticationFailure(status);
   }
 
-  if (!enabled) {
-    bt_log(DEBUG, "sm", "encryption disabled (handle: %#.4x)", le_link_->handle());
+  IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
+  if (!status || !enabled) {
+    bt_log(WARN, "sm", "encryption of link (handle: %#.4x) %s%s!", le_link_->handle(),
+           !status ? fxl::StringPrintf("failed with %s", bt_str(status)).c_str() : "disabled",
+           idle_phase ? "" : " during pairing");
     SetSecurityProperties(sm::SecurityProperties());
-  } else if (std::holds_alternative<IdlePhase>(current_phase_)) {
+    if (!idle_phase) {
+      Abort(ErrorCode::kUnspecifiedReason);
+    }
+    return;
+  }
+
+  if (idle_phase) {
     bt_log(DEBUG, "sm", "encryption enabled while not pairing");
     if (bt_is_error(ValidateExistingLocalLtk(), ERROR, "sm",
                     "disconnecting link as it cannot be encrypted with LTK status")) {
       return;
     }
+    std::optional<SecurityLevel> security_req = idle_phase->pending_security_request();
+    if (security_req.has_value() && *security_req > ltk_->security().level()) {
+      bt_log(ERROR, "sm",
+             "peer responded to security request by encrypting link with a bonded "
+             "LTK of insufficient security properties - disconnecting link");
+      (*sm_chan_)->SignalLinkError();
+      return;
+    }
     // If encryption is enabled while not pairing, we update the security properties to those of
     // `ltk_`. Otherwise, we let the EndPhase2 pairing function determine the security properties.
     SetSecurityProperties(ltk_->security());
-  }
-
-  // Nothing to do if no pairing is in progress.
-  if (std::holds_alternative<IdlePhase>(current_phase_)) {
-    return;
-  }
-
-  if (!status || !enabled) {
-    bt_log(ERROR, "sm", "failed to encrypt link during pairing");
-    Abort(ErrorCode::kUnspecifiedReason);
+    if (security_req.has_value()) {
+      ZX_ASSERT(role_ == Role::kResponder);
+      ZX_ASSERT(!request_queue_.empty());
+      NotifySecurityCallbacks();
+    }
     return;
   }
 
@@ -312,6 +344,10 @@ void PairingState::OnPairingComplete(PairingData pairing_data) {
   // Go back to IdlePhase so we can pair again if need be.
   ResetState();
 
+  NotifySecurityCallbacks();
+}
+
+void PairingState::NotifySecurityCallbacks() {
   // Separate out the requests that are satisfied by the current security level from those that
   // require a higher level. We'll retry pairing for the latter.
   std::queue<PendingRequest> satisfied;
@@ -335,7 +371,7 @@ void PairingState::OnPairingComplete(PairingData pairing_data) {
   }
 
   if (!request_queue_.empty()) {
-    StartPairing(request_queue_.front().level);
+    UpgradeSecurityInternal();
   }
 }
 
@@ -348,10 +384,7 @@ void PairingState::Reset(IOCapability io_capability) {
 void PairingState::ResetState() {
   StopTimer();
   features_.reset();
-  if (!std::holds_alternative<IdlePhase>(current_phase_)) {
-    auto self = weak_ptr_factory_.GetWeakPtr();
-    GoToIdlePhase();
-  }
+  GoToIdlePhase();
 }
 
 bool PairingState::AssignLongTermKey(const LTK& ltk) {
@@ -388,8 +421,6 @@ void PairingState::Abort(ErrorCode ecode) {
           arg->Abort(ecode);
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.Abort(ecode);
-        } else if constexpr (std::is_same_v<IdlePhase, T>) {
-          bt_log(DEBUG, "sm", "abort called with no in-progress security upgrade");
         } else {
           ZX_PANIC("cannot abort when current_phase_ is std::monostate!");
         }
@@ -493,7 +524,7 @@ void PairingState::OnPairingTimeout() {
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.OnPairingTimeout();
         } else {
-          ZX_PANIC("cannot timeout during IdlePhase or when current_phase_ is std::monostate!");
+          ZX_PANIC("cannot timeout when current_phase_ is std::monostate!");
         }
       },
       current_phase_);
@@ -515,7 +546,7 @@ void PairingState::OnNewLongTermKey(const LTK& ltk) {
 }
 
 void PairingState::GoToIdlePhase() {
-  current_phase_.emplace<IdlePhase>(sm_chan_->GetWeakPtr(), role_,
+  current_phase_.emplace<IdlePhase>(sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), role_,
                                     fit::bind_member(this, &PairingState::OnPairingRequest),
                                     fit::bind_member(this, &PairingState::OnSecurityRequest));
 }

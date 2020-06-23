@@ -57,9 +57,9 @@ class PairingPhase {
   // Cleans up pairing state and and invokes Listener::OnPairingFailed.
   void OnFailure(Status status);
 
-  // Ends the current pairing procedure unsuccessfully, with |ecode| as the reason, and calls
-  // OnFailure.
-  void Abort(ErrorCode ecode);
+  // Default implementation ends the current pairing procedure unsuccessfully with |ecode| as the
+  // reason, and calls OnFailure.
+  virtual void Abort(ErrorCode ecode);
 
   // Called by the owning class when the SMP pairing timer expires, calls OnFailure.
   void OnPairingTimeout();

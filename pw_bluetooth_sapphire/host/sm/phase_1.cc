@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
@@ -20,39 +21,43 @@ namespace sm {
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, IOCapability io_capability,
-    BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete) {
+    BondableMode bondable_mode, SecurityLevel requested_level, CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
   return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener), Role::kInitiator,
                                             std::nullopt, io_capability, bondable_mode,
-                                            mitm_required, std::move(on_complete)));
+                                            requested_level, std::move(on_complete)));
 }
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, PairingRequestParams preq,
-    IOCapability io_capability, BondableMode bondable_mode, bool mitm_required,
+    IOCapability io_capability, BondableMode bondable_mode, SecurityLevel minimum_allowed_level,
     CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
   return std::unique_ptr<Phase1>(new Phase1(std::move(chan), std::move(listener), Role::kResponder,
-                                            preq, io_capability, bondable_mode, mitm_required,
-                                            std::move(on_complete)));
+                                            preq, io_capability, bondable_mode,
+                                            minimum_allowed_level, std::move(on_complete)));
 }
 
 Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
                std::optional<PairingRequestParams> preq, IOCapability io_capability,
-               BondableMode bondable_mode, bool mitm_required, CompleteCallback on_complete)
+               BondableMode bondable_mode, SecurityLevel requested_level,
+               CompleteCallback on_complete)
     : PairingPhase(std::move(chan), std::move(listener), role),
       preq_(preq),
+      requested_level_(requested_level),
       oob_available_(false),
-      mitm_required_(mitm_required),
-      feature_exchange_pending_(false),
       io_capability_(io_capability),
       bondable_mode_(bondable_mode),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(!(role == Role::kInitiator && preq.has_value()));
-  ZX_ASSERT(!(role == Role::kResponder && !preq.has_value()));
+  ZX_ASSERT(!(role == Role::kInitiator && preq_.has_value()));
+  ZX_ASSERT(!(role == Role::kResponder && !preq_.has_value()));
+  ZX_ASSERT(requested_level_ >= SecurityLevel::kEncrypted);
+  if (requested_level_ > SecurityLevel::kEncrypted) {
+    ZX_ASSERT(io_capability != IOCapability::kNoInputNoOutput);
+  }
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
 }
 
@@ -70,8 +75,6 @@ void Phase1::Start() {
 void Phase1::InitiateFeatureExchange() {
   // Only the initiator can initiate the feature exchange.
   ZX_ASSERT(role() == Role::kInitiator);
-  // Pairing should not be in progress when this function is called
-  ZX_ASSERT(!feature_exchange_pending_);
   LocalPairingParams preq_values = BuildPairingParameters();
   preq_ = PairingRequestParams{.io_capability = preq_values.io_capability,
                                .oob_data_flag = preq_values.oob_data_flag,
@@ -79,7 +82,6 @@ void Phase1::InitiateFeatureExchange() {
                                .max_encryption_key_size = preq_values.max_encryption_key_size,
                                .initiator_key_dist_gen = preq_values.local_keys,
                                .responder_key_dist_gen = preq_values.remote_keys};
-  feature_exchange_pending_ = true;
   sm_chan().SendMessage(kPairingRequest, *preq_);
 }
 
@@ -87,9 +89,6 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
   // We should only be in this state when pairing is initiated by the remote i.e. we are the
   // responder.
   ZX_ASSERT(role() == Role::kResponder);
-  ZX_ASSERT(!feature_exchange_pending_);
-  ZX_ASSERT(preq_.has_value());
-  feature_exchange_pending_ = true;
 
   LocalPairingParams pres_values = BuildPairingParameters();
   pres_ = PairingResponseParams{.io_capability = pres_values.io_capability,
@@ -103,7 +102,6 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
 
   fit::result<PairingFeatures, ErrorCode> maybe_features =
       ResolveFeatures(false /* local_initiator */, req_params, *pres_);
-  feature_exchange_pending_ = false;
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
     Abort(maybe_features.error());
@@ -148,7 +146,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
   if (sm_chan().SupportsSecureConnections()) {
     local_params.auth_req |= AuthReq::kSC;
   }
-  if (mitm_required_) {
+  if (requested_level_ >= SecurityLevel::kAuthenticated) {
     local_params.auth_req |= AuthReq::kMITM;
   }
 
@@ -161,8 +159,6 @@ LocalPairingParams Phase1::BuildPairingParameters() {
 fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initiator,
                                                                 const PairingRequestParams& preq,
                                                                 const PairingResponseParams& pres) {
-  ZX_ASSERT(feature_exchange_pending_);
-
   // Select the smaller of the initiator and responder max. encryption key size
   // values (Vol 3, Part H, 2.3.4).
   uint8_t enc_key_size = std::min(preq.max_encryption_key_size, pres.max_encryption_key_size);
@@ -253,12 +249,13 @@ void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {
 
   if (!preq_.has_value() || pres_.has_value()) {
     bt_log(DEBUG, "sm", "ignoring unexpected \"Pairing Response\" packet");
+    Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   fit::result<PairingFeatures, ErrorCode> maybe_features =
       ResolveFeatures(true /* local_initiator */, *preq_, response_params);
-  feature_exchange_pending_ = false;
+
   if (maybe_features.is_error()) {
     bt_log(DEBUG, "sm", "rejecting pairing features");
     Abort(maybe_features.error());
