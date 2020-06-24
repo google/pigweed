@@ -31,6 +31,11 @@
 
 #include "pw_polyfill/language_features.h"
 
+// Disable deprecated warnings within this file, since it uses the deprecated
+// pw::span class.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Pigweed: Disable the asserts from Chromium for now.
 #define _PW_SPAN_ASSERT(arg)
 
@@ -219,7 +224,7 @@ struct ExtentStorage<dynamic_extent> {
 
 // [span], class template span
 template <typename T, size_t Extent>
-class /* [[deprecated]] */ span : public span_internal::ExtentStorage<Extent> {
+class [[deprecated]] span : public span_internal::ExtentStorage<Extent> {
  private:
   using ExtentStorage = span_internal::ExtentStorage<Extent>;
 
@@ -453,5 +458,7 @@ span(const Container&) -> span<internal::ValueType<const Container>>;
 #endif  // __cpp_deduction_guides
 
 }  // namespace pw
+
+#pragma GCC diagnostic pop
 
 #undef _PW_SPAN_ASSERT

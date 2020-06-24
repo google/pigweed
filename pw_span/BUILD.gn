@@ -50,6 +50,9 @@ pw_test("test") {
 pw_test("pw_span_test") {
   deps = [ ":pw_span" ]
   sources = [ "pw_span_test.cc" ]
+
+  # Disable warnings for using the deprecated pw::span class.
+  cflags = [ "-Wno-deprecated-declarations" ]
 }
 
 pw_doc_group("docs") {
