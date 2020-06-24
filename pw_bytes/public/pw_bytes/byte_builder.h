@@ -122,7 +122,96 @@ class ByteBuilder {
       return byte_[index];
     }
 
+    // The Peek methods will retreive ordered (Little/Big Endian) values
+    // located at the iterator position without moving the iterator forward.
+    int8_t PeekInt8() const { return static_cast<int8_t>(PeekUint8()); }
+
+    uint8_t PeekUint8() const { return GetInteger<uint8_t>(); }
+
+    int16_t PeekInt16(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return static_cast<int16_t>(PeekUint16(order));
+    }
+
+    uint16_t PeekUint16(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return GetInteger<uint16_t>(order);
+    }
+
+    int32_t PeekInt32(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return static_cast<int32_t>(PeekUint32(order));
+    }
+
+    uint32_t PeekUint32(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return GetInteger<uint32_t>(order);
+    }
+
+    int64_t PeekInt64(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return static_cast<int64_t>(PeekUint64(order));
+    }
+
+    uint64_t PeekUint64(ByteOrder order = ByteOrder::kLittleEndian) const {
+      return GetInteger<uint64_t>(order);
+    }
+
+    // The Read methods will retreive ordered (Little/Big Endian) values
+    // located at the iterator position and move the iterator forward by
+    // sizeof(value) positions forward.
+    int8_t ReadInt8() { return static_cast<int8_t>(ReadUint8()); }
+
+    uint8_t ReadUint8() {
+      uint8_t value = GetInteger<uint8_t>();
+      byte_ += 1;
+      return value;
+    }
+
+    int16_t ReadInt16(ByteOrder order = ByteOrder::kLittleEndian) {
+      return static_cast<int16_t>(ReadUint16(order));
+    }
+
+    uint16_t ReadUint16(ByteOrder order = ByteOrder::kLittleEndian) {
+      uint16_t value = GetInteger<uint16_t>(order);
+      byte_ += 2;
+      return value;
+    }
+
+    int32_t ReadInt32(ByteOrder order = ByteOrder::kLittleEndian) {
+      return static_cast<int32_t>(ReadUint32(order));
+    }
+
+    uint32_t ReadUint32(ByteOrder order = ByteOrder::kLittleEndian) {
+      uint32_t value = GetInteger<uint32_t>(order);
+      byte_ += 4;
+      return value;
+    }
+
+    int64_t ReadInt64(ByteOrder order = ByteOrder::kLittleEndian) {
+      return static_cast<int64_t>(ReadUint64(order));
+    }
+
+    uint64_t ReadUint64(ByteOrder order = ByteOrder::kLittleEndian) {
+      int64_t value = GetInteger<int64_t>(order);
+      byte_ += 8;
+      return value;
+    }
+
    private:
+    template <typename T>
+    T GetInteger(ByteOrder order = ByteOrder::kLittleEndian) const {
+      T value;
+      std::memcpy(&value, byte_, sizeof(T));
+      if (kSystemEndianness != order) {
+        if constexpr (sizeof(T) == 1) {
+          return value;
+        } else if constexpr (sizeof(T) == 2) {
+          return Reverse2Bytes(value);
+        } else if constexpr (sizeof(T) == 4) {
+          return Reverse4Bytes(value);
+        } else if constexpr (sizeof(T) == 8) {
+          return Reverse8Bytes(value);
+        }
+      }
+      return value;
+    }
+
     const std::byte* byte_;
   };
 
@@ -230,7 +319,7 @@ class ByteBuilder {
   ByteBuilder& PutUint16(uint16_t value,
                          ByteOrder order = ByteOrder::kLittleEndian) {
     if (kSystemEndianness != order) {
-      value = ((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8);
+      value = Reverse2Bytes(value);
     }
     return WriteInOrder(value);
   }
@@ -244,10 +333,7 @@ class ByteBuilder {
   ByteBuilder& PutUint32(uint32_t value,
                          ByteOrder order = ByteOrder::kLittleEndian) {
     if (kSystemEndianness != order) {
-      value = ((value & 0x000000FF) << 3 * 8) |  //
-              ((value & 0x0000FF00) << 1 * 8) |  //
-              ((value & 0x00FF0000) >> 1 * 8) |  //
-              ((value & 0xFF000000) >> 3 * 8);
+      value = Reverse4Bytes(value);
     }
     return WriteInOrder(value);
   }
@@ -261,14 +347,7 @@ class ByteBuilder {
   ByteBuilder& PutUint64(uint64_t value,
                          ByteOrder order = ByteOrder::kLittleEndian) {
     if (kSystemEndianness != order) {
-      value = ((value & 0x00000000000000FF) << 7 * 8) |  //
-              ((value & 0x000000000000FF00) << 5 * 8) |  //
-              ((value & 0x0000000000FF0000) << 3 * 8) |  //
-              ((value & 0x00000000FF000000) << 1 * 8) |  //
-              ((value & 0x000000FF00000000) >> 1 * 8) |  //
-              ((value & 0x0000FF0000000000) >> 3 * 8) |  //
-              ((value & 0x00FF000000000000) >> 5 * 8) |  //
-              ((value & 0xFF00000000000000) >> 7 * 8);
+      value = Reverse8Bytes(value);
     }
     return WriteInOrder(value);
   }
@@ -289,6 +368,28 @@ class ByteBuilder {
   };
 
  private:
+  static constexpr uint16_t Reverse2Bytes(uint16_t value) {
+    return uint16_t(((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8));
+  }
+
+  static constexpr uint32_t Reverse4Bytes(uint32_t value) {
+    return uint32_t(((value & 0x000000FF) << 3 * 8) |  //
+                    ((value & 0x0000FF00) << 1 * 8) |  //
+                    ((value & 0x00FF0000) >> 1 * 8) |  //
+                    ((value & 0xFF000000) >> 3 * 8));
+  }
+
+  static constexpr uint64_t Reverse8Bytes(uint64_t value) {
+    return uint64_t(((value & 0x00000000000000FF) << 7 * 8) |  //
+                    ((value & 0x000000000000FF00) << 5 * 8) |  //
+                    ((value & 0x0000000000FF0000) << 3 * 8) |  //
+                    ((value & 0x00000000FF000000) << 1 * 8) |  //
+                    ((value & 0x000000FF00000000) >> 1 * 8) |  //
+                    ((value & 0x0000FF0000000000) >> 3 * 8) |  //
+                    ((value & 0x00FF000000000000) >> 5 * 8) |  //
+                    ((value & 0xFF00000000000000) >> 7 * 8));
+  }
+
   template <typename T>
   ByteBuilder& WriteInOrder(T value) {
     return append(&value, sizeof(value));
