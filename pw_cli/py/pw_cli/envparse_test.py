@@ -96,6 +96,7 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
             'PW_FOO': '001',
             'PW_BAR': '010',
             'PW_BAZ': '100',
+            'IGNORED': '011',
         }
 
     def test_parse_unrecognized_variable(self):
@@ -105,6 +106,20 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             parser.parse_env(env=self.raw_env)
+
+    def test_parse_unrecognized_but_allowed_suffix(self):
+        parser = envparse.EnvironmentParser(prefix='PW_')
+        parser.add_allowed_suffix('_ALLOWED_SUFFIX')
+
+        env = parser.parse_env(env={'PW_FOO_ALLOWED_SUFFIX': '001'})
+        self.assertEqual(env.PW_FOO_ALLOWED_SUFFIX, '001')
+
+    def test_parse_allowed_suffix_but_not_suffix(self):
+        parser = envparse.EnvironmentParser(prefix='PW_')
+        parser.add_allowed_suffix('_ALLOWED_SUFFIX')
+
+        with self.assertRaises(ValueError):
+            parser.parse_env(env={'PW_FOO_ALLOWED_SUFFIX_FOO': '001'})
 
     def test_parse_ignore_unrecognized(self):
         parser = envparse.EnvironmentParser(prefix='PW_',

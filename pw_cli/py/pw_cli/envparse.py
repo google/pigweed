@@ -15,8 +15,8 @@
 
 import argparse
 import os
-from typing import Callable, Dict, Generic, IO, Literal, Mapping, NamedTuple
-from typing import Optional, TypeVar
+from typing import Callable, Dict, Generic, IO, List, Literal, Mapping
+from typing import NamedTuple, Optional, TypeVar
 
 
 class EnvNamespace(argparse.Namespace):  # pylint: disable=too-few-public-methods
@@ -73,6 +73,7 @@ class EnvironmentParser:
         self._prefix: Optional[str] = prefix
         self._error_on_unrecognized: bool = error_on_unrecognized
         self._variables: Dict[str, VariableDescriptor] = {}
+        self._allowed_suffixes: List[str] = []
 
     def add_var(
         self,
@@ -102,6 +103,11 @@ class EnvironmentParser:
             type,  # type: ignore
             default)  # type: ignore
 
+    def add_allowed_suffix(self, suffix: str) -> None:
+        """Registers an environmant variable name suffix to be allowed."""
+
+        self._allowed_suffixes.append(suffix)
+
     def parse_env(self,
                   env: Optional[Mapping[str, str]] = None) -> EnvNamespace:
         """Parses known environment variables into a namespace.
@@ -128,9 +134,17 @@ class EnvironmentParser:
 
             setattr(namespace, var, val)
 
+        allowed_suffixes = tuple(self._allowed_suffixes)
+        for var in env:
+            if (not hasattr(namespace, var)
+                    and (self._prefix is None or var.startswith(self._prefix))
+                    and var.endswith(allowed_suffixes)):
+                setattr(namespace, var, env[var])
+
         if self._prefix is not None and self._error_on_unrecognized:
             for var in env:
-                if var.startswith(self._prefix) and var not in self._variables:
+                if (var.startswith(self._prefix) and var not in self._variables
+                        and not var.endswith(allowed_suffixes)):
                     raise ValueError(
                         f'Unrecognized environment variable {var}')
 
