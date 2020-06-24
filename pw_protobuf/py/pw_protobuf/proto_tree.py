@@ -70,6 +70,11 @@ class ProtoNode(abc.ABC):
         return '::'.join(
             self._attr_hierarchy(lambda node: node.cpp_name(), root))
 
+    def nanopb_name(self) -> str:
+        """Full nanopb-style name of the node."""
+        name = '_'.join(self._attr_hierarchy(lambda node: node.name(), None))
+        return name.lstrip('_')
+
     def common_ancestor(self, other: 'ProtoNode') -> Optional['ProtoNode']:
         """Finds the earliest common ancestor of this node and other."""
 
@@ -328,6 +333,15 @@ class ProtoServiceMethod:
 
     def name(self) -> str:
         return self._name
+
+    def type(self) -> Type:
+        return self._type
+
+    def request_type(self) -> ProtoNode:
+        return self._request_type
+
+    def response_type(self) -> ProtoNode:
+        return self._response_type
 
 
 def _add_enum_fields(enum_node: ProtoNode, proto_enum) -> None:

@@ -21,6 +21,7 @@ from typing import Dict, Iterable, List, Tuple
 
 import google.protobuf.descriptor_pb2 as descriptor_pb2
 
+from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoMessageField, ProtoNode
 from pw_protobuf.proto_tree import build_node_tree
 
@@ -498,66 +499,6 @@ PROTO_FIELD_METHODS: Dict[int, List] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: [SubMessageMethod],
     descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: [EnumMethod],
 }
-
-
-class OutputFile:
-    """A buffer to which data is written.
-
-    Example:
-
-    ```
-    output = Output("hello.c")
-    output.write_line('int main(void) {')
-    with output.indent():
-        output.write_line('printf("Hello, world");')
-        output.write_line('return 0;')
-    output.write_line('}')
-
-    print(output.content())
-    ```
-
-    Produces:
-    ```
-    int main(void) {
-      printf("Hello, world");
-      return 0;
-    }
-    ```
-    """
-
-    INDENT_WIDTH = 2
-
-    def __init__(self, filename: str):
-        self._filename: str = filename
-        self._content: List[str] = []
-        self._indentation: int = 0
-
-    def write_line(self, line: str = '') -> None:
-        if line:
-            self._content.append(' ' * self._indentation)
-            self._content.append(line)
-        self._content.append('\n')
-
-    def indent(self) -> 'OutputFile._IndentationContext':
-        """Increases the indentation level of the output."""
-        return self._IndentationContext(self)
-
-    def name(self) -> str:
-        return self._filename
-
-    def content(self) -> str:
-        return ''.join(self._content)
-
-    class _IndentationContext:
-        """Context that increases the output's indentation when it is active."""
-        def __init__(self, output: 'OutputFile'):
-            self._output = output
-
-        def __enter__(self):
-            self._output._indentation += OutputFile.INDENT_WIDTH
-
-        def __exit__(self, typ, value, traceback):
-            self._output._indentation -= OutputFile.INDENT_WIDTH
 
 
 def generate_code_for_message(message: ProtoNode, root: ProtoNode,

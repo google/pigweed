@@ -23,4 +23,13 @@ message TestResponse {
   int32 value = 1;
 }
 
+message TestStreamResponse {
+  bytes chunk = 1;
+}
+
 message Empty {}
+
+service TestService {
+  rpc TestRpc(TestRequest) returns (TestResponse) {}
+  rpc TestStreamRpc(Empty) returns (stream TestStreamResponse) {}
+}
