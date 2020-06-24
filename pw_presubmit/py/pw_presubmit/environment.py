@@ -24,12 +24,13 @@ from pw_presubmit import call
 _LOG = logging.getLogger(__name__)
 
 
-def init_cipd(pigweed_root: Path, output_directory: Path) -> None:
+def init_cipd(
+    pigweed_root: Path,
+    output_directory: Path,
+    package_files: Iterable[Path] = ()) -> None:
     """Runs CIPD."""
 
     # TODO(mohrr): invoke by importing rather than by subprocess.
-
-    # TODO(pwbug/138): find way to support dependent project package files.
 
     cmd = [
         sys.executable,
@@ -38,10 +39,12 @@ def init_cipd(pigweed_root: Path, output_directory: Path) -> None:
         '--install-dir', output_directory,
     ]  # yapf: disable
 
-    package_files = pigweed_root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
-                                          'cipd_setup').glob('*.json')
+    final_package_files = list(
+        pigweed_root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
+                              'cipd_setup').glob('*.json'))
+    final_package_files.extend(package_files)
 
-    for package_file in package_files:
+    for package_file in final_package_files:
         cmd.extend(('--package-file', package_file))
 
     call(*cmd)
