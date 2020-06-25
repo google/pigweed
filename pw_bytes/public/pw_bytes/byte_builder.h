@@ -18,8 +18,8 @@
 #include <cstddef>
 #include <cstring>
 
+#include "pw_bytes/span.h"
 #include "pw_preprocessor/compiler.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
@@ -134,7 +134,7 @@ class ByteBuilder {
   using const_iterator = iterator;
 
   // Creates an empty ByteBuilder.
-  constexpr ByteBuilder(span<std::byte> buffer) : buffer_(buffer), size_(0) {}
+  constexpr ByteBuilder(ByteSpan buffer) : buffer_(buffer), size_(0) {}
 
   // Disallow copy/assign to avoid confusion about where the bytes is actually
   // stored. ByteBuffers may be copied into one another.
@@ -213,7 +213,7 @@ class ByteBuilder {
   ByteBuilder& append(const void* bytes, size_t count);
 
   // Appends bytes from a byte span that calls the pointer/length version.
-  ByteBuilder& append(span<std::byte> bytes) {
+  ByteBuilder& append(ConstByteSpan bytes) {
     return append(bytes.data(), bytes.size());
   }
 
@@ -280,7 +280,7 @@ class ByteBuilder {
 
  protected:
   // Functions to support ByteBuffer copies.
-  constexpr ByteBuilder(const span<std::byte>& buffer, const ByteBuilder& other)
+  constexpr ByteBuilder(const ByteSpan& buffer, const ByteBuilder& other)
       : buffer_(buffer), size_(other.size_), status_(other.status_) {}
 
   void CopySizeAndStatus(const ByteBuilder& other) {
@@ -295,7 +295,7 @@ class ByteBuilder {
   }
   size_t ResizeForAppend(size_t bytes_to_append);
 
-  const span<std::byte> buffer_;
+  const ByteSpan buffer_;
 
   size_t size_;
   Status status_;

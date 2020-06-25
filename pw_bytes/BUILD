@@ -29,6 +29,7 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_bytes/byte_builder.h",
+        "public/pw_bytes/span.h",
     ],
     includes = ["public"],
     deps = [

@@ -21,16 +21,20 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 config("default_config") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("pw_bytes") {
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_bytes/byte_builder.h" ]
+  public = [
+    "public/pw_bytes/byte_builder.h",
+    "public/pw_bytes/span.h",
+  ]
   sources = [ "byte_builder.cc" ]
   public_deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
-    "$dir_pw_status",
+    dir_pw_preprocessor,
+    dir_pw_span,
+    dir_pw_status,
   ]
 }
 

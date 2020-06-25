@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bytes//byte_builder.h"
+#include "pw_bytes/byte_builder.h"
 
 #include <array>
 #include <cstddef>
@@ -30,7 +30,7 @@ namespace pw {
 namespace {
 
 TEST(ByteBuilder, EmptyBuffer_SizeAndMaxSizeAreCorrect) {
-  ByteBuilder bb(span<byte>{});
+  ByteBuilder bb(ByteSpan{});
 
   EXPECT_TRUE(bb.empty());
   EXPECT_EQ(0u, bb.size());
@@ -54,7 +54,7 @@ TEST(ByteBuilder, Constructor_InsertsEmptyBuffer) {
 }
 
 TEST(ByteBuilder, EmptyBuffer_Append) {
-  ByteBuilder bb(span<byte>{});
+  ByteBuilder bb(ByteSpan{});
   EXPECT_TRUE(bb.empty());
 
   auto bytesTestLiteral = MakeBytes(0x04, 0x05);
