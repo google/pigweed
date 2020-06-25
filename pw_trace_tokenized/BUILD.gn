@@ -31,7 +31,10 @@ config("backend_config") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":trace_tokenized_test" ]
+  tests = [
+    ":trace_tokenized_test",
+    ":tokenized_trace_buffer_test",
+  ]
 }
 
 pw_source_set("pw_trace_tokenized") {
@@ -60,6 +63,26 @@ pw_test("trace_tokenized_test") {
   ]
 
   sources = [ "trace_test.cc" ]
+}
+
+pw_source_set("tokenized_trace_buffer") {
+  deps = [ ":pw_trace_tokenized_core" ]
+  public_deps = [
+    "$dir_pw_ring_buffer",
+    "$dir_pw_varint",
+  ]
+  sources = [ "trace_buffer.cc" ]
+  public = [ "public/pw_trace_tokenized/trace_buffer.h" ]
+}
+
+pw_test("tokenized_trace_buffer_test") {
+  enable_if = pw_trace_tokenizer_time != ""
+  deps = [
+    ":tokenized_trace_buffer",
+    "$dir_pw_trace",
+  ]
+
+  sources = [ "trace_buffer_test.cc" ]
 }
 
 pw_source_set("fake_trace_time") {

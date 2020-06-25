@@ -22,7 +22,7 @@ significant changes.
 
 Future work will add:
 
-1. Add an optional ring buffer to store the data.
+1. Add a more complete API for how to retrieve data from ring_buffer.
 2. Add a Python library to decode the trace data.
 3. Add examples with sample output (especially for filtering and triggering).
 4. Add tools to retrieve trace data.
@@ -156,3 +156,27 @@ be done in one of a few ways.
 .. cpp:function:: PW_TRACE_GET_TIME()
 .. cpp:function:: size_t pw_trace_GetTraceTimeTicksPerSecond()
 .. cpp:function:: PW_TRACE_GET_TIME_TICKS_PER_SECOND()
+
+
+------
+Buffer
+------
+The optional trace buffer adds a ring buffer which contains the encoded trace
+data. This is still a work in progress, in particular better methods for
+retireving the data still needs to be added. Currently there is an accessor for
+the underlying ring buffer object, but this is a short term solution.
+
+.. cpp:function:: void ClearBuffer()
+.. cpp:function:: pw::ring_buffer::PrefixedEntryRingBuffer* GetBuffer()
+
+The buffer has two configurable options:
+
+1. PW_TRACE_BUFFER_SIZE_BYTES: The total size of the ring buffer in bytes.
+2. PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES: The maximum single trace object size.
+   Including the token, time, and any attached data. Any trace object larger
+   then this will be dropped.
+
+Added dependencies
+------------------
+``pw_ring_buffer``
+``pw_varint``
