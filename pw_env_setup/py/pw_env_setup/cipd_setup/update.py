@@ -48,6 +48,7 @@ def parse(argv=None):
     )
     parser.add_argument('--package-file',
                         dest='package_files',
+                        metavar='PACKAGE_FILE',
                         action='append')
     parser.add_argument('--cipd',
                         default=os.path.join(script_root, 'wrapper.py'))
@@ -59,8 +60,21 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
-def check_auth(cipd, paths=('pigweed', )):
+def check_auth(cipd, package_files):
     """Check have access to CIPD pigweed directory."""
+
+    paths = []
+    for package_file in package_files:
+        with open(package_file, 'r') as ins:
+            # This is an expensive RPC, so only check the first few entries
+            # in each file.
+            for i, entry in enumerate(json.load(ins)):
+                if i >= 3:
+                    break
+                parts = entry['path'].split('/')
+                while '${' in parts[-1]:
+                    parts.pop(-1)
+                paths.append('/'.join(parts))
 
     try:
         subprocess.check_output([cipd, 'auth-info'], stderr=subprocess.STDOUT)
@@ -74,17 +88,17 @@ def check_auth(cipd, paths=('pigweed', )):
         output = subprocess.check_output([cipd, 'ls', path],
                                          stderr=subprocess.STDOUT).decode()
         if 'No matching packages' in output:
-            print()
-            print('=' * 60, file=sys.stderr)
+            stderr = lambda *args: print(*args, file=sys.stderr)
+            stderr()
+            stderr('=' * 60)
+            stderr('ERROR: no access to CIPD path "{}"'.format(path))
             if logged_in:
-                print('ERROR: no access to CIPD path "{}":'.format(path),
-                      file=sys.stderr)
+                stderr('Your account does not have access to this path')
             else:
-                print('ERROR: no access to CIPD path "{}", try logging in '
-                      'with this command:'.format(path),
-                      file=sys.stderr)
-                print(cipd, 'auth-login', file=sys.stderr)
-            print('=' * 60, file=sys.stderr)
+                stderr('Try logging in with this command:')
+                stderr()
+                stderr('    {} auth-login'.format(cipd))
+            stderr('=' * 60)
             return False
 
     return True
@@ -117,7 +131,7 @@ def update(
 ):
     """Grab the tools listed in ensure_files."""
 
-    if not check_auth(cipd):
+    if not check_auth(cipd, package_files):
         return False
 
     # TODO(mohrr) use os.makedirs(..., exist_ok=True).
