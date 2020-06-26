@@ -123,6 +123,7 @@ source_set("driver_tests") {
     "gatt:testing",
     "testing:fake_controller",
     "testing:testing",
+    "//sdk/lib/inspect/testing/cpp:cpp",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
