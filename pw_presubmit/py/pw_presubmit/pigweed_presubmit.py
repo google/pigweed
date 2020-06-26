@@ -205,6 +205,8 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bpackage.json$',
     r'\byarn.lock$',
     r'\bpw_web_ui/types/serial.d.ts$',
+    r'\.pb\.h$',
+    r'\.pb\.c$',
 )
 
 

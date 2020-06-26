@@ -554,7 +554,7 @@ def filter_paths(endswith: Iterable[str] = (''),
     return filter_paths_for_function
 
 
-@filter_paths(endswith='.h')
+@filter_paths(endswith='.h', exclude=(r'\.pb\.h$', ))
 def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 
