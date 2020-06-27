@@ -71,3 +71,8 @@ fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
   deps = [ ":definitions" ]
 }
+
+fuzzer("pdu_fuzzer") {
+  sources = [ "pdu_fuzztest.cc" ]
+  deps = [ ":sdp" ]
+}
