@@ -12,12 +12,12 @@ development board.
 
 Building
 ========
-To build for this Pigweed target, simply build the top-level "qemu" Ninja
+To build for this Pigweed target, simply build the top-level "qemu_gcc" Ninja
 target.
 
 .. code:: sh
 
-  $ ninja -C out qemu
+  $ ninja -C out qemu_gcc
 
 Testing
 =======

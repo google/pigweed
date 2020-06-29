@@ -111,8 +111,14 @@ if (pw_arduino_build_CORE_PATH != "") {
   }
 }
 
-_build_pigweed_default_at_all_optimization_levels("qemu") {
-  toolchain_prefix = "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_"
+_build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
+  toolchain_prefix =
+      "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_gcc_"
+}
+
+_build_pigweed_default_at_all_optimization_levels("qemu_clang") {
+  toolchain_prefix =
+      "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_clang_"
 }
 
 group("docs") {
@@ -148,6 +154,7 @@ pw_python_group("python") {
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
     "$dir_pw_tokenizer/py",
+    "$dir_pw_toolchain/py",
     "$dir_pw_trace/py",
     "$dir_pw_trace_tokenized/py",
     "$dir_pw_unit_test/py",
@@ -264,7 +271,6 @@ if (current_toolchain != default_toolchain) {
   # Targets for all module unit test groups.
   pw_test_group("pw_module_tests") {
     group_deps = [
-      "$dir_pw_allocator:tests",
       "$dir_pw_assert:tests",
       "$dir_pw_base64:tests",
       "$dir_pw_blob_store:tests",
@@ -305,6 +311,19 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
     ]
+
+    # TODO(pwbug/315): Fix pw_allocator tests on ARM Clang build.
+    _qemu_toolchains = [
+      "lm3s6965evb_qemu_clang_debug",
+      "lm3s6965evb_qemu_clang_size_optimized",
+      "lm3s6965evb_qemu_clang_speed_optimized",
+    ]
+    _toolchain_is_qemu_clang =
+        _qemu_toolchains + [ get_label_info(current_toolchain, "name") ] -
+        [ get_label_info(current_toolchain, "name") ] != _qemu_toolchains
+    if (!_toolchain_is_qemu_clang) {
+      group_deps += [ "$dir_pw_allocator:tests" ]
+    }
 
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain) {

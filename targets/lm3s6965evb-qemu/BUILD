@@ -25,7 +25,7 @@ pw_cc_library(
     name = "pre_init",
     srcs = [
         "boot.cc",
-        "vector_table.cc"
+        "vector_table.c"
     ],
     deps = [
         "//pw_boot_armv7m",

@@ -275,7 +275,7 @@ void BeginExtendedFaultTest() {
       // clang-format off
       : /*output=*/[local_msp]"=r"(local_msp), [local_psp]"=r"(local_psp)
       : /*input=*/[magic]"r"(magic)
-      : /*clobbers=*/"r4", "r5", "r11", "memory"
+      : /*clobbers=*/"r0", "r4", "r5", "r11", "memory"
       // clang-format on
   );
 
@@ -314,7 +314,7 @@ void BeginExtendedFaultUnalignedStackTest() {
       // clang-format off
       : /*output=*/[local_msp]"=r"(local_msp), [local_psp]"=r"(local_psp)
       : /*input=*/[magic]"r"(magic)
-      : /*clobbers=*/"r4", "r5", "r11", "memory"
+      : /*clobbers=*/"r0", "r4", "r5", "r11", "memory"
       // clang-format on
   );
 
@@ -567,6 +567,14 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
     trigger_nested_fault = false;
     BeginNestedFaultTest();
   }
+  // Logging may require FPU (fpu instructions in vsnprintf()), so re-enable
+  // asap.
+  EnableFpu();
+
+  // Disable traps. Must be disabled before EXPECT, as memcpy() can do unaligned
+  // operations.
+  cortex_m_ccr &= ~kUnalignedTrapEnableMask;
+  cortex_m_ccr &= ~kDivByZeroTrapEnableMask;
 
   // Clear HFSR forced (nested) hard fault mask if set. This will only be
   // set by the nested fault test.
@@ -582,7 +590,6 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
                 sizeof(pw_cpu_exception_State));
 
     // Disable unaligned read/write trapping to "handle" exception.
-    cortex_m_ccr &= ~kUnalignedTrapEnableMask;
     cortex_m_cfsr = kUnalignedFaultMask;
     exceptions_handled++;
     return;
@@ -602,7 +609,6 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
     }
 
     // Disable divide-by-zero trapping to "handle" exception.
-    cortex_m_ccr &= ~kDivByZeroTrapEnableMask;
     cortex_m_cfsr = kDivByZeroFaultMask;
     exceptions_handled++;
     return;

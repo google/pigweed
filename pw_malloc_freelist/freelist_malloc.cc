@@ -17,13 +17,13 @@
 #include "pw_allocator/freelist_heap.h"
 #include "pw_boot_armv7m/boot.h"
 #include "pw_malloc/malloc.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
 namespace {
 std::aligned_storage_t<sizeof(pw::allocator::FreeListHeapBuffer<>),
                        alignof(pw::allocator::FreeListHeapBuffer<>)>
     buf;
-std::span<std::byte> pw_allocator_freelist_raw_heap;
 }  // namespace
 pw::allocator::FreeListHeapBuffer<>* pw_freelist_heap;
 

@@ -61,25 +61,21 @@ PW_PACKED(struct) GpioBlock {
 };
 
 // Constants related to GPIO mode register masks.
-constexpr uint32_t kGpioPortModeMask = 0x3u;
 constexpr uint32_t kGpio9PortModePos = 18;
 constexpr uint32_t kGpio10PortModePos = 20;
 constexpr uint32_t kGpioPortModeAlternate = 2;
 
 // Constants related to GPIO port speed register masks.
-constexpr uint32_t kGpioPortSpeedMask = 0x3u;
 constexpr uint32_t kGpio9PortSpeedPos = 18;
 constexpr uint32_t kGpio10PortSpeedPos = 20;
 constexpr uint32_t kGpioSpeedVeryHigh = 3;
 
 // Constants related to GPIO pull up/down resistor type masks.
-constexpr uint32_t kGpioPullTypeMask = 0x3u;
 constexpr uint32_t kGpio9PullTypePos = 18;
 constexpr uint32_t kGpio10PullTypePos = 20;
 constexpr uint32_t kPullTypePullUp = 1;
 
 // Constants related to GPIO port speed register masks.
-constexpr uint32_t kGpioAltModeMask = 0x3u;
 constexpr uint32_t kGpio9AltModeHighPos = 4;
 constexpr uint32_t kGpio10AltModeHighPos = 8;
 

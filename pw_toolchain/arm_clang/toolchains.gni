@@ -1,0 +1,115 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+# Specifies the tools used by host Clang toolchains.
+_arm_clang_toolchain = {
+  # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
+  # ar. This should get updated for linux systems.
+  ar = "ar"
+  cc = "clang"
+  cxx = "clang++"
+
+  link_whole_archive = true
+}
+
+# Configs specific to different architectures.
+_cortex_m3 = [ "$dir_pw_toolchain/arm_clang:cortex_m3" ]
+
+_cortex_m4 = [ "$dir_pw_toolchain/arm_clang:cortex_m4" ]
+
+_cortex_m4f = [ "$dir_pw_toolchain/arm_clang:cortex_m4f" ]
+
+# Describes ARM clang toolchains for specific targets.
+pw_toolchain_arm_clang = {
+  cortex_m3_debug = {
+    name = "arm_clang_cortex_m3_debug"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m3_speed_optimized = {
+    name = "arm_clang_cortex_m3_speed_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m3_size_optimized = {
+    name = "arm_clang_cortex_m3_size_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m3 + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
+  cortex_m4_debug = {
+    name = "arm_clang_cortex_m4_debug"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m4_speed_optimized = {
+    name = "arm_clang_cortex_m4_speed_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m4_size_optimized = {
+    name = "arm_clang_cortex_m4_size_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4 + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
+  cortex_m4f_debug = {
+    name = "arm_clang_cortex_m4f_debug"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m4f_speed_optimized = {
+    name = "arm_clang_cortex_m4f_speed_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m4f_size_optimized = {
+    name = "arm_clang_cortex_m4f_size_optimized"
+    forward_variables_from(_arm_clang_toolchain, "*")
+    defaults = {
+      default_configs = _cortex_m4f + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
+}
+
+# This list just contains the members of the above scope for convenience to make
+# it trivial to generate all the toolchains in this file via a
+# `generate_toolchains` target.
+pw_toolchain_arm_clang_list = [
+  pw_toolchain_arm_clang.cortex_m3_debug,
+  pw_toolchain_arm_clang.cortex_m3_speed_optimized,
+  pw_toolchain_arm_clang.cortex_m3_size_optimized,
+  pw_toolchain_arm_clang.cortex_m4_debug,
+  pw_toolchain_arm_clang.cortex_m4_speed_optimized,
+  pw_toolchain_arm_clang.cortex_m4_size_optimized,
+  pw_toolchain_arm_clang.cortex_m4f_debug,
+  pw_toolchain_arm_clang.cortex_m4f_speed_optimized,
+  pw_toolchain_arm_clang.cortex_m4f_size_optimized,
+]

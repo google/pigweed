@@ -25,10 +25,7 @@ constexpr uint32_t kSystemCoreClock = 12000000;
 
 // UART status flags.
 constexpr uint32_t kTxFifoEmptyMask = 0b10000000;
-constexpr uint32_t kTxFifoFullMask = 0b1000000;
 constexpr uint32_t kRxFifoFullMask = 0b100000;
-constexpr uint32_t kRxFifoEmptyMask = 0b10000;
-constexpr uint32_t kTxBusyMask = 0b1000;
 
 // UART line control flags.
 // Default: 8n1

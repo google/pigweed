@@ -43,7 +43,7 @@ if (current_toolchain != default_toolchain) {
     ]
     sources = [
       "boot.cc",
-      "vector_table.cc",
+      "vector_table.c",
     ]
   }
 

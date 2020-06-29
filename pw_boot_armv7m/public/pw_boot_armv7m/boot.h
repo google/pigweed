@@ -85,7 +85,7 @@ int main();
 // (which usually points to Reset_Handler) must be set to point to this
 // function. This function is implemented by pw_boot_armv7m, and does early
 // memory initialization.
-PW_NO_PROLOGUE void pw_boot_Entry();
+PW_NO_RETURN void pw_boot_Entry();
 
 // pw_boot hook: Before static memory is initialized (user supplied)
 //

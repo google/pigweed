@@ -36,12 +36,12 @@ int main() {
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
 
   void* result =
-      std::memset((void*)working_buffer, sizeof(working_buffer), 0x55);
+      std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
   is_set = (result != nullptr);
 
   test_partition.Erase();
 
-  std::memset((void*)working_buffer, sizeof(working_buffer), 0x55);
+  std::memset((void*)working_buffer, 0x55, sizeof(working_buffer));
 
   test_partition.Write(0, std::as_bytes(std::span(working_buffer)));
 

@@ -179,6 +179,12 @@ SECTIONS
     . = _stack_high;
     pw_boot_stack_high_addr = .;
   } >RAM
+
+  /* Discard unwind info. */
+  .ARM.extab 0x0 (INFO) :
+  {
+    KEEP(*(.ARM.extab*))
+  }
 }
 
 /* Symbols used by core_init.c: */

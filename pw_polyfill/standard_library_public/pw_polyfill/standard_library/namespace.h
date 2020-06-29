@@ -13,9 +13,9 @@
 // the License.
 #pragma once
 
-// Clang uses a special namespace for standard library headers. Use this
+// libc++ uses a special namespace for standard library headers. Use this
 // namespace via the defines in <__config>.
-#if defined(__clang__) && __has_include(<__config>)
+#if defined(_LIBCPP_VERSION) && __has_include(<__config>)
 
 #include <__config>
 
@@ -27,11 +27,11 @@
 #define _PW_POLYFILL_BEGIN_NAMESPACE_STD namespace std {
 #define _PW_POLYFILL_END_NAMESPACE_STD }  // namespace std
 
-// Cannot compile with Clang / libc++ without the <__config> header.
-#ifdef __clang__
+// Cannot compile when using libc++ without the <__config> header.
+#ifdef _LIBCPP_VERSION
 static_assert(
     false,
-    "Compiling with Clang, but the <__config> header is not available. "
+    "Compiling against libc++, but the <__config> header is not available. "
     "The <__config> header provides various _LIBCPP defines used internally "
     "by libc++. pw_polyfill needs this header for the "
     "_LIBCPP_BEGIN_NAMESPACE_STD and _LIBCPP_END_NAMESPACE_STD macros, which "
@@ -43,6 +43,6 @@ static_assert(
     "<__config>, in which this file should be updated to properly "
     "set _PW_POLYFILL_BEGIN_NAMESPACE_STD and _PW_POLYFILL_END_NAMESPACE_STD.");
 
-#endif  // __clang__
+#endif  // _LIBCPP_VERSION
 
-#endif  // defined(__clang__) && __has_include(<__config>)
+#endif  // defined(_LIBCPP_VERSION) && __has_include(<__config>)

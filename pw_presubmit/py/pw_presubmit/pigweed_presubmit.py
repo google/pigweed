@@ -137,7 +137,13 @@ def gn_teensy_build(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu'))
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'))
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_qemu_clang_build(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_clang'))
 
 
 def gn_docs_build(ctx: PresubmitContext):
@@ -501,8 +507,6 @@ def commit_message_format(_: PresubmitContext):
 BROKEN = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
-    # QEMU build. Currently doesn't have test runners.
-    gn_qemu_build,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
@@ -538,6 +542,9 @@ FULL = (
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now.
     gn_gcc_build if sys.platform != 'darwin' else (),
+    # Windows doesn't support QEMU yet.
+    gn_qemu_build if sys.platform != 'win32' else (),
+    gn_qemu_clang_build if sys.platform != 'win32' else (),
     source_is_in_build_files,
     python_checks,
     build_env_setup,
