@@ -164,3 +164,11 @@ fuzzer("bredr_dynamic_channel_registry_fuzzer") {
     ":testing",
   ]
 }
+
+fuzzer("channel_configuration_fuzzer") {
+  sources = [ "channel_configuration_fuzztest.cc" ]
+  deps = [
+    ":l2cap",
+    ":testing",
+  ]
+}
