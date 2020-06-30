@@ -650,6 +650,22 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseParse) {
 
   EXPECT_FALSE(status);
 
+  const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
+      0x00, 0x11,  // AttributeListByteCount (17 bytes)
+      // Attribute List
+      0x35, 0x0F,                    // Sequence uint8 15 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
+      0x08, 0x01,                    // Handle: uint8_t (!) (1 = kServiceClassIdList)
+      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
+      0x00                           // No continuation state
+  );
+
+  ServiceAttributeResponse resp_wrongtype;
+  status = resp_wrongtype.Parse(kInvalidHandleWrongType);
+
+  EXPECT_FALSE(status);
+
   const auto kInvalidByteCount = CreateStaticByteBuffer(
       0x00, 0x12,  // AttributeListByteCount (18 bytes)
       // Attribute List (only 17 bytes long)
@@ -1012,6 +1028,24 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseParse) {
 
   ServiceSearchAttributeResponse resp3;
   status = resp3.Parse(kInvalidItemsWrongOrder);
+
+  EXPECT_FALSE(status);
+
+  const auto kInvalidHandleWrongType = CreateStaticByteBuffer(
+      0x00, 0x13,  // AttributeListByteCount (19 bytes)
+      // Wrapping Attribute List
+      0x35, 0x11,  // Sequence uint8 17 bytes
+      // Attribute List
+      0x35, 0x0F,                    // Sequence uint8 15 bytes
+      0x09, 0x00, 0x00,              // Handle: uint16_t (0 = kServiceRecordHandle)
+      0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
+      0x08, 0x01,                    // Handle: uint8_t (!) (1 = kServiceClassIdList)
+      0x35, 0x03, 0x19, 0x11, 0x01,  // Element: Sequence (3) { UUID(0x1101) }
+      0x00                           // No continuation state
+  );
+
+  ServiceAttributeResponse resp_wrongtype;
+  status = resp_wrongtype.Parse(kInvalidHandleWrongType);
 
   EXPECT_FALSE(status);
 

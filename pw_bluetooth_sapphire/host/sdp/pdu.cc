@@ -607,17 +607,17 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   size_t idx = 0;
   for (auto* it = attribute_list.At(0); it != nullptr; it = attribute_list.At(idx)) {
     auto* val = attribute_list.At(idx + 1);
-    if ((it->type() != DataElement::Type::kUnsignedInt) || (val == nullptr)) {
+    std::optional<AttributeId> id = it->Get<uint16_t>();
+    if (!id || (val == nullptr)) {
       attributes_.clear();
       return Status(HostError::kPacketMalformed);
     }
-    AttributeId id = *(it->Get<uint16_t>());
-    if (id < last_id) {
+    if (*id < last_id) {
       attributes_.clear();
       return Status(HostError::kPacketMalformed);
     }
-    attributes_.emplace(id, val->Clone());
-    last_id = id;
+    attributes_.emplace(*id, val->Clone());
+    last_id = *id;
     idx += 2;
   }
   return Status();
@@ -941,20 +941,20 @@ Status ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf) {
     size_t idx = 0;
     for (auto* it = list_it->At(0); it != nullptr; it = list_it->At(idx)) {
       auto* val = list_it->At(idx + 1);
-      if ((it->type() != DataElement::Type::kUnsignedInt) || (val == nullptr)) {
+      std::optional<AttributeId> id = it->Get<uint16_t>();
+      if (!id || (val == nullptr)) {
         attribute_lists_.clear();
-        bt_log(TRACE, "sdp", "attribute isn't a ptr or doesn't exist");
+        bt_log(TRACE, "sdp", "attribute isn't a number or value doesn't exist");
         return Status(HostError::kPacketMalformed);
       }
       bt_log(TRACE, "sdp", "adding %zu:%s = %s", list_idx, bt_str(*it), bt_str(*val));
-      AttributeId id = *(it->Get<uint16_t>());
-      if (id < last_id) {
+      if (*id < last_id) {
         attribute_lists_.clear();
         bt_log(TRACE, "sdp", "attribute ids are in wrong order");
         return Status(HostError::kPacketMalformed);
       }
-      attribute_lists_.at(list_idx).emplace(id, val->Clone());
-      last_id = id;
+      attribute_lists_.at(list_idx).emplace(*id, val->Clone());
+      last_id = *id;
       idx += 2;
     }
   }

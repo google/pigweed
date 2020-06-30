@@ -333,6 +333,15 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   records2.emplace_back(std::move(psm_wrong_argtype));
   EXPECT_FALSE(server()->RegisterService(std::move(records2), kChannelParams, {}));
 
+  ServiceRecord psm_wrong_intsize;
+  psm_wrong_intsize.SetServiceClassUUIDs({profile::kAVRemoteControl});
+  psm_wrong_intsize.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                                          DataElement(uint8_t(5)));
+
+  std::vector<ServiceRecord> records_wrong_intsize;
+  records_wrong_intsize.emplace_back(std::move(psm_wrong_intsize));
+  EXPECT_FALSE(server()->RegisterService(std::move(records_wrong_intsize), kChannelParams, {}));
+
   ServiceRecord psm_rfcomm;
   psm_rfcomm.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,

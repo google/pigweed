@@ -41,7 +41,7 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   }
 
   const auto* psm_elem = l2cap_protocol->At(1);
-  if (psm_elem && psm_elem->type() == DataElement::Type::kUnsignedInt) {
+  if (psm_elem && psm_elem->Get<uint16_t>()) {
     return *psm_elem->Get<uint16_t>();
   } else if (psm_elem) {
     bt_log(TRACE, "sdp", "ProtocolDescriptorList invalid L2CAP parameter type");
