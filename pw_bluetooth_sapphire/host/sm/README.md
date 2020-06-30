@@ -3,19 +3,21 @@ This directory contains Fuchsia's implementation of the Security Manager Protoco
 
 
 ## Feature support
-Description                                            | Level of Support
--------------------------------------------------------|---------------------------
-SMP over BR/EDR                                        | Not Supported
-LE Security Mode 1 (encrypted security levels)         | Up to Mode 1 Level 3
-LE Security Mode 2 (unencrypted, data-signed security) | Not Supported
-Legacy Pairing                                         | Supported
-Secure Connections Pairing                             | Supported
-Out of Band Pairing                                    | Not Supported
-Identity Resolving Key (IRK) Exchange                  | Supported
-Connection Signature Resolving Key (CSRK) Exchange     | Not Supported
-Cross-Transport Key Generation                         | Not Supported
-Slave Security Request                                 | Not Supported
+Description                                                | Level of Support
+-----------------------------------------------------------|---------------------------
+SMP over BR/EDR                                            | Not Supported
+GAP LE Security Mode 1 (encrypted security levels)         | Supported
+GAP LE Security Mode 2 (unencrypted, data-signed security) | Not Supported
+GAP LE Security Mode 3 (Broadcast_Code encrypted security) | Not Supported
+Legacy Pairing                                             | Supported
+Secure Connections Pairing                                 | Supported
+Out of Band Pairing                                        | Not Supported
+Identity Resolving Key (IRK) Exchange                      | Supported
+Connection Signature Resolving Key (CSRK) Exchange         | Not Supported
+Cross-Transport Key Generation                             | Not Supported
+SMP Security Request                                       | Supported
 
+See Core Specification v5.2 Volume 3 Part C Section 10.2 for more information about the GAP LE Security Modes.
 
 ## Library interface
 The Fuchsia SMP library exposes its functionality through the [`PairingState`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h) class. Each Bluetooth connection is expected to instantiate its own `PairingState`, i.e. there is no singleton "Security Manager" in Fuchsia's Bluetooth. **The SM library expects that clients will only directly instantiate the PairingState class, not any other internal classes. All callbacks related to SMP, including HCI link and L2CAP channel callbacks, must be run on the same thread as the instantiated PairingState.** The public interface of PairingState is the intended public interface for the SM library as a whole. Documentation can be found in the [`PairingState` header](/src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h).
