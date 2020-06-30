@@ -40,10 +40,16 @@ class FakePeer {
   // Toggles whether the address of this device represents a resolved RPA.
   void set_address_resolved(bool value) { address_resolved_ = value; }
 
-  bool has_inquiry_response() {
+  // TODO(armansito): Come up with a better scheme to determine supported transport type instead of
+  // relying on address type, which doesn't translate well to dual-mode.
+  bool supports_bredr() const {
     // All BR/EDR devices have inquiry responses.
     return address().type() == DeviceAddress::Type::kBREDR;
   }
+
+  // TODO(armansito): Come up with a better scheme to determine supported transport type instead of
+  // relying on address type, which doesn't translate well to dual-mode.
+  bool supports_le() const { return address().type() != DeviceAddress::Type::kBREDR; }
 
   // |should_batch_reports| indicates to the FakeController that the SCAN_IND
   // report should be included in the same HCI LE Advertising Report Event

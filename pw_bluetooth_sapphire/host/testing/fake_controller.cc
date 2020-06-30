@@ -490,7 +490,7 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci::OpCode opcode) {
 void FakeController::SendInquiryResponses() {
   // TODO(jamuraa): combine some of these into a single response event
   for (const auto& [addr, peer] : peers_) {
-    if (!peer->has_inquiry_response()) {
+    if (!peer->supports_bredr()) {
       continue;
     }
 
@@ -518,7 +518,7 @@ void FakeController::SendAdvertisingReports() {
 }
 
 void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
-  if (!le_scan_state_.enabled) {
+  if (!le_scan_state_.enabled || !peer.supports_le()) {
     return;
   }
   // We want to send scan response packets only during an active scan and if
