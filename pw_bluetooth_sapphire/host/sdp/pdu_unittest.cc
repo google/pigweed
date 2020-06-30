@@ -538,7 +538,7 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
       CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00,  // ServiceRecordHandle: 0
                              0xFF, 0xFF,              // Maximum attribute byte count: (max = 65535)
                              // Attribute ID List
-                             0x35, 0x06,        // Sequence uint8 5 bytes
+                             0x35, 0x06,        // Sequence uint8 6 bytes
                              0x09, 0x00, 0x02,  // uint16_t (2)
                              0x09, 0x00, 0x01,  // uint16_t (1)
                              0x00               // No continuation state
@@ -562,6 +562,16 @@ TEST_F(SDP_PDUTest, ServiceAttributeRequestParse) {
   ServiceAttributeRequest req_baditems(kInvalidAttributeList);
 
   EXPECT_FALSE(req_baditems.valid());
+
+  // AttributeID list is empty
+  const auto kInvalidNoItems = CreateStaticByteBuffer(0x00, 0x00, 0x00, 0x00, // ServiceRecordHandle: 0
+                                                      0xFF, 0xFF, // Maximum attribute byte count: max
+                                                      0x35, 0x00, // Sequence uint8 no bytes
+                                                      0x00 // No continuation state
+  );
+
+  ServiceAttributeRequest req_noitems(kInvalidNoItems);
+  EXPECT_FALSE(req_noitems.valid());
 }
 
 TEST_F(SDP_PDUTest, ServiceAttributeRequestGetPDU) {
@@ -841,6 +851,18 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeRequestParse) {
 
   ServiceSearchAttributeRequest req_noitems(kInvalidNoItems);
   EXPECT_FALSE(req_noitems.valid());
+
+  const auto kInvalidNoAttributes =
+      CreateStaticByteBuffer(0x35, 0x03,  // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xF0, 0x0F,  // Maximum attribute byte count (61455)
+                             // Attribute ID List
+                             0x35, 0x00,        // Sequence uint8 0 bytes
+                             0x00               // No continuation state
+      );
+
+  ServiceSearchAttributeRequest req_noattributes(kInvalidNoAttributes);
+  EXPECT_FALSE(req_noattributes.valid());
 
   const auto kInvalidTooManyItems = CreateStaticByteBuffer(
       // ServiceSearchPattern

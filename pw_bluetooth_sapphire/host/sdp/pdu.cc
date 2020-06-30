@@ -76,6 +76,7 @@ size_t ReadAttributeIDList(const ByteBuffer& buf, std::list<AttributeRange>* att
   size_t elem_size = DataElement::Read(&attribute_list_elem, buf);
   if ((elem_size == 0) || (attribute_list_elem.type() != DataElement::Type::kSequence)) {
     bt_log(TRACE, "sdp", "failed to parse attribute ranges, or not a sequence");
+    attribute_ranges->clear();
     return 0;
   }
   uint16_t last_attr = 0x0000;
@@ -442,7 +443,7 @@ ServiceAttributeRequest::ServiceAttributeRequest(const ByteBuffer& params) {
   read_size += sizeof(uint16_t);
 
   size_t elem_size = ReadAttributeIDList(params.view(read_size), &attribute_ranges_);
-  if (elem_size == 0) {
+  if (attribute_ranges_.size() == 0) {
     max_attribute_byte_count_ = 0;
     return;
   }
@@ -754,7 +755,7 @@ ServiceSearchAttributeRequest::ServiceSearchAttributeRequest(const ByteBuffer& p
   read_size += sizeof(uint16_t);
 
   size_t elem_size = ReadAttributeIDList(params.view(read_size), &attribute_ranges_);
-  if (elem_size == 0) {
+  if (attribute_ranges_.size() == 0) {
     max_attribute_byte_count_ = 0;
     return;
   }
