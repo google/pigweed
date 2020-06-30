@@ -172,3 +172,11 @@ fuzzer("channel_configuration_fuzzer") {
     ":testing",
   ]
 }
+
+fuzzer("common_handler_fuzzer") {
+  sources = [ "common_handler_fuzztest.cc" ]
+  deps = [
+    ":l2cap",
+    ":testing",
+  ]
+}

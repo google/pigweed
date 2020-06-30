@@ -163,6 +163,7 @@ fuzzers_package("fuzzers") {
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
     "l2cap:bredr_dynamic_channel_registry_fuzzer",
     "l2cap:channel_configuration_fuzzer",
+    "l2cap:common_handler_fuzzer",
     "sdp:data_element_fuzzer",
     "sdp:pdu_fuzzer",
   ]
