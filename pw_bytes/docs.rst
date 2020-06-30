@@ -34,6 +34,10 @@ Utilities for building byte arrays at run time
 -``PutInt32``, ``PutUInt32``: Inserts 32-bit integers in little/big endian.
 -``PutInt64``, ``PutInt64``: Inserts 64-bit integers in little/big endian.
 
+Size report: using ByteBuffer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. include:: byte_builder_size_report
+
 Future work
 ^^^^^^^^^^^
 - Utilities for building byte arrays at compile time.
