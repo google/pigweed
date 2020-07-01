@@ -131,4 +131,16 @@ StatusWithSize FakeFlashMemory::Write(Address address,
   return StatusWithSize(status, data.size());
 }
 
+std::byte* FakeFlashMemory::FlashAddressToMcuAddress(Address address) const {
+  if (address > sector_count() * sector_size_bytes()) {
+    PW_LOG_ERROR(
+        "FlashAddressToMcuAddress beyond end of memory; address %x, max "
+        "address %x",
+        unsigned(address),
+        unsigned(sector_count() * sector_size_bytes()));
+    return nullptr;
+  }
+  return buffer_.data() + address;
+}
+
 }  // namespace pw::kvs

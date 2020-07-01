@@ -116,6 +116,8 @@ class FakeFlashMemory : public FlashMemory {
   StatusWithSize Write(Address address,
                        std::span<const std::byte> data) override;
 
+  std::byte* FlashAddressToMcuAddress(Address) const override;
+
   // Testing API
 
   // Access the underlying buffer for testing purposes. Not part of the
