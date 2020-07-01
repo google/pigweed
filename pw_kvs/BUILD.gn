@@ -46,6 +46,7 @@ pw_source_set("pw_kvs") {
     "public/pw_kvs/internal/key_descriptor.h",
     "public/pw_kvs/internal/sectors.h",
     "public/pw_kvs/internal/span_traits.h",
+    "pw_kvs_private/config.h",
     "pw_kvs_private/macros.h",
     "sectors.cc",
   ]
@@ -83,6 +84,17 @@ pw_source_set("fake_flash") {
   deps = [ dir_pw_log ]
 }
 
+pw_source_set("flash_partition_test") {
+  public = [ "public/pw_kvs/flash_partition_test.h" ]
+  sources = [ "flash_partition_test.cc" ]
+  deps = [
+    dir_pw_kvs,
+    dir_pw_log,
+    dir_pw_span,
+    dir_pw_unit_test,
+  ]
+}
+
 pw_source_set("test_utils") {
   public_configs = [ ":default_config" ]
   public = [ "pw_kvs_private/byte_utils.h" ]
@@ -107,6 +119,7 @@ pw_test_group("tests") {
     ":checksum_test",
     ":entry_test",
     ":entry_cache_test",
+    ":fake_flash_partition_test",
     ":key_value_store_test",
     ":key_value_store_binary_format_test",
     ":key_value_store_fuzz_test",
@@ -147,6 +160,15 @@ pw_test("entry_cache_test") {
     ":test_utils",
   ]
   sources = [ "entry_cache_test.cc" ]
+}
+
+pw_test("fake_flash_partition_test") {
+  deps = [
+    ":fake_flash",
+    ":flash_partition_test",
+    dir_pw_log,
+  ]
+  sources = [ "fake_flash_partition_test.cc" ]
 }
 
 pw_test("key_value_store_test") {

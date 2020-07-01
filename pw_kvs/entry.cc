@@ -19,10 +19,18 @@
 #include <cinttypes>
 #include <cstring>
 
+#include "pw_kvs_private/config.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs::internal {
+
+static_assert(
+    kMaxFlashAlignment >= Entry::kMinAlignmentBytes,
+    "Flash alignment is required to be at least Entry::kMinAlignmentBytes");
+
+constexpr size_t kWriteBufferSize =
+    std::max(kMaxFlashAlignment, 4 * Entry::kMinAlignmentBytes);
 
 using std::byte;
 using std::string_view;
@@ -93,11 +101,11 @@ Entry::Entry(FlashPartition& partition,
 StatusWithSize Entry::Write(string_view key,
                             std::span<const byte> value) const {
   FlashPartition::Output flash(partition(), address_);
-  return AlignedWrite<64>(flash,
-                          alignment_bytes(),
-                          {std::as_bytes(std::span(&header_, 1)),
-                           std::as_bytes(std::span(key)),
-                           value});
+  return AlignedWrite<kWriteBufferSize>(flash,
+                                        alignment_bytes(),
+                                        {std::as_bytes(std::span(&header_, 1)),
+                                         std::as_bytes(std::span(key)),
+                                         value});
 }
 
 Status Entry::Update(const EntryFormat& new_format,
@@ -122,7 +130,7 @@ StatusWithSize Entry::Copy(Address new_address) const {
                transaction_id());
 
   FlashPartition::Output output(partition(), new_address);
-  AlignedWriterBuffer<4 * kMinAlignmentBytes> writer(alignment_bytes(), output);
+  AlignedWriterBuffer<kWriteBufferSize> writer(alignment_bytes(), output);
 
   // Use this object's header rather than the header in flash of flash, since
   // this Entry may have been updated.

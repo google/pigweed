@@ -157,7 +157,7 @@ typedef FlashWithPartitionFake<4 * 128 /*sector size*/, 6 /*sectors*/> Flash;
 // Although it might be useful to test other configurations, some tests require
 // at least 3 sectors; therfore it should have this when checked in.
 FakeFlashMemoryBuffer<4 * 1024, 6> test_flash(
-    16);  // 4 x 4k sectors, 16 byte alignment
+    16);  // 6 x 4k sectors, 16 byte alignment
 FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 FakeFlashMemoryBuffer<1024, 60> large_test_flash(8);
 FlashPartition large_test_partition(&large_test_flash,
@@ -1332,9 +1332,7 @@ TEST_F(EmptyInitializedKvs, ValueSize_DeletedKey) {
 class LargeEmptyInitializedKvs : public ::testing::Test {
  protected:
   LargeEmptyInitializedKvs() : kvs_(&large_test_partition, default_format) {
-    ASSERT_EQ(
-        Status::OK,
-        large_test_partition.Erase(0, large_test_partition.sector_count()));
+    ASSERT_EQ(Status::OK, large_test_partition.Erase());
     ASSERT_EQ(Status::OK, kvs_.Init());
   }
 

@@ -117,7 +117,7 @@ class FlashMemory {
  private:
   const uint32_t sector_size_;
   const uint32_t flash_sector_count_;
-  const uint8_t alignment_;
+  const uint32_t alignment_;
   const uint32_t start_address_;
   const uint32_t start_sector_;
   const std::byte erased_memory_content_;

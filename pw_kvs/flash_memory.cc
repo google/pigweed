@@ -20,6 +20,7 @@
 #include <cinttypes>
 #include <cstring>
 
+#include "pw_kvs_private/config.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status_with_size.h"
@@ -66,22 +67,25 @@ StatusWithSize FlashPartition::Write(Address address,
 Status FlashPartition::IsRegionErased(Address source_flash_address,
                                       size_t length,
                                       bool* is_erased) {
-  // Max alignment is artificial to keep the stack usage low for this
-  // function. Using 16 because it's the alignment of encrypted flash.
-  constexpr size_t kMaxAlignment = 16;
-
   // Relying on Read() to check address and len arguments.
   if (is_erased == nullptr) {
     return Status::INVALID_ARGUMENT;
   }
+
+  // TODO(pwbug/214): Currently using a single flash alignment to do both the
+  // read and write. The allowable flash read length may be less than what write
+  // needs (possibly by a bunch), resulting in buffer and erased_pattern_buffer
+  // being bigger than they need to be.
   const size_t alignment = alignment_bytes();
-  if (alignment > kMaxAlignment || kMaxAlignment % alignment ||
+  if (alignment > kMaxFlashAlignment || kMaxFlashAlignment % alignment ||
       length % alignment) {
     return Status::INVALID_ARGUMENT;
   }
 
-  byte buffer[kMaxAlignment];
-  byte erased_pattern_buffer[kMaxAlignment];
+  byte buffer[kMaxFlashAlignment];
+
+  // TODO(pwrev/215): Stop using erased_pattern_buffer to save stack.
+  byte erased_pattern_buffer[kMaxFlashAlignment];
 
   size_t offset = 0;
   std::memset(erased_pattern_buffer,

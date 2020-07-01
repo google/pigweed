@@ -38,6 +38,7 @@ pw_cc_library(
         "public/pw_kvs/internal/key_descriptor.h",
         "public/pw_kvs/internal/sectors.h",
         "public/pw_kvs/internal/span_traits.h",
+        "pw_kvs_private/config.h",
         "pw_kvs_private/macros.h",
         "sectors.cc",
     ],
@@ -89,6 +90,21 @@ pw_cc_library(
         "//pw_log:facade",
         "//pw_span",
         "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "flash_partition_test",
+    srcs = [
+        "flash_partition_test.cc",
+    ],
+    hdrs = [
+        "public/pw_kvs/flash_partition_test.h",
+    ],
+    deps = [
+        ":pw_kvs",
+        "//pw_log",
+        "//pw_span",
     ],
 )
 
@@ -164,6 +180,17 @@ pw_cc_test(
     deps = [
         ":pw_kvs",
         ":test_utils",
+        "//pw_log:backend",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "fake_flash_partition_test",
+    srcs = ["fake_flash_partition_test.cc"],
+    deps = [
+        ":pw_kvs",
+        ":flash_partition_test",
         "//pw_log:backend",
         "//pw_unit_test",
     ],
