@@ -195,41 +195,13 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
     return;
   }
 
-  auto gatt_device = std::make_unique<GattRemoteServiceDevice>(peer_id, service);
-  zx_status_t status = gatt_device->Bind(dev_);
-  if (status != ZX_OK) {
-    return;
-  }
-
-  auto ptr = gatt_device.release();
-  gatt_devices_.insert(ptr);
-  service->AddRemovedHandler([this, ptr] {
-    std::lock_guard<std::mutex> lock(mtx_);
-
-    auto iter = gatt_devices_.find(ptr);
-    if (iter == gatt_devices_.end()) {
-      // This can happen if the child was already removed in HostDevice::CleanUp() as a result of
-      // the HCI device unbind sequence.
-      bt_log(TRACE, "bt-host", "bt-gatt-svc child already unpublished");
-      return;
-    }
-
-    ptr->Unbind();
-    gatt_devices_.erase(iter);
-  });
+  __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(dev_, peer_id, service);
 }
 
 void HostDevice::CleanUp() {
   bt_log(DEBUG, "bt-host", "clean up");
 
-  // Explicitly unbind all published bt-gatt-svc children.
-  auto children = std::move(gatt_devices_);
-  for (auto* child : children) {
-    child->Unbind();
-  }
-
   host_ = nullptr;
-
   if (dev_) {
     device_async_remove(dev_);
     dev_ = nullptr;

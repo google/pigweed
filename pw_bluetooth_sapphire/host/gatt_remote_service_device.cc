@@ -108,39 +108,23 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
 
 }  // namespace
 
-GattRemoteServiceDevice::GattRemoteServiceDevice(bt::gatt::PeerId peer_id,
+GattRemoteServiceDevice::GattRemoteServiceDevice(zx_device_t* parent, bt::gatt::PeerId peer_id,
                                                  fbl::RefPtr<bt::gatt::RemoteService> service)
-    : loop_(&kAsyncLoopConfigNoAttachToCurrentThread),
-      dev_(nullptr),
+    : ddk::Device<GattRemoteServiceDevice, ddk::UnbindableNew>(parent),
+      loop_(&kAsyncLoopConfigNoAttachToCurrentThread),
       peer_id_(peer_id),
-      service_(service) {
-  dev_proto_.version = DEVICE_OPS_VERSION;
-  dev_proto_.unbind = &GattRemoteServiceDevice::DdkUnbind;
-  dev_proto_.release = &GattRemoteServiceDevice::DdkRelease;
-}
+      service_(service) {}
 
-bt_gatt_svc_protocol_ops_t GattRemoteServiceDevice::proto_ops_ = {
-    .connect = &GattRemoteServiceDevice::OpConnect,
-    .stop = &GattRemoteServiceDevice::OpStop,
-    .read_characteristic = &GattRemoteServiceDevice::OpReadCharacteristic,
-    .read_long_characteristic = &GattRemoteServiceDevice::OpReadLongCharacteristic,
-    .write_characteristic = &GattRemoteServiceDevice::OpWriteCharacteristic,
-    .enable_notifications = &GattRemoteServiceDevice::OpEnableNotifications,
-};
-
-zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
+// static
+zx_status_t GattRemoteServiceDevice::Publish(zx_device_t* parent, bt::gatt::PeerId peer_id,
+                                             fbl::RefPtr<bt::gatt::RemoteService> service) {
   ZX_DEBUG_ASSERT(parent);
-
-  std::lock_guard<std::mutex> lock(mtx_);
-
-  if (dev_) {
-    return ZX_ERR_ALREADY_BOUND;
-  }
+  ZX_DEBUG_ASSERT(service);
 
   // The bind program of an attaching device driver can either bind using to the
   // well known short 16 bit UUID of the service if available or the full 128
   // bit UUID (split across 4 32 bit values).
-  const UUID& uuid = service_->uuid();
+  const UUID& uuid = service->uuid();
   uint32_t uuid16 = 0;
 
   if (uuid.CompactSize() == 2) {
@@ -155,74 +139,100 @@ zx_status_t GattRemoteServiceDevice::Bind(zx_device_t* parent) {
   uuid03 = le32toh(*reinterpret_cast<uint32_t*>(&uuid_bytes[8]));
   uuid04 = le32toh(*reinterpret_cast<uint32_t*>(&uuid_bytes[12]));
 
+  bt_log(DEBUG, "bt-host",
+         "bt-gatt-svc: binding to UUID16(%#04x), UUID128(1: %08x, 2: %08x, 3: %08x, 4: %08x), "
+         "peer: %s",
+         uuid16, uuid01, uuid02, uuid03, uuid04, bt_str(peer_id));
+
   zx_device_prop_t props[] = {
       {BIND_BT_GATT_SVC_UUID16, 0, uuid16},    {BIND_BT_GATT_SVC_UUID128_1, 0, uuid01},
       {BIND_BT_GATT_SVC_UUID128_2, 0, uuid02}, {BIND_BT_GATT_SVC_UUID128_3, 0, uuid03},
       {BIND_BT_GATT_SVC_UUID128_4, 0, uuid04},
   };
+  auto args = ddk::DeviceAddArgs("bt-gatt-svc").set_props(props);
+  auto dev = std::make_unique<GattRemoteServiceDevice>(parent, peer_id, service);
 
-  bt_log(DEBUG, "bt-host",
-         "bt-gatt-svc binding to UUID16(%#04x), UUID128(1: %08x, 2: %08x,"
-         " 3: %08x, 4: %08x), peer: %s",
-         uuid16, uuid01, uuid02, uuid03, uuid04, bt_str(peer_id_));
+  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::Bind DdkAdd");
+  zx_status_t status = dev->DdkAdd(args);
+  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::Bind DdkAdd");
 
-  device_add_args_t args = {
-      .version = DEVICE_ADD_ARGS_VERSION,
-      .name = "bt-gatt-svc",
-      .ctx = this,
-      .ops = &dev_proto_,
-      .props = props,
-      .prop_count = 5,
-      .proto_id = ZX_PROTOCOL_BT_GATT_SVC,
-      .proto_ops = &proto_ops_,
-      .flags = 0,
-  };
-
-  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::Bind device_add");
-  zx_status_t status = device_add(parent, &args, &dev_);
-  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::Bind device_add");
   if (status != ZX_OK) {
-    dev_ = nullptr;
-    bt_log(ERROR, "bt-host", "bt-gatt-svc: failed to publish child gatt device: %s",
-           zx_status_get_string(status));
+    bt_log(ERROR, "bt-gatt-svc", "failed to publish device: %s", zx_status_get_string(status));
     return status;
   }
 
-  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::Bind StartThread");
-  loop_.StartThread("bt-host bt-gatt-svc");
-  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::Bind StartThread");
+  // Kick off the dedicated dispatcher where our children will process GATT events from the stack.
+  dev->StartThread();
+
+  // The DDK owns the memory now.
+  __UNUSED auto* ptr = dev.release();
 
   return status;
 }
 
-void GattRemoteServiceDevice::Unbind() {
-  bt_log(DEBUG, "bt-host", "bt-gatt-svc: unbinding service");
-  async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
-  loop_.JoinThreads();
-
-  zx_device_t* dev;
-  {
-    std::lock_guard<std::mutex> lock(mtx_);
-    dev = dev_;
-    dev_ = nullptr;
-  }
-  if (dev) {
-    device_remove_deprecated(dev);
-  }
-}
-
-void GattRemoteServiceDevice::Release() {
-  {
-    // We expect no associated bt-gatt-svc device to exist in this state.
-    std::lock_guard<std::mutex> lock(mtx_);
-    ZX_ASSERT(!dev_);  // We expect the device to have been unpublished
-  }
-
+void GattRemoteServiceDevice::DdkRelease() {
+  bt_log(TRACE, "bt-host", "bt-gatt-svc: release");
   // The DDK no longer owns this context object, so delete it.
   delete this;
 }
 
-void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb, void* cookie) {
+void GattRemoteServiceDevice::DdkUnbindNew(ddk::UnbindTxn txn) {
+  bt_log(DEBUG, "bt-host", "bt-gatt-svc: unbind");
+
+  async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
+  loop_.JoinThreads();
+
+  txn.Reply();
+}
+
+void GattRemoteServiceDevice::StartThread() {
+  // NOTE: This method is expected to run on the bt-host thread.
+  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+
+  TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::StartThread");
+
+  // Start processing GATT tasks.
+  loop_.StartThread("bt-host bt-gatt-svc");
+
+  // There are a few possible race conditions between the "GATT service removed handler" and the
+  // GattRemoteServiceDevice destruction. The following race conditions *could* lead to a
+  // use-after-free:
+  //
+  //   * During initialization, it is possible for Publish() to fail to add the bt-gatt-svc device
+  //     if the service handler runs while bt-host is unbinding. We register the removal handler
+  //     only after the device has been successfully created, to ensure that it doesn't get run
+  //     after Publish() returns early and the context object gets deleted.
+  //
+  //   * Under regular conditions that lead to unbinding a bt-gatt-svc.
+  //
+  // A bt-gatt-svc device can be unbound during the following events:
+  //
+  //   1. The parent HostDevice finishes its unbind, which triggers its children to unbind.
+  //   2. The removed handler gets called due to a Bluetooth stack event, such as a disconnection
+  //      or a change in the peer's ATT database.
+  //   3. The removed handler gets called while HostDevice is shutting down, as part of the
+  //      Bluetooth stack's clean up procedure. The GATT layer always notifies this callback during
+  //      its destruction.
+  //
+  // The following invariants *should* prevent this callback to run with a dangling pointer in the
+  // unbind conditions:
+  //
+  //   a. HostDevice always drains and shuts down its event loop completely before it finishes
+  //      unbinding.
+  //   b. GattRemoteServiceDevice always drains and shuts down its own |loop_| before its unbind
+  //      finishes, and thus this callback must finish running before release gets called.
+  //   c. #1 is not an issue because DdkUnbindNew should only get called after HostDevice finishes
+  //      unbinding.
+  //   d. #3 is not an issue because it is guaranteed to occur before HostDevice finishes unbinding,
+  //      due to invariant a.
+  //   e. #2 is not an issue because it involves regular operation outside of shutdown.
+  service_->AddRemovedHandler([this] { DdkAsyncRemove(); }, loop_.dispatcher());
+
+  TRACE_DURATION_END("bluetooth", "GattRemoteServiceDevice::StartThread");
+}
+
+void GattRemoteServiceDevice::BtGattSvcConnect(bt_gatt_svc_connect_callback connect_cb,
+                                               void* cookie) {
   async::PostTask(loop_.dispatcher(), [this, connect_cb, cookie]() {
     service_->DiscoverCharacteristics(
         [connect_cb, cookie](att::Status cb_status, const auto& chrcs) {
@@ -275,14 +285,13 @@ void GattRemoteServiceDevice::Connect(bt_gatt_svc_connect_callback connect_cb, v
   return;
 }
 
-void GattRemoteServiceDevice::Stop() {
+void GattRemoteServiceDevice::BtGattSvcStop() {
   // TODO(zbowling): Unregister notifications on the remote service.
   // We may replace this with an explicit unregister for notifications instead.
 }
 
-void GattRemoteServiceDevice::ReadCharacteristic(bt_gatt_id_t id,
-                                                 bt_gatt_svc_read_characteristic_callback read_cb,
-                                                 void* cookie) {
+void GattRemoteServiceDevice::BtGattSvcReadCharacteristic(
+    bt_gatt_id_t id, bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
   auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
@@ -293,7 +302,7 @@ void GattRemoteServiceDevice::ReadCharacteristic(bt_gatt_id_t id,
   return;
 }
 
-void GattRemoteServiceDevice::ReadLongCharacteristic(
+void GattRemoteServiceDevice::BtGattSvcReadLongCharacteristic(
     bt_gatt_id_t id, uint16_t offset, size_t max_bytes,
     bt_gatt_svc_read_characteristic_callback read_cb, void* cookie) {
   auto read_callback = [id, cookie, read_cb](att::Status status, const ByteBuffer& buff) {
@@ -306,7 +315,7 @@ void GattRemoteServiceDevice::ReadLongCharacteristic(
   return;
 }
 
-void GattRemoteServiceDevice::WriteCharacteristic(
+void GattRemoteServiceDevice::BtGattSvcWriteCharacteristic(
     bt_gatt_id_t id, const void* buff, size_t len,
     bt_gatt_svc_write_characteristic_callback write_cb, void* cookie) {
   auto* buf = static_cast<const uint8_t*>(buff);
@@ -325,7 +334,7 @@ void GattRemoteServiceDevice::WriteCharacteristic(
   return;
 }
 
-void GattRemoteServiceDevice::EnableNotifications(
+void GattRemoteServiceDevice::BtGattSvcEnableNotifications(
     bt_gatt_id_t id, const bt_gatt_notification_value_t* value,
     bt_gatt_svc_enable_notifications_callback status_cb, void* cookie) {
   auto value_cb = *value;
