@@ -15,7 +15,9 @@
 
 #include <stddef.h>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 using ::ptrdiff_t;
 using ::size_t;
@@ -71,4 +73,4 @@ inline byte& operator>>=(byte& b, I shift) noexcept {
   return b = b >> shift;
 }
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 class initializer_list {
@@ -39,4 +41,4 @@ class initializer_list {
   size_type size_;
 };
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

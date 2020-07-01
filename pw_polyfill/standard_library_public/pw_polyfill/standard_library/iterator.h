@@ -15,12 +15,14 @@
 
 #include <iterator>
 
+#include "pw_polyfill/standard_library/namespace.h"
+
 // Define std::data and std::size.
 #ifndef __cpp_lib_nonmember_container_access
 
 #include <cstddef>
 
-namespace std {
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename C>
 constexpr auto data(C& container) -> decltype(container.data()) {
@@ -47,6 +49,6 @@ constexpr size_t size(const T (&)[kSize]) noexcept {
   return kSize;
 }
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD
 
 #endif  // __cpp_lib_nonmember_container_access

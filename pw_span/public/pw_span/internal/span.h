@@ -44,11 +44,12 @@
 #include <utility>
 
 #include "pw_polyfill/language_features.h"
+#include "pw_polyfill/standard_library/namespace.h"
 
 // Pigweed: Disable the asserts from Chromium for now.
 #define _PW_SPAN_ASSERT(arg)
 
-namespace std {
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 // [views.constants]
 constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
@@ -466,6 +467,6 @@ span(const Container&) -> span<pw_span_internal::ValueType<const Container>>;
 
 #endif  // __cpp_deduction_guides
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD
 
 #undef _PW_SPAN_ASSERT

@@ -15,7 +15,9 @@
 
 #include <type_traits>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 // Defines std:foo_t aliases for typename foo::type. This is a small subset of
 // <type_traits> which may be expanded as needed.
@@ -61,4 +63,4 @@ struct is_null_pointer : std::is_same<decltype(nullptr), std::remove_cv_t<T>> {
 
 #endif  // __cpp_lib_is_null_pointer
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

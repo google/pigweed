@@ -11,14 +11,19 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+// This is a fake version of Clang / libc++'s <__config> header. The <__config>
+// header provides various _LIBCPP defines used internally by libc++.
+//
+// In particular, pw_polyfill and pw_minimal_cpp_stdlib need the macros that
+// provide the namespace to use for standard library definitions. This header
+// provides _LIBCPP_BEGIN_NAMESPACE_STD and _LIBCPP_END_NAMESPACE_STD.
 #pragma once
 
-#include <stdarg.h>
+#define _LIBCPP_BEGIN_NAMESPACE_STD \
+  namespace std {                   \
+  inline namespace __pw_minimal_cpp_stdlib {
 
-#include "pw_polyfill/standard_library/namespace.h"
-
-_PW_POLYFILL_BEGIN_NAMESPACE_STD
-
-using ::va_list;
-
-_PW_POLYFILL_END_NAMESPACE_STD
+#define _LIBCPP_END_NAMESPACE_STD \
+  }                               \
+  }

@@ -12,4 +12,5 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-pw_auto_add_simple_module(pw_minimal_cpp_stdlib)
+add_library(pw_minimal_cpp_stdlib INTERFACE)
+target_include_directories(pw_minimal_cpp_stdlib INTERFACE public)

@@ -17,9 +17,11 @@
 #include <cstddef>
 #include <iterator>
 
+#include "pw_polyfill/standard_library/namespace.h"
+
 #define __cpp_lib_string_view 201606L
 
-namespace std {
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 class basic_string_view {
@@ -171,4 +173,4 @@ using u32string_view = basic_string_view<char32_t>;
 // NOT IMPLEMENTED: string_view literals cannot be implemented since they do not
 //                  start with _.
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

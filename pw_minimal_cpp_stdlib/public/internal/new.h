@@ -13,16 +13,18 @@
 // the License.
 #pragma once
 
+#include "pw_polyfill/standard_library/namespace.h"
+
 // Placement new
 inline void* operator new(decltype(sizeof(0)), void* ptr) { return ptr; }
 
 #define __cpp_lib_launder 201606L
 
-namespace std {
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 [[nodiscard]] constexpr T* launder(T* pointer) noexcept {
   return __builtin_launder(pointer);
 }
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

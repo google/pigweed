@@ -76,14 +76,26 @@ pw_test_group("tests") {
   ]
 }
 
-pw_test("minimal_cpp_stdlib_test") {
+pw_source_set("minimal_cpp_stdlib_isolated_test") {
   configs = [ ":no_cpp_includes" ]
-  deps = [ ":pw_minimal_cpp_stdlib" ]
+  deps = [
+    ":pw_minimal_cpp_stdlib",
+    dir_pw_preprocessor,
+  ]
+  sources = [ "isolated_test.cc" ]
+  visibility = [ ":*" ]
+}
+
+pw_test("minimal_cpp_stdlib_test") {
+  deps = [ ":minimal_cpp_stdlib_isolated_test" ]
   sources = [ "test.cc" ]
 }
 
 pw_test("standard_library_test") {
-  sources = [ "test.cc" ]
+  sources = [
+    "isolated_test.cc",
+    "test.cc",
+  ]
 }
 
 pw_doc_group("docs") {

@@ -66,14 +66,23 @@ pw_cc_library(
     includes = ["public"],
 )
 
+pw_cc_library(
+    name = "minimal_cpp_stdlib_isolated_test",
+    srcs = ["isolated_test.cc"],
+    copts = ["-nostdinc++"],
+    deps = [
+        ":pw_minimal_cpp_stdlib",
+        "//pw_preprocessor",
+    ],
+)
+
 pw_cc_test(
     name = "test",
     srcs = [
         "test.cc",
     ],
-    copts = ["-nostdinc++"],
     deps = [
-        ":pw_minimal_cpp_stdlib",
+        ":pw_minimal_cpp_stdlib_isolated_test",
         "//pw_unit_test",
     ],
 )

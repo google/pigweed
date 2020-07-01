@@ -15,10 +15,12 @@
 
 #include <cstddef>
 
+#include "pw_polyfill/standard_library/namespace.h"
+
 // Defines the std::byte type if it is not present.
 #ifndef __cpp_lib_byte
 
-namespace std {
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 enum class byte : unsigned char {};
 
@@ -77,6 +79,6 @@ inline byte& operator>>=(byte& b, I shift) noexcept {
   return b = b >> shift;
 }
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD
 
 #endif  // __cpp_lib_byte

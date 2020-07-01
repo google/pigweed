@@ -15,7 +15,9 @@
 
 #include <stdio.h>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 using ::size_t;
 
@@ -29,4 +31,4 @@ using ::vsnprintf;
 using ::getchar;
 using ::sscanf;
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

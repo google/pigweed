@@ -15,7 +15,9 @@
 
 #include <cstddef>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 #define __cpp_lib_nonmember_container_access 201411L
 
@@ -72,4 +74,4 @@ struct iterator_traits {};
 template <typename>
 struct reverse_iterator;
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

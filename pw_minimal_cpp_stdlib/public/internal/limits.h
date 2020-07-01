@@ -15,7 +15,9 @@
 
 #include <limits.h>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 struct numeric_limits {
@@ -62,4 +64,4 @@ _PW_INTEGRAL_LIMIT(long long, LLONG, ULLONG);
 #undef _PW_LIMITS_SPECIALIZATION
 #undef _PW_INTEGRAL_LIMIT
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

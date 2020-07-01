@@ -15,7 +15,9 @@
 
 #include <iterator>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T, decltype(sizeof(0)) kSize>
 struct array {
@@ -100,4 +102,4 @@ struct array {
 
 // NOT IMPLEMENTED: comparison operators, get, swap, tuple specializations
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

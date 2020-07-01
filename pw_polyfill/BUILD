@@ -50,6 +50,7 @@ pw_cc_library(
         "standard_library_public/pw_polyfill/standard_library/assert.h",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",
         "standard_library_public/pw_polyfill/standard_library/iterator.h",
+        "standard_library_public/pw_polyfill/standard_library/namespace.h",
         "standard_library_public/pw_polyfill/standard_library/type_traits.h",
     ],
     includes = ["standard_library_public"],

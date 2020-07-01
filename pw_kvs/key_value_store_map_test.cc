@@ -13,24 +13,13 @@
 // the License.
 
 #include <cstdlib>
+#include <random>
 #include <set>
 #include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
-
-// TODO(hepler): Clang 11 fails to compile this file if <random> is included
-// before <span>. It seems to miss the definition of std::span. This compiles
-// correctly in GCC 9.
-//
-//   In file included from ../pw_kvs/key_value_store_map_test.cc:33:
-//   In file included from ../pw_unit_test/public_overrides/gtest/gtest.h:20:
-//   In file included from ../pw_unit_test/public/pw_unit_test/framework.h:32:
-//   ../pw_string/public/pw_string/string_builder.h:267:25: error:
-//       implicit instantiation of undefined template
-//       'std::span<char, 18446744073709551615>'
-#include <random>
 
 #define DUMP_KVS_CONTENTS 0
 

@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 #define __cpp_lib_transformation_trait_aliases 201304L
 #define __cpp_lib_type_trait_variable_templates 201510L
@@ -447,4 +449,4 @@ using underlying_type_t = typename underlying_type<T>::type;
 template <typename T>
 inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<T>::value;
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

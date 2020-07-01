@@ -15,7 +15,9 @@
 
 #include <type_traits>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <class InputIterator, class OutputIterator>
 constexpr OutputIterator copy(InputIterator first,
@@ -93,4 +95,4 @@ constexpr bool lexicographical_compare(LhsIterator first_l,
   return (first_l == last_l) && (first_r != last_r);
 }
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

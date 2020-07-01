@@ -15,7 +15,9 @@
 
 #include <math.h>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 // The integer overloads of these functions are not provided.
 
@@ -52,4 +54,4 @@ inline bool signbit(long double value) { return __builtin_signbit(value); }
 
 using ::round;
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD

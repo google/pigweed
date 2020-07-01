@@ -15,7 +15,9 @@
 
 #include <type_traits>
 
-namespace std {
+#include "pw_polyfill/standard_library/namespace.h"
+
+_PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 constexpr remove_reference_t<T>&& move(T&& object) {
@@ -29,4 +31,4 @@ struct tuple_element;
 template <typename>
 struct tuple_size;
 
-}  // namespace std
+_PW_POLYFILL_END_NAMESPACE_STD
