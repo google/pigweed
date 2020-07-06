@@ -8,6 +8,7 @@ source_set("testing") {
   sources = [
     "fake_controller_test.h",
     "fake_l2cap_unittest.cc",
+    "fake_signaling_server_unittest.cc",
     "test_controller.cc",
     "test_controller.h",
     "test_packets.cc",
@@ -19,6 +20,7 @@ source_set("testing") {
   public_deps = [
     ":fake_controller",
     "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
   ]
 }
 
@@ -36,6 +38,8 @@ source_set("fake_controller") {
     "fake_l2cap.h",
     "fake_peer.cc",
     "fake_peer.h",
+    "fake_signaling_server.cc",
+    "fake_signaling_server.h",
   ]
 
   public_deps = [
