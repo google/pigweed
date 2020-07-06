@@ -293,7 +293,7 @@ TEST_F(L2CAP_SignalingChannelTest, ValidRequestCommandIds) {
   }
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectUnsolicitedResponse) {
+TEST_F(L2CAP_SignalingChannelTest, DoNotRejectUnsolicitedResponse) {
   constexpr CommandId kTestCmdId = 97;
   auto cmd = CreateStaticByteBuffer(
       // Command header (Echo Response, length 1)
@@ -302,14 +302,13 @@ TEST_F(L2CAP_SignalingChannelTest, RejectUnsolicitedResponse) {
       // Payload
       0x23);
 
-  auto expected = CreateStaticByteBuffer(
-      // Command header (Command rejected, length 2)
-      0x01, kTestCmdId, 0x02, 0x00,
+  size_t send_count = 0;
+  auto send_cb = [&](auto) { send_count++; };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
-      // Reason (Command not understood)
-      0x00, 0x00);
-
-  EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
+  fake_chan()->Receive(cmd);
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, send_count);
 }
 
 TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseWithWrongType) {
@@ -571,7 +570,7 @@ TEST_F(L2CAP_SignalingChannelTest, RegisterRequestResponder) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseInvalidId) {
+TEST_F(L2CAP_SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   // Request will use ID = 1.
   constexpr CommandId kIncorrectId = 2;
   // Remote's echo response that has a different ID to what will be in the
@@ -596,24 +595,15 @@ TEST_F(L2CAP_SignalingChannelTest, RejectRemoteResponseInvalidId) {
   RunLoopUntilIdle();
   EXPECT_TRUE(tx_success);
 
-  const ByteBuffer& reject_rsp = StaticByteBuffer(
-      // Command header (Command Rejected)
-      0x01, kIncorrectId, 0x02, 0x00,
-
-      // Reason (Command not understood)
-      0x00, 0x00);
   bool reject_sent = false;
-  fake_chan()->SetSendCallback(
-      [&reject_rsp, &reject_sent](auto cb_packet) {
-        reject_sent = ContainersEqual(reject_rsp, *cb_packet);
-      },
-      dispatcher());
+  fake_chan()->SetSendCallback([&reject_sent](auto cb_packet) { reject_sent = true; },
+                               dispatcher());
 
   fake_chan()->Receive(rsp_invalid_id);
 
   RunLoopUntilIdle();
   EXPECT_FALSE(echo_cb_called);
-  EXPECT_TRUE(reject_sent);
+  EXPECT_FALSE(reject_sent);
 }
 
 }  // namespace

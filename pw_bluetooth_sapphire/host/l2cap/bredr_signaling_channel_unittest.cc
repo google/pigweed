@@ -64,24 +64,6 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, RespondsToEchoRequest) {
   EXPECT_TRUE(called);
 }
 
-TEST_F(L2CAP_BrEdrSignalingChannelTest, RejectUnsolicitedEchoResponse) {
-  auto cmd = CreateStaticByteBuffer(
-      // Command header (Echo Response, length 1)
-      0x09, kTestCmdId, 0x01, 0x00,
-
-      // Payload
-      0x23);
-
-  auto expected = CreateStaticByteBuffer(
-      // Command header (Command rejected, length 2)
-      0x01, kTestCmdId, 0x02, 0x00,
-
-      // Reason (Command not understood)
-      0x00, 0x00);
-
-  EXPECT_TRUE(ReceiveAndExpect(cmd, expected));
-}
-
 TEST_F(L2CAP_BrEdrSignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;
   auto send_cb = [&send_cb_called](auto) { send_cb_called = true; };

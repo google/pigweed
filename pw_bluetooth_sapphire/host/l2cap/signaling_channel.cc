@@ -148,8 +148,9 @@ bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
 void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   auto iter = pending_commands_.find(packet.header().id);
   if (iter == pending_commands_.end()) {
+    // Core Spec v5.2, Vol 3, Part A, Section 4.1: L2CAP_COMMAND_REJECT_RSP packets should NOT be
+    // sent in response to an identified response packet.
     bt_log(TRACE, "l2cap", "sig: ignoring unexpected response, id %#.2x", packet.header().id);
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
 
