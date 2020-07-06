@@ -112,14 +112,18 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
                           f'{RPC_NAMESPACE}::ServerWriter<T>;')
         output.write_line()
 
-        output.write_line(f'constexpr {service.name()}()'
-                          f' : {base_class}(kServiceId, kMethods) {{}}')
+        output.write_line(f'constexpr {service.name()}()')
+        output.write_line(f'    : {base_class}(kServiceId, kMethods) {{}}')
 
         output.write_line()
         output.write_line(
             f'{service.name()}(const {service.name()}&) = delete;')
         output.write_line(f'{service.name()}& operator='
                           f'(const {service.name()}&) = delete;')
+
+        output.write_line()
+        output.write_line(f'static constexpr const char* name() '
+                          f'{{ return "{service.name()}"; }}')
 
         for method in service.methods():
             _generate_code_for_method(method, output)
@@ -132,8 +136,6 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
         output.write_line(
             f'static constexpr uint32_t kServiceId = {hex(service_name_hash)};'
         )
-        output.write_line(
-            f'static constexpr char* kServiceName = "{service.name()}";')
         output.write_line()
 
         output.write_line(

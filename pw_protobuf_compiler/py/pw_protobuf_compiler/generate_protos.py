@@ -77,12 +77,20 @@ def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
     ]
 
 
+def protoc_nanopb_rpc_args(args: argparse.Namespace) -> List[str]:
+    return [
+        '--plugin', f'protoc-gen-custom={shutil.which("pw_rpc_codegen")}',
+        '--custom_out', args.out_dir
+    ]
+
+
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
     'cc': protoc_cc_args,
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,
+    'nanopb_rpc': protoc_nanopb_rpc_args,
 }
 
 

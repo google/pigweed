@@ -45,3 +45,12 @@ pw_test("method_test") {
   sources = [ "method_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
+
+pw_test("codegen_test") {
+  deps = [
+    "..:nanopb_server",
+    "..:test_protos_nanopb_rpc",
+  ]
+  sources = [ "codegen_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}

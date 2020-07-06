@@ -16,18 +16,22 @@ Generator support
 
 Protobuf code generation is currently supported for the following generators:
 
-+-------------+------------+---------------------------------------------------+
-| Generator   | Code       | Notes                                             |
-+-------------+------------+---------------------------------------------------+
-| pw_protobuf | ``pwpb``   | Compiles using ``pw_protobuf``.                   |
-+-------------+------------+---------------------------------------------------+
-| Go          | ``go``     | Compiles using the standard Go protobuf plugin    |
-|             |            | with gRPC service support.                        |
-+-------------+------------+---------------------------------------------------+
-| Nanopb      | ``nanopb`` | Compiles using Nanopb. The build argument         |
-|             |            | ``dir_pw_third_party_nanopb`` must be set to      |
-|             |            | point to a local nanopb installation.             |
-+-------------+------------+---------------------------------------------------+
++-------------+----------------+-----------------------------------------------+
+| Generator   | Code           | Notes                                         |
++-------------+----------------+-----------------------------------------------+
+| pw_protobuf | ``pwpb``       | Compiles using ``pw_protobuf``.               |
++-------------+----------------+-----------------------------------------------+
+| Go          | ``go``         | Compiles using the standard Go protobuf       |
+|             |                | plugin with gRPC service support.             |
++-------------+----------------+-----------------------------------------------+
+| Nanopb      | ``nanopb``     | Compiles using Nanopb. The build argument     |
+|             |                | ``dir_pw_third_party_nanopb`` must be set to  |
+|             |                | point to a local nanopb installation.         |
++-------------+----------------+-----------------------------------------------+
+| Nanopb RPC  | ``nanopb_rpc`` | Compiles pw_rpc service code for a nanopb     |
+|             |                | server. Requires the nanopb generator to be   |
+|             |                | configured as well.                           |
++-------------+----------------+-----------------------------------------------+
 
 The build variable ``pw_protobuf_GENERATORS`` tells the module the generators
 for which it should compile code. It is defined as a list of generator codes.

@@ -127,6 +127,15 @@ pw_proto_library("protos") {
   sources = [ "pw_rpc_protos/packet.proto" ]
 }
 
+# Source files for pw_protobuf's protoc plugin.
+pw_input_group("nanopb_protoc_plugin") {
+  inputs = [
+    "py/pw_rpc/codegen_nanopb.py",
+    "py/pw_rpc/plugin.py",
+    "py/pw_rpc/ids.py",
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
@@ -137,6 +146,7 @@ pw_test_group("tests") {
     ":channel_test",
     ":packet_test",
     ":server_test",
+    "nanopb:codegen_test",
     "nanopb:method_test",
   ]
 }
