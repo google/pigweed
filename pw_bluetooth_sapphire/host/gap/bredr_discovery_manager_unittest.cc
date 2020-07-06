@@ -623,6 +623,108 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
   RunLoopUntilIdle();
 }
 
+// clang-format off
+const auto kWriteLocalNameMaxLen = CreateStaticByteBuffer(
+  LowerBits(hci::kWriteLocalName), UpperBits(hci::kWriteLocalName),
+  0xF8, // parameter_total_size (248 bytes)
+  // Complete Local Name (exactly 248 bytes)
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W'
+);
+
+const auto kWriteExtInquiryResponseMaxLen = CreateStaticByteBuffer(
+  LowerBits(hci::kWriteExtendedInquiryResponse),
+  UpperBits(hci::kWriteExtendedInquiryResponse),
+  0xF1, // parameter_total_size (241 bytes)
+  0x00, // fec_required
+  0xEF, // 239 bytes (1 + 238 bytes)
+  0x08, // DataType::kShortenedLocalName,
+  // Shortened Local Name (238 bytes, truncated from above)
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+  'T', 'U', 'V', 'W', 'X', 'Y',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'
+);
+// clang-format on
+
+// Test: UpdateLocalName successfully sends hci command, and further calls
+// UpdateEIRResponseData (private). Ensures the name is updated at the very end.
+TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
+  test_device()->QueueCommandTransaction(CommandTransaction(kWriteLocalNameMaxLen, {}));
+
+  // Set the status to be a dummy invalid status.
+  hci::Status result = hci::Status(hci::kPairingNotAllowed);
+  size_t callback_count = 0u;
+  auto name_cb = [&result, &callback_count](const auto& status) {
+    EXPECT_TRUE(status);
+    callback_count++;
+    result = status;
+  };
+  std::string kNewName = "";
+  while (kNewName.length() < 225) {
+    kNewName.append("ABCDEFGHIJKLMNOPQRSTUVWXY");
+  }
+  kNewName.append("ABCDEFGHIJKLMNOPQRSTUVW");
+  discovery_manager()->UpdateLocalName(kNewName, name_cb);
+
+  RunLoopUntilIdle();
+
+  // Local name should not be set, callback shouldn't be called yet.
+  EXPECT_NE(kNewName, discovery_manager()->local_name());
+  EXPECT_EQ(0u, callback_count);
+
+  test_device()->SendCommandChannelPacket(kWriteLocalNameRsp);
+  test_device()->QueueCommandTransaction(CommandTransaction(kWriteExtInquiryResponseMaxLen, {}));
+
+  RunLoopUntilIdle();
+
+  // Still waiting on EIR response.
+  // Local name should not be set, callback shouldn't be called yet.
+  EXPECT_NE(kNewName, discovery_manager()->local_name());
+  EXPECT_EQ(0u, callback_count);
+
+  test_device()->SendCommandChannelPacket(kWriteExtendedInquiryResponseRsp);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kNewName, discovery_manager()->local_name());
+  EXPECT_EQ(hci::Status(hci::kSuccess), result);
+  EXPECT_EQ(1u, callback_count);
+}
+
 // Test: UpdateLocalName successfully sends hci command, and further calls
 // UpdateEIRResponseData (private). Ensures the name is updated at the very end.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {

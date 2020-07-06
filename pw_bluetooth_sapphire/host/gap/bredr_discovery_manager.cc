@@ -294,7 +294,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name, hci::StatusC
                             ->extended_inquiry_response,
                         hci::kExtendedInquiryResponseBytes);
   eir_response_buf.Fill(0);
-  eir_response_buf[0] = name.length() + 1;
+  eir_response_buf[0] = name_size + 1;
   eir_response_buf[1] = static_cast<uint8_t>(name_type);
   eir_response_buf.mutable_view(2).Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
   self->hci_->command_channel()->SendCommand(
