@@ -175,8 +175,8 @@ StatusWithSize WriteLine(const std::string_view& s) {
   }
   chars_written += result.size();
 
-  // Write trailing newline ("\n\r").
-  result = WriteBytes(std::as_bytes(std::span("\n\r", 2)));
+  // Write trailing newline.
+  result = WriteBytes(std::as_bytes(std::span("\r\n", 2)));
   chars_written += result.size();
 
   return StatusWithSize(result.status(), chars_written);
