@@ -35,6 +35,19 @@ void pw_boot_PreStaticMemoryInit() {
   volatile uint32_t& arm_v7m_cpacr =
       *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
   arm_v7m_cpacr |= kFpuEnableMask;
+
+  // Ensure the FPU configuration is committed and enabled before continuing and
+  // potentially executing any FPU instructions, however rare that may be during
+  // startup.
+  asm volatile(
+      " dsb \n"
+      " isb \n"
+      // clang-format off
+      : /*output=*/
+      : /*input=*/
+      : /*clobbers=*/"memory"
+      // clang-format on
+  );
 #endif  // PW_ARMV7M_ENABLE_FPU
 }
 
