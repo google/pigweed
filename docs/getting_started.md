@@ -51,14 +51,10 @@ $ pw watch out default stm32f429i
   ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
-20200319 01:41:37 INF Starting Pigweed build watcher
-20200319 01:41:37 INF Searching for GN build dirs...
-20200319 01:41:37 INF Will build [1/3]: out/host
-20200319 01:41:37 INF Will build [2/3]: out/disco
-20200319 01:41:37 INF Will build [3/3]: out/docs
-20200319 01:41:39 INF Directory to watch: $HOME/wrk/pigweed
-20200319 01:41:39 INF Watching for file changes. Ctrl-C exits.
-20200319 01:41:39 INF Triggering initial build...
+20200707 17:24:06 INF Starting Pigweed build watcher
+20200707 17:24:06 INF Will build [1/1]: out default stm32f429i
+20200707 17:24:06 INF Attaching filesystem watcher to $HOME/wrk/pigweed/...
+20200707 17:24:06 INF Triggering initial build...
 ...
 ```
 
@@ -153,7 +149,7 @@ environment in a new session with the following command:
 
 **Linux/macOS**
 ```bash
-$ . ./activate.sh
+$ source ./activate.sh
 ```
 
 **Windows**
@@ -298,7 +294,7 @@ We can tell GN to use the testing server by enabling a build arg specific to
 the stm32f429i-disc1 target.
 
 ```shell
-$ gn args out/disco
+$ gn args out
 # Append this line to the file that opens in your editor to tell GN to run
 # on-device unit tests.
 pw_use_test_server = true
