@@ -24,6 +24,7 @@ from __future__ import print_function
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -77,8 +78,15 @@ def check_auth(cipd, package_files):
                 paths.append('/'.join(parts))
 
     try:
-        subprocess.check_output([cipd, 'auth-info'], stderr=subprocess.STDOUT)
+        output = subprocess.check_output([cipd, 'auth-info'],
+                                         stderr=subprocess.STDOUT).decode()
         logged_in = True
+
+        username = None
+        match = re.search(r'Logged in as (\S*)\.', output)
+        if match:
+            username = match.group(1)
+
     except subprocess.CalledProcessError:
         logged_in = False
 
@@ -93,7 +101,11 @@ def check_auth(cipd, package_files):
             stderr('=' * 60)
             stderr('ERROR: no access to CIPD path "{}"'.format(path))
             if logged_in:
-                stderr('Your account does not have access to this path')
+                username_part = ''
+                if username:
+                    username_part = '({}) '.format(username)
+                stderr('Your account {}does not have access to this '
+                       'path'.format(username_part))
             else:
                 stderr('Try logging in with this command:')
                 stderr()
