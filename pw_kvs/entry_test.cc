@@ -35,7 +35,10 @@ using std::string_view;
 constexpr EntryFormat kFormat{0xbeef, nullptr};
 
 TEST(Entry, Size_RoundsUpToAlignment) {
-  FakeFlashMemoryBuffer<64, 2> flash(16);
+  // Use FakeFlashMemory, rather than FakeFlashMemoryBuffer, so the class gets
+  // tested/used directly.
+  std::array<std::byte, 64 * 2> buffer;
+  FakeFlashMemory flash(buffer, 64, 2, 16);
 
   for (size_t alignment_bytes = 1; alignment_bytes <= 4096; ++alignment_bytes) {
     FlashPartition partition(&flash, 0, flash.sector_count(), alignment_bytes);

@@ -79,9 +79,6 @@ class FlashError {
 // write, checks alignments, and is addressed in sectors). The underlying buffer
 // is not initialized.
 class FakeFlashMemory : public FlashMemory {
- private:
-  static Vector<FlashError, 0> no_errors_;
-
  public:
   // Default to 8-bit alignment.
   static constexpr size_t kDefaultAlignmentBytes = 1;
@@ -141,6 +138,8 @@ class FakeFlashMemory : public FlashMemory {
   }
 
  private:
+  static inline Vector<FlashError, 0> no_errors_;
+
   const std::span<std::byte> buffer_;
   Vector<FlashError>& read_errors_;
   Vector<FlashError>& write_errors_;
