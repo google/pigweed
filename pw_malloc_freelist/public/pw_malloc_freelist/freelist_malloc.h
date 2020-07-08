@@ -14,7 +14,6 @@
 #pragma once
 
 #include "pw_allocator/freelist_heap.h"
-#include "pw_span/span.h"
 
 // Global variables to initialize a freelist heap.
 extern pw::allocator::FreeListHeapBuffer<>* pw_freelist_heap;

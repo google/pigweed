@@ -20,7 +20,6 @@
 //
 // In order to minimize changes from the original, this file does NOT fully
 // adhere to Pigweed's style guide.
-#include "pw_span/span.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -58,59 +57,6 @@ constexpr bool constexpr_equal(InputIterator1 first1,
 }
 
 }  // namespace
-
-// TODO(hepler): Remove these tests after eliminating pw::span.
-TEST(StdSpanCompatibility, ConstructFromPwSpanToStdSpan) {
-  char array[] = {'a', 'b', 'c', 'd', '\0'};
-
-  ::pw::span pw_span(array);
-  std::span std_span(pw_span);
-
-  std_span[0] = '!';
-  EXPECT_STREQ(std_span.data(), "!bcd");
-
-  EXPECT_EQ(pw_span.data(), std_span.data());
-  EXPECT_EQ(pw_span.size(), std_span.size());
-}
-
-TEST(StdSpanCompatibility, ConstructFromStdSpanToPwSpan) {
-  char array[] = {'a', 'b', 'c', 'd', '\0'};
-
-  std::span std_span(array);
-  ::pw::span pw_span(std_span);
-
-  pw_span[0] = '!';
-  EXPECT_STREQ(pw_span.data(), "!bcd");
-
-  EXPECT_EQ(pw_span.data(), std_span.data());
-  EXPECT_EQ(pw_span.size(), std_span.size());
-}
-
-TEST(StdSpanCompatibility, AssignFromPwSpanToStdSpan) {
-  char array[] = {'a', 'b', 'c', 'd', '\0'};
-
-  auto pw_span = ::pw::span(array);
-  std::span std_span = pw_span;
-
-  std_span[0] = '!';
-  EXPECT_STREQ(std_span.data(), "!bcd");
-
-  EXPECT_EQ(pw_span.data(), std_span.data());
-  EXPECT_EQ(pw_span.size(), std_span.size());
-}
-
-TEST(StdSpanCompatibility, AssignFromStdSpanToPwSpan) {
-  char array[] = {'a', 'b', 'c', 'd', '\0'};
-
-  auto std_span = std::span(array);
-  ::pw::span pw_span = std_span;
-
-  pw_span[0] = '!';
-  EXPECT_STREQ(pw_span.data(), "!bcd");
-
-  EXPECT_EQ(pw_span.data(), std_span.data());
-  EXPECT_EQ(pw_span.size(), std_span.size());
-}
 
 TEST(SpanTest, DeductionGuides_MutableArray) {
   char array[] = {'a', 'b', 'c', 'd', '\0'};

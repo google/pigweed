@@ -12,22 +12,14 @@ The ``pw_span`` module provides an implementation of C++20's
 non-owning view of an array of values. The intent is for this implementation of
 ``std::span`` is to exactly match the C++20 standard.
 
-The only header provided by the ``pw_span`` namespace is ``<span>``. It is
-included as if it were coming from the C++ Standard Library. If the C++ library
-provides ``<span>``, the library's version of ``std::span`` is used in place of
+The only header provided by the ``pw_span`` module is ``<span>``. It is included
+as if it were coming from the C++ Standard Library. If the C++ library provides
+``<span>``, the library's version of ``std::span`` is used in place of
 ``pw_span``'s.
 
 ``pw_span`` requires two include paths -- ``public/`` and ``public_overrides/``.
 The internal implementation header is in ``public/``, and the ``<span>`` header
 that mimics the C++ Standard Library is in ``public_overrides/``.
-
-.. warning::
-
-  Currently, there is a ``pw_span/span.h`` header that provides a ``pw::span``
-  class. ``pw::span`` is deprecated. Do NOT use it in new code. Instead, include
-  ``<span>`` and use ``std::span``. ``pw::span`` will be removed as soon as
-  projects have migrated to ``std::span``.
-
 
 Using std::span
 ===============

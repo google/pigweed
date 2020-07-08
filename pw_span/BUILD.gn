@@ -28,31 +28,17 @@ config("default_config") {
 pw_source_set("pw_span") {
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_polyfill" ]
-  public = [
-    "public/pw_span/span.h",
-    "public_overrides/span",
-  ]
+  public = [ "public_overrides/span" ]
   sources = [ "public/pw_span/internal/span.h" ]
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":test",
-    ":pw_span_test",
-  ]
+  tests = [ ":test" ]
 }
 
 pw_test("test") {
   deps = [ ":pw_span" ]
   sources = [ "span_test.cc" ]
-}
-
-pw_test("pw_span_test") {
-  deps = [ ":pw_span" ]
-  sources = [ "pw_span_test.cc" ]
-
-  # Disable warnings for using the deprecated pw::span class.
-  cflags = [ "-Wno-deprecated-declarations" ]
 }
 
 pw_doc_group("docs") {
