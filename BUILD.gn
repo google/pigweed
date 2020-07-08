@@ -30,6 +30,9 @@ declare_args() {
   #   size_optimized
   #   speed_optimized
   pw_optimization_level = "debug"
+
+  # List of application image GN targets specific to the Pigweed target.
+  pw_TARGET_APPLICATIONS = []
 }
 
 # Enumerate all of the different targets that upstream Pigweed will build by
@@ -88,6 +91,7 @@ group("pigweed_default") {
     if (pw_docgen_BUILD_DOCS) {
       deps += [ "$dir_pigweed/docs" ]
     } else {
+      deps += [ ":apps" ]
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {
         # Without a test runner defined, build the tests but don't run them.
         deps += [ ":pw_module_tests" ]
@@ -106,17 +110,18 @@ group("pigweed_default") {
 
 # Prevent the default toolchain from parsing any other BUILD.gn files.
 if (current_toolchain != default_toolchain) {
+  group("apps") {
+    # Application images built for all targets.
+    deps = []
+
+    # Add target-specific images.
+    deps += pw_TARGET_APPLICATIONS
+  }
+
   group("host_tools") {
     deps = [
       "$dir_pw_target_runner/go:simple_client",
       "$dir_pw_target_runner/go:simple_server",
-    ]
-  }
-
-  group("pw_facades") {
-    deps = [
-      "$dir_pw_cpu_exception",
-      "$dir_pw_sys_io",
     ]
   }
 
@@ -128,6 +133,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_base64",
       "$dir_pw_bytes",
       "$dir_pw_checksum",
+      "$dir_pw_cpu_exception",
       "$dir_pw_polyfill",
       "$dir_pw_preprocessor",
       "$dir_pw_protobuf",
@@ -136,6 +142,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_status",
       "$dir_pw_stream",
       "$dir_pw_string",
+      "$dir_pw_sys_io",
       "$dir_pw_trace",
       "$dir_pw_unit_test",
       "$dir_pw_varint",

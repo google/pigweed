@@ -15,5 +15,6 @@
   docs/embedded_cpp_guide
   docs/style_guide
   targets
+  build_system
   docs/module_structure
   module_guides

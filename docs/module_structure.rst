@@ -248,8 +248,6 @@ __ `Example module structure`_
 7. Add new module to main GN build
 
     - in ``/BUILD.gn`` to ``group("pw_modules")`` using folder alias variable
-    - General modules and backends of facades go in ``pw_modules``, facades go
-      in ``pw_facades``
 
 8. Add test target for new module in ``/BUILD.gn`` to
    ``pw_test_group("pw_module_tests")``

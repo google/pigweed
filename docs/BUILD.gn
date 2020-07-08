@@ -50,6 +50,7 @@ pw_doc_gen("docs") {
     "../CODE_OF_CONDUCT.md",
     "../CONTRIBUTING.md",
     "../README.md",
+    "build_system.rst",
     "index.rst",
     "module_guides.rst",
     "targets.rst",

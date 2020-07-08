@@ -2,7 +2,7 @@
 
 .. highlight:: sh
 
-.. _chapter-build:
+.. _chapter-pw-build:
 
 --------
 pw_build
