@@ -178,6 +178,13 @@ class ACLDataChannel final {
   // dedicated LE buffer.
   const DataBufferInfo& GetLEBufferInfo() const;
 
+  // Reads bytes from the channel and try to parse them as ACLDataPacket.
+  // ZX_ERR_IO means error happens while reading from the channel.
+  // ZX_ERR_INVALID_ARGS means the packet is malformed.
+  // Otherwise, ZX_OK is returned.
+  static zx_status_t ReadACLDataPacketFromChannel(const zx::channel &channel,
+                                                  const ACLDataPacketPtr& packet);
+
  private:
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {

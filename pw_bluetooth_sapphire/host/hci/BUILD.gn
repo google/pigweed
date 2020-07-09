@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/fuzzing/fuzzer.gni")
+
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 source_set("definitions") {
@@ -115,5 +117,13 @@ source_set("tests") {
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
+  ]
+}
+
+fuzzer("read_acl_data_packet_fuzzer") {
+  sources = [ "acl_data_channel_read_acl_data_packet_fuzztest.cc" ]
+  deps = [
+    ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 }

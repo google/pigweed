@@ -474,36 +474,12 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
       bt_log(ERROR, "hci", "failed to allocate buffer received ACL data packet!");
       return;
     }
-    uint32_t read_size;
-    auto packet_bytes = packet->mutable_view()->mutable_data();
-    zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
-                                            packet_bytes.size(), 0, &read_size, nullptr);
-    if (read_status < 0) {
-      bt_log(DEBUG, "hci", "failed to read RX bytes: %s", zx_status_get_string(status));
-      // Clear the handler so that we stop receiving events from it.
-      // TODO(jamuraa): signal failure to the consumer so it can do something.
+    zx_status_t status = ReadACLDataPacketFromChannel(channel_, packet);
+    if (status == ZX_ERR_INVALID_ARGS) {
+      continue;
+    } else if (status != ZX_OK) {
       return;
     }
-
-    if (read_size < sizeof(ACLDataHeader)) {
-      bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
-             sizeof(ACLDataHeader), read_size);
-      // TODO(jamuraa): signal stream error somehow
-      continue;
-    }
-
-    const size_t rx_payload_size = read_size - sizeof(ACLDataHeader);
-    const size_t size_from_header = le16toh(packet->view().header().data_total_length);
-    if (size_from_header != rx_payload_size) {
-      bt_log(ERROR, "hci",
-             "malformed packet - payload size from header (%zu) does not match"
-             " received payload size: %zu",
-             size_from_header, rx_payload_size);
-      // TODO(jamuraa): signal stream error somehow
-      continue;
-    }
-
-    packet->InitializeFromBuffer();
     {
       TRACE_DURATION("bluetooth", "ACLDataChannel->rx_callback_");
       rx_callback_(std::move(packet));
@@ -514,6 +490,41 @@ void ACLDataChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   if (status != ZX_OK) {
     bt_log(ERROR, "hci", "wait error: %s", zx_status_get_string(status));
   }
+}
+
+zx_status_t ACLDataChannel::ReadACLDataPacketFromChannel(const zx::channel &channel,
+                                                         const ACLDataPacketPtr& packet) {
+  uint32_t read_size;
+  auto packet_bytes = packet->mutable_view()->mutable_data();
+  zx_status_t read_status = channel.read(0u, packet_bytes.mutable_data(), nullptr,
+                                          packet_bytes.size(), 0, &read_size, nullptr);
+  if (read_status < 0) {
+    bt_log(DEBUG, "hci", "failed to read RX bytes: %s", zx_status_get_string(read_status));
+    // Clear the handler so that we stop receiving events from it.
+    // TODO(jamuraa): signal failure to the consumer so it can do something.
+    return ZX_ERR_IO;
+  }
+
+  if (read_size < sizeof(ACLDataHeader)) {
+    bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
+           sizeof(ACLDataHeader), read_size);
+    // TODO(jamuraa): signal stream error somehow
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  const size_t rx_payload_size = read_size - sizeof(ACLDataHeader);
+  const size_t size_from_header = le16toh(packet->view().header().data_total_length);
+  if (size_from_header != rx_payload_size) {
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%zu) does not match"
+           " received payload size: %zu",
+           size_from_header, rx_payload_size);
+    // TODO(jamuraa): signal stream error somehow
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  packet->InitializeFromBuffer();
+  return ZX_OK;
 }
 
 ACLDataChannel::DataPacketQueue::iterator ACLDataChannel::SendQueueInsertLocationForPriority(
