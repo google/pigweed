@@ -138,9 +138,17 @@ TEST(FlashPartitionTest, EraseTest) {
     ASSERT_EQ(block_size, status.size());
   }
 
+  // Preset the flag to make sure the check actually sets it.
+  bool is_erased = true;
+  ASSERT_EQ(Status::OK,
+            test_partition.IsRegionErased(
+                0, test_partition.size_bytes(), &is_erased));
+  ASSERT_EQ(false, is_erased);
+
   ASSERT_EQ(Status::OK, test_partition.Erase());
 
-  bool is_erased;
+  // Preset the flag to make sure the check actually sets it.
+  is_erased = false;
   ASSERT_EQ(Status::OK,
             test_partition.IsRegionErased(
                 0, test_partition.size_bytes(), &is_erased));

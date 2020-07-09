@@ -83,23 +83,21 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   }
 
   byte buffer[kMaxFlashAlignment];
-
-  // TODO(pwrev/215): Stop using erased_pattern_buffer to save stack.
-  byte erased_pattern_buffer[kMaxFlashAlignment];
-
+  const byte erased_byte = flash_.erased_memory_content();
   size_t offset = 0;
-  std::memset(erased_pattern_buffer,
-              int(flash_.erased_memory_content()),
-              sizeof(erased_pattern_buffer));
   *is_erased = false;
   while (length > 0u) {
     // Check earlier that length is aligned, no need to round up
     size_t read_size = std::min(sizeof(buffer), length);
     TRY(Read(source_flash_address + offset, read_size, buffer).status());
-    if (std::memcmp(buffer, erased_pattern_buffer, read_size)) {
-      // Detected memory chunk is not entirely erased
-      return Status::OK;
+
+    for (byte b : std::span(buffer, read_size)) {
+      if (b != erased_byte) {
+        // Detected memory chunk is not entirely erased
+        return Status::OK;
+      }
     }
+
     offset += read_size;
     length -= read_size;
   }
