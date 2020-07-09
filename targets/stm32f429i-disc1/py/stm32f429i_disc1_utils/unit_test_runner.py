@@ -19,6 +19,8 @@ import logging
 import os
 import subprocess
 import sys
+import threading
+from typing import List
 
 import coloredlogs
 import serial
@@ -43,6 +45,11 @@ _LOG = logging.getLogger('unit_test_runner')
 _TESTS_STARTING_STRING = b'[==========] Running all tests.'
 _TESTS_DONE_STRING = b'[==========] Done running all tests.'
 _TEST_FAILURE_STRING = b'[  FAILED  ]'
+
+# How long to wait for the first byte of a test to be emitted. This is longer
+# than the user-configurable timeout as there's a delay while the device is
+# flashed.
+_FLASH_TIMEOUT = 5.0
 
 
 class TestingFailure(Exception):
@@ -128,26 +135,28 @@ def reset_device(openocd_config, stlink_serial):
     _LOG.debug('Successfully reset device')
 
 
-def read_serial(openocd_config, stlink_serial, port, baud_rate,
-                test_timeout) -> bytes:
+def read_serial(port, baud_rate, test_timeout) -> bytes:
     """Reads lines from a serial port until a line read times out.
 
     Returns bytes object containing the read serial data.
     """
 
     serial_data = bytearray()
-    device = serial.Serial(baudrate=baud_rate, port=port, timeout=test_timeout)
+    device = serial.Serial(baudrate=baud_rate,
+                           port=port,
+                           timeout=_FLASH_TIMEOUT)
     if not device.is_open:
         raise TestingFailure('Failed to open device')
 
     # Flush input buffer and reset the device to begin the test.
     device.reset_input_buffer()
-    reset_device(openocd_config, stlink_serial)
 
     # Block and wait for the first byte.
     serial_data += device.read()
     if not serial_data:
         raise TestingFailure('Device not producing output')
+
+    device.timeout = test_timeout
 
     # Read with a reasonable timeout until we stop getting characters.
     while True:
@@ -222,6 +231,11 @@ def handle_test_results(test_output):
     _LOG.info('Test passed!')
 
 
+def _threaded_test_reader(dest, port, baud_rate, test_timeout):
+    """Parses test output to the mutable "dest" passed to this function."""
+    dest.append(read_serial(port, baud_rate, test_timeout))
+
+
 def run_device_test(binary,
                     test_timeout,
                     openocd_config,
@@ -245,11 +259,20 @@ def run_device_test(binary,
 
     _LOG.debug('Launching test binary %s', binary)
     try:
-        flash_device(binary, openocd_config, stlink_serial)
+        # Begin capturing test output via another thread BEFORE flashing the
+        # device since the test will automatically run after the image is
+        # flashed. This reduces flake since there isn't a need to time a reset
+        # correctly relative to the start of capturing device output.
+        result: List[bytes] = []
+        threaded_reader_args = (result, port, baud, test_timeout)
+        read_thread = threading.Thread(target=_threaded_test_reader,
+                                       args=threaded_reader_args)
+        read_thread.start()
         _LOG.info('Running test')
-        serial_data = read_serial(openocd_config, stlink_serial, port, baud,
-                                  test_timeout)
-        handle_test_results(serial_data)
+        flash_device(binary, openocd_config, stlink_serial)
+        read_thread.join()
+        if result:
+            handle_test_results(result[0])
     except TestingFailure as err:
         _LOG.error(err)
         return False
