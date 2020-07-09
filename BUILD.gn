@@ -170,6 +170,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_checksum:tests",
       "$dir_pw_containers:tests",
       "$dir_pw_fuzzer:tests",
+      "$dir_pw_hex_dump:tests",
       "$dir_pw_log:tests",
       "$dir_pw_log_tokenized:tests",
       "$dir_pw_malloc_freelist:tests",

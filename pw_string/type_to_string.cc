@@ -110,8 +110,10 @@ StatusWithSize IntToString(uint64_t value, std::span<char> buffer) {
   return StatusWithSize(total_digits);
 }
 
-StatusWithSize IntToHexString(uint64_t value, std::span<char> buffer) {
-  const uint_fast8_t digits = HexDigitCount(value);
+StatusWithSize IntToHexString(uint64_t value,
+                              std::span<char> buffer,
+                              uint_fast8_t min_width) {
+  const uint_fast8_t digits = std::max(HexDigitCount(value), min_width);
 
   if (digits >= buffer.size()) {
     return HandleExhaustedBuffer(buffer);

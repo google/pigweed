@@ -280,6 +280,12 @@ TEST_F(IntToHexStringTest, Sweep) {
   }
 }
 
+TEST_F(IntToHexStringTest, MinWidth) {
+  unsigned val = 0xbeef;
+  EXPECT_TRUE(IntToHexString(val, buffer_, 8).ok());
+  EXPECT_STREQ("0000beef", buffer_);
+}
+
 TEST_F(IntToHexStringTest, Uint32Max) {
   EXPECT_EQ(
       8u,

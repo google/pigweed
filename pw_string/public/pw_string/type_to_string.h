@@ -70,8 +70,11 @@ template <>
 StatusWithSize IntToString(int64_t value, std::span<char> buffer);
 
 // Writes an integer as a hexadecimal string. Semantics match IntToString. The
-// output is lowercase without a leading 0x.
-StatusWithSize IntToHexString(uint64_t value, std::span<char> buffer);
+// output is lowercase without a leading 0x. min_width adds leading zeroes such
+// that the final string is at least the specified number of characters wide.
+StatusWithSize IntToHexString(uint64_t value,
+                              std::span<char> buffer,
+                              uint_fast8_t min_width = 0);
 
 // Rounds a floating point number to an integer and writes it as a
 // null-terminated string. Returns the number of characters written, excluding

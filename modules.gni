@@ -33,6 +33,7 @@ declare_args() {
       get_path_info("pw_cpu_exception_armv7m", "abspath")
   dir_pw_docgen = get_path_info("pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("pw_doctor", "abspath")
+  dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
   dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
   dir_pw_kvs = get_path_info("pw_kvs", "abspath")
   dir_pw_log = get_path_info("pw_log", "abspath")
