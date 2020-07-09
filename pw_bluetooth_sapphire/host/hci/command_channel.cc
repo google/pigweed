@@ -640,42 +640,17 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   // syscall would be worth it but investigate.
 
   for (size_t count = 0; count < signal->count; count++) {
-    uint32_t read_size;
     auto packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
     if (!packet) {
       bt_log(ERROR, "hci", "failed to allocate event packet!");
       return;
     }
-    auto packet_bytes = packet->mutable_view()->mutable_data();
-    zx_status_t read_status = channel_.read(0u, packet_bytes.mutable_data(), nullptr,
-                                            packet_bytes.size(), 0, &read_size, nullptr);
-    if (read_status < 0) {
-      bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
-      // Clear the handler so that we stop receiving events from it.
-      // TODO(jamuraa): signal upper layers that we can't read the channel.
+    zx_status_t status = ReadEventPacketFromChannel(channel_, packet);
+    if (status == ZX_ERR_INVALID_ARGS) {
+      continue;
+    } else if (status != ZX_OK) {
       return;
     }
-
-    if (read_size < sizeof(EventHeader)) {
-      bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
-             sizeof(EventHeader), read_size);
-      // TODO(armansito): Should this be fatal? Ignore for now.
-      continue;
-    }
-
-    // Compare the received payload size to what is in the header.
-    const size_t rx_payload_size = read_size - sizeof(EventHeader);
-    const size_t size_from_header = packet->view().header().parameter_total_size;
-    if (size_from_header != rx_payload_size) {
-      bt_log(ERROR, "hci",
-             "malformed packet - payload size from header (%zu) does not match"
-             " received payload size: %zu",
-             size_from_header, rx_payload_size);
-      continue;
-    }
-
-    packet->InitializeFromBuffer();
-
     if (packet->event_code() == kCommandStatusEventCode ||
         packet->event_code() == kCommandCompleteEventCode) {
       UpdateTransaction(std::move(packet));
@@ -689,6 +664,41 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   if (status != ZX_OK) {
     bt_log(DEBUG, "hci", "wait error: %s", zx_status_get_string(status));
   }
+}
+
+zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel &channel,
+                                                       const EventPacketPtr& packet) {
+  uint32_t read_size;
+  auto packet_bytes = packet->mutable_view()->mutable_data();
+  zx_status_t read_status = channel.read(0u, packet_bytes.mutable_data(), nullptr,
+                                          packet_bytes.size(), 0, &read_size, nullptr);
+  if (read_status < 0) {
+    bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
+    // Clear the handler so that we stop receiving events from it.
+    // TODO(jamuraa): signal upper layers that we can't read the channel.
+    return ZX_ERR_IO;
+  }
+
+  if (read_size < sizeof(EventHeader)) {
+    bt_log(ERROR, "hci", "malformed data packet - expected at least %zu bytes, got %u",
+           sizeof(EventHeader), read_size);
+    // TODO(armansito): Should this be fatal? Ignore for now.
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  // Compare the received payload size to what is in the header.
+  const size_t rx_payload_size = read_size - sizeof(EventHeader);
+  const size_t size_from_header = packet->view().header().parameter_total_size;
+  if (size_from_header != rx_payload_size) {
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%zu) does not match"
+           " received payload size: %zu",
+           size_from_header, rx_payload_size);
+    return ZX_ERR_INVALID_ARGS;
+  }
+
+  packet->InitializeFromBuffer();
+  return ZX_OK;
 }
 
 }  // namespace hci

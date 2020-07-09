@@ -203,6 +203,13 @@ class CommandChannel final {
     channel_timeout_cb_ = std::move(timeout_cb);
   }
 
+  // Reads bytes from the channel and try to parse them as EventPacket.
+  // ZX_ERR_IO means error happens while reading from the channel.
+  // ZX_ERR_INVALID_ARGS means the packet is malformed.
+  // Otherwise, ZX_OK is returned.
+  static zx_status_t ReadEventPacketFromChannel(const zx::channel &channel,
+                                                const EventPacketPtr& packet);
+
  private:
   CommandChannel(Transport* transport, zx::channel hci_command_channel);
 

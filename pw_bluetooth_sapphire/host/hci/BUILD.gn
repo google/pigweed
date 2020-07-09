@@ -127,3 +127,11 @@ fuzzer("read_acl_data_packet_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 }
+
+fuzzer("read_command_event_packet_fuzzer") {
+  sources = [ "command_channel_read_event_packet_fuzztest.cc" ]
+  deps = [
+    ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+  ]
+}

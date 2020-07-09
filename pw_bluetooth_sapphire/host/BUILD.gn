@@ -167,5 +167,6 @@ fuzzers_package("fuzzers") {
     "sdp:data_element_fuzzer",
     "sdp:pdu_fuzzer",
     "hci:read_acl_data_packet_fuzzer",
+    "hci:read_command_event_packet_fuzzer",
   ]
 }

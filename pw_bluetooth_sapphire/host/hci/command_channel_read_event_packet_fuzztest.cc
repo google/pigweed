@@ -1,4 +1,4 @@
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 
 #include "slab_allocators.h"
 
@@ -10,7 +10,7 @@ namespace bt::hci {
 void fuzz(const uint8_t* data, size_t size) {
   // Allocate a buffer for the event. Since we don't know the size beforehand
   // we allocate the largest possible buffer.
-  auto packet = ACLDataPacket::New(slab_allocators::kLargeACLDataPayloadSize);
+  auto packet = EventPacket::New(slab_allocators::kLargeControlPayloadSize);
   if (!packet) {
     return;
   }
@@ -21,7 +21,7 @@ void fuzz(const uint8_t* data, size_t size) {
     return;
   }
   a.write(0u, data, size, nullptr, 0);
-  ACLDataChannel::ReadACLDataPacketFromChannel(b, packet);
+  CommandChannel::ReadEventPacketFromChannel(b, packet);
 }
 
 }  // namespace bt::hci

@@ -21,6 +21,7 @@ namespace hci {
 
 using CommandPacket = Packet<CommandHeader>;
 using EventPacket = Packet<EventHeader>;
+using EventPacketPtr = std::unique_ptr<EventPacket>;
 
 // Packet template specialization for HCI command packets.
 template <>
