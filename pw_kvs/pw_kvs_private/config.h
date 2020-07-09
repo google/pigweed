@@ -17,9 +17,10 @@
 
 #include <cstddef>
 
+// The maximum flash alignment supported
 #ifndef PW_KVS_MAX_FLASH_ALIGNMENT
 #define PW_KVS_MAX_FLASH_ALIGNMENT 256UL
-#endif
+#endif  // PW_KVS_MAX_FLASH_ALIGNMENT
 
 static_assert((PW_KVS_MAX_FLASH_ALIGNMENT >= 16UL),
               "Max flash alignment is required to be at least 16");

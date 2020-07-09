@@ -28,6 +28,7 @@ pw_source_set("pw_kvs") {
     "public/pw_kvs/alignment.h",
     "public/pw_kvs/checksum.h",
     "public/pw_kvs/flash_memory.h",
+    "public/pw_kvs/flash_test_partition.h",
     "public/pw_kvs/format.h",
     "public/pw_kvs/io.h",
     "public/pw_kvs/key_value_store.h",
@@ -84,15 +85,68 @@ pw_source_set("fake_flash") {
   deps = [ dir_pw_log ]
 }
 
-pw_source_set("flash_partition_test") {
-  public = [ "public/pw_kvs/flash_partition_test.h" ]
-  sources = [ "flash_partition_test.cc" ]
+pw_source_set("fake_flash_small_partition") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_kvs/flash_test_partition.h" ]
+  sources = [ "fake_flash_test_partition.cc" ]
+  deps = [
+    ":fake_flash",
+    dir_pw_kvs,
+  ]
+}
+
+pw_source_set("fake_flash_64_aligned_partition") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_kvs/flash_test_partition.h" ]
+  sources = [ "fake_flash_test_partition.cc" ]
+  deps = [
+    ":fake_flash",
+    dir_pw_kvs,
+  ]
+  defines = [ "PW_FLASH_TEST_ALIGNMENT=64" ]
+}
+
+pw_source_set("fake_flash_256_aligned_partition") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_kvs/flash_test_partition.h" ]
+  sources = [ "fake_flash_test_partition.cc" ]
+  deps = [
+    ":fake_flash",
+    dir_pw_kvs,
+  ]
+  defines = [ "PW_FLASH_TEST_ALIGNMENT=256" ]
+}
+
+pw_source_set("flash_partition_test_100_iterations") {
   deps = [
     dir_pw_kvs,
     dir_pw_log,
-    dir_pw_span,
     dir_pw_unit_test,
   ]
+  sources = [ "flash_partition_test.cc" ]
+  defines = [ "PW_FLASH_TEST_ITERATIONS=100" ]
+}
+
+pw_source_set("flash_partition_test_2_iterations") {
+  deps = [
+    dir_pw_kvs,
+    dir_pw_log,
+    dir_pw_unit_test,
+  ]
+  sources = [ "flash_partition_test.cc" ]
+  defines = [ "PW_FLASH_TEST_ITERATIONS=2" ]
+}
+
+pw_source_set("key_value_store_initialized_test") {
+  deps = [
+    ":crc16",
+    ":pw_kvs",
+    ":test_utils",
+    dir_pw_checksum,
+    dir_pw_log,
+    dir_pw_unit_test,
+  ]
+  sources = [ "key_value_store_initialized_test.cc" ]
 }
 
 pw_source_set("test_utils") {
@@ -119,8 +173,13 @@ pw_test_group("tests") {
     ":checksum_test",
     ":entry_test",
     ":entry_cache_test",
-    ":fake_flash_partition_test",
+    ":flash_partition_small_test",
+    ":flash_partition_64_alignment_test",
+    ":flash_partition_256_alignment_test",
     ":key_value_store_test",
+    ":key_value_store_small_flash_test",
+    ":key_value_store_64_alignment_flash_test",
+    ":key_value_store_256_alignment_flash_test",
     ":key_value_store_binary_format_test",
     ":key_value_store_fuzz_test",
     ":key_value_store_map_test",
@@ -162,13 +221,31 @@ pw_test("entry_cache_test") {
   sources = [ "entry_cache_test.cc" ]
 }
 
-pw_test("fake_flash_partition_test") {
+pw_test("flash_partition_small_test") {
   deps = [
     ":fake_flash",
-    ":flash_partition_test",
+    ":fake_flash_small_partition",
+    ":flash_partition_test_100_iterations",
     dir_pw_log,
   ]
-  sources = [ "fake_flash_partition_test.cc" ]
+}
+
+pw_test("flash_partition_64_alignment_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_64_aligned_partition",
+    ":flash_partition_test_100_iterations",
+    dir_pw_log,
+  ]
+}
+
+pw_test("flash_partition_256_alignment_test") {
+  deps = [
+    ":fake_flash",
+    ":fake_flash_256_aligned_partition",
+    ":flash_partition_test_100_iterations",
+    dir_pw_log,
+  ]
 }
 
 pw_test("key_value_store_test") {
@@ -181,6 +258,27 @@ pw_test("key_value_store_test") {
     dir_pw_log,
   ]
   sources = [ "key_value_store_test.cc" ]
+}
+
+pw_test("key_value_store_small_flash_test") {
+  deps = [
+    ":fake_flash_small_partition",
+    ":key_value_store_initialized_test",
+  ]
+}
+
+pw_test("key_value_store_64_alignment_flash_test") {
+  deps = [
+    ":fake_flash_64_aligned_partition",
+    ":key_value_store_initialized_test",
+  ]
+}
+
+pw_test("key_value_store_256_alignment_flash_test") {
+  deps = [
+    ":fake_flash_256_aligned_partition",
+    ":key_value_store_initialized_test",
+  ]
 }
 
 pw_test("key_value_store_binary_format_test") {

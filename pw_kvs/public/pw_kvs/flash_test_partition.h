@@ -13,16 +13,10 @@
 // the License.
 #pragma once
 
-#include <cstddef>
-
 #include "pw_kvs/flash_memory.h"
 
-namespace pw::kvs::PartitionTest {
+namespace pw::kvs {
 
-void WriteTest(FlashPartition& partition, size_t test_iterations = 2);
+FlashPartition& FlashTestPartition();
 
-void EraseTest(FlashPartition& partition);
-
-void ReadOnlyTest(FlashPartition& partition);
-
-}  // namespace pw::kvs::PartitionTest
+}  // namespace pw::kvs

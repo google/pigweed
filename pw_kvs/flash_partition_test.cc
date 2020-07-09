@@ -12,20 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_kvs/flash_partition_test.h"
-
 #include <span>
 
 #include "gtest/gtest.h"
 #include "pw_kvs/flash_memory.h"
+#include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs::PartitionTest {
+namespace {
+
+#ifndef PW_FLASH_TEST_ITERATIONS
+#define PW_FLASH_TEST_ITERATIONS 2
+#endif  // PW_FLASH_TEST_ITERATIONS
+
+constexpr size_t kTestIterations = PW_FLASH_TEST_ITERATIONS;
 
 constexpr size_t kTestDataSize = kMaxFlashAlignment;
-
-namespace {
 
 void WriteData(FlashPartition& partition, uint8_t fill_byte) {
   uint8_t test_data[kTestDataSize];
@@ -95,74 +99,67 @@ void WriteData(FlashPartition& partition, uint8_t fill_byte) {
   }
 }
 
-}  // namespace
+TEST(FlashPartitionTest, FillTest) {
+  FlashPartition& test_partition = FlashTestPartition();
 
-void WriteTest(FlashPartition& partition, size_t test_iterations) {
-  ASSERT_GE(kTestDataSize, partition.alignment_bytes());
+  ASSERT_GE(kTestDataSize, test_partition.alignment_bytes());
 
-  for (size_t i = 0; i < test_iterations; i++) {
-    WriteData(partition, 0);
-    WriteData(partition, 0xff);
-    WriteData(partition, 0x55);
-    WriteData(partition, 0xa3);
+  for (size_t i = 0; i < kTestIterations; i++) {
+    WriteData(test_partition, 0);
+    WriteData(test_partition, 0xff);
+    WriteData(test_partition, 0x55);
+    WriteData(test_partition, 0xa3);
   }
 }
 
-void EraseTest(FlashPartition& partition) {
+TEST(FlashPartitionTest, EraseTest) {
+  FlashPartition& test_partition = FlashTestPartition();
+
   static const uint8_t fill_byte = 0x55;
   uint8_t test_data[kTestDataSize];
   memset(test_data, fill_byte, sizeof(test_data));
 
-  ASSERT_GE(kTestDataSize, partition.alignment_bytes());
+  ASSERT_GE(kTestDataSize, test_partition.alignment_bytes());
 
   const size_t block_size =
-      std::min(sizeof(test_data), partition.sector_size_bytes());
+      std::min(sizeof(test_data), test_partition.sector_size_bytes());
   auto data_span = std::span(test_data, block_size);
 
-  ASSERT_EQ(Status::OK, partition.Erase(0, partition.sector_count()));
+  ASSERT_EQ(Status::OK, test_partition.Erase(0, test_partition.sector_count()));
 
   // Write to the first page of each sector.
-  for (size_t sector_index = 0; sector_index < partition.sector_count();
+  for (size_t sector_index = 0; sector_index < test_partition.sector_count();
        sector_index++) {
     FlashPartition::Address address =
-        sector_index * partition.sector_size_bytes();
+        sector_index * test_partition.sector_size_bytes();
 
-    StatusWithSize status = partition.Write(address, as_bytes(data_span));
+    StatusWithSize status = test_partition.Write(address, as_bytes(data_span));
     ASSERT_EQ(Status::OK, status.status());
     ASSERT_EQ(block_size, status.size());
   }
 
-  ASSERT_EQ(Status::OK, partition.Erase());
+  ASSERT_EQ(Status::OK, test_partition.Erase());
 
   bool is_erased;
   ASSERT_EQ(Status::OK,
-            partition.IsRegionErased(0, partition.size_bytes(), &is_erased));
+            test_partition.IsRegionErased(
+                0, test_partition.size_bytes(), &is_erased));
   ASSERT_EQ(true, is_erased);
 
   // Read the first page of each sector and make sure it has been erased.
-  for (size_t sector_index = 0; sector_index < partition.sector_count();
+  for (size_t sector_index = 0; sector_index < test_partition.sector_count();
        sector_index++) {
     FlashPartition::Address address =
-        sector_index * partition.sector_size_bytes();
+        sector_index * test_partition.sector_size_bytes();
 
     StatusWithSize status =
-        partition.Read(address, data_span.size_bytes(), data_span.data());
+        test_partition.Read(address, data_span.size_bytes(), data_span.data());
     ASSERT_EQ(Status::OK, status.status());
     ASSERT_EQ(data_span.size_bytes(), status.size());
 
-    ASSERT_EQ(true, partition.AppearsErased(as_bytes(data_span)));
+    ASSERT_EQ(true, test_partition.AppearsErased(as_bytes(data_span)));
   }
 }
 
-void ReadOnlyTest(FlashPartition& partition) {
-  uint8_t test_data[kTestDataSize];
-  auto data_span = std::span(test_data);
-
-  ASSERT_EQ(Status::PERMISSION_DENIED,
-            partition.Erase(0, partition.sector_count()));
-
-  ASSERT_EQ(Status::PERMISSION_DENIED,
-            partition.Write(0, as_bytes(data_span)).status());
-}
-
+}  // namespace
 }  // namespace pw::kvs::PartitionTest
