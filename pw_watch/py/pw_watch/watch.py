@@ -94,7 +94,7 @@ class BuildCommand:
         return (str(self.build_dir), *self.targets)
 
     def __str__(self) -> str:
-        return shlex.join(self.args())
+        return ' '.join(shlex.quote(arg) for arg in self.args())
 
 
 class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):

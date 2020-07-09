@@ -169,7 +169,7 @@ def main() -> int:
         return 1
 
     command = [sys.executable] + resolved_command
-    _LOG.debug('RUN %s', shlex.join(command))
+    _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
 
     if args.capture_output:
         completed_process = subprocess.run(

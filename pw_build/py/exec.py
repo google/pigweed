@@ -145,7 +145,7 @@ def main() -> int:
         _LOG.error('')
         _LOG.error('Full command:')
         _LOG.error('')
-        _LOG.error('  %s', shlex.join(command))
+        _LOG.error('  %s', ' '.join(shlex.quote(arg) for arg in command))
         _LOG.error('')
         _LOG.error('Process output:')
         print(flush=True)

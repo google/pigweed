@@ -148,7 +148,7 @@ def _truncate(value, length: int = 60) -> str:
 
 def format_command(args: Sequence, kwargs: dict) -> Tuple[str, str]:
     attr = ', '.join(f'{k}={_truncate(v)}' for k, v in sorted(kwargs.items()))
-    return attr, shlex.join(str(arg) for arg in args)
+    return attr, ' '.join(shlex.quote(str(arg)) for arg in args)
 
 
 def log_run(args, **kwargs) -> subprocess.CompletedProcess:

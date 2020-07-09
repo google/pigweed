@@ -15,7 +15,7 @@
 
 import argparse
 import os
-from typing import Callable, Dict, Generic, IO, List, Literal, Mapping
+from typing import Callable, Dict, Generic, IO, List, Mapping
 from typing import NamedTuple, Optional, TypeVar
 
 
@@ -172,7 +172,9 @@ def strict_bool(value: str) -> bool:
             or value in _BOOLEAN_TRUE_EMOJI)
 
 
-OpenMode = Literal['r', 'rb', 'w', 'wb']
+# TODO(mohrr) Switch to Literal when no longer supporting Python 3.7.
+# OpenMode = Literal['r', 'rb', 'w', 'wb']
+OpenMode = str
 
 
 class FileType:

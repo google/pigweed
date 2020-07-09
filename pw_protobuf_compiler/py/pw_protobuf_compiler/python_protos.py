@@ -52,12 +52,13 @@ def compile_protos(
         *proto_paths,
     )
 
-    _LOG.debug('%s', shlex.join(str(c) for c in cmd))
+    _LOG.debug('%s', ' '.join(shlex.quote(str(c)) for c in cmd))
     process = subprocess.run(cmd, capture_output=True)
 
     if process.returncode:
         _LOG.error('protoc invocation failed!\n%s\n%s',
-                   shlex.join(str(c) for c in cmd), process.stderr.decode())
+                   ' '.join(shlex.quote(str(c)) for c in cmd),
+                   process.stderr.decode())
         process.check_returncode()
 
 
