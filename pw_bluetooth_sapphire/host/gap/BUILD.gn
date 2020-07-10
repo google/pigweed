@@ -42,6 +42,8 @@ static_library("gap") {
     "peer.h",
     "peer_cache.cc",
     "peer_cache.h",
+    "types.cc",
+    "types.h",
   ]
 
   public_deps = [
@@ -102,6 +104,7 @@ source_set("tests") {
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
     "peer_unittest.cc",
+    "types_unittest.cc",
   ]
 
   deps = [
