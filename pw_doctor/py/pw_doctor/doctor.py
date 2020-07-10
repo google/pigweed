@@ -196,6 +196,9 @@ def virtualenv(ctx: DoctorContext):
 @register_into(CHECKS)
 def cipd(ctx: DoctorContext):
     """Check cipd is set up correctly and in use."""
+    if os.environ.get('PW_DOCTOR_SKIP_CIPD_CHECKS'):
+        return
+
     cipd_path = 'pigweed'
 
     cipd_exe = shutil.which('cipd')
@@ -237,7 +240,11 @@ def cipd(ctx: DoctorContext):
 
 @register_into(CHECKS)
 def cipd_versions(ctx: DoctorContext):
-    """Check cipd is set up correctly and in use."""
+    """Check cipd tool versions are current."""
+
+    if os.environ.get('PW_DOCTOR_SKIP_CIPD_CHECKS'):
+        return
+
     try:
         root = pathlib.Path(os.environ['PW_ROOT']).resolve()
     except KeyError:

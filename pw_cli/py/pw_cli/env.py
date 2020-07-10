@@ -42,6 +42,8 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
 
     parser.add_allowed_suffix('_CIPD_INSTALL_DIR')
 
+    parser.add_var('PW_DOCTOR_SKIP_CIPD_CHECKS')
+
     parser.add_var('PW_CIPD_PACKAGE_FILES')
     parser.add_var('PW_VIRTUALENV_REQUIREMENTS')
     parser.add_var('PW_VIRTUALENV_SETUP_PY_ROOTS')
