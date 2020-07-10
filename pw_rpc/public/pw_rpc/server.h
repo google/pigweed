@@ -30,6 +30,8 @@ class Server {
       : channels_(static_cast<internal::Channel*>(channels.data()),
                   channels.size()) {}
 
+  ~Server();
+
   // Registers a service with the server. This should not be called directly
   // with an internal::Service; instead, use a generated class which inherits
   // from it.

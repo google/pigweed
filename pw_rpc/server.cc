@@ -29,6 +29,14 @@ using std::byte;
 using internal::Packet;
 using internal::PacketType;
 
+Server::~Server() {
+  // Since the writers remove themselves from the server in Finish(), remove the
+  // first writer until no writers remain.
+  while (!writers_.empty()) {
+    writers_.front().Finish();
+  }
+}
+
 void Server::ProcessPacket(std::span<const byte> data,
                            ChannelOutput& interface) {
   Packet packet = Packet::FromBuffer(data);

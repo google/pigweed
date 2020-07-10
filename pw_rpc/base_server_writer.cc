@@ -26,11 +26,20 @@ BaseServerWriter::BaseServerWriter(ServerCall& call)
 }
 
 BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
+  Finish();
+
+  state_ = other.state_;
+
+  if (other.open()) {
+    other.call_.server().RemoveWriter(other);
+    other.state_ = kClosed;
+
+    other.call_.server().RegisterWriter(*this);
+  }
+
   call_ = std::move(other.call_);
   response_ = std::move(other.response_);
-  state_ = std::move(other.state_);
 
-  other.state_ = kClosed;
   return *this;
 }
 
