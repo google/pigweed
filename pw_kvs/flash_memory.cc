@@ -106,8 +106,9 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
 }
 
 bool FlashPartition::AppearsErased(std::span<const byte> data) const {
+  byte erased_content = flash_.erased_memory_content();
   for (byte b : data) {
-    if (b != flash_.erased_memory_content()) {
+    if (b != erased_content) {
       return false;
     }
   }

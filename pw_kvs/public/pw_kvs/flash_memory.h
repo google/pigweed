@@ -211,7 +211,7 @@ class FlashPartition {
   virtual StatusWithSize Write(Address address,
                                std::span<const std::byte> data);
 
-  // Check to see if chunk of flash memory is erased. Address and len need to
+  // Check to see if chunk of flash partition is erased. Address and len need to
   // be aligned with FlashMemory.
   // Returns: OK, on success.
   //          TIMEOUT, on timeout.
@@ -221,6 +221,12 @@ class FlashPartition {
   virtual Status IsRegionErased(Address source_flash_address,
                                 size_t len,
                                 bool* is_erased);
+
+  // Check if the entire partition is erased.
+  // Returns: same as IsRegionErased().
+  Status IsErased(bool* is_erased) {
+    return IsRegionErased(0, this->size_bytes(), is_erased);
+  }
 
   // Checks to see if the data appears to be erased. No reads or writes occur;
   // the FlashPartition simply compares the data to
