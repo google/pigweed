@@ -47,8 +47,20 @@ template("_pw_disableable_target") {
   } else {
     _actual_target_name = target_name + "_DISABLED"
 
-    group(target_name) {
-      forward_variables_from(invoker, [ "testonly" ])
+    # If the target is disabled, create an empty target in its place. Use an
+    # action with the original target's sources as inputs to ensure that
+    # the source files exist (even if they don't compile).
+    pw_python_script(target_name) {
+      script = "$dir_pw_build/py/nop.py"
+      stamp = true
+
+      inputs = []
+      if (defined(invoker.sources)) {
+        inputs += invoker.sources
+      }
+      if (defined(invoker.public)) {
+        inputs += invoker.public
+      }
     }
   }
 
