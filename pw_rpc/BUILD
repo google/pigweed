@@ -90,7 +90,7 @@ pw_cc_library(
 filegroup(
     name = "nanopb",
     srcs = [
-        "nanopb/codegen_manual_test.cc",
+        "nanopb/codegen_test.cc",
         "nanopb/method.cc",
         "nanopb/method_test.cc",
         "nanopb/public_overrides/pw_rpc/internal/method.h",
