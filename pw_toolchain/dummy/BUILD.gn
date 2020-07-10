@@ -23,4 +23,41 @@ toolchain("dummy") {
     }
     description = "stamp {{output}}"
   }
+
+  # If the user tries to build a target with the default toolchain, run a script
+  # printing out the error.
+  _bad_toolchain_command = "python " + rebase_path("bad_toolchain.py")
+
+  tool("asm") {
+    command = _bad_toolchain_command
+    outputs =
+        [ "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o" ]
+  }
+
+  tool("cc") {
+    command = _bad_toolchain_command
+    outputs =
+        [ "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o" ]
+  }
+
+  tool("cxx") {
+    command = _bad_toolchain_command
+    outputs =
+        [ "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o" ]
+  }
+
+  tool("link") {
+    command = _bad_toolchain_command
+    outputs = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+  }
+
+  tool("alink") {
+    command = _bad_toolchain_command
+    outputs = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+  }
+
+  tool("solink") {
+    command = _bad_toolchain_command
+    outputs = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+  }
 }
