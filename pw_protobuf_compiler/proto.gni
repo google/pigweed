@@ -358,11 +358,17 @@ template("pw_proto_library") {
   foreach(_gen, _generators) {
     _lang_target = "${target_name}_${_gen}"
     _gen_deps = []
+
+    if (_gen == "nanopb_rpc") {
+      # Generated RPC code depends on the library's core protos.
+      _gen_deps += [ ":${target_name}_nanopb" ]
+    }
+
     if (defined(invoker.deps)) {
       _gen_deps = process_file_template(invoker.deps, "{{source}}_${_gen}")
 
       if (_gen == "nanopb_rpc") {
-        # Generated RPC code also depends on the core generated protos.
+        # RPC dependencies also depend on their core generated protos.
         _gen_deps += process_file_template(invoker.deps, "{{source}}_nanopb")
       }
     }
