@@ -44,14 +44,14 @@
   },
   {
     "_comment": "TODO(pwbug/70) Put clang in cipd for Windows.",
-    "path": "fuchsia/third_party/clang/${os=linux,mac}-${arch}",
+    "path": "fuchsia/third_party/clang/${os=linux,mac}-${arch=amd64}",
     "tags": [
       "git_revision:8e058feae0b0d07cd86257f0aa3154acfa887fe0"
     ]
   },
   {
     "_comment": "When bumping the minor version (e.g., to 3.9.x) also update env_setup/virtualenv/init.py to check for the new version.",
-    "path": "infra/3pp/tools/cpython3/${platform}",
+    "path": "infra/3pp/tools/cpython3/${os}-${arch=amd64}",
     "tags": [
       "version:3.8.2.chromium.10"
     ]
