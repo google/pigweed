@@ -172,14 +172,14 @@ class SignalingChannel : public SignalingChannelInterface {
   CommandId GetNextCommandId();
 
  private:
-  // Register a callback that will be invoked when a response-type command
-  // packet (specified by |expected_code|) is received. Returns the identifier
-  // to be included in the header of the outgoing request packet (or
-  // kInvalidCommandId if all valid command identifiers are pending responses).
-  // If the signaling channel receives a Command Reject that matches the same
-  // identifier, the rejection packet will be forwarded to the callback instead.
-  // |handler| will be run on the L2CAP thread.
-  CommandId EnqueueResponse(CommandCode expected_code, ResponseHandler cb);
+  // Enqueue a response to a request with command id |id| and payload |request_packet|. Register a
+  // callback |cb| that will be invoked when a response-type command packet (specified by
+  // |response_code|) is received. Starts the RTX timer and handles retransmission of
+  // |request_packet| and eventual timeout failure if a response isn't received. If the signaling
+  // channel receives a Command Reject that matches the same |id|, the rejection packet will be
+  // forwarded to the callback instead.
+  void EnqueueResponse(const ByteBuffer& request_packet, CommandId id, CommandCode response_code,
+                       ResponseHandler cb);
 
   // Called when a response-type command packet is received. Sends a Command
   // Reject if no ResponseHandler was registered for inbound packet's command
@@ -187,9 +187,10 @@ class SignalingChannel : public SignalingChannelInterface {
   void OnRxResponse(const SignalingPacket& packet);
 
   // Called after Response Timeout eXpired (RTX) or Extended Response Timeout eXpired (ERTX) timer
-  // expires. |id| must be in |pending_commands_|. The ResponseHandler will be invoked with
-  // Status::kTimeOut and an empty ByteBuffer.
-  void OnResponseTimeout(CommandId id);
+  // expires. |id| must be in |pending_commands_|. If |retransmit| is true, requests will be
+  // retransmitted up to the retransmission limit before timing out the response. The
+  // ResponseHandler will be invoked with Status::kTimeOut and an empty ByteBuffer.
+  void OnResponseTimeout(CommandId id, bool retransmit);
 
   // True if an outbound request-type command has registered a callback for its
   // response matching a particular |id|.
@@ -208,7 +209,6 @@ class SignalingChannel : public SignalingChannelInterface {
   // Builds a signaling packet with the given parameters and payload. The
   // backing buffer is slab allocated.
   ByteBufferPtr BuildPacket(CommandCode code, uint8_t identifier, const ByteBuffer& data);
-
   // Channel callbacks:
   void OnChannelClosed();
   void OnRxBFrame(ByteBufferPtr sdu);
@@ -217,6 +217,35 @@ class SignalingChannel : public SignalingChannelInterface {
   // packets and send responses for command packets that exceed this host's MTU
   // or can't be handled by this host.
   void CheckAndDispatchPacket(const SignalingPacket& packet);
+
+  // Stores copy of request, response handlers, and timeout state for requests that have been sent.
+  struct PendingCommand {
+    PendingCommand(const ByteBuffer& request_packet, CommandCode response_code,
+                   ResponseHandler response_handler)
+        : response_code(response_code),
+          response_handler(std::move(response_handler)),
+          command_packet(std::make_unique<DynamicByteBuffer>(request_packet)),
+          transmit_count(1u),
+          timer_duration(0u),
+          response_timeout_task() {}
+    CommandCode response_code;
+    ResponseHandler response_handler;
+
+    // Copy of request command packet. Used for retransmissions.
+    ByteBufferPtr command_packet;
+
+    // Number of times this request has been transmitted.
+    size_t transmit_count;
+
+    // The current timer duration. Used to perform exponential backoff with the RTX timer.
+    zx::duration timer_duration;
+
+    // Automatically canceled by destruction if the response is received.
+    async::TaskClosure response_timeout_task;
+  };
+
+  // Retransmit the request corresponding to |pending_command| and reset the RTX timer.
+  void RetransmitPendingCommand(PendingCommand& pending_command);
 
   // Destroy all other members prior to this so they can use this for checking.
   fxl::ThreadChecker thread_checker_;
@@ -227,18 +256,7 @@ class SignalingChannel : public SignalingChannelInterface {
   uint16_t mtu_;
   uint8_t next_cmd_id_;
 
-  // Stores response handlers for requests that have been sent.
-  struct PendingCommand {
-    PendingCommand(CommandCode expected_code, ResponseHandler response_handler)
-        : expected_code(expected_code),
-          response_handler(std::move(response_handler)),
-          response_timeout_task() {}
-    CommandCode expected_code;
-    ResponseHandler response_handler;
-
-    // Automatically canceled by destruction if the response is received.
-    async::TaskClosure response_timeout_task;
-  };
+  // Stores response handlers for outbound request packets with the corresponding CommandId.
   std::unordered_map<CommandId, PendingCommand> pending_commands_;
 
   // Stores handlers for incoming request packets.

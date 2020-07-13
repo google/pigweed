@@ -305,6 +305,16 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     chanmgr()->RegisterACL(handle, role, std::move(lec), std::move(suc));
   }
 
+  void ReceiveL2capInformationResponses(CommandId extended_features_id,
+                                        CommandId fixed_channels_supported_id,
+                                        l2cap::ExtendedFeatures features = 0u,
+                                        l2cap::FixedChannelsSupported channels = 0u) {
+    ReceiveAclDataPacket(
+        testing::AclExtFeaturesInfoRsp(extended_features_id, kTestHandle1, features));
+    ReceiveAclDataPacket(testing::AclFixedChannelsSupportedInfoRsp(fixed_channels_supported_id,
+                                                                   kTestHandle1, channels));
+  }
+
   fbl::RefPtr<Channel> ActivateNewFixedChannel(ChannelId id,
                                                hci::ConnectionHandle conn_handle = kTestHandle1,
                                                Channel::ClosedCallback closed_cb = DoNothing,
@@ -1992,8 +2002,9 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
   auto link_error_cb = [&link_error] { link_error = true; };
   const auto cmd_ids =
       QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, std::move(link_error_cb));
-  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
-                                                      kExtendedFeaturesBitEnhancedRetransmission));
+  ReceiveL2capInformationResponses(cmd_ids.extended_features_id,
+                                   cmd_ids.fixed_channels_supported_id,
+                                   /*features=*/kExtendedFeaturesBitEnhancedRetransmission);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
@@ -2039,8 +2050,9 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
   auto link_error_cb = [&link_error] { link_error = true; };
   const auto cmd_ids =
       QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster, std::move(link_error_cb));
-  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
-                                                      kExtendedFeaturesBitEnhancedRetransmission));
+  ReceiveL2capInformationResponses(cmd_ids.extended_features_id,
+                                   cmd_ids.fixed_channels_supported_id,
+                                   /*features=*/kExtendedFeaturesBitEnhancedRetransmission);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
@@ -2087,8 +2099,9 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
 // unacknowledged outbound I-Frame.
 TEST_F(L2CAP_ChannelManagerTest, ErtmChannelDoesNotRetransmitUnacknowledgedIFrameDuringRemoteBusy) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
-  ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
-                                                      kExtendedFeaturesBitEnhancedRetransmission));
+  ReceiveL2capInformationResponses(cmd_ids.extended_features_id,
+                                   cmd_ids.fixed_channels_supported_id,
+                                   /*features=*/kExtendedFeaturesBitEnhancedRetransmission);
 
   fbl::RefPtr<Channel> channel;
   auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {

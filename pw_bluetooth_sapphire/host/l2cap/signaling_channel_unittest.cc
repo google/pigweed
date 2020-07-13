@@ -464,9 +464,14 @@ TEST_F(L2CAP_SignalingChannelTest, HandlerCompletedByResponseNotCalledAgainAfter
 
 // Ensure that the signaling channel calls ResponseHandler with Status::kTimeOut after a request
 // times out waiting for a peer response.
-TEST_F(L2CAP_SignalingChannelTest, CallHandlerWithKTimeOutStatusAfterRtxTimeout) {
-  bool tx_success = false;
-  fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; }, dispatcher());
+TEST_F(L2CAP_SignalingChannelTest, CallHandlerCalledAfterMaxNumberOfRtxTimeoutRetransmissions) {
+  size_t send_cb_count = 0;
+  auto send_cb = [&](auto cb_packet) {
+    SignalingPacket pkt(cb_packet.get());
+    EXPECT_EQ(pkt.header().id, 1u);
+    send_cb_count++;
+  };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
   bool rx_cb_called = false;
@@ -478,11 +483,63 @@ TEST_F(L2CAP_SignalingChannelTest, CallHandlerWithKTimeOutStatusAfterRtxTimeout)
       }));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(tx_success);
+  EXPECT_EQ(send_cb_count, 1u);
   EXPECT_FALSE(rx_cb_called);
 
-  RunLoopFor(kSignalingChannelResponseTimeout);
+  auto timeout = kSignalingChannelResponseTimeout;
+  for (size_t i = 1; i < kMaxSignalingChannelTransmissions; i++) {
+    // Ensure retransmission doesn't happen before timeout.
+    RunLoopFor(timeout - zx::msec(100));
+    EXPECT_EQ(send_cb_count, i);
+
+    RunLoopFor(zx::msec(100));
+    EXPECT_EQ(send_cb_count, 1 + i);
+    EXPECT_FALSE(rx_cb_called);
+
+    timeout *= 2;
+  }
+
+  send_cb_count = 0;
+  RunLoopFor(timeout);
+  EXPECT_EQ(send_cb_count, 0u);
   EXPECT_TRUE(rx_cb_called);
+}
+
+TEST_F(L2CAP_SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
+  size_t send_cb_count = 0;
+  auto send_cb = [&](auto cb_packet) {
+    SignalingPacket pkt(cb_packet.get());
+    EXPECT_EQ(pkt.header().id, 1u);
+    send_cb_count++;
+  };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
+  size_t rx_cb_count = 0;
+  EXPECT_TRUE(
+      sig()->SendRequest(kEchoRequest, req_data, [&rx_cb_count](Status status, const ByteBuffer&) {
+        rx_cb_count++;
+        EXPECT_EQ(Status::kSuccess, status);
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+      }));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, send_cb_count);
+  EXPECT_EQ(0u, rx_cb_count);
+
+  RunLoopFor(kSignalingChannelResponseTimeout);
+  EXPECT_EQ(2u, send_cb_count);
+  EXPECT_EQ(0u, rx_cb_count);
+
+  const StaticByteBuffer echo_rsp(kEchoResponse, 0x01, 0x00, 0x00);
+  fake_chan()->Receive(echo_rsp);
+  EXPECT_EQ(2u, send_cb_count);
+  EXPECT_EQ(1u, rx_cb_count);
+
+  // Second response should be ignored as it is unexpected.
+  fake_chan()->Receive(echo_rsp);
+  EXPECT_EQ(2u, send_cb_count);
+  EXPECT_EQ(1u, rx_cb_count);
 }
 
 // When the response handler expects more responses, use the longer ERTX timeout for the following

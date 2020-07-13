@@ -44,22 +44,6 @@ SignalingChannel::~SignalingChannel() { ZX_DEBUG_ASSERT(IsCreationThreadCurrent(
 bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& payload,
                                    ResponseHandler cb) {
   ZX_ASSERT(cb);
-  const CommandId id = EnqueueResponse(req_code + 1, std::move(cb));
-  if (id == kInvalidCommandId) {
-    return false;
-  }
-
-  return SendPacket(req_code, id, payload);
-}
-
-void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
-  ZX_ASSERT(!IsSupportedResponse(req_code));
-  ZX_ASSERT(cb);
-  inbound_handlers_[req_code] = std::move(cb);
-}
-
-CommandId SignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseHandler cb) {
-  ZX_ASSERT(IsSupportedResponse(expected_code));
 
   // Command identifiers for pending requests are assumed to be unique across
   // all types of requests and reused by order of least recent use. See v5.0
@@ -76,23 +60,43 @@ CommandId SignalingChannel::EnqueueResponse(CommandCode expected_code, ResponseH
 
     if (id == initial_id) {
       bt_log(WARN, "l2cap",
-             "sig: all valid command IDs in use for pending requests; can't queue expected "
-             "response command %#.2x",
-             expected_code);
-      return kInvalidCommandId;
+             "sig: all valid command IDs in use for pending requests; can't send "
+             "request %#.2x",
+             req_code);
+      return false;
     }
   }
 
-  const auto [iter, inserted] = pending_commands_.try_emplace(id, expected_code, std::move(cb));
+  auto command_packet = BuildPacket(req_code, id, payload);
+
+  auto response_code = req_code + 1;
+  EnqueueResponse(*command_packet, id, response_code, std::move(cb));
+
+  return Send(std::move(command_packet));
+}
+
+void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
+  ZX_ASSERT(!IsSupportedResponse(req_code));
+  ZX_ASSERT(cb);
+  inbound_handlers_[req_code] = std::move(cb);
+}
+
+void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet, CommandId id,
+                                       CommandCode response_code, ResponseHandler cb) {
+  ZX_ASSERT(IsSupportedResponse(response_code));
+
+  const auto [iter, inserted] =
+      pending_commands_.try_emplace(id, request_packet, response_code, std::move(cb));
   ZX_ASSERT(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which will call
   // OnResponseTimeout when it expires. This timer is canceled if the response is received before
   // expiry because OnRxResponse destroys its containing PendingCommand.
   auto& rtx_task = iter->second.response_timeout_task;
-  rtx_task.set_handler(std::bind(&SignalingChannel::OnResponseTimeout, this, id));
-  rtx_task.PostDelayed(async_get_default_dispatcher(), kSignalingChannelResponseTimeout);
-  return id;
+  rtx_task.set_handler(
+      std::bind(&SignalingChannel::OnResponseTimeout, this, id, /*retransmit=*/true));
+  iter->second.timer_duration = kSignalingChannelResponseTimeout;
+  rtx_task.PostDelayed(async_get_default_dispatcher(), iter->second.timer_duration);
 }
 
 bool SignalingChannel::IsCommandPending(CommandId id) const {
@@ -146,7 +150,8 @@ bool SignalingChannel::HandlePacket(const SignalingPacket& packet) {
 }
 
 void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
-  auto iter = pending_commands_.find(packet.header().id);
+  auto cmd_id = packet.header().id;
+  auto iter = pending_commands_.find(cmd_id);
   if (iter == pending_commands_.end()) {
     // Core Spec v5.2, Vol 3, Part A, Section 4.1: L2CAP_COMMAND_REJECT_RSP packets should NOT be
     // sent in response to an identified response packet.
@@ -156,14 +161,14 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
 
   Status status;
   auto& [_, pending_command] = *iter;
-  if (packet.header().code == pending_command.expected_code) {
+  if (packet.header().code == pending_command.response_code) {
     status = Status::kSuccess;
   } else if (packet.header().code == kCommandRejectCode) {
     status = Status::kReject;
   } else {
     bt_log(WARN, "l2cap", "sig: response (id %#.2x) has unexpected code %#.2x", packet.header().id,
            packet.header().code);
-    SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
+    SendCommandReject(cmd_id, RejectReason::kNotUnderstood, BufferView());
     return;
   }
 
@@ -172,17 +177,31 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
     pending_commands_.erase(iter);
   } else {
     // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
+    // TODO(55361): Limit the number of times the ERTX timer is reset so that total timeout duration
+    // is <= 300 seconds.
     pending_command.response_timeout_task.Cancel();
+    pending_command.timer_duration = kSignalingChannelExtendedResponseTimeout;
+    // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the
+    // request and has been given a large amount of time.
+    pending_command.response_timeout_task.set_handler(
+        std::bind(&SignalingChannel::OnResponseTimeout, this, cmd_id, /*retransmit=*/false));
     pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
-                                                      kSignalingChannelExtendedResponseTimeout);
+                                                      pending_command.timer_duration);
   }
 }
 
-void SignalingChannel::OnResponseTimeout(CommandId id) {
-  auto node = pending_commands_.extract(id);
-  ZX_ASSERT(node);
-  ResponseHandler& response_handler = node.mapped().response_handler;
-  response_handler(Status::kTimeOut, BufferView());
+void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
+  auto iter = pending_commands_.find(id);
+  ZX_ASSERT(iter != pending_commands_.end());
+
+  if (!retransmit || iter->second.transmit_count == kMaxSignalingChannelTransmissions) {
+    auto node = pending_commands_.extract(iter);
+    ResponseHandler& response_handler = node.mapped().response_handler;
+    response_handler(Status::kTimeOut, BufferView());
+    return;
+  }
+
+  RetransmitPendingCommand(iter->second);
 }
 
 bool SignalingChannel::Send(ByteBufferPtr packet) {
@@ -276,6 +295,23 @@ void SignalingChannel::CheckAndDispatchPacket(const SignalingPacket& packet) {
   } else if (!HandlePacket(packet)) {
     SendCommandReject(packet.header().id, RejectReason::kNotUnderstood, BufferView());
   }
+}
+
+void SignalingChannel::RetransmitPendingCommand(PendingCommand& pending_command) {
+  pending_command.response_timeout_task.Cancel();
+
+  pending_command.transmit_count++;
+  bt_log(TRACE, "l2cap", "retransmitting pending command (transmission #: %zu)",
+         pending_command.transmit_count);
+
+  // "If a duplicate Request message is sent, the RTX timeout value shall be reset to a new value at
+  // least double the previous value". (Core Spec v5.1, Vol 3, Part A, Sec 6.2.1).
+  pending_command.timer_duration *= 2;
+
+  pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
+                                                    pending_command.timer_duration);
+
+  Send(std::make_unique<DynamicByteBuffer>(*pending_command.command_packet));
 }
 
 }  // namespace internal
