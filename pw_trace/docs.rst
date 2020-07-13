@@ -247,3 +247,23 @@ provided.
 - *PW_TRACE_TRACE_ID_DEFAULT*: Default value if not trace_id provided.
 - *PW_TRACE_GROUP_LABEL_DEFAULT*: Default value if not group_label provided.
 
+----------
+Sample App
+----------
+A sample application is provided in the examples folder. This code attempts to
+provide examples of the multiple ways tracing can be used. Furthermore,
+trace backends can include the sample app in their own examples to show how to
+use other features.
+
+The sample app contains 3 "fake" tasks, which are each in their own
+`PW_TRACE_MODULE`.
+
+- *Input*: Simulating a driver, which gets data periodically, and sends to
+  *Processing* task.
+- *Processing*: Has a work queue, which handles processing the jobs.
+- *Kernel*: A simple work loop which demonstrates a possible integration of
+  tracing with a RTOS/Kernel.
+
+Jobs are intentionally made to have multiple stages of processing (simulated by
+being re-added to the work-queue). This results in multiple jobs being handled
+at the same time, the trace_id is used to separate these traces.

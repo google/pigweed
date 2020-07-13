@@ -105,6 +105,12 @@ group("pigweed_default") {
         pw_toolchain_SCOPE.is_host_toolchain && pw_build_HOST_TOOLS) {
       deps += [ ":host_tools" ]
     }
+
+    # Trace examples currently only support running on non-windows host
+    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+        pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
+      deps += [ "$dir_pw_trace:trace_example_basic" ]
+    }
   }
 }
 

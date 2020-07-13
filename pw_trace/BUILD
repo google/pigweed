@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -81,4 +82,21 @@ pw_cc_test(
         "//pw_preprocessor",
         "//pw_unit_test",
     ],
+)
+
+pw_cc_library(
+    name = "pw_trace_sample_app",
+    srcs = [ "example/sample_app.cc" ],
+    includes = [ "example/public" ],
+    deps = [ "//pw_trace" ],
+    hdrs = [ "example/public/pw_trace/example/sample_app.h" ]
+)
+
+pw_cc_binary(
+    name = "trace_example_basic",
+    deps = [
+        ":pw_trace_sample_app",
+        "//pw_log"
+    ],
+    srcs = [ "example/basic.cc" ]
 )
