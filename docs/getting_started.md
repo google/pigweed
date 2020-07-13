@@ -77,7 +77,7 @@ $ pw watch out default stm32f429i
 See below for equivalent Windows commands, and for more details on what each
 part does.
 
-**Note:** After running bootstrap once, use `. ./activate.sh` (or
+**Note:** After running bootstrap once, use `source ./activate.sh` (or
 `activate.bat` on Windows) to re-activate the environment without
 re-bootstrapping.
 
@@ -225,10 +225,10 @@ be re-built and re-run.
 
 Try running the `pw_status` test manually:
 ```bash
-$ ./host_[compiler]/obj/pw_status/status_test
+$ ./out/host_{clang,gcc}_debug/obj/pw_status/test/status_test
 ```
 
-Depending on your host OS, `[compiler]` will default to either Clang or GCC.
+Depending on your host OS, the compiler will default to either `clang` or `gcc`.
 
 ## Building for a Device
 
