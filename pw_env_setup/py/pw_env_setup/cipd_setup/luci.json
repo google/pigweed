@@ -1,6 +1,24 @@
 [
     {
+        "path": "infra/tools/bb/${platform}",
+        "tags": [
+            "latest"
+        ]
+    },
+    {
+        "path": "infra/tools/luci-auth/${platform}",
+        "tags": [
+            "latest"
+        ]
+    },
+    {
         "path": "infra/tools/luci/gerrit/${platform}",
+        "tags": [
+            "latest"
+        ]
+    },
+    {
+        "path": "infra/tools/luci/gitiles/${platform}",
         "tags": [
             "latest"
         ]
@@ -19,18 +37,6 @@
     },
     {
         "path": "infra/tools/luci/logdog/logdog/${os}-${arch=amd64}",
-        "tags": [
-            "latest"
-        ]
-    },
-    {
-        "path": "infra/tools/luci-auth/${platform}",
-        "tags": [
-            "latest"
-        ]
-    },
-    {
-        "path": "infra/tools/bb/${platform}",
         "tags": [
             "latest"
         ]
