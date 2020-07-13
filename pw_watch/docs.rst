@@ -31,17 +31,24 @@ using the Pigweed environment.
 
   $ pw watch
 
-By default, ``pw_watch`` will watch for repository changes and then trigger
-Ninja builds sequentially for each subdirectory in ``${PIGWEED_ROOT}/out``. To
-override this behavior, follow ``pw watch`` with paths to Ninja build
-directories like so:
+By default, ``pw_watch`` will watch for repository changes and then trigger the
+default Ninja build target for ``${PIGWEED_ROOT}/out``. To override this
+behavior, follow ``pw watch`` with the path to the build directory optionally
+followed by the Ninja targets you'd like to build:
 
 .. code:: sh
 
-  $ pw watch out/host
+  # Build the default target in the "out" directory.
+  $ pw watch out
 
-  # Alternatively,
-  $ pw watch --build-directory out/host --build-directory out/disco
+  # Build the "host" target in the "out" directory.
+  $ pw watch out host
+
+  # Build the "host" and "docs" targets in the "out" directory.
+  $ pw watch out host docs
+
+  # Build "host" target in "out", and "stm32f429i" target in "build_dir_2".
+  $ pw watch --build-directory out host --build-directory build_dir_2 stm32f429i
 
 The ``--patterns`` and ``--ignore_patterns`` arguments can be used to include
 and exclude certain file patterns that will trigger rebuilds.

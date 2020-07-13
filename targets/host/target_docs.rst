@@ -12,8 +12,8 @@ documentation into a collection of HTML pages.
 
 Building
 ========
-To build for this target, change the ``pw_target_config`` GN build arg to point
-to this target's configuration file.
+To build for this target, invoke ninja with the top-level "host" group as the
+target to build.
 
 .. code:: sh
 
