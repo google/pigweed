@@ -75,18 +75,17 @@ def _generate_code_for_method(method: ProtoServiceMethod,
 
     req_type = method.request_type().nanopb_name()
     res_type = method.response_type().nanopb_name()
-    signature = f'static ::pw::Status {method.name()}'
 
     output.write_line()
 
     if method.type() == ProtoServiceMethod.Type.UNARY:
-        output.write_line(f'{signature}(')
+        output.write_line(f'static ::pw::Status {method.name()} (')
         with output.indent(4):
             output.write_line('ServerContext& ctx,')
             output.write_line(f'const {req_type}& request,')
             output.write_line(f'{res_type}& response);')
     elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        output.write_line(f'{signature}(')
+        output.write_line(f'static void {method.name()} (')
         with output.indent(4):
             output.write_line('ServerContext& ctx,')
             output.write_line(f'const {req_type}& request,')

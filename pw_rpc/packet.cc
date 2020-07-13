@@ -20,52 +20,51 @@ namespace pw::rpc::internal {
 
 using std::byte;
 
-Packet Packet::FromBuffer(std::span<const byte> data) {
-  PacketType type = PacketType::RPC;
-  uint32_t channel_id = 0;
-  uint32_t service_id = 0;
-  uint32_t method_id = 0;
-  std::span<const byte> payload;
-  Status status;
+Status Packet::FromBuffer(std::span<const byte> data, Packet& packet) {
+  packet = Packet();
 
-  uint32_t value;
   protobuf::Decoder decoder(data);
 
-  while (decoder.Next().ok()) {
+  Status status;
+
+  while ((status = decoder.Next()).ok()) {
     RpcPacket::Fields field =
         static_cast<RpcPacket::Fields>(decoder.FieldNumber());
-    uint32_t proto_value = 0;
 
     switch (field) {
-      case RpcPacket::Fields::TYPE:
-        decoder.ReadUint32(&proto_value);
-        type = static_cast<PacketType>(proto_value);
+      case RpcPacket::Fields::TYPE: {
+        uint32_t value;
+        decoder.ReadUint32(&value);
+        packet.set_type(static_cast<PacketType>(value));
         break;
+      }
 
       case RpcPacket::Fields::CHANNEL_ID:
-        decoder.ReadUint32(&channel_id);
+        decoder.ReadUint32(&packet.channel_id_);
         break;
 
       case RpcPacket::Fields::SERVICE_ID:
-        decoder.ReadUint32(&service_id);
+        decoder.ReadFixed32(&packet.service_id_);
         break;
 
       case RpcPacket::Fields::METHOD_ID:
-        decoder.ReadUint32(&method_id);
+        decoder.ReadFixed32(&packet.method_id_);
         break;
 
       case RpcPacket::Fields::PAYLOAD:
-        decoder.ReadBytes(&payload);
+        decoder.ReadBytes(&packet.payload_);
         break;
 
-      case RpcPacket::Fields::STATUS:
+      case RpcPacket::Fields::STATUS: {
+        uint32_t value;
         decoder.ReadUint32(&value);
-        status = static_cast<Status::Code>(value);
+        packet.set_status(static_cast<Status::Code>(value));
         break;
+      }
     }
   }
 
-  return Packet(type, channel_id, service_id, method_id, payload, status);
+  return status == Status::DATA_LOSS ? Status::DATA_LOSS : Status::OK;
 }
 
 StatusWithSize Packet::Encode(std::span<byte> buffer) const {
@@ -94,10 +93,8 @@ size_t Packet::MinEncodedSizeBytes() const {
 
   reserved_size += 1;  // channel_id key
   reserved_size += varint::EncodedSize(channel_id());
-  reserved_size += 1;  // service_id key
-  reserved_size += varint::EncodedSize(service_id());
-  reserved_size += 1;  // method_id key
-  reserved_size += varint::EncodedSize(method_id());
+  reserved_size += 1 + sizeof(uint32_t);  // service_id key and fixed32
+  reserved_size += 1 + sizeof(uint32_t);  // method_id key and fixed32
 
   // Packet type always takes two bytes to encode (varint key + varint enum).
   reserved_size += 2;

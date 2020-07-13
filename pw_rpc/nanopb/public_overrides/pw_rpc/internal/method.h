@@ -44,6 +44,8 @@ class ServerWriter : public internal::BaseServerWriter {
 
 namespace internal {
 
+class Packet;
+
 // Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
 using NanopbMessageDescriptor = const void*;
 
@@ -61,7 +63,7 @@ struct RpcTraits<Status (*)(
 
 // Specialization for server streaming RPCs.
 template <typename RequestType, typename ResponseType>
-struct RpcTraits<Status (*)(
+struct RpcTraits<void (*)(
     ServerContext&, const RequestType&, ServerWriter<ResponseType>&)> {
   using Request = RequestType;
   using Response = ResponseType;
@@ -122,10 +124,9 @@ class Method : public BaseMethod {
     return Method(
         {.server_streaming =
              [](ServerContext& ctx, const void* req, BaseServerWriter& resp) {
-               return method(
-                   ctx,
-                   *static_cast<const Request<method>*>(req),
-                   static_cast<ServerWriter<Response<method>>&>(resp));
+               method(ctx,
+                      *static_cast<const Request<method>*>(req),
+                      static_cast<ServerWriter<Response<method>>&>(resp));
              }},
         ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
         id,
@@ -136,15 +137,9 @@ class Method : public BaseMethod {
   // The pw::rpc::Server calls method.Invoke to call a user-defined RPC. Invoke
   // calls the invoker function, which encodes and decodes the request and
   // response (if any) and calls the user-defined RPC function.
-  StatusWithSize Invoke(ServerCall& call,
-                        std::span<const std::byte> request,
-                        std::span<std::byte> payload_buffer) const {
-    return invoker_(*this, call, request, payload_buffer);
+  void Invoke(ServerCall& call, const Packet& request) const {
+    return invoker_(*this, call, request);
   }
-
-  // Decodes a request protobuf with Nanopb to the provided buffer.
-  Status DecodeRequest(std::span<const std::byte> buffer,
-                       void* proto_struct) const;
 
   // Encodes a response protobuf with Nanopb to the provided buffer.
   StatusWithSize EncodeResponse(const void* proto_struct,
@@ -163,9 +158,9 @@ class Method : public BaseMethod {
   //
   //   Status(ServerContext&, const Request&, ServerWriter<Response>&)
   //
-  using ServerStreamingFunction = Status (*)(ServerContext&,
-                                             const void* request,
-                                             BaseServerWriter& writer);
+  using ServerStreamingFunction = void (*)(ServerContext&,
+                                           const void* request,
+                                           BaseServerWriter& writer);
 
   // The Function union stores a pointer to a generic version of the
   // user-defined RPC function. Using a union instead of void* avoids
@@ -184,12 +179,8 @@ class Method : public BaseMethod {
   }
 
   // The Invoker allocates request/response structs on the stack and calls the
-  // RPC according to its type (unary, server streaming, etc.). The Invoker
-  // returns the number of bytes written to the response buffer, if any.
-  using Invoker = StatusWithSize (&)(const Method&,
-                                     ServerCall&,
-                                     std::span<const std::byte>,
-                                     std::span<std::byte>);
+  // RPC according to its type (unary, server streaming, etc.).
+  using Invoker = void (&)(const Method&, ServerCall&, const Packet&);
 
   constexpr Method(Function function,
                    Invoker invoker,
@@ -202,15 +193,14 @@ class Method : public BaseMethod {
         request_fields_(request),
         response_fields_(response) {}
 
-  StatusWithSize CallUnary(ServerCall& call,
-                           std::span<const std::byte> request_buffer,
-                           std::span<std::byte> response_buffer,
-                           void* request_struct,
-                           void* response_struct) const;
+  void CallUnary(ServerCall& call,
+                 const Packet& request,
+                 void* request_struct,
+                 void* response_struct) const;
 
-  StatusWithSize CallServerStreaming(ServerCall& call,
-                                     std::span<const std::byte> request_buffer,
-                                     void* request_struct) const;
+  void CallServerStreaming(ServerCall& call,
+                           const Packet& request,
+                           void* request_struct) const;
 
   // TODO(hepler): Add CallClientStreaming and CallBidiStreaming
 
@@ -218,36 +208,41 @@ class Method : public BaseMethod {
   // size, with maximum alignment, to avoid generating unnecessary copies of
   // this function for each request/response type.
   template <size_t request_size, size_t response_size>
-  static StatusWithSize UnaryInvoker(const Method& method,
-                                     ServerCall& call,
-                                     std::span<const std::byte> request_buffer,
-                                     std::span<std::byte> response_buffer) {
+  static void UnaryInvoker(const Method& method,
+                           ServerCall& call,
+                           const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
         response_struct{};
 
-    return method.CallUnary(call,
-                            request_buffer,
-                            response_buffer,
-                            &request_struct,
-                            &response_struct);
+    method.CallUnary(call, request, &request_struct, &response_struct);
   }
 
   // Invoker function for server streaming RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
   // ServerWriter.
   template <size_t request_size>
-  static StatusWithSize ServerStreamingInvoker(
-      const Method& method,
-      ServerCall& call,
-      std::span<const std::byte> request_buffer,
-      std::span<std::byte> /* payload not used */) {
+  static void ServerStreamingInvoker(const Method& method,
+                                     ServerCall& call,
+                                     const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 
-    return method.CallServerStreaming(call, request_buffer, &request_struct);
+    method.CallServerStreaming(call, request, &request_struct);
   }
+
+  // Decodes a request protobuf with Nanopb to the provided buffer. Sends an
+  // error packet if the request failed to decode.
+  bool DecodeRequest(Channel& channel,
+                     const Packet& request,
+                     void* proto_struct) const;
+
+  // Encodes a response and sends it over the provided channel.
+  void SendResponse(Channel& channel,
+                    const Packet& request,
+                    const void* response_struct,
+                    Status status) const;
 
   // Allocates memory for the request/response structs and invokes the
   // user-defined RPC based on its type (unary, server streaming, etc.).

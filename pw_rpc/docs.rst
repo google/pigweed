@@ -91,6 +91,8 @@ The status field indicates the type of error.
 * ``FAILED_PRECONDITION`` -- Attempted to cancel an RPC that is not pending.
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
+* ``INTERNAL`` -- The server was unable to respond to an RPC due to an
+  unrecoverable internal error.
 
 Inovking a service method
 -------------------------

@@ -65,6 +65,11 @@ class Channel : public rpc::Channel {
     return OutputBuffer(output().AcquireBuffer());
   }
 
+  Status Send(const internal::Packet& packet) {
+    OutputBuffer buffer = AcquireBuffer();
+    return Send(buffer, packet);
+  }
+
   Status Send(OutputBuffer& output, const internal::Packet& packet);
 };
 

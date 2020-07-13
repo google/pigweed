@@ -16,34 +16,37 @@ syntax = "proto3";
 package pw.rpc.internal;
 
 enum PacketType {
-  // RPC packets correspond with an RPC request or response.
+  // RPC packets correspond with a request or response for a service method.
   RPC = 0;
 
-  // CANCEL packets indicate cancellation of an ongoing streaming RPC. They are
-  // sent by the client to request cancellation and by the server to signal that
-  // an RPC was cancelled. The server sends a CANCEL packet when an RPC is
-  // cancelled server-side and in response to a client's request.
-  CANCEL = 1;
+  // STREAM_END packets signal the end of a server or client stream.
+  STREAM_END = 1;
+
+  // CANCEL packets request termination of an ongoing RPC.
+  CANCEL = 2;
+
+  // ERROR packets are sent by the server to indicate that it received an
+  // unexpected or malformed packet.
+  ERROR = 3;
 }
 
 message RpcPacket {
-  // The type of packet. Either a general RPC packet or a specific control
-  // packet. Required.
+  // The type of packet. Determines which other fields are used. Required.
   PacketType type = 1;
 
   // Channel through which the packet is sent. Required.
   uint32 channel_id = 2;
 
-  // Tokenized fully-qualified name of the service with which this packet is
+  // Hash of the fully-qualified name of the service with which this packet is
   // associated. For RPC packets, this is the service that processes the packet.
-  uint32 service_id = 3;
+  fixed32 service_id = 3;
 
-  // Tokenized name of the method which should process this packet.
-  uint32 method_id = 4;
+  // Hash of the name of the method which should process this packet.
+  fixed32 method_id = 4;
 
-  // The packet's payload.
+  // The packet's payload, which is an encoded protobuf.
   bytes payload = 5;
 
-  // RPC response status code.
+  // Status code for the RPC response or error.
   uint32 status = 6;
 }

@@ -48,15 +48,8 @@ class Server {
   IntrusiveList<internal::BaseServerWriter>& writers() { return writers_; }
 
  private:
-  void HandleRpcPacket(const internal::Packet& request,
-                       internal::Channel& channel);
-
-  void HandleCancelPacket(const internal::Packet& request);
-
-  void InvokeMethod(const internal::Packet& request,
-                    Channel& channel,
-                    internal::Packet& response,
-                    std::span<std::byte> buffer);
+  void HandleCancelPacket(const internal::Packet& request,
+                          internal::Channel& channel);
 
   internal::Channel* FindChannel(uint32_t id) const;
   internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);

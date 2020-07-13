@@ -59,9 +59,9 @@ class FakeGeneratedService : public Service {
                         const pw_rpc_test_TestRequest&,
                         pw_rpc_test_TestResponse&);
 
-  static Status StartStream(ServerContext&,
-                            const pw_rpc_test_TestRequest&,
-                            ServerWriter<pw_rpc_test_TestResponse>&);
+  static void StartStream(ServerContext&,
+                          const pw_rpc_test_TestRequest&,
+                          ServerWriter<pw_rpc_test_TestResponse>&);
 
   static constexpr std::array<Method, 3> kMethods = {
       Method::Unary<DoNothing>(
@@ -87,78 +87,91 @@ Status FakeGeneratedService::AddFive(ServerContext&,
 Status FakeGeneratedService::DoNothing(ServerContext&,
                                        const pw_rpc_test_Empty&,
                                        pw_rpc_test_Empty&) {
-  return Status::NOT_FOUND;
+  return Status::UNKNOWN;
 }
 
-Status FakeGeneratedService::StartStream(
+void FakeGeneratedService::StartStream(
     ServerContext&,
     const pw_rpc_test_TestRequest& request,
     ServerWriter<pw_rpc_test_TestResponse>& writer) {
   last_request = request;
 
   last_writer = std::move(writer);
-  return Status::UNAVAILABLE;
-}
-
-TEST(Method, UnaryRpc_DoesNothing) {
-  ENCODE_PB(pw_rpc_test_Empty, {}, request);
-  byte response[128] = {};
-
-  const Method& method = std::get<0>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
-  StatusWithSize result = method.Invoke(context.get(), request, response);
-  EXPECT_EQ(Status::NOT_FOUND, result.status());
 }
 
 TEST(Method, UnaryRpc_SendsResponse) {
   ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 123}, request);
-  byte response[128] = {};
 
   const Method& method = std::get<1>(FakeGeneratedService::kMethods);
   ServerContextForTest<FakeGeneratedService> context(method);
-  StatusWithSize result = method.Invoke(context.get(), request, response);
-  EXPECT_EQ(Status::UNAUTHENTICATED, result.status());
+  method.Invoke(context.get(), context.packet(request));
+
+  const Packet& response = context.output().sent_packet();
+  EXPECT_EQ(response.status(), Status::UNAUTHENTICATED);
 
   // Field 1 (encoded as 1 << 3) with 128 as the value.
   constexpr std::byte expected[]{
       std::byte{0x08}, std::byte{0x80}, std::byte{0x01}};
 
-  EXPECT_EQ(sizeof(expected), result.size());
-  EXPECT_EQ(0, std::memcmp(expected, response, sizeof(expected)));
+  EXPECT_EQ(sizeof(expected), response.payload().size());
+  EXPECT_EQ(0,
+            std::memcmp(expected, response.payload().data(), sizeof(expected)));
 
   EXPECT_EQ(123, last_request.integer);
 }
 
-TEST(Method, UnaryRpc_BufferTooSmallForResponse_InternalError) {
-  ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 123}, request);
-  byte response[2] = {};  // Too small for the response
+TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
+  std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
+
+  const Method& method = std::get<0>(FakeGeneratedService::kMethods);
+  ServerContextForTest<FakeGeneratedService> context(method);
+  method.Invoke(context.get(), context.packet(bad_payload));
+
+  const Packet& packet = context.output().sent_packet();
+  EXPECT_EQ(PacketType::ERROR, packet.type());
+  EXPECT_EQ(Status::DATA_LOSS, packet.status());
+  EXPECT_EQ(context.kServiceId, packet.service_id());
+  EXPECT_EQ(method.id(), packet.method_id());
+}
+
+TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
+  constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
+  ENCODE_PB(pw_rpc_test_TestRequest, {.integer = value}, request);
 
   const Method& method = std::get<1>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
+  // Output buffer is too small for the response, but can fit an error packet.
+  ServerContextForTest<FakeGeneratedService, 22> context(method);
+  ASSERT_LT(context.output().buffer_size(),
+            context.packet(request).MinEncodedSizeBytes() + request.size() + 1);
 
-  StatusWithSize result = method.Invoke(context.get(), request, response);
-  EXPECT_EQ(Status::INTERNAL, result.status());
-  EXPECT_EQ(0u, result.size());
-  EXPECT_EQ(123, last_request.integer);
+  method.Invoke(context.get(), context.packet(request));
+
+  const Packet& packet = context.output().sent_packet();
+  EXPECT_EQ(PacketType::ERROR, packet.type());
+  EXPECT_EQ(Status::INTERNAL, packet.status());
+  EXPECT_EQ(context.kServiceId, packet.service_id());
+  EXPECT_EQ(method.id(), packet.method_id());
+
+  EXPECT_EQ(value, last_request.integer);
 }
 
-TEST(Method, ServerStreamingRpc) {
+TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 555}, request);
 
   const Method& method = std::get<2>(FakeGeneratedService::kMethods);
   ServerContextForTest<FakeGeneratedService> context(method);
-  StatusWithSize result = method.Invoke(context.get(), request, {});
 
-  EXPECT_EQ(Status::UNAVAILABLE, result.status());
-  EXPECT_EQ(0u, result.size());
+  method.Invoke(context.get(), context.packet(request));
 
+  EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(555, last_request.integer);
 }
 
 TEST(Method, ServerWriter_SendsResponse) {
   const Method& method = std::get<2>(FakeGeneratedService::kMethods);
   ServerContextForTest<FakeGeneratedService> context(method);
-  ASSERT_EQ(Status::UNAVAILABLE, method.Invoke(context.get(), {}, {}).status());
+
+  method.Invoke(context.get(), context.packet({}));
 
   EXPECT_EQ(Status::OK, last_writer.Write({.value = 100}));
 
@@ -167,25 +180,31 @@ TEST(Method, ServerWriter_SendsResponse) {
   auto encoded = context.packet(payload).Encode(encoded_response);
   ASSERT_EQ(Status::OK, encoded.status());
 
-  ASSERT_EQ(encoded.size(), context.output().sent_packet().size());
+  ASSERT_EQ(encoded.size(), context.output().sent_data().size());
   EXPECT_EQ(0,
             std::memcmp(encoded_response.data(),
-                        context.output().sent_packet().data(),
+                        context.output().sent_data().data(),
                         encoded.size()));
 }
 
 TEST(Method, ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
   const Method& method = std::get<2>(FakeGeneratedService::kMethods);
 
-  // Make the buffer barely fit a packet with no payload.
-  ServerContextForTest<FakeGeneratedService, 12> context(method);
-  ASSERT_EQ(Status::UNAVAILABLE, method.Invoke(context.get(), {}, {}).status());
+  constexpr size_t kNoPayloadPacketSize = 2 /* type */ + 2 /* channel */ +
+                                          5 /* service */ + 5 /* method */ +
+                                          2 /* payload */ + 2 /* status */;
 
-  // Verify that the encoded size of a packet with an empty payload is 12.
+  // Make the buffer barely fit a packet with no payload.
+  ServerContextForTest<FakeGeneratedService, kNoPayloadPacketSize> context(
+      method);
+
+  // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet({}).Encode(encoded_response);
   ASSERT_EQ(Status::OK, encoded.status());
-  ASSERT_EQ(12u, encoded.size());
+  ASSERT_EQ(kNoPayloadPacketSize, encoded.size());
+
+  method.Invoke(context.get(), context.packet({}));
 
   EXPECT_EQ(Status::OK, last_writer.Write({}));                  // Barely fits
   EXPECT_EQ(Status::INTERNAL, last_writer.Write({.value = 1}));  // Too big

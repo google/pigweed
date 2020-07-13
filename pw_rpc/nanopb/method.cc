@@ -16,6 +16,8 @@
 
 #include "pb_decode.h"
 #include "pb_encode.h"
+#include "pw_log/log.h"
+#include "pw_rpc/internal/packet.h"
 
 namespace pw::rpc::internal {
 namespace {
@@ -37,15 +39,6 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 using std::byte;
 
-Status Method::DecodeRequest(std::span<const byte> buffer,
-                             void* proto_struct) const {
-  auto input = pb_istream_from_buffer(
-      reinterpret_cast<const pb_byte_t*>(buffer.data()), buffer.size());
-  return pb_decode(&input, static_cast<Fields>(request_fields_), proto_struct)
-             ? Status::OK
-             : Status::INTERNAL;
-}
-
 StatusWithSize Method::EncodeResponse(const void* proto_struct,
                                       std::span<byte> buffer) const {
   auto output = pb_ostream_from_buffer(
@@ -56,37 +49,68 @@ StatusWithSize Method::EncodeResponse(const void* proto_struct,
   return StatusWithSize::INTERNAL;
 }
 
-StatusWithSize Method::CallUnary(ServerCall& call,
-                                 std::span<const byte> request_buffer,
-                                 std::span<byte> response_buffer,
-                                 void* request_struct,
-                                 void* response_struct) const {
-  Status status = DecodeRequest(request_buffer, request_struct);
-  if (!status.ok()) {
-    return StatusWithSize(status, 0);
+void Method::CallUnary(ServerCall& call,
+                       const Packet& request,
+                       void* request_struct,
+                       void* response_struct) const {
+  if (!DecodeRequest(call.channel(), request, request_struct)) {
+    return;
   }
 
-  status = function_.unary(call.context(), request_struct, response_struct);
-
-  StatusWithSize encoded = EncodeResponse(response_struct, response_buffer);
-  if (encoded.ok()) {
-    return StatusWithSize(status, encoded.size());
-  }
-  return encoded;
+  const Status status =
+      function_.unary(call.context(), request_struct, response_struct);
+  SendResponse(call.channel(), request, response_struct, status);
 }
 
-StatusWithSize Method::CallServerStreaming(ServerCall& call,
-                                           std::span<const byte> request_buffer,
-                                           void* request_struct) const {
-  Status status = DecodeRequest(request_buffer, request_struct);
-  if (!status.ok()) {
-    return StatusWithSize(status, 0);
+void Method::CallServerStreaming(ServerCall& call,
+                                 const Packet& request,
+                                 void* request_struct) const {
+  if (!DecodeRequest(call.channel(), request, request_struct)) {
+    return;
   }
 
   internal::BaseServerWriter server_writer(call);
-  return StatusWithSize(
-      function_.server_streaming(call.context(), request_struct, server_writer),
-      0);
+  function_.server_streaming(call.context(), request_struct, server_writer);
+}
+
+bool Method::DecodeRequest(Channel& channel,
+                           const Packet& request,
+                           void* proto_struct) const {
+  auto input = pb_istream_from_buffer(
+      reinterpret_cast<const pb_byte_t*>(request.payload().data()),
+      request.payload().size());
+  if (pb_decode(&input, static_cast<Fields>(request_fields_), proto_struct)) {
+    return true;
+  }
+
+  PW_LOG_WARN("Failed to decode request payload from channel %u",
+              unsigned(channel.id()));
+  channel.Send(Packet::Error(request, Status::DATA_LOSS));
+  return false;
+}
+
+void Method::SendResponse(Channel& channel,
+                          const Packet& request,
+                          const void* response_struct,
+                          Status status) const {
+  Channel::OutputBuffer response_buffer = channel.AcquireBuffer();
+  std::span payload_buffer = response_buffer.payload(request);
+
+  StatusWithSize encoded = EncodeResponse(response_struct, payload_buffer);
+
+  if (encoded.ok()) {
+    Packet response = Packet::Response(request);
+
+    response.set_payload(payload_buffer.first(encoded.size()));
+    response.set_status(status);
+    if (channel.Send(response_buffer, response).ok()) {
+      return;
+    }
+  }
+
+  PW_LOG_WARN("Failed to encode response packet for channel %u",
+              unsigned(channel.id()));
+  channel.Send(response_buffer, Packet::Error(request, Status::INTERNAL));
 }
 
 }  // namespace pw::rpc::internal

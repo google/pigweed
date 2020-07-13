@@ -16,7 +16,7 @@ syntax = "proto3";
 package pw.rpc.test;
 
 message TestRequest {
-  float integer = 1;
+  int64 integer = 1;
 }
 
 message TestResponse {

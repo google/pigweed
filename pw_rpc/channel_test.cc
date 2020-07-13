@@ -36,8 +36,8 @@ TEST(ChannelOutput, Name) {
 }
 
 constexpr Packet kTestPacket(PacketType::RPC, 1, 42, 100);
-const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 2 /* service */ +
-                             2 /* method */ + 2 /* payload key */ +
+const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
+                             5 /* method */ + 2 /* payload key */ +
                              2 /* status */;
 
 TEST(Channel, TestPacket_ReservedSizeMatchesMinEncodedSizeBytes) {
@@ -79,13 +79,11 @@ TEST(Channel, OutputBuffer_PayloadDoesNotFit_ReportsError) {
   TestOutput<kReservedSize> output;
   internal::Channel channel(100, &output);
 
-  Channel::OutputBuffer output_buffer(channel.AcquireBuffer());
-
   Packet packet = kTestPacket;
   byte data[1] = {};
   packet.set_payload(data);
 
-  EXPECT_EQ(Status::INTERNAL, channel.Send(output_buffer, packet));
+  EXPECT_EQ(Status::INTERNAL, channel.Send(packet));
 }
 
 TEST(Channel, OutputBuffer_ExtraRoom) {

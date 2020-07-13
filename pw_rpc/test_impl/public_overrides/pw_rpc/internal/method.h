@@ -18,6 +18,7 @@
 #include <span>
 
 #include "pw_rpc/internal/base_method.h"
+#include "pw_rpc/internal/packet.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status_with_size.h"
 
@@ -29,24 +30,13 @@ class Method : public BaseMethod {
  public:
   constexpr Method(uint32_t id) : BaseMethod(id), last_channel_id_(0) {}
 
-  StatusWithSize Invoke(ServerCall& call,
-                        std::span<const std::byte> request,
-                        std::span<std::byte> payload_buffer) const {
+  void Invoke(ServerCall& call, const Packet& request) const {
     last_channel_id_ = call.channel().id();
     last_request_ = request;
-    last_payload_buffer_ = payload_buffer;
-
-    std::memcpy(payload_buffer.data(),
-                response_.data(),
-                std::min(response_.size(), payload_buffer.size()));
-    return StatusWithSize(response_status_, response_.size());
   }
 
   uint32_t last_channel_id() const { return last_channel_id_; }
-  std::span<const std::byte> last_request() const { return last_request_; }
-  std::span<std::byte> last_payload_buffer() const {
-    return last_payload_buffer_;
-  }
+  const Packet& last_request() const { return last_request_; }
 
   void set_response(std::span<const std::byte> payload) { response_ = payload; }
   void set_status(Status status) { response_status_ = status; }
@@ -56,8 +46,7 @@ class Method : public BaseMethod {
   // The Method class is used exclusively in tests. Having these members mutable
   // allows tests to verify that the Method is invoked correctly.
   mutable uint32_t last_channel_id_;
-  mutable std::span<const std::byte> last_request_;
-  mutable std::span<std::byte> last_payload_buffer_;
+  mutable Packet last_request_;
 
   std::span<const std::byte> response_;
   Status response_status_;

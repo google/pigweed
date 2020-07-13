@@ -45,7 +45,7 @@ BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
 
 uint32_t BaseServerWriter::method_id() const { return call_.method().id(); }
 
-void BaseServerWriter::Finish() {
+void BaseServerWriter::Finish(Status status) {
   if (!open()) {
     return;
   }
@@ -53,13 +53,13 @@ void BaseServerWriter::Finish() {
   call_.server().RemoveWriter(*this);
   state_ = kClosed;
 
-  // Send a control packet indicating that the stream has terminated.
-  auto response = call_.channel().AcquireBuffer();
-  call_.channel().Send(response,
-                       Packet(PacketType::CANCEL,
+  // Send a control packet indicating that the stream (and RPC) has terminated.
+  call_.channel().Send(Packet(PacketType::STREAM_END,
                               call_.channel().id(),
                               call_.service().id(),
-                              method().id()));
+                              method().id(),
+                              {},
+                              status));
 }
 
 std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {

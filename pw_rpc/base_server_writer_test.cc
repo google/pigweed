@@ -112,8 +112,8 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
 
   writer.Finish();
 
-  Packet packet = Packet::FromBuffer(context.output().sent_packet());
-  EXPECT_EQ(packet.type(), PacketType::CANCEL);
+  const Packet& packet = context.output().sent_packet();
+  EXPECT_EQ(packet.type(), PacketType::STREAM_END);
   EXPECT_EQ(packet.channel_id(), context.kChannelId);
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());
@@ -141,10 +141,9 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   auto sws = context.packet(data).Encode(encoded);
   ASSERT_EQ(Status::OK, sws.status());
 
-  EXPECT_EQ(sws.size(), context.output().sent_packet().size());
+  EXPECT_EQ(sws.size(), context.output().sent_data().size());
   EXPECT_EQ(
-      0,
-      std::memcmp(encoded, context.output().sent_packet().data(), sws.size()));
+      0, std::memcmp(encoded, context.output().sent_data().data(), sws.size()));
 }
 
 TEST(ServerWriter, Closed_IgnoresPacket) {

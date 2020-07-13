@@ -71,6 +71,7 @@ template("_pw_rpc_server_library") {
       ":$_target_name",
       ":common",
       dir_pw_span,
+      dir_pw_unit_test,
     ]
     visibility = [ "./*" ]
   }

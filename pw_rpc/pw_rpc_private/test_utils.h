@@ -25,25 +25,42 @@
 
 namespace pw::rpc {
 
-template <size_t buffer_size>
+template <size_t output_buffer_size>
 class TestOutput : public ChannelOutput {
  public:
+  static constexpr size_t buffer_size() { return output_buffer_size; }
+
   constexpr TestOutput(const char* name = "TestOutput")
-      : ChannelOutput(name), sent_packet_{} {}
+      : ChannelOutput(name), sent_data_{} {}
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
   void SendAndReleaseBuffer(size_t size) override {
-    sent_packet_ = std::span(buffer_.data(), size);
+    if (size == 0u) {
+      return;
+    }
+
+    packet_count_ += 1;
+    sent_data_ = std::span(buffer_.data(), size);
+    EXPECT_EQ(Status::OK,
+              internal::Packet::FromBuffer(sent_data_, sent_packet_));
   }
 
   std::span<const std::byte> buffer() const { return buffer_; }
 
-  const std::span<const std::byte>& sent_packet() const { return sent_packet_; }
+  size_t packet_count() const { return packet_count_; }
+
+  const std::span<const std::byte>& sent_data() const { return sent_data_; }
+  const internal::Packet& sent_packet() const {
+    EXPECT_GT(packet_count_, 0u);
+    return sent_packet_;
+  }
 
  private:
-  std::array<std::byte, buffer_size> buffer_;
-  std::span<const std::byte> sent_packet_;
+  std::array<std::byte, buffer_size()> buffer_;
+  std::span<const std::byte> sent_data_;
+  internal::Packet sent_packet_;
+  size_t packet_count_ = 0;
 };
 
 // Version of the internal::Server with extra methods exposed for testing.

@@ -21,6 +21,7 @@
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/service.h"
+#include "pw_status/status.h"
 
 namespace pw::rpc::internal {
 
@@ -52,12 +53,14 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   uint32_t method_id() const;
 
   // Closes the ServerWriter, if it is open.
-  void Finish();
+  void Finish(Status status = Status::OK);
 
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
 
   const Method& method() const { return call_.method(); }
+
+  const Channel& channel() const { return call_.channel(); }
 
   std::span<std::byte> AcquirePayloadBuffer();
 

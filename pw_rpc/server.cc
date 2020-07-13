@@ -23,11 +23,51 @@
 #include "pw_rpc/server_context.h"
 
 namespace pw::rpc {
+namespace {
 
 using std::byte;
 
 using internal::Packet;
 using internal::PacketType;
+
+enum IncludeMethod : bool { kIncludeMethod, kOmitMethod };
+
+void SendError(internal::Channel& channel,
+               Status status,
+               const Packet& packet,
+               IncludeMethod method = kIncludeMethod) {
+  Packet error = Packet::Error(packet, status);
+  if (method == kOmitMethod) {
+    error.set_method_id(Packet::kUnassignedId);
+  }
+  channel.Send(error);
+}
+
+bool DecodePacket(ChannelOutput& interface,
+                  std::span<const byte> data,
+                  Packet& packet) {
+  if (Status status = Packet::FromBuffer(data, packet); !status.ok()) {
+    PW_LOG_WARN("Failed to decode packet on interface %s", interface.name());
+    return false;
+  }
+
+  // If the packet is malformed, don't try to process it.
+  if (packet.channel_id() == Channel::kUnassignedChannelId ||
+      packet.service_id() == 0 || packet.method_id() == 0) {
+    PW_LOG_WARN("Received incomplete packet on interface %s", interface.name());
+
+    // Only send an ERROR response if a valid channel ID was provided.
+    if (packet.channel_id() != Channel::kUnassignedChannelId) {
+      internal::Channel temp_channel(packet.channel_id(), &interface);
+      SendError(temp_channel, Status::DATA_LOSS, packet);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+}  // namespace
 
 Server::~Server() {
   // Since the writers remove themselves from the server in Finish(), remove the
@@ -40,12 +80,8 @@ Server::~Server() {
 void Server::ProcessPacket(std::span<const byte> data,
                            ChannelOutput& interface) {
   // TODO(hepler): Update the packet parsing code to report when decoding fails.
-  Packet packet = Packet::FromBuffer(data);
-
-  if (packet.channel_id() == Channel::kUnassignedChannelId ||
-      packet.service_id() == 0 || packet.method_id() == 0) {
-    // Malformed packet; don't even try to process it.
-    PW_LOG_WARN("Received incomplete packet on interface %s", interface.name());
+  Packet packet;
+  if (!DecodePacket(interface, data, packet)) {
     return;
   }
 
@@ -54,94 +90,64 @@ void Server::ProcessPacket(std::span<const byte> data,
     // If the requested channel doesn't exist, try to dynamically assign one.
     channel = AssignChannel(packet.channel_id(), interface);
     if (channel == nullptr) {
-      // If a channel can't be assigned, send back a response indicating that
-      // the server cannot process the request. The channel_id in the response
-      // is not set, to allow clients to detect this error case.
+      // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error.
       internal::Channel temp_channel(packet.channel_id(), &interface);
-
-      // TODO(hepler): Add a new PacketType for errors like this, rather than
-      // using PacketType::RPC.
-      Packet response(PacketType::RPC);
-      response.set_status(Status::RESOURCE_EXHAUSTED);
-      auto response_buffer = temp_channel.AcquireBuffer();
-      temp_channel.Send(response_buffer, response);
+      SendError(temp_channel, Status::RESOURCE_EXHAUSTED, packet);
       return;
     }
   }
 
-  switch (packet.type()) {
-    case PacketType::RPC:
-      HandleRpcPacket(packet, *channel);
-      break;
-    case PacketType::CANCEL:
-      HandleCancelPacket(packet);
-      break;
-  }
-}
-
-void Server::HandleRpcPacket(const internal::Packet& request,
-                             internal::Channel& channel) {
-  Packet response(PacketType::RPC);
-
-  response.set_channel_id(channel.id());
-  auto response_buffer = channel.AcquireBuffer();
-
-  // Invoke the method with matching service and method IDs, if any.
-  InvokeMethod(request, channel, response, response_buffer.payload(response));
-  channel.Send(response_buffer, response);
-}
-
-void Server::HandleCancelPacket(const internal::Packet& request) {
-  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
-    return w.channel_id() == request.channel_id() &&
-           w.service_id() == request.service_id() &&
-           w.method_id() == request.method_id();
-  });
-
-  if (writer == writers_.end()) {
-    PW_LOG_WARN("Received CANCEL packet for unknown method");
-  } else {
-    writer->Finish();
-  }
-}
-
-void Server::InvokeMethod(const Packet& request,
-                          Channel& channel,
-                          internal::Packet& response,
-                          std::span<std::byte> payload_buffer) {
+  // Packets always include service and method IDs.
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
-    return s.id() == request.service_id();
+    return s.id() == packet.service_id();
   });
 
   if (service == services_.end()) {
-    // Couldn't find the requested service. Reply with a NOT_FOUND response
-    // without the service_id field set.
-    response.set_status(Status::NOT_FOUND);
+    SendError(*channel, Status::NOT_FOUND, packet, kOmitMethod);
     return;
   }
 
-  response.set_service_id(service->id());
-
-  const internal::Method* method = service->FindMethod(request.method_id());
+  const internal::Method* method = service->FindMethod(packet.method_id());
 
   if (method == nullptr) {
-    // Couldn't find the requested method. Reply with a NOT_FOUND response
-    // without the method_id field set.
-    response.set_status(Status::NOT_FOUND);
+    SendError(*channel, Status::NOT_FOUND, packet);
     return;
   }
 
-  response.set_method_id(method->id());
+  switch (packet.type()) {
+    case PacketType::RPC: {
+      internal::ServerCall call(
+          static_cast<internal::Server&>(*this), *channel, *service, *method);
+      method->Invoke(call, packet);
+      return;
+    }
+    case PacketType::STREAM_END:
+      // TODO(hepler): Support client streaming RPCs.
+      break;
+    case PacketType::CANCEL:
+      HandleCancelPacket(packet, *channel);
+      return;
+    case PacketType::ERROR:
+      break;
+  }
+  SendError(*channel, Status::UNIMPLEMENTED, packet);
+  PW_LOG_WARN("Unable to handle packet of type %u", unsigned(packet.type()));
+}
 
-  internal::ServerCall call(static_cast<internal::Server&>(*this),
-                            static_cast<internal::Channel&>(channel),
-                            *service,
-                            *method);
-  StatusWithSize result =
-      method->Invoke(call, request.payload(), payload_buffer);
+void Server::HandleCancelPacket(const Packet& packet,
+                                internal::Channel& channel) {
+  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
+    return w.channel_id() == packet.channel_id() &&
+           w.service_id() == packet.service_id() &&
+           w.method_id() == packet.method_id();
+  });
 
-  response.set_status(result.status());
-  response.set_payload(payload_buffer.first(result.size()));
+  if (writer == writers_.end()) {
+    SendError(channel, Status::FAILED_PRECONDITION, packet);
+    PW_LOG_WARN("Received CANCEL packet for method that is not pending");
+  } else {
+    writer->Finish(Status::CANCELLED);
+  }
 }
 
 internal::Channel* Server::FindChannel(uint32_t id) const {
