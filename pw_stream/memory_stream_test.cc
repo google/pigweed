@@ -88,6 +88,17 @@ TEST(MemoryWriter, EmptyData) {
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
 }
 
+TEST(MemoryWriter, ValidateContents_SingleByteWrites) {
+  MemoryWriter memory_writer(memory_buffer);
+  EXPECT_TRUE(memory_writer.Write(std::byte{0x01}).ok());
+  EXPECT_EQ(memory_writer.bytes_written(), 1u);
+  EXPECT_EQ(memory_writer.data()[0], std::byte{0x01});
+
+  EXPECT_TRUE(memory_writer.Write(std::byte{0x7E}).ok());
+  EXPECT_EQ(memory_writer.bytes_written(), 2u);
+  EXPECT_EQ(memory_writer.data()[1], std::byte{0x7E});
+}
+
 #if CHECK_TEST_CRASHES
 
 // TODO(amontanez): Ensure that this test triggers an assert.

@@ -43,7 +43,7 @@ class Writer {
   Status Write(const void* data, size_t size_bytes) {
     return Write(std::span(static_cast<const std::byte*>(data), size_bytes));
   }
-
+  Status Write(const std::byte b) { return Write(&b, 1); }
   // Flush any buffered data, finalizing all writes.
   //
   // Generally speaking, the scope that instantiates the concrete `Writer`
