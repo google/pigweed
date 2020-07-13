@@ -109,7 +109,10 @@ group("pigweed_default") {
     # Trace examples currently only support running on non-windows host
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
-      deps += [ "$dir_pw_trace:trace_example_basic" ]
+      deps += [
+        "$dir_pw_trace:trace_example_basic",
+        "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
+      ]
     }
   }
 }

@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_binary",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -127,3 +128,27 @@ pw_cc_test(
     ],
 )
 
+pw_cc_library(
+    name = "pw_trace_host_trace_time",
+    includes = [ "example/public" ],
+    deps = [ "//pw_trace" ],
+    srcs = [ "host_trace_time.cc" ]
+)
+
+pw_cc_library(
+    name = "pw_trace_example_to_file",
+    includes = [ "example/public" ],
+    deps = [ "//pw_trace" ],
+    hdrs = [ "example/public/pw_trace_tokenized/example/trace_to_file.h" ]
+)
+
+pw_cc_binary(
+    name = "trace_tokenized_example_basic",
+    deps = [
+        ":pw_trace_example_to_file",
+        "//pw_log",
+        "//dir_pw_trace",
+        "//dir_pw_trace:pw_trace_sample_app",
+    ],
+    srcs = [ "example/basic.cc" ]
+)

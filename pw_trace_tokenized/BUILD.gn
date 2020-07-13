@@ -90,6 +90,11 @@ pw_source_set("fake_trace_time") {
   sources = [ "fake_trace_time.cc" ]
 }
 
+pw_source_set("host_trace_time") {
+  deps = [ ":pw_trace_tokenized_core" ]
+  sources = [ "host_trace_time.cc" ]
+}
+
 pw_source_set("pw_trace_tokenized_core") {
   public_configs = [
     ":backend_config",
@@ -113,4 +118,25 @@ pw_source_set("pw_trace_tokenized_core") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+config("trace_example_config") {
+  include_dirs = [ "example/public" ]
+}
+
+pw_source_set("trace_example_to_file") {
+  deps = [ ":pw_trace_tokenized" ]
+  public_configs = [ ":trace_example_config" ]
+  public = [ "example/public/pw_trace_tokenized/example/trace_to_file.h" ]
+}
+
+# Builds trace examples
+pw_executable("trace_tokenized_example_basic") {
+  deps = [
+    ":trace_example_to_file",
+    "$dir_pw_log",
+    "$dir_pw_trace",
+    "$dir_pw_trace:trace_sample_app",
+  ]
+  sources = [ "example/basic.cc" ]
 }

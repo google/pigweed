@@ -180,3 +180,17 @@ Added dependencies
 ------------------
 ``pw_ring_buffer``
 ``pw_varint``
+
+
+--------
+Examples
+--------
+The examples all use `pw_trace` sample app to provide the trace data. Details
+for how to build, run, and decode the traces are included at the top of each
+example. This is early work, and is provided as an example of how different
+tracing concepts can look.
+
+Basic
+-----
+The basic example turns on tracing and dumps all trace output to a file provided
+on the command line.

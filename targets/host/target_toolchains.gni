@@ -35,8 +35,8 @@ _host_common = {
   # Configure backend for trace facade.
   pw_trace_BACKEND = "$dir_pw_trace_tokenized"
 
-  # Tokenizer trace time, for now using a fake time.
-  pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:fake_trace_time"
+  # Tokenizer trace time.
+  pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 
   # Allow nanopb to be toggled via a build arg on host for easy testing.
   _has_nanopb = pw_protobuf_GENERATORS + [ "nanopb" ] - [ "nanopb" ] !=
