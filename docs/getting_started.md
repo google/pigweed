@@ -271,7 +271,10 @@ tests directly on the device.
 Connect any number of STM32F429I-DISC1 boards to your computer using the mini
 USB port on the board (**not** the micro USB). Pigweed will automatically detect
 the boards and distribute the tests across the devices. More boards = faster
-tests!
+tests! Keep in mind that you may have to make some environment specific updates
+to ensure you have permissions to use the USB device. For example, on Linux you
+may need to update your udev rules and ensure you're in the plugdev and dailout
+groups.
 
 ![development boards connected via USB](images/stm32f429i-disc1_connected.jpg)
 
