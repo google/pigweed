@@ -24,7 +24,10 @@ class SectorsTest : public ::testing::Test {
  protected:
   SectorsTest()
       : partition_(&flash_),
-        sectors_(sector_descriptors_, partition_, nullptr) {}
+        sectors_(sector_descriptors_, partition_, nullptr) {
+    EXPECT_EQ(0u, sectors_.size());
+    sectors_.Reset();
+  }
 
   FakeFlashMemoryBuffer<128, 16> flash_;
   FlashPartition partition_;
@@ -33,10 +36,7 @@ class SectorsTest : public ::testing::Test {
 };
 
 TEST_F(SectorsTest, Reset) {
-  EXPECT_EQ(0u, sectors_.size());
-
-  sectors_.Reset();
-
+  // Reset is done by the fixture.
   EXPECT_EQ(partition_.sector_count(), sectors_.size());
   EXPECT_EQ(32u, sectors_.max_size());
   EXPECT_EQ(sectors_.begin(), sectors_.last_new());
