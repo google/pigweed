@@ -202,3 +202,12 @@ start and stop capturing a trace. The examples makes use of `PW_TRACE_REF` and
 `PW_TRACE_REF_DATA` to specify a start and stop event for the capture. This can
 be useful if the trace buffer is small and you wish to capture a specific
 series of events.
+
+Filter
+------
+The filter example demonstrates how a callback can be used to filter which trace
+events get processed and saved. In this example all events from the processing
+task which don't have traceId equal to 3 are removed. Both the other task traces
+are not removed. This can be a useful feature while debugging as it limits the
+amount of events which get stored to the buffer, and only saves the events of
+interest.

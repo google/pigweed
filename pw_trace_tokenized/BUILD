@@ -163,3 +163,14 @@ pw_cc_binary(
     ],
     srcs = [ "example/trigger.cc" ]
 )
+
+pw_cc_binary(
+    name = "trace_tokenized_example_filter",
+    deps = [
+        ":pw_trace_example_to_file",
+        "//pw_log",
+        "//dir_pw_trace",
+        "//dir_pw_trace:pw_trace_sample_app",
+    ],
+    srcs = [ "example/filter.cc" ]
+)

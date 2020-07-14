@@ -112,6 +112,7 @@ group("pigweed_default") {
       deps += [
         "$dir_pw_trace:trace_example_basic",
         "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
+        "$dir_pw_trace_tokenized:trace_tokenized_example_filter",
         "$dir_pw_trace_tokenized:trace_tokenized_example_trigger",
       ]
     }
