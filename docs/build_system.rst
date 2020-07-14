@@ -260,24 +260,17 @@ all of Pigweed's GN targets are contained within the ``pigweed_default`` group.
 This group is instantiated multiple times, with different Pigweed target
 toolchains.
 
-.. code::
+These groups include the following:
 
-  # Snippit from Pigweed's //BUILD.gn
-
-  group("host_clang") {
-    deps = [ ":pigweed_default($dir_pigweed/targets/host:host_clang_$pw_optimization_level)" ]
-  }
-
-  group("stm32f429i") {
-    deps = [ ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_optimization_level)" ]
-  }
-
-  group("docs") {
-    deps = [ ":pigweed_default($dir_pigweed/targets/docs)" ]
-  }
+* ``host`` -- builds ``pigweed_default`` with Clang or GCC, depending on the
+  platform
+* ``host_clang`` -- builds ``pigweed_default`` for the host with Clang
+* ``host_gcc`` -- builds ``pigweed_default`` for the host with GCC
+* ``stm32f429i`` -- builds ``pigweed_default`` for STM32F429i Discovery board
+* ``docs`` -- builds the Pigweed documentation and size reports
 
 Pigweed projects are recommended to follow this pattern, creating a top-level
-group for each of its Pigweed targets, which builds a common GN target with the
+group for each of their Pigweed targets that builds a common GN target with the
 appropriate toolchain.
 
 It is important that no dependencies are listed under the default toolchain
@@ -299,7 +292,7 @@ toolchain.
   }
 
   # The images group is instantiated for each of the project's Pigweed targets.
-  group("my_pigwed_target") {
+  group("my_pigweed_target") {
     deps = [ ":my_application_images(//toolchains:my_pigweed_target)" ]
   }
 
@@ -318,6 +311,24 @@ present, Ninja will build this group when invoked without arguments.
 
 .. tip::
   Defining a ``default`` group makes using ``pw watch`` simple!
+
+Optimization levels
+^^^^^^^^^^^^^^^^^^^
+Pigweed's ``//BUILD.gn`` defines the ``pw_default_optimization_level`` build
+arg, which specifies the optimization level to use for the default groups
+(``host``, ``stm32f429i``, etc.). The supported values for
+``pw_default_optimization_level`` are:
+
+* ``debug`` -- create debugging-friendly binaries (``-Og``)
+* ``size_optimized`` -- optimize for size (``-Os``)
+* ``speed_optimized`` -- optimized for speed, without increasing code size
+  (``-O2``)
+
+Pigweed defines versions of its groups in ``//BUILD.gn`` for each optimization
+level. Rather than relying on ``pw_default_optimization_level``, you may
+directly build a group at the desired optimization level:
+``<group>_<optimization>``. Examples include ``host_clang_debug``,
+``host_gcc_size_optimized``, and ``stm32f429i_speed_optimized``.
 
 Upstream GN target groups
 ^^^^^^^^^^^^^^^^^^^^^^^^^

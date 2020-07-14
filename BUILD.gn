@@ -24,13 +24,13 @@ import("$dir_pw_unit_test/test.gni")
 # Main build file for upstream Pigweed.
 
 declare_args() {
-  # The optimization level to use when building upstream Pigweed targets.
+  # The default optimization level for building upstream Pigweed targets.
   #
   # Choices:
   #   debug
   #   size_optimized
   #   speed_optimized
-  pw_optimization_level = "debug"
+  pw_default_optimization_level = "debug"
 
   # List of application image GN targets specific to the Pigweed target.
   pw_TARGET_APPLICATIONS = []
@@ -47,43 +47,64 @@ group("default") {
   ]
 }
 
+# This template generates a group that builds pigweed_default with a particular
+# toolchain.
+template("_build_pigweed_default_at_all_optimization_levels") {
+  _toolchain_prefix = invoker.toolchain_prefix
+
+  group(target_name) {
+    deps = [
+      ":pigweed_default(${_toolchain_prefix}$pw_default_optimization_level)",
+    ]
+  }
+
+  foreach(optimization,
+          [
+            "debug",
+            "size_optimized",
+            "speed_optimized",
+          ]) {
+    group(target_name + "_$optimization") {
+      deps = [ ":pigweed_default($_toolchain_prefix$optimization)" ]
+    }
+  }
+}
+
 # Below are a list of GN targets you can build to force Pigweed to build for a
 # specific Pigweed target.
-group("host") {
-  # Auto select a toolchain based on host OS.
+_build_pigweed_default_at_all_optimization_levels("host") {
+  # Select a toolchain based on host OS.
   if (host_os == "linux") {
-    _default_host_toolchain = ":host_clang"
+    toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
   } else if (host_os == "mac") {
-    _default_host_toolchain = ":host_clang"
+    toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
   } else if (host_os == "win") {
-    _default_host_toolchain = ":host_gcc"
+    toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
   } else {
     assert(false, "Please define a host config for your system: $host_os")
   }
-
-  deps = [ _default_host_toolchain ]
 }
 
-group("host_clang") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/host:host_clang_$pw_optimization_level)" ]
+_build_pigweed_default_at_all_optimization_levels("host_clang") {
+  toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
 }
 
-group("host_gcc") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/host:host_gcc_$pw_optimization_level)" ]
+_build_pigweed_default_at_all_optimization_levels("host_gcc") {
+  toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
 }
 
-group("stm32f429i") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_optimization_level)" ]
+_build_pigweed_default_at_all_optimization_levels("stm32f429i") {
+  toolchain_prefix = "$dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_"
 }
 
 if (dir_pw_third_party_arduino != "") {
-  group("arduino") {
-    deps = [ ":pigweed_default($dir_pigweed/targets/arduino:arduino_$pw_optimization_level)" ]
+  _build_pigweed_default_at_all_optimization_levels("arduino") {
+    toolchain_prefix = "$dir_pigweed/targets/arduino:arduino_"
   }
 }
 
-group("qemu") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_$pw_optimization_level)" ]
+_build_pigweed_default_at_all_optimization_levels("qemu") {
+  toolchain_prefix = "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_"
 }
 
 group("docs") {

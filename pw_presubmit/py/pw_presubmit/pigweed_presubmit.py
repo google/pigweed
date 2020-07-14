@@ -52,30 +52,54 @@ def init_virtualenv(ctx: PresubmitContext):
     environment.init_virtualenv(ctx.root, ctx.output_dir)
 
 
+# Trigger builds if files with these extensions change.
+_BUILD_EXTENSIONS = ('.rst', '.gn', '.gni', *format_code.C_FORMAT.extensions)
+
+
+def _at_all_optimization_levels(target):
+    for level in ['debug', 'size_optimized', 'speed_optimized']:
+        yield f'{target}_{level}'
+
+
 #
 # Build presubmit checks
 #
 def gn_clang_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, "host_clang")
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'))
 
 
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
+@filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_quick_build_check(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'host_clang_size_optimized',
+                'stm32f429i_size_optimized')
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, "host_gcc")
+
+    # Skip optimized host GCC builds for now, since GCC sometimes emits spurious
+    # warnings.
+    #
+    #   -02: GCC 9.3 emits spurious maybe-uninitialized warnings
+    #   -0s: GCC 8.1 (Mingw-w64) emits a spurious nonnull warning
+    #
+    # TODO(pwbug/255): Enable optimized GCC builds when this is fixed.
+    build.ninja(ctx.output_dir, 'host_gcc_debug')
 
 
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, "stm32f429i")
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
 
 
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, "qemu")
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu'))
 
 
 def gn_docs_build(ctx: PresubmitContext):
@@ -401,15 +425,12 @@ def commit_message_format(_: PresubmitContext):
 BROKEN = (
     # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
     clang_tidy,
-    # Host tools are not broken but take long on slow internet connections.
-    # They're still run in CQ, but not in 'pw presubmit'.
-    gn_host_tools,
-    # QEMU build. Currently doesn't have test runners, and can't build one
-    # of the fuzzing targets.
+    # QEMU build. Currently doesn't have test runners.
     gn_qemu_build,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
+    bazel_test,
 )
 
 QUICK = (
@@ -419,13 +440,13 @@ QUICK = (
     copyright_notice,
     format_code.presubmit_checks(),
     pw_presubmit.pragma_once,
-    gn_clang_build,
-    gn_arm_build,
+    gn_quick_build_check,
     source_is_in_build_files,
     python_checks.all_checks(),
 )
 
 FULL = (
+    commit_message_format,
     init_cipd,
     init_virtualenv,
     copyright_notice,
@@ -434,6 +455,7 @@ FULL = (
     gn_clang_build,
     gn_arm_build,
     gn_docs_build,
+    gn_host_tools,
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now.
     gn_gcc_build if sys.platform != 'darwin' else (),
@@ -441,7 +463,6 @@ FULL = (
     # the clang issues. The problem is that all clang++ invocations need the
     # two extra flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
     cmake_tests if sys.platform != 'darwin' else (),
-    bazel_test if sys.platform != 'darwin' else (),
     source_is_in_build_files,
     python_checks.all_checks(),
     build_env_setup,

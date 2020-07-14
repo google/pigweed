@@ -198,6 +198,10 @@ class Framework {
     Framework& framework = Get();
     framework.StartTest(test_info);
 
+    // Reset the memory pool to a marker value to help detect use of
+    // uninitialized memory.
+    std::memset(&framework.memory_pool_, 0xa5, sizeof(framework.memory_pool_));
+
     // Construct the test object within the static memory pool. The StartTest
     // function has already been called by the TestInfo at this point.
     TestInstance* test_instance = new (&framework.memory_pool_) TestInstance;
