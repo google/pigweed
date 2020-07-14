@@ -140,3 +140,13 @@ pw_executable("trace_tokenized_example_basic") {
   ]
   sources = [ "example/basic.cc" ]
 }
+
+pw_executable("trace_tokenized_example_trigger") {
+  deps = [
+    ":trace_example_to_file",
+    "$dir_pw_log",
+    "$dir_pw_trace",
+    "$dir_pw_trace:trace_sample_app",
+  ]
+  sources = [ "example/trigger.cc" ]
+}

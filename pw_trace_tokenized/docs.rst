@@ -194,3 +194,11 @@ Basic
 -----
 The basic example turns on tracing and dumps all trace output to a file provided
 on the command line.
+
+Trigger
+-------
+The trigger example demonstrates how a trace event can be used as a trigger to
+start and stop capturing a trace. The examples makes use of `PW_TRACE_REF` and
+`PW_TRACE_REF_DATA` to specify a start and stop event for the capture. This can
+be useful if the trace buffer is small and you wish to capture a specific
+series of events.
