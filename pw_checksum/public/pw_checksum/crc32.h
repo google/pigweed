@@ -22,16 +22,19 @@ extern "C" {
 
 #define PW_CHECKSUM_CRC32_INITIAL_VALUE 0xFFFFFFFFu
 
-// C API for calculating the ANSI CRC32 of an array of data.
+// C API for calculating the CRC32 of an array of data.
 
+// Updates an existing CRC value. The previous_result must have been returned
+// from a previous CRC32 call; it is not used as the initial value.
 uint32_t pw_ChecksumCrc32Append(const void* data,
                                 size_t size_bytes,
                                 uint32_t previous_result);
 
-inline uint32_t pw_ChecksumCrc32(const void* data, size_t size_bytes) {
+// Starts calculating a CRC32 for the provided data.
+static inline uint32_t pw_ChecksumCrc32(const void* data, size_t size_bytes) {
   return pw_ChecksumCrc32Append(
       data, size_bytes, ~PW_CHECKSUM_CRC32_INITIAL_VALUE);
-};
+}
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -42,26 +45,28 @@ namespace pw::checksum {
 
 inline constexpr uint32_t kCrc32InitialValue = PW_CHECKSUM_CRC32_INITIAL_VALUE;
 
-// Calculates initial / one-time ANSI CRC32 for the provided data with standard
-// initial value.
+// Starts calculating a CRC32 with the provided data. Uses kCrc32InitialValue as
+// the initial value.
 inline uint32_t Crc32(std::span<const std::byte> data) {
   return pw_ChecksumCrc32(data.data(), data.size_bytes());
 }
 
-// Update an existing CRC, pass the previous value as the value argument.
+// Updates an existing CRC value. The previous_result must have been returned
+// from a previous CRC32 call; it is not used as the initial value.
 inline uint32_t Crc32(std::span<const std::byte> data,
                       uint32_t previous_result) {
   return pw_ChecksumCrc32Append(
       data.data(), data.size_bytes(), previous_result);
 }
 
-// Calculates initial / one-time ANSI CRC32 for a single byte with standard
-// initial value. This is useful for updating a CRC byte-by-byte.
+// Starts calculating a CRC32 with the provided byte. Uses kCrc32InitialValue as
+// the initial value.
 inline uint32_t Crc32(std::byte value) {
   return pw_ChecksumCrc32(&value, sizeof(value));
 }
 
-// Update an existing CRC, pass the previous value as the value argument.
+// Updates an existing CRC value. The previous_result must have been returned
+// from a previous CRC32 call; it is not used as the initial value.
 inline uint32_t Crc32(std::byte value, uint32_t previous_result) {
   return pw_ChecksumCrc32Append(&value, sizeof(value), previous_result);
 }

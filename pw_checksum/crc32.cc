@@ -64,13 +64,13 @@ constexpr uint32_t kCrc32Table[] = {
 
 }  // namespace
 
-extern "C" {
-
-uint32_t pw_ChecksumCrc32Append(const void* data,
-                                size_t size_bytes,
-                                uint32_t previous_result) {
+extern "C" uint32_t pw_ChecksumCrc32Append(const void* data,
+                                           size_t size_bytes,
+                                           uint32_t previous_result) {
   const uint8_t* const array = static_cast<const uint8_t*>(data);
 
+  // CRC32 values are finalized by inverting the bits. The finalization step
+  // must be undone before appending to a prior CRC32 value.
   previous_result = ~previous_result;
 
   for (size_t i = 0; i < size_bytes; ++i) {
@@ -80,5 +80,5 @@ uint32_t pw_ChecksumCrc32Append(const void* data,
 
   return ~previous_result;
 }
-}
+
 }  // namespace pw::checksum
