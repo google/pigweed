@@ -13,8 +13,8 @@ express setup configures Pigweed's watcher for three targets to give a taste of
 Pigweed:
 
 1. **Host** - Mac, Linux, or Windows. Builds and runs tests
-2. **Device/STM32F429** - Build only; see later in the guide to run tests on
-   device
+2. **Device/STM32F429** - Build only; Optionally, the STM32F429I-DISC1 kit to
+   follow along later in the guide to run tests directly on said device(s)
 3. **Docs** - Builds the Pigweed docs
 
 To get setup:
