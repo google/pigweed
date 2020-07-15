@@ -13,7 +13,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-PREFIX="$PW_ROOT/.bootstrap"
+if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
+  PW_ENVIRONMENT_ROOT="$PW_ROOT/.environment"
+fi
+PREFIX="$PW_ENVIRONMENT_ROOT/bootstrap"
 mkdir -p "$PREFIX"
 
 # Update the mtimes on the most recent pw_env_setup executables.

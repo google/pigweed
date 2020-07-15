@@ -165,7 +165,11 @@ fi
 
 export PW_ROOT
 
-SETUP_SH="$PW_ROOT/pw_env_setup/.env_setup.sh"
+if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
+  PW_ENVIRONMENT_ROOT="$PW_ROOT/.environment"
+  export PW_ENVIRONMENT_ROOT
+fi
+SETUP_SH="$PW_ENVIRONMENT_ROOT/activate.sh"
 
 if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
   _pw_green "\n  WELCOME TO...\n"
@@ -221,7 +225,7 @@ if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   if [ -n "$_PW_ENV_SETUP" ]; then
     "$_PW_ENV_SETUP" --shell-file "$SETUP_SH"
   else
-    "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH"
+    "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH" --install-dir "$PW_ENVIRONMENT_ROOT"
   fi
 
   PW_CIPD_PACKAGE_FILES="$_PW_OLD_CIPD_PACKAGE_FILES"

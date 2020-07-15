@@ -34,6 +34,7 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_ENVSETUP_QUIET',
                    type=envparse.strict_bool,
                    default=False)
+    parser.add_var('PW_ENVIRONMENT_ROOT')
     parser.add_var('PW_ROOT')
     parser.add_var('PW_SKIP_BOOTSTRAP')
     parser.add_var('PW_SUBPROCESS', type=envparse.strict_bool, default=False)

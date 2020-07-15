@@ -56,6 +56,12 @@ if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   )
 )
 
+:: Not prefixing environment with "." since that doesn't hide it anyway.
+if "%PW_ENVIRONMENT_ROOT%"=="" (
+   set "PW_ENVIRONMENT_ROOT=%PW_ROOT%\environment"
+)
+set "shell_file=%PW_ENVIRONMENT_ROOT%\activate.bat"
+
 set _PW_OLD_CIPD_PACKAGE_FILES=%PW_CIPD_PACKAGE_FILES%
 set _PW_OLD_VIRTUALENV_REQUIREMENTS=%PW_VIRTUALENV_REQUIREMENTS%
 set _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS=%PW_VIRTUALENV_SETUP_PY_ROOTS%
@@ -67,7 +73,6 @@ set PW_VIRTUALENV_SETUP_PY_ROOTS=%PW_ROOT%;%PW_VIRTUALENV_SETUP_PY_ROOTS%
 set PW_CARGO_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cargo_setup\packages.txt;%PW_CARGO_PACKAGE_FILES%
 
 set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
-set "shell_file=%PW_ROOT%\pw_env_setup\.env_setup.bat"
 
 :: If PW_SKIP_BOOTSTRAP is set, only run the activation stage instead of the
 :: complete env_setup.
@@ -76,7 +81,8 @@ if "%PW_SKIP_BOOTSTRAP%" == "" (
   :: the --shell-file argument.
   call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
       --pw-root "%PW_ROOT%/" ^
-      --shell-file "%shell_file%"
+      --shell-file "%shell_file%" ^
+      --install-dir "%PW_ENVIRONMENT_ROOT%"
 ) else (
   if exist "%shell_file%" (
     call "%python%" "%_pw_start_script%"

@@ -30,6 +30,11 @@ project.
 
 .. _CIPD: https://github.com/luci/luci-go/tree/master/cipd
 
+By default packages will be installed in a ``.environment`` folder within the
+checkout root, and CIPD will cache files in ``$HOME/.cipd-cache-dir``. These
+paths can be overridden by setting ``PW_ENVIRONMENT_ROOT`` and
+``CIPD_CACHE_DIR``, respectively.
+
 .. warning::
   At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
   suggest relying on it just yet. However, we are interested in experience

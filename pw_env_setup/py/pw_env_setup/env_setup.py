@@ -172,8 +172,8 @@ def result_func(glob_warnings):
 # pylint: disable=useless-object-inheritance
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
-    def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, *args,
-                 **kwargs):
+    def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
+                 *args, **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
         self._env = environment.Environment()
         self._pw_root = pw_root
@@ -183,6 +183,7 @@ class EnvSetup(object):
         self._shell_file = shell_file
         self._is_windows = os.name == 'nt'
         self._quiet = quiet
+        self._install_dir = install_dir
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -289,7 +290,7 @@ Then use `set +x` to go back to normal.
         return 0
 
     def cipd(self):
-        install_dir = os.path.join(self._pw_root, '.cipd')
+        install_dir = os.path.join(self._install_dir, 'cipd')
 
         cipd_client = cipd_wrapper.init(install_dir, silent=True)
 
@@ -311,7 +312,7 @@ Then use `set +x` to go back to normal.
     def virtualenv(self):
         """Setup virtualenv."""
 
-        venv_path = os.path.join(self._pw_root, '.python3-env')
+        venv_path = os.path.join(self._install_dir, 'python3-env')
 
         requirements, req_glob_warnings = _get_env(
             'PW_VIRTUALENV_REQUIREMENTS')
@@ -364,13 +365,15 @@ Then use `set +x` to go back to normal.
                 '          to enable Rust. (Rust is usually not needed.)',
             )
 
+        install_dir = os.path.join(self._install_dir, 'cargo')
+
         package_files, glob_warnings = _get_env('PW_CARGO_PACKAGE_FILES')
         result = result_func(glob_warnings)
 
         if not package_files:
             return result(_Result.Status.SKIPPED)
 
-        if not cargo_setup.install(pw_root=self._pw_root,
+        if not cargo_setup.install(install_dir=install_dir,
                                    package_files=package_files,
                                    env=self._env):
             return result(_Result.Status.FAILED)
@@ -414,6 +417,12 @@ def parse(argv=None):
         help='Reduce output.',
         action='store_true',
         default='PW_ENVSETUP_QUIET' in os.environ,
+    )
+
+    parser.add_argument(
+        '--install-dir',
+        help='Location to install environment.',
+        required=True,
     )
 
     return parser.parse_args(argv)

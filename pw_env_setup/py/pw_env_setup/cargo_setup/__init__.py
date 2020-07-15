@@ -19,13 +19,11 @@ import sys
 import tempfile
 
 
-def install(pw_root, package_files, env):
+def install(install_dir, package_files, env):
     """Installs rust tools using cargo."""
-    prefix = os.path.join(pw_root, '.cargo')
-
     # Adding to PATH at the beginning to suppress a warning about this not
     # being in PATH.
-    env.prepend('PATH', os.path.join(prefix, 'bin'))
+    env.prepend('PATH', os.path.join(install_dir, 'bin'))
 
     if 'CARGO_TARGET_DIR' not in os.environ:
         env.set('CARGO_TARGET_DIR', os.path.expanduser('~/.cargo-cache'))
@@ -45,7 +43,7 @@ def install(pw_root, package_files, env):
                         # If downgrading (which could happen when switching
                         # branches) '--force' is required.
                         '--force',
-                        '--root', prefix,
+                        '--root', install_dir,
                         '--version', version,
                         package,
                     ]  # yapf: disable

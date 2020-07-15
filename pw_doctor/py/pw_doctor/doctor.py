@@ -186,10 +186,13 @@ def virtualenv(ctx: DoctorContext):
     if 'LUCI_CONTEXT' in os.environ:
         return
 
-    root = pathlib.Path(os.environ['PW_ROOT']).resolve()
+    var = 'PW_ROOT'
+    if 'PW_ENVIRONMENT_ROOT' in os.environ:
+        var = 'PW_ENVIRONMENT_ROOT'
+    root = pathlib.Path(os.environ[var]).resolve()
 
     if root not in venv_path.parents:
-        ctx.error('VIRTUAL_ENV (%s) not inside PW_ROOT (%s)', venv_path, root)
+        ctx.error('VIRTUAL_ENV (%s) not inside %s (%s)', venv_path, var, root)
         ctx.error('\n'.join(os.environ.keys()))
 
 
