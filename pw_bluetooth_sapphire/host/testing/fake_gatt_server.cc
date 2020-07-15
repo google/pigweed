@@ -5,6 +5,7 @@
 #include "fake_gatt_server.h"
 
 #include <endian.h>
+#include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include "fake_controller.h"
@@ -37,6 +38,12 @@ void FakeGattServer::HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu
       SendErrorRsp(conn, opcode, 0, att::ErrorCode::kRequestNotSupported);
       break;
   }
+}
+
+void FakeGattServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
+  auto cb = fit::bind_member(this, &FakeGattServer::HandlePdu);
+  l2cap_->RegisterHandler(l2cap::kSignalingChannelId, cb);
+  return;
 }
 
 void FakeGattServer::HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& bytes) {

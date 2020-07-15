@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 #include <zircon/syscalls.h>
 
+#include "fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -45,7 +46,11 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       supports_ll_conn_update_procedure_(true),
       le_features_(hci::LESupportedFeatures{0}),
       should_batch_reports_(false),
-      gatt_server_(this) {}
+      signaling_server_(fit::bind_member(this, &FakePeer::SendSignalingPacket)),
+      gatt_server_(this) {
+  signaling_server_.RegisterWithL2cap(&l2cap_);
+  gatt_server_.RegisterWithL2cap(&l2cap_);
+};
 
 void FakePeer::SetAdvertisingData(const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(data.size() <= hci::kMaxLEAdvertisingDataLength);
@@ -180,8 +185,9 @@ void FakePeer::AddLink(hci::ConnectionHandle handle) {
   ZX_DEBUG_ASSERT(!HasLink(handle));
   logical_links_.insert(handle);
 
-  if (logical_links_.size() == 1u)
+  if (logical_links_.size() == 1u) {
     set_connected(true);
+  }
 }
 
 void FakePeer::RemoveLink(hci::ConnectionHandle handle) {
@@ -218,26 +224,15 @@ void FakePeer::OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
     bt_log(WARN, "fake-hci", "malformed L2CAP packet!");
     return;
   }
+  l2cap_.HandlePdu(conn, pdu);
+}
 
-  const auto& header = pdu.As<l2cap::BasicHeader>();
-  uint16_t len = le16toh(header.length);
-  l2cap::ChannelId chan_id = le16toh(header.channel_id);
-
-  auto payload = pdu.view(sizeof(l2cap::BasicHeader));
-  if (payload.size() != len) {
-    bt_log(WARN, "fake-hci", "malformed L2CAP B-frame header!");
-    return;
-  }
-
-  switch (chan_id) {
-    case l2cap::kATTChannelId:
-      gatt_server_.HandlePdu(conn, payload);
-      break;
-
-    // TODO(armansito): Support other channels
-    default:
-      break;
-  }
+void FakePeer::SendSignalingPacket(hci::ConnectionHandle conn, const ByteBuffer& packet) {
+  ZX_ASSERT_MSG(packet.size() >= sizeof(l2cap::CommandHeader), "SDU has only %zu bytes",
+                packet.size());
+  ZX_ASSERT(packet.As<l2cap::CommandHeader>().length ==
+            (packet.size() - sizeof(l2cap::CommandHeader)));
+  ctrl()->SendL2CAPBFrame(conn, l2cap::kSignalingChannelId, packet);
 }
 
 }  // namespace testing

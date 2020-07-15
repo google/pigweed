@@ -15,6 +15,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_gatt_server.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
 
 namespace bt {
 namespace testing {
@@ -146,7 +148,15 @@ class FakePeer {
 
   void WriteScanResponseReport(hci::LEAdvertisingReportData* report) const;
 
+  // Validate received L2CAP packets and then route them to the FakeL2cap
+  // instance owned by the device. The FakeL2cap instance will process the
+  // packet and route it to the appropriate packet handler.
   void OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu);
+
+  // Sends ACL signaling packets using the FakeController's SendL2CapBFrame
+  // function on handle |conn|. Assumes that input buffer |packet| has
+  // signaling packet header intact but does not have an L2cap packet header.
+  void SendSignalingPacket(hci::ConnectionHandle conn, const ByteBuffer& packet);
 
   // The FakeController that this FakePeer has been assigned to.
   FakeController* ctrl_;  // weak
@@ -181,8 +191,9 @@ class FakePeer {
   // Class of device
   DeviceClass class_of_device_;
 
+  FakeL2cap l2cap_;
+  FakeSignalingServer signaling_server_;
   FakeGattServer gatt_server_;
-
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
 };
 

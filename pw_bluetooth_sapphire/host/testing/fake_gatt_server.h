@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_
 
+#include "fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -21,6 +22,9 @@ class FakeGattServer final {
 
   // Handle the ATT |pdu| received over link with handle |conn|.
   void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
+
+  // Register with FakleL2cap |l2cap_| associated with the device that owns the server.
+  void RegisterWithL2cap(FakeL2cap* l2cap_);
 
  private:
   void HandleReadByGrpType(hci::ConnectionHandle conn, const ByteBuffer& params);
