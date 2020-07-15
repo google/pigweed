@@ -51,7 +51,13 @@ extensions = [
     'sphinxcontrib.packetdiag',
 ]
 
-blockdiag_html_image_format = 'SVG'
+_DIAG_HTML_IMAGE_FORMAT = 'SVG'
+blockdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
+nwdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
+seqdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
+actdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
+rackdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
+packetdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT
 
 # Tell m2r to parse links to .md files and add them to the build.
 m2r_parse_relative_links = True

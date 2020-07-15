@@ -138,6 +138,7 @@ pw_input_group("nanopb_protoc_plugin") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  inputs = [ "pw_rpc_protos/packet.proto" ]
 }
 
 pw_test_group("tests") {
