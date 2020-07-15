@@ -49,11 +49,21 @@
 // Default: behaviour for unimplemented trace event types
 #ifndef _PW_TRACE_DISABLED
 #define _PW_TRACE_DISABLED(...) \
-  if (0) {                      \
-  }
+  do {                          \
+  } while (0)
 #endif  // _PW_TRACE_DISABLED
 
-#ifdef PW_TRACE_TYPE_INSTANT  // Disabled if backend doesn't define this
+// Default: label used for PW_TRACE_FUNCTION trace events
+#ifndef PW_TRACE_FUNCTION_LABEL
+#define PW_TRACE_FUNCTION_LABEL __PRETTY_FUNCTION__
+#endif
+
+// This block handles:
+//      - PW_TRACE_INSTANT(label)
+//      - PW_TRACE_INSTANT_FLAG(flag, label)
+// Which creates a trace event with the type: PW_TRACE_TYPE_INSTANT
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_INSTANT
 #define _PW_TRACE_INSTANT_ARGS2(flag, label) \
   PW_TRACE(PW_TRACE_TYPE_INSTANT,            \
            flag,                             \
@@ -64,7 +74,12 @@
 #define _PW_TRACE_INSTANT_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_INSTANT
 
-#ifdef PW_TRACE_TYPE_INSTANT_GROUP  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_INSTANT(label, group)
+//      - PW_TRACE_INSTANT_FLAG(flag, label, group)
+// Which creates a trace event with the type: PW_TRACE_TYPE_INSTANT_GROUP
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_INSTANT_GROUP
 #define _PW_TRACE_INSTANT_ARGS3(flag, label, group) \
   PW_TRACE(PW_TRACE_TYPE_INSTANT_GROUP,             \
            flag,                                    \
@@ -75,14 +90,24 @@
 #define _PW_TRACE_INSTANT_ARGS3(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_INSTANT_GROUP
 
-#ifdef PW_TRACE_TYPE_ASYNC_INSTANT  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_INSTANT(label, group, trace_id)
+//      - PW_TRACE_INSTANT_FLAG(flag, label, group, trace_id)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_INSTANT
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_ASYNC_INSTANT
 #define _PW_TRACE_INSTANT_ARGS4(flag, label, group, trace_id) \
   PW_TRACE(PW_TRACE_TYPE_ASYNC_INSTANT, flag, label, group, trace_id)
 #else  // PW_TRACE_TYPE_ASYNC_INSTANT
 #define _PW_TRACE_INSTANT_ARGS4(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_ASYNC_INSTANT
 
-#ifdef PW_TRACE_TYPE_DURATION_START  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_START(label)
+//      - PW_TRACE_START_FLAG(flag, label)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_START
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_DURATION_START
 #define _PW_TRACE_START_ARGS2(flag, label) \
   PW_TRACE(PW_TRACE_TYPE_DURATION_START,   \
            flag,                           \
@@ -93,6 +118,11 @@
 #define _PW_TRACE_START_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_DURATION_START
 
+// This block handles:
+//      - PW_TRACE_START(label, group)
+//      - PW_TRACE_START_FLAG(flag, label, group)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_GROUP_START
+// NOTE: If this type is not defined by the backend this trace is removed.
 #ifdef PW_TRACE_TYPE_DURATION_GROUP_START  // Disabled if backend doesn't define
                                            // this
 #define _PW_TRACE_START_ARGS3(flag, label, group) \
@@ -105,14 +135,24 @@
 #define _PW_TRACE_START_ARGS3(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_DURATION_GROUP_START
 
-#ifdef PW_TRACE_TYPE_ASYNC_START  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_START(label, group, trace_id)
+//      - PW_TRACE_START_FLAG(flag, label, group, trace_id)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_START
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_ASYNC_START
 #define _PW_TRACE_START_ARGS4(flag, label, group, trace_id) \
   PW_TRACE(PW_TRACE_TYPE_ASYNC_START, flag, label, group, trace_id)
 #else  // PW_TRACE_TYPE_ASYNC_START
 #define _PW_TRACE_START_ARGS4(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_ASYNC_START
 
-#ifdef PW_TRACE_TYPE_DURATION_END  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_END(labe)
+//      - PW_TRACE_END_FLAG(flag, label)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_END
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_DURATION_END
 #define _PW_TRACE_END_ARGS2(flag, label) \
   PW_TRACE(PW_TRACE_TYPE_DURATION_END,   \
            flag,                         \
@@ -123,8 +163,12 @@
 #define _PW_TRACE_END_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_DURATION_END
 
-#ifdef PW_TRACE_TYPE_DURATION_GROUP_END  // Disabled if backend doesn't define
-                                         // this
+// This block handles:
+//      - PW_TRACE_END(label, group)
+//      - PW_TRACE_END_FLAG(flag, label, group)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_GROUP_END
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_DURATION_GROUP_END
 #define _PW_TRACE_END_ARGS3(flag, label, group) \
   PW_TRACE(PW_TRACE_TYPE_DURATION_GROUP_END,    \
            flag,                                \
@@ -135,29 +179,128 @@
 #define _PW_TRACE_END_ARGS3(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_DURATION_GROUP_END
 
-#ifdef PW_TRACE_TYPE_ASYNC_END  // Disabled if backend doesn't define this
+// This block handles:
+//      - PW_TRACE_END(label, group, trace_id)
+//      - PW_TRACE_END_FLAG(flag, label, group, trace_id)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_END
+// NOTE: If this type is not defined by the backend this trace is removed.
+#ifdef PW_TRACE_TYPE_ASYNC_END
 #define _PW_TRACE_END_ARGS4(flag, label, group, trace_id) \
   PW_TRACE(PW_TRACE_TYPE_ASYNC_END, flag, label, group, trace_id)
 #else  // PW_TRACE_TYPE_ASYNC_END
 #define _PW_TRACE_END_ARGS4(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // PW_TRACE_TYPE_ASYNC_END
 
+// The pigweed scope objects gets defined inline with the trace event. The
+// constructor handles the start trace event, and the destructor does the end.
 #ifndef _PW_TRACE_SCOPE_OBJECT
-#define _PW_TRACE_SCOPE_OBJECT(object_name, flag, ...)                 \
+#define _PW_TRACE_SCOPE_OBJECT(                                        \
+    object_name, flag, event_type_start, event_type_end, label, group) \
   class object_name {                                                  \
    public:                                                             \
-    object_name(const char* label) : label_(label) {                   \
-      PW_TRACE_START_FLAG((flag), (label_)PW_COMMA_ARGS(__VA_ARGS__)); \
+    object_name(uint32_t trace_id = PW_TRACE_TRACE_ID_DEFAULT)         \
+        : trace_id_(trace_id) {                                        \
+      PW_TRACE(event_type_start, flag, label, group, trace_id_);       \
     }                                                                  \
     ~object_name() {                                                   \
-      PW_TRACE_END_FLAG((flag), (label_)PW_COMMA_ARGS(__VA_ARGS__));   \
+      PW_TRACE(event_type_end, flag, label, group, trace_id_);         \
     }                                                                  \
                                                                        \
    private:                                                            \
-    const char* label_;                                                \
+    const uint32_t trace_id_;                                          \
   }
 #endif  // _PW_TRACE_SCOPE_OBJECT
 
+// This block handles:
+//      - PW_TRACE_SCOPE(label)
+//      - PW_TRACE_SCOPE_FLAG(flag, label)
+//      - PW_TRACE_FUNCTION()
+//      - PW_TRACE_FUNCTION_FLAG(flag)
+// These each generate two trace events:
+//      - PW_TRACE_TYPE_DURATION_START: Where trace event appears in code.
+//      - PW_TRACE_TYPE_DURATION_END: When current scope is lost.
+// NOTE; If these types are not defined by the backend these traces are removed.
+#if defined(PW_TRACE_TYPE_DURATION_START) && defined(PW_TRACE_TYPE_DURATION_END)
+#define _PW_TRACE_SCOPE_ARGS2(flag, label)                            \
+  _PW_TRACE_SCOPE_OBJECT(PW_CONCAT(_PwTraceScopeObject, __COUNTER__), \
+                         flag,                                        \
+                         PW_TRACE_TYPE_DURATION_START,                \
+                         PW_TRACE_TYPE_DURATION_END,                  \
+                         label,                                       \
+                         PW_TRACE_GROUP_LABEL_DEFAULT)                \
+  PW_CONCAT(_pw_trace_scope_object, __COUNTER__);
+#define _PW_TRACE_FUNCTION_ARGS0() \
+  _PW_TRACE_SCOPE_ARGS2(PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL)
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS1(flag) \
+  _PW_TRACE_SCOPE_ARGS2(flag, PW_TRACE_FUNCTION_LABEL)
+#endif  // defined(PW_TRACE_TYPE_DURATION_START) &&
+        // defined(PW_TRACE_TYPE_DURATION_END)
+
+// This block handles:
+//      - PW_TRACE_SCOPE(label, group)
+//      - PW_TRACE_SCOPE_FLAG(flag, label, group)
+//      - PW_TRACE_FUNCTION(group)
+//      - PW_TRACE_FUNCTION_FLAG(flag, group)
+// These each generate two trace events:
+//      - PW_TRACE_TYPE_DURATION_GROUP_START: Where trace event appears in code.
+//      - PW_TRACE_TYPE_DURATION_GROUP_END: When current scope is lost.
+// NOTE; If these types are not defined by the backend these traces are removed.
+#if defined(PW_TRACE_TYPE_DURATION_GROUP_START) && \
+    defined(PW_TRACE_TYPE_DURATION_GROUP_END)
+#define _PW_TRACE_SCOPE_ARGS3(flag, label, group)                     \
+  _PW_TRACE_SCOPE_OBJECT(PW_CONCAT(_PwTraceScopeObject, __COUNTER__), \
+                         flag,                                        \
+                         PW_TRACE_TYPE_DURATION_GROUP_START,          \
+                         PW_TRACE_TYPE_DURATION_GROUP_END,            \
+                         label,                                       \
+                         group)                                       \
+  PW_CONCAT(_pw_trace_scope_object, __COUNTER__);
+#define _PW_TRACE_FUNCTION_ARGS1(group) \
+  _PW_TRACE_SCOPE_ARGS3(PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL, group)
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS2(flag, group) \
+  _PW_TRACE_SCOPE_ARGS3(flag, PW_TRACE_FUNCTION_LABEL, group)
+#endif  // defined(PW_TRACE_TYPE_DURATION_GROUP_START) &&
+        // defined(PW_TRACE_TYPE_DURATION_GROUP_END)
+
+// This block handles:
+//      - PW_TRACE_SCOPE(label, group, trace_id)
+//      - PW_TRACE_SCOPE_FLAG(flag, label, group, trace_id)
+//      - PW_TRACE_FUNCTION(group, trace_id)
+//      - PW_TRACE_FUNCTION_FLAG(flag, group, trace_id)
+// These each generate two trace events:
+//      - PW_TRACE_TYPE_ASYNC_START: Where trace event appears in code.
+//      - PW_TRACE_TYPE_ASYNC_END: When current scope is lost.
+// NOTE: If these types are not defined by the backend these traces are removed.
+#if defined(PW_TRACE_TYPE_ASYNC_START) && defined(PW_TRACE_TYPE_ASYNC_END)
+#define _PW_TRACE_SCOPE_ARGS4(flag, label, group, trace_id)           \
+  _PW_TRACE_SCOPE_OBJECT(PW_CONCAT(_PwTraceScopeObject, __COUNTER__), \
+                         flag,                                        \
+                         PW_TRACE_TYPE_ASYNC_START,                   \
+                         PW_TRACE_TYPE_ASYNC_END,                     \
+                         label,                                       \
+                         group)                                       \
+  PW_CONCAT(_pw_trace_scope_object, __COUNTER__)(trace_id);
+#define _PW_TRACE_FUNCTION_ARGS2(group, trace_id) \
+  _PW_TRACE_SCOPE_ARGS4(                          \
+      PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL, group, trace_id)
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS3(flag, group, trace_id) \
+  _PW_TRACE_SCOPE_ARGS4(flag, PW_TRACE_FUNCTION_LABEL, group, trace_id)
+#endif  // defined(PW_TRACE_TYPE_ASYNC_START) &&
+        // defined(PW_TRACE_TYPE_ASYNC_END)
+
+// This block handles:
+//      - PW_TRACE_INSTANT_DATA(label,
+//                              data_format_string,
+//                              data,
+//                              size)
+//      - PW_TRACE_INSTANT_DATA_FLAG(flag,
+//                                   label,
+//                                   data_format_string,
+//                                   data,
+//                                   size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_INSTANT
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_INSTANT)
 #define _PW_TRACE_INSTANT_DATA_ARGS5(            \
     flag, label, data_format_string, data, size) \
@@ -173,6 +316,21 @@
 #define _PW_TRACE_INSTANT_DATA_ARGS5(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_INSTANT)
 
+// This block handles:
+//      - PW_TRACE_INSTANT_DATA(label,
+//                              group,
+//                              data_format_string,
+//                              data,
+//                              size)
+//      - PW_TRACE_INSTANT_DATA_FLAG(flag,
+//                                   label,
+//                                   group,
+//                                   data_format_string,
+//                                   data,
+//                                   size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_INSTANT_GROUP
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_INSTANT_GROUP)
 #define _PW_TRACE_INSTANT_DATA_ARGS6(                   \
     flag, label, group, data_format_string, data, size) \
@@ -188,6 +346,23 @@
 #define _PW_TRACE_INSTANT_DATA_ARGS6(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_INSTANT_GROUP)
 
+// This block handles:
+//      - PW_TRACE_INSTANT_DATA(label,
+//                              group,
+//                              trace_id
+//                              data_format_string,
+//                              data,
+//                              size)
+//      - PW_TRACE_INSTANT_DATA_FLAG(flag,
+//                                   label,
+//                                   group,
+//                                   trace_id
+//                                   data_format_string,
+//                                   data,
+//                                   size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_INSTANT
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_ASYNC_INSTANT)
 #define _PW_TRACE_INSTANT_DATA_ARGS7(                             \
     flag, label, group, trace_id, data_format_string, data, size) \
@@ -203,6 +378,19 @@
 #define _PW_TRACE_INSTANT_DATA_ARGS7(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_ASYNC_INSTANT)
 
+// This block handles:
+//      - PW_TRACE_START_DATA(label,
+//                            data_format_string,
+//                            data,
+//                            size)
+//      - PW_TRACE_START_DATA_FLAG(flag,
+//                                 label,
+//                                 data_format_string,
+//                                 data,
+//                                 size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_START
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_START)
 #define _PW_TRACE_START_DATA_ARGS5(              \
     flag, label, data_format_string, data, size) \
@@ -218,6 +406,21 @@
 #define _PW_TRACE_START_DATA_ARGS5(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_START)
 
+// This block handles:
+//      - PW_TRACE_START_DATA(label,
+//                            group,
+//                            data_format_string,
+//                            data,
+//                            size)
+//      - PW_TRACE_START_DATA_FLAG(flag,
+//                                 label,
+//                                 group,
+//                                 data_format_string,
+//                                 data,
+//                                 size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_GROUP_START
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_GROUP_START)
 #define _PW_TRACE_START_DATA_ARGS6(                     \
     flag, label, group, data_format_string, data, size) \
@@ -233,6 +436,23 @@
 #define _PW_TRACE_START_DATA_ARGS6(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_START)
 
+// This block handles:
+//      - PW_TRACE_START_DATA(label,
+//                            group,
+//                            trace_id
+//                            data_format_string,
+//                            data,
+//                            size)
+//      - PW_TRACE_START_DATA_FLAG(flag,
+//                                 label,
+//                                 group,
+//                                 trace_id
+//                                 data_format_string,
+//                                 data,
+//                                 size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_START
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_ASYNC_START)
 #define _PW_TRACE_START_DATA_ARGS7(                               \
     flag, label, group, trace_id, data_format_string, data, size) \
@@ -248,6 +468,19 @@
 #define _PW_TRACE_START_DATA_ARGS7(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_ASYNC_START)
 
+// This block handles:
+//      - PW_TRACE_END_DATA(label,
+//                          data_format_string,
+//                          data,
+//                          size)
+//      - PW_TRACE_END_DATA_FLAG(flag,
+//                               label,
+//                               data_format_string,
+//                               data,
+//                               size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_END
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_END)
 #define _PW_TRACE_END_DATA_ARGS5(flag, label, data_format_string, data, size) \
   PW_TRACE_DATA(PW_TRACE_TYPE_DURATION_END,                                   \
@@ -262,6 +495,21 @@
 #define _PW_TRACE_END_DATA_ARGS5(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_START)
 
+// This block handles:
+//      - PW_TRACE_END_DATA(label,
+//                          group,
+//                          data_format_string,
+//                          data,
+//                          size)
+//      - PW_TRACE_END_DATA_FLAG(flag,
+//                               label,
+//                               group,
+//                               data_format_string,
+//                               data,
+//                               size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_DURATION_GROUP_END
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_GROUP_END)
 #define _PW_TRACE_END_DATA_ARGS6(                       \
     flag, label, group, data_format_string, data, size) \
@@ -277,6 +525,23 @@
 #define _PW_TRACE_END_DATA_ARGS6(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_DURATION_GROUP_END)
 
+// This block handles:
+//      - PW_TRACE_END_DATA(label,
+//                          group,
+//                          trace_id
+//                          data_format_string,
+//                          data,
+//                          size)
+//      - PW_TRACE_END_DATA_FLAG(flag,
+//                               label,
+//                               group,
+//                               trace_id
+//                               data_format_string,
+//                               data,
+//                               size)
+// Which creates a trace event with the type: PW_TRACE_TYPE_ASYNC_END
+// NOTE: If this type or PW_TRACE_DATA is not defined by the backend this trace
+// is removed.
 #if defined(PW_TRACE_DATA) && defined(PW_TRACE_TYPE_ASYNC_END)
 #define _PW_TRACE_END_DATA_ARGS7(                                 \
     flag, label, group, trace_id, data_format_string, data, size) \

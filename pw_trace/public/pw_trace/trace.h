@@ -311,7 +311,7 @@
   PW_DELEGATE_BY_ARG_COUNT(_PW_TRACE_END_DATA_ARGS, __VA_ARGS__)
 
 #ifdef __cplusplus
-#ifndef PW_TRACE_SCOPE
+
 // PW_TRACE_SCOPE(label)
 // PW_TRACE_SCOPE(label, group)
 // PW_TRACE_SCOPE(label, group, trace_id)
@@ -346,8 +346,9 @@
 //     Bar: [----------------Bar----------------]
 //     Group: [----------------Foo----------------]
 //                        [------SubFoo-------]
+#ifndef PW_TRACE_SCOPE
 #define PW_TRACE_SCOPE(...) PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, __VA_ARGS__)
-
+#endif  // PW_TRACE_SCOPE
 // PW_TRACE_SCOPE_FLAG(flag, label)
 // PW_TRACE_SCOPE_FLAG(flag, label, group)
 // PW_TRACE_SCOPE_FLAG(flag, label, group, trace_id)
@@ -355,13 +356,11 @@
 // These macros mirror PW_TRACE_SCOPE but intruduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
-#define PW_TRACE_SCOPE_FLAG(flag, label, ...)                         \
-  _PW_TRACE_SCOPE_OBJECT(                                             \
-      PW_CONCAT(_PwTraceScopeObject, __COUNTER__), flag, __VA_ARGS__) \
-  PW_CONCAT(_pw_trace_scope_object, __COUNTER__)(label);
-#endif  // PW_TRACE_SCOPE
+#ifndef PW_TRACE_SCOPE_FLAG
+#define PW_TRACE_SCOPE_FLAG(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TRACE_SCOPE_ARGS, __VA_ARGS__)
+#endif  // PW_TRACE_SCOPE_FLAG
 
-#ifndef PW_TRACE_FUNCTION
 // PW_TRACE_FUNCTION()
 // PW_TRACE_FUNCTION(group)
 // PW_TRACE_FUNCTION(group, trace_id)
@@ -396,8 +395,11 @@
 //     Bar: [----------------Bar----------------]
 //     Group: [----------------Parent----------------]
 //                        [------Child-------]
+#ifndef PW_TRACE_FUNCTION
 #define PW_TRACE_FUNCTION(...) \
-  PW_TRACE_FUNCTION_FLAG(PW_TRACE_FLAGS, __VA_ARGS__)
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TRACE_FUNCTION_ARGS, __VA_ARGS__)
+//  PW_TRACE_FUNCTION_FLAG(PW_TRACE_FLAGS, __VA_ARGS__)
+#endif  // PW_TRACE_FUNCTION
 
 // PW_TRACE_FUNCTION_FLAG(flag)
 // PW_TRACE_FUNCTION_FLAG(flag, group)
@@ -406,8 +408,9 @@
 // These macros mirror PW_TRACE_FUNCTION but intruduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
-#define PW_TRACE_FUNCTION_FLAG(flag, ...) \
-  PW_TRACE_SCOPE_FLAG(flag, __PRETTY_FUNCTION__, __VA_ARGS__)
-#endif  // PW_TRACE_FUNCTION
+#ifndef PW_TRACE_FUNCTION_FLAG
+#define PW_TRACE_FUNCTION_FLAG(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TRACE_FUNCTION_FLAGS_ARGS, __VA_ARGS__)
+#endif  // PW_TRACE_FUNCTION_FLAG
 
 #endif  // __cplusplus

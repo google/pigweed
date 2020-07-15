@@ -199,6 +199,25 @@ TEST(BasicTrace, ScopeGroup) {
                   PW_TRACE_TRACE_ID_DEFAULT));
 }
 
+TEST(BasicTrace, ScopeTraceId) {
+  static constexpr uint32_t kTraceId = 5;
+  {
+    PW_TRACE_SCOPE("scoped trace id", "group", kTraceId);
+    EXPECT_EQ(LastEvent::Instance().Get(),
+              Event(AsyncStart,
+                    PW_TRACE_FLAGS_DEFAULT,
+                    "scoped trace id",
+                    "group",
+                    kTraceId));
+  }
+  EXPECT_EQ(LastEvent::Instance().Get(),
+            Event(AsyncEnd,
+                  PW_TRACE_FLAGS_DEFAULT,
+                  "scoped trace id",
+                  "group",
+                  kTraceId));
+}
+
 TEST(BasicTrace, Function) {
   TraceFunction();
   // Can't check label, since might change depending on compiler.
