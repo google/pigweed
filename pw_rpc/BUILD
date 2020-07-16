@@ -92,8 +92,10 @@ filegroup(
     name = "nanopb",
     srcs = [
         "nanopb/codegen_test.cc",
+        "nanopb/echo_service_test.cc",
         "nanopb/method.cc",
         "nanopb/method_test.cc",
+        "nanopb/public/pw_rpc/echo_service_nanopb.h",
         "nanopb/public_overrides/pw_rpc/internal/method.h",
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",

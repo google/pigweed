@@ -14,6 +14,48 @@ procedure calls (RPCs) on a device.
 
   Under construction.
 
+Services
+========
+A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``
+uses these .proto definitions to generate code for a base service, from which
+user-defined RPCs are implemented.
+
+``pw_rpc`` supports multiple protobuf libraries, and the generated code API
+depends on which is used.
+
+.. toctree::
+  :maxdepth: 1
+
+  nanopb/docs
+
+Testing a pw_rpc integration
+============================
+After setting up a ``pw_rpc`` server in your project, you can test that it is
+working as intended by registering the provided ``EchoService``, defined in
+``pw_rpc_protos/echo.proto``, which echoes back a message that it receives.
+
+.. literalinclude:: pw_rpc_protos/echo.proto
+  :language: protobuf
+  :lines: 14-
+
+For example, in C++ with nanopb:
+
+.. code:: c++
+
+  #include "pw_rpc/server.h"
+
+  // Include the apporpriate header for your protobuf library.
+  #include "pw_rpc/echo_service_nanopb.h"
+
+  constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
+  static pw::rpc::Server server(kChannels);
+
+  static pw::rpc::EchoService echo_service;
+
+  void Init() {
+    server.RegisterService(&echo_service);
+  }
+
 Protocol description
 ====================
 Pigweed RPC servers and clients communicate using ``pw_rpc`` packets. These

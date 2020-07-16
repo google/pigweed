@@ -16,6 +16,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 config("config") {
@@ -36,9 +37,25 @@ pw_source_set("nanopb") {
   visibility = [ "../*" ]
 }
 
+config("echo_config") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("echo_service") {
+  public_configs = [ ":echo_config" ]
+  public_deps = [ "..:echo_service_proto_nanopb_rpc" ]
+  sources = [ "public/pw_rpc/echo_service_nanopb.h" ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":codegen_test",
+    ":echo_service_test",
     ":method_test",
   ]
 }
@@ -60,5 +77,14 @@ pw_test("method_test") {
     "..:test_protos_nanopb",
   ]
   sources = [ "method_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("echo_service_test") {
+  deps = [
+    ":echo_service",
+    "..:nanopb_test_method_context",
+  ]
+  sources = [ "echo_service_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }

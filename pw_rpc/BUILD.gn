@@ -140,6 +140,11 @@ pw_proto_library("protos") {
   sources = [ "pw_rpc_protos/packet.proto" ]
 }
 
+pw_proto_library("echo_service_proto") {
+  sources = [ "pw_rpc_protos/echo.proto" ]
+  inputs = [ "pw_rpc_protos/echo.options" ]
+}
+
 # Source files for pw_protobuf's protoc plugin.
 pw_input_group("nanopb_protoc_plugin") {
   inputs = [
@@ -152,7 +157,11 @@ pw_input_group("nanopb_protoc_plugin") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  inputs = [ "pw_rpc_protos/packet.proto" ]
+  inputs = [
+    "pw_rpc_protos/echo.proto",
+    "pw_rpc_protos/packet.proto",
+  ]
+  group_deps = [ "nanopb:docs" ]
 }
 
 pw_test_group("tests") {
