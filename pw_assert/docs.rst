@@ -111,8 +111,8 @@ asserting in that case, rather than terminating at a C-style API.
 Why isn't there a ``PW_CHECK_LE``? Why is the type (e.g. ``INT``) needed?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The problem with asserts like ``PW_CHECK_LE(a, b)`` instead of
-``PW_CHECK_INT_LE(a, b)`` or ``PW_CHECK_FLOAT_LE(a, b)`` is that to capture the
-arguments with the tokenizer, we need to know the types. Using the
+``PW_CHECK_INT_LE(a, b)`` or ``PW_CHECK_FLOAT_EXACT_LE(a, b)`` is that to
+capture the arguments with the tokenizer, we need to know the types. Using the
 preprocessor, it is impossible to dispatch based on the types of ``a`` and
 ``b``, so unfortunately having a separate macro for each of the types commonly
 asserted on is necessary.
@@ -193,7 +193,8 @@ invoke to assert.
     +------------------------------------+-------------------------------------+
     | ``PW_CHECK(a_ptr <= b_ptr)``       | ``PW_CHECK_PTR_LE(a_ptr, b_ptr)``   |
     +------------------------------------+-------------------------------------+
-    | ``PW_CHECK(Temp() <= 10.0)``       | ``PW_CHECK_FLOAT_LE(Temp(), 10.0)`` |
+    | ``PW_CHECK(Temp() <= 10.0)``       | ``PW_CHECK_FLOAT_EXACT_LE(``        |
+    |                                    | ``    Temp(), 10.0)``               |
     +------------------------------------+-------------------------------------+
     | ``PW_CHECK(Foo() == Status::OK)``  | ``PW_CHECK_OK(Foo())``              |
     +------------------------------------+-------------------------------------+
@@ -242,118 +243,156 @@ invoke to assert.
 
   .. code-block:: cpp
 
-    PW_CHECK_FLOAT_GE(BatteryVoltage(), 3.2, "System state=%s", SysState());
+    PW_CHECK_FLOAT_EXACT_GE(BatteryVoltage(), 3.2,
+                            "System state=%s", SysState());
 
   Below is the full list of binary comparison assert macros, along with the
   type specifier. The specifier is irrelevant to application authors but is
   needed for backend implementers.
 
-  +-------------------+--------------+-----------+-----------------------+
-  | Macro             | a, b type    | condition | a, b format specifier |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_LE   | int          | a <= b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_LT   | int          | a <  b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_GE   | int          | a >= b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_GT   | int          | a >  b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_EQ   | int          | a == b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_INT_NE   | int          | a != b    | %d                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_LE  | unsigned int | a <= b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_LT  | unsigned int | a <  b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_GE  | unsigned int | a >= b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_GT  | unsigned int | a >  b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_EQ  | unsigned int | a == b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_UINT_NE  | unsigned int | a != b    | %u                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_LE   | void*        | a <= b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_LT   | void*        | a <  b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_GE   | void*        | a >= b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_GT   | void*        | a >  b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_EQ   | void*        | a == b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_PTR_NE   | void*        | a != b    | %p                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_LE | float        | a <= b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_LT | float        | a <  b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_GE | float        | a >= b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_GT | float        | a >  b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_EQ | float        | a == b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
-  | PW_CHECK_FLOAT_NE | float        | a != b    | %f                    |
-  +-------------------+--------------+-----------+-----------------------+
+  +-------------------------+--------------+-----------+-----------------------+
+  | Macro                   | a, b type    | condition | a, b format specifier |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_LE         | int          | a <= b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_LT         | int          | a <  b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_GE         | int          | a >= b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_GT         | int          | a >  b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_EQ         | int          | a == b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_INT_NE         | int          | a != b    | %d                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_LE        | unsigned int | a <= b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_LT        | unsigned int | a <  b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_GE        | unsigned int | a >= b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_GT        | unsigned int | a >  b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_EQ        | unsigned int | a == b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_UINT_NE        | unsigned int | a != b    | %u                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_LE         | void*        | a <= b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_LT         | void*        | a <  b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_GE         | void*        | a >= b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_GT         | void*        | a >  b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_EQ         | void*        | a == b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_PTR_NE         | void*        | a != b    | %p                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_LE | float        | a <= b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_LT | float        | a <  b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_GE | float        | a >= b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_GT | float        | a >  b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_EQ | float        | a == b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
+  | PW_CHECK_FLOAT_EXACT_NE | float        | a != b    | %f                    |
+  +-------------------------+--------------+-----------+-----------------------+
 
   The above ``CHECK_*_*()`` are also available in DCHECK variants, which will
   only evaluate their arguments and trigger if the ``NDEBUG`` macro is defined.
 
-  +--------------------+--------------+-----------+-----------------------+
-  | Macro              | a, b type    | condition | a, b format specifier |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_LE   | int          | a <= b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_LT   | int          | a <  b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_GE   | int          | a >= b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_GT   | int          | a >  b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_EQ   | int          | a == b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_INT_NE   | int          | a != b    | %d                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_LE  | unsigned int | a <= b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_LT  | unsigned int | a <  b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_GE  | unsigned int | a >= b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_GT  | unsigned int | a >  b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_EQ  | unsigned int | a == b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_UINT_NE  | unsigned int | a != b    | %u                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_LE   | void*        | a <= b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_LT   | void*        | a <  b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_GE   | void*        | a >= b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_GT   | void*        | a >  b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_EQ   | void*        | a == b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_PTR_NE   | void*        | a != b    | %p                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_LE | float        | a <= b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_LT | float        | a <  b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_GE | float        | a >= b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_GT | float        | a >  b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_EQ | float        | a == b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
-  | PW_DCHECK_FLOAT_NE | float        | a != b    | %f                    |
-  +--------------------+--------------+-----------+-----------------------+
+  +--------------------------+--------------+-----------+----------------------+
+  | Macro                    | a, b type    | condition | a, b format          |
+  |                          |              |           | specifier            |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_LE         | int          | a <= b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_LT         | int          | a <  b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_GE         | int          | a >= b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_GT         | int          | a >  b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_EQ         | int          | a == b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_INT_NE         | int          | a != b    | %d                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_LE        | unsigned int | a <= b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_LT        | unsigned int | a <  b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_GE        | unsigned int | a >= b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_GT        | unsigned int | a >  b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_EQ        | unsigned int | a == b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_UINT_NE        | unsigned int | a != b    | %u                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_LE         | void*        | a <= b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_LT         | void*        | a <  b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_GE         | void*        | a >= b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_GT         | void*        | a >  b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_EQ         | void*        | a == b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_PTR_NE         | void*        | a != b    | %p                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_LE | float        | a <= b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_LT | float        | a <  b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_GE | float        | a >= b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_GT | float        | a >  b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_EQ | float        | a == b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+  | PW_DCHECK_FLOAT_EXACT_NE | float        | a != b    | %f                   |
+  +--------------------------+--------------+-----------+----------------------+
+
+.. attention::
+
+  For float, proper comparator checks which take floating point
+  precision and ergo error accumulation into account are not provided on
+  purpose as this comes with some complexity and requires application
+  specific tolerances in terms of Units of Least Precision (ULP). Instead,
+  we recommend developers carefully consider how floating point precision and
+  error impact the data they are bounding and whether checks are appropriate.
+
+.. cpp:function:: PW_CHECK_FLOAT_NEAR(a, b, abs_tolerance)
+.. cpp:function:: PW_CHECK_FLOAT_NEAR(a, b, abs_tolerance, format, ...)
+.. cpp:function:: PW_DCHECK_FLOAT_NEAR(a, b, abs_tolerance)
+.. cpp:function:: PW_DCHECK_FLOAT_NEAR(a, b, abs_tolerance, format, ...)
+
+  Asserts that ``(a >= b - abs_tolerance) && (a <= b + abs_tolerance)`` is true,
+  where ``a``, ``b``, and ``abs_tolerance`` are converted to ``float``.
+
+  .. note::
+    This also asserts that ``abs_tolerance >= 0``.
+
+  The ``DCHECK`` variants only run if ``NDEBUG`` is defined; otherwise, the
+  entire statement is removed (and the expression not evaluated).
+
+  Example, with no message:
+
+  .. code-block:: cpp
+
+    PW_CHECK_FLOAT_NEAR(cos(0.0f), 1, 0.001);
+
+  Example, with an included message and arguments:
+
+  .. code-block:: cpp
+
+    PW_CHECK_FLOAT_NEAR(FirstOperation(), RedundantOperation(), 0.1,
+                        "System state=%s", SysState());
 
 .. cpp:function:: PW_CHECK_OK(status)
 .. cpp:function:: PW_CHECK_OK(status, format, ...)

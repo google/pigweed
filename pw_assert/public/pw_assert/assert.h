@@ -26,38 +26,65 @@
 //   Trigger a crash with a message. Replaces LOG_FATAL() in other systems.
 //   PW_CRASH(msg, ...)
 //
+//   In all below cases, the message argument is optional:
+//   PW_CHECK_INT_LE(x, y) or
+//   PW_CHECK_INT_LE(x, y, "Was booting %s subsystem", subsystem_name)
+//
 //   Asserts the condition, crashes on failure. Equivalent to assert.
 //   PW_CHECK(condition) or
 //   PW_CHECK(condition, msg, ...)
+//
+//   Some common typed checks.
+//   PW_CHECK_OK(status, msg, ...)  Asserts status == PW_STATUS_OK
+//   PW_CHECK_NOTNULL(ptr, msg, ...)  Asserts ptr != NULL
 //
 //   In many cases an assert is a binary comparison. In those cases, using the
 //   special binary assert macros below for <, <=, >, >=, == enables reporting
 //   the values of the operands in addition to the string of the condition.
 //
-//   In all cases, the message argument is optional:
-//   PW_CHECK_INT_LE(x, y) or
-//   PW_CHECK_INT_LE(x, y, "Was booting %s subsystem", subsystem_name)
-//
 //   Binary comparison asserts for 'int' type ("%d" in format strings):
-//   PW_CHECK_INT_LE  (a, b, msg, ...)  Asserts a <= b
-//   PW_CHECK_INT_LT  (a, b, msg, ...)  Asserts a <  b
-//   PW_CHECK_INT_GE  (a, b, msg, ...)  Asserts a >= b
-//   PW_CHECK_INT_GT  (a, b, msg, ...)  Asserts a >  b
-//   PW_CHECK_INT_EQ  (a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_INT_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_INT_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_INT_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_INT_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_INT_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_INT_NE(a, b, msg, ...)  Asserts a != b
 //
 //   Binary comparison asserts for 'unsigned int' type ("%u" in format strings):
-//   PW_CHECK_UINT_LE (a, b, msg, ...)  Asserts a <= b
-//   PW_CHECK_UINT_LT (a, b, msg, ...)  Asserts a <  b
-//   PW_CHECK_UINT_GE (a, b, msg, ...)  Asserts a >= b
-//   PW_CHECK_UINT_GT (a, b, msg, ...)  Asserts a >  b
-//   PW_CHECK_UINT_EQ (a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_UINT_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_UINT_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_UINT_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_UINT_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_UINT_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_UINT_NE(a, b, msg, ...)  Asserts a != b
+//
+//   Binary comparison asserts for 'void*' type ("%p" in format strings):
+//   PW_CHECK_PTR_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_PTR_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_PTR_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_PTR_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_PTR_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_PTR_NE(a, b, msg, ...)  Asserts a != b
 //
 //   Binary comparison asserts for 'float' type ("%f" in format strings):
-//   PW_CHECK_FLOAT_LE(a, b, msg, ...)  Asserts a <= b
-//   PW_CHECK_FLOAT_LT(a, b, msg, ...)  Asserts a <  b
-//   PW_CHECK_FLOAT_GE(a, b, msg, ...)  Asserts a >= b
-//   PW_CHECK_FLOAT_GT(a, b, msg, ...)  Asserts a >  b
-//   PW_CHECK_FLOAT_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_FLOAT_NEAR(a, b, abs_tolerance, msg, ...)
+//     Asserts (a >= (b - abs_tolerance)) && (a <= (b + abs_tolerance))
+//   PW_CHECK_FLOAT_EXACT_LE(a, b, msg, ...)  Asserts a <= b
+//   PW_CHECK_FLOAT_EXACT_LT(a, b, msg, ...)  Asserts a <  b
+//   PW_CHECK_FLOAT_EXACT_GE(a, b, msg, ...)  Asserts a >= b
+//   PW_CHECK_FLOAT_EXACT_GT(a, b, msg, ...)  Asserts a >  b
+//   PW_CHECK_FLOAT_EXACT_EQ(a, b, msg, ...)  Asserts a == b
+//   PW_CHECK_FLOAT_EXACT_NE(a, b, msg, ...)  Asserts a != b
+//
+//   The above CHECK_*_*() are also available in DCHECK variants, which will
+//   only evaluate their arguments and trigger if the NDEBUG macro is defined.
+//
+//   Note: For float, proper comparator checks which take floating point
+//   precision and ergo error accumulation into account are not provided on
+//   purpose as this comes with some complexity and requires application
+//   specific tolerances in terms of Units of Least Precision (ULP). Instead,
+//   we recommend developers carefully consider how floating point precision and
+//   error impact the data they are bounding and whether CHECKs are appropriate.
 //
 //   Note: PW_CRASH is the equivalent of LOG_FATAL in other systems, where a
 //   device crash is triggered with a message. In Pigweed, logging and

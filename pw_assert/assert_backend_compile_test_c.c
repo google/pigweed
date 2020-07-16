@@ -122,13 +122,14 @@ void AssertBackendCompileTestsInC() {
     float x_float = 50.5;
     float y_float = 66.5;
 
-    PW_CHECK_FLOAT_LE(x_float, y_float);
-    PW_CHECK_FLOAT_LE(x_float, y_float, "FLOAT: " FAIL_IF_DISPLAYED);
-    PW_CHECK_FLOAT_LE(x_float, y_float, "FLOAT: " FAIL_IF_DISPLAYED_ARGS, z);
+    PW_CHECK_FLOAT_EXACT_LE(x_float, y_float);
+    PW_CHECK_FLOAT_EXACT_LE(x_float, y_float, "FLOAT: " FAIL_IF_DISPLAYED);
+    PW_CHECK_FLOAT_EXACT_LE(
+        x_float, y_float, "FLOAT: " FAIL_IF_DISPLAYED_ARGS, z);
 
-    PW_CHECK_FLOAT_GE(x_float, y_float);
-    PW_CHECK_FLOAT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN);
-    PW_CHECK_FLOAT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN_ARGS, z);
+    PW_CHECK_FLOAT_EXACT_GE(x_float, y_float);
+    PW_CHECK_FLOAT_EXACT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN);
+    PW_CHECK_FLOAT_EXACT_GE(x_float, y_float, "FLOAT: " FAIL_IF_HIDDEN_ARGS, z);
   }
 
   // Don't exhaustively test the DCHECKs but have a sampling of them.
@@ -138,7 +139,7 @@ void AssertBackendCompileTestsInC() {
     PW_DCHECK(5 == 10, "Message");
     PW_DCHECK(5 == 10, "Message: %d", 5);
     PW_DCHECK_INT_LE(5.4, 10.0);
-    PW_DCHECK_FLOAT_EQ(5.4, 10.0, "Message");
+    PW_DCHECK_FLOAT_EXACT_EQ(5.4, 10.0, "Message");
   }
 
   {  // TEST(Check, ComparisonArgumentsWithCommas)

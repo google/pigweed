@@ -52,7 +52,7 @@ PW_EXTERN_C_END
 
 // Sample assert failure message produced by the below implementation:
 //
-//   Check failed: current_sensor (=610) < new_sensor (=50): More details!
+//   Check failed: current_sensor (=610) < new_sensor (=50). More details!
 //
 // Putting the value next to the operand makes the string easier to read.
 
