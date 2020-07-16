@@ -133,6 +133,7 @@ void FakeController::Settings::AddLESupportedCommands() {
   SetBit(supported_commands + 26, hci::SupportedCommand::kLECreateConnectionCancel);
   SetBit(supported_commands + 27, hci::SupportedCommand::kLEConnectionUpdate);
   SetBit(supported_commands + 27, hci::SupportedCommand::kLEReadRemoteFeatures);
+  SetBit(supported_commands + 28, hci::SupportedCommand::kLEStartEncryption);
 }
 
 void FakeController::Settings::ApplyLegacyLEConfig() {
@@ -1090,6 +1091,11 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
                   BufferView(&response, sizeof(response)));
 }
 
+void FakeController::OnLEStartEncryptionCommand(const hci::LEStartEncryptionCommandParams& params) {
+  RespondWithCommandStatus(hci::kLEStartEncryption, hci::StatusCode::kSuccess);
+  SendEncryptionChangeEvent(params.connection_handle, hci::kSuccess, hci::EncryptionStatus::kOn);
+}
+
 void FakeController::SendTxPowerLevelReadResponse() {
   hci::LEReadAdvertisingChannelTxPowerReturnParams params;
   // Send back arbitrary tx power.
@@ -1648,6 +1654,11 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       if (respond_to_tx_power_read_) {
         SendTxPowerLevelReadResponse();
       }
+      break;
+    }
+    case hci::kLEStartEncryption: {
+      const auto& params = command_packet.payload<hci::LEStartEncryptionCommandParams>();
+      OnLEStartEncryptionCommand(params);
       break;
     }
     default: {

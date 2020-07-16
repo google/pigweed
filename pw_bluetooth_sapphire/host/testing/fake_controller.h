@@ -399,6 +399,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(const hci::LEReadRemoteFeaturesCommandParams& params);
 
+  // Called when a HCI_LE_Enable_Encryption command is received, responds with a successful
+  // encryption change event.
+  void OnLEStartEncryptionCommand(const hci::LEStartEncryptionCommandParams& params);
+
   // FakeControllerBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;

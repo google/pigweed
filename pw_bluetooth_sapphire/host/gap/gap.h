@@ -40,6 +40,7 @@ enum class LeSecurityMode {
   // SC-generated and authenticated encryption keys.
   SecureConnectionsOnly,
 };
+const char* LeSecurityModeToString(LeSecurityMode mode);
 
 // Placeholder assigned as the local name when gap::Adapter is initialized.
 constexpr char kDefaultLocalName[] = "fuchsia";

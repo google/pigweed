@@ -66,6 +66,8 @@ class LowEnergyConnectionRef final {
   // C Section 9.4 for more details.
   sm::BondableMode bondable_mode() const;
 
+  sm::SecurityProperties security() const;
+
   PeerId peer_identifier() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
@@ -222,6 +224,13 @@ class LowEnergyConnectionManager final {
   //   |cb|: callback called upon completion of this function, whether pairing takes place or not.
   void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
             sm::StatusCallback cb);
+
+  // Sets the LE security mode of the local device (see v5.2 Vol. 3 Part C Section 10.2). If set to
+  // SecureConnectionsOnly, any currently encrypted links not meeting the requirements of Security
+  // Mode 1 Level 4 will be disconnected.
+  void SetSecurityMode(LeSecurityMode mode);
+
+  LeSecurityMode security_mode() const { return security_mode_; }
 
  private:
   friend class LowEnergyConnectionRef;
@@ -403,6 +412,9 @@ class LowEnergyConnectionManager final {
   // The pairing delegate used for authentication challenges. If nullptr, all
   // pairing requests will be rejected.
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
+
+  // The GAP LE security mode of the device (v5.2 Vol. 3 Part C 10.2).
+  LeSecurityMode security_mode_;
 
   // Time after which a connection attempt is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.

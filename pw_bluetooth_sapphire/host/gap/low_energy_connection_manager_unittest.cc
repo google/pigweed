@@ -14,8 +14,11 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
@@ -48,6 +51,7 @@ const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {2});
 const DeviceAddress kAddress2(DeviceAddress::Type::kBREDR, {3});
+const DeviceAddress kAddress3(DeviceAddress::Type::kLEPublic, {4});
 
 const size_t kLEMaxNumPackets = 10;
 const hci::DataBufferInfo kLEDataBufferInfo(hci::kMaxACLPayloadSize, kLEMaxNumPackets);
@@ -1253,6 +1257,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   EXPECT_TRUE(peer->temporary());
   // This is to capture the channel created during the Connection process
+  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
   FakeChannel* fake_chan = nullptr;
   fake_l2cap()->set_channel_callback(
       [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
@@ -1311,6 +1317,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   EXPECT_TRUE(peer->temporary());
   // This is to capture the channel created during the Connection process
+  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
   FakeChannel* fake_chan = nullptr;
   fake_l2cap()->set_channel_callback(
       [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
@@ -2071,6 +2079,159 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated
       },
       BondableMode::Bondable);
   RunLoopUntilIdle();
+}
+
+LowEnergyConnectionManager::ConnectionResultCallback MakeConnectionResultCallback(
+    hci::Status& status, LowEnergyConnectionRefPtr& conn_ref) {
+  return [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    EXPECT_TRUE(conn_ref->active());
+  };
+}
+
+// Test that active connections not meeting the requirements for Secure Connections Only mode are
+// disconnected when the security mode is changed to SC Only.
+TEST_F(GAP_LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsufficientSecurity) {
+  Peer* encrypted_peer = peer_cache()->NewPeer(kAddress0, true);
+  Peer* unencrypted_peer = peer_cache()->NewPeer(kAddress1, true);
+  Peer* secure_authenticated_peer = peer_cache()->NewPeer(kAddress3, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3));
+
+  // Store bonds for the "secure" peers to emulate encrypted connections without emulating the
+  // entire pairing process.
+  const UInt128 kKey1Val = {1, 2, 3}, kKey2Val = {4, 5, 6};
+  const sm::LTK kEncryptedLtk(
+      sm::SecurityProperties(true /*encrypted*/, false /*authenticated*/,
+                             true /*secure connections*/, sm::kMaxEncryptionKeySize),
+      hci::LinkKey(kKey1Val, 0, 0));
+  const sm::LTK kSecureAuthenticatedLtk(
+      sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
+                             true /*secure connections*/, sm::kMaxEncryptionKeySize),
+      hci::LinkKey(kKey2Val, 0, 0));
+  const sm::PairingData kEncryptedData{.local_ltk = kEncryptedLtk, .peer_ltk = kEncryptedLtk};
+  const sm::PairingData kSecureAuthenticatedData{.local_ltk = kSecureAuthenticatedLtk,
+                                                 .peer_ltk = kSecureAuthenticatedLtk};
+  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(encrypted_peer->identifier(), kEncryptedData));
+  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(secure_authenticated_peer->identifier(),
+                                               kSecureAuthenticatedData));
+  RunLoopUntilIdle();
+
+  hci::Status unencrypted_status(HostError::kFailed), encrypted_status(HostError::kFailed),
+      secure_authenticated_status(HostError::kFailed);
+  LowEnergyConnectionRefPtr unencrypted_conn_ref, encrypted_conn_ref, secure_authenticated_conn_ref;
+  EXPECT_TRUE(connected_peers().empty());
+
+  // The bonded peers will attempt to encrypt the link upon successful connection, and the fake
+  // controller will respond that the link has been successfully encrypted.
+  EXPECT_TRUE(
+      conn_mgr()->Connect(unencrypted_peer->identifier(),
+                          MakeConnectionResultCallback(unencrypted_status, unencrypted_conn_ref)));
+  EXPECT_TRUE(
+      conn_mgr()->Connect(encrypted_peer->identifier(),
+                          MakeConnectionResultCallback(encrypted_status, encrypted_conn_ref)));
+  EXPECT_TRUE(conn_mgr()->Connect(
+      secure_authenticated_peer->identifier(),
+      MakeConnectionResultCallback(secure_authenticated_status, secure_authenticated_conn_ref)));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(3u, connected_peers().size());
+  ASSERT_TRUE(unencrypted_conn_ref);
+  ASSERT_TRUE(encrypted_conn_ref);
+  ASSERT_TRUE(secure_authenticated_conn_ref);
+  EXPECT_TRUE(unencrypted_conn_ref->active());
+  EXPECT_TRUE(secure_authenticated_conn_ref->active());
+  EXPECT_TRUE(encrypted_conn_ref->active());
+  EXPECT_EQ(sm::SecurityLevel::kNoSecurity, unencrypted_conn_ref->security().level());
+  EXPECT_EQ(sm::SecurityLevel::kEncrypted, encrypted_conn_ref->security().level());
+  EXPECT_EQ(sm::SecurityLevel::kSecureAuthenticated,
+            secure_authenticated_conn_ref->security().level());
+
+  // Setting Secure Connections Only mode causes connections not allowed under this mode to be
+  // disconnected (in this case, `encrypted_peer` is encrypted, SC-generated, and with max
+  // encryption key size, but not authenticated).
+  conn_mgr()->SetSecurityMode(LeSecurityMode::SecureConnectionsOnly);
+  RunLoopUntilIdle();
+  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, conn_mgr()->security_mode());
+  EXPECT_EQ(2u, connected_peers().size());
+  EXPECT_TRUE(unencrypted_conn_ref->active());
+  EXPECT_TRUE(secure_authenticated_conn_ref->active());
+  EXPECT_FALSE(encrypted_conn_ref->active());
+}
+
+// Test that both existing and new peers pick up on a change to Secure Connections Only mode.
+TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
+  // LE Connection Manager defaults to Mode 1.
+  EXPECT_EQ(LeSecurityMode::Mode1, conn_mgr()->security_mode());
+  // We need a non-NoInputNoOutput IOCapability to Pair in SC-only mode at the end of the test
+  FakePairingDelegate fake_delegate(sm::IOCapability::kDisplayYesNo);
+  conn_mgr()->SetPairingDelegate(fake_delegate.GetWeakPtr());
+
+  // This peer will already be connected when we set LE Secure Connections Only mode.
+  Peer* existing_peer = peer_cache()->NewPeer(kAddress1, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
+  LowEnergyConnectionRefPtr existing_conn_ref;
+  hci::Status s;
+  RunLoopUntilIdle();
+  // This captures the channel created during the Connection process.
+  FakeChannel* fake_chan = nullptr;
+  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
+  fake_l2cap()->set_channel_callback([&fake_chan](const fbl::RefPtr<FakeChannel>& new_fake_chan) {
+    fake_chan = new_fake_chan.get();
+  });
+  EXPECT_TRUE(conn_mgr()->Connect(existing_peer->identifier(),
+                                  MakeConnectionResultCallback(s, existing_conn_ref)));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fake_chan);
+  FakeChannel* existing_chan = fake_chan;
+  EXPECT_EQ(1u, connected_peers().size());
+
+  conn_mgr()->SetSecurityMode(LeSecurityMode::SecureConnectionsOnly);
+
+  // This peer is connected after setting LE Secure Connections Only mode.
+  Peer* new_peer = peer_cache()->NewPeer(kAddress3, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3));
+  LowEnergyConnectionRefPtr new_conn_ref;
+  EXPECT_TRUE(
+      conn_mgr()->Connect(new_peer->identifier(), MakeConnectionResultCallback(s, new_conn_ref)));
+  RunLoopUntilIdle();
+  EXPECT_NE(existing_chan, fake_chan);
+  FakeChannel* new_chan = fake_chan;
+
+  EXPECT_EQ(2u, connected_peers().size());
+  // Validate that future pairings enforce the SC only conditions
+  // clang-format off
+  const auto kExpected = CreateStaticByteBuffer(
+    0x01,  // code: "Pairing Request"
+    sm::IOCapability::kDisplayYesNo,
+    0x00,  // OOB: not present
+    sm::AuthReq::kBondingFlag |sm::AuthReq::kMITM | sm::AuthReq::kSC,
+    0x10,  // encr. key size: 16 (default max)
+    0x01,  // initiator keys: enc key
+    0x03   // responder keys: enc key and identity info
+  );
+  // clang-format on
+
+  int cb_called_count = 0;
+  // Although the `Pair` command only requests kEncrypted security, MITM is expected in the Pairing
+  // Request due to Secure Connections Only mode.
+  auto expect_default_bytebuffer = [&cb_called_count, kExpected](ByteBufferPtr sent) {
+    ASSERT_TRUE(sent);
+    ASSERT_EQ(*sent, kExpected);
+    cb_called_count++;
+  };
+  existing_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  new_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
+  conn_mgr()->Pair(existing_peer->identifier(), sm::SecurityLevel::kEncrypted,
+                   sm::BondableMode::Bondable, [](auto /**/) {});
+  conn_mgr()->Pair(new_peer->identifier(), sm::SecurityLevel::kEncrypted,
+                   sm::BondableMode::Bondable, [](auto /**/) {});
+  RunLoopUntilIdle();
+  EXPECT_EQ(2, cb_called_count);
 }
 
 // Tests for assertions that enforce invariants.

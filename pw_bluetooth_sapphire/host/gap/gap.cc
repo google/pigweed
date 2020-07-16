@@ -16,4 +16,14 @@ const char* TechnologyTypeToString(TechnologyType type) {
       return "LowEnergy";
   }
 }
+
+const char* LeSecurityModeToString(LeSecurityMode mode) {
+  switch (mode) {
+    case LeSecurityMode::Mode1:
+      return "Mode 1";
+    case LeSecurityMode::SecureConnectionsOnly:
+      return "Secure Connections Only Mode";
+  }
+}
+
 }  // namespace bt::gap

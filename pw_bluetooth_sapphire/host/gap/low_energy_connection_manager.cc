@@ -11,11 +11,13 @@
 #include <zircon/syscalls.h>
 
 #include <optional>
+#include <vector>
 
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
@@ -190,6 +192,11 @@ class LowEnergyConnection final : public sm::Delegate {
         conn_pause_central_expiry_);
   }
 
+  void set_security_mode(LeSecurityMode mode) {
+    ZX_ASSERT(pairing_);
+    pairing_->set_security_mode(mode);
+  }
+
   size_t ref_count() const { return refs_.size(); }
 
   PeerId peer_id() const { return peer_id_; }
@@ -198,6 +205,11 @@ class LowEnergyConnection final : public sm::Delegate {
   BondableMode bondable_mode() const {
     ZX_DEBUG_ASSERT(pairing_);
     return pairing_->bondable_mode();
+  }
+
+  sm::SecurityProperties security() const {
+    ZX_ASSERT(pairing_);
+    return pairing_->security();
   }
 
  private:
@@ -233,10 +245,10 @@ class LowEnergyConnection final : public sm::Delegate {
     if (conn_mgr_->pairing_delegate()) {
       io_cap = conn_mgr_->pairing_delegate()->io_capability();
     }
-
+    LeSecurityMode security_mode = conn_mgr_->security_mode();
     pairing_ = std::make_unique<sm::PairingState>(
         link_->WeakPtr(), std::move(smp), io_cap, weak_ptr_factory_.GetWeakPtr(),
-        connection_options.bondable_mode(), LeSecurityMode::Mode1);
+        connection_options.bondable_mode(), security_mode);
 
     // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
     // will start encryption if the local device is the link-layer master.
@@ -244,7 +256,6 @@ class LowEnergyConnection final : public sm::Delegate {
       bt_log(INFO, "gap-le", "assigning existing LTK");
       pairing_->AssignLongTermKey(*ltk);
     }
-
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
     gatt_->DiscoverServices(peer_id(), connection_options.optional_service_uuid());
@@ -442,6 +453,13 @@ BondableMode LowEnergyConnectionRef::bondable_mode() const {
   return conn_iter->second->bondable_mode();
 }
 
+sm::SecurityProperties LowEnergyConnectionRef::security() const {
+  ZX_DEBUG_ASSERT(manager_);
+  auto conn_iter = manager_->connections_.find(peer_id_);
+  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
+  return conn_iter->second->security();
+}
+
 LowEnergyConnectionManager::PendingRequestData::PendingRequestData(
     const DeviceAddress& address, ConnectionResultCallback first_callback,
     ConnectionOptions connection_options)
@@ -464,6 +482,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
                                                        fbl::RefPtr<data::Domain> data_domain,
                                                        fxl::WeakPtr<gatt::GATT> gatt)
     : hci_(std::move(hci)),
+      security_mode_(LeSecurityMode::Mode1),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
@@ -616,6 +635,27 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
   }
   bt_log(DEBUG, "gap-le", "pairing with security level: %d", pairing_level);
   iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
+}
+
+void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
+  security_mode_ = mode;
+  if (mode == LeSecurityMode::SecureConnectionsOnly) {
+    // `Disconnect`ing the peer must not be done while iterating through `connections_` as it
+    // removes the connection from `connections_`, hence the helper vector.
+    std::vector<PeerId> insufficiently_secure_peers;
+    for (auto& [peer_id, connection] : connections_) {
+      if (connection->security().level() != sm::SecurityLevel::kSecureAuthenticated &&
+          connection->security().level() != sm::SecurityLevel::kNoSecurity) {
+        insufficiently_secure_peers.push_back(peer_id);
+      }
+    }
+    for (PeerId id : insufficiently_secure_peers) {
+      Disconnect(id);
+    }
+  }
+  for (auto& iter : connections_) {
+    iter.second->set_security_mode(mode);
+  }
 }
 
 void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
