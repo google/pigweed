@@ -253,7 +253,11 @@ def cipd_versions(ctx: DoctorContext):
     except KeyError:
         return  # This case is handled elsewhere.
 
-    versions_path = root.joinpath('.cipd', 'pigweed', '.versions')
+    if 'PW_PIGWEED_CIPD_INSTALL_DIR' not in os.environ:
+        ctx.error('PW_PIGWEED_CIPD_INSTALL_DIR not set')
+    cipd_dir = pathlib.Path(os.environ['PW_PIGWEED_CIPD_INSTALL_DIR'])
+
+    versions_path = cipd_dir / '.versions'
     # Deliberately not checking luci.json--it's not required to be up-to-date.
     json_path = root.joinpath('pw_env_setup', 'py', 'pw_env_setup',
                               'cipd_setup', 'pigweed.json')
