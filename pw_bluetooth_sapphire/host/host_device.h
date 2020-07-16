@@ -34,6 +34,8 @@ class HostDevice final {
 
  private:
   // Protocol trampolines.
+  static void DdkInit(void* ctx) { static_cast<HostDevice*>(ctx)->Init(); }
+
   static void DdkUnbind(void* ctx) { static_cast<HostDevice*>(ctx)->Unbind(); }
 
   static void DdkRelease(void* ctx) { static_cast<HostDevice*>(ctx)->Release(); }
@@ -54,6 +56,7 @@ class HostDevice final {
     return static_cast<HostDevice*>(ctx)->OpenHostChannel(zx::channel(channel));
   }
 
+  void Init();
   void Unbind();
   void Release();
 
@@ -73,6 +76,9 @@ class HostDevice final {
 
   // The base DDK device ops.
   zx_protocol_device_t dev_proto_ = {};
+
+  // HCI protocol struct
+  bt_hci_protocol_t hci_proto_;
 
   // Guards access to members below.
   std::mutex mtx_;

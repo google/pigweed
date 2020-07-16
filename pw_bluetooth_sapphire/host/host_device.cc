@@ -23,6 +23,7 @@ HostDevice::HostDevice(zx_device_t* device)
   ZX_DEBUG_ASSERT(parent_);
 
   dev_proto_.version = DEVICE_OPS_VERSION;
+  dev_proto_.init = &HostDevice::DdkInit;
   dev_proto_.unbind = &HostDevice::DdkUnbind;
   dev_proto_.release = &HostDevice::DdkRelease;
   dev_proto_.message = &HostDevice::DdkMessage;
@@ -33,45 +34,40 @@ zx_status_t HostDevice::Bind() {
 
   std::lock_guard<std::mutex> lock(mtx_);
 
-  bt_hci_protocol_t hci_proto;
-  zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_HCI, &hci_proto);
+  zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_HCI, &hci_proto_);
   if (status != ZX_OK) {
     bt_log(ERROR, "bt-host", "failed to obtain bt-hci protocol ops: %s",
            zx_status_get_string(status));
     return status;
   }
 
-  if (!hci_proto.ops) {
+  if (!hci_proto_.ops) {
     bt_log(ERROR, "bt-host", "bt-hci device ops required!");
     return ZX_ERR_NOT_SUPPORTED;
   }
 
-  if (!hci_proto.ops->open_command_channel) {
+  if (!hci_proto_.ops->open_command_channel) {
     bt_log(ERROR, "bt-host", "bt-hci op required: open_command_channel");
     return ZX_ERR_NOT_SUPPORTED;
   }
 
-  if (!hci_proto.ops->open_acl_data_channel) {
+  if (!hci_proto_.ops->open_acl_data_channel) {
     bt_log(ERROR, "bt-host", "bt-hci op required: open_acl_data_channel");
     return ZX_ERR_NOT_SUPPORTED;
   }
 
-  if (!hci_proto.ops->open_snoop_channel) {
+  if (!hci_proto_.ops->open_snoop_channel) {
     bt_log(ERROR, "bt-host", "bt-hci op required: open_snoop_channel");
     return ZX_ERR_NOT_SUPPORTED;
   }
 
-  // We are required to publish a device before returning from Bind but we
-  // haven't fully initialized the adapter yet. We create the bt-host device as
-  // invisible until initialization completes on the host thread. We also
-  // disallow other drivers from directly binding to it.
   device_add_args_t args = {
       .version = DEVICE_ADD_ARGS_VERSION,
       .name = "bt_host",
       .ctx = this,
       .ops = &dev_proto_,
       .proto_id = ZX_PROTOCOL_BT_HOST,
-      .flags = DEVICE_ADD_NON_BINDABLE | DEVICE_ADD_INVISIBLE,
+      .flags = DEVICE_ADD_NON_BINDABLE,
   };
 
   status = device_add(parent_, &args, &dev_);
@@ -80,44 +76,45 @@ zx_status_t HostDevice::Bind() {
     return status;
   }
 
+  return status;
+  // Since we define an init hook, Init will be called by the DDK after this method finishes.
+}
+
+void HostDevice::Init() {
+  bt_log(DEBUG, "bt-host", "init");
+
+  std::lock_guard<std::mutex> lock(mtx_);
+
   loop_.StartThread("bt-host (gap)");
 
   // Send the bootstrap message to Host. The Host object can only be accessed on
   // the Host thread.
-  async::PostTask(loop_.dispatcher(), [hci_proto, this] {
+  async::PostTask(loop_.dispatcher(), [this] {
     bt_log(TRACE, "bt-host", "host thread start");
 
     std::lock_guard<std::mutex> lock(mtx_);
-    host_ = fxl::MakeRefCounted<Host>(hci_proto);
+    host_ = fxl::MakeRefCounted<Host>(hci_proto_);
     host_->Initialize([this](bool success) {
-      {
-        std::lock_guard<std::mutex> lock(mtx_);
+      std::lock_guard<std::mutex> lock(mtx_);
 
-        // Abort if CleanUp has been called.
-        if (!host_) {
-          bt_log(TRACE, "bt-host", "host already removed; nothing to do");
-          return;
-        }
+      // host_ and dev_ must be defined here as Bind() must have been called and the runloop has not
+      // yet been been drained in Unbind().
+      ZX_DEBUG_ASSERT(host_);
+      ZX_DEBUG_ASSERT(dev_);
 
-        if (success) {
-          bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
-          host_->gatt_host()->SetRemoteServiceWatcher(
-              fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
-          device_make_visible(dev_, nullptr);
-          return;
-        }
-
+      if (!success) {
         bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
-
-        host_->ShutDown();
-        CleanUp();
+        device_init_reply(dev_, ZX_ERR_INTERNAL, nullptr /* No arguments */);
+        // DDK will call Unbind here to clean up.
+      } else {
+        bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
+        host_->gatt_host()->SetRemoteServiceWatcher(
+            fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
+        device_init_reply(dev_, ZX_OK, nullptr /* No arguments */);
+        return;
       }
-
-      loop_.JoinThreads();
     });
   });
-
-  return ZX_OK;
 }
 
 void HostDevice::Unbind() {
@@ -125,22 +122,15 @@ void HostDevice::Unbind() {
 
   {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (!host_) {
-      bt_log(TRACE, "bt-host", "host already removed");
-      return;
-    }
 
     // Do this immediately to stop receiving new service callbacks.
     bt_log(TRACE, "bt-host", "removing GATT service watcher");
     host_->gatt_host()->SetRemoteServiceWatcher({});
 
-    // Tear down the bt-host device and all of its GATT children. Make a copy of
-    // |host_| first since CleanUp() clears it.
-    auto host = host_;
-    CleanUp();
-
-    async::PostTask(loop_.dispatcher(), [this, host] {
-      host->ShutDown();
+    async::PostTask(loop_.dispatcher(), [this] {
+      std::lock_guard<std::mutex> lock(mtx_);
+      host_->ShutDown();
+      host_ = nullptr;
       loop_.Quit();
     });
 
@@ -150,6 +140,8 @@ void HostDevice::Unbind() {
   // Make sure that the ShutDown task runs before this returns. We re
   bt_log(TRACE, "bt-host", "waiting for shut down tasks to complete");
   loop_.JoinThreads();
+
+  device_unbind_reply(dev_);
 
   bt_log(DEBUG, "bt-host", "GAP has been shut down");
 }
@@ -163,15 +155,13 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
   ZX_DEBUG_ASSERT(channel);
   std::lock_guard<std::mutex> lock(mtx_);
 
-  // It's possible that this is being processed whilst the device is unbinding,
-  // in which case |host_| can be null
-  if (!host_) {
-    bt_log(ERROR, "bt-host", "Cannot open channel, host is unbound");
-    return ZX_ERR_BAD_STATE;
-  }
+  // This is called from the fidl operation OpenChannelOp.  No fidl calls will be delivered to the
+  // driver before dev_ is initialized by Bind() nor host_ initialized by Init(), and no fidl calls
+  // will be delivered after the DDK calls Unbind() and host_ is removed.
+  ZX_DEBUG_ASSERT(host_);
+  ZX_DEBUG_ASSERT(dev_);
 
   // Tell Host to start processing messages on this handle.
-  ZX_DEBUG_ASSERT(host_);
   async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(channel)]() mutable {
     host->BindHostInterface(std::move(chan));
   });
@@ -190,22 +180,12 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
 
   std::lock_guard<std::mutex> lock(mtx_);
 
-  // Ignore the event if our bt-host device has been removed (this is likely during shut down).
-  if (!dev_) {
-    return;
-  }
+  // This is run on the host event loop. Bind(), Init() and Unbind() should maintain the invariant
+  // that dev_ and host_ are initialized when the event loop is running.
+  ZX_DEBUG_ASSERT(host_);
+  ZX_DEBUG_ASSERT(dev_);
 
   __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(dev_, peer_id, service);
-}
-
-void HostDevice::CleanUp() {
-  bt_log(DEBUG, "bt-host", "clean up");
-
-  host_ = nullptr;
-  if (dev_) {
-    device_async_remove(dev_);
-    dev_ = nullptr;
-  }
 }
 
 }  // namespace bthost
