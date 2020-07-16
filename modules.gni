@@ -22,6 +22,7 @@ declare_args() {
   dir_pw_assert_basic = get_path_info("pw_assert_basic", "abspath")
   dir_pw_base64 = get_path_info("pw_base64", "abspath")
   dir_pw_bloat = get_path_info("pw_bloat", "abspath")
+  dir_pw_blob_store = get_path_info("pw_blob_store", "abspath")
   dir_pw_boot_armv7m = get_path_info("pw_boot_armv7m", "abspath")
   dir_pw_build = get_path_info("pw_build", "abspath")
   dir_pw_bytes = get_path_info("pw_bytes", "abspath")

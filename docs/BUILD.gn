@@ -66,6 +66,7 @@ pw_doc_gen("docs") {
     "$dir_pw_assert_basic:docs",
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
+    "$dir_pw_blob_store:docs",
     "$dir_pw_boot_armv7m:docs",
     "$dir_pw_build:docs",
     "$dir_pw_bytes:docs",
