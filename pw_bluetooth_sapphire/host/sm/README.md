@@ -9,6 +9,7 @@ SMP over BR/EDR                                            | Not Supported
 GAP LE Security Mode 1 (encrypted security levels)         | Supported
 GAP LE Security Mode 2 (unencrypted, data-signed security) | Not Supported
 GAP LE Security Mode 3 (Broadcast_Code encrypted security) | Not Supported
+GAP LE Secure Connections Only Mode                        | Supported
 Legacy Pairing                                             | Supported
 Secure Connections Pairing                                 | Supported
 Out of Band Pairing                                        | Not Supported

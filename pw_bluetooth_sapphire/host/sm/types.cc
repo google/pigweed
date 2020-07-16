@@ -4,25 +4,25 @@
 
 #include "types.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace sm {
 namespace {
 
-SecurityLevel SecurityLevelFromLinkKey(hci::LinkKeyType lk_type) {
-  switch (lk_type) {
-    case hci::LinkKeyType::kDebugCombination:
-    case hci::LinkKeyType::kUnauthenticatedCombination192:
-    case hci::LinkKeyType::kUnauthenticatedCombination256:
-      return SecurityLevel::kEncrypted;
-    case hci::LinkKeyType::kAuthenticatedCombination192:
-    case hci::LinkKeyType::kAuthenticatedCombination256:
-      return SecurityLevel::kAuthenticated;
-    default:
-      break;
-  }
-  return SecurityLevel::kNoSecurity;
+bool IsEncryptedKey(hci::LinkKeyType lk_type) {
+  return (lk_type == hci::LinkKeyType::kDebugCombination ||
+          lk_type == hci::LinkKeyType::kUnauthenticatedCombination192 ||
+          lk_type == hci::LinkKeyType::kUnauthenticatedCombination256 ||
+          lk_type == hci::LinkKeyType::kAuthenticatedCombination192 ||
+          lk_type == hci::LinkKeyType::kAuthenticatedCombination256);
+}
+
+bool IsAuthenticatedKey(hci::LinkKeyType lk_type) {
+  return (lk_type == hci::LinkKeyType::kAuthenticatedCombination192 ||
+          lk_type == hci::LinkKeyType::kAuthenticatedCombination256);
 }
 
 bool IsSecureConnectionsKey(hci::LinkKeyType lk_type) {
@@ -51,27 +51,51 @@ const char* LevelToString(SecurityLevel level) {
       return "encrypted";
     case SecurityLevel::kAuthenticated:
       return "encrypted (MITM)";
+    case SecurityLevel::kSecureAuthenticated:
+      return "encrypted (MITM) with Secure Connections and 128-bit key";
     default:
       break;
   }
   return "not secure";
 }
 
-SecurityProperties::SecurityProperties()
-    : level_(SecurityLevel::kNoSecurity), enc_key_size_(0u), sc_(false) {}
+SecurityProperties::SecurityProperties() : SecurityProperties(false, false, false, 0u) {}
+
+SecurityProperties::SecurityProperties(bool encrypted, bool authenticated, bool secure_connections,
+                                       size_t enc_key_size)
+    : properties_(0u), enc_key_size_(enc_key_size) {
+  properties_ |= (encrypted ? Property::kEncrypted : 0u);
+  properties_ |= (authenticated ? Property::kAuthenticated : 0u);
+  properties_ |= (secure_connections ? Property::kSecureConnections : 0u);
+}
 
 SecurityProperties::SecurityProperties(SecurityLevel level, size_t enc_key_size,
                                        bool secure_connections)
-    : level_(level), enc_key_size_(enc_key_size), sc_(secure_connections) {}
-
+    : SecurityProperties((level >= SecurityLevel::kEncrypted),
+                         (level >= SecurityLevel::kAuthenticated), secure_connections,
+                         enc_key_size) {}
 // All BR/EDR link keys, even those from legacy pairing or based on 192-bit EC
 // points, are stored in 128 bits, according to Core Spec v5.0, Vol 2, Part H
 // Section 3.1 "Key Types."
 SecurityProperties::SecurityProperties(hci::LinkKeyType lk_type)
-    : SecurityProperties(SecurityLevelFromLinkKey(lk_type), kMaxEncryptionKeySize,
-                         IsSecureConnectionsKey(lk_type)) {
+    : SecurityProperties(IsEncryptedKey(lk_type), IsAuthenticatedKey(lk_type),
+                         IsSecureConnectionsKey(lk_type), kMaxEncryptionKeySize) {
   ZX_DEBUG_ASSERT_MSG(lk_type != hci::LinkKeyType::kChangedCombination,
                       "Can't infer security information from a Changed Combination Key");
+}
+
+SecurityLevel SecurityProperties::level() const {
+  auto level = SecurityLevel::kNoSecurity;
+  if (properties_ & Property::kEncrypted) {
+    level = SecurityLevel::kEncrypted;
+    if (properties_ & Property::kAuthenticated) {
+      level = SecurityLevel::kAuthenticated;
+      if (enc_key_size_ == kMaxEncryptionKeySize && (properties_ & Property::kSecureConnections)) {
+        level = SecurityLevel::kSecureAuthenticated;
+      }
+    }
+  }
+  return level;
 }
 
 std::optional<hci::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
@@ -94,9 +118,13 @@ std::optional<hci::LinkKeyType> SecurityProperties::GetLinkKeyType() const {
 }
 
 std::string SecurityProperties::ToString() const {
-  return fxl::StringPrintf("[security: %s, key size: %lu, %s]", LevelToString(level()),
-                           enc_key_size(),
-                           secure_connections() ? "secure connections" : "legacy authentication");
+  if (level() == SecurityLevel::kNoSecurity) {
+    return "[no security]";
+  }
+  return fxl::StringPrintf("[%s%s%skey size: %lu]", encrypted() ? "encrypted " : "",
+                           authenticated() ? "authenticated (MITM) " : "",
+                           secure_connections() ? "secure connections " : "legacy authentication ",
+                           enc_key_size());
 }
 
 LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)

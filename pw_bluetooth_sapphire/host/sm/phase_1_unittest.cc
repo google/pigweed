@@ -575,6 +575,92 @@ TEST_F(SMP_Phase1Test, FeatureExchangeEncryptionKeySize) {
   ASSERT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error().protocol_error());
 }
 
+TEST_F(SMP_Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
+  auto phase_args = Phase1Args{.io_capability = IOCapability::kKeyboardDisplay,
+                               .level = SecurityLevel::kSecureAuthenticated,
+                               .sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+    0x01,  // code: Pairing Request
+    0x04,  // IO cap.: KeyboardDisplay
+    0x00,  // OOB: not present
+    AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
+    0x10,  // encr. key size: 16 (default max)
+    0x01,  // initiator keys: enc key
+    0x03   // responder keys: enc key and identity info
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+    0x02,  // code: Pairing Response
+    0x04,  // IO cap.: KeyboardDisplay
+    0x00,  // OOB: not present
+    AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
+    0x0F,  // encr. key size: 15, i.e. one byte less than max possible encryption key size.
+    0x01,  // initiator keys: enc key only
+    0x01   // responder keys: enc key only
+  );
+  const auto kFailure =  CreateStaticByteBuffer(
+    kPairingFailed,
+    ErrorCode::kEncryptionKeySize
+  );
+  // clang-format on
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  // We should receive a pairing response and reply back with Pairing Failed; we enforce that all
+  // encryption keys are 16 bytes when `level` is set to SecureAuthenticated.
+  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+
+  EXPECT_EQ(0, feature_exchange_count());
+  EXPECT_EQ(1, listener()->pairing_error_count());
+  ASSERT_EQ(ErrorCode::kEncryptionKeySize, listener()->last_error().protocol_error());
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
+  auto phase_args = Phase1Args{.io_capability = IOCapability::kKeyboardDisplay,
+                               .level = SecurityLevel::kSecureAuthenticated,
+                               .sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+    0x01,  // code: Pairing Request
+    0x04,  // IO cap.: KeyboardDisplay
+    0x00,  // OOB: not present
+    AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
+    0x10,  // encr. key size: 16 (default max)
+    0x01,  // initiator keys: enc key
+    0x03   // responder keys: enc key and identity info
+  );
+  const auto kResponse = CreateStaticByteBuffer(
+    0x02,  // code: Pairing Response
+    0x04,  // IO cap.: KeyboardDisplay
+    0x00,  // OOB: not present
+    AuthReq::kBondingFlag | AuthReq::kMITM,
+    0x10,  // encr. key size: 16 (default max)
+    0x01,  // initiator keys: enc key only
+    0x01   // responder keys: enc key only
+  );
+  const auto kFailure =  CreateStaticByteBuffer(
+    kPairingFailed,
+    ErrorCode::kAuthenticationRequirements
+  );
+  // clang-format on
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  // We should receive a pairing response and reply back with Pairing Failed; we enforce that
+  // Secure Connections is used when `level` is set to SecureAuthenticated.
+  EXPECT_TRUE(ReceiveAndExpect(kResponse, kFailure));
+
+  EXPECT_EQ(0, feature_exchange_count());
+  EXPECT_EQ(1, listener()->pairing_error_count());
+  ASSERT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
+}
+
 TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Request
                                                0x03,  // IO cap.: NoInputNoOutput
@@ -1042,6 +1128,37 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRejectsMethodOfInsufficientSecuri
   // Both devices have DisplayYesNo IOCap, but the initiator does not support Secure Connections so
   // Numeric Comparison cannot be used. Neither device has a keyboard, so Passkey Entry cannot be
   // used. Thus authenticated pairing, the desired level, cannot be met and we fail.
+  ASSERT_TRUE(Expect(kFailure));
+
+  EXPECT_EQ(1, listener()->pairing_error_count());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInputNoOutput) {
+  // clang-format off
+  const auto kRequest = CreateStaticByteBuffer(
+    0x01,  // code: Pairing Request
+    0x03,  // IO cap.: NoInputNoOutput
+    0x00,  // OOB: not present
+    AuthReq::kBondingFlag | AuthReq::kSC,
+    0x10,  // encr. key size: 16 (default max)
+    0x01,  // initiator keys: enc key
+    0x03   // responder keys: enc key and identity info
+  );
+  const auto kFailure =  CreateStaticByteBuffer(
+    kPairingFailed,
+    ErrorCode::kAuthenticationRequirements
+  );
+  // clang-format on
+  auto reader = PacketReader(&kRequest);
+  auto phase_args = Phase1Args{.preq = reader.payload<PairingRequestParams>(),
+                               .io_capability = IOCapability::kDisplayYesNo,
+                               .level = SecurityLevel::kSecureAuthenticated,
+                               .sc_supported = true};
+  NewPhase1(Role::kResponder, phase_args);
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+
+  // Cannot perform SecureAuthenticated pairing with the peer's NoInputNoOutput IOCapabilities.
   ASSERT_TRUE(Expect(kFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());

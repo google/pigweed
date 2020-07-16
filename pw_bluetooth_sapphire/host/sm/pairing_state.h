@@ -13,6 +13,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -37,11 +38,13 @@ class PairingState final : public PairingPhase::Listener {
  public:
   // |link|: The LE logical link over which pairing procedures occur.
   // |smp|: The L2CAP LE SMP fixed channel that operates over |link|.
-  // |ioc|: The initial I/O capability.
+  // |io_capability|: The initial I/O capability.
   // |delegate|: Delegate which handles SMP interactions with the rest of the Bluetooth stack.
+  // |bondable_mode|: the operating bondable mode of the device (see v5.2, Vol. 3, Part C 9.4).
+  // |security_mode|: the security mode this PairingState is in (see v5.2, Vol. 3, Part C 10.2).
   PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-               BondableMode bondable_mode);
+               BondableMode bondable_mode, gap::LeSecurityMode security_mode);
   ~PairingState() override;
 
   // Returns the current security properties of the LE link.
@@ -93,6 +96,10 @@ class PairingState final : public PairingPhase::Listener {
   // if bondable mode needs to be reset during a pairing Reset() or Abort() must be called first.
   void set_bondable_mode(sm::BondableMode mode) { bondable_mode_ = mode; }
 
+  // Sets the LE Security mode of the pairing state - see enum definition for details of each mode.
+  // If a security upgrade is in-progress, this will only take effect on the next security upgrade.
+  void set_security_mode(gap::LeSecurityMode mode) { security_mode_ = mode; }
+
  private:
   // Represents a pending request to update the security level.
   struct PendingRequest {
@@ -125,6 +132,11 @@ class PairingState final : public PairingPhase::Listener {
 
   // Called when Phase 2 generates an encryption key, so the link can be encrypted with it.
   void OnPhase2EncryptionKey(const UInt128& new_key);
+
+  // Check if encryption using `current_ltk` will satisfy the current security requirements.
+  static bool CurrentLtkInsufficientlySecureForEncryption(std::optional<LTK> current_ltk,
+                                                          IdlePhase* idle_phase,
+                                                          gap::LeSecurityMode mode);
 
   // Called when the encryption state of the LE link changes.
   void OnEncryptionChange(hci::Status status, bool enabled);
@@ -195,6 +207,9 @@ class PairingState final : public PairingPhase::Listener {
 
   // The operating bondable mode of the device.
   BondableMode bondable_mode_;
+
+  // The current GAP security mode of the device (v5.2 Vol. 3 Part C Section 10.2)
+  gap::LeSecurityMode security_mode_;
 
   SecurityProperties le_sec_;  // Current security properties of the LE-U link.
 

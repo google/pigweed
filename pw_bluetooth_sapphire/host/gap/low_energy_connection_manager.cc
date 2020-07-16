@@ -234,9 +234,9 @@ class LowEnergyConnection final : public sm::Delegate {
       io_cap = conn_mgr_->pairing_delegate()->io_capability();
     }
 
-    pairing_ = std::make_unique<sm::PairingState>(link_->WeakPtr(), std::move(smp), io_cap,
-                                                  weak_ptr_factory_.GetWeakPtr(),
-                                                  connection_options.bondable_mode());
+    pairing_ = std::make_unique<sm::PairingState>(
+        link_->WeakPtr(), std::move(smp), io_cap, weak_ptr_factory_.GetWeakPtr(),
+        connection_options.bondable_mode(), LeSecurityMode::Mode1);
 
     // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
     // will start encryption if the local device is the link-layer master.
@@ -981,7 +981,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
 
   // Process the next pending attempt.
   ZX_DEBUG_ASSERT(!connector_->request_pending());
-  
+
   TryCreateNextConnection();
 }
 

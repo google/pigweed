@@ -63,15 +63,20 @@ struct PairingFeatures final {
   KeyDistGenField remote_key_distribution;
 };
 
+// Each enum variant corresponds to an LE security mode 1 level in v5.2 Vol. Part C 10.2.1. Fuchsia
+// only supports encryption based security (Security Mode 1 and Secure Connections Only mode).
 enum class SecurityLevel {
   // No encryption
-  kNoSecurity = 0,
+  kNoSecurity = 1,
 
   // Encrypted without MITM protection (unauthenticated)
-  kEncrypted = 1,
+  kEncrypted = 2,
 
   // Encrypted with MITM protection (authenticated)
-  kAuthenticated = 2,
+  kAuthenticated = 3,
+
+  // Encrypted with MITM protection, Secure Connections, and a 128-bit encryption key.
+  kSecureAuthenticated = 4,
 };
 
 // Returns a string representation of |level| for debug messages.
@@ -83,7 +88,8 @@ class SecurityProperties final {
  public:
   SecurityProperties();
   SecurityProperties(SecurityLevel level, size_t enc_key_size, bool secure_connections);
-
+  SecurityProperties(bool encrypted, bool authenticated, bool secure_connections,
+                     size_t enc_key_size);
   // Build from a BR/EDR Link Key that resulted from pairing. |lk_type| should not be
   // kChangedCombination, because that means that the link key is the same type as before it was
   // changed, which this has no knowledge of.
@@ -100,10 +106,11 @@ class SecurityProperties final {
   // policies regarding debug keys.
   explicit SecurityProperties(hci::LinkKeyType lk_type);
 
-  SecurityLevel level() const { return level_; }
+  SecurityLevel level() const;
   size_t enc_key_size() const { return enc_key_size_; }
-  bool secure_connections() const { return sc_; }
-  bool authenticated() const { return level_ == SecurityLevel::kAuthenticated; }
+  bool encrypted() const { return properties_ & Property::kEncrypted; }
+  bool secure_connections() const { return properties_ & Property::kSecureConnections; }
+  bool authenticated() const { return properties_ & Property::kAuthenticated; }
 
   // Returns the BR/EDR link key type that produces the current security properties. Returns
   // std::nullopt if the current security level is kNoSecurity.
@@ -119,15 +126,21 @@ class SecurityProperties final {
 
   // Compare two properties for equality.
   bool operator==(const SecurityProperties& other) const {
-    return level_ == other.level_ && enc_key_size_ == other.enc_key_size_ && sc_ == other.sc_;
+    return properties_ == other.properties_ && enc_key_size_ == other.enc_key_size_;
   }
 
   bool operator!=(const SecurityProperties& other) const { return !(*this == other); }
 
  private:
-  SecurityLevel level_;
+  // Possible security properties for a link.
+  enum Property : uint8_t {
+    kEncrypted = (1 << 0),
+    kAuthenticated = (1 << 1),
+    kSecureConnections = (1 << 2)
+  };
+  using PropertiesField = uint8_t;
+  PropertiesField properties_;
   size_t enc_key_size_;
-  bool sc_;
 };
 
 // Represents a reusable long term key for a specific transport.

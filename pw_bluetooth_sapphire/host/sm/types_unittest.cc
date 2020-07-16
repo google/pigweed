@@ -4,7 +4,12 @@
 
 #include "types.h"
 
+#include <string>
+
 #include <gtest/gtest.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace sm {
@@ -54,7 +59,7 @@ TEST(SMP_TypesTest, LinkKeyTypeToSecurityProperties) {
   EXPECT_EQ(true, props.secure_connections());
 
   props = SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination256);
-  EXPECT_EQ(SecurityLevel::kAuthenticated, props.level());
+  EXPECT_EQ(SecurityLevel::kSecureAuthenticated, props.level());
   EXPECT_EQ(16UL, props.enc_key_size());
   EXPECT_EQ(true, props.authenticated());
   EXPECT_EQ(true, props.secure_connections());
@@ -89,6 +94,50 @@ TEST(SMP_TypesTest, SecurityPropertiesToLinkKeyType) {
   props = SecurityProperties(hci::LinkKeyType::kAuthenticatedCombination256);
   ASSERT_TRUE(props.GetLinkKeyType().has_value());
   EXPECT_EQ(hci::LinkKeyType::kAuthenticatedCombination256, *props.GetLinkKeyType());
+}
+
+TEST(SMP_TypesTest, CorrectPropertiesToLevelMapping) {
+  for (auto sc : {true, false}) {
+    SCOPED_TRACE("secure connections: " + std::to_string(sc));
+    for (auto key_sz : {kMinEncryptionKeySize, kMaxEncryptionKeySize}) {
+      SCOPED_TRACE("encryption key size: " + std::to_string(key_sz));
+      ASSERT_EQ(SecurityLevel::kEncrypted, SecurityProperties(true, false, sc, key_sz).level());
+
+      for (auto auth : {true, false}) {
+        SCOPED_TRACE("authenticated: " + std::to_string(auth));
+        ASSERT_EQ(SecurityLevel::kNoSecurity, SecurityProperties(false, auth, sc, key_sz).level());
+      }
+    }
+  }
+  ASSERT_EQ(SecurityLevel::kAuthenticated,
+            SecurityProperties(true, true, false, kMaxEncryptionKeySize).level());
+  ASSERT_EQ(SecurityLevel::kAuthenticated,
+            SecurityProperties(true, true, true, kMinEncryptionKeySize).level());
+  ASSERT_EQ(SecurityLevel::kSecureAuthenticated,
+            SecurityProperties(true, true, true, kMaxEncryptionKeySize).level());
+}
+
+TEST(SMP_TypesTest, PropertiesLevelConstructorWorks) {
+  for (auto enc_key_size : {kMinEncryptionKeySize, kMaxEncryptionKeySize}) {
+    SCOPED_TRACE("Enc key size: " + std::to_string(enc_key_size));
+    for (auto sc : {true, false}) {
+      SCOPED_TRACE("Secure Connections: " + std::to_string(sc));
+      ASSERT_EQ(SecurityLevel::kNoSecurity,
+                SecurityProperties(SecurityLevel::kNoSecurity, enc_key_size, sc).level());
+      ASSERT_EQ(SecurityLevel::kEncrypted,
+                SecurityProperties(SecurityLevel::kEncrypted, enc_key_size, sc).level());
+      if (sc && enc_key_size == kMaxEncryptionKeySize) {
+        ASSERT_EQ(SecurityLevel::kSecureAuthenticated,
+                  SecurityProperties(SecurityLevel::kAuthenticated, enc_key_size, sc).level());
+        ASSERT_EQ(
+            SecurityLevel::kSecureAuthenticated,
+            SecurityProperties(SecurityLevel::kSecureAuthenticated, enc_key_size, sc).level());
+      } else {
+        ASSERT_EQ(SecurityLevel::kAuthenticated,
+                  SecurityProperties(SecurityLevel::kAuthenticated, enc_key_size, sc).level());
+      }
+    }
+  }
 }
 
 }  // namespace

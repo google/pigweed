@@ -2,6 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+source_set("definitions") {
+  sources = [
+    "gap.cc",
+    "gap.h",
+  ]
+  deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+}
+
 static_library("gap") {
   sources = [
     "adapter.cc",
@@ -17,8 +25,6 @@ static_library("gap") {
     "connection_request.h",
     "discovery_filter.cc",
     "discovery_filter.h",
-    "gap.cc",
-    "gap.h",
     "identity_resolving_list.cc",
     "identity_resolving_list.h",
     "interrogator.cc",
@@ -47,6 +53,7 @@ static_library("gap") {
   ]
 
   public_deps = [
+    ":definitions",
     "//sdk/fidl/fuchsia.io",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/data",

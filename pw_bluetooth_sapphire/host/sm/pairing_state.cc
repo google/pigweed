@@ -20,7 +20,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/idle_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
@@ -54,12 +56,13 @@ PairingState::~PairingState() {
 
 PairingState::PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
                            IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-                           BondableMode bondable_mode)
+                           BondableMode bondable_mode, gap::LeSecurityMode security_mode)
     : next_pairing_id_(0),
       delegate_(std::move(delegate)),
       le_link_(std::move(link)),
       io_cap_(io_capability),
       bondable_mode_(bondable_mode),
+      security_mode_(security_mode),
       le_sec_(SecurityProperties()),
       sm_chan_(std::make_unique<PairingChannel>(smp)),
       role_(le_link_->role() == hci::Connection::Role::kMaster ? Role::kInitiator
@@ -127,6 +130,13 @@ void PairingState::UpgradeSecurity(SecurityLevel level, PairingCallback callback
     callback(Status(), le_sec_);
     return;
   }
+
+  // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
+  // bit encryption key, so we force all security upgrade requests to that level.
+  if (security_mode_ == gap::LeSecurityMode::SecureConnectionsOnly) {
+    level = SecurityLevel::kSecureAuthenticated;
+  }
+
   // |request_queue| must be empty if there is no active security upgrade request, which is
   // equivalent to being in idle phase with no pending security request.
   ZX_ASSERT(request_queue_.empty());
@@ -143,8 +153,13 @@ void PairingState::OnPairingRequest(const PairingRequestParams& req_params) {
   StartNewTimer();
 
   // We only require authentication as Responder if there is a pending Security Request for it.
-  // TODO(52999): This will need to be modified to support Secure Connections Only mode.
   auto required_level = idle_phase->pending_security_request().value_or(SecurityLevel::kEncrypted);
+
+  // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
+  // bit encryption key, so we force all security upgrade requests to that level.
+  if (security_mode_ == gap::LeSecurityMode::SecureConnectionsOnly) {
+    required_level = SecurityLevel::kSecureAuthenticated;
+  }
 
   current_phase_ = Phase1::CreatePhase1Responder(
       sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode_,
@@ -236,6 +251,17 @@ void PairingState::OnPhase2EncryptionKey(const UInt128& new_key) {
   }
 }
 
+bool PairingState::CurrentLtkInsufficientlySecureForEncryption(std::optional<LTK> current_ltk,
+                                                               IdlePhase* idle_phase,
+                                                               gap::LeSecurityMode mode) {
+  SecurityLevel current_ltk_sec =
+      current_ltk ? current_ltk->security().level() : SecurityLevel::kNoSecurity;
+  return (idle_phase && idle_phase->pending_security_request() &&
+          idle_phase->pending_security_request() > current_ltk_sec) ||
+         (mode == gap::LeSecurityMode::SecureConnectionsOnly &&
+          current_ltk_sec != SecurityLevel::kSecureAuthenticated);
+}
+
 void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   // First notify the delegate in case of failure.
   if (bt_is_error(status, ERROR, "sm", "link layer authentication failed")) {
@@ -255,24 +281,23 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
     return;
   }
 
+  if (CurrentLtkInsufficientlySecureForEncryption(ltk_, idle_phase, security_mode_)) {
+    bt_log(WARN, "sm", "peer encrypted link with insufficiently secure key, disconnecting");
+    delegate_->OnAuthenticationFailure(hci::Status(HostError::kInsufficientSecurity));
+    (*sm_chan_)->SignalLinkError();
+    return;
+  }
+
   if (idle_phase) {
     bt_log(DEBUG, "sm", "encryption enabled while not pairing");
     if (bt_is_error(ValidateExistingLocalLtk(), ERROR, "sm",
                     "disconnecting link as it cannot be encrypted with LTK status")) {
       return;
     }
-    std::optional<SecurityLevel> security_req = idle_phase->pending_security_request();
-    if (security_req.has_value() && *security_req > ltk_->security().level()) {
-      bt_log(ERROR, "sm",
-             "peer responded to security request by encrypting link with a bonded "
-             "LTK of insufficient security properties - disconnecting link");
-      (*sm_chan_)->SignalLinkError();
-      return;
-    }
     // If encryption is enabled while not pairing, we update the security properties to those of
     // `ltk_`. Otherwise, we let the EndPhase2 pairing function determine the security properties.
     SetSecurityProperties(ltk_->security());
-    if (security_req.has_value()) {
+    if (idle_phase->pending_security_request().has_value()) {
       ZX_ASSERT(role_ == Role::kResponder);
       ZX_ASSERT(!request_queue_.empty());
       NotifySecurityCallbacks();

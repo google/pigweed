@@ -162,7 +162,10 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
   // Select the smaller of the initiator and responder max. encryption key size
   // values (Vol 3, Part H, 2.3.4).
   uint8_t enc_key_size = std::min(preq.max_encryption_key_size, pres.max_encryption_key_size);
-  if (enc_key_size < kMinEncryptionKeySize) {
+  uint8_t min_allowed_enc_key_size = (requested_level_ == SecurityLevel::kSecureAuthenticated)
+                                         ? kMaxEncryptionKeySize
+                                         : kMinEncryptionKeySize;
+  if (enc_key_size < min_allowed_enc_key_size) {
     bt_log(DEBUG, "sm", "encryption key size too small! (%u)", enc_key_size);
     return fit::error(ErrorCode::kEncryptionKeySize);
   }
@@ -233,6 +236,10 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
   if (sc) {
     local_keys &= ~KeyDistGen::kEncKey;
     remote_keys &= ~KeyDistGen::kEncKey;
+  } else if (requested_level_ == SecurityLevel::kSecureAuthenticated) {
+    // SecureAuthenticated means Secure Connections is required, so if this pairing would not use
+    // Secure Connections it does not meet the requirements of `requested_level_`
+    return fit::error(ErrorCode::kAuthenticationRequirements);
   }
 
   return fit::ok(PairingFeatures(local_initiator, sc, will_bond, method, enc_key_size, local_keys,

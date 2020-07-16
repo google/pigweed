@@ -105,6 +105,17 @@ TEST_F(SMP_IdlePhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
   EXPECT_EQ(SecurityLevel::kAuthenticated, *idle_phase()->pending_security_request());
 }
 
+TEST_F(SMP_IdlePhaseTest, MakeSecureAuthenticatedBondableSecurityRequest) {
+  NewIdlePhase(Role::kResponder);
+  StaticByteBuffer kExpectedReq = {kSecurityRequest,
+                                   AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC};
+  async::PostTask(dispatcher(), [this] {
+    idle_phase()->MakeSecurityRequest(SecurityLevel::kSecureAuthenticated, BondableMode::Bondable);
+  });
+  ASSERT_TRUE(Expect(kExpectedReq));
+  EXPECT_EQ(SecurityLevel::kSecureAuthenticated, *idle_phase()->pending_security_request());
+}
+
 TEST_F(SMP_IdlePhaseTest, HandlesChannelClosedGracefully) {
   fake_chan()->Close();
   RunLoopUntilIdle();

@@ -9,9 +9,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
@@ -56,7 +58,8 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
                                                                 link_role, kLocalAddr, kPeerAddr);
 
     pairing_ = std::make_unique<PairingState>(fake_link_->WeakPtr(), fake_chan_, ioc,
-                                              weak_ptr_factory_.GetWeakPtr(), bondable_mode);
+                                              weak_ptr_factory_.GetWeakPtr(), bondable_mode,
+                                              gap::LeSecurityMode::Mode1);
   }
 
   void DestroyPairingState() { pairing_ = nullptr; }
@@ -947,6 +950,57 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveConfirmValueInPhase1) {
 
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(security_status(), pairing_complete_status());
+}
+
+TEST_F(SMP_InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
+  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
+  UpgradeSecurity(SecurityLevel::kEncrypted);
+  // The peer has NoInputNoOutput IOCapabilities, thus cannot perform authenticated pairing.
+  ReceivePairingFeatures(IOCapability::kNoInputNoOutput, AuthReq::kBondingFlag | AuthReq::kSC);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, security_callback_count());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, security_status().protocol_error());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(security_status(), pairing_complete_status());
+}
+
+TEST_F(SMP_InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnectionsOnlyMode) {
+  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  const LTK kUnauthenticatedLtk(SecurityProperties(true /*encrypted*/, false /*authenticated*/,
+                                                   true /*SC*/, kMaxEncryptionKeySize),
+                                hci::LinkKey());
+  pairing()->AssignLongTermKey(kUnauthenticatedLtk);
+  RunLoopUntilIdle();
+  // After setting SC Only mode, assigning and encrypting with an unauthenticated LTK should cause
+  // the channel to be disconnected with an authentication failure.
+  fake_link()->TriggerEncryptionChangeCallback(hci::Status(), true);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, auth_failure_callback_count());
+  EXPECT_EQ(HostError::kInsufficientSecurity, auth_failure_status().error());
+  EXPECT_TRUE(fake_chan()->link_error());
+}
+
+TEST_F(SMP_InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsOnlyMode) {
+  SetUpPairingState(IOCapability::kDisplayYesNo);
+  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  UInt128 enc_key;
+  FastForwardToPhase3(&enc_key, true, SecurityLevel::kSecureAuthenticated);
+  RunLoopUntilIdle();
+  // After setting SC Only mode, secure authenticated pairing should still complete successfully.
+  EXPECT_EQ(1, pairing_data_callback_count());
+  EXPECT_TRUE(peer_ltk().has_value());
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, security_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(security_status());
+  EXPECT_EQ(security_status(), pairing_complete_status());
+
+  EXPECT_EQ(SecurityLevel::kSecureAuthenticated, sec_props().level());
 }
 
 // In Phase 2 but still waiting to receive TK.
@@ -3224,6 +3278,39 @@ TEST_F(SMP_ResponderPairingTest, PairingRequestStartsPairingTimer) {
   ASSERT_EQ(1, pairing_complete_count());
   EXPECT_EQ(HostError::kTimedOut, pairing_complete_status().error());
   EXPECT_EQ(0, security_callback_count());
+}
+
+TEST_F(SMP_ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
+  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
+  UpgradeSecurity(SecurityLevel::kEncrypted);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, security_request_count());
+  EXPECT_EQ(AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC, security_request_payload());
+  // The peer has NoInputNoOutput IOCapabilities, thus cannot perform authenticated pairing.
+  ReceivePairingRequest(IOCapability::kNoInputNoOutput, AuthReq::kBondingFlag | AuthReq::kSC);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, security_callback_count());
+  EXPECT_EQ(ErrorCode::kAuthenticationRequirements, security_status().protocol_error());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(security_status(), pairing_complete_status());
+}
+
+TEST_F(SMP_ResponderPairingTest, RejectInsufficientKeySizeRequestInSecureConnectionsOnlyMode) {
+  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
+  // The peer encryption key size is not kMaxEncryptionKeySize, thus does not meet the Secure
+  // Connections Only requirements.
+  ReceivePairingRequest(IOCapability::kDisplayYesNo, AuthReq::kBondingFlag | AuthReq::kSC,
+                        kMaxEncryptionKeySize - 1);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(ErrorCode::kEncryptionKeySize, pairing_complete_status().protocol_error());
 }
 
 // Tests that Secure Connections works as responder
