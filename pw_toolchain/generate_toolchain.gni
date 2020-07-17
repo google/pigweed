@@ -189,10 +189,15 @@ template("generate_toolchain") {
         _link_flags += [
           # Output a map file that shows symbols and their location.
           "-Wl,-Map,$_link_mapfile",
-
-          # Delete unreferenced sections. Helpful with -ffunction-sections.
-          "-Wl,--gc-sections",
         ]
+
+        # TODO(hepler): Re-add gc-sections to host when supported by tokenizer.
+        if (!is_host_toolchain) {
+          _link_flags += [
+            # Delete unreferenced sections. Helpful with -ffunction-sections.
+            "-Wl,--gc-sections",
+          ]
+        }
       }
 
       _link_group =
