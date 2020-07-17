@@ -70,6 +70,11 @@ class ProtoNode(abc.ABC):
         return '::'.join(
             self._attr_hierarchy(lambda node: node.cpp_name(), root))
 
+    def proto_path(self) -> str:
+        """Fully-qualified package path of the node."""
+        path = '.'.join(self._attr_hierarchy(lambda node: node.name(), None))
+        return path.lstrip('.')
+
     def nanopb_name(self) -> str:
         """Full nanopb-style name of the node."""
         name = '_'.join(self._attr_hierarchy(lambda node: node.name(), None))

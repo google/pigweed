@@ -127,11 +127,11 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
         for method in service.methods():
             _generate_code_for_method(method, output)
 
-    service_name_hash = pw_rpc.ids.calculate(service.name())
+    service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
 
     with output.indent():
-        output.write_line(f'// 65599 hash of "{service.name()}".')
+        output.write_line(f'// 65599 hash of "{service.proto_path()}".')
         output.write_line(
             f'static constexpr uint32_t kServiceId = {hex(service_name_hash)};'
         )

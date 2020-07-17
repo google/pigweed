@@ -13,6 +13,7 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/hash.h"
 #include "pw_rpc/test_method_context.h"
 #include "pw_rpc_test_protos/test_rpc.pb.h"
 
@@ -44,7 +45,7 @@ namespace {
 
 TEST(NanopbCodegen, CompilesProperly) {
   test::TestService service;
-  EXPECT_EQ(service.id(), 0x105b6ac8u);
+  EXPECT_EQ(service.id(), Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
 }
 
