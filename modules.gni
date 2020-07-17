@@ -16,6 +16,7 @@ declare_args() {
   # This file defines a directory variable for each of Pigweed's modules. This
   # allows modules to be moved or swapped out without breaking existing builds.
   # All module variables are prefixed with dir_.
+  dir_docker = get_path_info("docker", "abspath")
   dir_pw_allocator = get_path_info("pw_allocator", "abspath")
   dir_pw_assert = get_path_info("pw_assert", "abspath")
   dir_pw_assert_basic = get_path_info("pw_assert_basic", "abspath")
