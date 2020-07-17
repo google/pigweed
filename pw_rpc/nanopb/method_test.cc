@@ -47,21 +47,31 @@ std::span<const byte> EncodeProtobuf(const T& protobuf,
   return std::as_bytes(buffer.first(output.bytes_written));
 }
 
+template <typename Implementation>
 class FakeGeneratedService : public Service {
  public:
   constexpr FakeGeneratedService(uint32_t id) : Service(id, kMethods) {}
 
-  static Status DoNothing(ServerContext&,
-                          const pw_rpc_test_Empty&,
-                          pw_rpc_test_Empty&);
+  static Status DoNothing(ServerCall& call,
+                          const pw_rpc_test_Empty& request,
+                          pw_rpc_test_Empty& response) {
+    return static_cast<Implementation&>(call.service())
+        .DoNothing(call.context(), request, response);
+  }
 
-  static Status AddFive(ServerContext&,
-                        const pw_rpc_test_TestRequest&,
-                        pw_rpc_test_TestResponse&);
+  static Status AddFive(ServerCall& call,
+                        const pw_rpc_test_TestRequest& request,
+                        pw_rpc_test_TestResponse& response) {
+    return static_cast<Implementation&>(call.service())
+        .AddFive(call.context(), request, response);
+  }
 
-  static void StartStream(ServerContext&,
-                          const pw_rpc_test_TestRequest&,
-                          ServerWriter<pw_rpc_test_TestResponse>&);
+  static void StartStream(ServerCall& call,
+                          const pw_rpc_test_TestRequest& request,
+                          ServerWriter<pw_rpc_test_TestResponse>& writer) {
+    static_cast<Implementation&>(call.service())
+        .StartStream(call.context(), request, writer);
+  }
 
   static constexpr std::array<Method, 3> kMethods = {
       Method::Unary<DoNothing>(
@@ -76,34 +86,38 @@ class FakeGeneratedService : public Service {
 pw_rpc_test_TestRequest last_request;
 ServerWriter<pw_rpc_test_TestResponse> last_writer;
 
-Status FakeGeneratedService::AddFive(ServerContext&,
-                                     const pw_rpc_test_TestRequest& request,
-                                     pw_rpc_test_TestResponse& response) {
-  last_request = request;
-  response.value = request.integer + 5;
-  return Status::UNAUTHENTICATED;
-}
+class FakeGeneratedServiceImpl
+    : public FakeGeneratedService<FakeGeneratedServiceImpl> {
+ public:
+  FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
 
-Status FakeGeneratedService::DoNothing(ServerContext&,
-                                       const pw_rpc_test_Empty&,
-                                       pw_rpc_test_Empty&) {
-  return Status::UNKNOWN;
-}
+  Status AddFive(ServerContext&,
+                 const pw_rpc_test_TestRequest& request,
+                 pw_rpc_test_TestResponse& response) {
+    last_request = request;
+    response.value = request.integer + 5;
+    return Status::UNAUTHENTICATED;
+  }
 
-void FakeGeneratedService::StartStream(
-    ServerContext&,
-    const pw_rpc_test_TestRequest& request,
-    ServerWriter<pw_rpc_test_TestResponse>& writer) {
-  last_request = request;
+  Status DoNothing(ServerContext&,
+                   const pw_rpc_test_Empty&,
+                   pw_rpc_test_Empty&) {
+    return Status::UNKNOWN;
+  }
 
-  last_writer = std::move(writer);
-}
+  void StartStream(ServerContext&,
+                   const pw_rpc_test_TestRequest& request,
+                   ServerWriter<pw_rpc_test_TestResponse>& writer) {
+    last_request = request;
+    last_writer = std::move(writer);
+  }
+};
 
 TEST(Method, UnaryRpc_SendsResponse) {
   ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 123}, request);
 
-  const Method& method = std::get<1>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
+  const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
+  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
   method.Invoke(context.get(), context.packet(request));
 
   const Packet& response = context.output().sent_packet();
@@ -123,8 +137,8 @@ TEST(Method, UnaryRpc_SendsResponse) {
 TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
   std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
 
-  const Method& method = std::get<0>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
+  const Method& method = std::get<0>(FakeGeneratedServiceImpl::kMethods);
+  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
   method.Invoke(context.get(), context.packet(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
@@ -138,9 +152,9 @@ TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
   ENCODE_PB(pw_rpc_test_TestRequest, {.integer = value}, request);
 
-  const Method& method = std::get<1>(FakeGeneratedService::kMethods);
+  const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   // Output buffer is too small for the response, but can fit an error packet.
-  ServerContextForTest<FakeGeneratedService, 22> context(method);
+  ServerContextForTest<FakeGeneratedServiceImpl, 22> context(method);
   ASSERT_LT(context.output().buffer_size(),
             context.packet(request).MinEncodedSizeBytes() + request.size() + 1);
 
@@ -158,8 +172,8 @@ TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
 TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 555}, request);
 
-  const Method& method = std::get<2>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
+  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
   method.Invoke(context.get(), context.packet(request));
 
@@ -168,8 +182,8 @@ TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
 }
 
 TEST(Method, ServerWriter_SendsResponse) {
-  const Method& method = std::get<2>(FakeGeneratedService::kMethods);
-  ServerContextForTest<FakeGeneratedService> context(method);
+  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 
@@ -188,14 +202,14 @@ TEST(Method, ServerWriter_SendsResponse) {
 }
 
 TEST(Method, ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
-  const Method& method = std::get<2>(FakeGeneratedService::kMethods);
+  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
 
   constexpr size_t kNoPayloadPacketSize = 2 /* type */ + 2 /* channel */ +
                                           5 /* service */ + 5 /* method */ +
                                           2 /* payload */ + 2 /* status */;
 
   // Make the buffer barely fit a packet with no payload.
-  ServerContextForTest<FakeGeneratedService, kNoPayloadPacketSize> context(
+  ServerContextForTest<FakeGeneratedServiceImpl, kNoPayloadPacketSize> context(
       method);
 
   // Verify that the encoded size of a packet with an empty payload is correct.

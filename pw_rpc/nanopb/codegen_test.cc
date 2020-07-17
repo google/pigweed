@@ -20,23 +20,25 @@
 namespace pw::rpc {
 namespace test {
 
-Status TestService::TestRpc(ServerContext&,
-                            const pw_rpc_test_TestRequest& request,
-                            pw_rpc_test_TestResponse& response) {
-  response.value = request.integer + 1;
-  return static_cast<Status::Code>(request.status_code);
-}
-
-void TestService::TestStreamRpc(
-    ServerContext&,
-    const pw_rpc_test_TestRequest& request,
-    ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
-  for (int i = 0; i < request.integer; ++i) {
-    writer.Write({.number = static_cast<uint32_t>(i)});
+class TestServiceImpl : public TestService<TestServiceImpl> {
+ public:
+  Status TestRpc(ServerContext&,
+                 const pw_rpc_test_TestRequest& request,
+                 pw_rpc_test_TestResponse& response) {
+    response.value = request.integer + 1;
+    return static_cast<Status::Code>(request.status_code);
   }
 
-  writer.Finish(static_cast<Status::Code>(request.status_code));
-}
+  void TestStreamRpc(ServerContext&,
+                     const pw_rpc_test_TestRequest& request,
+                     ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
+    for (int i = 0; i < request.integer; ++i) {
+      writer.Write({.number = static_cast<uint32_t>(i)});
+    }
+
+    writer.Finish(static_cast<Status::Code>(request.status_code));
+  }
+};
 
 }  // namespace test
 
@@ -44,13 +46,13 @@ namespace internal {
 namespace {
 
 TEST(NanopbCodegen, CompilesProperly) {
-  test::TestService service;
+  test::TestServiceImpl service;
   EXPECT_EQ(service.id(), Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
 }
 
 TEST(NanopbCodegen, InvokeUnaryRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestRpc) context;
 
   EXPECT_EQ(Status::OK,
             context.call({.integer = 123, .status_code = Status::OK}));
@@ -64,7 +66,7 @@ TEST(NanopbCodegen, InvokeUnaryRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::ABORTED});
 
@@ -86,7 +88,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 

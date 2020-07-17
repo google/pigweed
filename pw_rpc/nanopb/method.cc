@@ -64,8 +64,7 @@ void Method::CallUnary(ServerCall& call,
     return;
   }
 
-  const Status status =
-      function_.unary(call.context(), request_struct, response_struct);
+  const Status status = function_.unary(call, request_struct, response_struct);
   SendResponse(call.channel(), request, response_struct, status);
 }
 
@@ -77,7 +76,7 @@ void Method::CallServerStreaming(ServerCall& call,
   }
 
   internal::BaseServerWriter server_writer(call);
-  function_.server_streaming(call.context(), request_struct, server_writer);
+  function_.server_streaming(call, request_struct, server_writer);
 }
 
 bool Method::DecodeRequest(Channel& channel,

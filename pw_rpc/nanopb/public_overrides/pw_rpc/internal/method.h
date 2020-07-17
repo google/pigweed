@@ -57,8 +57,7 @@ struct RpcTraits;
 
 // Specialization for unary RPCs.
 template <typename RequestType, typename ResponseType>
-struct RpcTraits<Status (*)(
-    ServerContext&, const RequestType&, ResponseType&)> {
+struct RpcTraits<Status (*)(ServerCall&, const RequestType&, ResponseType&)> {
   using Request = RequestType;
   using Response = ResponseType;
 
@@ -70,7 +69,7 @@ struct RpcTraits<Status (*)(
 // Specialization for server streaming RPCs.
 template <typename RequestType, typename ResponseType>
 struct RpcTraits<void (*)(
-    ServerContext&, const RequestType&, ServerWriter<ResponseType>&)> {
+    ServerCall&, const RequestType&, ServerWriter<ResponseType>&)> {
   using Request = RequestType;
   using Response = ResponseType;
 
@@ -78,6 +77,20 @@ struct RpcTraits<void (*)(
   static constexpr bool kServerStreaming = true;
   static constexpr bool kClientStreaming = false;
 };
+
+// Member function specialization for unary RPCs.
+template <typename T, typename RequestType, typename ResponseType>
+struct RpcTraits<Status (T::*)(
+    ServerContext&, const RequestType&, ResponseType&)>
+    : public RpcTraits<Status (*)(
+          ServerCall&, const RequestType&, ResponseType&)> {};
+
+// Member function specialization for server streaming RPCs.
+template <typename T, typename RequestType, typename ResponseType>
+struct RpcTraits<void (T::*)(
+    ServerContext&, const RequestType&, ServerWriter<ResponseType>&)>
+    : public RpcTraits<void (*)(
+          ServerCall&, const RequestType&, ServerWriter<ResponseType>&)> {};
 
 template <auto method>
 using Request = typename RpcTraits<decltype(method)>::Request;
@@ -109,9 +122,9 @@ class Method : public BaseMethod {
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
     return Method({.unary =
-                       [](ServerContext& ctx, const void* req, void* resp) {
+                       [](ServerCall& call, const void* req, void* resp) {
                          return method(
-                             ctx,
+                             call,
                              *static_cast<const Request<method>*>(req),
                              *static_cast<Response<method>*>(resp));
                        }},
@@ -133,8 +146,8 @@ class Method : public BaseMethod {
     // union, defined below.
     return Method(
         {.server_streaming =
-             [](ServerContext& ctx, const void* req, BaseServerWriter& resp) {
-               method(ctx,
+             [](ServerCall& call, const void* req, BaseServerWriter& resp) {
+               method(call,
                       *static_cast<const Request<method>*>(req),
                       static_cast<ServerWriter<Response<method>>&>(resp));
              }},
@@ -163,17 +176,17 @@ class Method : public BaseMethod {
  private:
   // Generic version of the unary RPC function signature:
   //
-  //   Status(ServerContext&, const Request&, Response&)
+  //   Status(ServerCall&, const Request&, Response&)
   //
-  using UnaryFunction = Status (*)(ServerContext&,
+  using UnaryFunction = Status (*)(ServerCall&,
                                    const void* request,
                                    void* response);
 
   // Generic version of the server streaming RPC function signature:
   //
-  //   Status(ServerContext&, const Request&, ServerWriter<Response>&)
+  //   Status(ServerCall&, const Request&, ServerWriter<Response>&)
   //
-  using ServerStreamingFunction = void (*)(ServerContext&,
+  using ServerStreamingFunction = void (*)(ServerCall&,
                                            const void* request,
                                            BaseServerWriter& writer);
 

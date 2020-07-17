@@ -68,23 +68,30 @@
       ::pw::rpc::test_internal::ServiceTestUtilities<         \
           service,                                            \
           ::pw::rpc::internal::Hash(#method_name)>,           \
-      service::method_name PW_COMMA_ARGS(__VA_ARGS__)>
+      &service::method_name PW_COMMA_ARGS(__VA_ARGS__)>
 
 // Internal classes that implement PW_RPC_TEST_METHOD_CONTEXT.
 namespace pw::rpc::test_internal {
+
+// Identifies a base class from a member function it defines. This should be
+// used with decltype to retrieve the base class.
+template <typename T, typename U>
+T BaseFromMember(U T::*);
 
 // Finds the method object in a service at compile time. This class friended by
 // the generated service classes to give it access to the internal method list.
 template <typename ServiceType, uint32_t method_hash>
 class ServiceTestUtilities {
  public:
+  using BaseService =
+      decltype(BaseFromMember(&ServiceType::_PwRpcInternalGeneratedBase));
   using Service = ServiceType;
 
   static constexpr const internal::Method& method() { return *FindMethod(); }
 
  private:
   static constexpr const internal::Method* FindMethod() {
-    for (const internal::Method& method : Service::kMethods) {
+    for (const internal::Method& method : BaseService::kMethods) {
       if (method.id() == method_hash) {
         return &method;
       }
@@ -177,7 +184,8 @@ class UnaryContext {
     ctx_.output.clear();
     ctx_.responses.emplace_back();
     ctx_.responses.back() = {};
-    return function(ctx_.call.context(), request, ctx_.responses.back());
+    return (ctx_.service.*function)(
+        ctx_.call.context(), request, ctx_.responses.back());
   }
 
   // Gives access to the RPC's response.
@@ -204,9 +212,10 @@ class ServerStreamingContext {
   void call(const Request& request) {
     ctx_.output.clear();
     internal::BaseServerWriter server_writer(ctx_.call);
-    function(ctx_.call.context(),
-             request,
-             static_cast<ServerWriter<Response>&>(server_writer));
+    return (ctx_.service.*function)(
+        ctx_.call.context(),
+        request,
+        static_cast<ServerWriter<Response>&>(server_writer));
   }
 
   // Returns the responses that have been recorded. The maximum number of

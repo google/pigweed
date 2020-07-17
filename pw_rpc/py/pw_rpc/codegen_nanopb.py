@@ -75,21 +75,32 @@ def _generate_code_for_method(method: ProtoServiceMethod,
 
     req_type = method.request_type().nanopb_name()
     res_type = method.response_type().nanopb_name()
+    implementation_cast = 'static_cast<Implementation&>(call.service())'
 
     output.write_line()
 
     if method.type() == ProtoServiceMethod.Type.UNARY:
-        output.write_line(f'static ::pw::Status {method.name()} (')
+        output.write_line(f'static ::pw::Status {method.name()}(')
         with output.indent(4):
-            output.write_line('ServerContext& ctx,')
+            output.write_line('::pw::rpc::internal::ServerCall& call,')
             output.write_line(f'const {req_type}& request,')
-            output.write_line(f'{res_type}& response);')
+            output.write_line(f'{res_type}& response) {{')
+        with output.indent():
+            output.write_line(f'return {implementation_cast}')
+            output.write_line(
+                f'    .{method.name()}(call.context(), request, response);')
+        output.write_line('}')
     elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        output.write_line(f'static void {method.name()} (')
+        output.write_line(f'static void {method.name()}(')
         with output.indent(4):
-            output.write_line('ServerContext& ctx,')
+            output.write_line('::pw::rpc::internal::ServerCall& call,')
             output.write_line(f'const {req_type}& request,')
-            output.write_line(f'ServerWriter<{res_type}>& writer);')
+            output.write_line(f'ServerWriter<{res_type}>& writer) {{')
+        with output.indent():
+            output.write_line(implementation_cast)
+            output.write_line(
+                f'    .{method.name()}(call.context(), request, writer);')
+        output.write_line('}')
     else:
         raise NotImplementedError(
             'Only unary and server streaming RPCs are currently supported')
@@ -100,8 +111,9 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
     """Generates a C++ derived class for a nanopb RPC service."""
 
     base_class = f'{RPC_NAMESPACE}::internal::Service'
+    output.write_line('\ntemplate <typename Implementation>')
     output.write_line(
-        f'\nclass {service.cpp_namespace(root)} : public {base_class} {{')
+        f'class {service.cpp_namespace(root)} : public {base_class} {{')
     output.write_line(' public:')
 
     with output.indent():
@@ -124,8 +136,10 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
         output.write_line(f'static constexpr const char* name() '
                           f'{{ return "{service.name()}"; }}')
 
-        for method in service.methods():
-            _generate_code_for_method(method, output)
+        output.write_line()
+        output.write_line('// Used in test code to identify a base service.')
+        output.write_line(
+            'constexpr void _PwRpcInternalGeneratedBase() const {}')
 
     service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
@@ -135,8 +149,11 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
         output.write_line(
             f'static constexpr uint32_t kServiceId = {hex(service_name_hash)};'
         )
-        output.write_line()
 
+        for method in service.methods():
+            _generate_code_for_method(method, output)
+
+        output.write_line()
         output.write_line(
             f'static constexpr std::array<{RPC_NAMESPACE}::internal::Method,'
             f' {len(service.methods())}> kMethods = {{')
