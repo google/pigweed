@@ -47,7 +47,8 @@ class AdapterTest : public TestingBase {
     auto data_domain = data::testing::FakeDomain::Create();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(),
-                                         std::optional(std::move(data_domain)));
+                                         std::optional(std::move(data_domain)),
+                                         inspector_.GetRoot().CreateChild("adapter"));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
   }
@@ -81,10 +82,13 @@ class AdapterTest : public TestingBase {
 
   Adapter* adapter() const { return adapter_.get(); }
 
+  zx::vmo inspect_vmo() const { return inspector_.DuplicateVmo(); }
+
  private:
   bool transport_closed_called_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<Adapter> adapter_;
+  inspect::Inspector inspector_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterTest);
 };
@@ -873,7 +877,7 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
                   fxl::StringPrintf(
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(peer_cache_matcher, sdp_server_matcher)));
-  auto hierarchy = inspect::ReadFromVmo(adapter()->InspectVmo()).take_value();
+  auto hierarchy = inspect::ReadFromVmo(inspect_vmo()).take_value();
 
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),
                                ChildrenMatch(UnorderedElementsAre(adapter_matcher))));

@@ -80,6 +80,9 @@ class HostDevice final {
   // HCI protocol struct
   bt_hci_protocol_t hci_proto_;
 
+  // Inspector for driver inspect tree. This object is thread-safe.
+  inspect::Inspector inspect_;
+
   // Guards access to members below.
   std::mutex mtx_;
 

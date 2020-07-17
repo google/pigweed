@@ -50,7 +50,10 @@ source_set("sources") {
     "fidl/server_base.h",
   ]
 
-  deps = [ "//src/devices/lib/driver" ]
+  deps = [
+    "//src/devices/lib/driver",
+    "//zircon/system/ulib/inspect",
+  ]
 
   public_deps = [
     ":stack",

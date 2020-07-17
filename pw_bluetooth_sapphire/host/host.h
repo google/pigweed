@@ -51,7 +51,7 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
  public:
   // Initializes the system and reports the status in |success|.
   using InitCallback = fit::function<void(bool success)>;
-  bool Initialize(InitCallback callback);
+  bool Initialize(inspect::Node adapter_node, InitCallback callback);
 
   // Shuts down all systems.
   void ShutDown();

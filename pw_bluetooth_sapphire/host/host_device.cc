@@ -4,6 +4,7 @@
 
 #include "host_device.h"
 
+#include <lib/inspect/cpp/inspect.h>
 #include <zircon/status.h>
 
 #include "host.h"
@@ -16,6 +17,8 @@ namespace {
 // bt-gatt-svc devices are published for HID-over-GATT only.
 constexpr bt::UUID kHogUuid(uint16_t(0x1812));
 
+const char* kDeviceName = "bt_host";
+
 }  // namespace
 
 HostDevice::HostDevice(zx_device_t* device)
@@ -27,6 +30,8 @@ HostDevice::HostDevice(zx_device_t* device)
   dev_proto_.unbind = &HostDevice::DdkUnbind;
   dev_proto_.release = &HostDevice::DdkRelease;
   dev_proto_.message = &HostDevice::DdkMessage;
+
+  inspect_.GetRoot().CreateString("name", kDeviceName, &inspect_);
 }
 
 zx_status_t HostDevice::Bind() {
@@ -63,11 +68,12 @@ zx_status_t HostDevice::Bind() {
 
   device_add_args_t args = {
       .version = DEVICE_ADD_ARGS_VERSION,
-      .name = "bt_host",
+      .name = kDeviceName,
       .ctx = this,
       .ops = &dev_proto_,
       .proto_id = ZX_PROTOCOL_BT_HOST,
       .flags = DEVICE_ADD_NON_BINDABLE,
+      .inspect_vmo = inspect_.DuplicateVmo().release(),
   };
 
   status = device_add(parent_, &args, &dev_);
@@ -94,7 +100,8 @@ void HostDevice::Init() {
 
     std::lock_guard<std::mutex> lock(mtx_);
     host_ = fxl::MakeRefCounted<Host>(hci_proto_);
-    host_->Initialize([this](bool success) {
+    auto adapter_node = inspect_.GetRoot().CreateChild("adapter");
+    host_->Initialize(std::move(adapter_node), [this](bool success) {
       std::lock_guard<std::mutex> lock(mtx_);
 
       // host_ and dev_ must be defined here as Bind() must have been called and the runloop has not

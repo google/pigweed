@@ -28,9 +28,8 @@ namespace bt {
 namespace gap {
 
 Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                 std::optional<fbl::RefPtr<data::Domain>> data_domain)
-    : inspector_(),
-      adapter_node_(inspector_.GetRoot().CreateChild("adapter")),
+                 std::optional<fbl::RefPtr<data::Domain>> data_domain, inspect::Node adapter_node)
+    : adapter_node_(std::move(adapter_node)),
       identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),

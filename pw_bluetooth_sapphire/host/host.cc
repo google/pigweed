@@ -19,7 +19,7 @@ Host::Host(const bt_hci_protocol_t& hci_proto) : hci_proto_(hci_proto) {}
 
 Host::~Host() {}
 
-bool Host::Initialize(InitCallback callback) {
+bool Host::Initialize(inspect::Node adapter_node, InitCallback callback) {
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_);
 
   auto hci_result = hci::Transport::Create(std::move(dev));
@@ -31,7 +31,8 @@ bool Host::Initialize(InitCallback callback) {
 
   gatt_host_ = std::make_unique<GattHost>();
 
-  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
+  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt,
+                                        std::move(adapter_node));
   if (!gap_)
     return false;
 

@@ -114,8 +114,6 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile) override;
   void Close() override;
 
-  void GetInspectVmo(GetInspectVmoCallback callback) override;
-
  private:
   // bt::gap::PairingDelegate overrides:
   bt::sm::IOCapability io_capability() const override;

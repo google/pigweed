@@ -734,16 +734,6 @@ void HostServer::Close() {
   }
 }
 
-void HostServer::GetInspectVmo(GetInspectVmoCallback callback) {
-  bt_log(DEBUG, "bt-host", "Get Inspect Vmo");
-  auto vmo = adapter()->InspectVmo();
-  size_t vmo_size = 0;
-  auto status = vmo.get_size(&vmo_size);
-  ZX_ASSERT_MSG(status == ZX_OK, "Reading VMO size failed");
-  fuchsia::mem::Buffer buffer = {.vmo = std::move(vmo), .size = vmo_size};
-  callback(std::move(buffer));
-}
-
 bt::sm::IOCapability HostServer::io_capability() const {
   bt_log(DEBUG, "bt-host", "I/O capability: %s",
          bt::sm::util::IOCapabilityToString(io_capability_).c_str());

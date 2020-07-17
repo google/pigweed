@@ -71,7 +71,8 @@ class Adapter final {
   // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
   explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                   std::optional<fbl::RefPtr<data::Domain>> data_domain);
+                   std::optional<fbl::RefPtr<data::Domain>> data_domain,
+                   inspect::Node adapter_node);
   ~Adapter();
 
   // Returns a uniquely identifier for this adapter on the current system.
@@ -174,9 +175,6 @@ class Adapter final {
   // Sets the Device Class of this adapter.
   void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback);
 
-  // Returns a duplicate read-only version of the Inspect VMO.
-  zx::vmo InspectVmo() const { return inspector_.DuplicateVmo(); }
-
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,
   // Part C, 9.3.3).
@@ -231,7 +229,6 @@ class Adapter final {
   bool IsLeRandomAddressChangeAllowed();
 
   // Must be initialized first so that child nodes can be passed to other constructors.
-  inspect::Inspector inspector_;
   inspect::Node adapter_node_;
   struct InspectProperties {
     inspect::StringProperty adapter_id;

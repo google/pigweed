@@ -669,15 +669,5 @@ TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
   EXPECT_TRUE(replied);
 }
 
-TEST_F(FIDL_HostServerTest, GetInspectVmoCallsCallbackWithAdapterInspectVmo) {
-  std::optional<fuchsia::mem::Buffer> vmo_buf;
-  auto vmo_cb = [&vmo_buf](fuchsia::mem::Buffer vmo) { vmo_buf = std::move(vmo); };
-  host_server()->GetInspectVmo(std::move(vmo_cb));
-  ASSERT_TRUE(vmo_buf.has_value());
-
-  auto hierarchy = inspect::ReadFromVmo(vmo_buf->vmo).take_value();
-  EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root"))));
-}
-
 }  // namespace
 }  // namespace bthost

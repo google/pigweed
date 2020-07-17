@@ -37,6 +37,7 @@ class AdapterTestFixture : public bt::testing::FakeControllerTest<bt::testing::F
   std::unique_ptr<bt::gap::Adapter> adapter_;
   fbl::RefPtr<bt::data::testing::FakeDomain> data_plane_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> gatt_;
+  inspect::Inspector inspector_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(AdapterTestFixture);
 };
