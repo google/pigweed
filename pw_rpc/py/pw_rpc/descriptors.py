@@ -15,9 +15,10 @@
 
 from dataclasses import dataclass
 import enum
-from typing import Any, Callable, Collection, Iterable, Iterator, NamedTuple
+from typing import Any, Callable, Collection, Dict, Iterable, Iterator, Tuple
 from typing import TypeVar, Union
 
+from google.protobuf import descriptor_pb2
 from pw_rpc import ids
 
 
@@ -52,6 +53,19 @@ class Service:
         return f'Service({self.name!r})'
 
 
+def _streaming_attributes(method) -> Tuple[bool, bool]:
+    # TODO(hepler): Investigate adding server_streaming and client_streaming
+    #     attributes to the generated protobuf code. As a workaround,
+    #     deserialize the FileDescriptorProto to get that information.
+    service = method.containing_service
+
+    file_pb = descriptor_pb2.FileDescriptorProto()
+    file_pb.MergeFromString(service.file.serialized_pb)
+
+    method_pb = file_pb.service[service.index].method[method.index]  # pylint: disable=no-member
+    return method_pb.server_streaming, method_pb.client_streaming
+
+
 @dataclass(frozen=True, eq=False)
 class Method:
     """Describes a method in a service."""
@@ -59,26 +73,10 @@ class Method:
     service: Service
     name: str
     id: int
-    type: 'Method.Type'
+    server_streaming: bool
+    client_streaming: bool
     request_type: Any
     response_type: Any
-
-    @property
-    def full_name(self) -> str:
-        return f'{self.service.name}.{self.name}'
-
-    class Type(enum.Enum):
-        UNARY = 0
-        SERVER_STREAMING = 1
-        CLIENT_STREAMING = 2
-        BIDI_STREAMING = 3
-
-        @classmethod
-        def from_descriptor(cls, unused_descriptor) -> 'Method.Type':
-            # TODO(hepler): Add server_streaming and client_streaming to
-            #     protobuf generated code, or access these attributes by
-            #     deserializing the FileDescriptor.
-            return cls.UNARY
 
     @classmethod
     def from_descriptor(cls, module, descriptor, service: Service):
@@ -86,20 +84,64 @@ class Method:
             service,
             descriptor.name,
             ids.calculate(descriptor.name),
-            cls.Type.from_descriptor(descriptor),
+            *_streaming_attributes(descriptor),
             getattr(module, descriptor.input_type.name),
             getattr(module, descriptor.output_type.name),
         )
 
+    class Type(enum.Enum):
+        UNARY = 0
+        SERVER_STREAMING = 1
+        CLIENT_STREAMING = 2
+        BIDI_STREAMING = 3
+
+    @property
+    def full_name(self) -> str:
+        return f'{self.service.name}.{self.name}'
+
+    @property
+    def type(self) -> 'Method.Type':
+        if self.server_streaming and self.client_streaming:
+            return self.Type.BIDI_STREAMING
+
+        if self.server_streaming:
+            return self.Type.SERVER_STREAMING
+
+        if self.client_streaming:
+            return self.Type.CLIENT_STREAMING
+
+        return self.Type.UNARY
+
+    def get_request(self, proto, proto_kwargs: Dict[str, Any]):
+        """Returns a request_type protobuf message.
+
+        The client implementation may use this to support providing a request
+        as either a message object or as keyword arguments for the message's
+        fields (but not both).
+        """
+        if proto and proto_kwargs:
+            raise TypeError(
+                'Requests must be provided either as a message object or a '
+                'series of keyword args, but both were provided '
+                f'({proto!r} and {proto_kwargs!r})')
+
+        if proto is None:
+            return self.request_type(**proto_kwargs)
+
+        if not isinstance(proto, self.request_type):
+            try:
+                bad_type = proto.DESCRIPTOR.full_name
+            except AttributeError:
+                bad_type = type(proto).__name__
+
+            raise TypeError(f'Expected a message of type '
+                            f'{self.request_type.DESCRIPTOR.full_name}, '
+                            f'got {bad_type}')
+
+        return proto
+
     def __repr__(self) -> str:
         return f'Method({self.name!r})'
-
-
-class PendingRpc(NamedTuple):
-    """Uniquely identifies an RPC call."""
-    channel: Channel
-    service: Service
-    method: Method
 
 
 T = TypeVar('T')

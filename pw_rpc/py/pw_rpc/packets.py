@@ -21,6 +21,7 @@ from pw_protobuf_compiler import python_protos
 packet_pb2 = python_protos.compile_and_import_file(
     os.path.join(__file__, '..', '..', '..', 'pw_rpc_protos', 'packet.proto'))
 
+PacketType = packet_pb2.PacketType
 RpcPacket = packet_pb2.RpcPacket
 
 DecodeError = message.DecodeError
@@ -39,12 +40,23 @@ def decode_payload(packet, payload_type):
     return payload
 
 
-def encode(rpc: tuple, request: message.Message) -> bytes:
-    channel, service, method = rpc
+def _ids(rpc: tuple) -> tuple:
+    return tuple(item if isinstance(item, int) else item.id for item in rpc)
 
-    return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.RPC,
-        channel_id=channel if isinstance(channel, int) else channel.id,
-        service_id=service if isinstance(service, int) else service.id,
-        method_id=method if isinstance(method, int) else method.id,
-        payload=request.SerializeToString()).SerializeToString()
+
+def encode_request(rpc: tuple, request: message.Message) -> bytes:
+    channel, service, method = _ids(rpc)
+
+    return RpcPacket(type=PacketType.RPC,
+                     channel_id=channel,
+                     service_id=service,
+                     method_id=method,
+                     payload=request.SerializeToString()).SerializeToString()
+
+
+def encode_cancel(rpc: tuple) -> bytes:
+    channel, service, method = _ids(rpc)
+    return RpcPacket(type=PacketType.CANCEL,
+                     channel_id=channel,
+                     service_id=service,
+                     method_id=method).SerializeToString()
