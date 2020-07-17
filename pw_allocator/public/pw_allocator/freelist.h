@@ -43,7 +43,7 @@ class FreeListBuffer;
 // bucket[1] (128B) --> chunk[65B] --> chunk[72B] --> NULL
 // bucket[2] (256B) --> NULL
 // bucket[3] (512B) --> chunk[312B] --> chunk[512B] --> chunk[416B] --> NULL
-// bucket[4] (implciit) --> chunk[1024B] --> chunk[513B] --> NULL
+// bucket[4] (implicit) --> chunk[1024B] --> chunk[513B] --> NULL
 //
 // Note that added chunks should be aligned to a 4-byte boundary.
 //

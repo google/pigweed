@@ -7,8 +7,7 @@
 ----
 host
 ----
-The Pigweed host target assembles Pigweed's reStructuredText and markdown
-documentation into a collection of HTML pages.
+The Pigweed host target is used for unit testing and some host side tooling.
 
 Building
 ========
@@ -33,7 +32,7 @@ Example:
 
 ... code:: sh
 
-  $ ./out/host_[compiler]/obj/pw_status/status_test
+  $ ./out/host_[compiler]_debug/obj/pw_status/status_test
 
 Configuration
 =============

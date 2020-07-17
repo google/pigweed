@@ -27,14 +27,14 @@ These tests can be run on-device in a few different ways.
 Run a unit test
 ---------------
 If using ``out`` as a build directory, tests will be located in
-``out/stm32f429i/obj/[module name]/[test_name].elf``. To run these on device,
-the stm32f429i-disc1 target provides a helper script that flashes the test to a
-device and then runs it.
+``out/stm32f429i_disc1_debug/obj/[module name]/[test_name].elf``. To run these
+on device, the stm32f429i-disc1 target provides a helper script that flashes the
+test to a device and then runs it.
 
 .. code:: sh
 
   # Setup pigweed environment.
-  $ . pw_env_setup/setup.sh
+  $ source activate.sh
   # Run test.
   $ stm32f429i_disc1_unit_test_runner /path/to/binary
 
@@ -50,9 +50,10 @@ specified with the ``--test`` option.
 .. code:: sh
 
   # Setup Pigweed environment.
-  $ . pw_env_setup/setup.sh
+  $ source activate.sh
   # Run test.
-  $ pw test --root out/stm32f429i/ --runner stm32f429i_disc1_unit_test_runner
+  $ pw test --root out/stm32f429i_disc_debug/  \
+        --runner stm32f429i_disc1_unit_test_runner
 
 Run tests affected by code changes
 ----------------------------------

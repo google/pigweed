@@ -93,7 +93,7 @@ Example module structure
     code_relating_to_subfeature/...
 
 Module name
-~~~~~~~~~~~
+-----------
 Pigweed upstream modules are always named with a prefix ``pw_`` to enforce
 namespacing. Projects using Pigweed that wish to make their own modules can use
 whatever name they like, but we suggest picking a short prefix to namespace
@@ -101,10 +101,10 @@ your product (e.g. for an Internet of Toast project, perhaps the prefix could
 be ``it_``).
 
 C++ file and directory locations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
 
 C++ public headers
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 Located ``{pw_module_dir}/public/<module>``. These are headers that must be
 exposed due to C++ limitations (i.e. are included from the public interface,
 but are not intended for public use).
@@ -143,7 +143,7 @@ the public interface, but are not intended for use), place the headers in a
   that, there is the ``public_overrides/`` directory.
 
 Public override headers
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 Located ``{pw_module_dir}/public_overrides/<module>``. In general, the Pigweed
 philosophy is to avoid having "things hiding under rocks", and having header
 files with the same name that can override each other is considered a rock
@@ -175,7 +175,7 @@ For example, the ``pw_unit_test`` module provides a header override for
 Note that the overrides are in a separate directory ``public_overrides``.
 
 C++ implementation files
-^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 Located ``{pw_module_dir}/``. C++ implementation files go at the top level of
 the module. Implementation files must always use "" style includes.
 
