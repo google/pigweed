@@ -64,8 +64,8 @@ template("_pw_rpc_server_library") {
     friend = [ "./*" ]
   }
 
-  pw_source_set("test_utils_$_target_name") {
-    public = [ "pw_rpc_private/test_utils.h" ]
+  pw_source_set("internal_test_utils_$_target_name") {
+    public = [ "pw_rpc_private/internal_test_utils.h" ]
     public_configs = [ ":private_includes" ]
     public_deps = [
       ":$_target_name",
@@ -119,6 +119,17 @@ _pw_rpc_server_library("nanopb_server") {
   implementation = "nanopb"
 }
 
+pw_source_set("nanopb_test_method_context") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_rpc/test_method_context.h" ]
+  sources = [ "public/pw_rpc/internal/hash.h" ]
+  public_deps = [
+    ":nanopb_server",
+    dir_pw_containers,
+    dir_pw_unit_test,
+  ]
+}
+
 config("private_includes") {
   include_dirs = [ "." ]
   visibility = [ ":*" ]
@@ -165,8 +176,8 @@ pw_proto_library("test_protos") {
 
 pw_test("base_server_writer_test") {
   deps = [
+    ":internal_test_utils_test_server",
     ":test_server",
-    ":test_utils_test_server",
   ]
   sources = [ "base_server_writer_test.cc" ]
 }
@@ -174,7 +185,7 @@ pw_test("base_server_writer_test") {
 pw_test("channel_test") {
   deps = [
     ":common",
-    ":test_utils_test_server",
+    ":internal_test_utils_test_server",
   ]
   sources = [ "channel_test.cc" ]
 }
@@ -189,9 +200,9 @@ pw_test("packet_test") {
 
 pw_test("server_test") {
   deps = [
+    ":internal_test_utils_test_server",
     ":protos_pwpb",
     ":test_server",
-    ":test_utils_test_server",
     dir_pw_assert,
   ]
   sources = [ "server_test.cc" ]

@@ -49,6 +49,13 @@ StatusWithSize Method::EncodeResponse(const void* proto_struct,
   return StatusWithSize::INTERNAL;
 }
 
+bool Method::DecodeResponse(std::span<const byte> response,
+                            void* proto_struct) const {
+  auto input = pb_istream_from_buffer(
+      reinterpret_cast<const pb_byte_t*>(response.data()), response.size());
+  return pb_decode(&input, static_cast<Fields>(response_fields_), proto_struct);
+}
+
 void Method::CallUnary(ServerCall& call,
                        const Packet& request,
                        void* request_struct,

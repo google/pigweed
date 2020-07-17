@@ -11,6 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+// Internal-only testing utilities. public/pw_rpc/test_method_context.h provides
+// improved public-facing utilities for testing RPC services.
 #pragma once
 
 #include <array>

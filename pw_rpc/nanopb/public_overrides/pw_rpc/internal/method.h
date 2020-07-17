@@ -49,6 +49,8 @@ class Packet;
 // Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
 using NanopbMessageDescriptor = const void*;
 
+enum class Type { kUnary, kServerStreaming, kClientStreaming, kBidiStreaming };
+
 // Extracts the request and response proto types from a method.
 template <typename Method>
 struct RpcTraits;
@@ -59,6 +61,10 @@ struct RpcTraits<Status (*)(
     ServerContext&, const RequestType&, ResponseType&)> {
   using Request = RequestType;
   using Response = ResponseType;
+
+  static constexpr Type kType = Type::kUnary;
+  static constexpr bool kServerStreaming = false;
+  static constexpr bool kClientStreaming = false;
 };
 
 // Specialization for server streaming RPCs.
@@ -67,6 +73,10 @@ struct RpcTraits<void (*)(
     ServerContext&, const RequestType&, ServerWriter<ResponseType>&)> {
   using Request = RequestType;
   using Response = ResponseType;
+
+  static constexpr Type kType = Type::kServerStreaming;
+  static constexpr bool kServerStreaming = true;
+  static constexpr bool kClientStreaming = false;
 };
 
 template <auto method>
@@ -144,6 +154,11 @@ class Method : public BaseMethod {
   // Encodes a response protobuf with Nanopb to the provided buffer.
   StatusWithSize EncodeResponse(const void* proto_struct,
                                 std::span<std::byte> buffer) const;
+
+  // Decodes a response protobuf with Nanopb to the provided buffer. For testing
+  // use.
+  bool DecodeResponse(std::span<const std::byte> response,
+                      void* proto_struct) const;
 
  private:
   // Generic version of the unary RPC function signature:

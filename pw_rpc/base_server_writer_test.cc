@@ -21,7 +21,7 @@
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/service.h"
 #include "pw_rpc/server_context.h"
-#include "pw_rpc_private/test_utils.h"
+#include "pw_rpc_private/internal_test_utils.h"
 
 namespace pw::rpc {
 

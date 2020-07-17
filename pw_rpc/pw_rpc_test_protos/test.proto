@@ -17,6 +17,7 @@ package pw.rpc.test;
 
 message TestRequest {
   int64 integer = 1;
+  uint32 status_code = 2;
 }
 
 message TestResponse {
@@ -25,11 +26,12 @@ message TestResponse {
 
 message TestStreamResponse {
   bytes chunk = 1;
+  uint32 number = 2;
 }
 
 message Empty {}
 
 service TestService {
   rpc TestRpc(TestRequest) returns (TestResponse) {}
-  rpc TestStreamRpc(Empty) returns (stream TestStreamResponse) {}
+  rpc TestStreamRpc(TestRequest) returns (stream TestStreamResponse) {}
 }

@@ -46,6 +46,7 @@ pw_test_group("tests") {
 pw_test("codegen_test") {
   deps = [
     "..:nanopb_server",
+    "..:nanopb_test_method_context",
     "..:test_protos_nanopb_rpc",
   ]
   sources = [ "codegen_test.cc" ]
@@ -54,9 +55,9 @@ pw_test("codegen_test") {
 
 pw_test("method_test") {
   deps = [
+    "..:internal_test_utils_nanopb_server",
     "..:nanopb_server",
     "..:test_protos_nanopb",
-    "..:test_utils_nanopb_server",
   ]
   sources = [ "method_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""

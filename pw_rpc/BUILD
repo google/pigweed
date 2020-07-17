@@ -36,6 +36,7 @@ pw_cc_library(
         "public/pw_rpc/server_context.h",
         "public/pw_rpc/internal/channel.h",
         "public/pw_rpc/internal/server.h",
+        "public/pw_rpc/internal/hash.h",
         # TODO(hepler): Only building the test version of the server for now.
         "test_impl/public_overrides/pw_rpc/internal/method.h",
     ],
@@ -76,8 +77,8 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "test_utils",
-    hdrs = ["pw_rpc_private/test_utils.h"],
+    name = "internal_test_utils",
+    hdrs = ["pw_rpc_private/internal_test_utils.h"],
     visibility = ["//visibility:private"],
     deps = [
         ":common",
@@ -97,6 +98,7 @@ filegroup(
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",
         "nanopb/test_rpc.pb.h",
+        "public/pw_rpc/test_method_context.h",
     ],
 )
 
@@ -106,8 +108,8 @@ pw_cc_test(
         "base_server_writer_test.cc",
     ],
     deps = [
+        ":internal_test_utils",
         ":pw_rpc",
-        ":test_utils",
     ],
 )
 
@@ -143,8 +145,8 @@ pw_cc_test(
         "server_test.cc",
     ],
     deps = [
+        ":internal_test_utils",
         ":pw_rpc",
-        ":test_utils",
         "//pw_assert",
     ],
 )

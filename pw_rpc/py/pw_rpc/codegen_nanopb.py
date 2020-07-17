@@ -145,7 +145,11 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
             for method in service.methods():
                 _generate_method_descriptor(method, output)
 
-        output.write_line('};')
+        output.write_line('};\n')
+
+        output.write_line('template <typename, uint32_t>')
+        output.write_line(
+            'friend class ::pw::rpc::test_internal::ServiceTestUtilities;')
 
     output.write_line('};')
 
@@ -163,9 +167,9 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#pragma once\n')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>\n')
-    output.write_line('#include "pw_rpc/server_context.h"')
     output.write_line('#include "pw_rpc/internal/method.h"')
     output.write_line('#include "pw_rpc/internal/service.h"')
+    output.write_line('#include "pw_rpc/server_context.h"')
 
     # Include the corresponding nanopb header file for this proto file, in which
     # the file's messages and enums are generated.
@@ -176,6 +180,11 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     for imported_file in file_descriptor_proto.dependency:
         generated_header = _proto_filename_to_nanopb_header(imported_file)
         output.write_line(f'#include "{generated_header}"')
+
+    output.write_line('namespace pw::rpc::test_internal {\n')
+    output.write_line('template <typename, uint32_t>')
+    output.write_line('class ServiceTestUtilities;')
+    output.write_line('\n}  // namespace pw::rpc::test_internal')
 
     if package.cpp_namespace():
         file_namespace = package.cpp_namespace()

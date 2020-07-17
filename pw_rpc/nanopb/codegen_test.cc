@@ -13,9 +13,33 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_rpc/test_method_context.h"
 #include "pw_rpc_test_protos/test_rpc.pb.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
+namespace test {
+
+Status TestService::TestRpc(ServerContext&,
+                            const pw_rpc_test_TestRequest& request,
+                            pw_rpc_test_TestResponse& response) {
+  response.value = request.integer + 1;
+  return static_cast<Status::Code>(request.status_code);
+}
+
+void TestService::TestStreamRpc(
+    ServerContext&,
+    const pw_rpc_test_TestRequest& request,
+    ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
+  for (int i = 0; i < request.integer; ++i) {
+    writer.Write({.number = static_cast<uint32_t>(i)});
+  }
+
+  writer.Finish(static_cast<Status::Code>(request.status_code));
+}
+
+}  // namespace test
+
+namespace internal {
 namespace {
 
 TEST(NanopbCodegen, CompilesProperly) {
@@ -24,5 +48,57 @@ TEST(NanopbCodegen, CompilesProperly) {
   EXPECT_STREQ(service.name(), "TestService");
 }
 
+TEST(NanopbCodegen, InvokeUnaryRpc) {
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
+
+  EXPECT_EQ(Status::OK,
+            context.call({.integer = 123, .status_code = Status::OK}));
+
+  EXPECT_EQ(124, context.response().value);
+
+  EXPECT_EQ(
+      Status::INVALID_ARGUMENT,
+      context.call({.integer = 999, .status_code = Status::INVALID_ARGUMENT}));
+  EXPECT_EQ(1000, context.response().value);
+}
+
+TEST(NanopbCodegen, InvokeStreamingRpc) {
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
+
+  context.call({.integer = 0, .status_code = Status::ABORTED});
+
+  EXPECT_EQ(Status::ABORTED, context.status());
+  EXPECT_TRUE(context.done());
+  EXPECT_TRUE(context.responses().empty());
+  EXPECT_EQ(0u, context.total_responses());
+
+  context.call({.integer = 4, .status_code = Status::OK});
+
+  ASSERT_EQ(4u, context.responses().size());
+  ASSERT_EQ(4u, context.total_responses());
+
+  for (size_t i = 0; i < context.responses().size(); ++i) {
+    EXPECT_EQ(context.responses()[i].number, i);
+  }
+
+  EXPECT_EQ(Status::OK, context.status());
+}
+
+TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+
+  ASSERT_EQ(3u, context.responses().max_size());
+
+  context.call({.integer = 5, .status_code = Status::NOT_FOUND});
+
+  ASSERT_EQ(3u, context.responses().size());
+  ASSERT_EQ(5u, context.total_responses());
+
+  EXPECT_EQ(context.responses()[0].number, 0u);
+  EXPECT_EQ(context.responses()[1].number, 1u);
+  EXPECT_EQ(context.responses()[2].number, 4u);
+}
+
 }  // namespace
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc
