@@ -13,6 +13,7 @@
 # the License.
 """Tools for compiling and importing Python protos on the fly."""
 
+import importlib.util
 import logging
 import os
 from pathlib import Path
@@ -20,8 +21,7 @@ import subprocess
 import shlex
 import tempfile
 from types import ModuleType
-from typing import Dict, Iterable, List, Set, Tuple, Union
-import importlib.util
+from typing import Dict, Iterable, Iterator, List, Set, Tuple, Union
 
 _LOG = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def _import_module(name: str, path: str) -> ModuleType:
     return module
 
 
-def import_modules(directory: PathOrStr) -> Iterable[ModuleType]:
+def import_modules(directory: PathOrStr) -> Iterator[ModuleType]:
     """Imports modules in a directory and yields them."""
     parent = os.path.dirname(directory)
 
@@ -85,7 +85,7 @@ def import_modules(directory: PathOrStr) -> Iterable[ModuleType]:
 
 def compile_and_import(proto_files: Iterable[PathOrStr],
                        includes: Iterable[PathOrStr] = (),
-                       output_dir: PathOrStr = None) -> Iterable[ModuleType]:
+                       output_dir: PathOrStr = None) -> Iterator[ModuleType]:
     """Compiles protos and imports their modules; yields the proto modules.
 
     Args:
@@ -102,7 +102,7 @@ def compile_and_import(proto_files: Iterable[PathOrStr],
         compile_protos(output_dir, proto_files, includes)
         yield from import_modules(output_dir)
     else:
-        with tempfile.TemporaryDirectory(prefix='protos_') as tempdir:
+        with tempfile.TemporaryDirectory(prefix='compiled_protos_') as tempdir:
             compile_protos(tempdir, proto_files, includes)
             yield from import_modules(tempdir)
 
@@ -112,6 +112,28 @@ def compile_and_import_file(proto_file: PathOrStr,
                             output_dir: PathOrStr = None) -> ModuleType:
     """Compiles and imports the module for a single .proto file."""
     return next(iter(compile_and_import([proto_file], includes, output_dir)))
+
+
+def compile_and_import_strings(
+        contents: Iterable[str],
+        includes: Iterable[PathOrStr] = (),
+        output_dir: PathOrStr = None) -> Iterator[ModuleType]:
+    """Compiles protos in one or more strings."""
+
+    if isinstance(contents, str):
+        contents = [contents]
+
+    with tempfile.TemporaryDirectory(prefix='proto_sources_') as path:
+        protos = []
+
+        for proto in contents:
+            # Use a hash of the proto so the same contents map to the same file
+            # name. The protobuf package complains if it seems the same contents
+            # in files with different names.
+            protos.append(Path(path, f'protobuf_{hash(proto):x}.proto'))
+            protos[-1].write_text(proto)
+
+        yield from compile_and_import(protos, includes, output_dir)
 
 
 class _ProtoPackage:
@@ -152,6 +174,13 @@ class Library:
     the list of modules in a particular package, and the modules() generator
     for iterating over all modules.
     """
+    @classmethod
+    def from_strings(cls,
+                     contents: Iterable[str],
+                     includes: Iterable[PathOrStr] = (),
+                     output_dir: PathOrStr = None) -> 'Library':
+        return cls(compile_and_import_strings(contents, includes, output_dir))
+
     def __init__(self, modules: Iterable[ModuleType]):
         """Constructs a Library from an iterable of modules.
 

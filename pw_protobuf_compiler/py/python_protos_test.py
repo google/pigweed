@@ -20,7 +20,7 @@ import unittest
 
 from pw_protobuf_compiler import python_protos
 
-PROTO_1 = b"""\
+PROTO_1 = """\
 syntax = "proto3";
 
 package pw.protobuf_compiler.test1;
@@ -48,7 +48,7 @@ service PublicService {
 }
 """
 
-PROTO_2 = b"""\
+PROTO_2 = """\
 syntax = "proto2";
 
 package pw.protobuf_compiler.test2;
@@ -69,7 +69,7 @@ service Bravo {
 }
 """
 
-PROTO_3 = b"""\
+PROTO_3 = """\
 syntax = "proto3";
 
 package pw.protobuf_compiler.test2;
@@ -93,7 +93,7 @@ class TestCompileAndImport(unittest.TestCase):
 
         for i, contents in enumerate([PROTO_1, PROTO_2, PROTO_3], 1):
             self._protos.append(Path(self._proto_dir.name, f'test_{i}.proto'))
-            self._protos[-1].write_bytes(contents)
+            self._protos[-1].write_text(contents)
 
     def tearDown(self):
         self._proto_dir.cleanup()
@@ -157,6 +157,24 @@ class TestProtoLibrary(TestCompileAndImport):
     def test_access_modules_by_package_unkonwn(self):
         with self.assertRaises(KeyError):
             _ = self._library.modules_by_package['pw.not_real']
+
+    def test_library_from_strings(self):
+        # Replace the package to avoid conflicts with the other proto imports
+        new_protos = [
+            p.replace('pw.protobuf_compiler', 'proto.library.test')
+            for p in [PROTO_1, PROTO_2, PROTO_3]
+        ]
+
+        library = python_protos.Library.from_strings(new_protos)
+
+        # Make sure we can safely import the same proto contents multiple times.
+        library = python_protos.Library.from_strings(new_protos)
+
+        msg = library.packages.proto.library.test.test2.Request
+        self.assertEqual(msg(magic_number=50).magic_number, 50)
+
+        val = library.packages.proto.library.test.test2.YO
+        self.assertEqual(val, 0)
 
 
 if __name__ == '__main__':
