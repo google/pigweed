@@ -430,8 +430,14 @@ TEST(InMemoryKvs, Put_MaxValueSize) {
                                                           default_format);
   ASSERT_OK(kvs.Init());
 
+  size_t max_key_value_size = kvs.max_key_value_size_bytes();
+  EXPECT_EQ(max_key_value_size,
+            KeyValueStore::max_key_value_size_bytes(
+                flash.partition.sector_size_bytes()));
+
   size_t max_value_size =
       flash.partition.sector_size_bytes() - sizeof(EntryHeader) - 1;
+  EXPECT_EQ(max_key_value_size, (max_value_size + 1));
 
   // Use the large_test_flash as a big chunk of data for the Put statement.
   ASSERT_GT(sizeof(large_test_flash), max_value_size + 2 * sizeof(EntryHeader));

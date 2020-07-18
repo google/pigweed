@@ -138,6 +138,10 @@ class Entry {
                    std::max(partition.alignment_bytes(), kMinAlignmentBytes));
   }
 
+  // Byte size of overhead (not-key, not-value) in an entry. Does not include
+  // any paddding used to get proper size alignment.
+  static constexpr size_t entry_overhead() { return sizeof(EntryHeader); }
+
   Address address() const { return address_; }
 
   void set_address(Address address) { address_ = address; }

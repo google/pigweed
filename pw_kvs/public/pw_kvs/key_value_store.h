@@ -303,6 +303,18 @@ class KeyValueStore {
 
   bool error_detected() const { return error_detected_; }
 
+  // Maximum number of bytes allowed for a key-value combination.
+  size_t max_key_value_size_bytes() const {
+    return max_key_value_size_bytes(partition_.sector_size_bytes());
+  }
+
+  // Maximum number of bytes allowed for a given sector size for a key-value
+  // combination.
+  static constexpr size_t max_key_value_size_bytes(
+      size_t partition_sector_size_bytes) {
+    return partition_sector_size_bytes - Entry::entry_overhead();
+  }
+
   // Check KVS for any error conditions. Primarily intended for test and
   // internal use.
   bool CheckForErrors();
