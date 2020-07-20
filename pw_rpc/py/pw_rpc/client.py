@@ -112,10 +112,10 @@ class _MethodClients(descriptors.ServiceAccessor):
                  channel: Channel, methods: Collection[Method]):
         super().__init__(
             {
-                method.name: client_impl.method_client(rpcs, channel, method)
+                method: client_impl.method_client(rpcs, channel, method)
                 for method in methods
             },
-            as_attrs=True)
+            as_attrs='members')
 
 
 class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
@@ -124,10 +124,10 @@ class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
                  services: Collection[Service]):
         super().__init__(
             {
-                s.name: _MethodClients(rpcs, client_impl, channel, s.methods)
+                s: _MethodClients(rpcs, client_impl, channel, s.methods)
                 for s in services
             },
-            as_attrs=True)
+            as_attrs='packages')
 
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
@@ -159,19 +159,19 @@ def _decode_payload(rpc: PendingRpc, packet):
 class ChannelClient:
     """RPC services and methods bound to a particular channel.
 
-    RPCs are invoked from a ChannelClient using its call member. The service and
-    method may be selected as attributes or by indexing call with service and
+    RPCs are invoked from a ChannelClient using its rpcs member. The service and
+    method may be selected as attributes or by indexing rpcs with service and
     method name or ID:
 
-      response = client.channel(1).call.FooService.SomeMethod(foo=bar)
+      response = client.channel(1).rpcs.FooService.SomeMethod(foo=bar)
 
-      response = client.channel(1).call[foo_service_id]['SomeMethod'](foo=bar)
+      response = client.channel(1).rpcs[foo_service_id]['SomeMethod'](foo=bar)
 
     The type and semantics of the return value, if there is one, are determined
     by the ClientImpl instance used by the Client.
     """
     channel: Channel
-    call: _ServiceClients
+    rpcs: _ServiceClients
 
 
 class Client:
@@ -190,6 +190,7 @@ class Client:
     def __init__(self, impl: ClientImpl, channels: Iterable[Channel],
                  services: Iterable[Service]):
         self._impl = impl
+
         self.services = descriptors.Services(services)
 
         self._rpcs = PendingRpcs()

@@ -23,7 +23,7 @@ import pw_rpc.ids
 TEST_PROTO_1 = """\
 syntax = "proto3";
 
-package pw.call.test1;
+package pw.test1;
 
 message SomeMessage {
   uint32 magic_number = 1;
@@ -51,7 +51,7 @@ service PublicService {
 TEST_PROTO_2 = """\
 syntax = "proto2";
 
-package pw.call.test2;
+package pw.test2;
 
 message Request {
   optional float magic_number = 1;
@@ -82,54 +82,75 @@ class ClientTest(unittest.TestCase):
 
     def test_access_service_client_as_attribute_or_index(self):
         self.assertIs(
-            self._client.channel(1).call.PublicService,
-            self._client.channel(1).call['PublicService'])
+            self._client.channel(1).rpcs.pw.test1.PublicService,
+            self._client.channel(1).rpcs['pw.test1.PublicService'])
         self.assertIs(
-            self._client.channel(1).call.PublicService,
-            self._client.channel(1).call[pw_rpc.ids.calculate(
-                'PublicService')])
+            self._client.channel(1).rpcs.pw.test1.PublicService,
+            self._client.channel(1).rpcs[pw_rpc.ids.calculate(
+                'pw.test1.PublicService')])
 
     def test_access_method_client_as_attribute_or_index(self):
         self.assertIs(
-            self._client.channel(1).call.Alpha.Unary,
-            self._client.channel(1).call['Alpha']['Unary'])
+            self._client.channel(1).rpcs.pw.test2.Alpha.Unary,
+            self._client.channel(1).rpcs['pw.test2.Alpha']['Unary'])
         self.assertIs(
-            self._client.channel(1).call.Alpha.Unary,
-            self._client.channel(1).call['Alpha'][pw_rpc.ids.calculate(
-                'Unary')])
+            self._client.channel(1).rpcs.pw.test2.Alpha.Unary,
+            self._client.channel(1).rpcs['pw.test2.Alpha'][
+                pw_rpc.ids.calculate('Unary')])
+
+    def test_service_name(self):
+        self.assertEqual(
+            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.service.name,
+            'Alpha')
+        self.assertEqual(
+            self._client.channel(
+                1).rpcs.pw.test2.Alpha.Unary.service.full_name,
+            'pw.test2.Alpha')
+
+    def test_method_name(self):
+        self.assertEqual(
+            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.method.name,
+            'Unary')
+        self.assertEqual(
+            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.method.full_name,
+            'pw.test2.Alpha/Unary')
 
     def test_check_for_presence_of_services(self):
-        self.assertIn('PublicService', self._client.channel(1).call)
-        self.assertIn(pw_rpc.ids.calculate('PublicService'),
-                      self._client.channel(1).call)
-        self.assertNotIn('NotAService', self._client.channel(1).call)
-        self.assertNotIn(-1213, self._client.channel(1).call)
+        self.assertIn('pw.test1.PublicService', self._client.channel(1).rpcs)
+        self.assertIn(pw_rpc.ids.calculate('pw.test1.PublicService'),
+                      self._client.channel(1).rpcs)
+
+    def test_check_for_presence_of_missing_services(self):
+        self.assertNotIn('PublicService', self._client.channel(1).rpcs)
+        self.assertNotIn('NotAService', self._client.channel(1).rpcs)
+        self.assertNotIn(-1213, self._client.channel(1).rpcs)
 
     def test_check_for_presence_of_methods(self):
-        self.assertIn('SomeUnary', self._client.channel(1).call.PublicService)
-        self.assertIn(pw_rpc.ids.calculate('SomeUnary'),
-                      self._client.channel(1).call.PublicService)
+        service = self._client.channel(1).rpcs.pw.test1.PublicService
+        self.assertIn('SomeUnary', service)
+        self.assertIn(pw_rpc.ids.calculate('SomeUnary'), service)
 
-        self.assertNotIn('Unary', self._client.channel(1).call.PublicService)
-        self.assertNotIn(12345, self._client.channel(1).call.PublicService)
+    def test_check_for_presence_of_missing_methods(self):
+        service = self._client.channel(1).rpcs.pw.test1.PublicService
+        self.assertNotIn('Some', service)
+        self.assertNotIn('Unary', service)
+        self.assertNotIn(12345, service)
 
     def test_method_get_request_with_both_message_and_kwargs(self):
-        req = self._client.services['Alpha'].methods['Unary'].request_type()
+        method = self._client.services['pw.test2.Alpha'].methods['Unary']
 
         with self.assertRaisesRegex(TypeError, r'either'):
-            self._client.services['Alpha'].methods['Unary'].get_request(
-                req, {'magic_number': 1.0})
+            method.get_request(method.request_type(), {'magic_number': 1.0})
 
     def test_method_get_request_with_wrong_type(self):
-        with self.assertRaisesRegex(TypeError, r'pw\.call\.test2\.Request'):
-            self._client.services['Alpha'].methods['Unary'].get_request(
-                'str!', {})
+        method = self._client.services['pw.test2.Alpha'].methods['Unary']
+        with self.assertRaisesRegex(TypeError, r'pw\.test2\.Request'):
+            method.get_request('a str!', {})
 
     def test_method_get_with_incorrect_message_type(self):
-        msg = self._protos.packages.pw.call.test1.AnotherMessage()
-        with self.assertRaisesRegex(TypeError,
-                                    r'pw\.call\.test1\.SomeMessage'):
-            self._client.services['PublicService'].methods[
+        msg = self._protos.packages.pw.test1.AnotherMessage()
+        with self.assertRaisesRegex(TypeError, r'pw\.test1\.SomeMessage'):
+            self._client.services['pw.test1.PublicService'].methods[
                 'SomeUnary'].get_request(msg, {})
 
     def test_process_packet_invalid_proto_data(self):
@@ -140,21 +161,20 @@ class ClientTest(unittest.TestCase):
             self._client.process_packet(
                 packets.encode_request(
                     (123, 456, 789),
-                    self._protos.packages.pw.call.test2.Request())))
+                    self._protos.packages.pw.test2.Request())))
 
     def test_process_packet_unrecognized_service(self):
         self.assertFalse(
             self._client.process_packet(
                 packets.encode_request(
-                    (1, 456, 789),
-                    self._protos.packages.pw.call.test2.Request())))
+                    (1, 456, 789), self._protos.packages.pw.test2.Request())))
 
     def test_process_packet_unrecognized_method(self):
         self.assertFalse(
             self._client.process_packet(
                 packets.encode_request(
                     (1, next(iter(self._client.services)).id, 789),
-                    self._protos.packages.pw.call.test2.Request())))
+                    self._protos.packages.pw.test2.Request())))
 
 
 if __name__ == '__main__':

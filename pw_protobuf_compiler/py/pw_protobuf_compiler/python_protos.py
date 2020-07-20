@@ -21,7 +21,8 @@ import subprocess
 import shlex
 import tempfile
 from types import ModuleType
-from typing import Dict, Iterable, Iterator, List, Set, Tuple, Union
+from typing import Dict, Generic, Iterable, Iterator, List, NamedTuple, Set
+from typing import Tuple, TypeVar, Union
 
 _LOG = logging.getLogger(__name__)
 
@@ -137,11 +138,14 @@ def compile_and_import_strings(
         yield from compile_and_import(protos, includes, output_dir)
 
 
-class _ProtoPackage:
-    """Used by the Library class for accessing protocol buffer modules."""
+T = TypeVar('T')
+
+
+class _NestedPackage(Generic[T]):
+    """Facilitates navigating protobuf packages as attributes."""
     def __init__(self, package: str):
-        self._packages: Dict[str, _ProtoPackage] = {}
-        self._modules: List[ModuleType] = []
+        self._packages: Dict[str, _NestedPackage[T]] = {}
+        self._items: List[T] = []
         self._package = package
 
     def __getattr__(self, attr: str):
@@ -149,12 +153,58 @@ class _ProtoPackage:
         if attr in self._packages:
             return self._packages[attr]
 
-        for module in self._modules:
+        for module in self._items:
             if hasattr(module, attr):
                 return getattr(module, attr)
 
         raise AttributeError(
             f'Proto package "{self._package}" does not contain "{attr}"')
+
+    def __iter__(self) -> Iterator['_NestedPackage[T]']:
+        return iter(self._packages.values())
+
+    def __repr__(self) -> str:
+        return f'_NestedPackage({self._package!r})'
+
+    def __str__(self) -> str:
+        return self._package
+
+
+class Packages(NamedTuple):
+    """Items in a protobuf package structure; returned from as_package."""
+    items_by_package: Dict[str, List]
+    packages: _NestedPackage
+
+
+def as_packages(items: Iterable[Tuple[str, T]],
+                packages: Packages = None) -> Packages:
+    """Places items in a proto-style package structure navigable by attributes.
+
+    Args:
+      items: (package, item) tuples to insert into the package structure
+      packages: if provided, update this Packages instead of creating a new one
+    """
+    if packages is None:
+        packages = Packages({}, _NestedPackage(''))
+
+    for package, item in items:
+        packages.items_by_package.setdefault(package, []).append(item)
+
+        entry = packages.packages
+        subpackages = package.split('.')
+
+        # pylint: disable=protected-access
+        for i, subpackage in enumerate(subpackages, 1):
+            if subpackage not in entry._packages:
+                entry._packages[subpackage] = _NestedPackage('.'.join(
+                    subpackages[:i]))
+
+            entry = entry._packages[subpackage]
+
+        entry._items.append(item)
+        # pylint: enable=protected-access
+
+    return packages
 
 
 class Library:
@@ -190,24 +240,9 @@ class Library:
 
             protos = Library(compile_and_import(list_of_proto_files))
         """
-        self.modules_by_package: Dict[str, List[ModuleType]] = {}
-        self.packages = _ProtoPackage('')
-
-        for module in modules:
-            package = module.DESCRIPTOR.package  # type: ignore[attr-defined]
-            self.modules_by_package.setdefault(package, []).append(module)
-
-            entry = self.packages
-            subpackages = package.split('.')
-
-            for i, subpackage in enumerate(subpackages, 1):
-                if subpackage not in entry._packages:
-                    entry._packages[subpackage] = _ProtoPackage('.'.join(
-                        subpackages[:i]))
-
-                entry = entry._packages[subpackage]
-
-            entry._modules.append(module)
+        self.modules_by_package, self.packages = as_packages(
+            (m.DESCRIPTOR.package, m)  # type: ignore[attr-defined]
+            for m in modules)
 
     def modules(self) -> Iterable[ModuleType]:
         """Allows iterating over all protobuf modules in this library."""

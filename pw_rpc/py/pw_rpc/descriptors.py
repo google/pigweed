@@ -15,11 +15,12 @@
 
 from dataclasses import dataclass
 import enum
-from typing import Any, Callable, Collection, Dict, Iterable, Iterator, Tuple
-from typing import TypeVar, Union
+from typing import Any, Callable, Collection, Dict, Generic, Iterable, Iterator
+from typing import Tuple, TypeVar, Union
 
 from google.protobuf import descriptor_pb2
 from pw_rpc import ids
+from pw_protobuf_compiler import python_protos
 
 
 @dataclass(frozen=True)
@@ -36,11 +37,17 @@ class Service:
     """Describes an RPC service."""
     name: str
     id: int
+    package: str
     methods: 'ServiceAccessor'
+
+    @property
+    def full_name(self):
+        return f'{self.package}.{self.name}'
 
     @classmethod
     def from_descriptor(cls, module, descriptor):
-        service = cls(descriptor.name, ids.calculate(descriptor.name), None)
+        service = cls(descriptor.name, ids.calculate(descriptor.full_name),
+                      descriptor.file.package, None)
         object.__setattr__(
             service, 'methods',
             Methods(
@@ -50,7 +57,10 @@ class Service:
         return service
 
     def __repr__(self) -> str:
-        return f'Service({self.name!r})'
+        return f'Service({self.full_name!r})'
+
+    def __str__(self) -> str:
+        return self.full_name
 
 
 def _streaming_attributes(method) -> Tuple[bool, bool]:
@@ -97,7 +107,7 @@ class Method:
 
     @property
     def full_name(self) -> str:
-        return f'{self.service.name}.{self.name}'
+        return f'{self.service.full_name}/{self.name}'
 
     @property
     def type(self) -> 'Method.Type':
@@ -143,34 +153,51 @@ class Method:
     def __repr__(self) -> str:
         return f'Method({self.name!r})'
 
+    def __str__(self) -> str:
+        return self.full_name
+
 
 T = TypeVar('T')
 
 
+def _name(item: Union[Service, Method]) -> str:
+    return item.full_name if isinstance(item, Service) else item.name
+
+
+class _AccessByName(Generic[T]):
+    """Wrapper for accessing types by name within a proto package structure."""
+    def __init__(self, name: str, item: T):
+        setattr(self, name, item)
+
+
 class ServiceAccessor(Collection[T]):
     """Navigates RPC services by name or ID."""
-    def __init__(self, members, as_attrs: bool):
-        """Creates accessor from a {name: value} dict or [values] iterable."""
+    def __init__(self, members, as_attrs: str = ''):
+        """Creates accessor from an {item: value} dict or [values] iterable."""
         if isinstance(members, dict):
-            by_name = members
-            self._by_id = {
-                ids.calculate(name): m
-                for name, m in by_name.items()
-            }
+            by_name = {_name(k): v for k, v in members.items()}
+            self._by_id = {k.id: v for k, v in members.items()}
         else:
-            by_name = {m.name: m for m in members}
+            by_name = {_name(m): m for m in members}
             self._by_id = {m.id: m for m in by_name.values()}
 
-        if as_attrs:
+        if as_attrs == 'members':
             for name, member in by_name.items():
                 setattr(self, name, member)
+        elif as_attrs == 'packages':
+            for package in python_protos.as_packages(
+                (m.package, _AccessByName(m.name, members[m]))
+                    for m in members).packages:
+                setattr(self, str(package), package)
+        elif as_attrs:
+            raise ValueError(f'Unexpected value {as_attrs!r} for as_attrs')
 
     def __getitem__(self, name_or_id: Union[str, int]):
         """Accesses a service/method by the string name or ID."""
         try:
             return self._by_id[_id(name_or_id)]
         except KeyError:
-            name = ' (name_or_id)' if isinstance(name_or_id, str) else ''
+            name = f' ("{name_or_id}")' if isinstance(name_or_id, str) else ''
             raise KeyError(f'Unknown ID {_id(name_or_id)}{name}')
 
     def __iter__(self) -> Iterator[T]:
@@ -194,10 +221,10 @@ def _id(handle: Union[str, int]) -> int:
 class Services(ServiceAccessor[Service]):
     """A collection of Service descriptors."""
     def __init__(self, services: Iterable[Service]):
-        super().__init__(services, as_attrs=False)
+        super().__init__(services)
 
 
 class Methods(ServiceAccessor[Method]):
     """A collection of Method descriptors in a Service."""
     def __init__(self, method: Iterable[Method]):
-        super().__init__(method, as_attrs=False)
+        super().__init__(method)
