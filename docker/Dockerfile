@@ -26,9 +26,9 @@ ENV PW_ROOT /pigweed-cache/pigweed
 ENV PW_ENVIRONMENT_ROOT /pigweed-cache/environment
 ENV PW_CIPD_PACKAGE_FILES "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/*.json"
 
+COPY . $PW_ROOT
 # --shell-file is required, but we're going to ignore it.
-RUN git clone https://pigweed.googlesource.com/pigweed/pigweed $PW_ROOT && \
-    $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py \
+RUN $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py \
     --shell-file $PW_ROOT/init.sh \
     --pw-root $PW_ROOT \
     --install-dir $PW_ENVIRONMENT_ROOT
