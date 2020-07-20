@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -22,12 +22,15 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "pw_sys_io_baremetal_stm32f429",
-    srcs = ["sys_io_baremetal.cc"],
-    hdrs = ["public/pw_sys_io_baremetal_stm32f429/init.h"],
+    name = "pw_pre_init",
+    srcs = [
+        "early_boot.c",
+        "vector_table.cc"
+    ],
     deps = [
         "//pw_boot_armv7m",
+        "//pw_malloc",
         "//pw_preprocessor",
-        "//pw_sys_io",
-    ]
+        "//pw_sys_io_baremetal_stm32f429",
+    ],
 )

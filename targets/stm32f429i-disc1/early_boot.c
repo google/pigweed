@@ -12,10 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <inttypes.h>
-
 #include "pw_boot_armv7m/boot.h"
 #include "pw_malloc/malloc.h"
+#include "pw_sys_io_baremetal_stm32f429/init.h"
 
 void pw_PreStaticConstructorInit() {
   // TODO(pwbug/17): Optionally enable Replace when Pigweed config system is
@@ -30,8 +29,9 @@ void pw_PreStaticConstructorInit() {
 
   *arm_v7m_cpacr |= kFpuEnableMask;
 #endif  // PW_ARMV7M_ENABLE_FPU
-
 #if PW_MALLOC_ACTIVE
   pw_MallocInit();
 #endif  // PW_MALLOC_ACTIVE
 }
+
+void pw_PreMainInit() { pw_sys_io_Init(); }

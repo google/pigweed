@@ -15,11 +15,37 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("target_toolchains.gni")
 generate_toolchains("target_toolchains") {
   toolchains = pw_target_toolchain_stm32f429i_disc1_list
+}
+
+config("pw_malloc_active") {
+  if (pw_malloc_BACKEND != "") {
+    defines = [ "PW_MALLOC_ACTIVE=1" ]
+  }
+}
+
+if (current_toolchain != default_toolchain) {
+  pw_source_set("pw_pre_init") {
+    configs = [ ":pw_malloc_active" ]
+    public_deps = [
+      "$dir_pw_boot_armv7m",
+      "$dir_pw_sys_io_baremetal_stm32f429",
+    ]
+    deps = [
+      "$dir_pw_malloc",
+      "$dir_pw_preprocessor",
+    ]
+    sources = [
+      "early_boot.c",
+      "vector_table.cc",
+    ]
+  }
 }
 
 pw_doc_group("target_docs") {

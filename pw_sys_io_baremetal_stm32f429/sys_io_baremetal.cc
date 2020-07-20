@@ -133,49 +133,9 @@ volatile GpioBlock& gpio_a =
 volatile UsartBlock& usart1 =
     *reinterpret_cast<volatile UsartBlock*>(kApb2PeripheralBase + 0x1000U);
 
-// Default handler to insert into the ARMv7-M vector table (below).
-// This function exists for convenience. If a device isn't doing what you
-// expect, it might have hit a fault and ended up here.
-void DefaultFaultHandler(void) {
-  while (true) {
-    // Wait for debugger to attach.
-  }
-}
-
-// This is the device's interrupt vector table. It's not referenced in any
-// code because the platform (STM32F4xx) expects this table to be present at the
-// beginning of flash. The exact address is specified in the pw_boot_armv7m
-// configuration as part of the target config.
-//
-// For more information, see ARMv7-M Architecture Reference Manual DDI 0403E.b
-// section B1.5.3.
-
-// This typedef is for convenience when building the vector table. With the
-// exception of SP_main (0th entry in the vector table), all the entries of the
-// vector table are function pointers.
-typedef void (*InterruptHandler)();
-
-PW_KEEP_IN_SECTION(".vector_table")
-const InterruptHandler vector_table[] = {
-    // The starting location of the stack pointer.
-    // This address is NOT an interrupt handler/function pointer, it is simply
-    // the address that the main stack pointer should be initialized to. The
-    // value is reinterpret casted because it needs to be in the vector table.
-    [0] = reinterpret_cast<InterruptHandler>(&pw_stack_high_addr),
-
-    // Reset handler, dictates how to handle reset interrupt. This is the
-    // address that the Program Counter (PC) is initialized to at boot.
-    [1] = pw_BootEntry,
-
-    // NMI handler.
-    [2] = DefaultFaultHandler,
-    // HardFault handler.
-    [3] = DefaultFaultHandler,
-};
-
 }  // namespace
 
-extern "C" void pw_PreMainInit() {
+extern "C" void pw_sys_io_Init() {
   // Enable 'A' GIPO clocks.
   platform_rcc.ahb1_config |= kGpioAEnable;
 
