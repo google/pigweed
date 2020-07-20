@@ -1,3 +1,7 @@
+// Copyright 2020 The Fuchsia Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "gatt_remote_service_server.h"
 
 #include "gtest/gtest.h"
@@ -5,16 +9,16 @@
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_client.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service_manager.h"
 
 namespace bthost {
-
 namespace {
 
 namespace fbgatt = fuchsia::bluetooth::gatt;
+
+constexpr bt::PeerId kPeerId(1);
 
 constexpr bt::att::Handle kServiceStartHandle = 0x0021;
 constexpr bt::att::Handle kServiceEndHandle = 0x002C;
@@ -22,24 +26,21 @@ const bt::UUID kServiceUuid((uint16_t)0x180D);
 
 void NopStatusCallback(bt::att::Status) {}
 
-};  // namespace
-
-using TestingBase = ::gtest::TestLoopFixture;
-class FIDL_GattRemoteServiceServerTest : public TestingBase {
+class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
+  FIDL_GattRemoteServiceServerTest() = default;
+  ~FIDL_GattRemoteServiceServerTest() override = default;
+
   void SetUp() override {
-    auto client = std::make_unique<bt::gatt::testing::FakeClient>(dispatcher());
-    fake_client_ = client.get();
-
-    mgr_ =
-        std::make_unique<bt::gatt::internal::RemoteServiceManager>(std::move(client), dispatcher());
-
-    service_ = SetUpFakeService(
-        bt::gatt::ServiceData(kServiceStartHandle, kServiceEndHandle, kServiceUuid));
+    {
+      auto [svc, client] = gatt()->AddPeerService(
+          kPeerId, bt::gatt::ServiceData(kServiceStartHandle, kServiceEndHandle, kServiceUuid));
+      service_ = std::move(svc);
+      fake_client_ = std::move(client);
+    }
 
     fidl::InterfaceHandle<fbgatt::RemoteService> handle;
-    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
-    server_ = std::make_unique<GattRemoteServiceServer>(service_, gatt_->AsWeakPtr(),
+    server_ = std::make_unique<GattRemoteServiceServer>(service_, gatt()->AsWeakPtr(),
                                                         handle.NewRequest());
     proxy_.Bind(std::move(handle));
   }
@@ -48,42 +49,26 @@ class FIDL_GattRemoteServiceServerTest : public TestingBase {
     // Clear any previous expectations that are based on the ATT Write Request,
     // so that write requests sent during RemoteService::ShutDown() are ignored.
     fake_client()->set_write_request_callback({});
+
+    bt::gatt::testing::FakeLayerTest::TearDown();
   }
 
  protected:
-  // Initializes a RemoteService based on |data|.
-  fbl::RefPtr<bt::gatt::RemoteService> SetUpFakeService(const bt::gatt::ServiceData& data) {
-    std::vector<bt::gatt::ServiceData> fake_services{{data}};
-    fake_client()->set_primary_services(std::move(fake_services));
-
-    mgr_->Initialize(NopStatusCallback);
-
-    bt::gatt::ServiceList services;
-    mgr_->ListServices(std::vector<bt::UUID>(),
-                       [&services](auto status, bt::gatt::ServiceList cb_services) {
-                         services = std::move(cb_services);
-                       });
-
-    RunLoopUntilIdle();
-
-    ZX_DEBUG_ASSERT(services.size() == 1u);
-    return services[0];
+  bt::gatt::testing::FakeClient* fake_client() const {
+    ZX_ASSERT(fake_client_);
+    return fake_client_.get();
   }
 
-  bt::gatt::testing::FakeClient* fake_client() const { return fake_client_; }
   fbgatt::RemoteServicePtr& service_proxy() { return proxy_; }
 
  private:
-  std::unique_ptr<bt::gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<GattRemoteServiceServer> server_;
+
   fbgatt::RemoteServicePtr proxy_;
-
-  std::unique_ptr<bt::gatt::internal::RemoteServiceManager> mgr_;
-
-  // The memory is owned by |mgr_|.
-  bt::gatt::testing::FakeClient* fake_client_;
-
   fbl::RefPtr<bt::gatt::RemoteService> service_;
+  fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
+
+  DISALLOW_COPY_ASSIGN_AND_MOVE(FIDL_GattRemoteServiceServerTest);
 };
 
 TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
@@ -199,4 +184,5 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeInvalidParametersErrorClosesC
   EXPECT_EQ(ZX_ERR_INVALID_ARGS, error_status.value());
 }
 
-};  // namespace bthost
+}  // namespace
+}  // namespace bthost

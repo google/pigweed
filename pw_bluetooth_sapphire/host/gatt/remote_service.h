@@ -46,8 +46,14 @@ class RemoteServiceManager;
 // A RemoteService can be accessed from multiple threads. All continuations
 // provided in |callback| parameters below will run on the GATT thread unless an
 // dispatcher is explicitly provided.
-class RemoteService : public fbl::RefCounted<RemoteService> {
+class RemoteService final : public fbl::RefCounted<RemoteService> {
  public:
+  // In production, a RemoteService should only be constructed by a RemoteServiceManager.
+  // The constructor and destructor are made available for testing.
+  RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client,
+                async_dispatcher_t* gatt_dispatcher);
+  ~RemoteService();
+
   // Shuts down this service. Called when the service gets removed (e.g. due to
   // disconnection or because it was removed by the peer).
   void ShutDown();
@@ -209,11 +215,6 @@ class RemoteService : public fbl::RefCounted<RemoteService> {
 
   using PendingClosure = PendingCallback<fit::closure>;
   using PendingCharacteristicCallback = PendingCallback<CharacteristicCallback>;
-
-  // A RemoteService can only be constructed by a RemoteServiceManager.
-  RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client,
-                async_dispatcher_t* gatt_dispatcher);
-  ~RemoteService();
 
   bool alive() const __TA_REQUIRES(mtx_) { return !shut_down_; }
 

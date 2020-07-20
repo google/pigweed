@@ -6,13 +6,12 @@
 
 #include <fbl/macros.h>
 
-#include "lib/gtest/test_loop_fixture.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer_test.h"
 
 namespace bthost {
 namespace {
 
-class GattHostTest : public ::gtest::TestLoopFixture {
+class GattHostTest : public bt::gatt::testing::FakeLayerTest {
  public:
   GattHostTest() = default;
   ~GattHostTest() override = default;
@@ -49,7 +48,7 @@ TEST_F(GattHostTest, RemoteServiceWatcher) {
     gatt_host()->SetRemoteServiceWatcher([](auto, auto) {});
   });
 
-  fake_domain()->NotifyRemoteService(bt::PeerId(1), nullptr);
+  fake_domain()->AddPeerService(bt::PeerId(1), bt::gatt::ServiceData(), /*notify=*/true);
   EXPECT_TRUE(called);
 }
 

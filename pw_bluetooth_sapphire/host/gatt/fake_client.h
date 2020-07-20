@@ -103,9 +103,12 @@ class FakeClient final : public Client {
   // Emulates the receipt of a notification or indication PDU.
   void SendNotification(bool indicate, att::Handle handle, const ByteBuffer& value);
 
+  // Methods to obtain a weak pointer to both FakeClient and the base class types.
+  fxl::WeakPtr<Client> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+  fxl::WeakPtr<FakeClient> AsFakeWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
   // Client overrides:
-  fxl::WeakPtr<Client> AsWeakPtr() override;
   uint16_t mtu() const override;
   void ExchangeMTU(MTUCallback callback) override;
   void DiscoverPrimaryServices(ServiceCallback svc_callback,

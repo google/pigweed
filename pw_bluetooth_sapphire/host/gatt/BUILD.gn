@@ -53,10 +53,13 @@ source_set("testing") {
     "fake_client.h",
     "fake_layer.cc",
     "fake_layer.h",
+    "fake_layer_test.cc",
+    "fake_layer_test.h",
   ]
 
   public_deps = [
     ":gatt",
+    "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/fxl",
     "//zircon/public/lib/fbl",

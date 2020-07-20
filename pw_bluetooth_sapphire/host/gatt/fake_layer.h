@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_
 
+#include "src/connectivity/bluetooth/core/bt-host/gatt/fake_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
 namespace bt {
@@ -18,8 +19,18 @@ class FakeLayer final : public GATT {
   FakeLayer() = default;
   ~FakeLayer() override = default;
 
-  // Notifies the remote service watcher if one is registered.
-  void NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> service);
+  // Create a new peer GATT service. Creates a peer entry if it doesn't already exist.
+  // Notifies the remote service watcher if |notify| is true.
+  //
+  // Returns the fake remote service and a handle to the fake object.
+  //
+  // NOTE: the remote service watcher can also get triggered by calling DiscoverServices().
+  std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
+      PeerId peer_id, const ServiceData& info, bool notify = false);
+
+  // Assign a callback to be notified when a service discovery has been requested.
+  using DiscoverServicesCallback = fit::function<void(PeerId, std::optional<UUID>)>;
+  void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
   // GATT overrides:
   void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
@@ -34,14 +45,24 @@ class FakeLayer final : public GATT {
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;
 
-  // Unit test callbacks
-  using DiscoverServicesCallback = fit::function<void(PeerId, std::optional<UUID>)>;
-  void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
-
  private:
+  // Test callbacks
+  DiscoverServicesCallback discover_services_cb_;
+
+  // Emulated callbacks
   RemoteServiceWatcher remote_service_watcher_;
 
-  DiscoverServicesCallback discover_services_cb_;
+  // Emulated GATT peer.
+  struct TestPeer {
+    TestPeer();
+    ~TestPeer();
+
+    FakeClient fake_client;
+    std::vector<fbl::RefPtr<RemoteService>> services;
+
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
+  };
+  std::unordered_map<PeerId, TestPeer> peers_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };

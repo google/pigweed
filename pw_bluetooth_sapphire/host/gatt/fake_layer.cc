@@ -4,25 +4,41 @@
 
 #include "fake_layer.h"
 
+#include <lib/async/default.h>
+
 namespace bt {
 namespace gatt {
 namespace testing {
 
-void FakeLayer::NotifyRemoteService(PeerId peer_id, fbl::RefPtr<RemoteService> service) {
-  if (!remote_service_watcher_) {
-    return;
+FakeLayer::TestPeer::TestPeer() : fake_client(async_get_default_dispatcher()) {}
+
+FakeLayer::TestPeer::~TestPeer() {
+  for (auto& s : services) {
+    s->ShutDown();
+  }
+}
+
+std::pair<fbl::RefPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPeerService(
+    PeerId peer_id, const ServiceData& info, bool notify) {
+  auto [iter, _] = peers_.try_emplace(peer_id);
+  auto& peer = iter->second;
+
+  auto service = fbl::AdoptRef(
+      new RemoteService(info, peer.fake_client.AsWeakPtr(), async_get_default_dispatcher()));
+  peer.services.push_back(service);
+
+  if (notify && remote_service_watcher_) {
+    remote_service_watcher_(peer_id, service);
   }
 
-  remote_service_watcher_(peer_id, std::move(service));
+  return {service, peer.fake_client.AsFakeWeakPtr()};
 }
 
 void FakeLayer::AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) {
-  // TODO: implement
+  peers_.try_emplace(peer_id);
 }
 
-void FakeLayer::RemoveConnection(PeerId peer_id) {
-  // TODO: implement
-}
+void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }
 
 void FakeLayer::RegisterService(ServicePtr service, ServiceIdCallback callback,
                                 ReadHandler read_handler, WriteHandler write_handler,
@@ -40,8 +56,20 @@ void FakeLayer::SendNotification(IdType service_id, IdType chrc_id, PeerId peer_
 }
 
 void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) {
-  if (discover_services_cb_) { discover_services_cb_(peer_id, optional_service_uuid); }
-  // TODO: implement the rest
+  if (discover_services_cb_) {
+    discover_services_cb_(peer_id, optional_service_uuid);
+  }
+
+  auto iter = peers_.find(peer_id);
+  if (!remote_service_watcher_ || iter == peers_.end()) {
+    return;
+  }
+
+  for (auto& s : iter->second.services) {
+    if (!optional_service_uuid || s->uuid() == *optional_service_uuid) {
+      remote_service_watcher_(peer_id, s);
+    }
+  }
 }
 
 void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) {
@@ -50,7 +78,19 @@ void FakeLayer::RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) {
 
 void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
                              ServiceListCallback callback) {
-  // TODO: implement
+  ServiceList services;
+
+  auto iter = peers_.find(peer_id);
+  if (iter != peers_.end()) {
+    for (auto& s : iter->second.services) {
+      auto pred = [&](const UUID& uuid) { return s->uuid() == uuid; };
+      if (uuids.empty() || std::find_if(uuids.begin(), uuids.end(), pred) != uuids.end()) {
+        services.push_back(s);
+      }
+    }
+  }
+
+  callback(att::Status(), std::move(services));
 }
 
 void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) {
@@ -58,7 +98,7 @@ void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCall
 }
 
 void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
- discover_services_cb_ = std::move(cb);
+  discover_services_cb_ = std::move(cb);
 }
 
 }  // namespace testing

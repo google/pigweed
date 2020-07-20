@@ -19,8 +19,6 @@ FakeClient::FakeClient(async_dispatcher_t* dispatcher)
   ZX_DEBUG_ASSERT(dispatcher_);
 }
 
-fxl::WeakPtr<Client> FakeClient::AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
 uint16_t FakeClient::mtu() const {
   // TODO(armansito): Return a configurable value.
   return att::kLEMinMTU;
@@ -47,8 +45,7 @@ void FakeClient::DiscoverPrimaryServices(ServiceCallback svc_callback,
 void FakeClient::DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
                                                StatusCallback status_callback, UUID uuid) {
   async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
-                                status_callback = std::move(status_callback),
-                                uuid] {
+                                status_callback = std::move(status_callback), uuid] {
     for (const auto& svc : services_) {
       if (svc.type == uuid) {
         svc_callback(svc);
