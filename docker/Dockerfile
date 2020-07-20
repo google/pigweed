@@ -26,11 +26,17 @@ ENV PW_ROOT /pigweed-cache/pigweed
 ENV PW_ENVIRONMENT_ROOT /pigweed-cache/environment
 ENV PW_CIPD_PACKAGE_FILES "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/*.json"
 
-COPY . $PW_ROOT
+WORKDIR $PW_ROOT
+# env_setup requires .git for determining top-level directory with git rev-parse
+ENV EMAIL "docker-build <>"
+RUN git init
+RUN git commit --allow-empty --allow-empty-message -m ''
+COPY pw_env_setup/ $PW_ROOT/pw_env_setup/
 # --shell-file is required, but we're going to ignore it.
 RUN $PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py \
     --shell-file $PW_ROOT/init.sh \
     --pw-root $PW_ROOT \
     --install-dir $PW_ENVIRONMENT_ROOT
+COPY . $PW_ROOT
 
 CMD /bin/bash
