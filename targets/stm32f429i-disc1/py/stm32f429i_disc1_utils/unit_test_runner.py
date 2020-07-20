@@ -83,7 +83,7 @@ def parse_args():
                         ' with target device')
     parser.add_argument('--test-timeout',
                         type=float,
-                        default=2.0,
+                        default=5.0,
                         help='Maximum communication delay in seconds before a '
                         'test is considered unresponsive and aborted')
     parser.add_argument('--verbose',
