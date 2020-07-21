@@ -257,10 +257,8 @@ class Impl final : public Client {
             }
 
             // This must succeed as we have performed the appropriate checks above.
-            UUID uuid;
             BufferView uuid_bytes(entry.value, entry_length - (2 * sizeof(att::Handle)));
-            __UNUSED bool result = UUID::FromBytes(uuid_bytes, &uuid);
-            ZX_DEBUG_ASSERT(result);
+            UUID uuid(uuid_bytes);
 
             ServiceData service(kind, start, end, uuid);
             last_handle = service.range_end;
@@ -500,9 +498,7 @@ class Impl final : public Client {
 
         // This must succeed as we have performed the necessary checks
         // above.
-        UUID type;
-        __UNUSED bool result = UUID::FromBytes(value.view(3), &type);
-        ZX_DEBUG_ASSERT(result);
+        UUID type(value.view(3));
 
         // Notify the handler. By default, there are no extended properties to report.
         chrc_cb(CharacteristicData(properties, /*extended_properties=*/std::nullopt, chrc_handle,
