@@ -58,9 +58,9 @@ if not getattr(sys, 'oxidized', False):
             '\n'
             'Try updating to one of the standard Python implemetations:\n'
             '  https://www.python.org/downloads/')
-    sys.path.append(
-        os.path.abspath(os.path.join(filename, os.path.pardir,
-                                     os.path.pardir)))
+    sys.path = [
+        os.path.abspath(os.path.join(filename, os.path.pardir, os.path.pardir))
+    ]
     import pw_env_setup  # pylint: disable=unused-import
     sys.path = old_sys_path
 
