@@ -223,7 +223,7 @@ if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   fi
 
   if [ -n "$_PW_ENV_SETUP" ]; then
-    "$_PW_ENV_SETUP" --shell-file "$SETUP_SH"
+    "$_PW_ENV_SETUP" --shell-file "$SETUP_SH" --install-dir "$PW_ENVIRONMENT_ROOT"
   else
     "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH" --install-dir "$PW_ENVIRONMENT_ROOT"
   fi
