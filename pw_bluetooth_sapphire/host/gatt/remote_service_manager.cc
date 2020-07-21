@@ -103,17 +103,9 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
       return;
     }
 
-    Client::ServiceCallback svc_cb = [self](const ServiceData& service_data) {
-      if (!self) {
+    auto svc_cb = [self](const ServiceData& service_data) {
+      if (!self)
         return;
-      }
-
-      att::Handle handle = service_data.range_start;
-      auto iter = self->services_.find(handle);
-      if (iter != self->services_.end()) {
-        bt_log(ERROR, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
-        return;
-      }
 
       auto svc = fbl::AdoptRef(
           new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
@@ -122,7 +114,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
         return;
       }
 
-      self->services_[handle] = svc;
+      self->services_[svc->handle()] = svc;
     };
 
     auto status_cb = [self, init_cb = std::move(init_cb)](att::Status status) {
@@ -148,29 +140,13 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
       init_cb(status);
     };
 
-    auto primary_discov_cb = [self, service_uuid, status_cb = std::move(status_cb),
-                              svc_cb = svc_cb.share()](att::Status status) mutable {
-      if (!self || !status) {
-        status_cb(status);
-        return;
-      }
-      self->DiscoverServices(ServiceKind::SECONDARY, service_uuid, std::move(svc_cb),
-                             std::move(status_cb));
-    };
-
-    self->DiscoverServices(ServiceKind::PRIMARY, service_uuid, std::move(svc_cb),
-                           std::move(primary_discov_cb));
+    if (service_uuid) {
+      self->client_->DiscoverPrimaryServicesByUUID(std::move(svc_cb), std::move(status_cb),
+                                                   service_uuid.value());
+    } else {
+      self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
+    }
   });
-}
-
-void RemoteServiceManager::DiscoverServices(ServiceKind kind, std::optional<UUID> uuid,
-                                            Client::ServiceCallback svc_cb,
-                                            att::StatusCallback status_cb) {
-  if (uuid) {
-    client_->DiscoverServicesByUuid(kind, std::move(svc_cb), std::move(status_cb), uuid.value());
-  } else {
-    client_->DiscoverServices(kind, std::move(svc_cb), std::move(status_cb));
-  }
 }
 
 void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,

@@ -84,10 +84,6 @@ class RemoteServiceManager final {
     DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceListRequest);
   };
 
-  // Helper function to initiate service discovery.
-  void DiscoverServices(ServiceKind kind, std::optional<UUID> uuid, Client::ServiceCallback svc_cb,
-                        att::StatusCallback status_cb);
-
   // Shuts down and cleans up all services.
   void ClearServices();
 

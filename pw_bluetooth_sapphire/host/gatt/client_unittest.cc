@@ -16,14 +16,14 @@ constexpr UUID kTestUuid2((uint16_t)0xBEEF);
 constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 // clang-format off
-const auto kDiscoverPrimaryRequest = CreateStaticByteBuffer(
+const auto kDiscoverAllPrimaryRequest = CreateStaticByteBuffer(
     0x10,        // opcode: read by group type request
     0x01, 0x00,  // start handle: 0x0001
     0xFF, 0xFF,  // end handle: 0xFFFF
     0x00, 0x28   // type: primary service (0x2800)
 );
 
-const auto kDiscoverPrimary16ByUUID = CreateStaticByteBuffer(
+const auto kDiscoverAllPrimary16ByUUID = CreateStaticByteBuffer(
     0x06,        // opcode: find by type value request
     0x01, 0x00,  // start handle: 0x0001
     0xFF, 0xFF,  // end handle: 0xFFFF
@@ -31,7 +31,7 @@ const auto kDiscoverPrimary16ByUUID = CreateStaticByteBuffer(
     0xAD, 0xDE  // UUID
 );
 
-const auto kDiscoverPrimary128ByUUID = CreateStaticByteBuffer(
+const auto kDiscoverAllPrimary128ByUUID = CreateStaticByteBuffer(
     0x06,        // opcode: find by type value request
     0x01, 0x00,  // start handle: 0x0001
     0xFF, 0xFF,  // end handle: 0xFFFF
@@ -318,16 +318,15 @@ TEST_F(GATT_ClientTest, ExchangeMTUSelectDefault) {
   EXPECT_EQ(att::kLEMinMTU, att()->mtu());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryResponseTooShort) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryResponseTooShort) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   // Respond back with a malformed payload.
   fake_chan()->Receive(CreateStaticByteBuffer(0x11));
@@ -337,16 +336,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryResponseTooShort) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedDataLength) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedDataLength) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   // Respond back with an unexpected data length. This is 6 for services with a
   // 16-bit UUID (start (2) + end (2) + uuid (2)) and 20 for 128-bit
@@ -362,16 +360,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedDataLength) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedAttrDataList) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedAttrDataList) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x11,  // opcode: read by group type response
                                               6,     // data length: 6 (16-bit UUIDs)
@@ -387,16 +384,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedAttrDataList) {
 // Tests that we handle an empty attribute data list. In practice, the
 // server would send an "Attribute Not Found" error instead but our stack treats
 // an empty data list as not an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryEmptyDataList) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryEmptyDataList) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x11,  // opcode: read by group type response
                                               6      // data length: 6 (16-bit UUIDs)
@@ -408,16 +404,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryEmptyDataList) {
 }
 
 // The first request results in "Attribute Not Found".
-TEST_F(GATT_ClientTest, DiscoverPrimaryAttributeNotFound) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryAttributeNotFound) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
                                               0x10,        // request: read by group type
@@ -432,16 +427,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryAttributeNotFound) {
 }
 
 // The first request results in an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryError) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryError) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [&, this] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
                                               0x10,        // request: read by group type
@@ -455,16 +449,15 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedServiceRange) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryMalformedServiceRange) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, NopSvcCallback, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [this, res_cb] { client()->DiscoverPrimaryServices(NopSvcCallback, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   // Return a service where start > end.
   fake_chan()->Receive(CreateStaticByteBuffer(0x11,        // opcode: read by group type response
@@ -481,7 +474,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMalformedServiceRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimary16BitResultsSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -489,11 +482,10 @@ TEST_F(GATT_ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [this, svc_cb, res_cb] { client()->DiscoverPrimaryServices(svc_cb, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x11,        // opcode: read by group type response
                                               0x06,        // data length: 6 (16-bit UUIDs)
@@ -519,7 +511,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimary16BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid2, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimary128BitResultSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -527,11 +519,10 @@ TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [this, svc_cb, res_cb] { client()->DiscoverPrimaryServices(svc_cb, res_cb); });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimaryRequest));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimaryRequest));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x11,        // opcode: read by group type response
                                               0x14,        // data length: 20 (128-bit UUIDs)
@@ -553,7 +544,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMultipleRequests) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
   const auto kExpectedRequest1 =
       CreateStaticByteBuffer(0x10,        // opcode: read by group type request
                              0x01, 0x00,  // start handle: 0x0001
@@ -580,9 +571,8 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMultipleRequests) {
   auto svc_cb = [&services](const ServiceData& svc) { services.push_back(svc); };
 
   // Initiate the request on the loop since Expect() below blocks.
-  async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
-  });
+  async::PostTask(dispatcher(),
+                  [this, svc_cb, res_cb] { client()->DiscoverPrimaryServices(svc_cb, res_cb); });
 
   ASSERT_TRUE(Expect(kExpectedRequest1));
 
@@ -642,16 +632,16 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMultipleRequests) {
   EXPECT_EQ(kTestUuid3, services[2].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDByResponseTooShort) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDByResponseTooShort) {
   att::Status status;
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, NopSvcCallback, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   // Respond back with a malformed payload.
   fake_chan()->Receive(CreateStaticByteBuffer(0x7, 0x0));
@@ -662,18 +652,18 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDByResponseTooShort) {
 }
 
 // Tests that we handle an empty handle information list properly. In practice, the
-// server would send an "Attribute Not Found" error instead.  A handle list that is
+// server would send an "Attribute Not Found" error instead.  A handle list that is 
 // empty is an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDEmptyDataList) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDEmptyDataList) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, NopSvcCallback, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x07  // opcode: find by value type response
                                                     // data list is empty
@@ -684,16 +674,16 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDEmptyDataList) {
 }
 
 // The first request results in "Attribute Not Found".
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDAttributeNotFound) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDAttributeNotFound) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, NopSvcCallback, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
                                               0x06,        // request: find by type value
@@ -708,16 +698,16 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDAttributeNotFound) {
 }
 
 // The first request results in an error.
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDError) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDError) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [&, this] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, NopSvcCallback, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
                                               0x06,        // request: find by type value
@@ -731,16 +721,16 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDError) {
   EXPECT_EQ(att::ErrorCode::kRequestNotSupported, status.protocol_error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMalformedServiceRange) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDMalformedServiceRange) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, res_cb] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, NopSvcCallback, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(NopSvcCallback, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   // Return a service where start > end.
   fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
@@ -756,7 +746,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMalformedServiceRange) {
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID16BitResultsSingleRequest) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUID16BitResultsSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -765,10 +755,10 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID16BitResultsSingleRequest) {
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, svc_cb, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary16ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary16ByUUID));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
                                               0x01, 0x00,  // svc 1 start: 0x0001
@@ -791,7 +781,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID16BitResultsSingleRequest) {
   EXPECT_EQ(kTestUuid1, services[1].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID128BitResultSingleRequest) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUID128BitResultSingleRequest) {
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
 
@@ -800,14 +790,14 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID128BitResultSingleRequest) {
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, svc_cb, res_cb, kTestUuid3);
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid3);
   });
 
-  ASSERT_TRUE(Expect(kDiscoverPrimary128ByUUID));
+  ASSERT_TRUE(Expect(kDiscoverAllPrimary128ByUUID));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
                                               0x01, 0x00,  // svc 1 start: 0x0008
-                                              0xFF, 0xFF   // svc 1 end: 0xFFFF
+                                              0xFF, 0xFF  // svc 1 end: 0xFFFF
                                               ));
 
   RunLoopUntilIdle();
@@ -821,7 +811,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMultipleRequests) {
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDMultipleRequests) {
   const auto kExpectedRequest1 =
       CreateStaticByteBuffer(0x06,        // opcode: find by type value request
                              0x01, 0x00,  // start handle: 0x0001
@@ -852,7 +842,7 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMultipleRequests) {
 
   // Initiate the request on the loop since Expect() below blocks.
   async::PostTask(dispatcher(), [this, svc_cb, res_cb] {
-    client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, svc_cb, res_cb, kTestUuid1);
+    client()->DiscoverPrimaryServicesByUUID(svc_cb, res_cb, kTestUuid1);
   });
 
   ASSERT_TRUE(Expect(kExpectedRequest1));

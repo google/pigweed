@@ -31,25 +31,23 @@ void FakeClient::ExchangeMTU(MTUCallback callback) {
   async::PostTask(dispatcher_, std::move(task));
 }
 
-void FakeClient::DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
-                                  StatusCallback status_callback) {
+void FakeClient::DiscoverPrimaryServices(ServiceCallback svc_callback,
+                                         StatusCallback status_callback) {
   async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
-                                status_callback = std::move(status_callback), kind] {
+                                status_callback = std::move(status_callback)] {
     for (const auto& svc : services_) {
-      if (svc.kind == kind) {
-        svc_callback(svc);
-      }
+      svc_callback(svc);
     }
     status_callback(service_discovery_status_);
   });
 }
 
-void FakeClient::DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                                        StatusCallback status_callback, UUID uuid) {
+void FakeClient::DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
+                                               StatusCallback status_callback, UUID uuid) {
   async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
-                                status_callback = std::move(status_callback), kind, uuid] {
+                                status_callback = std::move(status_callback), uuid] {
     for (const auto& svc : services_) {
-      if (svc.kind == kind && svc.type == uuid) {
+      if (svc.type == uuid) {
         svc_callback(svc);
       }
     }

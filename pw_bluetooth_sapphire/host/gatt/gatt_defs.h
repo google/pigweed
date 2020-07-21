@@ -116,16 +116,10 @@ constexpr IdType kInvalidId = 0u;
 
 // Types representing GATT discovery results.
 
-enum class ServiceKind {
-  PRIMARY,
-  SECONDARY,
-};
-
 struct ServiceData {
   ServiceData() = default;
-  ServiceData(ServiceKind kind, att::Handle start, att::Handle end, const UUID& type);
+  ServiceData(att::Handle start, att::Handle end, const UUID& type);
 
-  ServiceKind kind;
   att::Handle range_start;
   att::Handle range_end;
   UUID type;
@@ -136,6 +130,7 @@ struct CharacteristicData {
   CharacteristicData() = delete;
   CharacteristicData(Properties props, std::optional<ExtendedProperties> ext_props,
                      att::Handle handle, att::Handle value_handle, const UUID& type);
+
 
   Properties properties;
   std::optional<ExtendedProperties> extended_properties;

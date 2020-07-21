@@ -7,8 +7,8 @@
 namespace bt {
 namespace gatt {
 
-ServiceData::ServiceData(ServiceKind kind, att::Handle start, att::Handle end, const UUID& type)
-    : kind(kind), range_start(start), range_end(end), type(type) {}
+ServiceData::ServiceData(att::Handle start, att::Handle end, const UUID& type)
+    : range_start(start), range_end(end), type(type) {}
 
 CharacteristicData::CharacteristicData(Properties props,
                                        std::optional<ExtendedProperties> ext_props,
