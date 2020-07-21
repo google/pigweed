@@ -57,7 +57,7 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
     for (const auto& svc : services) {
       ServiceInfo service_info;
       service_info.id = svc->handle();
-      service_info.primary = true;
+      service_info.primary = svc->info().kind == bt::gatt::ServiceKind::PRIMARY;
       service_info.type = svc->uuid().ToString();
       out[i++] = std::move(service_info);
     }

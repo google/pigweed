@@ -59,19 +59,8 @@ class Client {
   // v5.0, Vol 3, Part G, 4.4.1. |service_callback| is run for each discovered
   // service. |status_callback| is run with the result of the operation.
   //
-  // NOTE: |service_callback| will be called asynchronously as services are
-  // discovered so a caller can start processing the results immediately while
-  // the procedure is in progress. Since discovery usually occurs over multiple
-  // ATT transactions, it is possible for |status_callback| to be called with an
-  // error even if some services have been discovered. It is up to the client
-  // to clear any cached state in this case.
-  using ServiceCallback = fit::function<void(const ServiceData&)>;
-  virtual void DiscoverPrimaryServices(ServiceCallback svc_callback,
-                                       att::StatusCallback status_callback) = 0;
-
-  // Performs the "Discover All Primary Services by UUID" procedure defined in
-  // v5.0, Vol 3, Part G, 4.4.2. |service_callback| is run for each discovered
-  // service. |status_callback| is run with the result of the operation.
+  // The |kind| parameter can be used to control whether primary or secondary services get
+  // discovered.
   //
   // NOTE: |service_callback| will be called asynchronously as services are
   // discovered so a caller can start processing the results immediately while
@@ -79,8 +68,25 @@ class Client {
   // ATT transactions, it is possible for |status_callback| to be called with an
   // error even if some services have been discovered. It is up to the client
   // to clear any cached state in this case.
-  virtual void DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
-                                             att::StatusCallback status_callback, UUID uuid) = 0;
+  using ServiceCallback = fit::function<void(const ServiceData&)>;
+  virtual void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
+                                att::StatusCallback status_callback) = 0;
+
+  // Performs the "Discover All Primary Services by UUID" procedure defined in
+  // v5.0, Vol 3, Part G, 4.4.2. |service_callback| is run for each discovered
+  // service. |status_callback| is run with the result of the operation.
+  //
+  // The |kind| parameter can be used to control whether primary or secondary services get
+  // discovered.
+  //
+  // NOTE: |service_callback| will be called asynchronously as services are
+  // discovered so a caller can start processing the results immediately while
+  // the procedure is in progress. Since discovery usually occurs over multiple
+  // ATT transactions, it is possible for |status_callback| to be called with an
+  // error even if some services have been discovered. It is up to the client
+  // to clear any cached state in this case.
+  virtual void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
+                                      att::StatusCallback status_callback, UUID uuid) = 0;
 
   // Performs the "Discover All Characteristics of a Service" procedure defined
   // in v5.0, Vol 3, Part G, 4.6.1.

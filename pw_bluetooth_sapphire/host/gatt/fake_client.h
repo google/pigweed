@@ -19,7 +19,7 @@ class FakeClient final : public Client {
   void set_server_mtu(uint16_t mtu) { server_mtu_ = mtu; }
   void set_exchage_mtu_status(att::Status status) { exchange_mtu_status_ = status; }
 
-  void set_primary_services(std::vector<ServiceData> services) { services_ = std::move(services); }
+  void set_services(std::vector<ServiceData> services) { services_ = std::move(services); }
 
   void set_service_discovery_status(att::Status status) { service_discovery_status_ = status; }
 
@@ -111,16 +111,16 @@ class FakeClient final : public Client {
   // Client overrides:
   uint16_t mtu() const override;
   void ExchangeMTU(MTUCallback callback) override;
-  void DiscoverPrimaryServices(ServiceCallback svc_callback,
-                               att::StatusCallback status_callback) override;
+  void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
+                        att::StatusCallback status_callback) override;
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                att::StatusCallback status_callback) override;
   void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
-  void DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback,
-                                     att::StatusCallback status_callback, UUID uuid) override;
+  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
+                              att::StatusCallback status_callback, UUID uuid) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override;

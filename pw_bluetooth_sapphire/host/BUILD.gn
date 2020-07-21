@@ -110,6 +110,7 @@ source_set("driver_tests") {
   sources = [
     "fidl/adapter_test_fixture.cc",
     "fidl/adapter_test_fixture.h",
+    "fidl/gatt_client_server_unittest.cc",
     "fidl/gatt_remote_service_server_unittest.cc",
     "fidl/helpers_unittest.cc",
     "fidl/host_server_unittest.cc",

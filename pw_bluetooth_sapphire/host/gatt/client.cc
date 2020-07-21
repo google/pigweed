@@ -182,15 +182,14 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
-  void DiscoverPrimaryServices(ServiceCallback svc_callback,
-                               StatusCallback status_callback) override {
-    DiscoverPrimaryServicesInternal(att::kHandleMin, att::kHandleMax, std::move(svc_callback),
-                                    std::move(status_callback));
+  void DiscoverServices(ServiceKind kind, ServiceCallback svc_callback,
+                        StatusCallback status_callback) override {
+    DiscoverServicesInternal(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
+                             std::move(status_callback));
   }
 
-  void DiscoverPrimaryServicesInternal(att::Handle start, att::Handle end,
-                                       ServiceCallback svc_callback,
-                                       StatusCallback status_callback) {
+  void DiscoverServicesInternal(ServiceKind kind, att::Handle start, att::Handle end,
+                                ServiceCallback svc_callback, StatusCallback status_callback) {
     auto pdu = NewPDU(sizeof(att::ReadByGroupTypeRequestParams16));
     if (!pdu) {
       status_callback(att::Status(HostError::kOutOfMemory));
@@ -201,14 +200,15 @@ class Impl final : public Client {
     auto* params = writer.mutable_payload<att::ReadByGroupTypeRequestParams16>();
     params->start_handle = htole16(start);
     params->end_handle = htole16(end);
-    params->type = htole16(types::kPrimaryService16);
+    params->type = htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
+                                                        : types::kSecondaryService16);
 
     auto rsp_cb =
-        BindCallback([this, svc_cb = std::move(svc_callback),
+        BindCallback([this, kind, svc_cb = std::move(svc_callback),
                       res_cb = status_callback.share()](const att::PacketReader& rsp) mutable {
           ZX_DEBUG_ASSERT(rsp.opcode() == att::kReadByGroupTypeResponse);
-          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverPrimaryServicesInternal rsp_cb",
-                         "size", rsp.size());
+          TRACE_DURATION("bluetooth", "gatt::Client::DiscoverServicesInternal rsp_cb", "size",
+                         rsp.size());
 
           if (rsp.payload_size() < sizeof(att::ReadByGroupTypeResponseParams)) {
             // Received malformed response. Disconnect the link.
@@ -247,23 +247,23 @@ class Impl final : public Client {
           while (attr_data_list.size()) {
             const auto& entry = attr_data_list.As<att::AttributeGroupDataEntry>();
 
-            ServiceData service;
-            service.range_start = le16toh(entry.start_handle);
-            service.range_end = le16toh(entry.group_end_handle);
+            att::Handle start = le16toh(entry.start_handle);
+            att::Handle end = le16toh(entry.group_end_handle);
 
-            if (service.range_end < service.range_start) {
+            if (end < start) {
               bt_log(DEBUG, "gatt", "received malformed service range values");
               res_cb(att::Status(HostError::kPacketMalformed));
               return;
             }
 
-            last_handle = service.range_end;
-
-            BufferView value(entry.value, entry_length - (2 * sizeof(att::Handle)));
-
             // This must succeed as we have performed the appropriate checks above.
-            __UNUSED bool result = UUID::FromBytes(value, &service.type);
+            UUID uuid;
+            BufferView uuid_bytes(entry.value, entry_length - (2 * sizeof(att::Handle)));
+            __UNUSED bool result = UUID::FromBytes(uuid_bytes, &uuid);
             ZX_DEBUG_ASSERT(result);
+
+            ServiceData service(kind, start, end, uuid);
+            last_handle = service.range_end;
 
             // Notify the handler.
             svc_cb(service);
@@ -278,8 +278,8 @@ class Impl final : public Client {
           }
 
           // Request the next batch.
-          DiscoverPrimaryServicesInternal(last_handle + 1, att::kHandleMax, std::move(svc_cb),
-                                          std::move(res_cb));
+          DiscoverServicesInternal(kind, last_handle + 1, att::kHandleMax, std::move(svc_cb),
+                                   std::move(res_cb));
         });
 
     auto error_cb = BindErrorCallback(
@@ -298,15 +298,15 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
-  void DiscoverPrimaryServicesByUUID(ServiceCallback svc_callback, StatusCallback status_callback,
-                                     UUID uuid) override {
-    DiscoverPrimaryServicesByUUIDInternal(att::kHandleMin, att::kHandleMax, std::move(svc_callback),
-                                          std::move(status_callback), uuid);
+  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
+                              StatusCallback status_callback, UUID uuid) override {
+    DiscoverServicesByUuidInternal(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
+                                   std::move(status_callback), uuid);
   }
 
-  void DiscoverPrimaryServicesByUUIDInternal(att::Handle start, att::Handle end,
-                                             ServiceCallback svc_callback,
-                                             StatusCallback status_callback, UUID uuid) {
+  void DiscoverServicesByUuidInternal(ServiceKind kind, att::Handle start, att::Handle end,
+                                      ServiceCallback svc_callback, StatusCallback status_callback,
+                                      UUID uuid) {
     size_t uuid_size_bytes = uuid.CompactSize(/* allow 32 bit UUIDs */ false);
     auto pdu = NewPDU(sizeof(att::FindByTypeValueRequestParams) + uuid_size_bytes);
     if (!pdu) {
@@ -318,63 +318,63 @@ class Impl final : public Client {
     auto* params = writer.mutable_payload<att::FindByTypeValueRequestParams>();
     params->start_handle = htole16(start);
     params->end_handle = htole16(end);
-    params->type = htole16(types::kPrimaryService16);
+    params->type = htole16(kind == ServiceKind::PRIMARY ? types::kPrimaryService16
+                                                        : types::kSecondaryService16);
     MutableBufferView value_view(params->value, uuid_size_bytes);
     uuid.ToBytes(&value_view, /* allow 32 bit UUIDs */ false);
 
-    auto rsp_cb =
-        BindCallback([this, svc_cb = std::move(svc_callback), res_cb = status_callback.share(),
-                      uuid](const att::PacketReader& rsp) mutable {
-          ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
+    auto rsp_cb = BindCallback([this, kind, svc_cb = std::move(svc_callback),
+                                res_cb = status_callback.share(),
+                                uuid](const att::PacketReader& rsp) mutable {
+      ZX_DEBUG_ASSERT(rsp.opcode() == att::kFindByTypeValueResponse);
 
-          size_t payload_size = rsp.payload_size();
-          if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
-            // Received malformed response. Disconnect the link.
-            bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
-                   payload_size);
-            att_->ShutDown();
-            res_cb(att::Status(HostError::kPacketMalformed));
-            return;
-          }
+      size_t payload_size = rsp.payload_size();
+      if (payload_size < 1 || payload_size % sizeof(att::FindByTypeValueResponseParams) != 0) {
+        // Received malformed response. Disconnect the link.
+        bt_log(DEBUG, "gatt", "received malformed Find By Type Value response with size %zu",
+               payload_size);
+        att_->ShutDown();
+        res_cb(att::Status(HostError::kPacketMalformed));
+        return;
+      }
 
-          BufferView handle_list = rsp.payload_data();
+      BufferView handle_list = rsp.payload_data();
 
-          att::Handle last_handle = att::kHandleMax;
-          while (handle_list.size()) {
-            const auto& entry = handle_list.As<att::HandlesInformationList>();
+      att::Handle last_handle = att::kHandleMax;
+      while (handle_list.size()) {
+        const auto& entry = handle_list.As<att::HandlesInformationList>();
 
-            ServiceData service;
-            service.range_start = le16toh(entry.handle);
-            service.range_end = le16toh(entry.group_end_handle);
+        att::Handle start = le16toh(entry.handle);
+        att::Handle end = le16toh(entry.group_end_handle);
 
-            if (service.range_end < service.range_start) {
-              bt_log(DEBUG, "gatt", "received malformed service range values");
-              res_cb(att::Status(HostError::kPacketMalformed));
-              return;
-            }
+        if (end < start) {
+          bt_log(DEBUG, "gatt", "received malformed service range values");
+          res_cb(att::Status(HostError::kPacketMalformed));
+          return;
+        }
 
-            service.type = uuid;
+        ServiceData service(kind, start, end, uuid);
 
-            // Notify the handler.
-            svc_cb(service);
+        // Notify the handler.
+        svc_cb(service);
 
-            // HandlesInformationList is a single element of the list.
-            size_t entry_length = sizeof(att::HandlesInformationList);
-            handle_list = handle_list.view(entry_length);
+        // HandlesInformationList is a single element of the list.
+        size_t entry_length = sizeof(att::HandlesInformationList);
+        handle_list = handle_list.view(entry_length);
 
-            last_handle = service.range_end;
-          }
+        last_handle = service.range_end;
+      }
 
-          // The procedure is over if we have reached the end of the handle range.
-          if (last_handle == att::kHandleMax) {
-            res_cb(att::Status());
-            return;
-          }
+      // The procedure is over if we have reached the end of the handle range.
+      if (last_handle == att::kHandleMax) {
+        res_cb(att::Status());
+        return;
+      }
 
-          // Request the next batch.
-          DiscoverPrimaryServicesByUUIDInternal(last_handle + 1, att::kHandleMax, std::move(svc_cb),
-                                                std::move(res_cb), uuid);
-        });
+      // Request the next batch.
+      DiscoverServicesByUuidInternal(kind, last_handle + 1, att::kHandleMax, std::move(svc_cb),
+                                     std::move(res_cb), uuid);
+    });
 
     auto error_cb = BindErrorCallback(
         [res_cb = status_callback.share()](att::Status status, att::Handle handle) {
