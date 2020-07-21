@@ -32,7 +32,7 @@ def main(library: str, generator: str):
     print(f'ERROR: Attempting to build protobuf library {library}, but the '
           f'{generator} protobuf generator is not in use.')
     print(f'To use {generator} protobufs, list "{generator}" in '
-          'pw_protobuf_generators.')
+          'pw_protobuf_GENERATORS.')
     sys.exit(1)
 
 

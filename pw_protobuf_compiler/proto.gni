@@ -365,7 +365,7 @@ template("pw_proto_library") {
     }
 
     if (defined(invoker.deps)) {
-      _gen_deps = process_file_template(invoker.deps, "{{source}}_${_gen}")
+      _gen_deps += process_file_template(invoker.deps, "{{source}}_${_gen}")
 
       if (_gen == "nanopb_rpc") {
         # RPC dependencies also depend on their core generated protos.
