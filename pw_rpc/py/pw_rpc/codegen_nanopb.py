@@ -40,7 +40,7 @@ def _proto_filename_to_nanopb_header(proto_file: str) -> str:
 def _proto_filename_to_generated_header(proto_file: str) -> str:
     """Returns the generated C++ RPC header name for a .proto file."""
     filename = os.path.splitext(proto_file)[0]
-    return f'{filename}_rpc{PROTO_H_EXTENSION}'
+    return f'{filename}.rpc{PROTO_H_EXTENSION}'
 
 
 def _generate_method_descriptor(method: ProtoServiceMethod,
@@ -201,21 +201,25 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('namespace pw::rpc::test_internal {\n')
     output.write_line('template <typename, uint32_t>')
     output.write_line('class ServiceTestUtilities;')
-    output.write_line('\n}  // namespace pw::rpc::test_internal')
+    output.write_line('\n}  // namespace pw::rpc::test_internal\n')
 
     if package.cpp_namespace():
         file_namespace = package.cpp_namespace()
         if file_namespace.startswith('::'):
             file_namespace = file_namespace[2:]
 
-        output.write_line(f'\nnamespace {file_namespace} {{')
+        output.write_line(f'namespace {file_namespace} {{')
+
+    output.write_line('namespace generated {')
 
     for node in package:
         if node.type() == ProtoNode.Type.SERVICE:
             _generate_code_for_service(node, package, output)
 
+    output.write_line('\n}  // namespace generated')
+
     if package.cpp_namespace():
-        output.write_line(f'\n}}  // namespace {file_namespace}')
+        output.write_line(f'}}  // namespace {file_namespace}')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:

@@ -15,11 +15,11 @@
 
 #include <cstring>
 
-#include "pw_rpc_protos/echo_rpc.pb.h"
+#include "pw_rpc_protos/echo.rpc.pb.h"
 
 namespace pw::rpc {
 
-class EchoServiceImpl : public EchoService<EchoServiceImpl> {
+class EchoService final : public generated::EchoService<EchoService> {
  public:
   Status Echo(ServerContext&,
               const pw_rpc_EchoMessage& request,

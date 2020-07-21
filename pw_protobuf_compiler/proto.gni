@@ -114,7 +114,7 @@ template("_pw_nanopb_rpc_proto_library") {
 
   _outputs = []
   foreach(_proto, _relative_proto_paths) {
-    _output_h = string_replace(_proto, ".proto", "_rpc.pb.h")
+    _output_h = string_replace(_proto, ".proto", ".rpc.pb.h")
     _outputs += [ "$_proto_gen_dir/$_output_h" ]
   }
 

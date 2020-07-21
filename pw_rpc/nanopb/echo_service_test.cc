@@ -20,13 +20,13 @@ namespace pw::rpc {
 namespace {
 
 TEST(EchoService, Echo_EchoesRequestMessage) {
-  PW_RPC_TEST_METHOD_CONTEXT(EchoServiceImpl, Echo) context;
+  PW_RPC_TEST_METHOD_CONTEXT(EchoService, Echo) context;
   ASSERT_EQ(context.call({.msg = "Hello, world"}), Status::OK);
   EXPECT_STREQ(context.response().msg, "Hello, world");
 }
 
 TEST(EchoService, Echo_EmptyRequest) {
-  PW_RPC_TEST_METHOD_CONTEXT(EchoServiceImpl, Echo) context;
+  PW_RPC_TEST_METHOD_CONTEXT(EchoService, Echo) context;
   ASSERT_EQ(context.call({.msg = ""}), Status::OK);
   EXPECT_STREQ(context.response().msg, "");
 }

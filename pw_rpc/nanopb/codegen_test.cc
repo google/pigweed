@@ -15,12 +15,12 @@
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/test_method_context.h"
-#include "pw_rpc_test_protos/test_rpc.pb.h"
+#include "pw_rpc_test_protos/test.rpc.pb.h"
 
 namespace pw::rpc {
 namespace test {
 
-class TestServiceImpl : public TestService<TestServiceImpl> {
+class TestService final : public generated::TestService<TestService> {
  public:
   Status TestRpc(ServerContext&,
                  const pw_rpc_test_TestRequest& request,
@@ -46,13 +46,13 @@ namespace internal {
 namespace {
 
 TEST(NanopbCodegen, CompilesProperly) {
-  test::TestServiceImpl service;
+  test::TestService service;
   EXPECT_EQ(service.id(), Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
 }
 
 TEST(NanopbCodegen, InvokeUnaryRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestRpc) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
   EXPECT_EQ(Status::OK,
             context.call({.integer = 123, .status_code = Status::OK}));
@@ -66,7 +66,7 @@ TEST(NanopbCodegen, InvokeUnaryRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestStreamRpc) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::ABORTED});
 
@@ -88,7 +88,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestServiceImpl, TestStreamRpc, 3) context;
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
