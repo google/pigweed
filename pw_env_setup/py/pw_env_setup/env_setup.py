@@ -41,30 +41,28 @@ import sys
 # If we're running oxidized, filesystem-centric import hacks won't work. In that
 # case, jump straight to the imports and assume oxidation brought in the deps.
 if not getattr(sys, 'oxidized', False):
-    try:
-        # Even if we're running from source, the user may have a functioning
-        # Python environment already set up. Prefer using it over hacks.
-        # pylint: disable=no-name-in-module
-        from pw_env_setup import cargo_setup
-        # pylint: enable=no-name-in-module
-    except ImportError:
-        old_sys_path = copy.deepcopy(sys.path)
-        filename = None
-        if hasattr(sys.modules[__name__], '__file__'):
-            filename = __file__
-        else:
-            # Try introspection in environments where __file__ is not populated.
-            frame = inspect.currentframe()
-            if frame is not None:
-                filename = inspect.getfile(frame)
-        # If none of our strategies worked, the imports are going to fail.
-        if filename is None:
-            raise
-        sys.path.append(
-            os.path.abspath(
-                os.path.join(filename, os.path.pardir, os.path.pardir)))
-        import pw_env_setup  # pylint: disable=unused-import
-        sys.path = old_sys_path
+    old_sys_path = copy.deepcopy(sys.path)
+    filename = None
+    if hasattr(sys.modules[__name__], '__file__'):
+        filename = __file__
+    else:
+        # Try introspection in environments where __file__ is not populated.
+        frame = inspect.currentframe()
+        if frame is not None:
+            filename = inspect.getfile(frame)
+    # If none of our strategies worked, we're in a strange runtime environment.
+    # The imports are almost certainly going to fail.
+    if filename is None:
+        raise RuntimeError(
+            'Unable to locate pw_env_setup module; cannot continue.\n'
+            '\n'
+            'Try updating to one of the standard Python implemetations:\n'
+            '  https://www.python.org/downloads/')
+    sys.path.append(
+        os.path.abspath(os.path.join(filename, os.path.pardir,
+                                     os.path.pardir)))
+    import pw_env_setup  # pylint: disable=unused-import
+    sys.path = old_sys_path
 
 # pylint: disable=wrong-import-position
 from pw_env_setup.cipd_setup import update as cipd_update
