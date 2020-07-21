@@ -275,7 +275,10 @@ bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
   bt::UUID output;
   // Conversion must always succeed given the defined size of |input|.
   static_assert(sizeof(input.value) == 16, "FIDL UUID definition malformed!");
-  return bt::UUID(bt::BufferView(input.value.data(), input.value.size()));
+  bool status =
+      bt::UUID::FromBytes(bt::BufferView(input.value.data(), input.value.size()), &output);
+  ZX_ASSERT_MSG(status, "expected UUID conversion from FIDL to succeed!");
+  return output;
 }
 
 fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid) {

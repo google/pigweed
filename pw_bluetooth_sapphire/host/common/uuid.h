@@ -23,10 +23,6 @@ class UUID final {
   // an unsupported size.
   static bool FromBytes(const ByteBuffer& bytes, UUID* out_uuid);
 
-  // Constructs a UUID from |bytes|. This is similar to FromBytes, except it asserts if |bytes| has
-  // an unsupported size.
-  explicit UUID(const ByteBuffer& bytes);
-
   constexpr explicit UUID(const UInt128& uuid128) : type_(Type::k128Bit), value_(uuid128) {
     if (!IsValueCompressable())
       return;
