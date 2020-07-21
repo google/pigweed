@@ -189,14 +189,11 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include "pw_rpc/server_context.h"')
 
     # Include the corresponding nanopb header file for this proto file, in which
-    # the file's messages and enums are generated.
+    # the file's messages and enums are generated. All other files imported from
+    # the .proto file are #included in there.
     nanopb_header = _proto_filename_to_nanopb_header(
         file_descriptor_proto.name)
     output.write_line(f'#include "{nanopb_header}"\n')
-
-    for imported_file in file_descriptor_proto.dependency:
-        generated_header = _proto_filename_to_nanopb_header(imported_file)
-        output.write_line(f'#include "{generated_header}"')
 
     output.write_line('namespace pw::rpc::test_internal {\n')
     output.write_line('template <typename, uint32_t>')
