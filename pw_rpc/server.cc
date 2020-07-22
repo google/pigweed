@@ -30,19 +30,6 @@ using std::byte;
 using internal::Packet;
 using internal::PacketType;
 
-enum IncludeMethod : bool { kIncludeMethod, kOmitMethod };
-
-void SendError(internal::Channel& channel,
-               Status status,
-               const Packet& packet,
-               IncludeMethod method = kIncludeMethod) {
-  Packet error = Packet::Error(packet, status);
-  if (method == kOmitMethod) {
-    error.set_method_id(Packet::kUnassignedId);
-  }
-  channel.Send(error);
-}
-
 bool DecodePacket(ChannelOutput& interface,
                   std::span<const byte> data,
                   Packet& packet) {
@@ -59,7 +46,7 @@ bool DecodePacket(ChannelOutput& interface,
     // Only send an ERROR response if a valid channel ID was provided.
     if (packet.channel_id() != Channel::kUnassignedChannelId) {
       internal::Channel temp_channel(packet.channel_id(), &interface);
-      SendError(temp_channel, Status::DATA_LOSS, packet);
+      temp_channel.Send(Packet::Error(packet, Status::DATA_LOSS));
     }
     return false;
   }
@@ -92,7 +79,7 @@ void Server::ProcessPacket(std::span<const byte> data,
     if (channel == nullptr) {
       // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error.
       internal::Channel temp_channel(packet.channel_id(), &interface);
-      SendError(temp_channel, Status::RESOURCE_EXHAUSTED, packet);
+      temp_channel.Send(Packet::Error(packet, Status::RESOURCE_EXHAUSTED));
       return;
     }
   }
@@ -103,14 +90,14 @@ void Server::ProcessPacket(std::span<const byte> data,
   });
 
   if (service == services_.end()) {
-    SendError(*channel, Status::NOT_FOUND, packet, kOmitMethod);
+    channel->Send(Packet::Error(packet, Status::NOT_FOUND));
     return;
   }
 
   const internal::Method* method = service->FindMethod(packet.method_id());
 
   if (method == nullptr) {
-    SendError(*channel, Status::NOT_FOUND, packet);
+    channel->Send(Packet::Error(packet, Status::NOT_FOUND));
     return;
   }
 
@@ -130,7 +117,7 @@ void Server::ProcessPacket(std::span<const byte> data,
     case PacketType::ERROR:
       break;
   }
-  SendError(*channel, Status::UNIMPLEMENTED, packet);
+  channel->Send(Packet::Error(packet, Status::UNIMPLEMENTED));
   PW_LOG_WARN("Unable to handle packet of type %u", unsigned(packet.type()));
 }
 
@@ -143,7 +130,7 @@ void Server::HandleCancelPacket(const Packet& packet,
   });
 
   if (writer == writers_.end()) {
-    SendError(channel, Status::FAILED_PRECONDITION, packet);
+    channel.Send(Packet::Error(packet, Status::FAILED_PRECONDITION));
     PW_LOG_WARN("Received CANCEL packet for method that is not pending");
   } else {
     writer->Finish(Status::CANCELLED);

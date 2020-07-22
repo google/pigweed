@@ -51,6 +51,11 @@ service PublicService {
 """
 
 
+def _rpc(method_stub):
+    return client.PendingRpc(method_stub.channel, method_stub.method.service,
+                             method_stub.method)
+
+
 class CallbackClientImplTest(unittest.TestCase):
     """Tests the callback_client as used within a pw_rpc Client."""
     def setUp(self):
@@ -143,10 +148,11 @@ class CallbackClientImplTest(unittest.TestCase):
                                    method.response_type(payload='0_o'))
 
             callback = mock.Mock()
-            stub.SomeUnary.with_callback(callback, magic_number=5)
+            stub.SomeUnary.invoke(callback, magic_number=5)
 
             callback.assert_called_once_with(
-                Status.ABORTED, method.response_type(payload='0_o'))
+                _rpc(stub.SomeUnary), Status.ABORTED,
+                method.response_type(payload='0_o'))
 
             self.assertEqual(
                 5,
@@ -159,7 +165,7 @@ class CallbackClientImplTest(unittest.TestCase):
         exception_msg = 'YOU BROKE IT O-]-<'
 
         with self.assertLogs(callback_client.__name__, 'ERROR') as logs:
-            stub.with_callback(mock.Mock(side_effect=Exception(exception_msg)))
+            stub.invoke(mock.Mock(side_effect=Exception(exception_msg)))
 
         self.assertIn(exception_msg, ''.join(logs.output))
 
@@ -173,14 +179,14 @@ class CallbackClientImplTest(unittest.TestCase):
         callback = mock.Mock()
 
         for _ in range(3):
-            call = stub.SomeUnary.with_callback(callback, magic_number=55)
+            call = stub.SomeUnary.invoke(callback, magic_number=55)
 
             self.assertIsNotNone(self._last_request)
             self._last_request = None
 
-            # Try to call the RPC again before cancelling, which is an error.
+            # Try to invoke the RPC again before cancelling, which is an error.
             with self.assertRaises(client.Error):
-                stub.SomeUnary.with_callback(callback, magic_number=56)
+                stub.SomeUnary.invoke(callback, magic_number=56)
 
             self.assertTrue(call.cancel())
             self.assertFalse(call.cancel())  # Already cancelled, returns False
@@ -189,6 +195,16 @@ class CallbackClientImplTest(unittest.TestCase):
             self.assertIsNone(self._last_request)
 
         callback.assert_not_called()
+
+    def test_reinvoke_unary_rpc(self):
+        stub = self._client.channel(1).rpcs.pw.test1.PublicService
+        callback = mock.Mock()
+
+        # The reinvoke method ignores pending rpcs, so can be called repeatedly.
+        for _ in range(3):
+            self._last_request = None
+            stub.SomeUnary.reinvoke(callback, magic_number=55)
+            self.assertEqual(self._last_request.type, packets.PacketType.RPC)
 
     def test_invoke_server_streaming(self):
         stub = self._client.channel(1).rpcs.pw.test1.PublicService
@@ -222,12 +238,13 @@ class CallbackClientImplTest(unittest.TestCase):
             self._enqueue_stream_end(1, method, Status.ABORTED)
 
             callback = mock.Mock()
-            stub.SomeServerStreaming.with_callback(callback, magic_number=3)
+            stub.SomeServerStreaming.invoke(callback, magic_number=3)
 
+            rpc = _rpc(stub.SomeServerStreaming)
             callback.assert_has_calls([
-                mock.call(None, method.response_type(payload='!!!')),
-                mock.call(None, method.response_type(payload='?')),
-                mock.call(Status.ABORTED, None),
+                mock.call(rpc, None, method.response_type(payload='!!!')),
+                mock.call(rpc, None, method.response_type(payload='?')),
+                mock.call(rpc, Status.ABORTED, None),
             ])
 
             self.assertEqual(
@@ -242,25 +259,26 @@ class CallbackClientImplTest(unittest.TestCase):
         self._enqueue_response(1, stub.method, response=resp)
 
         callback = mock.Mock()
-        call = stub.with_callback(callback, magic_number=3)
+        call = stub.invoke(callback, magic_number=3)
         callback.assert_called_once_with(
-            None, stub.method.response_type(payload='!!!'))
+            _rpc(stub), None, stub.method.response_type(payload='!!!'))
 
         callback.reset_mock()
 
         call.cancel()
 
-        self.assertIs(self._last_request.type, packets.PacketType.CANCEL)
+        self.assertEqual(self._last_request.type, packets.PacketType.CANCEL)
 
         # Ensure the RPC can be called after being cancelled.
         self._enqueue_response(1, stub.method, response=resp)
         self._enqueue_stream_end(1, stub.method, Status.OK)
 
-        call = stub.with_callback(callback, magic_number=3)
+        call = stub.invoke(callback, magic_number=3)
 
+        rpc = _rpc(stub)
         callback.assert_has_calls([
-            mock.call(None, stub.method.response_type(payload='!!!')),
-            mock.call(Status.OK, None),
+            mock.call(rpc, None, stub.method.response_type(payload='!!!')),
+            mock.call(rpc, Status.OK, None),
         ])
 
     def test_ignore_bad_packets_with_pending_rpc(self):

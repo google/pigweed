@@ -38,7 +38,7 @@ class Service:
     name: str
     id: int
     package: str
-    methods: 'ServiceAccessor'
+    methods: 'Methods'
 
     @property
     def full_name(self):
@@ -174,12 +174,13 @@ class ServiceAccessor(Collection[T]):
     """Navigates RPC services by name or ID."""
     def __init__(self, members, as_attrs: str = ''):
         """Creates accessor from an {item: value} dict or [values] iterable."""
-        if isinstance(members, dict):
-            by_name = {_name(k): v for k, v in members.items()}
-            self._by_id = {k.id: v for k, v in members.items()}
-        else:
-            by_name = {_name(m): m for m in members}
-            self._by_id = {m.id: m for m in by_name.values()}
+        # If the members arg was passed as a [values] iterable, convert it to
+        # an equivalent dictionary.
+        if not isinstance(members, dict):
+            members = {m: m for m in members}
+
+        by_name = {_name(k): v for k, v in members.items()}
+        self._by_id = {k.id: v for k, v in members.items()}
 
         if as_attrs == 'members':
             for name, member in by_name.items():
@@ -197,8 +198,10 @@ class ServiceAccessor(Collection[T]):
         try:
             return self._by_id[_id(name_or_id)]
         except KeyError:
-            name = f' ("{name_or_id}")' if isinstance(name_or_id, str) else ''
-            raise KeyError(f'Unknown ID {_id(name_or_id)}{name}')
+            pass
+
+        name = f' ("{name_or_id}")' if isinstance(name_or_id, str) else ''
+        raise KeyError(f'Unknown ID {_id(name_or_id)}{name}')
 
     def __iter__(self) -> Iterator[T]:
         return iter(self._by_id.values())
@@ -218,13 +221,35 @@ def _id(handle: Union[str, int]) -> int:
     return ids.calculate(handle) if isinstance(handle, str) else handle
 
 
+class Methods(ServiceAccessor[Method]):
+    """A collection of Method descriptors in a Service."""
+    def __init__(self, method: Iterable[Method]):
+        super().__init__(method)
+
+
 class Services(ServiceAccessor[Service]):
     """A collection of Service descriptors."""
     def __init__(self, services: Iterable[Service]):
         super().__init__(services)
 
 
-class Methods(ServiceAccessor[Method]):
-    """A collection of Method descriptors in a Service."""
-    def __init__(self, method: Iterable[Method]):
-        super().__init__(method)
+def get_method(service_accessor: ServiceAccessor[T], name: str) -> T:
+    """Returns a method matching the given full name in a ServiceAccessor.
+
+    Args:
+      name: name as package.Service/Method or package.Service.Method.
+
+    Raises:
+      ValueError: the method name is not properly formatted
+      KeyError: the method is not present
+    """
+    if '/' in name:
+        service_name, method_name = name.split('/')
+    else:
+        service_name, method_name = name.rsplit('.', 1)
+
+    service = service_accessor[service_name]
+    if isinstance(service, Service):
+        service = service.methods
+
+    return service[method_name]

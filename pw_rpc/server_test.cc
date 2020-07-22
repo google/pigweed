@@ -157,8 +157,8 @@ TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
   const Packet& packet = output_.sent_packet();
   EXPECT_EQ(packet.type(), PacketType::ERROR);
   EXPECT_EQ(packet.channel_id(), 1u);
-  EXPECT_EQ(packet.service_id(), 43u);
-  EXPECT_EQ(packet.method_id(), 0u);  // No method since service not found
+  EXPECT_EQ(packet.service_id(), 43u);  // No service ID 43
+  EXPECT_EQ(packet.method_id(), 27u);
   EXPECT_EQ(packet.status(), Status::NOT_FOUND);
 }
 
@@ -243,7 +243,7 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
   EXPECT_EQ(output_.sent_packet().type(), PacketType::ERROR);
   EXPECT_EQ(output_.sent_packet().status(), Status::NOT_FOUND);
   EXPECT_EQ(output_.sent_packet().service_id(), 43u);
-  EXPECT_EQ(output_.sent_packet().method_id(), 0u);
+  EXPECT_EQ(output_.sent_packet().method_id(), 100u);
   EXPECT_TRUE(writer_.open());
 }
 

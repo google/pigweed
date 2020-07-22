@@ -70,84 +70,139 @@ service Bravo {
 """
 
 
-class ClientTest(unittest.TestCase):
-    """Tests the pw_rpc Client independently of the ClientImpl."""
-    def setUp(self):
-        self._protos = python_protos.Library.from_strings(
-            [TEST_PROTO_1, TEST_PROTO_2])
+def _test_setup():
+    protos = python_protos.Library.from_strings([TEST_PROTO_1, TEST_PROTO_2])
+    return protos, client.Client.from_modules(callback_client.Impl(),
+                                              [client.Channel(1, None)],
+                                              protos.modules())
 
-        self._client = client.Client.from_modules(callback_client.Impl(),
-                                                  [client.Channel(1, None)],
-                                                  self._protos.modules())
+
+class ChannelClientTest(unittest.TestCase):
+    """Tests the ChannelClient."""
+    def setUp(self):
+        self._channel_client = _test_setup()[1].channel(1)
 
     def test_access_service_client_as_attribute_or_index(self):
+        self.assertIs(self._channel_client.rpcs.pw.test1.PublicService,
+                      self._channel_client.rpcs['pw.test1.PublicService'])
         self.assertIs(
-            self._client.channel(1).rpcs.pw.test1.PublicService,
-            self._client.channel(1).rpcs['pw.test1.PublicService'])
-        self.assertIs(
-            self._client.channel(1).rpcs.pw.test1.PublicService,
-            self._client.channel(1).rpcs[pw_rpc.ids.calculate(
+            self._channel_client.rpcs.pw.test1.PublicService,
+            self._channel_client.rpcs[pw_rpc.ids.calculate(
                 'pw.test1.PublicService')])
 
     def test_access_method_client_as_attribute_or_index(self):
+        self.assertIs(self._channel_client.rpcs.pw.test2.Alpha.Unary,
+                      self._channel_client.rpcs['pw.test2.Alpha']['Unary'])
         self.assertIs(
-            self._client.channel(1).rpcs.pw.test2.Alpha.Unary,
-            self._client.channel(1).rpcs['pw.test2.Alpha']['Unary'])
-        self.assertIs(
-            self._client.channel(1).rpcs.pw.test2.Alpha.Unary,
-            self._client.channel(1).rpcs['pw.test2.Alpha'][
-                pw_rpc.ids.calculate('Unary')])
+            self._channel_client.rpcs.pw.test2.Alpha.Unary,
+            self._channel_client.rpcs['pw.test2.Alpha'][pw_rpc.ids.calculate(
+                'Unary')])
 
     def test_service_name(self):
         self.assertEqual(
-            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.service.name,
+            self._channel_client.rpcs.pw.test2.Alpha.Unary.service.name,
             'Alpha')
         self.assertEqual(
-            self._client.channel(
-                1).rpcs.pw.test2.Alpha.Unary.service.full_name,
+            self._channel_client.rpcs.pw.test2.Alpha.Unary.service.full_name,
             'pw.test2.Alpha')
 
     def test_method_name(self):
         self.assertEqual(
-            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.method.name,
+            self._channel_client.rpcs.pw.test2.Alpha.Unary.method.name,
             'Unary')
         self.assertEqual(
-            self._client.channel(1).rpcs.pw.test2.Alpha.Unary.method.full_name,
+            self._channel_client.rpcs.pw.test2.Alpha.Unary.method.full_name,
             'pw.test2.Alpha/Unary')
 
+    def test_iterate_over_all_methods(self):
+        channel_client = self._channel_client
+        all_methods = {
+            channel_client.rpcs.pw.test1.PublicService.SomeUnary,
+            channel_client.rpcs.pw.test1.PublicService.SomeServerStreaming,
+            channel_client.rpcs.pw.test1.PublicService.SomeClientStreaming,
+            channel_client.rpcs.pw.test1.PublicService.SomeBidiStreaming,
+            channel_client.rpcs.pw.test2.Alpha.Unary,
+            channel_client.rpcs.pw.test2.Bravo.BidiStreaming,
+        }
+        self.assertEqual(set(channel_client.methods()), all_methods)
+
     def test_check_for_presence_of_services(self):
-        self.assertIn('pw.test1.PublicService', self._client.channel(1).rpcs)
+        self.assertIn('pw.test1.PublicService', self._channel_client.rpcs)
         self.assertIn(pw_rpc.ids.calculate('pw.test1.PublicService'),
-                      self._client.channel(1).rpcs)
+                      self._channel_client.rpcs)
 
     def test_check_for_presence_of_missing_services(self):
-        self.assertNotIn('PublicService', self._client.channel(1).rpcs)
-        self.assertNotIn('NotAService', self._client.channel(1).rpcs)
-        self.assertNotIn(-1213, self._client.channel(1).rpcs)
+        self.assertNotIn('PublicService', self._channel_client.rpcs)
+        self.assertNotIn('NotAService', self._channel_client.rpcs)
+        self.assertNotIn(-1213, self._channel_client.rpcs)
 
     def test_check_for_presence_of_methods(self):
-        service = self._client.channel(1).rpcs.pw.test1.PublicService
+        service = self._channel_client.rpcs.pw.test1.PublicService
         self.assertIn('SomeUnary', service)
         self.assertIn(pw_rpc.ids.calculate('SomeUnary'), service)
 
     def test_check_for_presence_of_missing_methods(self):
-        service = self._client.channel(1).rpcs.pw.test1.PublicService
+        service = self._channel_client.rpcs.pw.test1.PublicService
         self.assertNotIn('Some', service)
         self.assertNotIn('Unary', service)
         self.assertNotIn(12345, service)
 
-    def test_method_get_request_with_both_message_and_kwargs(self):
+    def test_method_fully_qualified_name(self):
+        self.assertIs(self._channel_client.method('pw.test2.Alpha/Unary'),
+                      self._channel_client.rpcs.pw.test2.Alpha.Unary)
+        self.assertIs(self._channel_client.method('pw.test2.Alpha.Unary'),
+                      self._channel_client.rpcs.pw.test2.Alpha.Unary)
+
+
+class ClientTest(unittest.TestCase):
+    """Tests the pw_rpc Client independently of the ClientImpl."""
+    def setUp(self):
+        self._protos, self._client = _test_setup()
+
+    def test_all_methods(self):
+        services = self._client.services
+
+        all_methods = {
+            services['pw.test1.PublicService'].methods['SomeUnary'],
+            services['pw.test1.PublicService'].methods['SomeServerStreaming'],
+            services['pw.test1.PublicService'].methods['SomeClientStreaming'],
+            services['pw.test1.PublicService'].methods['SomeBidiStreaming'],
+            services['pw.test2.Alpha'].methods['Unary'],
+            services['pw.test2.Bravo'].methods['BidiStreaming'],
+        }
+        self.assertEqual(set(self._client.methods()), all_methods)
+
+    def test_method_present(self):
+        self.assertIs(
+            self._client.method('pw.test1.PublicService.SomeUnary'), self.
+            _client.services['pw.test1.PublicService'].methods['SomeUnary'])
+        self.assertIs(
+            self._client.method('pw.test1.PublicService/SomeUnary'), self.
+            _client.services['pw.test1.PublicService'].methods['SomeUnary'])
+
+    def test_method_invalid_format(self):
+        with self.assertRaises(ValueError):
+            self._client.method('SomeUnary')
+
+    def test_method_not_present(self):
+        with self.assertRaises(KeyError):
+            self._client.method('pw.test1.PublicService/ThisIsNotGood')
+
+        with self.assertRaises(KeyError):
+            self._client.method('nothing.Good')
+
+    def test_get_request_with_both_message_and_kwargs(self):
         method = self._client.services['pw.test2.Alpha'].methods['Unary']
 
         with self.assertRaisesRegex(TypeError, r'either'):
             method.get_request(method.request_type(), {'magic_number': 1.0})
 
-    def test_method_get_request_with_wrong_type(self):
+    def test_get_request_with_wrong_type(self):
         method = self._client.services['pw.test2.Alpha'].methods['Unary']
         with self.assertRaisesRegex(TypeError, r'pw\.test2\.Request'):
             method.get_request('a str!', {})
 
-    def test_method_get_with_incorrect_message_type(self):
+    def test_get_request_with_incorrect_message_type(self):
         msg = self._protos.packages.pw.test1.AnotherMessage()
         with self.assertRaisesRegex(TypeError, r'pw\.test1\.SomeMessage'):
             self._client.services['pw.test1.PublicService'].methods[

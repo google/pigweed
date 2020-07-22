@@ -16,9 +16,11 @@
 import abc
 from dataclasses import dataclass
 import logging
-from typing import Collection, Dict, Iterable, List, NamedTuple, Optional
+from typing import Collection, Dict, Iterable, Iterator, List, NamedTuple
+from typing import Optional
 
 from pw_rpc import descriptors, packets
+from pw_rpc.packets import PacketType
 from pw_rpc.descriptors import Channel, Service, Method
 from pw_status import Status
 
@@ -35,29 +37,33 @@ class PendingRpc(NamedTuple):
     service: Service
     method: Method
 
+    def __str__(self) -> str:
+        return f'PendingRpc(channel={self.channel.id}, method={self.method})'
+
 
 class PendingRpcs:
     """Internal object for tracking whether an RPC is pending."""
     def __init__(self):
         self._pending: Dict[PendingRpc, List] = {}
 
-    # Use underscores to prevent potential conflicts with request field names.
     def invoke(self,
-               _rpc: PendingRpc,
-               _context,
-               _request=None,
-               **request_fields):
+               rpc: PendingRpc,
+               request,
+               context,
+               override_pending=False) -> None:
+        """Invokes the provided RPC."""
         # Ensure that every context is a unique object by wrapping it in a list.
-        context = [_context]
+        unique_ctx = [context]
 
-        # Check that the context was added; if not, the RPC was already pending.
-        if self._pending.setdefault(_rpc, context) is not context:
-            raise Error(f'Sent request for {_rpc}, but it is already pending! '
+        if override_pending:
+            self._pending[rpc] = unique_ctx
+        elif self._pending.setdefault(rpc, unique_ctx) is not unique_ctx:
+            # If the context was not added, the RPC was already pending.
+            raise Error(f'Sent request for {rpc}, but it is already pending! '
                         'Cancel the RPC before invoking it again')
 
-        _LOG.debug('Starting %s', _rpc)
-        request = _rpc.method.get_request(_request, request_fields)
-        _rpc.channel.output(packets.encode_request(_rpc, request))
+        _LOG.debug('Starting %s', rpc)
+        rpc.channel.output(packets.encode_request(rpc, request))
 
     def cancel(self, rpc: PendingRpc) -> bool:
         """Cancels the RPC, including sending a CANCEL packet.
@@ -73,6 +79,16 @@ class PendingRpcs:
 
         if rpc.method.type is not Method.Type.UNARY:
             rpc.channel.output(packets.encode_cancel(rpc))
+
+        return True
+
+    def clear(self, rpc: PendingRpc) -> bool:
+        """Clears the RPC's pending status without sending a CANCEL packet."""
+        try:
+            _LOG.debug('Clearing %s', rpc)
+            del self._pending[rpc]
+        except KeyError:
+            return False
 
         return True
 
@@ -96,11 +112,21 @@ class ClientImpl(abc.ABC):
         """Returns an object that invokes a method using the given channel."""
 
     @abc.abstractmethod
-    def process_response(self, rpcs: PendingRpcs, rpc: PendingRpc, context,
-                         status: Optional[Status], payload) -> None:
+    def process_response(self,
+                         rpcs: PendingRpcs,
+                         rpc: PendingRpc,
+                         context,
+                         status: Optional[Status],
+                         payload,
+                         *,
+                         args: tuple = (),
+                         kwargs: dict = None) -> None:
         """Processes a response from the RPC server.
 
         Args:
+          rpcs: The PendingRpcs object used by the client.
+          rpc: Information about the pending RPC
+          context: Arbitrary context object associated with the pending RPC
           status: If set, this is the last packet for this RPC. None otherwise.
           payload: A protobuf message, if present. None otherwise.
         """
@@ -131,21 +157,20 @@ class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
 
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
-    # STREAM_END and non-streaming RPC packets have a status.
-    if (packet.type is packets.PacketType.STREAM_END
-            or (packet.type is packets.PacketType.RPC
-                and not rpc.method.server_streaming)):
-        try:
-            return Status(packet.status)
-        except ValueError:
-            _LOG.warning('Illegal status code %d for %s', packet.status, rpc)
-            return None
+    # Server streaming RPC packets never have a status; all other packets do.
+    if packet.type == PacketType.RPC and rpc.method.server_streaming:
+        return None
+
+    try:
+        return Status(packet.status)
+    except ValueError:
+        _LOG.warning('Illegal status code %d for %s', packet.status, rpc)
 
     return None
 
 
 def _decode_payload(rpc: PendingRpc, packet):
-    if packet.type is packets.PacketType.RPC:
+    if packet.type == PacketType.RPC:
         try:
             return packets.decode_payload(packet, rpc.method.response_type)
         except packets.DecodeError as err:
@@ -159,19 +184,49 @@ def _decode_payload(rpc: PendingRpc, packet):
 class ChannelClient:
     """RPC services and methods bound to a particular channel.
 
-    RPCs are invoked from a ChannelClient using its rpcs member. The service and
-    method may be selected as attributes or by indexing rpcs with service and
-    method name or ID:
+    RPCs are invoked through service method clients. These may be accessed via
+    the `rpcs` member. Service methods use a fully qualified name: package,
+    service, method. Service methods may be selected as attributes or by
+    indexing the rpcs member by service and method name or ID.
 
-      response = client.channel(1).rpcs.FooService.SomeMethod(foo=bar)
+      # Access the service method client as an attribute
+      rpc = client.channel(1).rpcs.the.package.FooService.SomeMethod
 
-      response = client.channel(1).rpcs[foo_service_id]['SomeMethod'](foo=bar)
+      # Access the service method client by string name
+      rpc = client.channel(1).rpcs[foo_service_id]['SomeMethod']
 
-    The type and semantics of the return value, if there is one, are determined
-    by the ClientImpl instance used by the Client.
+    RPCs may also be accessed from their canonical name.
+
+      # Access the service method client from its full name:
+      rpc = client.channel(1).method('the.package.FooService/SomeMethod')
+
+      # Using a . instead of a / is also supported:
+      rpc = client.channel(1).method('the.package.FooService.SomeMethod')
+
+    The ClientImpl class determines the type of the service method client. A
+    synchronous RPC client might return a callable object, so an RPC could be
+    invoked directly (e.g. rpc(field1=123, field2=b'456')).
     """
+    client: 'Client'
     channel: Channel
     rpcs: _ServiceClients
+
+    def method(self, method_name: str):
+        """Returns a method client matching the given name.
+
+        Args:
+          method_name: name as package.Service/Method or package.Service.Method.
+
+        Raises:
+          ValueError: the method name is not properly formatted
+          KeyError: the method is not present
+        """
+        return descriptors.get_method(self.rpcs, method_name)
+
+    def methods(self) -> Iterator:
+        """Iterates over all method clients in this ChannelClient."""
+        for service_client in self.rpcs:
+            yield from service_client
 
 
 class Client:
@@ -197,7 +252,7 @@ class Client:
 
         self._channels_by_id = {
             channel.id: ChannelClient(
-                channel,
+                self, channel,
                 _ServiceClients(self._rpcs, self._impl, channel,
                                 self.services))
             for channel in channels
@@ -207,38 +262,76 @@ class Client:
         """Returns a ChannelClient, which is used to call RPCs on a channel."""
         return self._channels_by_id[channel_id]
 
-    def process_packet(self, data: bytes) -> bool:
+    def method(self, method_name: str) -> Method:
+        """Returns a Method matching the given name.
+
+        Args:
+          method_name: name as package.Service/Method or package.Service.Method.
+
+        Raises:
+          ValueError: the method name is not properly formatted
+          KeyError: the method is not present
+        """
+        return descriptors.get_method(self.services, method_name)
+
+    def methods(self) -> Iterator[Method]:
+        """Iterates over all Methods supported by this client."""
+        for service in self.services:
+            yield from service.methods
+
+    def process_packet(self, pw_rpc_raw_packet_data: bytes, *impl_args,
+                       **impl_kwargs) -> bool:
         """Processes an incoming packet.
 
         Args:
-            data: raw binary data for exactly one RPC packet
+            pw_rpc_raw_packet_data: raw binary data for exactly one RPC packet
+            impl_args: optional positional arguments passed to the ClientImpl
+            impl_kwargs: optional keyword arguments passed to the ClientImpl
 
         Returns:
             True if the packet was decoded and handled by this client
         """
         try:
-            packet = packets.decode(data)
+            packet = packets.decode(pw_rpc_raw_packet_data)
         except packets.DecodeError as err:
             _LOG.warning('Failed to decode packet: %s', err)
-            _LOG.debug('Raw packet: %r', data)
+            _LOG.debug('Raw packet: %r', pw_rpc_raw_packet_data)
             return False
 
         try:
             rpc = self._lookup_rpc(packet)
         except ValueError as err:
             _LOG.warning('Unable to process packet: %s', err)
+            _LOG.debug('Packet:\n%s', packet)
             return False
 
         status = _decode_status(rpc, packet)
+
+        if packet.type == PacketType.ERROR:
+            self._rpcs.clear(rpc)
+            _LOG.warning('%s: invocation failed with %s', rpc, status)
+            return True  # Handled packet, even though it was an error
+
+        if packet.type not in (PacketType.RPC, PacketType.STREAM_END):
+            _LOG.error('%s: unexpected PacketType %s', rpc, packet.type)
+            _LOG.debug('Packet:\n%s', packet)
+            return True
+
         payload = _decode_payload(rpc, packet)
 
         try:
             context = self._rpcs.get_pending(rpc, status)
         except KeyError:
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
-            return True  # Handled packet, even though it was invalid
+            return True
 
-        self._impl.process_response(self._rpcs, rpc, context, status, payload)
+        self._impl.process_response(self._rpcs,
+                                    rpc,
+                                    context,
+                                    status,
+                                    payload,
+                                    args=impl_args,
+                                    kwargs=impl_kwargs)
         return True
 
     def _lookup_rpc(self, packet: packets.RpcPacket) -> PendingRpc:

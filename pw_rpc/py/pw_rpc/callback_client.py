@@ -30,10 +30,10 @@ which may be None. The Status is only set when the RPC is completed.
 
   callback = lambda status, payload: print('Response:', status, payload)
 
-  call = client.channel(1).call.MyServer.MyUnary.with_callback(
+  call = client.channel(1).call.MyServer.MyUnary.invoke(
       callback, some_field=123)
 
-  call = client.channel(1).call.MyService.MyServerStreaming.with_callback(
+  call = client.channel(1).call.MyService.MyServerStreaming.invoke(
       callback, request):
 
 When invoking a method, requests may be provided as a message object or as
@@ -50,8 +50,7 @@ from pw_status import Status
 
 _LOG = logging.getLogger(__name__)
 
-UnaryCallback = Callable[[Status, Any], Any]
-Callback = Callable[[Optional[Status], Any], Any]
+Callback = Callable[[client.PendingRpc, Optional[Status], Any], Any]
 
 
 class _MethodClient:
@@ -73,6 +72,21 @@ class _MethodClient:
     @property
     def service(self) -> Service:
         return self._rpc.service
+
+    def invoke(self, callback: Callback, _request=None, **request_fields):
+        """Invokes an RPC with a callback."""
+        self._rpcs.invoke(self._rpc,
+                          self.method.get_request(_request, request_fields),
+                          callback)
+        return _AsyncCall(self._rpcs, self._rpc)
+
+    def reinvoke(self, callback: Callback, _request=None, **request_fields):
+        """Invokes an RPC with a callback, overriding any pending requests."""
+        self._rpcs.invoke(self._rpc,
+                          self.method.get_request(_request, request_fields),
+                          callback,
+                          override_pending=True)
+        return _AsyncCall(self._rpcs, self._rpc)
 
 
 class _AsyncCall:
@@ -115,40 +129,26 @@ class _StreamingResponses:
 class UnaryMethodClient(_MethodClient):
     def __call__(self, _request=None, **request_fields) -> Tuple[Status, Any]:
         responses: queue.SimpleQueue = queue.SimpleQueue()
-        self.with_callback(
-            lambda status, payload: responses.put((status, payload)), _request,
-            **request_fields)
+        self.invoke(
+            lambda _, status, payload: responses.put((status, payload)),
+            _request, **request_fields)
         return responses.get()
-
-    def with_callback(self,
-                      callback: UnaryCallback,
-                      _request=None,
-                      **request_fields):
-        self._rpcs.invoke(self._rpc, callback, _request, **request_fields)
-        return _AsyncCall(self._rpcs, self._rpc)
 
 
 class ServerStreamingMethodClient(_MethodClient):
     def __call__(self, _request=None, **request_fields) -> _StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
-        self.with_callback(
-            lambda status, payload: responses.put((status, payload)), _request,
-            **request_fields)
+        self.invoke(
+            lambda _, status, payload: responses.put((status, payload)),
+            _request, **request_fields)
         return _StreamingResponses(responses)
-
-    def with_callback(self,
-                      callback: Callback,
-                      _request=None,
-                      **request_fields):
-        self._rpcs.invoke(self._rpc, callback, _request, **request_fields)
-        return _AsyncCall(self._rpcs, self._rpc)
 
 
 class ClientStreamingMethodClient(_MethodClient):
     def __call__(self):
         raise NotImplementedError
 
-    def with_callback(self, callback: Callback):
+    def invoke(self, callback: Callback, _request=None, **request_fields):
         raise NotImplementedError
 
 
@@ -156,7 +156,7 @@ class BidirectionalStreamingMethodClient(_MethodClient):
     def __call__(self):
         raise NotImplementedError
 
-    def with_callback(self, callback: Callback):
+    def invoke(self, callback: Callback, _request=None, **request_fields):
         raise NotImplementedError
 
 
@@ -181,11 +181,25 @@ class Impl(client.ClientImpl):
 
         raise AssertionError(f'Unknown method type {method.type}')
 
-    def process_response(self, rpcs: client.PendingRpcs,
-                         rpc: client.PendingRpc, context,
-                         status: Optional[Status], payload) -> None:
+    def process_response(self,
+                         rpcs: client.PendingRpcs,
+                         rpc: client.PendingRpc,
+                         context,
+                         status: Optional[Status],
+                         payload,
+                         *,
+                         args: tuple = (),
+                         kwargs: dict = None) -> None:
+        """Invokes the callback associated with this RPC.
+
+        Any additional positional and keyword args passed through
+        Client.process_packet are forwarded to the callback.
+        """
+        if kwargs is None:
+            kwargs = {}
+
         try:
-            context(status, payload)
+            context(rpc, status, payload, *args, **kwargs)
         except:  # pylint: disable=bare-except
             rpcs.cancel(rpc)
             _LOG.exception('Callback %s for %s raised exception', context, rpc)
