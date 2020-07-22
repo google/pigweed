@@ -38,9 +38,9 @@ TEST(MemoryWriter, BytesWritten) {
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
   Status status =
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct));
-  EXPECT_TRUE(status.ok());
+  EXPECT_EQ(status, Status::OK);
   EXPECT_EQ(memory_writer.bytes_written(), sizeof(kExpectedStruct));
-}
+}  // namespace
 
 TEST(MemoryWriter, ValidateContents) {
   MemoryWriter memory_writer(memory_buffer);
@@ -57,22 +57,25 @@ TEST(MemoryWriter, ValidateContents) {
 TEST(MemoryWriter, MultipleWrites) {
   constexpr size_t kTempBufferSize = 72;
   std::byte buffer[kTempBufferSize] = {};
-  size_t counter = 0;
 
+  for (std::byte& value : memory_buffer) {
+    value = std::byte(0);
+  }
   MemoryWriter memory_writer(memory_buffer);
 
-  do {
+  size_t counter = 0;
+  while (memory_writer.ConservativeWriteLimit() >= kTempBufferSize) {
     for (size_t i = 0; i < sizeof(buffer); ++i) {
       buffer[i] = std::byte(counter++);
     }
-  } while (memory_writer.Write(std::span(buffer)) !=
-           Status::RESOURCE_EXHAUSTED);
+    EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::OK);
+  }
 
-  // Ensure that we counted up to at least the sink buffer size. This can be
-  // more since we write to the sink via in intermediate buffer.
-  EXPECT_GE(counter, kSinkBufferSize);
+  EXPECT_GT(memory_writer.ConservativeWriteLimit(), 0u);
+  EXPECT_LT(memory_writer.ConservativeWriteLimit(), kTempBufferSize);
 
-  EXPECT_EQ(memory_writer.bytes_written(), kSinkBufferSize);
+  EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::RESOURCE_EXHAUSTED);
+  EXPECT_EQ(memory_writer.bytes_written(), counter);
 
   counter = 0;
   for (const std::byte& value : memory_writer.WrittenData()) {
@@ -80,11 +83,39 @@ TEST(MemoryWriter, MultipleWrites) {
   }
 }
 
+TEST(MemoryWriter, FullWriter) {
+  constexpr size_t kTempBufferSize = 32;
+  std::byte buffer[kTempBufferSize] = {};
+  const int fill_byte = 0x25;
+  memset(buffer, fill_byte, sizeof(buffer));
+
+  for (std::byte& value : memory_buffer) {
+    value = std::byte(0);
+  }
+  MemoryWriter memory_writer(memory_buffer);
+
+  while (memory_writer.ConservativeWriteLimit() > 0) {
+    size_t bytes_to_write =
+        std::min(sizeof(buffer), memory_writer.ConservativeWriteLimit());
+    EXPECT_EQ(memory_writer.Write(std::span(buffer, bytes_to_write)),
+              Status::OK);
+  }
+
+  EXPECT_EQ(memory_writer.ConservativeWriteLimit(), 0u);
+
+  EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::OUT_OF_RANGE);
+  EXPECT_EQ(memory_writer.bytes_written(), memory_buffer.size());
+
+  for (const std::byte& value : memory_writer.WrittenData()) {
+    EXPECT_EQ(value, std::byte(fill_byte));
+  }
+}
+
 TEST(MemoryWriter, EmptyData) {
   std::byte buffer[5] = {};
 
   MemoryWriter memory_writer(memory_buffer);
-  EXPECT_TRUE(memory_writer.Write(buffer, 0).ok());
+  EXPECT_EQ(memory_writer.Write(buffer, 0), Status::OK);
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
 }
 

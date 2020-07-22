@@ -34,6 +34,13 @@ pw_cc_library(
       "buffered_stream.cc",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_span",
+        "//pw_status",
+    ],
 )
 
 pw_cc_test(

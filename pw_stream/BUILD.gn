@@ -31,7 +31,8 @@ pw_source_set("pw_stream") {
   sources = [ "memory_stream.cc" ]
   public_deps = [
     dir_pw_assert,
-    dir_pw_preprocessor,
+    dir_pw_bytes,
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]

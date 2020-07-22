@@ -18,7 +18,10 @@
 #include <span>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/span.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::stream {
 
@@ -26,17 +29,37 @@ namespace pw::stream {
 class Writer {
  public:
   // There are no requirements around if or how a `Writer` should call Flush()
-  // at the time of object destruction. In general, do not assume a `Writer`
-  // will automatically call Flush when destroyed.
+  // at the time of object destruction.
   virtual ~Writer() = default;
 
-  // Write data to this stream Writer. If the writer runs out of resources, it
-  // will return Status::RESOURCE_EXHAUSTED. The derived class choses whether
-  // to do partial writes in this case, or abort the entire write operation.
+  // Write data to this stream Writer. Data is
+  // not guaranteed to be fully written out to final resting place on Write
+  // return.
   //
-  // Derived classes should NOT try to override these public write methods.
+  // If the writer is unable to fully accept the input data size it will abort
+  // the write and return RESOURCE_EXHAUSTED.
+  //
+  // If the writer has been exhausted and is and can no longer accept additional
+  // bytes it will return OUT_OF_RANGE. This is similar to EndOfFile. Write will
+  // only return OUT_OF_RANGE if ConservativeWriteLimit() is and will remain
+  // zero. A Write operation that is successful and also exhausts the writer
+  // returns OK, with all following calls returning OUT_OF_RANGE. When
+  // ConservativeWriteLimit() is greater than zero, a Write that is a number of
+  // bytes beyond what will exhaust the Write will abort and return
+  // RESOURCE_EXHAUSTED rather than OUT_OF_RANGE because the writer is still
+  // able to write bytes.
+  //
+  // Derived classes should NOT try to override the public Write methods.
   // Instead, provide an implementation by overriding DoWrite().
-  Status Write(std::span<const std::byte> data) {
+  //
+  // Returns: OK, successful write/enqueue of data.
+  //          FAILED_PRECONDITION - writer unable/not in state to accept
+  //          data.
+  //          RESOURCE_EXHAUSTED - unable to write all of requested data at this
+  //          time. No data written.
+  //          OUT_OF_RANGE - Writer has been exhausted, similar to EOF. No data
+  //          written, no more will be written.
+  Status Write(ConstByteSpan data) {
     PW_DCHECK(data.empty() || data.data() != nullptr);
     return DoWrite(data);
   }
@@ -44,15 +67,62 @@ class Writer {
     return Write(std::span(static_cast<const std::byte*>(data), size_bytes));
   }
   Status Write(const std::byte b) { return Write(&b, 1); }
-  // Flush any buffered data, finalizing all writes.
-  //
-  // Generally speaking, the scope that instantiates the concrete `Writer`
-  // class should be in charge of calling `Flush()`, and functions that only
-  // have access to the Writer interface should avoid calling this function.
-  virtual Status Flush() { return Status::OK; }
+
+  // Probable (not guaranteed) minimum number of bytes at this time that can be
+  // written. This number is advisory and not guaranteed to write without a
+  // RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Writer processes/handles enqueued or
+  // other contexts write data this number can go up or down for some Writers.
+  virtual size_t ConservativeWriteLimit() const = 0;
 
  private:
-  virtual Status DoWrite(std::span<const std::byte> data) = 0;
+  virtual Status DoWrite(ConstByteSpan data) = 0;
+};
+
+// General-purpose reader interface
+class Reader {
+ public:
+  virtual ~Reader() = default;
+
+  // Read data from this stream Reader. If any number of bytes are read return
+  // OK with a span of the actual byte read.
+  //
+  // If the reader has been exhausted and is and can no longer read additional
+  // bytes it will return OUT_OF_RANGE. This is similar to EndOfFile. Read will
+  // only return OUT_OF_RANGE if ConservativeReadLimit() is and will remain
+  // zero. A Read operation that is successful and also exhausts the reader
+  // returns OK, with all following calls returning OUT_OF_RANGE.
+  //
+  // Derived classes should NOT try to override these public read methods.
+  // Instead, provide an implementation by overriding DoRead().
+  //
+  // Returns: OK with span of bytes read - success, between 1 and
+  //          dest.size_bytes() were read.
+  //          FAILED_PRECONDITION - Reader unable/not in state to read data.
+  //          OUT_OF_RANGE - Reader has been exhausted, similar to EOF. No bytes
+  //          read, no more will be read.
+  Result<ByteSpan> Read(ByteSpan dest) {
+    PW_DCHECK(dest.empty() || dest.data() != nullptr);
+    StatusWithSize result = DoRead(dest);
+
+    if (result.ok()) {
+      return dest.first(result.size());
+    } else {
+      return result.status();
+    }
+  }
+  Result<ByteSpan> Read(void* dest, size_t size_bytes) {
+    return Read(std::span(static_cast<std::byte*>(dest), size_bytes));
+  }
+
+  // Probable (not guaranteed) minimum number of bytes at this time that can be
+  // read. This number is advisory and not guaranteed to read full number or
+  // requested bytes or without a OUT_OF_RANGE. As Reader
+  // processes/handles/receives enqueued data or other contexts read data this
+  // number can go up or down for some Readers.
+  virtual size_t ConservativeReadLimit() const = 0;
+
+ private:
+  virtual StatusWithSize DoRead(ByteSpan dest) = 0;
 };
 
 }  // namespace pw::stream
