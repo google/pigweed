@@ -102,6 +102,31 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
   EXPECT_EQ(context.responses()[2].number, 4u);
 }
 
+TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
+  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+
+  ASSERT_EQ(3u, context.responses().max_size());
+
+  auto writer = context.writer();
+
+  writer.Write({.number = 3});
+  writer.Write({.number = 6});
+  writer.Write({.number = 9});
+
+  EXPECT_FALSE(context.done());
+
+  writer.Finish(Status::CANCELLED);
+  ASSERT_TRUE(context.done());
+  EXPECT_EQ(Status::CANCELLED, context.status());
+
+  ASSERT_EQ(3u, context.responses().size());
+  ASSERT_EQ(3u, context.total_responses());
+
+  EXPECT_EQ(context.responses()[0].number, 3u);
+  EXPECT_EQ(context.responses()[1].number, 6u);
+  EXPECT_EQ(context.responses()[2].number, 9u);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace pw::rpc

@@ -218,6 +218,14 @@ class ServerStreamingContext {
         static_cast<ServerWriter<Response>&>(server_writer));
   }
 
+  // Returns a server writer which writes responses into the context's buffer.
+  // This should not be called alongside call(); use one or the other.
+  ServerWriter<Response> writer() {
+    ctx_.output.clear();
+    internal::BaseServerWriter server_writer(ctx_.call);
+    return std::move(static_cast<ServerWriter<Response>&>(server_writer));
+  }
+
   // Returns the responses that have been recorded. The maximum number of
   // responses is responses().max_size(). responses().back() is always the most
   // recent response, even if total_responses() > responses().max_size().
