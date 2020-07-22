@@ -19,6 +19,8 @@ fi
 PREFIX="$PW_ENVIRONMENT_ROOT/bootstrap"
 mkdir -p "$PREFIX"
 
+set -o errexit
+
 # Update the mtimes on the most recent pw_env_setup executables.
 for HASH in $(git --git-dir="$PW_ROOT/.git" --no-pager log --max-count=5 --format=format:%H); do
   if [ -f "$PREFIX/$HASH" ]; then
@@ -28,11 +30,11 @@ done
 
 # Delete any files with an (apparent) age greater than 5 days. This will never
 # include the 5 most recent pw_env_setup executables, but if there's been no
-# bootstrap call in less than 5 days this could delete all version of
+# bootstrap call in less than 5 days this could delete all versions of
 # pw_env_setup. This is acceptable because it's very unlikely there have been
 # no commits in a 5 day period, and if there really have been no commits this
 # will just re-download that executable in a few lines.
-find "$PREFIX" -mtime +5 -exec echo rm {} \;
+find "$PREFIX" -mtime +5 -exec rm {} \;
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 if [ "$OS" = "darwin" ]; then
