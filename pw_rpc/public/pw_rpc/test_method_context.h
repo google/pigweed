@@ -15,6 +15,7 @@
 
 #include <tuple>
 
+#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
 #include "pw_preprocessor/macro_arg_count.h"
 #include "pw_rpc/channel.h"
@@ -22,7 +23,6 @@
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
-#include "pw_unit_test/framework.h"
 
 // Declares a context object that may be used to invoke an RPC. The context is
 // declared with the RPC service and method name. The RPC is then invoked with
