@@ -219,6 +219,17 @@ TEST(UUIDTest, FromBytes) {
   EXPECT_EQ(kId1As16, uuid);
 }
 
+TEST(UUIDTest, ByteConstructor) {
+  const StaticByteBuffer kUuid16(0x0d, 0x18);
+  UUID uuid(kUuid16);
+  EXPECT_EQ(kId1As16, uuid);
+}
+
+TEST(UUIDTest, ByteConstructorAssertsOnInvalidInput) {
+  const StaticByteBuffer kInvalidUuid(0x0d);
+  EXPECT_DEATH_IF_SUPPORTED((UUID(kInvalidUuid)), ".*");
+}
+
 TEST(UUIDTest, CompactSize) {
   UUID direct(kId1As16);
   UUID fromstring;

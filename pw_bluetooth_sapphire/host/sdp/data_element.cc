@@ -428,8 +428,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
         // UUID expects these to be in little-endian order.
         cursor.Copy(&uuid_bytes, 0, 16);
         std::reverse(uuid_bytes.mutable_data(), uuid_bytes.mutable_data() + 16);
-        UUID uuid;
-        UUID::FromBytes(uuid_bytes, &uuid);
+        UUID uuid(uuid_bytes);
         elem->Set(uuid);
       } else {
         return 0;
