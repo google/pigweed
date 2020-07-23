@@ -97,9 +97,13 @@ dummy output file for the action.
 ``pw_python_script`` accepts all of the arguments of a regular ``action``
 target. Additionally, it has some of its own arguments:
 
-* ``stamp``: Optional boolean indicating whether to automatically create a dummy
-  output file for the script. This allows running scripts without specifying any
-  ``outputs``.
+* ``capture_output``: Optional boolean. If true, script output is hidden unless
+  the script fails with an error. Defaults to true.
+* ``stamp``: Optional variable indicating whether to automatically create a
+  dummy output file for the script. This allows running scripts without
+  specifying ``outputs``. If ``stamp`` is true, a generic output file is
+  used. If ``stamp`` is a file path, that file is used as a stamp file. Like any
+  output file, ``stamp`` must be in the build directory. Defaults to false.
 
 **Expressions**
 

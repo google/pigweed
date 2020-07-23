@@ -483,6 +483,33 @@ A CSV token database can be checked into a source repository and updated as code
 changes are made. The build system can invoke ``database.py`` to update the
 database after each build.
 
+GN integration
+^^^^^^^^^^^^^^
+Token databases may be updated as part of a GN build. The
+``pw_tokenizer_database`` template provided by ``dir_pw_tokenizer/database.gni``
+automatically updates a tokenized strings database in the source tree with
+artifacts from one or more GN targets or other database files.
+
+Each database in the source tree can only be updated from a single
+``pw_tokenizer_database`` rule. Updating the same database in multiple rules
+results in ``Duplicate output file`` GN errors or ``multiple rules generate
+<file>`` Ninja errors. To avoid these errors, ``pw_tokenizer_database`` rules
+should be defined in the default toolchain, and the input targets should be
+referenced with specific toolchains.
+
+.. code-block::
+
+  # gn-format disable
+  import("//build_overrides/pigweed.gni")
+
+  import("$dir_pw_tokenizer/database.gni")
+
+  pw_tokenizer_database("my_database") {
+    database = "database_in_the_source_tree.csv"
+    targets = [ "//firmware/image:foo(//targets/my_board:some_toolchain)" ]
+    input_databases = [ "other_database.csv" ]
+  }
+
 Detokenization
 ==============
 Detokenization is the process of expanding a token to the string it represents

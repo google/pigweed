@@ -231,12 +231,16 @@ def expand_paths_or_globs(*paths_or_globs: str) -> Iterable[Path]:
             # This is a valid path; yield it without evaluating it as a glob.
             yield Path(path_or_glob)
         else:
-            paths = glob.glob(path_or_glob)
-            if not paths:
+            paths = glob.glob(path_or_glob, recursive=True)
+
+            # If no paths were found and the path is not a glob, raise an Error.
+            if not paths and not any(c in path_or_glob for c in '*?[]!'):
                 raise FileNotFoundError(f'{path_or_glob} is not a valid path')
 
             for path in paths:
-                yield Path(path)
+                # Resolve globs to CSV or compatible binary files.
+                if elf_reader.compatible_file(path) or path.endswith('.csv'):
+                    yield Path(path)
 
 
 class ExpandGlobs(argparse.Action):
@@ -291,7 +295,8 @@ def token_databases_parser() -> argparse.ArgumentParser:
               'tokens. For ELF files, the tokenization domain to read from '
               'may specified after the path as #domain_name (e.g. '
               'foo.elf#TEST_DOMAIN). Unless specified, only the default '
-              'domain is read from ELF files; .* reads all domains.'))
+              'domain is read from ELF files; .* reads all domains. Globs are '
+              'expanded to compatible database files.'))
     return parser
 
 

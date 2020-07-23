@@ -65,8 +65,9 @@ import("//build_overrides/pigweed.gni")
 #   capture_output (=true)  If true, script output is hidden unless the script
 #                           fails with an error. Defaults to true.
 #
-#   stamp                   File to touch if the script is successful. If not
-#                           set, no file is touched.
+#   stamp                   File to touch if the script is successful. If set to
+#                           true, a generic file is used. If false or not set,
+#                           no file is touched.
 #
 template("pw_python_script") {
   assert(defined(invoker.script), "pw_python_script requires a script to run")
@@ -102,8 +103,13 @@ template("pw_python_script") {
   }
 
   # If a stamp file is requested, add it as an output of the runner script.
-  if (defined(invoker.stamp) && invoker.stamp) {
-    _stamp_file = "$target_gen_dir/$target_name.pw_pystamp"
+  if (defined(invoker.stamp) && invoker.stamp != false) {
+    if (invoker.stamp == true) {
+      _stamp_file = "$target_gen_dir/$target_name.pw_pystamp"
+    } else {
+      _stamp_file = invoker.stamp
+    }
+
     _outputs += [ _stamp_file ]
     _script_args += [
       "--touch",

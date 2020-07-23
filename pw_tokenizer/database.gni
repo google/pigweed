@@ -1,0 +1,74 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# gn-format disable
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/python_script.gni")
+
+# Updates a tokenized string database in the source tree with artifacts from one
+# or more targets. Other database files may also be used.
+#
+# The database file must exist. A CSV or binary database can be created with the
+# pw/pw_tokenizer/database.py tool. An empty CSV database file can be also
+# created as a starting point.
+#
+# Args:
+#   database: source tree path to database file to update; must exist beforehand
+#   targets: GN targets (executables or libraries) from which to add tokens
+#   input_databases: paths to other database files from which to add tokens
+#
+template("pw_tokenizer_database") {
+  assert(defined(invoker.database),
+         "pw_tokenizer_database requires a 'database' variable")
+
+  if (defined(invoker.targets)) {
+    _targets = invoker.targets
+  } else {
+    _targets = []
+  }
+
+  if (defined(invoker.input_databases)) {
+    _input_databases = invoker.input_databases
+  } else {
+    _input_databases = []
+  }
+
+  assert(
+      _targets != [] || _input_databases != [],
+      "No 'targets' or 'input_databases' were set for pw_tokenizer_database! " +
+          "At least one target or database must be provided as an input.")
+
+  pw_python_script(target_name) {
+    script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
+    args = [
+      "add",
+      "--database",
+      rebase_path(invoker.database),
+    ]
+    args += rebase_path(_input_databases)
+
+    foreach(target, invoker.targets) {
+      args += [ "<TARGET_FILE($target)>" ]
+    }
+
+    deps = _targets
+    inputs = [ invoker.database ] + _input_databases
+
+    # Since the output file is in the source tree, create a corresponding stamp
+    # file in the output directory that is independent of the toolchain. That
+    # way, trying to update the database from multiple toolchains is an error.
+    stamp = "$root_build_dir/" + rebase_path(invoker.database, "//") + ".update"
+  }
+}

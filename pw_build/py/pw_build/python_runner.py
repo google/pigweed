@@ -83,7 +83,7 @@ class GnPaths(NamedTuple):
     def resolve(self, gn_path: str) -> Path:
         """Resolves a GN path to a filesystem path."""
         if gn_path.startswith('//'):
-            return self.root.joinpath(gn_path[2:]).resolve()
+            return self.root.joinpath(gn_path.lstrip('/')).resolve()
 
         return self.cwd.joinpath(gn_path).resolve()
 

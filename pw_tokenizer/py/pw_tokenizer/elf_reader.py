@@ -24,6 +24,7 @@ archive are read as one unit.
 """
 
 import argparse
+from pathlib import Path
 import re
 import struct
 import sys
@@ -152,12 +153,19 @@ def _bytes_match(fd: BinaryIO, expected: bytes) -> bool:
         return False
 
 
-def compatible_file(fd: BinaryIO) -> bool:
+def compatible_file(file: Union[BinaryIO, str, Path]) -> bool:
     """True if the file type is supported (ELF or archive)."""
-    offset = fd.tell()
-    fd.seek(0)
-    result = _bytes_match(fd, ELF_MAGIC) or _bytes_match(fd, ARCHIVE_MAGIC)
-    fd.seek(offset)
+    try:
+        fd = open(file, 'rb') if isinstance(file, (str, Path)) else file
+
+        offset = fd.tell()
+        fd.seek(0)
+        result = _bytes_match(fd, ELF_MAGIC) or _bytes_match(fd, ARCHIVE_MAGIC)
+        fd.seek(offset)
+    finally:
+        if isinstance(file, (str, Path)):
+            fd.close()
+
     return result
 
 
