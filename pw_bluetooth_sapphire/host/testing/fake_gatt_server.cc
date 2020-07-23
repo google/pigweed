@@ -42,7 +42,7 @@ void FakeGattServer::HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu
 
 void FakeGattServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto cb = fit::bind_member(this, &FakeGattServer::HandlePdu);
-  l2cap_->RegisterHandler(l2cap::kSignalingChannelId, cb);
+  l2cap_->RegisterHandler(l2cap::kATTChannelId, cb);
   return;
 }
 

@@ -13,6 +13,9 @@ FakeL2cap::FakeL2cap(UnexpectedPduCallback unexpected_pdu_callback)
     : unexpected_pdu_callback_(std::move(unexpected_pdu_callback)) {}
 
 void FakeL2cap::RegisterHandler(l2cap::ChannelId cid, ChannelReceiveCallback callback) {
+  if (callbacks_.find(cid) != callbacks_.end()) {
+    bt_log(WARN, "fake-hci", "Overwriting previous handler for Channel ID %hu", cid);
+  }
   callbacks_.insert_or_assign(cid, std::move(callback));
 }
 

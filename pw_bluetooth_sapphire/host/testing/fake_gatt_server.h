@@ -23,7 +23,9 @@ class FakeGattServer final {
   // Handle the ATT |pdu| received over link with handle |conn|.
   void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
-  // Register with FakleL2cap |l2cap_| associated with the device that owns the server.
+  // Register with FakleL2cap |l2cap_| associated with the device that owns
+  // the server such that this FakeGattServer instance receives all packets
+  // sent on kATTChannelId.
   void RegisterWithL2cap(FakeL2cap* l2cap_);
 
  private:
