@@ -15,6 +15,7 @@
 
 #include <algorithm>
 
+#include "pw_assert/assert.h"
 #include "pw_status/status.h"
 
 namespace pw {
@@ -32,8 +33,12 @@ class Result {
   constexpr Result(std::in_place_t, Args&&... args)
       : value_(std::forward<Args>(args)...), status_(Status::OK) {}
 
-  constexpr Result(Status status) : status_(status) { EnsureNotOk(); }
-  constexpr Result(Status::Code code) : status_(code) { EnsureNotOk(); }
+  constexpr Result(Status status) : status_(status) {
+    PW_CHECK(status_ != Status::OK);
+  }
+  constexpr Result(Status::Code code) : status_(code) {
+    PW_CHECK(status_ != Status::OK);
+  }
 
   constexpr Result(const Result&) = default;
   constexpr Result& operator=(const Result&) = default;
@@ -45,17 +50,17 @@ class Result {
   constexpr bool ok() const { return status_.ok(); }
 
   constexpr T& value() & {
-    EnsureOk();
+    PW_CHECK_OK(status_);
     return value_;
   }
 
   constexpr const T& value() const& {
-    EnsureOk();
+    PW_CHECK_OK(status_);
     return value_;
   }
 
   constexpr T&& value() && {
-    EnsureOk();
+    PW_CHECK_OK(status_);
     return std::move(value_);
   }
 
@@ -80,18 +85,6 @@ class Result {
     T value_;
   };
   Status status_;
-
-  constexpr void EnsureOk() const {
-    if (!ok()) {
-      // TODO(frolv): Crash.
-    }
-  }
-
-  constexpr void EnsureNotOk() const {
-    if (ok()) {
-      // TODO(frolv): Crash.
-    }
-  }
 };
 
 }  // namespace pw

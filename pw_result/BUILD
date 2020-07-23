@@ -29,6 +29,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_assert",
         "//pw_status",
     ],
 )
