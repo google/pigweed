@@ -16,11 +16,12 @@
 import argparse
 import logging
 import os
-import pathlib
+from pathlib import Path
 import re
 import shlex
 import subprocess
 import sys
+from typing import Collection, Iterator
 
 _LOG = logging.getLogger(__name__)
 
@@ -81,7 +82,25 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def find_binary(target: pathlib.Path) -> str:
+class TooManyFilesError(Exception):
+    def __init__(self, target: Path, files: Collection[Path]):
+        super().__init__(f'Found {len(files)} files for target {target}')
+        self.target = target
+        self.files = files
+
+
+# Look for files with these extensions.
+_EXTENSIONS = '', '.elf', '.exe', '.a', '.so'
+
+
+def _find_potential_files(path: Path, target_name: str) -> Iterator[Path]:
+    for extension in _EXTENSIONS:
+        potential_file = path / f'{target_name}{extension}'
+        if potential_file.is_file():
+            yield potential_file
+
+
+def find_binary(target: Path) -> str:
     """Tries to find a binary for a gn build target.
 
     Args:
@@ -92,19 +111,23 @@ def find_binary(target: pathlib.Path) -> str:
         Full path to the target's binary.
 
     Raises:
-        RuntimeError: No binary found for target.
+        FileNotFoundError: No binary found for the target.
+        TooManyFilesError: Found multiple binaries for the target.
     """
 
     target_dirname, target_name = target.name.rsplit(':', 1)
 
-    for extension in ['', '.elf', '.exe']:
-        potential_file = target.parent.joinpath(target_dirname,
-                                                f'{target_name}{extension}')
-        if potential_file.is_file():
-            return str(potential_file)
+    potential_files = set(
+        _find_potential_files(target.parent / target_dirname, target_name))
 
-    raise FileNotFoundError(
-        f'Could not find output binary for build target {target}')
+    if not potential_files:
+        raise FileNotFoundError(
+            f'Could not find output binary for build target {target}')
+
+    if len(potential_files) > 1:
+        raise TooManyFilesError(target, potential_files)
+
+    return str(next(iter(potential_files)))
 
 
 def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
@@ -123,7 +146,7 @@ def _resolve_path(gn_root: str, out_dir: str, string: str) -> str:
         return string
 
     full_path = gn_root + string[2:] if is_gn_path else string
-    resolved_path = pathlib.Path(full_path).resolve()
+    resolved_path = Path(full_path).resolve()
 
     # GN targets exist in the out directory and have the format
     # '/path/to/directory:target_name'.
@@ -167,6 +190,23 @@ def main() -> int:
     except FileNotFoundError as err:
         _LOG.error('%s: %s', sys.argv[0], err)
         return 1
+    except TooManyFilesError as err:
+        _LOG.error('%s: %s', sys.argv[0], err)
+        _LOG.error('Files found for %s target:\n%s', err.target.name,
+                   '\n'.join(str(f) for f in err.files))
+        _LOG.error('Exactly one file must be found for each target.')
+
+        out_dir_name = args.out_dir.strip('/').split('/', 1)[0]
+        _LOG.error(
+            'To fix this, delete and recreate the output directory. '
+            'For example:\n\n'
+            '  rm -rf %s\n'
+            '  gen gen %s\n', out_dir_name, out_dir_name)
+        _LOG.error(
+            'If clearing the output directory does not work, the file '
+            'resolution logic in this script (%s) may need updating.',
+            __file__)
+        return 1
 
     command = [sys.executable] + resolved_command
     _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
@@ -194,7 +234,7 @@ def main() -> int:
         # touch the stamp file to indicate a successful run of the command.
         touch_file = resolve_path(args.gn_root, args.out_dir, args.touch)
         _LOG.debug('TOUCH %s', touch_file)
-        pathlib.Path(touch_file).touch()
+        Path(touch_file).touch()
 
     return completed_process.returncode
 
