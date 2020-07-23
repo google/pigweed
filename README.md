@@ -10,6 +10,18 @@ Pigweed is in the early stages of development, **and should be considered
 experimental**. We’re continuing to evolve the platform and add new modules. We
 value developer feedback along the way.
 
+# Quick links
+
+ - [Getting started guide](docs/getting_started.md)
+ - [Source code](https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/master)
+ - [Code reviews](https://pigweed-review.googlesource.com/)
+ - [Issue tracker](https://bugs.chromium.org/p/pigweed/issues/list)
+ - [Mailing list](https://groups.google.com/forum/#!forum/pigweed)
+ - [Chat room (Discord)](https://discord.gg/M9NSeTA)
+ - [Open Source blog post](https://opensource.googleblog.com/2020/03/pigweed-collection-of-embedded-libraries.html)
+
+Get the code: `git clone https://pigweed.googlesource.com/pigweed/pigweed`
+
 # Getting Started
 
 If you'd like to get set up with Pigweed, please visit the
