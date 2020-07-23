@@ -20,10 +20,14 @@ Pigweed contribution overview:
      automatically add a `Change-Id: ...` line to your commit.
    * Install the Pigweed presubmit check hook (`pw presubmit --install`).
      (recommended).
- 2. Ensure all files include a correct [copyright and license header](CONTRIBUTING.md#source-code-headers).
- 2. Upload the change with `git push origin HEAD:refs/for/master`.
- 3. Address any reviewer feedback by amending the commit (`git commit --amend`).
- 4. Submit change to CI builders to merge.
+ 1. Ensure all files include a correct [copyright and license header](CONTRIBUTING.md#source-code-headers).
+ 1. Run `pw presubmit` (see below) to detect style or compilation issues before
+    uploading.
+ 1. Upload the change with `git push origin HEAD:refs/for/master`.
+ 1. Address any reviewer feedback by amending the commit (`git commit --amend`).
+ 1. Submit change to CI builders to merge. If you are not part of Pigweed's
+    core team, you can ask the reviewer to add the `+2 CQ` vote, which will
+    trigger a rebase asd submit once the builders pass.
 
 ## Contributor License Agreement
 
