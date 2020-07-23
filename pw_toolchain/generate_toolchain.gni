@@ -110,6 +110,50 @@ template("generate_toolchain") {
         ]
       }
 
+      tool("objc") {
+        depfile = "{{output}}.d"
+        command =
+            string_join(" ",
+                        [
+                          invoker.cc,
+                          "-MMD -MF $depfile",  # Write out dependencies.
+                          "{{cflags}}",
+                          "{{cflags_objc}}",  # Must come after {{cflags}}.
+                          "{{defines}}",
+                          "{{include_dirs}}",
+                          "{{framework_dirs}}",
+                          "-c {{source}}",
+                          "-o {{output}}",
+                        ])
+        depsformat = "gcc"
+        description = "objc {{output}}"
+        outputs = [
+          "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
+        ]
+      }
+
+      tool("objcxx") {
+        depfile = "{{output}}.d"
+        command =
+            string_join(" ",
+                        [
+                          invoker.cxx,
+                          "-MMD -MF $depfile",  # Write out dependencies.
+                          "{{cflags}}",
+                          "{{cflags_objcc}}",  # Must come after {{cflags}}.
+                          "{{defines}}",
+                          "{{include_dirs}}",
+                          "{{framework_dirs}}",
+                          "-c {{source}}",
+                          "-o {{output}}",
+                        ])
+        depsformat = "gcc"
+        description = "objc++ {{output}}"
+        outputs = [
+          "{{source_out_dir}}/{{target_output_name}}.{{source_file_part}}.o",
+        ]
+      }
+
       assert(defined(invoker.ar), "toolchain is missing 'ar'")
       tool("alink") {
         command = "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
