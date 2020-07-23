@@ -201,6 +201,7 @@ template("generate_toolchain") {
         _link_flags += [ "-Wl,--start-group" ]
       }
       _link_flags += [ "{{inputs}}" ]
+      _link_flags += [ "{{frameworks}}" ]
 
       if (defined(invoker.link_whole_archive) && invoker.link_whole_archive) {
         # Load all object files from all libraries to resolve symbols.
