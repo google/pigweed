@@ -32,3 +32,13 @@ pw_cc_library(
     ],
     includes = ["public"],
 )
+
+cc_test(
+    name = "encoder_test",
+    srcs = ["encoder_test.cc"],
+    deps = [
+        ":pw_hdlc_lite",
+        "//pw_stream",
+        "//pw_unit_test",
+    ],
+)
