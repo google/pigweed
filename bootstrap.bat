@@ -67,7 +67,7 @@ set _PW_OLD_VIRTUALENV_REQUIREMENTS=%PW_VIRTUALENV_REQUIREMENTS%
 set _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS=%PW_VIRTUALENV_SETUP_PY_ROOTS%
 set _PW_OLD_CARGO_PACKAGE_FILES=%PW_CARGO_PACKAGE_FILES%
 
-set PW_CIPD_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\*.json;%PW_CIPD_PACKAGE_FILES%
+set PW_CIPD_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\pigweed.json;%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\luci.json;%PW_CIPD_PACKAGE_FILES%
 set PW_VIRTUALENV_REQUIREMENTS=%PW_ROOT%\pw_env_setup\py\pw_env_setup\virtualenv_setup\requirements.txt;%PW_VIRTUALENV_REQUIREMENTS%
 set PW_VIRTUALENV_SETUP_PY_ROOTS=%PW_ROOT%;%PW_VIRTUALENV_SETUP_PY_ROOTS%
 set PW_CARGO_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cargo_setup\packages.txt;%PW_CARGO_PACKAGE_FILES%

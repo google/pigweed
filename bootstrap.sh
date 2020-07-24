@@ -203,7 +203,7 @@ if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   fi
 
   _PW_OLD_CIPD_PACKAGE_FILES="$PW_CIPD_PACKAGE_FILES"
-  PW_CIPD_PACKAGE_FILES="$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/*.json:$PW_CIPD_PACKAGE_FILES"
+  PW_CIPD_PACKAGE_FILES="$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json:$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json:$PW_CIPD_PACKAGE_FILES"
   export PW_CIPD_PACKAGE_FILES
 
   _PW_OLD_VIRTUALENV_REQUIREMENTS="$PW_VIRTUALENV_REQUIREMENTS"

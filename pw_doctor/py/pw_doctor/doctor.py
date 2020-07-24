@@ -164,12 +164,16 @@ def python_version(ctx: DoctorContext):
     """Check the Python version is correct."""
     actual = sys.version_info
     expected = (3, 8)
-    if actual[0:2] < expected or actual[0] != expected[0]:
-        ctx.error('Python %d.%d.x required, got Python %d.%d.%d', *expected,
-                  *actual[0:3])
-    elif actual[0:2] > expected:
-        ctx.warning('Python %d.%d.x required, got Python %d.%d.%d', *expected,
-                    *actual[0:3])
+    if (actual[0:2] < expected or actual[0] != expected[0]
+            or actual[0:2] > expected):
+        # If we get the wrong version but it still came from CIPD print a
+        # warning but give it a pass.
+        if 'chromium' in sys.version:
+            ctx.warning('Python %d.%d.x expected, got Python %d.%d.%d',
+                        *expected, *actual[0:3])
+        else:
+            ctx.error('Python %d.%d.x required, got Python %d.%d.%d',
+                      *expected, *actual[0:3])
 
 
 @register_into(CHECKS)
