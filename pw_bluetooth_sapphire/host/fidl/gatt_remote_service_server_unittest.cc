@@ -34,7 +34,8 @@ class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest
   void SetUp() override {
     {
       auto [svc, client] = gatt()->AddPeerService(
-          kPeerId, bt::gatt::ServiceData(kServiceStartHandle, kServiceEndHandle, kServiceUuid));
+          kPeerId, bt::gatt::ServiceData(bt::gatt::ServiceKind::PRIMARY, kServiceStartHandle,
+                                         kServiceEndHandle, kServiceUuid));
       service_ = std::move(svc);
       fake_client_ = std::move(client);
     }

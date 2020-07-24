@@ -103,9 +103,17 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
       return;
     }
 
-    auto svc_cb = [self](const ServiceData& service_data) {
-      if (!self)
+    Client::ServiceCallback svc_cb = [self](const ServiceData& service_data) {
+      if (!self) {
         return;
+      }
+
+      att::Handle handle = service_data.range_start;
+      auto iter = self->services_.find(handle);
+      if (iter != self->services_.end()) {
+        bt_log(ERROR, "gatt", "found duplicate service attribute handle! (%#.4x)", handle);
+        return;
+      }
 
       auto svc = fbl::AdoptRef(
           new RemoteService(service_data, self->client_->AsWeakPtr(), self->gatt_dispatcher_));
@@ -114,7 +122,7 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
         return;
       }
 
-      self->services_[svc->handle()] = svc;
+      self->services_[handle] = svc;
     };
 
     auto status_cb = [self, init_cb = std::move(init_cb)](att::Status status) {
@@ -140,13 +148,42 @@ void RemoteServiceManager::Initialize(att::StatusCallback cb, std::optional<UUID
       init_cb(status);
     };
 
-    if (service_uuid) {
-      self->client_->DiscoverPrimaryServicesByUUID(std::move(svc_cb), std::move(status_cb),
-                                                   service_uuid.value());
-    } else {
-      self->client_->DiscoverPrimaryServices(std::move(svc_cb), std::move(status_cb));
-    }
+    auto primary_discov_cb = [self, service_uuid, status_cb = std::move(status_cb),
+                              svc_cb = svc_cb.share()](att::Status status) mutable {
+      if (!self || !status) {
+        status_cb(status);
+        return;
+      }
+
+      auto secondary_discov_cb = [cb = std::move(status_cb)](att::Status status) mutable {
+        // Not all GATT servers support the "secondary service" group type. We suppress the
+        // "Unsupported Group Type" error code and simply report no services instead of treating it
+        // as a fatal condition (errors propagated up the stack from here will cause the connection
+        // to be terminated).
+        if (status.is_protocol_error() &&
+            status.protocol_error() == att::ErrorCode::kUnsupportedGroupType) {
+          bt_log(DEBUG, "gatt", "peer does not support secondary services; ignoring ATT error");
+          status = att::Status();
+        }
+        cb(status);
+      };
+      self->DiscoverServices(ServiceKind::SECONDARY, service_uuid, std::move(svc_cb),
+                             std::move(secondary_discov_cb));
+    };
+
+    self->DiscoverServices(ServiceKind::PRIMARY, service_uuid, std::move(svc_cb),
+                           std::move(primary_discov_cb));
   });
+}
+
+void RemoteServiceManager::DiscoverServices(ServiceKind kind, std::optional<UUID> uuid,
+                                            Client::ServiceCallback svc_cb,
+                                            att::StatusCallback status_cb) {
+  if (uuid) {
+    client_->DiscoverServicesByUuid(kind, std::move(svc_cb), std::move(status_cb), uuid.value());
+  } else {
+    client_->DiscoverServices(kind, std::move(svc_cb), std::move(status_cb));
+  }
 }
 
 void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,

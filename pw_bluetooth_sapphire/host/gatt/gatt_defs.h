@@ -116,13 +116,25 @@ constexpr IdType kInvalidId = 0u;
 
 // Types representing GATT discovery results.
 
+enum class ServiceKind {
+  PRIMARY,
+  SECONDARY,
+};
+
 struct ServiceData {
   ServiceData() = default;
-  ServiceData(att::Handle start, att::Handle end, const UUID& type);
+  ServiceData(ServiceKind kind, att::Handle start, att::Handle end, const UUID& type);
 
+  ServiceKind kind;
   att::Handle range_start;
   att::Handle range_end;
   UUID type;
+
+  // NOTE: In C++20 this can be generated via `= default` assignment.
+  bool operator==(const ServiceData& other) const {
+    return kind == other.kind && range_start == other.range_start && range_end == other.range_end &&
+           type == other.type;
+  }
 };
 
 // An immutable definition of a GATT Characteristic
@@ -131,12 +143,17 @@ struct CharacteristicData {
   CharacteristicData(Properties props, std::optional<ExtendedProperties> ext_props,
                      att::Handle handle, att::Handle value_handle, const UUID& type);
 
-
   Properties properties;
   std::optional<ExtendedProperties> extended_properties;
   att::Handle handle;
   att::Handle value_handle;
   UUID type;
+
+  // NOTE: In C++20 this can be generated via `= default` assignment.
+  bool operator==(const CharacteristicData& other) const {
+    return properties == other.properties && extended_properties == other.extended_properties &&
+           handle == other.handle && value_handle == other.value_handle && type == other.type;
+  }
 };
 
 // An immutable definition of a GATT Descriptor
@@ -146,6 +163,11 @@ struct DescriptorData {
 
   const att::Handle handle;
   const UUID type;
+
+  // NOTE: In C++20 this can be generated via `= default` assignment.
+  bool operator==(const DescriptorData& other) const {
+    return handle == other.handle && type == other.type;
+  }
 };
 
 }  // namespace gatt
