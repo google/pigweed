@@ -28,6 +28,7 @@ pw_doc_group("core_docs") {
   ]
   sources = [
     "embedded_cpp_guide.rst",
+    "faq.rst",
     "getting_started.md",
     "module_structure.rst",
     "style_guide.rst",

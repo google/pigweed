@@ -21,5 +21,6 @@
   Code Style <docs/style_guide>
   targets
   Build System <build_system>
+  FAQ <docs/faq>
   docs/module_structure
   module_guides
