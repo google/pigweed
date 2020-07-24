@@ -93,7 +93,13 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 
   const auto n_frames_acked = NumFramesBetween(expected_ack_seq_, new_seq);
   if (n_frames_acked > NumUnackedFrames()) {
-    // TODO(53889): Peer is attempting acknowledge frames we haven't sent, so disconnect.
+    // Peer acknowledgment of our outbound data (ReqSeq) exceeds the sequence numbers of
+    // yet-acknowledged data that we've sent to that peer. See conditions "With-Invalid-ReqSeq" and
+    // "With-Invalid-ReqSeq-Retrans" in Core Spec v5.0 Vol 3 Part A Sec 8.6.5.5.
+    bt_log(WARN, "l2cap",
+           "Received acknowledgment for %hhu frames but only %hhu frames are pending",
+           n_frames_acked, NumUnackedFrames());
+    connection_failure_callback_();  // May invalidate |self|.
     return;
   }
 

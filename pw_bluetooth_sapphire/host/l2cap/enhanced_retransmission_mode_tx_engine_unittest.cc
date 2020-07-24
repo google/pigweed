@@ -933,13 +933,24 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   EXPECT_EQ(1, last_pdu->As<SimpleInformationFrameHeader>().tx_seq());
 }
 
-TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
-       EngineDoesNotCrashOnAckOfMoreFramesThanAreOutstanding) {
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, AckOfFrameWithNoneOutstandingClosesChannel) {
+  bool connection_failed = false;
   TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
-                     NoOpTxCallback, NoOpFailureCallback);
+                     NoOpTxCallback, [&] { connection_failed = true; });
+
+  tx_engine.UpdateAckSeq(1, false);
+  EXPECT_TRUE(connection_failed);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       AckOfMoreFramesThanAreOutstandingClosesChannel) {
+  bool connection_failed = false;
+  TxEngine tx_engine(kTestChannelId, kDefaultMTU, kDefaultMaxTransmissions, kDefaultTxWindow,
+                     NoOpTxCallback, [&] { connection_failed = true; });
+
   tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
-  RunLoopUntilIdle();
   tx_engine.UpdateAckSeq(2, true);
+  EXPECT_TRUE(connection_failed);
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, EngineDoesNotCrashOnSpuriousAckAfterValidAck) {
