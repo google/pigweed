@@ -70,10 +70,12 @@ bool IsMpsValid(const PDU& pdu) {
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
-Engine::EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback)
+Engine::EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback,
+                                           ConnectionFailureCallback connection_failure_callback)
     : next_seqnum_(0),
       remote_is_busy_(false),
-      send_frame_callback_(std::move(send_frame_callback)) {}
+      send_frame_callback_(std::move(send_frame_callback)),
+      connection_failure_callback_(std::move(connection_failure_callback)) {}
 
 ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
   // A note on validation (see Vol 3, Part A, 3.3.7):
@@ -160,6 +162,13 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
 }
 
 ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu) {
+  // Core Spec v5, Vol 3, Part A, Sec 8.6.1.5: "S-Frames shall not be transmitted with both the
+  // F-bit and the P-bit set to 1 at the same time."
+  if (sframe.is_poll_request() && sframe.is_poll_response()) {
+    connection_failure_callback_();
+    return nullptr;
+  }
+
   // Signal changes to our RemoteBusy variable per Core Spec v5.0, Vol 3, Part A, Sec 8.6.5.6.
   const bool remote_is_busy = sframe.function() == SupervisoryFunction::ReceiverNotReady;
   if (remote_is_busy && !remote_is_busy_) {

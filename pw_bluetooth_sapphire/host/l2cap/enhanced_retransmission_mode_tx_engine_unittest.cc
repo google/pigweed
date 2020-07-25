@@ -45,8 +45,8 @@ class L2CAP_EnhancedRetransmissionModeTxEngineTest : public ::gtest::TestLoopFix
   }
 };
 
-void NoOpTxCallback(ByteBufferPtr){};
-void NoOpFailureCallback(){};
+void NoOpTxCallback(ByteBufferPtr) {}
+void NoOpFailureCallback() {}
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMinimalSizedSdu) {
   ByteBufferPtr last_pdu;

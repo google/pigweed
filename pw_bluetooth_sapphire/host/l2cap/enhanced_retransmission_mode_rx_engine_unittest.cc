@@ -25,13 +25,14 @@ constexpr uint8_t kExtendedControlSelectiveRejectBits = 0b0000'1100;
 
 using Engine = EnhancedRetransmissionModeRxEngine;
 
-void NopTxCallback(ByteBufferPtr) {}
+void NoOpTxCallback(ByteBufferPtr) {}
+void NoOpFailureCallback() {}
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduImmediatelyReturnsDataForUnsegmentedSdu) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
-  const ByteBufferPtr sdu = Engine(NopTxCallback)
+  const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
                                 .ProcessPdu(Fragmenter(kTestHandle)
                                                 .BuildFrame(kTestChannelId, payload,
                                                             FrameCheckSequenceOption::kIncludeFcs));
@@ -42,7 +43,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0);
-  const ByteBufferPtr sdu = Engine(NopTxCallback)
+  const ByteBufferPtr sdu = Engine(NoOpTxCallback, NoOpFailureCallback)
                                 .ProcessPdu(Fragmenter(kTestHandle)
                                                 .BuildFrame(kTestChannelId, payload,
                                                             FrameCheckSequenceOption::kIncludeFcs));
@@ -56,7 +57,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleZeroBytePd
 
   // FCS footer is entirely omitted.
   const ByteBufferPtr sdu =
-      Engine(NopTxCallback)
+      Engine(NoOpTxCallback, NoOpFailureCallback)
           .ProcessPdu(Fragmenter(kTestHandle)
                           .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
   EXPECT_FALSE(sdu);
@@ -67,7 +68,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCanHandleIncomplete
   // No payload is present and only one byte of the FCS footer is present.
   const StaticByteBuffer payload{0, 0, 0};
   const ByteBufferPtr sdu =
-      Engine(NopTxCallback)
+      Engine(NoOpTxCallback, NoOpFailureCallback)
           .ProcessPdu(Fragmenter(kTestHandle)
                           .BuildFrame(kTestChannelId, payload, FrameCheckSequenceOption::kNoFcs));
   EXPECT_FALSE(sdu);
@@ -80,7 +81,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
       1 << 1,                                   // TxSeq = 1, R=0
       0,                                        // SAR and ReqSeq
       'h', 'e', 'l', 'l', 'o');
-  EXPECT_FALSE(Engine(NopTxCallback)
+  EXPECT_FALSE(Engine(NoOpTxCallback, NoOpFailureCallback)
                    .ProcessPdu(Fragmenter(kTestHandle)
                                    .BuildFrame(kTestChannelId, payload,
                                                FrameCheckSequenceOption::kIncludeFcs)));
@@ -88,7 +89,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduAdvancesSequenceNumberOnInSequenceFrame) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   // Send with sequence 0.
   {
@@ -125,7 +126,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNumber) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
   auto payload = CreateStaticByteBuffer(  //
       0 << 1,                             // TxSeq=0, R=0
       0,                                  // SAR and ReqSeq
@@ -148,7 +149,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRollsOverSequenceNu
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduDoesNotAdvanceSequenceNumberForOutOfSequencePdu) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
   const auto out_of_seq = CreateStaticByteBuffer(  //
       1 << 1,                                      // TxSeq=1, R=0
       0,                                           // SAR and ReqSeq
@@ -176,7 +177,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduImmediatelyAcksUnse
 
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto payload = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
-  ASSERT_TRUE(Engine(tx_callback)
+  ASSERT_TRUE(Engine(tx_callback, NoOpFailureCallback)
                   .ProcessPdu(Fragmenter(kTestHandle)
                                   .BuildFrame(kTestChannelId, payload,
                                               FrameCheckSequenceOption::kIncludeFcs)));
@@ -197,7 +198,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduSendsCorrectReqSeqO
     ++n_acks;
   };
 
-  Engine rx_engine(tx_callback);
+  Engine rx_engine(tx_callback, NoOpFailureCallback);
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   for (size_t i = 0; i < 64; ++i) {
     const auto payload = CreateStaticByteBuffer(i << 1, 0, 'h', 'e', 'l', 'l', 'o');
@@ -231,7 +232,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequ
   // that we should _not_ also transmit a ReceiverReady frame.
   //
   // TODO(BT-448): Revise this test when we start sending Reject frames.
-  ASSERT_FALSE(Engine(tx_callback)
+  ASSERT_FALSE(Engine(tx_callback, NoOpFailureCallback)
                    .ProcessPdu(Fragmenter(kTestHandle)
                                    .BuildFrame(kTestChannelId, payload,
                                                FrameCheckSequenceOption::kIncludeFcs)));
@@ -246,7 +247,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
     ++n_outbound_frames;
   };
 
-  Engine rx_engine(tx_callback);
+  Engine rx_engine(tx_callback, NoOpFailureCallback);
   // Send an I-frame to advance the receiver's sequence number.
   // See Core Spec, v5, Vol 3, Part A, Table 3.2 for the first two bytes.
   const auto info_frame = CreateStaticByteBuffer(0, 0, 'h', 'e', 'l', 'l', 'o');
@@ -275,7 +276,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduRespondsToReceiverR
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumCallback) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<uint8_t> receive_seq_num;
   std::optional<bool> receive_is_poll_response;
@@ -333,7 +334,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsReceiveSeqNumC
 }
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallback) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<uint8_t> ack_seq_num;
   auto ack_seq_num_callback = [&ack_seq_num](uint8_t seq_num) { ack_seq_num = seq_num; };
@@ -353,7 +354,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduCallsAckSeqNumCallb
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReady) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   bool receive_seq_num_called = false;
   rx_engine.set_receive_seq_num_callback([&](uint8_t, bool) { receive_seq_num_called = true; });
@@ -387,7 +388,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRemoteBusySetCallbackOnReceiverNotReadyAfterReceiverReadyClearedBusy) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   const StaticByteBuffer receiver_not_ready(0b1 | kExtendedControlReceiverNotReadyBits, 0);
   auto local_sdu = rx_engine.ProcessPdu(
@@ -421,7 +422,7 @@ class ExtendedControlFieldBitsTest : public testing::TestWithParam<uint16_t> {};
 
 TEST_P(ExtendedControlFieldBitsTest,
        ProcessPduCallsRemoteBusyClearedCallbackOnNonRnrSFrameAfterReceiverNotReady) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   bool receive_seq_num_called = false;
   int remote_busy_set_calls = 0;
@@ -480,7 +481,7 @@ INSTANTIATE_TEST_SUITE_P(L2CAP_EnhancedRetransmissionModeRxEngineTestNonRnrSFram
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsRangeRetransmitSetCallbackThenReceiveSeqNumCallbackOnReject) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<bool> receive_is_poll_request;
   rx_engine.set_range_retransmit_set_callback(
@@ -508,7 +509,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
 
 TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
      ProcessPduCallsSingleRetransmitSetCallbackThenReceiveSeqNumCallbackOnSelectiveReject) {
-  Engine rx_engine(NopTxCallback);
+  Engine rx_engine(NoOpTxCallback, NoOpFailureCallback);
 
   std::optional<bool> receive_is_poll_request;
   rx_engine.set_single_retransmit_set_callback(
@@ -532,6 +533,20 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
           .BuildFrame(kTestChannelId, srej_frame, FrameCheckSequenceOption::kIncludeFcs));
   EXPECT_TRUE(receive_seq_num.has_value());
   EXPECT_TRUE(receive_is_poll_response.has_value());
+}
+
+TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest,
+     ProcessPduWithPollResponseAndPollRequestClosesChannel) {
+  bool connection_failed = false;
+  Engine rx_engine(NoOpTxCallback, [&] { connection_failed = true; });
+
+  // Send an RR S-frame with both poll request and response bits set.
+  // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, Table 3.2 for field definitions.
+  auto rr_frame = StaticByteBuffer(0b1 | kExtendedControlFBitMask | kExtendedControlPBitMask, 0);
+  rx_engine.ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, rr_frame, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_TRUE(connection_failed);
 }
 
 }  // namespace

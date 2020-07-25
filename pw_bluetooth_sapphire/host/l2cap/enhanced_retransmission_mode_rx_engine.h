@@ -22,9 +22,11 @@ namespace internal {
 class EnhancedRetransmissionModeRxEngine final : public RxEngine {
  public:
   using SendFrameCallback = fit::function<void(ByteBufferPtr pdu)>;
+  using ConnectionFailureCallback = fit::function<void()>;
 
-  EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback);
-  virtual ~EnhancedRetransmissionModeRxEngine() = default;
+  EnhancedRetransmissionModeRxEngine(SendFrameCallback send_frame_callback,
+                                     ConnectionFailureCallback connection_failure_callback);
+  ~EnhancedRetransmissionModeRxEngine() override = default;
 
   ByteBufferPtr ProcessPdu(PDU) override;
 
@@ -93,6 +95,9 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
   bool remote_is_busy_;
 
   SendFrameCallback send_frame_callback_;
+
+  // Invoked when the connection encounters a fatal error.
+  const ConnectionFailureCallback connection_failure_callback_;
 
   // TODO(52554): Refactor these delegates into a single interface for TxEngine to implement.
   ReceiveSeqNumCallback receive_seq_num_callback_;
