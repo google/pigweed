@@ -97,14 +97,26 @@ class _VariableAction(_Action):
             env.pop(self.name, None)
 
 
+def _var_form(variable, windows=(os.name == 'nt')):
+    if windows:
+        return '%{}%'.format(variable)
+    return '${}'.format(variable)
+
+
 class Set(_VariableAction):
     """Set a variable."""
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        value = self.value
+        for var, replacement in replacements:
+            if var != self.name:
+                value = value.replace(replacement, _var_form(var, windows))
+
         if windows:
-            outs.write('set {name}={value}\n'.format(**vars(self)))
+            outs.write('set {name}={value}\n'.format(name=self.name,
+                                                     value=value))
         else:
-            outs.write(
-                '{name}="{value}"\nexport {name}\n'.format(**vars(self)))
+            outs.write('{name}="{value}"\nexport {name}\n'.format(
+                name=self.name, value=value))
 
     def apply(self, env):
         env[self.name] = self.value
@@ -117,7 +129,8 @@ class Clear(_VariableAction):
         kwargs['allow_empty_values'] = True
         super(Clear, self).__init__(*args, **kwargs)
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        del replacements  # Unused.
         if windows:
             outs.write('set {name}=\n'.format(**vars(self)))
         else:
@@ -134,27 +147,31 @@ class Remove(_VariableAction):
         super(Remove, self).__init__(name, value, *args, **kwargs)
         self._pathsep = pathsep
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        value = self.value
+        for var, replacement in replacements:
+            if var != self.name:
+                value = value.replace(replacement, _var_form(var, windows))
+
         if windows:
-            outs.write(':: Remove\n::   {value}\n:: from\n::   {name}\n'
-                       ':: before adding it back.\n'
-                       'set {name}=%{name}:{value}{pathsep}=%\n'.format(
-                           name=self.name,
-                           value=self.value,
-                           pathsep=self._pathsep))
+            pass
+            # TODO(pwbug/231) This does not seem to be supported when value
+            # contains a %variable%. Disabling for now.
+            # outs.write(':: Remove\n::   {value}\n:: from\n::   {name}\n'
+            #            ':: before adding it back.\n'
+            #            'set {name}=%{name}:{value}{pathsep}=%\n'.format(
+            #              name=self.name, value=value, pathsep=self._pathsep))
 
         else:
             outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
                        'adding it back.\n'
                        '{name}="$(echo "${name}"'
-                       ' | sed "s/{pathsep}{escvalue}{pathsep}/{pathsep}/g;"'
-                       ' | sed "s/^{escvalue}{pathsep}//g;"'
-                       ' | sed "s/{pathsep}{escvalue}$//g;"'
-                       ')"\nexport {name}\n'.format(
-                           name=self.name,
-                           value=self.value,
-                           escvalue=self.value.replace('/', '\\/'),
-                           pathsep=self._pathsep))
+                       ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
+                       ' | sed "s|^{value}{pathsep}||g;"'
+                       ' | sed "s|{pathsep}{value}$||g;"'
+                       ')"\nexport {name}\n'.format(name=self.name,
+                                                    value=value,
+                                                    pathsep=self._pathsep))
 
     def apply(self, env):
         env[self.name] = env[self.name].replace(
@@ -178,14 +195,19 @@ class Prepend(_VariableAction):
         super(Prepend, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        value = self.value
+        for var, replacement in replacements:
+            if var != self.name:
+                value = value.replace(replacement, _var_form(var, windows))
+        value = self._join(value, _var_form(self.name, windows))
+
         if windows:
-            outs.write('set {name}={value}\n'.format(
-                name=self.name,
-                value=self._join(self.value, '%{}%'.format(self.name))))
+            outs.write('set {name}={value}\n'.format(name=self.name,
+                                                     value=value))
         else:
             outs.write('{name}="{value}"\nexport {name}\n'.format(
-                name=self.name, value=self._join(self.value, '$' + self.name)))
+                name=self.name, value=value))
 
     def apply(self, env):
         env[self.name] = self._join(self.value, env.get(self.name, ''))
@@ -201,14 +223,19 @@ class Append(_VariableAction):
         super(Append, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        value = self.value
+        for var, repl_value in replacements:
+            if var != self.name:
+                value = value.replace(repl_value, _var_form(var, windows))
+        value = self._join(_var_form(self.name, windows), value)
+
         if windows:
-            outs.write('set {name}={value}\n'.format(
-                name=self.name,
-                value=self._join('%{}%'.format(self.name), self.value)))
+            outs.write('set {name}={value}\n'.format(name=self.name,
+                                                     value=value))
         else:
             outs.write('{name}="{value}"\nexport {name}\n'.format(
-                name=self.name, value=self._join('$' + self.name, self.value)))
+                name=self.name, value=value))
 
     def apply(self, env):
         env[self.name] = self._join(env.get(self.name, ''), self.value)
@@ -232,7 +259,8 @@ class Echo(_Action):
         self.value = value
         self._newline = newline
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        del replacements  # Unused.
         # POSIX shells parse arguments and pass to echo, but Windows seems to
         # pass the command line as is without parsing, so quoting is wrong.
         if windows:
@@ -262,7 +290,8 @@ class Comment(_Action):
         super(Comment, self).__init__(*args, **kwargs)
         self.value = value
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        del replacements  # Unused.
         comment_char = '::' if windows else '#'
         for line in self.value.splitlines():
             outs.write('{} {}\n'.format(comment_char, line))
@@ -280,7 +309,8 @@ class Command(_Action):
         self.command = command
         self.exit_on_error = exit_on_error
 
-    def write(self, outs, windows=(os.name == 'nt')):
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        del replacements  # Unused.
         # TODO(mohrr) use shlex.quote here?
         outs.write('{}\n'.format(' '.join(self.command)))
         if not self.exit_on_error:
@@ -293,12 +323,18 @@ class Command(_Action):
             # Assume failing command produced relevant output.
             outs.write('if [ "$?" -ne 0 ]; then\n  return 1\nfi\n')
 
+    def apply(self, env):  # pylint: disable=no-self-use
+        del env  # Unused.
+
 
 class BlankLine(_Action):
     """Write a blank line to the init script."""
     def write(  # pylint: disable=no-self-use
-        self, outs, windows=(os.name == 'nt')):
-        del windows  # Unused.
+        self,
+        outs,
+        windows=(os.name == 'nt'),
+        replacements=()):
+        del replacements, windows  # Unused.
         outs.write('\n')
 
     def apply(self, env):  # pylint: disable=no-self-use
@@ -306,7 +342,13 @@ class BlankLine(_Action):
 
 
 class Hash(_Action):
-    def write(self, outs, windows=(os.name == 'nt')):  # pylint: disable=no-self-use
+    def write(  # pylint: disable=no-self-use
+        self,
+        outs,
+        windows=(os.name == 'nt'),
+        replacements=()):
+        del replacements  # Unused.
+
         if windows:
             return
 
@@ -340,11 +382,15 @@ class Environment(object):
         self._pathsep = pathsep
         self._windows = windows
         self._allcaps = allcaps
+        self._replacements = []
 
     def _join(self, *args):
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             args = args[0]
         return self._pathsep.join(args)
+
+    def add_replacement(self, variable, value=None):
+        self._replacements.append((variable, value))
 
     def normalize_key(self, name):
         if self._allcaps:
@@ -436,8 +482,15 @@ class Environment(object):
         if self._windows:
             outs.write('@echo off\n')
 
+        # This is a tuple and not a dictionary because we don't need random
+        # access and order needs to be preserved.
+        replacements = tuple((key, self.get(key) if value is None else value)
+                             for key, value in self._replacements)
+
         for action in self._actions:
-            action.write(outs, windows=self._windows)
+            action.write(outs,
+                         windows=self._windows,
+                         replacements=replacements)
 
         if self._windows:
             outs.write(':{}\n'.format(_SCRIPT_END_LABEL))

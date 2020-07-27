@@ -29,6 +29,8 @@ import subprocess
 import tempfile
 import unittest
 
+import six
+
 from pw_env_setup import environment
 
 
@@ -94,10 +96,12 @@ class EnvironmentTest(unittest.TestCase):
     def setUp(self):
         self.env = environment.Environment()
 
+        # Name of a variable that is already set when the test starts.
         self.var_already_set = self.env.normalize_key('var_already_set')
         os.environ[self.var_already_set] = 'orig value'
         self.assertIn(self.var_already_set, os.environ)
 
+        # Name of a variable that is not set when the test starts.
         self.var_not_set = self.env.normalize_key('var_not_set')
         if self.var_not_set in os.environ:
             del os.environ[self.var_not_set]
@@ -151,6 +155,22 @@ class EnvironmentTest(unittest.TestCase):
         self.env.clear(self.var_already_set)
         env = _evaluate_env_in_shell(self.env)
         self.assertNotIn(self.var_already_set, env)
+
+    def test_value_replacement(self):
+        self.env.set(self.var_not_set, '/foo/bar/baz')
+        self.env.add_replacement('FOOBAR', '/foo/bar')
+        buf = six.StringIO()
+        self.env.write(buf)
+        assert '/foo/bar' not in buf.getvalue()
+
+    def test_variable_replacement(self):
+        self.env.set('FOOBAR', '/foo/bar')
+        self.env.set(self.var_not_set, '/foo/bar/baz')
+        self.env.add_replacement('FOOBAR')
+        buf = six.StringIO()
+        self.env.write(buf)
+        print(buf.getvalue())
+        assert '/foo/bar/baz' not in buf.getvalue()
 
     def test_nonglobal(self):
         self.env.set(self.var_not_set, '1')
