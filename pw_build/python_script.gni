@@ -138,7 +138,7 @@ template("pw_python_script") {
     ]
     forward_variables_from(invoker, "*", _ignore_vars)
 
-    script = "$dir_pw_build/py/python_runner.py"
+    script = "$dir_pw_build/py/pw_build/python_runner.py"
     args = _script_args
     inputs = _inputs
     outputs = _outputs

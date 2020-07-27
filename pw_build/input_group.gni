@@ -30,7 +30,7 @@ template("pw_input_group") {
       "stamp",
     ]
     forward_variables_from(invoker, "*", ignore_vars)
-    script = "$dir_pw_build/py/nop.py"
+    script = "$dir_pw_build/py/pw_build/nop.py"
     stamp = true
   }
 }

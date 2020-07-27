@@ -51,7 +51,7 @@ template("_pw_disableable_target") {
     # action with the original target's sources as inputs to ensure that
     # the source files exist (even if they don't compile).
     pw_python_script(target_name) {
-      script = "$dir_pw_build/py/nop.py"
+      script = "$dir_pw_build/py/pw_build/nop.py"
       stamp = true
 
       inputs = []

@@ -34,7 +34,7 @@ config("sanitize_undefined") {
 # Locate XCode's sysroot for Clang.
 config("xcode_sysroot") {
   if (host_os == "mac") {
-    _xcode_sysroot = exec_script("$dir_pw_build/py/exec.py",
+    _xcode_sysroot = exec_script("$dir_pw_build/py/pw_build/exec.py",
                                  [
                                    "--",
                                    "/usr/bin/xcrun",

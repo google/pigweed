@@ -109,7 +109,7 @@ template("pw_exec") {
   }
 
   pw_python_script(target_name) {
-    script = "$dir_pw_build/py/exec.py"
+    script = "$dir_pw_build/py/pw_build/exec.py"
     args = _script_args
 
     forward_variables_from(invoker,

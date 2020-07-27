@@ -91,7 +91,7 @@ template("pw_facade") {
 
     pw_python_script(_main_target_name + "_NO_BACKEND_SET") {
       stamp = true
-      script = "$dir_pw_build/py/null_backend.py"
+      script = "$dir_pw_build/py/pw_build/null_backend.py"
       args = [ _main_target_name ]
       not_needed(invoker, "*")
     }
