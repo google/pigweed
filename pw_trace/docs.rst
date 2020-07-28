@@ -179,6 +179,19 @@ These macros require 3 additional arguments:
 - *data* - A pointer to a buffer of arbitrary caller-provided data (void*).
 - *size* - The size of the data (size_t).
 
+Currently the included python tool supports a few different options for
+*data_format_string*:
+
+- *@pw_arg_label* - Uses the string in the data as the trace event label.
+- *@pw_arg_group* - Uses the string in the data as the trace event group.
+- *@pw_arg_counter* - Uses the data as a little endian integer value, and
+  visualizes it as a counter value in the trace (on a graph).
+- *@pw_py_struct_fmt:* - Interprets the string after the ":" as a python struct
+  format string, and uses that format string to unpack the data elements. This
+  can be used to either provide a single value type, or provide multiple
+  different values with a variety of types. Options for format string types can
+  be found here: https://docs.python.org/3/library/struct.html#format-characters
+
 .. tip::
 
   It is ok for only one event of a start/end pair to contain data, as long the
@@ -244,8 +257,8 @@ The backend can use these macros to change what the default value is if not
 provided.
 
 - *PW_TRACE_FLAGS_DEFAULT*: Default value if no flags are provided.
-- *PW_TRACE_TRACE_ID_DEFAULT*: Default value if not trace_id provided.
-- *PW_TRACE_GROUP_LABEL_DEFAULT*: Default value if not group_label provided.
+- *PW_TRACE_TRACE_ID_DEFAULT*: Default value if no trace_id provided.
+- *PW_TRACE_GROUP_LABEL_DEFAULT*: Default value if no group_label provided.
 
 ----------
 Sample App
@@ -267,3 +280,18 @@ The sample app contains 3 "fake" tasks, which are each in their own
 Jobs are intentionally made to have multiple stages of processing (simulated by
 being re-added to the work-queue). This results in multiple jobs being handled
 at the same time, the trace_id is used to separate these traces.
+
+----------------------
+Python Trace Generator
+----------------------
+The Python tool is still in early developments, but currently it supports
+generating a list of json lines from a list of trace events.
+
+To view the trace, these lines can be saved to a file and loaded into
+chrome://tracing.
+
+Future work will look to add:
+
+- Config options to customize output.
+- A method of providing custom data formatters.
+- Perfetto support.
