@@ -46,13 +46,15 @@ be overridden.
 Buffering
 ^^^^^^^^^
 If any buffering occurs in a ``Writer`` and data must be flushed before it is
-fully committed to the sink, a ``Writer`` may optionally override ``Flush()``.
-Writes to a buffer may optimistically return ``Status::OK``, so depend on the
-return value of ``Flush()`` to ensure any pending data is committed to a sink.
+fully committed to the sink, a ``Writer`` implementation is resposible for any
+``Flush()`` capability.
 
-Generally speaking, the scope that instantiates the concrete ``Writer`` class
-should be in charge of calling ``Flush()``, and functions that only have access
-to the Writer interface should avoid calling this function.
+pw::stream::Reader
+------------------
+This is the foundational stream ``Reader`` abstract class. Any class that wishes
+to implement the ``Reader`` interface **must** provide a ``DoRead()``
+implementation. Note that ``Read()`` itself is **not** virtual, and should not
+be overridden.
 
 pw::stream::MemoryWriter
 ------------------------
@@ -60,6 +62,11 @@ The ``MemoryWriter`` class implements the ``Writer`` interface by backing the
 data destination with an **externally-provided** memory buffer.
 ``MemoryWriterBuffer`` extends ``MemoryWriter`` to internally provide a memory
 buffer.
+
+pw::stream::MemoryReader
+------------------------
+The ``MemoryReader`` class implements the ``Reader`` interface by backing the
+data source with an **externally-provided** memory buffer.
 
 Why use pw_stream?
 ==================

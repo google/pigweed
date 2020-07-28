@@ -138,7 +138,133 @@ TEST(MemoryWriter, NullPointer) {
   memory_writer.Write(nullptr, 21);
 }
 
+// TODO(davidrogers): Ensure that this test triggers an assert.
+TEST(MemoryReader, NullSpan) {
+  ByteSpan dest(nullptr, 5);
+  MemoryReader memory_reader(memory_buffer);
+  memory_reader.Read(dest);
+}
+
+// TODO(davidrogers): Ensure that this test triggers an assert.
+TEST(MemoryReader, NullPointer) {
+  MemoryReader memory_reader(memory_buffer);
+  memory_reader.Read(nullptr, 21);
+}
+
 #endif  // CHECK_TEST_CRASHES
+
+TEST(MemoryReader, SingleFullRead) {
+  constexpr size_t kTempBufferSize = 32;
+
+  std::array<std::byte, kTempBufferSize> source;
+  std::array<std::byte, kTempBufferSize> dest;
+
+  uint8_t counter = 0;
+  for (std::byte& value : source) {
+    value = std::byte(counter++);
+  }
+
+  MemoryReader memory_reader(source);
+
+  // Read exactly the available bytes.
+  EXPECT_EQ(memory_reader.ConservativeReadLimit(), dest.size());
+  Result<ByteSpan> result = memory_reader.Read(dest);
+  EXPECT_EQ(result.status(), Status::OK);
+  EXPECT_EQ(result.value().size_bytes(), dest.size());
+
+  ASSERT_EQ(source.size(), result.value().size_bytes());
+  for (size_t i = 0; i < source.size(); i++) {
+    EXPECT_EQ(source[i], result.value()[i]);
+  }
+
+  // Shoud be no byte remaining.
+  EXPECT_EQ(memory_reader.ConservativeReadLimit(), 0u);
+  result = memory_reader.Read(dest);
+  EXPECT_EQ(result.status(), Status::OUT_OF_RANGE);
+}
+
+TEST(MemoryReader, EmptySpanRead) {
+  constexpr size_t kTempBufferSize = 32;
+  std::array<std::byte, kTempBufferSize> source;
+
+  // Use a span with nullptr and zero length;
+  ByteSpan dest(nullptr, 0);
+  EXPECT_EQ(dest.size_bytes(), 0u);
+
+  MemoryReader memory_reader(source);
+
+  // Read exactly the available bytes.
+  Result<ByteSpan> result = memory_reader.Read(dest);
+  EXPECT_EQ(result.status(), Status::OK);
+  EXPECT_EQ(result.value().size_bytes(), 0u);
+  EXPECT_EQ(result.value().data(), dest.data());
+
+  // Shoud be original bytes remaining.
+  EXPECT_EQ(memory_reader.ConservativeReadLimit(), source.size());
+}
+
+TEST(MemoryReader, SinglePartialRead) {
+  constexpr size_t kTempBufferSize = 32;
+  std::array<std::byte, kTempBufferSize> source;
+  std::array<std::byte, kTempBufferSize * 2> dest;
+
+  uint8_t counter = 0;
+  for (std::byte& value : source) {
+    value = std::byte(counter++);
+  }
+
+  MemoryReader memory_reader(source);
+
+  // Try and read double the bytes available. Use the pointer/size version of
+  // the API.
+  Result<ByteSpan> result = memory_reader.Read(dest.data(), dest.size());
+  EXPECT_EQ(result.status(), Status::OK);
+  EXPECT_EQ(result.value().size_bytes(), source.size());
+
+  ASSERT_EQ(source.size(), result.value().size_bytes());
+  for (size_t i = 0; i < source.size(); i++) {
+    EXPECT_EQ(source[i], result.value()[i]);
+  }
+
+  // Shoud be no byte remaining.
+  EXPECT_EQ(memory_reader.ConservativeReadLimit(), 0u);
+  result = memory_reader.Read(dest);
+  EXPECT_EQ(result.status(), Status::OUT_OF_RANGE);
+}
+
+TEST(MemoryReader, MultipleReads) {
+  constexpr size_t kTempBufferSize = 32;
+
+  std::array<std::byte, kTempBufferSize * 5> source;
+  std::array<std::byte, kTempBufferSize> dest;
+
+  uint8_t counter = 0;
+
+  for (std::byte& value : source) {
+    value = std::byte(counter++);
+  }
+
+  MemoryReader memory_reader(source);
+
+  size_t source_chunk_base = 0;
+
+  while (memory_reader.ConservativeReadLimit() > 0) {
+    size_t read_limit = memory_reader.ConservativeReadLimit();
+
+    // Try and read a chunk of bytes.
+    Result<ByteSpan> result = memory_reader.Read(dest);
+    EXPECT_EQ(result.status(), Status::OK);
+    EXPECT_EQ(result.value().size_bytes(), dest.size());
+    EXPECT_EQ(memory_reader.ConservativeReadLimit(),
+              read_limit - result.value().size_bytes());
+
+    // Verify the chunk of byte that was read.
+    for (size_t i = 0; i < result.value().size_bytes(); i++) {
+      EXPECT_EQ(source[source_chunk_base + i], result.value()[i]);
+    }
+    source_chunk_base += result.value().size_bytes();
+  }
+}
 
 }  // namespace
 }  // namespace pw::stream
