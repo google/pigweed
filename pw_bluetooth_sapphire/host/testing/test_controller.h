@@ -20,16 +20,28 @@
 namespace bt {
 namespace testing {
 
-// TODO(46656): add file name, line number, and expectation expression
+struct ExpectationMetadata {
+  ExpectationMetadata(const char* file, int line, const char* expectation)
+      : file(file), line(line), expectation(expectation) {}
+  ExpectationMetadata() : file(nullptr), line(0), expectation(nullptr) {}
+  const char* file;
+  int line;
+  // String inside of the expectation expression: EXPECT_ACL_PACKET_OUT(expectation, ...).
+  const char* expectation;
+};
+
 struct PacketExpectation {
   DynamicByteBuffer data;
+  // TODO(57038): Make metadata required once all tests have been migrated.
+  std::optional<ExpectationMetadata> meta;
 };
 
 class Transaction {
  public:
   // The |expected| buffer and the buffers in |replies| will be copied, so their lifetime does not
   // need to extend past Transaction construction.
-  Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies);
+  Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
+              std::optional<ExpectationMetadata> meta);
   virtual ~Transaction() = default;
   Transaction(Transaction&& other) = default;
   Transaction& operator=(Transaction&& other) = default;
@@ -39,7 +51,7 @@ class Transaction {
 
   const PacketExpectation& expected() { return expected_; }
   void set_expected(const PacketExpectation& expected) {
-    expected_ = PacketExpectation{DynamicByteBuffer(expected.data)};
+    expected_ = PacketExpectation{.data = DynamicByteBuffer(expected.data), .meta = expected.meta};
   }
 
   std::queue<DynamicByteBuffer>& replies() { return replies_; }
@@ -55,11 +67,13 @@ class Transaction {
 // packet and the events that should be sent back in response to it.
 class CommandTransaction final : public Transaction {
  public:
-  CommandTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
-      : Transaction(expected, replies), prefix_(false) {}
+  CommandTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
+                     std::optional<ExpectationMetadata> meta = std::nullopt)
+      : Transaction(expected, replies, meta), prefix_(false) {}
 
   // Match by opcode only.
-  CommandTransaction(hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies);
+  CommandTransaction(hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies,
+                     std::optional<ExpectationMetadata> meta = std::nullopt);
 
   // Move constructor and assignment operator.
   CommandTransaction(CommandTransaction&& other) = default;
@@ -75,17 +89,23 @@ class CommandTransaction final : public Transaction {
 // A DataTransaction is used to set up an expectation for an acl data channel
 class DataTransaction final : public Transaction {
  public:
-  DataTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
-      : Transaction(expected, replies) {}
+  DataTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
+                  ExpectationMetadata meta)
+      : Transaction(expected, replies, meta) {}
   DataTransaction(DataTransaction&& other) = default;
   DataTransaction& operator=(DataTransaction&& other) = default;
 };
 
 // Helper macro for expecting a data packet and specifying a variable number of responses that the
 // TestController should send in response to the expected packet.
-// TODO(46656): add file & line number arguments
-#define EXPECT_ACL_PACKET_OUT(device, packet_buffer, ...) \
-  (device)->QueueDataTransaction((packet_buffer), {__VA_ARGS__})
+#define EXPECT_ACL_PACKET_OUT(device, expected, ...)        \
+  (device)->QueueDataTransaction((expected), {__VA_ARGS__}, \
+                                 bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
+
+// Helper macro for expecting a command packet and receiving a variable number of responses.
+#define EXPECT_CMD_PACKET_OUT(device, expected, ...) \
+  (device)->QueueCommandTransaction(                 \
+      (expected), {__VA_ARGS__}, bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
 
 // TestController allows unit tests to set up an expected sequence of HCI
 // command packets and ACL data packets and any packets that should be sent back in response. The
@@ -100,9 +120,11 @@ class TestController : public FakeControllerBase {
   // against the next expected transaction in the queue. A mismatch will cause a
   // fatal assertion. On a match, TestController will send back the replies
   // provided in the transaction.
+  // TODO(57038): Make metadata required.
   void QueueCommandTransaction(CommandTransaction transaction);
   void QueueCommandTransaction(const ByteBuffer& expected,
-                               const std::vector<const ByteBuffer*>& replies);
+                               const std::vector<const ByteBuffer*>& replies,
+                               std::optional<ExpectationMetadata> meta = std::nullopt);
 
   // Queues a transaction into the TestController's expected ACL data queue. Each
   // packet received through the ACL data channel endpoint will be verified
@@ -111,7 +133,8 @@ class TestController : public FakeControllerBase {
   // provided in the transaction.
   void QueueDataTransaction(DataTransaction transaction);
   void QueueDataTransaction(const ByteBuffer& expected,
-                            const std::vector<const ByteBuffer*>& replies);
+                            const std::vector<const ByteBuffer*>& replies,
+                            ExpectationMetadata meta);
 
   // Returns true iff all transactions queued with QueueDataTransaction() have been received.
   bool AllExpectedDataPacketsSent() const;

@@ -14,8 +14,9 @@
 namespace bt {
 namespace testing {
 
-Transaction::Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies)
-    : expected_({DynamicByteBuffer(expected)}) {
+Transaction::Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
+                         std::optional<ExpectationMetadata> meta)
+    : expected_({DynamicByteBuffer(expected), meta}) {
   for (const auto* buffer : replies) {
     replies_.push(DynamicByteBuffer(*buffer));
   }
@@ -26,11 +27,12 @@ bool Transaction::Match(const ByteBuffer& packet) {
 }
 
 CommandTransaction::CommandTransaction(hci::OpCode expected_opcode,
-                                       const std::vector<const ByteBuffer*>& replies)
-    : Transaction({DynamicByteBuffer()}, replies), prefix_(true) {
+                                       const std::vector<const ByteBuffer*>& replies,
+                                       std::optional<ExpectationMetadata> meta)
+    : Transaction(DynamicByteBuffer(), replies, meta), prefix_(true) {
   hci::OpCode le_opcode = htole16(expected_opcode);
   const BufferView expected(&le_opcode, sizeof(expected_opcode));
-  set_expected({DynamicByteBuffer(expected)});
+  set_expected({DynamicByteBuffer(expected), meta});
 }
 
 bool CommandTransaction::Match(const ByteBuffer& cmd) {
@@ -47,17 +49,25 @@ TestController::TestController()
 TestController::~TestController() {
   while (!cmd_transactions_.empty()) {
     auto& transaction = cmd_transactions_.front();
-    // TODO(46656): add file & line number to failure
-    ADD_FAILURE() << "Didn't receive expected outbound command packet {"
-                  << ByteContainerToString(transaction.expected().data) << "}";
+    if (transaction.expected().meta.has_value()) {
+      auto meta = transaction.expected().meta.value();
+      ADD_FAILURE_AT(meta.file, meta.line)
+          << "Didn't receive expected outbound command packet (" << meta.expectation << ") {"
+          << ByteContainerToString(transaction.expected().data) << "}";
+    } else {
+      ADD_FAILURE() << "Didn't receive expected outbound command packet {"
+                    << ByteContainerToString(transaction.expected().data) << "}";
+    }
     cmd_transactions_.pop();
   }
 
   while (!data_transactions_.empty()) {
     auto& transaction = data_transactions_.front();
-    // TODO(46656): add file & line number to failure
-    ADD_FAILURE() << "Didn't receive expected outbound data packet {"
-                  << ByteContainerToString(transaction.expected().data) << "}";
+    ZX_ASSERT(transaction.expected().meta.has_value());
+    auto meta = transaction.expected().meta.value();
+    ADD_FAILURE_AT(meta.file, meta.line)
+        << "Didn't receive expected outbound data packet (" << meta.expectation << ") {"
+        << ByteContainerToString(transaction.expected().data) << "}";
     data_transactions_.pop();
   }
   Stop();
@@ -68,8 +78,9 @@ void TestController::QueueCommandTransaction(CommandTransaction transaction) {
 }
 
 void TestController::QueueCommandTransaction(const ByteBuffer& expected,
-                                             const std::vector<const ByteBuffer*>& replies) {
-  QueueCommandTransaction(CommandTransaction({DynamicByteBuffer(expected)}, replies));
+                                             const std::vector<const ByteBuffer*>& replies,
+                                             std::optional<ExpectationMetadata> meta) {
+  QueueCommandTransaction(CommandTransaction(DynamicByteBuffer(expected), replies, meta));
 }
 
 void TestController::QueueDataTransaction(DataTransaction transaction) {
@@ -78,8 +89,9 @@ void TestController::QueueDataTransaction(DataTransaction transaction) {
 }
 
 void TestController::QueueDataTransaction(const ByteBuffer& expected,
-                                          const std::vector<const ByteBuffer*>& replies) {
-  QueueDataTransaction(DataTransaction({DynamicByteBuffer(expected)}, replies));
+                                          const std::vector<const ByteBuffer*>& replies,
+                                          ExpectationMetadata meta) {
+  QueueDataTransaction(DataTransaction(DynamicByteBuffer(expected), replies, meta));
 }
 
 bool TestController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
@@ -131,15 +143,25 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       << ", OCF: 0x" << ocf;
 
   auto& expected = cmd_transactions_.front();
-  const hci::OpCode expected_opcode =
-    le16toh(expected.expected().data.As<hci::OpCode>());
+  const hci::OpCode expected_opcode = le16toh(expected.expected().data.As<hci::OpCode>());
   uint8_t expected_ogf = hci::GetOGF(expected_opcode);
   uint16_t expected_ocf = hci::GetOCF(expected_opcode);
 
-  ASSERT_TRUE(expected.Match(command_packet.data()))
-      << " Expected command packet with OGF: 0x" << std::hex << static_cast<uint16_t>(expected_ogf)
-      << ", OCF: 0x" << expected_ocf << ". Received command packet with OGF: 0x"
-      << static_cast<uint16_t>(ogf) << ", OCF: 0x" << ocf;
+  if (!expected.Match(command_packet.data())) {
+    if (expected.expected().meta.has_value()) {
+      auto meta = expected.expected().meta.value();
+      GTEST_FAIL_AT(meta.file, meta.line)
+          << " Expected command packet (" << meta.expectation << ") with OGF: 0x" << std::hex
+          << static_cast<uint16_t>(expected_ogf) << ", OCF: 0x" << expected_ocf
+          << ". Received command packet with OGF: 0x" << static_cast<uint16_t>(ogf) << ", OCF: 0x"
+          << ocf;
+    } else {
+      GTEST_FAIL() << " Expected command packet with OGF: 0x" << std::hex
+                   << static_cast<uint16_t>(expected_ogf) << ", OCF: 0x" << expected_ocf
+                   << ". Received command packet with OGF: 0x" << static_cast<uint16_t>(ogf)
+                   << ", OCF: 0x" << ocf;
+    }
+  }
 
   while (!expected.replies().empty()) {
     auto& reply = expected.replies().front();
@@ -162,7 +184,11 @@ void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
                                              << ByteContainerToString(acl_data_packet) << "}";
 
     auto& expected = data_transactions_.front();
-    ASSERT_TRUE(expected.Match(acl_data_packet.view()));
+    if (!expected.Match(acl_data_packet.view())) {
+      ZX_ASSERT(expected.expected().meta.has_value());
+      auto meta = expected.expected().meta.value();
+      GTEST_FAIL_AT(meta.file, meta.line) << "Expected data packet (" << meta.expectation << ")";
+    }
 
     while (!expected.replies().empty()) {
       auto& reply = expected.replies().front();
