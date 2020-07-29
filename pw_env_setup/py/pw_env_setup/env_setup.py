@@ -189,9 +189,10 @@ class EnvSetup(object):
         if isinstance(self._pw_root, bytes) and bytes != str:
             self._pw_root = self._pw_root.decode()
 
-        # No need to set PW_ROOT or PW_ENVIRONMENT_ROOT, that will be done by
-        # bootstrap.sh and bootstrap.bat for both bootstrap and activate.
-        self._env.add_replacement('PW_ENVIRONMENT_ROOT', install_dir)
+        # No need to set PW_ROOT or _PW_ACTUAL_ENVIRONMENT_ROOT, that will be
+        # done by bootstrap.sh and bootstrap.bat for both bootstrap and
+        # activate.
+        self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('PW_ROOT', pw_root)
 
     def _log(self, *args, **kwargs):

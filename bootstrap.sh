@@ -165,11 +165,19 @@ fi
 
 export PW_ROOT
 
+# PW_ENVIRONMENT_ROOT allows developers to specify where the environment should
+# be installed. _PW_ACTUAL_ENVIRONMENT_ROOT is where Pigweed keeps that 
+# information. This separation allows Pigweed to assume PW_ENVIRONMENT_ROOT 
+# came from the developer and not from a previous bootstrap possibly from 
+# another workspace.
 if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
-  PW_ENVIRONMENT_ROOT="$PW_ROOT/.environment"
-  export PW_ENVIRONMENT_ROOT
+  _PW_ACTUAL_ENVIRONMENT_ROOT="$PW_ROOT/.environment"
+  export _PW_ACTUAL_ENVIRONMENT_ROOT
+else
+  _PW_ACTUAL_ENVIRONMENT_ROOT="$PW_ENVIRONMENT_ROOT"
+  export _PW_ACTUAL_ENVIRONMENT_ROOT
 fi
-SETUP_SH="$PW_ENVIRONMENT_ROOT/activate.sh"
+SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
 
 if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
   _pw_green "\n  WELCOME TO...\n"
@@ -223,9 +231,9 @@ if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   fi
 
   if [ -n "$_PW_ENV_SETUP" ]; then
-    "$_PW_ENV_SETUP" --shell-file "$SETUP_SH" --install-dir "$PW_ENVIRONMENT_ROOT"
+    "$_PW_ENV_SETUP" --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT"
   else
-    "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH" --install-dir "$PW_ENVIRONMENT_ROOT"
+    "$PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT"
   fi
 
   PW_CIPD_PACKAGE_FILES="$_PW_OLD_CIPD_PACKAGE_FILES"

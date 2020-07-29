@@ -56,11 +56,18 @@ if not "%PW_BOOTSTRAP_PYTHON%" == "" (
   )
 )
 
-:: Not prefixing environment with "." since that doesn't hide it anyway.
+:: PW_ENVIRONMENT_ROOT allows developers to specify where the environment should
+:: be installed. _PW_ACTUAL_ENVIRONMENT_ROOT is where Pigweed keeps that 
+:: information. This separation allows Pigweed to assume PW_ENVIRONMENT_ROOT 
+:: came from the developer and not from a previous bootstrap possibly from 
+:: another workspace.
 if "%PW_ENVIRONMENT_ROOT%"=="" (
-   set "PW_ENVIRONMENT_ROOT=%PW_ROOT%\environment"
+   :: Not prefixing environment with "." since that doesn't hide it anyway.
+   set "_PW_ACTUAL_ENVIRONMENT_ROOT=%PW_ROOT%\environment"
+) else (
+   set "_PW_ACTUAL_ENVIRONMENT_ROOT=%PW_ENVIRONMENT_ROOT%"
 )
-set "shell_file=%PW_ENVIRONMENT_ROOT%\activate.bat"
+set "shell_file=%_PW_ACTUAL_ENVIRONMENT_ROOT%\activate.bat"
 
 set _PW_OLD_CIPD_PACKAGE_FILES=%PW_CIPD_PACKAGE_FILES%
 set _PW_OLD_VIRTUALENV_REQUIREMENTS=%PW_VIRTUALENV_REQUIREMENTS%
@@ -82,7 +89,7 @@ if "%PW_SKIP_BOOTSTRAP%" == "" (
   call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
       --pw-root "%PW_ROOT%/" ^
       --shell-file "%shell_file%" ^
-      --install-dir "%PW_ENVIRONMENT_ROOT%"
+      --install-dir "%_PW_ACTUAL_ENVIRONMENT_ROOT%"
 ) else (
   if exist "%shell_file%" (
     call "%python%" "%_pw_start_script%"

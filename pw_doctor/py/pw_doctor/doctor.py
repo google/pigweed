@@ -191,8 +191,8 @@ def virtualenv(ctx: DoctorContext):
         return
 
     var = 'PW_ROOT'
-    if 'PW_ENVIRONMENT_ROOT' in os.environ:
-        var = 'PW_ENVIRONMENT_ROOT'
+    if '_PW_ACTUAL_ENVIRONMENT_ROOT' in os.environ:
+        var = '_PW_ACTUAL_ENVIRONMENT_ROOT'
     root = pathlib.Path(os.environ[var]).resolve()
 
     if root not in venv_path.parents:
