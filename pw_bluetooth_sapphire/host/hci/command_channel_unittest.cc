@@ -67,7 +67,7 @@ TEST_F(HCI_CommandChannelTest, SingleRequestResponse) {
       LowerBits(kReset), UpperBits(kReset),  // HCI_Reset opcode
       StatusCode::kHardwareFailure);
   // clang-format on
-  test_device()->QueueCommandTransaction(CommandTransaction(req, {&rsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
   StartTestDevice();
 
   // Send a HCI_Reset command. We attach an instance of TestCallbackObject to
@@ -123,7 +123,7 @@ TEST_F(HCI_CommandChannelTest, SingleAsynchronousRequest) {
       0x01,  // parameter_total_size (1 byte payload)
       StatusCode::kSuccess);
   // clang-format on
-  test_device()->QueueCommandTransaction(CommandTransaction(req, {&rsp0, &rsp1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0, &rsp1);
   StartTestDevice();
 
   // Send HCI_Inquiry
@@ -170,7 +170,7 @@ TEST_F(HCI_CommandChannelTest, SingleRequestWithStatusResponse) {
       LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
       );
   // clang-format on
-  test_device()->QueueCommandTransaction(CommandTransaction(req, {&rsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
   StartTestDevice();
 
   // Send HCI_Reset
@@ -222,8 +222,8 @@ TEST_F(HCI_CommandChannelTest, OneSentUntilStatus) {
       0x00, 0x00 // No associated opcode.
       );
   // clang-format on
-  test_device()->QueueCommandTransaction(CommandTransaction(req1, {&rsp1}));
-  test_device()->QueueCommandTransaction(CommandTransaction(req2, {&rsp2}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req1, &rsp1);
+  EXPECT_CMD_PACKET_OUT(test_device(), req2, &rsp2);
   StartTestDevice();
 
   CommandChannel::TransactionId reset_id, inquiry_id;
@@ -299,9 +299,9 @@ TEST_F(HCI_CommandChannelTest, QueuedCommands) {
   // clang-format on
 
   // We handle our own responses to make sure commands are queued.
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
-  test_device()->QueueCommandTransaction(CommandTransaction(req_inqcancel, {}));
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_reset}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
+  EXPECT_CMD_PACKET_OUT(test_device(), req_inqcancel, );
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_reset);
   StartTestDevice();
 
   size_t transaction_count = 0u;
@@ -393,8 +393,8 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommands) {
       );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
-  test_device()->QueueCommandTransaction(CommandTransaction(req_inqcancel, {&rsp_inqstatus}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
+  EXPECT_CMD_PACKET_OUT(test_device(), req_inqcancel, &rsp_inqstatus);
   StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
@@ -494,8 +494,7 @@ TEST_F(HCI_CommandChannelTest, AsyncQueueWhenBlocked) {
   test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
                                         dispatcher());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(req_reset, {&rsp_resetstatus, &rsp_bogocomplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus, &rsp_bogocomplete);
   StartTestDevice();
 
   test_device()->SendCommandChannelPacket(rsp_nocommandsavail);
@@ -677,7 +676,7 @@ TEST_F(HCI_CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // We will send the HCI_Reset command with kTestEventCode as the completion
   // event. The event handler we register below should only get invoked once and
   // after the pending transaction completes.
-  test_device()->QueueCommandTransaction(CommandTransaction(req, {&req_complete, &event, &event}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &req_complete, &event, &event);
   StartTestDevice();
 
   int event_count = 0;
@@ -718,7 +717,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
                                           0xFF,  // num_hci_command_packets (255 can be sent)
                                           LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
   );
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
   int transaction_count = 0u;
@@ -756,7 +755,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
                                           0xFF,  // num_hci_command_packets (255 can be sent)
                                           LowerBits(kReset), UpperBits(kReset)  // HCI_Reset opcode
   );
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
   int transaction_count = 0u;
@@ -833,7 +832,7 @@ const auto kReadRemoteSupportedFeaturesComplete =
 //  - The first command (after removal) does not receive the update event for the second command.
 TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   using namespace std::placeholders;
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadRemoteSupportedFeaturesCmd, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
   StartTestDevice();
 
   int transaction_count = 0u;
@@ -884,9 +883,8 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
 //  - Calling RemoveQueuedCommand on an asynchronous command that has received both Command Status
 //    and command completion events returns false and has no effect.
 TEST_F(HCI_CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteSupportedFeaturesCmd,
-      {&kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
+                        &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
   StartTestDevice();
 
   int transaction_count = 0;
@@ -921,7 +919,7 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
 //    controller returns false.
 //  - The command still notifies the callback for update and completion events.
 TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadRemoteSupportedFeaturesCmd, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
   StartTestDevice();
 
   int transaction_count = 0;
@@ -965,8 +963,8 @@ TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
 //    controller and gotten Command Status returns false.
 //  - The command still notifies the callback for completion event.
 TEST_F(HCI_CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadRemoteSupportedFeaturesCmd, {&kReadRemoteSupportedFeaturesRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
+                        &kReadRemoteSupportedFeaturesRsp);
   StartTestDevice();
 
   int transaction_count = 0;
@@ -1107,7 +1105,7 @@ TEST_F(HCI_CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInte
   );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status}));
+  EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status);
   StartTestDevice();
 
   constexpr EventCode kTestEventCode = 0x01;
@@ -1193,7 +1191,7 @@ TEST_F(HCI_CommandChannelTest, CommandTimeoutCallback) {
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
   // time out.
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
   size_t timeout_cb_count = 0;
@@ -1231,7 +1229,7 @@ TEST_F(HCI_CommandChannelTest, DestroyChannelInTimeoutCallback) {
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
   // time out.
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   StartTestDevice();
 
   size_t timeout_cb_count = 0;
@@ -1291,8 +1289,8 @@ TEST_F(HCI_CommandChannelTest, AsynchronousCommandChaining) {
       );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
-  test_device()->QueueCommandTransaction(CommandTransaction(req_reset, {&rsp_resetstatus}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
   StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
@@ -1404,15 +1402,12 @@ TEST_F(HCI_CommandChannelTest, ExclusiveCommands) {
                              StatusCode::kSuccess  // Command succeeded
       );
 
-  test_device()->QueueCommandTransaction(CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(excl_two_cmd, {&rsp_excl_two_status}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(excl_one_cmd, {&rsp_excl_one_status}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(nonexclusive_cmd, {&nonexclusive_complete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_two_cmd, &rsp_excl_two_status);
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), excl_one_cmd, &rsp_excl_one_status);
+  EXPECT_CMD_PACKET_OUT(test_device(), nonexclusive_cmd, &nonexclusive_complete);
 
   StartTestDevice();
 
@@ -1600,7 +1595,7 @@ TEST_F(HCI_CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
                                                 0x01,  // parameter total size (1 byte payload)
                                                 kSubeventCode);
 
-  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status_event}));
+  EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status_event);
   StartTestDevice();
 
   auto cmd_packet = CommandPacket::New(kOpCode);
@@ -1656,7 +1651,7 @@ TEST_F(
   auto cmd = StaticByteBuffer(LowerBits(kOpCode), UpperBits(kOpCode),
                               // parameter total size (0 byte payload)
                               0x00);
-  test_device()->QueueCommandTransaction(CommandTransaction(std::move(cmd), {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), std::move(cmd), );
   EXPECT_NE(0u, cmd_channel()->SendLeAsyncCommand(
                     CommandPacket::New(kOpCode), [](auto, const auto&) {}, kSubeventCode + 1));
   RunLoopUntilIdle();
@@ -1694,7 +1689,7 @@ TEST_F(HCI_CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitF
                                                 0x01,  // parameter total size (1 byte payload)
                                                 kSubeventCode);
 
-  test_device()->QueueCommandTransaction(CommandTransaction(cmd0, {&cmd0_status_event}));
+  EXPECT_CMD_PACKET_OUT(test_device(), cmd0, &cmd0_status_event);
   StartTestDevice();
 
   size_t event_count_0 = 0;
@@ -1746,7 +1741,7 @@ TEST_F(HCI_CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitF
   EXPECT_EQ(0u, event_count_1);
 
   // When first command complete event is received, second command should be sent.
-  test_device()->QueueCommandTransaction(CommandTransaction(cmd1, {&cmd1_status_event}));
+  EXPECT_CMD_PACKET_OUT(test_device(), cmd1, &cmd1_status_event);
   test_device()->SendCommandChannelPacket(cmd_complete_subevent);
   RunLoopUntilIdle();
   EXPECT_EQ(2u, event_count_0);
@@ -1777,7 +1772,7 @@ TEST_F(
                                            // HCI opcode
                                            LowerBits(kOpCode), UpperBits(kOpCode));
 
-  test_device()->QueueCommandTransaction(CommandTransaction(cmd, {&cmd_status_event}));
+  EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status_event);
   StartTestDevice();
 
   size_t event_count = 0;

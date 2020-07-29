@@ -61,12 +61,10 @@ class LowEnergyInterrogatorTest : public TestingBase {
     const auto le_remote_features_complete_packet =
         testing::LEReadRemoteFeaturesCompletePacket(conn, features);
 
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteVersionInfoPacket(conn),
-                           {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::LEReadRemoteFeaturesPacket(conn),
-                           {&kLEReadRemoteFeaturesRsp, &le_remote_features_complete_packet}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(conn),
+                          &kLEReadRemoteFeaturesRsp, &le_remote_features_complete_packet);
   }
 
   PeerCache* peer_cache() const { return peer_cache_.get(); }
@@ -110,9 +108,8 @@ TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulInterrogationPeerAlreadyHasLEFea
 
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
-                         {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->le());
@@ -158,12 +155,10 @@ TEST_F(GAP_LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const auto le_read_remote_features_error_status_packet =
       testing::CommandStatusPacket(hci::kLEReadRemoteFeatures, hci::StatusCode::kUnknownCommand);
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
-                         {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
-                         {&le_read_remote_features_error_status_packet}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
+                        &le_read_remote_features_error_status_packet);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->le());
@@ -184,11 +179,10 @@ TEST_F(GAP_LowEnergyInterrogatorTest, PeerRemovedBeforeLEReadRemoteFeaturesCompl
   const auto le_remote_features_complete_packet =
       testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle, hci::LESupportedFeatures{0});
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
-                         {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      testing::LEReadRemoteFeaturesPacket(kConnectionHandle), {&kLEReadRemoteFeaturesRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
+                        &kLEReadRemoteFeaturesRsp);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->le());
@@ -214,11 +208,10 @@ TEST_F(GAP_LowEnergyInterrogatorTest, ReadLERemoteFeaturesCallbackHandlesCancele
   const auto le_remote_features_complete_packet =
       testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle, hci::LESupportedFeatures{0});
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
-                         {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      testing::LEReadRemoteFeaturesPacket(kConnectionHandle), {&kLEReadRemoteFeaturesRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
+                        &kLEReadRemoteFeaturesRsp);
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   ASSERT_TRUE(peer->le());

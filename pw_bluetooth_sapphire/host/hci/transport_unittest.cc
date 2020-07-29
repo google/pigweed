@@ -34,7 +34,7 @@ TEST_F(HCI_TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosed
 
   // Expect the HCI_Reset command but dont send a reply back to make the command
   // time out.
-  test_device()->QueueCommandTransaction(testing::CommandTransaction(req_reset, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset);
   StartTestDevice();
 
   size_t cb_count = 0;

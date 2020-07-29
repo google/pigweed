@@ -73,15 +73,12 @@ class BrEdrInterrogatorTest : public TestingBase {
     const DynamicByteBuffer remote_supported_complete_packet =
         testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
 
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::RemoteNameRequestPacket(addr),
-                           {&kRemoteNameRequestRsp, &remote_name_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteVersionInfoPacket(conn),
-                           {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteSupportedFeaturesPacket(conn),
-                           {&kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
+                          &kRemoteNameRequestRsp, &remote_name_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
+                          &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
     QueueSuccessfulReadRemoteExtendedFeatures(conn);
   }
 
@@ -91,12 +88,10 @@ class BrEdrInterrogatorTest : public TestingBase {
     const DynamicByteBuffer remote_extended2_complete_packet =
         testing::ReadRemoteExtended2CompletePacket(conn);
 
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteExtended1Packet(conn),
-                           {&kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteExtended2Packet(conn),
-                           {&kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
   }
 
   PeerCache* peer_cache() const { return peer_cache_.get(); }
@@ -163,12 +158,11 @@ TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulReinterrogation) {
 TEST_F(GAP_BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   const DynamicByteBuffer remote_name_request_failure_rsp =
       testing::CommandStatusPacket(hci::kRemoteNameRequest, hci::StatusCode::kUnspecifiedError);
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      testing::RemoteNameRequestPacket(kTestDevAddr), {&remote_name_request_failure_rsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle), {}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle), {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
+                        &remote_name_request_failure_rsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
 
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
   EXPECT_FALSE(peer->name());

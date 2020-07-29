@@ -23,7 +23,6 @@ namespace testing {
 struct ExpectationMetadata {
   ExpectationMetadata(const char* file, int line, const char* expectation)
       : file(file), line(line), expectation(expectation) {}
-  ExpectationMetadata() : file(nullptr), line(0), expectation(nullptr) {}
   const char* file;
   int line;
   // String inside of the expectation expression: EXPECT_ACL_PACKET_OUT(expectation, ...).
@@ -32,8 +31,7 @@ struct ExpectationMetadata {
 
 struct PacketExpectation {
   DynamicByteBuffer data;
-  // TODO(57038): Make metadata required once all tests have been migrated.
-  std::optional<ExpectationMetadata> meta;
+  ExpectationMetadata meta;
 };
 
 class Transaction {
@@ -41,7 +39,7 @@ class Transaction {
   // The |expected| buffer and the buffers in |replies| will be copied, so their lifetime does not
   // need to extend past Transaction construction.
   Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
-              std::optional<ExpectationMetadata> meta);
+              ExpectationMetadata meta);
   virtual ~Transaction() = default;
   Transaction(Transaction&& other) = default;
   Transaction& operator=(Transaction&& other) = default;
@@ -68,12 +66,12 @@ class Transaction {
 class CommandTransaction final : public Transaction {
  public:
   CommandTransaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
-                     std::optional<ExpectationMetadata> meta = std::nullopt)
+                     ExpectationMetadata meta)
       : Transaction(expected, replies, meta), prefix_(false) {}
 
   // Match by opcode only.
   CommandTransaction(hci::OpCode expected_opcode, const std::vector<const ByteBuffer*>& replies,
-                     std::optional<ExpectationMetadata> meta = std::nullopt);
+                     ExpectationMetadata meta);
 
   // Move constructor and assignment operator.
   CommandTransaction(CommandTransaction&& other) = default;
@@ -120,11 +118,12 @@ class TestController : public FakeControllerBase {
   // against the next expected transaction in the queue. A mismatch will cause a
   // fatal assertion. On a match, TestController will send back the replies
   // provided in the transaction.
-  // TODO(57038): Make metadata required.
   void QueueCommandTransaction(CommandTransaction transaction);
   void QueueCommandTransaction(const ByteBuffer& expected,
+                               const std::vector<const ByteBuffer*>& replies, ExpectationMetadata);
+  void QueueCommandTransaction(hci::OpCode expected_opcode,
                                const std::vector<const ByteBuffer*>& replies,
-                               std::optional<ExpectationMetadata> meta = std::nullopt);
+                               ExpectationMetadata meta);
 
   // Queues a transaction into the TestController's expected ACL data queue. Each
   // packet received through the ACL data channel endpoint will be verified

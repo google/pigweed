@@ -544,10 +544,8 @@ class BrEdrConnectionManagerTest : public TestingBase {
     test_device()->ClearTransactionCallback();
     if (connection_manager_ != nullptr) {
       // deallocating the connection manager disables connectivity.
-      test_device()->QueueCommandTransaction(
-          CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-      test_device()->QueueCommandTransaction(
-          CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+      EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+      EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
       connection_manager_ = nullptr;
     }
     RunLoopUntilIdle();
@@ -579,18 +577,16 @@ class BrEdrConnectionManagerTest : public TestingBase {
   void QueueSuccessfulIncomingConn(DeviceAddress addr = kTestDevAddr,
                                    hci::ConnectionHandle handle = kConnectionHandle) const {
     const auto connection_complete = testing::ConnectionCompletePacket(addr, handle);
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::AcceptConnectionRequestPacket(addr),
-                           {&kAcceptConnectionRequestRsp, &connection_complete}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(addr),
+                          &kAcceptConnectionRequestRsp, &connection_complete);
     QueueSuccessfulInterrogation(addr, handle);
   }
 
   void QueueSuccessfulCreateConnection(Peer* peer, hci::ConnectionHandle conn) const {
     const DynamicByteBuffer complete_packet =
         testing::ConnectionCompletePacket(peer->address(), conn);
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::CreateConnectionPacket(peer->address()),
-                           {&kCreateConnectionRsp, &complete_packet}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::CreateConnectionPacket(peer->address()),
+                          &kCreateConnectionRsp, &complete_packet);
   }
 
   void QueueSuccessfulInterrogation(DeviceAddress addr, hci::ConnectionHandle conn) const {
@@ -605,43 +601,37 @@ class BrEdrConnectionManagerTest : public TestingBase {
     const DynamicByteBuffer remote_extended2_complete_packet =
         testing::ReadRemoteExtended2CompletePacket(conn);
 
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::RemoteNameRequestPacket(addr),
-                           {&kRemoteNameRequestRsp, &remote_name_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteVersionInfoPacket(conn),
-                           {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteSupportedFeaturesPacket(conn),
-                           {&kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteExtended1Packet(conn),
-                           {&kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(testing::ReadRemoteExtended2Packet(conn),
-                           {&kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
+                          &kRemoteNameRequestRsp, &remote_name_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
+                          &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
   }
 
   void QueueSuccessfulPairing() {
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kAuthenticationRequested, {&kAuthenticationRequestedStatus, &kLinkKeyRequest}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kLinkKeyRequestNegativeReply, {&kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest}));
+    EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus,
+                          &kLinkKeyRequest);
+    EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
+                          &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
     const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
         IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
     const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                     AuthRequirements::kMITMGeneralBonding),
-        {&kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(kUserConfirmationRequestReply,
-                           {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
-                            &kLinkKeyNotification, &kAuthenticationComplete}));
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp}));
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                       AuthRequirements::kMITMGeneralBonding),
+                          &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
+                          &kUserConfirmationRequest);
+    EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                          &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                          &kLinkKeyNotification, &kAuthenticationComplete);
+    EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                          &kEncryptionChangeEvent);
+    EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
   }
 
   void QueueDisconnection(
@@ -649,8 +639,8 @@ class BrEdrConnectionManagerTest : public TestingBase {
       hci::StatusCode reason = hci::StatusCode::kRemoteUserTerminatedConnection) const {
     const DynamicByteBuffer disconnect_complete =
         testing::DisconnectionCompletePacket(conn, reason);
-    test_device()->QueueCommandTransaction(CommandTransaction(
-        testing::DisconnectPacket(conn, reason), {&kDisconnectRsp, &disconnect_complete}));
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(conn, reason), &kDisconnectRsp,
+                          &disconnect_complete);
   }
 
  private:
@@ -672,10 +662,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisableConnectivity) {
     EXPECT_TRUE(status);
   };
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspPage}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableNone, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableNone, &kWriteScanEnableRsp);
 
   connmgr()->SetConnectable(false, cb);
 
@@ -683,10 +671,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisableConnectivity) {
 
   EXPECT_EQ(1u, cb_count);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
   connmgr()->SetConnectable(false, cb);
 
@@ -702,14 +688,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
     EXPECT_TRUE(status);
   };
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWritePageScanActivity, {&kWritePageScanActivityRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWritePageScanType, {&kWritePageScanTypeRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspNone}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnablePage, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanActivity, &kWritePageScanActivityRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanType, &kWritePageScanTypeRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspNone);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
 
   connmgr()->SetConnectable(true, cb);
 
@@ -717,14 +699,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
 
   EXPECT_EQ(1u, cb_count);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWritePageScanActivity, {&kWritePageScanActivityRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWritePageScanType, {&kWritePageScanTypeRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspInquiry}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableBoth, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanActivity, &kWritePageScanActivityRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWritePageScanType, &kWritePageScanTypeRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspInquiry);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
 
   connmgr()->SetConnectable(true, cb);
 
@@ -737,19 +715,18 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EnableConnectivity) {
 // interrogation should allow a peer that only report the first Extended
 // Features page.
 TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResponse) {
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteSupportedFeatures,
-      {&kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended1, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended2, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -758,14 +735,11 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnection_BrokenExtendedPageResp
   EXPECT_EQ(6, transaction_count());
 
   // When we deallocate the connection manager next, we should disconnect.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kDisconnect, {&kDisconnectRsp, &kDisconnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp, &kDisconnectionComplete);
 
   // deallocating the connection manager disables connectivity.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
   SetConnectionManager(nullptr);
 
@@ -791,14 +765,11 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
 
   // When we deallocate the connection manager next, we should disconnect.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kDisconnect, {&kDisconnectRsp, &kDisconnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp, &kDisconnectionComplete);
 
   // deallocating the connection manager disables connectivity.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
   SetConnectionManager(nullptr);
 
@@ -851,10 +822,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemoteDisconnect) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   // deallocating the connection manager disables connectivity.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
   SetConnectionManager(nullptr);
 
@@ -877,18 +846,17 @@ const auto kReadRemoteSupportedFeaturesCompleteFailed =
 //  - Receiving extra responses after a command fails will not fail
 //  - We don't query extended features if we don't receive an answer.
 TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestCompleteFailed}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteSupportedFeatures,
-      {&kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesCompleteFailed}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestCompleteFailed);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp,
+                        &kReadRemoteSupportedFeaturesCompleteFailed);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kDisconnect, {&kDisconnectRsp, &kDisconnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp, &kDisconnectionComplete);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -899,8 +867,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionFailedInterrogation) {
 
 // Test: replies negative to IO Capability Requests before PairingDelegate is set
 TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWithNoPairingDelegate) {
-  test_device()->QueueCommandTransaction(kIoCapabilityRequestNegativeReply,
-                                         {&kIoCapabilityRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kIoCapabilityRequestNegativeReply,
+                        &kIoCapabilityRequestNegativeReplyRsp);
 
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
@@ -914,8 +882,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestNegativeReplyWhenNotCo
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(kIoCapabilityRequestNegativeReply,
-                                         {&kIoCapabilityRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kIoCapabilityRequestNegativeReply,
+                        &kIoCapabilityRequestNegativeReplyRsp);
 
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
@@ -937,10 +905,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
 
   ASSERT_EQ(kIncomingConnTransactions, transaction_count());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kNoInputNoOutput,
-                                   AuthRequirements::kGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kNoInputNoOutput,
+                                                     AuthRequirements::kGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kMITMGeneralBonding));
@@ -966,10 +934,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUse
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
@@ -983,8 +951,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUse
         confirm_cb(false);
       });
 
-  test_device()->QueueCommandTransaction(kUserConfirmationRequestNegativeReply,
-                                         {&kUserConfirmationRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestNegativeReply,
+                        &kUserConfirmationRequestNegativeReplyRsp);
   test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
@@ -1033,10 +1001,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
@@ -1047,8 +1015,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
     response_cb(-128);  // Negative values indicate rejection.
   });
 
-  test_device()->QueueCommandTransaction(kUserPasskeyRequestNegativeReply,
-                                         {&kUserPasskeyRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserPasskeyRequestNegativeReply,
+                        &kUserPasskeyRequestNegativeReplyRsp);
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
   pairing_delegate.SetCompletePairingCallback(
@@ -1064,8 +1032,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
 // Test: replies negative to Link Key Requests for unknown and unbonded peers
 TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
-  test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
-                                         {&kLinkKeyRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
@@ -1086,8 +1054,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   ASSERT_TRUE(peer->connected());
   ASSERT_FALSE(peer->bonded());
 
-  test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply,
-                                         {&kLinkKeyRequestNegativeReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
@@ -1116,7 +1084,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   ASSERT_TRUE(peer->connected());
 
-  test_device()->QueueCommandTransaction(kLinkKeyRequestReply, {&kLinkKeyRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestReply, &kLinkKeyRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
@@ -1147,10 +1115,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
@@ -1161,8 +1129,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
     response_cb(kPasskey);
   });
 
-  test_device()->QueueCommandTransaction(MakeUserPasskeyRequestReply(kPasskey),
-                                         {&kUserPasskeyRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), MakeUserPasskeyRequestReply(kPasskey),
+                        &kUserPasskeyRequestReplyRsp);
   test_device()->SendCommandChannelPacket(kUserPasskeyRequest);
 
   pairing_delegate.SetCompletePairingCallback(
@@ -1171,9 +1139,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
-  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
-                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(peer->bonded());
@@ -1200,10 +1168,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kDisplayOnly,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayOnly,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kKeyboardOnly, AuthRequirements::kGeneralBonding));
@@ -1224,9 +1192,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
-  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
-                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(peer->bonded());
@@ -1253,10 +1221,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairi
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  test_device()->QueueCommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(
       MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kGeneralBonding));
@@ -1270,8 +1238,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairi
         confirm_cb(true);
       });
 
-  test_device()->QueueCommandTransaction(kUserConfirmationRequestReply,
-                                         {&kUserConfirmationRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp);
   test_device()->SendCommandChannelPacket(MakeUserConfirmationRequest(kPasskey));
 
   pairing_delegate.SetCompletePairingCallback(
@@ -1280,14 +1248,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairi
   test_device()->SendCommandChannelPacket(kSimplePairingCompleteSuccess);
   test_device()->SendCommandChannelPacket(kLinkKeyNotification);
 
-  test_device()->QueueCommandTransaction(kSetConnectionEncryption,
-                                         {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent});
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(peer->bonded());
 
-  test_device()->QueueCommandTransaction(kLinkKeyRequestReply, {&kLinkKeyRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestReply, &kLinkKeyRequestReplyRsp);
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
   RunLoopUntilIdle();
@@ -1316,7 +1284,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, UnbondedPeerChangeLinkKey) {
   RunLoopUntilIdle();
   EXPECT_FALSE(peer->bonded());
 
-  test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply, {&kLinkKeyRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply, &kLinkKeyRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
@@ -1357,7 +1325,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LegacyLinkKeyNotBonded) {
   RunLoopUntilIdle();
   EXPECT_FALSE(peer->bonded());
 
-  test_device()->QueueCommandTransaction(kLinkKeyRequestNegativeReply, {&kLinkKeyRequestReplyRsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply, &kLinkKeyRequestReplyRsp);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
@@ -1388,10 +1356,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
 
   EXPECT_EQ(kIncomingConnTransactions + 1, transaction_count());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableInq, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, &kWriteScanEnableRsp);
 
   SetConnectionManager(nullptr);
 
@@ -1502,12 +1468,12 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
 
   // Second connection is shortened because we have already interrogated,
   // and we don't search for SDP services because none are registered
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended1, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended2, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended2Complete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended2Complete);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -1559,8 +1525,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   // This test uses a modified peer and interrogation which doesn't use
   // extended pages.
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
   const DynamicByteBuffer remote_name_complete_packet =
       testing::RemoteNameRequestCompletePacket(kTestDevAddr);
   const DynamicByteBuffer remote_version_complete_packet =
@@ -1568,15 +1534,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
   const DynamicByteBuffer remote_supported_complete_packet =
       testing::ReadRemoteSupportedFeaturesCompletePacket(kConnectionHandle, false);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::RemoteNameRequestPacket(kTestDevAddr),
-                         {&kRemoteNameRequestRsp, &remote_name_complete_packet}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
-                         {&kReadRemoteVersionInfoRsp, &remote_version_complete_packet}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle),
-                         {&kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet}));
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
+                        &kRemoteNameRequestRsp, &remote_name_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle),
+                        &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
                                             kChannelParams);
@@ -1610,8 +1574,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
 
   // Second connection is shortened because we have already interrogated.
   // We still search for SDP services.
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
   // We don't send any interrogation packets, because there is none to be done.
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
@@ -1671,24 +1635,24 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   // Pairing initiation and flow that results in bonding then encryption, but verifying the strength
   // of the encryption key doesn't complete
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAuthenticationRequested, {&kAuthenticationRequestedStatus, &kLinkKeyRequest}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kLinkKeyRequestNegativeReply, {&kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus,
+                        &kLinkKeyRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
   const auto kIoCapabilityResponse =
       MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                   AuthRequirements::kMITMGeneralBonding),
-      {&kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kUserConfirmationRequestReply,
-                         {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
-                          &kLinkKeyNotification, &kAuthenticationComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
+                        &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification, &kAuthenticationComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
@@ -1754,8 +1718,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   // Note: this skips some parts of the pairing flow, because the link key being
   // received is the important part of this. The key is not received when the
   // authentication fails.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus);
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
@@ -1767,14 +1730,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
 
   // The authentication flow will request the existing link key, which should be
   // returned and stored, and then the authentication is complete.
-  test_device()->QueueCommandTransaction(kLinkKeyRequestReply,
-                                         {&kLinkKeyRequestReplyRsp, &kAuthenticationComplete});
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestReply, &kLinkKeyRequestReplyRsp,
+                        &kAuthenticationComplete);
 
   test_device()->SendCommandChannelPacket(kLinkKeyRequest);
 
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
 
   RunLoopUntilIdle();
 
@@ -1819,8 +1782,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   // Note: this skips some parts of the pairing flow, because the link key being
   // received is the important part of this. The key is not received when the
   // authentication fails.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kAuthenticationRequested, {&kAuthenticationRequestedStatus}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus);
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
@@ -1889,16 +1851,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
   // are opening the L2CAP channel because the peer started pairing first.
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                      AuthRequirements::kMITMGeneralBonding),
-                         {&kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kUserConfirmationRequestReply,
-      {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess, &kLinkKeyNotification}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadEncryptionKeySize, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification);
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kChannelParams, socket_cb);
 
@@ -1928,14 +1890,14 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Trigger inbound connection and respond to some (but not all) of interrogation.
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kAcceptConnectionRequest, {&kAcceptConnectionRequestRsp, &kConnectionComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadRemoteSupportedFeatures, {&kReadRemoteSupportedFeaturesRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1963,17 +1925,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
       MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                      AuthRequirements::kMITMGeneralBonding),
-                         {&kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kUserConfirmationRequestReply,
-      {&kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess, &kLinkKeyNotification}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kSetConnectionEncryption, {&kSetConnectionEncryptionRsp, &kEncryptionChangeEvent}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadEncryptionKeySize, {&kReadEncryptionKeySizeRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification);
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, &kReadEncryptionKeySizeRsp);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1992,10 +1953,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
   EXPECT_TRUE(socket_cb_called);
 
   // Complete interrogation successfully.
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended1, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteExtended2, {&kReadRemoteExtendedFeaturesRsp, &kReadRemoteExtended1Complete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
   test_device()->SendCommandChannelPacket(kReadRemoteSupportedFeaturesComplete);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -2228,8 +2189,7 @@ std::string FormatConnectionState(Peer::ConnectionState s) {
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRspError}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRspError);
 
   ASSERT_TRUE(peer->bredr());
   EXPECT_TRUE(NotConnected(peer));
@@ -2257,8 +2217,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionCompleteError}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionCompleteError);
 
   hci::Status status(HostError::kFailed);
   bool callback_run = false;
@@ -2285,10 +2245,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTimeout) {
   auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kCreateConnectionCancel, {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
+                        &kConnectionCompleteCanceled);
 
   hci::Status status;
   auto callback = [&status](auto cb_status, auto conn_ref) {
@@ -2312,8 +2271,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
@@ -2341,16 +2300,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
   EXPECT_TRUE(peer->temporary());
 
   // Queue up outbound connection.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
 
   // Queue up most of interrogation.
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kReadRemoteVersionInfo, {&kReadRemoteVersionInfoRsp, &kRemoteVersionInfoComplete}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadRemoteSupportedFeatures, {&kReadRemoteSupportedFeaturesRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteVersionInfo, &kReadRemoteVersionInfoRsp,
+                        &kRemoteVersionInfoComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeatures,
+                        &kReadRemoteSupportedFeaturesRsp);
 
   hci::Status status;
   BrEdrConnection* conn_ref = nullptr;
@@ -2378,8 +2337,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
@@ -2422,8 +2381,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 
@@ -2461,10 +2420,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
 
   // Enqueue first connection request (which will timeout and be cancelled)
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kCreateConnectionCancel, {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
+                        &kConnectionCompleteCanceled);
 
   // Enqueue second connection (which will succeed once previous has ended)
   QueueSuccessfulCreateConnection(peer_b, kConnectionHandle2);
@@ -2515,10 +2473,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
   auto* peer_b = peer_cache()->NewPeer(kTestDevAddr2, true);
 
   // Enqueue first connection request (which will await Connection Complete)
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kCreateConnectionCancel, {&kCreateConnectionCancelRsp, &kConnectionCompleteCanceled}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnectionCancel, &kCreateConnectionCancelRsp,
+                        &kConnectionCompleteCanceled);
 
   // No-op connection callbacks
   auto callback_a = [](auto, auto) {};
@@ -2618,7 +2575,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   EXPECT_EQ(1u, packet_count);
 
-  test_device()->QueueCommandTransaction(CommandTransaction(kDisconnect, {&kDisconnectRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp);
 
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
   RunLoopUntilIdle();
@@ -2811,8 +2768,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle, hci::StatusCode::kAuthenticationFailure);
 
@@ -2849,8 +2806,8 @@ TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
   EXPECT_TRUE(peer->temporary());
 
   // Queue up the connection
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kCreateConnection, {&kCreateConnectionRsp, &kConnectionComplete}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
   QueueDisconnection(kConnectionHandle);
 

@@ -106,7 +106,7 @@ TEST_F(HCI_ConnectionTest, Getters) {
   ASSERT_TRUE(connection->ltk().has_value());
   EXPECT_EQ(LinkKey(), connection->ltk().value());
 
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
@@ -121,7 +121,7 @@ TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
   ASSERT_TRUE(connection->ltk_type().has_value());
   EXPECT_EQ(kLinkKeyType, connection->ltk_type().value());
 
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_P(LinkTypeConnectionTest, Disconnect) {
@@ -141,7 +141,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   // clang-format on
 
-  test_device()->QueueCommandTransaction(req_bytes, {&cmd_status_bytes, &disc_cmpl_bytes});
+  EXPECT_CMD_PACKET_OUT(test_device(), req_bytes, &cmd_status_bytes, &disc_cmpl_bytes);
 
   bool callback_called = false;
   test_device()->SetTransactionCallback([&callback_called] { callback_called = true; },
@@ -207,8 +207,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   EXPECT_EQ(handle1_packet_count, 0u);
 
   const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle0),
-                                         {&disconnect_status_rsp});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle0), &disconnect_status_rsp);
 
   conn0->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
   RunLoopUntilIdle();
@@ -230,7 +229,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
                          ACLBroadcastFlag::kPointToPoint, 1),
       l2cap::kInvalidChannelId));
 
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle1), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
 }
 
 // In remote disconnection, Connection::Disconnect is not called. Instead,
@@ -308,14 +307,14 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   // have been sent.
   EXPECT_EQ(handle1_packet_count, 1u);
 
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle1), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
 }
 
 TEST_F(HCI_ConnectionTest, StartEncryptionFailsAsLowEnergySlave) {
   auto conn = NewLEConnection(Connection::Role::kSlave);
   conn->set_le_ltk(LinkKey());
   EXPECT_FALSE(conn->StartEncryption());
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
@@ -323,16 +322,16 @@ TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsAsLowEnergyMaster) {
   auto ltk = LinkKey();
   conn->set_le_ltk(ltk);
   EXPECT_TRUE(conn->StartEncryption());
-  test_device()->QueueCommandTransaction(
-      testing::LEStartEncryptionPacket(kTestHandle, ltk.rand(), ltk.ediv(), ltk.value()), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::LEStartEncryptionPacket(kTestHandle, ltk.rand(),
+                                                                        ltk.ediv(), ltk.value()));
 }
 
 TEST_F(HCI_ConnectionTest, StartEncryptionSucceedsWithBrEdrLinkKeyType) {
   auto conn = NewACLConnection();
   conn->set_bredr_link_key(LinkKey(), kLinkKeyType);
   EXPECT_TRUE(conn->StartEncryption());
-  test_device()->QueueCommandTransaction(
-      testing::SetConnectionEncryption(kTestHandle, /*enable=*/true), {});
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::SetConnectionEncryption(kTestHandle, /*enable=*/true));
 }
 
 TEST_P(LinkTypeConnectionTest, DisconnectError) {
@@ -352,7 +351,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // clang-format on
 
-  test_device()->QueueCommandTransaction(req_bytes, {&cmd_status_bytes, &disc_cmpl_bytes});
+  EXPECT_CMD_PACKET_OUT(test_device(), req_bytes, &cmd_status_bytes, &disc_cmpl_bytes);
 
   // The callback should get called regardless of the procedure status.
   bool callback_called = false;
@@ -370,7 +369,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 TEST_P(LinkTypeConnectionTest, StartEncryptionNoLinkKey) {
   auto conn = NewConnection();
   EXPECT_FALSE(conn->StartEncryption());
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 // HCI Command Status event is received with an error status.
@@ -393,7 +392,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
   );
   // clang-format on
 
-  test_device()->QueueCommandTransaction(kExpectedCommand, {&kErrorStatus});
+  EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kErrorStatus);
 
   bool callback = false;
   auto conn = NewLEConnection();
@@ -409,7 +408,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionFailsAtStatus) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback);
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionCommand) {
@@ -428,7 +427,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionComman
                                         0x19, 0x20  // opcode: HCI_LE_Start_Encryption
   );
 
-  test_device()->QueueCommandTransaction(kExpectedCommand, {&kStatus});
+  EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kStatus);
 
   bool callback = false;
   auto conn = NewLEConnection();
@@ -441,7 +440,7 @@ TEST_F(HCI_ConnectionTest, LEStartEncryptionSendsSetLeConnectionEncryptionComman
   // changed event.
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 // HCI Command Status event is received with an error status.
@@ -458,7 +457,7 @@ TEST_F(HCI_ConnectionTest, AclStartEncryptionFailsAtStatus) {
                                              0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
   );
 
-  test_device()->QueueCommandTransaction(kExpectedCommand, {&kErrorStatus});
+  EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kErrorStatus);
 
   bool callback = false;
   auto conn = NewACLConnection();
@@ -474,7 +473,7 @@ TEST_F(HCI_ConnectionTest, AclStartEncryptionFailsAtStatus) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback);
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(HCI_ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand) {
@@ -490,7 +489,7 @@ TEST_F(HCI_ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand
                                         0x13, 0x04  // opcode: HCI_Set_Connection_Encryption
   );
 
-  test_device()->QueueCommandTransaction(kExpectedCommand, {&kStatus});
+  EXPECT_CMD_PACKET_OUT(test_device(), kExpectedCommand, &kStatus);
 
   bool callback = false;
   auto conn = NewACLConnection();
@@ -502,7 +501,7 @@ TEST_F(HCI_ConnectionTest, AclStartEncryptionSendsSetConnectionEncryptionCommand
   // Callback shouldn't be called until the controller sends an encryption changed event.
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
@@ -533,7 +532,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeIgnoredEvents) {
 
   RunLoopUntilIdle();
   EXPECT_FALSE(callback);
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 const auto kEncryptionChangeEventEnabled =
@@ -599,7 +598,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 
   if (conn->ll_type() == Connection::LinkType::kACL) {
     // The host tries to validate the size of key used to encrypt ACL links.
-    test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
+    EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
   }
 
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
@@ -617,7 +616,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   EXPECT_FALSE(enabled);
 
   // The host should disconnect the link if encryption fails.
-  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventFailed);
   RunLoopUntilIdle();
 
@@ -635,7 +634,7 @@ TEST_F(HCI_ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   });
 
   // Send the encryption change failure. The host should disconnect the link as a result.
-  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(testing::EncryptionChangeEventPacket(
       hci::StatusCode::kConnectionTerminatedMICFailure, kTestHandle, EncryptionStatus::kOff));
   RunLoopUntilIdle();
@@ -670,8 +669,8 @@ TEST_F(HCI_ConnectionTest, AclEncryptionEnableCanNotReadKeySizeClosesLink) {
     EXPECT_TRUE(enabled);
   });
 
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
-  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
   RunLoopUntilIdle();
 
@@ -698,8 +697,8 @@ TEST_F(HCI_ConnectionTest, AclEncryptionEnableKeySizeOneByteClosesLink) {
     EXPECT_TRUE(enabled);
   });
 
-  test_device()->QueueCommandTransaction(kReadEncryptionKeySizeCommand, {&kKeySizeComplete});
-  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(kEncryptionChangeEventEnabled);
   RunLoopUntilIdle();
 
@@ -741,7 +740,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   EXPECT_TRUE(enabled);
 
   // The host should disconnect the link if encryption fails.
-  test_device()->QueueCommandTransaction(kDisconnectCommand, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(kEncryptionKeyRefreshFailed);
   RunLoopUntilIdle();
 
@@ -789,7 +788,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
 
   // Test will fail if the connection sends a response without ignoring these
   // events.
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kTestHandle), {});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kTestHandle));
 }
 
 TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoKey) {
@@ -814,7 +813,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoKey) {
   // clang-format on
 
   // The request should be rejected since there is no LTK.
-  test_device()->QueueCommandTransaction(kResponse, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kResponse);
   auto conn = NewLEConnection();
 
   test_device()->SendCommandChannelPacket(kEvent);
@@ -844,7 +843,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestNoMatchinKey) {
   // clang-format on
 
   // The request should be rejected since there is no LTK.
-  test_device()->QueueCommandTransaction(kResponse, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kResponse);
   auto conn = NewLEConnection();
   conn->set_le_ltk(LinkKey(kLTK, 1, 1));
 
@@ -876,7 +875,7 @@ TEST_F(HCI_ConnectionTest, LELongTermKeyRequestReply) {
   // clang-format on
 
   // The request should be rejected since there is no LTK.
-  test_device()->QueueCommandTransaction(kResponse, {});
+  EXPECT_CMD_PACKET_OUT(test_device(), kResponse);
   auto conn = NewLEConnection();
   conn->set_le_ltk(LinkKey(kLTK, 0x8899AABBCCDDEEFF, 0xBEEF));
 
@@ -927,8 +926,8 @@ TEST_F(HCI_ConnectionTest,
 
   const auto disconnect_status_rsp = testing::DisconnectStatusResponsePacket();
   DynamicByteBuffer disconnection_complete(testing::DisconnectionCompletePacket(kHandle));
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle),
-                                         {&disconnect_status_rsp, &disconnection_complete});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle), &disconnect_status_rsp,
+                        &disconnection_complete);
 
   // Disconnect |conn0| by destroying it. The received disconnection complete event will cause the
   // handler to unregister the link and clear pending packets.
@@ -951,8 +950,8 @@ TEST_F(HCI_ConnectionTest,
   EXPECT_EQ(packet_count, 2 * kBrEdrBufferInfo.max_num_packets());
 
   conn1.reset();
-  test_device()->QueueCommandTransaction(testing::DisconnectPacket(kHandle),
-                                         {&disconnect_status_rsp, &disconnection_complete});
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle), &disconnect_status_rsp,
+                        &disconnection_complete);
   RunLoopUntilIdle();
 }
 

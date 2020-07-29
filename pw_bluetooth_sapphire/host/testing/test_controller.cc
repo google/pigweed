@@ -15,7 +15,7 @@ namespace bt {
 namespace testing {
 
 Transaction::Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
-                         std::optional<ExpectationMetadata> meta)
+                         ExpectationMetadata meta)
     : expected_({DynamicByteBuffer(expected), meta}) {
   for (const auto* buffer : replies) {
     replies_.push(DynamicByteBuffer(*buffer));
@@ -28,7 +28,7 @@ bool Transaction::Match(const ByteBuffer& packet) {
 
 CommandTransaction::CommandTransaction(hci::OpCode expected_opcode,
                                        const std::vector<const ByteBuffer*>& replies,
-                                       std::optional<ExpectationMetadata> meta)
+                                       ExpectationMetadata meta)
     : Transaction(DynamicByteBuffer(), replies, meta), prefix_(true) {
   hci::OpCode le_opcode = htole16(expected_opcode);
   const BufferView expected(&le_opcode, sizeof(expected_opcode));
@@ -49,22 +49,16 @@ TestController::TestController()
 TestController::~TestController() {
   while (!cmd_transactions_.empty()) {
     auto& transaction = cmd_transactions_.front();
-    if (transaction.expected().meta.has_value()) {
-      auto meta = transaction.expected().meta.value();
-      ADD_FAILURE_AT(meta.file, meta.line)
-          << "Didn't receive expected outbound command packet (" << meta.expectation << ") {"
-          << ByteContainerToString(transaction.expected().data) << "}";
-    } else {
-      ADD_FAILURE() << "Didn't receive expected outbound command packet {"
-                    << ByteContainerToString(transaction.expected().data) << "}";
-    }
+    auto meta = transaction.expected().meta;
+    ADD_FAILURE_AT(meta.file, meta.line)
+        << "Didn't receive expected outbound command packet (" << meta.expectation << ") {"
+        << ByteContainerToString(transaction.expected().data) << "}";
     cmd_transactions_.pop();
   }
 
   while (!data_transactions_.empty()) {
     auto& transaction = data_transactions_.front();
-    ZX_ASSERT(transaction.expected().meta.has_value());
-    auto meta = transaction.expected().meta.value();
+    auto meta = transaction.expected().meta;
     ADD_FAILURE_AT(meta.file, meta.line)
         << "Didn't receive expected outbound data packet (" << meta.expectation << ") {"
         << ByteContainerToString(transaction.expected().data) << "}";
@@ -79,8 +73,14 @@ void TestController::QueueCommandTransaction(CommandTransaction transaction) {
 
 void TestController::QueueCommandTransaction(const ByteBuffer& expected,
                                              const std::vector<const ByteBuffer*>& replies,
-                                             std::optional<ExpectationMetadata> meta) {
+                                             ExpectationMetadata meta) {
   QueueCommandTransaction(CommandTransaction(DynamicByteBuffer(expected), replies, meta));
+}
+
+void TestController::QueueCommandTransaction(hci::OpCode expected_opcode,
+                                             const std::vector<const ByteBuffer*>& replies,
+                                             ExpectationMetadata meta) {
+  QueueCommandTransaction(CommandTransaction(expected_opcode, replies, meta));
 }
 
 void TestController::QueueDataTransaction(DataTransaction transaction) {
@@ -142,32 +142,25 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
       << "Received unexpected command packet with OGF: 0x" << std::hex << static_cast<uint16_t>(ogf)
       << ", OCF: 0x" << ocf;
 
-  auto& expected = cmd_transactions_.front();
-  const hci::OpCode expected_opcode = le16toh(expected.expected().data.As<hci::OpCode>());
+  auto& transaction = cmd_transactions_.front();
+  const hci::OpCode expected_opcode = le16toh(transaction.expected().data.As<hci::OpCode>());
   uint8_t expected_ogf = hci::GetOGF(expected_opcode);
   uint16_t expected_ocf = hci::GetOCF(expected_opcode);
 
-  if (!expected.Match(command_packet.data())) {
-    if (expected.expected().meta.has_value()) {
-      auto meta = expected.expected().meta.value();
-      GTEST_FAIL_AT(meta.file, meta.line)
-          << " Expected command packet (" << meta.expectation << ") with OGF: 0x" << std::hex
-          << static_cast<uint16_t>(expected_ogf) << ", OCF: 0x" << expected_ocf
-          << ". Received command packet with OGF: 0x" << static_cast<uint16_t>(ogf) << ", OCF: 0x"
-          << ocf;
-    } else {
-      GTEST_FAIL() << " Expected command packet with OGF: 0x" << std::hex
-                   << static_cast<uint16_t>(expected_ogf) << ", OCF: 0x" << expected_ocf
-                   << ". Received command packet with OGF: 0x" << static_cast<uint16_t>(ogf)
-                   << ", OCF: 0x" << ocf;
-    }
+  if (!transaction.Match(command_packet.data())) {
+    auto meta = transaction.expected().meta;
+    GTEST_FAIL_AT(meta.file, meta.line)
+        << " Expected command packet (" << meta.expectation << ") with OGF: 0x" << std::hex
+        << static_cast<uint16_t>(expected_ogf) << ", OCF: 0x" << expected_ocf
+        << ". Received command packet with OGF: 0x" << static_cast<uint16_t>(ogf) << ", OCF: 0x"
+        << ocf;
   }
 
-  while (!expected.replies().empty()) {
-    auto& reply = expected.replies().front();
+  while (!transaction.replies().empty()) {
+    auto& reply = transaction.replies().front();
     auto status = SendCommandChannelPacket(reply);
     ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
-    expected.replies().pop();
+    transaction.replies().pop();
   }
   cmd_transactions_.pop();
 
@@ -185,8 +178,7 @@ void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
 
     auto& expected = data_transactions_.front();
     if (!expected.Match(acl_data_packet.view())) {
-      ZX_ASSERT(expected.expected().meta.has_value());
-      auto meta = expected.expected().meta.value();
+      auto meta = expected.expected().meta;
       GTEST_FAIL_AT(meta.file, meta.line) << "Expected data packet (" << meta.expectation << ")";
     }
 

@@ -77,8 +77,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                                                 0x00         // status: success
   );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kResponse);
 
   const UInt128 kIrk{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
   int hci_cmd_count = 0;
@@ -123,8 +122,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacy) {
   EXPECT_FALSE(sm::util::IrkCanResolveRpa(kIrk2, addr));
 
   // Re-enable privacy to trigger a refresh.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kResponse);
   addr_mgr()->EnablePrivacy(false);
   addr_mgr()->EnablePrivacy(true);
   RunLoopUntilIdle();
@@ -141,8 +139,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyNoIrk) {
                                                 0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                                                 0x00         // status: success
   );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kResponse);
 
   int hci_cmd_count = 0;
   DeviceAddress addr;
@@ -186,10 +183,8 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyHciError) {
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kErrorResponse}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kErrorResponse);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
 
@@ -219,8 +214,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, EnablePrivacyWhileAddressChangeIsDisallo
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
   test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());
@@ -248,10 +242,8 @@ TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpiration) {
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
@@ -287,10 +279,8 @@ TEST_F(GAP_LowEnergyAddressManagerTest, AddressExpirationWhileAddressChangeIsDis
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
@@ -331,8 +321,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacy) {
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
   EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
@@ -358,8 +347,7 @@ TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
                              0x05, 0x20,  // opcode: HCI_LE_Set_Random_Address
                              0x00         // status: success
       );
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(hci::kLESetRandomAddress, {&kSuccessResponse}));
+  EXPECT_CMD_PACKET_OUT(test_device(), hci::kLESetRandomAddress, &kSuccessResponse);
 
   int hci_count = 0;
   test_device()->SetTransactionCallback([&] { hci_count++; }, dispatcher());

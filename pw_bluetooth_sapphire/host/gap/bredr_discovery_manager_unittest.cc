@@ -71,10 +71,8 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 
   void NewDiscoveryManager(hci::InquiryMode mode) {
     // We expect to set the Inquiry Scan and the Type when we start.
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(kWriteInquiryActivity, {&kWriteInquiryActivityRsp}));
-    test_device()->QueueCommandTransaction(
-        CommandTransaction(kWriteInquiryType, {&kWriteInquiryTypeRsp}));
+    EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryActivity, &kWriteInquiryActivityRsp);
+    EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
 
     discovery_manager_ =
         std::make_unique<BrEdrDiscoveryManager>(transport()->WeakPtr(), mode, &peer_cache_);
@@ -356,10 +354,9 @@ const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci::kWriteScanEnable);
 // Test: Inquiry Results that come in when there's no discovery happening get
 // discarded.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
@@ -377,8 +374,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
   EXPECT_EQ(1u, peers_found);
   EXPECT_TRUE(discovery_manager()->discovering());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
@@ -404,10 +400,9 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryAndDrop) {
 // Test: dropping the first discovery shouldn't stop inquiry
 // Test: starting two sessions at once should only start inquiry once
 TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
@@ -485,10 +480,9 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, MultipleRequests) {
 // Test: we should only request a peer's name if it's the first time we
 // encounter it.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
@@ -531,8 +525,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
   // Inquiry should be restarted when the Complete comes in because an active
   // session2 still exists.
   // TODO(jamuraa, NET-619): test InquiryCancel when it is implemented
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 
   RunLoopUntilIdle();
@@ -563,10 +556,9 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryWhileStop) {
 
 // Test: When Inquiry Fails to start, we report this back to the requester.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRspError, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRspError, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
 
@@ -587,10 +579,9 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
 // Test: When inquiry complete indicates failure, we signal to the current
 // sessions.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, ContinuingDiscoveryError) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
@@ -683,7 +674,7 @@ const auto kWriteExtInquiryResponseMaxLen = CreateStaticByteBuffer(
 // Test: UpdateLocalName successfully sends hci command, and further calls
 // UpdateEIRResponseData (private). Ensures the name is updated at the very end.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteLocalNameMaxLen, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
   hci::Status result = hci::Status(hci::kPairingNotAllowed);
@@ -707,7 +698,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_EQ(0u, callback_count);
 
   test_device()->SendCommandChannelPacket(kWriteLocalNameRsp);
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteExtInquiryResponseMaxLen, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteExtInquiryResponseMaxLen, );
 
   RunLoopUntilIdle();
 
@@ -728,7 +719,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
 // Test: UpdateLocalName successfully sends hci command, and further calls
 // UpdateEIRResponseData (private). Ensures the name is updated at the very end.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteLocalName, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
   hci::Status result = hci::Status(hci::kPairingNotAllowed);
@@ -748,7 +739,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_EQ(0u, callback_count);
 
   test_device()->SendCommandChannelPacket(kWriteLocalNameRsp);
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteExtendedInquiryResponse, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteExtendedInquiryResponse, );
 
   RunLoopUntilIdle();
 
@@ -769,7 +760,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
 // Test: UpdateLocalName passes back error code through the callback and |local_name_|
 // does not get updated.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteLocalName, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
   hci::Status result = hci::Status(hci::kUnsupportedRemoteFeature);
@@ -803,7 +794,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 // Consequently, the |local_name_| should not be updated, and the callback should
 // return the error.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteLocalName, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
   hci::Status result = hci::Status(hci::kUnsupportedRemoteFeature);
@@ -824,7 +815,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 
   // kWriteLocalName should succeed.
   test_device()->SendCommandChannelPacket(kWriteLocalNameRsp);
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteExtendedInquiryResponse, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteExtendedInquiryResponse, );
 
   RunLoopUntilIdle();
 
@@ -848,7 +839,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 // Test: requesting discoverable while discoverable is pending doesn't send
 // any more HCI commands
 TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, );
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
@@ -863,7 +854,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
   EXPECT_EQ(0u, sessions.size());
   EXPECT_FALSE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(CommandTransaction(kWriteScanEnableInq, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableInq, );
 
   test_device()->SendCommandChannelPacket(kReadScanEnableRspNone);
 
@@ -884,10 +875,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
   EXPECT_EQ(3u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspInquiry}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableNone, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspInquiry);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableNone, &kWriteScanEnableRsp);
 
   sessions.clear();
 
@@ -900,10 +889,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableSet) {
 // the discoverable enabled and reports success
 // Test: enable/disable while page scan is enabled works.
 TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspPage}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableBoth, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspPage);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
 
   std::vector<std::unique_ptr<BrEdrDiscoverableSession>> sessions;
   auto session_cb = [&sessions](auto status, auto cb_session) {
@@ -918,7 +905,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_EQ(1u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, );
 
   sessions.clear();
 
@@ -927,7 +914,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   // Request a new discovery before the procedure finishes.
   // This will queue another ReadScanEnable just in case the disable write is
   // in progress.
-  test_device()->QueueCommandTransaction(CommandTransaction(kReadScanEnable, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, );
   discovery_manager()->RequestDiscoverable(session_cb);
 
   test_device()->SendCommandChannelPacket(kReadScanEnableRspBoth);
@@ -940,8 +927,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_TRUE(discovery_manager()->discoverable());
 
   // If somehow the scan got turned off, we will still turn it back on.
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnableBoth, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnableBoth, &kWriteScanEnableRsp);
   test_device()->SendCommandChannelPacket(kReadScanEnableRspPage);
 
   RunLoopUntilIdle();
@@ -949,10 +935,8 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   EXPECT_EQ(1u, sessions.size());
   EXPECT_TRUE(discovery_manager()->discoverable());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kReadScanEnable, {&kReadScanEnableRspBoth}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kWriteScanEnablePage, {&kWriteScanEnableRsp}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadScanEnable, &kReadScanEnableRspBoth);
+  EXPECT_CMD_PACKET_OUT(test_device(), kWriteScanEnablePage, &kWriteScanEnableRsp);
 
   sessions.clear();
 
@@ -967,12 +951,11 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiry) {
   NewDiscoveryManager(hci::InquiryMode::kExtended);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kSetExtendedMode, {&kSetExtendedModeRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest2, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
+                        &kRSSIInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest2, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete2);
 
   std::unique_ptr<BrEdrDiscoverySession> session1;
   size_t peers_found1 = 0u;
@@ -1013,10 +996,9 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, InquiryResultUpgradesKnownLowEnergyPeerToD
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest1, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete1}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest1, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete1);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;
@@ -1045,12 +1027,11 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnerg
 
   NewDiscoveryManager(hci::InquiryMode::kExtended);
 
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kSetExtendedMode, {&kSetExtendedModeRsp}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(kInquiry, {&kInquiryRsp, &kExtendedInquiryResult, &kRSSIInquiryResult}));
-  test_device()->QueueCommandTransaction(CommandTransaction(
-      kRemoteNameRequest2, {&kRemoteNameRequestRsp, &kRemoteNameRequestComplete2}));
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
+                        &kRSSIInquiryResult);
+  EXPECT_CMD_PACKET_OUT(test_device(), kRemoteNameRequest2, &kRemoteNameRequestRsp,
+                        &kRemoteNameRequestComplete2);
 
   std::unique_ptr<BrEdrDiscoverySession> session;
   size_t peers_found = 0u;

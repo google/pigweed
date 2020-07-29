@@ -53,37 +53,29 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunner) {
   //
   // Sequence 1 (HCI packets)
   //    -> Command; <- error status
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_status_error_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_status_error_bytes);
 
   // Sequence 2 (HCI packets)
   //    -> Command; <- error complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_error_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_error_bytes);
 
   // Sequence 3 (HCI packets)
   //    -> Command; <- success complete
   //    -> Command; <- error complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_error_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_error_bytes);
 
   // Sequence 4 (HCI packets)
   //    -> Command; <- success complete
   //    -> Command; <- success complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   // Sequence 5 (HCI packets)
   //    -> Command; <- success complete
   //    -> Command; <- success complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());
@@ -206,21 +198,17 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
 
   // Sequence 1
   //   -> Command; <- success complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   // Sequence 2
   //   -> Command; <- success complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   // Sequence 3
   //   -> Command; <- success complete
   //   -> Command; <- error complete
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_error_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_error_bytes);
 
   test_device()->StartCmdChannel(test_cmd_chan());
   test_device()->StartAclChannel(test_acl_chan());
@@ -374,14 +362,11 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
   // Parallel commands should all run before commands that require success.
   // command and command2 are answered in opposite order because they should be
   // sent simultaneously.
-  test_device()->QueueCommandTransaction(CommandTransaction(command_bytes, {}));
-  test_device()->QueueCommandTransaction(CommandTransaction(command2_bytes, {}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
-  test_device()->QueueCommandTransaction(
-      CommandTransaction(command_bytes, {&command_cmpl_success_bytes}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, );
+  EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   int cb_called = 0;
   auto cb = [&](const auto&) { cb_called++; };
@@ -428,8 +413,8 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
 
   // If any simultaneous commands fail, the sequence fails and the command
   // sequence is terminated.
-  test_device()->QueueCommandTransaction(CommandTransaction(command_bytes, {}));
-  test_device()->QueueCommandTransaction(CommandTransaction(command2_bytes, {}));
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, );
+  EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, false);
