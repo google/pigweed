@@ -28,7 +28,7 @@ SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::R
   // Note: No need to guard against out-of-thread access as these callbacks are
   // called on the L2CAP thread.
   auto self = weak_ptr_factory_.GetWeakPtr();
-  chan_->ActivateOnDataDomain(
+  chan_->Activate(
       [self](ByteBufferPtr sdu) {
         if (self)
           self->OnRxBFrame(std::move(sdu));

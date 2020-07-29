@@ -89,30 +89,42 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
                                         });
   }
 
-  void Receive128BitCmd(Code cmd_code, const UInt128& value) {
+  auto Make128BitCmd(Code cmd_code, const UInt128& value) {
     StaticByteBuffer<PacketSize<UInt128>()> buffer;
     PacketWriter writer(cmd_code, &buffer);
     *writer.mutable_payload<UInt128>() = value;
-    fake_chan()->Receive(buffer);
+    return buffer;
   }
 
-  void ReceiveMasterIdentification(uint64_t random, uint16_t ediv) {
+  void Receive128BitCmd(Code cmd_code, const UInt128& value) {
+    fake_chan()->Receive(Make128BitCmd(cmd_code, value));
+  }
+
+  auto MakeMasterIdentification(uint64_t random, uint16_t ediv) {
     StaticByteBuffer<PacketSize<MasterIdentificationParams>()> buffer;
     PacketWriter writer(kMasterIdentification, &buffer);
     auto* params = writer.mutable_payload<MasterIdentificationParams>();
     params->ediv = htole16(ediv);
     params->rand = htole64(random);
-    fake_chan()->Receive(buffer);
+    return buffer;
   }
 
-  void ReceiveIdentityAddress(const DeviceAddress& address) {
+  void ReceiveMasterIdentification(uint64_t random, uint16_t ediv) {
+    fake_chan()->Receive(MakeMasterIdentification(random, ediv));
+  }
+
+  auto MakeIdentityAddress(const DeviceAddress& address) {
     StaticByteBuffer<PacketSize<IdentityAddressInformationParams>()> buffer;
     PacketWriter writer(kIdentityAddressInformation, &buffer);
     auto* params = writer.mutable_payload<IdentityAddressInformationParams>();
     params->type = address.type() == DeviceAddress::Type::kLEPublic ? AddressType::kPublic
                                                                     : AddressType::kStaticRandom;
     params->bd_addr = address.value();
-    fake_chan()->Receive(buffer);
+    return buffer;
+  }
+
+  void ReceiveIdentityAddress(const DeviceAddress& address) {
+    fake_chan()->Receive(MakeIdentityAddress(address));
   }
 
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
@@ -212,10 +224,10 @@ TEST_F(SMP_Phase3Test, EncryptionInformationReceivedTwice) {
   ASSERT_FALSE(sent);
   // When we receive the second Encryption Info packet, we should respond with pairing failed, as a
   // device should only ever send one Encryption Info packet in Phase 3.
-  Receive128BitCmd(kEncryptionInformation, UInt128());
+  const auto kEncryptionInformationCmd = Make128BitCmd(kEncryptionInformation, UInt128());
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, listener()->last_error().protocol_error());
@@ -255,10 +267,10 @@ TEST_F(SMP_Phase3Test, ReceiveExampleLtkAborts) {
   phase_3()->Start();
 
   // Pairing should abort when receiving sample LTK data
-  Receive128BitCmd(kEncryptionInformation, kLtkSample);
+  const auto kEncryptionInformationCmd = Make128BitCmd(kEncryptionInformation, kLtkSample);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
@@ -284,10 +296,10 @@ TEST_F(SMP_Phase3Test, ReceiveExampleRandAborts) {
   ASSERT_EQ(0, phase_3_complete_count());
   // We disallow pairing with spec sample values as using known values for encryption parameters
   // is inherently unsafe.
-  ReceiveMasterIdentification(kRandSample, kEDiv);
+  const auto kMasterIdentificationCmd = MakeMasterIdentification(kRandSample, kEDiv);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kMasterIdentificationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
@@ -304,10 +316,10 @@ TEST_F(SMP_Phase3Test, ReceiveTooLongLTK) {
   // Ltk with 9 bytes set is longer than the negotiated max of 8 bytes.
   const UInt128 kTooLongLtk{1, 2, 3, 4, 5, 6, 7, 8, 9};
   // Pairing should abort when receiving sample LTK data
-  Receive128BitCmd(kEncryptionInformation, kTooLongLtk);
+  const auto kEncryptionInformationCmd = Make128BitCmd(kEncryptionInformation, kTooLongLtk);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kInvalidParameters};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kEncryptionInformationCmd, kExpectedFailure));
   ASSERT_TRUE(listener()->last_error().is_protocol_error());
   EXPECT_EQ(ErrorCode::kInvalidParameters, listener()->last_error().protocol_error());
 }
@@ -326,11 +338,11 @@ TEST_F(SMP_Phase3Test, MasterIdentificationReceivedTwice) {
   // Send duplicate master identification. If Phase 3 receives multiple Master Identification
   // commands before completing, it should abort the pairing.
   Receive128BitCmd(kEncryptionInformation, UInt128());
-  ReceiveMasterIdentification(kRand, kEdiv);
-  ReceiveMasterIdentification(kRand, kEdiv);
+  const auto kMasterIdentificationCmd = MakeMasterIdentification(kRand, kEdiv);
+  fake_chan()->Receive(kMasterIdentificationCmd);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kMasterIdentificationCmd, kExpectedFailure));
 
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
@@ -479,10 +491,10 @@ TEST_F(SMP_Phase3Test, IRKReceivedTwice) {
   EXPECT_EQ(0, phase_3_complete_count());
 
   // Send an IRK again. This should cause pairing to fail.
-  Receive128BitCmd(kIdentityInformation, UInt128());
+  const auto kIdentityInformationCmd = Make128BitCmd(kIdentityInformation, UInt128());
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kIdentityInformationCmd, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -492,10 +504,10 @@ TEST_F(SMP_Phase3Test, IdentityAddressReceivedInWrongOrder) {
   args.features.remote_key_distribution = KeyDistGen::kIdKey;
   NewPhase3(args);
 
-  ReceiveIdentityAddress(kSampleDeviceAddress);
+  const auto kIdentityAddressCmd = MakeIdentityAddress(kSampleDeviceAddress);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kIdentityAddressCmd, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -516,10 +528,10 @@ TEST_F(SMP_Phase3Test, IdentityAddressReceivedTwice) {
   EXPECT_EQ(0, phase_3_complete_count());
 
   // Send the IdentityAddress again. This should cause pairing to fail.
-  ReceiveIdentityAddress(kSampleDeviceAddress);
+  const auto kIdentityAddressCmd = MakeIdentityAddress(kSampleDeviceAddress);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kIdentityAddressCmd, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -538,11 +550,10 @@ TEST_F(SMP_Phase3Test, BadIdentityAddressType) {
   const uint8_t kInvalidAddrType = 0xFF;
   params->type = *reinterpret_cast<const AddressType*>(&kInvalidAddrType);
   params->bd_addr = DeviceAddressBytes({1, 2, 3, 4, 5, 6});
-  fake_chan()->Receive(addr);
 
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kInvalidParameters};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(addr, kExpectedFailure));
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 

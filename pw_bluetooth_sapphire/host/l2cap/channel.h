@@ -53,15 +53,14 @@ namespace l2cap {
 //   * FakeChannel, which can be used for unit testing service-layer entities
 //     that operate on one or more L2CAP channel(s).
 //
-// Production instances are obtained from a ChannelManager. Channels are safe to
-// activate, deactivate, and destroy on any thread.
+// Production instances are obtained from a ChannelManager. Channels are not thread safe.
 //
 // A Channel's owner must explicitly call Deactivate() and must not rely on
 // dropping its reference to close the channel.
 //
 // When a LogicalLink closes, all of its active channels become deactivated
 // when it closes and this is signaled by running the ClosedCallback passed to
-// ActivateWithDispatcher() or ActivateOnDataDomain.
+// Activate().
 class Channel : public fbl::RefCounted<Channel> {
  public:
   // Identifier for this channel's endpoint on this device. It can be prior-
@@ -122,19 +121,8 @@ class Channel : public fbl::RefCounted<Channel> {
   // that |rx_cb| is not empty and the underlying logical link is active.
   using RxCallback = fit::function<void(ByteBufferPtr packet)>;
 
-  // Activates this channel assigning |dispatcher| to execute |rx_callback| and |closed_callback|.
-  //
-  // Returns false if the channel's link has been closed.
-  //
-  // Each channel can be activated only once.
-  //
-  // NOTE: Callers shouldn't assume that this method will succeed, as the underlying link can be
-  // removed at any time.
-  virtual bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
-                                      async_dispatcher_t* dispatcher) = 0;
-
-  // Activates this channel as in ActivateWithDispatcher, but callbacks will be executed immediately
-  // on the Data domain as L2CAP is notified of their underlying events.
+  // Activates this channel to execute |rx_callback| and |closed_callback|
+  // immediately as L2CAP is notified of their underlying events.
   //
   // Any inbound data that has already been buffered for this channel will be drained by calling
   // |rx_callback| repeatedly, before this call returns.
@@ -143,7 +131,12 @@ class Channel : public fbl::RefCounted<Channel> {
   // introducing excessive latency.
   //
   // Each channel can be activated only once.
-  virtual bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) = 0;
+  //
+  // Returns false if the channel's link has been closed.
+  //
+  // NOTE: Callers shouldn't assume that this method will succeed, as the underlying link can be
+  // removed at any time.
+  virtual bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) = 0;
 
   // Deactivates this channel. No more packets can be sent or received after
   // this is called. |rx_callback| may still be called if it has been already
@@ -246,9 +239,7 @@ class ChannelImpl : public Channel {
 
   // Channel overrides:
   const sm::SecurityProperties security() override;
-  bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
-                              async_dispatcher_t* dispatcher) override;
-  bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) override;
+  bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) override;
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
@@ -262,14 +253,9 @@ class ChannelImpl : public Channel {
               ChannelInfo info);
   ~ChannelImpl() override = default;
 
-  // TODO(armansito): Add MPS fields when we support segmentation/flow-control.
-
-  std::mutex mtx_;
-
-  bool active_ __TA_GUARDED(mtx_);
-  async_dispatcher_t* dispatcher_ __TA_GUARDED(mtx_);
-  RxCallback rx_cb_ __TA_GUARDED(mtx_);
-  ClosedCallback closed_cb_ __TA_GUARDED(mtx_);
+  bool active_;
+  RxCallback rx_cb_;
+  ClosedCallback closed_cb_;
 
   // The LogicalLink that this channel is associated with. A channel is always
   // created by a LogicalLink.
@@ -278,21 +264,21 @@ class ChannelImpl : public Channel {
   // because when a LogicalLink is torn down, it will notify all of its
   // associated channels by calling OnLinkClosed() which sets |link_| to
   // nullptr.
-  fxl::WeakPtr<internal::LogicalLink> link_ __TA_GUARDED(mtx_);
+  fxl::WeakPtr<internal::LogicalLink> link_;
 
   // The engine which processes received PDUs, and converts them to SDUs for
   // upper layers.
-  std::unique_ptr<RxEngine> rx_engine_ __TA_GUARDED(mtx_);
+  std::unique_ptr<RxEngine> rx_engine_;
 
   // The engine which accepts SDUs, and converts them to PDUs for lower layers.
-  std::unique_ptr<TxEngine> tx_engine_ __TA_GUARDED(mtx_);
+  std::unique_ptr<TxEngine> tx_engine_;
 
   // The pending SDUs on this channel. Received PDUs are buffered if |rx_cb_| is
   // currently not set.
   // TODO(armansito): We should avoid STL containers for data packets as they
   // all implicitly allocate. This is a reminder to fix this elsewhere
   // (especially in the HCI layer).
-  std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_ __TA_GUARDED(mtx_);
+  std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_;
 
   fxl::ThreadChecker thread_checker_;
 

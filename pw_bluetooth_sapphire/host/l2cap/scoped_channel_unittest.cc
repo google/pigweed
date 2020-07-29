@@ -20,7 +20,7 @@ void NopRxCallback(ByteBufferPtr) {}
 
 TEST(L2CAP_ScopedChannelTest, Close) {
   auto chan = fbl::AdoptRef(new FakeChannel(1, 1, 1, hci::Connection::LinkType::kACL));
-  ASSERT_TRUE(chan->ActivateWithDispatcher(NopRxCallback, DoNothing, nullptr));
+  ASSERT_TRUE(chan->Activate(NopRxCallback, DoNothing));
   ASSERT_TRUE(chan->activated());
 
   {
@@ -34,8 +34,8 @@ TEST(L2CAP_ScopedChannelTest, Close) {
 TEST(L2CAP_ScopedChannelTest, Reset) {
   auto chan1 = fbl::AdoptRef(new FakeChannel(1, 1, 1, hci::Connection::LinkType::kACL));
   auto chan2 = fbl::AdoptRef(new FakeChannel(1, 1, 1, hci::Connection::LinkType::kACL));
-  ASSERT_TRUE(chan1->ActivateWithDispatcher(NopRxCallback, DoNothing, nullptr));
-  ASSERT_TRUE(chan2->ActivateWithDispatcher(NopRxCallback, DoNothing, nullptr));
+  ASSERT_TRUE(chan1->Activate(NopRxCallback, DoNothing));
+  ASSERT_TRUE(chan2->Activate(NopRxCallback, DoNothing));
   ASSERT_TRUE(chan1->activated());
   ASSERT_TRUE(chan2->activated());
 

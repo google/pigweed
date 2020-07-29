@@ -18,7 +18,6 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandl
     : Channel(id, remote_id, link_type, handle, info),
       handle_(handle),
       fragmenter_(handle),
-      dispatcher_(nullptr),
       send_dispatcher_(nullptr),
       activate_fails_(false),
       link_error_(false),
@@ -31,8 +30,7 @@ void FakeChannel::Receive(const ByteBuffer& data) {
   auto sdu = std::make_unique<DynamicByteBuffer>(pdu.length());
   pdu.Copy(sdu.get());
   if (rx_cb_) {
-    RunOrPost([cb = rx_cb_.share(), sdu = std::move(sdu)]() mutable { cb(std::move(sdu)); },
-              dispatcher_);
+    rx_cb_(std::move(sdu));
   } else {
     pending_rx_sdus_.push(std::move(sdu));
   }
@@ -62,8 +60,7 @@ void FakeChannel::Close() {
     closed_cb_();
 }
 
-bool FakeChannel::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
-                                         async_dispatcher_t* dispatcher) {
+bool FakeChannel::Activate(RxCallback rx_callback, ClosedCallback closed_callback) {
   ZX_DEBUG_ASSERT(rx_callback);
   ZX_DEBUG_ASSERT(closed_callback);
   ZX_DEBUG_ASSERT(!rx_cb_);
@@ -72,7 +69,6 @@ bool FakeChannel::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback 
   if (activate_fails_)
     return false;
 
-  dispatcher_ = dispatcher;
   closed_cb_ = std::move(closed_callback);
   rx_cb_ = std::move(rx_callback);
 
@@ -84,12 +80,7 @@ bool FakeChannel::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback 
   return true;
 }
 
-bool FakeChannel::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) {
-  return ActivateWithDispatcher(std::move(rx_callback), std::move(closed_callback), nullptr);
-}
-
 void FakeChannel::Deactivate() {
-  dispatcher_ = nullptr;
   closed_cb_ = {};
   rx_cb_ = {};
 }

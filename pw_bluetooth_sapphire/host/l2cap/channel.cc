@@ -56,10 +56,7 @@ fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, Channel
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
                          fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info)
-    : Channel(id, remote_id, link->type(), link->handle(), info),
-      active_(false),
-      dispatcher_(nullptr),
-      link_(link) {
+    : Channel(id, remote_id, link->type(), link->handle(), info), active_(false), link_(link) {
   ZX_ASSERT(link_);
   ZX_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
@@ -69,13 +66,11 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
   FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
                                             ? FrameCheckSequenceOption::kIncludeFcs
                                             : FrameCheckSequenceOption::kNoFcs;
-  auto send_cb = [rid = remote_id, link, fcs_option](auto pdu) {
-    async::PostTask(link->dispatcher(), [=, pdu = std::move(pdu)] {
-      if (link) {
-        // |link| is expected to ignore this call and drop the packet if it has been closed.
-        link->SendFrame(rid, *pdu, fcs_option);
-      }
-    });
+  auto send_cb = [remote_id, link, fcs_option](auto pdu) {
+    if (link) {
+      // |link| is expected to ignore this call and drop the packet if it has been closed.
+      link->SendFrame(remote_id, *pdu, fcs_option);
+    }
   };
 
   if (info_.mode == ChannelMode::kBasic) {
@@ -86,16 +81,10 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
     auto connection_failure_cb = [this, link] {
       ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
-      // This isn't called until Channel has been activated and the callback is destroyed by
-      // Deactivate, so even without taking |mutex_| we know that the channel is active. However,
-      // this may be called from a locked context in HandleRxPdu, so defer the signal to after the
-      // critical section so that we don't deadlock when removing this channel.
-      async::PostTask(async_get_default_dispatcher(), [link] {
-        if (link) {
-          // |link| is expected to ignore this call if it has been closed.
-          link->SignalError();
-        }
-      });
+      if (link) {
+        // |link| is expected to ignore this call if it has been closed.
+        link->SignalError();
+      }
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window, send_cb,
@@ -104,64 +93,44 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
 }
 
 const sm::SecurityProperties ChannelImpl::security() {
-  std::lock_guard lock(mtx_);
   if (link_) {
     return link_->security();
   }
   return sm::SecurityProperties();
 }
 
-bool ChannelImpl::ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
-                                         async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(rx_callback);
-  ZX_DEBUG_ASSERT(closed_callback);
+bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callback) {
+  ZX_ASSERT(rx_callback);
+  ZX_ASSERT(closed_callback);
 
-  fit::closure task;
-  bool run_task = false;
+  // Activating on a closed link has no effect. We also clear this on
+  // deactivation to prevent a channel from being activated more than once.
+  if (!link_)
+    return false;
 
-  {
-    std::lock_guard lock(mtx_);
+  ZX_ASSERT(!active_);
+  active_ = true;
+  rx_cb_ = std::move(rx_callback);
+  closed_cb_ = std::move(closed_callback);
 
-    // Activating on a closed link has no effect. We also clear this on
-    // deactivation to prevent a channel from being activated more than once.
-    if (!link_)
-      return false;
-
-    ZX_DEBUG_ASSERT(!active_);
-    active_ = true;
-    ZX_DEBUG_ASSERT(!dispatcher_);
-    dispatcher_ = dispatcher;
-    rx_cb_ = std::move(rx_callback);
-    closed_cb_ = std::move(closed_callback);
-
-    // Route the buffered packets.
-    if (!pending_rx_sdus_.empty()) {
-      run_task = true;
-      task = [func = rx_cb_.share(), pending = std::move(pending_rx_sdus_)]() mutable {
-        TRACE_DURATION("bluetooth", "ChannelImpl::ActivateWithDispatcher pending drain");
-        while (!pending.empty()) {
-          TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
-          func(std::move(pending.front()));
-          pending.pop();
-        }
-      };
-      ZX_DEBUG_ASSERT(pending_rx_sdus_.empty());
+  // Route the buffered packets.
+  if (!pending_rx_sdus_.empty()) {
+    // Add reference to |rx_cb_| in case channel is destroyed as a result of handling an SDU.
+    auto rx_cb = rx_cb_.share();
+    auto pending = std::move(pending_rx_sdus_);
+    ZX_ASSERT(pending_rx_sdus_.empty());
+    TRACE_DURATION("bluetooth", "ChannelImpl::Activate pending drain");
+    while (!pending.empty()) {
+      TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
+      rx_cb(std::move(pending.front()));
+      pending.pop();
     }
-  }
-
-  if (run_task) {
-    RunOrPost(std::move(task), dispatcher);
   }
 
   return true;
 }
 
-bool ChannelImpl::ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) {
-  return ActivateWithDispatcher(std::move(rx_callback), std::move(closed_callback), nullptr);
-}
-
 void ChannelImpl::Deactivate() {
-  std::lock_guard lock(mtx_);
   bt_log(TRACE, "l2cap", "deactivating channel (link: %#.4x, id: %#.4x)", link_handle(), id());
 
   // De-activating on a closed link has no effect.
@@ -171,42 +140,30 @@ void ChannelImpl::Deactivate() {
   }
 
   active_ = false;
-  dispatcher_ = nullptr;
   rx_cb_ = {};
   closed_cb_ = {};
   rx_engine_ = {};
   tx_engine_ = {};
 
-  // Tell the link to release this channel on its thread.
-  async::PostTask(link_->dispatcher(), [this, link = link_] {
-    if (link) {
-      // |link| is expected to ignore this call if it has been closed.
-      link->RemoveChannel(this);
-    }
-  });
-
+  auto link = link_;
   link_ = nullptr;
+
+  // |link| is expected to ignore this call if it has been closed.
+  link->RemoveChannel(this);
 }
 
 void ChannelImpl::SignalLinkError() {
-  std::lock_guard lock(mtx_);
-
   // Cannot signal an error on a closed or deactivated link.
   if (!link_ || !active_)
     return;
 
-  async::PostTask(async_get_default_dispatcher(), [link = link_] {
-    if (link) {
-      // |link| is expected to ignore this call if it has been closed.
-      link->SignalError();
-    }
-  });
+  // |link_| is expected to ignore this call if it has been closed.
+  link_->SignalError();
 }
 
 bool ChannelImpl::Send(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(sdu);
 
-  std::lock_guard lock(mtx_);
   TRACE_DURATION("bluetooth", "l2cap:channel_send", "handle", link_->handle(), "id", id());
 
   if (!link_) {
@@ -226,99 +183,71 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   ZX_ASSERT(callback);
   ZX_ASSERT(dispatcher);
 
-  std::lock_guard lock(mtx_);
-
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on inactive channel");
     return;
   }
 
-  async::PostTask(link_->dispatcher(),
-                  [link = link_, level, callback = std::move(callback), dispatcher]() mutable {
-                    if (link) {
-                      link->UpgradeSecurity(level, std::move(callback), dispatcher);
-                    }
-                  });
+  link_->UpgradeSecurity(level, std::move(callback), dispatcher);
 }
 
 void ChannelImpl::OnClosed() {
-  async_dispatcher_t* dispatcher;
-  fit::closure task;
+  bt_log(TRACE, "l2cap", "channel closed (link: %#.4x, id: %#.4x)", link_handle(), id());
 
-  {
-    std::lock_guard lock(mtx_);
-    bt_log(TRACE, "l2cap", "channel closed (link: %#.4x, id: %#.4x)", link_handle(), id());
-
-    if (!link_ || !active_) {
-      link_ = nullptr;
-      return;
-    }
-
-    ZX_DEBUG_ASSERT(closed_cb_);
-    dispatcher = dispatcher_;
-    task = std::move(closed_cb_);
-    active_ = false;
+  if (!link_ || !active_) {
     link_ = nullptr;
-    dispatcher_ = nullptr;
-    rx_engine_ = nullptr;
-    tx_engine_ = nullptr;
+    return;
   }
 
-  RunOrPost(std::move(task), dispatcher);
+  ZX_ASSERT(closed_cb_);
+  auto closed_cb = std::move(closed_cb_);
+  active_ = false;
+  link_ = nullptr;
+  rx_engine_ = nullptr;
+  tx_engine_ = nullptr;
+
+  closed_cb();
 }
 
 void ChannelImpl::HandleRxPdu(PDU&& pdu) {
-  async_dispatcher_t* dispatcher;
-  fit::closure task;
+  TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu", "handle", link_->handle(), "channel_id",
+                 id_);
 
-  {
-    std::lock_guard lock(mtx_);
-    TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu", "handle", link_->handle(), "channel_id",
-                   id_);
-
-    // link_ may be nullptr if a pdu is received after the channel has been deactivated but
-    // before LogicalLink::RemoveChannel has been dispatched
-    if (!link_) {
-      bt_log(TRACE, "l2cap", "ignoring pdu on deactivated channel");
-      return;
-    }
-
-    ZX_DEBUG_ASSERT(rx_engine_);
-
-    ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
-    if (!sdu) {
-      // The PDU may have been invalid, out-of-sequence, or part of a segmented
-      // SDU.
-      // * If invalid, we drop the PDU (per Core Spec Ver 5, Vol 3, Part A,
-      //   Secs. 3.3.6 and/or 3.3.7).
-      // * If out-of-sequence or part of a segmented SDU, we expect that some
-      //   later call to ProcessPdu() will return us an SDU containing this
-      //   PDU's data.
-      return;
-    }
-
-    // Buffer the packets if the channel hasn't been activated.
-    if (!active_) {
-      pending_rx_sdus_.emplace(std::move(sdu));
-      // Tracing: we assume pending_rx_sdus_ is only filled once and use the length of queue
-      // for trace ids.
-      TRACE_FLOW_BEGIN("bluetooth", "ChannelImpl::HandleRxPdu queued", pending_rx_sdus_.size());
-      return;
-    }
-
-    trace_flow_id_t trace_id = TRACE_NONCE();
-    TRACE_FLOW_BEGIN("bluetooth", "ChannelImpl::HandleRxPdu callback", trace_id);
-
-    dispatcher = dispatcher_;
-    task = [func = rx_cb_.share(), sdu = std::move(sdu), trace_id]() mutable {
-      TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu callback task");
-      TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu callback", trace_id);
-      func(std::move(sdu));
-    };
-
-    ZX_DEBUG_ASSERT(rx_cb_);
+  // link_ may be nullptr if a pdu is received after the channel has been deactivated but
+  // before LogicalLink::RemoveChannel has been dispatched
+  if (!link_) {
+    bt_log(TRACE, "l2cap", "ignoring pdu on deactivated channel");
+    return;
   }
-  RunOrPost(std::move(task), dispatcher);
+
+  ZX_ASSERT(rx_engine_);
+
+  ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
+  if (!sdu) {
+    // The PDU may have been invalid, out-of-sequence, or part of a segmented
+    // SDU.
+    // * If invalid, we drop the PDU (per Core Spec Ver 5, Vol 3, Part A,
+    //   Secs. 3.3.6 and/or 3.3.7).
+    // * If out-of-sequence or part of a segmented SDU, we expect that some
+    //   later call to ProcessPdu() will return us an SDU containing this
+    //   PDU's data.
+    return;
+  }
+
+  // Buffer the packets if the channel hasn't been activated.
+  if (!active_) {
+    pending_rx_sdus_.emplace(std::move(sdu));
+    // Tracing: we assume pending_rx_sdus_ is only filled once and use the length of queue
+    // for trace ids.
+    TRACE_FLOW_BEGIN("bluetooth", "ChannelImpl::HandleRxPdu queued", pending_rx_sdus_.size());
+    return;
+  }
+
+  ZX_ASSERT(rx_cb_);
+  {
+    TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu callback");
+    rx_cb_(std::move(sdu));
+  }
 }
 
 }  // namespace internal

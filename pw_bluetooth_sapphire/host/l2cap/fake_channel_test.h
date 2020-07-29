@@ -71,6 +71,8 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
   fxl::WeakPtr<FakeChannel> fake_chan() const { return fake_chan_; }
 
+  void set_fake_chan(fxl::WeakPtr<FakeChannel> chan) { fake_chan_ = chan; }
+
  private:
   // Helper that sets a reception expectation callback with |expected| then sends |packet| if it is
   // not std::nullopt, returning whether |expected| was received when the test loop run until idle.

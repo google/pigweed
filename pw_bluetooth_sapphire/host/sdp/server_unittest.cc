@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
@@ -28,7 +29,7 @@ using namespace inspect::testing;
 
 using bt::testing::FakeController;
 
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using TestingBase = l2cap::testing::FakeChannelTest;
 
 constexpr hci::ConnectionHandle kTestHandle1 = 1;
 constexpr hci::ConnectionHandle kTestHandle2 = 2;
@@ -45,7 +46,10 @@ class SDP_ServerTest : public TestingBase {
  protected:
   void SetUp() override {
     l2cap_ = data::testing::FakeDomain::Create();
-    l2cap_->set_channel_callback([this](auto fake_chan) { channel_ = std::move(fake_chan); });
+    l2cap_->set_channel_callback([this](auto fake_chan) {
+      channel_ = std::move(fake_chan);
+      set_fake_chan(channel_->AsWeakPtr());
+    });
     l2cap_->AddACLConnection(kTestHandle1, hci::Connection::Role::kSlave, nullptr, nullptr);
     l2cap_->AddACLConnection(kTestHandle2, hci::Connection::Role::kSlave, nullptr, nullptr);
     server_ = std::make_unique<Server>(l2cap_,
@@ -61,36 +65,6 @@ class SDP_ServerTest : public TestingBase {
   Server* server() const { return server_.get(); }
 
   fbl::RefPtr<data::testing::FakeDomain> l2cap() const { return l2cap_; }
-
-  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan() const { return channel_; }
-
-  bool Expect(const ByteBuffer& expected) {
-    if (!fake_chan()) {
-      bt_log(ERROR, "unittest", "no channel, failing!");
-      return false;
-    }
-
-    bool success = false;
-    auto cb = [&expected, &success](auto cb_packet) {
-      success = ContainersEqual(expected, *cb_packet);
-    };
-
-    fake_chan()->SetSendCallback(cb, dispatcher());
-    RunLoopUntilIdle();
-
-    return success;
-  }
-
-  bool ReceiveAndExpect(const ByteBuffer& packet, const ByteBuffer& expected_response) {
-    if (!fake_chan()) {
-      bt_log(ERROR, "unittest", "no channel, failing!");
-      return false;
-    }
-
-    fake_chan()->Receive(packet);
-
-    return Expect(expected_response);
-  }
 
   RegistrationHandle AddSPP(sdp::Server::ConnectCallback cb = NopConnectCallback) {
     ServiceRecord record;

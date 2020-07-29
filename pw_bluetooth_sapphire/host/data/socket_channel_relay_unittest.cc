@@ -294,12 +294,7 @@ TEST_F(DATA_SocketChannelRelayRxTest, MessageFromChannelIsCopiedToSocketSynchron
   const auto kExpectedMessage = CreateStaticByteBuffer('h', 'e', 'l', 'l', 'o');
   ASSERT_TRUE(relay()->Activate());
   channel()->Receive(kExpectedMessage);
-  // Note: we dispatch one task, to get the data from the FakeChannel to
-  // the SocketChannelRelay. We avoid RunUntilIdle(), to ensure that the
-  // SocketChannelRelay immediately copies the l2cap::Channel data to the
-  // zx::socket.
-  RunLoopOnce();
-
+  // The data should be copied synchronously, so the async loop should not be run here.
   EXPECT_TRUE(ContainersEqual(kExpectedMessage, ReadDatagramFromSocket(kExpectedMessage.size())));
 }
 

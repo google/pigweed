@@ -262,6 +262,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
+  // Synchronously closes channels & sockets.
   domain()->RemoveConnection(kLinkHandle);
   acl_data_channel()->UnregisterLink(kLinkHandle);
   acl_data_channel()->ClearControllerPacketCount(kLinkHandle);
@@ -270,8 +271,8 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   bytes_written = 0;
   status = sock.write(0, write_data, sizeof(write_data) - 1, &bytes_written);
 
-  EXPECT_EQ(ZX_OK, status);
-  EXPECT_EQ(80u, bytes_written);
+  EXPECT_EQ(ZX_ERR_PEER_CLOSED, status);
+  EXPECT_EQ(0u, bytes_written);
 
   // no packets should be sent
   RunLoopUntilIdle();
@@ -360,6 +361,9 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ(u8"🔰", socket_bytes.view(0, bytes_read).AsString());
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
 TEST_F(DATA_DomainTest, OutboundL2capSocket) {
@@ -407,6 +411,9 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
   EXPECT_EQ(ZX_OK, status);
   ASSERT_EQ(4u, bytes_read);
   EXPECT_EQ("test", socket_bytes.view(0, bytes_read).AsString());
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
 TEST_F(DATA_DomainTest, OutboundSocketIsInvalidWhenL2capFailsToOpenChannel) {
@@ -574,6 +581,9 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
   ASSERT_TRUE(chan);
   EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->params->max_rx_sdu_size);
   EXPECT_EQ(*chan_params.mode, chan->params->mode);
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
 TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {

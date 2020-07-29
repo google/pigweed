@@ -102,10 +102,14 @@ class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   }
 
   void Receive128BitCmd(Code cmd_code, const UInt128& value) {
+    fake_chan()->Receive(Make128BitCmd(cmd_code, value));
+  }
+
+  DynamicByteBuffer Make128BitCmd(Code cmd_code, const UInt128& value) {
     StaticByteBuffer<PacketSize<UInt128>()> buffer;
     PacketWriter writer(cmd_code, &buffer);
     *writer.mutable_payload<UInt128>() = value;
-    fake_chan()->Receive(buffer);
+    return DynamicByteBuffer(buffer);
   }
 
   UInt128 GenerateConfirmValue(const UInt128& random, uint32_t tk = 0) const {
@@ -309,10 +313,10 @@ TEST_F(SMP_Phase2LegacyTest, InitiatorReceivesConfirmBeforeTkFails) {
   ASSERT_FALSE(sent_sdu);
 
   // Receive peer confirm (generated from arbitrary peer rand {0}) before |confirm_cb| is notified
-  Receive128BitCmd(kPairingConfirm, GenerateConfirmValue({0}));
+  const auto kPairingConfirmCmd = Make128BitCmd(kPairingConfirm, GenerateConfirmValue({0}));
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
 }
 
 TEST_F(SMP_Phase2LegacyTest, InvalidConfirmValueFails) {
@@ -335,10 +339,10 @@ TEST_F(SMP_Phase2LegacyTest, InvalidConfirmValueFails) {
   // Change the peer random so that the confirm value we sent does not match the random value.
   UInt128 mismatched_peer_rand = values.random;
   mismatched_peer_rand[0] += 1;
-  Receive128BitCmd(kPairingRandom, mismatched_peer_rand);
+  const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, mismatched_peer_rand);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kConfirmValueFailed};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -462,10 +466,10 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeTkFails) {
   ASSERT_TRUE(confirm_cb);
 
   MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
-  Receive128BitCmd(kPairingRandom, values.random);
+  const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -480,10 +484,10 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomBeforeConfirmFails) {
   phase_2_legacy()->Start();
   ASSERT_TRUE(requested_confirmation);
   MatchingPair values = GenerateMatchingConfirmAndRandom(0);  // Just Works TK is 0
-  Receive128BitCmd(kPairingRandom, values.random);
+  const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -724,11 +728,11 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveConfirmValueTwiceFails) {
   Receive128BitCmd(kPairingConfirm, values.confirm);
   RunLoopUntilIdle();
   ASSERT_EQ(kPairingConfirm, code);
-  Receive128BitCmd(kPairingConfirm, values.confirm);
+  const auto kPairingConfirmCmd = Make128BitCmd(kPairingConfirm, values.confirm);
   // Pairing should fail after receiving 2 confirm values with kUnspecifiedReason
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -749,11 +753,11 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
   RunLoopUntilIdle();
   // We've completed Phase 2, and should've notified the callback
   ASSERT_EQ(1, phase_2_complete_count());
-  Receive128BitCmd(kPairingRandom, values.random);
+  const auto kPairingRandomCmd = Make128BitCmd(kPairingRandom, values.random);
   // Pairing should fail after receiving a second random value with kUnspecifiedReason
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 }  // namespace

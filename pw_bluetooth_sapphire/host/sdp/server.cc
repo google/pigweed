@@ -174,7 +174,7 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  bool activated = channel->ActivateWithDispatcher(
+  bool activated = channel->Activate(
       [self, handle, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
         if (self) {
           self->OnRxBFrame(handle, std::move(sdu), max_tx_sdu_size);
@@ -184,8 +184,7 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
         if (self) {
           self->OnChannelClosed(handle);
         }
-      },
-      async_get_default_dispatcher());
+      });
   if (!activated) {
     bt_log(WARN, "sdp", "failed to activate channel (handle %#.4x)", handle);
     return false;

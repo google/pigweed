@@ -28,7 +28,7 @@ PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
     ZX_PANIC("unsupported link type for SMP!");
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
-  chan_->ActivateWithDispatcher(
+  chan_->Activate(
       [self](ByteBufferPtr sdu) {
         if (self) {
           self->OnRxBFrame(std::move(sdu));
@@ -40,8 +40,7 @@ PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
         if (self) {
           self->OnChannelClosed();
         }
-      },
-      async_get_default_dispatcher());
+      });
   // The SMP fixed channel's MTU must be >=23 bytes (kNoSecureConnectionsMTU) per spec V5.0 Vol. 3
   // Part H 3.2. As SMP operates on a fixed channel, there is no way to configure this MTU, so we
   // expect that L2CAP always provides a channel with a sufficiently large MTU. This assertion

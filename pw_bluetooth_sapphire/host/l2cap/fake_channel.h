@@ -65,9 +65,7 @@ class FakeChannel : public Channel {
 
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
-  bool ActivateWithDispatcher(RxCallback rx_callback, ClosedCallback closed_callback,
-                              async_dispatcher_t* dispatcher) override;
-  bool ActivateOnDataDomain(RxCallback rx_callback, ClosedCallback closed_callback) override;
+  bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) override;
   void Deactivate() override;
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
@@ -84,7 +82,6 @@ class FakeChannel : public Channel {
 
   ClosedCallback closed_cb_;
   RxCallback rx_cb_;
-  async_dispatcher_t* dispatcher_;
 
   SendCallback send_cb_;
   async_dispatcher_t* send_dispatcher_;

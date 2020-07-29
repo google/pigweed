@@ -96,10 +96,15 @@ class SMP_Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
 
   template <typename T>
   void ReceiveCmd(Code cmd_code, const T& value) {
+    fake_chan()->Receive(MakeCmd(cmd_code, value));
+  }
+
+  template <typename T>
+  StaticByteBuffer<PacketSize<T>()> MakeCmd(Code cmd_code, const T& value) {
     StaticByteBuffer<PacketSize<T>()> buffer;
     PacketWriter writer(cmd_code, &buffer);
     *writer.mutable_payload<T>() = value;
-    fake_chan()->Receive(buffer);
+    return buffer;
   }
 
   static std::pair<Code, UInt128> ExtractCodeAnd128BitCmd(ByteBufferPtr sdu) {
@@ -290,95 +295,95 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveMalformedPacket) {
   phase_2_sc()->Start();
   // PairingPublicKeyParams is expected to have both an X and Y value, not just an X.
   const UInt256 kX = peer_key().GetPublicKeyX();
-  ReceiveCmd<UInt256>(kPairingPublicKey, kX);
+  const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, kX);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kInvalidParameters};
 
-  EXPECT_TRUE(Expect(kExpectedFailure));
+  EXPECT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveUnexpectedPacket) {
   phase_2_sc()->Start();
   // Pairing Responses should only be sent during Phase 1 of pairing.
-  ReceiveCmd<PairingResponseParams>(kPairingResponse, PairingResponseParams());
+  const auto kPairingResponseCmd = MakeCmd(kPairingResponse, PairingResponseParams());
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
 
-  EXPECT_TRUE(Expect(kExpectedFailure));
+  EXPECT_TRUE(ReceiveAndExpect(kPairingResponseCmd, kExpectedFailure));
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorPubKeyOutOfOrder) {
   NewPhase2SecureConnections(Role::kInitiator);
 
-  ReceiveCmd<PairingPublicKeyParams>(kPairingPublicKey, peer_key().GetSerializedPublicKey());
+  const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, peer_key().GetSerializedPublicKey());
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, RejectsPublicKeyOffCurve) {
   phase_2_sc()->Start();
-  ReceiveCmd<PairingPublicKeyParams>(kPairingPublicKey,
-                                     PairingPublicKeyParams{.x = {0x01}, .y = {0x02}});
+  const auto kPairingPublicKeyCmd =
+      MakeCmd(kPairingPublicKey, PairingPublicKeyParams{.x = {0x01}, .y = {0x02}});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kInvalidParameters};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceivePeerPublicKeyTwice) {
   phase_2_sc()->Start();
-  ReceiveCmd<PairingPublicKeyParams>(kPairingPublicKey, peer_key().GetSerializedPublicKey());
-  ReceiveCmd<PairingPublicKeyParams>(kPairingPublicKey, peer_key().GetSerializedPublicKey());
+  const auto kPairingPublicKeyCmd = MakeCmd(kPairingPublicKey, peer_key().GetSerializedPublicKey());
+  fake_chan()->Receive(kPairingPublicKeyCmd);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingPublicKeyCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueBeforeStage1Fails) {
   phase_2_sc()->Start();
-  ReceiveCmd(kPairingConfirm, PairingConfirmValue{1});
+  const auto kPairingConfirmCmd = MakeCmd(kPairingConfirm, PairingConfirmValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueBeforeStage1Fails) {
   phase_2_sc()->Start();
-  ReceiveCmd(kPairingRandom, PairingRandomValue{1});
+  const auto kPairingRandomCmd = MakeCmd(kPairingRandom, PairingRandomValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveDhKeyCheckValueBeforeStage1Fails) {
   phase_2_sc()->Start();
-  ReceiveCmd(kPairingDHKeyCheck, PairingDHKeyCheckValueE{1});
+  const auto kPairingDHKeyCheckCmd = MakeCmd(kPairingDHKeyCheck, PairingDHKeyCheckValueE{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingDHKeyCheckCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveConfirmValueAfterStage1Fails) {
   FastForwardToDhKeyCheck();
-  ReceiveCmd(kPairingConfirm, PairingConfirmValue{1});
+  const auto kPairingConfirmCmd = MakeCmd(kPairingConfirm, PairingConfirmValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingConfirmCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
 TEST_F(SMP_Phase2SecureConnectionsTest, ReceiveRandomValueAfterStage1Fails) {
   FastForwardToDhKeyCheck();
-  ReceiveCmd(kPairingRandom, PairingRandomValue{1});
+  const auto kPairingRandomCmd = MakeCmd(kPairingRandom, PairingRandomValue{1});
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -389,10 +394,11 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveDhKeyCheckWhileWaitingFo
   LtkAndChecks expected_stage2_vals = FastForwardToDhKeyCheck();
   ASSERT_TRUE(confirm_cb);
   // Receiving the peer DHKey check before user confirmation should fail as initiator.
-  ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
+  const auto kPairingDHKeyCheckCmd =
+      MakeCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kUnspecifiedReason};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingDHKeyCheckCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -414,10 +420,10 @@ TEST_F(SMP_Phase2SecureConnectionsTest, Stage1JustWorksErrorPropagates) {
   ASSERT_EQ(kPairingRandom, sent_code);
   UInt128 mismatched_random = stage1_vals.random;
   mismatched_random[0] += 1;
-  ReceiveCmd(kPairingRandom, mismatched_random);
+  const auto kMismatchedPairingRandomCmd = MakeCmd(kPairingRandom, mismatched_random);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kConfirmValueFailed};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kMismatchedPairingRandomCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 
@@ -466,10 +472,11 @@ TEST_F(SMP_Phase2SecureConnectionsTest, InitiatorReceiveWrongDhKeyCheckFails) {
   RunLoopUntilIdle();
   ASSERT_EQ(kPairingDHKeyCheck, sent_code);
   // As initiator, we expect the dhkey_check_b value, not the a.
-  ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_a);
+  const auto kPairingDHKeyCheckCmd =
+      MakeCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_a);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kDHKeyCheckFailed};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingDHKeyCheckCmd, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
   ASSERT_EQ(0, phase_2_complete_count());
 }
@@ -651,10 +658,11 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ResponderReceiveWrongDhKeyCheckFails) {
   confirm_cb(true);
   RunLoopUntilIdle();
   // As responder, we expect the dhkey_check_a value, not the b.
-  ReceiveCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
+  const auto kPairingDHKeyCheckCmdWithBValue =
+      MakeCmd(kPairingDHKeyCheck, expected_stage2_vals.dhkey_check_b);
   const StaticByteBuffer<PacketSize<ErrorCode>()> kExpectedFailure{kPairingFailed,
                                                                    ErrorCode::kDHKeyCheckFailed};
-  ASSERT_TRUE(Expect(kExpectedFailure));
+  ASSERT_TRUE(ReceiveAndExpect(kPairingDHKeyCheckCmdWithBValue, kExpectedFailure));
   ASSERT_EQ(1, listener()->pairing_error_count());
   ASSERT_EQ(0, phase_2_complete_count());
 }

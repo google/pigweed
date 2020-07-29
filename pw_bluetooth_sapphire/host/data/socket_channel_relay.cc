@@ -74,13 +74,11 @@ bool SocketChannelRelay<ChannelT>::Activate() {
     return false;
   }
 
-  // TODO(35105): Transition to ActivateOnDataDomain.
   const auto self = weak_ptr_factory_.GetWeakPtr();
   const auto channel_id = channel_->id();
-  const bool activate_success = channel_->ActivateWithDispatcher(
+  const bool activate_success = channel_->Activate(
       [self, channel_id](ByteBufferPtr rx_data) {
-        // Note: this lambda _may_ be invoked immediately when yielding after ActivateWithDispatcher
-        // returns.
+        // Note: this lambda _may_ be invoked immediately for buffered packets.
         if (self) {
           self->OnChannelDataReceived(std::move(rx_data));
         } else {
@@ -95,8 +93,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
           bt_log(TRACE, "l2cap", "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
                  channel_id);
         }
-      },
-      dispatcher_);
+      });
   if (!activate_success) {
     return false;
   }

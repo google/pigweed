@@ -4,8 +4,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
@@ -2398,103 +2399,97 @@ class GATT_ServerTest_Security : public GATT_ServerTest {
     grp->set_active(true);
   }
 
+  auto MakeAttError(att::OpCode request, att::Handle handle, att::ErrorCode ecode) {
+    return StaticByteBuffer(0x01,                                  // opcode: error response
+                            request,                               // request opcode
+                            LowerBits(handle), UpperBits(handle),  // handle
+                            ecode                                  // error code
+    );
+  }
+
   // Blocks until an ATT Error Response PDU with the given parameters is
   // received from the fake channel (i.e. received FROM the ATT bearer).
   bool ExpectAttError(att::OpCode request, att::Handle handle, att::ErrorCode ecode) {
-    // clang-format off
-    return Expect(CreateStaticByteBuffer(
-        0x01,                                 // opcode: error response
-        request,                              // request opcode
-        LowerBits(handle), UpperBits(handle), // handle
-        ecode                                 // error code
-        ));
-    // clang-format on
+    return Expect(MakeAttError(request, handle, ecode));
   }
 
   // Helpers for emulating the receipt of an ATT read/write request PDU and
   // expecting back a security error. Expects a valid response if
   // |expected_ecode| is att::ErrorCode::kNoError.
   bool EmulateReadByTypeRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(0x08,  // opcode: read by type
-                                                LowerBits(handle),
-                                                UpperBits(handle),  // start handle
-                                                LowerBits(handle), UpperBits(handle),  // end handle
-                                                0xEF, 0xBE  // type: 0xBEEF, i.e. kTestType16
-                                                ));
+    const auto kReadByTypeRequestPdu =
+        StaticByteBuffer(0x08,  // opcode: read by type
+                         LowerBits(handle),
+                         UpperBits(handle),                     // start handle
+                         LowerBits(handle), UpperBits(handle),  // end handle
+                         0xEF, 0xBE);                           // type: 0xBEEF, i.e. kTestType16
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(0x09,  // opcode: read by type response
-                                           0x05,  // length: 5 (strlen("foo") + 2)
-                                           LowerBits(handle), UpperBits(handle),  // handle
-                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                           ));
+      return ReceiveAndExpect(kReadByTypeRequestPdu,
+                              StaticByteBuffer(0x09,  // opcode: read by type response
+                                               0x05,  // length: 5 (strlen("foo") + 2)
+                                               LowerBits(handle), UpperBits(handle),  // handle
+                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                               ));
     } else {
-      return ExpectAttError(0x08, handle, expected_ecode);
+      return ReceiveAndExpect(kReadByTypeRequestPdu, MakeAttError(0x08, handle, expected_ecode));
     }
   }
 
   bool EmulateReadBlobRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    // clang-format off
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x0C,                                  // opcode: read blob
-        LowerBits(handle), UpperBits(handle),  // handle
-        0x00, 0x00                             // offset: 0
-        ));
-    // clang-format on
+    const auto kReadBlobRequestPdu =
+        StaticByteBuffer(0x0C,                                  // opcode: read blob
+                         LowerBits(handle), UpperBits(handle),  // handle
+                         0x00, 0x00);                           // offset: 0
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(0x0D,          // opcode: read blob response
-                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                           ));
+      return ReceiveAndExpect(kReadBlobRequestPdu,
+                              StaticByteBuffer(0x0D,          // opcode: read blob response
+                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                               ));
     } else {
-      return ExpectAttError(0x0C, handle, expected_ecode);
+      return ReceiveAndExpect(kReadBlobRequestPdu, MakeAttError(0x0C, handle, expected_ecode));
     }
   }
 
   bool EmulateReadRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    // clang-format off
-    fake_chan()->Receive(CreateStaticByteBuffer(
-        0x0A,  // opcode: read request
-        LowerBits(handle), UpperBits(handle)  // handle
-        ));
-    // clang-format on
+    const auto kReadRequestPdu = StaticByteBuffer(0x0A,  // opcode: read request
+                                                  LowerBits(handle), UpperBits(handle));  // handle
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(0x0B,          // opcode: read response
-                                           'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
-                                           ));
+      return ReceiveAndExpect(kReadRequestPdu,
+                              StaticByteBuffer(0x0B,          // opcode: read response
+                                               'f', 'o', 'o'  // value: "foo", i.e. kTestValue1
+                                               ));
     } else {
-      return ExpectAttError(0x0A, handle, expected_ecode);
+      return ReceiveAndExpect(kReadRequestPdu, MakeAttError(0x0A, handle, expected_ecode));
     }
   }
 
   bool EmulateWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(0x12,  // opcode: write request
-                                                LowerBits(handle), UpperBits(handle),  // handle
-                                                't', 'e', 's', 't'  // value: "test"
-                                                ));
+    const auto kWriteRequestPdu = StaticByteBuffer(0x12,  // opcode: write request
+                                                   LowerBits(handle), UpperBits(handle),  // handle
+                                                   't', 'e', 's', 't');  // value: "test"
     if (expected_ecode == att::ErrorCode::kNoError) {
-      return Expect(CreateStaticByteBuffer(0x13  // write response
-                                           ));
+      return ReceiveAndExpect(kWriteRequestPdu, StaticByteBuffer(0x13));  // write response
     } else {
-      return ExpectAttError(0x12, handle, expected_ecode);
+      return ReceiveAndExpect(kWriteRequestPdu, MakeAttError(0x12, handle, expected_ecode));
     }
   }
 
   bool EmulatePrepareWriteRequest(att::Handle handle, att::ErrorCode expected_ecode) {
-    fake_chan()->Receive(CreateStaticByteBuffer(0x16,  // opcode: prepare write request
-                                                LowerBits(handle), UpperBits(handle),  // handle
-                                                0x00, 0x00,                            // offset: 0
-                                                't', 'e', 's', 't'  // value: "test"
-                                                ));
+    const auto kPrepareWriteRequestPdu =
+        StaticByteBuffer(0x16,                                  // opcode: prepare write request
+                         LowerBits(handle), UpperBits(handle),  // handle
+                         0x00, 0x00,                            // offset: 0
+                         't', 'e', 's', 't'                     // value: "test"
+        );
     if (expected_ecode == att::ErrorCode::kNoError) {
-      // clang-format off
-      return Expect(CreateStaticByteBuffer(
-          0x17,                                 // prepare write response
-          LowerBits(handle), UpperBits(handle), // handle
-          0x00, 0x00,                           // offset: 0
-          't', 'e', 's', 't'                    // value: "test"
-          ));
-      // clang-format on
+      return ReceiveAndExpect(kPrepareWriteRequestPdu,
+                              StaticByteBuffer(0x17,  // prepare write response
+                                               LowerBits(handle), UpperBits(handle),  // handle
+                                               0x00, 0x00,                            // offset: 0
+                                               't', 'e', 's', 't'  // value: "test"
+                                               ));
     } else {
-      return ExpectAttError(0x16, handle, expected_ecode);
+      return ReceiveAndExpect(kPrepareWriteRequestPdu, MakeAttError(0x16, handle, expected_ecode));
     }
   }
 

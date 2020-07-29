@@ -553,20 +553,20 @@ TEST_F(GATT_ClientTest, DiscoverPrimary128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryMultipleRequests) {
-  const auto kExpectedRequest1 =
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryMultipleRequests) {
+  const auto kExpectedRequest0 =
       CreateStaticByteBuffer(0x10,        // opcode: read by group type request
                              0x01, 0x00,  // start handle: 0x0001
                              0xFF, 0xFF,  // end handle: 0xFFFF
                              0x00, 0x28   // type: primary service (0x2800)
       );
-  const auto kExpectedRequest2 =
+  const auto kExpectedRequest1 =
       CreateStaticByteBuffer(0x10,        // opcode: read by group type request
                              0x08, 0x00,  // start handle: 0x0008
                              0xFF, 0xFF,  // end handle: 0xFFFF
                              0x00, 0x28   // type: primary service (0x2800)
       );
-  const auto kExpectedRequest3 =
+  const auto kExpectedRequest2 =
       CreateStaticByteBuffer(0x10,        // opcode: read by group type request
                              0x0A, 0x00,  // start handle: 0x000A
                              0xFF, 0xFF,  // end handle: 0xFFFF
@@ -584,36 +584,34 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryMultipleRequests) {
     client()->DiscoverServices(ServiceKind::PRIMARY, svc_cb, res_cb);
   });
 
-  ASSERT_TRUE(Expect(kExpectedRequest1));
+  ASSERT_TRUE(Expect(kExpectedRequest0));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x11,        // opcode: read by group type response
-                                              0x06,        // data length: 6 (16-bit UUIDs)
-                                              0x01, 0x00,  // svc 1 start: 0x0001
-                                              0x05, 0x00,  // svc 1 end: 0x0005
-                                              0xAD, 0xDE,  // svc 1 uuid: 0xDEAD
-                                              0x06, 0x00,  // svc 2 start: 0x0006
-                                              0x07, 0x00,  // svc 2 end: 0x0007
-                                              0xEF, 0xBE   // svc 2 uuid: 0xBEEF
-                                              ));
+  const auto kResponse0 = StaticByteBuffer(0x11,        // opcode: read by group type response
+                                           0x06,        // data length: 6 (16-bit UUIDs)
+                                           0x01, 0x00,  // svc 1 start: 0x0001
+                                           0x05, 0x00,  // svc 1 end: 0x0005
+                                           0xAD, 0xDE,  // svc 1 uuid: 0xDEAD
+                                           0x06, 0x00,  // svc 2 start: 0x0006
+                                           0x07, 0x00,  // svc 2 end: 0x0007
+                                           0xEF, 0xBE   // svc 2 uuid: 0xBEEF
+  );
 
   // The client should follow up with a second request following the last end
   // handle.
-  ASSERT_TRUE(Expect(kExpectedRequest2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
 
   // Respond with one 128-bit service UUID.
+  const auto kResponse1 = StaticByteBuffer(0x11,        // opcode: read by group type response
+                                           0x14,        // data length: 20 (128-bit UUIDs)
+                                           0x08, 0x00,  // svc 1 start: 0x0008
+                                           0x09, 0x00,  // svc 1 end: 0x0009
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x11,        // opcode: read by group type response
-                                              0x14,        // data length: 20 (128-bit UUIDs)
-                                              0x08, 0x00,  // svc 1 start: 0x0008
-                                              0x09, 0x00,  // svc 1 end: 0x0009
-
-                                              // UUID matches |kTestUuid3| declared above.
-                                              0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                                              15));
+                                           // UUID matches |kTestUuid3| declared above.
+                                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
   // The client should follow up with a third request following the last end
   // handle.
-  ASSERT_TRUE(Expect(kExpectedRequest3));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
 
   // Terminate the procedure with an error response.
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
@@ -821,28 +819,36 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUID128BitResultSingleRequest) {
   EXPECT_EQ(kTestUuid3, services[0].type);
 }
 
-TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMultipleRequests) {
-  const auto kExpectedRequest1 =
-      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
-                             0x01, 0x00,  // start handle: 0x0001
-                             0xFF, 0xFF,  // end handle: 0xFFFF
-                             0x00, 0x28,  // type: primary service (0x2800)
-                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-      );
-  const auto kExpectedRequest2 =
-      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
-                             0x08, 0x00,  // start handle: 0x0008
-                             0xFF, 0xFF,  // end handle: 0xFFFF
-                             0x00, 0x28,  // type: primary service (0x2800)
-                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-      );
-  const auto kExpectedRequest3 =
-      CreateStaticByteBuffer(0x06,        // opcode: find by type value request
-                             0x0A, 0x00,  // start handle: 0x000A
-                             0xFF, 0xFF,  // end handle: 0xFFFF
-                             0x00, 0x28,  // type: primary service (0x2800)
-                             0xAD, 0xDE   // svc 1 uuid: 0xDEAD
-      );
+TEST_F(GATT_ClientTest, DiscoverAllPrimaryByUUIDMultipleRequests) {
+  const auto kExpectedRequest0 = StaticByteBuffer(0x06,        // opcode: find by type value request
+                                                  0x01, 0x00,  // start handle: 0x0001
+                                                  0xFF, 0xFF,  // end handle: 0xFFFF
+                                                  0x00, 0x28,  // type: primary service (0x2800)
+                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+  );
+  const auto kResponse0 = StaticByteBuffer(0x07,        // opcode: find by type value response
+                                           0x01, 0x00,  // svc 1 start: 0x0001
+                                           0x05, 0x00,  // svc 1 end: 0x0005
+                                           0x06, 0x00,  // svc 2 start: 0x0006
+                                           0x07, 0x00   // svc 2 end: 0x0007
+  );
+  const auto kExpectedRequest1 = StaticByteBuffer(0x06,        // opcode: find by type value request
+                                                  0x08, 0x00,  // start handle: 0x0008
+                                                  0xFF, 0xFF,  // end handle: 0xFFFF
+                                                  0x00, 0x28,  // type: primary service (0x2800)
+                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+  );
+  // Respond with one 128-bit service UUID.
+  const auto kResponse1 = StaticByteBuffer(0x07,        // opcode: find by type value response
+                                           0x08, 0x00,  // svc 1 start: 0x0008
+                                           0x09, 0x00   // svc 1 end: 0x0009
+  );
+  const auto kExpectedRequest2 = StaticByteBuffer(0x06,        // opcode: find by type value request
+                                                  0x0A, 0x00,  // start handle: 0x000A
+                                                  0xFF, 0xFF,  // end handle: 0xFFFF
+                                                  0x00, 0x28,  // type: primary service (0x2800)
+                                                  0xAD, 0xDE   // svc 1 uuid: 0xDEAD
+  );
 
   att::Status status(HostError::kFailed);
   auto res_cb = [&status](att::Status val) { status = val; };
@@ -855,36 +861,22 @@ TEST_F(GATT_ClientTest, DiscoverPrimaryByUUIDMultipleRequests) {
     client()->DiscoverServicesByUuid(ServiceKind::PRIMARY, svc_cb, res_cb, kTestUuid1);
   });
 
-  ASSERT_TRUE(Expect(kExpectedRequest1));
-
-  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
-                                              0x01, 0x00,  // svc 1 start: 0x0001
-                                              0x05, 0x00,  // svc 1 end: 0x0005
-                                              0x06, 0x00,  // svc 2 start: 0x0006
-                                              0x07, 0x00   // svc 2 end: 0x0007
-                                              ));
+  ASSERT_TRUE(Expect(kExpectedRequest0));
 
   // The client should follow up with a second request following the last end
   // handle.
-  ASSERT_TRUE(Expect(kExpectedRequest2));
-
-  // Respond with one 128-bit service UUID.
-
-  fake_chan()->Receive(CreateStaticByteBuffer(0x07,        // opcode: find by type value response
-                                              0x08, 0x00,  // svc 1 start: 0x0008
-                                              0x09, 0x00   // svc 1 end: 0x0009
-                                              ));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
 
   // The client should follow up with a third request following the last end
   // handle.
-  ASSERT_TRUE(Expect(kExpectedRequest3));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
 
   // Terminate the procedure with an error response.
-  fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
-                                              0x06,        // request: find by type value
-                                              0x0A, 0x00,  // handle: 0x000A
-                                              0x0A         // error: Attribute Not Found
-                                              ));
+  fake_chan()->Receive(StaticByteBuffer(0x01,        // opcode: error response
+                                        0x06,        // request: find by type value
+                                        0x0A, 0x00,  // handle: 0x000A
+                                        0x0A         // error: Attribute Not Found
+                                        ));
 
   RunLoopUntilIdle();
 
@@ -1211,19 +1203,38 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
   constexpr att::Handle kStart = 0x0001;
   constexpr att::Handle kEnd = 0xFFFF;
 
-  const auto kExpectedRequest1 =
+  const auto kExpectedRequest0 =
       CreateStaticByteBuffer(0x08,        // opcode: read by type request
                              0x01, 0x00,  // start handle: 0x0001
                              0xFF, 0xFF,  // end handle: 0xFFFF
                              0x03, 0x28   // type: characteristic decl. (0x2803)
       );
-  const auto kExpectedRequest2 =
+  const auto kResponse0 = StaticByteBuffer(0x09,        // opcode: read by type response
+                                           0x07,        // data length: 7 (16-bit UUIDs)
+                                           0x03, 0x00,  // chrc 1 handle
+                                           0x00,        // chrc 1 properties
+                                           0x04, 0x00,  // chrc 1 value handle
+                                           0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
+                                           0x05, 0x00,  // chrc 2 handle
+                                           0x01,        // chrc 2 properties
+                                           0x06, 0x00,  // chrc 2 value handle
+                                           0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
+  );
+  const auto kExpectedRequest1 =
       CreateStaticByteBuffer(0x08,        // opcode: read by type request
                              0x06, 0x00,  // start handle: 0x0006
                              0xFF, 0xFF,  // end handle: 0xFFFF
                              0x03, 0x28   // type: characteristic decl. (0x2803)
       );
-  const auto kExpectedRequest3 =
+  // Respond with one characteristic with a 128-bit UUID
+  const auto kResponse1 = StaticByteBuffer(0x09,        // opcode: read by type response
+                                           0x15,        // data length: 21 (128-bit UUIDs)
+                                           0x07, 0x00,  // chrc handle
+                                           0x00,        // chrc properties
+                                           0x08, 0x00,  // chrc value handle
+                                           // UUID matches |kTestUuid3| declared above.
+                                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+  const auto kExpectedRequest2 =
       CreateStaticByteBuffer(0x08,        // opcode: read by type request
                              0x08, 0x00,  // start handle: 0x0008
                              0xFF, 0xFF,  // end handle: 0xFFFF
@@ -1240,39 +1251,15 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryMultipleRequests) {
   async::PostTask(dispatcher(),
                   [&, this] { client()->DiscoverCharacteristics(kStart, kEnd, chrc_cb, res_cb); });
 
-  ASSERT_TRUE(Expect(kExpectedRequest1));
-
-  fake_chan()->Receive(CreateStaticByteBuffer(0x09,        // opcode: read by type response
-                                              0x07,        // data length: 7 (16-bit UUIDs)
-                                              0x03, 0x00,  // chrc 1 handle
-                                              0x00,        // chrc 1 properties
-                                              0x04, 0x00,  // chrc 1 value handle
-                                              0xAD, 0xDE,  // chrc 1 uuid: 0xDEAD
-                                              0x05, 0x00,  // chrc 2 handle
-                                              0x01,        // chrc 2 properties
-                                              0x06, 0x00,  // chrc 2 value handle
-                                              0xEF, 0xBE   // chrc 2 uuid: 0xBEEF
-                                              ));
+  ASSERT_TRUE(Expect(kExpectedRequest0));
 
   // The client should follow up with a second request following the last
   // characteristic declaration handle.
-  ASSERT_TRUE(Expect(kExpectedRequest2));
-
-  // Respond with one characteristic with a 128-bit UUID
-
-  fake_chan()->Receive(CreateStaticByteBuffer(0x09,        // opcode: read by type response
-                                              0x15,        // data length: 21 (128-bit UUIDs)
-                                              0x07, 0x00,  // chrc handle
-                                              0x00,        // chrc properties
-                                              0x08, 0x00,  // chrc value handle
-
-                                              // UUID matches |kTestUuid3| declared above.
-                                              0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                                              15));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse0, kExpectedRequest1));
 
   // The client should follow up with a third request following the last
   // characteristic declaration handle.
-  ASSERT_TRUE(Expect(kExpectedRequest3));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedRequest2));
 
   // Terminate the procedure with an error response.
   fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
@@ -2022,24 +2009,24 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2091,15 +2078,15 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesMalformedFailure) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,        // opcode: prepare write response
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x00, 0x00,  // offset: 0x0000
-                                              'f', 'o'     // value: "foo"
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00, 0x00,  // offset: 0x0000
+                                           'f', 'o'     // value: "fo"
+  );
 
   // The second request is malformed, the client should send an ExecuteWrite
   // instead of the malformed PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2140,15 +2127,15 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesErrorFailure) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x01,        // opcode: error response
-                                              0x16,        // request: prepare write request
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x06         // error: Request Not Supported
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x01,        // opcode: error response
+                                           0x16,        // request: prepare write request
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x06         // error: Request Not Supported
+  );
 
   // The first request returned an error, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2216,52 +2203,50 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueRequestSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes.
-  ASSERT_TRUE(Expect(kExpectedExec));
-
-  fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
-  );
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
 
   // The first request should be fully complete now, and should trigger the
   // second.
   EXPECT_TRUE(status1);
 
-  ASSERT_TRUE(Expect(kExpectedPrep3));
+  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
+  ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x02, 0x00,    // handle: 0x0002
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x02, 0x00,    // handle: 0x0002
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep4));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse3, kExpectedPrep4));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x02, 0x00,    // handle: 0x0002
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse4 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x02, 0x00,    // handle: 0x0002
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse4, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2321,11 +2306,11 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // Initiate another request while the first one is being processed. It should
   // be enqueued to be processed afterwards.
@@ -2338,45 +2323,44 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesEnqueueLateRequestSuccess) {
   });
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
-  );
+  const auto kExecuteWriteResponse = StaticByteBuffer(0x19);  // opcode: execute write response
 
   // The first request should be fully complete now, and should trigger the
   // second.
   EXPECT_TRUE(status1);
 
-  ASSERT_TRUE(Expect(kExpectedPrep3));
+  ASSERT_TRUE(ReceiveAndExpect(kExecuteWriteResponse, kExpectedPrep3));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x02, 0x00,    // handle: 0x0002
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse3 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x02, 0x00,    // handle: 0x0002
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep4));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse3, kExpectedPrep4));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x02, 0x00,    // handle: 0x0002
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse4 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x02, 0x00,    // handle: 0x0002
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse4, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2424,24 +2408,24 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesDifferingResponseSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,        // opcode: prepare write response
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x00, 0x00,  // offset: 0x0000
-                                              'f', 'l'     // value: "fl" -> different, but OK.
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00, 0x00,  // offset: 0x0000
+                                           'f', 'l'     // value: "fl" -> different, but OK.
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2488,24 +2472,24 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableWriteSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x00, 0x00,    // offset: 0x0000
-                                              'f', 'o', 'o'  // value: "foo"
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x00, 0x00,    // offset: 0x0000
+                                           'f', 'o', 'o'  // value: "foo"
+  );
 
   // The client should follow up with a second prepare write request
-  ASSERT_TRUE(Expect(kExpectedPrep2));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedPrep2));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x03, 0x00,    // offset: 0x0003
-                                              'b', 'a', 'r'  // value: "bar"
-                                              ));
+  const auto kResponse2 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x03, 0x00,    // offset: 0x0003
+                                           'b', 'a', 'r'  // value: "bar"
+  );
 
   // The client should send an execute write request following the prepared
   // writes
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse2, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2544,14 +2528,14 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyBufSuccess) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,        // opcode: prepare write response
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x00, 0x00   // offset: 0x0000
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00, 0x00   // offset: 0x0000
+  );
 
   // The client should send an execute write request following the prepared
   // writes
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2593,15 +2577,15 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableDifferingResponseError) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,               // opcode: prepare write response
-                                              0x01, 0x00,         // handle: 0x0001
-                                              0x00, 0x00,         // offset: 0x0000
-                                              'f', 'o', 'b', '1'  // value: "fob1" -> invalid
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,               // opcode: prepare write response
+                                           0x01, 0x00,         // handle: 0x0001
+                                           0x00, 0x00,         // offset: 0x0000
+                                           'f', 'o', 'b', '1'  // value: "fob1" -> invalid
+  );
 
   // The first request returned an error, the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2643,14 +2627,14 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableMalformedResponseError) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,        // opcode: prepare write response
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x00         // offset: malformed
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00         // offset: malformed
+  );
 
   // The first request returned an error (malformed), the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2690,15 +2674,15 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableOffsetMismatchError) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,          // opcode: prepare write response
-                                              0x01, 0x00,    // handle: 0x0001
-                                              0x01, 0x00,    // offset: incorrect
-                                              'f', 'o', 'o'  // value: 'foo'
-                                              ));
+  const auto kResponse1 = StaticByteBuffer(0x17,          // opcode: prepare write response
+                                           0x01, 0x00,    // handle: 0x0001
+                                           0x01, 0x00,    // offset: incorrect
+                                           'f', 'o', 'o'  // value: 'foo'
+  );
 
   // The first request returned an error (malformed), the client should send an ExecuteWrite
   // instead of the second PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -2738,14 +2722,14 @@ TEST_F(GATT_ClientTest, ExecutePrepareWritesReliableEmptyValueError) {
 
   ASSERT_TRUE(Expect(kExpectedPrep1));
 
-  fake_chan()->Receive(CreateStaticByteBuffer(0x17,        // opcode: prepare write response
-                                              0x01, 0x00,  // handle: 0x0001
-                                              0x00, 0x00   // offset: 0x0000
-                                              ));          // value: omitted
+  const auto kResponse1 = StaticByteBuffer(0x17,        // opcode: prepare write response
+                                           0x01, 0x00,  // handle: 0x0001
+                                           0x00, 0x00   // offset: 0x0000
+  );
 
   // The first request returned an error (empty value), the client should
   // send an ExecuteWrite instead of the second PrepareWrite.
-  ASSERT_TRUE(Expect(kExpectedExec));
+  ASSERT_TRUE(ReceiveAndExpect(kResponse1, kExpectedExec));
 
   fake_chan()->Receive(CreateStaticByteBuffer(0x19)  // opcode: execute write response
   );
@@ -3257,16 +3241,14 @@ TEST_F(GATT_ClientTest, Indication) {
     EXPECT_EQ("test", value.AsString());
   });
 
-  // clang-format off
-  fake_chan()->Receive(CreateStaticByteBuffer(
-      0x1D,               // opcode: indication
-      0x01, 0x00,         // handle: 1
-      't', 'e', 's', 't'  // value: "test"
-  ));
-  // clang-format on
+  const auto kIndication = StaticByteBuffer(0x1D,               // opcode: indication
+                                            0x01, 0x00,         // handle: 1
+                                            't', 'e', 's', 't'  // value: "test"
+  );
 
   // Wait until a confirmation gets sent.
-  EXPECT_TRUE(Expect(CreateStaticByteBuffer(0x1E)));
+  const auto kConfirmation = StaticByteBuffer(0x1E);
+  EXPECT_TRUE(ReceiveAndExpect(kIndication, kConfirmation));
   EXPECT_TRUE(called);
 }
 
