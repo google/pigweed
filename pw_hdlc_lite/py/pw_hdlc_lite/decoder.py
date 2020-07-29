@@ -15,9 +15,7 @@
 
 import binascii
 
-HDLC_UNESCAPING_CONSTANT = 0x20
-HDLC_ESCAPE = 0x7D
-HDLC_FRAME_DELIMITER = 0x7E
+from pw_hdlc_lite import constants
 
 
 class CrcMismatchError(Exception):
@@ -37,14 +35,14 @@ class Decoder:
         CrcMismatchError exception.
         """
         for byte in byte_array:
-            if byte == HDLC_FRAME_DELIMITER:
+            if byte == constants.HDLC_FRAME_DELIMITER:
                 if self._data:
                     if self._check_crc():
                         yield self._data[:-2]
                     else:
                         raise CrcMismatchError()
                     self._data.clear()
-            elif byte == HDLC_ESCAPE:
+            elif byte == constants.HDLC_ESCAPE:
                 self._unescape_next_byte_flag = True
             else:
                 self._add_unescaped_byte(byte)
@@ -52,7 +50,7 @@ class Decoder:
     def _add_unescaped_byte(self, byte):
         """Unescapes the bytes based on the _unescape_next_byte_flag flag."""
         if self._unescape_next_byte_flag:
-            self._data.append(byte ^ HDLC_UNESCAPING_CONSTANT)
+            self._data.append(byte ^ constants.HDLC_UNESCAPING_CONSTANT)
             self._unescape_next_byte_flag = False
         else:
             self._data.append(byte)
