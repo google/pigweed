@@ -74,7 +74,7 @@ template("pw_linker_script") {
       # Treat the following file as a C file.
       "-x",
       "c",
-      get_path_info(invoker.linker_script, "abspath"),
+      rebase_path(invoker.linker_script),
     ]
 
     # Include any explicitly listed c flags.
@@ -90,7 +90,7 @@ template("pw_linker_script") {
     # Set output file.
     args += [
       "-o",
-      _final_linker_script,
+      rebase_path(_final_linker_script),
     ]
     outputs = [ _final_linker_script ]
   }

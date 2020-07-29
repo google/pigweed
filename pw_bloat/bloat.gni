@@ -99,9 +99,7 @@ template("pw_size_report") {
              "Size report binaries must define 'label' and 'target' variables")
       _all_target_dependencies += [ binary.target ]
 
-      _target_dir = get_label_info(binary.target, "target_out_dir")
-      _target_name = get_label_info(binary.target, "name")
-      _binary_path = get_path_info(_target_dir, "abspath") + ":$_target_name"
+      _binary_path = "<TARGET_FILE(${binary.target})>"
 
       # If the binary defines its own base, use that instead of the global base.
       if (defined(binary.base)) {
@@ -120,9 +118,7 @@ template("pw_size_report") {
         _bloaty_configs += [ get_path_info(pw_bloat_BLOATY_CONFIG, "abspath") ]
       }
 
-      _base_dir = get_label_info(_binary_base, "target_out_dir")
-      _base_name = get_label_info(_binary_base, "name")
-      _binary_path += ";" + get_path_info(_base_dir, "abspath") + ":$_base_name"
+      _binary_path += ";" + "<TARGET_FILE($_binary_base)>"
 
       _binary_paths += [ _binary_path ]
       _binary_labels += [ binary.label ]
@@ -167,7 +163,7 @@ template("pw_size_report") {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
         script = "$dir_pw_bloat/py/no_bloaty.py"
-        args = [ _doc_rst_output ]
+        args = [ rebase_path(_doc_rst_output) ]
         outputs = [ _doc_rst_output ]
       }
 
@@ -330,7 +326,7 @@ template("pw_toolchain_size_report") {
         pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
       }
       script = "$dir_pw_bloat/py/no_toolchains.py"
-      args = [ _doc_rst_output ]
+      args = [ rebase_path(_doc_rst_output) ]
       outputs = [ _doc_rst_output ]
     }
   }

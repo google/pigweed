@@ -72,14 +72,14 @@ template("pw_exec") {
   if (defined(invoker.env_file)) {
     _script_args += [
       "--env-file",
-      get_path_info(invoker.env_file, "abspath"),
+      rebase_path(invoker.env_file),
     ]
   }
 
   if (defined(invoker.args_file)) {
     _script_args += [
       "--args-file",
-      get_path_info(invoker.args_file, "abspath"),
+      rebase_path(invoker.args_file),
     ]
 
     if (defined(invoker.skip_empty_args) && invoker.skip_empty_args) {

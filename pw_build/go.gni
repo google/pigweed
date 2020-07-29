@@ -138,7 +138,7 @@ template("pw_go_executable") {
     args = [
       "build",
       "-o",
-      target_out_dir,
+      rebase_path(target_out_dir),
       invoker.package,
     ]
     deps = [
@@ -147,5 +147,15 @@ template("pw_go_executable") {
     ]
     env = [ "GOPATH+=$_default_gopath" ]
     env_file = _metadata_file
+
+    _binary_name = get_path_info(invoker.package, "name")
+
+    if (host_os == "win") {
+      _extension = ".exe"
+    } else {
+      _extension = ""
+    }
+
+    outputs = [ "$target_out_dir/$_binary_name$_extension" ]
   }
 }

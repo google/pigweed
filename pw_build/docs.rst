@@ -82,10 +82,9 @@ forward them through to the underlying target.
 pw_python_script
 ^^^^^^^^^^^^^^^^
 The ``pw_python_script`` template is a convenience wrapper around ``action`` for
-running Python scripts. The main benefit it provides is automatic resolution of
-GN paths to filesystem paths and GN target names to compiled binary files. This
-allows Python scripts to be written independent of GN, taking only filesystem as
-arguments.
+running Python scripts. The main benefit it provides is resolution of GN target
+labels to compiled binary files. This allows Python scripts to be written
+independently of GN, taking only filesystem paths as arguments.
 
 Another convenience provided by the template is to allow running scripts without
 any outputs. Sometimes scripts run in a build do not directly produce output
@@ -102,15 +101,59 @@ target. Additionally, it has some of its own arguments:
   output file for the script. This allows running scripts without specifying any
   ``outputs``.
 
+**Expressions**
+
+``pw_python_script`` evaluates expressions in ``args``, the arguments passed to
+the script. These expressions function similarly to generator expressions in
+CMake. Expressions may be passed as a standalone argument or as part of another
+argument. A single argument may contain multiple expressions.
+
+Generally, these expressions are used within templates rather than directly in
+BUILD.gn files. This allows build code to use GN labels without having to worry
+about converting them to files.
+
+Currently, only one expression is supported.
+
+.. describe:: <TARGET_FILE(gn_target)>
+
+  Evaluates to the output file of the provided GN target. For example, the
+  expression
+
+  .. code::
+
+    "<TARGET_FILE(//foo/bar:static_lib)>"
+
+  might expand to
+
+  .. code::
+
+    "/home/User/project_root/out/obj/foo/bar/static_lib.a"
+
+  ``TARGET_FILE`` parses the ``.ninja`` file for the GN target, so it should
+  always find the correct output file, regardless of the toolchain's or target's
+  configuration. Some targets, such as ``source_set`` and ``group`` targets, do
+  not have an output file, and attempting to use ``TARGET_FILE`` with them
+  results in an error.
+
+  ``TARGET_FILE`` only resolves GN target labels to their outputs. To resolve
+  paths generally, use the standard GN approach of applying the
+  ``rebase_path(path)`` function. With default arguments, ``rebase_path``
+  converts the provided GN path or list of paths to be relative to the build
+  directory, from which all build commands and scripts are executed.
+
 **Example**
 
 .. code::
 
   import("$dir_pw_build/python_script.gni")
 
-  python_script("hello_world") {
-    script = "py/say_hello.py"
-    args = [ "world" ]
+  pw_python_script("postprocess_main_image") {
+    script = "py/postprocess_binary.py"
+    args = [
+      "--database",
+      rebase_path("my/database.csv"),
+      "--binary=<TARGET_FILE(//firmware/images:main)>",
+    ]
     stamp = true
   }
 

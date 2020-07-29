@@ -23,33 +23,20 @@ if (pw_build_HOST_TOOLS) {
   # Defines a Pigweed host tool and installs it into the host_tools directory.
   #
   # Args:
-  #   deps: List containing exactly one target which outputs a binary tool.
+  #   tool: The target that outputs the binary tool.
   #   name: Optional name for the installed program. Defaults to the name of
   #     the compiled binary.
   template("pw_host_tool") {
-    assert(defined(invoker.deps),
-           "pw_host_tool must specify an executable as a dependency")
-
-    num_deps = 0
-    foreach(_dep, invoker.deps) {
-      num_deps += 1
-    }
-    assert(num_deps == 1, "pw_host_tool must have exactly one dependency")
-
-    _host_tools_dir = "$root_out_dir/host_tools"
-
-    # Can't do invoker.deps[0] in GN.
-    _deps = invoker.deps
-    _out_target = get_label_info(_deps[0], "target_out_dir") + ":" +
-                  get_label_info(_deps[0], "name")
+    assert(defined(invoker.tool),
+           "pw_host_tool must specify an executable as the tool variable")
 
     _script_args = [
       "--src",
-      _out_target,
+      "<TARGET_FILE(${invoker.tool})>",
       "--dst",
-      _host_tools_dir,
+      rebase_path("$root_out_dir/host_tools"),
       "--out-root",
-      root_out_dir,
+      rebase_path(root_out_dir),
     ]
 
     if (defined(invoker.name) && invoker.name != "") {
@@ -62,7 +49,7 @@ if (pw_build_HOST_TOOLS) {
     pw_python_script(target_name) {
       script = "$dir_pw_build/py/pw_build/host_tool.py"
       args = _script_args
-      deps = _deps
+      deps = [ invoker.tool ]
       stamp = true
     }
   }

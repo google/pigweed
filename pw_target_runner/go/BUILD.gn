@@ -33,9 +33,9 @@ pw_go_executable("pw_target_runner_server") {
 }
 
 pw_host_tool("simple_client") {
-  deps = [ ":pw_target_runner_client" ]
+  tool = ":pw_target_runner_client"
 }
 
 pw_host_tool("simple_server") {
-  deps = [ ":pw_target_runner_server" ]
+  tool = ":pw_target_runner_server"
 }

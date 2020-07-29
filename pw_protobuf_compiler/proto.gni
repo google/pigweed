@@ -65,12 +65,12 @@ template("_pw_pwpb_proto_library") {
              "--language",
              "cc",
              "--module-path",
-             _module_path,
+             rebase_path(_module_path),
              "--include-file",
-             invoker.include_file,
+             rebase_path(invoker.include_file),
              "--out-dir",
-             _proto_gen_dir,
-           ] + get_path_info(invoker.protos, "abspath")
+             rebase_path(_proto_gen_dir),
+           ] + rebase_path(invoker.protos)
     inputs = invoker.protos
     outputs = _outputs
     deps = invoker.deps
@@ -128,14 +128,14 @@ template("_pw_nanopb_rpc_proto_library") {
              "--language",
              "nanopb_rpc",
              "--module-path",
-             _module_path,
+             rebase_path(_module_path),
              "--include-paths",
-             "$dir_pw_third_party_nanopb/generator/proto",
+             rebase_path("$dir_pw_third_party_nanopb/generator/proto"),
              "--include-file",
-             invoker.include_file,
+             rebase_path(invoker.include_file),
              "--out-dir",
-             _proto_gen_dir,
-           ] + get_path_info(invoker.protos, "abspath")
+             rebase_path(_proto_gen_dir),
+           ] + rebase_path(invoker.protos)
     inputs = invoker.protos
     outputs = _outputs
 
@@ -208,16 +208,17 @@ template("_pw_nanopb_proto_library") {
              "--language",
              "nanopb",
              "--module-path",
-             _module_path,
+             rebase_path(_module_path),
              "--include-paths",
-             "$dir_pw_third_party_nanopb/generator/proto",
+             rebase_path("$dir_pw_third_party_nanopb/generator/proto"),
              "--include-file",
-             invoker.include_file,
+             rebase_path(invoker.include_file),
              "--out-dir",
-             _proto_gen_dir,
+             rebase_path(_proto_gen_dir),
              "--custom-plugin",
-             get_path_info(_nanopb_plugin, "abspath"),
-           ] + get_path_info(invoker.protos, "abspath")
+             rebase_path(_nanopb_plugin),
+           ] + rebase_path(invoker.protos)
+
     inputs = invoker.protos
     outputs = _outputs
 
@@ -273,12 +274,12 @@ template("_pw_go_proto_library") {
              "--language",
              "go",
              "--module-path",
-             "//",
+             rebase_path("//"),
              "--include-file",
-             invoker.include_file,
+             rebase_path(invoker.include_file),
              "--out-dir",
-             _proto_gen_dir,
-           ] + get_path_info(invoker.protos, "abspath")
+             rebase_path(_proto_gen_dir),
+           ] + rebase_path(invoker.protos)
     inputs = invoker.protos
     deps = invoker.deps + invoker.gen_deps
     stamp = true

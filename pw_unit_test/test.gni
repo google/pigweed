@@ -167,9 +167,9 @@ template("pw_test") {
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
       args = [
         "--runner",
-        pw_unit_test_AUTOMATIC_RUNNER,
+        rebase_path(pw_unit_test_AUTOMATIC_RUNNER),
         "--test",
-        get_path_info("$_test_output_dir:$_test_to_run", "abspath"),
+        "<TARGET_FILE(:$_test_to_run)>",
       ]
       stamp = true
     }

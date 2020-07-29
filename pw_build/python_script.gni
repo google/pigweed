@@ -75,11 +75,14 @@ template("pw_python_script") {
     # GN root directory relative to the build directory (in which the runner
     # script is invoked).
     "--gn-root",
-    rebase_path("//", root_build_dir),
+    rebase_path("//"),
 
-    # Output directory root, used to determine whether to search for a binary.
-    "--out-dir",
-    root_out_dir,
+    # Current directory, used to resolve relative paths.
+    "--current-path",
+    rebase_path("."),
+
+    "--default-toolchain=$default_toolchain",
+    "--current-toolchain=$current_toolchain",
   ]
 
   if (defined(invoker.inputs)) {
@@ -104,16 +107,16 @@ template("pw_python_script") {
     _outputs += [ _stamp_file ]
     _script_args += [
       "--touch",
-      _stamp_file,
+      rebase_path(_stamp_file),
     ]
   }
 
   # Capture output or not.
   # Note: capture defaults to true.
-  if (!defined(invoker.capture_output)) {
-    capture_output = true
-  } else {
+  if (defined(invoker.capture_output)) {
     forward_variables_from(invoker, [ "capture_output" ])
+  } else {
+    capture_output = true
   }
   if (capture_output) {
     _script_args += [ "--capture-output" ]
@@ -124,7 +127,8 @@ template("pw_python_script") {
   # of the Python script to run.
   _script_args += [ "--" ]
 
-  _script_args += [ get_path_info(invoker.script, "abspath") ]
+  _script_args += [ rebase_path(invoker.script) ]
+
   if (defined(invoker.args)) {
     _script_args += invoker.args
   }

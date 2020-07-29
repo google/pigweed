@@ -93,21 +93,18 @@ template("pw_doc_gen") {
     "--gn-gen-root",
     rebase_path(root_gen_dir, root_build_dir) + "/",
     "--sphinx-build-dir",
-    get_path_info("$target_gen_dir/pw_docgen_tree", "abspath"),
+    rebase_path("$target_gen_dir/pw_docgen_tree"),
     "--conf",
-    get_path_info(invoker.conf, "abspath"),
+    rebase_path(invoker.conf),
     "--out-dir",
-    get_path_info(invoker.output_directory, "abspath"),
+    rebase_path(invoker.output_directory),
     "--metadata",
   ]
 
   # Metadata JSON file path.
-  _script_args +=
-      get_path_info(get_target_outputs(":$_metadata_file_target"), "abspath")
+  _script_args += rebase_path(get_target_outputs(":$_metadata_file_target"))
 
-  foreach(path, invoker.sources) {
-    _script_args += [ get_path_info(path, "abspath") ]
-  }
+  _script_args += rebase_path(invoker.sources)
 
   if (pw_docgen_BUILD_DOCS) {
     pw_python_script(target_name) {
