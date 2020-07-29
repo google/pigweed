@@ -18,9 +18,20 @@
 
 #include <span>
 
+#include "pw_assert/assert.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
+
+#if PW_ALLOCATOR_POISON_ENABLE
+// Add poison offset of sizeof(void*) bytes before and after usable space in all
+// Blocks.
+#define PW_ALLOCATOR_POISON_OFFSET sizeof(void*)
+#else
+// Set the poison offset to 0 bytes; will not add poisson space before and
+// after usable space in all Blocks.
+#define PW_ALLOCATOR_POISON_OFFSET static_cast<size_t>(0)
+#endif  // PW_ALLOCATOR_POISON_ENABLE
 
 // The "Block" type is intended to be a building block component for
 // allocators. In the this design, there is an explicit pointer to next and
@@ -56,7 +67,7 @@ namespace pw::allocator {
 //  +----------------+------+------+------+---------------------------------+
 //  ^
 //  |
-//  '----------- NextBlock() = Next & ~0x3 --------------------------------->
+//  '----------- Next() = Next & ~0x3 --------------------------------->
 //
 // The first block in a chain is denoted by a nullptr "prev" field, and the last
 // block is denoted by the "Last" bit being set.
@@ -91,21 +102,25 @@ class Block final {
   // Be aware that this method does not do any sanity checking; passing a random
   // pointer will return a non-null pointer.
   static Block* FromUsableSpace(std::byte* usable_space) {
-    return reinterpret_cast<Block*>(usable_space - sizeof(Block));
+    return reinterpret_cast<Block*>(usable_space - sizeof(Block) -
+                                    PW_ALLOCATOR_POISON_OFFSET);
   }
 
   // Size including the header.
   size_t OuterSize() const {
-    return reinterpret_cast<intptr_t>(NextBlock()) -
+    return reinterpret_cast<intptr_t>(Next()) -
            reinterpret_cast<intptr_t>(this);
   }
 
   // Usable bytes inside the block.
-  size_t InnerSize() const { return OuterSize() - sizeof(*this); }
+  size_t InnerSize() const {
+    return OuterSize() - sizeof(*this) - 2 * PW_ALLOCATOR_POISON_OFFSET;
+  }
 
   // Return the usable space inside this block.
   std::byte* UsableSpace() {
-    return reinterpret_cast<std::byte*>(this) + sizeof(*this);
+    return reinterpret_cast<std::byte*>(this) + sizeof(*this) +
+           PW_ALLOCATOR_POISON_OFFSET;
   }
 
   // Split this block, such that this block has an inner size of
@@ -182,24 +197,52 @@ class Block final {
   // Fetch the block immediately after this one.
   // Note: you should also check Last(); this function may return a valid
   // block, even if one does not exist.
-  Block* NextBlock() const {
+  Block* Next() const {
     return reinterpret_cast<Block*>(
         (NextAsUIntPtr() & ~(kInUseFlag | kLastFlag)));
   }
 
   // Return the block immediately before this one. This will return nullptr
   // if this is the "first" block.
-  Block* PrevBlock() const { return prev; }
+  Block* Prev() const { return prev; }
+
+  // Return true if the block is aligned, the prev/next field matches with the
+  // previous and next block, and the poisoned bytes is not damaged. Otherwise,
+  // return false to indicate this block is corrupted.
+  bool IsValid() const { return CheckStatus() == BlockStatus::VALID; }
+
+  // Uses PW_DCHECK to log information about the reason if a blcok is invalid.
+  // This function will do nothing if the block is valid.
+  void CrashIfInvalid();
 
  private:
   static constexpr uintptr_t kInUseFlag = 0x1;
   static constexpr uintptr_t kLastFlag = 0x2;
+  static constexpr std::byte POISON_PATTERN[8] = {std::byte{0x92},
+                                                  std::byte{0x88},
+                                                  std::byte{0x0a},
+                                                  std::byte{0x00},
+                                                  std::byte{0xec},
+                                                  std::byte{0xdc},
+                                                  std::byte{0xae},
+                                                  std::byte{0x4e}};
+  enum BlockStatus {
+    VALID,
+    MISALIGNED,
+    PREV_MISMATCHED,
+    NEXT_MISMATCHED,
+    POISON_CORRUPTED
+  };
 
   Block() = default;
 
   // Helper to reduce some of the casting nesting in the block management
   // functions.
   uintptr_t NextAsUIntPtr() const { return reinterpret_cast<uintptr_t>(next); }
+
+  void PoisonBlock();
+  bool CheckPoisonBytes() const;
+  BlockStatus CheckStatus() const;
 
   // Note: Consider instead making these next/prev offsets from the current
   // block, with templated type for the offset size. There are some interesting

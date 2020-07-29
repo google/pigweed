@@ -31,7 +31,7 @@ TEST(FreeListHeap, CanAllocate) {
 
   ASSERT_NE(ptr, nullptr);
   // In this case, the allocator should be returning us the start of the chunk.
-  EXPECT_EQ(ptr, &buf[0] + sizeof(Block));
+  EXPECT_EQ(ptr, &buf[0] + sizeof(Block) + PW_ALLOCATOR_POISON_OFFSET);
 }
 
 TEST(FreeListHeap, AllocationsDontOverlap) {
@@ -85,7 +85,9 @@ TEST(FreeListHeap, ReturnsNullWhenFull) {
 
   FreeListHeapBuffer allocator(buf);
 
-  EXPECT_NE(allocator.Allocate(N - sizeof(Block)), nullptr);
+  EXPECT_NE(
+      allocator.Allocate(N - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET),
+      nullptr);
   EXPECT_EQ(allocator.Allocate(1), nullptr);
 }
 
@@ -109,6 +111,9 @@ TEST(FreeListHeap, ReturnedPointersAreAligned) {
   EXPECT_EQ(ptr2_start % alignment, static_cast<size_t>(0));
 }
 
+#if CHECK_TEST_CRASHES
+
+// TODO(amontanez): Ensure that this test triggers an assert.
 TEST(FreeListHeap, CannotFreeNonOwnedPointer) {
   // This is a nasty one to test without looking at the internals of FreeList.
   // We can cheat; create a heap, allocate it all, and try and return something
@@ -118,7 +123,8 @@ TEST(FreeListHeap, CannotFreeNonOwnedPointer) {
 
   FreeListHeapBuffer allocator(buf);
 
-  void* ptr = allocator.Allocate(N - sizeof(Block));
+  void* ptr =
+      allocator.Allocate(N - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
 
   ASSERT_NE(ptr, nullptr);
 
@@ -134,6 +140,7 @@ TEST(FreeListHeap, CannotFreeNonOwnedPointer) {
   void* ptr_before = allocator.Allocate(1);
   EXPECT_EQ(ptr_before, nullptr);
 }
+#endif  // CHECK_TEST_CRASHES
 
 TEST(FreeListHeap, CanRealloc) {
   constexpr size_t N = 2048;
@@ -171,7 +178,7 @@ TEST(FreeListHeap, ReallocHasSameContent) {
   ASSERT_NE(ptr1, nullptr);
   ASSERT_NE(ptr2, nullptr);
   // Verify that data inside the allocated and reallocated chunks are the same.
-  EXPECT_EQ(memcmp(data1, data2, kAllocSize), 0);
+  EXPECT_EQ(std::memcmp(data1, data2, kAllocSize), 0);
 }
 
 TEST(FreeListHeap, ReturnsNullReallocFreedPointer) {

@@ -57,7 +57,7 @@ _target_config = {
     # TODO(pwbug/219): Currently "pw_tokenizer/detokenize_test" requires at
     # least 6K bytes in heap when using pw_malloc_freelist. The heap size
     # required for tests should be investigated.
-    "PW_BOOT_HEAP_SIZE=6K",
+    "PW_BOOT_HEAP_SIZE=7K",
     "PW_BOOT_MIN_STACK_SIZE=1K",
     "PW_BOOT_RAM_BEGIN=0x20000000",
     "PW_BOOT_RAM_SIZE=192K",

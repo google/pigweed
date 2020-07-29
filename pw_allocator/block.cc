@@ -14,6 +14,8 @@
 
 #include "pw_allocator/block.h"
 
+#include <cstring>
+
 namespace pw::allocator {
 
 Status Block::Init(const std::span<std::byte> region, Block** block) {
@@ -41,6 +43,9 @@ Status Block::Init(const std::span<std::byte> region, Block** block) {
 
   aliased.block->prev = nullptr;
   *block = aliased.block;
+#if PW_ALLOCATOR_POISON_ENABLE
+  (*block)->PoisonBlock();
+#endif  // PW_ALLOCATOR_POISON_ENABLE
   return Status::OK;
 }
 
@@ -75,7 +80,8 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
   // (2) Does the resulting block have enough space to store the header?
   // TODO: What to do if the returned section is empty (i.e. remaining
   // size == sizeof(Block))?
-  if (InnerSize() - aligned_head_block_inner_size < sizeof(Block)) {
+  if (InnerSize() - aligned_head_block_inner_size <
+      sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET) {
     return Status::RESOURCE_EXHAUSTED;
   }
 
@@ -85,13 +91,17 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
       reinterpret_cast<intptr_t>(this) +
       // skip past the current header...
       sizeof(*this) +
-      // into the usable bytes by the new inner size.
-      aligned_head_block_inner_size);
+      // add the poison bytes before usable space ...
+      PW_ALLOCATOR_POISON_OFFSET +
+      // into the usable bytes by the new inner size...
+      aligned_head_block_inner_size +
+      // add the poison bytes after the usable space ...
+      PW_ALLOCATOR_POISON_OFFSET);
 
   // If we're inserting in the middle, we need to update the current next
   // block to point to what we're inserting
   if (!Last()) {
-    NextBlock()->prev = new_next;
+    Next()->prev = new_next;
   }
 
   // Copy next verbatim so the next block also gets the "last"-ness
@@ -102,6 +112,12 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
   next = new_next;
 
   *new_block = next;
+
+#if PW_ALLOCATOR_POISON_ENABLE
+  PoisonBlock();
+  (*new_block)->PoisonBlock();
+#endif  // PW_ALLOCATOR_POISON_ENABLE
+
   return Status::OK;
 }
 
@@ -112,18 +128,18 @@ Status Block::MergeNext() {
   }
 
   // Is this or the next block in use?
-  if (Used() || NextBlock()->Used()) {
+  if (Used() || Next()->Used()) {
     return Status::FAILED_PRECONDITION;
   }
 
   // Simply enough, this block's next pointer becomes the next block's
   // next pointer. We then need to re-wire the "next next" block's prev
   // pointer to point back to us though.
-  next = NextBlock()->next;
+  next = Next()->next;
 
   // Copying the pointer also copies the "last" status, so this is safe.
   if (!Last()) {
-    NextBlock()->prev = this;
+    Next()->prev = this;
   }
 
   return Status::OK;
@@ -140,6 +156,93 @@ Status Block::MergePrev() {
   // after this has been invoked. Be careful when doing anything with `this`
   // After doing the below.
   return prev->MergeNext();
+}
+
+// TODO(pwbug/234): Add stack tracing to locate which call to the heap operation
+// caused the corruption.
+// TODO: Add detailed information to log report and leave succinct messages
+// in the crash message.
+void Block::CrashIfInvalid() {
+  switch (CheckStatus()) {
+    case VALID:
+      break;
+    case MISALIGNED:
+      PW_DCHECK(false, "The block at address %p is not aligned.", this);
+      break;
+    case NEXT_MISMATCHED:
+      PW_DCHECK(false,
+                "The 'prev' field in the next block (%p), does not match the "
+                "address of the current block (%p).",
+                Next()->Prev(),
+                this);
+      break;
+    case PREV_MISMATCHED:
+      PW_DCHECK(false,
+                "The 'next' field in the previous block (%p), does not match "
+                "the address of the current block (%p).",
+                Prev()->Next(),
+                this);
+      break;
+    case POISON_CORRUPTED:
+      PW_DCHECK(
+          false, "The poisoned pattern in the block at %p is corrupted.", this);
+      break;
+  }
+}
+
+// This function will return a Block::BlockStatus that is either VALID or
+// indicates the reason why the Block is invalid. If the Block is invalid at
+// multiple points, this function will only return one of the reasons.
+Block::BlockStatus Block::CheckStatus() const {
+  // Make sure the Block is aligned.
+  if (reinterpret_cast<uintptr_t>(this) % alignof(Block) != 0) {
+    return BlockStatus::MISALIGNED;
+  }
+
+  // Test if the prev/next pointer for this Block matches.
+  if (!Last() && (this >= Next() || this != Next()->Prev())) {
+    return BlockStatus::NEXT_MISMATCHED;
+  }
+
+  if (Prev() && (this <= Prev() || this != Prev()->Next())) {
+    return BlockStatus::PREV_MISMATCHED;
+  }
+
+#if PW_ALLOCATOR_POISON_ENABLE
+  if (!this->CheckPoisonBytes()) {
+    return BlockStatus::POISON_CORRUPTED;
+  }
+#endif  // PW_ALLOCATOR_POISON_ENABLE
+  return BlockStatus::VALID;
+}
+
+// Paint sizeof(void*) bytes before and after the usable space in Block as the
+// randomized function pattern.
+void Block::PoisonBlock() {
+#if PW_ALLOCATOR_POISON_ENABLE
+  std::byte* front_region = reinterpret_cast<std::byte*>(this) + sizeof(*this);
+  memcpy(front_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET);
+
+  std::byte* end_region =
+      reinterpret_cast<std::byte*>(Next()) - PW_ALLOCATOR_POISON_OFFSET;
+  memcpy(end_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET);
+#endif  // PW_ALLOCATOR_POISON_ENABLE
+}
+
+bool Block::CheckPoisonBytes() const {
+#if PW_ALLOCATOR_POISON_ENABLE
+  std::byte* front_region = reinterpret_cast<std::byte*>(
+      reinterpret_cast<intptr_t>(this) + sizeof(*this));
+  if (std::memcmp(front_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET)) {
+    return false;
+  }
+  std::byte* end_region = reinterpret_cast<std::byte*>(
+      reinterpret_cast<intptr_t>(this->Next()) - PW_ALLOCATOR_POISON_OFFSET);
+  if (std::memcmp(end_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET)) {
+    return false;
+  }
+#endif  // PW_ALLOCATOR_POISON_ENABLE
+  return true;
 }
 
 }  // namespace pw::allocator

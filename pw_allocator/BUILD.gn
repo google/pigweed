@@ -18,8 +18,18 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+declare_args() {
+  pw_allocator_POISON_HEAP = false
+}
+
 config("default_config") {
   include_dirs = [ "public" ]
+}
+
+config("enable_heap_poison") {
+  if (pw_allocator_POISON_HEAP) {
+    defines = [ "PW_ALLOCATOR_POISON_ENABLE=1" ]
+  }
 }
 
 group("pw_allocator") {
@@ -32,8 +42,10 @@ group("pw_allocator") {
 
 pw_source_set("block") {
   public_configs = [ ":default_config" ]
+  configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
+    "$dir_pw_assert",
     "$dir_pw_span",
     "$dir_pw_status",
   ]
@@ -42,6 +54,7 @@ pw_source_set("block") {
 
 pw_source_set("freelist") {
   public_configs = [ ":default_config" ]
+  configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/freelist.h" ]
   public_deps = [
     "$dir_pw_containers:vector",
@@ -53,11 +66,16 @@ pw_source_set("freelist") {
 
 pw_source_set("freelist_heap") {
   public_configs = [ ":default_config" ]
+  configs = [ ":enable_heap_poison" ]
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [
     ":block",
     ":freelist",
     "$dir_pw_span",
+  ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_log",
   ]
   sources = [ "freelist_heap.cc" ]
   sources += public
@@ -72,16 +90,19 @@ pw_test_group("tests") {
 }
 
 pw_test("block_test") {
+  configs = [ ":enable_heap_poison" ]
   deps = [ ":block" ]
   sources = [ "block_test.cc" ]
 }
 
 pw_test("freelist_test") {
+  configs = [ ":enable_heap_poison" ]
   deps = [ ":freelist" ]
   sources = [ "freelist_test.cc" ]
 }
 
 pw_test("freelist_heap_test") {
+  configs = [ ":enable_heap_poison" ]
   deps = [ ":freelist_heap" ]
   sources = [ "freelist_heap_test.cc" ]
 }

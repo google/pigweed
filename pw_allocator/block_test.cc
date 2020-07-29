@@ -14,6 +14,7 @@
 
 #include "pw_allocator/block.h"
 
+#include <cstring>
 #include <span>
 
 #include "gtest/gtest.h"
@@ -31,9 +32,10 @@ TEST(Block, CanCreateSingleBlock) {
 
   ASSERT_EQ(status, Status::OK);
   EXPECT_EQ(block->OuterSize(), kN);
-  EXPECT_EQ(block->InnerSize(), kN - sizeof(Block));
-  EXPECT_EQ(block->PrevBlock(), nullptr);
-  EXPECT_EQ(block->NextBlock(), (Block*)((uintptr_t)block + kN));
+  EXPECT_EQ(block->InnerSize(),
+            kN - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
+  EXPECT_EQ(block->Prev(), nullptr);
+  EXPECT_EQ(block->Next(), (Block*)((uintptr_t)block + kN));
   EXPECT_EQ(block->Used(), false);
   EXPECT_EQ(block->Last(), true);
 }
@@ -73,15 +75,17 @@ TEST(Block, CanSplitBlock) {
 
   ASSERT_EQ(status, Status::OK);
   EXPECT_EQ(block->InnerSize(), kSplitN);
-  EXPECT_EQ(block->OuterSize(), kSplitN + sizeof(Block));
+  EXPECT_EQ(block->OuterSize(),
+            kSplitN + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
   EXPECT_EQ(block->Last(), false);
 
-  EXPECT_EQ(next_block->OuterSize(), kN - kSplitN - sizeof(Block));
+  EXPECT_EQ(next_block->OuterSize(),
+            kN - kSplitN - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
   EXPECT_EQ(next_block->Used(), false);
   EXPECT_EQ(next_block->Last(), true);
 
-  EXPECT_EQ(block->NextBlock(), next_block);
-  EXPECT_EQ(next_block->PrevBlock(), block);
+  EXPECT_EQ(block->Next(), next_block);
+  EXPECT_EQ(next_block->Prev(), block);
 }
 
 TEST(Block, CanSplitBlockUnaligned) {
@@ -104,11 +108,13 @@ TEST(Block, CanSplitBlockUnaligned) {
 
   ASSERT_EQ(status, Status::OK);
   EXPECT_EQ(block->InnerSize(), split_len);
-  EXPECT_EQ(block->OuterSize(), split_len + sizeof(Block));
-  EXPECT_EQ(next_block->OuterSize(), kN - split_len - sizeof(Block));
+  EXPECT_EQ(block->OuterSize(),
+            split_len + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
+  EXPECT_EQ(next_block->OuterSize(),
+            kN - split_len - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
   EXPECT_EQ(next_block->Used(), false);
-  EXPECT_EQ(block->NextBlock(), next_block);
-  EXPECT_EQ(next_block->PrevBlock(), block);
+  EXPECT_EQ(block->Next(), next_block);
+  EXPECT_EQ(next_block->Prev(), block);
 }
 
 TEST(Block, CanSplitMidBlock) {
@@ -135,15 +141,16 @@ TEST(Block, CanSplitMidBlock) {
   Block* block3 = nullptr;
   block->Split(kSplit2, &block3);
 
-  EXPECT_EQ(block->NextBlock(), block3);
-  EXPECT_EQ(block3->NextBlock(), block2);
-  EXPECT_EQ(block2->PrevBlock(), block3);
-  EXPECT_EQ(block3->PrevBlock(), block);
+  EXPECT_EQ(block->Next(), block3);
+  EXPECT_EQ(block3->Next(), block2);
+  EXPECT_EQ(block2->Prev(), block3);
+  EXPECT_EQ(block3->Prev(), block);
 }
 
 TEST(Block, CannotSplitBlockWithoutHeaderSpace) {
   constexpr size_t kN = 1024;
-  constexpr size_t kSplitN = kN - sizeof(Block) - 1;
+  constexpr size_t kSplitN =
+      kN - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET - 1;
   byte bytes[kN];
 
   Block* block = nullptr;
@@ -182,6 +189,23 @@ TEST(Block, CannotMakeBlockLargerInSplit) {
   EXPECT_EQ(status, Status::OUT_OF_RANGE);
 }
 
+TEST(Block, CannotMakeSecondBlockLargerInSplit) {
+  // Ensure that the second block in split is at least of the size of header.
+  constexpr size_t kN = 1024;
+  byte bytes[kN];
+
+  Block* block = nullptr;
+  Block::Init(std::span(bytes, kN), &block);
+
+  Block* next_block = nullptr;
+  auto status = block->Split(
+      block->InnerSize() - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET + 1,
+      &next_block);
+
+  ASSERT_EQ(status, Status::RESOURCE_EXHAUSTED);
+  EXPECT_EQ(next_block, nullptr);
+}
+
 TEST(Block, CanMakeZeroSizeFirstBlock) {
   // This block does support splitting with zero payload size.
   constexpr size_t kN = 1024;
@@ -206,7 +230,9 @@ TEST(Block, CanMakeZeroSizeSecondBlock) {
   Block::Init(std::span(bytes, kN), &block);
 
   Block* next_block = nullptr;
-  auto status = block->Split(block->InnerSize() - sizeof(Block), &next_block);
+  auto status = block->Split(
+      block->InnerSize() - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET,
+      &next_block);
 
   ASSERT_EQ(status, Status::OK);
   EXPECT_EQ(next_block->InnerSize(), static_cast<size_t>(0));
@@ -224,7 +250,7 @@ TEST(Block, CanMarkBlockUsed) {
 
   // Mark used packs that data into the next pointer. Check that it's still
   // valid
-  EXPECT_EQ(block->NextBlock(), (Block*)((uintptr_t)block + kN));
+  EXPECT_EQ(block->Next(), (Block*)((uintptr_t)block + kN));
 
   block->MarkFree();
   EXPECT_EQ(block->Used(), false);
@@ -263,13 +289,15 @@ TEST(Block, CanMergeWithNextBlock) {
 
   EXPECT_EQ(block3->MergeNext(), Status::OK);
 
-  EXPECT_EQ(block->NextBlock(), block3);
-  EXPECT_EQ(block3->PrevBlock(), block);
+  EXPECT_EQ(block->Next(), block3);
+  EXPECT_EQ(block3->Prev(), block);
   EXPECT_EQ(block->InnerSize(), kSplit2);
 
   // The resulting "right hand" block should have an outer size of 1024 - 256 -
-  // sizeof(Block), which accounts for the first block.
-  EXPECT_EQ(block3->OuterSize(), kN - kSplit2 - sizeof(Block));
+  // sizeof(Block) - 2*PW_ALLOCATOR_POISON_OFFSET, which accounts for the first
+  // block.
+  EXPECT_EQ(block3->OuterSize(),
+            kN - kSplit2 - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
 }
 
 TEST(Block, CannotMergeWithFirstOrLastBlock) {
@@ -303,6 +331,81 @@ TEST(Block, CannotMergeUsedBlock) {
   block->MarkUsed();
   EXPECT_EQ(block->MergeNext(), Status::FAILED_PRECONDITION);
   EXPECT_EQ(next_block->MergePrev(), Status::FAILED_PRECONDITION);
+}
+
+TEST(Block, CanCheckValidBlock) {
+  constexpr size_t kN = 1024;
+  byte bytes[kN];
+
+  Block* first_block = nullptr;
+  Block::Init(std::span(bytes, kN), &first_block);
+
+  Block* second_block = nullptr;
+  first_block->Split(512, &second_block);
+
+  Block* third_block = nullptr;
+  second_block->Split(256, &third_block);
+
+  EXPECT_EQ(first_block->IsValid(), true);
+  EXPECT_EQ(second_block->IsValid(), true);
+  EXPECT_EQ(third_block->IsValid(), true);
+}
+
+TEST(Block, CanCheckInalidBlock) {
+  constexpr size_t kN = 1024;
+  byte bytes[kN];
+
+  Block* first_block = nullptr;
+  Block::Init(std::span(bytes, kN), &first_block);
+
+  Block* second_block = nullptr;
+  first_block->Split(512, &second_block);
+
+  Block* third_block = nullptr;
+  second_block->Split(256, &third_block);
+
+  Block* fourth_block = nullptr;
+  third_block->Split(128, &fourth_block);
+
+  std::byte* next_ptr = reinterpret_cast<std::byte*>(first_block);
+  memcpy(next_ptr, second_block, sizeof(void*));
+  EXPECT_EQ(first_block->IsValid(), false);
+  EXPECT_EQ(second_block->IsValid(), false);
+  EXPECT_EQ(third_block->IsValid(), true);
+  EXPECT_EQ(fourth_block->IsValid(), true);
+
+#if PW_ALLOCATOR_POISON_ENABLE
+  std::byte fault_poison[PW_ALLOCATOR_POISON_OFFSET] = {std::byte(0)};
+  std::byte* front_poison =
+      reinterpret_cast<std::byte*>(third_block) + sizeof(*third_block);
+  memcpy(front_poison, fault_poison, PW_ALLOCATOR_POISON_OFFSET);
+  EXPECT_EQ(third_block->IsValid(), false);
+
+  std::byte* end_poison =
+      reinterpret_cast<std::byte*>(fourth_block) + sizeof(*fourth_block);
+  memcpy(end_poison, fault_poison, PW_ALLOCATOR_POISON_OFFSET);
+  EXPECT_EQ(fourth_block->IsValid(), false);
+#endif  // PW_ALLOCATOR_POISON_ENABLE
+}
+
+TEST(Block, CanPoisonBlock) {
+#if PW_ALLOCATOR_POISON_ENABLE
+  constexpr size_t kN = 1024;
+  byte bytes[kN];
+
+  Block* first_block = nullptr;
+  Block::Init(std::span(bytes, kN), &first_block);
+
+  Block* second_block = nullptr;
+  first_block->Split(512, &second_block);
+
+  Block* third_block = nullptr;
+  second_block->Split(256, &third_block);
+
+  EXPECT_EQ(first_block->IsValid(), true);
+  EXPECT_EQ(second_block->IsValid(), true);
+  EXPECT_EQ(third_block->IsValid(), true);
+#endif  // PW_ALLOCATOR_POISON_ENABLE
 }
 
 }  // namespace pw::allocator

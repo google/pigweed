@@ -16,6 +16,9 @@
 
 #include <cstring>
 
+#include "pw_assert/assert.h"
+#include "pw_log/log.h"
+
 namespace pw::allocator {
 
 FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
@@ -26,6 +29,7 @@ FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
   freelist_.AddChunk(BlockToSpan(block));
 
   region_ = region;
+  heap_stats_.total_bytes = region.size();
 }
 
 void* FreeListHeap::Allocate(size_t size) {
@@ -40,6 +44,8 @@ void* FreeListHeap::Allocate(size_t size) {
 
   Block* chunk_block = Block::FromUsableSpace(chunk.data());
 
+  chunk_block->CrashIfInvalid();
+
   // Split that chunk. If there's a leftover chunk, add it to the freelist
   Block* leftover;
   auto status = chunk_block->Split(size, &leftover);
@@ -48,8 +54,11 @@ void* FreeListHeap::Allocate(size_t size) {
   }
 
   chunk_block->MarkUsed();
+
   heap_stats_.bytes_allocated += size;
   heap_stats_.cumulative_allocated += size;
+  heap_stats_.total_allocate_calls += 1;
+
   return chunk_block->UsableSpace();
 }
 
@@ -57,22 +66,26 @@ void FreeListHeap::Free(void* ptr) {
   std::byte* bytes = static_cast<std::byte*>(ptr);
 
   if (bytes < region_.data() || bytes >= region_.data() + region_.size()) {
+    InvalidFreeCrash();
     return;
   }
 
   Block* chunk_block = Block::FromUsableSpace(bytes);
+  chunk_block->CrashIfInvalid();
+
   size_t size_freed = chunk_block->InnerSize();
   // Ensure that the block is in-use
   if (!chunk_block->Used()) {
+    InvalidFreeCrash();
     return;
   }
   chunk_block->MarkFree();
   // Can we combine with the left or right blocks?
-  Block* prev = chunk_block->PrevBlock();
+  Block* prev = chunk_block->Prev();
   Block* next = nullptr;
 
   if (!chunk_block->Last()) {
-    next = chunk_block->NextBlock();
+    next = chunk_block->Next();
   }
 
   if (prev != nullptr && !prev->Used()) {
@@ -90,8 +103,10 @@ void FreeListHeap::Free(void* ptr) {
   }
   // Add back to the freelist
   freelist_.AddChunk(BlockToSpan(chunk_block));
+
   heap_stats_.bytes_allocated -= size_freed;
   heap_stats_.cumulative_freed += size_freed;
+  heap_stats_.total_free_calls += 1;
 }
 
 // Follows constract of the C standard realloc() function
@@ -144,6 +159,33 @@ void* FreeListHeap::Calloc(size_t num, size_t size) {
     memset(ptr, 0, num * size);
   }
   return ptr;
+}
+
+void FreeListHeap::LogHeapStats() {
+  PW_LOG_INFO(" ");
+  PW_LOG_INFO("    The current heap information: ");
+  PW_LOG_INFO("          The total heap size is %u bytes.",
+              static_cast<unsigned int>(heap_stats_.total_bytes));
+  PW_LOG_INFO("          The current allocated heap memory is %u bytes.",
+              static_cast<unsigned int>(heap_stats_.bytes_allocated));
+  PW_LOG_INFO("          The cumulative allocated heap memory is %u bytes.",
+              static_cast<unsigned int>(heap_stats_.cumulative_allocated));
+  PW_LOG_INFO("          The cumulative freed heap memory is %u bytes.",
+              static_cast<unsigned int>(heap_stats_.cumulative_freed));
+  PW_LOG_INFO(
+      "          malloc() is called %u times. (realloc()/calloc() counted as "
+      "one time)",
+      static_cast<unsigned int>(heap_stats_.total_allocate_calls));
+  PW_LOG_INFO(
+      "          free() is called %u times. (realloc() counted as one time)",
+      static_cast<unsigned int>(heap_stats_.total_free_calls));
+  PW_LOG_INFO(" ");
+}
+
+// TODO: Add stack tracing to locate which call to the heap operation caused
+// the corruption.
+void FreeListHeap::InvalidFreeCrash() {
+  PW_DCHECK(false, "You tried to free an invalid pointer!");
 }
 
 }  // namespace pw::allocator

@@ -27,9 +27,12 @@ class FreeListHeap {
   template <size_t N>
   friend class FreeListHeapBuffer;
   struct HeapStats {
+    size_t total_bytes;
     size_t bytes_allocated;
     size_t cumulative_allocated;
     size_t cumulative_freed;
+    size_t total_allocate_calls;
+    size_t total_free_calls;
   };
   FreeListHeap(std::span<std::byte> region, FreeList& freelist);
 
@@ -38,10 +41,14 @@ class FreeListHeap {
   void* Realloc(void* ptr, size_t size);
   void* Calloc(size_t num, size_t size);
 
+  void LogHeapStats();
+
  private:
   std::span<std::byte> BlockToSpan(Block* block) {
     return std::span<std::byte>(block->UsableSpace(), block->InnerSize());
   }
+
+  void InvalidFreeCrash();
 
   std::span<std::byte> region_;
   FreeList& freelist_;
@@ -65,6 +72,8 @@ class FreeListHeapBuffer {
   const FreeListHeap::HeapStats& heap_stats() const {
     return heap_.heap_stats_;
   };
+
+  void LogHeapStats() { heap_.LogHeapStats(); }
 
  private:
   FreeListBuffer<N> freelist_;
