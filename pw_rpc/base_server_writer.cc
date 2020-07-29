@@ -54,7 +54,7 @@ void BaseServerWriter::Finish(Status status) {
   state_ = kClosed;
 
   // Send a control packet indicating that the stream (and RPC) has terminated.
-  call_.channel().Send(Packet(PacketType::STREAM_END,
+  call_.channel().Send(Packet(PacketType::SERVER_STREAM_END,
                               call_.channel().id(),
                               call_.service().id(),
                               method().id(),
@@ -68,7 +68,7 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
   }
 
   response_ = call_.channel().AcquireBuffer();
-  return response_.payload(RpcPacket());
+  return response_.payload(ResponsePacket());
 }
 
 Status BaseServerWriter::ReleasePayloadBuffer(
@@ -76,11 +76,12 @@ Status BaseServerWriter::ReleasePayloadBuffer(
   if (!open()) {
     return Status::FAILED_PRECONDITION;
   }
-  return call_.channel().Send(response_, RpcPacket(payload));
+  return call_.channel().Send(response_, ResponsePacket(payload));
 }
 
-Packet BaseServerWriter::RpcPacket(std::span<const std::byte> payload) const {
-  return Packet(PacketType::RPC,
+Packet BaseServerWriter::ResponsePacket(
+    std::span<const std::byte> payload) const {
+  return Packet(PacketType::RESPONSE,
                 call_.channel().id(),
                 call_.service().id(),
                 method().id(),

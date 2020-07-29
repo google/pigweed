@@ -19,6 +19,7 @@ import unittest
 from pw_protobuf_compiler import python_protos
 from pw_rpc import callback_client, client, packets
 import pw_rpc.ids
+from pw_status import Status
 
 TEST_PROTO_1 = """\
 syntax = "proto3";
@@ -70,10 +71,10 @@ service Bravo {
 """
 
 
-def _test_setup():
+def _test_setup(output=None):
     protos = python_protos.Library.from_strings([TEST_PROTO_1, TEST_PROTO_2])
     return protos, client.Client.from_modules(callback_client.Impl(),
-                                              [client.Channel(1, None)],
+                                              [client.Channel(1, output)],
                                               protos.modules())
 
 
@@ -157,7 +158,17 @@ class ChannelClientTest(unittest.TestCase):
 class ClientTest(unittest.TestCase):
     """Tests the pw_rpc Client independently of the ClientImpl."""
     def setUp(self):
-        self._protos, self._client = _test_setup()
+        self._last_packet_sent_bytes = None
+        self._protos, self._client = _test_setup(self._save_packet)
+
+    def _save_packet(self, packet):
+        self._last_packet_sent_bytes = packet
+
+    def _last_packet_sent(self):
+        packet = packets.RpcPacket()
+        self.assertIsNotNone(self._last_packet_sent_bytes)
+        packet.MergeFromString(self._last_packet_sent_bytes)
+        return packet
 
     def test_all_methods(self):
         services = self._client.services
@@ -209,27 +220,73 @@ class ClientTest(unittest.TestCase):
                 'SomeUnary'].get_request(msg, {})
 
     def test_process_packet_invalid_proto_data(self):
-        self.assertFalse(self._client.process_packet(b'NOT a packet!'))
+        self.assertIs(self._client.process_packet(b'NOT a packet!'),
+                      Status.DATA_LOSS)
+
+    def test_process_packet_not_for_client(self):
+        self.assertIs(
+            self._client.process_packet(
+                packets.RpcPacket(
+                    type=packets.PacketType.REQUEST).SerializeToString()),
+            Status.INVALID_ARGUMENT)
 
     def test_process_packet_unrecognized_channel(self):
-        self.assertFalse(
+        self.assertIs(
             self._client.process_packet(
-                packets.encode_request(
+                packets.encode_response(
                     (123, 456, 789),
-                    self._protos.packages.pw.test2.Request())))
+                    self._protos.packages.pw.test2.Request())),
+            Status.NOT_FOUND)
 
     def test_process_packet_unrecognized_service(self):
-        self.assertFalse(
+        self.assertIs(
             self._client.process_packet(
-                packets.encode_request(
-                    (1, 456, 789), self._protos.packages.pw.test2.Request())))
+                packets.encode_response(
+                    (1, 456, 789), self._protos.packages.pw.test2.Request())),
+            Status.OK)
+
+        self.assertEqual(
+            self._last_packet_sent(),
+            packets.RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+                              channel_id=1,
+                              service_id=456,
+                              method_id=789,
+                              status=Status.NOT_FOUND.value))
 
     def test_process_packet_unrecognized_method(self):
-        self.assertFalse(
+        service = next(iter(self._client.services))
+
+        self.assertIs(
             self._client.process_packet(
-                packets.encode_request(
-                    (1, next(iter(self._client.services)).id, 789),
-                    self._protos.packages.pw.test2.Request())))
+                packets.encode_response(
+                    (1, service.id, 789),
+                    self._protos.packages.pw.test2.Request())), Status.OK)
+
+        self.assertEqual(
+            self._last_packet_sent(),
+            packets.RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+                              channel_id=1,
+                              service_id=service.id,
+                              method_id=789,
+                              status=Status.NOT_FOUND.value))
+
+    def test_process_packet_non_pending_method(self):
+        service = next(iter(self._client.services))
+        method = next(iter(service.methods))
+
+        self.assertIs(
+            self._client.process_packet(
+                packets.encode_response(
+                    (1, service.id, method.id),
+                    self._protos.packages.pw.test2.Request())), Status.OK)
+
+        self.assertEqual(
+            self._last_packet_sent(),
+            packets.RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+                              channel_id=1,
+                              service_id=service.id,
+                              method_id=method.id,
+                              status=Status.FAILED_PRECONDITION.value))
 
 
 if __name__ == '__main__':

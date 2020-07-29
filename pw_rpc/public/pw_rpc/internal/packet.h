@@ -34,7 +34,7 @@ class Packet {
   // provided packet.
   static constexpr Packet Response(const Packet& request,
                                    Status status = Status::OK) {
-    return Packet(PacketType::RPC,
+    return Packet(PacketType::RESPONSE,
                   request.channel_id(),
                   request.service_id(),
                   request.method_id(),
@@ -44,8 +44,8 @@ class Packet {
 
   // Creates an ERROR packet with the channel, service, and method ID of the
   // provided packet.
-  static constexpr Packet Error(const Packet& packet, Status status) {
-    return Packet(PacketType::ERROR,
+  static constexpr Packet ServerError(const Packet& packet, Status status) {
+    return Packet(PacketType::SERVER_ERROR,
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),
@@ -55,7 +55,9 @@ class Packet {
 
   // Creates an empty packet.
   constexpr Packet()
-      : Packet(PacketType::RPC, kUnassignedId, kUnassignedId, kUnassignedId) {}
+      : Packet(
+            PacketType::RESPONSE, kUnassignedId, kUnassignedId, kUnassignedId) {
+  }
 
   constexpr Packet(PacketType type,
                    uint32_t channel_id,
@@ -77,6 +79,12 @@ class Packet {
   // response, excluding the payload. This may be used to split the buffer into
   // reserved space and available space for the payload.
   size_t MinEncodedSizeBytes() const;
+
+  enum Destination : bool { kServer, kClient };
+
+  constexpr Destination destination() const {
+    return static_cast<int>(type_) % 2 == 0 ? kServer : kClient;
+  }
 
   constexpr PacketType type() const { return type_; }
   constexpr uint32_t channel_id() const { return channel_id_; }

@@ -73,63 +73,111 @@ encoded as protocol buffers. The full packet format is described in
   :lines: 14-
 
 The packet type and RPC type determine which fields are present in a Pigweed RPC
-packet. This table describes the meaning of and fields included with each packet
-type when sent from client to server and server to client.
+packet. Each packet type is only sent by either the client or the server.
+These tables describe the meaning of and fields included with each packet type.
 
-+-------------+----------------------------------+--------------------------------+
-| packet type |         client-to-server         |         server-to-client       |
-+=============+==================================+================================+
-| RPC         | RPC request                      | RPC response                   |
-|             |                                  |                                |
-|             | .. code-block:: text             | .. code-block:: text           |
-|             |                                  |                                |
-|             |   - channel_id                   |   - channel_id                 |
-|             |   - service_id                   |   - service_id                 |
-|             |   - method_id                    |   - method_id                  |
-|             |   - payload                      |   - payload                    |
-|             |     (unless first client stream) |   - status                     |
-|             |                                  |     (unless in server stream)  |
-|             |                                  |                                |
-+-------------+----------------------------------+--------------------------------+
-| STREAM_END  | Client stream finished           | Server stream and RPC finished |
-|             |                                  |                                |
-|             | .. code-block:: text             | .. code-block:: text           |
-|             |                                  |                                |
-|             |   - channel_id                   |   - channel_id                 |
-|             |   - service_id                   |   - service_id                 |
-|             |   - method_id                    |   - method_id                  |
-|             |                                  |   - status                     |
-|             |                                  |                                |
-+-------------+----------------------------------+--------------------------------+
-| CANCEL      | Cancel server stream             | (not used)                     |
-|             |                                  |                                |
-|             | .. code-block:: text             |                                |
-|             |                                  |                                |
-|             |   - channel_id                   |                                |
-|             |   - service_id                   |                                |
-|             |   - method_id                    |                                |
-|             |                                  |                                |
-+-------------+----------------------------------+--------------------------------+
-| ERROR       | (not used)                       | Unexpected or malformed packet |
-|             |                                  |                                |
-|             |                                  | .. code-block:: text           |
-|             |                                  |                                |
-|             |                                  |   - channel_id                 |
-|             |                                  |   - service_id (if relevant)   |
-|             |                                  |   - method_id (if relevant)    |
-|             |                                  |   - status                     |
-|             |                                  |                                |
-+-------------+----------------------------------+--------------------------------+
+Client-to-server packets
+^^^^^^^^^^^^^^^^^^^^^^^^
++---------------------------+----------------------------------+
+| packet type               | description                      |
++===========================+==================================+
+| REQUEST                   | RPC request                      |
+|                           |                                  |
+|                           | .. code-block:: text             |
+|                           |                                  |
+|                           |   - channel_id                   |
+|                           |   - service_id                   |
+|                           |   - method_id                    |
+|                           |   - payload                      |
+|                           |     (unless first client stream) |
+|                           |                                  |
++---------------------------+----------------------------------+
+| CLIENT_STREAM_END         | Client stream finished           |
+|                           |                                  |
+|                           | .. code-block:: text             |
+|                           |                                  |
+|                           |   - channel_id                   |
+|                           |   - service_id                   |
+|                           |   - method_id                    |
+|                           |                                  |
+|                           |                                  |
++---------------------------+----------------------------------+
+| CLIENT_ERROR              | Received unexpected packet       |
+|                           |                                  |
+|                           | .. code-block:: text             |
+|                           |                                  |
+|                           |   - channel_id                   |
+|                           |   - service_id                   |
+|                           |   - method_id                    |
+|                           |   - status                       |
++---------------------------+----------------------------------+
+| CANCEL_SERVER_STREAM      | Cancel a server stream           |
+|                           |                                  |
+|                           | .. code-block:: text             |
+|                           |                                  |
+|                           |   - channel_id                   |
+|                           |   - service_id                   |
+|                           |   - method_id                    |
+|                           |                                  |
++---------------------------+----------------------------------+
 
-Error packets
--------------
-The server sends ``ERROR`` packets when it receives a packet it cannot process.
-The status field indicates the type of error.
+**Errors**
 
-* ``DATA_LOSS`` -- Failed to decode a packet.
-* ``NOT_FOUND`` -- The requested service or method does not exist. In the
-  ``ERROR`` packet, the service ID is always set, but the method ID is only set
-  if the requested service exists.
+The client sends ``CLIENT_ERROR`` packets to a server when it receives a packet
+it did not request. If the RPC is a streaming RPC, the server should abort it.
+
+The status code indicates the type of error. If the client does not distinguish
+between the error types, it can send whichever status is most relevant. The
+status code is logged, but all status codes result in the same action by the
+server: aborting the RPC.
+
+* ``NOT_FOUND`` -- Received a packet for a service method the client does not
+  recognize.
+* ``FAILED_PRECONDITION`` -- Received a packet for a service method that the
+  client did not invoke.
+
+Server-to-client packets
+^^^^^^^^^^^^^^^^^^^^^^^^
++-------------------+--------------------------------+
+| packet type       | description                    |
++===================+================================+
+| RESPONSE          | RPC response                   |
+|                   |                                |
+|                   | .. code-block:: text           |
+|                   |                                |
+|                   |   - channel_id                 |
+|                   |   - service_id                 |
+|                   |   - method_id                  |
+|                   |   - payload                    |
+|                   |   - status                     |
+|                   |     (unless in server stream)  |
++-------------------+--------------------------------+
+| SERVER_STREAM_END | Server stream and RPC finished |
+|                   |                                |
+|                   | .. code-block:: text           |
+|                   |                                |
+|                   |   - channel_id                 |
+|                   |   - service_id                 |
+|                   |   - method_id                  |
+|                   |   - status                     |
++-------------------+--------------------------------+
+| SERVER_ERROR      | Received unexpected packet     |
+|                   |                                |
+|                   | .. code-block:: text           |
+|                   |                                |
+|                   |   - channel_id                 |
+|                   |   - service_id (if relevant)   |
+|                   |   - method_id (if relevant)    |
+|                   |   - status                     |
++-------------------+--------------------------------+
+
+**Errors**
+
+The server sends ``SERVER_ERROR`` packets when it receives a packet it cannot
+process. The client should abort any RPC for which it receives an error. The
+status field indicates the type of error.
+
+* ``NOT_FOUND`` -- The requested service or method does not exist.
 * ``FAILED_PRECONDITION`` -- Attempted to cancel an RPC that is not pending.
 * ``RESOURCE_EXHAUSTED`` -- The request came on a new channel, but a channel
   could not be allocated for it.
@@ -155,19 +203,19 @@ response.
 
     client -> server [
         label = "request",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client <- server [
         label = "response",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
     ];
   }
 
 Server streaming RPC
 ^^^^^^^^^^^^^^^^^^^^
 In a server streaming RPC, the client sends a single request and the server
-sends any number of responses followed by a ``STREAM_END`` packet.
+sends any number of responses followed by a ``SERVER_STREAM_END`` packet.
 
 .. seqdiag::
   :scale: 110
@@ -177,23 +225,23 @@ sends any number of responses followed by a ``STREAM_END`` packet.
 
     client -> server [
         label = "request",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client <-- server [
         noactivate,
         label = "responses (zero or more)",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client <- server [
         label = "done",
-        rightnote = "PacketType.STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
+        rightnote = "PacketType.SERVER_STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
     ];
   }
 
 Server streaming RPCs may be cancelled by the client. The client sends a
-``CANCEL`` packet to terminate the RPC.
+``CANCEL_SERVER_STREAM`` packet to terminate the RPC.
 
 .. seqdiag::
   :scale: 110
@@ -203,31 +251,31 @@ Server streaming RPCs may be cancelled by the client. The client sends a
 
     client -> server [
         label = "request",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client <-- server [
         noactivate,
         label = "responses (zero or more)",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client -> server [
         noactivate,
         label = "cancel",
-        leftnote  = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
+        leftnote  = "PacketType.CANCEL_SERVER_STREAM\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client <- server [
         label = "done",
-        rightnote = "PacketType.STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
+        rightnote = "PacketType.SERVER_STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
     ];
   }
 
 Client streaming RPC
 ^^^^^^^^^^^^^^^^^^^^
 In a client streaming RPC, the client sends any number of RPC requests followed
-by a ``STREAM_END`` packet. The server then sends a single response.
+by a ``CLIENT_STREAM_END`` packet. The server then sends a single response.
 
 The first client-to-server RPC packet does not include a payload.
 
@@ -243,24 +291,24 @@ The first client-to-server RPC packet does not include a payload.
 
     client -> server [
         label = "start",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client --> server [
         noactivate,
         label = "requests (zero or more)",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client -> server [
         noactivate,
         label = "done",
-        leftnote = "PacketType.STREAM_END\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.CLIENT_STREAM_END\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client <- server [
         label = "response",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
     ];
   }
 
@@ -275,28 +323,28 @@ response packet.
 
     client -> server [
         label = "start",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client --> server [
         noactivate,
         label = "requests (zero or more)",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client <- server [
         label = "response",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload\nstatus"
     ];
   }
 
 Bidirectional streaming RPC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In a bidirectional streaming RPC, the client sends any number of requests and
-the server sends any number of responses. The client sends a ``STREAM_END``
-packet when it has finished sending requests. The server sends a ``STREAM_END``
-packet after it receives the client's ``STREAM_END`` and finished sending its
-responses.
+the server sends any number of responses. The client sends a
+``CLIENT_STREAM_END`` packet when it has finished sending requests. The server
+sends a ``SERVER_STREAM_END`` packet after it receives the client's
+``CLIENT_STREAM_END`` and finished sending its responses.
 
 The first client-to-server RPC packet does not include a payload.
 
@@ -312,13 +360,13 @@ The first client-to-server RPC packet does not include a payload.
 
     client -> server [
         label = "start",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client --> server [
         noactivate,
         label = "requests (zero or more)",
-        leftnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        leftnote = "PacketType.REQUEST\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     ... (messages in any order) ...
@@ -326,13 +374,13 @@ The first client-to-server RPC packet does not include a payload.
     client <-- server [
         noactivate,
         label = "responses (zero or more)",
-        rightnote = "PacketType.RPC\nchannel ID\nservice ID\nmethod ID\npayload"
+        rightnote = "PacketType.RESPONSE\nchannel ID\nservice ID\nmethod ID\npayload"
     ];
 
     client -> server [
         noactivate,
         label = "done",
-        leftnote = "PacketType.STREAM_END\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.CLIENT_STREAM_END\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client <-- server [
@@ -343,13 +391,14 @@ The first client-to-server RPC packet does not include a payload.
 
     client <- server [
         label = "done",
-        rightnote = "PacketType.STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
+        rightnote = "PacketType.SERVER_STREAM_END\nchannel ID\nservice ID\nmethod ID\nstatus"
     ];
   }
 
-The server may terminate the RPC at any time by sending a ``STREAM_END`` packet
-with the status, even if the client has not sent its ``STREAM_END``. The client
-may cancel the RPC at any time by sending a ``CANCEL`` packet.
+The server may terminate the RPC at any time by sending a ``SERVER_STREAM_END``
+packet with the status, even if the client has not sent its ``STREAM_END``. The
+client may cancel the RPC at any time by sending a ``CANCEL_SERVER_STREAM``
+packet.
 
 .. seqdiag::
   :scale: 110
@@ -377,7 +426,7 @@ may cancel the RPC at any time by sending a ``CANCEL`` packet.
     client -> server [
         noactivate,
         label = "cancel",
-        leftnote = "PacketType.CANCEL\nchannel ID\nservice ID\nmethod ID"
+        leftnote = "PacketType.CANCEL_SERVER_STREAM\nchannel ID\nservice ID\nmethod ID"
     ];
 
     client <- server [

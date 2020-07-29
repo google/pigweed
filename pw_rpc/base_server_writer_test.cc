@@ -113,7 +113,7 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
   writer.Finish();
 
   const Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(packet.type(), PacketType::STREAM_END);
+  EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
   EXPECT_EQ(packet.channel_id(), context.kChannelId);
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());

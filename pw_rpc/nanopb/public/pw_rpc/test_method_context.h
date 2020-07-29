@@ -256,18 +256,17 @@ void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
   last_status_ = packet.status();
 
   switch (packet.type()) {
-    case internal::PacketType::RPC:
+    case internal::PacketType::RESPONSE:
       // If we run out of space, the back message is always the most recent.
       responses_.emplace_back();
       responses_.back() = {};
       EXPECT_TRUE(method_.DecodeResponse(packet.payload(), &responses_.back()));
       total_responses_ += 1;
       break;
-    case internal::PacketType::STREAM_END:
+    case internal::PacketType::SERVER_STREAM_END:
       stream_ended_ = true;
       break;
-    case internal::PacketType::CANCEL:
-    case internal::PacketType::ERROR:
+    default:
       FAIL();
       break;
   }

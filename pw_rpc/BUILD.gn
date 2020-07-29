@@ -201,6 +201,7 @@ pw_test("channel_test") {
 pw_test("packet_test") {
   deps = [
     ":common",
+    dir_pw_bytes,
     dir_pw_protobuf,
   ]
   sources = [ "packet_test.cc" ]

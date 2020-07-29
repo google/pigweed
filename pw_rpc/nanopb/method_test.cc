@@ -142,7 +142,7 @@ TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
   method.Invoke(context.get(), context.packet(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(PacketType::ERROR, packet.type());
+  EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DATA_LOSS, packet.status());
   EXPECT_EQ(context.kServiceId, packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());
@@ -162,7 +162,7 @@ TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   method.Invoke(context.get(), context.packet(request));
 
   const Packet& packet = context.output().sent_packet();
-  EXPECT_EQ(PacketType::ERROR, packet.type());
+  EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::INTERNAL, packet.status());
   EXPECT_EQ(context.kServiceId, packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());

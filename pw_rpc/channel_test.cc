@@ -35,7 +35,7 @@ TEST(ChannelOutput, Name) {
   EXPECT_EQ(nullptr, NameTester(nullptr).name());
 }
 
-constexpr Packet kTestPacket(PacketType::RPC, 1, 42, 100);
+constexpr Packet kTestPacket(PacketType::RESPONSE, 1, 42, 100);
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
                              2 /* status */;

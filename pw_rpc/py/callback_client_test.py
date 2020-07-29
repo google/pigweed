@@ -66,7 +66,8 @@ class CallbackClientImplTest(unittest.TestCase):
             self._protos.modules())
 
         self._last_request: packets.RpcPacket = None
-        self._next_packets: List[Tuple[bytes, bool]] = []
+        self._next_packets: List[Tuple[bytes, Status]] = []
+        self._send_responses_on_request = True
 
     def _enqueue_response(self,
                           channel_id: int,
@@ -75,7 +76,7 @@ class CallbackClientImplTest(unittest.TestCase):
                           response=b'',
                           *,
                           ids: Tuple[int, int] = None,
-                          valid=True):
+                          process_status=Status.OK):
         if method:
             assert ids is None
             service_id, method_id = method.service.id, method.id
@@ -89,32 +90,42 @@ class CallbackClientImplTest(unittest.TestCase):
             payload = response.SerializeToString()
 
         self._next_packets.append(
-            (packets.RpcPacket(channel_id=channel_id,
+            (packets.RpcPacket(type=packets.PacketType.RESPONSE,
+                               channel_id=channel_id,
                                service_id=service_id,
                                method_id=method_id,
                                status=status.value,
-                               payload=payload).SerializeToString(), valid))
+                               payload=payload).SerializeToString(),
+             process_status))
 
     def _enqueue_stream_end(self,
                             channel_id: int,
                             method,
                             status: Status = Status.OK,
-                            valid=True):
+                            process_status=Status.OK):
         self._next_packets.append(
-            (packets.RpcPacket(type=packets.PacketType.STREAM_END,
+            (packets.RpcPacket(type=packets.PacketType.SERVER_STREAM_END,
                                channel_id=channel_id,
                                service_id=method.service.id,
                                method_id=method.id,
                                status=status.value).SerializeToString(),
-             valid))
+             process_status))
 
     def _handle_request(self, data: bytes):
+        # Disable this method to prevent infinite recursion if processing the
+        # packet happens to send another packet.
+        if not self._send_responses_on_request:
+            return
+
+        self._send_responses_on_request = False
+
         self._last_request = packets.decode(data)
 
-        for packet, valid in self._next_packets:
-            self.assertEqual(valid, self._client.process_packet(packet))
+        for packet, status in self._next_packets:
+            self.assertIs(status, self._client.process_packet(packet))
 
         self._next_packets.clear()
+        self._send_responses_on_request = True
 
     def _sent_payload(self, message_type):
         self.assertIsNotNone(self._last_request)
@@ -204,7 +215,8 @@ class CallbackClientImplTest(unittest.TestCase):
         for _ in range(3):
             self._last_request = None
             stub.SomeUnary.reinvoke(callback, magic_number=55)
-            self.assertEqual(self._last_request.type, packets.PacketType.RPC)
+            self.assertEqual(self._last_request.type,
+                             packets.PacketType.REQUEST)
 
     def test_invoke_server_streaming(self):
         stub = self._client.channel(1).rpcs.pw.test1.PublicService
@@ -267,7 +279,8 @@ class CallbackClientImplTest(unittest.TestCase):
 
         call.cancel()
 
-        self.assertEqual(self._last_request.type, packets.PacketType.CANCEL)
+        self.assertEqual(self._last_request.type,
+                         packets.PacketType.CANCEL_SERVER_STREAM)
 
         # Ensure the RPC can be called after being cancelled.
         self._enqueue_response(1, stub.method, response=resp)
@@ -287,19 +300,23 @@ class CallbackClientImplTest(unittest.TestCase):
         service_id = method.service.id
 
         # Unknown channel
-        self._enqueue_response(999, method, valid=False)
+        self._enqueue_response(999, method, process_status=Status.NOT_FOUND)
         # Bad service
-        self._enqueue_response(1, ids=(999, method.id), valid=False)
+        self._enqueue_response(1,
+                               ids=(999, method.id),
+                               process_status=Status.OK)
         # Bad method
-        self._enqueue_response(1, ids=(service_id, 999), valid=False)
-        # For RPC not pending (valid=True because the packet is processed)
+        self._enqueue_response(1,
+                               ids=(service_id, 999),
+                               process_status=Status.OK)
+        # For RPC not pending (is Status.OK because the packet is processed)
         self._enqueue_response(
             1,
             ids=(service_id,
                  rpcs.pw.test1.PublicService.SomeBidiStreaming.method.id),
-            valid=True)
+            process_status=Status.OK)
 
-        self._enqueue_response(1, method, valid=True)
+        self._enqueue_response(1, method, process_status=Status.OK)
 
         status, response = rpcs.pw.test1.PublicService.SomeUnary(
             magic_number=6)
@@ -314,7 +331,7 @@ class CallbackClientImplTest(unittest.TestCase):
                                method,
                                Status.OK,
                                b'INVALID DATA!!!',
-                               valid=True)
+                               process_status=Status.OK)
 
         status, response = rpcs.pw.test1.PublicService.SomeUnary(
             magic_number=6)

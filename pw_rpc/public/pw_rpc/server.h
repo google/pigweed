@@ -15,12 +15,14 @@
 
 #include <cstddef>
 #include <span>
+#include <tuple>
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/service.h"
+#include "pw_status/status.h"
 
 namespace pw::rpc {
 
@@ -36,8 +38,16 @@ class Server {
   // with a Service; instead, use a generated class which inherits from it.
   void RegisterService(Service& service) { services_.push_front(service); }
 
-  void ProcessPacket(std::span<const std::byte> packet,
-                     ChannelOutput& interface);
+  // Processes an RPC packet. The packet may contain an RPC request or a control
+  // packet, the result of which is processed in this function. Returns whether
+  // the packet was able to be processed:
+  //
+  //   OK - The packet was processed by the server.
+  //   DATA_LOSS - Failed to decode the packet.
+  //   INVALID_ARGUMENT - The packet is intended for a client, not a server.
+  //
+  Status ProcessPacket(std::span<const std::byte> packet,
+                       ChannelOutput& interface);
 
   constexpr size_t channel_count() const { return channels_.size(); }
 
@@ -45,6 +55,9 @@ class Server {
   IntrusiveList<internal::BaseServerWriter>& writers() { return writers_; }
 
  private:
+  std::tuple<Service*, const internal::Method*> FindMethod(
+      const internal::Packet& packet);
+
   void HandleCancelPacket(const internal::Packet& request,
                           internal::Channel& channel);
 

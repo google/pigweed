@@ -91,7 +91,7 @@ bool Method::DecodeRequest(Channel& channel,
 
   PW_LOG_WARN("Failed to decode request payload from channel %u",
               unsigned(channel.id()));
-  channel.Send(Packet::Error(request, Status::DATA_LOSS));
+  channel.Send(Packet::ServerError(request, Status::DATA_LOSS));
   return false;
 }
 
@@ -116,7 +116,7 @@ void Method::SendResponse(Channel& channel,
 
   PW_LOG_WARN("Failed to encode response packet for channel %u",
               unsigned(channel.id()));
-  channel.Send(response_buffer, Packet::Error(request, Status::INTERNAL));
+  channel.Send(response_buffer, Packet::ServerError(request, Status::INTERNAL));
 }
 
 }  // namespace pw::rpc::internal

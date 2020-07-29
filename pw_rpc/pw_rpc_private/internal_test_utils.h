@@ -94,9 +94,9 @@ class ServerContextForTest {
 
   ServerContextForTest() : ServerContextForTest(service_.method) {}
 
-  // Creates a packet for this context's channel, service, and method.
+  // Creates a response packet for this context's channel, service, and method.
   internal::Packet packet(std::span<const std::byte> payload) const {
-    return internal::Packet(internal::PacketType::RPC,
+    return internal::Packet(internal::PacketType::RESPONSE,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),

@@ -158,7 +158,7 @@ class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
     # Server streaming RPC packets never have a status; all other packets do.
-    if packet.type == PacketType.RPC and rpc.method.server_streaming:
+    if packet.type == PacketType.RESPONSE and rpc.method.server_streaming:
         return None
 
     try:
@@ -170,7 +170,7 @@ def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
 
 
 def _decode_payload(rpc: PendingRpc, packet):
-    if packet.type == PacketType.RPC:
+    if packet.type == PacketType.RESPONSE:
         try:
             return packets.decode_payload(packet, rpc.method.response_type)
         except packets.DecodeError as err:
@@ -280,50 +280,67 @@ class Client:
             yield from service.methods
 
     def process_packet(self, pw_rpc_raw_packet_data: bytes, *impl_args,
-                       **impl_kwargs) -> bool:
+                       **impl_kwargs) -> Status:
         """Processes an incoming packet.
 
         Args:
-            pw_rpc_raw_packet_data: raw binary data for exactly one RPC packet
-            impl_args: optional positional arguments passed to the ClientImpl
-            impl_kwargs: optional keyword arguments passed to the ClientImpl
+          pw_rpc_raw_packet_data: raw binary data for exactly one RPC packet
+          impl_args: optional positional arguments passed to the ClientImpl
+          impl_kwargs: optional keyword arguments passed to the ClientImpl
 
         Returns:
-            True if the packet was decoded and handled by this client
+          OK - the packet was processed by this client
+          DATA_LOSS - the packet could not be decoded
+          INVALID_ARGUMENT - the packet is for a server, not a client
+          NOT_FOUND - the packet's channel ID is not known to this client
         """
         try:
             packet = packets.decode(pw_rpc_raw_packet_data)
         except packets.DecodeError as err:
             _LOG.warning('Failed to decode packet: %s', err)
             _LOG.debug('Raw packet: %r', pw_rpc_raw_packet_data)
-            return False
+            return Status.DATA_LOSS
+
+        if packets.for_server(packet):
+            return Status.INVALID_ARGUMENT
 
         try:
-            rpc = self._lookup_rpc(packet)
+            channel_client = self._channels_by_id[packet.channel_id]
+        except KeyError:
+            _LOG.warning('Unrecognized channel ID %d', packet.channel_id)
+            return Status.NOT_FOUND
+
+        try:
+            rpc = self._look_up_service_and_method(packet, channel_client)
         except ValueError as err:
-            _LOG.warning('Unable to process packet: %s', err)
-            _LOG.debug('Packet:\n%s', packet)
-            return False
+            channel_client.channel.output(
+                packets.encode_client_error(packet, Status.NOT_FOUND))
+            _LOG.warning('%s', err)
+            return Status.OK
 
         status = _decode_status(rpc, packet)
 
-        if packet.type == PacketType.ERROR:
+        if packet.type == PacketType.SERVER_ERROR:
             self._rpcs.clear(rpc)
             _LOG.warning('%s: invocation failed with %s', rpc, status)
-            return True  # Handled packet, even though it was an error
+            return Status.OK  # Handled packet, even though it was an error
 
-        if packet.type not in (PacketType.RPC, PacketType.STREAM_END):
+        if packet.type not in (PacketType.RESPONSE,
+                               PacketType.SERVER_STREAM_END):
             _LOG.error('%s: unexpected PacketType %s', rpc, packet.type)
             _LOG.debug('Packet:\n%s', packet)
-            return True
+            return Status.OK
 
         payload = _decode_payload(rpc, packet)
 
         try:
             context = self._rpcs.get_pending(rpc, status)
         except KeyError:
+            channel_client.channel.output(
+                packets.encode_client_error(packet,
+                                            Status.FAILED_PRECONDITION))
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
-            return True
+            return Status.OK
 
         self._impl.process_response(self._rpcs,
                                     rpc,
@@ -332,14 +349,11 @@ class Client:
                                     payload,
                                     args=impl_args,
                                     kwargs=impl_kwargs)
-        return True
+        return Status.OK
 
-    def _lookup_rpc(self, packet: packets.RpcPacket) -> PendingRpc:
-        try:
-            channel_client = self._channels_by_id[packet.channel_id]
-        except KeyError:
-            raise ValueError(f'Unrecognized channel ID {packet.channel_id}')
-
+    def _look_up_service_and_method(
+            self, packet: packets.RpcPacket,
+            channel_client: ChannelClient) -> PendingRpc:
         try:
             service = self.services[packet.service_id]
         except KeyError:

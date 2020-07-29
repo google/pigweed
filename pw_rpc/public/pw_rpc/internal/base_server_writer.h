@@ -67,7 +67,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
  private:
-  Packet RpcPacket(std::span<const std::byte> payload = {}) const;
+  Packet ResponsePacket(std::span<const std::byte> payload = {}) const;
 
   ServerCall call_;
   Channel::OutputBuffer response_;

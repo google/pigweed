@@ -16,18 +16,33 @@ syntax = "proto3";
 package pw.rpc.internal;
 
 enum PacketType {
-  // RPC packets correspond with a request or response for a service method.
-  RPC = 0;
+  // To simplify identifying the origin of a packet, client-to-server packets
+  // use even numbers and server-to-client packets use odd numbers.
 
-  // STREAM_END packets signal the end of a server or client stream.
-  STREAM_END = 1;
+  // Client-to-server packets
 
-  // CANCEL packets request termination of an ongoing RPC.
-  CANCEL = 2;
+  // A request from a client for a serivce method.
+  REQUEST = 0;
 
-  // ERROR packets are sent by the server to indicate that it received an
-  // unexpected or malformed packet.
-  ERROR = 3;
+  // A client stream has completed.
+  CLIENT_STREAM_END = 2;
+
+  // The client received a packet for an RPC it did not request.
+  CLIENT_ERROR = 4;
+
+  // The client requests cancellation of an ongoing server stream.
+  CANCEL_SERVER_STREAM = 6;
+
+  // Server-to-client packets
+
+  // A response from a server for a service method.
+  RESPONSE = 1;
+
+  // A server streaming or bidirectional RPC has completed.
+  SERVER_STREAM_END = 3;
+
+  // The server was unable to process a request.
+  SERVER_ERROR = 5;
 }
 
 message RpcPacket {
