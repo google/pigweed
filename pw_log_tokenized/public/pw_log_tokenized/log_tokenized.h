@@ -50,7 +50,18 @@
 #define PW_LOG_TOKENIZED_FORMAT_STRING(string) PW_LOG_MODULE_NAME ": " string
 #endif  // PW_LOG_TOKENIZED_FORMAT_STRING
 
+// The log level, module token, and flag bits are packed into the tokenizer's
+// payload argument, which is typically 32 bits. These macros specify the number
+// of bits to use for each field.
+#define _PW_LOG_TOKENIZED_LEVEL_BITS 6
+#define _PW_LOG_TOKENIZED_MODULE_BITS 16
+#define _PW_LOG_TOKENIZED_FLAG_BITS 10
+
 #ifdef __cplusplus
+
+static_assert((_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS +
+               _PW_LOG_TOKENIZED_FLAG_BITS) == 32,
+              "Log metadata must fit in a 32-bit integer");
 
 namespace pw {
 namespace log_tokenized {
@@ -99,17 +110,6 @@ class GenericMetadata {
 
   static_assert(level_bits + module_bits + flag_bits <= sizeof(bits_) * 8);
 };
-
-// The log level, module token, and flag bits are packed into the tokenizer's
-// payload argument, which is typically 32 bits. These macros specify the number
-// of bits to use for each field.
-#define _PW_LOG_TOKENIZED_LEVEL_BITS 6
-#define _PW_LOG_TOKENIZED_MODULE_BITS 16
-#define _PW_LOG_TOKENIZED_FLAG_BITS 10
-
-static_assert((_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS +
-               _PW_LOG_TOKENIZED_FLAG_BITS) == 32,
-              "Log metadata must fit in a 32-bit integer");
 
 }  // namespace internal
 
