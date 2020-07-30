@@ -127,6 +127,34 @@ CHECKS: List[Callable] = []
 
 
 @register_into(CHECKS)
+def env_os(ctx: DoctorContext):
+    """Check that the environment matches this machine."""
+    if '_PW_ACTUAL_ENVIRONMENT_ROOT' not in os.environ:
+        return
+    env_root = pathlib.Path(os.environ['_PW_ACTUAL_ENVIRONMENT_ROOT'])
+    config = env_root / 'config.json'
+    if not config.is_file():
+        return
+
+    with open(config, 'r') as ins:
+        data = json.load(ins)
+    if data['os'] != os.name:
+        ctx.error('Current OS (%s) does not match bootstrapped OS (%s)',
+                  os.name, data['os'])
+
+    # Skipping sysname and nodename in os.uname(). nodename could change
+    # based on the current network. sysname won't change, but is
+    # redundant because it's contained in release or version, and
+    # skipping it here simplifies logic.
+    uname = ' '.join(getattr(os, 'uname', lambda: ())()[2:])
+    if data['uname'] != uname:
+        ctx.warning(
+            'Current uname (%s) does not match Bootstrap uname (%s), '
+            'you may need to rerun bootstrap on this system', uname,
+            data['uname'])
+
+
+@register_into(CHECKS)
 def pw_root(ctx: DoctorContext):
     """Check that environment variable PW_ROOT is set and makes sense."""
     try:

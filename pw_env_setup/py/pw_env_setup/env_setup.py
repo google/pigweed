@@ -28,6 +28,7 @@ import argparse
 import copy
 import glob
 import inspect
+import json
 import os
 import shutil
 import subprocess
@@ -288,6 +289,19 @@ Then use `set +x` to go back to normal.
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
+
+        config = {
+            # Skipping sysname and nodename in os.uname(). nodename could change
+            # based on the current network. sysname won't change, but is
+            # redundant because it's contained in release or version, and
+            # skipping it here simplifies logic.
+            'uname': ' '.join(getattr(os, 'uname', lambda: ())()[2:]),
+            'os': os.name,
+        }
+
+        with open(os.path.join(self._install_dir, 'config.json'), 'w') as outs:
+            outs.write(
+                json.dumps(config, indent=4, separators=(',', ': ')) + '\n')
 
         return 0
 
