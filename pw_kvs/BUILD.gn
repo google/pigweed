@@ -52,12 +52,12 @@ pw_source_set("pw_kvs") {
     "sectors.cc",
   ]
   public_deps = [
+    dir_pw_assert,
     dir_pw_containers,
     dir_pw_span,
     dir_pw_status,
   ]
   deps = [
-    dir_pw_assert,
     dir_pw_checksum,
     dir_pw_log,
   ]

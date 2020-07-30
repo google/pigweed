@@ -18,6 +18,7 @@
 #include <initializer_list>
 #include <span>
 
+#include "pw_assert/assert.h"
 #include "pw_kvs/alignment.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -45,8 +46,7 @@ class FlashMemory {
         start_address_(start_address),
         start_sector_(sector_start),
         erased_memory_content_(erased_memory_content) {
-    // TODO: The smallest possible alignment is 1 B; 0 is invalid.
-    // DCHECK_NE(alignment_, 0);
+    PW_DCHECK_UINT_NE(alignment_, 0);
   }
 
   virtual ~FlashMemory() = default;
@@ -163,9 +163,18 @@ class FlashPartition {
       : flash_(*flash),
         start_sector_index_(start_sector_index),
         sector_count_(sector_count),
-        alignment_bytes_(alignment_bytes == 0 ? flash_.alignment_bytes()
-                                              : alignment_bytes),
-        permission_(permission) {}
+        alignment_bytes_(alignment_bytes == 0
+                             ? flash_.alignment_bytes()
+                             : std::max(alignment_bytes,
+                                        uint32_t(flash_.alignment_bytes()))),
+        permission_(permission) {
+    uint32_t misalignment = (alignment_bytes_ % flash_.alignment_bytes());
+    PW_DCHECK_UINT_EQ(
+        misalignment,
+        0,
+        "Flash partition alignmentmust be a multiple of the flash "
+        "memory alignment");
+  }
 
   // Creates a FlashPartition that uses the entire flash with its alignment.
   constexpr FlashPartition(FlashMemory* flash)
