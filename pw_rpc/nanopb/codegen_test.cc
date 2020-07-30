@@ -42,17 +42,16 @@ class TestService final : public generated::TestService<TestService> {
 
 }  // namespace test
 
-namespace internal {
 namespace {
 
 TEST(NanopbCodegen, CompilesProperly) {
   test::TestService service;
-  EXPECT_EQ(service.id(), Hash("pw.rpc.test.TestService"));
+  EXPECT_EQ(service.id(), internal::Hash("pw.rpc.test.TestService"));
   EXPECT_STREQ(service.name(), "TestService");
 }
 
 TEST(NanopbCodegen, InvokeUnaryRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
+  TestMethodContext<&test::TestService::TestRpc> context;
 
   EXPECT_EQ(Status::OK,
             context.call({.integer = 123, .status_code = Status::OK}));
@@ -66,7 +65,7 @@ TEST(NanopbCodegen, InvokeUnaryRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
+  TestMethodContext<&test::TestService::TestStreamRpc> context;
 
   context.call({.integer = 0, .status_code = Status::ABORTED});
 
@@ -88,7 +87,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+  TestMethodContext<&test::TestService::TestStreamRpc, 3> context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
@@ -103,7 +102,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
-  PW_RPC_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
+  TestMethodContext<&test::TestService::TestStreamRpc, 3> context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
@@ -128,5 +127,4 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace pw::rpc

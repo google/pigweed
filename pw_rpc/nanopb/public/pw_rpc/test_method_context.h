@@ -14,6 +14,7 @@
 #pragma once
 
 #include <tuple>
+#include <utility>
 
 #include "gtest/gtest.h"
 #include "pw_containers/vector.h"
@@ -23,15 +24,18 @@
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
+#include "pw_rpc/internal/service_method_traits.h"
+
+namespace pw::rpc {
 
 // Declares a context object that may be used to invoke an RPC. The context is
-// declared with the RPC service and method name. The RPC is then invoked with
-// the call method.
+// declared with a pointer to the service member function (&Service::Method).
+// The RPC can then be invoked with the call method.
 //
 // For a unary RPC, context.call(request) returns the status, and the response
 // struct can be accessed via context.response().
 //
-//   PW_RPC_TEST_METHOD_CONTEXT(my::CoolService, TheMethod) context;
+//   pw::rpc::TestMethodContext<&my::CoolService::TheMethod> context;
 //   EXPECT_EQ(Status::OK, context.call({.some_arg = 123}));
 //   EXPECT_EQ(500, context.response().some_response_value);
 //
@@ -39,8 +43,7 @@
 // normal RPC, the method completes when the ServerWriter's Finish method is
 // called (or it goes out of scope).
 //
-//
-//   PW_RPC_TEST_METHOD_CONTEXT(my::CoolService, TheStreamingMethod) context;
+//   pw::rpc::TestMethodContext<&my::CoolService::TheStreamingMethod> context;
 //   context.call({.some_arg = 123});
 //
 //   EXPECT_TRUE(context.done());  // Check that the RPC completed
@@ -53,55 +56,26 @@
 //     // iterate over the responses
 //   }
 //
-// PW_RPC_TEST_METHOD_CONTEXT takes two optional arguments:
+// TestMethodContext forwards its constructor arguments to the underlying
+// serivce. For example:
+//
+//   pw::rpc::TestMethodContext<&MyService::Go> context(serivce, args);
+//
+// pw::rpc::TestMethodContext takes two optional template arguments:
 //
 //   size_t max_responses: maximum responses to store; ignored unless streaming
-//   size_t output_buffer_size: buffer size; must be large enough for a packet
+//   size_t output_size_bytes: buffer size; must be large enough for a packet
 //
 // Example:
 //
-//   PW_RPC_TEST_METHOD_CONTEXT(MyService, BestMethod, 3, 256) context;
+//   pw::rpc::TestMethodContext<&MyService::BestMethod, 3, 256> context;
 //   ASSERT_EQ(3u, context.responses().max_size());
 //
-#define PW_RPC_TEST_METHOD_CONTEXT(service, method_name, ...) \
-  ::pw::rpc::test_internal::MethodInvocationContext<          \
-      ::pw::rpc::test_internal::ServiceTestUtilities<         \
-          service,                                            \
-          ::pw::rpc::internal::Hash(#method_name)>,           \
-      &service::method_name PW_COMMA_ARGS(__VA_ARGS__)>
+template <auto method, size_t max_responses = 4, size_t output_size_bytes = 128>
+class TestMethodContext;
 
-// Internal classes that implement PW_RPC_TEST_METHOD_CONTEXT.
-namespace pw::rpc::test_internal {
-
-// Identifies a base class from a member function it defines. This should be
-// used with decltype to retrieve the base class.
-template <typename T, typename U>
-T BaseFromMember(U T::*);
-
-// Finds the method object in a service at compile time. This class friended by
-// the generated service classes to give it access to the internal method list.
-template <typename ServiceType, uint32_t method_hash>
-class ServiceTestUtilities {
- public:
-  using BaseService =
-      decltype(BaseFromMember(&ServiceType::_PwRpcInternalGeneratedBase));
-  using Service = ServiceType;
-
-  static constexpr const internal::Method& method() { return *FindMethod(); }
-
- private:
-  static constexpr const internal::Method* FindMethod() {
-    for (const internal::Method& method : BaseService::kMethods) {
-      if (method.id() == method_hash) {
-        return &method;
-      }
-    }
-    return nullptr;
-  }
-
-  static_assert(FindMethod() != nullptr,
-                "The specified service method does not exist");
-};
+// Internal classes that implement TestMethodContext.
+namespace internal::test {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
 template <typename Response>
@@ -110,7 +84,7 @@ class MessageOutput final : public ChannelOutput {
   MessageOutput(const internal::Method& method,
                 Vector<Response>& responses,
                 std::span<std::byte> buffer)
-      : ChannelOutput("test_internal::MessageOutput"),
+      : ChannelOutput("internal::test::MessageOutput"),
         method_(method),
         responses_(responses),
         buffer_(buffer) {
@@ -140,30 +114,27 @@ class MessageOutput final : public ChannelOutput {
 };
 
 // Collects everything needed to invoke a particular RPC.
-template <typename ServiceUtils,
-          auto function,
-          size_t max_responses,
-          size_t output_size>
+template <auto method, size_t max_responses, size_t output_size>
 struct InvocationContext {
-  using Request = internal::Request<function>;
-  using Response = internal::Response<function>;
+  using Request = internal::Request<method>;
+  using Response = internal::Response<method>;
 
   template <typename... Args>
   InvocationContext(Args&&... args)
-      : output(ServiceUtils::method(), responses, buffer),
+      : output(ServiceMethodTraits<method>::method(), responses, buffer),
         channel(Channel::Create<123>(&output)),
         server(std::span(&channel, 1)),
         service(std::forward<Args>(args)...),
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
-             ServiceUtils::method()) {}
+             ServiceMethodTraits<method>::method()) {}
 
   MessageOutput<Response> output;
 
-  Channel channel;
-  Server server;
-  typename ServiceUtils::Service service;
+  rpc::Channel channel;
+  rpc::Server server;
+  typename ServiceMethodTraits<method>::Service service;
   Vector<Response, max_responses> responses;
   std::array<std::byte, output_size> buffer = {};
 
@@ -172,10 +143,10 @@ struct InvocationContext {
 
 // Method invocation context for a unary RPC. Returns the status in call() and
 // provides the response through the response() method.
-template <typename ServiceUtils, auto function, size_t output_size>
+template <auto method, size_t output_size>
 class UnaryContext {
  private:
-  InvocationContext<ServiceUtils, function, 1, output_size> ctx_;
+  InvocationContext<method, 1, output_size> ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -189,7 +160,7 @@ class UnaryContext {
     ctx_.output.clear();
     ctx_.responses.emplace_back();
     ctx_.responses.back() = {};
-    return (ctx_.service.*function)(
+    return (ctx_.service.*method)(
         ctx_.call.context(), request, ctx_.responses.back());
   }
 
@@ -201,13 +172,10 @@ class UnaryContext {
 };
 
 // Method invocation context for a server streaming RPC.
-template <typename ServiceUtils,
-          auto function,
-          size_t max_responses,
-          size_t output_size>
+template <auto method, size_t max_responses, size_t output_size>
 class ServerStreamingContext {
  private:
-  InvocationContext<ServiceUtils, function, max_responses, output_size> ctx_;
+  InvocationContext<method, max_responses, output_size> ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -220,7 +188,7 @@ class ServerStreamingContext {
   void call(const Request& request) {
     ctx_.output.clear();
     internal::BaseServerWriter server_writer(ctx_.call);
-    return (ctx_.service.*function)(
+    return (ctx_.service.*method)(
         ctx_.call.context(),
         request,
         static_cast<ServerWriter<Response>&>(server_writer));
@@ -255,16 +223,14 @@ class ServerStreamingContext {
 
 // Alias to select the type of the context object to use based on which type of
 // RPC it is for.
-template <typename T,
-          auto function,
-          size_t responses = 4,
-          size_t output_size = 128>
-using MethodInvocationContext = std::tuple_element_t<
-    static_cast<size_t>(internal::RpcTraits<decltype(function)>::kType),
-    std::tuple<UnaryContext<T, function, output_size>,
-               ServerStreamingContext<T, function, responses, output_size>
-               // TODO(hepler): Support client and bidi streaming
-               >>;
+template <auto method, size_t responses, size_t output_size>
+using Context = std::tuple_element_t<
+    static_cast<size_t>(internal::RpcTraits<decltype(method)>::kType),
+    std::tuple<
+        internal::test::UnaryContext<method, output_size>,
+        internal::test::ServerStreamingContext<method, responses, output_size>
+        // TODO(hepler): Support client and bidi streaming
+        >>;
 
 template <typename Response>
 void MessageOutput<Response>::clear() {
@@ -307,4 +273,17 @@ void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
   }
 }
 
-}  // namespace pw::rpc::test_internal
+}  // namespace internal::test
+
+template <auto method, size_t max_responses, size_t output_size_bytes>
+class TestMethodContext
+    : public internal::test::Context<method, max_responses, output_size_bytes> {
+ public:
+  // Forwards constructor arguments to the service class.
+  template <typename... ServiceArgs>
+  TestMethodContext(ServiceArgs&&... service_args)
+      : internal::test::Context<method, max_responses, output_size_bytes>(
+            std::forward<ServiceArgs>(service_args)...) {}
+};
+
+}  // namespace pw::rpc

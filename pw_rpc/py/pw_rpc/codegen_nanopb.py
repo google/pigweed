@@ -106,6 +106,32 @@ def _generate_code_for_method(method: ProtoServiceMethod,
             'Only unary and server streaming RPCs are currently supported')
 
 
+def _generate_method_lookup_function(service: ProtoNode, output: OutputFile):
+    """Generates a function that gets the Method from a function pointer."""
+    output.write_line('template <auto impl_method>')
+    output.write_line(
+        'static constexpr const ::pw::rpc::internal::Method* MethodFor() {')
+
+    with output.indent():
+        for i, method in enumerate(service.methods()):
+            output.write_line(
+                'if constexpr (std::is_same_v<decltype(impl_method), '
+                f'decltype(&Implementation::{method.name()})>) {{')
+
+            with output.indent():
+                output.write_line(
+                    'if constexpr ('
+                    f'impl_method == &Implementation::{method.name()}) {{')
+                output.write_line(f'  return &std::get<{i}>(kMethods);')
+                output.write_line('}')
+
+            output.write_line('}')
+
+        output.write_line('return nullptr;')
+
+    output.write_line('}')
+
+
 def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
@@ -119,8 +145,9 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
     with output.indent():
         output.write_line(
             f'using ServerContext = {RPC_NAMESPACE}::ServerContext;')
-        output.write_line('template <typename T> using ServerWriter = '
-                          f'{RPC_NAMESPACE}::ServerWriter<T>;')
+        output.write_line('template <typename T>')
+        output.write_line(
+            f'using ServerWriter = {RPC_NAMESPACE}::ServerWriter<T>;')
         output.write_line()
 
         output.write_line(f'constexpr {service.name()}()')
@@ -137,7 +164,8 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
                           f'{{ return "{service.name()}"; }}')
 
         output.write_line()
-        output.write_line('// Used in test code to identify a base service.')
+        output.write_line(
+            '// Used by ServiceMethodTraits to identify a base service.')
         output.write_line(
             'constexpr void _PwRpcInternalGeneratedBase() const {}')
 
@@ -154,6 +182,8 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
             _generate_code_for_method(method, output)
 
         output.write_line()
+
+        # Generate the method table
         output.write_line(
             f'static constexpr std::array<{RPC_NAMESPACE}::internal::Method,'
             f' {len(service.methods())}> kMethods = {{')
@@ -164,9 +194,12 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
 
         output.write_line('};\n')
 
-        output.write_line('template <typename, uint32_t>')
+        _generate_method_lookup_function(service, output)
+
+        output.write_line()
+        output.write_line('template <auto>')
         output.write_line(
-            'friend class ::pw::rpc::test_internal::ServiceTestUtilities;')
+            'friend class ::pw::rpc::internal::ServiceMethodTraits;')
 
     output.write_line('};')
 
@@ -182,8 +215,10 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line(f'// on {datetime.now()}')
     output.write_line('// clang-format off')
     output.write_line('#pragma once\n')
+    output.write_line('#include <array>')
     output.write_line('#include <cstddef>')
-    output.write_line('#include <cstdint>\n')
+    output.write_line('#include <cstdint>')
+    output.write_line('#include <type_traits>\n')
     output.write_line('#include "pw_rpc/internal/method.h"')
     output.write_line('#include "pw_rpc/internal/service.h"')
     output.write_line('#include "pw_rpc/server_context.h"')
@@ -195,10 +230,10 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
         file_descriptor_proto.name)
     output.write_line(f'#include "{nanopb_header}"\n')
 
-    output.write_line('namespace pw::rpc::test_internal {\n')
-    output.write_line('template <typename, uint32_t>')
-    output.write_line('class ServiceTestUtilities;')
-    output.write_line('\n}  // namespace pw::rpc::test_internal\n')
+    output.write_line('namespace pw::rpc::internal {\n')
+    output.write_line('template <auto>')
+    output.write_line('class ServiceMethodTraits;')
+    output.write_line('\n}  // namespace pw::rpc::internal\n')
 
     if package.cpp_namespace():
         file_namespace = package.cpp_namespace()

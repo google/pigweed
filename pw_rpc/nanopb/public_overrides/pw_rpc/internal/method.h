@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <type_traits>
 
 #include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/base_server_writer.h"
@@ -51,9 +52,16 @@ using NanopbMessageDescriptor = const void*;
 
 enum class Type { kUnary, kServerStreaming, kClientStreaming, kBidiStreaming };
 
+// Templated false value for use in static_assert(false) statements.
+template <typename...>
+constexpr std::false_type kFalse{};
+
 // Extracts the request and response proto types from a method.
 template <typename Method>
-struct RpcTraits;
+struct RpcTraits {
+  static_assert(kFalse<Method>,
+                "The selected function is not an RPC service method");
+};
 
 // Specialization for unary RPCs.
 template <typename RequestType, typename ResponseType>
@@ -83,14 +91,18 @@ template <typename T, typename RequestType, typename ResponseType>
 struct RpcTraits<Status (T::*)(
     ServerContext&, const RequestType&, ResponseType&)>
     : public RpcTraits<Status (*)(
-          ServerCall&, const RequestType&, ResponseType&)> {};
+          ServerCall&, const RequestType&, ResponseType&)> {
+  using Service = T;
+};
 
 // Member function specialization for server streaming RPCs.
 template <typename T, typename RequestType, typename ResponseType>
 struct RpcTraits<void (T::*)(
     ServerContext&, const RequestType&, ServerWriter<ResponseType>&)>
     : public RpcTraits<void (*)(
-          ServerCall&, const RequestType&, ServerWriter<ResponseType>&)> {};
+          ServerCall&, const RequestType&, ServerWriter<ResponseType>&)> {
+  using Service = T;
+};
 
 template <auto method>
 using Request = typename RpcTraits<decltype(method)>::Request;

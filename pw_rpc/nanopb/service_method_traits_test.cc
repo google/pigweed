@@ -12,24 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
-#include "pw_rpc/echo_service_nanopb.h"
-#include "pw_rpc/test_method_context.h"
+#include "pw_rpc/internal/service_method_traits.h"
 
-namespace pw::rpc {
+#include <type_traits>
+
+#include "pw_rpc/echo_service_nanopb.h"
+
+namespace pw::rpc::internal {
 namespace {
 
-TEST(EchoService, Echo_EchoesRequestMessage) {
-  TestMethodContext<&EchoService::Echo> context;
-  ASSERT_EQ(context.call({.msg = "Hello, world"}), Status::OK);
-  EXPECT_STREQ(context.response().msg, "Hello, world");
-}
+static_assert(std::is_same_v<ServiceMethodTraits<&EchoService::Echo>::Service,
+                             EchoService>);
+static_assert(
+    std::is_same_v<ServiceMethodTraits<&EchoService::Echo>::BaseService,
+                   generated::EchoService<EchoService>>);
 
-TEST(EchoService, Echo_EmptyRequest) {
-  TestMethodContext<&EchoService::Echo> context;
-  ASSERT_EQ(context.call({.msg = ""}), Status::OK);
-  EXPECT_STREQ(context.response().msg, "");
-}
+static_assert(
+    std::is_same_v<decltype(ServiceMethodTraits<&EchoService::Echo>::method()),
+                   const Method&>);
 
 }  // namespace
-}  // namespace pw::rpc
+}  // namespace pw::rpc::internal

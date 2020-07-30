@@ -96,11 +96,13 @@ filegroup(
         "nanopb/method.cc",
         "nanopb/method_test.cc",
         "nanopb/public/pw_rpc/echo_service_nanopb.h",
+        "nanopb/public/pw_rpc/internal/service_method_traits.h",
+        "nanopb/public/pw_rpc/test_method_context.h",
         "nanopb/public_overrides/pw_rpc/internal/method.h",
+        "nanopb/service_method_traits_test.cc",
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",
         "nanopb/test_rpc.pb.h",
-        "public/pw_rpc/test_method_context.h",
     ],
 )
 

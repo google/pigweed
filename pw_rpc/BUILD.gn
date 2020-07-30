@@ -107,6 +107,7 @@ pw_source_set("common") {
     "public/pw_rpc/internal/base_method.h",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/channel.h",
+    "public/pw_rpc/internal/hash.h",
     "public/pw_rpc/internal/packet.h",
   ]
   friend = [ "./*" ]
@@ -117,18 +118,6 @@ pw_source_set("common") {
 # structs as their requests and responses.
 _pw_rpc_server_library("nanopb_server") {
   implementation = "nanopb"
-}
-
-pw_source_set("nanopb_test_method_context") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_rpc/test_method_context.h" ]
-  sources = [ "public/pw_rpc/internal/hash.h" ]
-  public_deps = [
-    ":nanopb_server",
-    dir_pw_containers,
-    dir_pw_unit_test,
-  ]
-  friend = [ "nanopb:*" ]
 }
 
 config("private_includes") {
