@@ -46,6 +46,7 @@
       message,                                                        \
       __VA_ARGS__)
 
+// By default, log format strings include PW_LOG_MODULE_NAME.
 #ifndef PW_LOG_TOKENIZED_FORMAT_STRING
 #define PW_LOG_TOKENIZED_FORMAT_STRING(string) PW_LOG_MODULE_NAME ": " string
 #endif  // PW_LOG_TOKENIZED_FORMAT_STRING

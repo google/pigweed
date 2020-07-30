@@ -21,32 +21,42 @@ import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 config("default_config") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
 }
 
+# This target provides the log_tokenized.h header, which implements the pw_log
+# backend.
+#
+# This target depends on the pw_tokenizer facade target
+# (dir_pw_tokenizer:global_handler_with_payload_facade) to avoid circular
+# dependencies. The dependency graph for pw_log_tokenized is the following:
+#
+#   pw_log:facade <---   :pw_log_tokenized
+#        ^            \      ^       ^
+#        |             \    /         \
+#   -> pw_log -> :log_backend --> pw_tokenizer:global_handler_with_payload
+#
 pw_source_set("pw_log_tokenized") {
-  public_configs = [
-    ":backend_config",
-    ":default_config",
-  ]
-  public_deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
-  deps = [ ":core" ]
-  public = [
-    "public/pw_log_tokenized/log_tokenized.h",
-    "public_overrides/pw_log_backend/log_backend.h",
-  ]
-}
-
-pw_source_set("core") {
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_log:facade",
+    "$dir_pw_tokenizer:global_handler_with_payload_facade",
     dir_pw_preprocessor,
   ]
-  visibility = [ ":*" ]
+  public = [ "public/pw_log_tokenized/log_tokenized.h" ]
+}
+
+# This target provides the backend for pw_log.
+pw_source_set("log_backend") {
+  public_configs = [ ":backend_config" ]
+  public_deps = [ ":pw_log_tokenized" ]
+  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
+  deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
 }
 
 pw_test_group("tests") {
@@ -55,7 +65,10 @@ pw_test_group("tests") {
 
 pw_test("test") {
   sources = [ "test.cc" ]
-  deps = [ ":pw_log_tokenized" ]
+  deps = [
+    ":log_backend",
+    ":pw_log_tokenized",
+  ]
 
   # TODO(hepler): Switch this to a facade test when available.
   enable_if = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND == ""

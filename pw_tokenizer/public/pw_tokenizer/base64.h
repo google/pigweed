@@ -33,8 +33,7 @@
 
 // This character is used to mark the start of a Base64-encoded tokenized
 // message. For consistency, it is recommended to always use $ if possible.
-//
-// If desired, any non-Base64 character may be used as a suffix.
+// If required, a different non-Base64 character may be used as a prefix.
 #define PW_TOKENIZER_BASE64_PREFIX '$'
 
 PW_EXTERN_C_START
@@ -72,13 +71,19 @@ inline constexpr char kBase64Prefix = PW_TOKENIZER_BASE64_PREFIX;
 
 // Encodes a binary tokenized message as prefixed Base64. Returns the size of
 // the number of characters written to output_buffer. Returns 0 if the buffer is
-// too small.
+// too small or does not start with kBase64Prefix.
 inline size_t PrefixedBase64Encode(std::span<const std::byte> binary_message,
                                    std::span<char> output_buffer) {
   return pw_TokenizerPrefixedBase64Encode(binary_message.data(),
                                           binary_message.size(),
                                           output_buffer.data(),
                                           output_buffer.size());
+}
+
+// Also accept a std::span<const uint8_t> for the binary message.
+inline size_t PrefixedBase64Encode(std::span<const uint8_t> binary_message,
+                                   std::span<char> output_buffer) {
+  return PrefixedBase64Encode(std::as_bytes(binary_message), output_buffer);
 }
 
 // Decodes a prefixed Base64 tokenized message to binary. Returns the size of

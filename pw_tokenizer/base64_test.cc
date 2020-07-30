@@ -23,11 +23,13 @@
 namespace pw::tokenizer {
 namespace {
 
+using std::byte;
+
 class PrefixedBase64 : public ::testing::Test {
  protected:
   PrefixedBase64() : binary_{}, base64_{} {}
 
-  std::byte binary_[32];
+  byte binary_[32];
   char base64_[32];
 };
 
@@ -37,7 +39,7 @@ const struct TestData {
       : binary{std::as_bytes(std::span(binary_data, kSize - 1))},
         base64(base64_data) {}
 
-  std::span<const std::byte> binary;
+  std::span<const byte> binary;
   std::string_view base64;
 } kTestData[] = {
     {"", "$"},
@@ -64,7 +66,7 @@ TEST_F(PrefixedBase64, Encode) {
 }
 
 TEST_F(PrefixedBase64, Encode_EmptyInput_WritesPrefix) {
-  EXPECT_EQ(1u, PrefixedBase64Encode({}, base64_));
+  EXPECT_EQ(1u, PrefixedBase64Encode(std::span<byte>(), base64_));
   EXPECT_EQ('$', base64_[0]);
 }
 
@@ -83,18 +85,18 @@ TEST_F(PrefixedBase64, Decode) {
 
 TEST_F(PrefixedBase64, Decode_EmptyInput_WritesNothing) {
   EXPECT_EQ(0u, PrefixedBase64Decode({}, binary_));
-  EXPECT_EQ(std::byte{0}, binary_[0]);
+  EXPECT_EQ(byte{0}, binary_[0]);
 }
 
 TEST_F(PrefixedBase64, Decode_OnlyPrefix_WritesNothing) {
   EXPECT_EQ(0u, PrefixedBase64Decode("$", binary_));
-  EXPECT_EQ(std::byte{0}, binary_[0]);
+  EXPECT_EQ(byte{0}, binary_[0]);
 }
 
 TEST_F(PrefixedBase64, Decode_EmptyOutput_WritesNothing) {
   EXPECT_EQ(0u,
             PrefixedBase64Decode(kTestData[5].base64, std::span(binary_, 0)));
-  EXPECT_EQ(std::byte{0}, binary_[0]);
+  EXPECT_EQ(byte{0}, binary_[0]);
 }
 
 TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
@@ -102,11 +104,11 @@ TEST_F(PrefixedBase64, Decode_OutputTooSmall_WritesNothing) {
   EXPECT_EQ(0u,
             PrefixedBase64Decode(item.base64,
                                  std::span(binary_, item.binary.size() - 1)));
-  EXPECT_EQ(std::byte{0}, binary_[0]);
+  EXPECT_EQ(byte{0}, binary_[0]);
 }
 
 TEST(PrefixedBase64, DecodeInPlace) {
-  std::byte buffer[32];
+  byte buffer[32];
 
   for (auto& [binary, base64] : kTestData) {
     std::memcpy(buffer, base64.data(), base64.size());

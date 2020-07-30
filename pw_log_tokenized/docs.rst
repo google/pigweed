@@ -36,5 +36,14 @@ Example implementation:
 
 See the documentation for ``pw_tokenizer`` for further details.
 
+Build targets
+-------------
+The GN build for ``pw_log_tokenized`` has two targets: ``pw_log_tokenized`` and
+``log_backend``. The ``pw_log_tokenized`` target provides the
+``pw_log_tokenized/log_tokenized.h`` header. The ``log_backend`` target
+implements the backend for the ``pw_log`` facade. ``pw_log_tokenized`` invokes
+the ``pw_tokenizer:global_handler_with_facade`` facade, which must be
+implemented by the user of ``pw_log_tokenized``.
+
 .. note::
   The documentation for this module is currently incomplete.
