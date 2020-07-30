@@ -32,6 +32,16 @@ NANOPB_H_EXTENSION = '.pb.h'
 RPC_NAMESPACE = '::pw::rpc'
 
 
+def _invoker_name(method: ProtoServiceMethod) -> str:
+    """Name for the function that invokes the user-defined service method.
+
+    The generated class uses a different name for the methods than the derived
+    class. If it used the same name, the invocation would appear to the compiler
+    as a recursive function call if the derived class failed to define a method.
+    """
+    return 'Invoke_' + method.name()
+
+
 def _proto_filename_to_nanopb_header(proto_file: str) -> str:
     """Returns the generated nanopb header name for a .proto file."""
     return os.path.splitext(proto_file)[0] + NANOPB_H_EXTENSION
@@ -50,9 +60,9 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
     method_class = f'{RPC_NAMESPACE}::internal::Method'
 
     if method.type() == ProtoServiceMethod.Type.UNARY:
-        func = f'{method_class}::Unary<{method.name()}>'
+        func = f'{method_class}::Unary<{_invoker_name(method)}>'
     elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        func = f'{method_class}::ServerStreaming<{method.name()}>'
+        func = f'{method_class}::ServerStreaming<{_invoker_name(method)}>'
     else:
         raise NotImplementedError(
             'Only unary and server streaming RPCs are currently supported')
@@ -63,8 +73,7 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
 
     output.write_line(f'{func}(')
     with output.indent(4):
-        output.write_line(
-            f'{hex(method_id)},  // 65599 hash of "{method.name()}"')
+        output.write_line(f'0x{method_id:08x},  // Hash of "{method.name()}"')
         output.write_line(f'{req_fields},')
         output.write_line(f'{res_fields}),')
 
@@ -80,7 +89,7 @@ def _generate_code_for_method(method: ProtoServiceMethod,
     output.write_line()
 
     if method.type() == ProtoServiceMethod.Type.UNARY:
-        output.write_line(f'static ::pw::Status {method.name()}(')
+        output.write_line(f'static ::pw::Status {_invoker_name(method)}(')
         with output.indent(4):
             output.write_line('::pw::rpc::internal::ServerCall& call,')
             output.write_line(f'const {req_type}& request,')
@@ -91,7 +100,7 @@ def _generate_code_for_method(method: ProtoServiceMethod,
                 f'    .{method.name()}(call.context(), request, response);')
         output.write_line('}')
     elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        output.write_line(f'static void {method.name()}(')
+        output.write_line(f'static void {_invoker_name(method)}(')
         with output.indent(4):
             output.write_line('::pw::rpc::internal::ServerCall& call,')
             output.write_line(f'const {req_type}& request,')
@@ -173,9 +182,9 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
     output.write_line('\n private:')
 
     with output.indent():
-        output.write_line(f'// 65599 hash of "{service.proto_path()}".')
+        output.write_line(f'// Hash of "{service.proto_path()}".')
         output.write_line(
-            f'static constexpr uint32_t kServiceId = {hex(service_name_hash)};'
+            f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
         )
 
         for method in service.methods():
