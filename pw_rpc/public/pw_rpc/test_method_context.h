@@ -148,10 +148,12 @@ struct InvocationContext {
   using Request = internal::Request<function>;
   using Response = internal::Response<function>;
 
-  InvocationContext()
+  template <typename... Args>
+  InvocationContext(Args&&... args)
       : output(ServiceUtils::method(), responses, buffer),
         channel(Channel::Create<123>(&output)),
         server(std::span(&channel, 1)),
+        service(std::forward<Args>(args)...),
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
@@ -178,6 +180,9 @@ class UnaryContext {
  public:
   using Request = typename decltype(ctx_)::Request;
   using Response = typename decltype(ctx_)::Response;
+
+  template <typename... Args>
+  UnaryContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request. Returns the status.
   Status call(const Request& request) {
@@ -207,6 +212,9 @@ class ServerStreamingContext {
  public:
   using Request = typename decltype(ctx_)::Request;
   using Response = typename decltype(ctx_)::Response;
+
+  template <typename... Args>
+  ServerStreamingContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
 
   // Invokes the RPC with the provided request.
   void call(const Request& request) {
