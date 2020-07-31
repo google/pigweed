@@ -447,6 +447,54 @@ and that header must define the following macros:
 Frequently asked questions
 --------------------------
 
+When should DCHECK_* be used instead of CHECK_* and vice versa?
+---------------------------------------------------------------
+There is no hard and fast rule for when to use one or the other.
+
+In theory, ``DCHECK_*`` macros should never be used and all the asserts should
+remain active in production. In practice, **assert statements come at a binary
+size and runtime cost**, even when using extensions like a tokenized assert
+backend that strips the stringified assert expression from the binary. Each
+assert is **at least a branch with a function call**; depending on the assert
+backend, that function call may take several arguments (like the message, the
+file line number, the module, etc). These function calls can take 10-20 bytes
+or more of ROM each. Thus, there is a balance to be struct between ``DCHECK_*``
+and ``CHECK_*``.
+
+Pigweed uses these conventions to decide between ``CHECK_*`` and ``DCHECK_*``:
+
+- **Prefer to use CHECK_* at public API boundaries** of modules, where an
+  invalid value is a clear programmer bug. In certain cases use ``DCHECK_*`` to
+  keep binary size small when in production; for example, in modules with a
+  large public API surface, or modules with many inlined functions in headers.
+- **Avoid using CHECK_* macros in headers.** It is still OK to use ``CHECK_*``
+  macros in headers, but carefully consider the cost, since inlined use of the
+  ``CHECK_*`` macros in headers will expand to the full assert cost for every
+  translation unit that includes the header and calls the function with the
+  ``CHECK_*`` instance. ``DCHECK_*`` macros are are better, but even they come
+  at a cost, since it is preferable to be able to compile a binary in debug
+  mode for as long as possible on the road to production.
+- **Prefer to use DCHECK_* variants for internal asserts** that attempt to
+  catch module-author level programming errors. For example, use DCHECKs to
+  verify internal function preconditions, or other invariants that should
+  always be true but will likely never fire in production. In some cases using
+  ``CHECK_*`` macros for internal consistency checking can make sense, if the
+  runtime cost is low and there are only a couple of instances.
+
+.. tip::
+
+  **Do not return error status codes for obvious API misuse**.
+
+  Returning an error code may mask the earliest sign of a bug; notifying the
+  developer of the problem depends on correct propagation of the error to upper
+  levels of the system. Instead, prefer to use the ``CHECK_*`` or ``DCHECK_*``
+  macros to ensure a prompt termination and warning to the developer.
+
+  Error status codes should be reserved for system misbehaviour or expected
+  exceptional cases, like a sensor is not yet ready, or a storage subsystem is
+  full when writing. Doing ``CHECK_*`` assertions in those cases would be a
+  mistake; so use error codes in those cases instead.
+
 How should objects be asserted against or compared?
 ---------------------------------------------------
 Unfortunatly, there is no native mechanism for this, and instead the way to
