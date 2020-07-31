@@ -430,9 +430,26 @@ void ProfileServer::Search(
   searches_total_ = next;
 }
 
-void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
-                            fidlbredr::ChannelParameters parameters, ConnectCallback callback) {
+void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
+                            fidlbredr::ConnectParameters connection, ConnectCallback callback) {
   bt::PeerId id{peer_id.value};
+
+  // Anything other than L2CAP is not supported by this server.
+  if (!connection.is_l2cap()) {
+    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+    return;
+  }
+
+  // The L2CAP parameters must include a PSM. ChannelParameters are optional.
+  auto l2cap_params = std::move(connection.l2cap());
+  if (!l2cap_params.has_psm()) {
+    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
+    return;
+  }
+  uint16_t psm = l2cap_params.psm();
+
+  fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
+
   auto connected_cb = [cb = callback.share()](auto chan_sock) {
     if (!chan_sock) {
       bt_log(TRACE, "profile_server", "Channel socket is empty, returning failed.");

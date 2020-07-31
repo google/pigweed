@@ -138,6 +138,47 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
   EXPECT_TRUE(signals & ZX_CHANNEL_PEER_CLOSED);
 }
 
+TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersNoPSM) {
+  // Random peer, since we don't expect the connection.
+  fuchsia::bluetooth::PeerId peer_id{123};
+
+  // No PSM provided - this is invalid.
+  fidlbredr::L2capParameters l2cap_params;
+  fidlbredr::ChannelParameters channel_params;
+  l2cap_params.set_parameters(std::move(channel_params));
+
+  fidlbredr::ConnectParameters connection;
+  connection.set_l2cap(std::move(l2cap_params));
+
+  // Expect an error result.
+  auto sock_cb = [](auto result) {
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.err(), fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+  };
+
+  client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
+  RunLoopUntilIdle();
+}
+
+TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
+  // Random peer, since we don't expect the connection.
+  fuchsia::bluetooth::PeerId peer_id{123};
+
+  // RFCOMM Parameters are provided - this is not supported.
+  fidlbredr::RfcommParameters rfcomm_params;
+  fidlbredr::ConnectParameters connection;
+  connection.set_rfcomm(std::move(rfcomm_params));
+
+  // Expect an error result.
+  auto sock_cb = [](auto result) {
+    EXPECT_TRUE(result.is_err());
+    EXPECT_EQ(result.err(), fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+  };
+
+  client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
+  RunLoopUntilIdle();
+}
+
 class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
  public:
   FIDL_ProfileServerTest_ConnectedPeer() = default;
@@ -217,7 +258,14 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
 
   fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
 
-  client()->Connect(peer_id, kPSM, std::move(fidl_params), std::move(sock_cb));
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(kPSM);
+  l2cap_params.set_parameters(std::move(fidl_params));
+
+  fidlbredr::ConnectParameters connection;
+  connection.set_l2cap(std::move(l2cap_params));
+
+  client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
   RunLoopUntilIdle();
 }
 
@@ -252,7 +300,14 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
 
   fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
 
-  client()->Connect(peer_id, kPSM, std::move(fidl_params), std::move(sock_cb));
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(kPSM);
+  l2cap_params.set_parameters(std::move(fidl_params));
+
+  fidlbredr::ConnectParameters connection;
+  connection.set_l2cap(std::move(l2cap_params));
+
+  client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
   RunLoopUntilIdle();
 }
 

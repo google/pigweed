@@ -36,8 +36,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   void Search(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
               std::vector<uint16_t> attr_ids,
               fidl::InterfaceHandle<fuchsia::bluetooth::bredr::SearchResults> results) override;
-  void Connect(fuchsia::bluetooth::PeerId peer_id, uint16_t psm,
-               fuchsia::bluetooth::bredr::ChannelParameters parameters,
+  void Connect(fuchsia::bluetooth::PeerId peer_id,
+               fuchsia::bluetooth::bredr::ConnectParameters connection,
                ConnectCallback callback) override;
 
   // Callback when clients close their connection targets
