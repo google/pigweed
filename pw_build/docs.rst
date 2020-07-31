@@ -116,7 +116,7 @@ Generally, these expressions are used within templates rather than directly in
 BUILD.gn files. This allows build code to use GN labels without having to worry
 about converting them to files.
 
-Currently, only one expression is supported.
+The following expressions are supported:
 
 .. describe:: <TARGET_FILE(gn_target)>
 
@@ -144,6 +144,50 @@ Currently, only one expression is supported.
   ``rebase_path(path)`` function. With default arguments, ``rebase_path``
   converts the provided GN path or list of paths to be relative to the build
   directory, from which all build commands and scripts are executed.
+
+.. describe:: <TARGET_FILE_IF_EXISTS(gn_target)>
+
+  ``TARGET_FILE_IF_EXISTS`` evaluates to the output file of the provided GN
+  target, if the output file exists. If the output file does not exist, the
+  entire argument that includes this expression is omitted, even if there is
+  other text or another expression.
+
+  For example, consider this expression:
+
+  .. code::
+
+    "--database=<TARGET_FILE_IF_EXISTS(//alpha/bravo)>"
+
+  If the ``//alpha/bravo`` target file exists, this might expand to the
+  following:
+
+  .. code::
+
+    "--database=/home/User/project/out/obj/alpha/bravo/bravo.elf"
+
+  If the ``//alpha/bravo`` target file does not exist, the entire
+  ``--database=`` argument is omitted from the script arguments.
+
+.. describe:: <TARGET_OBJECTS(gn_target)>
+
+  Evaluates to the object files of the provided GN target. Expands to a separate
+  argument for each object file. If the target has no object files, the argument
+  is omitted entirely. Because it does not expand to a single expression, the
+  ``<TARGET_OBJECTS(...)>`` expression may not have leading or trailing text.
+
+  For example, the expression
+
+  .. code::
+
+    "<TARGET_OBJECTS(//foo/bar:a_source_set)>"
+
+  might expand to multiple separate arguments:
+
+  .. code::
+
+    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_a.cc.o"
+    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_b.cc.o"
+    "/home/User/project_root/out/obj/foo/bar/a_source_set.file_c.cc.o"
 
 **Example**
 

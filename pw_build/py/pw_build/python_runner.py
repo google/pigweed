@@ -14,22 +14,20 @@
 """Script that preprocesses a Python command then runs it.
 
 This script evaluates expressions in the Python command's arguments then invokes
-the command. Only one expression is supported currently:
-
-  <TARGET_FILE(gn_target)> -- gets the target output file (e.g. .elf, .a,, .so)
-      for a GN target; raises an error for targets with no output file, such as
-      a source_set or group
+the command.
 """
 
 import argparse
 from dataclasses import dataclass
+import enum
 import logging
 from pathlib import Path
 import re
 import shlex
 import subprocess
 import sys
-from typing import Callable, Dict, Iterator, List, NamedTuple, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, NamedTuple
+from typing import Optional, Tuple
 
 _LOG = logging.getLogger(__name__)
 
@@ -269,43 +267,110 @@ class ExpressionError(Exception):
     """An error occurred while parsing an expression."""
 
 
-def _target_output_file(paths: GnPaths, target_name: str) -> str:
-    target = TargetInfo(paths, target_name)
+class _ArgAction(enum.Enum):
+    APPEND = 0
+    OMIT = 1
+    EMIT_NEW = 2
 
-    if not target.artifact:
+
+class _Expression:
+    def __init__(self, match: re.Match, ending: int):
+        self._match = match
+        self._ending = ending
+
+    @property
+    def string(self):
+        return self._match.string
+
+    @property
+    def end(self) -> int:
+        return self._ending + len(_ENDING)
+
+    def contents(self) -> str:
+        return self.string[self._match.end():self._ending]
+
+    def expression(self) -> str:
+        return self.string[self._match.start():self.end]
+
+
+_Actions = Iterator[Tuple[_ArgAction, str]]
+
+
+def _target_file(paths: GnPaths, expr: _Expression) -> _Actions:
+    target = TargetInfo(paths, expr.contents())
+
+    if target.artifact is None:
         raise ExpressionError(f'Target {target} has no output file!')
 
-    return str(target.artifact)
+    yield _ArgAction.APPEND, str(target.artifact)
 
 
-_FUNCTIONS: Dict['str', Callable[[GnPaths, str], str]] = {
-    'TARGET_FILE': _target_output_file,
+def _target_file_if_exists(paths: GnPaths, expr: _Expression) -> _Actions:
+    (_, file), = _target_file(paths, expr)
+    if Path(file).exists():
+        yield _ArgAction.APPEND, file
+    else:
+        yield _ArgAction.OMIT, ''
+
+
+def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
+    if expr.expression() != expr.string:
+        raise ExpressionError(
+            f'The expression "{expr.expression()}" in "{expr.string}" may '
+            'expand to multiple arguments, so it cannot be used alongside '
+            'other text or expressions')
+
+    for obj in TargetInfo(paths, expr.contents()).object_files:
+        yield _ArgAction.EMIT_NEW, str(obj)
+
+
+_FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
+    'TARGET_FILE': _target_file,
+    'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
+    'TARGET_OBJECTS': _target_objects,
 }
 
 _START_EXPRESSION = re.compile(fr'<({"|".join(_FUNCTIONS)})\(')
+_ENDING = ')>'
 
 
-def _expand_expressions(paths: GnPaths, string: str) -> Iterator[str]:
-    pos = None
+def _expand_arguments(paths: GnPaths, string: str) -> _Actions:
+    pos = 0
 
     for match in _START_EXPRESSION.finditer(string):
-        yield string[pos:match.start()]
+        if pos != match.start():
+            yield _ArgAction.APPEND, string[pos:match.start()]
 
-        pos = string.find(')>', match.end())
-        if pos == -1:
-            raise ExpressionError('Parse error: no terminating ")>" '
+        ending = string.find(_ENDING, match.end())
+        if ending == -1:
+            raise ExpressionError(f'Parse error: no terminating "{_ENDING}" '
                                   f'was found for "{string[match.start():]}"')
 
-        yield _FUNCTIONS[match.group(1)](paths, string[match.end():pos])
+        expression = _Expression(match, ending)
+        yield from _FUNCTIONS[match.group(1)](paths, expression)
 
-        pos += 2  # skip the terminating ')>'
+        pos = expression.end
 
-    yield string[pos:]
+    if pos < len(string):
+        yield _ArgAction.APPEND, string[pos:]
 
 
-def expand_expressions(paths: GnPaths, arg: str) -> str:
-    """Expands <FUNCTION(...)> expressions."""
-    return ''.join(_expand_expressions(paths, arg))
+def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
+    """Expands <FUNCTION(...)> expressions; yields zero or more arguments."""
+    if arg == '':
+        return ['']
+
+    expanded_args: List[List[str]] = [[]]
+
+    for action, piece in _expand_arguments(paths, arg):
+        if action is _ArgAction.OMIT:
+            return []
+
+        expanded_args[-1].append(piece)
+        if action is _ArgAction.EMIT_NEW:
+            expanded_args.append([])
+
+    return (''.join(arg) for arg in expanded_args if arg)
 
 
 def main(
@@ -334,7 +399,8 @@ def main(
 
     command = [sys.executable]
     try:
-        command += (expand_expressions(paths, arg) for arg in original_cmd[1:])
+        for arg in original_cmd[1:]:
+            command += expand_expressions(paths, arg)
     except ExpressionError as err:
         _LOG.error('%s: %s', sys.argv[0], err)
         return 1
