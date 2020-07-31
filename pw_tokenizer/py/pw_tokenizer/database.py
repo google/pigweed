@@ -27,7 +27,7 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List, Set
 
 try:
     from pw_tokenizer import elf_reader, tokens
@@ -264,16 +264,21 @@ class _LoadTokenDatabases(argparse.Action):
     """Argparse action that reads tokenize databases from paths or globs."""
     def __call__(self, parser, namespace, values, option_string=None):
         databases: List[tokens.Database] = []
-        paths: List[Path] = []
+        paths: Set[Path] = set()
 
         try:
             for value in values:
                 if value.count('#') == 1:
                     databases.extend(_read_elf_with_domain(*value.split('#')))
                 else:
-                    paths.extend(expand_paths_or_globs(value))
+                    paths.update(expand_paths_or_globs(value))
 
-            databases += (load_token_database(path) for path in paths)
+            for path in paths:
+                try:
+                    databases.append(load_token_database(path))
+                except:
+                    _LOG.exception('Failed to load token database %s', path)
+                    raise
         except (FileNotFoundError, ValueError) as err:
             parser.error(f'argument elf_or_token_database: {err}')
 

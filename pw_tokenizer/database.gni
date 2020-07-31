@@ -26,8 +26,13 @@ import("$dir_pw_build/python_script.gni")
 #
 # Args:
 #   database: source tree path to database file to update; must exist beforehand
-#   targets: GN targets (executables or libraries) from which to add tokens
+#   targets: GN targets (executables or libraries) from which to add tokens;
+#       these targets are added to deps
+#   optional_targets: GN targets from which to add tokens, if the output files
+#       already exist; these targets are NOT added to deps
 #   input_databases: paths to other database files from which to add tokens
+#   deps: GN targets to build prior to generating the database; artifacts from
+#       these targets are NOT implicitly used for database generation
 #
 template("pw_tokenizer_database") {
   assert(defined(invoker.database),
@@ -39,6 +44,12 @@ template("pw_tokenizer_database") {
     _targets = []
   }
 
+  if (defined(invoker.optional_targets)) {
+    _optional_targets = invoker.optional_targets
+  } else {
+    _optional_targets = []
+  }
+
   if (defined(invoker.input_databases)) {
     _input_databases = invoker.input_databases
   } else {
@@ -46,9 +57,10 @@ template("pw_tokenizer_database") {
   }
 
   assert(
-      _targets != [] || _input_databases != [],
-      "No 'targets' or 'input_databases' were set for pw_tokenizer_database! " +
-          "At least one target or database must be provided as an input.")
+      _targets != [] || _optional_targets != [] || _input_databases != [],
+      "No 'targets', 'optional_targets', or 'input_databases' were set for " +
+          "pw_tokenizer_database! At least one target or database must be " +
+          "provided as an input.")
 
   pw_python_script(target_name) {
     script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
@@ -59,11 +71,22 @@ template("pw_tokenizer_database") {
     ]
     args += rebase_path(_input_databases)
 
-    foreach(target, invoker.targets) {
+    foreach(target, _targets) {
       args += [ "<TARGET_FILE($target)>" ]
     }
 
+    # For optional targets, the build outputs may not exist, since they aren't
+    # added to deps. Use TARGET_FILE_IF_EXISTS to handle this.
+    foreach(target, _optional_targets) {
+      args += [ "<TARGET_FILE_IF_EXISTS($target)>" ]
+    }
+
     deps = _targets
+
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+
     inputs = [ invoker.database ] + _input_databases
 
     # Since the output file is in the source tree, create a corresponding stamp
