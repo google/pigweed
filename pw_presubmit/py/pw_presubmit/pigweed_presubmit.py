@@ -189,6 +189,7 @@ the License.
 
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'^(?:.+/)?\..+$',
+    r'^docker/tag$',
     r'\bAUTHORS$',
     r'\bLICENSE$',
     r'\bOWNERS$',
