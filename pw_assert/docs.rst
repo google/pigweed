@@ -11,26 +11,24 @@ pw_assert
 --------
 Overview
 --------
-Pigweed's assert module provides facilities for applications to check
-preconditions. The module is split into two components:
+Pigweed's assert module enables applications to check preconditions, triggering
+a crash if the condition is not met. Consistent use of asserts is one aspect of
+defensive programming that can lead to more reliable and less buggy code.
 
-1. The facade (this module) which is only a macro interface layer
-2. The backend, provided elsewhere, that implements the low level checks
+The assert API facilitates flexible crash handling through Pigweed's facade
+mechanism. The API is desigend to enable features like:
 
-All behaviour is controlled by the backend.
+- Optional ancillary printf-style messages along assertions
+- Capturing actual values of binary operator assertions like ``a < b``
+- Compatibility with pw_tokenizer for reduced binary code size
 
-The ``pw_assert`` public API provides three classes of macros:
+The ``pw_assert`` API provides three classes of macros:
 
-+-----------------------------------------+--------------------------------+
-| PW_CRASH(format, ...)                   | Trigger a crash with a message |
-+-----------------------------------------+--------------------------------+
-| PW_CHECK(condition[, format, ...])      | Assert a condition, optionally |
-|                                         | with a message                 |
-+-----------------------------------------+--------------------------------+
-| PW_CHECK_<type>_<cmp>(a, b[, fmt, ...]) | Assert that the expression     |
-|                                         | ``a <cmp> b`` is true,         |
-|                                         | optionally with a message.     |
-+-----------------------------------------+--------------------------------+
+- **PW_CRASH(format, ...)** - Trigger a crash with a message.
+- **PW_CHECK(condition[, format, ...])** - Assert a condition, optionally with
+  a message.
+- **PW_CHECK_<type>_<cmp>(a, b[, fmt, ...])** - Assert that the expression ``a
+  <cmp> b`` is true, optionally with a message.
 
 .. tip::
 
@@ -74,6 +72,30 @@ Example
     // This assert disabled for release builds, where NDEBUG is defined.
     // The functions ItemCount() and GetStateStr() are never called.
     PW_DCHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
+
+Structure of assert modules
+---------------------------
+The module is split into two components:
+
+1. The **facade** (this module) which is only a macro interface layer, and
+   performs the actual checks for the conditions.
+2. The **backend**, provided elsewhere, that handles the consequences of an
+   assert failing. Example backends include ``pw_assert_basic``, which prints a
+   useful message and either quits the application (on host) or hangs in a
+   while loop (on device). In the future, there will be a tokenized assert
+   backend. This is also where application or product specific crash handling
+   would go.
+
+.. blockdiag::
+
+  blockdiag {
+    default_fontsize = 16;
+    facade  [label = "facade"];
+    backend [label = "backend"];
+    facade -> backend
+  }
+
+See the Backend API section below for more details.
 
 --------------------
 Facade API reference
@@ -483,7 +505,7 @@ Pigweed uses these conventions to decide between ``CHECK_*`` and ``DCHECK_*``:
 
 .. tip::
 
-  **Do not return error status codes for obvious API misuse**.
+  **Do not return error status codes for obvious API misuse**
 
   Returning an error code may mask the earliest sign of a bug; notifying the
   developer of the problem depends on correct propagation of the error to upper
