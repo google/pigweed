@@ -75,65 +75,9 @@ Example
     // The functions ItemCount() and GetStateStr() are never called.
     PW_DCHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
 
-Design discussion
------------------
-The Pigweed assert API was designed taking into account the needs of several
-past projects the team members were involved with. Based on those experiences,
-the following were key requirements for the API:
-
-1. **C compatibility** - Since asserts are typically invoked from arbitrary
-   contexts, including from vendor or third party code, the assert system must
-   have a C-compatible API. Some API functions working only in C++ is
-   acceptable, as long as the key functions work in C.
-2. **Capturing both expressions and values** - Since asserts can trigger in
-   ways that are not repeatable, it is important to capture rich diagnostic
-   information to help identifying the root cause of the fault. For asserts,
-   this means including the failing expression text, and optionally also
-   capturing failing expression values. For example, instead of capturing an
-   error with the expression (``x < y``), capturing an error with the
-   expression and values(``x < y, with x = 10, y = 0``).
-3. **Tokenization compatible** - It's important that the assert expressions
-   support tokenization; both the expression itself (e.g. ``a < b``) and the
-   message attached to the expression. For example: ``PW_CHECK(ItWorks(), "Ruh
-   roh: %d", some_int)``.
-4. **Customizable assert handling** - Most products need to support custom
-   handling of asserts. In some cases, an assert might trigger printing out
-   details to a UART; in other cases, it might trigger saving a log entry to
-   flash. The assert system must support this customization.
-
-The combination of #1, #2, and #3 led to the structure of the API. In
-particular, the need to support tokenized asserts and the need to support
-capturing values led to the choice of having ``PW_CHECK_INT_LE(a, b)`` instead
-of ``PW_CHECK(a <= b)``. Needing to support tokenization is what drove the
-facade & backend arrangement, since the backend must provide the raw macros for
-asserting in that case, rather than terminating at a C-style API.
-
-Why isn't there a ``PW_CHECK_LE``? Why is the type (e.g. ``INT``) needed?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The problem with asserts like ``PW_CHECK_LE(a, b)`` instead of
-``PW_CHECK_INT_LE(a, b)`` or ``PW_CHECK_FLOAT_EXACT_LE(a, b)`` is that to
-capture the arguments with the tokenizer, we need to know the types. Using the
-preprocessor, it is impossible to dispatch based on the types of ``a`` and
-``b``, so unfortunately having a separate macro for each of the types commonly
-asserted on is necessary.
-
-How should objects be asserted against or compared?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Unfortunatly, there is no native mechanism for this, and instead the way to
-assert object states or comparisons is with the normal ``PW_CHECK_*`` macros
-that operate on booleans, ints, and floats.
-
-This is due to the requirement of supporting C and also tokenization. It may be
-possible support rich object comparions by defining a convention for
-stringifying objects; however, this hasn't been added yet. Additionally, such a
-mechanism would not work well with tokenization. In particular, it would
-require runtime stringifying arguments and rendering them with ``%s``, which
-leads to binary bloat even with tokenization. So it is likely that a rich
-object assert API won't be added.
-
----------------------------
-Assert facade API reference
----------------------------
+--------------------
+Facade API reference
+--------------------
 
 The below functions describe the assert API functions that applications should
 invoke to assert.
@@ -425,9 +369,9 @@ invoke to assert.
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.
 
-----------------------------
-Assert backend API reference
-----------------------------
+---------------------
+Backend API reference
+---------------------
 
 The backend controls what to do in the case of an assertion failure. In the
 most basic cases, the backend could display the assertion failure on something
@@ -436,6 +380,14 @@ the backend could store crash details like the current thread's stack to flash.
 
 This facade module (``pw_assert``) does not provide a backend. See
 :ref:`chapter-pw-assert-basic` for a basic implementation.
+
+.. attention::
+
+  The facade macros (``PW_CRASH`` and related) are expected to behave like they
+  have the ``[[ noreturn ]]`` attribute set. This implies that the backend
+  handler functions, ``PW_HANDLE_*`` defined by the backend, must not return.
+
+  In other words, the device must reboot.
 
 The backend must provide the header
 
@@ -491,13 +443,65 @@ and that header must define the following macros:
     See :ref:`chapter-pw-assert-basic` for one way to combine these arguments
     into a meaningful error message.
 
-.. attention::
+--------------------------
+Frequently asked questions
+--------------------------
 
-  The facade macros (``PW_CRASH`` and related) are expected to behave like they
-  have the ``[[ noreturn ]]`` attribute set. This implies that the backend
-  handler functions, ``PW_HANDLE_*`` defined by the backend, must not return.
+How should objects be asserted against or compared?
+---------------------------------------------------
+Unfortunatly, there is no native mechanism for this, and instead the way to
+assert object states or comparisons is with the normal ``PW_CHECK_*`` macros
+that operate on booleans, ints, and floats.
 
-  In other words, the device must reboot.
+This is due to the requirement of supporting C and also tokenization. It may be
+possible support rich object comparions by defining a convention for
+stringifying objects; however, this hasn't been added yet. Additionally, such a
+mechanism would not work well with tokenization. In particular, it would
+require runtime stringifying arguments and rendering them with ``%s``, which
+leads to binary bloat even with tokenization. So it is likely that a rich
+object assert API won't be added.
+
+Why was the assert facade designed this way?
+--------------------------------------------
+The Pigweed assert API was designed taking into account the needs of several
+past projects the team members were involved with. Based on those experiences,
+the following were key requirements for the API:
+
+1. **C compatibility** - Since asserts are typically invoked from arbitrary
+   contexts, including from vendor or third party code, the assert system must
+   have a C-compatible API. Some API functions working only in C++ is
+   acceptable, as long as the key functions work in C.
+2. **Capturing both expressions and values** - Since asserts can trigger in
+   ways that are not repeatable, it is important to capture rich diagnostic
+   information to help identifying the root cause of the fault. For asserts,
+   this means including the failing expression text, and optionally also
+   capturing failing expression values. For example, instead of capturing an
+   error with the expression (``x < y``), capturing an error with the
+   expression and values(``x < y, with x = 10, y = 0``).
+3. **Tokenization compatible** - It's important that the assert expressions
+   support tokenization; both the expression itself (e.g. ``a < b``) and the
+   message attached to the expression. For example: ``PW_CHECK(ItWorks(), "Ruh
+   roh: %d", some_int)``.
+4. **Customizable assert handling** - Most products need to support custom
+   handling of asserts. In some cases, an assert might trigger printing out
+   details to a UART; in other cases, it might trigger saving a log entry to
+   flash. The assert system must support this customization.
+
+The combination of #1, #2, and #3 led to the structure of the API. In
+particular, the need to support tokenized asserts and the need to support
+capturing values led to the choice of having ``PW_CHECK_INT_LE(a, b)`` instead
+of ``PW_CHECK(a <= b)``. Needing to support tokenization is what drove the
+facade & backend arrangement, since the backend must provide the raw macros for
+asserting in that case, rather than terminating at a C-style API.
+
+Why isn't there a ``PW_CHECK_LE``? Why is the type (e.g. ``INT``) needed?
+-------------------------------------------------------------------------
+The problem with asserts like ``PW_CHECK_LE(a, b)`` instead of
+``PW_CHECK_INT_LE(a, b)`` or ``PW_CHECK_FLOAT_EXACT_LE(a, b)`` is that to
+capture the arguments with the tokenizer, we need to know the types. Using the
+preprocessor, it is impossible to dispatch based on the types of ``a`` and
+``b``, so unfortunately having a separate macro for each of the types commonly
+asserted on is necessary.
 
 -------------
 Compatibility
