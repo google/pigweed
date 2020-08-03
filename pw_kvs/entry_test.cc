@@ -18,13 +18,13 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_kvs/alignment.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/format.h"
-#include "pw_kvs_private/byte_utils.h"
 
 namespace pw::kvs::internal {
 namespace {
@@ -92,20 +92,20 @@ TEST(Entry, Construct_Tombstone) {
 constexpr uint32_t kMagicWithChecksum = 0xad165142;
 constexpr uint32_t kTransactionId1 = 0x96979899;
 
-constexpr auto kKey1 = ByteStr("key45");
-constexpr auto kValue1 = ByteStr("VALUE!");
-constexpr auto kPadding1 = ByteStr("\0\0\0\0\0");
+constexpr auto kKey1 = bytes::String("key45");
+constexpr auto kValue1 = bytes::String("VALUE!");
+constexpr auto kPadding1 = bytes::String("\0\0\0\0\0");
 
-constexpr auto kHeader1 = AsBytes(kMagicWithChecksum,
-                                  uint32_t(0x23aa),          // checksum (CRC16)
-                                  uint8_t(1),                // alignment (32 B)
-                                  uint8_t(kKey1.size()),     // key length
-                                  uint16_t(kValue1.size()),  // value size
-                                  kTransactionId1            // transaction ID
+constexpr auto kHeader1 = bytes::Concat(kMagicWithChecksum,
+                                        uint32_t(0x23aa),  // checksum (CRC16)
+                                        uint8_t(1),        // alignment (32 B)
+                                        uint8_t(kKey1.size()),     // key length
+                                        uint16_t(kValue1.size()),  // value size
+                                        kTransactionId1  // transaction ID
 );
 
-constexpr auto kEntryWithoutPadding1 = AsBytes(kHeader1, kKey1, kValue1);
-constexpr auto kEntry1 = AsBytes(kEntryWithoutPadding1, kPadding1);
+constexpr auto kEntryWithoutPadding1 = bytes::Concat(kHeader1, kKey1, kValue1);
+constexpr auto kEntry1 = bytes::Concat(kEntryWithoutPadding1, kPadding1);
 static_assert(kEntry1.size() == 32);
 
 ChecksumCrc16 default_checksum;
@@ -217,7 +217,7 @@ TEST(ValidEntry, Write) {
             0);
 }
 
-constexpr auto kHeader2 = ByteStr(
+constexpr auto kHeader2 = bytes::String(
     "\x42\x51\x16\xad"  // magic
     "\xba\xb3\x00\x00"  // checksum (CRC16)
     "\x00"              // alignment
@@ -226,12 +226,13 @@ constexpr auto kHeader2 = ByteStr(
     "\x00\x01\x02\x03"  // transaction ID
 );
 
-constexpr auto kKeyAndPadding2 = ByteStr("K\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
+constexpr auto kKeyAndPadding2 =
+    bytes::String("K\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0");
 
 class TombstoneEntryInFlash : public ::testing::Test {
  protected:
   TombstoneEntryInFlash()
-      : flash_(AsBytes(kHeader2, kKeyAndPadding2)), partition_(&flash_) {
+      : flash_(bytes::Concat(kHeader2, kKeyAndPadding2)), partition_(&flash_) {
     EXPECT_EQ(Status::OK, Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
@@ -282,7 +283,7 @@ TEST(TombstoneEntry, Write) {
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(32u, result.size());
   EXPECT_EQ(std::memcmp(&flash.buffer()[16],
-                        AsBytes(kHeader2, kKeyAndPadding2).data(),
+                        bytes::Concat(kHeader2, kKeyAndPadding2).data(),
                         kEntry1.size()),
             0);
 }
@@ -308,7 +309,7 @@ TEST(Entry, Checksum_NoChecksumRequiresZero) {
 
 TEST(Entry, Checksum_ChecksPadding) {
   FakeFlashMemoryBuffer<1024, 4> flash(
-      AsBytes(kHeader1, kKey1, kValue1, ByteStr("\0\0\0\0\1")));
+      bytes::Concat(kHeader1, kKey1, kValue1, bytes::String("\0\0\0\0\1")));
   FlashPartition partition(&flash);
   Entry entry;
   ASSERT_EQ(Status::OK, Entry::Read(partition, 0, kFormats, &entry));
@@ -415,20 +416,21 @@ constexpr auto MakeNewFormatWithSumEntry() {
   constexpr size_t size = AlignUp(kEntryWithoutPadding1.size(), alignment);
 
   constexpr uint32_t checksum =
-      ByteSum(AsBytes(kFormatWithSum.magic)) + 0 /* checksum */ +
+      ByteSum(bytes::Concat(kFormatWithSum.magic)) + 0 /* checksum */ +
       alignment_units + kKey1.size() + kValue1.size() +
-      ByteSum(AsBytes(kTransactionId1 + 1)) + ByteSum(kKey1) +
+      ByteSum(bytes::Concat(kTransactionId1 + 1)) + ByteSum(kKey1) +
       ByteSum(kValue1) + size /* +1 for each byte in the checksum */;
 
   constexpr auto kNewHeader1 =
-      AsBytes(kFormatWithSum.magic,      // magic
-              checksum,                  // checksum (byte sum)
-              alignment_units,           // alignment (in 16 B units)
-              uint8_t(kKey1.size()),     // key length
-              uint16_t(kValue1.size()),  // value size
-              kTransactionId1 + 1);      // transaction ID
+      bytes::Concat(kFormatWithSum.magic,      // magic
+                    checksum,                  // checksum (byte sum)
+                    alignment_units,           // alignment (in 16 B units)
+                    uint8_t(kKey1.size()),     // key length
+                    uint16_t(kValue1.size()),  // value size
+                    kTransactionId1 + 1);      // transaction ID
   constexpr size_t padding = Padding(kEntryWithoutPadding1.size(), alignment);
-  return AsBytes(kNewHeader1, kKey1, kValue1, InitializedBytes<padding>(0));
+  return bytes::Concat(
+      kNewHeader1, kKey1, kValue1, bytes::Initialized<padding>(0));
 }
 
 TEST_F(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSmallerAlignment) {
@@ -518,13 +520,14 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
   EXPECT_EQ(kEntry1.size(), result.size());
 
   constexpr auto kNewHeader1 =
-      AsBytes(no_checksum.magic,         // magic
-              uint32_t(0),               // checksum (none)
-              uint8_t(0),                // alignment (changed to 16 B from 32)
-              uint8_t(kKey1.size()),     // key length
-              uint16_t(kValue1.size()),  // value size
-              kTransactionId1 + 1);      // transaction ID
-  constexpr auto kNewEntry1 = AsBytes(kNewHeader1, kKey1, kValue1, kPadding1);
+      bytes::Concat(no_checksum.magic,  // magic
+                    uint32_t(0),        // checksum (none)
+                    uint8_t(0),         // alignment (changed to 16 B from 32)
+                    uint8_t(kKey1.size()),     // key length
+                    uint16_t(kValue1.size()),  // value size
+                    kTransactionId1 + 1);      // transaction ID
+  constexpr auto kNewEntry1 =
+      bytes::Concat(kNewHeader1, kKey1, kValue1, kPadding1);
 
   EXPECT_EQ(0,
             std::memcmp(&flash_.buffer()[kEntry1.size()],

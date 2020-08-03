@@ -15,11 +15,11 @@
 #include "pw_kvs/internal/entry_cache.h"
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/internal/key_descriptor.h"
-#include "pw_kvs_private/byte_utils.h"
 
 namespace pw::kvs::internal {
 namespace {
@@ -198,13 +198,14 @@ constexpr size_t kSectorSize = 64;
 constexpr uint32_t kMagic = 0xa14ae726;
 // For KVS entry magic value always use a random 32 bit integer rather than a
 // human readable 4 bytes. See pw_kvs/format.h for more information.
-constexpr auto kTheEntry = AsBytes(uint32_t(kMagic),  // magic
-                                   uint32_t(0),       // checksum
-                                   uint8_t(0),        // alignment (16 B)
-                                   uint8_t(sizeof(kTheKey) - 1),  // key length
-                                   uint16_t(0),                   // value size
-                                   uint32_t(123),  // transaction ID
-                                   ByteStr(kTheKey));
+constexpr auto kTheEntry =
+    bytes::Concat(uint32_t(kMagic),              // magic
+                  uint32_t(0),                   // checksum
+                  uint8_t(0),                    // alignment (16 B)
+                  uint8_t(sizeof(kTheKey) - 1),  // key length
+                  uint16_t(0),                   // value size
+                  uint32_t(123),                 // transaction ID
+                  bytes::String(kTheKey));
 constexpr std::array<byte, kSectorSize - kTheEntry.size() % kSectorSize>
     kPadding1{};
 constexpr size_t kSize1 = kTheEntry.size() + kPadding1.size();
@@ -215,13 +216,13 @@ constexpr char kCollision2[] = "axzzK";
 // For KVS entry magic value always use a random 32 bit integer rather than a
 // human readable 4 bytes. See pw_kvs/format.h for more information.
 constexpr auto kCollisionEntry =
-    AsBytes(uint32_t(kMagic),                  // magic
-            uint32_t(0),                       // checksum
-            uint8_t(0),                        // alignment (16 B)
-            uint8_t(sizeof(kCollision1) - 1),  // key length
-            uint16_t(0),                       // value size
-            uint32_t(123),                     // transaction ID
-            ByteStr(kCollision1));
+    bytes::Concat(uint32_t(kMagic),                  // magic
+                  uint32_t(0),                       // checksum
+                  uint8_t(0),                        // alignment (16 B)
+                  uint8_t(sizeof(kCollision1) - 1),  // key length
+                  uint16_t(0),                       // value size
+                  uint32_t(123),                     // transaction ID
+                  bytes::String(kCollision1));
 constexpr std::array<byte, kSectorSize - kCollisionEntry.size() % kSectorSize>
     kPadding2{};
 constexpr size_t kSize2 = kCollisionEntry.size() + kPadding2.size();
@@ -229,13 +230,13 @@ constexpr size_t kSize2 = kCollisionEntry.size() + kPadding2.size();
 // For KVS entry magic value always use a random 32 bit integer rather than a
 // human readable 4 bytes. See pw_kvs/format.h for more information.
 constexpr auto kDeletedEntry =
-    AsBytes(uint32_t(kMagic),                 // magic
-            uint32_t(0),                      // checksum
-            uint8_t(0),                       // alignment (16 B)
-            uint8_t(sizeof("delorted") - 1),  // key length
-            uint16_t(0xffff),                 // value size (deleted)
-            uint32_t(123),                    // transaction ID
-            ByteStr("delorted"));
+    bytes::Concat(uint32_t(kMagic),                 // magic
+                  uint32_t(0),                      // checksum
+                  uint8_t(0),                       // alignment (16 B)
+                  uint8_t(sizeof("delorted") - 1),  // key length
+                  uint16_t(0xffff),                 // value size (deleted)
+                  uint32_t(123),                    // transaction ID
+                  bytes::String("delorted"));
 constexpr std::array<byte, kSectorSize - kDeletedEntry.size() % kSectorSize>
     kPadding3{};
 
@@ -248,14 +249,14 @@ class InitializedEntryCache : public EmptyEntryCache {
   static_assert(Hash(kCollision1) == Hash(kCollision2));
 
   InitializedEntryCache()
-      : flash_(AsBytes(kTheEntry,
-                       kPadding1,
-                       kTheEntry,
-                       kPadding1,
-                       kCollisionEntry,
-                       kPadding2,
-                       kDeletedEntry,
-                       kPadding3)),
+      : flash_(bytes::Concat(kTheEntry,
+                             kPadding1,
+                             kTheEntry,
+                             kPadding1,
+                             kCollisionEntry,
+                             kPadding2,
+                             kDeletedEntry,
+                             kPadding3)),
         partition_(&flash_),
         sectors_(sector_descriptors_, partition_, nullptr),
         format_(kFormat) {

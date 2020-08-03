@@ -18,6 +18,7 @@ pw_auto_add_simple_module(pw_kvs
     pw_status
   PRIVATE_DEPS
     pw_assert
+    pw_bytes
     pw_checksum
     pw_log
     pw_string

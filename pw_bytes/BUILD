@@ -28,6 +28,7 @@ pw_cc_library(
         "byte_builder.cc",
     ],
     hdrs = [
+        "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
         "public/pw_bytes/span.h",
     ],
@@ -36,6 +37,15 @@ pw_cc_library(
         "//pw_preprocessor",
         "//pw_span",
         "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "array_test",
+    srcs = ["array_test.cc"],
+    deps = [
+        ":pw_bytes",
+        "//pw_unit_test",
     ],
 )
 

@@ -18,13 +18,13 @@
 #include <span>
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_checksum/ccitt_crc16.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
-#include "pw_kvs_private/byte_utils.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"

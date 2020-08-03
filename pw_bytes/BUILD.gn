@@ -27,6 +27,7 @@ config("default_config") {
 pw_source_set("pw_bytes") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_bytes/array.h",
     "public/pw_bytes/byte_builder.h",
     "public/pw_bytes/span.h",
   ]
@@ -39,7 +40,10 @@ pw_source_set("pw_bytes") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":byte_builder_test" ]
+  tests = [
+    ":array",
+    ":byte_builder_test",
+  ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
     "$dir_pw_span:tests",
@@ -50,6 +54,11 @@ pw_test_group("tests") {
 pw_test("byte_builder_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "byte_builder_test.cc" ]
+}
+
+pw_test("array") {
+  deps = [ ":pw_bytes" ]
+  sources = [ "array_test.cc" ]
 }
 
 pw_doc_group("docs") {

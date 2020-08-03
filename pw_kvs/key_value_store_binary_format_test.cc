@@ -17,12 +17,12 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/format.h"
 #include "pw_kvs/internal/hash.h"
 #include "pw_kvs/key_value_store.h"
-#include "pw_kvs_private/byte_utils.h"
 
 namespace pw::kvs {
 namespace {
@@ -80,15 +80,16 @@ constexpr auto MakeValidEntry(uint32_t magic,
                               const std::array<byte, kValueSize>& value) {
   constexpr size_t kKeyLength = kKeyLengthWithNull - 1;
 
-  auto data = AsBytes(magic,
-                      uint32_t(0),
-                      uint8_t(kAlignmentBytes / 16 - 1),
-                      uint8_t(kKeyLength),
-                      uint16_t(kValueSize),
-                      id,
-                      ByteStr(key),
-                      std::span(value),
-                      EntryPadding<kAlignmentBytes, kKeyLength, kValueSize>());
+  auto data =
+      bytes::Concat(magic,
+                    uint32_t(0),
+                    uint8_t(kAlignmentBytes / 16 - 1),
+                    uint8_t(kKeyLength),
+                    uint16_t(kValueSize),
+                    id,
+                    bytes::String(key),
+                    std::span(value),
+                    EntryPadding<kAlignmentBytes, kKeyLength, kValueSize>());
 
   // Calculate the checksum
   uint32_t checksum = kChecksum(data, 0);
@@ -110,14 +111,14 @@ constexpr auto MakeDeletedEntry(uint32_t magic,
                                 const char (&key)[kKeyLengthWithNull]) {
   constexpr size_t kKeyLength = kKeyLengthWithNull - 1;
 
-  auto data = AsBytes(magic,
-                      uint32_t(0),
-                      uint8_t(kAlignmentBytes / 16 - 1),
-                      uint8_t(kKeyLength),
-                      uint16_t(0xFFFF),
-                      id,
-                      ByteStr(key),
-                      EntryPadding<kAlignmentBytes, kKeyLength>());
+  auto data = bytes::Concat(magic,
+                            uint32_t(0),
+                            uint8_t(kAlignmentBytes / 16 - 1),
+                            uint8_t(kKeyLength),
+                            uint16_t(0xFFFF),
+                            id,
+                            bytes::String(key),
+                            EntryPadding<kAlignmentBytes, kKeyLength>());
 
   // Calculate the checksum
   uint32_t checksum = kChecksum(data, 0);
@@ -154,12 +155,16 @@ constexpr Options kRecoveryLazyGcOptions{
     .verify_on_write = true,
 };
 
-constexpr auto kEntry1 = MakeValidEntry(kMagic, 1, "key1", ByteStr("value1"));
-constexpr auto kEntry2 = MakeValidEntry(kMagic, 3, "k2", ByteStr("value2"));
-constexpr auto kEntry3 = MakeValidEntry(kMagic, 4, "k3y", ByteStr("value3"));
-constexpr auto kEntry4 = MakeValidEntry(kMagic, 5, "4k", ByteStr("value4"));
+constexpr auto kEntry1 =
+    MakeValidEntry(kMagic, 1, "key1", bytes::String("value1"));
+constexpr auto kEntry2 =
+    MakeValidEntry(kMagic, 3, "k2", bytes::String("value2"));
+constexpr auto kEntry3 =
+    MakeValidEntry(kMagic, 4, "k3y", bytes::String("value3"));
+constexpr auto kEntry4 =
+    MakeValidEntry(kMagic, 5, "4k", bytes::String("value4"));
 
-constexpr auto kEmpty32Bytes = InitializedBytes<32>(0xff);
+constexpr auto kEmpty32Bytes = bytes::Initialized<32>(0xff);
 static_assert(sizeof(kEmpty32Bytes) == 32);
 
 EntryFormat default_format = {.magic = kMagic, .checksum = &default_checksum};
@@ -182,7 +187,7 @@ class KvsErrorHandling : public ::testing::Test {
 };
 
 TEST_F(KvsErrorHandling, Init_Ok) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   EXPECT_EQ(Status::OK, kvs_.Init());
   byte buffer[64];
@@ -191,7 +196,7 @@ TEST_F(KvsErrorHandling, Init_Ok) {
 }
 
 TEST_F(KvsErrorHandling, Init_DuplicateEntries_ReturnsDataLossButReadsEntry) {
-  InitFlashTo(AsBytes(kEntry1, kEntry1));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry1));
 
   EXPECT_EQ(Status::DATA_LOSS, kvs_.Init());
   byte buffer[64];
@@ -202,7 +207,7 @@ TEST_F(KvsErrorHandling, Init_DuplicateEntries_ReturnsDataLossButReadsEntry) {
 TEST_F(KvsErrorHandling, Init_CorruptEntry_FindsSubsequentValidEntry) {
   // Corrupt each byte in the first entry once.
   for (size_t i = 0; i < kEntry1.size(); ++i) {
-    InitFlashTo(AsBytes(kEntry1, kEntry2));
+    InitFlashTo(bytes::Concat(kEntry1, kEntry2));
     flash_.buffer()[i] = byte(int(flash_.buffer()[i]) + 1);
 
     ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
@@ -219,7 +224,7 @@ TEST_F(KvsErrorHandling, Init_CorruptEntry_FindsSubsequentValidEntry) {
 }
 
 TEST_F(KvsErrorHandling, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2, kEntry3, kEntry4));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2, kEntry3, kEntry4));
 
   // Corrupt the first and third entries.
   flash_.buffer()[9] = byte(0xef);
@@ -242,7 +247,7 @@ TEST_F(KvsErrorHandling, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
 }
 
 TEST_F(KvsErrorHandling, Init_ReadError_InitializedWithSingleEntryError) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   flash_.InjectReadError(
       FlashError::InRange(Status::UNAUTHENTICATED, kEntry1.size()));
@@ -252,7 +257,7 @@ TEST_F(KvsErrorHandling, Init_ReadError_InitializedWithSingleEntryError) {
 }
 
 TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   // Corrupt 3 of the 4 512-byte flash sectors. Corrupt sectors should be
   // unwritable, and the KVS must maintain one empty sector at all times.
@@ -263,8 +268,9 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
   flash_.buffer()[1025] = byte(0xef);
 
   ASSERT_EQ(Status::DATA_LOSS, kvs_.Init());
-  EXPECT_EQ(Status::FAILED_PRECONDITION, kvs_.Put("hello", ByteStr("world")));
-  EXPECT_EQ(Status::FAILED_PRECONDITION, kvs_.Put("a", ByteStr("b")));
+  EXPECT_EQ(Status::FAILED_PRECONDITION,
+            kvs_.Put("hello", bytes::String("world")));
+  EXPECT_EQ(Status::FAILED_PRECONDITION, kvs_.Put("a", bytes::String("b")));
 
   // Existing valid entries should still be readable.
   EXPECT_EQ(1u, kvs_.size());
@@ -279,7 +285,7 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldBeUnwritable) {
 }
 
 TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   // Corrupt all of the 4 512-byte flash sectors. Leave the pre-init entries
   // intact. The KVS should be unavailable because recovery is set to full
@@ -302,7 +308,7 @@ TEST_F(KvsErrorHandling, Init_CorruptSectors_ShouldRecoverOne) {
 // result in missing keys that are actually written after a write error in
 // flash.
 TEST_F(KvsErrorHandling, DISABLED_Init_OkWithWriteErrorOnFlash) {
-  InitFlashTo(AsBytes(kEntry1, kEmpty32Bytes, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEmpty32Bytes, kEntry2));
 
   EXPECT_EQ(Status::DATA_LOSS, kvs_.Init());
   byte buffer[64];
@@ -319,11 +325,11 @@ TEST_F(KvsErrorHandling, DISABLED_Init_OkWithWriteErrorOnFlash) {
 
 TEST_F(KvsErrorHandling, Init_CorruptKey_RevertsToPreviousVersion) {
   constexpr auto kVersion7 =
-      MakeValidEntry(kMagic, 7, "my_key", ByteStr("version 7"));
+      MakeValidEntry(kMagic, 7, "my_key", bytes::String("version 7"));
   constexpr auto kVersion8 =
-      MakeValidEntry(kMagic, 8, "my_key", ByteStr("version 8"));
+      MakeValidEntry(kMagic, 8, "my_key", bytes::String("version 8"));
 
-  InitFlashTo(AsBytes(kVersion7, kVersion8));
+  InitFlashTo(bytes::Concat(kVersion7, kVersion8));
 
   // Corrupt a byte of entry version 8 (addresses 32-63).
   flash_.buffer()[34] = byte(0xef);
@@ -349,7 +355,7 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   ASSERT_EQ(Status::OK, kvs_.Init());
   flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
 
-  EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
+  EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", bytes::String("value1")));
 
   EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", std::span<byte>()).status());
   ASSERT_TRUE(kvs_.empty());
@@ -361,7 +367,7 @@ TEST_F(KvsErrorHandling, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
   // The bytes were marked used, so a new key should not overlap with the bytes
   // from the failed Put.
-  EXPECT_EQ(Status::OK, kvs_.Put("key1", ByteStr("value1")));
+  EXPECT_EQ(Status::OK, kvs_.Put("key1", bytes::String("value1")));
 
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (32u * kvs_.redundancy()));
@@ -389,7 +395,7 @@ class KvsErrorRecovery : public ::testing::Test {
 };
 
 TEST_F(KvsErrorRecovery, Init_Ok) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   EXPECT_EQ(Status::OK, kvs_.Init());
   byte buffer[64];
@@ -398,7 +404,7 @@ TEST_F(KvsErrorRecovery, Init_Ok) {
 }
 
 TEST_F(KvsErrorRecovery, Init_DuplicateEntries_RecoversDuringInit) {
-  InitFlashTo(AsBytes(kEntry1, kEntry1));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry1));
 
   EXPECT_EQ(Status::OK, kvs_.Init());
   auto stats = kvs_.GetStorageStats();
@@ -412,7 +418,7 @@ TEST_F(KvsErrorRecovery, Init_DuplicateEntries_RecoversDuringInit) {
 TEST_F(KvsErrorRecovery, Init_CorruptEntry_FindsSubsequentValidEntry) {
   // Corrupt each byte in the first entry once.
   for (size_t i = 0; i < kEntry1.size(); ++i) {
-    InitFlashTo(AsBytes(kEntry1, kEntry2));
+    InitFlashTo(bytes::Concat(kEntry1, kEntry2));
     flash_.buffer()[i] = byte(int(flash_.buffer()[i]) + 1);
 
     ASSERT_EQ(Status::OK, kvs_.Init());
@@ -430,7 +436,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptEntry_FindsSubsequentValidEntry) {
 }
 
 TEST_F(KvsErrorRecovery, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2, kEntry3, kEntry4));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2, kEntry3, kEntry4));
 
   // Corrupt the first and third entries.
   flash_.buffer()[9] = byte(0xef);
@@ -454,7 +460,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptEntry_CorrectlyAccountsForSectorSize) {
 }
 
 TEST_F(KvsErrorRecovery, Init_ReadError_InitializedWithSingleEntryError) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   flash_.InjectReadError(
       FlashError::InRange(Status::UNAUTHENTICATED, kEntry1.size()));
@@ -470,7 +476,7 @@ TEST_F(KvsErrorRecovery, Init_ReadError_InitializedWithSingleEntryError) {
 }
 
 TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldBeUnwritable) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   // Corrupt 3 of the 4 512-byte flash sectors. Corrupt sectors should be
   // recovered via garbage collection.
@@ -479,8 +485,8 @@ TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldBeUnwritable) {
   flash_.buffer()[1025] = byte(0xef);
 
   ASSERT_EQ(Status::OK, kvs_.Init());
-  EXPECT_EQ(Status::OK, kvs_.Put("hello", ByteStr("world")));
-  EXPECT_EQ(Status::OK, kvs_.Put("a", ByteStr("b")));
+  EXPECT_EQ(Status::OK, kvs_.Put("hello", bytes::String("world")));
+  EXPECT_EQ(Status::OK, kvs_.Put("a", bytes::String("b")));
 
   // Existing valid entries should still be readable.
   EXPECT_EQ(3u, kvs_.size());
@@ -496,7 +502,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldBeUnwritable) {
 }
 
 TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldRecoverOne) {
-  InitFlashTo(AsBytes(kEntry1, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEntry2));
 
   // Corrupt all of the 4 512-byte flash sectors. Leave the pre-init entries
   // intact. As part of recovery all corrupt sectors should get garbage
@@ -520,7 +526,7 @@ TEST_F(KvsErrorRecovery, Init_CorruptSectors_ShouldRecoverOne) {
 // result in missing keys that are actually written after a write error in
 // flash.
 TEST_F(KvsErrorRecovery, DISABLED_Init_OkWithWriteErrorOnFlash) {
-  InitFlashTo(AsBytes(kEntry1, kEmpty32Bytes, kEntry2));
+  InitFlashTo(bytes::Concat(kEntry1, kEmpty32Bytes, kEntry2));
 
   EXPECT_EQ(Status::OK, kvs_.Init());
   byte buffer[64];
@@ -539,11 +545,11 @@ TEST_F(KvsErrorRecovery, DISABLED_Init_OkWithWriteErrorOnFlash) {
 
 TEST_F(KvsErrorRecovery, Init_CorruptKey_RevertsToPreviousVersion) {
   constexpr auto kVersion7 =
-      MakeValidEntry(kMagic, 7, "my_key", ByteStr("version 7"));
+      MakeValidEntry(kMagic, 7, "my_key", bytes::String("version 7"));
   constexpr auto kVersion8 =
-      MakeValidEntry(kMagic, 8, "my_key", ByteStr("version 8"));
+      MakeValidEntry(kMagic, 8, "my_key", bytes::String("version 8"));
 
-  InitFlashTo(AsBytes(kVersion7, kVersion8));
+  InitFlashTo(bytes::Concat(kVersion7, kVersion8));
 
   // Corrupt a byte of entry version 8 (addresses 32-63).
   flash_.buffer()[34] = byte(0xef);
@@ -569,7 +575,7 @@ TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   ASSERT_EQ(Status::OK, kvs_.Init());
   flash_.InjectWriteError(FlashError::Unconditional(Status::UNAVAILABLE, 1));
 
-  EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", ByteStr("value1")));
+  EXPECT_EQ(Status::UNAVAILABLE, kvs_.Put("key1", bytes::String("value1")));
   EXPECT_EQ(true, kvs_.error_detected());
 
   EXPECT_EQ(Status::NOT_FOUND, kvs_.Get("key1", std::span<byte>()).status());
@@ -584,7 +590,7 @@ TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
 
   // The bytes were marked used, so a new key should not overlap with the bytes
   // from the failed Put.
-  EXPECT_EQ(Status::OK, kvs_.Put("key1", ByteStr("value1")));
+  EXPECT_EQ(Status::OK, kvs_.Put("key1", bytes::String("value1")));
 
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (32u * kvs_.redundancy()));
@@ -608,22 +614,22 @@ constexpr uint32_t AltChecksum(std::span<const byte> data, uint32_t state) {
 ChecksumFunction<uint32_t> alt_checksum(AltChecksum);
 
 constexpr auto kAltEntry =
-    MakeValidEntry<AltChecksum>(kAltMagic, 32, "A Key", ByteStr("XD"));
+    MakeValidEntry<AltChecksum>(kAltMagic, 32, "A Key", bytes::String("XD"));
 
 constexpr uint32_t NoChecksum(std::span<const byte>, uint32_t) { return 0; }
 // For KVS magic value always use a random 32 bit integer rather than a
 // human readable 4 bytes. See pw_kvs/format.h for more information.
 constexpr uint32_t kNoChecksumMagic = 0xd49ba138;
 
-constexpr auto kNoChecksumEntry =
-    MakeValidEntry<NoChecksum>(kNoChecksumMagic, 64, "kee", ByteStr("O_o"));
+constexpr auto kNoChecksumEntry = MakeValidEntry<NoChecksum>(
+    kNoChecksumMagic, 64, "kee", bytes::String("O_o"));
 
 constexpr auto kDeletedEntry =
     MakeDeletedEntry<AltChecksum>(kAltMagic, 128, "gone");
 
 class InitializedRedundantMultiMagicKvs : public ::testing::Test {
  protected:
-  static constexpr auto kInitialContents = AsBytes(
+  static constexpr auto kInitialContents = bytes::Concat(
       kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3, kDeletedEntry);
 
   InitializedRedundantMultiMagicKvs()
@@ -753,7 +759,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, SingleReadErrors) {
 TEST_F(InitializedRedundantMultiMagicKvs, SingleWriteError) {
   flash_.InjectWriteError(FlashError::Unconditional(Status::INTERNAL, 1, 1));
 
-  EXPECT_EQ(Status::INTERNAL, kvs_.Put("new key", ByteStr("abcd?")));
+  EXPECT_EQ(Status::INTERNAL, kvs_.Put("new key", bytes::String("abcd?")));
 
   EXPECT_EQ(true, kvs_.error_detected());
 
@@ -809,10 +815,10 @@ TEST_F(InitializedRedundantMultiMagicKvs, DataLossAfterLosingBothCopies) {
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
-  EXPECT_EQ(Status::OK, kvs_.Put("new key", ByteStr("abcd?")));
+  EXPECT_EQ(Status::OK, kvs_.Put("new key", bytes::String("abcd?")));
 
   constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 129, "new key", ByteStr("abcd?"));
+      MakeValidEntry(kMagic, 129, "new key", bytes::String("abcd?"));
   EXPECT_EQ(0,
             std::memcmp(kNewEntry.data(),
                         flash_.buffer().data() + kInitialContents.size(),
@@ -821,10 +827,10 @@ TEST_F(InitializedRedundantMultiMagicKvs, PutNewEntry_UsesFirstFormat) {
 }
 
 TEST_F(InitializedRedundantMultiMagicKvs, PutExistingEntry_UsesFirstFormat) {
-  EXPECT_EQ(Status::OK, kvs_.Put("A Key", ByteStr("New value!")));
+  EXPECT_EQ(Status::OK, kvs_.Put("A Key", bytes::String("New value!")));
 
   constexpr auto kNewEntry =
-      MakeValidEntry(kMagic, 129, "A Key", ByteStr("New value!"));
+      MakeValidEntry(kMagic, 129, "A Key", bytes::String("New value!"));
   EXPECT_EQ(0,
             std::memcmp(kNewEntry.data(),
                         flash_.buffer().data() + kInitialContents.size(),
@@ -862,7 +868,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, UpdateEntryFormat) {
 class InitializedMultiMagicKvs : public ::testing::Test {
  protected:
   static constexpr auto kInitialContents =
-      AsBytes(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
+      bytes::Concat(kNoChecksumEntry, kEntry1, kAltEntry, kEntry2, kEntry3);
 
   InitializedMultiMagicKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),
@@ -919,7 +925,7 @@ TEST_F(InitializedMultiMagicKvs, UpdateEntryFormat) {
 class InitializedRedundantLazyRecoveryKvs : public ::testing::Test {
  protected:
   static constexpr auto kInitialContents =
-      AsBytes(kEntry1, kEntry2, kEntry3, kEntry4);
+      bytes::Concat(kEntry1, kEntry2, kEntry3, kEntry4);
 
   InitializedRedundantLazyRecoveryKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),
@@ -1011,7 +1017,7 @@ TEST_F(InitializedRedundantLazyRecoveryKvs, TwoSectorsCorruptWithGoodEntries) {
 class InitializedLazyRecoveryKvs : public ::testing::Test {
  protected:
   static constexpr auto kInitialContents =
-      AsBytes(kEntry1, kEntry2, kEntry3, kEntry4);
+      bytes::Concat(kEntry1, kEntry2, kEntry3, kEntry4);
 
   InitializedLazyRecoveryKvs()
       : flash_(internal::Entry::kMinAlignmentBytes),

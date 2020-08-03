@@ -168,7 +168,7 @@ pw_source_set("key_value_store_initialized_test") {
     ":crc16",
     ":flash_test_partition",
     ":pw_kvs",
-    ":test_utils",
+    dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_log,
     dir_pw_unit_test,
@@ -183,12 +183,6 @@ pw_source_set("test_key_value_store_test") {
     dir_pw_unit_test,
   ]
   sources = [ "test_key_value_store_test.cc" ]
-}
-
-pw_source_set("test_utils") {
-  public_configs = [ ":default_config" ]
-  public = [ "pw_kvs_private/byte_utils.h" ]
-  visibility = [ ":*" ]
 }
 
 pw_source_set("test_partition") {
@@ -244,7 +238,7 @@ pw_test("entry_test") {
     ":crc16",
     ":fake_flash",
     ":pw_kvs",
-    ":test_utils",
+    dir_pw_bytes,
   ]
   sources = [ "entry_test.cc" ]
 }
@@ -253,7 +247,7 @@ pw_test("entry_cache_test") {
   deps = [
     ":fake_flash",
     ":pw_kvs",
-    ":test_utils",
+    dir_pw_bytes,
   ]
   sources = [ "entry_cache_test.cc" ]
 }
@@ -290,7 +284,7 @@ pw_test("key_value_store_test") {
     ":crc16",
     ":fake_flash",
     ":pw_kvs",
-    ":test_utils",
+    dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_log,
   ]
@@ -323,7 +317,7 @@ pw_test("key_value_store_binary_format_test") {
     ":crc16",
     ":fake_flash",
     ":pw_kvs",
-    ":test_utils",
+    dir_pw_bytes,
     dir_pw_log,
   ]
   sources = [ "key_value_store_binary_format_test.cc" ]

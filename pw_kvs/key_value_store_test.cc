@@ -28,12 +28,12 @@
 #endif  // DUMP_KVS_STATE_TO_FILE
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_checksum/ccitt_crc16.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
-#include "pw_kvs_private/byte_utils.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
@@ -48,12 +48,16 @@ using std::byte;
 constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
-// Test the functions in byte_utils.h. Create a byte array with AsBytes and
-// ByteStr and check that its contents are correct.
+// Test the functions in byte_utils.h. Create a byte array with bytes::Concat
+// and bytes::String and check that its contents are correct.
 constexpr std::array<char, 2> kTestArray = {'a', 'b'};
 
-constexpr auto kAsBytesTest = AsBytes(
-    'a', uint16_t(1), uint8_t(23), kTestArray, ByteStr("c"), uint64_t(-1));
+constexpr auto kAsBytesTest = bytes::Concat('a',
+                                            uint16_t(1),
+                                            uint8_t(23),
+                                            kTestArray,
+                                            bytes::String("c"),
+                                            uint64_t(-1));
 
 static_assert(kAsBytesTest.size() == 15);
 static_assert(kAsBytesTest[0] == std::byte{'a'});

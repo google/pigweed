@@ -14,6 +14,7 @@
 
 pw_auto_add_simple_module(pw_bytes
   PUBLIC_DEPS
+    pw_polyfill.overrides
     pw_preprocessor
     pw_span
     pw_status
