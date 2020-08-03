@@ -129,7 +129,9 @@ constexpr auto MakeDeletedEntry(uint32_t magic,
   return data;
 }
 
-constexpr uint32_t kMagic = 0xc001beef;
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr uint32_t kMagic = 0x5ab2f0b5;
 
 constexpr Options kNoGcOptions{
     .gc_on_write = GargbageCollectOnWrite::kDisabled,
@@ -592,7 +594,9 @@ TEST_F(KvsErrorRecovery, Put_WriteFailure_EntryNotAddedButBytesMarkedWritten) {
   EXPECT_EQ(stats.missing_redundant_entries_recovered, 0u);
 }
 
-constexpr uint32_t kAltMagic = 0xbadD00D;
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr uint32_t kAltMagic = 0x41a2db83;
 
 constexpr uint32_t AltChecksum(std::span<const byte> data, uint32_t state) {
   for (byte b : data) {
@@ -607,7 +611,9 @@ constexpr auto kAltEntry =
     MakeValidEntry<AltChecksum>(kAltMagic, 32, "A Key", ByteStr("XD"));
 
 constexpr uint32_t NoChecksum(std::span<const byte>, uint32_t) { return 0; }
-constexpr uint32_t kNoChecksumMagic = 0x6000061e;
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr uint32_t kNoChecksumMagic = 0xd49ba138;
 
 constexpr auto kNoChecksumEntry =
     MakeValidEntry<NoChecksum>(kNoChecksumMagic, 64, "kee", ByteStr("O_o"));

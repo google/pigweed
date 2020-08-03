@@ -85,7 +85,9 @@ class KvsTester {
                    kParams.partition_start_sector,
                    kParams.partition_sector_count,
                    kParams.partition_alignment),
-        kvs_(&partition_, {.magic = 0xBAD'C0D3, .checksum = nullptr}) {
+        // For KVS magic value always use a random 32 bit integer rather than a
+        // human readable 4 bytes. See pw_kvs/format.h for more information.
+        kvs_(&partition_, {.magic = 0xc857e51d, .checksum = nullptr}) {
     EXPECT_EQ(Status::OK, partition_.Erase());
     Status result = kvs_.Init();
     EXPECT_EQ(Status::OK, result);

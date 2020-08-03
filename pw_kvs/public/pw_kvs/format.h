@@ -26,6 +26,9 @@ namespace internal {
 
 // Disk format of the header used for each key-value entry.
 struct EntryHeader {
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h::EntryFormat for more
+  // information.
   uint32_t magic;
 
   // The checksum of the entire entry, including the header, key, value, and

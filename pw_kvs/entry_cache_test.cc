@@ -195,10 +195,12 @@ TEST_F(EmptyEntryCache, Iterator_Const_CanBeAssignedFromMutable) {
 }
 
 constexpr size_t kSectorSize = 64;
-
-constexpr auto kTheEntry = AsBytes(uint32_t(12345),  // magic
-                                   uint32_t(0),      // checksum
-                                   uint8_t(0),       // alignment (16 B)
+constexpr uint32_t kMagic = 0xa14ae726;
+// For KVS entry magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr auto kTheEntry = AsBytes(uint32_t(kMagic),  // magic
+                                   uint32_t(0),       // checksum
+                                   uint8_t(0),        // alignment (16 B)
                                    uint8_t(sizeof(kTheKey) - 1),  // key length
                                    uint16_t(0),                   // value size
                                    uint32_t(123),  // transaction ID
@@ -210,8 +212,10 @@ constexpr size_t kSize1 = kTheEntry.size() + kPadding1.size();
 constexpr char kCollision1[] = "9FDC";
 constexpr char kCollision2[] = "axzzK";
 
+// For KVS entry magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
 constexpr auto kCollisionEntry =
-    AsBytes(uint32_t(12345),                   // magic
+    AsBytes(uint32_t(kMagic),                  // magic
             uint32_t(0),                       // checksum
             uint8_t(0),                        // alignment (16 B)
             uint8_t(sizeof(kCollision1) - 1),  // key length
@@ -222,8 +226,10 @@ constexpr std::array<byte, kSectorSize - kCollisionEntry.size() % kSectorSize>
     kPadding2{};
 constexpr size_t kSize2 = kCollisionEntry.size() + kPadding2.size();
 
+// For KVS entry magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
 constexpr auto kDeletedEntry =
-    AsBytes(uint32_t(12345),                  // magic
+    AsBytes(uint32_t(kMagic),                 // magic
             uint32_t(0),                      // checksum
             uint8_t(0),                       // alignment (16 B)
             uint8_t(sizeof("delorted") - 1),  // key length
@@ -233,7 +239,9 @@ constexpr auto kDeletedEntry =
 constexpr std::array<byte, kSectorSize - kDeletedEntry.size() % kSectorSize>
     kPadding3{};
 
-constexpr EntryFormat kFormat{.magic = uint32_t(12345), .checksum = nullptr};
+// For KVS entry magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat kFormat{.magic = uint32_t(kMagic), .checksum = nullptr};
 
 class InitializedEntryCache : public EmptyEntryCache {
  protected:

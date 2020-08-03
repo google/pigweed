@@ -158,7 +158,9 @@ FlashPartition large_test_partition(&large_test_flash,
 constexpr std::array<const char*, 3> keys{"TestKey1", "Key2", "TestKey3"};
 
 ChecksumCrc16 checksum;
-constexpr EntryFormat default_format{.magic = 0xBAD'C0D3,
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat default_format{.magic = 0xa6cb3c16,
                                      .checksum = &checksum};
 
 }  // namespace
@@ -168,7 +170,9 @@ TEST(InitCheck, TooFewSectors) {
   FakeFlashMemoryBuffer<4 * 1024, 1> test_flash(16);
   FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat format{.magic = 0x89bb14d2, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&test_partition,
                                                           format);
 
@@ -182,7 +186,9 @@ TEST(InitCheck, ZeroSectors) {
   // Set FlashPartition to have 0 sectors.
   FlashPartition test_partition(&test_flash, 0, 0);
 
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat format{.magic = 0xd1da57c1, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&test_partition,
                                                           format);
 
@@ -196,7 +202,9 @@ TEST(InitCheck, TooManySectors) {
   // Set FlashPartition to have 0 sectors.
   FlashPartition test_partition(&test_flash, 0, test_flash.sector_count());
 
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat format{.magic = 0x610f6d17, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, 2> kvs(&test_partition, format);
 
   EXPECT_EQ(kvs.Init(), Status::FAILED_PRECONDITION);
@@ -218,8 +226,10 @@ TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
     DBG("xxx                                      xxxx");
     DBG("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
 
-    // Create and initialize the KVS.
-    constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+    // Create and initialize the KVS. For KVS magic value always use a random 32
+    // bit integer rather than a human readable 4 bytes. See pw_kvs/format.h for
+    // more information.
+    constexpr EntryFormat format{.magic = 0x83a9257, .checksum = nullptr};
     KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                             format);
     ASSERT_OK(kvs.Init());
@@ -257,8 +267,10 @@ TEST(InMemoryKvs, WritingMultipleKeysIncreasesSize) {
   Flash flash;
   ASSERT_OK(flash.partition.Erase());
 
-  // Create and initialize the KVS.
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // Create and initialize the KVS. For KVS magic value always use a random 32
+  // bit integer rather than a human readable 4 bytes. See pw_kvs/format.h for
+  // more information.
+  constexpr EntryFormat format{.magic = 0x2ed3a058, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());
@@ -284,7 +296,9 @@ TEST(InMemoryKvs, WriteAndReadOneKey) {
   ASSERT_OK(flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat format{.magic = 0x5d70896, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());
@@ -344,7 +358,9 @@ TEST(InMemoryKvs, Basic) {
   ASSERT_EQ(Status::OK, flash.partition.Erase());
 
   // Create and initialize the KVS.
-  constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat format{.magic = 0x7bf19895, .checksum = nullptr};
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
                                                           format);
   ASSERT_OK(kvs.Init());

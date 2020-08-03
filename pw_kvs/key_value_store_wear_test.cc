@@ -25,7 +25,9 @@
 namespace pw::kvs {
 namespace {
 
-constexpr EntryFormat format{.magic = 0xBAD'C0D3, .checksum = nullptr};
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat format{.magic = 0x1bce4ad5, .checksum = nullptr};
 
 class WearTest : public ::testing::Test {
  protected:

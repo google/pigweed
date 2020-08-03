@@ -41,8 +41,10 @@ ChecksumCrc16 checksum;
 
 class EmptyInitializedKvs : public ::testing::Test {
  protected:
+  // For KVS magic value always use a random 32 bit integer rather than a
+  // human readable 4 bytes. See pw_kvs/format.h for more information.
   EmptyInitializedKvs()
-      : kvs_(&test_partition, {.magic = 0xBAD'C0D3, .checksum = &checksum}) {
+      : kvs_(&test_partition, {.magic = 0x873a9b50, .checksum = &checksum}) {
     test_partition.Erase(0, test_partition.sector_count());
     ASSERT_EQ(Status::OK, kvs_.Init());
   }

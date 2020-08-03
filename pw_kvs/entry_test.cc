@@ -32,7 +32,9 @@ namespace {
 using std::byte;
 using std::string_view;
 
-constexpr EntryFormat kFormat{0xbeef, nullptr};
+// For magic value always use a random 32 bit integer rather than a human
+// readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat kFormat{0x961c2ff9, nullptr};
 
 TEST(Entry, Size_RoundsUpToAlignment) {
   // Use FakeFlashMemory, rather than FakeFlashMemoryBuffer, so the class gets
@@ -85,7 +87,9 @@ TEST(Entry, Construct_Tombstone) {
   EXPECT_EQ(entry.transaction_id(), 123u);
 }
 
-constexpr uint32_t kMagicWithChecksum = 0x600df00d;
+// For magic value always use a unique random 32 bit integer rather than a human
+// readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr uint32_t kMagicWithChecksum = 0xad165142;
 constexpr uint32_t kTransactionId1 = 0x96979899;
 
 constexpr auto kKey1 = ByteStr("key45");
@@ -93,7 +97,7 @@ constexpr auto kValue1 = ByteStr("VALUE!");
 constexpr auto kPadding1 = ByteStr("\0\0\0\0\0");
 
 constexpr auto kHeader1 = AsBytes(kMagicWithChecksum,
-                                  uint32_t(0x65c5),          // checksum (CRC16)
+                                  uint32_t(0x23aa),          // checksum (CRC16)
                                   uint8_t(1),                // alignment (32 B)
                                   uint8_t(kKey1.size()),     // key length
                                   uint16_t(kValue1.size()),  // value size
@@ -214,8 +218,8 @@ TEST(ValidEntry, Write) {
 }
 
 constexpr auto kHeader2 = ByteStr(
-    "\x0d\xf0\x0d\x60"  // magic
-    "\xd5\xf5\x00\x00"  // checksum (CRC16)
+    "\x42\x51\x16\xad"  // magic
+    "\xba\xb3\x00\x00"  // checksum (CRC16)
     "\x00"              // alignment
     "\x01"              // key length
     "\xff\xff"          // value size
@@ -346,7 +350,9 @@ TEST_F(ValidEntryInFlash, Update_ReadError_WithChecksumIsError) {
             entry_.Update(kFormatWithChecksum, kTransactionId1 + 1));
 }
 
-constexpr EntryFormat kNoChecksumFormat{.magic = 0xf000000d,
+// For magic value always use a random 32 bit integer rather than a human
+// readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat kNoChecksumFormat{.magic = 0x721bad24,
                                         .checksum = nullptr};
 
 TEST_F(ValidEntryInFlash, Update_ReadError_NoChecksumIsOkay) {
@@ -397,7 +403,9 @@ class ChecksumSummation final : public ChecksumAlgorithm {
   uint32_t sum_;
 } sum_checksum;
 
-constexpr uint32_t kMagicWithSum = 0x12345678;
+// For magic value always use a random 32 bit integer rather than a human
+// readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr uint32_t kMagicWithSum = 0x6093aadb;
 constexpr EntryFormat kFormatWithSum{kMagicWithSum, &sum_checksum};
 constexpr internal::EntryFormats kFormatsWithSum(kFormatWithSum);
 
@@ -499,7 +507,9 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatLargerAlignment) {
 }
 
 TEST_F(ValidEntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
-  constexpr EntryFormat no_checksum{.magic = 0xf000000d, .checksum = nullptr};
+  // For magic value always use a random 32 bit integer rather than a human
+  // readable 4 bytes. See pw_kvs/format.h for more information.
+  constexpr EntryFormat no_checksum{.magic = 0x43fae18f, .checksum = nullptr};
 
   ASSERT_EQ(Status::OK, entry_.Update(no_checksum, kTransactionId1 + 1));
 

@@ -75,7 +75,9 @@ class KvsAttributes {
 constexpr std::array<const char*, 3> keys{"TestKey1", "Key2", "TestKey3"};
 
 ChecksumCrc16 checksum;
-constexpr EntryFormat default_format{.magic = 0xBAD'C0D3,
+// For KVS magic value always use a random 32 bit integer rather than a
+// human readable 4 bytes. See pw_kvs/format.h for more information.
+constexpr EntryFormat default_format{.magic = 0x5b9a341e,
                                      .checksum = &checksum};
 
 class EmptyInitializedKvs : public ::testing::Test {
