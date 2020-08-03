@@ -669,5 +669,19 @@ TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
   EXPECT_TRUE(replied);
 }
 
+TEST_F(FIDL_HostServerTest, SetLeSecurityMode) {
+  // Set the HostServer to SecureConnectionsOnly mode first
+  host_client()->SetLeSecurityMode(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY);
+  RunLoopUntilIdle();
+  ASSERT_EQ(fidl_helpers::LeSecurityModeFromFidl(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY),
+            adapter()->le_connection_manager()->security_mode());
+
+  // Set the HostServer back to Mode 1 and verify that the change takes place
+  host_client()->SetLeSecurityMode(fsys::LeSecurityMode::MODE_1);
+  RunLoopUntilIdle();
+  ASSERT_EQ(fidl_helpers::LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1),
+            adapter()->le_connection_manager()->security_mode());
+}
+
 }  // namespace
 }  // namespace bthost

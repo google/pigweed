@@ -9,8 +9,10 @@
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
+#include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
@@ -303,6 +305,17 @@ bt::sm::IOCapability IoCapabilityFromFidl(fsys::InputCapability input,
   }
 
   return bt::sm::IOCapability::kNoInputNoOutput;
+}
+
+bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) {
+  switch (mode) {
+    case fsys::LeSecurityMode::MODE_1:
+      return bt::gap::LeSecurityMode::Mode1;
+    case fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY:
+      return bt::gap::LeSecurityMode::SecureConnectionsOnly;
+  }
+  bt_log(WARN, "sm", "FIDL security mode not recognized, defaulting to SecureConnectionsOnly");
+  return bt::gap::LeSecurityMode::SecureConnectionsOnly;
 }
 
 bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {

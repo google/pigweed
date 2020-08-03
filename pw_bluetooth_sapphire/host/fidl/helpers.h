@@ -13,6 +13,7 @@
 
 #include <optional>
 
+#include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
@@ -21,6 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 
@@ -98,6 +100,7 @@ fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);
 // Functions that convert FIDL types to library objects.
 bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::sys::InputCapability,
                                           const fuchsia::bluetooth::sys::OutputCapability);
+bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fuchsia::bluetooth::sys::LeSecurityMode mode);
 
 // Functions to construct FIDL control library objects from library objects.
 fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer);
@@ -133,10 +136,8 @@ bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filt
 bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(
     fuchsia::bluetooth::le::AdvertisingModeHint mode_hint);
 
-bt::AdvertisingData AdvertisingDataFromFidl(
-    const fuchsia::bluetooth::le::AdvertisingData& input);
-fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(
-    const bt::AdvertisingData& input);
+bt::AdvertisingData AdvertisingDataFromFidl(const fuchsia::bluetooth::le::AdvertisingData& input);
+fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
     const bt::AdvertisingData& input);
 

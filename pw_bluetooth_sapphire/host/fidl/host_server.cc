@@ -36,9 +36,11 @@ namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 
 using bt::PeerId;
+using bt::gap::LeSecurityModeToString;
 using bt::sm::IOCapability;
 using fidl_helpers::AddressBytesFromString;
 using fidl_helpers::HostErrorToFidl;
+using fidl_helpers::LeSecurityModeFromFidl;
 using fidl_helpers::NewFidlError;
 using fidl_helpers::PeerIdFromString;
 using fidl_helpers::SecurityLevelFromFidl;
@@ -472,6 +474,15 @@ void HostServer::EnablePrivacy(bool enabled) {
   auto addr_mgr = adapter()->le_address_manager();
   if (addr_mgr) {
     addr_mgr->EnablePrivacy(enabled);
+  }
+}
+
+void HostServer::SetLeSecurityMode(fsys::LeSecurityMode mode) {
+  bt::gap::LeSecurityMode gap_mode = LeSecurityModeFromFidl(mode);
+  bt_log(INFO, "bt-host", "Setting LE Security Mode: %s", LeSecurityModeToString(gap_mode));
+  auto conn_mgr = adapter()->le_connection_manager();
+  if (conn_mgr) {
+    conn_mgr->SetSecurityMode(gap_mode);
   }
 }
 

@@ -8,7 +8,9 @@
 
 #include "adapter_test_fixture.h"
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
+#include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace fble = fuchsia::bluetooth::le;
@@ -243,6 +245,15 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
 
   EXPECT_EQ(1u, output.uris->size());
   EXPECT_EQ(uri, output.uris->front());
+}
+
+TEST(FIDL_HelpersTest, LeSecurityModeFromFidl) {
+  EXPECT_EQ(bt::gap::LeSecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
+  EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,
+            LeSecurityModeFromFidl(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY));
+  auto nonexistent_security_mode = static_cast<fsys::LeSecurityMode>(0xFF);
+  EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,
+            LeSecurityModeFromFidl(nonexistent_security_mode));
 }
 
 TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
