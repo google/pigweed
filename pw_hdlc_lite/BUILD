@@ -24,11 +24,13 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_hdlc_lite",
     hdrs = [
+      "public/pw_hdlc_lite/decoder.h",
       "public/pw_hdlc_lite/encoder.h",
       "public/pw_hdlc_lite/sys_io_stream.h",
     ],
     srcs = [
       "encoder.cc",
+      "decoder.cc"
     ],
     includes = ["public"],
 )
@@ -40,5 +42,16 @@ cc_test(
         ":pw_hdlc_lite",
         "//pw_stream",
         "//pw_unit_test",
+    ],
+)
+
+cc_test(
+    name = "decoder_test",
+    srcs = ["decoder_test.cc"],
+    deps = [
+        ":pw_hdlc_lite",
+        "//pw_stream",
+        "//pw_unit_test",
+        "//pw_result",
     ],
 )

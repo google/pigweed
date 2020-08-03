@@ -25,14 +25,20 @@ config("default_config") {
 pw_source_set("pw_hdlc_lite") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_hdlc_lite/decoder.h",
     "public/pw_hdlc_lite/encoder.h",
     "public/pw_hdlc_lite/sys_io_stream.h",
   ]
-  sources = [ "encoder.cc" ]
+  sources = [
+    "decoder.cc",
+    "encoder.cc",
+  ]
   public_deps = [
     dir_pw_assert,
     dir_pw_bytes,
+    dir_pw_log,
     dir_pw_preprocessor,
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
     dir_pw_stream,
@@ -42,7 +48,10 @@ pw_source_set("pw_hdlc_lite") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":encoder_test" ]
+  tests = [
+    ":encoder_test",
+    ":decoder_test",
+  ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
     "$dir_pw_span:tests",
@@ -57,6 +66,15 @@ pw_test("encoder_test") {
     "$dir_pw_stream",
   ]
   sources = [ "encoder_test.cc" ]
+}
+
+pw_test("decoder_test") {
+  deps = [
+    ":pw_hdlc_lite",
+    "$dir_pw_result",
+    "$dir_pw_stream",
+  ]
+  sources = [ "decoder_test.cc" ]
 }
 
 pw_doc_group("docs") {
