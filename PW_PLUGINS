@@ -12,3 +12,4 @@
 
 # Pigweed's presubmit check script
 presubmit pw_presubmit.pigweed_presubmit main
+heap-viewer pw_allocator.heap_viewer main

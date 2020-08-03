@@ -108,5 +108,6 @@ pw_test("freelist_heap_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "doc_resources/pw_allocator_heap_visualizer_demo.png" ]
   sources = [ "docs.rst" ]
 }

@@ -171,14 +171,14 @@ void Block::CrashIfInvalid() {
       break;
     case NEXT_MISMATCHED:
       PW_DCHECK(false,
-                "The 'prev' field in the next block (%p), does not match the "
+                "The 'prev' field in the next block (%p) does not match the "
                 "address of the current block (%p).",
                 Next()->Prev(),
                 this);
       break;
     case PREV_MISMATCHED:
       PW_DCHECK(false,
-                "The 'next' field in the previous block (%p), does not match "
+                "The 'next' field in the previous block (%p) does not match "
                 "the address of the current block (%p).",
                 Prev()->Next(),
                 this);
