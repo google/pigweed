@@ -52,13 +52,14 @@ class Writer {
   // Derived classes should NOT try to override the public Write methods.
   // Instead, provide an implementation by overriding DoWrite().
   //
-  // Returns: OK, successful write/enqueue of data.
-  //          FAILED_PRECONDITION - writer unable/not in state to accept
-  //          data.
-  //          RESOURCE_EXHAUSTED - unable to write all of requested data at this
-  //          time. No data written.
-  //          OUT_OF_RANGE - Writer has been exhausted, similar to EOF. No data
-  //          written, no more will be written.
+  // Returns:
+  //
+  // OK - successful write/enqueue of data.
+  // FAILED_PRECONDITION - writer unable/not in state to accept data.
+  // RESOURCE_EXHAUSTED - unable to write all of requested data at this time. No
+  //     data written.
+  // OUT_OF_RANGE - Writer has been exhausted, similar to EOF. No data written,
+  //     no more will be written.
   Status Write(ConstByteSpan data) {
     PW_DCHECK(data.empty() || data.data() != nullptr);
     return DoWrite(data);
@@ -70,7 +71,7 @@ class Writer {
 
   // Probable (not guaranteed) minimum number of bytes at this time that can be
   // written. This number is advisory and not guaranteed to write without a
-  // RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Writer processes/handles enqueued or
+  // RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Writer processes/handles enqueued of
   // other contexts write data this number can go up or down for some Writers.
   virtual size_t ConservativeWriteLimit() const = 0;
 
@@ -95,11 +96,15 @@ class Reader {
   // Derived classes should NOT try to override these public read methods.
   // Instead, provide an implementation by overriding DoRead().
   //
-  // Returns: OK with span of bytes read - success, between 1 and
-  //          dest.size_bytes() were read.
-  //          FAILED_PRECONDITION - Reader unable/not in state to read data.
-  //          OUT_OF_RANGE - Reader has been exhausted, similar to EOF. No bytes
-  //          read, no more will be read.
+  // Returns:
+  //
+  // OK with span of bytes read - success, between 1 and dest.size_bytes() were
+  //     read.
+  // FAILED_PRECONDITION - Reader unable/not in state to read data.
+  // RESOURCE_EXHAUSTED - unable to read any bytes at this time. No bytes read.
+  //     Try again once bytes become available.
+  // OUT_OF_RANGE - Reader has been exhausted, similar to EOF. No bytes read, no
+  //     more will be read.
   Result<ByteSpan> Read(ByteSpan dest) {
     PW_DCHECK(dest.empty() || dest.data() != nullptr);
     StatusWithSize result = DoRead(dest);
@@ -115,8 +120,8 @@ class Reader {
   }
 
   // Probable (not guaranteed) minimum number of bytes at this time that can be
-  // read. This number is advisory and not guaranteed to read full number or
-  // requested bytes or without a OUT_OF_RANGE. As Reader
+  // read. This number is advisory and not guaranteed to read full number of
+  // requested bytes or without a RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Reader
   // processes/handles/receives enqueued data or other contexts read data this
   // number can go up or down for some Readers.
   virtual size_t ConservativeReadLimit() const = 0;
