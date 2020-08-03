@@ -32,6 +32,8 @@ source_set("fake_controller") {
     "fake_controller.h",
     "fake_controller_base.cc",
     "fake_controller_base.h",
+    "fake_dynamic_channel.cc",
+    "fake_dynamic_channel.h",
     "fake_gatt_server.cc",
     "fake_gatt_server.h",
     "fake_l2cap.cc",
