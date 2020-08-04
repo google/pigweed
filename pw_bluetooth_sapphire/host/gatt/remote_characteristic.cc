@@ -86,16 +86,14 @@ void RemoteCharacteristic::ShutDown() {
   weak_ptr_factory_.InvalidateWeakPtrs();
   shut_down_ = true;
 
-  if (ccc_handle_ != att::kInvalidHandle) {
-    ResolvePendingNotifyRequests(att::Status(HostError::kFailed));
+  ResolvePendingNotifyRequests(att::Status(HostError::kFailed));
 
-    // Clear the CCC if we have enabled notifications.
-    // TODO(armansito): Don't write to the descriptor if ShutDown() was called
-    // as a result of a "Service Changed" indication.
-    if (!notify_handlers_.empty()) {
-      notify_handlers_.clear();
-      DisableNotificationsInternal();
-    }
+  // Clear the CCC if we have enabled notifications.
+  // TODO(armansito): Don't write to the descriptor if ShutDown() was called
+  // as a result of a "Service Changed" indication.
+  if (!notify_handlers_.empty()) {
+    notify_handlers_.clear();
+    DisableNotificationsInternal();
   }
 }
 
@@ -221,8 +219,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
   ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(!shut_down_);
 
-  if (!(info().properties & (Property::kNotify | Property::kIndicate)) ||
-      ccc_handle_ == att::kInvalidHandle) {
+  if (!(info().properties & (Property::kNotify | Property::kIndicate))) {
     bt_log(DEBUG, "gatt", "characteristic does not support notifications");
     ReportNotifyStatus(att::Status(HostError::kNotSupported), kInvalidId,
                        std::move(status_callback), dispatcher);
@@ -245,6 +242,15 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
   // until the descriptor write completes.
   if (pending_notify_reqs_.size() > 1u)
     return;
+
+  // It is possible for some characteristics that support notifications or indications to not have a
+  // CCC descriptor. Such characteristics do not need to be directly configured to consider
+  // notifications to have been enabled.
+  if (ccc_handle_ == att::kInvalidHandle) {
+    bt_log(TRACE, "gatt", "notications enabled without characteristic configuration");
+    ResolvePendingNotifyRequests(att::Status());
+    return;
+  }
 
   StaticByteBuffer<2> ccc_value;
   ccc_value.SetToZeros();
@@ -285,7 +291,10 @@ bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
 }
 
 void RemoteCharacteristic::DisableNotificationsInternal() {
-  ZX_DEBUG_ASSERT(ccc_handle_ != att::kInvalidHandle);
+  if (ccc_handle_ == att::kInvalidHandle) {
+    // Nothing to do.
+    return;
+  }
 
   if (!client_) {
     bt_log(TRACE, "gatt", "client bearer invalid!");

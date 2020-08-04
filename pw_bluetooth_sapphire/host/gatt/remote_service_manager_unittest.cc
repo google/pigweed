@@ -2410,22 +2410,6 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoProperties) {
   att::Status status;
   service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
                                [&](att::Status cb_status, IdType) { status = cb_status; });
-
-  RunLoopUntilIdle();
-
-  EXPECT_EQ(HostError::kNotSupported, status.error());
-}
-
-TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsNoCCC) {
-  // Has the "notify" property but no CCC descriptor.
-  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
-  auto service =
-      SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1), {chr});
-
-  att::Status status;
-  service->EnableNotifications(kDefaultCharacteristic, NopValueCallback,
-                               [&](att::Status cb_status, IdType) { status = cb_status; });
-
   RunLoopUntilIdle();
 
   EXPECT_EQ(HostError::kNotSupported, status.error());
@@ -2672,6 +2656,46 @@ TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
   EXPECT_EQ(2, ccc_write_count);
   EXPECT_EQ(4, cb_count);
   EXPECT_TRUE(status);
+}
+
+// Enabling notifications should succeed without a descriptor write.
+TEST_F(GATT_RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
+  // Has the "notify" property but no CCC descriptor.
+  CharacteristicData chr(Property::kNotify, std::nullopt, 2, 3, kTestUuid3);
+  auto service =
+      SetupServiceWithChrcs(ServiceData(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1), {chr});
+
+  bool write_requested = false;
+  fake_client()->set_write_request_callback([&](auto, auto&, auto) { write_requested = true; });
+
+  int notify_count = 0;
+  auto notify_cb = [&](const auto& value) { notify_count++; };
+
+  att::Status status;
+  IdType id;
+  service->EnableNotifications(kDefaultCharacteristic, std::move(notify_cb),
+                               [&](att::Status _status, IdType _id) {
+                                 status = _status;
+                                 id = _id;
+                               });
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(write_requested);
+
+  fake_client()->SendNotification(false, 3, StaticByteBuffer('y', 'e'));
+  EXPECT_EQ(1, notify_count);
+
+  // Disabling notifications should not result in a write request.
+  service->DisableNotifications(kDefaultCharacteristic, id,
+                                [&](auto _status) { status = _status; });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(status);
+  EXPECT_FALSE(write_requested);
+
+  // The handler should no longer receive notifications.
+  fake_client()->SendNotification(false, 3, StaticByteBuffer('o', 'y', 'e'));
+  EXPECT_EQ(1, notify_count);
 }
 
 // Notifications received when the remote service database is empty should be
