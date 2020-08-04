@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
     "pw_cc_test",
 )
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_proto_grpc//:plugin.bzl", "proto_plugin")
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -46,6 +50,8 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":config",
+        "//pw_bytes",
+        "//pw_result",
         "//pw_span",
         "//pw_status",
         "//pw_varint",
@@ -80,11 +86,35 @@ pw_cc_test(
     ],
 )
 
-# TODO(frolv): Figure out how to integrate pw_protobuf codegen into Bazel.
-filegroup(
+proto_library(
+    name = "codegen_test_proto",
+    srcs = [
+        "pw_protobuf_protos/common.proto",
+        "pw_protobuf_test_protos/full_test.proto",
+        "pw_protobuf_test_protos/imported.proto",
+        "pw_protobuf_test_protos/importer.proto",
+        "pw_protobuf_test_protos/non_pw_package.proto",
+        "pw_protobuf_test_protos/proto2.proto",
+        "pw_protobuf_test_protos/repeated.proto",
+    ],
+    strip_import_prefix = "//pw_protobuf",
+)
+
+pw_proto_library(
+    name = "codegen_test_protos_pwpb",
+    deps = [":codegen_test_proto"],
+)
+
+pw_cc_test(
     name = "codegen_test",
     srcs = [
         "codegen_test.cc",
+    ],
+    deps = [
+        ":codegen_test_protos_pwpb",
+        ":pw_protobuf",
+        "//pw_span",
+        "//pw_unit_test",
     ],
 )
 
@@ -102,4 +132,23 @@ filegroup(
     srcs = glob([
         "size_report/*.cc",
     ]),
+)
+
+py_binary(
+    name = "plugin",
+    srcs = glob(["py/pw_protobuf/*.py"]),
+    imports = ["py"],
+    main = "py/pw_protobuf/plugin.py",
+    python_version = "PY3",
+    deps = ["@com_google_protobuf//:protobuf_python"],
+)
+
+proto_plugin(
+    name = "pw_cc_plugin",
+    outputs = [
+        "{protopath}.pwpb.h",
+    ],
+    protoc_plugin_name = "pwpb",
+    tool = "@pigweed//pw_protobuf:plugin",
+    visibility = ["//visibility:public"],
 )

@@ -302,3 +302,58 @@ These proto files are accessed in C++ the same as in the GN build:
 .. code-block:: cpp
 
   #include "my_other_protos/baz.pwpb.h"
+
+Bazel
+=====
+Bazel provides a ``pw_proto_library`` rule with similar features as the
+GN template. The Bazel build only supports building firmware code, so
+``pw_proto_library`` does not generate a Python package. The Bazel rules differ
+slightly compared to the GN build to be more in line with what would be
+considered idiomatic in Bazel.
+
+To use Pigweeds Protobuf rules you must first pull in the required dependencies
+into your Bazel WORKSPACE file. e.g.
+
+.. code-block:: python
+
+  # WORKSPACE ...
+  load("@pigweed//pw_protobuf_compiler:deps.bzl", "pw_protobuf_dependencies")
+  pw_protobuf_dependencies()
+
+Bazel uses a different set of rules to manage proto files than it does to
+compile them. e.g.
+
+.. code-block:: python
+
+  # BUILD ...
+  load("@rules_proto//proto:defs.bzl", "proto_library")
+  load("@pigweed//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
+
+  # Manages proto sources and dependencies.
+  proto_library(
+    name = "my_proto",
+    srcs = [
+      "my_protos/foo.proto",
+      "my_protos/bar.proto",
+    ]
+  )
+
+  # Compiles dependant protos to C++.
+  pw_proto_library(
+    name = "my_cc_proto",
+    deps = [":my_proto"],
+  )
+
+  # Library that depends on generated proto targets.
+  pw_cc_library(
+    name = "my_lib",
+    srcs = ["my/lib.cc"],
+    deps = [":my_cc_proto"],
+  )
+
+From ``my/lib.cc`` you can now include the generated headers.
+e.g.
+
+.. code:: cpp
+
+  #include "my_protos/bar.pwpb.h"

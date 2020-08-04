@@ -221,6 +221,7 @@ _MODULES_THAT_WORK_WITH_BAZEL = [
     "//pw_allocator/...",
     "//pw_assert/...",
     '//pw_assert_basic/...',
+    '//pw_protobuf/...',
     '//pw_base64/...',
     '//pw_build/...',
     '//pw_chrono/...',
