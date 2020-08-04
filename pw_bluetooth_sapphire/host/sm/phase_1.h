@@ -18,7 +18,7 @@
 
 namespace bt {
 namespace sm {
-// Responsible for Phase 1 of SMP pairing, the feature exchange. Takes in the current pairing state
+// Responsible for Phase 1 of SMP pairing, the feature exchange. Takes in the current SM settings
 // and notifies a constructor-provided callback with the negotiated features upon completion.
 //
 // This class is not thread safe and is meant to be accessed on the thread it was created on. All

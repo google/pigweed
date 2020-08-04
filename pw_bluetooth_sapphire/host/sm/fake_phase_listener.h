@@ -83,7 +83,7 @@ class FakeListener : public PairingPhase::Listener {
   std::optional<IdentityInfo> identity_info_ = std::nullopt;
   int identity_info_count_ = 0;
 
-  // Delegate functions used to respond to user input requests from the pairing state.
+  // Delegate functions used to respond to user input requests from the pairing phases.
   ConfirmDelegate confirm_delegate_;
   DisplayDelegate display_delegate_;
   RequestPasskeyDelegate request_passkey_delegate_;

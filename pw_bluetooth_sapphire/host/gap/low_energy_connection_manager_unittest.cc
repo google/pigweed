@@ -1286,7 +1286,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
   ASSERT_TRUE(fake_chan);
 
   bool cb_called = false;
-  // This test only checks that PairingState kicks off a pairing feature exchange correctly, as
+  // This test only checks that SecurityManager kicks off a pairing feature exchange correctly, as
   // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
   auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
     ASSERT_TRUE(sent);
@@ -1346,7 +1346,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
   ASSERT_TRUE(fake_chan);
 
   bool cb_called = false;
-  // This test only checks that PairingState kicks off a pairing feature exchange correctly, as
+  // This test only checks that SecurityManager kicks off a pairing feature exchange correctly, as
   // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
   auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
     ASSERT_TRUE(sent);

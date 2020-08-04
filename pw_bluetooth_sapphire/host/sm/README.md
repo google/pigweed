@@ -21,7 +21,7 @@ SMP Security Request                                       | Supported
 See Core Specification v5.2 Volume 3 Part C Section 10.2 for more information about the GAP LE Security Modes.
 
 ## Library interface
-The Fuchsia SMP library exposes its functionality through the [`PairingState`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h) class. Each Bluetooth connection is expected to instantiate its own `PairingState`, i.e. there is no singleton "Security Manager" in Fuchsia's Bluetooth. **The SM library expects that clients will only directly instantiate the PairingState class, not any other internal classes. All callbacks related to SMP, including HCI link and L2CAP channel callbacks, must be run on the same thread as the instantiated PairingState.** The public interface of PairingState is the intended public interface for the SM library as a whole. Documentation can be found in the [`PairingState` header](/src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h).
+The Fuchsia SMP library exposes its functionality through the [`SecurityManager`](/src/connectivity/bluetooth/core/bt-host/sm/security_manager.h) class. Each Bluetooth connection is expected to instantiate its own `SecurityManager`, i.e. there is no singleton which manages security for all of Fuchsia Bluetooth. **The SM library expects that clients will only directly instantiate the SecurityManager class, not any other internal classes. All callbacks related to SMP, including HCI link and L2CAP channel callbacks, must be run on the same thread as the instantiated SecurityManager.** The public interface of SecurityManager is the intended public interface for the SM library as a whole. Documentation can be found in the [`SecurityManager` header](/src/connectivity/bluetooth/core/bt-host/sm/security_manager.h).
 
 
 ### Interface concepts
@@ -29,7 +29,7 @@ The Fuchsia SMP library exposes its functionality through the [`PairingState`](/
 
 **PairingDelegate** - Pairing with a peer may give that device access to sensitive information and/or capabilities, so it is good practice (and in some cases, required) to condition pairing on explicit user input. Thus SM must be able to display input prompts and handle user input during pairing. The [`bt-host`](/src/connectivity/bluetooth/core/bt-host/README.md) driver is device-agnostic, so SM cannot directly display output or query for user input from an unknown device. Instead, SM uses the `bt-host`-internal [`sm::Delegate`](/src/connectivity/bluetooth/core/bt-host/sm/delegate.h) class to display information and request user input, which eventually bubbles up to the system [PairingDelegate FIDL protocol](/sdk/fidl/fuchsia.bluetooth.sys/pairing_delegate.fidl).
 
-**Link-layer encryption and SM** - A reasonable, but incorrect, assumption is that SM is directly responsible for encrypting BLE data. SM, the Bluetooth controller, and `hci::Connection` all play roles in encrypting data with the encryption key. SM is responsible for generating (and optionally storing/bonding) the key for the link through pairing. The Bluetooth controller is responsible for validating that both devices agree on the key and then using the key to actually (en|de)crypt data over the link. `PairingState` takes a pointer to [`hci::Connection`](/src/connectivity/bluetooth/core/bt-host/hci/connection.h) in its constructor, which serves as the bridge between the two. SM assigns the encryption key to `hci::Connection`, which stores it internally. It then responds to HCI encryption key request events from the controller with this key. **The `hci::Connection` LE encryption key should only ever be modified by SM**.
+**Link-layer encryption and SM** - A reasonable, but incorrect, assumption is that SM is directly responsible for encrypting BLE data. SM, the Bluetooth controller, and `hci::Connection` all play roles in encrypting data with the encryption key. SM is responsible for generating (and optionally storing/bonding) the key for the link through pairing. The Bluetooth controller is responsible for validating that both devices agree on the key and then using the key to actually (en|de)crypt data over the link. `SecurityManager` takes a pointer to [`hci::Connection`](/src/connectivity/bluetooth/core/bt-host/hci/connection.h) in its constructor, which serves as the bridge between the two. SM assigns the encryption key to `hci::Connection`, which stores it internally. It then responds to HCI encryption key request events from the controller with this key. **The `hci::Connection` LE encryption key should only ever be modified by SM**.
 
 
 ## Implementation details
@@ -40,9 +40,9 @@ The remainder of this document is aimed at developers who plan to change SM, and
 This section aims to give a high-level understanding of how the various files and classes in the sm/ directory are related.
 
 #### Stateful pairing classes
-Each of these files represents a single stateful class which implements a portion of the SMP pairing state machine. Indentation is used to indicate ownership, with the `PairingState` class at the top level - this is consistent with the expectation that only the `PairingState` class should be directly instantiated by non-SM code. While the `*Phase*` classes are always owned by `PairingState`, the PairingState uses a `std::variant` to store the current class, meaning that only 1 `*Phase*` class is ever present at once. Documentation for each class can be found in the linked header file.
+Each of these files represents a single stateful class which implements a portion of the SMP pairing state machine. Indentation is used to indicate ownership, with the `SecurityManager` class at the top level - this is consistent with the expectation that only the `SecurityManager` class should be directly instantiated by non-SM code. While the `*Phase*` classes are always owned by `SecurityManager`, the SecurityManager uses a `std::variant` to store the current class, meaning that only 1 `*Phase*` class is ever present at once. Documentation for each class can be found in the linked header file.
 
-- [`PairingState`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h)
+- [`SecurityManager`](/src/connectivity/bluetooth/core/bt-host/sm/security_manager.h)
   - [`PairingChannel`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h)
   - [`IdlePhase`](/src/connectivity/bluetooth/core/bt-host/sm/idle_phase.h)
   - [`Phase1`](/src/connectivity/bluetooth/core/bt-host/sm/phase_1.h)
@@ -59,7 +59,7 @@ These are abstract classes subclassed by many of the "stateful pairing classes".
 
 #### Utility files:
 These files provide commonly-used functionality in SM. They easily could be (and sometimes are) used outside of SM. These files contain definitions, pure functions of their input, or small structs/classes with little internal state:
-  * [`delegate.h`](/src/connectivity/bluetooth/core/bt-host/sm/delegate.h) - details the interface required by the `PairingState` constructor for SMP to interact with the rest of the BT stack.
+  * [`delegate.h`](/src/connectivity/bluetooth/core/bt-host/sm/delegate.h) - details the interface required by the `SecurityManager` constructor for SMP to interact with the rest of the BT stack.
   * [`ecdh_key.h`](/src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h) - utility C++ wrapper class for BoringSSL ECDH key functionality used in Secure Connections pairing.
   * [`packet.h`](/src/connectivity/bluetooth/core/bt-host/sm/packet.h) - SM-specific packet parsing and writing classes.
   * [`status.h`](/src/connectivity/bluetooth/core/bt-host/sm/status.h) - SM-specific version of the `bt-host` [`Status`](/src/connectivity/bluetooth/core/bt-host/common/status.h) class.

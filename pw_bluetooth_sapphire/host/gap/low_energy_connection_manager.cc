@@ -26,7 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/pairing_state.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -129,10 +129,10 @@ class LowEnergyConnection final : public sm::Delegate {
                                connection_options);
   }
 
-  // Tells the connection's pairing state to UpgradeSecurity to the desired level.
+  // Used to respond to protocol/service requests for increased security.
   void OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb) {
-    ZX_ASSERT(pairing_);
-    pairing_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
+    ZX_ASSERT(sm_);
+    sm_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
       bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", bt_str(status), bt_str(sp));
       cb(status);
     });
@@ -143,14 +143,14 @@ class LowEnergyConnection final : public sm::Delegate {
   // in the context of testing. May only be called on an already-established connection.
   void UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
                        sm::StatusCallback cb) {
-    ZX_ASSERT(pairing_);
-    pairing_->set_bondable_mode(bondable_mode);
+    ZX_ASSERT(sm_);
+    sm_->set_bondable_mode(bondable_mode);
     OnSecurityRequest(level, std::move(cb));
   }
 
   // Cancels any on-going pairing procedures and sets up SMP to use the provided
   // new I/O capabilities for future pairing procedures.
-  void ResetPairingState(sm::IOCapability ioc) { pairing_->Reset(ioc); }
+  void ResetSecurityManager(sm::IOCapability ioc) { sm_->Reset(ioc); }
 
   // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
   // timeout has already finished.
@@ -193,8 +193,8 @@ class LowEnergyConnection final : public sm::Delegate {
   }
 
   void set_security_mode(LeSecurityMode mode) {
-    ZX_ASSERT(pairing_);
-    pairing_->set_security_mode(mode);
+    ZX_ASSERT(sm_);
+    sm_->set_security_mode(mode);
   }
 
   size_t ref_count() const { return refs_.size(); }
@@ -203,13 +203,13 @@ class LowEnergyConnection final : public sm::Delegate {
   hci::ConnectionHandle handle() const { return link_->handle(); }
   hci::Connection* link() const { return link_.get(); }
   BondableMode bondable_mode() const {
-    ZX_DEBUG_ASSERT(pairing_);
-    return pairing_->bondable_mode();
+    ZX_ASSERT(sm_);
+    return sm_->bondable_mode();
   }
 
   sm::SecurityProperties security() const {
-    ZX_ASSERT(pairing_);
-    return pairing_->security();
+    ZX_ASSERT(sm_);
+    return sm_->security();
   }
 
  private:
@@ -246,15 +246,15 @@ class LowEnergyConnection final : public sm::Delegate {
       io_cap = conn_mgr_->pairing_delegate()->io_capability();
     }
     LeSecurityMode security_mode = conn_mgr_->security_mode();
-    pairing_ = std::make_unique<sm::PairingState>(
-        link_->WeakPtr(), std::move(smp), io_cap, weak_ptr_factory_.GetWeakPtr(),
-        connection_options.bondable_mode(), security_mode);
+    sm_ = std::make_unique<sm::SecurityManager>(link_->WeakPtr(), std::move(smp), io_cap,
+                                                weak_ptr_factory_.GetWeakPtr(),
+                                                connection_options.bondable_mode(), security_mode);
 
     // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
     // will start encryption if the local device is the link-layer master.
     if (ltk) {
       bt_log(INFO, "gap-le", "assigning existing LTK");
-      pairing_->AssignLongTermKey(*ltk);
+      sm_->AssignLongTermKey(*ltk);
     }
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
@@ -390,7 +390,7 @@ class LowEnergyConnection final : public sm::Delegate {
   fxl::WeakPtr<gatt::GATT> gatt_;
 
   // SMP pairing manager.
-  std::unique_ptr<sm::PairingState> pairing_;
+  std::unique_ptr<sm::SecurityManager> sm_;
 
   // Called after kLEConnectionPausePeripheral.
   std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
@@ -692,8 +692,8 @@ void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate
   // delegate will receive calls to PairingDelegate::CompletePairing, unless it
   // is null.
   for (auto& iter : connections_) {
-    iter.second->ResetPairingState(delegate ? delegate->io_capability()
-                                            : sm::IOCapability::kNoInputNoOutput);
+    iter.second->ResetSecurityManager(delegate ? delegate->io_capability()
+                                               : sm::IOCapability::kNoInputNoOutput);
   }
 }
 

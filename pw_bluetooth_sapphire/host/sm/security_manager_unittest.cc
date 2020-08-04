@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "pairing_state.h"
+#include "security_manager.h"
 
 #include <fbl/macros.h>
 
@@ -33,22 +33,22 @@ const DeviceAddress kPeerAddr(DeviceAddress::Type::kLERandom, {0xB6, 0xB5, 0xB4,
 const PairingRandomValue kHardCodedPairingRandom = {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
                                                     0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
 
-class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::Delegate {
+class SMP_SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::Delegate {
  public:
-  SMP_PairingStateTest() : weak_ptr_factory_(this) {}
-  ~SMP_PairingStateTest() override = default;
+  SMP_SecurityManagerTest() : weak_ptr_factory_(this) {}
+  ~SMP_SecurityManagerTest() override = default;
 
  protected:
   void TearDown() override {
     RunLoopUntilIdle();
-    DestroyPairingState();
+    DestroySecurityManager();
   }
 
-  void NewPairingState(Role role, IOCapability ioc, BondableMode bondable_mode) {
+  void NewSecurityManager(Role role, IOCapability ioc, BondableMode bondable_mode) {
     // Setup fake SMP channel.
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
-    fake_chan_->SetSendCallback(fit::bind_member(this, &SMP_PairingStateTest::OnDataReceived),
+    fake_chan_->SetSendCallback(fit::bind_member(this, &SMP_SecurityManagerTest::OnDataReceived),
                                 dispatcher());
 
     // Setup a fake logical link.
@@ -57,12 +57,12 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
     fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, hci::Connection::LinkType::kLE,
                                                                 link_role, kLocalAddr, kPeerAddr);
 
-    pairing_ = std::make_unique<PairingState>(fake_link_->WeakPtr(), fake_chan_, ioc,
-                                              weak_ptr_factory_.GetWeakPtr(), bondable_mode,
-                                              gap::LeSecurityMode::Mode1);
+    pairing_ = std::make_unique<SecurityManager>(fake_link_->WeakPtr(), fake_chan_, ioc,
+                                                 weak_ptr_factory_.GetWeakPtr(), bondable_mode,
+                                                 gap::LeSecurityMode::Mode1);
   }
 
-  void DestroyPairingState() { pairing_ = nullptr; }
+  void DestroySecurityManager() { pairing_ = nullptr; }
 
   // sm::Delegate override:
   void ConfirmPairing(ConfirmCallback confirm) override {
@@ -326,7 +326,7 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
                                  : util::F4(pkb, pka, random, r).value();
   }
 
-  PairingState* pairing() const { return pairing_.get(); }
+  SecurityManager* pairing() const { return pairing_.get(); }
   l2cap::testing::FakeChannel* fake_chan() const { return fake_chan_.get(); }
   hci::testing::FakeConnection* fake_link() const { return fake_link_.get(); }
 
@@ -437,7 +437,7 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
   int local_id_info_callback_count_ = 0;
   std::optional<IdentityInfo> local_id_info_;
 
-  // Delegate functions used to respond to user input requests from the pairing state.
+  // Delegate functions used to respond to user input requests from the Security Manager.
   ConfirmDelegate confirm_delegate_;
   DisplayDelegate display_delegate_;
   RequestPasskeyDelegate request_passkey_delegate_;
@@ -472,23 +472,23 @@ class SMP_PairingStateTest : public l2cap::testing::FakeChannelTest, public sm::
 
   fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
   std::unique_ptr<hci::testing::FakeConnection> fake_link_;
-  std::unique_ptr<PairingState> pairing_;
+  std::unique_ptr<SecurityManager> pairing_;
 
-  fxl::WeakPtrFactory<SMP_PairingStateTest> weak_ptr_factory_;
+  fxl::WeakPtrFactory<SMP_SecurityManagerTest> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_PairingStateTest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_SecurityManagerTest);
 };
 
-class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
+class SMP_InitiatorPairingTest : public SMP_SecurityManagerTest {
  public:
   SMP_InitiatorPairingTest() = default;
   ~SMP_InitiatorPairingTest() override = default;
 
-  void SetUp() override { SetUpPairingState(); }
+  void SetUp() override { SetUpSecurityManager(); }
 
-  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly,
-                         BondableMode bondable_mode = BondableMode::Bondable) {
-    NewPairingState(Role::kInitiator, ioc, bondable_mode);
+  void SetUpSecurityManager(IOCapability ioc = IOCapability::kDisplayOnly,
+                            BondableMode bondable_mode = BondableMode::Bondable) {
+    NewSecurityManager(Role::kInitiator, ioc, bondable_mode);
   }
 
   void GenerateMatchingLegacyConfirmAndRandom(UInt128* out_confirm, UInt128* out_random,
@@ -653,16 +653,16 @@ class SMP_InitiatorPairingTest : public SMP_PairingStateTest {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_InitiatorPairingTest);
 };
 
-class SMP_ResponderPairingTest : public SMP_PairingStateTest {
+class SMP_ResponderPairingTest : public SMP_SecurityManagerTest {
  public:
   SMP_ResponderPairingTest() = default;
   ~SMP_ResponderPairingTest() override = default;
 
-  void SetUp() override { SetUpPairingState(); }
+  void SetUp() override { SetUpSecurityManager(); }
 
-  void SetUpPairingState(IOCapability ioc = IOCapability::kDisplayOnly,
-                         BondableMode bondable_mode = BondableMode::Bondable) {
-    NewPairingState(Role::kResponder, ioc, bondable_mode);
+  void SetUpSecurityManager(IOCapability ioc = IOCapability::kDisplayOnly,
+                            BondableMode bondable_mode = BondableMode::Bondable) {
+    NewSecurityManager(Role::kResponder, ioc, bondable_mode);
   }
 
   void GenerateMatchingLegacyConfirmAndRandom(UInt128* out_confirm, UInt128* out_random,
@@ -893,7 +893,7 @@ TEST_F(SMP_InitiatorPairingTest, PairingAbortedInPhase1) {
 // Local resets I/O capabilities while pairing. This should abort any ongoing
 // pairing and the new I/O capabilities should be used in following pairing
 // requests.
-TEST_F(SMP_InitiatorPairingTest, PairingStateResetDuringPairing) {
+TEST_F(SMP_InitiatorPairingTest, SecurityManagerResetDuringPairing) {
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();
 
@@ -953,7 +953,7 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveConfirmValueInPhase1) {
 }
 
 TEST_F(SMP_InitiatorPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
-  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  SetUpSecurityManager(IOCapability::kKeyboardDisplay);
   pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
   // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
   UpgradeSecurity(SecurityLevel::kEncrypted);
@@ -986,7 +986,7 @@ TEST_F(SMP_InitiatorPairingTest, RejectUnauthenticatedEncryptionInSecureConnecti
 }
 
 TEST_F(SMP_InitiatorPairingTest, AllowSecureAuthenticatedPairingInSecureConnectionsOnlyMode) {
-  SetUpPairingState(IOCapability::kDisplayYesNo);
+  SetUpSecurityManager(IOCapability::kDisplayYesNo);
   pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
   UInt128 enc_key;
   FastForwardToPhase3(&enc_key, true, SecurityLevel::kSecureAuthenticated);
@@ -1027,8 +1027,8 @@ TEST_F(SMP_InitiatorPairingTest, ReceiveConfirmValueWhileWaitingForUserInput) {
   EXPECT_EQ(security_status(), pairing_complete_status());
 }
 
-// PairingState destroyed when waiting for Just Works user confirmation.
-TEST_F(SMP_InitiatorPairingTest, PairingStateDestroyedStateWhileWaitingForUserInput) {
+// SecurityManager destroyed when waiting for Just Works user confirmation.
+TEST_F(SMP_InitiatorPairingTest, SecurityManagerDestroyedStateWhileWaitingForUserInput) {
   ConfirmCallback respond;
   set_confirm_delegate([&](ConfirmCallback rsp) { respond = std::move(rsp); });
 
@@ -1037,7 +1037,7 @@ TEST_F(SMP_InitiatorPairingTest, PairingStateDestroyedStateWhileWaitingForUserIn
   RunLoopUntilIdle();
   EXPECT_TRUE(respond);
 
-  DestroyPairingState();
+  DestroySecurityManager();
 
   // This should proceed safely.
   respond(true);
@@ -1382,7 +1382,7 @@ TEST_F(SMP_InitiatorPairingTest, LegacyPhase2ConfirmValuesExchanged) {
 // TK delegate rejects pairing. When pairing method is "PasskeyEntryInput", this
 // should result in a "Passkey Entry Failed" error.
 TEST_F(SMP_InitiatorPairingTest, LegacyPhase2TKDelegateRejectsPasskeyInput) {
-  SetUpPairingState(IOCapability::kKeyboardOnly);
+  SetUpSecurityManager(IOCapability::kKeyboardOnly);
 
   bool tk_requested = false;
   PasskeyResponseCallback respond;
@@ -1475,7 +1475,7 @@ TEST_F(SMP_InitiatorPairingTest, IgnoresExpiredConfirmRequestCallback) {
 }
 
 TEST_F(SMP_InitiatorPairingTest, IgnoresExpiredDisplayRequestCallback) {
-  SetUpPairingState(IOCapability::kDisplayOnly);
+  SetUpSecurityManager(IOCapability::kDisplayOnly);
   ConfirmCallback respond = nullptr;
   set_display_delegate([&](uint32_t /**/, Delegate::DisplayMethod method, ConfirmCallback rsp) {
     ASSERT_EQ(Delegate::DisplayMethod::kPeerEntry, method);
@@ -1516,7 +1516,7 @@ TEST_F(SMP_InitiatorPairingTest, IgnoresExpiredDisplayRequestCallback) {
 }
 
 TEST_F(SMP_InitiatorPairingTest, IgnoresExpiredPasskeyEntryInputCallback) {
-  SetUpPairingState(IOCapability::kKeyboardOnly);
+  SetUpSecurityManager(IOCapability::kKeyboardOnly);
   PasskeyResponseCallback passkey_cb = nullptr;
   set_request_passkey_delegate([&](PasskeyResponseCallback cb) { passkey_cb = std::move(cb); });
 
@@ -1861,7 +1861,7 @@ TEST_F(SMP_InitiatorPairingTest, ScPhase3EncKeyBitSetNotDistributed) {
 // with the key generated in Phase 2, but the upper layers are not notified of that key as an LTK.
 TEST_F(SMP_InitiatorPairingTest, ScPhase3NonBondableCompleteWithoutKeyExchange) {
   // Must have DisplayYesNo IOC to generate Authenticated security per kExpectedSecurity
-  SetUpPairingState(IOCapability::kDisplayYesNo);
+  SetUpSecurityManager(IOCapability::kDisplayYesNo);
   const SecurityProperties kExpectedSecurity(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
                                              true /* secure connections */);
   UInt128 ltk_bytes;
@@ -2705,7 +2705,7 @@ TEST_F(SMP_ResponderPairingTest, SecurityRequestInitiatorEncryptsWithInsufficien
 }
 
 TEST_F(SMP_ResponderPairingTest, AuthenticatedSecurityRequestWithInsufficientIoCapRejected) {
-  SetUpPairingState(IOCapability::kNoInputNoOutput);
+  SetUpSecurityManager(IOCapability::kNoInputNoOutput);
   // Make a security request for authenticated security
   UpgradeSecurity(SecurityLevel::kAuthenticated);
   RunLoopUntilIdle();
@@ -3214,10 +3214,10 @@ TEST_F(SMP_ResponderPairingTest, ReceiveSecurityRequest) {
   ReceiveSecurityRequest();
   EXPECT_EQ(ErrorCode::kCommandNotSupported, received_error_code());
 }
-// Test that LTK is generated and passed up to PairingState when both sides request bonding
+// Test that LTK is generated and passed up to SecurityManager when both sides request bonding
 TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly);
+  SetUpSecurityManager(IOCapability::kDisplayOnly);
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       0u,                   // remote keys
                       KeyDistGen::kEncKey,  // local keys
@@ -3227,11 +3227,11 @@ TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
   EXPECT_TRUE(pairing_data().local_ltk.has_value());
 }
 
-// Test that LTK is not passed up to PairingState when local side requests non-bondable mode and
+// Test that LTK is not passed up to SecurityManager when local side requests non-bondable mode and
 // peer requests bondable mode.
 TEST_F(SMP_ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::NonBondable);
+  SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::NonBondable);
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       0u,                   // remote keys
                       KeyDistGen::kEncKey,  // local keys
@@ -3241,11 +3241,11 @@ TEST_F(SMP_ResponderPairingTest, LocalRequestsNonBondableNoLTKCreated) {
   EXPECT_FALSE(pairing_data().local_ltk.has_value() || pairing_data().peer_ltk.has_value());
 }
 
-// Test that LTK is not passed up to PairingState when local side requests bondable mode and peer
+// Test that LTK is not passed up to SecurityManager when local side requests bondable mode and peer
 // requests non-bondable mode.
 TEST_F(SMP_ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::Bondable);
+  SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::Bondable);
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       0u,  // remote keys
                       0u,  // local keys
@@ -3255,11 +3255,11 @@ TEST_F(SMP_ResponderPairingTest, PeerRequestsNonBondableNoLTKCreated) {
   EXPECT_FALSE(pairing_data().local_ltk.has_value() || pairing_data().peer_ltk.has_value());
 }
 
-// Test that LTK is not generated and passed up to PairingState when both sides request
+// Test that LTK is not generated and passed up to SecurityManager when both sides request
 // non-bondable mode.
 TEST_F(SMP_ResponderPairingTest, BothSidesRequestNonBondableNoLTKCreated) {
   UInt128 stk;
-  SetUpPairingState(IOCapability::kDisplayOnly, BondableMode::NonBondable);
+  SetUpSecurityManager(IOCapability::kDisplayOnly, BondableMode::NonBondable);
   FastForwardToPhase3(&stk, false /*secure_connections*/, SecurityLevel::kEncrypted,
                       0u,  // remote keys
                       0u,  // local keys
@@ -3281,7 +3281,7 @@ TEST_F(SMP_ResponderPairingTest, PairingRequestStartsPairingTimer) {
 }
 
 TEST_F(SMP_ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnectionsOnlyMode) {
-  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  SetUpSecurityManager(IOCapability::kKeyboardDisplay);
   pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
   // In SC Only mode, SM should translate this "encrypted" request into a MITM requirement.
   UpgradeSecurity(SecurityLevel::kEncrypted);
@@ -3300,7 +3300,7 @@ TEST_F(SMP_ResponderPairingTest, RejectUnauthenticatedPairingInSecureConnections
 }
 
 TEST_F(SMP_ResponderPairingTest, RejectInsufficientKeySizeRequestInSecureConnectionsOnlyMode) {
-  SetUpPairingState(IOCapability::kKeyboardDisplay);
+  SetUpSecurityManager(IOCapability::kKeyboardDisplay);
   pairing()->set_security_mode(gap::LeSecurityMode::SecureConnectionsOnly);
   // The peer encryption key size is not kMaxEncryptionKeySize, thus does not meet the Secure
   // Connections Only requirements.
@@ -3316,7 +3316,7 @@ TEST_F(SMP_ResponderPairingTest, RejectInsufficientKeySizeRequestInSecureConnect
 // Tests that Secure Connections works as responder
 TEST_F(SMP_ResponderPairingTest, SecureConnectionsWorks) {
   // Must have DisplayYesNo IOC to generate Authenticated security per kExpectedSecurity
-  SetUpPairingState(IOCapability::kDisplayYesNo);
+  SetUpSecurityManager(IOCapability::kDisplayYesNo);
   UInt128 ltk_bytes;
   const SecurityProperties kExpectedSecurity(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize,
                                              true /* secure connections */);

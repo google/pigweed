@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_
 
 #include <zircon/assert.h>
 
@@ -32,20 +32,20 @@
 namespace bt {
 namespace sm {
 
-// Represents the pairing state of a connected peer. The peer device must be a
-// LE or a BR/EDR/LE device.
-class PairingState final : public PairingPhase::Listener {
+// Provides a per-peer interface to Security Manager Protocol functionality detailed in v5.2 Vol. 3
+// Part H. The peer device must be a LE or a BR/EDR/LE device. See README.md for more overview.
+class SecurityManager final : public PairingPhase::Listener {
  public:
   // |link|: The LE logical link over which pairing procedures occur.
   // |smp|: The L2CAP LE SMP fixed channel that operates over |link|.
   // |io_capability|: The initial I/O capability.
   // |delegate|: Delegate which handles SMP interactions with the rest of the Bluetooth stack.
   // |bondable_mode|: the operating bondable mode of the device (see v5.2, Vol. 3, Part C 9.4).
-  // |security_mode|: the security mode this PairingState is in (see v5.2, Vol. 3, Part C 10.2).
-  PairingState(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
-               IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
-               BondableMode bondable_mode, gap::LeSecurityMode security_mode);
-  ~PairingState() override;
+  // |security_mode|: the security mode this SecurityManager is in (see v5.2, Vol. 3, Part C 10.2).
+  SecurityManager(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+                  IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+                  BondableMode bondable_mode, gap::LeSecurityMode security_mode);
+  ~SecurityManager() override;
 
   // Returns the current security properties of the LE link.
   const SecurityProperties& security() const { return le_sec_; }
@@ -88,16 +88,16 @@ class PairingState final : public PairingPhase::Listener {
   // Abort all ongoing pairing procedures and notify pairing callbacks with the provided error.
   void Abort(ErrorCode ecode = ErrorCode::kUnspecifiedReason);
 
-  // Returns whether or not the pairing state is in bondable mode. Note that being in bondable mode
-  // does not guarantee that pairing will necessarily bond.
+  // Returns whether or not the SecurityManager is in bondable mode. Note that being in bondable
+  // mode does not guarantee that pairing will necessarily bond.
   BondableMode bondable_mode() const { return bondable_mode_; }
 
-  // Sets the bondable mode of the pairing state. Any in-progress pairings will not be affected -
+  // Sets the bondable mode of the SecurityManager. Any in-progress pairings will not be affected -
   // if bondable mode needs to be reset during a pairing Reset() or Abort() must be called first.
   void set_bondable_mode(sm::BondableMode mode) { bondable_mode_ = mode; }
 
-  // Sets the LE Security mode of the pairing state - see enum definition for details of each mode.
-  // If a security upgrade is in-progress, this will only take effect on the next security upgrade.
+  // Sets the LE Security mode of the SecurityManager - see enum definition for details of each
+  // mode. If a security upgrade is in-progress, only takes effect on the next security upgrade.
   void set_security_mode(gap::LeSecurityMode mode) { security_mode_ = mode; }
 
  private:
@@ -230,25 +230,25 @@ class PairingState final : public PairingPhase::Listener {
   // The role of the local device in pairing.
   Role role_;
 
-  async::TaskClosureMethod<PairingState, &PairingState::OnPairingTimeout> timeout_task_{this};
+  async::TaskClosureMethod<SecurityManager, &SecurityManager::OnPairingTimeout> timeout_task_{this};
 
   // The presence of a particular phase in this variant indicates that the pairing state machine is
   // currently in that phase. `weak_ptr_factory_` must be the last declared member so that all weak
-  // pointers to PairingState are invalidated at the beginning of destruction, but all of the Phase
-  // class ctors take a WeakPtr<PairingState>. Thus, we include std::monostate in the variant so
-  // `current_phase_` can be default-constructible in the initializer list, and construct an Idle
-  // Phase in the PairingState ctor.
+  // pointers to SecurityManager are invalidated at the beginning of destruction, but all of the
+  // Phase class ctors take a WeakPtr<SecurityManager>. Thus, we include std::monostate in the
+  // variant so `current_phase_` can be default-constructible in the initializer list, and construct
+  // an Idle Phase in the SecurityManager ctor.
   // TODO(fxbug.dev/53946): Clean up usage of PairingPhases, especially re:std::monostate.
   std::variant<std::monostate, IdlePhase, std::unique_ptr<Phase1>, Phase2Legacy,
                Phase2SecureConnections, Phase3>
       current_phase_;
 
-  fxl::WeakPtrFactory<PairingState> weak_ptr_factory_;
+  fxl::WeakPtrFactory<SecurityManager> weak_ptr_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManager);
 };
 
 }  // namespace sm
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_STATE_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_
