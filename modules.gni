@@ -51,6 +51,7 @@ declare_args() {
   dir_pw_presubmit = get_path_info("pw_presubmit", "abspath")
   dir_pw_protobuf = get_path_info("pw_protobuf", "abspath")
   dir_pw_protobuf_compiler = get_path_info("pw_protobuf_compiler", "abspath")
+  dir_pw_random = get_path_info("pw_random", "abspath")
   dir_pw_result = get_path_info("pw_result", "abspath")
   dir_pw_ring_buffer = get_path_info("pw_ring_buffer", "abspath")
   dir_pw_rpc = get_path_info("pw_rpc", "abspath")

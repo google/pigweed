@@ -192,6 +192,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_preprocessor:tests",
       "$dir_pw_protobuf:tests",
       "$dir_pw_protobuf_compiler:tests",
+      "$dir_pw_random:tests",
       "$dir_pw_result:tests",
       "$dir_pw_ring_buffer:tests",
       "$dir_pw_rpc:tests",
