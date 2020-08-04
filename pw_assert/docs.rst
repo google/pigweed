@@ -507,14 +507,15 @@ Pigweed uses these conventions to decide between ``CHECK_*`` and ``DCHECK_*``:
 
   **Do not return error status codes for obvious API misuse**
 
-  Returning an error code may mask the earliest sign of a bug; notifying the
-  developer of the problem depends on correct propagation of the error to upper
-  levels of the system. Instead, prefer to use the ``CHECK_*`` or ``DCHECK_*``
-  macros to ensure a prompt termination and warning to the developer.
+  Returning an error code may **mask the earliest sign of a bug** because
+  notifying the developer of the problem depends on correct propagation of the
+  error to upper levels of the system. Instead, prefer to use the ``CHECK_*``
+  or ``DCHECK_*`` macros to ensure a prompt termination and warning to the
+  developer.
 
-  Error status codes should be reserved for system misbehaviour or expected
-  exceptional cases, like a sensor is not yet ready, or a storage subsystem is
-  full when writing. Doing ``CHECK_*`` assertions in those cases would be a
+  **Error status codes should be reserved for system misbehaviour or expected
+  exceptional cases**, like a sensor is not yet ready, or a storage subsystem
+  is full when writing. Doing ``CHECK_*`` assertions in those cases would be a
   mistake; so use error codes in those cases instead.
 
 How should objects be asserted against or compared?
@@ -576,4 +577,72 @@ asserted on is necessary.
 -------------
 Compatibility
 -------------
-The facade is compatible with C and C++.
+The facade is compatible with both C and C++.
+
+----------------
+Roadmap & Status
+----------------
+
+The Pigweed assert subsystem consiststs of several modules that work in
+coordination. In particular, there is the facade (this module), then a number
+of backends to handle assert failures. In some cases, the backends will have
+backends (like log_tokenized). Not all of those modules are ready today. Below
+is a brief summary of what modules are ready now, and which need to be written
+or need more work:
+
+Currently implemented modules
+-----------------------------
+
+- ``pw_assert`` - **Stable** - The assert facade (this module). This module is
+  stable, and in production use. The documentation is comprehensive and covers
+  the functionality. There are (a) tests for the facade macro processing logic,
+  using a fake assert backend; and (b) compile tests to verify that the
+  selected backend compiles with all supported assert constructions and types.
+- ``pw_assert_basic`` - **Stable** - The assert basic module is a simple assert
+  handler that displays the failed assert line and the values of captured
+  arguments. Output is directed to ``pw_sys_io``. This module is a great
+  ready-to-roll module when bringing up a system, but is likely not the best
+  choice for production.
+
+Not yet written modules
+-----------------------
+
+- ``pw_assert_tokenized`` - **Not started** - Just like there is a
+  ``pw_log_tokenized`` module that leverages the tokenizer to strip log string
+  literals from binaries, there will be an implementation that tokenizes the
+  assert contents (such as the captured source expression string). We may
+  combine ``pw_log_tokenized`` and ``pw_assert_tokenized`` into
+  ``pw_log_assert_tokenized`` since much of the details would be shared between
+  them.
+- ``pw_assert_log`` - **Not started** - This would use ``pw_log`` on assert
+  failure to communicate the failure information. Instead of being a separate
+  module, this might be an optional flag added to ``pw_assert_basic``.
+
+Missing functionality
+---------------------
+
+- **Stack traces** - Pigweed doesn't have a reliable stack walker, which makes
+  displaying a stack trace on crash harder. We plan to add this eventually.
+- **Snapshot integration** - Pigweed doesn't yet have a rich system state
+  capture system that can capture state like number of tasks, available memory,
+  and so on. Snapshot facilities are the obvious ones to run inside an assert
+  handler. It'll happen someday.
+- **Light asserts to break circular dependencies** - The Pigweed assert API is
+  flexible thanks to the facade structure; however, this can trigger circular
+  header dependencies due to facade directly including the backend. This can
+  happen when adding asserts to low-level functionality in headers, like for
+  example inside ``<span>``. Our polyfill span is used extensively in low level
+  components (like malloc and vector), including in some assert backends, which
+  leads to circular dependencies when span itself tries to assert.
+
+  There is no solution to this problem that doesn't require a compromise. The
+  easiest solution to enabling asserts everywhere is to shift to a C ABI with
+  link time dependency resolution; this breaks the header cycles. However, such
+  a structure would prevent custom compile-time filtering and tokenization.
+
+  Our current plan is to offer a simple C-function based assert API, with the
+  backend provided at link time rather than through header redirection. For
+  example, the API could be as simple as ``void pw_assert(bool condition)`` or
+  ``pw_assert_crash()`` if the condition check was done in a macro. This assert
+  API is intended for contexts where including the backend header would trigger
+  these problems, for use in common low level headers like ``<span>``.
