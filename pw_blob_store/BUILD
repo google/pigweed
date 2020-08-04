@@ -24,6 +24,7 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_blob_store",
+    srcs = [ "blob_store.cc" ],
     hdrs = [
         "public/pw_blob_store/blob_store.h",
     ],
@@ -32,8 +33,23 @@ pw_cc_library(
         "//pw_checksum",
         "//pw_containers",
         "//pw_log",
-        "//pw_log:facade",
         "//pw_span",
         "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "blob_store_test",
+    srcs = [
+        "blob_store_test.cc",
+    ],
+    deps = [
+        ":pw_blob_store",
+        "//pw_kvs:crc16",
+        "//pw_kvs:fake_flash",
+        "//pw_kvs:fake_flash_test_key_value_store",
+        "//pw_log",
+        "//pw_random",
+        "//pw_unit_test",
     ],
 )

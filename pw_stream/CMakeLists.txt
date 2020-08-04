@@ -12,17 +12,15 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-pw_auto_add_simple_module(pw_blob_store
+pw_auto_add_simple_module(pw_stream
   PUBLIC_DEPS
+    pw_bytes
     pw_containers
-    pw_kvs
+    pw_log
+    pw_result
     pw_span
     pw_status
-    pw_stream
   PRIVATE_DEPS
     pw_assert
-    pw_checksum
-    pw_log
-    pw_random
     pw_string
 )
