@@ -19,13 +19,13 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "pw_rpc/internal/service.h"
 #include "pw_rpc/server_context.h"
+#include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
 
 namespace pw::rpc {
 
-class TestService : public internal::Service {
+class TestService : public Service {
  public:
   constexpr TestService(uint32_t id)
       : Service(id, std::span(&method, 1)), method(8) {}

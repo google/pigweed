@@ -437,7 +437,7 @@ Requests
       label = "pw_rpc library";
 
       server [label = "Server"];
-      service [label = "internal::Service"];
+      service [label = "Service"];
       method [label = "internal::Method"];
     }
 

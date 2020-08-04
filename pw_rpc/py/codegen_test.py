@@ -48,52 +48,95 @@ service TestService {
 EXPECTED_NANOPB_CODE = """\
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 
-#include "pw_rpc/internal/service.h"
+#include "pw_rpc/internal/method.h"
+#include "pw_rpc/server_context.h"
+#include "pw_rpc/service.h"
 #include "test.pb.h"
 
+namespace pw::rpc::internal {
+
+template <auto>
+class ServiceMethodTraits;
+
+}  // namespace pw::rpc::internal
 
 namespace pw::rpc::test {
+namespace generated {
 
-class TestService : public ::pw::rpc::internal::Service {
+template <typename Implementation>
+class TestService : public ::pw::rpc::Service {
  public:
   using ServerContext = ::pw::rpc::ServerContext;
-  template <typename T> using ServerWriter = ::pw::rpc::ServerWriter<T>;
+  template <typename T>
+  using ServerWriter = ::pw::rpc::ServerWriter<T>;
 
-  constexpr TestService() : ::pw::rpc::internal::Service(kServiceId, kMethods) {}
+  constexpr TestService()
+      : ::pw::rpc::Service(kServiceId, kMethods) {}
 
   TestService(const TestService&) = delete;
   TestService& operator=(const TestService&) = delete;
 
-  static ::pw::Status TestRpc(
-      ServerContext& ctx,
-      const pw_rpc_test_TestRequest& request,
-      pw_rpc_test_TestResponse& response);
+  static constexpr const char* name() { return "TestService"; }
 
-  static ::pw::Status TestStreamRpc(
-      ServerContext& ctx,
-      const pw_rpc_test_Empty& request,
-      ServerWriter<pw_rpc_test_TestStreamResponse>& writer);
+  // Used by ServiceMethodTraits to identify a base service.
+  constexpr void _PwRpcInternalGeneratedBase() const {}
 
  private:
-  // 65599 hash of "TestService".
-  static constexpr uint32_t kServiceId = 0x105b6ac8;
-  static constexpr char* kServiceName = "TestService";
+  // Hash of "pw.rpc.test.TestService".
+  static constexpr uint32_t kServiceId = 0xcc0f6de0;
+
+  static ::pw::Status Invoke_TestRpc(
+      ::pw::rpc::internal::ServerCall& call,
+      const pw_rpc_test_TestRequest& request,
+      pw_rpc_test_TestResponse& response) {
+    return static_cast<Implementation&>(call.service())
+        .TestRpc(call.context(), request, response);
+  }
+
+  static void Invoke_TestStreamRpc(
+      ::pw::rpc::internal::ServerCall& call,
+      const pw_rpc_test_TestRequest& request,
+      ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
+    static_cast<Implementation&>(call.service())
+        .TestStreamRpc(call.context(), request, writer);
+  }
 
   static constexpr std::array<::pw::rpc::internal::Method, 2> kMethods = {
-      ::pw::rpc::internal::Method::Unary<TestRpc>(
-          0xbc924054,  // 65599 hash of "TestRpc"
+      ::pw::rpc::internal::Method::Unary<Invoke_TestRpc>(
+          0xbc924054,  // Hash of "TestRpc"
           pw_rpc_test_TestRequest_fields,
           pw_rpc_test_TestResponse_fields),
-      ::pw::rpc::internal::Method::ServerStreaming<TestStreamRpc>(
-          0xd97a28fa,  // 65599 hash of "TestStreamRpc"
-          pw_rpc_test_Empty_fields,
+      ::pw::rpc::internal::Method::ServerStreaming<Invoke_TestStreamRpc>(
+          0xd97a28fa,  // Hash of "TestStreamRpc"
+          pw_rpc_test_TestRequest_fields,
           pw_rpc_test_TestStreamResponse_fields),
   };
+
+  template <auto impl_method>
+  static constexpr const ::pw::rpc::internal::Method* MethodFor() {
+    if constexpr (std::is_same_v<decltype(impl_method), decltype(&Implementation::TestRpc)>) {
+      if constexpr (impl_method == &Implementation::TestRpc) {
+        return &std::get<0>(kMethods);
+      }
+    }
+    if constexpr (std::is_same_v<decltype(impl_method), decltype(&Implementation::TestStreamRpc)>) {
+      if constexpr (impl_method == &Implementation::TestStreamRpc) {
+        return &std::get<1>(kMethods);
+      }
+    }
+    return nullptr;
+  }
+
+  template <auto>
+  friend class ::pw::rpc::internal::ServiceMethodTraits;
 };
 
+}  // namespace generated
 }  // namespace pw::rpc::test
 """
 
@@ -128,7 +171,7 @@ class TestNanopbCodegen(unittest.TestCase):
 
         generated_files = os.listdir(self._output_dir.name)
         self.assertEqual(len(generated_files), 1)
-        self.assertEqual(generated_files[0], 'test_rpc.pb.h')
+        self.assertEqual(generated_files[0], 'test.rpc.pb.h')
 
         # Read the generated file, ignoring its preamble.
         generated_code = Path(self._output_dir.name,

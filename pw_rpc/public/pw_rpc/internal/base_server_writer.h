@@ -20,7 +20,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
-#include "pw_rpc/internal/service.h"
+#include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {

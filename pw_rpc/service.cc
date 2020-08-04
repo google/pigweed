@@ -12,16 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/service.h"
+#include "pw_rpc/service.h"
 
 #include <type_traits>
 
 #include "pw_rpc/internal/method.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
 
-const Method* Service::FindMethod(uint32_t method_id) const {
-  for (const Method& method : methods_) {
+const internal::Method* Service::FindMethod(uint32_t method_id) const {
+  for (const internal::Method& method : methods_) {
     if (method.id() == method_id) {
       return &method;
     }
@@ -30,4 +30,4 @@ const Method* Service::FindMethod(uint32_t method_id) const {
   return nullptr;
 }
 
-}  // namespace pw::rpc::internal
+}  // namespace pw::rpc

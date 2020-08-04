@@ -20,7 +20,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/channel.h"
-#include "pw_rpc/internal/service.h"
+#include "pw_rpc/service.h"
 
 namespace pw::rpc {
 
@@ -33,11 +33,8 @@ class Server {
   ~Server();
 
   // Registers a service with the server. This should not be called directly
-  // with an internal::Service; instead, use a generated class which inherits
-  // from it.
-  void RegisterService(internal::Service& service) {
-    services_.push_front(service);
-  }
+  // with a Service; instead, use a generated class which inherits from it.
+  void RegisterService(Service& service) { services_.push_front(service); }
 
   void ProcessPacket(std::span<const std::byte> packet,
                      ChannelOutput& interface);
@@ -55,7 +52,7 @@ class Server {
   internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);
 
   std::span<internal::Channel> channels_;
-  IntrusiveList<internal::Service> services_;
+  IntrusiveList<Service> services_;
   IntrusiveList<internal::BaseServerWriter> writers_;
 };
 

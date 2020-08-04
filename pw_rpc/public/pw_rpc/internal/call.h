@@ -22,12 +22,12 @@
 namespace pw::rpc {
 
 class ServerContext;
+class Service;
 
 namespace internal {
 
 class Method;
 class Server;
-class Service;
 
 // Collects information for an ongoing RPC being processed by the server.
 // The Server creates a ServerCall object to represent a method invocation. The

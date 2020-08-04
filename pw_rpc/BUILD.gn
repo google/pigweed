@@ -56,7 +56,6 @@ template("_pw_rpc_server_library") {
       "base_server_writer.cc",
       "public/pw_rpc/internal/base_server_writer.h",
       "public/pw_rpc/internal/server.h",
-      "public/pw_rpc/internal/service.h",
       "server.cc",
       "service.cc",
     ]
@@ -77,13 +76,22 @@ template("_pw_rpc_server_library") {
   }
 }
 
+# Provides the public RPC service definition (but not implementation). Can be
+# used to expose global service registration without depending on the complete
+# RPC library.
+pw_source_set("service") {
+  public_configs = [ ":default_config" ]
+  public_deps = [ "$dir_pw_containers:intrusive_list" ]
+  public = [ "public/pw_rpc/service.h" ]
+}
+
 # Put these dependencies into a group since they need to be shared by the server
 # library and its implementation library.
 group("server_library_deps") {
   public_configs = [ ":default_config" ]
   public_deps = [
     ":common",
-    "$dir_pw_containers:intrusive_list",
+    ":service",
     dir_pw_span,
     dir_pw_status,
   ]

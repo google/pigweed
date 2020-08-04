@@ -145,7 +145,7 @@ def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
 
-    base_class = f'{RPC_NAMESPACE}::internal::Service'
+    base_class = f'{RPC_NAMESPACE}::Service'
     output.write_line('\ntemplate <typename Implementation>')
     output.write_line(
         f'class {service.cpp_namespace(root)} : public {base_class} {{')
@@ -229,8 +229,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstdint>')
     output.write_line('#include <type_traits>\n')
     output.write_line('#include "pw_rpc/internal/method.h"')
-    output.write_line('#include "pw_rpc/internal/service.h"')
     output.write_line('#include "pw_rpc/server_context.h"')
+    output.write_line('#include "pw_rpc/service.h"')
 
     # Include the corresponding nanopb header file for this proto file, in which
     # the file's messages and enums are generated. All other files imported from

@@ -27,13 +27,13 @@ pw_cc_library(
     srcs = [
         "base_server_writer.cc",
         "public/pw_rpc/internal/base_server_writer.h",
-        "public/pw_rpc/internal/service.h",
         "server.cc",
         "service.cc",
     ],
     hdrs = [
         "public/pw_rpc/server.h",
         "public/pw_rpc/server_context.h",
+        "public/pw_rpc/service.h",
         "public/pw_rpc/internal/channel.h",
         "public/pw_rpc/internal/server.h",
         "public/pw_rpc/internal/hash.h",

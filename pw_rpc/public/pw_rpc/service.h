@@ -19,9 +19,12 @@
 
 #include "pw_containers/intrusive_list.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
+namespace internal {
 
 class Method;
+
+}  // namespace internal
 
 // Base class for all RPC services. This cannot be instantiated directly; use a
 // generated subclass instead.
@@ -29,19 +32,19 @@ class Service : public IntrusiveList<Service>::Item {
  public:
   uint32_t id() const { return id_; }
 
-  // Finds the method with the provided method_id. Returns nullptr if no match.
-  const Method* FindMethod(uint32_t method_id) const;
-
  protected:
   template <typename T>
   constexpr Service(uint32_t id, T&& methods)
       : id_(id), methods_(std::forward<T>(methods)) {}
 
  private:
-  friend class ServiceRegistry;
+  friend class Server;
+
+  // Finds the method with the provided method_id. Returns nullptr if no match.
+  const internal::Method* FindMethod(uint32_t method_id) const;
 
   uint32_t id_;
-  std::span<const Method> methods_;
+  std::span<const internal::Method> methods_;
 };
 
-}  // namespace pw::rpc::internal
+}  // namespace pw::rpc

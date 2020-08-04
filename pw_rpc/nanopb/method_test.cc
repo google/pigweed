@@ -18,8 +18,8 @@
 
 #include "gtest/gtest.h"
 #include "pb_encode.h"
-#include "pw_rpc/internal/service.h"
 #include "pw_rpc/server_context.h"
+#include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
