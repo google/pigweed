@@ -23,26 +23,54 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "client",
+    srcs = [
+        "client.cc",
+        "base_client_call.cc",
+    ],
+    hdrs = [
+        "public/pw_rpc/client.h",
+        "public/pw_rpc/internal/base_client_call.h",
+    ],
+    deps = [
+        ":common",
+    ]
+)
+
+pw_cc_library(
     name = "server",
     srcs = [
         "base_server_writer.cc",
-        "channel.cc",
-        "packet.cc",
         "public/pw_rpc/internal/base_server_writer.h",
         "public/pw_rpc/internal/call.h",
-        "public/pw_rpc/internal/channel.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
-        "public/pw_rpc/internal/packet.h",
         "public/pw_rpc/internal/server.h",
         "server.cc",
         "service.cc",
     ],
     hdrs = [
-        "public/pw_rpc/channel.h",
         "public/pw_rpc/server.h",
         "public/pw_rpc/server_context.h",
         "public/pw_rpc/service.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":common",
+    ],
+)
+
+pw_cc_library(
+    name = "common",
+    srcs = [
+        "channel.cc",
+        "packet.cc",
+        "public/pw_rpc/internal/channel.h",
+        "public/pw_rpc/internal/method_type.h",
+        "public/pw_rpc/internal/packet.h",
+    ],
+    hdrs = [
+        "public/pw_rpc/channel.h",
     ],
     includes = ["public"],
     deps = [
@@ -73,12 +101,18 @@ filegroup(
     srcs = [
         "nanopb/codegen_test.cc",
         "nanopb/echo_service_test.cc",
+        "nanopb/nanopb_client_call.cc",
+        "nanopb/nanopb_client_call_test.cc",
+        "nanopb/nanopb_common.cc",
         "nanopb/nanopb_method.cc",
         "nanopb/nanopb_method_test.cc",
         "nanopb/public/pw_rpc/echo_service_nanopb.h",
+        "nanopb/public/pw_rpc/nanopb_client_call.h",
+        "nanopb/public/pw_rpc/internal/nanopb_common.h",
         "nanopb/public/pw_rpc/internal/nanopb_method.h",
         "nanopb/public/pw_rpc/internal/service_method_traits.h",
         "nanopb/public/pw_rpc/test_method_context.h",
+        "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
         "nanopb/service_method_traits_test.cc",
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",
@@ -94,6 +128,28 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":server",
+    ],
+)
+
+pw_cc_test(
+    name = "base_client_call_test",
+    srcs = [
+        "base_client_call_test.cc",
+    ],
+    deps = [
+        ":client",
+        ":internal_test_utils",
+    ],
+)
+
+pw_cc_test(
+    name = "client_test",
+    srcs = [
+        "client_test.cc",
+    ],
+    deps = [
+        ":client",
+        ":internal_test_utils",
     ],
 )
 

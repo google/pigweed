@@ -21,6 +21,8 @@
 
 #include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_type.h"
+#include "pw_rpc/internal/nanopb_common.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -53,11 +55,6 @@ namespace internal {
 
 class Packet;
 
-// Use a void* to cover both Nanopb 3's pb_field_s and Nanopb 4's pb_msgdesc_s.
-using NanopbMessageDescriptor = const void*;
-
-enum class Type { kUnary, kServerStreaming, kClientStreaming, kBidiStreaming };
-
 // Templated false value for use in static_assert(false) statements.
 template <typename...>
 constexpr std::false_type kFalse{};
@@ -75,7 +72,7 @@ struct RpcTraits<Status (*)(ServerCall&, const RequestType&, ResponseType&)> {
   using Request = RequestType;
   using Response = ResponseType;
 
-  static constexpr Type kType = Type::kUnary;
+  static constexpr MethodType kType = MethodType::kUnary;
   static constexpr bool kServerStreaming = false;
   static constexpr bool kClientStreaming = false;
 };
@@ -87,7 +84,7 @@ struct RpcTraits<void (*)(
   using Request = RequestType;
   using Response = ResponseType;
 
-  static constexpr Type kType = Type::kServerStreaming;
+  static constexpr MethodType kType = MethodType::kServerStreaming;
   static constexpr bool kServerStreaming = true;
   static constexpr bool kClientStreaming = false;
 };
@@ -178,12 +175,16 @@ class NanopbMethod : public Method {
 
   // Encodes a response protobuf with Nanopb to the provided buffer.
   StatusWithSize EncodeResponse(const void* proto_struct,
-                                std::span<std::byte> buffer) const;
+                                std::span<std::byte> buffer) const {
+    return serde_.EncodeResponse(buffer, proto_struct);
+  }
 
   // Decodes a response protobuf with Nanopb to the provided buffer. For testing
   // use.
   bool DecodeResponse(std::span<const std::byte> response,
-                      void* proto_struct) const;
+                      void* proto_struct) const {
+    return serde_.DecodeResponse(proto_struct, response);
+  }
 
  private:
   // Generic version of the unary RPC function signature:
@@ -223,10 +224,7 @@ class NanopbMethod : public Method {
                          Function function,
                          NanopbMessageDescriptor request,
                          NanopbMessageDescriptor response)
-      : Method(id, invoker),
-        function_(function),
-        request_fields_(request),
-        response_fields_(response) {}
+      : Method(id, invoker), function_(function), serde_(request, response) {}
 
   void CallUnary(ServerCall& call,
                  const Packet& request,
@@ -284,9 +282,8 @@ class NanopbMethod : public Method {
   // Stores the user-defined RPC in a generic wrapper.
   Function function_;
 
-  // Pointers to the descriptors used to encode and decode Nanopb structs.
-  NanopbMessageDescriptor request_fields_;
-  NanopbMessageDescriptor response_fields_;
+  // Serde used to encode and decode Nanopb structs.
+  NanopbMethodSerde serde_;
 };
 
 }  // namespace internal

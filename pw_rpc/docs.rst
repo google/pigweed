@@ -23,6 +23,11 @@ user-defined RPCs are implemented.
 ``pw_rpc`` supports multiple protobuf libraries, and the generated code API
 depends on which is used.
 
+.. _pw-rpc-protobuf-apis:
+
+Protobuf library APIs
+=====================
+
 .. toctree::
   :maxdepth: 1
 
@@ -533,3 +538,67 @@ Responses
     method -> server -> channel;
     channel -> packets [folded];
   }
+
+RPC client
+==========
+The RPC client is used to send requests to a server and manages the contexts of
+ongoing RPCs.
+
+Setting up a client
+-------------------
+The ``pw::rpc::Client`` class is instantiated with a list of channels that it
+uses to communicate. These channels can be shared with a server, but multiple
+clients cannot use the same channels.
+
+To send incoming RPC packets from the transport layer to be processed by a
+client, the client's ``ProcessPacket`` function is called with the packet data.
+
+.. code:: c++
+
+  #include "pw_rpc/client.h"
+
+  namespace {
+
+  pw::rpc::Channel my_channels[] = {
+      pw::rpc::Channel::Create<1>(&my_channel_output)};
+  pw::rpc::Client my_client(my_channels);
+
+  }  // namespace
+
+  // Called when the transport layer receives an RPC packet.
+  void ProcessRpcPacket(ConstByteSpan packet) {
+    my_client.ProcessPacket(packet);
+  }
+
+Making RPC calls
+----------------
+RPC calls are not made directly through the client, but using one of its
+registered channels instead. A service client class is generated from a .proto
+file for each selected protobuf library, which is then used to send RPC requests
+through a given channel. The API for this depends on the protobuf library;
+please refer to the :ref:`appropriate documentation <pw-rpc-protobuf-apis>`.
+Multiple service client implementations can exist simulatenously and share the
+same ``Client`` class.
+
+When a call is made, a ``pw::rpc::ClientCall`` object is returned to the caller.
+This object tracks the ongoing RPC call, and can be used to manage it. An RPC
+call is only active as long as its ``ClientCall`` object is alive.
+
+.. tip::
+  Use ``std::move`` when passing around ``ClientCall`` objects to keep RPCs
+  alive.
+
+Client implementation details
+-----------------------------
+
+The ClientCall class
+^^^^^^^^^^^^^^^^^^^^
+``ClientCall`` stores the context of an active RPC, and serves as the user's
+interface to the RPC client. The core RPC library provides a base ``ClientCall``
+class with common functionality, which is then extended for RPC client
+implementations tied to different protobuf libraries to provide convenient
+interfaces for working with RPCs.
+
+The RPC server stores a list of all of active ``ClientCall`` objects. When an
+incoming packet is recieved, it dispatches to one of its active calls, which
+then decodes the payload and presents it to the user.

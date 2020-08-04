@@ -17,9 +17,9 @@
 #include <array>
 
 #include "gtest/gtest.h"
-#include "pb_encode.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
+#include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
@@ -27,25 +27,6 @@ namespace pw::rpc::internal {
 namespace {
 
 using std::byte;
-
-#define ENCODE_PB(proto, result, ...) \
-  _ENCODE_PB_EXPAND(proto, result, __LINE__, __VA_ARGS__)
-
-#define _ENCODE_PB_EXPAND(proto, result, unique, ...) \
-  _ENCODE_PB_IMPL(proto, result, unique, __VA_ARGS__)
-
-#define _ENCODE_PB_IMPL(proto, result, unique, ...)               \
-  std::array<pb_byte_t, 2 * sizeof(proto)> _pb_buffer_##unique{}; \
-  const std::span result = EncodeProtobuf<proto, proto##_fields>( \
-      proto{__VA_ARGS__}, _pb_buffer_##unique)
-
-template <typename T, auto fields>
-std::span<const byte> EncodeProtobuf(const T& protobuf,
-                                     std::span<pb_byte_t> buffer) {
-  auto output = pb_ostream_from_buffer(buffer.data(), buffer.size());
-  EXPECT_TRUE(pb_encode(&output, fields, &protobuf));
-  return std::as_bytes(buffer.first(output.bytes_written));
-}
 
 template <typename Implementation>
 class FakeGeneratedService : public Service {
@@ -114,7 +95,8 @@ class FakeGeneratedServiceImpl
 };
 
 TEST(NanopbMethod, UnaryRpc_SendsResponse) {
-  ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
+  PW_ENCODE_PB(
+      pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
   const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
@@ -150,7 +132,7 @@ TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
 
 TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
-  ENCODE_PB(
+  PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
   const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
@@ -171,7 +153,8 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
 }
 
 TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
-  ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
+  PW_ENCODE_PB(
+      pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
   const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
@@ -190,7 +173,7 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 
   EXPECT_EQ(Status::OK, last_writer.Write({.value = 100}));
 
-  ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
+  PW_ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet(payload).Encode(encoded_response);
   ASSERT_EQ(Status::OK, encoded.status());

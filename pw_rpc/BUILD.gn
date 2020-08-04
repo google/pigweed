@@ -28,33 +28,59 @@ config("default_config") {
 
 pw_source_set("server") {
   public_configs = [ ":default_config" ]
-  public_deps = [
-    ":protos_pwpb",
-    "$dir_pw_containers:intrusive_list",
-    dir_pw_assert,
-    dir_pw_span,
-    dir_pw_status,
-  ]
+  public_deps = [ ":common" ]
   deps = [ dir_pw_log ]
   public = [
-    "public/pw_rpc/channel.h",
     "public/pw_rpc/server.h",
     "public/pw_rpc/server_context.h",
     "public/pw_rpc/service.h",
   ]
   sources = [
     "base_server_writer.cc",
-    "channel.cc",
-    "packet.cc",
     "public/pw_rpc/internal/base_server_writer.h",
     "public/pw_rpc/internal/call.h",
-    "public/pw_rpc/internal/channel.h",
     "public/pw_rpc/internal/hash.h",
     "public/pw_rpc/internal/method.h",
-    "public/pw_rpc/internal/packet.h",
     "public/pw_rpc/internal/server.h",
     "server.cc",
     "service.cc",
+  ]
+  friend = [ "./*" ]
+}
+
+pw_source_set("client") {
+  public_configs = [ ":default_config" ]
+  public_deps = [ ":common" ]
+  deps = [ dir_pw_log ]
+  public = [
+    "public/pw_rpc/client.h",
+    "public/pw_rpc/internal/base_client_call.h",
+  ]
+  sources = [
+    "base_client_call.cc",
+    "client.cc",
+  ]
+}
+
+# Classes shared by the server and client.
+pw_source_set("common") {
+  public_configs = [ ":default_config" ]
+  public_deps = [
+    ":protos_pwpb",
+    "$dir_pw_containers:intrusive_list",
+    dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+  deps = [ dir_pw_log ]
+  public = [ "public/pw_rpc/channel.h" ]
+  sources = [
+    "channel.cc",
+    "packet.cc",
+    "public/pw_rpc/internal/channel.h",
+    "public/pw_rpc/internal/method_type.h",
+    "public/pw_rpc/internal/packet.h",
   ]
   friend = [ "./*" ]
 }
@@ -66,6 +92,7 @@ pw_source_set("test_utils") {
   ]
   public_configs = [ ":private_includes" ]
   public_deps = [
+    ":client",
     ":server",
     dir_pw_span,
   ]
@@ -145,8 +172,10 @@ pw_size_report("server_size") {
 
 pw_test_group("tests") {
   tests = [
+    ":base_client_call_test",
     ":base_server_writer_test",
     ":channel_test",
+    ":client_test",
     ":packet_test",
     ":server_test",
     ":service_test",
@@ -156,6 +185,7 @@ pw_test_group("tests") {
 
 pw_proto_library("test_protos") {
   sources = [ "pw_rpc_test_protos/test.proto" ]
+  inputs = [ "pw_rpc_test_protos/test.options" ]
   visibility = [ "./*" ]
 }
 
@@ -196,6 +226,22 @@ pw_test("service_test") {
     dir_pw_assert,
   ]
   sources = [ "service_test.cc" ]
+}
+
+pw_test("client_test") {
+  deps = [
+    ":client",
+    ":test_utils",
+  ]
+  sources = [ "client_test.cc" ]
+}
+
+pw_test("base_client_call_test") {
+  deps = [
+    ":client",
+    ":test_utils",
+  ]
+  sources = [ "base_client_call_test.cc" ]
 }
 
 pw_test("server_test") {

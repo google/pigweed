@@ -28,8 +28,28 @@ pw_source_set("method") {
   public_configs = [ ":public" ]
   public = [ "public/pw_rpc/internal/nanopb_method.h" ]
   sources = [ "nanopb_method.cc" ]
-  public_deps = [ "..:server" ]
+  public_deps = [
+    ":common",
+    "..:server",
+  ]
   deps = [ dir_pw_log ]
+}
+
+pw_source_set("client") {
+  public_configs = [ ":public" ]
+  public_deps = [
+    ":common",
+    "..:client",
+  ]
+  public = [ "public/pw_rpc/nanopb_client_call.h" ]
+  sources = [ "nanopb_client_call.cc" ]
+}
+
+pw_source_set("common") {
+  public_deps = [ dir_pw_bytes ]
+  public_configs = [ ":public" ]
+  public = [ "public/pw_rpc/internal/nanopb_common.h" ]
+  sources = [ "nanopb_common.cc" ]
 
   if (dir_pw_third_party_nanopb != "") {
     public_deps += [ "$dir_pw_third_party/nanopb" ]
@@ -56,6 +76,14 @@ pw_source_set("test_method_context") {
   ]
 }
 
+pw_source_set("internal_test_utils") {
+  public = [ "pw_rpc_nanopb_private/internal_test_utils.h" ]
+  public_deps = []
+  if (dir_pw_third_party_nanopb != "") {
+    public_deps += [ "$dir_pw_third_party/nanopb" ]
+  }
+}
+
 pw_source_set("echo_service") {
   public_configs = [ ":public" ]
   public_deps = [ "..:echo_service_proto_nanopb_rpc" ]
@@ -68,11 +96,23 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
   tests = [
+    ":client_call_test",
     ":codegen_test",
     ":echo_service_test",
     ":nanopb_method_test",
     ":service_method_traits_test",
   ]
+}
+
+pw_test("client_call_test") {
+  deps = [
+    ":client",
+    ":internal_test_utils",
+    "..:test_protos_nanopb",
+    "..:test_utils",
+  ]
+  sources = [ "nanopb_client_call_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
 }
 
 pw_test("codegen_test") {
@@ -87,6 +127,7 @@ pw_test("codegen_test") {
 
 pw_test("nanopb_method_test") {
   deps = [
+    ":internal_test_utils",
     ":method",
     "..:server",
     "..:test_protos_nanopb",

@@ -151,3 +151,10 @@ Bidirectional streaming RPC
 .. attention::
 
   ``pw_rpc`` does not yet support bidirectional streaming RPCs.
+
+Client-side
+-----------
+
+.. admonition:: TODO
+
+  Document the generated client interface

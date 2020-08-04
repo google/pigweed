@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <span>
 
+#include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
@@ -119,6 +120,48 @@ class ServerContextForTest {
   Service service_;
 
   internal::ServerCall context_;
+};
+
+template <size_t output_buffer_size = 128,
+          size_t input_buffer_size = 128,
+          uint32_t channel_id = 99,
+          uint32_t service_id = 16,
+          uint32_t method_id = 111>
+class ClientContextForTest {
+ public:
+  static constexpr uint32_t kChannelId = channel_id;
+  static constexpr uint32_t kServiceId = service_id;
+  static constexpr uint32_t kMethodId = method_id;
+
+  ClientContextForTest()
+      : channel_(Channel::Create<kChannelId>(&output_)),
+        client_(std::span(&channel_, 1)) {}
+
+  const auto& output() const { return output_; }
+  Channel& channel() { return channel_; }
+  Client& client() { return client_; }
+
+  // Sends a packet to be processed by the client. Returns the client's
+  // ProcessPacket status.
+  Status SendPacket(internal::PacketType type,
+                    Status status = Status::OK,
+                    std::span<const std::byte> payload = {}) {
+    internal::Packet packet(
+        type, kChannelId, kServiceId, kMethodId, payload, status);
+    std::byte buffer[input_buffer_size];
+    StatusWithSize sws = packet.Encode(buffer);
+    EXPECT_EQ(sws.status(), Status::OK);
+    return client_.ProcessPacket(std::span(buffer, sws.size()));
+  }
+
+  Status SendResponse(Status status, std::span<const std::byte> payload) {
+    return SendPacket(internal::PacketType::RESPONSE, status, payload);
+  }
+
+ private:
+  TestOutput<output_buffer_size> output_;
+  Channel channel_;
+  Client client_;
 };
 
 }  // namespace pw::rpc
