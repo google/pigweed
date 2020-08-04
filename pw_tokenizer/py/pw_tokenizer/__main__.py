@@ -15,4 +15,4 @@
 
 from pw_tokenizer import detokenize
 
-detokenize._main(detokenize._parse_args())  # pylint: disable=protected-access
+detokenize.main()

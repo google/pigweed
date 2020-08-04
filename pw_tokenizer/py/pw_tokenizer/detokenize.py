@@ -343,13 +343,14 @@ def _detokenize_prefixed_base64(detokenizer, prefix, recursion):
     return decode_and_detokenize
 
 
+BASE64_PREFIX = b'$'
 DEFAULT_RECURSION = 9
 
 
 def detokenize_base64_live(detokenizer,
                            input_file,
                            output,
-                           prefix=b'$',
+                           prefix=BASE64_PREFIX,
                            recursion=DEFAULT_RECURSION):
     """Reads chars one-at-a-time and decodes messages; SLOW for big files."""
     transform = _detokenize_prefixed_base64(detokenizer, prefix, recursion)
@@ -367,7 +368,7 @@ def detokenize_base64_live(detokenizer,
 def detokenize_base64_to_file(detokenizer,
                               data,
                               output,
-                              prefix=b'$',
+                              prefix=BASE64_PREFIX,
                               recursion=DEFAULT_RECURSION):
     """Decodes prefixed Base64 messages in data; decodes to an output file."""
     transform = _detokenize_prefixed_base64(detokenizer, prefix, recursion)
@@ -389,7 +390,7 @@ def detokenize_base64_to_file(detokenizer,
 
 def detokenize_base64(detokenizer,
                       data,
-                      prefix=b'$',
+                      prefix=BASE64_PREFIX,
                       recursion=DEFAULT_RECURSION):
     """Decodes and replaces prefixed Base64 messages in the provided data.
 
@@ -428,7 +429,7 @@ def _handle_base64(databases, input_file, output, prefix, show_errors):
 
 
 def _parse_args():
-    """Parse and return command line arguments."""
+    """Parses and return command line arguments."""
 
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -460,7 +461,7 @@ def _parse_args():
     subparser.add_argument(
         '-p',
         '--prefix',
-        default='$',
+        default=BASE64_PREFIX,
         help=('The one-character prefix that signals the start of a '
               'Base64-encoded message. (default: $)'))
     subparser.add_argument(
@@ -473,7 +474,9 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _main(args):
+def main():
+    args = _parse_args()
+
     handler = args.handler
     del args.handler
 
@@ -483,4 +486,4 @@ def _main(args):
 if __name__ == '__main__':
     if sys.version_info[0] < 3:
         sys.exit('ERROR: The detokenizer command line tools require Python 3.')
-    _main(_parse_args())
+    sys.exit(main())

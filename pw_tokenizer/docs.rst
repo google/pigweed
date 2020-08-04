@@ -692,6 +692,29 @@ functions.
     TransmitLogMessage(base64_buffer, base64_size);
   }
 
+Command line utilities
+^^^^^^^^^^^^^^^^^^^^^^
+``pw_tokenizer`` provides two standalone command line utilities for detokenizing
+Base64-encoded tokenized strings.
+
+* ``detokenize.py`` -- Detokenizes Base64-encoded strings in files or from
+  stdin.
+* ``detokenize_serial.py`` -- Detokenizes Base64-encoded strings from a
+  connected serial device.
+
+If the ``pw_tokenizer`` Python package is installed, these tools may be executed
+as runnable modules. For example:
+
+.. code-block::
+
+  # Detokenize Base64-encoded strings in a file
+  python -m pw_tokenizer.detokenize -i input_file.txt
+
+  # Detokenize Base64-encoded strings in output from a serial device
+  python -m pw_tokenizer.detokenize_serial --device /dev/ttyACM0
+
+See the ``--help`` options for these tools for full usage information.
+
 Deployment war story
 ====================
 The tokenizer module was developed to bring tokenized logging to an

@@ -23,4 +23,5 @@ setuptools.setup(
     description='Tools for decoding tokenized strings',
     packages=setuptools.find_packages(),
     test_suite='setup.test_suite',
+    extra_requires=['serial'],
 )
