@@ -43,7 +43,7 @@ size_t pw_VarintZigZagEncodedSize(int64_t integer);
 #include <span>
 #include <type_traits>
 
-#include "pw_polyfill/language_features.h"
+#include "pw_polyfill/language_feature_macros.h"
 
 namespace pw {
 namespace varint {

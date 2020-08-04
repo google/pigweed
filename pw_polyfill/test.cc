@@ -15,7 +15,7 @@
 #include <array>
 
 #include "gtest/gtest.h"
-#include "pw_polyfill/language_features.h"
+#include "pw_polyfill/language_feature_macros.h"
 #include "pw_polyfill/standard.h"
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
@@ -63,7 +63,11 @@ TEST(Cstddef, Byte_AssignmentOperators) {
   EXPECT_TRUE((value >>= 5) == std::byte(0x6));
 }
 
-int c_array[5423];
+// Check that consteval is at least equivalent to constexpr.
+consteval int ConstevalFunction() { return 123; }
+static_assert(ConstevalFunction() == 123);
+
+int c_array[5423] = {};
 std::array<int, 32> array;
 
 TEST(Iterator, Size) {
@@ -74,6 +78,15 @@ TEST(Iterator, Size) {
 TEST(Iterator, Data) {
   EXPECT_TRUE(std::data(c_array) == c_array);
   EXPECT_TRUE(std::data(array) == array.data());
+}
+
+constinit bool mutable_value = true;
+
+TEST(Constinit, ValueIsMutable) {
+  ASSERT_TRUE(mutable_value);
+  mutable_value = false;
+  ASSERT_FALSE(mutable_value);
+  mutable_value = true;
 }
 
 TEST(TypeTraits, Aliases) {

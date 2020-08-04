@@ -20,7 +20,6 @@
 
 #include <cstring>
 
-#include "pw_polyfill/language_features.h"  // static_assert
 #include "pw_tokenizer_private/encode_args.h"
 
 namespace pw {

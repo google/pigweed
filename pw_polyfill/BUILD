@@ -25,7 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_polyfill",
     hdrs = [
-        "public/pw_polyfill/language_features.h",
+        "public/pw_polyfill/language_feature_macros.h",
         "public/pw_polyfill/standard.h",
     ],
     includes = ["public"],
@@ -34,11 +34,16 @@ pw_cc_library(
 
 pw_cc_library(
     name = "overrides",
+    srcs = ["language_features.h"],
     hdrs = [
         "public_overrides/assert.h",
         "public_overrides/cstddef",
         "public_overrides/iterator",
         "public_overrides/type_traits",
+    ],
+    copts = [
+        "-include",
+        "language_features.h",
     ],
     includes = ["public_overrides"],
     deps = [":standard_library"],

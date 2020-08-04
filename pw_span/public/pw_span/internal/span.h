@@ -43,7 +43,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "pw_polyfill/language_features.h"
+#include "pw_polyfill/language_feature_macros.h"
 #include "pw_polyfill/standard_library/namespace.h"
 
 // Pigweed: Disable the asserts from Chromium for now.

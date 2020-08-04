@@ -22,3 +22,6 @@ target_include_directories(pw_polyfill.overrides
     public_overrides
     standard_library_public
 )
+target_compile_options(pw_polyfill.overrides INTERFACE
+    -include "${CMAKE_CURRENT_SOURCE_DIR}/language_features.h"
+)
