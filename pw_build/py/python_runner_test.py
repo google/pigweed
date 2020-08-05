@@ -182,10 +182,12 @@ class TargetTest(unittest.TestCase):
 
     def test_source_set_artifact(self):
         target = TargetInfo(self._paths, '//fake_module:fake_source_set')
+        self.assertTrue(target.generated)
         self.assertIsNone(target.artifact)
 
     def test_source_set_object_files(self):
         target = TargetInfo(self._paths, '//fake_module:fake_source_set')
+        self.assertTrue(target.generated)
         self.assertEqual(
             set(target.object_files), {
                 self._outdir / 'fake_source_set.file_a.cc.o',
@@ -204,6 +206,18 @@ class TargetTest(unittest.TestCase):
         target = TargetInfo(self._paths, '//fake_module:fake_test')
         self.assertEqual(target.artifact,
                          self._outdir / 'test' / 'fake_test.elf')
+
+    def test_non_existent_target(self):
+        target = TargetInfo(self._paths,
+                            '//fake_module:definitely_not_a_real_target')
+        self.assertFalse(target.generated)
+        self.assertIsNone(target.artifact)
+
+    def test_non_existent_toolchain(self):
+        target = TargetInfo(
+            self._paths, '//fake_module:fake_source_set(//not_a:toolchain)')
+        self.assertFalse(target.generated)
+        self.assertIsNone(target.artifact)
 
 
 class ExpandExpressionsTest(unittest.TestCase):
@@ -257,6 +271,15 @@ class ExpandExpressionsTest(unittest.TestCase):
             self.assertEqual(list(expand_expressions(self._paths, expr)),
                              [expected])
 
+    def test_target_objects_no_target_file(self):
+        with self.assertRaisesRegex(ExpressionError, 'no output file'):
+            expand_expressions(self._paths,
+                               '<TARGET_FILE(//fake_module:fake_source_set)>')
+
+    def test_target_file_non_existent_target(self):
+        with self.assertRaisesRegex(ExpressionError, 'generated'):
+            expand_expressions(self._paths, '<TARGET_FILE(//not_real:abc123)>')
+
     def test_target_file_if_exists(self):
         path = self._path('test', 'fake_test.elf', create=True)
 
@@ -274,11 +297,23 @@ class ExpandExpressionsTest(unittest.TestCase):
     def test_target_file_if_exists_arg_omitted(self):
         for expr in [
                 '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test(fake)>',
+                '<TARGET_FILE_IF_EXISTS(//not_a_module:nothing)>',
                 '--arg=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
                 '--argument=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>;'
                 '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
         ]:
             self.assertEqual(list(expand_expressions(self._paths, expr)), [])
+
+    def test_target_file_if_exists_error_if_never_has_artifact(self):
+        for expr in [
+                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
+                'bar=<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
+                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
+                '--foo=<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
+        ]:
+            with self.assertRaises(ExpressionError):
+                expand_expressions(self._paths, expr)
 
     def test_target_objects(self):
         self.assertEqual(
@@ -317,6 +352,10 @@ class ExpandExpressionsTest(unittest.TestCase):
         ]:
             with self.assertRaises(ExpressionError):
                 expand_expressions(self._paths, arg)
+
+    def test_target_objects_non_existent_target(self):
+        with self.assertRaisesRegex(ExpressionError, 'generated'):
+            expand_expressions(self._paths, '<TARGET_OBJECTS(//not_real)>')
 
 
 if __name__ == '__main__':
