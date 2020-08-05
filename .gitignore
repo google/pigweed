@@ -21,6 +21,8 @@ bazel-*
 .cache/
 .mypy_cache/
 __pycache__/
+build/
+dist/
 
 # PyOxidizer
 pw_env_setup/py/oxidizer/build

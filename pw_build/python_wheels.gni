@@ -11,18 +11,25 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""pw_build"""
 
-import setuptools
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
-setuptools.setup(
-    name='pw_build',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Python scripts that support the GN build',
-    packages=setuptools.find_packages(),
-    install_requires=[
-        'wheel',
-    ],
-)
+import("$dir_pw_build/python_script.gni")
+
+# Builds a .whl from a Python package.
+template("pw_python_wheels") {
+  pw_python_script(target_name) {
+    forward_variables_from(invoker, [ "deps" ])
+
+    script = "$dir_pw_build/py/pw_build/python_wheels.py"
+
+    args = [
+      "--out_dir",
+      rebase_path("$target_out_dir/python_wheels"),
+    ]
+    args += rebase_path(invoker.inputs)
+
+    stamp = true
+  }
+}
