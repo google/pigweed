@@ -7,6 +7,7 @@ source_set("testing") {
 
   sources = [
     "fake_controller_test.h",
+    "fake_dynamic_channel_unittest.cc",
     "fake_l2cap_unittest.cc",
     "fake_signaling_server_unittest.cc",
     "test_controller.cc",
