@@ -276,7 +276,8 @@ TEST(StringBuilder, Resize_LargerThanCapacity_Fails) {
 }
 
 TEST(StringBuilder, Format_Normal) {
-  StringBuffer<64> sb;
+  std::byte buffer[64];
+  StringBuilder sb(buffer);
   EXPECT_TRUE(sb.Format("0x%x", 0xabc).ok());
   EXPECT_STREQ("0xabc", sb.data());
 

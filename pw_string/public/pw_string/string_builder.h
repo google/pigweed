@@ -89,6 +89,9 @@ class StringBuilder {
   constexpr StringBuilder(std::span<char> buffer) : buffer_(buffer), size_(0) {
     NullTerminate();
   }
+  StringBuilder(std::span<std::byte> buffer)
+      : StringBuilder(
+            {reinterpret_cast<char*>(buffer.data()), buffer.size_bytes()}) {}
 
   // Disallow copy/assign to avoid confusion about where the string is actually
   // stored. StringBuffers may be copied into one another.
