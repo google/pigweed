@@ -16,7 +16,8 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "pw_preprocessor/util.h"
+#include "pw_log/log.h"
+#include "pw_preprocessor/concat.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 // This macro implements PW_LOG, using
@@ -43,12 +44,18 @@
       ((uintptr_t)(level) | 0u /* TODO(hepler): add module token */ | \
        ((uintptr_t)(flags) << (_PW_LOG_TOKENIZED_LEVEL_BITS +         \
                                _PW_LOG_TOKENIZED_MODULE_BITS))),      \
-      message,                                                        \
+      PW_LOG_TOKENIZED_FORMAT_STRING(message),                        \
       __VA_ARGS__)
 
-// By default, log format strings include PW_LOG_MODULE_NAME.
+// By default, log format strings include the PW_LOG_MODULE_NAME, if defined.
 #ifndef PW_LOG_TOKENIZED_FORMAT_STRING
-#define PW_LOG_TOKENIZED_FORMAT_STRING(string) PW_LOG_MODULE_NAME ": " string
+
+#define PW_LOG_TOKENIZED_FORMAT_STRING(string) \
+  PW_CONCAT(_PW_LOG_TOKENIZED_FMT_, PW_LOG_MODULE_NAME_DEFINED)(string)
+
+#define _PW_LOG_TOKENIZED_FMT_0(string) string
+#define _PW_LOG_TOKENIZED_FMT_1(string) PW_LOG_MODULE_NAME " " string
+
 #endif  // PW_LOG_TOKENIZED_FORMAT_STRING
 
 // The log level, module token, and flag bits are packed into the tokenizer's

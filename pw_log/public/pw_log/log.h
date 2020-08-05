@@ -35,6 +35,10 @@
 //   PW_LOG_MODULE_NAME
 //     - The module name the backend should use
 //
+//   PW_LOG_LEVEL
+//     - General log level setting. By default, logs below this level are
+//       excluded from the build.
+//
 // Outputs: Macros log_backend.h is expected to provide:
 //
 //   PW_LOG(level, flags, fmt, ...)
@@ -59,8 +63,16 @@
 #include "pw_log_backend/log_backend.h"
 
 // Default: Module name
-#ifndef PW_LOG_MODULE_NAME
+// An empty string is used for the module name if it is not set. The
+// PW_LOG_MODULE_NAME_DEFINED macro is set to 1 or 0 to allow pw_log backends to
+// behave differently if the module name is defined. For example, a backend
+// might prefix the format string with PW_LOG_MODULE_NAME ": ", but only if the
+// module name is provided.
+#ifdef PW_LOG_MODULE_NAME
+#define PW_LOG_MODULE_NAME_DEFINED 1
+#else
 #define PW_LOG_MODULE_NAME ""
+#define PW_LOG_MODULE_NAME_DEFINED 0
 #endif  // PW_LOG_MODULE_NAME
 
 // Default: Flags
@@ -74,8 +86,6 @@
 //
 // All log statements have a level, and this define is the default filtering.
 // This is compile-time filtering if the level is a constant.
-//
-// TODO(pwbug/17): Convert this to the config system when available.
 #ifndef PW_LOG_LEVEL
 #define PW_LOG_LEVEL PW_LOG_LEVEL_DEBUG
 #endif  // PW_LOG_LEVEL
