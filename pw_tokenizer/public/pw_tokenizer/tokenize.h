@@ -57,7 +57,7 @@
   /* compiler warnings.                                                    */ \
   static _PW_TOKENIZER_CONST char PW_CONCAT(                                  \
       _pw_tokenizer_string_literal_DO_NOT_USE_,                               \
-      __LINE__)[] _PW_TOKENIZER_SECTION(domain) = string_literal
+      __COUNTER__)[] _PW_TOKENIZER_SECTION(domain) = string_literal
 
 // Encodes a tokenized string and arguments to the provided buffer. The size of
 // the buffer is passed via a pointer to a size_t. After encoding is complete,

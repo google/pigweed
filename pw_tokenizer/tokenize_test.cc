@@ -67,6 +67,25 @@ TEST(TokenizeStringLiteral, GlobalVariable_MatchesHash) {
   EXPECT_EQ(TestHash(">:-[]"), kGlobalToken);
 }
 
+// Verify that we can tokenize multiple strings from one source line.
+#define THREE_FOR_ONE(first, second, third)         \
+  [[maybe_unused]] constexpr uint32_t token_1 =     \
+      PW_TOKENIZE_STRING_DOMAIN("ignored", first);  \
+  [[maybe_unused]] constexpr uint32_t token_2 =     \
+      PW_TOKENIZE_STRING_DOMAIN("ignored", second); \
+  [[maybe_unused]] constexpr uint32_t token_3 =     \
+      PW_TOKENIZE_STRING_DOMAIN("ignored", third);
+
+TEST(TokenizeStringLiteral, MultipleTokenizationsInOneMacroExpansion) {
+  // This verifies that we can safely tokenize multiple times in a single macro
+  // expansion. This can be useful when for example a name and description are
+  // both tokenized after being passed into a macro.
+  //
+  // This test only verifies that this compiles correctly; it does not test
+  // that the tokenizations make it to the final token database.
+  THREE_FOR_ONE("hello", "yes", "something");
+}
+
 class TokenizeToBuffer : public ::testing::Test {
  public:
   TokenizeToBuffer() : buffer_{} {}
