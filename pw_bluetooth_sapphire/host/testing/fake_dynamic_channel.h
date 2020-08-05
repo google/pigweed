@@ -12,6 +12,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace testing {
@@ -31,35 +33,29 @@ namespace testing {
 // assigned to it) but it is not Open state.
 class FakeDynamicChannel {
  public:
-  // Callback associated with handling packets sent across the channel.
+  // Callback associated with handling packet |sdu| sent across the channel.
   // Set by the service associated with the channel's PSM.
-  // Requires the channel ID |local_cid|, connection handle |handle|,
-  // and packet to handle |pdu|.
-  using PacketHandlerCallback = fit::function<void(
-      l2cap::ChannelId local_cid, hci::ConnectionHandle conn, const ByteBuffer& pdu)>;
+  using PacketHandlerCallback = fit::function<void(const ByteBuffer& sdu)>;
 
-  // Callback associated with sending packets through this dynamic channel.
-  // Set by the service associated with the channel's PSM.
-  // Requires the channel ID |local_cid|, connection handle |handle|,
-  // and packet to send |pdu|.
-  using SendPacketCallback = fit::function<void(
-      l2cap::ChannelId local_cid, hci::ConnectionHandle conn, const ByteBuffer& packet)>;
+  // Callback associated with sending packet |sdu| through this dynamic
+  // channel. Set by the service associated with the channel's PSM.
+  using SendPacketCallback = fit::function<void(const ByteBuffer& sdu)>;
 
   // Callback associated with closing and tearing down this dynamic channel.
   // Set by the service associated with the channel's PSM.
-  // Requires the channel id |local_cid|.
-  using ChannelDeletedCallback = fit::function<void(l2cap::ChannelId local_cid)>;
+  using ChannelDeletedCallback = fit::function<void()>;
 
-  // Create a FakeDynamicChannel with Protocol Service Multiplexer (PSM) |psm|
-  // locally registered Channel ID |local_cid|, and remote Channel ID
-  // |remote_cid|. Set to closed upon creation.
-  FakeDynamicChannel(l2cap::PSM psm, l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid);
+  // Create a FakeDynamicChannel with Connection Handle |conn|, Protocol
+  // Service Multiplexer (PSM) |psm| locally registered Channel ID |local_cid|,
+  // and remote Channel ID |remote_cid|. Set to closed upon creation.
+  FakeDynamicChannel(hci::ConnectionHandle conn, l2cap::PSM psm, l2cap::ChannelId local_cid,
+                     l2cap::ChannelId remote_cid);
 
   // Call the ChannelDeletedCallback instance associated with the server upon
   // destroying the channel instance.
   ~FakeDynamicChannel() {
     if (channel_deleted_callback_) {
-      channel_deleted_callback_(local_cid_);
+      channel_deleted_callback_();
     }
   }
 
@@ -71,19 +67,24 @@ class FakeDynamicChannel {
   void set_send_packet_callback(SendPacketCallback send_packet_callback);
   void set_channel_deleted_callback(ChannelDeletedCallback channel_deleted_callback);
 
-  bool opened() { return opened_; }
-  bool configuration_request_received() { return configuration_request_received_; }
-  bool configuration_response_received() { return configuration_response_received_; }
+  hci::ConnectionHandle handle() const { return handle_; }
+  bool opened() const { return opened_; }
+  bool configuration_request_received() const { return configuration_request_received_; }
+  bool configuration_response_received() const { return configuration_response_received_; }
   l2cap::PSM psm() const { return psm_; }
   l2cap::ChannelId local_cid() const { return local_cid_; }
   l2cap::ChannelId remote_cid() const { return remote_cid_; }
-  const PacketHandlerCallback& packet_handler_callback() const { return packet_handler_callback_; }
-  const SendPacketCallback& send_packet_callback() const { return send_packet_callback_; }
-  const ChannelDeletedCallback& channel_deleted_callback() const {
-    return channel_deleted_callback_;
-  }
+  PacketHandlerCallback& packet_handler_callback() { return packet_handler_callback_; }
+  SendPacketCallback& send_packet_callback() { return send_packet_callback_; }
+  ChannelDeletedCallback& channel_deleted_callback() { return channel_deleted_callback_; }
+
+  // Return a WeakPtr instance of this FakeDynamicChannel
+  fxl::WeakPtr<FakeDynamicChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  // ConnectionHandle associated with what
+  hci::ConnectionHandle handle_;
+
   // If the device is connected  and so is ready to communicate over the channel.
   bool opened_;
 
@@ -106,7 +107,7 @@ class FakeDynamicChannel {
 
   // Identifies the endpoint of this channel on the peer device. Set upon
   // connection completion.
-  l2cap::ChannelId remote_cid_;
+  const l2cap::ChannelId remote_cid_;
 
   // Callback associated with handling data packets sent to this channel.
   PacketHandlerCallback packet_handler_callback_;
@@ -116,6 +117,10 @@ class FakeDynamicChannel {
 
   // Callback associated with closing the dynamic channel.
   ChannelDeletedCallback channel_deleted_callback_;
+
+  // Any management of FakeDynamicChannel instances outside of FakeL2cap
+  // should be done through the use of WeakPtrs.
+  fxl::WeakPtrFactory<FakeDynamicChannel> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDynamicChannel);
 };
