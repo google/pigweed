@@ -16,7 +16,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "pw_log/log.h"
+#include "pw_log/options.h"
 #include "pw_preprocessor/concat.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 

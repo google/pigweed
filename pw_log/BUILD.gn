@@ -33,6 +33,7 @@ pw_facade("pw_log") {
   public = [
     "public/pw_log/levels.h",
     "public/pw_log/log.h",
+    "public/pw_log/options.h",
   ]
 }
 

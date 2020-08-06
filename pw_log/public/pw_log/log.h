@@ -11,21 +11,20 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-//==============================================================================
-//
+
 // This file describes Pigweed's public user-facing logging API.
 //
 // THIS PUBLIC API IS NOT STABLE OR COMPLETE!
 //
 // Key functionality is still missing:
 //
-// - API for controlling verbosity at compile time
 // - API for controlling verbosity at run time
 // - API for querying if logging is enabled for the given level or flags
 //
 #pragma once
 
 #include "pw_log/levels.h"
+#include "pw_log/options.h"
 
 // log_backend.h must ultimately resolve to a header that implements the macros
 // required by the logging facade, as described below.
@@ -61,42 +60,6 @@
 //       implementation defines these in terms of PW_LOG().
 //
 #include "pw_log_backend/log_backend.h"
-
-// Default: Module name
-// An empty string is used for the module name if it is not set. The
-// PW_LOG_MODULE_NAME_DEFINED macro is set to 1 or 0 to allow pw_log backends to
-// behave differently if the module name is defined. For example, a backend
-// might prefix the format string with PW_LOG_MODULE_NAME ": ", but only if the
-// module name is provided.
-#ifdef PW_LOG_MODULE_NAME
-#define PW_LOG_MODULE_NAME_DEFINED 1
-#else
-#define PW_LOG_MODULE_NAME ""
-#define PW_LOG_MODULE_NAME_DEFINED 0
-#endif  // PW_LOG_MODULE_NAME
-
-// Default: Flags
-// For log statements like LOG_INFO that don't have an explicit argument, this
-// is used for the flags value.
-#ifndef PW_LOG_DEFAULT_FLAGS
-#define PW_LOG_DEFAULT_FLAGS 0
-#endif  // PW_LOG_DEFAULT_FLAGS
-
-// Default: Log level filtering
-//
-// All log statements have a level, and this define is the default filtering.
-// This is compile-time filtering if the level is a constant.
-#ifndef PW_LOG_LEVEL
-#define PW_LOG_LEVEL PW_LOG_LEVEL_DEBUG
-#endif  // PW_LOG_LEVEL
-
-// Default: Log enabled expression
-//
-// This expression determines whether or not the statement is enabled and
-// should be passed to the backend.
-#ifndef PW_LOG_ENABLE_IF
-#define PW_LOG_ENABLE_IF(level, flags) ((level) >= PW_LOG_LEVEL)
-#endif  // PW_LOG_ENABLE_IF
 
 #ifndef PW_LOG
 #define PW_LOG(level, flags, message, ...)               \

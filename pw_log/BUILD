@@ -30,6 +30,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_log/levels.h",
         "public/pw_log/log.h",
+        "public/pw_log/options.h",
     ],
     includes = ["public"],
     deps = [
