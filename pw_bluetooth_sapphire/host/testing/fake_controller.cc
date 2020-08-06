@@ -563,6 +563,8 @@ void FakeController::NotifyLEConnectionParameters(const DeviceAddress& addr,
 
 void FakeController::OnCreateConnectionCommandReceived(
     const hci::CreateConnectionCommandParams& params) {
+  acl_create_connection_command_count_++;
+
   // Cannot issue this command while a request is already pending.
   if (bredr_connect_pending_) {
     RespondWithCommandStatus(hci::kCreateConnection, hci::StatusCode::kCommandDisallowed);
@@ -660,6 +662,8 @@ void FakeController::OnCreateConnectionCommandReceived(
 
 void FakeController::OnLECreateConnectionCommandReceived(
     const hci::LECreateConnectionCommandParams& params) {
+  le_create_connection_command_count_++;
+
   // Cannot issue this command while a request is already pending.
   if (le_connect_pending_) {
     RespondWithCommandStatus(hci::kLECreateConnection, hci::StatusCode::kCommandDisallowed);

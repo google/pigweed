@@ -126,24 +126,35 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
     return pairing_delegate;
   }
 
-  std::tuple<bt::gap::Peer*, FakeChannel*> ConnectFakePeer(bool connect_le = true) {
-    auto device_addr = connect_le ? kLeTestAddr : kBredrTestAddr;
-    auto* peer = adapter()->peer_cache()->NewPeer(device_addr, true);
-    EXPECT_TRUE(peer->temporary());
+  bt::gap::Peer* AddFakePeer(const bt::DeviceAddress& address) {
+    bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(address, /*connectable=*/true);
+    ZX_ASSERT(peer);
+    ZX_ASSERT(peer->temporary());
+
+    test_device()->AddPeer(std::make_unique<FakePeer>(address));
+
+    return peer;
+  }
+
+  using ConnectResult = fit::result<void, fsys::Error>;
+  std::optional<ConnectResult> ConnectFakePeer(bt::PeerId id) {
+    std::optional<ConnectResult> result;
+    host_client()->Connect(fbt::PeerId{id.value()},
+                           [&](ConnectResult _result) { result = _result; });
+    RunLoopUntilIdle();
+    return result;
+  }
+
+  std::tuple<bt::gap::Peer*, FakeChannel*> CreateAndConnectFakePeer(bool connect_le = true) {
+    auto address = connect_le ? kLeTestAddr : kBredrTestAddr;
+    bt::gap::Peer* peer = AddFakePeer(address);
+
     // This is to capture the channel created during the Connection process
     FakeChannel* fake_chan = nullptr;
     data_domain()->set_channel_callback(
         [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
 
-    auto fake_peer = std::make_unique<FakePeer>(device_addr);
-    test_device()->AddPeer(std::move(fake_peer));
-
-    std::optional<fit::result<void, fsys::Error>> connect_result;
-    host_client()->Connect(fbt::PeerId{peer->identifier().value()}, [&](auto result) {
-      ASSERT_FALSE(result.is_err());
-      connect_result = std::move(result);
-    });
-    RunLoopUntilIdle();
+    auto connect_result = ConnectFakePeer(peer->identifier());
 
     if (!connect_result || connect_result->is_error()) {
       peer = nullptr;
@@ -176,7 +187,7 @@ class FIDL_HostServerPairingTest : public FIDL_HostServerTest {
     if (!fake_peer_ || !fake_chan_) {
       ASSERT_FALSE(fake_peer_);
       ASSERT_FALSE(fake_chan_);
-      std::tie(fake_peer_, fake_chan_) = ConnectFakePeer(is_le);
+      std::tie(fake_peer_, fake_chan_) = CreateAndConnectFakePeer(is_le);
       ASSERT_TRUE(fake_peer_);
       ASSERT_TRUE(fake_chan_);
       ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, fake_peer_->le()->connection_state());
@@ -565,7 +576,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
 }
 
 TEST_F(FIDL_HostServerTest, InitiateBrEdrPairingLePeerFails) {
-  auto [peer, fake_chan] = ConnectFakePeer();
+  auto [peer, fake_chan] = CreateAndConnectFakePeer();
   ASSERT_TRUE(peer);
   ASSERT_TRUE(fake_chan);
   ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected, peer->le()->connection_state());
@@ -593,7 +604,8 @@ TEST_F(FIDL_HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
 }
 
 TEST_F(FIDL_HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
-  __UNUSED auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+  __UNUSED bt::gap::Peer* peer =
+      adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ResetHostServer();
 
   // By default the peer cache contains no entries when HostServer is first constructed. The first
@@ -620,7 +632,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersStateMachine) {
   ASSERT_FALSE(removed.has_value());
 
   // Adding a new peer should resolve the hanging get.
-  auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+  bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ASSERT_TRUE(updated.has_value());
   ASSERT_TRUE(removed.has_value());
   EXPECT_EQ(1u, updated->size());
@@ -651,7 +663,7 @@ TEST_F(FIDL_HostServerTest, WatchPeersUpdatedThenRemoved) {
   // Add then remove a peer. The watcher should only report the removal.
   bt::PeerId id;
   {
-    auto* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+    bt::gap::Peer* peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
     id = peer->identifier();
 
     // |peer| becomes a dangling pointer after the call to RemoveDisconnectedPeer. We scoped the
@@ -681,6 +693,60 @@ TEST_F(FIDL_HostServerTest, SetLeSecurityMode) {
   RunLoopUntilIdle();
   ASSERT_EQ(fidl_helpers::LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1),
             adapter()->le_connection_manager()->security_mode());
+}
+
+TEST_F(FIDL_HostServerTest, ConnectLowEnergy) {
+  bt::gap::Peer* peer = AddFakePeer(kLeTestAddr);
+  EXPECT_EQ(bt::gap::TechnologyType::kLowEnergy, peer->technology());
+
+  auto result = ConnectFakePeer(peer->identifier());
+  ASSERT_TRUE(result);
+  ASSERT_FALSE(result->is_error());
+
+  EXPECT_FALSE(peer->bredr());
+  ASSERT_TRUE(peer->le());
+  EXPECT_TRUE(peer->le()->connected());
+
+  // bt-host should only attempt to connect the LE transport.
+  EXPECT_EQ(1, test_device()->le_create_connection_command_count());
+  EXPECT_EQ(0, test_device()->acl_create_connection_command_count());
+}
+
+TEST_F(FIDL_HostServerTest, ConnectBredr) {
+  bt::gap::Peer* peer = AddFakePeer(kBredrTestAddr);
+  EXPECT_EQ(bt::gap::TechnologyType::kClassic, peer->technology());
+
+  auto result = ConnectFakePeer(peer->identifier());
+  ASSERT_TRUE(result);
+  ASSERT_FALSE(result->is_error());
+
+  EXPECT_FALSE(peer->le());
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(peer->bredr()->connected());
+
+  // bt-host should only attempt to connect the BR/EDR transport.
+  EXPECT_EQ(0, test_device()->le_create_connection_command_count());
+  EXPECT_EQ(1, test_device()->acl_create_connection_command_count());
+}
+
+TEST_F(FIDL_HostServerTest, ConnectDualMode) {
+  // Initialize the peer with data for both transport types.
+  bt::gap::Peer* peer = AddFakePeer(kBredrTestAddr);
+  peer->MutLe();
+  ASSERT_TRUE(peer->le());
+  peer->MutBrEdr();
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_EQ(bt::gap::TechnologyType::kDualMode, peer->technology());
+
+  auto result = ConnectFakePeer(peer->identifier());
+  ASSERT_TRUE(result);
+  ASSERT_FALSE(result->is_error());
+
+  // bt-host should only attempt to connect the BR/EDR transport.
+  EXPECT_TRUE(peer->bredr()->connected());
+  EXPECT_FALSE(peer->le()->connected());
+  EXPECT_EQ(0, test_device()->le_create_connection_command_count());
+  EXPECT_EQ(1, test_device()->acl_create_connection_command_count());
 }
 
 }  // namespace

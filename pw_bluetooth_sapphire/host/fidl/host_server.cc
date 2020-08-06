@@ -523,10 +523,10 @@ void HostServer::Connect(fbt::PeerId peer_id, ConnectCallback callback) {
     return;
   }
 
-  // TODO(BT-649): Dual-mode currently not supported; if the peer supports
-  // LowEnergy we assume LE. If a dual-mode peer, we should attempt to connect
+  // TODO(fxb/1242): Dual-mode currently not supported; if the peer supports
+  // BR/EDR we prefer BR/EDR. If a dual-mode peer, we should attempt to connect
   // both protocols.
-  if (!peer->le()) {
+  if (peer->bredr()) {
     ConnectBrEdr(id, std::move(callback));
     return;
   }

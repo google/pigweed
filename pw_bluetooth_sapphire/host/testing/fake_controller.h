@@ -165,6 +165,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // is unknown.
   FakePeer* FindPeer(const DeviceAddress& address);
 
+  // Counters for HCI commands received.
+  int le_create_connection_command_count() const { return le_create_connection_command_count_; }
+  int acl_create_connection_command_count() const { return acl_create_connection_command_count_; }
+
   // Sets a callback to be invoked when the the base controller parameters change due to a HCI
   // command. These parameters are:
   //
@@ -463,6 +467,10 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
 
   // The set of fake peers that are visible.
   std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;
+
+  // Callbacks and counters that are intended for unit tests.
+  int le_create_connection_command_count_ = 0;
+  int acl_create_connection_command_count_ = 0;
 
   fit::closure controller_parameters_cb_;
   ScanStateCallback scan_state_cb_;
