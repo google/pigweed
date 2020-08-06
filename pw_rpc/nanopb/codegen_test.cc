@@ -33,7 +33,7 @@ class TestService final : public generated::TestService<TestService> {
                      const pw_rpc_test_TestRequest& request,
                      ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
     for (int i = 0; i < request.integer; ++i) {
-      writer.Write({.number = static_cast<uint32_t>(i)});
+      writer.Write({.chunk = {}, .number = static_cast<uint32_t>(i)});
     }
 
     writer.Finish(static_cast<Status::Code>(request.status_code));
@@ -108,9 +108,9 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
 
   auto writer = context.writer();
 
-  writer.Write({.number = 3});
-  writer.Write({.number = 6});
-  writer.Write({.number = 9});
+  writer.Write({.chunk = {}, .number = 3});
+  writer.Write({.chunk = {}, .number = 6});
+  writer.Write({.chunk = {}, .number = 9});
 
   EXPECT_FALSE(context.done());
 

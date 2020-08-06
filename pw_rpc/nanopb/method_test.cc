@@ -28,16 +28,16 @@ namespace {
 
 using std::byte;
 
-#define ENCODE_PB(proto, init, result) \
-  _ENCODE_PB_EXPAND(proto, init, result, __LINE__)
+#define ENCODE_PB(proto, result, ...) \
+  _ENCODE_PB_EXPAND(proto, result, __LINE__, __VA_ARGS__)
 
-#define _ENCODE_PB_EXPAND(proto, init, result, unique) \
-  _ENCODE_PB_IMPL(proto, init, result, unique)
+#define _ENCODE_PB_EXPAND(proto, result, unique, ...) \
+  _ENCODE_PB_IMPL(proto, result, unique, __VA_ARGS__)
 
-#define _ENCODE_PB_IMPL(proto, init, result, unique)              \
+#define _ENCODE_PB_IMPL(proto, result, unique, ...)               \
   std::array<pb_byte_t, 2 * sizeof(proto)> _pb_buffer_##unique{}; \
-  const std::span result =                                        \
-      EncodeProtobuf<proto, proto##_fields>(proto init, _pb_buffer_##unique)
+  const std::span result = EncodeProtobuf<proto, proto##_fields>( \
+      proto{__VA_ARGS__}, _pb_buffer_##unique)
 
 template <typename T, auto fields>
 std::span<const byte> EncodeProtobuf(const T& protobuf,
@@ -114,7 +114,7 @@ class FakeGeneratedServiceImpl
 };
 
 TEST(Method, UnaryRpc_SendsResponse) {
-  ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 123}, request);
+  ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
   const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
@@ -150,7 +150,8 @@ TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
 
 TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
-  ENCODE_PB(pw_rpc_test_TestRequest, {.integer = value}, request);
+  ENCODE_PB(
+      pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
   const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   // Output buffer is too small for the response, but can fit an error packet.
@@ -170,7 +171,7 @@ TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
 }
 
 TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
-  ENCODE_PB(pw_rpc_test_TestRequest, {.integer = 555}, request);
+  ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
   const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
@@ -189,7 +190,7 @@ TEST(Method, ServerWriter_SendsResponse) {
 
   EXPECT_EQ(Status::OK, last_writer.Write({.value = 100}));
 
-  ENCODE_PB(pw_rpc_test_TestResponse, {.value = 100}, payload);
+  ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet(payload).Encode(encoded_response);
   ASSERT_EQ(Status::OK, encoded.status());
