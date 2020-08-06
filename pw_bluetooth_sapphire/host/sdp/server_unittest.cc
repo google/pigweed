@@ -1228,6 +1228,46 @@ TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
                     ChildrenMatch(UnorderedElementsAre(sdp_server_matcher2))));
 }
 
+// Test:
+// Server::HandleRequest() provides expected responses when called without
+// a corresponding l2cap::channel for both successful requests and errors.
+TEST_F(SDP_ServerTest, HandleRequestWithoutChannel) {
+  const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
+  const auto kTooSmall = CreateStaticByteBuffer(0x01,        // SDP_ServiceSearchRequest
+                                                0x10, 0x01,  // Transaction ID (0x1001)
+                                                0x00, 0x09   // Parameter length (9 bytes)
+  );
+  const auto kRspTooSmall = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
+  auto too_small_rsp = server()->HandleRequest(
+      std::unique_ptr<ByteBuffer>(new StaticByteBuffer(kTooSmall)), l2cap::kDefaultMTU);
+  EXPECT_TRUE(ContainersEqual(*too_small_rsp.value(), kRspTooSmall));
+
+  RegistrationHandle spp_handle = AddSPP();
+  RegistrationHandle a2dp_handle = AddA2DPSink();
+  const auto kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                                                   0x10, 0x01,  // Transaction ID (0x1001)
+                                                   0x00, 0x08,  // Parameter length (8 bytes)
+                                                   // ServiceSearchPattern
+                                                   0x35, 0x03,        // Sequence uint8 3 bytes
+                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                                                   0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
+                                                   0x00         // Contunuation State: none
+  );
+  const auto kL2capSearchResponse = CreateStaticByteBuffer(
+      0x03,                             // SDP_ServicesearchResponse
+      0x10, 0x01,                       // Transaction ID (0x1001)
+      0x00, 0x0D,                       // Parameter length (13 bytes)
+      0x00, 0x02,                       // Total service record count: 2
+      0x00, 0x02,                       // Current service record count: 2
+      UINT32_AS_BE_BYTES(a2dp_handle),  // This list isn't specifically ordered
+      UINT32_AS_BE_BYTES(spp_handle),
+      0x00  // No continuation state
+  );
+  auto search_rsp = server()->HandleRequest(
+      std::unique_ptr<ByteBuffer>(new StaticByteBuffer(kL2capSearch)), l2cap::kDefaultMTU);
+  EXPECT_TRUE(ContainersEqual(*search_rsp.value(), kL2capSearchResponse));
+}
+
 #undef SDP_ERROR_RSP
 #undef UINT32_AS_LE_BYTES
 

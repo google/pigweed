@@ -21,12 +21,6 @@ static constexpr const char* kInspectRegisteredPsmName = "registered_psms";
 static constexpr const char* kInspectPsmName = "psm";
 static constexpr const char* kInspectRecordName = "record";
 
-void SendErrorResponse(l2cap::Channel* chan, TransactionId tid, uint16_t max_tx_sdu_size,
-                       ErrorCode code) {
-  ErrorResponse response(code);
-  chan->Send(response.GetPDU(0 /* ignored */, tid, max_tx_sdu_size, BufferView()));
-}
-
 // Finds the PSM that is specified in a ProtocolDescriptorList
 // Returns l2cap::kInvalidPSM if none is found or the list is invalid
 l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
@@ -177,7 +171,10 @@ bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   bool activated = channel->Activate(
       [self, handle, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
         if (self) {
-          self->OnRxBFrame(handle, std::move(sdu), max_tx_sdu_size);
+          auto packet = self->HandleRequest(std::move(sdu), max_tx_sdu_size);
+          if (packet) {
+            self->Send(handle, std::move(packet.value()));
+          }
         }
       },
       [self, handle] {
@@ -446,107 +443,95 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
 
 void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.erase(handle); }
 
-void Server::OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu,
-                        uint16_t max_tx_sdu_size) {
+fit::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(sdu);
-  TRACE_DURATION("bluetooth", "sdp::Server::OnRxBFrame");
+  TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sdp", "PDU too short; dropping");
-    return;
+    return fit::nullopt;
   }
-
-  auto it = channels_.find(handle);
-  if (it == channels_.end()) {
-    bt_log(DEBUG, "sdp", "can't find peer to respond to; dropping");
-    return;
-  }
-
-  l2cap::Channel* chan = it->second.get();
   PacketView<Header> packet(sdu.get());
   TransactionId tid = betoh16(packet.header().tid);
   uint16_t param_length = betoh16(packet.header().param_length);
-
+  auto error_response_builder = [tid, max_tx_sdu_size](ErrorCode code) -> ByteBufferPtr {
+    return ErrorResponse(code).GetPDU(0 /* ignored */, tid, max_tx_sdu_size, BufferView());
+  };
   if (param_length != (sdu->size() - sizeof(Header))) {
     bt_log(TRACE, "sdp", "request isn't the correct size (%hu != %zu)", param_length,
            sdu->size() - sizeof(Header));
-    SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidSize);
-    return;
+    return error_response_builder(ErrorCode::kInvalidSize);
   }
-
   packet.Resize(param_length);
-
   switch (packet.header().pdu_id) {
     case kServiceSearchRequest: {
       ServiceSearchRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(DEBUG, "sdp", "ServiceSearchRequest not valid");
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
-        return;
+        return error_response_builder(ErrorCode::kInvalidRequestSyntax);
       }
       auto resp = SearchServices(request.service_search_pattern());
 
       auto bytes = resp.GetPDU(request.max_service_record_count(), tid, max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
-        return;
+        return error_response_builder(ErrorCode::kInvalidContinuationState);
       }
-      chan->Send(std::move(bytes));
-      return;
+      return std::move(bytes);
     }
     case kServiceAttributeRequest: {
       ServiceAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(TRACE, "sdp", "ServiceAttributeRequest not valid");
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
-        return;
+        return error_response_builder(ErrorCode::kInvalidRequestSyntax);
       }
       auto handle = request.service_record_handle();
       if (records_.find(handle) == records_.end()) {
         bt_log(TRACE, "sdp", "ServiceAttributeRequest can't find handle %#.8x", handle);
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRecordHandle);
-        return;
+        return error_response_builder(ErrorCode::kInvalidRecordHandle);
       }
       auto resp = GetServiceAttributes(handle, request.attribute_ranges());
       auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
-        return;
+        return error_response_builder(ErrorCode::kInvalidContinuationState);
       }
-      chan->Send(std::move(bytes));
-      return;
+      return std::move(bytes);
     }
     case kServiceSearchAttributeRequest: {
       ServiceSearchAttributeRequest request(packet.payload_data());
       if (!request.valid()) {
         bt_log(TRACE, "sdp", "ServiceSearchAttributeRequest not valid");
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
-        return;
+        return error_response_builder(ErrorCode::kInvalidRequestSyntax);
       }
       auto resp =
           SearchAllServiceAttributes(request.service_search_pattern(), request.attribute_ranges());
       auto bytes = resp.GetPDU(request.max_attribute_byte_count(), tid, max_tx_sdu_size,
                                request.ContinuationState());
       if (!bytes) {
-        SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidContinuationState);
-        return;
+        return error_response_builder(ErrorCode::kInvalidContinuationState);
       }
-      chan->Send(std::move(bytes));
-      return;
+      return std::move(bytes);
     }
     case kErrorResponse: {
       bt_log(TRACE, "sdp", "ErrorResponse isn't allowed as a request");
-      SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
-      return;
+      return error_response_builder(ErrorCode::kInvalidRequestSyntax);
     }
     default: {
       bt_log(TRACE, "sdp", "unhandled request, returning InvalidRequest");
-      SendErrorResponse(chan, tid, max_tx_sdu_size, ErrorCode::kInvalidRequestSyntax);
-      return;
+      return error_response_builder(ErrorCode::kInvalidRequestSyntax);
     }
   }
+}
+
+void Server::Send(hci::ConnectionHandle conn, ByteBufferPtr bytes) {
+  auto it = channels_.find(conn);
+  if (it == channels_.end()) {
+    bt_log(ERROR, "sdp", "can't find peer to respond to; dropping");
+    return;
+  }
+  l2cap::Channel* chan = it->second.get();
+  chan->Send(std::move(bytes));
 }
 
 void Server::UpdateInspectProperties() {

@@ -71,6 +71,15 @@ class Server final {
   // This method is public for testing purposes.
   ServiceRecord MakeServiceDiscoveryService();
 
+  // Construct a response based on input packet |sdu| and max size
+  // |max_tx_sdu_size|. Note that this function can both be called by means of
+  // connecting an l2cap::Channel and directly querying its database. As long
+  // as the database does not change between requests, both of these approaches
+  // are compatible.
+  // This function will drop the packet if the PDU is too short, and it will
+  // handle most errors by returning a valid packet with an ErrorResponse.
+  fit::optional<ByteBufferPtr> HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
+
  private:
   // Returns the next unused Service Handle, or 0 if none are available.
   ServiceHandle GetNextHandle();
@@ -104,10 +113,13 @@ class Server final {
 
   // l2cap::Channel callbacks
   void OnChannelClosed(const hci::ConnectionHandle& handle);
-  void OnRxBFrame(const hci::ConnectionHandle& handle, ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
 
   // Updates the property values associated with the |sdp_server_node_|.
   void UpdateInspectProperties();
+
+  // Send |bytes| over the channel associated with the connection handle
+  // |conn|. Logs an error if channel not found.
+  void Send(hci::ConnectionHandle conn, ByteBufferPtr bytes);
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.
