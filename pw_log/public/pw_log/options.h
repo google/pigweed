@@ -16,7 +16,6 @@
 // Files that use pw_log may define these macros BEFORE any headers are
 // #included to customize pw_log.
 //
-//
 // For example, the following sets the log module name to "Foobar" and the
 // minimum log level to WARN:
 //
@@ -32,6 +31,7 @@
 #pragma once
 
 // Default: Module name
+//
 // An empty string is used for the module name if it is not set. The
 // PW_LOG_MODULE_NAME_DEFINED macro is set to 1 or 0 to allow pw_log backends to
 // behave differently if the module name is defined. For example, a backend
@@ -45,6 +45,7 @@
 #endif  // PW_LOG_MODULE_NAME
 
 // Default: Flags
+//
 // For log statements like LOG_INFO that don't have an explicit argument, this
 // is used for the flags value.
 #ifndef PW_LOG_DEFAULT_FLAGS
