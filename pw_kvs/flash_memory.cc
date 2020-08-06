@@ -47,6 +47,9 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
   }
 
   TRY(CheckBounds(address, num_sectors * sector_size_bytes()));
+  const size_t address_sector_offset = address % sector_size_bytes();
+  PW_CHECK_UINT_EQ(address_sector_offset, 0u);
+
   return flash_.Erase(PartitionToFlashAddress(address), num_sectors);
 }
 
@@ -61,6 +64,10 @@ StatusWithSize FlashPartition::Write(Address address,
     return StatusWithSize::PERMISSION_DENIED;
   }
   TRY_WITH_SIZE(CheckBounds(address, data.size()));
+  const size_t address_alignment_offset = address % alignment_bytes();
+  PW_CHECK_UINT_EQ(address_alignment_offset, 0u);
+  const size_t size_alignment_offset = data.size() % alignment_bytes();
+  PW_CHECK_UINT_EQ(size_alignment_offset, 0u);
   return flash_.Write(PartitionToFlashAddress(address), data);
 }
 

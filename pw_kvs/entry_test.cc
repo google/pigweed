@@ -208,12 +208,12 @@ TEST(ValidEntry, Write) {
   FlashPartition partition(&flash, 0, flash.sector_count(), 32);
 
   Entry entry = Entry::Valid(
-      partition, 53, kFormatWithChecksum, "key45", kValue1, kTransactionId1);
+      partition, 64, kFormatWithChecksum, "key45", kValue1, kTransactionId1);
 
   auto result = entry.Write("key45", kValue1);
   EXPECT_EQ(Status::OK, result.status());
   EXPECT_EQ(32u, result.size());
-  EXPECT_EQ(std::memcmp(&flash.buffer()[53], kEntry1.data(), kEntry1.size()),
+  EXPECT_EQ(std::memcmp(&flash.buffer()[64], kEntry1.data(), kEntry1.size()),
             0);
 }
 

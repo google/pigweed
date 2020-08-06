@@ -186,10 +186,54 @@ TEST(FlashPartitionTest, AlignmentCheck) {
   const size_t sector_size_bytes = test_partition.sector_size_bytes();
 
   EXPECT_LE(alignment, kMaxFlashAlignment);
+  EXPECT_GT(alignment, 0u);
   EXPECT_EQ(kMaxFlashAlignment % alignment, 0U);
   EXPECT_LE(kMaxFlashAlignment, sector_size_bytes);
   EXPECT_LE(sector_size_bytes % kMaxFlashAlignment, 0U);
 }
+
+#if CHECK_TEST_CRASHES
+
+// TODO: Ensure that this test triggers an assert.
+TEST(FlashPartitionTest, BadWriteAddressAlignment) {
+  FlashPartition& test_partition = FlashTestPartition();
+
+  // Can't get bad alignment with alignment of 1.
+  if (test_partition.alignment_bytes() == 1) {
+    return;
+  }
+
+  std::array<std::byte, kMaxFlashAlignment> source_data;
+  test_partition.Write(1, source_data);
+}
+
+// TODO: Ensure that this test triggers an assert.
+TEST(FlashPartitionTest, BadWriteSizeAlignment) {
+  FlashPartition& test_partition = FlashTestPartition();
+
+  // Can't get bad alignment with alignment of 1.
+  if (test_partition.alignment_bytes() == 1) {
+    return;
+  }
+
+  std::array<std::byte, 1> source_data;
+  test_partition.Write(0, source_data);
+}
+
+// TODO: Ensure that this test triggers an assert.
+TEST(FlashPartitionTest, BadEraseAddressAlignment) {
+  FlashPartition& test_partition = FlashTestPartition();
+
+  // Can't get bad alignment with sector size of 1.
+  if (test_partition.sector_size_bytes() == 1) {
+    return;
+  }
+
+  // Try Erase at address 1 for 1 sector.
+  test_partition.Erase(1, 1);
+}
+
+#endif  // CHECK_TEST_CRASHES
 
 TEST(FlashPartitionTest, IsErased) {
   FlashPartition& test_partition = FlashTestPartition();
