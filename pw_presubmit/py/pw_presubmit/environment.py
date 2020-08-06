@@ -64,13 +64,12 @@ def init_virtualenv(
         pigweed_root: Path,
         output_directory: Path,
         setup_py_roots: Iterable[Union[Path, str]] = (),
+        requirements: Iterable[Union[Path, str]] = (),
 ) -> None:
     """Sets up a virtualenv, assumes recent Python 3 is already installed."""
     virtualenv_source = pigweed_root.joinpath('pw_env_setup', 'py',
                                               'pw_env_setup',
                                               'virtualenv_setup')
-
-    # TODO(pwbug/138): find way to support dependent project requirements.
 
     # For speed, don't build the venv if it exists. Use --clean to rebuild.
     if not output_directory.joinpath('pyvenv.cfg').is_file():
@@ -79,6 +78,7 @@ def init_virtualenv(
             virtualenv_source,
             f'--venv_path={output_directory}',
             f'--requirements={virtualenv_source / "requirements.txt"}',
+            *(f'--requirements={x}' for x in requirements),
             *(f'--setup-py-root={p}' for p in [pigweed_root, *setup_py_roots]),
         )
 

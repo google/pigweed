@@ -49,7 +49,7 @@ def init_cipd(ctx: PresubmitContext):
 
 
 def init_virtualenv(ctx: PresubmitContext):
-    environment.init_cipd(ctx.root, ctx.output_dir)
+    environment.init_virtualenv(ctx.root, ctx.output_dir)
 
 
 #
