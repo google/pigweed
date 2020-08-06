@@ -37,6 +37,7 @@ pw_doc_group("core_docs") {
 # Documentation for upstream Pigweed targets.
 group("target_docs") {
   deps = [
+    "$dir_pigweed/targets/arduino:target_docs",
     "$dir_pigweed/targets/docs:target_docs",
     "$dir_pigweed/targets/host:target_docs",
     "$dir_pigweed/targets/lm3s6965evb-qemu:target_docs",
@@ -90,6 +91,7 @@ group("module_docs") {
     "$dir_pw_stream:docs",
     "$dir_pw_string:docs",
     "$dir_pw_sys_io:docs",
+    "$dir_pw_sys_io_arduino:docs",
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
     "$dir_pw_sys_io_stdio:docs",
     "$dir_pw_target_runner:docs",

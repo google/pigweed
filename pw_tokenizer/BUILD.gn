@@ -15,6 +15,7 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -175,6 +176,10 @@ pw_test("argument_types_test") {
     "tokenize_test_fakes.cc",
   ]
   deps = [ ":pw_tokenizer" ]
+
+  if (dir_pw_third_party_arduino != "") {
+    remove_configs = [ "$dir_pw_build:strict_warnings" ]
+  }
 }
 
 pw_test("base64_test") {

@@ -1,0 +1,34 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# gn-format disable
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_arduino_build/arduino.gni")
+import("$dir_pw_build/target_types.gni")
+if (dir_pw_third_party_arduino != "") {
+  pw_source_set("simple_printing_main_arduino") {
+    remove_configs = [ "$dir_pw_build:strict_warnings" ]
+    public_deps = [ "$dir_pw_unit_test:pw_unit_test" ]
+    deps = [
+      "$dir_pw_sys_io",
+      "$dir_pw_third_party_arduino:arduino_core_sources",
+      "$dir_pw_unit_test:simple_printing_event_handler",
+    ]
+    sources = [ "simple_printing_main_arduino.cc" ]
+  }
+} else {
+  group("simple_printing_main_arduino") {
+  }
+}

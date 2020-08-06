@@ -15,6 +15,7 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
@@ -73,6 +74,12 @@ group("host_gcc") {
 
 group("stm32f429i") {
   deps = [ ":pigweed_default($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_optimization_level)" ]
+}
+
+if (dir_pw_third_party_arduino != "") {
+  group("arduino") {
+    deps = [ ":pigweed_default($dir_pigweed/targets/arduino:arduino_$pw_optimization_level)" ]
+  }
 }
 
 group("qemu") {
