@@ -27,10 +27,12 @@ pw_cc_library(
       "public/pw_hdlc_lite/decoder.h",
       "public/pw_hdlc_lite/encoder.h",
       "public/pw_hdlc_lite/sys_io_stream.h",
+      "public/pw_hdlc_lite/hdlc_channel.h",
     ],
     srcs = [
       "encoder.cc",
-      "decoder.cc"
+      "decoder.cc",
+      "hdlc_channel.cc"
     ],
     includes = ["public"],
 )
@@ -53,5 +55,15 @@ cc_test(
         "//pw_stream",
         "//pw_unit_test",
         "//pw_result",
+    ],
+)
+
+cc_test(
+    name = "hdlc_channel_test",
+    srcs = ["hdlc_channel_test.cc"],
+    deps = [
+        ":pw_hdlc_lite",
+        "//pw_stream",
+        "//pw_unit_test",
     ],
 )

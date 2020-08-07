@@ -119,7 +119,6 @@ pw_source_set("common") {
     "public/pw_rpc/internal/packet.h",
   ]
   friend = [ "./*" ]
-  visibility = [ "./*" ]
 }
 
 # RPC server that uses Nanopb to encode and decode protobufs. RPCs use Nanopb
