@@ -188,6 +188,7 @@ class FlashPartition {
       : FlashPartition(
             flash, 0, flash->sector_count(), flash->alignment_bytes()) {}
 
+  FlashPartition(FlashPartition&&) = default;
   FlashPartition(const FlashPartition&) = delete;
   FlashPartition& operator=(const FlashPartition&) = delete;
 
