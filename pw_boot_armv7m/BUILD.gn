@@ -53,7 +53,7 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
       defines = [ "PW_BOOT_ARMV7M_QEMU_SHUTDOWN=1" ]
     }
     public = [ "public/pw_boot_armv7m/boot.h" ]
-    sources = [ "core_init.c" ] + public
+    sources = [ "core_init.c" ]
   }
 }
 

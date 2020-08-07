@@ -27,7 +27,7 @@ config("default_config") {
 pw_source_set("bloat_this_binary") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_bloat/bloat_this_binary.h" ]
-  sources = [ "bloat_this_binary.cc" ] + public
+  sources = [ "bloat_this_binary.cc" ]
 }
 
 source_set("base_main") {

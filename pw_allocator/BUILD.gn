@@ -78,7 +78,6 @@ pw_source_set("freelist_heap") {
     "$dir_pw_log",
   ]
   sources = [ "freelist_heap.cc" ]
-  sources += public
 }
 
 pw_test_group("tests") {

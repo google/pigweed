@@ -43,7 +43,6 @@ pw_source_set("pw_protobuf") {
     "encoder.cc",
     "find.cc",
   ]
-  sources += public
 }
 
 pw_doc_group("docs") {

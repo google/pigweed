@@ -32,7 +32,6 @@ pw_source_set("pw_assert_basic") {
   ]
   deps = [ ":core" ]
   public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
-  sources = public
 }
 
 pw_source_set("core") {
@@ -44,7 +43,7 @@ pw_source_set("core") {
     "$dir_pw_sys_io",
   ]
   public = [ "public/pw_assert_basic/assert_basic.h" ]
-  sources = public + [ "assert_basic.cc" ]
+  sources = [ "assert_basic.cc" ]
 }
 
 pw_doc_group("docs") {

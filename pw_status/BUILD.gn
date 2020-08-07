@@ -28,7 +28,7 @@ pw_source_set("pw_status") {
     "public/pw_status/status.h",
     "public/pw_status/status_with_size.h",
   ]
-  sources = [ "status.cc" ] + public
+  sources = [ "status.cc" ]
 }
 
 pw_test_group("tests") {

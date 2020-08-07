@@ -37,7 +37,6 @@ pw_source_set("pw_string") {
     "string_builder.cc",
     "type_to_string.cc",
   ]
-  sources += public
   public_deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_span",

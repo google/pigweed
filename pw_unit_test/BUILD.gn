@@ -38,7 +38,7 @@ pw_source_set("pw_unit_test") {
     "public/pw_unit_test/framework.h",
     "public_overrides/gtest/gtest.h",
   ]
-  sources = [ "framework.cc" ] + public
+  sources = [ "framework.cc" ]
 }
 
 # Library providing an event handler which outputs human-readable text.
@@ -48,7 +48,7 @@ pw_source_set("simple_printing_event_handler") {
     "$dir_pw_preprocessor",
   ]
   public = [ "public/pw_unit_test/simple_printing_event_handler.h" ]
-  sources = [ "simple_printing_event_handler.cc" ] + public
+  sources = [ "simple_printing_event_handler.cc" ]
 }
 
 # Library providing a standard desktop main function for the pw_unit_test
@@ -75,7 +75,7 @@ pw_source_set("logging_event_handler") {
     "$dir_pw_preprocessor",
   ]
   public = [ "public/pw_unit_test/logging_event_handler.h" ]
-  sources = [ "logging_event_handler.cc" ] + public
+  sources = [ "logging_event_handler.cc" ]
 }
 
 pw_source_set("logging_main") {

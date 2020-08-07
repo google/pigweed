@@ -30,7 +30,6 @@ pw_source_set("pw_polyfill") {
     "public/pw_polyfill/language_features.h",
     "public/pw_polyfill/standard.h",
   ]
-  sources = public
 }
 
 config("overrides_config") {
@@ -63,7 +62,6 @@ pw_source_set("standard_library") {
     "standard_library_public/pw_polyfill/standard_library/namespace.h",
     "standard_library_public/pw_polyfill/standard_library/type_traits.h",
   ]
-  sources = public
   visibility = [
     ":overrides",
     ":pw_polyfill",

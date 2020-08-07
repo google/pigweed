@@ -52,7 +52,6 @@ pw_source_set("pw_trace_tokenized") {
   }
 
   public = [ "public_overrides/pw_trace_backend/trace_backend.h" ]
-  sources = public
 }
 
 pw_test("trace_tokenized_test") {
@@ -113,7 +112,7 @@ pw_source_set("pw_trace_tokenized_core") {
     "public/pw_trace_tokenized/trace_callback.h",
     "public/pw_trace_tokenized/trace_tokenized.h",
   ]
-  sources = public + [ "trace.cc" ]
+  sources = [ "trace.cc" ]
 }
 
 pw_doc_group("docs") {
