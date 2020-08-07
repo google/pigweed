@@ -50,8 +50,7 @@ const auto kWriteInquiryTypeRsp = COMMAND_COMPLETE_RSP(hci::kWriteInquiryScanTyp
 
 class BrEdrDiscoveryManagerTest : public TestingBase {
  public:
-  BrEdrDiscoveryManagerTest()
-      : peer_cache_(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName)) {}
+  BrEdrDiscoveryManagerTest() = default;
   ~BrEdrDiscoveryManagerTest() override = default;
 
   void SetUp() override {
@@ -86,7 +85,6 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   BrEdrDiscoveryManager* discovery_manager() const { return discovery_manager_.get(); }
 
  private:
-  inspect::Inspector inspector_;
   PeerCache peer_cache_;
   std::unique_ptr<BrEdrDiscoveryManager> discovery_manager_;
 

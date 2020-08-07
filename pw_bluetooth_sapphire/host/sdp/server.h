@@ -35,8 +35,11 @@ class Server final {
 
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
-  explicit Server(fbl::RefPtr<data::Domain> data_domain, inspect::Node node);
+  explicit Server(fbl::RefPtr<data::Domain> data_domain);
   ~Server();
+
+  // Attach SDP server inspect node as a child node of |parent|.
+  void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
   // Initialize a new SDP profile connection with |peer_id| on |channel|.
   // Returns false if the channel cannot be activated.
@@ -126,24 +129,26 @@ class Server final {
   fbl::RefPtr<data::Domain> data_domain_;
 
   struct InspectProperties {
-    InspectProperties(inspect::Node sdp_server_node)
-        : sdp_server_node(std::move(sdp_server_node)) {}
-
     // Inspect hierarchy node representing the sdp server.
     inspect::Node sdp_server_node;
 
     // Each ServiceRecord has it's record and nodes associated wth the registered PSMs.
     struct InspectServiceRecordProperties {
+      InspectServiceRecordProperties(std::string record, std::unordered_set<l2cap::PSM> psms);
+      void AttachInspect(inspect::Node& parent, std::string name);
+      inspect::Node node;
       // The record description.
-      inspect::StringProperty record;
+      const std::string record;
+      inspect::StringProperty record_property;
       // The node for the registered PSMs.
-      inspect::Node psms;
+      inspect::Node psms_node;
       // The currently registered PSMs.
+      const std::unordered_set<l2cap::PSM> psms;
       std::vector<std::pair<inspect::Node, inspect::StringProperty>> psm_nodes;
     };
 
     // The currently registered ServiceRecords.
-    std::vector<std::pair<inspect::Node, InspectServiceRecordProperties>> svc_record_nodes;
+    std::vector<InspectServiceRecordProperties> svc_record_properties;
   };
   InspectProperties inspect_properties_;
 

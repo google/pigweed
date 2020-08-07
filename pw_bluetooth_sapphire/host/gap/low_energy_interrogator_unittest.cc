@@ -38,8 +38,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    peer_cache_ =
-        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
+    peer_cache_ = std::make_unique<PeerCache>();
     interrogator_ = std::make_unique<LowEnergyInterrogator>(
         peer_cache_.get(), transport()->WeakPtr(), async_get_default_dispatcher());
 
@@ -72,7 +71,6 @@ class LowEnergyInterrogatorTest : public TestingBase {
   LowEnergyInterrogator* interrogator() const { return interrogator_.get(); }
 
  private:
-  inspect::Inspector inspector_;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<LowEnergyInterrogator> interrogator_;
 

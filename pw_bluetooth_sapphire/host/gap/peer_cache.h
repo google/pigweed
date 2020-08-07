@@ -38,10 +38,7 @@ class PeerCache final {
   using PeerCallback = fit::function<void(const Peer& peer)>;
   using PeerIdCallback = fit::function<void(PeerId identifier)>;
 
-  static constexpr const char* kInspectNodeName = "peer_cache";
-
-  // |node| must not be null.
-  explicit PeerCache(inspect::Node node);
+  PeerCache() = default;
 
   // Creates a new peer entry using the given parameters, and returns a
   // (non-owning) pointer to that peer. The caller must not retain the pointer
@@ -119,6 +116,10 @@ class PeerCache final {
   // If |address| is of type kBREDR or kLEPublic, then this searches for peers
   // that have either type of address.
   Peer* FindByAddress(const DeviceAddress& address) const;
+
+  // Attach peer cache inspect node as a child node of |parent|.
+  static constexpr const char* kInspectNodeName = "peer_cache";
+  void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
   // When set, |callback| will be invoked whenever a peer is added or updated.
   void set_peer_updated_callback(PeerCallback callback) {

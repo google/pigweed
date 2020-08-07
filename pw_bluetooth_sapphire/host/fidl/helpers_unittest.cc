@@ -304,7 +304,7 @@ TEST(FidlHelpersTest, PeerToFidlMandatoryFields) {
   async::TestLoop dispatcher;
 
   inspect::Inspector inspector;
-  bt::gap::PeerCache cache(inspector.GetRoot().CreateChild(bt::gap::PeerCache::kInspectNodeName));
+  bt::gap::PeerCache cache;
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   auto fidl = PeerToFidl(*peer);
@@ -342,7 +342,7 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
       );
 
   inspect::Inspector inspector;
-  bt::gap::PeerCache cache(inspector.GetRoot().CreateChild(bt::gap::PeerCache::kInspectNodeName));
+  bt::gap::PeerCache cache;
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv);

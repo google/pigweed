@@ -27,6 +27,8 @@ class FakeDomain final : public Domain {
  public:
   inline static fbl::RefPtr<FakeDomain> Create() { return fbl::AdoptRef(new FakeDomain()); }
 
+  void AttachInspect(inspect::Node& parent, std::string name) override {}
+
   // Returns true if and only if a link identified by |handle| has been added and connected.
   [[nodiscard]] bool IsLinkConnected(hci::ConnectionHandle handle) const;
 

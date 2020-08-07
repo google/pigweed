@@ -58,8 +58,7 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = Domain::Create(transport()->WeakPtr(),
-                             inspector_.GetRoot().CreateChild(Domain::kInspectNodeName));
+    domain_ = Domain::Create(transport()->WeakPtr());
 
     StartTestDevice();
 
@@ -163,12 +162,9 @@ class DATA_DomainTest : public TestingBase {
 
   Domain* domain() const { return domain_.get(); }
 
-  inspect::Inspector& inspector() { return inspector_; }
-
  private:
   fbl::RefPtr<Domain> domain_;
   l2cap::CommandId next_command_id_;
-  inspect::Inspector inspector_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
 };
@@ -620,7 +616,9 @@ TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
 }
 
 TEST_F(DATA_DomainTest, InspectHierarchy) {
-  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  inspect::Inspector inspector;
+  domain()->AttachInspect(inspector.GetRoot());
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
   auto domain_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
                               ChildrenMatch(::testing::IsEmpty()));

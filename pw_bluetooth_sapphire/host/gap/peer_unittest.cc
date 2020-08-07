@@ -19,7 +19,6 @@ namespace {
 
 using namespace inspect::testing;
 
-constexpr auto kPeerNodeName = "peer";
 constexpr uint16_t kManufacturer = 0x0001;
 constexpr uint16_t kSubversion = 0x0002;
 
@@ -33,8 +32,7 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
     peer_ = std::make_unique<Peer>(fit::bind_member(this, &GAP_PeerTest::NotifyListenersCallback),
                                    fit::bind_member(this, &GAP_PeerTest::UpdateExpiryCallback),
                                    fit::bind_member(this, &GAP_PeerTest::DualModeCallback),
-                                   RandomPeerId(), address_, connectable,
-                                   inspector_.GetRoot().CreateChild(kPeerNodeName));
+                                   RandomPeerId(), address_, connectable);
   }
 
   void TearDown() override {
@@ -44,7 +42,6 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 
  protected:
   Peer& peer() { return *peer_; }
-  inspect::Inspector& inspector() { return inspector_; }
   void set_notify_listeners_cb(Peer::DeviceCallback cb) { notify_listeners_cb_ = std::move(cb); }
   void set_update_expiry_cb(Peer::DeviceCallback cb) { update_expiry_cb_ = std::move(cb); }
   void set_dual_mode_cb(Peer::DeviceCallback cb) { dual_mode_cb_ = std::move(cb); }
@@ -76,7 +73,6 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
   }
 
   std::unique_ptr<Peer> peer_;
-  inspect::Inspector inspector_;
   DeviceAddress address_;
   Peer::DeviceCallback notify_listeners_cb_;
   Peer::DeviceCallback update_expiry_cb_;
@@ -85,6 +81,9 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 };
 
 TEST_F(GAP_PeerTest, InspectHierarchy) {
+  inspect::Inspector inspector;
+  peer().AttachInspect(inspector.GetRoot());
+
   peer().set_version(hci::HCIVersion::k5_0, kManufacturer, kSubversion);
   ASSERT_TRUE(peer().bredr().has_value());
 
@@ -94,7 +93,7 @@ TEST_F(GAP_PeerTest, InspectHierarchy) {
 
   peer().MutLe().SetFeatures(hci::LESupportedFeatures{0x0000000000000001});
 
-  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
 
   // clang-format off
   auto bredr_data_matcher = AllOf(

@@ -28,14 +28,13 @@ namespace bt {
 namespace gap {
 
 Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                 std::optional<fbl::RefPtr<data::Domain>> data_domain, inspect::Node adapter_node)
-    : adapter_node_(std::move(adapter_node)),
-      identifier_(Random<AdapterId>()),
+                 std::optional<fbl::RefPtr<data::Domain>> data_domain)
+    : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
-      peer_cache_(adapter_node_.CreateChild(PeerCache::kInspectNodeName)),
+      peer_cache_(),
       gatt_(gatt),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
@@ -213,6 +212,13 @@ void Adapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback
       });
 }
 
+void Adapter::AttachInspect(inspect::Node& parent, std::string name) {
+  adapter_node_ = parent.CreateChild(name);
+  UpdateInspectProperties();
+
+  peer_cache_.AttachInspect(adapter_node_);
+}
+
 void Adapter::InitializeStep2(InitializeCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(IsInitializing());
@@ -368,14 +374,14 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   if (!data_domain_) {
     // Initialize the data Domain to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain
-    auto data_domain =
-        data::Domain::Create(hci_, adapter_node_.CreateChild(data::Domain::kInspectNodeName));
+    auto data_domain = data::Domain::Create(hci_);
     if (!data_domain) {
       bt_log(ERROR, "gap", "Failed to initialize Data Domain");
       CleanUp();
       callback(false);
       return;
     }
+    data_domain->AttachInspect(adapter_node_);
     data_domain_ = data_domain;
   }
 
@@ -506,8 +512,8 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
 
-    sdp_server_ = std::make_unique<sdp::Server>(
-        data_domain_, adapter_node_.CreateChild(sdp::Server::kInspectNodeName));
+    sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
+    sdp_server_->AttachInspect(adapter_node_);
   }
 
   // Update properties before callback called so properties can be verified in unit tests.

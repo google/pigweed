@@ -52,8 +52,7 @@ class SDP_ServerTest : public TestingBase {
     });
     l2cap_->AddACLConnection(kTestHandle1, hci::Connection::Role::kSlave, nullptr, nullptr);
     l2cap_->AddACLConnection(kTestHandle2, hci::Connection::Role::kSlave, nullptr, nullptr);
-    server_ = std::make_unique<Server>(l2cap_,
-                                       inspector_.GetRoot().CreateChild(Server::kInspectNodeName));
+    server_ = std::make_unique<Server>(l2cap_);
   }
 
   void TearDown() override {
@@ -122,13 +121,10 @@ class SDP_ServerTest : public TestingBase {
     return handle;
   }
 
-  inspect::Inspector& inspector() { return inspector_; }
-
  private:
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
   fbl::RefPtr<data::testing::FakeDomain> l2cap_;
   std::unique_ptr<Server> server_;
-  inspect::Inspector inspector_;
 };
 
 constexpr l2cap::ChannelId kSdpChannel = 0x0041;
@@ -1147,6 +1143,9 @@ TEST_F(SDP_ServerTest, MakeServiceDiscoveryServiceIsValid) {
 // - The inspect hierarchy for the initial server is valid. It should
 // only contain the registered PSM for SDP.
 TEST_F(SDP_ServerTest, InspectHierarchy) {
+  inspect::Inspector inspector;
+  server()->AttachInspect(inspector.GetRoot());
+
   auto psm_matcher = AllOf(NodeMatches(
       AllOf(NameMatches("psm0x1"), PropertyList(UnorderedElementsAre(StringIs("psm", "SDP"))))));
   auto reg_psm_matcher = AllOf(NodeMatches(AllOf(NameMatches("registered_psms"))),
@@ -1163,7 +1162,7 @@ TEST_F(SDP_ServerTest, InspectHierarchy) {
   auto sdp_matcher = AllOf(NodeMatches(AllOf(NameMatches("sdp_server"))),
                            ChildrenMatch(UnorderedElementsAre(record_matcher)));
 
-  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
   EXPECT_THAT(hierarchy.take_value(), AllOf(NodeMatches(NameMatches("root")),
                                             ChildrenMatch(UnorderedElementsAre(sdp_matcher))));
@@ -1177,6 +1176,9 @@ TEST_F(SDP_ServerTest, InspectHierarchy) {
 // is not feasible due to the usage of inspect::UniqueName, which assigns a new name
 // to a node in every call. The contents of the node are verified.
 TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
+  inspect::Inspector inspector;
+  server()->AttachInspect(inspector.GetRoot());
+
   auto handle = AddA2DPSink();
 
   auto sdp_psm_matcher =
@@ -1207,7 +1209,7 @@ TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
             ChildrenMatch(UnorderedElementsAre(sdp_record_matcher, a2dp_record_matcher)));
 
   // Hierarchy should contain ServiceRecords and PSMs for SDP and A2DP Sink.
-  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
   EXPECT_THAT(hierarchy.take_value(),
               AllOf(NodeMatches(NameMatches("root")),
@@ -1221,7 +1223,7 @@ TEST_F(SDP_ServerTest, InspectHierarchyAfterUnregisterService) {
 
   // The ServiceRecords and PSMs associated with A2DP Sink should be removed
   // after the service has been registered. Only SDP's data should still exist.
-  auto hierarchy2 = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  auto hierarchy2 = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy2);
   EXPECT_THAT(hierarchy2.take_value(),
               AllOf(NodeMatches(NameMatches("root")),

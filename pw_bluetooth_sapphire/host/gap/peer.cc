@@ -30,20 +30,23 @@ std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
   return "(unknown)";
 }
 
-Peer::LowEnergyData::LowEnergyData(Peer* owner, inspect::Node node)
+Peer::LowEnergyData::LowEnergyData(Peer* owner)
     : peer_(owner),
-      node_(std::move(node)),
-      conn_state_(ConnectionState::kNotConnected,
-                  node_.CreateString(LowEnergyData::kInspectConnectionStateName, ""),
-                  &ConnectionStateToString),
-      bond_data_(std::nullopt, node_.CreateBool(LowEnergyData::kInspectBondDataName, false),
+      conn_state_(ConnectionState::kNotConnected, &ConnectionStateToString),
+      bond_data_(std::nullopt,
                  [](const std::optional<sm::PairingData>& p) { return p.has_value(); }),
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
-      features_(std::nullopt, node_.CreateString(LowEnergyData::kInspectFeaturesName, ""),
-                [](const std::optional<hci::LESupportedFeatures> f) {
-                  return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
-                }) {
+      features_(std::nullopt, [](const std::optional<hci::LESupportedFeatures> f) {
+        return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
+      }) {
   ZX_DEBUG_ASSERT(peer_);
+}
+
+void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name) {
+  node_ = parent.CreateChild(name);
+  conn_state_.AttachInspect(node_, LowEnergyData::kInspectConnectionStateName);
+  bond_data_.AttachInspect(node_, LowEnergyData::kInspectBondDataName);
+  features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
 
 void Peer::LowEnergyData::SetAutoConnectBehaviorForIntentionalDisconnect(void) {
@@ -170,15 +173,11 @@ void Peer::LowEnergyData::ClearBondData() {
   bond_data_.Set(std::nullopt);
 }
 
-Peer::BrEdrData::BrEdrData(Peer* owner, inspect::Node node)
+Peer::BrEdrData::BrEdrData(Peer* owner)
     : peer_(owner),
-      node_(std::move(node)),
-      conn_state_(ConnectionState::kNotConnected,
-                  node_.CreateString(BrEdrData::kInspectConnectionStateName, ""),
-                  &ConnectionStateToString),
+      conn_state_(ConnectionState::kNotConnected, &ConnectionStateToString),
       eir_len_(0u),
-      link_key_(std::nullopt, node_.CreateBool(BrEdrData::kInspectLinkKeyName, false),
-                [](const std::optional<sm::LTK>& l) { return l.has_value(); }) {
+      link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }) {
   ZX_DEBUG_ASSERT(peer_);
   ZX_DEBUG_ASSERT(peer_->identity_known());
 
@@ -187,6 +186,12 @@ Peer::BrEdrData::BrEdrData(Peer* owner, inspect::Node node)
   ZX_DEBUG_ASSERT(peer_->address().type() != DeviceAddress::Type::kLERandom &&
                   peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
   address_ = {DeviceAddress::Type::kBREDR, peer_->address().value()};
+}
+
+void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
+  node_ = parent.CreateChild(name);
+  conn_state_.AttachInspect(node_, BrEdrData::kInspectConnectionStateName);
+  link_key_.AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
@@ -303,28 +308,26 @@ void Peer::BrEdrData::ClearBondData() {
 
 Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
            DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-           bool connectable, inspect::Node node)
-    : node_(std::move(node)),
-      notify_listeners_callback_(std::move(notify_listeners_callback)),
+           bool connectable)
+    : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
-      identifier_(identifier, node_.CreateString(Peer::kInspectPeerIdName, "")),
+      identifier_(identifier),
       technology_((address.type() == DeviceAddress::Type::kBREDR) ? TechnologyType::kClassic
                                                                   : TechnologyType::kLowEnergy,
-                  node_.CreateString(Peer::kInspectTechnologyName, ""),
                   [](TechnologyType t) { return TechnologyTypeToString(t); }),
-      address_(address, node_.CreateString(Peer::kInspectAddressName, "")),
+      address_(address),
       identity_known_(false),
-      lmp_version_(std::nullopt, node_.CreateString(Peer::kInspectVersionName, ""),
+      lmp_version_(std::nullopt,
                    [](const std::optional<hci::HCIVersion>& v) {
                      return v ? hci::HCIVersionToString(*v) : "";
                    }),
       lmp_manufacturer_(
-          std::nullopt, node_.CreateString(Peer::kInspectManufacturerName, ""),
+          std::nullopt,
           [](const std::optional<uint16_t>& m) { return m ? GetManufacturerName(*m) : ""; }),
-      lmp_features_(hci::LMPFeatureSet(), node_.CreateString(Peer::kInspectFeaturesName, "")),
-      connectable_(connectable, node_.CreateBool(Peer::kInspectConnectableName, "")),
-      temporary_(true, node_.CreateBool(Peer::kInspectTemporaryName, true)),
+      lmp_features_(hci::LMPFeatureSet()),
+      connectable_(connectable),
+      temporary_(true),
       rssi_(hci::kRSSIInvalid) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   ZX_DEBUG_ASSERT(update_expiry_callback_);
@@ -338,18 +341,37 @@ Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expir
 
   // Initialize transport-specific state.
   if (*technology_ == TechnologyType::kClassic) {
-    bredr_data_ = BrEdrData(this, node_.CreateChild(Peer::BrEdrData::kInspectNodeName));
+    bredr_data_ = BrEdrData(this);
   } else {
-    le_data_ = LowEnergyData(this, node_.CreateChild(Peer::LowEnergyData::kInspectNodeName));
+    le_data_ = LowEnergyData(this);
   }
 }
 
+void Peer::AttachInspect(inspect::Node& parent, std::string name) {
+  node_ = parent.CreateChild(name);
+  identifier_.AttachInspect(node_, kInspectPeerIdName);
+  technology_.AttachInspect(node_, kInspectTechnologyName);
+  address_.AttachInspect(node_, kInspectAddressName);
+  lmp_version_.AttachInspect(node_, kInspectVersionName);
+  lmp_manufacturer_.AttachInspect(node_, kInspectManufacturerName);
+  lmp_features_.AttachInspect(node_, kInspectFeaturesName);
+  connectable_.AttachInspect(node_, kInspectConnectableName);
+  temporary_.AttachInspect(node_, kInspectTemporaryName);
+
+  if (bredr_data_) {
+    bredr_data_->AttachInspect(node_, Peer::BrEdrData::kInspectNodeName);
+  }
+  if (le_data_) {
+    le_data_->AttachInspect(node_, Peer::LowEnergyData::kInspectNodeName);
+  }
+}
 Peer::LowEnergyData& Peer::MutLe() {
   if (le_data_) {
     return *le_data_;
   }
 
-  le_data_ = LowEnergyData(this, node_.CreateChild(Peer::LowEnergyData::kInspectNodeName));
+  le_data_ = LowEnergyData(this);
+  le_data_->AttachInspect(node_);
 
   // Make dual-mode if both transport states have been initialized.
   if (bredr_data_) {
@@ -363,7 +385,8 @@ Peer::BrEdrData& Peer::MutBrEdr() {
     return *bredr_data_;
   }
 
-  bredr_data_ = BrEdrData(this, node_.CreateChild(Peer::BrEdrData::kInspectNodeName));
+  bredr_data_ = BrEdrData(this);
+  bredr_data_->AttachInspect(node_);
 
   // Make dual-mode if both transport states have been initialized.
   if (le_data_) {

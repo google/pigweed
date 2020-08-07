@@ -19,6 +19,7 @@ template <typename T>
 class TestProperty {
  public:
   using ValueCallback = fit::function<void(const T& value)>;
+  TestProperty() = default;
   TestProperty(T value, ValueCallback cb) : value_(value), value_cb_(std::move(cb)) {}
 
   void Set(const T& value) {
@@ -47,6 +48,40 @@ struct StringValue {
 }  // namespace
 
 using TestInspectable = Inspectable<int, TestProperty<int>, int>;
+
+TEST(InspectableTest, SetPropertyChangesProperty) {
+  std::optional<int> prop_value_0;
+  auto prop_cb_0 = [&](auto value) { prop_value_0 = value; };
+
+  TestInspectable inspectable(0, TestProperty<int>(1, prop_cb_0));
+  EXPECT_EQ(0, *inspectable);
+  ASSERT_TRUE(prop_value_0.has_value());
+  EXPECT_EQ(0, prop_value_0.value());
+
+  std::optional<int> prop_value_1;
+  auto prop_cb_1 = [&](auto value) { prop_value_1 = value; };
+  inspectable.SetProperty(TestProperty<int>(1, prop_cb_1));
+  ASSERT_TRUE(prop_value_1.has_value());
+  // New property should be updated with current value.
+  EXPECT_EQ(0, prop_value_1.value());
+
+  inspectable.Set(2);
+  // Old property should not be updated.
+  ASSERT_TRUE(prop_value_0.has_value());
+  EXPECT_EQ(0, prop_value_0.value());
+  // New property should be updated.
+  ASSERT_TRUE(prop_value_1.has_value());
+  EXPECT_EQ(2, prop_value_1.value());
+}
+
+TEST(InspectableTest, ConstructionWithValueOnly) {
+  TestInspectable inspectable(2);
+  EXPECT_EQ(2, *inspectable);
+
+  // Updating property should be a no-op, but value should still be updated.
+  inspectable.Set(1);
+  EXPECT_EQ(1, *inspectable);
+}
 
 TEST(InspectableTest, PropertyValueUpdatedOnConstruction) {
   std::optional<int> prop_value;
@@ -84,17 +119,21 @@ TEST(InspectableTest, UpdateValueThroughMutable) {
 }
 
 TEST(InspectableTest, ToStringInspectable) {
-  std::optional<std::string> prop_value;
-  auto prop_cb = [&](auto value) { prop_value = value; };
+  const auto kPropertyName = "test_property";
+  inspect::Inspector inspector;
+  auto& root = inspector.GetRoot();
 
-  ToStringInspectable inspectable(StringValue{""},
-                                  TestProperty<std::string>("", std::move(prop_cb)));
+  ToStringInspectable inspectable(StringValue{""}, root.CreateString(kPropertyName, ""));
 
-  const auto kExpectedValue = "fuchsia";
+  const std::string kExpectedValue = "fuchsia";
   inspectable.Mutable()->value = kExpectedValue;
   EXPECT_EQ(kExpectedValue, inspectable->value);
-  ASSERT_TRUE(prop_value.has_value());
-  EXPECT_EQ(kExpectedValue, prop_value.value());
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  ASSERT_TRUE(hierarchy.is_ok());
+  EXPECT_THAT(
+      hierarchy.take_value(),
+      AllOf(NodeMatches(PropertyList(ElementsAre(StringIs(kPropertyName, kExpectedValue))))));
 }
 
 TEST(InspectableTest, InspectRealStringProperty) {

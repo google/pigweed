@@ -70,8 +70,7 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
  public:
   void SetUp() override {
     TestLoopFixture::SetUp();
-    cache_ =
-        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
+    cache_ = std::make_unique<PeerCache>();
   }
 
   void TearDown() override {
@@ -98,15 +97,15 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
   // GAP_PeerCacheExpirationTest fixture.)
   Peer* peer() { return peer_; }
 
-  inspect::Inspector& inspector() { return inspector_; }
-
  private:
   std::unique_ptr<PeerCache> cache_;
   Peer* peer_;
-  inspect::Inspector inspector_;
 };
 
 TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
+  inspect::Inspector inspector;
+  cache()->AttachInspect(inspector.GetRoot());
+
   Peer* peer0 = cache()->NewPeer(kAddrLePublic, true);
   auto peer0_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x0"))));
 
@@ -114,7 +113,7 @@ TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRem
   auto peer1_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x1"))));
 
   // Hierarchy should contain peer0 and peer1.
-  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo()).take_value();
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   auto peer_cache_matcher0 =
       AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
             ChildrenMatch(UnorderedElementsAre(peer0_matcher, peer1_matcher)));
@@ -123,7 +122,7 @@ TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRem
   // peer0 should be removed from hierarchy after it is removed from the cache because its Node is
   // destroyed along with the Peer object.
   EXPECT_TRUE(cache()->RemoveDisconnectedPeer(peer0->identifier()));
-  hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo()).take_value();
+  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   auto peer_cache_matcher1 = AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
                                    ChildrenMatch(UnorderedElementsAre(peer1_matcher)));
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher1))));
@@ -1162,8 +1161,7 @@ TEST_F(GAP_PeerCacheTest_BrEdrUpdateCallbackTest, BecomingDualModeTriggersUpdate
 
 class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
  public:
-  GAP_PeerCacheExpirationTest()
-      : cache_(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName)) {}
+  GAP_PeerCacheExpirationTest() = default;
   void SetUp() {
     TestLoopFixture::SetUp();
     cache_.set_peer_removed_callback([this](PeerId) { peers_removed_++; });
@@ -1193,7 +1191,6 @@ class GAP_PeerCacheExpirationTest : public ::gtest::TestLoopFixture {
   int peers_removed() const { return peers_removed_; }
 
  private:
-  inspect::Inspector inspector_;
   PeerCache cache_;
   DeviceAddress peer_addr_;
   DeviceAddress peer_addr_alias_;

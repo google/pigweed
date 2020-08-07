@@ -49,8 +49,7 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = data::Domain::Create(
-        transport()->WeakPtr(), inspector_.GetRoot().CreateChild(data::Domain::kInspectNodeName));
+    domain_ = data::Domain::Create(transport()->WeakPtr());
 
     StartTestDevice();
   };
@@ -142,7 +141,6 @@ class DataFuzzTest : public TestingBase {
 
  private:
   FuzzedDataProvider data_;
-  inspect::Inspector inspector_;
   fbl::RefPtr<data::Domain> domain_;
   bool connection_;
   std::unordered_map<l2cap::ChannelId, fbl::RefPtr<l2cap::Channel>> channels_;

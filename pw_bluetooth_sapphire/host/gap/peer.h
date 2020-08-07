@@ -35,15 +35,6 @@ class PeerCache;
 // PeerCache.
 class Peer final {
  public:
-  static constexpr const char* kInspectPeerIdName = "peer_id";
-  static constexpr const char* kInspectTechnologyName = "technology";
-  static constexpr const char* kInspectAddressName = "address";
-  static constexpr const char* kInspectConnectableName = "connectable";
-  static constexpr const char* kInspectTemporaryName = "temporary";
-  static constexpr const char* kInspectFeaturesName = "features";
-  static constexpr const char* kInspectVersionName = "hci_version";
-  static constexpr const char* kInspectManufacturerName = "manufacturer";
-
   using DeviceCallback = fit::function<void(const Peer&)>;
 
   // Caller must ensure that callbacks are non-empty.
@@ -53,7 +44,7 @@ class Peer final {
   // (do the callbacks outlive |this|?).
   Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
        DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-       bool connectable, inspect::Node node);
+       bool connectable);
 
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
@@ -87,6 +78,18 @@ class Peer final {
     kSkipUntilNextConnection,
   };
 
+  static constexpr const char* kInspectPeerIdName = "peer_id";
+  static constexpr const char* kInspectTechnologyName = "technology";
+  static constexpr const char* kInspectAddressName = "address";
+  static constexpr const char* kInspectConnectableName = "connectable";
+  static constexpr const char* kInspectTemporaryName = "temporary";
+  static constexpr const char* kInspectFeaturesName = "features";
+  static constexpr const char* kInspectVersionName = "hci_version";
+  static constexpr const char* kInspectManufacturerName = "manufacturer";
+
+  // Attach peer as child node of |parent| with specified |name|.
+  void AttachInspect(inspect::Node& parent, std::string name = "peer");
+
   // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
    public:
@@ -95,7 +98,9 @@ class Peer final {
     static constexpr const char* kInspectBondDataName = "bonded";
     static constexpr const char* kInspectFeaturesName = "features";
 
-    LowEnergyData(Peer* owner, inspect::Node node);
+    LowEnergyData(Peer* owner);
+
+    void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
     // Current connection state.
     ConnectionState connection_state() const { return *conn_state_; }
@@ -201,7 +206,10 @@ class Peer final {
     static constexpr const char* kInspectConnectionStateName = "connection_state";
     static constexpr const char* kInspectLinkKeyName = "bonded";
 
-    BrEdrData(Peer* owner, inspect::Node node);
+    BrEdrData(Peer* owner);
+
+    // Attach peer inspect node as a child node of |parent|.
+    void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName);
 
     // Current connection state.
     ConnectionState connection_state() const { return *conn_state_; }

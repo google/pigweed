@@ -71,8 +71,7 @@ class Adapter final {
   // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
   explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                   std::optional<fbl::RefPtr<data::Domain>> data_domain,
-                   inspect::Node adapter_node);
+                   std::optional<fbl::RefPtr<data::Domain>> data_domain);
   ~Adapter();
 
   // Returns a uniquely identifier for this adapter on the current system.
@@ -182,6 +181,9 @@ class Adapter final {
   void set_auto_connect_callback(AutoConnectCallback callback) {
     auto_conn_cb_ = std::move(callback);
   }
+
+  // Attach Adapter's inspect node as a child node under |parent| with the given |name|.
+  void AttachInspect(inspect::Node& parent, std::string name = "adapter");
 
  private:
   // Second step of the initialization sequence. Called by Initialize() when the

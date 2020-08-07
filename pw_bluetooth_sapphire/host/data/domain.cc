@@ -15,11 +15,8 @@ namespace data {
 
 class Impl final : public Domain {
  public:
-  Impl(fxl::WeakPtr<hci::Transport> hci, inspect::Node node)
-      : Domain(),
-        dispatcher_(async_get_default_dispatcher()),
-        node_(std::move(node)),
-        hci_(std::move(hci)) {
+  Impl(fxl::WeakPtr<hci::Transport> hci)
+      : Domain(), dispatcher_(async_get_default_dispatcher()), hci_(std::move(hci)) {
     ZX_ASSERT(hci_);
     ZX_ASSERT(hci_->acl_data_channel());
     const auto& acl_buffer_info = hci_->acl_data_channel()->GetBufferInfo();
@@ -57,6 +54,10 @@ class Impl final : public Domain {
                         l2cap::SecurityUpgradeCallback security_callback) override {
     channel_manager_->RegisterACL(handle, role, std::move(link_error_callback),
                                   std::move(security_callback));
+  }
+
+  void AttachInspect(inspect::Node& parent, std::string name) override {
+    node_ = parent.CreateChild(name);
   }
 
   LEFixedChannels AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
@@ -142,9 +143,9 @@ class Impl final : public Domain {
 };
 
 // static
-fbl::RefPtr<Domain> Domain::Create(fxl::WeakPtr<hci::Transport> hci, inspect::Node node) {
+fbl::RefPtr<Domain> Domain::Create(fxl::WeakPtr<hci::Transport> hci) {
   ZX_DEBUG_ASSERT(hci);
-  return AdoptRef(new Impl(hci, std::move(node)));
+  return AdoptRef(new Impl(hci));
 }
 
 }  // namespace data

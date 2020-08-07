@@ -19,7 +19,7 @@ Host::Host(const bt_hci_protocol_t& hci_proto) : hci_proto_(hci_proto) {}
 
 Host::~Host() {}
 
-bool Host::Initialize(inspect::Node adapter_node, InitCallback callback) {
+bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
   auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_);
 
   auto hci_result = hci::Transport::Create(std::move(dev));
@@ -31,11 +31,11 @@ bool Host::Initialize(inspect::Node adapter_node, InitCallback callback) {
 
   gatt_host_ = std::make_unique<GattHost>();
 
-  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt,
-                                        std::move(adapter_node));
+  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
   if (!gap_)
     return false;
 
+  gap_->AttachInspect(root_node);
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // Called when the GAP layer is ready. We initialize the GATT profile after

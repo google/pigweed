@@ -526,8 +526,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     TestingBase::SetUp();
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
 
-    peer_cache_ =
-        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
+    peer_cache_ = std::make_unique<PeerCache>();
     data_domain_ = data::testing::FakeDomain::Create();
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
@@ -644,7 +643,6 @@ class BrEdrConnectionManagerTest : public TestingBase {
   }
 
  private:
-  inspect::Inspector inspector_;
   std::unique_ptr<BrEdrConnectionManager> connection_manager_;
   std::unique_ptr<PeerCache> peer_cache_;
   fbl::RefPtr<data::testing::FakeDomain> data_domain_;

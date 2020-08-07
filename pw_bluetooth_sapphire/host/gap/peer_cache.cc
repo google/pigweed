@@ -32,11 +32,6 @@ DeviceAddress GetAliasAddress(const DeviceAddress& address) {
 
 }  // namespace
 
-PeerCache::PeerCache(inspect::Node node) : node_(std::move(node)) {
-  // Node must not be null, or else unique names cannot be generated for peers.
-  ZX_ASSERT(node_);
-}
-
 Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   auto* const peer = InsertPeerRecord(RandomPeerId(), address, connectable);
@@ -193,17 +188,20 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
 bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {
-    bt_log(INFO, "gap-le", "failed to update auto-connect behavior (disconnect) for unknown peer: %s", bt_str(peer_id));
+    bt_log(INFO, "gap-le",
+           "failed to update auto-connect behavior (disconnect) for unknown peer: %s",
+           bt_str(peer_id));
     return false;
   }
 
-  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (disconnect) for peer: %s", bt_str(peer_id));
+  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (disconnect) for peer: %s",
+         bt_str(peer_id));
 
   peer->MutLe().SetAutoConnectBehaviorForIntentionalDisconnect();
 
-  // TODO(fxb/37584): When implementing auto-connect behavior tracking for classic bluetooth, consider tracking this
-  // policy for the peer as a whole unless we think this policy should be applied separately for each transport (per
-  // armansito@).
+  // TODO(fxb/37584): When implementing auto-connect behavior tracking for classic bluetooth,
+  // consider tracking this policy for the peer as a whole unless we think this policy should be
+  // applied separately for each transport (per armansito@).
 
   return true;
 }
@@ -211,11 +209,14 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
 bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
   Peer* const peer = FindById(peer_id);
   if (!peer) {
-    bt_log(INFO, "gap-le", "failed to update auto-connect behavior (connection) for unknown peer: %s", bt_str(peer_id));
+    bt_log(INFO, "gap-le",
+           "failed to update auto-connect behavior (connection) for unknown peer: %s",
+           bt_str(peer_id));
     return false;
   }
 
-  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (connection) for peer: %s", bt_str(peer_id));
+  bt_log(DEBUG, "gap-le", "updated auto-connect behavior (connection) for peer: %s",
+         bt_str(peer_id));
 
   peer->MutLe().SetAutoConnectBehaviorForSuccessfulConnection();
 
@@ -268,6 +269,18 @@ Peer* PeerCache::FindByAddress(const DeviceAddress& in_address) const {
   return p;
 }
 
+void PeerCache::AttachInspect(inspect::Node& parent, std::string name) {
+  node_ = parent.CreateChild(name);
+
+  if (!node_) {
+    return;
+  }
+
+  for (auto& [_, record] : peers_) {
+    record.peer()->AttachInspect(node_, node_.UniqueName("peer_"));
+  }
+}
+
 // Private methods below.
 
 Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& address,
@@ -281,8 +294,11 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
   std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
                                       fit::bind_member(this, &PeerCache::UpdateExpiry),
                                       fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
-                                      address, connectable,
-                                      node_.CreateChild(node_.UniqueName("peer_"))));
+                                      address, connectable));
+  if (node_) {
+    peer->AttachInspect(node_, node_.UniqueName("peer_"));
+  }
+
   // Note: we must construct the PeerRecord in-place, because it doesn't
   // support copy or move.
   auto [iter, inserted] = peers_.try_emplace(peer->identifier(), std::move(peer),

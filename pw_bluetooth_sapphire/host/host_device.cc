@@ -100,8 +100,7 @@ void HostDevice::Init() {
 
     std::lock_guard<std::mutex> lock(mtx_);
     host_ = fxl::MakeRefCounted<Host>(hci_proto_);
-    auto adapter_node = inspect_.GetRoot().CreateChild("adapter");
-    host_->Initialize(std::move(adapter_node), [this](bool success) {
+    host_->Initialize(inspect_.GetRoot(), [this](bool success) {
       std::lock_guard<std::mutex> lock(mtx_);
 
       // host_ and dev_ must be defined here as Bind() must have been called and the runloop has not

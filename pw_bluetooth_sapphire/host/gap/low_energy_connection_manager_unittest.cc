@@ -72,8 +72,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    peer_cache_ =
-        std::make_unique<PeerCache>(inspector_.GetRoot().CreateChild(PeerCache::kInspectNodeName));
+    peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = data::testing::FakeDomain::Create();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
@@ -150,8 +149,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
       connected_peers_.erase(address);
     }
   }
-
-  inspect::Inspector inspector_;
 
   fbl::RefPtr<data::testing::FakeDomain> l2cap_;
 

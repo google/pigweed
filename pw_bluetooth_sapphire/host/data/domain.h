@@ -34,10 +34,12 @@ namespace data {
 //   c. Data sockets that bridge out-of-process users to above protocols.
 class Domain : public fbl::RefCounted<Domain> {
  public:
-  static constexpr const char* kInspectNodeName = "data_domain";
-
   // Constructs an uninitialized data domain that can be used in production.
-  static fbl::RefPtr<Domain> Create(fxl::WeakPtr<hci::Transport> hci, inspect::Node node);
+  static fbl::RefPtr<Domain> Create(fxl::WeakPtr<hci::Transport> hci);
+
+  // Attach Domain's inspect node as a child of |parent| with the given |name|
+  static constexpr const char* kInspectNodeName = "data_domain";
+  virtual void AttachInspect(inspect::Node& parent, std::string name = kInspectNodeName) = 0;
 
   // Registers an ACL connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this

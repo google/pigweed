@@ -128,9 +128,8 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   return sdp;
 }
 
-Server::Server(fbl::RefPtr<data::Domain> data_domain, inspect::Node sdp_server_node)
+Server::Server(fbl::RefPtr<data::Domain> data_domain)
     : data_domain_(data_domain),
-      inspect_properties_(InspectProperties(std::move(sdp_server_node))),
       next_handle_(kFirstUnreservedHandle),
       db_state_(0),
       weak_ptr_factory_(this) {
@@ -156,6 +155,11 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain, inspect::Node sdp_server_n
 }
 
 Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
+
+void Server::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_properties_.sdp_server_node = parent.CreateChild(name);
+  UpdateInspectProperties();
+}
 
 bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", channel->link_handle());
@@ -535,36 +539,46 @@ void Server::Send(hci::ConnectionHandle conn, ByteBufferPtr bytes) {
 }
 
 void Server::UpdateInspectProperties() {
-  // Clear the previous inspect data.
-  inspect_properties_.svc_record_nodes.clear();
-
-  std::vector<std::pair<inspect::Node, InspectProperties::InspectServiceRecordProperties>> records;
-
-  for (const auto& svc_record : records_) {
-    auto record_node = inspect_properties_.sdp_server_node.CreateChild(
-        inspect_properties_.sdp_server_node.UniqueName(kInspectRecordName));
-    auto record_string = record_node.CreateString(kInspectRecordName, svc_record.second.ToString());
-
-    auto psms = record_node.CreateChild(kInspectRegisteredPsmName);
-    std::vector<std::pair<inspect::Node, inspect::StringProperty>> psm_nodes;
-
-    auto psm_set = service_to_psms_.find(svc_record.first);
-    if (psm_set != service_to_psms_.end()) {
-      for (const auto& psm : psm_set->second) {
-        auto psm_node = psms.CreateChild(psms.UniqueName(kInspectPsmName));
-        auto psm_uint = psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
-        psm_nodes.push_back(std::make_pair(std::move(psm_node), std::move(psm_uint)));
-      }
-    }
-
-    InspectProperties::InspectServiceRecordProperties svc_rec_props;
-    svc_rec_props.record = std::move(record_string);
-    svc_rec_props.psms = std::move(psms);
-    svc_rec_props.psm_nodes = std::move(psm_nodes);
-    records.push_back(std::make_pair(std::move(record_node), std::move(svc_rec_props)));
+  // Skip update if node has not been attached.
+  if (!inspect_properties_.sdp_server_node) {
+    return;
   }
 
-  inspect_properties_.svc_record_nodes = std::move(records);
+  // Clear the previous inspect data.
+  inspect_properties_.svc_record_properties.clear();
+
+  for (const auto& svc_record : records_) {
+    auto record_string = svc_record.second.ToString();
+    auto psms_it = service_to_psms_.find(svc_record.first);
+    std::unordered_set<l2cap::PSM> psm_set;
+    if (psms_it != service_to_psms_.end()) {
+      psm_set = psms_it->second;
+    }
+
+    InspectProperties::InspectServiceRecordProperties svc_rec_props(std::move(record_string),
+                                                                    std::move(psm_set));
+    auto& parent = inspect_properties_.sdp_server_node;
+    svc_rec_props.AttachInspect(parent, parent.UniqueName(kInspectRecordName));
+
+    inspect_properties_.svc_record_properties.push_back(std::move(svc_rec_props));
+  }
+}
+
+Server::InspectProperties::InspectServiceRecordProperties::InspectServiceRecordProperties(
+    std::string record, std::unordered_set<l2cap::PSM> psms)
+    : record(std::move(record)), psms(std::move(psms)) {}
+
+void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(inspect::Node& parent,
+                                                                              std::string name) {
+  node = parent.CreateChild(name);
+  record_property = node.CreateString(kInspectRecordName, record);
+  psms_node = node.CreateChild(kInspectRegisteredPsmName);
+  psm_nodes.clear();
+  for (const auto& psm : psms) {
+    auto psm_node = psms_node.CreateChild(psms_node.UniqueName(kInspectPsmName));
+    auto psm_string = psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
+    psm_nodes.push_back(std::make_pair(std::move(psm_node), std::move(psm_string)));
+  }
 }
 
 }  // namespace sdp
