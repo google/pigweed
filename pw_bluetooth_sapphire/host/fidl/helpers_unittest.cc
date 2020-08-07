@@ -381,6 +381,138 @@ TEST(FidlHelpersTest, ReliableModeFromFidl) {
   EXPECT_EQ(bt::gatt::ReliableMode::kDisabled, ReliableModeFromFidl(options));
 }
 
+// TODO: Set infomration w/o setting language, set a FIDL type that cannot be converted
+// - make sure the expected attributes are set and have the correct type
+// - make sure the profile descriptor sets the right attributes
+TEST(FidlHelpersTest, ServiceDefinitionToServiceRecord) {
+  fuchsia::bluetooth::bredr::ServiceDefinition def_should_fail;
+  // Should fail to convert without service class UUIDs.
+  auto rec_no_uuids = ServiceDefinitionToServiceRecord(def_should_fail);
+  EXPECT_FALSE(rec_no_uuids.is_ok());
+  // Should fail to convert when information set without language.
+  def_should_fail.mutable_service_class_uuids()->emplace_back(
+      fidl_helpers::UuidToFidl(bt::sdp::profile::kAudioSink));
+  fuchsia::bluetooth::bredr::Information info_no_language;
+  def_should_fail.mutable_information()->emplace_back(std::move(info_no_language));
+  auto rec_no_language = ServiceDefinitionToServiceRecord(def_should_fail);
+  EXPECT_FALSE(rec_no_language.is_ok());
+
+  // Create definition for successful conversion.
+  fuchsia::bluetooth::bredr::ServiceDefinition def;
+  def.mutable_service_class_uuids()->emplace_back(
+      fidl_helpers::UuidToFidl(bt::sdp::profile::kAudioSink));
+  fuchsia::bluetooth::bredr::Information info;
+  info.set_language("en");
+  info.set_name("TEST");
+  def.mutable_information()->emplace_back(std::move(info));
+  fuchsia::bluetooth::bredr::ProtocolDescriptor l2cap_proto;
+  l2cap_proto.protocol = fuchsia::bluetooth::bredr::ProtocolIdentifier::L2CAP;
+  fuchsia::bluetooth::bredr::DataElement l2cap_data_el;
+  l2cap_data_el.set_uint16(fuchsia::bluetooth::bredr::PSM_SDP);
+  l2cap_proto.params.emplace_back(std::move(l2cap_data_el));
+  def.mutable_protocol_descriptor_list()->emplace_back(std::move(l2cap_proto));
+  fuchsia::bluetooth::bredr::ProtocolDescriptor avdtp_proto;
+  avdtp_proto.protocol = fuchsia::bluetooth::bredr::ProtocolIdentifier::AVDTP;
+  fuchsia::bluetooth::bredr::DataElement avdtp_data_el;
+  avdtp_data_el.set_uint16(0x0103);  // Version 1.3
+  avdtp_proto.params.emplace_back(std::move(avdtp_data_el));
+  def.mutable_protocol_descriptor_list()->emplace_back(std::move(avdtp_proto));
+  fuchsia::bluetooth::bredr::ProfileDescriptor prof_desc;
+  prof_desc.profile_id =
+      fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier::ADVANCED_AUDIO_DISTRIBUTION;
+  prof_desc.major_version = 1;
+  prof_desc.minor_version = 3;
+  def.mutable_profile_descriptors()->emplace_back(prof_desc);
+  bt::sdp::AttributeId valid_att_id = 0x1111;
+  fuchsia::bluetooth::bredr::Attribute valid_attribute;
+  valid_attribute.element.set_uint8(0x01);
+  valid_attribute.id = valid_att_id;
+  def.mutable_additional_attributes()->emplace_back(std::move(valid_attribute));
+  // Add an invalid additional attribute that should not convert.
+  bt::sdp::AttributeId invalid_att_id = 0x1112;
+  fuchsia::bluetooth::bredr::Attribute invalid_attribute;
+  invalid_attribute.element.set_url("");
+  invalid_attribute.id = invalid_att_id;
+  def.mutable_additional_attributes()->emplace_back(std::move(invalid_attribute));
+
+  // Confirm converted ServiceRecord fields match ServiceDefinition
+  auto rec = ServiceDefinitionToServiceRecord(def);
+  EXPECT_TRUE(rec.is_ok());
+
+  // Confirm UUIDs match
+  std::unordered_set<bt::UUID> attribute_uuid = {bt::sdp::profile::kAudioSink};
+  EXPECT_TRUE(rec.value().FindUUID(attribute_uuid));
+
+  // Confirm information fields match
+  EXPECT_TRUE(rec.value().HasAttribute(bt::sdp::kLanguageBaseAttributeIdList));
+  const bt::sdp::DataElement& lang_val =
+      rec.value().GetAttribute(bt::sdp::kLanguageBaseAttributeIdList);
+  auto triplets = lang_val.Get<std::vector<bt::sdp::DataElement>>();
+  EXPECT_TRUE(triplets);
+  EXPECT_TRUE(triplets->size() % 3 == 0);
+  EXPECT_EQ(bt::sdp::DataElement::Type::kUnsignedInt, triplets->at(0).type());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kUnsignedInt, triplets->at(1).type());
+  EXPECT_EQ(bt::sdp::DataElement::Type::kUnsignedInt, triplets->at(2).type());
+  auto lang = triplets->at(0).Get<uint16_t>();
+  EXPECT_TRUE(lang);
+  EXPECT_EQ(0x656e, *lang);  // should be 'en' in ascii (but big-endian)
+  auto encoding = triplets->at(1).Get<uint16_t>();
+  EXPECT_TRUE(encoding);
+  EXPECT_EQ(106, *encoding);  // should always be UTF-8
+  auto base_attrid = triplets->at(2).Get<uint16_t>();
+  EXPECT_TRUE(base_attrid);
+  EXPECT_EQ(0x0100, *base_attrid);  // The primary language must be at 0x0100.
+  EXPECT_TRUE(rec.value().HasAttribute(*base_attrid + bt::sdp::kServiceNameOffset));
+  const bt::sdp::DataElement& name_elem =
+      rec.value().GetAttribute(*base_attrid + bt::sdp::kServiceNameOffset);
+  auto name = name_elem.Get<std::string>();
+  EXPECT_TRUE(name);
+  EXPECT_EQ("TEST", *name);
+
+  // Confirm protocol +  descriptor list
+  EXPECT_TRUE(rec.value().HasAttribute(bt::sdp::kProtocolDescriptorList));
+  const bt::sdp::DataElement& protocol_val =
+      rec.value().GetAttribute(bt::sdp::kProtocolDescriptorList);
+  bt::DynamicByteBuffer protocol_block(protocol_val.WriteSize());
+  protocol_val.Write(&protocol_block);
+  auto expected_protocol_list =
+      bt::CreateStaticByteBuffer(0x35, 0x10,  // Data Element Sequence (10 bytes)
+                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
+                                 0x19,        // UUID (16 bits)
+                                 0x01, 0x00,  // L2CAP Profile UUID
+                                 0x09,        // uint16_t
+                                 0x00, 0x01,  // PSM = SDP
+                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
+                                 0x19,        // UUID
+                                 0x00, 0x19,  // AVTDP Profile UUID
+                                 0x09,        // uint16_t
+                                 0x01, 0x03   // PSM_AVDTP
+      );
+  EXPECT_EQ(expected_protocol_list.size(), protocol_block.size());
+  EXPECT_TRUE(ContainersEqual(expected_protocol_list, protocol_block));
+
+  // Confirm profile descriptor list
+  EXPECT_TRUE(rec.value().HasAttribute(bt::sdp::kBluetoothProfileDescriptorList));
+  const bt::sdp::DataElement& profile_val =
+      rec.value().GetAttribute(bt::sdp::kBluetoothProfileDescriptorList);
+  bt::DynamicByteBuffer profile_block(profile_val.WriteSize());
+  profile_val.Write(&profile_block);
+  auto expected_profile_list =
+      bt::CreateStaticByteBuffer(0x35, 0x08,  // Data Element Sequence (8 bytes)
+                                 0x35, 0x06,  // Data Element Sequence (6 bytes)
+                                 0x19,        // UUID
+                                 0x11, 0x0d,  // Advanced Audio Identifier
+                                 0x09,        // uint16_t
+                                 0x01, 0x03   // Major and minor version
+      );
+  EXPECT_EQ(expected_profile_list.size(), profile_block.size());
+  EXPECT_TRUE(ContainersEqual(expected_profile_list, profile_block));
+
+  // Confirm additional attributes
+  EXPECT_TRUE(rec.value().HasAttribute(valid_att_id));
+  EXPECT_FALSE(rec.value().HasAttribute(invalid_att_id));
+}
+
 }  // namespace
 }  // namespace fidl_helpers
 }  // namespace bthost

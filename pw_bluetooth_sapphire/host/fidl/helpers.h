@@ -16,6 +16,7 @@
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/type_converter.h"
 #include "lib/fidl/cpp/vector.h"
+#include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -147,6 +148,10 @@ fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);
 // Functions that convert FIDL GATT types to library objects.
 bt::gatt::ReliableMode ReliableModeFromFidl(
     const fuchsia::bluetooth::gatt::WriteOptions& write_options);
+
+// Constructs a sdp::ServiceRecord from a FIDL ServiceDefinition |definition|
+fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
+    const fuchsia::bluetooth::bredr::ServiceDefinition& definition);
 
 }  // namespace fidl_helpers
 }  // namespace bthost

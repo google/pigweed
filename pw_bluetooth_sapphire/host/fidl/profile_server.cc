@@ -67,74 +67,6 @@ fidlbredr::Channel ChannelSocketToFidlChannel(bt::l2cap::ChannelSocket chan_sock
   return chan;
 }
 
-bool FidlToDataElement(const fidlbredr::DataElement& fidl, bt::sdp::DataElement* out) {
-  ZX_DEBUG_ASSERT(out);
-  switch (fidl.Which()) {
-    case fidlbredr::DataElement::Tag::kInt8:
-      out->Set(fidl.int8());
-      break;
-    case fidlbredr::DataElement::Tag::kInt16:
-      out->Set(fidl.int16());
-      break;
-    case fidlbredr::DataElement::Tag::kInt32:
-      out->Set(fidl.int32());
-      break;
-    case fidlbredr::DataElement::Tag::kInt64:
-      out->Set(fidl.int64());
-      break;
-    case fidlbredr::DataElement::Tag::kUint8:
-      out->Set(fidl.uint8());
-      break;
-    case fidlbredr::DataElement::Tag::kUint16:
-      out->Set(fidl.uint16());
-      break;
-    case fidlbredr::DataElement::Tag::kUint32:
-      out->Set(fidl.uint32());
-      break;
-    case fidlbredr::DataElement::Tag::kUint64:
-      out->Set(fidl.uint64());
-      break;
-    case fidlbredr::DataElement::Tag::kStr:
-      out->Set(fidl.str());
-      break;
-    case fidlbredr::DataElement::Tag::kB:
-      out->Set(fidl.b());
-      break;
-    case fidlbredr::DataElement::Tag::kUuid:
-      out->Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
-      break;
-    case fidlbredr::DataElement::Tag::kSequence: {
-      std::vector<bt::sdp::DataElement> seq;
-      for (const auto& fidl_elem : fidl.sequence()) {
-        bt::sdp::DataElement it;
-        if (!FidlToDataElement(*fidl_elem, &it)) {
-          return false;
-        }
-        seq.emplace_back(std::move(it));
-      }
-      out->Set(std::move(seq));
-      break;
-    }
-    case fidlbredr::DataElement::Tag::kAlternatives: {
-      std::vector<bt::sdp::DataElement> alts;
-      for (const auto& fidl_elem : fidl.alternatives()) {
-        bt::sdp::DataElement it;
-        if (!FidlToDataElement(*fidl_elem, &it)) {
-          return false;
-        }
-        alts.emplace_back(std::move(it));
-      }
-      out->SetAlternative(std::move(alts));
-      break;
-    }
-    default:
-      // Types not handled: Null datatype (never used) and Url data type (not supported by Set)
-      bt_log(WARN, "profile_server", "Encountered FidlToDataElement type not handled.");
-      return false;
-  }
-  return true;
-}
-
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = fidlbredr::DataElement::New();
   bt_log(TRACE, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
@@ -240,32 +172,6 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
 
   return desc;
 }
-
-void AddProtocolDescriptorList(
-    bt::sdp::ServiceRecord* rec, bt::sdp::ServiceRecord::ProtocolListId id,
-    const ::std::vector<fidlbredr::ProtocolDescriptor>& descriptor_list) {
-  bt_log(TRACE, "profile_server", "ProtocolDescriptorList %d", id);
-  for (auto& descriptor : descriptor_list) {
-    bt::sdp::DataElement protocol_params;
-    if (descriptor.params.size() > 1) {
-      std::vector<bt::sdp::DataElement> params;
-      for (auto& fidl_param : descriptor.params) {
-        bt::sdp::DataElement bt_param;
-        FidlToDataElement(fidl_param, &bt_param);
-        params.emplace_back(std::move(bt_param));
-      }
-      protocol_params.Set(std::move(params));
-    } else if (descriptor.params.size() == 1) {
-      FidlToDataElement(descriptor.params.front(), &protocol_params);
-    }
-
-    bt_log(TRACE, "profile_server", "%d : %s", fidl::ToUnderlying(descriptor.protocol),
-           protocol_params.ToString().c_str());
-    rec->AddProtocolDescriptor(id, bt::UUID(static_cast<uint16_t>(descriptor.protocol)),
-                               std::move(protocol_params));
-  }
-}
-
 }  // namespace
 
 ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
@@ -299,80 +205,14 @@ void ProfileServer::Advertise(
   std::vector<bt::sdp::ServiceRecord> registering;
 
   for (auto& definition : definitions) {
-    bt::sdp::ServiceRecord rec;
-    std::vector<bt::UUID> classes;
-
-    if (!definition.has_service_class_uuids()) {
-      bt_log(INFO, "profile_server", "Advertised service contains no Service UUIDs");
-      // Dropping receiver as we didn't register.
+    auto rec = fidl_helpers::ServiceDefinitionToServiceRecord(definition);
+    // Drop the receiver on error.
+    if (rec.is_error()) {
+      bt_log(INFO, "profile_server",
+             "Failed to create service record from service defintion - exiting!");
       return;
     }
-
-    for (auto& uuid : definition.service_class_uuids()) {
-      bt::UUID btuuid = fidl_helpers::UuidFromFidl(uuid);
-      bt_log(TRACE, "profile_server", "Setting Service Class UUID %s", bt_str(btuuid));
-      classes.emplace_back(std::move(btuuid));
-    }
-
-    rec.SetServiceClassUUIDs(classes);
-
-    if (definition.has_protocol_descriptor_list()) {
-      AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
-                                definition.protocol_descriptor_list());
-    }
-
-    if (definition.has_additional_protocol_descriptor_lists()) {
-      size_t protocol_list_id = 1;
-      for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {
-        AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list);
-        protocol_list_id++;
-      }
-    }
-
-    if (definition.has_profile_descriptors()) {
-      for (const auto& profile : definition.profile_descriptors()) {
-        bt_log(TRACE, "profile_server", "Adding Profile %#hx v%d.%d", profile.profile_id,
-               profile.major_version, profile.minor_version);
-        rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
-                       profile.minor_version);
-      }
-    }
-
-    if (definition.has_information()) {
-      for (const auto& info : definition.information()) {
-        if (!info.has_language()) {
-          bt_log(INFO, "profile_server", "Adding information to service definition: no language!");
-          // Dropping the receiver as it's not registered.
-          return;
-        }
-        std::string language = info.language();
-        std::string name, description, provider;
-        if (info.has_name()) {
-          name = info.name();
-        }
-        if (info.has_description()) {
-          description = info.description();
-        }
-        if (info.has_provider()) {
-          provider = info.provider();
-        }
-        bt_log(TRACE, "profile_server", "Adding Info (%s): (%s, %s, %s)", language.c_str(),
-               name.c_str(), description.c_str(), provider.c_str());
-        rec.AddInfo(language, name, description, provider);
-      }
-    }
-
-    if (definition.has_additional_attributes()) {
-      for (const auto& attribute : definition.additional_attributes()) {
-        bt::sdp::DataElement elem;
-        FidlToDataElement(attribute.element, &elem);
-        bt_log(TRACE, "profile_server", "Adding attribute %#x : %s", attribute.id,
-               elem.ToString().c_str());
-        rec.SetAttribute(attribute.id, std::move(elem));
-      }
-    }
-
-    registering.emplace_back(std::move(rec));
+    registering.emplace_back(std::move(rec.value()));
   }
 
   ZX_DEBUG_ASSERT(adapter());
