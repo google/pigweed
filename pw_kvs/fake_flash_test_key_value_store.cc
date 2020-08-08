@@ -67,8 +67,10 @@ KeyValueStoreBuffer<kKvsTestMaxEntries, kFlashTestSectors, kKvsTestRedundancy>
 }  // namespace
 
 KeyValueStore& TestKvs() {
-  test_partition.Erase();
-  test_kvs.Init();
+  if (!test_kvs.initialized()) {
+    test_kvs.Init();
+  }
+
   return test_kvs;
 }
 }  // namespace pw::kvs

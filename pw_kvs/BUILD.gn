@@ -72,6 +72,16 @@ pw_source_set("crc16") {
   ]
 }
 
+pw_source_set("flash_test_partition") {
+  public = [ "public/pw_kvs/flash_test_partition.h" ]
+  public_deps = [ ":pw_kvs" ]
+}
+
+pw_source_set("test_key_value_store") {
+  public = [ "public/pw_kvs/test_key_value_store.h" ]
+  public_deps = [ ":pw_kvs" ]
+}
+
 pw_source_set("fake_flash") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/fake_flash_memory.h" ]
@@ -89,6 +99,7 @@ pw_source_set("fake_flash_small_partition") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
+  public_deps = [ ":flash_test_partition" ]
   deps = [
     ":fake_flash",
     dir_pw_kvs,
@@ -99,6 +110,7 @@ pw_source_set("fake_flash_64_aligned_partition") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
+  public_deps = [ ":flash_test_partition" ]
   deps = [
     ":fake_flash",
     dir_pw_kvs,
@@ -110,6 +122,7 @@ pw_source_set("fake_flash_256_aligned_partition") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
+  public_deps = [ ":flash_test_partition" ]
   deps = [
     ":fake_flash",
     dir_pw_kvs,
@@ -119,8 +132,8 @@ pw_source_set("fake_flash_256_aligned_partition") {
 
 pw_source_set("fake_flash_test_key_value_store") {
   public_configs = [ ":default_config" ]
-  public = [ "public/pw_kvs/test_key_value_store.h" ]
   sources = [ "fake_flash_test_key_value_store.cc" ]
+  public_deps = [ ":test_key_value_store" ]
   deps = [
     ":crc16",
     ":fake_flash",
@@ -130,6 +143,7 @@ pw_source_set("fake_flash_test_key_value_store") {
 
 pw_source_set("flash_partition_test_100_iterations") {
   deps = [
+    ":flash_test_partition",
     dir_pw_kvs,
     dir_pw_log,
     dir_pw_unit_test,
@@ -140,6 +154,7 @@ pw_source_set("flash_partition_test_100_iterations") {
 
 pw_source_set("flash_partition_test_2_iterations") {
   deps = [
+    ":flash_test_partition",
     dir_pw_kvs,
     dir_pw_log,
     dir_pw_unit_test,
@@ -151,6 +166,7 @@ pw_source_set("flash_partition_test_2_iterations") {
 pw_source_set("key_value_store_initialized_test") {
   deps = [
     ":crc16",
+    ":flash_test_partition",
     ":pw_kvs",
     ":test_utils",
     dir_pw_checksum,
@@ -158,6 +174,15 @@ pw_source_set("key_value_store_initialized_test") {
     dir_pw_unit_test,
   ]
   sources = [ "key_value_store_initialized_test.cc" ]
+}
+
+pw_source_set("test_key_value_store_test") {
+  deps = [
+    ":pw_kvs",
+    ":test_key_value_store",
+    dir_pw_unit_test,
+  ]
+  sources = [ "test_key_value_store_test.cc" ]
 }
 
 pw_source_set("test_utils") {
@@ -317,9 +342,8 @@ pw_test("key_value_store_fuzz_test") {
 pw_test("fake_flash_test_key_value_store_test") {
   deps = [
     ":fake_flash_test_key_value_store",
-    ":pw_kvs",
+    ":test_key_value_store_test",
   ]
-  sources = [ "test_key_value_store_test.cc" ]
 }
 
 pw_test("key_value_store_map_test") {
