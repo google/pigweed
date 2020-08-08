@@ -13,6 +13,10 @@
 // the License.
 #pragma once
 
+#ifndef __cplusplus
+#include <stddef.h>
+#endif  // __cplusplus
+
 // Note: This file depends on the backend header already being included.
 
 #include "pw_preprocessor/macro_arg_count.h"
@@ -86,15 +90,22 @@
 #define PW_DCHECK_UINT_EQ(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_EQ(__VA_ARGS__)
 #define PW_DCHECK_UINT_NE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_NE(__VA_ARGS__)
 
-// Checks for pointer: LE, LT, GE, GT, EQ, NE, and NOTNULL.
+// Checks for pointer: LE, LT, GE, GT, EQ, NE.
 #define PW_CHECK_PTR_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, void*, "%p", __VA_ARGS__)
 #define PW_CHECK_PTR_LT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, < , argb, void*, "%p", __VA_ARGS__)
 #define PW_CHECK_PTR_GE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, void*, "%p", __VA_ARGS__)
 #define PW_CHECK_PTR_GT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, > , argb, void*, "%p", __VA_ARGS__)
 #define PW_CHECK_PTR_EQ(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, void*, "%p", __VA_ARGS__)
 #define PW_CHECK_PTR_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, void*, "%p", __VA_ARGS__)
+
+// Check for pointer: NOTNULL. Use "nullptr" in C++, "NULL" in C.
+#ifdef __cplusplus
+#define PW_CHECK_NOTNULL(arga, ...) \
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, nullptr, void*, "%p", __VA_ARGS__)
+#else  // __cplusplus
 #define PW_CHECK_NOTNULL(arga, ...) \
   _PW_CHECK_BINARY_CMP_IMPL(arga, !=, NULL, void*, "%p", __VA_ARGS__)
+#endif  // __cplusplus
 
 // Debug checks for pointer: LE, LT, GE, GT, EQ, NE, and NOTNULL.
 #define PW_DCHECK_PTR_LE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_LE(__VA_ARGS__)

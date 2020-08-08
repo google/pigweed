@@ -227,6 +227,16 @@ TEST_F(AssertPass, PtrGe3) { PW_CHECK_PTR_GE(0xb, 0xa); }
 TEST_F(AssertPass, PtrNotNull) { PW_CHECK_NOTNULL(0xa); }
 TEST_F(AssertFail, PtrNotNull) { PW_CHECK_NOTNULL(0x0); }
 
+// Note: Due to platform inconsistencies, the below test for the NOTNULL
+// message doesn't work. Some platforms print NULL formatted as %p as "(nil)",
+// others "0x0". Leaving this here for reference.
+//
+//   TEST_F(AssertFail, PtrNotNullDescription) {
+//     intptr_t intptr = 0;
+//     PW_CHECK_NOTNULL(intptr);
+//     EXPECT_MESSAGE("Check failed: intptr (=0x0) != nullptr (=0x0). ");
+//   }
+
 // PW_CHECK_FLOAT_*(...)
 // Binary checks with floats, comparisons: EXACT_LT, EXACT_LE, NEAR, EXACT_EQ,
 // EXACT_NE, EXACT_GE, EXACT_GT.
