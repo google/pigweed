@@ -100,8 +100,8 @@ whatever name they like, but we suggest picking a short prefix to namespace
 your product (e.g. for an Internet of Toast project, perhaps the prefix could
 be ``it_``).
 
-C++ file and directory locations
---------------------------------
+C++ module structure
+--------------------
 
 C++ public headers
 ~~~~~~~~~~~~~~~~~~
@@ -142,8 +142,8 @@ the public interface, but are not intended for use), place the headers in a
   These headers must not override headers from other modules. For
   that, there is the ``public_overrides/`` directory.
 
-Public override headers
-~~~~~~~~~~~~~~~~~~~~~~~
+C++ public override headers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Located ``{pw_module_dir}/public_overrides/<module>``. In general, the Pigweed
 philosophy is to avoid having "things hiding under rocks", and having header
 files with the same name that can override each other is considered a rock
@@ -191,7 +191,7 @@ Example:
     README.md
 
 Documentation
-~~~~~~~~~~~~~
+-------------
 Documentation should go in the root module folder, typically in the
 ``docs.rst`` file. There must be a docgen entry for the documentation in the
 ``BUILD.gn`` file with the target name ``docs``; so the full target for the
@@ -217,13 +217,18 @@ related files (like images and diagrams) there.
     docs/image/screenshot.png
     docs/image/diagram.svg
 
-Steps to create a new module for a Pigweed project
---------------------------------------------------
-These instructions are for creating a new module for contribution to the
-Pigweed project. See below for an `example`__ of what the new module folder
-might look like.
+Creating a new Pigweed module
+-----------------------------
+To create a new Pigweed module, follow the below steps.
 
-__ `Example module structure`_
+.. tip::
+
+  Connect with the Pigweed community (by `mailing the Pigweed list
+  <https://groups.google.com/forum/#!forum/pigweed>`_ or `raising your idea
+  in the Pigweed chat <https://discord.gg/M9NSeTA>`_) to discuss your module
+  idea before getting too far into the implementation. This can prevent
+  accidentally duplicating work, or avoiding writing code that won't get
+  accepted.
 
 1. Create module folder following `Module name`_ guidelines
 2. Add `C++ public headers`_ files in
@@ -263,3 +268,4 @@ __ `Example module structure`_
 
     - ``$ pw module-check {pw_module_dir}``
 
+12. Contribute your module to upstream Pigweed (optional but encouraged!)
