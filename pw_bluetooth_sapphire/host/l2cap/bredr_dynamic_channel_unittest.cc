@@ -1472,6 +1472,46 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadSize) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  const auto kPeerMps = 1024;
+  const auto kPeerMtu = kPeerMps + 1;
+  bool channel_opened = false;
+  auto open_cb = [&](auto chan) {
+    channel_opened = true;
+    ASSERT_TRUE(chan);
+    EXPECT_TRUE(chan->IsOpen());
+
+    // Note that max SDU size is the peer's MPS because it's smaller than its MTU.
+    EXPECT_EQ(kPeerMps, chan->info().max_tx_sdu_size);
+  };
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  const auto kInboundConfigReq =
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kPeerMtu, ChannelMode::kEnhancedRetransmission,
+                                 kErtmNFramesInTxWindow, kErtmMaxTransmissions, 0, 0, kPeerMps);
+  const auto kOutboundConfigRsp = MakeConfigRspWithMtuAndRfc(
+      kRemoteCId, ConfigurationResult::kSuccess, ChannelMode::kEnhancedRetransmission, kPeerMtu,
+      kErtmNFramesInTxWindow, kErtmMaxTransmissions, 2000, 12000, kPeerMps);
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundConfigRsp));
+
+  EXPECT_TRUE(channel_opened);
+}
+
 struct ReceiveMtuTestParams {
   std::optional<uint16_t> request_mtu;
   uint16_t response_mtu;

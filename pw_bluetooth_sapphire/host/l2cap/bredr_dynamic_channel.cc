@@ -361,20 +361,26 @@ ChannelInfo BrEdrDynamicChannel::info() const {
   ZX_ASSERT(local_config().mtu_option().has_value());
 
   const auto max_rx_sdu_size = local_config().mtu_option()->mtu();
-  const auto max_tx_sdu_size = remote_config().mtu_option()->mtu();
-  if (local_config().retransmission_flow_control_option()->mode() ==
-      ChannelMode::kEnhancedRetransmission) {
-    const auto n_frames_in_tx_window =
-        remote_config().retransmission_flow_control_option()->tx_window_size();
-    const auto max_transmissions =
-        remote_config().retransmission_flow_control_option()->max_transmit();
-    const auto max_tx_pdu_payload_size =
-        remote_config().retransmission_flow_control_option()->mps();
-    return ChannelInfo::MakeEnhancedRetransmissionMode(max_rx_sdu_size, max_tx_sdu_size,
-                                                       n_frames_in_tx_window, max_transmissions,
-                                                       max_tx_pdu_payload_size);
+  const auto peer_mtu = remote_config().mtu_option()->mtu();
+  if (local_config().retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
+    const auto max_tx_sdu_size = peer_mtu;
+    return ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size);
   }
-  return ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size);
+  const auto n_frames_in_tx_window =
+      remote_config().retransmission_flow_control_option()->tx_window_size();
+  const auto max_transmissions =
+      remote_config().retransmission_flow_control_option()->max_transmit();
+  const auto max_tx_pdu_payload_size = remote_config().retransmission_flow_control_option()->mps();
+  const auto max_tx_sdu_size = std::min(peer_mtu, max_tx_pdu_payload_size);
+  if (max_tx_pdu_payload_size < peer_mtu) {
+    bt_log(DEBUG, "l2cap-bredr",
+           "Channel %#.4x: reporting MPS of %hu to service to avoid segmenting outbound SDUs, "
+           "which would otherwise be %hu according to MTU",
+           local_cid(), max_tx_sdu_size, peer_mtu);
+  }
+  return ChannelInfo::MakeEnhancedRetransmissionMode(max_rx_sdu_size, max_tx_sdu_size,
+                                                     n_frames_in_tx_window, max_transmissions,
+                                                     max_tx_pdu_payload_size);
 }
 
 void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration config,
