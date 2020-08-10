@@ -411,6 +411,11 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
                             ? req_config.retransmission_flow_control_option()->mode()
                             : ChannelMode::kBasic;
 
+  // Record peer support for ERTM even if they haven't sent a Extended Features Mask.
+  if (req_mode == ChannelMode::kEnhancedRetransmission) {
+    SetEnhancedRetransmissionSupport(true);
+  }
+
   // Set default config options if not already in request.
   if (!req_config.mtu_option()) {
     req_config.set_mtu_option(ChannelConfiguration::MtuOption(kDefaultMTU));
@@ -564,8 +569,8 @@ void BrEdrDynamicChannel::CompleteInboundConnection(
   bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Sent Connection Response", local_cid());
   state_ |= kConnResponded;
 
+  UpdateLocalConfigForErtm();
   if (!IsWaitingForPeerErtmSupport()) {
-    UpdateLocalConfigForErtm();
     TrySendLocalConfig();
   }
 }
@@ -577,42 +582,14 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
                                          std::optional<bool> peer_supports_ertm)
     : DynamicChannel(registry, psm, local_cid, remote_cid),
       signaling_channel_(signaling_channel),
+      parameters_(params),
       state_(0u),
       peer_supports_ertm_(peer_supports_ertm),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(signaling_channel_);
   ZX_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
-  if (params.max_rx_sdu_size) {
-    const auto mtu = *params.max_rx_sdu_size;
-    if (mtu < kMinACLMTU) {
-      bt_log(WARN, "l2cap-bredr",
-             "Channel %#.4x: preferred MTU channel parameter below minimum allowed, using minimum "
-             "instead (mtu param: %#.2x, min mtu: %#.2x)",
-             local_cid, mtu, kMinACLMTU);
-      local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMinACLMTU));
-    } else {
-      local_config_.set_mtu_option(ChannelConfiguration::MtuOption(mtu));
-    }
-  } else {
-    local_config_.set_mtu_option(ChannelConfiguration::MtuOption(kMaxMTU));
-  }
-
-  if (params.mode && *params.mode == ChannelMode::kEnhancedRetransmission) {
-    // Core Spec v5.0 Vol 3, Part A, Sec 8.6.2.1 "When configuring a channel over an ACL-U logical
-    // link the values sent in a Configuration Request packet for Retransmission timeout and Monitor
-    // timeout shall be 0."
-    auto option =
-        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
-            /*tx_window_size=*/kErtmMaxUnackedInboundFrames,
-            /*max_transmit=*/kErtmMaxInboundRetransmissions, /*rtx_timeout=*/0,
-            /*monitor_timeout=*/0,
-            /*mps=*/kMaxInboundPduPayloadSize);
-    local_config_.set_retransmission_flow_control_option(option);
-  } else {
-    local_config_.set_retransmission_flow_control_option(
-        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
-  }
+  UpdateLocalConfigForErtm();
 }
 
 void BrEdrDynamicChannel::PassOpenResult() {
@@ -633,23 +610,53 @@ void BrEdrDynamicChannel::PassOpenError() {
 }
 
 void BrEdrDynamicChannel::UpdateLocalConfigForErtm() {
-  ZX_ASSERT(!IsWaitingForPeerErtmSupport());
+  local_config_.set_mtu_option(ChannelConfiguration::MtuOption(CalculateLocalMtu()));
 
-  auto local_mode = local_config_.retransmission_flow_control_option()->mode();
-
-  if (local_mode == ChannelMode::kEnhancedRetransmission) {
-    ZX_ASSERT(peer_supports_ertm_.has_value());
-    // Fall back to basic mode if peer doesn't support ERTM
-    if (!peer_supports_ertm_.value()) {
-      bt_log(TRACE, "l2cap", "Peer does not support ERTM, falling back to basic mode");
-      local_config_.set_retransmission_flow_control_option(
-          ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
-    }
+  if (ShouldRequestEnhancedRetransmission()) {
+    // Core Spec v5.0 Vol 3, Part A, Sec 8.6.2.1 "When configuring a channel over an ACL-U logical
+    // link the values sent in a Configuration Request packet for Retransmission timeout and Monitor
+    // timeout shall be 0."
+    auto option =
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeEnhancedRetransmissionMode(
+            /*tx_window_size=*/kErtmMaxUnackedInboundFrames,
+            /*max_transmit=*/kErtmMaxInboundRetransmissions, /*rtx_timeout=*/0,
+            /*monitor_timeout=*/0,
+            /*mps=*/kMaxInboundPduPayloadSize);
+    local_config_.set_retransmission_flow_control_option(option);
+  } else {
+    local_config_.set_retransmission_flow_control_option(
+        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
   }
 }
 
+uint16_t BrEdrDynamicChannel::CalculateLocalMtu() const {
+  const bool request_ertm = ShouldRequestEnhancedRetransmission();
+  const auto kDefaultPreferredMtu = request_ertm ? kMaxInboundPduPayloadSize : kMaxMTU;
+  uint16_t mtu = parameters_.max_rx_sdu_size.value_or(kDefaultPreferredMtu);
+  if (mtu < kMinACLMTU) {
+    bt_log(WARN, "l2cap-bredr",
+           "Channel %#.4x: preferred MTU channel parameter below minimum allowed, using minimum "
+           "instead (mtu param: %#x, min mtu: %#x)",
+           local_cid(), mtu, kMinACLMTU);
+    mtu = kMinACLMTU;
+  }
+  if (request_ertm && mtu > kMaxInboundPduPayloadSize) {
+    bt_log(DEBUG, "l2cap-bredr",
+           "Channel %#.4x: preferred MTU channel parameter above MPS; using MPS instead to avoid "
+           "segmentation (mtu param: %#x, max pdu: %#x)",
+           local_cid(), mtu, kMaxInboundPduPayloadSize);
+    mtu = kMaxInboundPduPayloadSize;
+  }
+  return mtu;
+}
+
+bool BrEdrDynamicChannel::ShouldRequestEnhancedRetransmission() const {
+  return parameters_.mode && *parameters_.mode == ChannelMode::kEnhancedRetransmission &&
+         peer_supports_ertm_.value_or(false);
+}
+
 bool BrEdrDynamicChannel::IsWaitingForPeerErtmSupport() {
-  const auto local_mode = local_config_.retransmission_flow_control_option()->mode();
+  const auto local_mode = parameters_.mode.value_or(ChannelMode::kBasic);
   return !peer_supports_ertm_.has_value() && (local_mode != ChannelMode::kBasic);
 }
 
@@ -731,7 +738,7 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
   const auto req_mode = config.retransmission_flow_control_option()
                             ? config.retransmission_flow_control_option()->mode()
                             : ChannelMode::kBasic;
-  const auto local_mode = local_config_.retransmission_flow_control_option()->mode();
+  const auto local_mode = local_config().retransmission_flow_control_option()->mode();
   switch (req_mode) {
     case ChannelMode::kBasic:
       // Local device must accept, as basic mode has highest precedence.
@@ -818,8 +825,8 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
 
     // Fall back to basic mode and try sending config again.
     // TODO(46992): limit the number of retries
-    local_config_.set_retransmission_flow_control_option(
-        ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+    peer_supports_ertm_ = false;
+    UpdateLocalConfigForErtm();
     SendLocalConfig();
     return true;
   }
@@ -922,8 +929,8 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
   bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Got remote channel ID %#.4x", local_cid(),
          rsp.remote_cid());
 
+  UpdateLocalConfigForErtm();
   if (!IsWaitingForPeerErtmSupport()) {
-    UpdateLocalConfigForErtm();
     TrySendLocalConfig();
   }
   return ResponseHandlerAction::kCompleteOutboundTransaction;

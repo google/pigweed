@@ -289,8 +289,8 @@ auto MakeConfigReqWithMtu(ChannelId dest_cid, uint16_t mtu = kMaxMTU, uint16_t f
 const ByteBuffer& kOutboundConfigReq = MakeConfigReqWithMtu(kRemoteCId);
 
 const ByteBuffer& kOutboundConfigReqWithErtm = MakeConfigReqWithMtuAndRfc(
-    kRemoteCId, kMaxMTU, ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
-    kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
+    kRemoteCId, kMaxInboundPduPayloadSize, ChannelMode::kEnhancedRetransmission,
+    kErtmMaxUnackedInboundFrames, kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
 
 const ByteBuffer& kInboundConfigReq = CreateStaticByteBuffer(
     // Destination CID
@@ -2034,6 +2034,31 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
       MakeConfigReqWithMtuAndRfc(kLocalCId, kMaxMTU, ChannelMode::kRetransmission, 0, 0, 0, 0, 0);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
+                                       kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       SendUnacceptableParamsResponseWhenPeerRequestsUnsupportedChannelModeAndSupportsErtm) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(), {});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // Retransmission mode is not supported.
+  const auto kInboundConfigReqWithRetransmissionMode =
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kMaxMTU, ChannelMode::kRetransmission, 0, 0, 0, 0, 0);
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
+                                       kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
 }
 
@@ -2065,6 +2090,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
 
   sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
                                                        kExtendedFeaturesInfoRspWithERTM.view()}});
+
   // Request ERTM.
   RunLoopUntilIdle();
 
@@ -2165,6 +2191,45 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
   RunLoopUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       UseMaxPduPayloadSizeWhenMtuChannelParameterExceedsItWithErtm) {
+  constexpr uint16_t kPreferredMtu = kMaxInboundPduPayloadSize + 1;
+  const auto kExpectedOutboundConfigReq =
+      MakeConfigReqWithMtuAndRfc(kRemoteCId, kMaxInboundPduPayloadSize,
+                                 ChannelMode::kEnhancedRetransmission, kErtmMaxUnackedInboundFrames,
+                                 kErtmMaxInboundRetransmissions, 0, 0, kMaxInboundPduPayloadSize);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&](const DynamicChannel* chan) {
+    if (open_cb_count == 0) {
+      ASSERT_TRUE(chan);
+      EXPECT_EQ(kMaxInboundPduPayloadSize, chan->info().max_rx_sdu_size);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, {ChannelMode::kEnhancedRetransmission, kPreferredMtu},
+                           std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
+                                       kOutboundOkConfigRspWithErtm));
+
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
 }

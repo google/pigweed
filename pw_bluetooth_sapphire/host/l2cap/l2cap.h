@@ -15,6 +15,7 @@
 #include <zircon/compiler.h>
 
 #include "lib/zx/time.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
 namespace bt {
 namespace l2cap {
@@ -117,8 +118,11 @@ static constexpr uint8_t kErtmMaxUnackedInboundFrames = 63;
 static constexpr uint8_t kErtmMaxInboundRetransmissions = 0;  // Infinite retransmissions
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. We can receive as large of a PDU as the peer
-// can encode and transmit.
-static constexpr auto kMaxInboundPduPayloadSize = std::numeric_limits<uint16_t>::max();
+// can encode and transmit. However, this value is for the information payload field of an I-Frame,
+// which is bounded by the 16-bit length field together with frame header and footer overhead.
+static constexpr uint16_t kMaxInboundPduPayloadSize = std::numeric_limits<uint16_t>::max() -
+                                                      sizeof(internal::EnhancedControlField) -
+                                                      sizeof(FrameCheckSequence);
 
 // Channel configuration option type field (Core Spec v5.1, Vol 3, Part A, Section 5):
 enum class OptionType : uint8_t {

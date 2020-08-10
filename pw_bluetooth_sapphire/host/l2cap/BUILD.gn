@@ -7,7 +7,10 @@ import("//build/fuzzing/fuzzer.gni")
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 source_set("definitions") {
-  sources = [ "l2cap.h" ]
+  sources = [
+    "frame_headers.h",
+    "l2cap.h",
+  ]
 
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/hci:definitions",
@@ -49,7 +52,6 @@ static_library("l2cap") {
     "fcs.h",
     "fragmenter.cc",
     "fragmenter.h",
-    "frame_headers.h",
     "le_signaling_channel.cc",
     "le_signaling_channel.h",
     "logical_link.cc",

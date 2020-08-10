@@ -365,8 +365,9 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     const auto conn_req_id = NextCommandId();
     const auto config_req_id = NextCommandId();
     EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
-    EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id, kMaxMTU, *chan_params.mode),
-                          kHighPriority);
+    EXPECT_ACL_PACKET_OUT(
+        OutboundConfigurationRequest(config_req_id, kMaxInboundPduPayloadSize, *chan_params.mode),
+        kHighPriority);
     const auto kInboundMtu = kDefaultMTU;
     EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId, kInboundMtu,
                                                         chan_params.mode, max_outbound_transmit),

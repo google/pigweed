@@ -217,11 +217,17 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // use |Disconnect| instead.
   void PassOpenError();
 
-  // The local configuration channel mode may need to be changed from ERTM to Basic Mode if the peer
-  // does not support ERTM. This channel must not be waiting for extended features when this method
-  // is called. No-op if extended features have not been received yet (e.g. when a basic mode
-  // channel configuration flow is initiated before extended features have been received).
+  // Overwrites the local configuration's MTU and Retransmission & Flow Control options using
+  // ChannelParameters provided by the local service and the peer's support for Enhanced
+  // Retransmission Mode (set using SetEnhancedRetransmissionSupport).
   void UpdateLocalConfigForErtm();
+
+  // Returns the maximum outbound SDU size based on service preference provided in
+  // ChannelParameters, specification limits, and ERTM transmission constraints.
+  uint16_t CalculateLocalMtu() const;
+
+  // Returns true if the local service prefers ERTM and the peer has indicated support for ERTM.
+  bool ShouldRequestEnhancedRetransmission() const;
 
   // Returns true if the preferred channel parameters require waiting for an extended features
   // information response and the response has not yet been received. Must be false before sending
@@ -261,6 +267,9 @@ class BrEdrDynamicChannel final : public DynamicChannel {
 
   SignalingChannelInterface* const signaling_channel_;
 
+  // Preferred parameters from the local service.
+  const ChannelParameters parameters_;
+
   // Bit field assembled using the bit masks above. When zero, it represents a
   // closed (i.e. not yet open) channel.
   State state_;
@@ -272,7 +281,9 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Support for ERTM is indicated in the peer's extended features mask, received in the extended
   // features information response. Since the response may not yet have been received when this
   // channel is created, this value may be assigned in either the constructor or in the
-  // |SetEnhancedRetransmissionSupport| callback.
+  // |SetEnhancedRetransmissionSupport| callback. This will be set to false if the peer rejects ERTM
+  // during negotiation and set to true if the peer requests ERTM before responding to the extended
+  // features information request.
   std::optional<bool> peer_supports_ertm_;
 
   // Contains options configured by remote configuration requests (Core Spec v5.1, Vol 3, Part A,
