@@ -82,7 +82,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
-        gatt_->AsWeakPtr());
+        gatt_->AsWeakPtr(), sm::SecurityManager::Create);
 
     test_device()->set_connection_state_callback(
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));

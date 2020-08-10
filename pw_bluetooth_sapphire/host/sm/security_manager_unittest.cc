@@ -57,9 +57,9 @@ class SMP_SecurityManagerTest : public l2cap::testing::FakeChannelTest, public s
     fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, hci::Connection::LinkType::kLE,
                                                                 link_role, kLocalAddr, kPeerAddr);
 
-    pairing_ = std::make_unique<SecurityManager>(fake_link_->WeakPtr(), fake_chan_, ioc,
-                                                 weak_ptr_factory_.GetWeakPtr(), bondable_mode,
-                                                 gap::LeSecurityMode::Mode1);
+    pairing_ = SecurityManager::Create(fake_link_->WeakPtr(), fake_chan_, ioc,
+                                       weak_ptr_factory_.GetWeakPtr(), bondable_mode,
+                                       gap::LeSecurityMode::Mode1);
   }
 
   void DestroySecurityManager() { pairing_ = nullptr; }

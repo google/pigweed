@@ -45,26 +45,176 @@ SecurityProperties FeaturesToProperties(const PairingFeatures& features) {
 }
 }  // namespace
 
-SecurityManager::PendingRequest::PendingRequest(SecurityLevel level, PairingCallback callback)
+class SecurityManagerImpl final : public SecurityManager, public PairingPhase::Listener {
+ public:
+  ~SecurityManagerImpl() override;
+  SecurityManagerImpl(fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp,
+                      IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+                      BondableMode bondable_mode, gap::LeSecurityMode security_mode);
+  // SecurityManager overrides:
+  bool AssignLongTermKey(const LTK& ltk) override;
+  void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
+  void Reset(IOCapability io_capability) override;
+  void Abort(ErrorCode ecode) override;
+
+ private:
+  // Represents a pending request to update the security level.
+  struct PendingRequest {
+    PendingRequest(SecurityLevel level, PairingCallback callback);
+    PendingRequest(PendingRequest&&) = default;
+    PendingRequest& operator=(PendingRequest&&) = default;
+
+    SecurityLevel level;
+    PairingCallback callback;
+  };
+
+  // Puts the pairing state machine back into the idle i.e. non-pairing state.
+  void GoToIdlePhase();
+
+  // Called when we receive a peer security request as initiator, will start Phase 1.
+  void OnSecurityRequest(AuthReqField auth_req);
+
+  // Called when we receive a peer pairing request as responder, will start Phase 1.
+  void OnPairingRequest(const PairingRequestParams& req_params);
+
+  // Pulls the next PendingRequest off |request_queue_| and starts a security upgrade to that
+  // |level| by either sending a Pairing Request as initiator or a Security Request as responder.
+  void UpgradeSecurityInternal();
+
+  // Called when the feature exchange (Phase 1) completes and the relevant features of both sides
+  // have been resolved into `features`. `preq` and `pres` need to be retained for cryptographic
+  // calculations in Phase 2. Causes a state transition from Phase 1 to Phase 2
+  void OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
+                         PairingResponseParams pres);
+
+  // Called when Phase 2 generates an encryption key, so the link can be encrypted with it.
+  void OnPhase2EncryptionKey(const UInt128& new_key);
+
+  // Check if encryption using `current_ltk` will satisfy the current security requirements.
+  static bool CurrentLtkInsufficientlySecureForEncryption(std::optional<LTK> current_ltk,
+                                                          IdlePhase* idle_phase,
+                                                          gap::LeSecurityMode mode);
+
+  // Called when the encryption state of the LE link changes.
+  void OnEncryptionChange(hci::Status status, bool enabled);
+
+  // Called when the link is encrypted at the end of pairing Phase 2.
+  void EndPhase2();
+
+  // Cleans up pairing state, updates the current security level, and notifies parties that
+  // requested security of the link's updated security properties.
+  void OnPairingComplete(PairingData data);
+
+  // After a call to UpgradeSecurity results in an increase of the link security level (through
+  // pairing completion or SMP Security Requested encryption), this method notifies all the
+  // callbacks associated with SecurityUpgrade requests.
+  void NotifySecurityCallbacks();
+
+  // Assign the current security properties and notify the delegate of the
+  // change.
+  void SetSecurityProperties(const SecurityProperties& sec);
+
+  // Directly assigns the current |ltk_| and the underlying |le_link_|'s link key. This function
+  // does not initiate link layer encryption and can be called during and outside of pairing.
+  void OnNewLongTermKey(const LTK& ltk);
+
+  // PairingPhase::Listener overrides:
+  void OnPairingFailed(Status status) override;
+  std::optional<IdentityInfo> OnIdentityRequest() override;
+  void ConfirmPairing(ConfirmCallback confirm) override;
+  void DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
+                      ConfirmCallback cb) override;
+  void RequestPasskey(PasskeyResponseCallback respond) override;
+
+  // Starts the SMP timer. Stops and cancels any in-progress timers.
+  bool StartNewTimer();
+  // Stops and resets the SMP Pairing Timer.
+  void StopTimer();
+  // Called when the pairing timer expires, forcing the pairing process to stop
+  void OnPairingTimeout();
+
+  // Returns a std::pair<InitiatorAddress, ResponderAddress>. Will assert if called outside active
+  // pairing or before Phase 1 is complete.
+  std::pair<DeviceAddress, DeviceAddress> LEPairingAddresses();
+
+  // Puts the class into a non-pairing state.
+  void ResetState();
+
+  // Returns true if the pairing state machine is currently in Phase 2 of pairing.
+  bool InPhase2() const {
+    return std::holds_alternative<Phase2Legacy>(current_phase_) ||
+           std::holds_alternative<Phase2SecureConnections>(current_phase_);
+  }
+
+  // Validates that both SM and the link have stored LTKs, and that these values match. Disconnects
+  // the link if it finds an issue. Should only be called when an LTK is expected to exists.
+  Status ValidateExistingLocalLtk();
+
+  // The ID that will be assigned to the next pairing operation.
+  PairingProcedureId next_pairing_id_;
+
+  // The higher-level class acting as a delegate for operations outside of SMP.
+  fxl::WeakPtr<Delegate> delegate_;
+
+  // Data for the currently registered LE-U link, if any.
+  fxl::WeakPtr<hci::Connection> le_link_;
+
+  // The IO capabilities of the device
+  IOCapability io_cap_;
+
+  // The current LTK assigned to this connection. This can be assigned directly
+  // by calling AssignLongTermKey() or as a result of a pairing procedure.
+  std::optional<LTK> ltk_;
+
+  // If a pairing is in progress and Phase 1 (feature exchange) has completed, this will store the
+  // result of that feature exchange. Otherwise, this will be std::nullopt.
+  std::optional<PairingFeatures> features_;
+
+  // The pending security requests added via UpgradeSecurity().
+  std::queue<PendingRequest> request_queue_;
+
+  // Fixed SMP Channel used to send/receive packets
+  std::unique_ptr<PairingChannel> sm_chan_;
+
+  // The role of the local device in pairing.
+  Role role_;
+
+  async::TaskClosureMethod<SecurityManagerImpl, &SecurityManagerImpl::OnPairingTimeout>
+      timeout_task_{this};
+
+  // The presence of a particular phase in this variant indicates that the pairing state machine is
+  // currently in that phase. `weak_ptr_factory_` must be the last declared member so that all weak
+  // pointers to SecurityManager are invalidated at the beginning of destruction, but all of the
+  // Phase class ctors take a WeakPtr<SecurityManager>. Thus, we include std::monostate in the
+  // variant so `current_phase_` can be default-constructible in the initializer list, and construct
+  // an Idle Phase in the SecurityManager ctor.
+  // TODO(fxbug.dev/53946): Clean up usage of PairingPhases, especially re:std::monostate.
+  std::variant<std::monostate, IdlePhase, std::unique_ptr<Phase1>, Phase2Legacy,
+               Phase2SecureConnections, Phase3>
+      current_phase_;
+
+  fxl::WeakPtrFactory<SecurityManagerImpl> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerImpl);
+};
+
+SecurityManagerImpl::PendingRequest::PendingRequest(SecurityLevel level, PairingCallback callback)
     : level(level), callback(std::move(callback)) {}
 
-SecurityManager::~SecurityManager() {
+SecurityManagerImpl::~SecurityManagerImpl() {
   if (le_link_) {
     le_link_->set_encryption_change_callback({});
   }
 }
 
-SecurityManager::SecurityManager(fxl::WeakPtr<hci::Connection> link,
-                                 fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
-                                 fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
-                                 gap::LeSecurityMode security_mode)
-    : next_pairing_id_(0),
+SecurityManagerImpl::SecurityManagerImpl(
+    fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
+    fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode, gap::LeSecurityMode security_mode)
+    : SecurityManager(bondable_mode, security_mode),
+      next_pairing_id_(0),
       delegate_(std::move(delegate)),
       le_link_(std::move(link)),
       io_cap_(io_capability),
-      bondable_mode_(bondable_mode),
-      security_mode_(security_mode),
-      le_sec_(SecurityProperties()),
       sm_chan_(std::make_unique<PairingChannel>(smp)),
       role_(le_link_->role() == hci::Connection::Role::kMaster ? Role::kInitiator
                                                                : Role::kResponder),
@@ -75,17 +225,16 @@ SecurityManager::SecurityManager(fxl::WeakPtr<hci::Connection> link,
   ZX_ASSERT(le_link_->handle() == smp->link_handle());
   ZX_ASSERT(le_link_->ll_type() == hci::Connection::LinkType::kLE);
   ZX_ASSERT(smp->id() == l2cap::kLESMPChannelId);
-
   // `current_phase_` is default constructed into std::monostate in the initializer list, but we
   // immediately assign IdlePhase to `current_phase_` through this `GoToIdlePhase` call.
   GoToIdlePhase();
 
   // Set up HCI encryption event.
   le_link_->set_encryption_change_callback(
-      fit::bind_member(this, &SecurityManager::OnEncryptionChange));
+      fit::bind_member(this, &SecurityManagerImpl::OnEncryptionChange));
 }
 
-void SecurityManager::OnSecurityRequest(AuthReqField auth_req) {
+void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   ZX_ASSERT(std::holds_alternative<IdlePhase>(current_phase_));
   ZX_ASSERT(role_ == Role::kInitiator);
 
@@ -117,7 +266,7 @@ void SecurityManager::OnSecurityRequest(AuthReqField auth_req) {
   });
 }
 
-void SecurityManager::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
+void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level, PairingCallback callback) {
   // If pairing is in progress then we queue the request.
   IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
   if (!idle_phase || idle_phase->pending_security_request().has_value()) {
@@ -127,14 +276,14 @@ void SecurityManager::UpgradeSecurity(SecurityLevel level, PairingCallback callb
     return;
   }
 
-  if (level <= le_sec_.level()) {
-    callback(Status(), le_sec_);
+  if (level <= security().level()) {
+    callback(Status(), security());
     return;
   }
 
   // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
   // bit encryption key, so we force all security upgrade requests to that level.
-  if (security_mode_ == gap::LeSecurityMode::SecureConnectionsOnly) {
+  if (security_mode() == gap::LeSecurityMode::SecureConnectionsOnly) {
     level = SecurityLevel::kSecureAuthenticated;
   }
 
@@ -145,7 +294,7 @@ void SecurityManager::UpgradeSecurity(SecurityLevel level, PairingCallback callb
   UpgradeSecurityInternal();
 }
 
-void SecurityManager::OnPairingRequest(const PairingRequestParams& req_params) {
+void SecurityManagerImpl::OnPairingRequest(const PairingRequestParams& req_params) {
   IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
   ZX_ASSERT(idle_phase);
   ZX_ASSERT(role_ == Role::kResponder);
@@ -158,17 +307,17 @@ void SecurityManager::OnPairingRequest(const PairingRequestParams& req_params) {
 
   // Secure Connections only mode only permits Secure Connections authenticated pairing with a 128-
   // bit encryption key, so we force all security upgrade requests to that level.
-  if (security_mode_ == gap::LeSecurityMode::SecureConnectionsOnly) {
+  if (security_mode() == gap::LeSecurityMode::SecureConnectionsOnly) {
     required_level = SecurityLevel::kSecureAuthenticated;
   }
 
   current_phase_ = Phase1::CreatePhase1Responder(
-      sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode_,
-      required_level, fit::bind_member(this, &SecurityManager::OnFeatureExchange));
+      sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode(),
+      required_level, fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
   std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
 }
 
-void SecurityManager::UpgradeSecurityInternal() {
+void SecurityManagerImpl::UpgradeSecurityInternal() {
   IdlePhase* idle_phase = std::get_if<IdlePhase>(&current_phase_);
   ZX_ASSERT_MSG(idle_phase, "cannot upgrade security while security upgrade already in progress!");
   const PendingRequest& next_req = request_queue_.front();
@@ -176,7 +325,7 @@ void SecurityManager::UpgradeSecurityInternal() {
       io_cap_ == IOCapability::kNoInputNoOutput) {
     bt_log(WARN, "sm",
            "cannot fulfill authenticated security request as IOCapabilities are NoInputNoOutput");
-    next_req.callback(Status(ErrorCode::kAuthenticationRequirements), le_sec_);
+    next_req.callback(Status(ErrorCode::kAuthenticationRequirements), security());
     request_queue_.pop();
     if (!request_queue_.empty()) {
       UpgradeSecurityInternal();
@@ -190,16 +339,16 @@ void SecurityManager::UpgradeSecurityInternal() {
   StartNewTimer();
   if (role_ == Role::kInitiator) {
     current_phase_ = Phase1::CreatePhase1Initiator(
-        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode_,
-        next_req.level, fit::bind_member(this, &SecurityManager::OnFeatureExchange));
+        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode(),
+        next_req.level, fit::bind_member(this, &SecurityManagerImpl::OnFeatureExchange));
     std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
   } else {
-    idle_phase->MakeSecurityRequest(next_req.level, bondable_mode_);
+    idle_phase->MakeSecurityRequest(next_req.level, bondable_mode());
   }
 }
 
-void SecurityManager::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
-                                        PairingResponseParams pres) {
+void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingRequestParams preq,
+                                            PairingResponseParams pres) {
   ZX_ASSERT(std::holds_alternative<std::unique_ptr<Phase1>>(current_phase_));
   bt_log(TRACE, "sm", "obtained LE Pairing features");
   next_pairing_id_++;
@@ -216,17 +365,17 @@ void SecurityManager::OnFeatureExchange(PairingFeatures features, PairingRequest
     *pres_writer.mutable_payload<PairingRequestParams>() = pres;
     current_phase_.emplace<Phase2Legacy>(
         sm_chan_->GetWeakPtr(), self, role_, features, *preq_pdu, *pres_pdu, initiator_addr,
-        responder_addr, fit::bind_member(this, &SecurityManager::OnPhase2EncryptionKey));
+        responder_addr, fit::bind_member(this, &SecurityManagerImpl::OnPhase2EncryptionKey));
     std::get<Phase2Legacy>(current_phase_).Start();
   } else {
     current_phase_.emplace<Phase2SecureConnections>(
         sm_chan_->GetWeakPtr(), self, role_, features, preq, pres, initiator_addr, responder_addr,
-        fit::bind_member(this, &SecurityManager::OnPhase2EncryptionKey));
+        fit::bind_member(this, &SecurityManagerImpl::OnPhase2EncryptionKey));
     std::get<Phase2SecureConnections>(current_phase_).Start();
   }
 }
 
-void SecurityManager::OnPhase2EncryptionKey(const UInt128& new_key) {
+void SecurityManagerImpl::OnPhase2EncryptionKey(const UInt128& new_key) {
   ZX_ASSERT(le_link_);
   ZX_ASSERT(features_);
   ZX_ASSERT(InPhase2());
@@ -252,9 +401,8 @@ void SecurityManager::OnPhase2EncryptionKey(const UInt128& new_key) {
   }
 }
 
-bool SecurityManager::CurrentLtkInsufficientlySecureForEncryption(std::optional<LTK> current_ltk,
-                                                                  IdlePhase* idle_phase,
-                                                                  gap::LeSecurityMode mode) {
+bool SecurityManagerImpl::CurrentLtkInsufficientlySecureForEncryption(
+    std::optional<LTK> current_ltk, IdlePhase* idle_phase, gap::LeSecurityMode mode) {
   SecurityLevel current_ltk_sec =
       current_ltk ? current_ltk->security().level() : SecurityLevel::kNoSecurity;
   return (idle_phase && idle_phase->pending_security_request() &&
@@ -263,7 +411,7 @@ bool SecurityManager::CurrentLtkInsufficientlySecureForEncryption(std::optional<
           current_ltk_sec != SecurityLevel::kSecureAuthenticated);
 }
 
-void SecurityManager::OnEncryptionChange(hci::Status status, bool enabled) {
+void SecurityManagerImpl::OnEncryptionChange(hci::Status status, bool enabled) {
   // First notify the delegate in case of failure.
   if (bt_is_error(status, ERROR, "sm", "link layer authentication failed")) {
     ZX_ASSERT(delegate_);
@@ -282,7 +430,7 @@ void SecurityManager::OnEncryptionChange(hci::Status status, bool enabled) {
     return;
   }
 
-  if (CurrentLtkInsufficientlySecureForEncryption(ltk_, idle_phase, security_mode_)) {
+  if (CurrentLtkInsufficientlySecureForEncryption(ltk_, idle_phase, security_mode())) {
     bt_log(WARN, "sm", "peer encrypted link with insufficiently secure key, disconnecting");
     delegate_->OnAuthenticationFailure(hci::Status(HostError::kInsufficientSecurity));
     (*sm_chan_)->SignalLinkError();
@@ -312,7 +460,7 @@ void SecurityManager::OnEncryptionChange(hci::Status status, bool enabled) {
   }
 }
 
-void SecurityManager::EndPhase2() {
+void SecurityManagerImpl::EndPhase2() {
   ZX_ASSERT(features_.has_value());
   ZX_ASSERT(InPhase2());
 
@@ -323,12 +471,12 @@ void SecurityManager::EndPhase2() {
     return;
   }
   auto self = weak_ptr_factory_.GetWeakPtr();
-  current_phase_.emplace<Phase3>(sm_chan_->GetWeakPtr(), self, role_, *features_, le_sec_,
-                                 fit::bind_member(this, &SecurityManager::OnPairingComplete));
+  current_phase_.emplace<Phase3>(sm_chan_->GetWeakPtr(), self, role_, *features_, security(),
+                                 fit::bind_member(this, &SecurityManagerImpl::OnPairingComplete));
   std::get<Phase3>(current_phase_).Start();
 }
 
-void SecurityManager::OnPairingComplete(PairingData pairing_data) {
+void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   // We must either be in Phase3 or Phase 2 with no keys to distribute if pairing has completed.
   if (!std::holds_alternative<Phase3>(current_phase_)) {
     ZX_ASSERT(InPhase2());
@@ -373,14 +521,14 @@ void SecurityManager::OnPairingComplete(PairingData pairing_data) {
   NotifySecurityCallbacks();
 }
 
-void SecurityManager::NotifySecurityCallbacks() {
+void SecurityManagerImpl::NotifySecurityCallbacks() {
   // Separate out the requests that are satisfied by the current security level from those that
   // require a higher level. We'll retry pairing for the latter.
   std::queue<PendingRequest> satisfied;
   std::queue<PendingRequest> unsatisfied;
   while (!request_queue_.empty()) {
     auto& request = request_queue_.front();
-    if (request.level <= le_sec_.level()) {
+    if (request.level <= security().level()) {
       satisfied.push(std::move(request));
     } else {
       unsatisfied.push(std::move(request));
@@ -392,7 +540,7 @@ void SecurityManager::NotifySecurityCallbacks() {
 
   // Notify the satisfied requests with success.
   while (!satisfied.empty()) {
-    satisfied.front().callback(Status(), le_sec_);
+    satisfied.front().callback(Status(), security());
     satisfied.pop();
   }
 
@@ -401,19 +549,19 @@ void SecurityManager::NotifySecurityCallbacks() {
   }
 }
 
-void SecurityManager::Reset(IOCapability io_capability) {
-  Abort();
+void SecurityManagerImpl::Reset(IOCapability io_capability) {
+  Abort(ErrorCode::kUnspecifiedReason);
   io_cap_ = io_capability;
   ResetState();
 }
 
-void SecurityManager::ResetState() {
+void SecurityManagerImpl::ResetState() {
   StopTimer();
   features_.reset();
   GoToIdlePhase();
 }
 
-bool SecurityManager::AssignLongTermKey(const LTK& ltk) {
+bool SecurityManagerImpl::AssignLongTermKey(const LTK& ltk) {
   if (!std::holds_alternative<IdlePhase>(current_phase_)) {
     bt_log(DEBUG, "sm", "Cannot directly assign LTK while pairing is in progress");
     return false;
@@ -430,16 +578,16 @@ bool SecurityManager::AssignLongTermKey(const LTK& ltk) {
   return true;
 }
 
-void SecurityManager::SetSecurityProperties(const SecurityProperties& sec) {
-  if (sec != le_sec_) {
+void SecurityManagerImpl::SetSecurityProperties(const SecurityProperties& sec) {
+  if (sec != security()) {
     bt_log(DEBUG, "sm", "security properties changed - handle: %#.4x, new: %s, old: %s",
-           le_link_->handle(), bt_str(sec), bt_str(le_sec_));
-    le_sec_ = sec;
-    delegate_->OnNewSecurityProperties(le_sec_);
+           le_link_->handle(), bt_str(sec), bt_str(security()));
+    set_security(sec);
+    delegate_->OnNewSecurityProperties(security());
   }
 }
 
-void SecurityManager::Abort(ErrorCode ecode) {
+void SecurityManagerImpl::Abort(ErrorCode ecode) {
   std::visit(
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
@@ -455,14 +603,14 @@ void SecurityManager::Abort(ErrorCode ecode) {
   // "Abort" should trigger OnPairingFailed.
 }
 
-std::optional<IdentityInfo> SecurityManager::OnIdentityRequest() {
+std::optional<IdentityInfo> SecurityManagerImpl::OnIdentityRequest() {
   // This is called by the bearer to determine if we have local identity
   // information to distribute.
   ZX_ASSERT(delegate_);
   return delegate_->OnIdentityInformationRequest();
 }
 
-void SecurityManager::ConfirmPairing(ConfirmCallback confirm) {
+void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
   ZX_ASSERT(delegate_);
   delegate_->ConfirmPairing([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
                              cb = std::move(confirm)](bool confirm) {
@@ -474,8 +622,8 @@ void SecurityManager::ConfirmPairing(ConfirmCallback confirm) {
   });
 }
 
-void SecurityManager::DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
-                                     ConfirmCallback confirm) {
+void SecurityManagerImpl::DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
+                                         ConfirmCallback confirm) {
   ZX_ASSERT(delegate_);
   delegate_->DisplayPasskey(passkey, method,
                             [id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(), method,
@@ -490,7 +638,7 @@ void SecurityManager::DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod m
                             });
 }
 
-void SecurityManager::RequestPasskey(PasskeyResponseCallback respond) {
+void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
   ZX_ASSERT(delegate_);
   delegate_->RequestPasskey([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
                              cb = std::move(respond)](int64_t passkey) {
@@ -502,7 +650,7 @@ void SecurityManager::RequestPasskey(PasskeyResponseCallback respond) {
   });
 }
 
-void SecurityManager::OnPairingFailed(Status status) {
+void SecurityManagerImpl::OnPairingFailed(Status status) {
   bt_log(ERROR, "sm", "LE pairing failed: %s", status.ToString().c_str());
   StopTimer();
   // TODO(NET-1201): implement "waiting interval" to prevent repeated attempts
@@ -513,7 +661,7 @@ void SecurityManager::OnPairingFailed(Status status) {
 
   auto requests = std::move(request_queue_);
   while (!requests.empty()) {
-    requests.front().callback(status, le_sec_);
+    requests.front().callback(status, security());
     requests.pop();
   }
 
@@ -524,7 +672,7 @@ void SecurityManager::OnPairingFailed(Status status) {
   ResetState();
 }
 
-bool SecurityManager::StartNewTimer() {
+bool SecurityManagerImpl::StartNewTimer() {
   if (timeout_task_.is_pending()) {
     ZX_ASSERT(timeout_task_.Cancel() == ZX_OK);
   }
@@ -532,7 +680,7 @@ bool SecurityManager::StartNewTimer() {
   return true;
 }
 
-void SecurityManager::StopTimer() {
+void SecurityManagerImpl::StopTimer() {
   if (timeout_task_.is_pending()) {
     zx_status_t status = timeout_task_.Cancel();
     if (status != ZX_OK) {
@@ -541,7 +689,7 @@ void SecurityManager::StopTimer() {
   }
 }
 
-void SecurityManager::OnPairingTimeout() {
+void SecurityManagerImpl::OnPairingTimeout() {
   std::visit(
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
@@ -556,7 +704,7 @@ void SecurityManager::OnPairingTimeout() {
       current_phase_);
 }
 
-std::pair<DeviceAddress, DeviceAddress> SecurityManager::LEPairingAddresses() {
+std::pair<DeviceAddress, DeviceAddress> SecurityManagerImpl::LEPairingAddresses() {
   ZX_ASSERT(!std::holds_alternative<IdlePhase>(current_phase_));
   const DeviceAddress *initiator = &le_link_->local_address(),
                       *responder = &le_link_->peer_address();
@@ -566,18 +714,19 @@ std::pair<DeviceAddress, DeviceAddress> SecurityManager::LEPairingAddresses() {
   return std::make_pair(*initiator, *responder);
 }
 
-void SecurityManager::OnNewLongTermKey(const LTK& ltk) {
+void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
   ltk_ = ltk;
   le_link_->set_le_ltk(ltk.key());
 }
 
-void SecurityManager::GoToIdlePhase() {
-  current_phase_.emplace<IdlePhase>(sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), role_,
-                                    fit::bind_member(this, &SecurityManager::OnPairingRequest),
-                                    fit::bind_member(this, &SecurityManager::OnSecurityRequest));
+void SecurityManagerImpl::GoToIdlePhase() {
+  current_phase_.emplace<IdlePhase>(
+      sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), role_,
+      fit::bind_member(this, &SecurityManagerImpl::OnPairingRequest),
+      fit::bind_member(this, &SecurityManagerImpl::OnSecurityRequest));
 }
 
-Status SecurityManager::ValidateExistingLocalLtk() {
+Status SecurityManagerImpl::ValidateExistingLocalLtk() {
   auto err = HostError::kNoError;
   if (!ltk_.has_value() || !le_link_->ltk().has_value()) {
     // The LTKs should always be present when this method is called.
@@ -596,6 +745,20 @@ Status SecurityManager::ValidateExistingLocalLtk() {
   }
   return status;
 }
+
+std::unique_ptr<SecurityManager> SecurityManager::Create(fxl::WeakPtr<hci::Connection> link,
+                                                         fbl::RefPtr<l2cap::Channel> smp,
+                                                         IOCapability io_capability,
+                                                         fxl::WeakPtr<Delegate> delegate,
+                                                         BondableMode bondable_mode,
+                                                         gap::LeSecurityMode security_mode) {
+  return std::unique_ptr<SecurityManagerImpl>(
+      new SecurityManagerImpl(std::move(link), std::move(smp), io_capability, std::move(delegate),
+                              bondable_mode, security_mode));
+}
+
+SecurityManager::SecurityManager(BondableMode bondable_mode, gap::LeSecurityMode security_mode)
+    : bondable_mode_(bondable_mode), security_mode_(security_mode) {}
 
 }  // namespace sm
 }  // namespace bt

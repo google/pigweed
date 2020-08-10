@@ -246,9 +246,9 @@ class LowEnergyConnection final : public sm::Delegate {
       io_cap = conn_mgr_->pairing_delegate()->io_capability();
     }
     LeSecurityMode security_mode = conn_mgr_->security_mode();
-    sm_ = std::make_unique<sm::SecurityManager>(link_->WeakPtr(), std::move(smp), io_cap,
-                                                weak_ptr_factory_.GetWeakPtr(),
-                                                connection_options.bondable_mode(), security_mode);
+    sm_ = conn_mgr_->sm_factory_func()(link_->WeakPtr(), std::move(smp), io_cap,
+                                       weak_ptr_factory_.GetWeakPtr(),
+                                       connection_options.bondable_mode(), security_mode);
 
     // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
     // will start encryption if the local device is the link-layer master.
@@ -480,9 +480,11 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
                                                        hci::LowEnergyConnector* connector,
                                                        PeerCache* peer_cache,
                                                        fbl::RefPtr<data::Domain> data_domain,
-                                                       fxl::WeakPtr<gatt::GATT> gatt)
+                                                       fxl::WeakPtr<gatt::GATT> gatt,
+                                                       SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
       security_mode_(LeSecurityMode::Mode1),
+      sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
