@@ -16,7 +16,8 @@
 
 #include <cstring>
 
-namespace pw::unit_test {
+namespace pw {
+namespace unit_test {
 
 void RegisterEventHandler(EventHandler* event_handler) {
   internal::Framework::Get().RegisterEventHandler(event_handler);
@@ -121,4 +122,5 @@ bool TestInfo::enabled() const {
 }
 
 }  // namespace internal
-}  // namespace pw::unit_test
+}  // namespace unit_test
+}  // namespace pw
