@@ -37,15 +37,21 @@
 //     }
 //   }
 //
-// TODO(hepler): Pack the hashed version of the module name into the payload.
-#define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(              \
-    level, flags, message, ...)                                       \
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                         \
-      ((uintptr_t)(level) | 0u /* TODO(hepler): add module token */ | \
-       ((uintptr_t)(flags) << (_PW_LOG_TOKENIZED_LEVEL_BITS +         \
-                               _PW_LOG_TOKENIZED_MODULE_BITS))),      \
-      PW_LOG_TOKENIZED_FORMAT_STRING(message),                        \
-      __VA_ARGS__)
+#define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                       \
+    level, flags, message, ...)                                                \
+  do {                                                                         \
+    _PW_TOKENIZER_CONST uintptr_t _pw_log_module_token =                       \
+        PW_TOKENIZE_STRING_DOMAIN("log_module_names", PW_LOG_MODULE_NAME);     \
+    PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                                \
+        ((uintptr_t)(level) |                                                  \
+         ((_pw_log_module_token &                                              \
+           ((1u << _PW_LOG_TOKENIZED_MODULE_BITS) - 1u))                       \
+          << _PW_LOG_TOKENIZED_LEVEL_BITS) |                                   \
+         ((uintptr_t)(flags)                                                   \
+          << (_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS))), \
+        PW_LOG_TOKENIZED_FORMAT_STRING(message),                               \
+        __VA_ARGS__);                                                          \
+  } while (0)
 
 // By default, log format strings include the PW_LOG_MODULE_NAME, if defined.
 #ifndef PW_LOG_TOKENIZED_FORMAT_STRING

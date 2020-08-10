@@ -12,10 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_MODULE_NAME "This is the log module name!"
+
 #include <cstring>
 #include <string_view>
-
-#define PW_LOG_MODULE_NAME "test"
 
 #include "gtest/gtest.h"
 #include "pw_log_tokenized/log_tokenized.h"
@@ -33,6 +33,10 @@ extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
 }
 
 extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t[], size_t) {}
+
+constexpr uintptr_t kModuleToken =
+    PW_TOKENIZER_STRING_TOKEN(PW_LOG_MODULE_NAME) &
+    ((1u << _PW_LOG_TOKENIZED_MODULE_BITS) - 1);
 
 constexpr Metadata test1 = Metadata::Set<0, 0, 0>();
 static_assert(test1.level() == 0);
@@ -53,6 +57,7 @@ TEST(LogTokenized, LogMetadata_Zero) {
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, 0, "hello");
   EXPECT_EQ(metadata.level(), 0u);
   EXPECT_EQ(metadata.flags(), 0u);
+  EXPECT_EQ(metadata.module(), kModuleToken);
   EXPECT_EQ(encoded_data_size, 4u /* token */);
 }
 
@@ -60,6 +65,7 @@ TEST(LogTokenized, LogMetadata_DifferentValues) {
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(55, 36, "hello%s", "?");
   EXPECT_EQ(metadata.level(), 55u);
   EXPECT_EQ(metadata.flags(), 36u);
+  EXPECT_EQ(metadata.module(), kModuleToken);
   EXPECT_EQ(encoded_data_size, 4u /* token */ + 2u /* encoded string */);
 }
 
@@ -67,6 +73,7 @@ TEST(LogTokenized, LogMetadata_MaxValues) {
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(63, 1023, "hello %d", 1);
   EXPECT_EQ(metadata.level(), 63u);
   EXPECT_EQ(metadata.flags(), 1023u);
+  EXPECT_EQ(metadata.module(), kModuleToken);
   EXPECT_EQ(encoded_data_size, 4u /* token */ + 1u /* encoded integer */);
 }
 
