@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "gtest/gtest.h"
+#include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
 #include "pw_preprocessor/macro_arg_count.h"
 #include "pw_rpc/channel.h"
@@ -166,7 +167,7 @@ class UnaryContext {
 
   // Gives access to the RPC's response.
   const Response& response() const {
-    EXPECT_FALSE(ctx_.responses.empty());
+    PW_CHECK_UINT_GT(ctx_.responses.size(), 0);
     return ctx_.responses.back();
   }
 };
@@ -216,7 +217,7 @@ class ServerStreamingContext {
 
   // The status of the stream. Only valid if done() is true.
   Status status() const {
-    EXPECT_TRUE(done());
+    PW_CHECK(done());
     return ctx_.output.last_status();
   }
 };
@@ -242,15 +243,14 @@ void MessageOutput<Response>::clear() {
 
 template <typename Response>
 void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
-  EXPECT_FALSE(stream_ended_);
+  PW_CHECK(!stream_ended_);
 
   if (size == 0u) {
     return;
   }
 
   internal::Packet packet;
-  EXPECT_EQ(
-      Status::OK,
+  PW_CHECK_OK(
       internal::Packet::FromBuffer(std::span(buffer_.data(), size), packet));
 
   last_status_ = packet.status();
@@ -260,15 +260,14 @@ void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
       // If we run out of space, the back message is always the most recent.
       responses_.emplace_back();
       responses_.back() = {};
-      EXPECT_TRUE(method_.DecodeResponse(packet.payload(), &responses_.back()));
+      PW_CHECK(method_.DecodeResponse(packet.payload(), &responses_.back()));
       total_responses_ += 1;
       break;
     case internal::PacketType::SERVER_STREAM_END:
       stream_ended_ = true;
       break;
     default:
-      FAIL();
-      break;
+      PW_CRASH("Unhandled PacketType");
   }
 }
 

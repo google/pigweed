@@ -54,8 +54,8 @@ pw_source_set("test_method_context") {
   public_deps = [
     ":service_method_traits",
     "..:nanopb_server",
+    dir_pw_assert,
     dir_pw_containers,
-    dir_pw_unit_test,
   ]
 }
 
