@@ -312,7 +312,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
 }
 
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
-       AddServiceChannelParametersReceivedInOnChannelConnectedCallback) {
+       AdvertiseChannelParametersReceivedInOnChannelConnectedCallback) {
   fidlbredr::ChannelParameters fidl_chan_params;
   fidl_chan_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
 
@@ -345,6 +345,158 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
                                                         0x41, kTxMtu));
   RunLoopUntilIdle();
+}
+
+class PriorityTest
+    : public FIDL_ProfileServerTest_ConnectedPeer,
+      public ::testing::WithParamInterface<std::pair<fidlbredr::A2dpDirectionPriority, bool>> {};
+
+TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
+  const auto kPriority = GetParam().first;
+  const bool kExpectSuccess = GetParam().second;
+
+  auto pairing_delegate =
+      std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
+  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  // Approve pairing requests.
+  pairing_delegate->SetConfirmPairingCallback(
+      [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
+  pairing_delegate->SetCompletePairingCallback(
+      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                            bt::l2cap::ChannelParameters());
+
+  // Expect a non-empty channel result.
+  std::optional<fidlbredr::Channel> channel;
+  auto chan_cb = [&channel](auto result) {
+    ASSERT_TRUE(result.is_response());
+    channel = std::move(result.response().channel);
+  };
+
+  fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(kPSM);
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  // Initiates pairing
+  client()->Connect(peer_id, std::move(conn_params), std::move(chan_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(channel.has_value());
+  ASSERT_TRUE(channel->has_ext_direction());
+  auto client = channel->mutable_ext_direction()->Bind();
+
+  std::optional<bt::hci::BcmSetAclPriorityCommandParams> sent_params;
+  test_device()->set_vendor_command_callback(
+      [&sent_params, kExpectSuccess](const bt::PacketView<bt::hci::CommandHeader>& command) {
+        auto opcode = letoh16(command.header().opcode);
+        EXPECT_EQ(opcode, bt::hci::kBcmSetAclPriority);
+        sent_params = command.payload<bt::hci::BcmSetAclPriorityCommandParams>();
+        return kExpectSuccess ? bt::hci::StatusCode::kSuccess
+                              : bt::hci::StatusCode::kUnspecifiedError;
+      });
+
+  size_t priority_cb_count = 0;
+  client->SetPriority(kPriority, [&](auto result) {
+    EXPECT_EQ(result.is_response(), kExpectSuccess);
+    priority_cb_count++;
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(priority_cb_count, 1u);
+  ASSERT_TRUE(sent_params.has_value());
+  EXPECT_EQ(letoh16(sent_params->handle), connection()->link().handle());
+  if (kPriority == fidlbredr::A2dpDirectionPriority::SOURCE) {
+    EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSource);
+  } else {
+    EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSink);
+  }
+  if (kPriority == fidlbredr::A2dpDirectionPriority::NORMAL) {
+    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kNormal);
+  } else {
+    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kHigh);
+  }
+  priority_cb_count = 0;
+  sent_params = std::nullopt;
+
+  // Dropping client should send priority command to revert priority back to normal if it was
+  // changed.
+  client = nullptr;
+  RunLoopUntilIdle();
+  EXPECT_EQ(priority_cb_count, 0u);
+  if (kPriority == fidlbredr::A2dpDirectionPriority::NORMAL) {
+    EXPECT_FALSE(sent_params.has_value());
+  } else {
+    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kNormal);
+  }
+}
+
+const std::array<std::pair<fidlbredr::A2dpDirectionPriority, bool>, 4> kPriorityParams = {
+    {{fidlbredr::A2dpDirectionPriority::SOURCE, false},
+     {fidlbredr::A2dpDirectionPriority::SOURCE, true},
+     {fidlbredr::A2dpDirectionPriority::SINK, true},
+     {fidlbredr::A2dpDirectionPriority::NORMAL, true}}};
+INSTANTIATE_TEST_SUITE_P(FIDL_ProfileServerTest_ConnectedPeer, PriorityTest,
+                         ::testing::ValuesIn(kPriorityParams));
+
+TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
+  fidlbredr::ChannelParameters fidl_chan_params;
+  fidl_chan_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
+
+  constexpr uint16_t kTxMtu = bt::l2cap::kMinACLMTU;
+
+  auto pairing_delegate =
+      std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
+  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+
+  using ::testing::StrictMock;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
+  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
+      connect_receiver_handle.NewRequest(), dispatcher());
+
+  std::vector<fidlbredr::ServiceDefinition> services;
+  services.emplace_back(MakeFIDLServiceDefinition());
+
+  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
+                      std::move(fidl_chan_params), std::move(connect_receiver_handle));
+  RunLoopUntilIdle();
+
+  std::optional<fidlbredr::Channel> channel;
+  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
+      .WillOnce([&channel](fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel cb_channel,
+                           ::testing::Unused) { channel = std::move(cb_channel); });
+
+  EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
+                                                        0x41, kTxMtu));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(channel.has_value());
+  auto client = channel->mutable_ext_direction()->Bind();
+
+  std::optional<bt::hci::BcmSetAclPriorityCommandParams> sent_params;
+  test_device()->set_vendor_command_callback(
+      [&sent_params](const bt::PacketView<bt::hci::CommandHeader>& command) {
+        auto opcode = letoh16(command.header().opcode);
+        EXPECT_EQ(opcode, bt::hci::kBcmSetAclPriority);
+        sent_params = command.payload<bt::hci::BcmSetAclPriorityCommandParams>();
+        return bt::hci::StatusCode::kSuccess;
+      });
+
+  size_t priority_cb_count = 0;
+  client->SetPriority(fidlbredr::A2dpDirectionPriority::SINK, [&](auto result) {
+    EXPECT_TRUE(result.is_response());
+    priority_cb_count++;
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(priority_cb_count, 1u);
+  ASSERT_TRUE(sent_params.has_value());
+  EXPECT_EQ(letoh16(sent_params->handle), connection()->link().handle());
+  EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSink);
+  EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kHigh);
+
+  test_device()->set_vendor_command_callback(nullptr);
+  client = nullptr;
 }
 
 }  // namespace

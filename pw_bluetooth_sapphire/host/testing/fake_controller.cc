@@ -1100,6 +1100,17 @@ void FakeController::OnLEStartEncryptionCommand(const hci::LEStartEncryptionComm
   SendEncryptionChangeEvent(params.connection_handle, hci::kSuccess, hci::EncryptionStatus::kOn);
 }
 
+void FakeController::OnVendorCommand(const PacketView<hci::CommandHeader>& command_packet) {
+  auto opcode = le16toh(command_packet.header().opcode);
+  auto status = hci::StatusCode::kUnknownCommand;
+  if (vendor_command_cb_) {
+    status = vendor_command_cb_(command_packet);
+  }
+  hci::SimpleReturnParams params;
+  params.status = status;
+  RespondWithCommandComplete(opcode, BufferView(&params, sizeof(params)));
+}
+
 void FakeController::SendTxPowerLevelReadResponse() {
   hci::LEReadAdvertisingChannelTxPowerReturnParams params;
   // Send back arbitrary tx power.
@@ -1119,6 +1130,12 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
   }
 
   if (MaybeRespondWithDefaultStatus(opcode)) {
+    return;
+  }
+
+  auto ogf = hci::GetOGF(opcode);
+  if (ogf == hci::kVendorOGF) {
+    OnVendorCommand(command_packet);
     return;
   }
 

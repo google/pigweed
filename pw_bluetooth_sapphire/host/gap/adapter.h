@@ -185,6 +185,9 @@ class Adapter final {
   // Attach Adapter's inspect node as a child node under |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name = "adapter");
 
+  // Returns this adapter's HCI transport.
+  fxl::WeakPtr<hci::Transport> transport() const { return hci_; }
+
  private:
   // Second step of the initialization sequence. Called by Initialize() when the
   // first batch of HCI commands have been sent.

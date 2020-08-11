@@ -207,6 +207,15 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
     le_read_remote_features_cb_ = std::move(callback);
   }
 
+  // Sets a callback to be invoked when a vendor command is received. A command complete event with
+  // the status code returned by the callback will be sent in response. If no callback is set, the
+  // kUnknownCommand status will be returned.
+  using VendorCommandCallback =
+      fit::function<hci::StatusCode(const PacketView<hci::CommandHeader>&)>;
+  void set_vendor_command_callback(VendorCommandCallback callback) {
+    vendor_command_cb_ = std::move(callback);
+  }
+
   // Sends a HCI event with the given parameters.
   void SendEvent(hci::EventCode event_code, const ByteBuffer& payload);
 
@@ -407,6 +416,9 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // encryption change event.
   void OnLEStartEncryptionCommand(const hci::LEStartEncryptionCommandParams& params);
 
+  // Called when a command with an OGF of hci::kVendorOGF is received.
+  void OnVendorCommand(const PacketView<hci::CommandHeader>& command_packet);
+
   // FakeControllerBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
@@ -478,6 +490,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   ConnectionStateCallback conn_state_cb_;
   LEConnectionParametersCallback le_conn_params_cb_;
   fit::closure le_read_remote_features_cb_;
+  VendorCommandCallback vendor_command_cb_;
 
   // Called when ACL data packets received.
   DataCallback data_callback_;

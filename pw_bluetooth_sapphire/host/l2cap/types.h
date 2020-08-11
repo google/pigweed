@@ -70,6 +70,8 @@ struct ChannelParameters {
 // Convenience struct for passsing around information about an opened channel.
 // For example, this is useful when describing the L2CAP channel underlying a zx::socket.
 struct ChannelInfo {
+  ChannelInfo() = default;
+
   static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size) {
     return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0);
   }
@@ -96,6 +98,9 @@ struct ChannelInfo {
   ChannelMode mode;
   uint16_t max_rx_sdu_size;
   uint16_t max_tx_sdu_size;
+
+  // TODO(57163): Remove after profile server hack is removed.
+  std::optional<hci::ConnectionHandle> handle;
 
   // For Enhanced Retransmission Mode only. See Core Spec v5.0 Vol 3, Part A, Sec 5.4 for details on
   // each field. Values are not meaningful if mode = ChannelMode::kBasic.

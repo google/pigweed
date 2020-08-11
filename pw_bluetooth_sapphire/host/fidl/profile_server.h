@@ -27,6 +27,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   ~ProfileServer() override;
 
  private:
+  class AudioDirectionExt;
+
   // fuchsia::bluetooth::bredr::Profile overrides:
   void Advertise(
       std::vector<fuchsia::bluetooth::bredr::ServiceDefinition> definitions,
@@ -55,6 +57,20 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   void OnServiceFound(uint64_t search_id, bt::PeerId peer_id,
                       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
+  // Callback for a channel priority request.
+  void OnSetPriority(bt::hci::ConnectionHandle handle,
+                     fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
+                     fuchsia::bluetooth::bredr::AudioDirectionExt::SetPriorityCallback cb);
+
+  // Callback when clients close their audio direction extension.
+  void OnAudioDirectionExtError(AudioDirectionExt* ext_server, bt::hci::ConnectionHandle handle,
+                                zx_status_t status);
+
+  // Create an AudioDirectionExt server for the given connection |handle| and set up callbacks.
+  // Returns the client end of the channel.
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::AudioDirectionExt> BindAudioDirectionExtServer(
+      bt::hci::ConnectionHandle handle);
+
   bt::gap::Adapter* adapter() const { return adapter_.get(); }
 
   // Advertised Services
@@ -80,6 +96,27 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   uint64_t searches_total_;
   std::map<uint64_t, RegisteredSearch> searches_;
+
+  class AudioDirectionExt : public ServerBase<fuchsia::bluetooth::bredr::AudioDirectionExt> {
+   public:
+    // Calls to SetPriority() are forwarded to |priority_cb|.
+    AudioDirectionExt(
+        fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioDirectionExt> request,
+        fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)>
+            priority_cb);
+
+    // fuchsia::bluetooth::bredr::AudioDirectionExt overrides:
+    void SetPriority(fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
+                     SetPriorityCallback callback) override;
+
+    fuchsia::bluetooth::bredr::A2dpDirectionPriority priority() const { return priority_; }
+
+   private:
+    fuchsia::bluetooth::bredr::A2dpDirectionPriority priority_;
+    fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)> cb_;
+  };
+  std::unordered_map<AudioDirectionExt*, std::unique_ptr<AudioDirectionExt>>
+      audio_direction_ext_servers_;
 
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 

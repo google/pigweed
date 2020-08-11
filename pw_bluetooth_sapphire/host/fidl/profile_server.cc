@@ -290,14 +290,27 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
-  auto connected_cb = [cb = callback.share()](auto chan_sock) {
+  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(),
+                       cb = callback.share()](auto chan_sock) {
     if (!chan_sock) {
       bt_log(TRACE, "profile_server", "Channel socket is empty, returning failed.");
       cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
 
-    cb(fit::ok(ChannelSocketToFidlChannel(std::move(chan_sock))));
+    if (!self) {
+      cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+      return;
+    }
+
+    ZX_ASSERT(chan_sock.params->handle.has_value());
+    auto handle = chan_sock.params->handle.value();
+    auto audio_direction_ext_client = self->BindAudioDirectionExtServer(handle);
+
+    auto chan = ChannelSocketToFidlChannel(std::move(chan_sock));
+    chan.set_ext_direction(std::move(audio_direction_ext_client));
+
+    cb(fit::ok(std::move(chan)));
   };
   ZX_DEBUG_ASSERT(adapter());
 
@@ -333,8 +346,12 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket 
   std::vector<fidlbredr::ProtocolDescriptor> list;
   list.emplace_back(std::move(*desc));
 
-  it->second.receiver->Connected(peer_id, ChannelSocketToFidlChannel(std::move(chan_sock)),
-                                 std::move(list));
+  auto audio_direction_ext_client = BindAudioDirectionExtServer(handle);
+
+  auto chan = ChannelSocketToFidlChannel(std::move(chan_sock));
+  chan.set_ext_direction(std::move(audio_direction_ext_client));
+
+  it->second.receiver->Connected(peer_id, std::move(chan), std::move(list));
 }
 
 void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
@@ -409,6 +426,93 @@ void ProfileServer::OnServiceFound(
 
   search_it->second.results->ServiceFound(fidl_peer_id, std::move(descriptor_list),
                                           std::move(fidl_attrs), []() {});
+}
+
+void ProfileServer::OnSetPriority(bt::hci::ConnectionHandle handle,
+                                  fidlbredr::A2dpDirectionPriority priority,
+                                  fidlbredr::AudioDirectionExt::SetPriorityCallback cb) {
+  auto packet = bt::hci::CommandPacket::New(bt::hci::kBcmSetAclPriority,
+                                            sizeof(bt::hci::BcmSetAclPriorityCommandParams));
+  auto params = packet->mutable_payload<bt::hci::BcmSetAclPriorityCommandParams>();
+  params->handle = htole16(handle);
+  params->priority = bt::hci::BcmAclPriority::kHigh;
+  params->direction = bt::hci::BcmAclPriorityDirection::kSink;
+  if (priority == fidlbredr::A2dpDirectionPriority::SOURCE) {
+    params->direction = bt::hci::BcmAclPriorityDirection::kSource;
+  } else if (priority == fidlbredr::A2dpDirectionPriority::NORMAL) {
+    params->priority = bt::hci::BcmAclPriority::kNormal;
+  }
+
+  // TODO(57163): Return error if there is a priority conflict or the controller does not support
+  // the ACL priority command.
+  adapter()->transport()->command_channel()->SendCommand(
+      std::move(packet),
+      [cb = std::move(cb), priority](auto id, const bt::hci::EventPacket& event) {
+        if (hci_is_error(event, WARN, "profile_server", "BCM acl priority failed")) {
+          cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+          return;
+        }
+
+        bt_log(DEBUG, "profile_server", "BCM acl priority updated (priority: %#.8x)",
+               static_cast<uint32_t>(priority));
+        cb(fit::ok());
+      });
+}
+
+void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server,
+                                             bt::hci::ConnectionHandle handle, zx_status_t status) {
+  bt_log(TRACE, "profile_server", "audio direction ext server closed (reason: %s)",
+         zx_status_get_string(status));
+
+  auto it = audio_direction_ext_servers_.find(ext_server);
+  if (it == audio_direction_ext_servers_.end()) {
+    bt_log(WARN, "profile_server",
+           "could not find ext server in audio direction ext error callback");
+    return;
+  }
+
+  // Revert any change made to ACL priority by this extension.
+  // TODO(57163): Remove this hack and revert priority when a channel is closed and
+  // no other channel is using the current priority.
+  if (ext_server->priority() != fidlbredr::A2dpDirectionPriority::NORMAL) {
+    OnSetPriority(handle, fidlbredr::A2dpDirectionPriority::NORMAL, [](auto result) {});
+  }
+
+  audio_direction_ext_servers_.erase(it);
+}
+
+fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDirectionExtServer(
+    bt::hci::ConnectionHandle handle) {
+  fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> client;
+
+  auto set_priority_cb = [this, handle](auto priority, auto cb) {
+    OnSetPriority(handle, priority, std::move(cb));
+  };
+
+  auto audio_direction_ext_server =
+      std::make_unique<AudioDirectionExt>(client.NewRequest(), std::move(set_priority_cb));
+  AudioDirectionExt* server_ptr = audio_direction_ext_server.get();
+
+  audio_direction_ext_server->set_error_handler([this, handle, server_ptr](zx_status_t status) {
+    OnAudioDirectionExtError(server_ptr, handle, status);
+  });
+
+  audio_direction_ext_servers_[server_ptr] = std::move(audio_direction_ext_server);
+
+  return client;
+}
+
+ProfileServer::AudioDirectionExt::AudioDirectionExt(
+    fidl::InterfaceRequest<fidlbredr::AudioDirectionExt> request,
+    fit::function<void(fidlbredr::A2dpDirectionPriority, SetPriorityCallback)> cb)
+    : ServerBase(this, std::move(request)),
+      priority_(fidlbredr::A2dpDirectionPriority::NORMAL),
+      cb_(std::move(cb)) {}
+
+void ProfileServer::AudioDirectionExt::SetPriority(
+    fuchsia::bluetooth::bredr::A2dpDirectionPriority priority, SetPriorityCallback callback) {
+  priority_ = priority;
+  cb_(priority, std::move(callback));
 }
 
 }  // namespace bthost
