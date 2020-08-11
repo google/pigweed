@@ -18,7 +18,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
-import("nanopb.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 declare_args() {
   # Generators with which to compile protobuf code. These are used by the
   # pw_proto_library template to determine which build targets to create.
@@ -162,8 +162,8 @@ template("_pw_nanopb_rpc_proto_library") {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ]
     public_deps = [
-                    dir_pw_third_party_nanopb,
                     "$dir_pw_rpc:nanopb_server",
+                    "$dir_pw_third_party/nanopb",
                   ] + invoker.gen_deps
     public = get_target_outputs(":$_gen_target")
   }
@@ -244,7 +244,7 @@ template("_pw_nanopb_proto_library") {
   pw_source_set(target_name) {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ]
-    public_deps = [ dir_pw_third_party_nanopb ] + invoker.gen_deps
+    public_deps = [ "$dir_pw_third_party/nanopb" ] + invoker.gen_deps
     sources = get_target_outputs(":$_gen_target")
     public = filter_include(sources, [ "*.pb.h" ])
   }

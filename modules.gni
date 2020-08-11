@@ -67,6 +67,7 @@ declare_args() {
       get_path_info("pw_sys_io_baremetal_stm32f429", "abspath")
   dir_pw_sys_io_stdio = get_path_info("pw_sys_io_stdio", "abspath")
   dir_pw_target_runner = get_path_info("pw_target_runner", "abspath")
+  dir_pw_third_party = get_path_info("third_party", "abspath")
   dir_pw_tokenizer = get_path_info("pw_tokenizer", "abspath")
   dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
   dir_pw_trace = get_path_info("pw_trace", "abspath")

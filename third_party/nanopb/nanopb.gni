@@ -14,6 +14,7 @@
 
 declare_args() {
   # If compiling protos for nanopb, this variable is set to the path to the
-  # nanopb installation.
+  # nanopb installation. When set, a pw_source_set for the nanopb library is
+  # created at "$dir_pw_third_party/nanopb".
   dir_pw_third_party_nanopb = ""
 }

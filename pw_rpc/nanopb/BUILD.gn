@@ -17,7 +17,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_protobuf_compiler/nanopb.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 config("overrides") {
   include_dirs = [ "public_overrides" ]
@@ -36,7 +36,7 @@ pw_source_set("nanopb") {
   public_deps = [ "..:server_library_deps" ]
 
   if (dir_pw_third_party_nanopb != "") {
-    public_deps += [ dir_pw_third_party_nanopb ]
+    public_deps += [ "$dir_pw_third_party/nanopb" ]
   }
 
   visibility = [ "../*" ]
