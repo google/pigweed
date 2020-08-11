@@ -260,7 +260,11 @@ def copyright_notice(ctx: PresubmitContext):
 
     for path in ctx.paths:
         _LOG.debug('Checking %s', path)
-        with open(path) as file:
+
+        if path.stat().st_size == 0:
+            continue  # Skip empty files
+
+        with path.open() as file:
             (comment, end_block_comment,
              line) = copyright_read_first_line(file)
 
