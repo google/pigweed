@@ -26,6 +26,7 @@ pw_cc_library(
     hdrs = [
       "public/pw_hdlc_lite/decoder.h",
       "public/pw_hdlc_lite/encoder.h",
+      "public/pw_hdlc_lite/rpc_server_packets.h",
       "public/pw_hdlc_lite/sys_io_stream.h",
       "public/pw_hdlc_lite/hdlc_channel.h",
     ],
@@ -35,6 +36,39 @@ pw_cc_library(
       "hdlc_channel.cc"
     ],
     includes = ["public"],
+    deps = [
+        "//pw_log",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_checksum",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_rpc",
+    ],
+)
+
+pw_cc_library(
+    name = "client_server_test",
+    srcs = [
+        "hdlc_server_example.cc",
+    ],
+    hdrs = [
+      "public/pw_hdlc_lite/decoder.h",
+      "public/pw_hdlc_lite/rpc_server_packets.h",
+      "public/pw_hdlc_lite/hdlc_channel.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_log",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_checksum",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_rpc",
+    ],
 )
 
 cc_test(

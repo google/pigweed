@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cstddef>
+#include <limits>
 #include <span>
 
 #include "pw_stream/stream.h"
@@ -25,6 +26,10 @@ namespace pw::stream {
 class SerialWriter : public Writer {
  public:
   size_t bytes_written() const { return bytes_written_; }
+
+  size_t ConservativeWriteLimit() const override {
+    return std::numeric_limits<size_t>::max();
+  }
 
  private:
   // Implementation for writing data to this stream.

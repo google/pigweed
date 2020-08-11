@@ -60,6 +60,20 @@ pw_source_set("pw_rpc") {
   ]
 }
 
+pw_executable("hdlc_server_example") {
+  public_configs = [ ":default_config" ]
+  sources = [
+    "hdlc_server_example.cc",
+    "public/pw_hdlc_lite/rpc_server_packets.h",
+  ]
+  public_deps = [ ":pw_hdlc_lite" ]
+  deps = [
+    ":pw_rpc",
+    "$dir_pw_rpc:nanopb_server",
+    "$dir_pw_rpc/nanopb:echo_service",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":encoder_test",
