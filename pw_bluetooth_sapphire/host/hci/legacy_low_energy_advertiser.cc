@@ -274,8 +274,8 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
                            std::move(connect_callback), std::move(callback));
 }
 
-// TODO(50542): StopAdvertising() should cancel outstanding calls to StartAdvertising() and clean
-// up state.
+// TODO(fxbug.dev/50542): StopAdvertising() should cancel outstanding calls to StartAdvertising()
+// and clean up state.
 bool LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
   if (advertised_ != address) {
     // not advertising, or not on this address.

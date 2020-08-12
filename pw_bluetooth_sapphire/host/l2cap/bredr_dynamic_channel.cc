@@ -399,7 +399,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
   if (remote_config_accum_.has_value()) {
     remote_config_accum_->Merge(std::move(config));
   } else {
-    // TODO(40053): if channel is being re-configured, merge with existing configuration
+    // TODO(fxbug.dev/40053): if channel is being re-configured, merge with existing configuration
     remote_config_accum_ = std::move(config);
   }
 
@@ -487,7 +487,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
 
   // Successful response should include actual MTU local device will use. This must be min(received
   // MTU, local outgoing MTU capability). Currently, we accept any MTU.
-  // TODO(41376): determine the upper bound of what we are actually capable of sending
+  // TODO(fxbug.dev/41376): determine the upper bound of what we are actually capable of sending
   uint16_t actual_mtu = req_config.mtu_option()->mtu();
   response_config.set_mtu_option(ChannelConfiguration::MtuOption(actual_mtu));
   req_config.set_mtu_option(response_config.mtu_option());
@@ -727,7 +727,8 @@ bool BrEdrDynamicChannel::AcceptedChannelModesAreConsistent() const {
 
 ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
     const ChannelConfiguration& config) {
-  // TODO(40053): reject reconfiguring MTU if mode is Enhanced Retransmission or Streaming mode.
+  // TODO(fxbug.dev/40053): reject reconfiguring MTU if mode is Enhanced Retransmission or Streaming
+  // mode.
   ChannelConfiguration unacceptable;
 
   // Reject MTUs below minimum size
@@ -830,7 +831,7 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
            local_cid());
 
     // Fall back to basic mode and try sending config again.
-    // TODO(46992): limit the number of retries
+    // TODO(fxbug.dev/46992): limit the number of retries
     peer_supports_ertm_ = false;
     UpdateLocalConfigForErtm();
     SendLocalConfig();

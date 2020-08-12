@@ -196,7 +196,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU pdu)
       // REJ_SENT state. See Core Spec, v5, Vol 3, Part A, Section 8.6.5.10, Table 8.7, "Recv
       // RR(P=1)".
       //
-      // TODO(1039): Respond with RNR when LocalBusy.
+      // TODO(fxbug.dev/1039): Respond with RNR when LocalBusy.
       SimpleReceiverReadyFrame poll_response;
       poll_response.set_is_poll_response();
       poll_response.set_receive_seq_num(next_seqnum_);

@@ -70,8 +70,8 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
     ZX_ASSERT(initiator());
     ZX_ASSERT_MSG(pairing_delegate(), "PairingDelegate was reset after pairing began");
 
-    // TODO(37447): PairingDelegate may be reset if bt-gap exits and clears PairingDelegate (which
-    // is processed on a different thread).
+    // TODO(fxbug.dev/37447): PairingDelegate may be reset if bt-gap exits and clears
+    // PairingDelegate (which is processed on a different thread).
     current_pairing_->local_iocap =
         sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
 
@@ -89,8 +89,8 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
       return std::nullopt;
     }
 
-    // TODO(37447): PairingDelegate may be reset if bt-gap exits and clears PairingDelegate (which
-    // is processed on a different thread).
+    // TODO(fxbug.dev/37447): PairingDelegate may be reset if bt-gap exits and clears
+    // PairingDelegate (which is processed on a different thread).
     current_pairing_->local_iocap =
         sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
     current_pairing_->ComputePairingData();
@@ -132,7 +132,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   }
   ZX_ASSERT(is_pairing());
 
-  // TODO(37447): Reject pairing if pairing delegate went away.
+  // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
   ZX_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
@@ -182,7 +182,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
   }
   ZX_ASSERT(is_pairing());
 
-  // TODO(37447): Reject pairing if pairing delegate went away.
+  // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
   ZX_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
@@ -212,7 +212,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
   }
   ZX_ASSERT(is_pairing());
 
-  // TODO(37447): Reject pairing if pairing delegate went away.
+  // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
   ZX_ASSERT(pairing_delegate());
   state_ = State::kWaitPairingComplete;
 
@@ -238,7 +238,7 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
   if (const hci::Status status(status_code);
       bt_is_error(status, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
                   bt_str(peer_id()))) {
-    // TODO(37447): Checking pairing_delegate() for reset like this isn't thread safe.
+    // TODO(fxbug.dev/37447): Checking pairing_delegate() for reset like this isn't thread safe.
     if (pairing_delegate()) {
       pairing_delegate()->CompletePairing(peer_id(), sm::Status(HostError::kFailed));
     }
@@ -252,8 +252,8 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
 }
 
 void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type) {
-  // TODO(36360): We assume the controller is never in pairing debug mode because it's a security
-  // hazard to pair and bond using Debug Combination link keys.
+  // TODO(fxbug.dev/36360): We assume the controller is never in pairing debug mode because it's a
+  // security hazard to pair and bond using Debug Combination link keys.
   ZX_ASSERT_MSG(key_type != hci::LinkKeyType::kDebugCombination,
                 "Pairing on link %#.4x (id: %s) resulted in insecure Debug Combination link key",
                 handle(), bt_str(peer_id()));

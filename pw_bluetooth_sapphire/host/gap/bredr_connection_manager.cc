@@ -481,7 +481,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
     self->Disconnect(peer_id);
   };
 
-  // TODO(37650): Implement this callback as a call to InitiatePairing().
+  // TODO(fxbug.dev/37650): Implement this callback as a call to InitiatePairing().
   auto security_callback = [](hci::ConnectionHandle handle, sm::SecurityLevel level, auto cb) {
     bt_log(INFO, "gap-bredr", "Ignoring security upgrade request; not implemented");
     cb(sm::Status(HostError::kNotSupported));

@@ -159,7 +159,7 @@ void HostServer::WatchPeers(WatchPeersCallback callback) {
   watch_peers_getter_.Watch(std::move(callback));
 }
 
-// TODO(35008): Add a unit test for this method.
+// TODO(fxbug.dev/35008): Add a unit test for this method.
 void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback callback) {
   ZX_DEBUG_ASSERT(!local_name.empty());
   // Make a copy of |local_name| to move separately into the lambda.
@@ -176,7 +176,7 @@ void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback cal
                           });
 }
 
-// TODO(35008): Add a unit test for this method.
+// TODO(fxbug.dev/35008): Add a unit test for this method.
 void HostServer::SetDeviceClass(fbt::DeviceClass device_class, SetDeviceClassCallback callback) {
   // Device Class values must only contain data in the lower 3 bytes.
   if (device_class.value >= 1 << 24) {

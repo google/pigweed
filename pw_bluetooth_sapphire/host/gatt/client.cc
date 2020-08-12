@@ -390,7 +390,7 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
-  // TODO(49794): refactor to use ReadByTypeRequest()
+  // TODO(fxbug.dev/49794): refactor to use ReadByTypeRequest()
   void DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,
                                CharacteristicCallback chrc_callback,
                                StatusCallback status_callback) override {

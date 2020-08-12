@@ -142,7 +142,8 @@ void LowEnergyPeripheralServer::StartAdvertising(
   // Per the API contract of `AdvertisingParameters` FIDL, if `connection_options` is present or
   // the deprecated `connectable` parameter is true, advertisements will be connectable.
   // `connectable_parameter` was the predecessor of `connection_options` and
-  // TODO(44749): will be removed once all consumers of it have migrated to `connection_options`.
+  // TODO(fxbug.dev/44749): will be removed once all consumers of it have migrated to
+  // `connection_options`.
   if (connectable_parameter || parameters.has_connection_options()) {
     // Per the API contract of the `ConnectionOptions` FIDL, the bondable mode of the connection
     // defaults to bondable mode unless the `connection_options` table exists and `bondable_mode`

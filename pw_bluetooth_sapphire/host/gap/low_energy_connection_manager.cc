@@ -567,7 +567,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   // either success of failure).
   auto pending_iter = pending_requests_.find(peer_id);
   if (pending_iter != pending_requests_.end()) {
-    // TODO(52283): add connection state asserts for invariants
+    // TODO(fxbug.dev/52283): add connection state asserts for invariants
     pending_iter->second.AddCallback(std::move(callback));
     return true;
   }
@@ -1136,8 +1136,8 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
   // Ensure interrogation has completed.
   ZX_ASSERT(peer->le()->features().has_value());
 
-  // TODO(49714): check local controller support for LL Connection Parameters Request procedure
-  // (mask is currently in Adapter le state, consider propagating down)
+  // TODO(fxbug.dev/49714): check local controller support for LL Connection Parameters Request
+  // procedure (mask is currently in Adapter le state, consider propagating down)
   bool ll_connection_parameters_req_supported =
       peer->le()->features()->le_features &
       static_cast<uint64_t>(hci::LESupportedFeature::kConnectionParametersRequestProcedure);
@@ -1253,8 +1253,8 @@ void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(
            accepted ? "accepted" : "rejected", handle);
   };
 
-  // TODO(49717): don't send request until after kLEConnectionParameterTimeout of an l2cap conn
-  // parameter update response being received (Core Spec v5.2, Vol 3, Part C, Sec 9.3.9).
+  // TODO(fxbug.dev/49717): don't send request until after kLEConnectionParameterTimeout of an l2cap
+  // conn parameter update response being received (Core Spec v5.2, Vol 3, Part C, Sec 9.3.9).
   data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb));
 }
 

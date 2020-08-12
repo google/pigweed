@@ -181,7 +181,7 @@ bool Adapter::IsDiscovering() const {
 }
 
 void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
-  // TODO(40836): set the public LE advertisement name from |name|
+  // TODO(fxbug.dev/40836): set the public LE advertisement name from |name|
   // If BrEdr is not supported, skip the name update.
   if (!bredr_discovery_manager()) {
     callback(hci::Status(bt::HostError::kNotSupported));
@@ -367,10 +367,10 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
 
   // Create the data domain, if we haven't been provided one. Doing so here lets us guarantee that
   // AclDataChannel's lifetime is a superset of Data Domain's lifetime.
-  // TODO(35228) We currently allow tests to inject their own domain in the adapter constructor,
-  // as the adapter_unittests rely on injecting a fake domain to avoid concurrency in the unit
-  // tests.  Once we move to a single threaded model, we would like to remove this and have the
-  // adapter always be responsible for creating the domain.
+  // TODO(fxbug.dev/35228) We currently allow tests to inject their own domain in the adapter
+  // constructor, as the adapter_unittests rely on injecting a fake domain to avoid concurrency in
+  // the unit tests.  Once we move to a single threaded model, we would like to remove this and have
+  // the adapter always be responsible for creating the domain.
   if (!data_domain_) {
     // Initialize the data Domain to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain

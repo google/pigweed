@@ -177,8 +177,8 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
     pending_commands_.erase(iter);
   } else {
     // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
-    // TODO(55361): Limit the number of times the ERTX timer is reset so that total timeout duration
-    // is <= 300 seconds.
+    // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so that total
+    // timeout duration is <= 300 seconds.
     pending_command.response_timeout_task.Cancel();
     pending_command.timer_duration = kSignalingChannelExtendedResponseTimeout;
     // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the

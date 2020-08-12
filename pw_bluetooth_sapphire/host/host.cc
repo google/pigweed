@@ -49,7 +49,8 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
   };
 
   bt_log(DEBUG, "bt-host", "initializing GAP");
-  // TODO(52588): remove bt-host device and shut down the stack when HCI transport has closed.
+  // TODO(fxbug.dev/52588): remove bt-host device and shut down the stack when HCI transport has
+  // closed.
   return gap_->Initialize(std::move(gap_init_callback),
                           [] { bt_log(DEBUG, "bt-host", "bt-host: HCI transport has closed"); });
 }

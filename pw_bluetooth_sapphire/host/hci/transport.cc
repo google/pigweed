@@ -128,7 +128,8 @@ void Transport::NotifyClosedCallback() {
 void Transport::OnChannelError() {
   bt_log(ERROR, "hci", "channel error");
 
-  // TODO(52588): remove calls to ShutDown() here as Host will destroy Transport in closed callback
+  // TODO(fxbug.dev/52588): remove calls to ShutDown() here as Host will destroy Transport in closed
+  // callback
   if (acl_data_channel_) {
     acl_data_channel_->ShutDown();
   }

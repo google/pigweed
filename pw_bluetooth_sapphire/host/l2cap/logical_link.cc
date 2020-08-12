@@ -367,7 +367,7 @@ void LogicalLink::SignalError() {
   }
 
   if (link_error_cb_) {
-    // TODO(53985): This should be removed when l2cap::Channel is no longer a thread-safe
+    // TODO(fxbug.dev/53985): This should be removed when l2cap::Channel is no longer a thread-safe
     // message-passing interface. But while it is, the above channel teardown work will be posting
     // L2CAP Signaling Channel Disconnection Requests that must go out before we request a GAP
     // disconnection of the underlying link with this callback.

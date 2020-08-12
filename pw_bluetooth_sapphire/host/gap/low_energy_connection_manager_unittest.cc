@@ -1103,8 +1103,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrP
 }
 
 // Successful connection to a peer whose address type is kBREDR.
-// TODO(2761): This test will likely become obsolete when LE connections are based on the presence
-// of LowEnergyData in a Peer and no address type enum exists.
+// TODO(fxbug.dev/2761): This test will likely become obsolete when LE connections are based on the
+// presence of LowEnergyData in a Peer and no address type enum exists.
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWithBrEdrAddress) {
   Peer* peer = peer_cache()->NewPeer(kAddrAlias0, true);
   ASSERT_TRUE(peer);
@@ -1254,7 +1254,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   EXPECT_TRUE(peer->temporary());
   // This is to capture the channel created during the Connection process
-  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
+  // SM-internal message
   //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
   FakeChannel* fake_chan = nullptr;
   fake_l2cap()->set_channel_callback(
@@ -1314,7 +1315,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   EXPECT_TRUE(peer->temporary());
   // This is to capture the channel created during the Connection process
-  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
+  // SM-internal message
   //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
   FakeChannel* fake_chan = nullptr;
   fake_l2cap()->set_channel_callback(
@@ -2175,7 +2177,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   RunLoopUntilIdle();
   // This captures the channel created during the Connection process.
   FakeChannel* fake_chan = nullptr;
-  // TODO(886): this is a fragile way to validate SM, as it depends both on the SM-internal message
+  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
+  // SM-internal message
   //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
   fake_l2cap()->set_channel_callback([&fake_chan](const fbl::RefPtr<FakeChannel>& new_fake_chan) {
     fake_chan = new_fake_chan.get();

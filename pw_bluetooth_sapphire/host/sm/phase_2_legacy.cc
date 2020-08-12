@@ -87,7 +87,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
 
   if (features_.method == sm::PairingMethod::kPasskeyEntryDisplay) {
     // Randomly generate a 6 digit passkey.
-    // TODO(50003): Fix modulo biasing of random passkey.
+    // TODO(fxbug.dev/50003): Fix modulo biasing of random passkey.
     uint32_t passkey;
     zx_cprng_draw(&passkey, sizeof(passkey));
     passkey = passkey % 1000000;
