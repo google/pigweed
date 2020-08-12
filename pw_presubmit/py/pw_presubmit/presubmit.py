@@ -178,9 +178,17 @@ class PresubmitContext:
     output_dir: Path
     paths: Tuple[Path, ...]
 
-    def relative_paths(self, start: Optional[Path] = None):
+    def relative_paths(self, start: Optional[Path] = None) -> Tuple[Path, ...]:
         return tuple(
             tools.relative_paths(self.paths, start if start else self.root))
+
+    def paths_by_repo(self) -> Dict[Path, List[Path]]:
+        repos = collections.defaultdict(list)
+
+        for path in self.paths:
+            repos[git_repo.root(path)].append(path)
+
+        return repos
 
 
 class _Filter(NamedTuple):

@@ -233,7 +233,7 @@ class Services(ServiceAccessor[Service]):
         super().__init__(services)
 
 
-def get_method(service_accessor: ServiceAccessor[T], name: str) -> T:
+def get_method(service_accessor: ServiceAccessor, name: str):
     """Returns a method matching the given full name in a ServiceAccessor.
 
     Args:

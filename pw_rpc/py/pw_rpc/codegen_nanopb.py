@@ -16,9 +16,10 @@
 from datetime import datetime
 import os
 from typing import Iterable
+from typing import cast
 
 from pw_protobuf.output_file import OutputFile
-from pw_protobuf.proto_tree import ProtoNode, ProtoServiceMethod
+from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
 from pw_protobuf.proto_tree import build_node_tree
 import pw_rpc.ids
 
@@ -115,7 +116,8 @@ def _generate_code_for_method(method: ProtoServiceMethod,
             'Only unary and server streaming RPCs are currently supported')
 
 
-def _generate_method_lookup_function(service: ProtoNode, output: OutputFile):
+def _generate_method_lookup_function(service: ProtoService,
+                                     output: OutputFile):
     """Generates a function that gets the Method from a function pointer."""
     output.write_line('template <auto impl_method>')
     output.write_line(
@@ -141,7 +143,7 @@ def _generate_method_lookup_function(service: ProtoNode, output: OutputFile):
     output.write_line('}')
 
 
-def _generate_code_for_service(service: ProtoNode, root: ProtoNode,
+def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
 
@@ -255,7 +257,8 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
 
     for node in package:
         if node.type() == ProtoNode.Type.SERVICE:
-            _generate_code_for_service(node, package, output)
+            _generate_code_for_service(cast(ProtoService, node), package,
+                                       output)
 
     output.write_line('\n}  // namespace generated')
 

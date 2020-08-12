@@ -18,11 +18,13 @@ from datetime import datetime
 import os
 import sys
 from typing import Dict, Iterable, List, Tuple
+from typing import cast
 
 import google.protobuf.descriptor_pb2 as descriptor_pb2
 
 from pw_protobuf.output_file import OutputFile
-from pw_protobuf.proto_tree import ProtoMessageField, ProtoNode
+from pw_protobuf.proto_tree import ProtoEnum, ProtoMessage, ProtoMessageField
+from pw_protobuf.proto_tree import ProtoNode
 from pw_protobuf.proto_tree import build_node_tree
 
 PLUGIN_NAME = 'pw_protobuf'
@@ -113,8 +115,12 @@ class ProtoMethod(abc.ABC):
     def _relative_type_namespace(self, from_root: bool = False) -> str:
         """Returns relative namespace between method's scope and field type."""
         scope = self._root if from_root else self._scope
-        ancestor = scope.common_ancestor(self._field.type_node())
-        return self._field.type_node().cpp_namespace(ancestor)
+        type_node = self._field.type_node()
+        assert type_node is not None
+        ancestor = scope.common_ancestor(type_node)
+        namespace = type_node.cpp_namespace(ancestor)
+        assert namespace is not None
+        return namespace
 
 
 class SubMessageMethod(ProtoMethod):
@@ -501,7 +507,7 @@ PROTO_FIELD_METHODS: Dict[int, List] = {
 }
 
 
-def generate_code_for_message(message: ProtoNode, root: ProtoNode,
+def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
                               output: OutputFile) -> None:
     """Creates a C++ class for a protobuf message."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -544,7 +550,7 @@ def generate_code_for_message(message: ProtoNode, root: ProtoNode,
     output.write_line('};')
 
 
-def define_not_in_class_methods(message: ProtoNode, root: ProtoNode,
+def define_not_in_class_methods(message: ProtoMessage, root: ProtoNode,
                                 output: OutputFile) -> None:
     """Defines methods for a message class that were previously declared."""
     assert message.type() == ProtoNode.Type.MESSAGE
@@ -567,7 +573,7 @@ def define_not_in_class_methods(message: ProtoNode, root: ProtoNode,
             output.write_line('}')
 
 
-def generate_code_for_enum(enum: ProtoNode, root: ProtoNode,
+def generate_code_for_enum(enum: ProtoEnum, root: ProtoNode,
                            output: OutputFile) -> None:
     """Creates a C++ enum for a proto enum."""
     assert enum.type() == ProtoNode.Type.ENUM
@@ -579,12 +585,9 @@ def generate_code_for_enum(enum: ProtoNode, root: ProtoNode,
     output.write_line('};')
 
 
-def forward_declare(node: ProtoNode, root: ProtoNode,
+def forward_declare(node: ProtoMessage, root: ProtoNode,
                     output: OutputFile) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
-    if node.type() != ProtoNode.Type.MESSAGE:
-        return
-
     namespace = node.cpp_namespace(root)
     output.write_line()
     output.write_line(f'namespace {namespace} {{')
@@ -602,7 +605,7 @@ def forward_declare(node: ProtoNode, root: ProtoNode,
     for child in node.children():
         if child.type() == ProtoNode.Type.ENUM:
             output.write_line()
-            generate_code_for_enum(child, node, output)
+            generate_code_for_enum(cast(ProtoEnum, child), node, output)
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -639,25 +642,28 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
         output.write_line(f'\nnamespace {file_namespace} {{')
 
     for node in package:
-        forward_declare(node, package, output)
+        if node.type() == ProtoNode.Type.MESSAGE:
+            forward_declare(cast(ProtoMessage, node), package, output)
 
     # Define all top-level enums.
     for node in package.children():
         if node.type() == ProtoNode.Type.ENUM:
             output.write_line()
-            generate_code_for_enum(node, package, output)
+            generate_code_for_enum(cast(ProtoEnum, node), package, output)
 
     # Run through all messages in the file, generating a class for each.
     for node in package:
         if node.type() == ProtoNode.Type.MESSAGE:
             output.write_line()
-            generate_code_for_message(node, package, output)
+            generate_code_for_message(cast(ProtoMessage, node), package,
+                                      output)
 
     # Run a second pass through the classes, this time defining all of the
     # methods which were previously only declared.
     for node in package:
         if node.type() == ProtoNode.Type.MESSAGE:
-            define_not_in_class_methods(node, package, output)
+            define_not_in_class_methods(cast(ProtoMessage, node), package,
+                                        output)
 
     if package.cpp_namespace():
         output.write_line(f'\n}}  // namespace {package.cpp_namespace()}')

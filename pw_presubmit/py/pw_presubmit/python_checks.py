@@ -32,7 +32,8 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import call, filter_paths
-from pw_presubmit.git_repo import find_python_packages, list_files
+from pw_presubmit.git_repo import python_packages_containing, list_files
+from pw_presubmit.git_repo import PythonPackage
 
 _LOG = logging.getLogger(__name__)
 
@@ -41,27 +42,29 @@ def run_module(*args, **kwargs):
     return call('python', '-m', *args, **kwargs)
 
 
+TEST_PATTERNS = ('*_test.py', )
+
+
 @filter_paths(endswith='.py')
 def test_python_packages(ctx: pw_presubmit.PresubmitContext,
-                         patterns: Iterable[str] = '*_test.py') -> None:
+                         patterns: Iterable[str] = TEST_PATTERNS) -> None:
     """Finds and runs test files in Python package directories.
 
     Finds the Python packages containing the affected paths, then searches
     within that package for test files. All files matching the provided patterns
     are executed with Python.
     """
-    test_globs = [patterns] if isinstance(patterns, str) else list(patterns)
-
-    packages: List[Path] = []
+    packages: List[PythonPackage] = []
     for repo in ctx.repos:
-        packages += find_python_packages(ctx.paths, repo=repo)
+        packages += python_packages_containing(ctx.paths, repo=repo)[0]
 
     if not packages:
         _LOG.info('No Python packages were found.')
         return
 
     for package in packages:
-        for test in list_files(pathspecs=test_globs, repo_path=package):
+        for test in list_files(pathspecs=tuple(patterns),
+                               repo_path=package.root):
             call('python', test)
 
 
@@ -87,17 +90,27 @@ def pylint(ctx: pw_presubmit.PresubmitContext) -> None:
 
 @filter_paths(endswith='.py')
 def mypy(ctx: pw_presubmit.PresubmitContext) -> None:
+    """Runs mypy on all paths and their packages."""
+    packages: List[PythonPackage] = []
+    other_files: List[Path] = []
+
+    for repo, paths in ctx.paths_by_repo().items():
+        new_packages, files = python_packages_containing(paths, repo=repo)
+        packages += new_packages
+        other_files += files
+
+        for package in new_packages:
+            other_files += package.other_files
+
     # Under some circumstances, mypy cannot check multiple Python files with the
     # same module name. Group filenames so that no duplicates occur in the same
     # mypy invocation. Also, omit setup.py from mypy checks.
     filename_sets: List[Set[str]] = [set()]
-    path_sets: List[List[Path]] = [[]]
+    path_sets: List[List[Path]] = [list(p.package for p in packages)]
 
-    duplicates_ok = '__init__.py', '__main__.py'
-
-    for path in (p for p in ctx.paths if p.name != 'setup.py'):
+    for path in (p for p in other_files if p.name != 'setup.py'):
         for filenames, paths in zip(filename_sets, path_sets):
-            if path.name in duplicates_ok or path.name not in filenames:
+            if path.name not in filenames:
                 paths.append(path)
                 filenames.add(path.name)
                 break
@@ -118,7 +131,8 @@ def mypy(ctx: pw_presubmit.PresubmitContext) -> None:
             '--color-output',
             '--show-error-codes',
             # TODO(pwbug/146): Some imports from installed packages fail. These
-            # imports should be fixed and this option removed.
+            # imports should be fixed and this option removed. See
+            # https://mypy.readthedocs.io/en/stable/installed_packages.html
             '--ignore-missing-imports',
             env=env)
 
