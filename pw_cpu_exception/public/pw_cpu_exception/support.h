@@ -38,4 +38,7 @@ std::span<const uint8_t> RawFaultingCpuState(
 void ToString(const pw_CpuExceptionState& cpu_state,
               const std::span<char>& dest);
 
+// Logs captured CPU state using pw_log at PW_LOG_LEVEL_INFO.
+void LogCpuState(const pw_CpuExceptionState& cpu_state);
+
 }  // namespace pw::cpu_exception

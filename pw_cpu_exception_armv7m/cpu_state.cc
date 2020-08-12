@@ -19,6 +19,7 @@
 #include <span>
 
 #include "pw_cpu_exception/support.h"
+#include "pw_log/log.h"
 #include "pw_string/string_builder.h"
 
 namespace pw::cpu_exception {
@@ -68,6 +69,47 @@ void ToString(const pw_CpuExceptionState& cpu_state,
   _PW_FORMAT_REGISTER(base, r12);
 
 #undef _PW_FORMAT_REGISTER
+}
+
+// Using this function adds approximately 100 bytes to binary size.
+void LogCpuState(const pw_CpuExceptionState& cpu_state) {
+  const ArmV7mFaultRegisters& base = cpu_state.base;
+  const ArmV7mExtraRegisters& extended = cpu_state.extended;
+
+  PW_LOG_INFO("Captured CPU state:");
+
+#define _PW_LOG_REGISTER(state_section, name) \
+  PW_LOG_INFO("  %-10s 0x%08" PRIx32, #name, state_section.name)
+
+  // Other registers.
+  _PW_LOG_REGISTER(base, pc);
+  _PW_LOG_REGISTER(base, lr);
+  _PW_LOG_REGISTER(base, psr);
+  _PW_LOG_REGISTER(extended, msp);
+  _PW_LOG_REGISTER(extended, psp);
+  _PW_LOG_REGISTER(extended, exc_return);
+  _PW_LOG_REGISTER(extended, cfsr);
+  _PW_LOG_REGISTER(extended, mmfar);
+  _PW_LOG_REGISTER(extended, bfar);
+  _PW_LOG_REGISTER(extended, icsr);
+  _PW_LOG_REGISTER(extended, control);
+
+  // General purpose registers.
+  _PW_LOG_REGISTER(base, r0);
+  _PW_LOG_REGISTER(base, r1);
+  _PW_LOG_REGISTER(base, r2);
+  _PW_LOG_REGISTER(base, r3);
+  _PW_LOG_REGISTER(extended, r4);
+  _PW_LOG_REGISTER(extended, r5);
+  _PW_LOG_REGISTER(extended, r6);
+  _PW_LOG_REGISTER(extended, r7);
+  _PW_LOG_REGISTER(extended, r8);
+  _PW_LOG_REGISTER(extended, r9);
+  _PW_LOG_REGISTER(extended, r10);
+  _PW_LOG_REGISTER(extended, r11);
+  _PW_LOG_REGISTER(base, r12);
+
+#undef _PW_LOG_REGISTER
 }
 
 }  // namespace pw::cpu_exception
