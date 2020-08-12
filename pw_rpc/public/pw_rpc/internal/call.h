@@ -26,7 +26,7 @@ class Service;
 
 namespace internal {
 
-class Method;
+class BaseMethod;
 class Server;
 
 // Collects information for an ongoing RPC being processed by the server.
@@ -46,7 +46,7 @@ class ServerCall {
   constexpr ServerCall(Server& server,
                        Channel& channel,
                        Service& service,
-                       const internal::Method& method)
+                       const internal::BaseMethod& method)
       : server_(&server),
         channel_(&channel),
         service_(&service),
@@ -73,7 +73,7 @@ class ServerCall {
     return *service_;
   }
 
-  const internal::Method& method() const {
+  const internal::BaseMethod& method() const {
     PW_DCHECK_NOTNULL(method_);
     return *method_;
   }
@@ -82,7 +82,7 @@ class ServerCall {
   Server* server_;
   Channel* channel_;
   Service* service_;
-  const internal::Method* method_;
+  const internal::BaseMethod* method_;
 };
 
 }  // namespace internal

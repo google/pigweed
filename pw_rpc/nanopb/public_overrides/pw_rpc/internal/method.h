@@ -133,16 +133,16 @@ class Method : public BaseMethod {
     //
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
-    return Method({.unary =
+    return Method(id,
+                  UnaryInvoker<AllocateSpaceFor<Request<method>>(),
+                               AllocateSpaceFor<Response<method>>()>,
+                  {.unary =
                        [](ServerCall& call, const void* req, void* resp) {
                          return method(
                              call,
                              *static_cast<const Request<method>*>(req),
                              *static_cast<Response<method>*>(resp));
                        }},
-                  UnaryInvoker<AllocateSpaceFor<Request<method>>(),
-                               AllocateSpaceFor<Response<method>>()>,
-                  id,
                   request,
                   response);
   }
@@ -157,23 +157,16 @@ class Method : public BaseMethod {
     // ServerWriter class. This wrapper is stored generically in the Function
     // union, defined below.
     return Method(
+        id,
+        ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
         {.server_streaming =
              [](ServerCall& call, const void* req, BaseServerWriter& resp) {
                method(call,
                       *static_cast<const Request<method>*>(req),
                       static_cast<ServerWriter<Response<method>>&>(resp));
              }},
-        ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
-        id,
         request,
         response);
-  }
-
-  // The pw::rpc::Server calls method.Invoke to call a user-defined RPC. Invoke
-  // calls the invoker function, which encodes and decodes the request and
-  // response (if any) and calls the user-defined RPC function.
-  void Invoke(ServerCall& call, const Packet& request) const {
-    return invoker_(*this, call, request);
   }
 
   // Encodes a response protobuf with Nanopb to the provided buffer.
@@ -218,17 +211,12 @@ class Method : public BaseMethod {
     return std::max(sizeof(T), size_t(64));
   }
 
-  // The Invoker allocates request/response structs on the stack and calls the
-  // RPC according to its type (unary, server streaming, etc.).
-  using Invoker = void (&)(const Method&, ServerCall&, const Packet&);
-
-  constexpr Method(Function function,
+  constexpr Method(uint32_t id,
                    Invoker invoker,
-                   uint32_t id,
+                   Function function,
                    NanopbMessageDescriptor request,
                    NanopbMessageDescriptor response)
-      : BaseMethod(id),
-        invoker_(invoker),
+      : BaseMethod(id, invoker),
         function_(function),
         request_fields_(request),
         response_fields_(response) {}
@@ -248,7 +236,7 @@ class Method : public BaseMethod {
   // size, with maximum alignment, to avoid generating unnecessary copies of
   // this function for each request/response type.
   template <size_t request_size, size_t response_size>
-  static void UnaryInvoker(const Method& method,
+  static void UnaryInvoker(const BaseMethod& method,
                            ServerCall& call,
                            const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
@@ -256,20 +244,22 @@ class Method : public BaseMethod {
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
         response_struct{};
 
-    method.CallUnary(call, request, &request_struct, &response_struct);
+    static_cast<const Method&>(method).CallUnary(
+        call, request, &request_struct, &response_struct);
   }
 
   // Invoker function for server streaming RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
   // ServerWriter.
   template <size_t request_size>
-  static void ServerStreamingInvoker(const Method& method,
+  static void ServerStreamingInvoker(const BaseMethod& method,
                                      ServerCall& call,
                                      const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 
-    method.CallServerStreaming(call, request, &request_struct);
+    static_cast<const Method&>(method).CallServerStreaming(
+        call, request, &request_struct);
   }
 
   // Decodes a request protobuf with Nanopb to the provided buffer. Sends an
@@ -283,10 +273,6 @@ class Method : public BaseMethod {
                     const Packet& request,
                     const void* response_struct,
                     Status status) const;
-
-  // Allocates memory for the request/response structs and invokes the
-  // user-defined RPC based on its type (unary, server streaming, etc.).
-  Invoker invoker_;
 
   // Stores the user-defined RPC in a generic wrapper.
   Function function_;
@@ -302,7 +288,10 @@ template <typename T>
 Status ServerWriter<T>::Write(const T& response) {
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
-  if (auto result = method().EncodeResponse(&response, buffer); result.ok()) {
+  if (auto result =
+          static_cast<const internal::Method&>(method()).EncodeResponse(
+              &response, buffer);
+      result.ok()) {
     return ReleasePayloadBuffer(buffer.first(result.size()));
   }
 

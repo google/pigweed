@@ -16,7 +16,11 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_rpc/internal/call.h"
+
 namespace pw::rpc::internal {
+
+class Packet;
 
 // RPC server implementations provide a Method class in the
 // pw_rpc/internal/method.h header that is derived from BaseMethod.
@@ -24,17 +28,23 @@ class BaseMethod {
  public:
   constexpr uint32_t id() const { return id_; }
 
-  // Implementations must provide the Invoke method, which the Server calls:
-  //
-  // StatusWithSize Invoke(ServerCall& call,
-  //                       std::span<const std::byte> request,
-  //                       std::span<std::byte> payload_buffer) const;
+  // The pw::rpc::Server calls method.Invoke to call a user-defined RPC. Invoke
+  // calls the invoker function, which handles the RPC request and response
+  // according to the RPC type and protobuf implementation and calls the
+  // user-defined RPC function.
+  void Invoke(ServerCall& call, const Packet& request) const {
+    return invoker_(*this, call, request);
+  }
 
  protected:
-  constexpr BaseMethod(uint32_t id) : id_(id) {}
+  using Invoker = void (&)(const BaseMethod&, ServerCall&, const Packet&);
+
+  constexpr BaseMethod(uint32_t id, Invoker invoker)
+      : id_(id), invoker_(invoker) {}
 
  private:
   uint32_t id_;
+  Invoker invoker_;
 };
 
 }  // namespace pw::rpc::internal

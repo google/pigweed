@@ -28,12 +28,8 @@ namespace pw::rpc::internal {
 // channel ID, request, and payload buffer, and optionally provides a response.
 class Method : public BaseMethod {
  public:
-  constexpr Method(uint32_t id) : BaseMethod(id), last_channel_id_(0) {}
-
-  void Invoke(ServerCall& call, const Packet& request) const {
-    last_channel_id_ = call.channel().id();
-    last_request_ = request;
-  }
+  constexpr Method(uint32_t id)
+      : BaseMethod(id, InvokeForTest), last_channel_id_(0) {}
 
   uint32_t last_channel_id() const { return last_channel_id_; }
   const Packet& last_request() const { return last_request_; }
@@ -42,6 +38,13 @@ class Method : public BaseMethod {
   void set_status(Status status) { response_status_ = status; }
 
  private:
+  static void InvokeForTest(const BaseMethod& method,
+                            ServerCall& call,
+                            const Packet& request) {
+    static_cast<const Method&>(method).last_channel_id_ = call.channel().id();
+    static_cast<const Method&>(method).last_request_ = request;
+  }
+
   // Make these mutable so they can be set in the Invoke method, which is const.
   // The Method class is used exclusively in tests. Having these members mutable
   // allows tests to verify that the Method is invoked correctly.

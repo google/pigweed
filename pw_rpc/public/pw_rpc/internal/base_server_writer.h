@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
+#include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/service.h"
@@ -25,7 +26,6 @@
 
 namespace pw::rpc::internal {
 
-class Method;
 class Packet;
 
 // Internal ServerWriter base class. ServerWriters are used to stream responses.
@@ -58,7 +58,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
 
-  const Method& method() const { return call_.method(); }
+  const BaseMethod& method() const { return call_.method(); }
 
   const Channel& channel() const { return call_.channel(); }
 
