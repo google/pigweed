@@ -173,6 +173,7 @@ Status ReadByte(std::byte* dest) {
   while (true) {
     if (usart1.status & kReadDataReady) {
       *dest = static_cast<std::byte>(usart1.data_register);
+      break;
     }
   }
   return Status::OK;
