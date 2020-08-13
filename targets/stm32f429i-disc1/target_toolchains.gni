@@ -64,6 +64,9 @@ _target_config = {
     "PW_BOOT_VECTOR_TABLE_BEGIN=0x08000000",
     "PW_BOOT_VECTOR_TABLE_SIZE=512",
   ]
+
+  current_cpu = "arm"
+  current_os = ""
 }
 
 _toolchain_properties = {

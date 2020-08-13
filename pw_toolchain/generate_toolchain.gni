@@ -38,12 +38,34 @@ declare_args() {
 #   defaults: (required) A scope setting defaults to apply to GN
 #     targets in this toolchain, as described in pw_vars_default.gni
 #
+# The defaults scope should contain values for builtin GN arguments:
+#   current_cpu: The CPU of the toolchain.
+#     Well known values include "arm", "arm64", "x64", "x86", and "mips".
+#   current_os: The OS of the toolchain. Defaults to "".
+#     Well known values include "win", "mac", "linux", "android", and "ios".
+#
 template("generate_toolchain") {
+  assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
+
   # In multi-toolchain builds from the top level, we run into issues where
   # toolchains defined with this template are re-generated each time. To avoid
   # collisions, the actual toolchain is only generated for the default (dummy)
   # toolchain, and an unused target is created otherwise.
   if (current_toolchain == default_toolchain) {
+    invoker_toolchain_args = invoker.defaults
+
+    # These values should always be set as they influence toolchain
+    # behavior, but allow them to be unset as a transitional measure.
+    if (!defined(invoker_toolchain_args.current_cpu)) {
+      invoker_toolchain_args.current_cpu = ""
+    }
+    if (!defined(invoker_toolchain_args.current_os)) {
+      invoker_toolchain_args.current_os = ""
+    }
+
+    # Determine OS of toolchain, which is the builtin argument "current_os".
+    toolchain_os = invoker_toolchain_args.current_os
+
     toolchain(target_name) {
       assert(defined(invoker.cc), "toolchain is missing 'cc'")
       tool("asm") {
@@ -175,9 +197,7 @@ template("generate_toolchain") {
         "{{ldflags}}",
       ]
 
-      is_host_toolchain =
-          defined(invoker.is_host_toolchain) && invoker.is_host_toolchain
-      if (is_host_toolchain && host_os == "mac") {
+      if (toolchain_os == "mac" || toolchain_os == "ios") {
         _link_flags += [
           # Output a map file that shows symbols and their location.
           "-Wl,-map,$_link_mapfile",
@@ -192,6 +212,8 @@ template("generate_toolchain") {
         ]
 
         # TODO(hepler): Re-add gc-sections to host when supported by tokenizer.
+        is_host_toolchain =
+            defined(invoker.is_host_toolchain) && invoker.is_host_toolchain
         if (!is_host_toolchain) {
           _link_flags += [
             # Delete unreferenced sections. Helpful with -ffunction-sections.
@@ -240,7 +262,7 @@ template("generate_toolchain") {
 
         if (defined(invoker.final_binary_extension)) {
           default_output_extension = invoker.final_binary_extension
-        } else if (is_host_toolchain && host_os == "win") {
+        } else if (toolchain_os == "win") {
           default_output_extension = ".exe"
         } else {
           default_output_extension = ""
@@ -301,14 +323,13 @@ template("generate_toolchain") {
       #   pw_toolchain_SCOPE: A copy of the invoker scope that defines the
       #     toolchain. Used for generating derivative toolchains.
       #
-      assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
       toolchain_args = {
         pw_toolchain_SCOPE = {
         }
         pw_toolchain_SCOPE = {
           forward_variables_from(invoker, "*")
         }
-        forward_variables_from(invoker.defaults, "*")
+        forward_variables_from(invoker_toolchain_args, "*")
       }
     }
   } else {

@@ -44,6 +44,10 @@ _host_common = {
   if (dir_pw_third_party_nanopb != "" && !_has_nanopb) {
     pw_protobuf_GENERATORS += [ "nanopb" ]
   }
+
+  # Specify builtin GN variables.
+  current_os = host_os
+  current_cpu = host_cpu
 }
 
 # Linux-specific target configuration.
