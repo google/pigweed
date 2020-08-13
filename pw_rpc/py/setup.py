@@ -26,6 +26,5 @@ setuptools.setup(
     install_requires=[
         'protobuf',
         'pw_protobuf',
-        'pw_protobuf_compiler',
     ],
 )

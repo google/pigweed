@@ -20,6 +20,7 @@ from typing import Collection, Dict, Iterable, Iterator, List, NamedTuple
 from typing import Optional
 
 from pw_rpc import descriptors, packets
+from pw_rpc.packet_pb2 import RpcPacket
 from pw_rpc.packets import PacketType
 from pw_rpc.descriptors import Channel, Service, Method
 from pw_status import Status
@@ -63,7 +64,10 @@ class PendingRpcs:
                         'Cancel the RPC before invoking it again')
 
         _LOG.debug('Starting %s', rpc)
-        rpc.channel.output(packets.encode_request(rpc, request))
+        # TODO(hepler): Remove `type: ignore` on this and other lines when
+        #     https://github.com/python/mypy/issues/5485 is fixed
+        rpc.channel.output(  # type: ignore
+            packets.encode_request(rpc, request))
 
     def cancel(self, rpc: PendingRpc) -> bool:
         """Cancels the RPC, including sending a CANCEL packet.
@@ -78,7 +82,7 @@ class PendingRpcs:
             return False
 
         if rpc.method.type is not Method.Type.UNARY:
-            rpc.channel.output(packets.encode_cancel(rpc))
+            rpc.channel.output(packets.encode_cancel(rpc))  # type: ignore
 
         return True
 
@@ -313,7 +317,7 @@ class Client:
         try:
             rpc = self._look_up_service_and_method(packet, channel_client)
         except ValueError as err:
-            channel_client.channel.output(
+            channel_client.channel.output(  # type: ignore
                 packets.encode_client_error(packet, Status.NOT_FOUND))
             _LOG.warning('%s', err)
             return Status.OK
@@ -336,7 +340,7 @@ class Client:
         try:
             context = self._rpcs.get_pending(rpc, status)
         except KeyError:
-            channel_client.channel.output(
+            channel_client.channel.output(  # type: ignore
                 packets.encode_client_error(packet,
                                             Status.FAILED_PRECONDITION))
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
@@ -352,7 +356,7 @@ class Client:
         return Status.OK
 
     def _look_up_service_and_method(
-            self, packet: packets.RpcPacket,
+            self, packet: RpcPacket,
             channel_client: ChannelClient) -> PendingRpc:
         try:
             service = self.services[packet.service_id]

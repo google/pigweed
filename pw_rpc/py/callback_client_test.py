@@ -19,7 +19,7 @@ from unittest import mock
 from typing import List, Tuple
 
 from pw_protobuf_compiler import python_protos
-from pw_rpc import callback_client, client, packets
+from pw_rpc import callback_client, client, packet_pb2, packets
 from pw_status import Status
 
 TEST_PROTO_1 = """\
@@ -65,7 +65,7 @@ class CallbackClientImplTest(unittest.TestCase):
             callback_client.Impl(), [client.Channel(1, self._handle_request)],
             self._protos.modules())
 
-        self._last_request: packets.RpcPacket = None
+        self._last_request: packet_pb2.RpcPacket = None
         self._next_packets: List[Tuple[bytes, Status]] = []
         self._send_responses_on_request = True
 
@@ -90,12 +90,12 @@ class CallbackClientImplTest(unittest.TestCase):
             payload = response.SerializeToString()
 
         self._next_packets.append(
-            (packets.RpcPacket(type=packets.PacketType.RESPONSE,
-                               channel_id=channel_id,
-                               service_id=service_id,
-                               method_id=method_id,
-                               status=status.value,
-                               payload=payload).SerializeToString(),
+            (packet_pb2.RpcPacket(type=packets.PacketType.RESPONSE,
+                                  channel_id=channel_id,
+                                  service_id=service_id,
+                                  method_id=method_id,
+                                  status=status.value,
+                                  payload=payload).SerializeToString(),
              process_status))
 
     def _enqueue_stream_end(self,
@@ -104,11 +104,11 @@ class CallbackClientImplTest(unittest.TestCase):
                             status: Status = Status.OK,
                             process_status=Status.OK):
         self._next_packets.append(
-            (packets.RpcPacket(type=packets.PacketType.SERVER_STREAM_END,
-                               channel_id=channel_id,
-                               service_id=method.service.id,
-                               method_id=method.id,
-                               status=status.value).SerializeToString(),
+            (packet_pb2.RpcPacket(type=packets.PacketType.SERVER_STREAM_END,
+                                  channel_id=channel_id,
+                                  service_id=method.service.id,
+                                  method_id=method.id,
+                                  status=status.value).SerializeToString(),
              process_status))
 
     def _handle_request(self, data: bytes):
