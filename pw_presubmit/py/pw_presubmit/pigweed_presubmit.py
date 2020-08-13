@@ -188,26 +188,31 @@ the License.
 """.splitlines())
 
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
+    # Configuration
     r'^(?:.+/)?\..+$',
+    r'\bPW_PLUGINS$',
+    # Metadata
     r'^docker/tag$',
     r'\bAUTHORS$',
     r'\bLICENSE$',
     r'\bOWNERS$',
-    r'\bPW_PLUGINS$',
-    r'\.elf$',
-    r'\.gif$',
-    r'\.jpg$',
-    r'\.json$',
-    r'\.md$',
-    r'\.png$',
-    r'\.rst$',
     r'\brequirements.txt$',
     r'\bgo.(mod|sum)$',
     r'\bpackage.json$',
     r'\byarn.lock$',
-    r'\bpw_web_ui/types/serial.d.ts$',
+    # Data files
+    r'\.elf$',
+    r'\.gif$',
+    r'\.jpg$',
+    r'\.json$',
+    r'\.png$',
+    # Documentation
+    r'\.md$',
+    r'\.rst$',
+    # Generated protobuf files
     r'\.pb\.h$',
     r'\.pb\.c$',
+    r'\_pb2.pyi?$',
 )
 
 
@@ -259,7 +264,6 @@ def copyright_notice(ctx: PresubmitContext):
     errors = []
 
     for path in ctx.paths:
-        _LOG.debug('Checking %s', path)
 
         if path.stat().st_size == 0:
             continue  # Skip empty files
@@ -269,12 +273,12 @@ def copyright_notice(ctx: PresubmitContext):
              line) = copyright_read_first_line(file)
 
             if not line:
-                _LOG.debug('%s: invalid first line', path)
+                _LOG.warning('%s: invalid first line', path)
                 errors.append(path)
                 continue
 
             if not (comment or end_block_comment):
-                _LOG.debug('%s: invalid first line %r', path, line)
+                _LOG.warning('%s: invalid first line %r', path, line)
                 errors.append(path)
                 continue
 
@@ -290,8 +294,8 @@ def copyright_notice(ctx: PresubmitContext):
                     expected_line = (comment + ' ' + expected).rstrip() + '\n'
 
                 if expected_line != actual:
-                    _LOG.debug('  bad line: %r', actual)
-                    _LOG.debug('  expected: %r', expected_line)
+                    _LOG.warning('  bad line: %r', actual)
+                    _LOG.warning('  expected: %r', expected_line)
                     errors.append(path)
                     break
 
