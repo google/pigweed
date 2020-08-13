@@ -198,8 +198,7 @@ ProfileServer::~ProfileServer() {
 }
 
 void ProfileServer::Advertise(
-    std::vector<fidlbredr::ServiceDefinition> definitions,
-    fidlbredr::SecurityRequirements requirements, fidlbredr::ChannelParameters parameters,
+    std::vector<fidlbredr::ServiceDefinition> definitions, fidlbredr::ChannelParameters parameters,
     fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver) {
   // TODO: check that the service definition is valid for useful error messages
 
@@ -315,10 +314,9 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   };
   ZX_DEBUG_ASSERT(adapter());
 
-  // TODO(54140): Use FIDL SecurityRequirements parameter here.
-  bt::gap::BrEdrSecurityRequirements sec_reqs{.authentication = false, .secure_connections = false};
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      id, psm, sec_reqs, FidlToChannelParameters(parameters), std::move(connected_cb));
+      id, psm, fidl_helpers::FidlToBrEdrSecurityRequirements(parameters),
+      FidlToChannelParameters(parameters), std::move(connected_cb));
   if (!connecting) {
     callback(fit::error(fuchsia::bluetooth::ErrorCode::NOT_FOUND));
   }

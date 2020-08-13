@@ -127,8 +127,8 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
 
   services.emplace_back(std::move(def));
 
-  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
-                      fidlbredr::ChannelParameters(), std::move(receiver_handle));
+  client()->Advertise(std::move(services), fidlbredr::ChannelParameters(),
+                      std::move(receiver_handle));
 
   RunLoopUntilIdle();
 
@@ -252,7 +252,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   // Expect a non-empty channel result.
   auto sock_cb = [](auto result) {
     EXPECT_TRUE(result.is_response());
-    EXPECT_TRUE(!result.response().ResultValue_().IsEmpty());
+    EXPECT_FALSE(result.response().channel.IsEmpty());
   };
   // Initiates pairing
 
@@ -267,6 +267,41 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
 
   client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
   RunLoopUntilIdle();
+}
+
+TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
+       ConnectWithAuthenticationRequiredButLinkKeyNotAuthenticatedFails) {
+  auto pairing_delegate =
+      std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kNoInputNoOutput);
+  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  pairing_delegate->SetCompletePairingCallback(
+      [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  fidlbredr::SecurityRequirements security;
+  security.set_authentication_required(true);
+  fidlbredr::ChannelParameters chan_params;
+  chan_params.set_security_requirements(std::move(security));
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(kPSM);
+  l2cap_params.set_parameters(std::move(chan_params));
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  size_t sock_cb_count = 0;
+  auto sock_cb = [&](auto result) {
+    sock_cb_count++;
+    ASSERT_TRUE(result.is_err());
+    EXPECT_EQ(fuchsia::bluetooth::ErrorCode::FAILED, result.err());
+  };
+
+  fuchsia::bluetooth::PeerId peer_id{peer()->identifier().value()};
+
+  // Initiates pairing.
+  // FakeController will create an unauthenticated key.
+  client()->Connect(peer_id, std::move(conn_params), std::move(sock_cb));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(1u, sock_cb_count);
 }
 
 // Tests receiving an empty Channel results in an error propagated through the callback.
@@ -330,8 +365,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
 
-  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
-                      std::move(fidl_chan_params), std::move(connect_receiver_handle));
+  client()->Advertise(std::move(services), std::move(fidl_chan_params),
+                      std::move(connect_receiver_handle));
   RunLoopUntilIdle();
 
   EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
@@ -442,7 +477,6 @@ INSTANTIATE_TEST_SUITE_P(FIDL_ProfileServerTest_ConnectedPeer, PriorityTest,
 
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
   fidlbredr::ChannelParameters fidl_chan_params;
-  fidl_chan_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
 
   constexpr uint16_t kTxMtu = bt::l2cap::kMinACLMTU;
 
@@ -458,8 +492,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
   std::vector<fidlbredr::ServiceDefinition> services;
   services.emplace_back(MakeFIDLServiceDefinition());
 
-  client()->Advertise(std::move(services), fidlbredr::SecurityRequirements(),
-                      std::move(fidl_chan_params), std::move(connect_receiver_handle));
+  client()->Advertise(std::move(services), std::move(fidl_chan_params),
+                      std::move(connect_receiver_handle));
   RunLoopUntilIdle();
 
   std::optional<fidlbredr::Channel> channel;

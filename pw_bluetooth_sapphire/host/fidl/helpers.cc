@@ -31,6 +31,7 @@ namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace fsys = fuchsia::bluetooth::sys;
+namespace fbredr = fuchsia::bluetooth::bredr;
 
 namespace bthost {
 namespace fidl_helpers {
@@ -976,6 +977,22 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
     }
   }
   return fit::ok(std::move(rec));
+}
+
+bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
+    const fbredr::ChannelParameters& fidl) {
+  bt::gap::BrEdrSecurityRequirements requirements{.authentication = false,
+                                                  .secure_connections = false};
+  if (fidl.has_security_requirements()) {
+    if (fidl.security_requirements().has_authentication_required()) {
+      requirements.authentication = fidl.security_requirements().authentication_required();
+    }
+
+    if (fidl.security_requirements().has_secure_connections_required()) {
+      requirements.secure_connections = fidl.security_requirements().secure_connections_required();
+    }
+  }
+  return requirements;
 }
 
 }  // namespace fidl_helpers

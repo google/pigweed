@@ -17,6 +17,7 @@ namespace fble = fuchsia::bluetooth::le;
 namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace fbg = fuchsia::bluetooth::gatt;
+namespace fbredr = fuchsia::bluetooth::bredr;
 
 namespace bthost {
 namespace fidl_helpers {
@@ -511,6 +512,44 @@ TEST(FidlHelpersTest, ServiceDefinitionToServiceRecord) {
   // Confirm additional attributes
   EXPECT_TRUE(rec.value().HasAttribute(valid_att_id));
   EXPECT_FALSE(rec.value().HasAttribute(invalid_att_id));
+}
+
+TEST(FidlHelpersTest, FidlToBrEdrSecurityRequirements) {
+  fbredr::ChannelParameters params;
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
+
+  params.set_security_requirements(fbredr::SecurityRequirements());
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
+
+  params.mutable_security_requirements()->set_secure_connections_required(false);
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
+  params.mutable_security_requirements()->clear_secure_connections_required();
+
+  params.mutable_security_requirements()->set_authentication_required(false);
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
+
+  params.mutable_security_requirements()->set_secure_connections_required(false);
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = false, .secure_connections = false}));
+
+  params.mutable_security_requirements()->set_authentication_required(true);
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = true, .secure_connections = false}));
+
+  params.mutable_security_requirements()->set_secure_connections_required(true);
+  EXPECT_EQ(
+      FidlToBrEdrSecurityRequirements(params),
+      (bt::gap::BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
 }
 
 }  // namespace

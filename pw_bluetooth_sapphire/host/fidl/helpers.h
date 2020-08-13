@@ -26,6 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
 
@@ -152,6 +153,9 @@ bt::gatt::ReliableMode ReliableModeFromFidl(
 // Constructs a sdp::ServiceRecord from a FIDL ServiceDefinition |definition|
 fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
     const fuchsia::bluetooth::bredr::ServiceDefinition& definition);
+
+bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
+    const fuchsia::bluetooth::bredr::ChannelParameters& fidl);
 
 }  // namespace fidl_helpers
 }  // namespace bthost

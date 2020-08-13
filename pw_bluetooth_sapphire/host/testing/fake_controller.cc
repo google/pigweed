@@ -987,7 +987,7 @@ void FakeController::OnIOCapabilityRequestReplyCommand(
   // to just UserConfirmationRequestEventCode.
   io_response.io_capability = hci::IOCapability::kNoInputNoOutput;
   io_response.oob_data_present = 0x00;  // OOB auth data not present
-  io_response.auth_requirements = hci::AuthRequirements::kMITMGeneralBonding;
+  io_response.auth_requirements = hci::AuthRequirements::kGeneralBonding;
   SendEvent(hci::kIOCapabilityResponseEventCode, BufferView(&io_response, sizeof(io_response)));
 
   // Event type based on |params.io_capability| and |io_response.io_capability|.

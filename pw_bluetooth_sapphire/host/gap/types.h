@@ -13,6 +13,10 @@ namespace bt::gap {
 struct BrEdrSecurityRequirements {
   bool authentication;
   bool secure_connections;
+
+  bool operator==(const BrEdrSecurityRequirements& rhs) const {
+    return authentication == rhs.authentication && secure_connections == rhs.secure_connections;
+  }
 };
 
 // Returns true if a key's security properties satisfy the specified security requirements.
