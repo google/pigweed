@@ -200,8 +200,7 @@ template("generate_toolchain") {
         }
       }
 
-      _link_group =
-          defined(invoker.link_group) && invoker.link_group && host_os != "mac"
+      _link_group = defined(invoker.link_group) && invoker.link_group
       if (_link_group) {
         _link_flags += [ "-Wl,--start-group" ]
       }
