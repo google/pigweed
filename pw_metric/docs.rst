@@ -615,6 +615,102 @@ Below is an example that **is incorrect**. Don't do what follows!
   structured upfront, then manipulated during a device's active phase. They do
   not support destruction.
 
+-----------------
+Exporting metrics
+-----------------
+Collecting metrics on a device is not useful without a mechanism to export
+those metrics for analysis and debugging. ``pw_metric`` offers an optional RPC
+service library (``:metric_service_nanopb``) that enables exporting a
+user-supplied set of on-device metrics via RPC. This facility is intended to
+function from the early stages of device bringup through production in the
+field.
+
+The metrics are fetched by calling the ``MetricService.Get`` RPC method, which
+streams all registered metrics to the caller in batches (server streaming RPC).
+Batching the returned metrics avoids requiring a large buffer or large RPC MTU.
+
+The returned metric objects have flattened paths to the root. For example, the
+returned metrics (post detokenization and jsonified) might look something like:
+
+.. code:: none
+
+  {
+    "/i2c1/failed_txns": 17,
+    "/i2c1/total_txns": 2013,
+    "/i2c1/gyro/resets": 24,
+    "/i2c1/gyro/hangs": 1,
+    "/spi1/thermocouple/reads": 242,
+    "/spi1/thermocouple/temp_celcius": 34.52,
+  }
+
+Note that there is no nesting of the groups; the nesting is implied from the
+path.
+
+RPC service setup
+-----------------
+To expose a ``MetricService`` in your application, do the following:
+
+1. Define metrics around the system, and put them in a group or list of
+   metrics. Easy choices include for example the ``global_groups`` and
+   ``global_metrics`` variables; or creat your own.
+2. Create an instance of ``pw::metric::MetricService``.
+3. Register the service with your RPC server.
+
+For example:
+
+.. code::
+
+   #include "pw_rpc/server.h"
+   #include "pw_metric/metric.h"
+   #include "pw_metric/global.h"
+   #include "pw_metric/metric_service_nanopb.h"
+
+   // Note: You must customize the RPC server setup; see pw_rpc.
+   Channel channels[] = {
+    Channel::Create<1>(&uart_output),
+   };
+   Server server(channels);
+
+   // Metric service instance, pointing to the global metric objects.
+   // This could also point to custom per-product or application objects.
+   pw::metric::MetricService metric_service(
+       pw::metric::global_metrics,
+       pw::metric::global_groups);
+
+   void RegisterServices() {
+     server.RegisterService(metric_service);
+     // Register other services here.
+   }
+
+   void main() {
+     // ... system initialization ...
+
+     RegisterServices();
+
+     // ... start your applcation ...
+   }
+
+.. attention::
+
+  Take care when exporting metrics. Ensure **appropriate access control** is in
+  place. In some cases it may make sense to entirely disable metrics export for
+  production builds. Although reading metrics via RPC won't influence the
+  device, in some cases the metrics could expose sensitive information if
+  product owners are not careful.
+
+.. attention::
+
+  **MetricService::Get is a synchronous RPC method**
+
+  Calls to is ``MetricService::Get`` are blocking and will send all metrics
+  immediately, even though it is a server-streaming RPC. This will work fine if
+  the device doesn't have too many metics, or doesn't have concurrent RPCs like
+  logging, but could be a problem in some cases.
+
+  We plan to offer an async version where the application is responsible for
+  pumping the metrics into the streaming response. This gives flow control to
+  the application.
+
 ----------------
 Design tradeoffs
 ----------------
@@ -695,8 +791,10 @@ Roadmap & Status
   metrics are enabled or disabled at compile time. This may rely on of C++20's
   support for zero-sized members to fully remove the cost.
 
-- **Exposing metrics via RPC** - We plan to add a ``pw_rpc`` service to export
-  metrics
+- **Async RCPC** - The current RPC service exports the metrics by streaming
+  them to the client in batches. However, the current solution streams all the
+  metrics to completion; this may block the RPC thread. In the future we will
+  have an async solution where the user is in control of flow priority.
 
 - **Timer integration** - We would like to add a stopwatch type mechanism to
   time multiple in-flight events.

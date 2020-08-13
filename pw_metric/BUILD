@@ -50,6 +50,17 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "metric_service_nanopb",
+    hdrs = [
+        "public/pw_metric/metric_service_nanopb.h",
+    ],
+    srcs = [ "metric_service_nanopb.cc" ],
+    deps = [
+        ":metric",
+    ],
+)
+
 pw_cc_test(
     name = "metric_test",
     srcs = [
@@ -67,5 +78,15 @@ pw_cc_test(
     ],
     deps = [
         ":global",
+    ],
+)
+
+pw_cc_test(
+    name = "metric_service_nanopb_test",
+    srcs = [
+        "metric_service_nanopb_test.cc",
+    ],
+    deps = [
+        ":metric_service_nanopb",
     ],
 )
