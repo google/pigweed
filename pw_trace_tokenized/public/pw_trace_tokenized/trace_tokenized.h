@@ -167,10 +167,13 @@ class TokenizedTrace {
 //    "1|2|test_module|group|label|%d"
 // The trace_id, and data value are runtime values and not included in the
 // token string.
-#define PW_TRACE_REF(event_type, module, label, flags, group)   \
-  PW_TOKENIZE_STRING(PW_STRINGIFY(event_type) "|" PW_STRINGIFY( \
-      flags) "|" module "|" group "|" label)
+#define PW_TRACE_REF(event_type, module, label, flags, group)          \
+  PW_TOKENIZE_STRING_DOMAIN("trace",                                   \
+                            PW_STRINGIFY(event_type) "|" PW_STRINGIFY( \
+                                flags) "|" module "|" group "|" label)
 
-#define PW_TRACE_REF_DATA(event_type, module, label, flags, group, type) \
-  PW_TOKENIZE_STRING(PW_STRINGIFY(event_type) "|" PW_STRINGIFY(          \
-      flags) "|" module "|" group "|" label "|" type)
+#define PW_TRACE_REF_DATA(event_type, module, label, flags, group, type)    \
+  PW_TOKENIZE_STRING_DOMAIN(                                                \
+      "trace",                                                              \
+      PW_STRINGIFY(event_type) "|" PW_STRINGIFY(flags) "|" module "|" group \
+                                                       "|" label "|" type)
