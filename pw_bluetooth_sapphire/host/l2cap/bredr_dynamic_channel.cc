@@ -726,7 +726,7 @@ bool BrEdrDynamicChannel::AcceptedChannelModesAreConsistent() const {
 }
 
 ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
-    const ChannelConfiguration& config) {
+    const ChannelConfiguration& config) const {
   // TODO(fxbug.dev/40053): reject reconfiguring MTU if mode is Enhanced Retransmission or Streaming
   // mode.
   ChannelConfiguration unacceptable;
@@ -766,7 +766,9 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
                local_cid());
         unacceptable.set_retransmission_flow_control_option(
             ChannelConfiguration::RetransmissionAndFlowControlOption::MakeBasicMode());
+        break;
       }
+      unacceptable.set_retransmission_flow_control_option(CheckForUnacceptableErtmOptions(config));
       break;
     default:
       bt_log(DEBUG, "l2cap-bredr",
@@ -792,6 +794,32 @@ ChannelConfiguration BrEdrDynamicChannel::CheckForUnacceptableConfigReqOptions(
   }
 
   return unacceptable;
+}
+
+std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption>
+BrEdrDynamicChannel::CheckForUnacceptableErtmOptions(const ChannelConfiguration& config) const {
+  ZX_ASSERT(config.retransmission_flow_control_option()->mode() ==
+            ChannelMode::kEnhancedRetransmission);
+  ZX_ASSERT(local_config().retransmission_flow_control_option()->mode() ==
+            ChannelMode::kEnhancedRetransmission);
+
+  std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption> unacceptable_rfc_option;
+  const auto& peer_rfc_option = config.retransmission_flow_control_option().value();
+
+  // TxWindow has a range of 1 to 63 (Core Spec v5.0, Vol 3, Part A, Sec 5.4).
+  if (peer_rfc_option.tx_window_size() < kErtmMinUnackedInboundFrames) {
+    bt_log(DEBUG, "l2cap-bredr", "Channel %#.4x: rejecting too-small ERTM TxWindow of %hhu",
+           local_cid(), peer_rfc_option.tx_window_size());
+    unacceptable_rfc_option = unacceptable_rfc_option.value_or(peer_rfc_option);
+    unacceptable_rfc_option->set_tx_window_size(kErtmMinUnackedInboundFrames);
+  } else if (peer_rfc_option.tx_window_size() > kErtmMaxUnackedInboundFrames) {
+    bt_log(DEBUG, "l2cap-bredr", "Channel %#.4x: rejecting too-small ERTM TxWindow of %hhu",
+           local_cid(), peer_rfc_option.tx_window_size());
+    unacceptable_rfc_option = unacceptable_rfc_option.value_or(peer_rfc_option);
+    unacceptable_rfc_option->set_tx_window_size(kErtmMaxUnackedInboundFrames);
+  }
+
+  return unacceptable_rfc_option;
 }
 
 bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(

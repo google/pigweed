@@ -253,7 +253,13 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // is a corresponding option with a value that would have been accepted if sent in the
   // original request.
   [[nodiscard]] ChannelConfiguration CheckForUnacceptableConfigReqOptions(
-      const ChannelConfiguration& config);
+      const ChannelConfiguration& config) const;
+
+  // Checks parameters for Enhanced Retransmission Mode in the Retransmission & Flow Control and
+  // if there are any unacceptable values, returns an option containing values that would have been
+  // accepted. Otherwise, returns std::nullopt.
+  [[nodiscard]] std::optional<ChannelConfiguration::RetransmissionAndFlowControlOption>
+  CheckForUnacceptableErtmOptions(const ChannelConfiguration& config) const;
 
   // Try to recover from a configuration response with the "Unacceptable Parameters" result.
   // Returns true if the negative reponse could be recovered from, and false otherwise (in which

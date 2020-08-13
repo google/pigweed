@@ -2102,6 +2102,74 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       SendUnacceptableParamsResponseWhenPeerRequestErtmWithZeroTxWindow) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  constexpr uint8_t kMaxTransmit = 31;
+  constexpr auto kMps = kMaxTxPduPayloadSize;
+
+  // TxWindow of zero is out of range.
+  const auto kInboundConfigReqWithZeroTxWindow =
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
+                                 /*tx_window=*/0, /*max_transmit=*/kMaxTransmit,
+                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
+      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+      ChannelMode::kEnhancedRetransmission, /*tx_window=*/1, /*max_transmit=*/kMaxTransmit,
+      /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithZeroTxWindow,
+                                       kOutboundConfigRsp));
+}
+
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       SendUnacceptableParamsResponseWhenPeerRequestErtmWithOversizeTxWindow) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  constexpr uint8_t kMaxTransmit = 31;
+  constexpr auto kMps = kMaxTxPduPayloadSize;
+
+  // TxWindow of 200 is out of range.
+  const auto kInboundConfigReqWithOversizeTxWindow =
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
+                                 /*tx_window=*/200, /*max_transmit=*/kMaxTransmit,
+                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
+      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+      ChannelMode::kEnhancedRetransmission, /*tx_window=*/63, /*max_transmit=*/kMaxTransmit,
+      /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithOversizeTxWindow,
+                                       kOutboundConfigRsp));
+}
+
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
 // the local device must accept. These modes are incompatible, so the local device should
 // default to Basic Mode.

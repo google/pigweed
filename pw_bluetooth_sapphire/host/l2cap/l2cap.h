@@ -107,6 +107,10 @@ constexpr uint16_t kMaxMTU = 0xFFFF;
 // The maximum length of a L2CAP B-frame information payload.
 constexpr uint16_t kMaxBasicFramePayloadSize = 65535;
 
+// See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. This is the minimum permissible value of
+// "TxWindow size" in the Retransmission & Flow Control Configuration Option.
+static constexpr uint8_t kErtmMinUnackedInboundFrames = 1;
+
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. We do not have a limit on inbound data that we
 // can receive in bursts based on memory constraints or other considerations, so this is simply the
 // maximum permissible value.
