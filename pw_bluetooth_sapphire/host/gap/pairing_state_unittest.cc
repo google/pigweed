@@ -6,11 +6,13 @@
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
+#include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
 namespace gap {
@@ -31,11 +33,15 @@ const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR, {0x99, 0x88, 0x77,
 const auto kTestLocalIoCap = sm::IOCapability::kDisplayYesNo;
 const auto kTestPeerIoCap = IOCapability::kDisplayOnly;
 const uint32_t kTestPasskey = 123456;
-const auto kTestLinkKeyValue = Random<UInt128>();
+const auto kTestLinkKeyValue = UInt128{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const hci::LinkKey kTestLinkKey(kTestLinkKeyValue, 0, 0);
 const auto kTestUnauthenticatedLinkKeyType = hci::LinkKeyType::kUnauthenticatedCombination192;
 const auto kTestAuthenticatedLinkKeyType = hci::LinkKeyType::kAuthenticatedCombination192;
 const auto kTestLegacyLinkKeyType = hci::LinkKeyType::kCombination;
 const auto kTestChangedLinkKeyType = hci::LinkKeyType::kChangedCombination;
+const BrEdrSecurityRequirements kNoSecurityRequirements{.authentication = false,
+                                                        .secure_connections = false};
 
 void NoOpStatusCallback(hci::ConnectionHandle, hci::Status){};
 void NoOpUserConfirmationCallback(bool){};
@@ -67,56 +73,95 @@ FakeConnection MakeFakeConnection() {
                         hci::Connection::Role::kMaster, kLocalAddress, kPeerAddress);
 }
 
-TEST(GAP_PairingStateTest, PairingStateStartsAsResponder) {
+class GAP_PairingStateTest : public ::gtest::TestLoopFixture {
+ public:
+  GAP_PairingStateTest() = default;
+  virtual ~GAP_PairingStateTest() = default;
+
+  void SetUp() override {
+    peer_cache_ = std::make_unique<PeerCache>();
+    peer_ = peer_cache_->NewPeer(kPeerAddress, true);
+
+    auth_request_count_ = 0;
+    send_auth_request_callback_ = [this]() { auth_request_count_++; };
+  }
+
+  void TearDown() override {
+    peer_ = nullptr;
+    peer_cache_ = nullptr;
+  }
+
+  fit::closure MakeAuthRequestCallback() { return send_auth_request_callback_.share(); }
+
+  PeerCache* peer_cache() const { return peer_cache_.get(); }
+  Peer* peer() const { return peer_; }
+  size_t auth_request_count() const { return auth_request_count_; }
+
+ private:
+  inspect::Inspector inspector_;
+  std::unique_ptr<PeerCache> peer_cache_;
+  Peer* peer_;
+  size_t auth_request_count_;
+  fit::closure send_auth_request_callback_;
+};
+
+TEST_F(GAP_PairingStateTest, PairingStateStartsAsResponder) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 }
 
-TEST(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
+TEST_F(GAP_PairingStateTest, PairingStateRemainsResponderAfterPeerIoCapResponse) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  EXPECT_EQ(0u, auth_request_count());
   EXPECT_FALSE(pairing_state.initiator());
 }
 
-TEST(GAP_PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
+TEST_F(GAP_PairingStateTest, PairingStateBecomesInitiatorAfterLocalPairingInitiated) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
-  EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
-            pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
 }
 
-TEST(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
+TEST_F(GAP_PairingStateTest, PairingStateSendsAuthenticationRequestExactlyOnce) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
-  EXPECT_EQ(PairingState::InitiatorAction::kSendAuthenticationRequest,
-            pairing_state.InitiatePairing(NoOpStatusCallback));
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
 
-  EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
-            pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(1u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
 }
 
-TEST(GAP_PairingStateTest,
-     PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
+TEST_F(GAP_PairingStateTest,
+       PairingStateRemainsResponderIfPairingInitiatedWhileResponderPairingInProgress) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
 
-  EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
-            pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_EQ(0u, auth_request_count());
   EXPECT_FALSE(pairing_state.initiator());
 }
 
-TEST(GAP_PairingStateTest, StatusCallbackMayDestroyPairingState) {
+TEST_F(GAP_PairingStateTest, StatusCallbackMayDestroyPairingState) {
   auto connection = MakeFakeConnection();
   std::unique_ptr<PairingState> pairing_state;
   bool cb_called = false;
@@ -127,7 +172,9 @@ TEST(GAP_PairingStateTest, StatusCallbackMayDestroyPairingState) {
     // Note that this lambda is owned by the PairingState so its captures are invalid after this.
     pairing_state = nullptr;
   };
-  pairing_state = std::make_unique<PairingState>(kTestPeerId, &connection, status_cb);
+
+  pairing_state = std::make_unique<PairingState>(kTestPeerId, &connection, peer_cache(),
+                                                 MakeAuthRequestCallback(), status_cb);
 
   // Unexpected event that should cause the status callback to be called with an error.
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
@@ -135,10 +182,10 @@ TEST(GAP_PairingStateTest, StatusCallbackMayDestroyPairingState) {
   EXPECT_TRUE(cb_called);
 }
 
-TEST(GAP_PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
+TEST_F(GAP_PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
   auto connection = MakeFakeConnection();
-  std::unique_ptr<PairingState> pairing_state =
-      std::make_unique<PairingState>(kTestPeerId, &connection, NoOpStatusCallback);
+  std::unique_ptr<PairingState> pairing_state = std::make_unique<PairingState>(
+      kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(), NoOpStatusCallback);
   bool cb_called = false;
   auto status_cb = [&pairing_state, &cb_called](hci::ConnectionHandle handle, hci::Status status) {
     EXPECT_FALSE(status.is_success());
@@ -149,7 +196,7 @@ TEST(GAP_PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
   };
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state->SetPairingDelegate(pairing_delegate.GetWeakPtr());
-  static_cast<void>(pairing_state->InitiatePairing(status_cb));
+  pairing_state->InitiatePairing(kNoSecurityRequirements, status_cb);
 
   // Unexpected event that should cause the status callback to be called with an error.
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
@@ -181,7 +228,7 @@ class TestStatusHandler final {
   std::optional<hci::Status> status_;
 };
 
-TEST(GAP_PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
+TEST_F(GAP_PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   TestStatusHandler handler;
   EXPECT_EQ(0, handler.call_count());
   EXPECT_FALSE(handler.status());
@@ -198,10 +245,11 @@ TEST(GAP_PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   EXPECT_EQ(hci::Status(hci::StatusCode::kPairingNotAllowed), *handler.status());
 }
 
-TEST(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
+TEST_F(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
   TestStatusHandler link_status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, link_status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             link_status_handler.MakeStatusCallback());
 
   // Unexpected event that should cause the status callback to be called with an error.
   pairing_state.OnUserPasskeyNotification(kTestPasskey);
@@ -214,7 +262,8 @@ TEST(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWith
 
   // Try to initiate pairing again.
   TestStatusHandler pairing_status_handler;
-  static_cast<void>(pairing_state.InitiatePairing(pairing_status_handler.MakeStatusCallback()));
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                pairing_status_handler.MakeStatusCallback());
 
   // The status callback for this attempt should be notified with an error.
   EXPECT_EQ(1, pairing_status_handler.call_count());
@@ -224,15 +273,17 @@ TEST(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWith
   EXPECT_EQ(hci::Status(HostError::kNotReady), *pairing_status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
+TEST_F(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
 
@@ -243,10 +294,11 @@ TEST(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallbac
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
+TEST_F(GAP_PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   ASSERT_FALSE(connection.ltk().has_value());
 
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
@@ -259,10 +311,11 @@ TEST(GAP_PairingStateTest, PeerMayNotChangeLinkKeyWhenNotEncrypted) {
   EXPECT_EQ(HostError::kInsufficientSecurity, status_handler.status()->error());
 }
 
-TEST(GAP_PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
+TEST_F(GAP_PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   connection.set_bredr_link_key(hci::LinkKey(UInt128(), 0, 0), kTestAuthenticatedLinkKeyType);
 
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestChangedLinkKeyType);
@@ -277,6 +330,7 @@ TEST(GAP_PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
 // Inject events that occur during the course of a successful pairing as an initiator, but not
 // including enabling link encryption.
 void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
+  static_cast<void>(pairing_state->OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -285,15 +339,16 @@ void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
   pairing_state->OnAuthenticationComplete(hci::StatusCode::kSuccess);
 }
 
-TEST(GAP_PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
+TEST_F(GAP_PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   AdvanceToEncryptionAsInitiator(&pairing_state);
 
   ASSERT_EQ(0, status_handler.call_count());
@@ -307,15 +362,16 @@ TEST(GAP_PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
   EXPECT_EQ(hci::Status(), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
+TEST_F(GAP_PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
   AdvanceToEncryptionAsInitiator(&pairing_state);
 
   ASSERT_EQ(0, status_handler.call_count());
@@ -329,15 +385,16 @@ TEST(GAP_PairingStateTest, EncryptionChangeErrorTriggersStatusCallbackWithError)
   EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
+TEST_F(GAP_PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(NoOpStatusCallback));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   AdvanceToEncryptionAsInitiator(&pairing_state);
 
   ASSERT_EQ(0, status_handler.call_count());
@@ -351,21 +408,23 @@ TEST(GAP_PairingStateTest, EncryptionChangeToDisabledTriggersStatusCallbackWithE
   EXPECT_EQ(hci::Status(HostError::kFailed), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
+TEST_F(GAP_PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
   TestStatusHandler status_handler_0;
-  static_cast<void>(pairing_state.InitiatePairing(status_handler_0.MakeStatusCallback()));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler_0.MakeStatusCallback());
   AdvanceToEncryptionAsInitiator(&pairing_state);
   EXPECT_TRUE(pairing_state.initiator());
 
   // Try to initiate pairing while pairing is in progress.
   TestStatusHandler status_handler_1;
-  static_cast<void>(pairing_state.InitiatePairing(status_handler_1.MakeStatusCallback()));
+  static_cast<void>(pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                                  status_handler_1.MakeStatusCallback()));
 
   EXPECT_TRUE(pairing_state.initiator());
   ASSERT_EQ(0, status_handler_0.call_count());
@@ -389,9 +448,10 @@ TEST(GAP_PairingStateTest, EncryptionChangeToEnableCallsInitiatorCallbacks) {
   EXPECT_EQ(1, status_handler_1.call_count());
 }
 
-TEST(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
+TEST_F(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, NoOpStatusCallback);
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             NoOpStatusCallback);
   NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -403,7 +463,7 @@ TEST(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) 
 
   // Try to initiate pairing while pairing is in progress.
   TestStatusHandler status_handler;
-  static_cast<void>(pairing_state.InitiatePairing(status_handler.MakeStatusCallback()));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
   EXPECT_FALSE(pairing_state.initiator());
 
   // Keep advancing state machine.
@@ -426,14 +486,15 @@ TEST(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) 
   EXPECT_EQ(1, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, PairingStateRejectsPairingInitiationWithoutPairingDelegate) {
+TEST_F(GAP_PairingStateTest, PairingStateRejectsPairingInitiationWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, owner_status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             owner_status_handler.MakeStatusCallback());
 
   TestStatusHandler initiator_status_handler;
-  EXPECT_EQ(PairingState::InitiatorAction::kDoNotSendAuthenticationRequest,
-            pairing_state.InitiatePairing(initiator_status_handler.MakeStatusCallback()));
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                initiator_status_handler.MakeStatusCallback());
   EXPECT_FALSE(pairing_state.initiator());
 
   // The owning link doesn't get an error for a failure to initiator pairing.
@@ -445,10 +506,11 @@ TEST(GAP_PairingStateTest, PairingStateRejectsPairingInitiationWithoutPairingDel
   EXPECT_EQ(hci::Status(HostError::kNotReady), *initiator_status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, PairingStateRejectsPairingResponseWithoutPairingDelegate) {
+TEST_F(GAP_PairingStateTest, PairingStateRejectsPairingResponseWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler status_handler;
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
 
   // PairingState rejects the pairing with a negative reply.
@@ -461,10 +523,11 @@ TEST(GAP_PairingStateTest, PairingStateRejectsPairingResponseWithoutPairingDeleg
   EXPECT_EQ(hci::Status(HostError::kNotReady), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
+TEST_F(GAP_PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -486,10 +549,11 @@ TEST(GAP_PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, LegacyPairingLinkKeyRaisesError) {
+TEST_F(GAP_PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -510,10 +574,11 @@ TEST(GAP_PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity), *status_handler.status());
 }
 
-TEST(GAP_PairingStateTest, PairingSetsConnectionLinkKey) {
+TEST_F(GAP_PairingStateTest, PairingSetsConnectionLinkKey) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -532,16 +597,18 @@ TEST(GAP_PairingStateTest, PairingSetsConnectionLinkKey) {
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
+TEST_F(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state.InitiatePairing(status_handler.MakeStatusCallback()));
+  pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
   ASSERT_TRUE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnLinkKeyRequest(kPeerAddress));
   EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
 
   pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
@@ -568,10 +635,11 @@ TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDis
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
+TEST_F(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -606,10 +674,11 @@ TEST(GAP_PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDis
 // confirmation on device B only and Yes/No confirmation on whether to pair on
 // device A. Device A does not show the confirmation value." and it should
 // result in user consent.
-TEST(GAP_PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
+TEST_F(GAP_PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplayYesNoSide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -637,10 +706,11 @@ TEST(GAP_PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDispl
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
+TEST_F(GAP_PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -667,10 +737,11 @@ TEST(GAP_PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) 
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
+TEST_F(GAP_PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -705,10 +776,11 @@ TEST(GAP_PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySid
   EXPECT_EQ(0, status_handler.call_count());
 }
 
-TEST(GAP_PairingStateTest, JustWorksPairingDoesNotRequestUserAction) {
+TEST_F(GAP_PairingStateTest, JustWorksPairingDoesNotRequestUserAction) {
   TestStatusHandler status_handler;
   auto connection = MakeFakeConnection();
-  PairingState pairing_state(kTestPeerId, &connection, status_handler.MakeStatusCallback());
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
   FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
@@ -734,6 +806,9 @@ TEST(GAP_PairingStateTest, JustWorksPairingDoesNotRequestUserAction) {
 // Event injectors. Return values are necessarily ignored in order to make types
 // match, so don't use these functions to test return values. Likewise,
 // arguments have been filled with test defaults for a successful pairing flow.
+void LinkKeyRequest(PairingState* pairing_state) {
+  static_cast<void>(pairing_state->OnLinkKeyRequest(kPeerAddress));
+}
 void IoCapabilityRequest(PairingState* pairing_state) {
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
 }
@@ -769,19 +844,24 @@ void AuthenticationComplete(PairingState* pairing_state) {
 // This is named so that the instantiated test description looks correct:
 //
 //   GAP_PairingStateTest/HandlesEvent.<test case>/<index of event>
-class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
- protected:
-  HandlesEvent()
-      : connection_(MakeFakeConnection()),
-        pairing_delegate_(kTestLocalIoCap),
-        pairing_state_(kTestPeerId, &connection_, status_handler_.MakeStatusCallback()) {
-    pairing_state().SetPairingDelegate(pairing_delegate_.GetWeakPtr());
+class HandlesEvent : public GAP_PairingStateTest,
+                     public ::testing::WithParamInterface<void (*)(PairingState*)> {
+ public:
+  HandlesEvent() : connection_(MakeFakeConnection()){};
+  virtual ~HandlesEvent() = default;
+
+  void SetUp() override {
+    GAP_PairingStateTest::SetUp();
+    pairing_delegate_ = std::make_unique<NoOpPairingDelegate>(kTestLocalIoCap);
+    pairing_state_ = std::make_unique<PairingState>(kTestPeerId, &connection_, peer_cache(),
+                                                    MakeAuthRequestCallback(),
+                                                    status_handler_.MakeStatusCallback());
+    pairing_state().SetPairingDelegate(pairing_delegate_->GetWeakPtr());
   }
-  ~HandlesEvent() = default;
 
   const FakeConnection& connection() const { return connection_; }
   const TestStatusHandler& status_handler() const { return status_handler_; }
-  PairingState& pairing_state() { return pairing_state_; }
+  PairingState& pairing_state() { return *pairing_state_; }
 
   // Returns an event injector that was passed to INSTANTIATE_TEST_SUITE_P.
   auto* event() const { return GetParam(); }
@@ -791,8 +871,8 @@ class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
  private:
   FakeConnection connection_;
   TestStatusHandler status_handler_;
-  NoOpPairingDelegate pairing_delegate_;
-  PairingState pairing_state_;
+  std::unique_ptr<NoOpPairingDelegate> pairing_delegate_;
+  std::unique_ptr<PairingState> pairing_state_;
 };
 
 // The tests here exercise that PairingState can be successfully advances
@@ -800,14 +880,15 @@ class HandlesEvent : public ::testing::TestWithParam<void (*)(PairingState*)> {
 // occurs out of order. This is intended to cover its internal state machine
 // transitions and not the side effects.
 INSTANTIATE_TEST_SUITE_P(GAP_PairingStateTest, HandlesEvent,
-                         ::testing::Values(IoCapabilityRequest, IoCapabilityResponse,
-                                           UserConfirmationRequest, UserPasskeyRequest,
-                                           UserPasskeyNotification, SimplePairingComplete,
-                                           LinkKeyNotification, AuthenticationComplete));
+                         ::testing::Values(LinkKeyRequest, IoCapabilityRequest,
+                                           IoCapabilityResponse, UserConfirmationRequest,
+                                           UserPasskeyRequest, UserPasskeyNotification,
+                                           SimplePairingComplete, LinkKeyNotification,
+                                           AuthenticationComplete));
 
 TEST_P(HandlesEvent, InIdleState) {
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == IoCapabilityResponse) {
+  if (event() == LinkKeyRequest || event() == IoCapabilityResponse) {
     EXPECT_EQ(0, status_handler().call_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
@@ -818,13 +899,47 @@ TEST_P(HandlesEvent, InIdleState) {
   }
 }
 
-TEST_P(HandlesEvent, InInitiatorPairingStartedState) {
+TEST_P(HandlesEvent, InInitiatorWaitLinkKeyRequestState) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
 
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == IoCapabilityRequest || event() == AuthenticationComplete) {
+  if (event() == LinkKeyRequest) {
     EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
+  // Advance state machine.
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == IoCapabilityRequest) {
+    EXPECT_EQ(0, status_handler().call_count());
+  } else {
+    EXPECT_EQ(1, status_handler().call_count());
+    ASSERT_TRUE(status_handler().status());
+    EXPECT_EQ(hci::Status(HostError::kNotSupported), status_handler().status());
+  }
+}
+
+TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+
+  // Advance state machine.
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  EXPECT_NE(std::nullopt, pairing_state().OnLinkKeyRequest(kPeerAddress));
+
+  RETURN_IF_FATAL(InjectEvent());
+  if (event() == AuthenticationComplete) {
+    EXPECT_EQ(0, status_handler().call_count());
+    EXPECT_EQ(1, connection().start_encryption_count());
   } else {
     EXPECT_EQ(1, status_handler().call_count());
     ASSERT_TRUE(status_handler().status());
@@ -834,7 +949,8 @@ TEST_P(HandlesEvent, InInitiatorPairingStartedState) {
 
 TEST_P(HandlesEvent, InInitiatorWaitIoCapResponseState) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -873,7 +989,7 @@ TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate
   RETURN_IF_FATAL(InjectEvent());
   EXPECT_LE(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
-  if (event() == IoCapabilityResponse) {
+  if (event() == LinkKeyRequest || event() == IoCapabilityResponse) {
     // Peer attempted to pair again, which raises an additional "not ready" error.
     EXPECT_EQ(hci::Status(HostError::kNotReady), status_handler().status());
   } else {
@@ -886,7 +1002,8 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
   ASSERT_TRUE(pairing_state().initiator());
@@ -906,7 +1023,8 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsInitiator) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
   ASSERT_TRUE(pairing_state().initiator());
@@ -926,7 +1044,8 @@ TEST_P(HandlesEvent, InWaitUserPasskeyNotificationStateAsInitiator) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
   ASSERT_TRUE(pairing_state().initiator());
@@ -1034,9 +1153,10 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
   }
 }
 
-TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteState) {
+TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1058,7 +1178,8 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteState) {
 
 TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1094,7 +1215,8 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
 
 TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1111,7 +1233,7 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   EXPECT_FALSE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
-  if (event() == IoCapabilityResponse) {
+  if (event() == LinkKeyRequest || event() == IoCapabilityResponse) {
     EXPECT_EQ(1, status_handler().call_count());
   } else {
     EXPECT_EQ(2, status_handler().call_count());
@@ -1140,7 +1262,8 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
 
 TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   // Advance state machine.
-  static_cast<void>(pairing_state().InitiatePairing(NoOpStatusCallback));
+  static_cast<void>(pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback));
+  static_cast<void>(pairing_state().OnLinkKeyRequest(kPeerAddress));
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -1161,7 +1284,7 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
 
 // PairingAction expected answers are inferred from "device A" Authentication
 // Stage 1 specs in v5.0 Vol 3, Part C, Sec 5.2.2.6, Table 5.7.
-TEST(GAP_PairingStateTest, GetInitiatorPairingAction) {
+TEST_F(GAP_PairingStateTest, GetInitiatorPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
             GetInitiatorPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
@@ -1200,7 +1323,7 @@ TEST(GAP_PairingStateTest, GetInitiatorPairingAction) {
 }
 
 // Ibid., but for "device B."
-TEST(GAP_PairingStateTest, GetResponderPairingAction) {
+TEST_F(GAP_PairingStateTest, GetResponderPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
             GetResponderPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
   EXPECT_EQ(PairingAction::kComparePasskey,
@@ -1240,7 +1363,7 @@ TEST(GAP_PairingStateTest, GetResponderPairingAction) {
 
 // Events are obtained from ibid. association models, mapped to HCI sequences in
 // v5.0 Vol 3, Vol 2, Part F, Sec 4.2.10–15.
-TEST(GAP_PairingStateTest, GetExpectedEvent) {
+TEST_F(GAP_PairingStateTest, GetExpectedEvent) {
   EXPECT_EQ(kUserConfirmationRequestEventCode,
             GetExpectedEvent(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
@@ -1279,7 +1402,7 @@ TEST(GAP_PairingStateTest, GetExpectedEvent) {
 }
 
 // Level of authentication from ibid. table.
-TEST(GAP_PairingStateTest, IsPairingAuthenticated) {
+TEST_F(GAP_PairingStateTest, IsPairingAuthenticated) {
   EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
   EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
   EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
@@ -1302,7 +1425,7 @@ TEST(GAP_PairingStateTest, IsPairingAuthenticated) {
       IsPairingAuthenticated(IOCapability::kNoInputNoOutput, IOCapability::kNoInputNoOutput));
 }
 
-TEST(GAP_PairingStateTest, GetInitiatorAuthRequirements) {
+TEST_F(GAP_PairingStateTest, GetInitiatorAuthRequirements) {
   EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
             GetInitiatorAuthRequirements(IOCapability::kDisplayOnly));
   EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
@@ -1313,7 +1436,7 @@ TEST(GAP_PairingStateTest, GetInitiatorAuthRequirements) {
             GetInitiatorAuthRequirements(IOCapability::kNoInputNoOutput));
 }
 
-TEST(GAP_PairingStateTest, GetResponderAuthRequirements) {
+TEST_F(GAP_PairingStateTest, GetResponderAuthRequirements) {
   EXPECT_EQ(AuthRequirements::kGeneralBonding,
             GetResponderAuthRequirements(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
   EXPECT_EQ(AuthRequirements::kGeneralBonding,
@@ -1356,6 +1479,323 @@ TEST(GAP_PairingStateTest, GetResponderAuthRequirements) {
   EXPECT_EQ(
       AuthRequirements::kGeneralBonding,
       GetResponderAuthRequirements(IOCapability::kNoInputNoOutput, IOCapability::kNoInputNoOutput));
+}
+
+TEST_F(GAP_PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  connection.set_bredr_link_key(kTestLinkKey, kTestAuthenticatedLinkKeyType);
+
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
+                                                            .secure_connections = false};
+  TestStatusHandler initiator_status_handler;
+  pairing_state.InitiatePairing(kSecurityRequirements,
+                                initiator_status_handler.MakeStatusCallback());
+  EXPECT_EQ(0u, auth_request_count());
+  EXPECT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(0, status_handler.call_count());
+  ASSERT_EQ(1, initiator_status_handler.call_count());
+  EXPECT_TRUE(initiator_status_handler.status()->is_success());
+}
+
+TEST_F(GAP_PairingStateTest,
+       InitiatorAuthRequiredCausesOnLinkKeyRequestToReturnNullIfUnauthenticatedKeyExists) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  BrEdrSecurityRequirements security{.authentication = true, .secure_connections = false};
+  pairing_state.InitiatePairing(security, status_handler.MakeStatusCallback());
+
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(GAP_PairingStateTest,
+       InitiatorNoSecurityRequirementsCausesOnLinkKeyRequestToReturnExistingKey) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+  EXPECT_FALSE(connection.ltk().has_value());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_TRUE(connection.ltk().has_value());
+}
+
+TEST_F(GAP_PairingStateTest, InitiatorOnLinkKeyRequestReturnsNullIfBondDataDoesNotExist) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+
+  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  EXPECT_FALSE(reply_key.has_value());
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(GAP_PairingStateTest, IdleStateOnLinkKeyRequestReturnsLinkKeyWhenBondDataExists) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+  EXPECT_FALSE(connection.ltk().has_value());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  ASSERT_TRUE(reply_key.has_value());
+  EXPECT_EQ(kTestLinkKey, reply_key.value());
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_TRUE(connection.ltk().has_value());
+}
+
+TEST_F(GAP_PairingStateTest, IdleStateOnLinkKeyRequestReturnsNullWhenBondDataDoesNotExist) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  EXPECT_FALSE(reply_key.has_value());
+  EXPECT_EQ(0, status_handler.call_count());
+}
+
+TEST_F(GAP_PairingStateTest, OnLinkKeyRequestReceivedMissingPeerFailsPairing) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+
+  EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer()->identifier()));
+
+  auto reply_key = pairing_state.OnLinkKeyRequest(kPeerAddress);
+  EXPECT_FALSE(reply_key.has_value());
+  ASSERT_EQ(1, status_handler.call_count());
+  EXPECT_EQ(hci::Status(HostError::kFailed), status_handler.status().value());
+}
+
+TEST_F(GAP_PairingStateTest,
+       MultipleQueuedPairingRequestsWithSameSecurityRequirementsCompleteAtSameTimeWithSuccess) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  TestStatusHandler initiate_status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                initiate_status_handler_0.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  TestStatusHandler initiate_status_handler_1;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                initiate_status_handler_1.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  AdvanceToEncryptionAsInitiator(&pairing_state);
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_EQ(1, connection.start_encryption_count());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_TRUE(status_handler.status()->is_success());
+  ASSERT_EQ(1, initiate_status_handler_0.call_count());
+  EXPECT_TRUE(initiate_status_handler_0.status()->is_success());
+  ASSERT_EQ(1, initiate_status_handler_1.call_count());
+  EXPECT_TRUE(initiate_status_handler_1.status()->is_success());
+}
+
+TEST_F(
+    GAP_PairingStateTest,
+    MultipleQueuedPairingRequestsWithAuthSecurityRequirementsCompleteAtSameTimeWithInsufficientSecurityFailure) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
+                                                            .secure_connections = false};
+
+  TestStatusHandler initiate_status_handler_0;
+  pairing_state.InitiatePairing(kSecurityRequirements,
+                                initiate_status_handler_0.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  TestStatusHandler initiate_status_handler_1;
+  pairing_state.InitiatePairing(kSecurityRequirements,
+                                initiate_status_handler_1.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  // Pair with unauthenticated link key.
+  AdvanceToEncryptionAsInitiator(&pairing_state);
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_EQ(1, connection.start_encryption_count());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_TRUE(status_handler.status()->is_success());
+  ASSERT_EQ(1, initiate_status_handler_0.call_count());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
+            initiate_status_handler_0.status().value());
+  ASSERT_EQ(1, initiate_status_handler_1.call_count());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
+            initiate_status_handler_1.status().value());
+}
+
+TEST_F(GAP_PairingStateTest,
+       AuthPairingRequestDuringInitiatorNoAuthPairingFailsQueuedAuthPairingRequest) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate_no_io(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate_no_io.GetWeakPtr());
+
+  TestStatusHandler initiate_status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                initiate_status_handler_0.MakeStatusCallback());
+
+  TestStatusHandler initiate_status_handler_1;
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
+                                                            .secure_connections = false};
+  pairing_state.InitiatePairing(kSecurityRequirements,
+                                initiate_status_handler_1.MakeStatusCallback());
+
+  // Pair with unauthenticated link key.
+  AdvanceToEncryptionAsInitiator(&pairing_state);
+
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_EQ(1, connection.start_encryption_count());
+
+  FakePairingDelegate fake_pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  EXPECT_EQ(1, status_handler.call_count());
+  ASSERT_TRUE(status_handler.status());
+  EXPECT_TRUE(status_handler.status()->is_success());
+  ASSERT_EQ(1, initiate_status_handler_0.call_count());
+  EXPECT_TRUE(initiate_status_handler_0.status()->is_success());
+  ASSERT_EQ(1, initiate_status_handler_1.call_count());
+  EXPECT_EQ(hci::Status(HostError::kInsufficientSecurity),
+            initiate_status_handler_1.status().value());
+
+  // Pairing for second request should not start.
+  EXPECT_FALSE(pairing_state.initiator());
+}
+
+TEST_F(GAP_PairingStateTest,
+       InitiatingPairingDuringAuthenticationWithExistingUnauthenticatedLinkKey) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  FakePairingDelegate fake_pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  pairing_state.SetPairingDelegate(fake_pairing_delegate.GetWeakPtr());
+
+  peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType), kTestLinkKey));
+
+  TestStatusHandler initiator_status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                initiator_status_handler_0.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  TestStatusHandler initiator_status_handler_1;
+  constexpr BrEdrSecurityRequirements kSecurityRequirements{.authentication = true,
+                                                            .secure_connections = false};
+  pairing_state.InitiatePairing(kSecurityRequirements,
+                                initiator_status_handler_1.MakeStatusCallback());
+  EXPECT_EQ(1u, auth_request_count());
+
+  // Authenticate with link key.
+  EXPECT_NE(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_TRUE(connection.ltk().has_value());
+  pairing_state.OnAuthenticationComplete(hci::StatusCode::kSuccess);
+
+  EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_EQ(1, connection.start_encryption_count());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  ASSERT_EQ(1, status_handler.call_count());
+  EXPECT_TRUE(status_handler.status()->is_success());
+  ASSERT_EQ(1, initiator_status_handler_0.call_count());
+  EXPECT_TRUE(initiator_status_handler_0.status()->is_success());
+  EXPECT_EQ(0, initiator_status_handler_1.call_count());
+
+  fake_pairing_delegate.SetDisplayPasskeyCallback([](PeerId peer_id, uint32_t value,
+                                                     PairingDelegate::DisplayMethod method,
+                                                     auto cb) { cb(true); });
+  fake_pairing_delegate.SetCompletePairingCallback(
+      [](PeerId peer_id, sm::Status status) { EXPECT_TRUE(status); });
+
+  // Pairing for second request should start.
+  EXPECT_EQ(2u, auth_request_count());
+  EXPECT_TRUE(pairing_state.initiator());
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+
+  bool confirmed = false;
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          [&confirmed](bool confirm) { confirmed = confirm; });
+  EXPECT_TRUE(confirmed);
+
+  pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
+  pairing_state.OnAuthenticationComplete(hci::StatusCode::kSuccess);
+  EXPECT_EQ(2, connection.start_encryption_count());
+
+  connection.TriggerEncryptionChangeCallback(hci::Status(), true);
+  ASSERT_EQ(2, status_handler.call_count());
+  EXPECT_TRUE(status_handler.status()->is_success());
+  EXPECT_EQ(1, initiator_status_handler_0.call_count());
+  ASSERT_EQ(1, initiator_status_handler_1.call_count());
+  EXPECT_TRUE(initiator_status_handler_1.status()->is_success());
+
+  // No further pairing should occur.
+  EXPECT_EQ(2u, auth_request_count());
+  EXPECT_FALSE(pairing_state.initiator());
 }
 
 }  // namespace

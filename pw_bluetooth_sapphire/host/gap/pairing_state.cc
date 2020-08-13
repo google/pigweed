@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
 namespace bt {
@@ -14,10 +15,17 @@ using hci::AuthRequirements;
 using hci::IOCapability;
 using sm::util::IOCapabilityForHci;
 
-PairingState::PairingState(PeerId peer_id, hci::Connection* link, StatusCallback status_cb)
-    : peer_id_(peer_id), link_(link), state_(State::kIdle), status_callback_(std::move(status_cb)) {
+PairingState::PairingState(PeerId peer_id, hci::Connection* link, PeerCache* peer_cache,
+                           fit::closure auth_cb, StatusCallback status_cb)
+    : peer_id_(peer_id),
+      link_(link),
+      peer_cache_(peer_cache),
+      state_(State::kIdle),
+      send_auth_request_callback_(std::move(auth_cb)),
+      status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
   ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
+  ZX_ASSERT(send_auth_request_callback_);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));
   cleanup_cb_ = [](PairingState* self) { self->link_->set_encryption_change_callback(nullptr); };
@@ -29,22 +37,40 @@ PairingState::~PairingState() {
   }
 }
 
-PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback status_cb) {
+void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requirements,
+                                   StatusCallback status_cb) {
   // Raise an error to only the initiator—and not others—if we can't pair because there's no pairing
   // delegate.
   if (!pairing_delegate()) {
     bt_log(DEBUG, "gap-bredr", "No pairing delegate for link %#.4x (id: %s); not pairing", handle(),
            bt_str(peer_id()));
     status_cb(handle(), hci::Status(HostError::kNotReady));
-    return InitiatorAction::kDoNotSendAuthenticationRequest;
+    return;
   }
 
   if (state() == State::kIdle) {
     ZX_ASSERT(!is_pairing());
-    current_pairing_ = Pairing::MakeInitiator(std::move(status_cb));
+
+    // If the current link key already meets the security requirements, skip pairing and report
+    // success.
+    if (link_->ltk_type() &&
+        SecurityPropertiesMeetRequirements(sm::SecurityProperties(*link_->ltk_type()),
+                                           security_requirements)) {
+      status_cb(handle(), hci::Status());
+      return;
+    }
+
+    // TODO(55770): If current IO capabilities would make meeting security requirements impossible,
+    // skip pairing and report failure immediately.
+
+    current_pairing_ = Pairing::MakeInitiator(security_requirements);
+    PairingRequest request{.security_requirements = security_requirements,
+                           .status_callback = std::move(status_cb)};
+    request_queue_.push_back(std::move(request));
     bt_log(DEBUG, "gap-bredr", "Initiating pairing on %#.4x (id %s)", handle(), bt_str(peer_id()));
-    state_ = State::kInitiatorPairingStarted;
-    return InitiatorAction::kSendAuthenticationRequest;
+    state_ = State::kInitiatorWaitLinkKeyRequest;
+    send_auth_request_callback_();
+    return;
   }
 
   // More than one consumer may wish to initiate pairing (e.g. concurrent outbound L2CAP channels),
@@ -54,19 +80,36 @@ PairingState::InitiatorAction PairingState::InitiatePairing(StatusCallback statu
     ZX_ASSERT(state() != State::kIdle);
     bt_log(DEBUG, "gap-bredr", "Already pairing %#.4x (id: %s); blocking callback on completion",
            handle(), bt_str(peer_id()));
-    current_pairing_->initiator_callbacks.push_back(std::move(status_cb));
+    PairingRequest request{.security_requirements = security_requirements,
+                           .status_callback = std::move(status_cb)};
+    request_queue_.push_back(std::move(request));
   } else {
     // In the error state, we should expect no pairing to be created and cancel this particular
     // request immediately.
     ZX_ASSERT(state() == State::kFailed);
     status_cb(handle(), hci::Status(HostError::kCanceled));
   }
+}
 
-  return InitiatorAction::kDoNotSendAuthenticationRequest;
+void PairingState::InitiateNextPairingRequest() {
+  ZX_ASSERT(state() == State::kIdle);
+  ZX_ASSERT(!is_pairing());
+
+  if (request_queue_.empty()) {
+    return;
+  }
+
+  PairingRequest& request = request_queue_.front();
+
+  current_pairing_ = Pairing::MakeInitiator(request.security_requirements);
+  bt_log(DEBUG, "gap-bredr", "Initiating queued pairing on %#.4x (id %s)", handle(),
+         bt_str(peer_id()));
+  state_ = State::kInitiatorWaitLinkKeyRequest;
+  send_auth_request_callback_();
 }
 
 std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
-  if (state() == State::kInitiatorPairingStarted) {
+  if (state() == State::kInitiatorWaitIoCapRequest) {
     ZX_ASSERT(initiator());
     ZX_ASSERT_MSG(pairing_delegate(), "PairingDelegate was reset after pairing began");
 
@@ -251,6 +294,56 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
   state_ = State::kWaitLinkKey;
 }
 
+std::optional<hci::LinkKey> PairingState::OnLinkKeyRequest(DeviceAddress address) {
+  if (state() != State::kIdle && state() != State::kInitiatorWaitLinkKeyRequest) {
+    FailWithUnexpectedEvent(__func__);
+    return std::nullopt;
+  }
+
+  auto* peer = peer_cache_->FindByAddress(address);
+  if (!peer) {
+    bt_log(ERROR, "gap-bredr", "no peer with address %s found", bt_str(address));
+    SignalStatus(hci::Status(HostError::kFailed));
+    return std::nullopt;
+  }
+
+  std::optional<sm::LTK> link_key;
+
+  if (peer->bredr() && peer->bredr()->bonded()) {
+    bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer->identifier()));
+
+    ZX_ASSERT(peer->bredr()->link_key().has_value());
+    link_key = peer->bredr()->link_key();
+    ZX_ASSERT(link_key->security().enc_key_size() == hci::kBrEdrLinkKeySize);
+
+    const auto link_key_type = link_key->security().GetLinkKeyType();
+    ZX_ASSERT(link_key_type.has_value());
+
+    link_->set_bredr_link_key(link_key->key(), link_key_type.value());
+  } else {
+    bt_log(INFO, "gap-bredr", "peer %s not bonded", bt_str(address));
+  }
+
+  // The link key request may be received outside of Simple Pairing (e.g. when the peer initiates
+  // the authentication procedure).
+  if (state() == State::kIdle) {
+    return link_key.has_value() ? link_key->key() : std::optional<hci::LinkKey>();
+  }
+
+  ZX_ASSERT(is_pairing());
+
+  if (link_key.has_value() && SecurityPropertiesMeetRequirements(
+                                  link_key->security(), current_pairing_->preferred_security)) {
+    // Skip Simple Pairing and just perform authentication with existing key.
+    state_ = State::kInitiatorWaitAuthComplete;
+    return link_key->key();
+  }
+
+  // Request that the controller perform Simple Pairing to generate a new key.
+  state_ = State::kInitiatorWaitIoCapRequest;
+  return std::nullopt;
+}
+
 void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type) {
   // TODO(fxbug.dev/36360): We assume the controller is never in pairing debug mode because it's a
   // security hazard to pair and bond using Debug Combination link keys.
@@ -313,7 +406,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
 }
 
 void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
-  if (state() != State::kInitiatorPairingStarted && state() != State::kInitiatorWaitAuthComplete) {
+  if (state() != State::kInitiatorWaitAuthComplete) {
     FailWithUnexpectedEvent(__func__);
     return;
   }
@@ -361,11 +454,11 @@ void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
-    StatusCallback status_callback) {
+    BrEdrSecurityRequirements security_requirements) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing);
   pairing->initiator = true;
-  pairing->initiator_callbacks.push_back(std::move(status_callback));
+  pairing->preferred_security = security_requirements;
   return pairing;
 }
 
@@ -375,6 +468,8 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
   std::unique_ptr<Pairing> pairing(new Pairing);
   pairing->initiator = false;
   pairing->peer_iocap = peer_iocap;
+  // Don't try to upgrade security as responder.
+  pairing->preferred_security = {.authentication = false, .secure_connections = false};
   return pairing;
 }
 
@@ -398,8 +493,10 @@ const char* PairingState::ToString(PairingState::State state) {
   switch (state) {
     case State::kIdle:
       return "Idle";
-    case State::kInitiatorPairingStarted:
-      return "InitiatorPairingStarted";
+    case State::kInitiatorWaitLinkKeyRequest:
+      return "InitiatorWaitLinkKeyRequest";
+    case State::kInitiatorWaitIoCapRequest:
+      return "InitiatorWaitIoCapRequest";
     case State::kInitiatorWaitIoCapResponse:
       return "InitiatorWaitIoCapResponse";
     case State::kResponderWaitIoCapRequest:
@@ -443,19 +540,86 @@ PairingState::State PairingState::GetStateForPairingEvent(hci::EventCode event_c
 void PairingState::SignalStatus(hci::Status status) {
   bt_log(TRACE, "gap-bredr", "Signaling pairing listeners for %#.4x (id: %s) with %s", handle(),
          bt_str(peer_id()), bt_str(status));
-  std::vector<StatusCallback> callbacks_to_signal;
-  if (is_pairing()) {
-    std::swap(callbacks_to_signal, current_pairing_->initiator_callbacks);
-    current_pairing_ = nullptr;
-  }
+
+  // Collect the callbacks before invoking them so that CompletePairingRequests() can safely access
+  // members.
+  auto callbacks_to_signal = CompletePairingRequests(status);
 
   // This PairingState may be destroyed by these callbacks (e.g. if signaling an error causes a
   // disconnection), so care must be taken not to access any members.
-  const auto handle = this->handle();
-  status_callback_(handle, status);
+  status_callback_(handle(), status);
   for (auto& cb : callbacks_to_signal) {
-    cb(handle, status);
+    cb();
   }
+}
+
+std::vector<fit::closure> PairingState::CompletePairingRequests(hci::Status status) {
+  std::vector<fit::closure> callbacks_to_signal;
+
+  if (!is_pairing()) {
+    ZX_ASSERT(request_queue_.empty());
+    return callbacks_to_signal;
+  }
+
+  if (!status.is_success()) {
+    // On pairing failure, signal all requests.
+    for (auto& request : request_queue_) {
+      callbacks_to_signal.push_back(
+          [handle = handle(), status, cb = std::move(request.status_callback)]() {
+            cb(handle, status);
+          });
+    }
+    request_queue_.clear();
+    current_pairing_ = nullptr;
+    return callbacks_to_signal;
+  }
+
+  ZX_ASSERT(state_ == State::kIdle);
+  ZX_ASSERT(link_->ltk_type().has_value());
+
+  auto security_properties = sm::SecurityProperties(link_->ltk_type().value());
+
+  // If a new link key was received, notify all callbacks because we always negotiate the best
+  // security possible. Even though pairing succeeded, send an error status if the individual
+  // request security requirements are not satisfied.
+  // TODO(fxbug.dev/1249): Only notify failure to callbacks of requests that have the same (or
+  // none) MITM requirements as the current pairing.
+  bool link_key_received = current_pairing_->security_properties.has_value();
+  if (link_key_received) {
+    for (auto& request : request_queue_) {
+      auto sec_props_satisfied =
+          SecurityPropertiesMeetRequirements(security_properties, request.security_requirements);
+      auto request_status =
+          sec_props_satisfied ? status : hci::Status(HostError::kInsufficientSecurity);
+
+      callbacks_to_signal.push_back(
+          [handle = handle(), request_status, cb = std::move(request.status_callback)]() {
+            cb(handle, request_status);
+          });
+    }
+    request_queue_.clear();
+  } else {
+    // If no new link key was received, then only authentication with an old key was performed
+    // (Simple Pairing was not required), and unsatisfied requests should initiate a new pairing
+    // rather than failing. If any pairing requests are satisfied by the existing key, notify them.
+    auto it = request_queue_.begin();
+    while (it != request_queue_.end()) {
+      if (!SecurityPropertiesMeetRequirements(security_properties, it->security_requirements)) {
+        it++;
+        continue;
+      }
+
+      callbacks_to_signal.push_back(
+          [handle = handle(), status, cb = std::move(it->status_callback)]() {
+            cb(handle, status);
+          });
+      it = request_queue_.erase(it);
+    }
+  }
+  current_pairing_ = nullptr;
+  InitiateNextPairingRequest();
+
+  return callbacks_to_signal;
 }
 
 void PairingState::EnableEncryption() {

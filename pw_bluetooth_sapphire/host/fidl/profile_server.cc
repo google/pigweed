@@ -9,6 +9,7 @@
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
@@ -314,8 +315,10 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   };
   ZX_DEBUG_ASSERT(adapter());
 
+  // TODO(54140): Use FIDL SecurityRequirements parameter here.
+  bt::gap::BrEdrSecurityRequirements sec_reqs{.authentication = false, .secure_connections = false};
   bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
-      id, psm, FidlToChannelParameters(parameters), std::move(connected_cb));
+      id, psm, sec_reqs, FidlToChannelParameters(parameters), std::move(connected_cb));
   if (!connecting) {
     callback(fit::error(fuchsia::bluetooth::ErrorCode::NOT_FOUND));
   }

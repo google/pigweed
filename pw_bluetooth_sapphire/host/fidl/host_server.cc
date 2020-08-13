@@ -678,7 +678,10 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
       callback(fit::ok());
     }
   };
-  adapter()->bredr_connection_manager()->Pair(peer_id, std::move(on_complete));
+  // TODO(fxbug.dev/57991): Add security parameter to Pair and use that here instead of hardcoding
+  // default.
+  bt::gap::BrEdrSecurityRequirements security{.authentication = false, .secure_connections = false};
+  adapter()->bredr_connection_manager()->Pair(peer_id, security, std::move(on_complete));
 }
 
 void HostServer::RequestLowEnergyCentral(

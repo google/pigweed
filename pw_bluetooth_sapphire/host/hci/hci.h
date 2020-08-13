@@ -251,12 +251,14 @@ struct RejectConnectionRequestCommandParams {
 // Link Key Request Reply Command (v1.1) (BR/EDR)
 constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
+constexpr size_t kBrEdrLinkKeySize = 16;
+
 struct LinkKeyRequestReplyCommandParams {
   // BD_ADDR of the peer device the link key is for.
   DeviceAddressBytes bd_addr;
 
   // Link key to use for the connection with the peer device.
-  uint8_t link_key[16];
+  uint8_t link_key[kBrEdrLinkKeySize];
 } __PACKED;
 
 struct LinkKeyRequestReplyReturnParams {
@@ -1267,7 +1269,7 @@ struct LinkKeyNotificationEventParams {
   DeviceAddressBytes bd_addr;
 
   // Link key for the associated address.
-  uint8_t link_key[16];
+  uint8_t link_key[kBrEdrLinkKeySize];
 
   // Type of key used when pairing.
   uint8_t key_type;

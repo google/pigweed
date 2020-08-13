@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_
 
+#include <list>
 #include <optional>
 #include <vector>
 
@@ -12,6 +13,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -69,7 +72,7 @@ enum class PairingAction {
 // --------------
 // Authentication Requested▶
 //     ◀ Link Key Request
-// Link Key Request Reply▶ (skip to "Set Connection Encryption")
+// Link Key Request Reply▶ (skip to "Authentication Complete")
 //     or
 // Link Key Request Negative Reply▶ (continue with pairing)
 //     ◀ Command Complete
@@ -108,6 +111,13 @@ enum class PairingAction {
 //
 // Responder flow
 // --------------
+// If initiator has key:
+//     ◀ Link Key Request
+// Link Key Request Reply▶ (skip to "Encryption Change")
+//     or
+// Link Key Request Negative Reply▶ (Authentication failed, skip pairing)
+//
+// If initiator doesn't have key:
 //     ◀ IO Capability Response
 //     ◀ IO Capability Request
 // IO Capability Request Reply▶
@@ -156,8 +166,12 @@ class PairingState final {
   // occur, this object will be put in a "failed" state and the owner shall
   // disconnect the link and destroy its PairingState.
   //
+  //  |auth_cb| will be called to indicate that the caller should send an Authentication Request for
+  //  this peer.
+  //
   // |link| must be valid for the lifetime of this object.
-  PairingState(PeerId peer_id, hci::Connection* link, StatusCallback status_cb);
+  PairingState(PeerId peer_id, hci::Connection* link, PeerCache* peer_cache, fit::closure auth_cb,
+               StatusCallback status_cb);
   PairingState(PairingState&&) = default;
   PairingState& operator=(PairingState&&) = default;
   ~PairingState();
@@ -178,9 +192,9 @@ class PairingState final {
   }
 
   // Starts pairing against the peer, if pairing is not already in progress.
-  // If not, this device becomes the pairing initiator, and returns
-  // |kSendAuthenticationRequest| to indicate that the caller shall send an
-  // Authentication Request for this peer.
+  // If not, this device becomes the pairing initiator. If pairing is in progress, the request will
+  // be queued until the current pairing completes or an additional pairing that upgrades the link
+  // key succeeds or fails.
   //
   // If no PairingDelegate is available, |status_cb| is immediately called with
   // HostError::kNotReady, but the PairingState status callback (provided in the
@@ -188,11 +202,7 @@ class PairingState final {
   //
   // When pairing completes or errors out, the |status_cb| of each call to this
   // function will be invoked with the result.
-  enum class InitiatorAction {
-    kDoNotSendAuthenticationRequest,
-    kSendAuthenticationRequest,
-  };
-  [[nodiscard]] InitiatorAction InitiatePairing(StatusCallback status_cb);
+  void InitiatePairing(BrEdrSecurityRequirements security_requirements, StatusCallback status_cb);
 
   // Event handlers. Caller must ensure that the event is addressed to the link
   // for this PairingState.
@@ -224,6 +234,10 @@ class PairingState final {
   // Caller is not expected to send a response.
   void OnSimplePairingComplete(hci::StatusCode status_code);
 
+  // Caller should send the returned link key in a Link Key Request Reply (or Link Key Request
+  // Negative Reply if the returned value is null).
+  [[nodiscard]] std::optional<hci::LinkKey> OnLinkKeyRequest(DeviceAddress address);
+
   // Caller is not expected to send a response.
   void OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyType key_type);
 
@@ -235,12 +249,15 @@ class PairingState final {
 
  private:
   enum class State {
-    // Wait for initiator's IO Capability Response or for locally-initiated
+    // Wait for initiator's IO Capability Response, Link Key Request, or for locally-initiated
     // pairing.
     kIdle,
 
-    // As initiator, wait for IO Capability Request or Authentication Complete.
-    kInitiatorPairingStarted,
+    // As initiator, wait for Link Key Request.
+    kInitiatorWaitLinkKeyRequest,
+
+    // As initiator, wait for IO Capability Request.
+    kInitiatorWaitIoCapRequest,
 
     // As initiator, wait for IO Capability Response.
     kInitiatorWaitIoCapResponse,
@@ -279,7 +296,7 @@ class PairingState final {
   // through PairingDelegate.
   class Pairing final {
    public:
-    static std::unique_ptr<Pairing> MakeInitiator(StatusCallback status_callback);
+    static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements);
     static std::unique_ptr<Pairing> MakeResponder(hci::IOCapability peer_iocap);
 
     // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are already set, compute and
@@ -292,9 +309,6 @@ class PairingState final {
 
     // True if the local device initiated pairing.
     bool initiator;
-
-    // Callbacks from callers of |InitiatePairing|.
-    std::vector<StatusCallback> initiator_callbacks;
 
     // IO Capability obtained from the pairing delegate.
     hci::IOCapability local_iocap;
@@ -313,6 +327,10 @@ class PairingState final {
 
     // Security properties of the link key received from the controller.
     std::optional<sm::SecurityProperties> security_properties;
+
+    // If the preferred security is greater than the existing link key, a new link key will be
+    // negotiated (which may still have insufficient security properties).
+    BrEdrSecurityRequirements preferred_security;
 
    private:
     Pairing() : weak_ptr_factory_(this) {}
@@ -337,9 +355,19 @@ class PairingState final {
   // Returns nullptr if the delegate is not set or no longer alive.
   PairingDelegate* pairing_delegate() { return pairing_delegate_.get(); }
 
-  // Call the permanent status callback this object was created with as well as any callbacks from
-  // local initiators. Resets the current pairing but does not change the state machine state.
+  // Call the permanent status callback this object was created with as well as any completed
+  // request callbacks from local initiators. Resets the current pairing and may initiate a new
+  // pairing if any requests have not been completed.
   void SignalStatus(hci::Status status);
+
+  // Determines which pairing requests have been completed by the current link key and/or status and
+  // removes them from the queue. If any pairing requests were not completed, starts a new pairing
+  // procedure. Returns a list of closures that call the status callbacks of completed pairing
+  // requests.
+  std::vector<fit::closure> CompletePairingRequests(hci::Status status);
+
+  // Starts the pairing procedure for the next queued pairing request, if any.
+  void InitiateNextPairingRequest();
 
   // Called to enable encryption on the link for this peer. Sets |state_| to
   // kWaitEncryption.
@@ -359,14 +387,30 @@ class PairingState final {
   // The BR/EDR link whose pairing is being driven by this object.
   hci::Connection* link_;
 
+  // Used to restore link keys.
+  PeerCache* peer_cache_;
+
   fxl::WeakPtr<PairingDelegate> pairing_delegate_;
 
   // State machine representation.
   State state_;
 
-  // Represents an ongoing pairing procedure. Will contain a value when the state isn't kIdle or
-  // kFailed.
   std::unique_ptr<Pairing> current_pairing_;
+
+  struct PairingRequest {
+    // Security properties required by the pairing initiator for pairing to be considered a success.
+    BrEdrSecurityRequirements security_requirements;
+
+    // Callback called when the pairing procedure is complete.
+    StatusCallback status_callback;
+  };
+  // Represents ongoing and queued pairing requests. Will contain a value when the state isn't
+  // kIdle or kFailed. Requests may be completed out-of-order as their security requirements are
+  // satisfied.
+  std::list<PairingRequest> request_queue_;
+
+  // Callback used to indicate an Authentication Request for this peer should be sent.
+  fit::closure send_auth_request_callback_;
 
   // Callback that status of this pairing is reported back through.
   StatusCallback status_callback_;

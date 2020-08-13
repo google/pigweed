@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -42,7 +43,8 @@ class BrEdrConnection final {
  public:
   using Request = ConnectionRequest<BrEdrConnection*>;
   BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
-                  std::unique_ptr<hci::Connection> link, std::optional<Request> request);
+                  std::unique_ptr<hci::Connection> link, fit::closure send_auth_request_cb,
+                  PeerCache* peer_cache, std::optional<Request> request);
 
   ~BrEdrConnection();
 
@@ -110,15 +112,18 @@ class BrEdrConnectionManager final {
   PeerId GetPeerId(hci::ConnectionHandle handle) const;
 
   // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
-  // |params|. Returns false if the peer is not already connected.
+  // |params|. If the current connection doesn't meet |security_requirements|, attempt to upgrade
+  // the link key and report an error via |cb| if the upgrade fails. Returns false if the peer is
+  // not already connected.
   //
   // |cb| will be called with a zx::socket corresponding to the channel created to the remote or
   // ZX_INVALID_HANDLE if the channel creation resulted in an error.
   //
   // On successful channel creation, |chan_info| will contain the configured channel parameters.
   using SocketCallback = fit::function<void(l2cap::ChannelSocket)>;
-  bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm, l2cap::ChannelParameters params,
-                        SocketCallback cb);
+  bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+                        BrEdrSecurityRequirements security_requirements,
+                        l2cap::ChannelParameters params, SocketCallback cb);
 
   // Add a service search to be performed on new connected remote peers.
   // This search will happen on every peer connection.
@@ -148,10 +153,10 @@ class BrEdrConnectionManager final {
   // TODO(BT-820) - implement a timeout
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
-  // Initiate pairing to the peer with |peer_id| using the bondable preference. All pairing config,
-  // such as authentication requirements, bonding preference, etc. will be determined by defaults.
-  // |callback| will be called with the result of the procedure, successful or not.
-  void Pair(PeerId peer_id, hci::StatusCallback callback);
+  // Initiate pairing to the peer with |peer_id| using the bondable preference. Pairing will only be
+  // initiated if the current link key does not meet the |security| requirements. |callback| will be
+  // called with the result of the procedure, successful or not.
+  void Pair(PeerId peer_id, BrEdrSecurityRequirements security, hci::StatusCallback callback);
 
   // Called when the controller can not begin a new connection.
   void OnConnectFailure(hci::Status status, PeerId peer_id);
@@ -231,6 +236,7 @@ class BrEdrConnectionManager final {
 
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.
+  void SendAuthenticationRequested(hci::ConnectionHandle handle, hci::StatusCallback cb);
   void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr, hci::IOCapability io_capability,
                                     uint8_t oob_data_present,
                                     hci::AuthRequirements auth_requirements,
@@ -245,17 +251,15 @@ class BrEdrConnectionManager final {
                                    hci::StatusCallback cb = nullptr);
   void SendUserPasskeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                            hci::StatusCallback cb = nullptr);
+  void SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                       hci::StatusCallback cb = nullptr);
+  void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci::LinkKey link_key,
+                               hci::StatusCallback cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
   // will be decoded for its status, which is passed to |cb|.
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
-
-  // Acts as both a command to initiate pairing and a query to see if that pairing was actually
-  // initiated. If true, the connnection was not already pairing, and this function has started the
-  // pairing process. If false, the PairingState could not start pairing.
-  bool InitiatesPairing(PeerId peer_id, BrEdrConnection* connection, hci::ConnectionHandle handle,
-                        PairingState::StatusCallback pairing_callback);
 
   using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 

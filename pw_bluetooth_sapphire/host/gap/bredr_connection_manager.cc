@@ -60,12 +60,15 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
 
 BrEdrConnection::BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
                                  std::unique_ptr<hci::Connection> link,
+                                 fit::closure send_auth_request_cb, PeerCache* peer_cache,
                                  std::optional<Request> request)
     : peer_id_(peer_id),
       link_(std::move(link)),
-      pairing_state_(peer_id, link_.get(),
+      pairing_state_(peer_id, link_.get(), peer_cache, std::move(send_auth_request_cb),
                      [peer_id, mgr = connection_manager](auto, hci::Status status) {
-                       if (!status) {
+                       if (bt_is_error(status, DEBUG, "gap-bredr",
+                                       "PairingState error status, disconnecting (peer id: %s)",
+                                       bt_str(peer_id))) {
                          mgr->Disconnect(peer_id);
                        }
                      }),
@@ -232,7 +235,8 @@ PeerId BrEdrConnectionManager::GetPeerId(hci::ConnectionHandle handle) const {
   return peer->identifier();
 }
 
-void BrEdrConnectionManager::Pair(PeerId peer_id, hci::StatusCallback callback) {
+void BrEdrConnectionManager::Pair(PeerId peer_id, BrEdrSecurityRequirements security,
+                                  hci::StatusCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "can't pair to peer_id %s: connection not found", bt_str(peer_id));
@@ -240,57 +244,37 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, hci::StatusCallback callback) 
     return;
   }
   auto& [handle, connection] = *conn_pair;
-  if (!connection->link().ltk()) {
-    auto pairing_callback = [pair_callback = std::move(callback)](auto, hci::Status status) {
-      pair_callback(status);
-    };
-    if (!InitiatesPairing(peer_id, connection, handle, std::move(pairing_callback))) {
-      bt_log(INFO, "gap-bredr",
-             "pairing to peer_id %s already in progress, call again to initiate pairing",
-             bt_str(peer_id));
-    }
-  } else {
-    // Already paired, return success status
-    callback(hci::Status());
-  }
+  auto pairing_callback = [pair_callback = std::move(callback)](auto, hci::Status status) {
+    pair_callback(status);
+  };
+  connection->pairing_state().InitiatePairing(security, std::move(pairing_callback));
 }
 
 bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+                                              BrEdrSecurityRequirements security_reqs,
                                               l2cap::ChannelParameters params, SocketCallback cb) {
-  auto conn_pair = FindConnectionById(peer_id);
-  if (!conn_pair) {
-    bt_log(TRACE, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
-    return false;
-  }
-  auto& [handle, connection] = *conn_pair;
-
-  if (!connection->link().ltk()) {
-    // Connection doesn't have a key, initiate pairing.
-    auto self = weak_ptr_factory_.GetWeakPtr();
-    auto retry_cb = [peer_id, psm, params, cb = std::move(cb), self](auto,
-                                                                     hci::Status status) mutable {
-      bt_log(TRACE, "gap-bredr", "got pairing status %s, %sretrying socket to %s", bt_str(status),
-             status ? "" : "not ", bt_str(peer_id));
-      if (!status) {
-        // Report the failure to the user with a ZX_HANDLE_INVALID socket.
-        cb(l2cap::ChannelSocket());
-        return;
-      }
-      if (self) {
-        // We should now have an LTK so try again.
-        self->OpenL2capChannel(peer_id, psm, params, std::move(cb));
-      }
-    };
-
-    if (!InitiatesPairing(peer_id, connection, handle, std::move(retry_cb))) {
-      bt_log(TRACE, "gap-bredr", "pairing ongoing to peer %s, waiting for result", bt_str(peer_id));
+  auto pairing_cb = [self = weak_ptr_factory_.GetWeakPtr(), peer_id, psm, params,
+                     cb = std::move(cb)](auto status) mutable {
+    bt_log(TRACE, "gap-bredr", "got pairing status %s, %sreturning socket to %s", bt_str(status),
+           status ? "" : "not ", bt_str(peer_id));
+    if (!status || !self) {
+      // Report the failure to the user with a ZX_HANDLE_INVALID socket.
+      cb(l2cap::ChannelSocket());
+      return;
     }
-    return true;
-  }
 
-  connection->OpenL2capChannel(psm, params, [cb = std::move(cb)](auto chan_sock, auto /*handle*/) {
-    cb(std::move(chan_sock));
-  });
+    auto conn_pair = self->FindConnectionById(peer_id);
+    if (!conn_pair) {
+      bt_log(TRACE, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
+      return;
+    }
+    auto& [handle, connection] = *conn_pair;
+
+    connection->OpenL2capChannel(
+        psm, params, [cb = std::move(cb)](auto chan_sock, auto) { cb(std::move(chan_sock)); });
+  };
+
+  Pair(peer_id, security_reqs, std::move(pairing_cb));
   return true;
 }
 
@@ -426,9 +410,16 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   std::optional<BrEdrConnection::Request> request =
       request_node ? std::move(request_node.mapped()) : std::optional<BrEdrConnection::Request>();
   const hci::ConnectionHandle handle = link->handle();
+  auto send_auth_request_cb = [this, handle]() {
+    this->SendAuthenticationRequested(handle, [handle](auto status) {
+      bt_is_error(status, WARN, "gap-bredr", "authentication requested command failed for %#.4x",
+                  handle);
+    });
+  };
   BrEdrConnection& connection =
       connections_
-          .try_emplace(handle, this, peer->identifier(), std::move(link), std::move(request))
+          .try_emplace(handle, this, peer->identifier(), std::move(link),
+                       std::move(send_auth_request_cb), cache_, std::move(request))
           .first->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
 
@@ -681,43 +672,30 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyReques
   const auto& params = event.params<hci::LinkKeyRequestParams>();
 
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
-
   auto* peer = cache_->FindByAddress(addr);
-  if (!peer || !peer->bredr() || !peer->bredr()->bonded()) {
-    bt_log(INFO, "gap-bredr", "no bonded peer with address %s found", addr.ToString().c_str());
-
-    auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestNegativeReply,
-                                         sizeof(hci::LinkKeyRequestNegativeReplyCommandParams));
-    auto reply_params = reply->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
-
-    reply_params->bd_addr = params.bd_addr;
-    SendCommandWithStatusCallback(std::move(reply), nullptr);
+  if (!peer) {
+    bt_log(WARN, "gap-bredr", "no peer with address %s found", bt_str(addr));
+    SendLinkKeyRequestNegativeReply(params.bd_addr);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   auto peer_id = peer->identifier();
-  bt_log(INFO, "gap-bredr", "recalling link key for bonded peer %s", bt_str(peer_id));
+  auto conn_pair = FindConnectionById(peer_id);
 
-  auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestReply,
-                                       sizeof(hci::LinkKeyRequestReplyCommandParams));
-  auto reply_params = reply->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
-
-  reply_params->bd_addr = params.bd_addr;
-  const sm::LTK& link_key = *peer->bredr()->link_key();
-  ZX_DEBUG_ASSERT(link_key.security().enc_key_size() == 16);
-  const auto& hci_key = link_key.key();
-  const auto& key_value = hci_key.value();
-  std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
-
-  const auto link_key_type = link_key.security().GetLinkKeyType();
-  ZX_ASSERT(link_key_type.has_value());
-  auto handle = FindConnectionById(peer_id);
-  if (!handle) {
+  if (!conn_pair) {
     bt_log(WARN, "gap-bredr", "can't find connection for ltk (id: %s)", bt_str(peer_id));
-  } else {
-    handle->second->link().set_bredr_link_key(hci_key, link_key_type.value());
+    SendLinkKeyRequestNegativeReply(params.bd_addr);
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
-  SendCommandWithStatusCallback(std::move(reply), nullptr);
+  auto& [handle, conn] = *conn_pair;
+
+  auto link_key = conn->pairing_state().OnLinkKeyRequest(addr);
+  if (!link_key.has_value()) {
+    SendLinkKeyRequestNegativeReply(params.bd_addr);
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  SendLinkKeyRequestReply(params.bd_addr, link_key.value());
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -996,6 +974,24 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress add
   });
 }
 
+void BrEdrConnectionManager::SendAuthenticationRequested(hci::ConnectionHandle handle,
+                                                         hci::StatusCallback cb) {
+  auto auth_request = hci::CommandPacket::New(hci::kAuthenticationRequested,
+                                              sizeof(hci::AuthenticationRequestedCommandParams));
+  auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()->connection_handle =
+      htole16(handle);
+
+  // Complete on command status because Authentication Complete Event is already registered.
+  hci::CommandChannel::CommandCallback command_cb;
+  if (cb) {
+    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+      cb(event.ToStatus());
+    };
+  }
+  hci_->command_channel()->SendCommand(std::move(auth_request), std::move(command_cb),
+                                       hci::kCommandStatusEventCode);
+}
+
 void BrEdrConnectionManager::SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
                                                           hci::IOCapability io_capability,
                                                           uint8_t oob_data_present,
@@ -1059,6 +1055,28 @@ void BrEdrConnectionManager::SendUserPasskeyRequestNegativeReply(DeviceAddressBy
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
+void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                                             hci::StatusCallback cb) {
+  auto negative_reply = hci::CommandPacket::New(
+      hci::kLinkKeyRequestNegativeReply, sizeof(hci::LinkKeyRequestNegativeReplyCommandParams));
+  auto negative_reply_params =
+      negative_reply->mutable_payload<hci::LinkKeyRequestNegativeReplyCommandParams>();
+  negative_reply_params->bd_addr = bd_addr;
+  SendCommandWithStatusCallback(std::move(negative_reply), std::move(cb));
+}
+
+void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
+                                                     hci::LinkKey link_key,
+                                                     hci::StatusCallback cb) {
+  auto reply = hci::CommandPacket::New(hci::kLinkKeyRequestReply,
+                                       sizeof(hci::LinkKeyRequestReplyCommandParams));
+  auto reply_params = reply->mutable_payload<hci::LinkKeyRequestReplyCommandParams>();
+  reply_params->bd_addr = bd_addr;
+  const auto& key_value = link_key.value();
+  std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
+  SendCommandWithStatusCallback(std::move(reply), std::move(cb));
+}
+
 void BrEdrConnectionManager::SendCommandWithStatusCallback(
     std::unique_ptr<hci::CommandPacket> command_packet, hci::StatusCallback cb) {
   hci::CommandChannel::CommandCallback command_cb;
@@ -1068,22 +1086,6 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
     };
   }
   hci_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
-}
-
-bool BrEdrConnectionManager::InitiatesPairing(PeerId peer_id, BrEdrConnection* connection,
-                                              hci::ConnectionHandle handle,
-                                              PairingState::StatusCallback pairing_callback) {
-  if (connection->pairing_state().InitiatePairing(std::move(pairing_callback)) ==
-      PairingState::InitiatorAction::kSendAuthenticationRequest) {
-    auto auth_request = hci::CommandPacket::New(hci::kAuthenticationRequested,
-                                                sizeof(hci::AuthenticationRequestedCommandParams));
-    auth_request->mutable_payload<hci::AuthenticationRequestedCommandParams>()->connection_handle =
-        htole16(handle);
-    bt_log(TRACE, "gap-bredr", "sending auth request to peer %s", bt_str(peer_id));
-    hci_->command_channel()->SendCommand(std::move(auth_request), nullptr);
-    return true;
-  }
-  return false;
 }
 
 }  // namespace gap
