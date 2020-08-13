@@ -55,9 +55,7 @@ class Packet {
 
   // Creates an empty packet.
   constexpr Packet()
-      : Packet(
-            PacketType::RESPONSE, kUnassignedId, kUnassignedId, kUnassignedId) {
-  }
+      : Packet(PacketType{}, kUnassignedId, kUnassignedId, kUnassignedId) {}
 
   constexpr Packet(PacketType type,
                    uint32_t channel_id,

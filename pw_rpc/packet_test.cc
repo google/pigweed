@@ -61,6 +61,15 @@ constexpr auto kEncoded = bytes::Array<
     MakeKey(6, protobuf::WireType::kVarint),
     0x00>();
 
+// Test that a defualt constructed packet sets its members to the default
+// protobuf values.
+static_assert(Packet().type() == PacketType{});
+static_assert(Packet().channel_id() == 0);
+static_assert(Packet().service_id() == 0);
+static_assert(Packet().method_id() == 0);
+static_assert(Packet().status() == static_cast<Status::Code>(0));
+static_assert(Packet().payload().empty());
+
 TEST(Packet, Encode) {
   byte buffer[64];
 
