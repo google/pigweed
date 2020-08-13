@@ -25,7 +25,12 @@ import("$dir_pw_build/python_script.gni")
 # created as a starting point.
 #
 # Args:
-#   database: source tree path to database file to update; must exist beforehand
+#   database: if updating a database, path to an existing database in the source
+#       tree; optional if creating a database, but may provide an output
+#       directory path to override the default of
+#       "$target_gen_dir/$target_name.[csv/binary]"
+#   create: if specified, create a database instead of updating one; 'create'
+#       must be set to one of the supported database types: "csv" or "binary"
 #   targets: GN targets (executables or libraries) from which to add tokens;
 #       these targets are added to deps
 #   optional_targets: GN targets from which to add tokens, if the output files
@@ -33,11 +38,27 @@ import("$dir_pw_build/python_script.gni")
 #   input_databases: paths to other database files from which to add tokens
 #   deps: GN targets to build prior to generating the database; artifacts from
 #       these targets are NOT implicitly used for database generation
+#   domain: if provided, extract strings from tokenization domains matching this
+#       regular expression
 #
 template("pw_tokenizer_database") {
-  assert(defined(invoker.database),
-         "pw_tokenizer_database requires a 'database' variable")
+  assert(defined(invoker.database) || defined(invoker.create),
+         "pw_tokenizer_database requires a 'database' variable, unless " +
+             "'create' is specified")
 
+  if (defined(invoker.create)) {
+    assert(invoker.create == "csv" || invoker.create == "binary",
+           "If provided, 'create' must be \"csv\" or \"binary\"")
+    _create = invoker.create
+  } else {
+    _create = ""
+  }
+
+  if (defined(invoker.database)) {
+    _database = invoker.database
+  } else {
+    _database = "$target_gen_dir/$target_name.${invoker.create}"
+  }
   if (defined(invoker.targets)) {
     _targets = invoker.targets
   } else {
@@ -62,23 +83,50 @@ template("pw_tokenizer_database") {
           "pw_tokenizer_database! At least one target or database must be " +
           "provided as an input.")
 
+  if (defined(invoker.domain)) {
+    _domain = "#" + invoker.domain
+  } else {
+    _domain = ""
+  }
+
   pw_python_script(target_name) {
     script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
-    args = [
-      "add",
+
+    inputs = _input_databases
+
+    if (_create == "") {
+      args = [ "add" ]
+      inputs += [ _database ]
+
+      # Since the output file is in the source tree, create a corresponding
+      # stamp file in the output directory that is independent of the toolchain.
+      # That way, updating the database from multiple toolchains is an error.
+      stamp =
+          "$root_build_dir/" + rebase_path(invoker.database, "//") + ".update"
+    } else {
+      args = [
+        "create",
+        "--force",
+        "--type",
+        _create,
+      ]
+      outputs = [ _database ]
+    }
+
+    args += [
       "--database",
-      rebase_path(invoker.database),
+      rebase_path(_database),
     ]
     args += rebase_path(_input_databases)
 
     foreach(target, _targets) {
-      args += [ "<TARGET_FILE($target)>" ]
+      args += [ "<TARGET_FILE($target)>$_domain" ]
     }
 
     # For optional targets, the build outputs may not exist, since they aren't
     # added to deps. Use TARGET_FILE_IF_EXISTS to handle this.
     foreach(target, _optional_targets) {
-      args += [ "<TARGET_FILE_IF_EXISTS($target)>" ]
+      args += [ "<TARGET_FILE_IF_EXISTS($target)>$_domain" ]
     }
 
     deps = _targets
@@ -86,12 +134,5 @@ template("pw_tokenizer_database") {
     if (defined(invoker.deps)) {
       deps += invoker.deps
     }
-
-    inputs = [ invoker.database ] + _input_databases
-
-    # Since the output file is in the source tree, create a corresponding stamp
-    # file in the output directory that is independent of the toolchain. That
-    # way, trying to update the database from multiple toolchains is an error.
-    stamp = "$root_build_dir/" + rebase_path(invoker.database, "//") + ".update"
   }
 }

@@ -485,10 +485,15 @@ database after each build.
 
 GN integration
 ^^^^^^^^^^^^^^
-Token databases may be updated as part of a GN build. The
+Token databases may be updated or created as part of a GN build. The
 ``pw_tokenizer_database`` template provided by ``dir_pw_tokenizer/database.gni``
-automatically updates a tokenized strings database in the source tree with
-artifacts from one or more GN targets or other database files.
+automatically updates an in-source tokenized strings database or creates a new
+database with artifacts from one or more GN targets or other database files.
+
+To create a new database, set the ``create`` variable to the desired database
+type (``"csv"`` or ``"binary"``). The database will be created in the output
+directory. To update an existing database, provide the path to the database with
+the ``database`` variable.
 
 Each database in the source tree can only be updated from a single
 ``pw_tokenizer_database`` rule. Updating the same database in multiple rules
