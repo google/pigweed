@@ -646,6 +646,61 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
+       EngineRetransmitsIFrameIndefinitelyWhenMaxTransmitsIsZero) {
+  constexpr size_t kMaxTransmissions = 0;
+  constexpr size_t kTxWindow = 2;
+  size_t num_info_frames_sent = 0;
+  bool connection_failed = false;
+  ByteBufferPtr last_tx_frame = nullptr;
+  TxEngine tx_engine(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow,
+      [&](ByteBufferPtr pdu) {
+        if (pdu->size() >= sizeof(EnhancedControlField) &&
+            pdu->As<EnhancedControlField>().designates_information_frame()) {
+          ++num_info_frames_sent;
+          last_tx_frame = std::move(pdu);
+        }
+      },
+      [&] { connection_failed = true; });
+
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(kDefaultPayload));
+  EXPECT_EQ(1u, num_info_frames_sent);
+
+  // This test should trigger enough transmissions to overflow an 8-bit transmit counter.
+  const auto kNumTransmissions = size_t{2} * std::numeric_limits<uint8_t>::max();
+
+  // Retransmissions after the initial one triggered by QueueSdu
+  for (size_t i = 0; i < kNumTransmissions - 1; ++i) {
+    // Not having received an acknowledgement after 2 seconds, receiver_ready_poll_task_ will fire,
+    // and cause us to send a ReceiverReadyPoll.
+    ASSERT_TRUE(RunLoopFor(zx::sec(2))) << "(i=" << i << ")";
+
+    // The connection should remain open, to allow the peer time to respond to our poll, and
+    // acknowledge the outstanding frame.
+    EXPECT_FALSE(connection_failed);
+
+    // The peer indicates that it has not received any frames.
+    tx_engine.UpdateAckSeq(0, true);
+  }
+
+  // The connection is still open and we have transmitted more times than the greatest possible
+  // finite MaxTransmit option (which is 8-bit).
+  EXPECT_FALSE(connection_failed);
+  EXPECT_EQ(kNumTransmissions, num_info_frames_sent);
+
+  // Check that the outbound frame's transmit count hasn't overflowed to zero by transmitting a
+  // different payload.
+  ASSERT_TRUE(ContainersEqual(kDefaultPayload, last_tx_frame->view(sizeof(EnhancedControlField))));
+  num_info_frames_sent = 0;
+
+  // If the first frame's transmit count had overflowed to zero, it would get sent out together
+  // with this new SDU because it would be indistinguishable from "never transmitted."
+  tx_engine.QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer('@')));
+  EXPECT_EQ(1u, num_info_frames_sent);
+  EXPECT_EQ('@', (*last_tx_frame)[sizeof(EnhancedControlField)]);
+}
+
+TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
        EngineClosesChannelAfterMaxTransmitsOfIFrameEvenIfRetransmissionsAreDisabled) {
   constexpr size_t kMaxTransmissions = 1;
   bool connection_failed = false;

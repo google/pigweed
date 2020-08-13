@@ -6,6 +6,8 @@
 
 #include <zircon/assert.h>
 
+#include <limits>
+
 #include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
@@ -324,7 +326,13 @@ uint8_t Engine::NumUnackedFrames() {
 void Engine::SendPdu(PendingPdu* pdu) {
   ZX_DEBUG_ASSERT(pdu);
   pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_receive_seq_num(req_seqnum_);
-  pdu->tx_count++;
+
+  // Prevent tx_count from overflowing to zero, as that would be indistinguishable from "never
+  // transmitted." This is only possible when configured for infinite retransmissions, so there is
+  // no benefit to having an accurate tx_count after each frame's initial transmission.
+  if (pdu->tx_count != std::numeric_limits<decltype(pdu->tx_count)>::max()) {
+    pdu->tx_count++;
+  }
   StartReceiverReadyPollTimer();
   send_frame_callback_(std::make_unique<DynamicByteBuffer>(pdu->buf));
 }
@@ -360,7 +368,9 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
       continue;
     }
 
-    if (cur_frame->tx_count >= max_transmissions_) {
+    // Core Spec v5.0, Vol 3, Part A, Sec 5.4: "In Enhanced Retransmission mode a value of zero for
+    // MaxTransmit means infinite retransmissions."
+    if (max_transmissions_ != 0 && cur_frame->tx_count >= max_transmissions_) {
       ZX_ASSERT_MSG(cur_frame->tx_count == max_transmissions_, "%hhu != %hhu", cur_frame->tx_count,
                     max_transmissions_);
       connection_failure_callback_();
