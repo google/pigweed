@@ -109,7 +109,7 @@
   {
     "path": "fuchsia/third_party/kythe",
     "tags": [
-      "version:0.0.45"
+      "version:0.0.46"
     ]
   }
 ]
