@@ -20,6 +20,9 @@ import("$dir_pw_unit_test/test.gni")
 declare_args() {
   # Tokenizer trace time, gets included if provided
   pw_trace_tokenizer_time = ""
+
+  # Trace buffer size in bytes. Set to 0 to disable.
+  pw_trace_tokenized_BUFFER_SIZE = 256
 }
 
 config("default_config") {
@@ -64,13 +67,22 @@ pw_test("trace_tokenized_test") {
   sources = [ "trace_test.cc" ]
 }
 
+config("trace_buffer_size") {
+  defines = [ "PW_TRACE_BUFFER_SIZE_BYTES=${pw_trace_tokenized_BUFFER_SIZE}" ]
+}
+
 pw_source_set("tokenized_trace_buffer") {
   deps = [ ":pw_trace_tokenized_core" ]
   public_deps = [
     "$dir_pw_ring_buffer",
+    "$dir_pw_tokenizer",
     "$dir_pw_varint",
   ]
   sources = [ "trace_buffer.cc" ]
+  public_configs = [
+    ":default_config",
+    ":trace_buffer_size",
+  ]
   public = [ "public/pw_trace_tokenized/trace_buffer.h" ]
 }
 
