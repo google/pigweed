@@ -444,8 +444,8 @@ void ProfileServer::OnSetPriority(bt::hci::ConnectionHandle handle,
     params->priority = bt::hci::BcmAclPriority::kNormal;
   }
 
-  // TODO(57163): Return error if there is a priority conflict or the controller does not support
-  // the ACL priority command.
+  // TODO(fxbug.dev/57163): Return error if there is a priority conflict or the controller does not
+  // support the ACL priority command.
   adapter()->transport()->command_channel()->SendCommand(
       std::move(packet),
       [cb = std::move(cb), priority](auto id, const bt::hci::EventPacket& event) {
@@ -473,7 +473,7 @@ void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server,
   }
 
   // Revert any change made to ACL priority by this extension.
-  // TODO(57163): Remove this hack and revert priority when a channel is closed and
+  // TODO(fxbug.dev/57163): Remove this hack and revert priority when a channel is closed and
   // no other channel is using the current priority.
   if (ext_server->priority() != fidlbredr::A2dpDirectionPriority::NORMAL) {
     OnSetPriority(handle, fidlbredr::A2dpDirectionPriority::NORMAL, [](auto result) {});

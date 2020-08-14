@@ -199,7 +199,7 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
 
   peer->MutLe().SetAutoConnectBehaviorForIntentionalDisconnect();
 
-  // TODO(fxb/37584): When implementing auto-connect behavior tracking for classic bluetooth,
+  // TODO(fxbug.dev/37584): When implementing auto-connect behavior tracking for classic bluetooth,
   // consider tracking this policy for the peer as a whole unless we think this policy should be
   // applied separately for each transport (per armansito@).
 
@@ -220,7 +220,7 @@ bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
 
   peer->MutLe().SetAutoConnectBehaviorForSuccessfulConnection();
 
-  // TODO(fxb/37584): Implement auto-connect behavior tracking for classic bluetooth.
+  // TODO(fxbug.dev/37584): Implement auto-connect behavior tracking for classic bluetooth.
 
   return true;
 }

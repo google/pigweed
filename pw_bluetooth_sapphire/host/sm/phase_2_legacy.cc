@@ -101,7 +101,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
     return;
   }
 
-  // TODO(fxb/601): Support providing a TK out of band.
+  // TODO(fxbug.dev/601): Support providing a TK out of band.
   ZX_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
   listener()->ConfirmPairing([self](bool confirm) {
     if (!self) {

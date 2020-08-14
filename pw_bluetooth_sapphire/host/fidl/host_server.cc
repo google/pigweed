@@ -523,7 +523,7 @@ void HostServer::Connect(fbt::PeerId peer_id, ConnectCallback callback) {
     return;
   }
 
-  // TODO(fxb/1242): Dual-mode currently not supported; if the peer supports
+  // TODO(fxbug.dev/1242): Dual-mode currently not supported; if the peer supports
   // BR/EDR we prefer BR/EDR. If a dual-mode peer, we should attempt to connect
   // both protocols.
   if (peer->bredr()) {

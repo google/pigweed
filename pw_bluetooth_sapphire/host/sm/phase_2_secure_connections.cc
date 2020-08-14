@@ -140,7 +140,7 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
                                                  peer_ecdh_->GetPublicKeyX(), features_.method,
                                                  std::move(send_cb), std::move(complete_cb));
   } else {  // method == kOutOfBand
-    // TODO(fxb/601): OOB would require significant extra plumbing & add security exposure not
+    // TODO(fxbug.dev/601): OOB would require significant extra plumbing & add security exposure not
     // necessary for current goals. This is not spec-compliant but should allow us to pass PTS.
     Abort(ErrorCode::kCommandNotSupported);
     return;

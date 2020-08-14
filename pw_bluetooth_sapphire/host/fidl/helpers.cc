@@ -550,8 +550,8 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
     output.set_rssi(peer.rssi());
   }
 
-  // TODO(fxb/37485): Populate service UUIDs based on GATT and SDP results as well as advertising
-  // and inquiry data.
+  // TODO(fxbug.dev/37485): Populate service UUIDs based on GATT and SDP results as well as
+  // advertising and inquiry data.
 
   return output;
 }

@@ -60,8 +60,8 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
       return;
     }
 
-    // TODO(55770): If current IO capabilities would make meeting security requirements impossible,
-    // skip pairing and report failure immediately.
+    // TODO(fxbug.dev/55770): If current IO capabilities would make meeting security requirements
+    // impossible, skip pairing and report failure immediately.
 
     current_pairing_ = Pairing::MakeInitiator(security_requirements);
     PairingRequest request{.security_requirements = security_requirements,
