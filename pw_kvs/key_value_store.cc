@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 
 #include "pw_kvs/key_value_store.h"
 
@@ -21,7 +22,6 @@
 #include <cstring>
 #include <type_traits>
 
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 #include "pw_assert/assert.h"
 #include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"

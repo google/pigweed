@@ -12,9 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
+
 #include "pw_kvs/internal/sectors.h"
 
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 #include "pw_log/log.h"
 
 namespace pw::kvs::internal {
