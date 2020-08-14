@@ -98,6 +98,22 @@
   PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_DEFAULT_FLAGS, message, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
+// Default: Number of bits available for the level
+//
+// All log statements have a level, and this define is the number of bits
+// available for the level. Some backends restrict this for better efficiency.
+#ifndef PW_LOG_LEVEL_BITS
+#define PW_LOG_LEVEL_BITS 0
+#endif  // PW_LOG_LEVEL_BITS
+
+// Default: Number of bits available for the flags
+//
+// All log statements have a flags field, and this define is the number of bits
+// available for the flags. Some backends restrict this for better efficiency.
+#ifndef PW_LOG_FLAG_BITS
+#define PW_LOG_FLAG_BITS 0
+#endif  // PW_LOG_FLAG_BITS
+
 // Define short, usable names if requested.
 // TODO(pwbug/17): Convert this to the config system when available.
 #ifndef PW_LOG_USE_SHORT_NAMES
