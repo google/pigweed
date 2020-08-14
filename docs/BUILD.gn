@@ -64,6 +64,7 @@ pw_doc_gen("docs") {
     "$dir_pw_allocator:docs",
     "$dir_pw_assert:docs",
     "$dir_pw_assert_basic:docs",
+    "$dir_pw_assert_log:docs",
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_blob_store:docs",
