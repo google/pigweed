@@ -819,6 +819,15 @@ BrEdrDynamicChannel::CheckForUnacceptableErtmOptions(const ChannelConfiguration&
     unacceptable_rfc_option->set_tx_window_size(kErtmMaxUnackedInboundFrames);
   }
 
+  // NOTE(fxbug.dev/1033): MPS must be large enough to fit the largest SDU in the minimum MTU case,
+  // because ERTM does not segment in the outbound direction.
+  if (peer_rfc_option.mps() < kMinACLMTU) {
+    bt_log(DEBUG, "l2cap-bredr", "Channel %#.4x: rejecting too-small ERTM MPS of %hu", local_cid(),
+           peer_rfc_option.mps());
+    unacceptable_rfc_option = unacceptable_rfc_option.value_or(peer_rfc_option);
+    unacceptable_rfc_option->set_mps(kMinACLMTU);
+  }
+
   return unacceptable_rfc_option;
 }
 

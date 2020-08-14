@@ -2170,6 +2170,40 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
                                        kOutboundConfigRsp));
 }
 
+TEST_F(L2CAP_BrEdrDynamicChannelTest,
+       SendUnacceptableParamsResponseWhenPeerRequestErtmWithUndersizeMps) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+                      {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  constexpr uint8_t kMaxTransmit = 31;
+  constexpr uint8_t kTxWindow = kErtmMaxUnackedInboundFrames;
+
+  // MPS of 16 would not be able to fit a 48-byte (minimum MTU) SDU without segmentation.
+  const auto kInboundConfigReqWithUndersizeMps =
+      MakeConfigReqWithMtuAndRfc(kLocalCId, kDefaultMTU, ChannelMode::kEnhancedRetransmission,
+                                 /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
+                                 /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/16);
+  const auto kOutboundConfigRsp = MakeConfigRspWithRfc(
+      kRemoteCId, ConfigurationResult::kUnacceptableParameters,
+      ChannelMode::kEnhancedRetransmission, /*tx_window=*/kTxWindow, /*max_transmit=*/kMaxTransmit,
+      /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMinACLMTU);
+  RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithUndersizeMps,
+                                       kOutboundConfigRsp));
+}
+
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
 // the local device must accept. These modes are incompatible, so the local device should
 // default to Basic Mode.
