@@ -34,12 +34,14 @@ class FlashMemory {
  public:
   // The flash address is in the range of: 0 to FlashSize.
   typedef uint32_t Address;
-  constexpr FlashMemory(size_t sector_size,
-                        size_t sector_count,
-                        size_t alignment,
-                        uint32_t start_address = 0,
-                        uint32_t sector_start = 0,
-                        std::byte erased_memory_content = std::byte{0xFF})
+
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  FlashMemory(size_t sector_size,
+              size_t sector_count,
+              size_t alignment,
+              uint32_t start_address = 0,
+              uint32_t sector_start = 0,
+              std::byte erased_memory_content = std::byte{0xFF})
       : sector_size_(sector_size),
         flash_sector_count_(sector_count),
         alignment_(alignment),
@@ -161,7 +163,8 @@ class FlashPartition {
     FlashPartition::Address address_;
   };
 
-  constexpr FlashPartition(
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  FlashPartition(
       FlashMemory* flash,
       uint32_t start_sector_index,
       uint32_t sector_count,
@@ -184,7 +187,8 @@ class FlashPartition {
   }
 
   // Creates a FlashPartition that uses the entire flash with its alignment.
-  constexpr FlashPartition(FlashMemory* flash)
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  FlashPartition(FlashMemory* flash)
       : FlashPartition(
             flash, 0, flash->sector_count(), flash->alignment_bytes()) {}
 

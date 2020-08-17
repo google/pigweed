@@ -33,12 +33,10 @@ class Result {
   constexpr Result(std::in_place_t, Args&&... args)
       : value_(std::forward<Args>(args)...), status_(Status::OK) {}
 
-  constexpr Result(Status status) : status_(status) {
-    PW_CHECK(status_ != Status::OK);
-  }
-  constexpr Result(Status::Code code) : status_(code) {
-    PW_CHECK(status_ != Status::OK);
-  }
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  Result(Status status) : status_(status) { PW_CHECK(status_ != Status::OK); }
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  Result(Status::Code code) : status_(code) { PW_CHECK(status_ != Status::OK); }
 
   constexpr Result(const Result&) = default;
   constexpr Result& operator=(const Result&) = default;
@@ -49,17 +47,20 @@ class Result {
   constexpr Status status() const { return status_; }
   constexpr bool ok() const { return status_.ok(); }
 
-  constexpr T& value() & {
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  T& value() & {
     PW_CHECK_OK(status_);
     return value_;
   }
 
-  constexpr const T& value() const& {
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  const T& value() const& {
     PW_CHECK_OK(status_);
     return value_;
   }
 
-  constexpr T&& value() && {
+  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
+  T&& value() && {
     PW_CHECK_OK(status_);
     return std::move(value_);
   }
