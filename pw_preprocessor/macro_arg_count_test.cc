@@ -22,10 +22,13 @@
 namespace pw {
 namespace {
 
+#define EMPTY_ARG
+
 TEST(HasArgs, WithoutArguments) {
   static_assert(PW_HAS_ARGS() == 0);
   static_assert(PW_HAS_ARGS(/**/) == 0);
   static_assert(PW_HAS_ARGS(/* uhm, hi */) == 0);
+  static_assert(PW_HAS_ARGS(EMPTY_ARG) == 0);
 
   // Test how the macro handles whitespace and comments.
   // clang-format off
@@ -38,9 +41,9 @@ TEST(HasArgs, WithoutArguments) {
       ) == 0);  // NOLINT
   // clang-format on
 
-  static_assert(PW_HAS_NO_ARGS() == 1);
-  static_assert(PW_HAS_NO_ARGS(/* hello */) == 1);
-  static_assert(PW_HAS_NO_ARGS(
+  static_assert(PW_EMPTY_ARGS() == 1);
+  static_assert(PW_EMPTY_ARGS(/* hello */) == 1);
+  static_assert(PW_EMPTY_ARGS(
                     // hello
                     /* goodbye */) == 1);
 }
@@ -53,11 +56,11 @@ TEST(HasArgs, WithArguments) {
   static_assert(PW_HAS_ARGS(PW_HAS_ARGS) == 1);
   static_assert(PW_HAS_ARGS(PW_HAS_ARGS()) == 1);
 
-  static_assert(PW_HAS_NO_ARGS(0) == 0);
-  static_assert(PW_HAS_NO_ARGS(, ) == 0);  // NOLINT
-  static_assert(PW_HAS_NO_ARGS(a, b, c) == 0);
-  static_assert(PW_HAS_NO_ARGS(PW_HAS_ARGS) == 0);
-  static_assert(PW_HAS_NO_ARGS(PW_HAS_ARGS()) == 0);
+  static_assert(PW_EMPTY_ARGS(0) == 0);
+  static_assert(PW_EMPTY_ARGS(, ) == 0);  // NOLINT
+  static_assert(PW_EMPTY_ARGS(a, b, c) == 0);
+  static_assert(PW_EMPTY_ARGS(PW_HAS_ARGS) == 0);
+  static_assert(PW_EMPTY_ARGS(PW_HAS_ARGS()) == 0);
 }
 
 constexpr int TestFunc(int arg, ...) { return arg; }
@@ -105,6 +108,16 @@ TEST(CommaVarargs, WithArguments) {
   static_assert(COUNT_ARGS_TEMPLATE(int) == 1);
   static_assert(COUNT_ARGS_TEMPLATE(int, int) == 2);
   static_assert(COUNT_ARGS_TEMPLATE(int, int, int) == 3);
+}
+
+TEST(CommaVarargs, EmptyFinalArgument) {
+  static_assert(COUNT_ARGS_TEMPLATE(EMPTY_ARG) == 0);
+  static_assert(COUNT_ARGS_TEMPLATE(int, ) == 1);
+  static_assert(COUNT_ARGS_TEMPLATE(int, EMPTY_ARG) == 1);
+  static_assert(COUNT_ARGS_TEMPLATE(int, /* EMPTY_ARG */) == 1);
+  static_assert(COUNT_ARGS_TEMPLATE(int, int, ) == 2);
+  static_assert(COUNT_ARGS_TEMPLATE(int, int, int, ) == 3);
+  static_assert(COUNT_ARGS_TEMPLATE(int, int, int, EMPTY_ARG) == 3);
 }
 
 TEST(CountArgs, Zero) {
