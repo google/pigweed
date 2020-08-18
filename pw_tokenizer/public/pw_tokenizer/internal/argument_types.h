@@ -182,13 +182,6 @@ constexpr pw_TokenizerArgTypes VarargsType() {
 // The arguments are not evaluated; only their types are used to
 // select the set their corresponding PW_TOKENIZER_ARG_TYPEs.
 #define PW_TOKENIZER_ARG_TYPES(...) \
-  _PW_TOKENIZER_TYPES_N(PW_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
-
-// Selects which _PW_TOKENIZER_TYPES_* macro to use based on the number of
-// arguments this was called with.
-#define _PW_TOKENIZER_TYPES_N(count, ...) \
-  _PW_TOKENIZER_TYPES_EXPAND_N(count, __VA_ARGS__)
-#define _PW_TOKENIZER_TYPES_EXPAND_N(count, ...) \
-  _PW_TOKENIZER_TYPES_##count(__VA_ARGS__)
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZER_TYPES_, __VA_ARGS__)
 
 #define _PW_TOKENIZER_TYPES_0() ((pw_TokenizerArgTypes)0)

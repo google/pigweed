@@ -31,6 +31,7 @@ pw_source_set("pw_preprocessor") {
     "public/pw_preprocessor/macro_arg_count.h",
     "public/pw_preprocessor/util.h",
   ]
+  sources = [ "public/pw_preprocessor/internal/arg_count_impl.h" ]
 }
 
 pw_doc_group("docs") {

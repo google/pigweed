@@ -17,6 +17,7 @@
 #pragma once
 
 #include "pw_preprocessor/boolean.h"
+#include "pw_preprocessor/internal/arg_count_impl.h"
 
 // PW_ARG_COUNT counts the number of arguments it was called with. It evalulates
 // to an integer literal in the range 0 to 64. Counting more than 64 arguments
@@ -42,6 +43,35 @@
                      24, 23, 22, 21, 20, 19, 18, 17, \
                      16, 15, 14, 13, 12, 11, 10,  9, \
                       8,  7,  6,  5, 4,  3,  2,  PW_HAS_ARGS(__VA_ARGS__))
+// clang-format on
+
+// Argument count for using with a C/C++ function or template parameter list.
+// The difference from PW_MACRO_ARG_COUNT is that the last argument is not
+// counted if it is empty. This makes it easier to drop the final comma when
+// expanding to C/C++ code.
+#define PW_FUNCTION_ARG_COUNT(...) \
+  _PW_FUNCTION_ARG_COUNT(PW_LAST_ARG(__VA_ARGS__), __VA_ARGS__)
+
+#define _PW_FUNCTION_ARG_COUNT(last_arg, ...) \
+  _PW_PASTE2(_PW_FUNCTION_ARG_COUNT_, PW_EMPTY_ARGS(last_arg))(__VA_ARGS__)
+
+#define _PW_FUNCTION_ARG_COUNT_0 PW_ARG_COUNT
+#define _PW_FUNCTION_ARG_COUNT_1(...) \
+  PW_ARG_COUNT(PW_DROP_LAST_ARG(__VA_ARGS__))
+
+// Evaluates to the last argument in the provided arguments.
+#define PW_LAST_ARG(...) \
+  _PW_PASTE2(_PW_LAST_ARG_, PW_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)
+
+// Evaluates to the provided arguments, excluding the final argument.
+#define PW_DROP_LAST_ARG(...) \
+  _PW_PASTE2(_PW_DROP_LAST_ARG_, PW_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)
+
+// Evaluates to the provided arguments excluding the final argument..
+#define PW_DROP_LAST_ARG_IF_EMPTY(...)                                       \
+  _PW_IF(                                                                    \
+      PW_EMPTY_ARGS(PW_LAST_ARG(__VA_ARGS__)), PW_DROP_LAST_ARG, _PW_EXPAND) \
+  (__VA_ARGS__)
 
 // Expands to 1 if one or more arguments are provided, 0 otherwise.
 #define PW_HAS_ARGS(...) PW_NOT(PW_EMPTY_ARGS(__VA_ARGS__))
@@ -69,11 +99,13 @@
 // whether any arguments were passed in.
 //
 // C++20 introduces __VA_OPT__, which would greatly simplify this macro.
-#define PW_EMPTY_ARGS(...)                                            \
+#define PW_EMPTY_ARGS(...)                                             \
   _PW_HAS_NO_ARGS(_PW_HAS_COMMA(__VA_ARGS__),                          \
                   _PW_HAS_COMMA(_PW_MAKE_COMMA_IF_CALLED __VA_ARGS__), \
                   _PW_HAS_COMMA(__VA_ARGS__()),                        \
                   _PW_HAS_COMMA(_PW_MAKE_COMMA_IF_CALLED __VA_ARGS__()))
+
+// clang-format off
 
 #define _PW_HAS_COMMA(...)                                           \
   _PW_ARG_COUNT_IMPL(__VA_ARGS__,                                    \
@@ -94,6 +126,7 @@
   count
 
 // clang-format on
+
 #define _PW_HAS_NO_ARGS(a1, a2, a3, a4) \
   _PW_HAS_COMMA(_PW_PASTE_RESULTS(a1, a2, a3, a4))
 #define _PW_PASTE_RESULTS(a1, a2, a3, a4) _PW_HAS_COMMA_CASE_##a1##a2##a3##a4
@@ -110,7 +143,9 @@
 // This is a more flexible, standard-compliant version of ##__VA_ARGS__. Unlike
 // ##__VA_ARGS__, this can be used to eliminate an unwanted comma when
 // __VA_ARGS__ expands to an empty argument because an outer macro was called
-// with __VA_ARGS__ instead of ##__VA_ARGS__.
+// with __VA_ARGS__ instead of ##__VA_ARGS__. Also, since PW_COMMA_ARGS drops
+// the last argument if it is empty, both MY_MACRO(1, 2) and MY_MACRO(1, 2, )
+// can work correctly.
 //
 // PW_COMMA_ARGS must NOT be used to conditionally include a comma when invoking
 // a macro from another macro. PW_COMMA_ARGS only functions correctly when the
@@ -132,69 +167,11 @@
      #define NESTED_MACRO(fmt, ...) \
          printf(fmt PW_COMMA_ARGS(__VA_ARGS__))  // PW_COMMA_ARGS is OK here
 */
-#define PW_COMMA_ARGS(...) \
-  _PW_COMMA_ARGS(PW_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
-#define _PW_COMMA_ARGS(count, ...) _PW_COMMA_ARGS_X(count, __VA_ARGS__)
-#define _PW_COMMA_ARGS_X(count, ...) _PW_COMMA_ARGS_##count(__VA_ARGS__)
+#define PW_COMMA_ARGS(...)                                       \
+  _PW_IF(PW_EMPTY_ARGS(__VA_ARGS__), _PW_EXPAND, _PW_COMMA_ARGS) \
+  (PW_DROP_LAST_ARG_IF_EMPTY(__VA_ARGS__))
 
-// Expand PW_COMMA_ARGS to a macro for each number of arguments. This makes it
-// possible to omit the final argument if it is empty. For example, for the
-// following macro:
-//
-//   #define MY_MACRO(...) SomeFunction(true PW_COMMA_ARGS(__VA_ARGS__))
-//
-// both MY_MACRO(1, 2) and MY_MACRO(1, 2, ) expand to SomeFunction(true, 1, 2).
-//
-// These macros were generated using the following Python code:
-//
-//   for i in range(2, 33):
-//     args = ', '.join(f'a{arg}' for arg in range(1, i))
-//     print(f'#define _PW_COMMA_ARGS_{i}({args}, a{i}) '
-//           f', {args} _PW_COMMA_ARGS_1(a{i})')
-//
-// clang-format off
-#define _PW_COMMA_ARGS_2(a1, a2) , a1 _PW_COMMA_ARGS_1(a2)
-#define _PW_COMMA_ARGS_3(a1, a2, a3) , a1, a2 _PW_COMMA_ARGS_1(a3)
-#define _PW_COMMA_ARGS_4(a1, a2, a3, a4) , a1, a2, a3 _PW_COMMA_ARGS_1(a4)
-#define _PW_COMMA_ARGS_5(a1, a2, a3, a4, a5) , a1, a2, a3, a4 _PW_COMMA_ARGS_1(a5)
-#define _PW_COMMA_ARGS_6(a1, a2, a3, a4, a5, a6) , a1, a2, a3, a4, a5 _PW_COMMA_ARGS_1(a6)
-#define _PW_COMMA_ARGS_7(a1, a2, a3, a4, a5, a6, a7) , a1, a2, a3, a4, a5, a6 _PW_COMMA_ARGS_1(a7)
-#define _PW_COMMA_ARGS_8(a1, a2, a3, a4, a5, a6, a7, a8) , a1, a2, a3, a4, a5, a6, a7 _PW_COMMA_ARGS_1(a8)
-#define _PW_COMMA_ARGS_9(a1, a2, a3, a4, a5, a6, a7, a8, a9) , a1, a2, a3, a4, a5, a6, a7, a8 _PW_COMMA_ARGS_1(a9)
-#define _PW_COMMA_ARGS_10(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) , a1, a2, a3, a4, a5, a6, a7, a8, a9 _PW_COMMA_ARGS_1(a10)
-#define _PW_COMMA_ARGS_11(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 _PW_COMMA_ARGS_1(a11)
-#define _PW_COMMA_ARGS_12(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 _PW_COMMA_ARGS_1(a12)
-#define _PW_COMMA_ARGS_13(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12 _PW_COMMA_ARGS_1(a13)
-#define _PW_COMMA_ARGS_14(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13 _PW_COMMA_ARGS_1(a14)
-#define _PW_COMMA_ARGS_15(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14 _PW_COMMA_ARGS_1(a15)
-#define _PW_COMMA_ARGS_16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15 _PW_COMMA_ARGS_1(a16)
-#define _PW_COMMA_ARGS_17(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16 _PW_COMMA_ARGS_1(a17)
-#define _PW_COMMA_ARGS_18(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17 _PW_COMMA_ARGS_1(a18)
-#define _PW_COMMA_ARGS_19(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18 _PW_COMMA_ARGS_1(a19)
-#define _PW_COMMA_ARGS_20(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19 _PW_COMMA_ARGS_1(a20)
-#define _PW_COMMA_ARGS_21(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20 _PW_COMMA_ARGS_1(a21)
-#define _PW_COMMA_ARGS_22(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21 _PW_COMMA_ARGS_1(a22)
-#define _PW_COMMA_ARGS_23(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22 _PW_COMMA_ARGS_1(a23)
-#define _PW_COMMA_ARGS_24(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23 _PW_COMMA_ARGS_1(a24)
-#define _PW_COMMA_ARGS_25(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24 _PW_COMMA_ARGS_1(a25)
-#define _PW_COMMA_ARGS_26(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25 _PW_COMMA_ARGS_1(a26)
-#define _PW_COMMA_ARGS_27(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26 _PW_COMMA_ARGS_1(a27)
-#define _PW_COMMA_ARGS_28(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27 _PW_COMMA_ARGS_1(a28)
-#define _PW_COMMA_ARGS_29(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28 _PW_COMMA_ARGS_1(a29)
-#define _PW_COMMA_ARGS_30(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29 _PW_COMMA_ARGS_1(a30)
-#define _PW_COMMA_ARGS_31(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30 _PW_COMMA_ARGS_1(a31)
-#define _PW_COMMA_ARGS_32(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32) , a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31 _PW_COMMA_ARGS_1(a32)
-// clang-format on
-
-#define _PW_COMMA_ARGS_0()
-
-// If there is one argument, make a comma only if the argument is not empty.
-#define _PW_COMMA_ARGS_1(arg) _PW_SKIP_COMMA(PW_EMPTY_ARGS(arg)) arg
-
-#define _PW_SKIP_COMMA(no_comma) _PW_SKIP_COMMA_X(no_comma)
-#define _PW_SKIP_COMMA_X(no_comma) _PW_SKIP_COMMA_##no_comma
-#define _PW_SKIP_COMMA_1
-#define _PW_SKIP_COMMA_0 ,
+#define _PW_COMMA_ARGS(...) , __VA_ARGS__
 
 // Allows calling a different function-like macro based on the number of
 // arguments.  For example:
@@ -209,8 +186,9 @@
 //    ARG_PRINT("a", "b");       // Outputs: 2 arg: a, b
 //    ARG_PRINT("a", "b", "c");  // Outputs: 3 arg: a, b, c
 //
-#define PW_DELEGATE_BY_ARG_COUNT(func, ...) \
-  _PW_DELEGATE_BY_ARG_COUNT(func, PW_ARG_COUNT(__VA_ARGS__))(__VA_ARGS__)
-#define _PW_DELEGATE_BY_ARG_COUNT_EXPANDED(name, n) name##n
-#define _PW_DELEGATE_BY_ARG_COUNT(name, n) \
-  _PW_DELEGATE_BY_ARG_COUNT_EXPANDED(name, n)
+#define PW_DELEGATE_BY_ARG_COUNT(function, ...)                 \
+  _PW_DELEGATE_BY_ARG_COUNT(                                    \
+      _PW_PASTE2(function, PW_FUNCTION_ARG_COUNT(__VA_ARGS__)), \
+      PW_DROP_LAST_ARG_IF_EMPTY(__VA_ARGS__))
+
+#define _PW_DELEGATE_BY_ARG_COUNT(function, ...) function(__VA_ARGS__)
