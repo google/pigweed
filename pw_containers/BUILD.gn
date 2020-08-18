@@ -40,7 +40,7 @@ pw_source_set("intrusive_list") {
     "public/pw_containers/internal/intrusive_list_impl.h",
     "public/pw_containers/intrusive_list.h",
   ]
-  deps = [ "$dir_pw_assert" ]
+  deps = [ dir_pw_assert ]
   sources = [ "intrusive_list.cc" ]
 }
 

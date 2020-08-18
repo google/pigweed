@@ -142,24 +142,25 @@ TEST(IntrusiveList, Assign_EmptyRange) {
 
 TEST(IntrusiveList, PushOne) {
   constexpr int kMagicValue = 31;
-  IntrusiveList<TestItem> test_items;
   TestItem item1(kMagicValue);
-  test_items.push_back(item1);
-  EXPECT_FALSE(test_items.empty());
-  EXPECT_EQ(test_items.front().GetNumber(), kMagicValue);
+  IntrusiveList<TestItem> list;
+  list.push_back(item1);
+  EXPECT_FALSE(list.empty());
+  EXPECT_EQ(list.front().GetNumber(), kMagicValue);
 }
 
 TEST(IntrusiveList, PushThree) {
-  IntrusiveList<TestItem> test_items;
   TestItem item1(1);
   TestItem item2(2);
   TestItem item3(3);
-  test_items.push_back(item1);
-  test_items.push_back(item2);
-  test_items.push_back(item3);
+
+  IntrusiveList<TestItem> list;
+  list.push_back(item1);
+  list.push_back(item2);
+  list.push_back(item3);
 
   int loop_count = 0;
-  for (auto& test_item : test_items) {
+  for (auto& test_item : list) {
     loop_count++;
     EXPECT_EQ(loop_count, test_item.GetNumber());
   }
@@ -167,35 +168,38 @@ TEST(IntrusiveList, PushThree) {
 }
 
 TEST(IntrusiveList, IsEmpty) {
-  IntrusiveList<TestItem> test_items;
-  EXPECT_TRUE(test_items.empty());
-
   TestItem item1(1);
-  test_items.push_back(item1);
-  EXPECT_FALSE(test_items.empty());
+
+  IntrusiveList<TestItem> list;
+  EXPECT_TRUE(list.empty());
+
+  list.push_back(item1);
+  EXPECT_FALSE(list.empty());
 }
 
 TEST(IntrusiveList, InsertAfter) {
+  // Create a test item to insert midway through the list.
   constexpr int kMagicValue = 42;
+  TestItem inserted_item(kMagicValue);
+
+  // Create initial values to fill in the start/end.
   TestItem item_array[20];
-  IntrusiveList<TestItem> test_list;
+
+  IntrusiveList<TestItem> list;
   // Fill the list with TestItem objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    test_list.push_back(item_array[i]);
+    list.push_back(item_array[i]);
   }
 
-  // Create a test item to insert midway through the list.
-  TestItem inserted_item(kMagicValue);
-
-  // Move an iterator to the middle of the list, and then insert the item.
-  auto it = test_list.begin();
+  // Move an iterator to the middle of the list, and then insert the magic item.
+  auto it = list.begin();
   size_t expected_index = 1;  // Expected index is iterator index + 1.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array) / 2; ++i) {
     it++;
     expected_index++;
   }
-  it = test_list.insert_after(it, inserted_item);
+  it = list.insert_after(it, inserted_item);
 
   // Ensure the returned iterator from insert_after is the newly inserted
   // element.
@@ -203,7 +207,7 @@ TEST(IntrusiveList, InsertAfter) {
 
   // Ensure the value is in the expected location (index of the iterator + 1).
   size_t i = 0;
-  for (TestItem& item : test_list) {
+  for (TestItem& item : list) {
     if (item.GetNumber() == kMagicValue) {
       EXPECT_EQ(i, expected_index);
     } else {
@@ -218,68 +222,69 @@ TEST(IntrusiveList, InsertAfter) {
 
 TEST(IntrusiveList, PushFront) {
   constexpr int kMagicValue = 42;
+  TestItem pushed_item(kMagicValue);
+
   TestItem item_array[20];
-  IntrusiveList<TestItem> test_list;
+  IntrusiveList<TestItem> list;
   // Fill the list with TestItem objects that have a value of zero.
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(0);
-    test_list.push_back(item_array[i]);
+    list.push_back(item_array[i]);
   }
 
   // Create a test item to push to the front of the list.
-  TestItem pushed_item(kMagicValue);
-  test_list.push_front(pushed_item);
-  EXPECT_EQ(test_list.front().GetNumber(), kMagicValue);
+  list.push_front(pushed_item);
+  EXPECT_EQ(list.front().GetNumber(), kMagicValue);
 }
 
 TEST(IntrusiveList, Clear_Empty) {
-  IntrusiveList<TestItem> test_list;
-  EXPECT_TRUE(test_list.empty());
-  test_list.clear();
-  EXPECT_TRUE(test_list.empty());
+  IntrusiveList<TestItem> list;
+  EXPECT_TRUE(list.empty());
+  list.clear();
+  EXPECT_TRUE(list.empty());
 }
 
 TEST(IntrusiveList, Clear_OneItem) {
-  IntrusiveList<TestItem> test_list;
   TestItem item(42);
-  test_list.push_back(item);
-  EXPECT_FALSE(test_list.empty());
-  test_list.clear();
-  EXPECT_TRUE(test_list.empty());
+  IntrusiveList<TestItem> list;
+  list.push_back(item);
+  EXPECT_FALSE(list.empty());
+  list.clear();
+  EXPECT_TRUE(list.empty());
 }
 
 TEST(IntrusiveList, Clear_TwoItems) {
-  IntrusiveList<TestItem> test_list;
   TestItem item1(42);
   TestItem item2(42);
-  test_list.push_back(item1);
-  test_list.push_back(item2);
-  EXPECT_FALSE(test_list.empty());
-  test_list.clear();
-  EXPECT_TRUE(test_list.empty());
+  IntrusiveList<TestItem> list;
+  list.push_back(item1);
+  list.push_back(item2);
+  EXPECT_FALSE(list.empty());
+  list.clear();
+  EXPECT_TRUE(list.empty());
 }
 
 TEST(IntrusiveList, Clear_ReinsertClearedItems) {
   std::array<TestItem, 20> item_array;
-  IntrusiveList<TestItem> test_list;
-  EXPECT_TRUE(test_list.empty());
-  test_list.clear();
-  EXPECT_TRUE(test_list.empty());
+  IntrusiveList<TestItem> list;
+  EXPECT_TRUE(list.empty());
+  list.clear();
+  EXPECT_TRUE(list.empty());
 
   // Fill the list with TestItem objects.
   for (size_t i = 0; i < item_array.size(); ++i) {
     item_array[i].SetNumber(0);
-    test_list.push_back(item_array[i]);
+    list.push_back(item_array[i]);
   }
 
   // Remove everything.
-  test_list.clear();
-  EXPECT_TRUE(test_list.empty());
+  list.clear();
+  EXPECT_TRUE(list.empty());
 
   // Ensure all the removed elements can still be added back to a list.
   for (size_t i = 0; i < item_array.size(); ++i) {
     item_array[i].SetNumber(0);
-    test_list.push_back(item_array[i]);
+    list.push_back(item_array[i]);
   }
 }
 
@@ -287,64 +292,63 @@ TEST(IntrusiveList, PopFront) {
   constexpr int kValue1 = 32;
   constexpr int kValue2 = 4083;
 
-  IntrusiveList<TestItem> test_list;
-  EXPECT_TRUE(test_list.empty());
-
   TestItem item1(kValue1);
   TestItem item2(kValue2);
 
-  test_list.push_front(item2);
-  test_list.push_front(item1);
-  test_list.pop_front();
-  EXPECT_EQ(test_list.front().GetNumber(), kValue2);
-  EXPECT_FALSE(test_list.empty());
-  test_list.pop_front();
-  EXPECT_TRUE(test_list.empty());
+  IntrusiveList<TestItem> list;
+  EXPECT_TRUE(list.empty());
+
+  list.push_front(item2);
+  list.push_front(item1);
+  list.pop_front();
+  EXPECT_EQ(list.front().GetNumber(), kValue2);
+  EXPECT_FALSE(list.empty());
+  list.pop_front();
+  EXPECT_TRUE(list.empty());
 }
 
 TEST(IntrusiveList, PopFrontAndReinsert) {
   constexpr int kValue1 = 32;
   constexpr int kValue2 = 4083;
 
-  IntrusiveList<TestItem> test_list;
-  EXPECT_TRUE(test_list.empty());
-
   TestItem item1(kValue1);
   TestItem item2(kValue2);
 
-  test_list.push_front(item2);
-  test_list.push_front(item1);
-  test_list.pop_front();
-  test_list.push_front(item1);
-  EXPECT_EQ(test_list.front().GetNumber(), kValue1);
+  IntrusiveList<TestItem> list;
+  EXPECT_TRUE(list.empty());
+
+  list.push_front(item2);
+  list.push_front(item1);
+  list.pop_front();
+  list.push_front(item1);
+  EXPECT_EQ(list.front().GetNumber(), kValue1);
 }
 
 TEST(IntrusiveList, ListFront) {
-  IntrusiveList<TestItem> test_items;
-
   TestItem item1(1);
   TestItem item2(0);
   TestItem item3(0xffff);
 
-  test_items.push_back(item1);
-  test_items.push_back(item2);
-  test_items.push_back(item3);
+  IntrusiveList<TestItem> list;
+  list.push_back(item1);
+  list.push_back(item2);
+  list.push_back(item3);
 
-  EXPECT_EQ(&item1, &test_items.front());
-  EXPECT_EQ(&item1, &(*test_items.begin()));
+  EXPECT_EQ(&item1, &list.front());
+  EXPECT_EQ(&item1, &(*list.begin()));
 }
 
 TEST(IntrusiveList, IteratorIncrement) {
   TestItem item_array[20];
-  IntrusiveList<TestItem> test_list;
+  IntrusiveList<TestItem> list;
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
     item_array[i].SetNumber(i);
-    test_list.push_back(item_array[i]);
+    list.push_back(item_array[i]);
   }
 
-  auto it = test_list.begin();
+  auto it = list.begin();
   int i = 0;
-  while (it != test_list.end()) {
+  while (it != list.end()) {
     if (i == 0) {
       // Test pre-incrementing on the first element.
       EXPECT_EQ((++it)->GetNumber(), item_array[++i].GetNumber());
@@ -358,12 +362,12 @@ TEST(IntrusiveList, ConstIteratorRead) {
   // For this test, items are checked to be non-zero.
   TestItem item1(1);
   TestItem item2(99);
-  IntrusiveList<TestItem> test_items;
+  IntrusiveList<TestItem> list;
 
-  const IntrusiveList<TestItem>* const_list = &test_items;
+  const IntrusiveList<TestItem>* const_list = &list;
 
-  test_items.push_back(item1);
-  test_items.push_back(item2);
+  list.push_back(item1);
+  list.push_back(item2);
 
   auto it = const_list->begin();
   while (it != const_list->end()) {
@@ -378,12 +382,12 @@ TEST(IntrusiveList, ConstIteratorRead) {
 TEST(IntrusiveList, ConstIteratorModify) {
   TestItem item1(1);
   TestItem item2(99);
-  IntrusiveList<TestItem> test_items;
+  IntrusiveList<TestItem> list;
 
-  const IntrusiveList<TestItem>* const_list = &test_items;
+  const IntrusiveList<TestItem>* const_list = &list;
 
-  test_items.push_back(item1);
-  test_items.push_back(item2);
+  list.push_back(item1);
+  list.push_back(item2);
 
   auto it = const_list->begin();
   while (it != const_list->end()) {
@@ -514,6 +518,46 @@ TEST(IntrusiveList, Remove_MultipleItems_RemoveAndPushBack) {
   EXPECT_EQ(&items[2], &(*it++));
   EXPECT_EQ(&items[4], &(*it++));
   EXPECT_EQ(&items[0], &(*it++));
+  EXPECT_EQ(list.end(), it);
+}
+
+TEST(IntrusiveList, ItemsRemoveThemselvesFromListsWhenDestructed) {
+  // Create a list with some items it.
+  TestItem a, b, c, d;
+  IntrusiveList<TestItem> list;
+  list.push_back(a);
+  list.push_back(b);
+  list.push_back(c);
+  list.push_back(d);
+
+  // Insert items that will be destructed before the list.
+  {
+    TestItem x, y, z, w;
+    list.push_back(x);
+    list.push_back(z);
+    list.push_front(y);
+    list.push_front(w);
+
+    auto it = list.begin();
+    EXPECT_EQ(&w, &(*it++));
+    EXPECT_EQ(&y, &(*it++));
+    EXPECT_EQ(&a, &(*it++));
+    EXPECT_EQ(&b, &(*it++));
+    EXPECT_EQ(&c, &(*it++));
+    EXPECT_EQ(&d, &(*it++));
+    EXPECT_EQ(&x, &(*it++));
+    EXPECT_EQ(&z, &(*it++));
+    EXPECT_EQ(list.end(), it);
+
+    // Here, x, y, z, w are removed from the list for the destructor.
+  }
+
+  // Ensure we get back our original list.
+  auto it = list.begin();
+  EXPECT_EQ(&a, &(*it++));
+  EXPECT_EQ(&b, &(*it++));
+  EXPECT_EQ(&c, &(*it++));
+  EXPECT_EQ(&d, &(*it++));
   EXPECT_EQ(list.end(), it);
 }
 

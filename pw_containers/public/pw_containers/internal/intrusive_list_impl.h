@@ -71,7 +71,17 @@ class List {
  public:
   class Item {
    protected:
-    constexpr Item() : Item(nullptr) {}
+    constexpr Item() : Item(this) {}
+
+    bool unlisted() const { return this == next_; }
+
+    // Unlink this from the list it is apart of, if any. Specifying prev saves
+    // calling previous(), which requires looping around the cycle.
+    void unlist(Item* prev = nullptr);
+
+    Item* previous();  // Note: O(n) since it loops around the cycle.
+
+    ~Item();
 
    private:
     friend class List;
@@ -81,6 +91,7 @@ class List {
 
     constexpr Item(Item* next) : next_(next) {}
 
+    // The next pointer. Unlisted items must be self-cycles (next_ == this).
     Item* next_;
   };
 
@@ -94,8 +105,6 @@ class List {
   // Intrusive lists cannot be copied, since each Item can only be in one list.
   List(const List&) = delete;
   List& operator=(const List&) = delete;
-
-  ~List() { clear(); }
 
   template <typename Iterator>
   void assign(Iterator first, Iterator last) {

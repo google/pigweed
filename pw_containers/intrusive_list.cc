@@ -18,28 +18,39 @@
 
 namespace pw::intrusive_list_impl {
 
+List::Item::~Item() { unlist(); }
+
+void List::Item::unlist(Item* prev) {
+  if (prev == nullptr) {
+    prev = previous();
+  }
+  // Skip over this.
+  prev->next_ = next_;
+
+  // Retain the invariant that unlisted items are self-cycles.
+  next_ = this;
+}
+
+List::Item* List::Item::previous() {
+  // Follow the cycle around to find the previous element; O(N).
+  Item* prev = next_;
+  while (prev->next_ != this) {
+    prev = prev->next_;
+  }
+  return prev;
+}
+
 void List::insert_after(Item* pos, Item& item) {
-  PW_CHECK_PTR_EQ(
-      item.next_,
-      nullptr,
+  PW_CHECK(
+      item.unlisted(),
       "Cannot add an item to a pw::IntrusiveList that is already in a list");
   item.next_ = pos->next_;
   pos->next_ = &item;
 }
 
-void List::erase_after(Item* pos) {
-  Item* const item_to_remove = pos->next_;
-  pos->next_ = item_to_remove->next_;
-  item_to_remove->next_ = nullptr;
-}
+void List::erase_after(Item* pos) { pos->next_->unlist(pos); }
 
-List::Item* List::before_end() noexcept {
-  Item* pos = before_begin();
-  while (pos->next_ != end()) {
-    pos = pos->next_;
-  }
-  return pos;
-}
+List::Item* List::before_end() noexcept { return before_begin()->previous(); }
 
 void List::clear() {
   while (!empty()) {
@@ -54,7 +65,6 @@ bool List::remove(const Item& item_to_remove) {
       return true;
     }
   }
-
   return false;
 }
 
