@@ -25,14 +25,13 @@
 // Die with a message with several attributes included. This crash frontend
 // funnels everything into the logger, which must then handle the true crash
 // behaviour.
-#define PW_HANDLE_CRASH(message, ...)       \
-  do {                                      \
-    PW_LOG(PW_LOG_LEVEL_CRITICAL,           \
-           PW_LOG_ASSERT_FAILED_FLAG,       \
-           __FILE__ ":%d: Crash: " message, \
-           __LINE__,                        \
-           __VA_ARGS__);                    \
-    PW_UNREACHABLE;                         \
+#define PW_HANDLE_CRASH(message, ...)            \
+  do {                                           \
+    PW_LOG(PW_LOG_LEVEL_CRITICAL,                \
+           PW_LOG_ASSERT_FAILED_FLAG,            \
+           __FILE__ ":%d: Crash: " message,      \
+           __LINE__ PW_COMMA_ARGS(__VA_ARGS__)); \
+    PW_UNREACHABLE;                              \
   } while (0)
 
 // Die with a message with several attributes included. This assert frontend
@@ -43,8 +42,7 @@
     PW_LOG(PW_LOG_LEVEL_CRITICAL,                                        \
            PW_LOG_ASSERT_FAILED_FLAG,                                    \
            __FILE__ ":%d: Check failed: " condition_string ". " message, \
-           __LINE__,                                                     \
-           __VA_ARGS__);                                                 \
+           __LINE__ PW_COMMA_ARGS(__VA_ARGS__));                         \
     PW_UNREACHABLE;                                                      \
   } while (0)
 
@@ -71,7 +69,7 @@
                  comparison_op_str " "                                    \
                  arg_b_str " (=" type_fmt ")"                             \
                  ". " message,                                            \
-              __LINE__, arg_a_val, arg_b_val, __VA_ARGS__);               \
+              __LINE__, arg_a_val, arg_b_val PW_COMMA_ARGS(__VA_ARGS__)); \
     PW_UNREACHABLE;                                                       \
   } while(0)
 // clang-format on

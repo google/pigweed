@@ -33,7 +33,8 @@
 #endif  // !defined(PW_ASSERT_ENABLE_DCHECK)
 
 // PW_CRASH - Crash the system, with a message.
-#define PW_CRASH PW_HANDLE_CRASH
+#define PW_CRASH(message, ...) \
+  PW_HANDLE_CRASH(message PW_COMMA_ARGS(__VA_ARGS__))
 
 // PW_CHECK - If condition evaluates to false, crash. Message optional.
 #define PW_CHECK(condition, ...)                              \
