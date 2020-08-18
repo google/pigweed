@@ -140,6 +140,7 @@ def write_ensure_file(package_file, ensure_file):
                    '$ParanoidMode CheckPresence\n')
 
         for entry in data:
+            outs.write('@Subdir {}\n'.format(entry.get('subdir', '')))
             outs.write('{} {}\n'.format(entry['path'],
                                         ' '.join(entry['tags'])))
 
