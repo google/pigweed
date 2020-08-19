@@ -30,10 +30,10 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   class AudioDirectionExt;
 
   // fuchsia::bluetooth::bredr::Profile overrides:
-  void Advertise(
-      std::vector<fuchsia::bluetooth::bredr::ServiceDefinition> definitions,
-      fuchsia::bluetooth::bredr::ChannelParameters parameters,
-      fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver) override;
+  void Advertise(std::vector<fuchsia::bluetooth::bredr::ServiceDefinition> definitions,
+                 fuchsia::bluetooth::bredr::ChannelParameters parameters,
+                 fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
+                 AdvertiseCallback callback) override;
   void Search(fuchsia::bluetooth::bredr::ServiceClassProfileIdentifier service_uuid,
               std::vector<uint16_t> attr_ids,
               fidl::InterfaceHandle<fuchsia::bluetooth::bredr::SearchResults> results) override;
@@ -75,10 +75,14 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Advertised Services
   struct AdvertisedService {
     AdvertisedService(fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
-                      bt::sdp::Server::RegistrationHandle registration_handle)
-        : receiver(std::move(receiver)), registration_handle(registration_handle) {}
+                      bt::sdp::Server::RegistrationHandle registration_handle,
+                      AdvertiseCallback disconnection_cb)
+        : receiver(std::move(receiver)),
+          registration_handle(registration_handle),
+          disconnection_cb(std::move(disconnection_cb)) {}
     fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver;
     bt::sdp::Server::RegistrationHandle registration_handle;
+    AdvertiseCallback disconnection_cb;
   };
 
   uint64_t advertised_total_;

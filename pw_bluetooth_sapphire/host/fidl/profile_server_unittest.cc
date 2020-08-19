@@ -22,6 +22,8 @@ namespace fidlbredr = fuchsia::bluetooth::bredr;
 
 namespace {
 
+void NopAdvertiseCallback(fidlbredr::Profile_Advertise_Result){};
+
 const bt::DeviceAddress kTestDevAddr(bt::DeviceAddress::Type::kBREDR, {1});
 constexpr bt::l2cap::PSM kPSM = bt::l2cap::kAVDTP;
 
@@ -123,12 +125,17 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
 
   std::vector<fidlbredr::ServiceDefinition> services;
   fidlbredr::ServiceDefinition def;
-  // Empty service definition is not allowed - it must contain at least a serivce UUID.
+  // Empty service definition is not allowed - it must contain at least a service UUID.
 
   services.emplace_back(std::move(def));
 
+  auto cb = [](auto response) {
+    EXPECT_TRUE(response.is_err());
+    EXPECT_EQ(response.err(), fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+  };
+
   client()->Advertise(std::move(services), fidlbredr::ChannelParameters(),
-                      std::move(receiver_handle));
+                      std::move(receiver_handle), std::move(cb));
 
   RunLoopUntilIdle();
 
@@ -136,6 +143,57 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidDefinition) {
   zx_signals_t signals;
   request.channel().wait_one(ZX_CHANNEL_PEER_CLOSED, zx::time(0), &signals);
   EXPECT_TRUE(signals & ZX_CHANNEL_PEER_CLOSED);
+}
+
+TEST_F(FIDL_ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle1;
+  auto request1 = receiver_handle1.NewRequest();
+
+  std::vector<fidlbredr::ServiceDefinition> services1;
+  services1.emplace_back(MakeFIDLServiceDefinition());
+
+  // First callback should never be called since the first advertisement is valid.
+  size_t cb1_count = 0;
+  auto cb1 = [&](auto) { cb1_count++; };
+
+  client()->Advertise(std::move(services1), fidlbredr::ChannelParameters(),
+                      std::move(receiver_handle1), std::move(cb1));
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(cb1_count, 0u);
+
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle2;
+  auto request2 = receiver_handle2.NewRequest();
+
+  std::vector<fidlbredr::ServiceDefinition> services2;
+  services2.emplace_back(MakeFIDLServiceDefinition());
+
+  // Second callback should error because the second advertisement is requesting a taken PSM.
+  size_t cb2_count = 0;
+  auto cb2 = [&](auto response) {
+    cb2_count++;
+    EXPECT_TRUE(response.is_err());
+    EXPECT_EQ(response.err(), fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
+  };
+
+  client()->Advertise(std::move(services2), fidlbredr::ChannelParameters(),
+                      std::move(receiver_handle2), std::move(cb2));
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(cb1_count, 0u);
+  ASSERT_EQ(cb2_count, 1u);
+
+  // Second channel should close.
+  zx_signals_t signals;
+  request2.channel().wait_one(ZX_CHANNEL_PEER_CLOSED, zx::time(0), &signals);
+  EXPECT_TRUE(signals & ZX_CHANNEL_PEER_CLOSED);
+
+  // Unregister the first advertisement.
+  request1 = receiver_handle1.NewRequest();
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb1_count, 1u);
 }
 
 TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersNoPSM) {
@@ -177,6 +235,35 @@ TEST_F(FIDL_ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
 
   client()->Connect(peer_id, std::move(connection), std::move(sock_cb));
   RunLoopUntilIdle();
+}
+
+TEST_F(FIDL_ProfileServerTest, UnregisterAdvertisementTriggersCallback) {
+  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
+  auto request = receiver_handle.NewRequest();
+
+  std::vector<fidlbredr::ServiceDefinition> services;
+  services.emplace_back(MakeFIDLServiceDefinition());
+
+  size_t cb_count = 0;
+  auto cb = [&](auto result) {
+    cb_count++;
+    EXPECT_TRUE(result.is_response());
+  };
+
+  client()->Advertise(std::move(services), fidlbredr::ChannelParameters(),
+                      std::move(receiver_handle), std::move(cb));
+
+  RunLoopUntilIdle();
+
+  // Advertisement is still active, callback shouldn't get triggered.
+  ASSERT_EQ(cb_count, 0u);
+
+  // Overwrite the server end of the ConnectionReceiver.
+  request = receiver_handle.NewRequest();
+  RunLoopUntilIdle();
+
+  // Profile server should drop the advertisement and notify the callback of termination.
+  ASSERT_EQ(cb_count, 1u);
 }
 
 class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
@@ -366,7 +453,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   services.emplace_back(MakeFIDLServiceDefinition());
 
   client()->Advertise(std::move(services), std::move(fidl_chan_params),
-                      std::move(connect_receiver_handle));
+                      std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
   EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
@@ -493,7 +580,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
   services.emplace_back(MakeFIDLServiceDefinition());
 
   client()->Advertise(std::move(services), std::move(fidl_chan_params),
-                      std::move(connect_receiver_handle));
+                      std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
   std::optional<fidlbredr::Channel> channel;

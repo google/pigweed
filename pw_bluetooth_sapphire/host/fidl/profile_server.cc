@@ -7,6 +7,7 @@
 #include <zircon/status.h>
 
 #include "helpers.h"
+#include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
@@ -189,6 +190,7 @@ ProfileServer::~ProfileServer() {
     auto sdp = adapter()->sdp_server();
     for (const auto& it : current_advertised_) {
       sdp->UnregisterService(it.second.registration_handle);
+      it.second.disconnection_cb(fit::ok());
     }
     auto conn_manager = adapter()->bredr_connection_manager();
     for (const auto& it : searches_) {
@@ -199,7 +201,8 @@ ProfileServer::~ProfileServer() {
 
 void ProfileServer::Advertise(
     std::vector<fidlbredr::ServiceDefinition> definitions, fidlbredr::ChannelParameters parameters,
-    fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver) {
+    fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver,
+    AdvertiseCallback callback) {
   // TODO: check that the service definition is valid for useful error messages
 
   std::vector<bt::sdp::ServiceRecord> registering;
@@ -210,6 +213,7 @@ void ProfileServer::Advertise(
     if (rec.is_error()) {
       bt_log(INFO, "profile_server",
              "Failed to create service record from service defintion - exiting!");
+      callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
       return;
     }
     registering.emplace_back(std::move(rec.value()));
@@ -228,6 +232,7 @@ void ProfileServer::Advertise(
       });
 
   if (!registration_handle) {
+    callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   };
 
@@ -236,7 +241,8 @@ void ProfileServer::Advertise(
   receiverptr.set_error_handler(
       [this, next](zx_status_t status) { OnConnectionReceiverError(next, status); });
 
-  current_advertised_.try_emplace(next, std::move(receiverptr), registration_handle);
+  current_advertised_.try_emplace(next, std::move(receiverptr), registration_handle,
+                                  std::move(callback));
   advertised_total_ = next;
 }
 
@@ -365,6 +371,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
   }
 
   adapter()->sdp_server()->UnregisterService(it->second.registration_handle);
+  it->second.disconnection_cb(fit::ok());
 
   current_advertised_.erase(it);
 }
