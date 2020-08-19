@@ -113,9 +113,9 @@ template("pw_size_report") {
 
       # Allow each binary to override the global bloaty config.
       if (defined(binary.bloaty_config)) {
-        _bloaty_configs += [ get_path_info(binary.bloaty_config, "abspath") ]
+        _bloaty_configs += [ rebase_path(binary.bloaty_config) ]
       } else {
-        _bloaty_configs += [ get_path_info(pw_bloat_BLOATY_CONFIG, "abspath") ]
+        _bloaty_configs += [ rebase_path(pw_bloat_BLOATY_CONFIG) ]
       }
 
       _binary_path += ";" + "<TARGET_FILE($_binary_base)>"
@@ -128,7 +128,7 @@ template("pw_size_report") {
       "--bloaty-config",
       string_join(";", _bloaty_configs),
       "--out-dir",
-      target_gen_dir,
+      rebase_path(target_gen_dir),
       "--target",
       target_name,
       "--title",
@@ -150,9 +150,7 @@ template("pw_size_report") {
 
     _doc_rst_output = "$target_gen_dir/${target_name}"
 
-    # TODO(frolv): Size reports are temporarily disabled pending the toolchain
-    # refactor.
-    if (true || host_os == "win") {
+    if (host_os == "win") {
       # Bloaty is not yet packaged for Windows systems; display a message
       # indicating this.
       not_needed("*")
