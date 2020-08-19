@@ -711,6 +711,20 @@ For example:
   pumping the metrics into the streaming response. This gives flow control to
   the application.
 
+-----------
+Size report
+-----------
+The below size report shows the cost in code and memory for a few examples of
+metrics. This does not include the RPC service.
+
+.. include:: metric_size_report
+
+.. attention::
+
+  At time of writing, **the above sizes show an unexpectedly large flash
+  impact**. We are investigating why GCC is inserting large global static
+  constructors per group, when all the logic should be reused across objects.
+
 ----------------
 Design tradeoffs
 ----------------

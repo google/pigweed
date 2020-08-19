@@ -46,15 +46,8 @@ class Metric : public IntrusiveList<Metric>::Item {
   bool is_float() const { return (name_and_type_ & kTypeMask) == kTypeFloat; }
   bool is_int() const { return (name_and_type_ & kTypeMask) == kTypeInt; }
 
-  float as_float() const {
-    PW_DCHECK(is_float());
-    return float_;
-  }
-
-  uint32_t as_int() const {
-    PW_DCHECK(is_int());
-    return uint_;
-  }
+  float as_float() const;
+  uint32_t as_int() const;
 
   // Dump a metric or metrics to logs. Level determines the indentation
   // indent_level up to a maximum of 4. Example output:
@@ -83,20 +76,11 @@ class Metric : public IntrusiveList<Metric>::Item {
   // Hide mutation methods, and only offer write access through the specialized
   // TypedMetric below. This makes it impossible to call metric.Increment() on
   // a float metric at compile time.
-  void Increment(uint32_t amount = 1) {
-    PW_DCHECK(is_int());
-    uint_ += amount;
-  }
+  void Increment(uint32_t amount = 1);
 
-  void SetInt(uint32_t value) {
-    PW_DCHECK(is_int());
-    uint_ = value;
-  }
+  void SetInt(uint32_t value);
 
-  void SetFloat(float value) {
-    PW_DCHECK(is_float());
-    float_ = value;
-  }
+  void SetFloat(float value);
 
  private:
   // The name of this metric as a token; from PW_TOKENIZE_STRING("my_metric").
@@ -163,10 +147,8 @@ class TypedMetric<uint32_t> : public Metric {
 // Size: 16 bytes/128 bits - next, name, metrics, children.
 class Group : public IntrusiveList<Group>::Item {
  public:
-  Group(Token name) : name_(name) {}
-  Group(Token name, IntrusiveList<Group>& groups) : name_(name) {
-    groups.push_front(*this);
-  }
+  Group(Token name);
+  Group(Token name, IntrusiveList<Group>& groups);
 
   Token name() const { return name_; }
 

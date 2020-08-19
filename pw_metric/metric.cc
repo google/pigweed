@@ -59,6 +59,31 @@ Metric::Metric(Token name, uint32_t value, IntrusiveList<Metric>& metrics)
   metrics.push_front(*this);
 }
 
+float Metric::as_float() const {
+  PW_DCHECK(is_float());
+  return float_;
+}
+
+uint32_t Metric::as_int() const {
+  PW_DCHECK(is_int());
+  return uint_;
+}
+
+void Metric::Increment(uint32_t amount) {
+  PW_DCHECK(is_int());
+  uint_ += amount;
+}
+
+void Metric::SetInt(uint32_t value) {
+  PW_DCHECK(is_int());
+  uint_ = value;
+}
+
+void Metric::SetFloat(float value) {
+  PW_DCHECK(is_float());
+  float_ = value;
+}
+
 void Metric::Dump(int level) {
   Base64EncodedToken encoded_name(name());
   const char* indent = Indent(level);
@@ -76,6 +101,12 @@ void Metric::Dump(IntrusiveList<Metric>& metrics, int level) {
   for (auto& m : metrics) {
     m.Dump(level);
   }
+}
+
+Group::Group(Token name) : name_(name) {}
+
+Group::Group(Token name, IntrusiveList<Group>& groups) : name_(name) {
+  groups.push_front(*this);
 }
 
 void Group::Dump(int level) {
