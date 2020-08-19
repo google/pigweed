@@ -7,10 +7,14 @@
 
 #include <lib/fit/function.h>
 
+#include <string>
+
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace sm {
@@ -60,9 +64,17 @@ class IdlePhase final : public PairingPhase, public PairingChannelHandler {
   void OnRxBFrame(ByteBufferPtr sdu) override;
   void OnChannelClosed() override { PairingPhase::HandleChannelClosed(); };
 
-  // PairingPhase override
+  // PairingPhase overrides
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() override {
     return weak_ptr_factory_.GetWeakPtr();
+  }
+  std::string ToStringInternal() override {
+    std::string security_req_status =
+        pending_security_request_.has_value()
+            ? fxl::StringPrintf(" - pending security request for %s",
+                                LevelToString(*pending_security_request_))
+            : "";
+    return fxl::StringPrintf("Idle Phase (pairing not in progress)%s", security_req_status.c_str());
   }
 
   std::optional<SecurityLevel> pending_security_request_;

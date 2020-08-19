@@ -651,7 +651,22 @@ void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
 }
 
 void SecurityManagerImpl::OnPairingFailed(Status status) {
-  bt_log(ERROR, "sm", "LE pairing failed: %s", status.ToString().c_str());
+  std::string phase_status = std::visit(
+      [=](auto& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        std::string s;
+        if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
+          s = arg->ToString();
+        } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
+          s = arg.ToString();
+        } else {
+          ZX_PANIC("cannot timeout when current_phase_ is std::monostate!");
+        }
+        return s;
+      },
+      current_phase_);
+  bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", status.ToString().c_str(),
+         phase_status.c_str());
   StopTimer();
   // TODO(NET-1201): implement "waiting interval" to prevent repeated attempts
   // as described in Vol 3, Part H, 2.3.6.

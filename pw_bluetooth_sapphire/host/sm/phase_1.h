@@ -92,9 +92,15 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   void OnRxBFrame(ByteBufferPtr sdu) final;
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
-  // PairingPhase override
+  // PairingPhase overrides
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
     return weak_ptr_factory_.GetWeakPtr();
+  }
+
+  std::string ToStringInternal() override {
+    return fxl::StringPrintf(
+        "Pairing Phase 1 (feature exchange) - pairing to %s security with \"%s\" IOCapabilities",
+        LevelToString(requested_level_), util::IOCapabilityToString(io_capability_).c_str());
   }
 
   // If acting as the Responder to a peer-initiatied pairing, then |preq_| is the |preq| ctor

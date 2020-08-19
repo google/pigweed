@@ -82,9 +82,15 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   void OnRxBFrame(ByteBufferPtr sdu) final;
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
-  // PairingPhase override
+  // PairingPhase overrides.
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
     return weak_ptr_factory_.GetWeakPtr();
+  }
+
+  std::string ToStringInternal() override {
+    return fxl::StringPrintf(
+        "Secure Connections Pairing Phase 2 (encryption key agreement) - pairing with %s method",
+        util::PairingMethodToString(features_.method).c_str());
   }
 
   bool is_just_works_or_numeric_comparison() const {

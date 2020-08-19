@@ -35,9 +35,13 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
     last_rx_packet_ = DynamicByteBuffer(max_packet_size);
   }
 
-  // PairingPhase override
+  // PairingPhase overrides.
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
     return weak_ptr_factory_.GetWeakPtr();
+  }
+
+  std::string ToStringInternal() override {
+    return "";
   }
 
   // PairingPhase override, not tested as PairingPhase does not implement this pure virtual

@@ -5,10 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_PHASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_PHASE_H_
 
+#include <string>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace sm {
@@ -54,6 +57,13 @@ class PairingPhase {
   // Kick off the state machine for the concrete PairingPhase.
   virtual void Start() = 0;
 
+  // Return a representation of the current state of the pairing phase for display purposes.
+  std::string ToString() {
+    return fxl::StringPrintf("%s Role: SMP %s%s", ToStringInternal().c_str(),
+                             role_ == Role::kInitiator ? "initiator" : "responder",
+                             has_failed_ ? " - pairing has failed" : "");
+  }
+
   // Cleans up pairing state and and invokes Listener::OnPairingFailed.
   void OnFailure(Status status);
 
@@ -91,6 +101,9 @@ class PairingPhase {
 
   // To ZX_ASSERT that methods are not called on a phase that has already failed.
   bool has_failed() const { return has_failed_; }
+
+  // For subclasses to provide more detailed inspect information.
+  virtual std::string ToStringInternal() = 0;
 
  private:
   fxl::WeakPtr<PairingChannel> sm_chan_;

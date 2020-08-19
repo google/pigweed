@@ -98,6 +98,14 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
     return weak_ptr_factory_.GetWeakPtr();
   }
 
+  std::string ToStringInternal() override {
+    return fxl::StringPrintf(
+        "Pairing Phase 3 (security key distribution) - paired with %s security properties, sending "
+        "0x%02X local key distribution value and expecting 0x%02X as peer key distribution value",
+        le_sec_.ToString().c_str(), features_.local_key_distribution,
+        features_.remote_key_distribution);
+  }
+
   const PairingFeatures features_;
 
   // Current security properties of the LE-U link.

@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -71,9 +72,15 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   void OnRxBFrame(ByteBufferPtr sdu) final;
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
-  // PairingPhase override
+  // PairingPhase overrides
   fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
     return weak_ptr_factory_.GetWeakPtr();
+  }
+
+  std::string ToStringInternal() override {
+    return fxl::StringPrintf(
+        "Legacy Pairing Phase 2 (encryption key agreement) - pairing with %s method",
+        util::PairingMethodToString(features_.method).c_str());
   }
 
   bool sent_local_confirm_;
