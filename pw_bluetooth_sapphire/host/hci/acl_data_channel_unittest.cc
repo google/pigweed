@@ -963,6 +963,97 @@ TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsA
   EXPECT_EQ(5u, handle1_packet_count);
 }
 
+TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
+  constexpr size_t kMaxMTU = 5;
+  constexpr size_t kMaxNumPackets = 6;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+
+  size_t handle0_packet_count = 0;
+  size_t handle1_packet_count = 0;
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    ZX_DEBUG_ASSERT(bytes.size() >= sizeof(ACLDataHeader));
+
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    if (connection_handle == kHandle0) {
+      handle0_packet_count++;
+    } else {
+      ASSERT_EQ(kHandle1, connection_handle);
+      handle1_packet_count++;
+    }
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Fill controller with |kMaxNumPackets| packets split evenly between the two handles.
+  for (size_t i = 0; i < kMaxNumPackets; ++i) {
+    ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
+    auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+  }
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kMaxNumPackets / 2, handle0_packet_count);
+  EXPECT_EQ(kMaxNumPackets / 2, handle1_packet_count);
+  handle0_packet_count = 0;
+  handle1_packet_count = 0;
+
+  // Queue up 3 packets for each handle,
+  for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+  }
+  for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
+    auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMTU);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+  }
+
+  RunLoopUntilIdle();
+
+  // No packets should have been sent because controller buffer is full.
+  EXPECT_EQ(0u, handle0_packet_count);
+  EXPECT_EQ(0u, handle1_packet_count);
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event.
+  auto event_buffer =
+      CreateStaticByteBuffer(0x13, 0x09,              // Event header
+                             0x01,                    // Number of handles
+                             0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
+                             0x02, 0x00, 0x05, 0x00   // (ignored, not indicated in handle count)
+      );
+
+  test_device()->SendCommandChannelPacket(event_buffer);
+  RunLoopUntilIdle();
+
+  // Only packets on handle0 should have been sent.
+  EXPECT_EQ(3u, handle0_packet_count);
+  EXPECT_EQ(0u, handle1_packet_count);
+
+  auto short_buffer = CreateStaticByteBuffer(0x13, 0x05,             // Event header
+                                             0x02,                   // Number of handles
+                                             0x02, 0x00, 0x02, 0x00  // 2 packets on handle 0x0002
+                                             // (missing second handle, should be ignored)
+  );
+
+  test_device()->SendCommandChannelPacket(short_buffer);
+  RunLoopUntilIdle();
+
+  // handle1 packets should have been sent anyway
+  EXPECT_EQ(3u, handle0_packet_count);
+  EXPECT_EQ(2u, handle1_packet_count);
+}
+
 }  // namespace
 }  // namespace hci
 }  // namespace bt
