@@ -50,17 +50,13 @@ class DynamicChannelRegistry {
   // over the new channel. Preferred channel parameters can be set in |params|.
   void OpenOutbound(PSM psm, ChannelParameters params, DynamicChannelCallback open_cb);
 
-  // Disconnect and remove the channel identified by |local_cid|. After this
-  // call completes, incoming PDUs with |local_cid| should be discarded as in
-  // error or considered to belong to a subsequent channel with that ID. Any
-  // outbound PDUs passed to the Channel interface for this channel should be
-  // discarded. The internal channel will be immediately destroyed and
-  // |local_cid| may be recycled for another dynamic channel.
-  //
-  // TODO(xow): Maybe take a DynamicChannel* to have greater confidence over the
-  // instance of DynamicChannel being deleted (similar to
-  // |LogicalLink::RemoveChannel|)?
-  void CloseChannel(ChannelId local_cid);
+  // Disconnect and remove the channel identified by |local_cid|. After this call completes,
+  // incoming PDUs with |local_cid| should be discarded as in error or considered to belong to a
+  // subsequent channel with that ID. Any outbound PDUs passed to the Channel interface for this
+  // channel should be discarded. When the close operation completes, |close_cb| will be called, the
+  // internal channel will be destroyed, and |local_cid| may be recycled for another dynamic
+  // channel. |close_cb| will be called immediately if the channel doesn't exist.
+  void CloseChannel(ChannelId local_cid, fit::closure close_cb);
 
  protected:
   // |largest_channel_id| is the greatest dynamic channel ID that can be

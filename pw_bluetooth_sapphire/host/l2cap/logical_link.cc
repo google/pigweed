@@ -342,7 +342,8 @@ void LogicalLink::RemoveChannel(Channel* chan) {
   // TODO(armansito): Change this if statement into an assert when a registry
   // gets created for LE channels.
   if (dynamic_registry_) {
-    dynamic_registry_->CloseChannel(id);
+    // TODO(xow): Add continuation for when channel is disconnected.
+    dynamic_registry_->CloseChannel(id, [] {});
   }
 }
 

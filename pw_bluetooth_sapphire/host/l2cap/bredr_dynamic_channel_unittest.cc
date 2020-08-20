@@ -1012,7 +1012,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
 
-  registry()->CloseChannel(kLocalCId);
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
@@ -1020,8 +1021,13 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, OpenAndLocalCloseChannel) {
   // Local channel closure shouldn't trigger the close callback.
   EXPECT_EQ(0, close_cb_count);
 
+  // Callback passed to CloseChannel should be called nonetheless.
+  EXPECT_TRUE(channel_close_cb_called);
+
   // Repeated closure of the same channel should not have any effect.
-  registry()->CloseChannel(kLocalCId);
+  channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  EXPECT_TRUE(channel_close_cb_called);
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   EXPECT_EQ(1, open_cb_count);
@@ -1199,7 +1205,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
   EXPECT_EQ(1, open_cb_count);
   EXPECT_EQ(0, close_cb_count);
 
-  registry()->CloseChannel(kLocalCId);
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   // Disconnection Response hasn't been received yet so the second channel
@@ -1214,9 +1221,14 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, ChannelIdNotReusedUntilDisconnectionComple
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kSecondChannelConnReq.view());
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
+  // CloseChannel callback hasn't been called either.
+  EXPECT_FALSE(channel_close_cb_called);
+
   // Complete the disconnection on the first channel.
   RETURN_IF_FATAL(sig()->ReceiveResponses(
       disconn_id, {{SignalingChannel::Status::kSuccess, kDisconRsp.view()}}));
+
+  EXPECT_TRUE(channel_close_cb_called);
 
   // Now the first channel ID gets reused.
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view());
@@ -1320,7 +1332,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, InboundConnectionOk) {
   EXPECT_EQ(1, service_request_cb_count);
   EXPECT_EQ(1, open_cb_count);
 
-  registry()->CloseChannel(kLocalCId);
+  registry()->CloseChannel(kLocalCId, [] {});
   EXPECT_EQ(0, close_cb_count);
 }
 

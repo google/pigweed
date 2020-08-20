@@ -183,10 +183,10 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndRemoteCloseChannel) {
 }
 
 TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
-  bool close_cb_called = false;
-  auto close_cb = [&close_cb_called](const DynamicChannel* chan) { close_cb_called = true; };
+  bool registry_close_cb_called = false;
+  auto registry_close_cb = [&](const DynamicChannel*) { registry_close_cb_called = true; };
 
-  TestDynamicChannelRegistry registry(std::move(close_cb), RejectAllServices);
+  TestDynamicChannelRegistry registry(std::move(registry_close_cb), RejectAllServices);
 
   bool open_result_cb_called = false;
   auto open_result_cb = [&open_result_cb_called](const DynamicChannel* chan) {
@@ -203,8 +203,10 @@ TEST(L2CAP_DynamicChannelRegistryTest, OpenAndLocalCloseChannel) {
   EXPECT_TRUE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_EQ(kFirstDynamicChannelId + 1, registry.FindAvailableChannelId());
 
-  registry.CloseChannel(kLocalCId);
-  EXPECT_FALSE(close_cb_called);
+  bool close_cb_called = false;
+  registry.CloseChannel(kLocalCId, [&] { close_cb_called = true; });
+  EXPECT_FALSE(registry_close_cb_called);
+  EXPECT_TRUE(close_cb_called);
   EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_EQ(kFirstDynamicChannelId, registry.FindAvailableChannelId());
 }
@@ -403,9 +405,11 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
   // Close the channel but don't let the disconnection complete.
   FakeDynamicChannel* const first_channel = registry.last_channel();
   first_channel->set_defer_disconnect_done_callback();
-  registry.CloseChannel(kLocalCId);
+  bool close_cb_called = false;
+  registry.CloseChannel(kLocalCId, [&] { close_cb_called = true; });
 
   // New channels should not reuse the "mostly disconnected" channel's ID.
+  EXPECT_FALSE(close_cb_called);
   EXPECT_NE(kLocalCId, registry.FindAvailableChannelId());
   ASSERT_TRUE(registry.FindChannelByLocalId(kLocalCId));
   EXPECT_FALSE(registry.FindChannelByLocalId(kLocalCId)->IsConnected());
@@ -426,6 +430,7 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
   // Complete the disconnection for the first channel opened.
   ASSERT_TRUE(first_channel->disconnect_done_callback());
   first_channel->disconnect_done_callback()();
+  EXPECT_TRUE(close_cb_called);
   EXPECT_EQ(kLocalCId, registry.FindAvailableChannelId());
 }
 

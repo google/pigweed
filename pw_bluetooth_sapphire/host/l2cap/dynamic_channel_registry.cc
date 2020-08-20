@@ -39,18 +39,22 @@ void DynamicChannelRegistry::OpenOutbound(PSM psm, ChannelParameters params,
   ActivateChannel(iter->second.get(), std::move(open_cb), true);
 }
 
-void DynamicChannelRegistry::CloseChannel(ChannelId local_cid) {
+void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure close_cb) {
   DynamicChannel* channel = FindChannelByLocalId(local_cid);
   if (!channel) {
+    close_cb();
     return;
   }
 
   ZX_DEBUG_ASSERT(channel->IsConnected());
-  auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), channel] {
+  auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), close_cb = std::move(close_cb),
+                          channel] {
     if (!self) {
+      close_cb();
       return;
     }
     self->RemoveChannel(channel);
+    close_cb();
   };
   channel->Disconnect(std::move(disconn_done_cb));
 }
