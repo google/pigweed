@@ -32,6 +32,13 @@ namespace testing {
 // instance managing those dynamic channels.
 class FakeL2cap final {
  public:
+  // Entities that instantiate FakeL2cap must provide a
+  // SendFrameCallback function to handle adding necessary protocol data unit
+  // header information to the packet and actually sending the packet using
+  // the associated device.
+  using SendFrameCallback =
+      fit::function<void(hci::ConnectionHandle conn, l2cap::ChannelId cid, const ByteBuffer& pdu)>;
+
   // After registering a channel with RegisterHandler, ChannelReceiveCallback
   // is called with a received L2CAP Service Data Unit |sdu| when FakeL2cap
   // handles a packet for the registered channel. Includes the |handle| that
@@ -51,11 +58,14 @@ class FakeL2cap final {
   // that takes a pointer to the FakeDynamicChannel with its
   using FakeDynamicChannelCallback = fit::function<void(fxl::WeakPtr<FakeDynamicChannel>)>;
 
+  // Calls |send_frame_callback| to send packets through the device
+  // instantiating the FakeL2cap instance.
   // Calls |unexpected_pdu_callback| for packets received that don't have a
   // handler registered. Defaults to a no-op if no callback provided.
   // Assumes the largest possible dynamic channel ID is
   // l2cap::kLastACLDynamicChannelId.
   explicit FakeL2cap(
+      SendFrameCallback send_frame_callback,
       UnexpectedPduCallback unexpected_pdu_callback = [](auto handle, auto& pdu) {},
       l2cap::ChannelId largest_channel_id = l2cap::kLastACLDynamicChannelId);
 
@@ -145,6 +155,9 @@ class FakeL2cap final {
   // was received on and the payload Service Data Unit |sdu|.
   void HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
+  // Return the SendFrameCallback associated with this FakeL2cap instance.
+  SendFrameCallback& send_frame_callback() { return send_frame_callback_; }
+
  private:
   // Map of channel IDs and corresponding functions. Use an unordered map for
   // constant-time (in the best case) for search/insertion/deletion when
@@ -161,6 +174,10 @@ class FakeL2cap final {
   // Map of individual channel configuration callbacks associated with
   // individual services
   std::unordered_map<l2cap::PSM, FakeDynamicChannelCallback> registered_services_;
+
+  // Function provided by the device that instantiates the FakeL2cap instance
+  // that adds PDU header information and actually sends the packet.
+  SendFrameCallback send_frame_callback_;
 
   // Handler function associated with unexpected PDUs. Defaults to a no-op.
   UnexpectedPduCallback unexpected_pdu_callback_;

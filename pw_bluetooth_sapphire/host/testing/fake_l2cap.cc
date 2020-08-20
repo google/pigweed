@@ -10,9 +10,11 @@
 namespace bt {
 namespace testing {
 
-FakeL2cap::FakeL2cap(UnexpectedPduCallback unexpected_pdu_callback,
+FakeL2cap::FakeL2cap(SendFrameCallback send_frame_callback,
+                     UnexpectedPduCallback unexpected_pdu_callback,
                      l2cap::ChannelId largest_channel_id)
-    : unexpected_pdu_callback_(std::move(unexpected_pdu_callback)),
+    : send_frame_callback_(std::move(send_frame_callback)),
+      unexpected_pdu_callback_(std::move(unexpected_pdu_callback)),
       largest_channel_id_(largest_channel_id) {}
 
 void FakeL2cap::RegisterHandler(l2cap::ChannelId cid, ChannelReceiveCallback callback) {
@@ -65,6 +67,15 @@ bool FakeL2cap::RegisterDynamicChannelWithPsm(hci::ConnectionHandle conn,
       return false;
     }
     psm_iter->second(channel);
+    // If the callback does not assign a send_packet_callback, default to
+    // FakeL2cap's version.
+    if (!channel->send_packet_callback()) {
+      auto send_cb = [this, channel](auto& packet) -> void {
+        auto& l2cap_callback = this->send_frame_callback();
+        l2cap_callback(channel->handle(), channel->local_cid(), packet);
+      };
+      channel->set_send_packet_callback(send_cb);
+    }
     return true;
   }
   return false;

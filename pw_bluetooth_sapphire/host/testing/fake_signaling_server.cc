@@ -11,9 +11,6 @@
 namespace bt {
 namespace testing {
 
-FakeSignalingServer::FakeSignalingServer(SendFrameCallback send_frame_callback)
-    : send_frame_callback_(std::move(send_frame_callback)) {}
-
 void FakeSignalingServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto cb = [&](auto conn, auto& sdu) { return HandleSdu(conn, sdu); };
   l2cap_->RegisterHandler(l2cap::kSignalingChannelId, cb);
@@ -178,7 +175,8 @@ void FakeSignalingServer::SendCFrame(hci::ConnectionHandle conn, l2cap::CommandC
   command_packet.mutable_header()->id = id;
   command_packet.mutable_header()->length = payload_buffer.size();
   command_packet.mutable_payload_data().Write(payload_buffer);
-  send_frame_callback_(conn, response_buffer);
+  auto& callback = fake_l2cap_->send_frame_callback();
+  return callback(conn, l2cap::kSignalingChannelId, response_buffer);
 }
 
 void FakeSignalingServer::SendCommandReject(hci::ConnectionHandle conn, l2cap::CommandId id,

@@ -153,10 +153,11 @@ class FakePeer {
   // packet and route it to the appropriate packet handler.
   void OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu);
 
-  // Sends ACL signaling packets using the FakeController's SendL2CapBFrame
-  // function on handle |conn|. Assumes that input buffer |packet| has
-  // signaling packet header intact but does not have an L2cap packet header.
-  void SendSignalingPacket(hci::ConnectionHandle conn, const ByteBuffer& packet);
+  // Sends packets over channel ID |cid| and handle |conn| using the
+  // FakeController's SendL2CapBFrame function. Assumes that input buffer
+  // |packet| has signaling packet header intact but does not have an L2CAP
+  //  packet header.
+  void SendPacket(hci::ConnectionHandle conn, l2cap::ChannelId cid, const ByteBuffer& packet);
 
   // The FakeController that this FakePeer has been assigned to.
   FakeController* ctrl_;  // weak

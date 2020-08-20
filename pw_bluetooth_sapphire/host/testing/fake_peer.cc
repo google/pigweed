@@ -46,7 +46,7 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       supports_ll_conn_update_procedure_(true),
       le_features_(hci::LESupportedFeatures{0}),
       should_batch_reports_(false),
-      signaling_server_(fit::bind_member(this, &FakePeer::SendSignalingPacket)),
+      l2cap_(fit::bind_member(this, &FakePeer::SendPacket)),
       gatt_server_(this) {
   signaling_server_.RegisterWithL2cap(&l2cap_);
   gatt_server_.RegisterWithL2cap(&l2cap_);
@@ -227,12 +227,9 @@ void FakePeer::OnRxL2CAP(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   l2cap_.HandlePdu(conn, pdu);
 }
 
-void FakePeer::SendSignalingPacket(hci::ConnectionHandle conn, const ByteBuffer& packet) {
-  ZX_ASSERT_MSG(packet.size() >= sizeof(l2cap::CommandHeader), "SDU has only %zu bytes",
-                packet.size());
-  ZX_ASSERT(packet.As<l2cap::CommandHeader>().length ==
-            (packet.size() - sizeof(l2cap::CommandHeader)));
-  ctrl()->SendL2CAPBFrame(conn, l2cap::kSignalingChannelId, packet);
+void FakePeer::SendPacket(hci::ConnectionHandle conn, l2cap::ChannelId cid,
+                          const ByteBuffer& packet) {
+  ctrl()->SendL2CAPBFrame(conn, cid, packet);
 }
 
 }  // namespace testing

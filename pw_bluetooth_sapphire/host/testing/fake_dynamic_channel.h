@@ -63,9 +63,15 @@ class FakeDynamicChannel {
   void set_closed() { opened_ = false; }
   void set_configuration_request_received() { configuration_request_received_ = true; }
   void set_configuration_response_received() { configuration_response_received_ = true; }
-  void set_packet_handler_callback(PacketHandlerCallback packet_handler_callback);
-  void set_send_packet_callback(SendPacketCallback send_packet_callback);
-  void set_channel_deleted_callback(ChannelDeletedCallback channel_deleted_callback);
+  void set_packet_handler_callback(PacketHandlerCallback packet_handler_callback) {
+    packet_handler_callback_ = std::move(packet_handler_callback);
+  }
+  void set_send_packet_callback(SendPacketCallback send_packet_callback) {
+    send_packet_callback_ = std::move(send_packet_callback);
+  }
+  void set_channel_deleted_callback(ChannelDeletedCallback channel_deleted_callback) {
+    channel_deleted_callback_ = std::move(channel_deleted_callback);
+  }
 
   hci::ConnectionHandle handle() const { return handle_; }
   bool opened() const { return opened_; }
