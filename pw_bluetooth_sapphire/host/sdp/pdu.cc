@@ -5,7 +5,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
 #include <endian.h>
+#include <memory>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
@@ -52,11 +54,14 @@ bool ValidContinuationState(const ByteBuffer& buf, BufferView* out) {
   return true;
 }
 
-MutableByteBufferPtr GetNewPDU(OpCode pdu_id, TransactionId tid, uint16_t param_length) {
-  auto ptr = NewSlabBuffer(sizeof(Header) + param_length);
-  if (!ptr) {
-    return nullptr;
-  }
+MutableByteBufferPtr NewSdpBuffer(size_t buffer_size) {
+  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double indirection once sufficient
+  // progress has been made on the attached bug (specifically re:l2cap::Channel::Send).
+  return std::make_unique<DynamicByteBuffer>(buffer_size);
+}
+
+MutableByteBufferPtr BuildNewPdu(OpCode pdu_id, TransactionId tid, uint16_t param_length) {
+  MutableByteBufferPtr ptr = NewSdpBuffer(sizeof(Header) + param_length);
   MutablePacketView<Header> packet(ptr.get(), param_length);
   packet.mutable_header()->pdu_id = pdu_id;
   packet.mutable_header()->tid = htobe16(tid);
@@ -190,7 +195,7 @@ Status ErrorResponse::Parse(const ByteBuffer& buf) {
 
 MutableByteBufferPtr ErrorResponse::GetPDU(uint16_t, TransactionId tid, uint16_t,
                                            const ByteBuffer&) const {
-  auto ptr = GetNewPDU(kErrorResponse, tid, sizeof(ErrorCode));
+  auto ptr = BuildNewPdu(kErrorResponse, tid, sizeof(ErrorCode));
   size_t written = sizeof(Header);
 
   ptr->WriteObj(htobe16(static_cast<uint16_t>(error_code_)), written);
@@ -260,7 +265,7 @@ ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
   DataElement search_pattern(std::move(pattern));
 
   size += search_pattern.WriteSize();
-  auto buf = GetNewPDU(kServiceSearchRequest, tid, size);
+  auto buf = BuildNewPdu(kServiceSearchRequest, tid, size);
   size_t written = sizeof(Header);
 
   // Write ServiceSearchPattern
@@ -393,7 +398,7 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t req_max, Transaction
   size_t size = (2 * sizeof(uint16_t)) + (current_record_count * sizeof(ServiceHandle)) +
                 sizeof(uint8_t) + info_length;
 
-  auto buf = GetNewPDU(kServiceSearchResponse, tid, size);
+  auto buf = BuildNewPdu(kServiceSearchResponse, tid, size);
   if (!buf) {
     return buf;
   }
@@ -484,10 +489,8 @@ ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
   DataElement attribute_list_elem(std::move(attribute_list));
   size += attribute_list_elem.WriteSize();
 
-  auto buf = GetNewPDU(kServiceAttributeRequest, tid, size);
-  if (!buf) {
-    return nullptr;
-  }
+  auto buf = BuildNewPdu(kServiceAttributeRequest, tid, size);
+
   size_t written = sizeof(Header);
 
   buf->WriteObj(htobe32(service_record_handle_), written);
@@ -684,10 +687,8 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t req_max, Transact
   }
 
   size_t size = sizeof(uint16_t) + attribute_list_byte_count + sizeof(uint8_t) + info_length;
-  auto buf = GetNewPDU(kServiceAttributeResponse, tid, size);
-  if (!buf) {
-    return nullptr;
-  }
+  auto buf = BuildNewPdu(kServiceAttributeResponse, tid, size);
+
   size_t written = sizeof(Header);
 
   buf->WriteObj(htobe16(attribute_list_byte_count), written);
@@ -812,10 +813,8 @@ ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
   DataElement search_pattern(std::move(pattern));
   size += search_pattern.WriteSize();
 
-  auto buf = GetNewPDU(kServiceSearchAttributeRequest, tid, size);
-  if (!buf) {
-    return nullptr;
-  }
+  auto buf = BuildNewPdu(kServiceSearchAttributeRequest, tid, size);
+
   size_t written = sizeof(Header);
 
   auto mut_view = buf->mutable_view(written);
@@ -1037,10 +1036,8 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   }
 
   size_t size = sizeof(uint16_t) + attribute_lists_byte_count + sizeof(uint8_t) + info_length;
-  auto buf = GetNewPDU(kServiceSearchAttributeResponse, tid, size);
-  if (!buf) {
-    return nullptr;
-  }
+  auto buf = BuildNewPdu(kServiceSearchAttributeResponse, tid, size);
+
   size_t written = sizeof(Header);
 
   buf->WriteObj(htobe16(attribute_lists_byte_count), written);

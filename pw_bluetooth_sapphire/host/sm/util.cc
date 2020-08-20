@@ -151,12 +151,9 @@ std::string DisplayMethodToString(Delegate::DisplayMethod method) {
 }
 
 MutableByteBufferPtr NewPdu(size_t param_size) {
-  auto pdu = NewSlabBuffer(sizeof(Header) + param_size);
-  if (!pdu) {
-    bt_log(ERROR, "sm", "out of memory");
-  }
-
-  return pdu;
+  // TODO(fxbug.dev/1338): Remove unique_ptr->DynamicByteBuffer double indirection once sufficient
+  // progress has been made on the attached bug (specifically re:l2cap::Channel::Send).
+  return std::make_unique<DynamicByteBuffer>(sizeof(Header) + param_size);
 }
 
 PairingMethod SelectPairingMethod(bool sec_conn, bool local_oob, bool peer_oob, bool mitm_required,
