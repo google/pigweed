@@ -56,17 +56,17 @@ their own for combining this subsystem's metrics with others.
   class MySubsystem {
    public:
     void DoSomething() {
-      attempts.Increment();
+      attempts_.Increment();
       if (ActionSucceeds()) {
-        successes.Increment();
+        successes_.Increment();
       }
     }
-    Group& metrics() { return my_subsystem; }
+    Group& metrics() { return metrics_; }
 
    private:
-    PW_METRIC_GROUP(my_subsystem);
-    PW_METRIC(my_subsystem, attempts, 0u);
-    PW_METRIC(my_subsystem, successes, 0u);
+    PW_METRIC_GROUP(metrics_, "my_subsystem");
+    PW_METRIC(metrics_, attempts_, "attempts", 0u);
+    PW_METRIC(metrics_, successes_, "successes", 0u);
   };
 
 The metrics subsystem has no canonical output format at this time, but a JSON
@@ -112,8 +112,8 @@ this use case. For example:
   #include "pw_metric/global.h"
   #include "pw_metric/metric.h"
 
-  PW_METRIC_GLOBAL(legacy_do_something);
-  PW_METRIC_GLOBAL(legacy_do_something_else);
+  PW_METRIC_GLOBAL(legacy_do_something, "legacy_do_something");
+  PW_METRIC_GLOBAL(legacy_do_something_else, "legacy_do_something_else");
 
   // This code was passed down from generations of developers before; no one
   // knows what it does or how it works. But it needs to be fixed!
@@ -252,13 +252,19 @@ The **macros are the primary mechanism for creating metrics**, and should be
 used instead of directly constructing metrics or groups. The macros handle
 tokenizing the metric and group names.
 
-.. cpp:function:: PW_METRIC(name, value)
-.. cpp:function:: PW_METRIC(group, name, value)
+.. cpp:function:: PW_METRIC(identifier, name, value)
+.. cpp:function:: PW_METRIC(group, identifier, name, value)
 
   Declare a metric, optionally adding it to a group.
 
-  - **name** - An identifier; the stringifed version of name will become a
-    token. For example: ``i2c_transactions``.
+  - **identifier** - An identifier name for the created variable or member.
+    For example: ``i2c_transactions`` might be used as a local or global
+    metric; inside a class, could be named according to members
+    (``i2c_transactions_`` for Google's C++ style).
+  - **name** - The string name for the metric. This will be tokenized. There
+    are no restrictions on the contents of the name; however, consider
+    restricting these to be valid C++ identifiers to ease integration with
+    other systems.
   - **value** - The initial value for the metric. Must be either a floating
     point value (e.g. ``3.2f``) or unsigned int (e.g. ``21u``).
   - **group** - A ``pw::metric::Group`` instance. If provided, the metric is
@@ -272,7 +278,7 @@ tokenizing the metric and group names.
 
     .. code::
 
-      PW_METRIC(foo, 15.5f);
+      PW_METRIC(foo, "foo", 15.5f);
 
       void MyFunc() {
         foo.Increment();
@@ -283,7 +289,7 @@ tokenizing the metric and group names.
     .. code::
 
       void MyFunc() {
-        PW_METRIC(foo, 15.5f);
+        PW_METRIC(foo, "foo", 15.5f);
         foo.Increment();
         // foo goes out of scope here; be careful!
       }
@@ -297,7 +303,7 @@ tokenizing the metric and group names.
           somethings.Increment();
         }
         // Every instance of MyStructy will have a separate somethings counter.
-        PW_METRIC(somethings, 0u);
+        PW_METRIC(somethings, "somethings", 0u);
       }
 
   You can also put a metric into a group with the macro. Metrics can belong to
@@ -305,10 +311,10 @@ tokenizing the metric and group names.
 
   .. code::
 
-    PW_METRIC_GROUP(my_group);
-    PW_METRIC(my_group, foo, 0.2f);
-    PW_METRIC(my_group, bar, 44000u);
-    PW_METRIC(my_group, zap, 3.14f);
+    PW_METRIC_GROUP(my_group, "my_group");
+    PW_METRIC(my_group, foo, "foo", 0.2f);
+    PW_METRIC(my_group, bar, "bar", 44000u);
+    PW_METRIC(my_group, zap, "zap", 3.14f);
 
   .. tip::
 
@@ -316,7 +322,7 @@ tokenizing the metric and group names.
     that contexts, metrics are globally registered without the need to
     centrally register in a single place.
 
-.. cpp:function:: PW_METRIC_GROUP(name)
+.. cpp:function:: PW_METRIC_GROUP(identifier, name)
 
   Declares a ``pw::metric::Group`` with name name; the name is tokenized.
   Works similar to ``PW_METRIC`` and can be used in the same contexts (global,
@@ -326,12 +332,12 @@ tokenizing the metric and group names.
 
   .. code::
 
-    PW_METRIC_GROUP(my_group);
-    PW_METRIC(my_group, foo, 0.2f);
-    PW_METRIC(my_group, bar, 44000u);
-    PW_METRIC(my_group, zap, 3.14f);
+    PW_METRIC_GROUP(my_group, "my_group");
+    PW_METRIC(my_group, foo, "foo", 0.2f);
+    PW_METRIC(my_group, bar, "bar", 44000u);
+    PW_METRIC(my_group, zap, "zap", 3.14f);
 
-.. cpp:function:: PW_METRIC_GLOBAL(name, value)
+.. cpp:function:: PW_METRIC_GLOBAL(identifier, name, value)
 
   Declare a ``pw::metric::Metric`` with name name, and register it in the
   global metrics list ``pw::metric::global_metrics``.
@@ -344,8 +350,8 @@ tokenizing the metric and group names.
     #include "pw_metric/global.h"
 
     // No need to coordinate collection of foo and bar; they're autoregistered.
-    PW_METRIC_GLOBAL(foo, 0.2f);
-    PW_METRIC_GLOBAL(bar, 44000u);
+    PW_METRIC_GLOBAL(foo, "foo", 0.2f);
+    PW_METRIC_GLOBAL(bar, "bar", 44000u);
 
   Note that metrics defined with ``PW_METRIC_GLOBAL`` should never be added to
   groups defined with ``PW_METRIC_GROUP_GLOBAL``. Each metric can only belong
@@ -358,7 +364,7 @@ tokenizing the metric and group names.
     scope. Putting these on an instance (member context) would lead to dangling
     pointers and misery. Metrics are never deleted or unregistered!
 
-.. cpp:function:: PW_METRIC_GROUP_GLOBAL(name, value)
+.. cpp:function:: PW_METRIC_GROUP_GLOBAL(identifier, name, value)
 
   Declare a ``pw::metric::Group`` with name name, and register it in the
   global metric groups list ``pw::metric::global_groups``.
@@ -375,9 +381,9 @@ tokenizing the metric and group names.
     #include "pw_metric/global.h"
 
     // No need to coordinate collection of this group; it's globally registered.
-    PW_METRIC_GROUP_GLOBAL(leagcy_system);
-    PW_METRIC(leagcy_system, foo, 0.2f);
-    PW_METRIC(leagcy_system, bar, 44000u);
+    PW_METRIC_GROUP_GLOBAL(leagcy_system, "legacy_system");
+    PW_METRIC(leagcy_system, foo, "foo",0.2f);
+    PW_METRIC(leagcy_system, bar, "bar",44000u);
 
   .. attention::
 
@@ -533,8 +539,8 @@ work fine:
 
    private:
     PW_METRIC_GROUP(metrics_, "power");  // Note metrics_ declared first.
-    PW_METRIC(metrics_, foo, 0.2f);
-    PW_METRIC(metrics_, bar, 44000u);
+    PW_METRIC(metrics_, foo, "foo", 0.2f);
+    PW_METRIC(metrics_, bar, "bar", 44000u);
   };
 
 but the following one will not since the group is constructed after the metrics
@@ -550,8 +556,8 @@ but the following one will not since the group is constructed after the metrics
      const Group& metrics() const { return metrics_; }
 
    private:
-    PW_METRIC(metrics_, foo, 0.2f);
-    PW_METRIC(metrics_, bar, 44000u);
+    PW_METRIC(metrics_, foo, "foo", 0.2f);
+    PW_METRIC(metrics_, bar, "bar", 44000u);
     PW_METRIC_GROUP(metrics_, "power");  // Error: metrics_ must be first.
   };
 
