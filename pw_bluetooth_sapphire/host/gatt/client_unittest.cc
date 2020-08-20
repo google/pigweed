@@ -1037,7 +1037,7 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryEmptyDataList) {
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(status);
+  EXPECT_EQ(status, att::Status(HostError::kPacketMalformed));
 }
 
 TEST_F(GATT_ClientTest, CharacteristicDiscoveryAttributeNotFound) {
@@ -1447,8 +1447,8 @@ TEST_F(GATT_ClientTest, CharacteristicDiscoveryHandlesNotIncreasing) {
 
   EXPECT_EQ(HostError::kPacketMalformed, status.error());
 
-  // The first characteristic should be reported.
-  EXPECT_EQ(1u, chrcs.size());
+  // No Characteristics should be reported.
+  EXPECT_EQ(0u, chrcs.size());
 }
 
 // Equal handles should result should not short-circuit and result in a request.

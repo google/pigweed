@@ -170,6 +170,14 @@ struct DescriptorData {
   }
 };
 
+// Characteristic Declaration attribute value (Core Spec v5.2, Vol 3, Sec 3.3.1).
+template <att::UUIDType Format>
+struct CharacteristicDeclarationAttributeValue {
+  Properties properties;
+  att::Handle value_handle;
+  att::AttributeType<Format> value_uuid;
+} __PACKED;
+
 }  // namespace gatt
 }  // namespace bt
 
