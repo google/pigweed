@@ -9,6 +9,7 @@ source_set("testing") {
     "fake_controller_test.h",
     "fake_dynamic_channel_unittest.cc",
     "fake_l2cap_unittest.cc",
+    "fake_sdp_server_unittest.cc",
     "fake_signaling_server_unittest.cc",
     "test_controller.cc",
     "test_controller.h",
@@ -28,6 +29,8 @@ source_set("testing") {
 # Target that includes Fake HCI emulation support. This should NOT depend on
 # gtest.
 source_set("fake_controller") {
+  testonly = true
+
   sources = [
     "fake_controller.cc",
     "fake_controller.h",
@@ -41,6 +44,8 @@ source_set("fake_controller") {
     "fake_l2cap.h",
     "fake_peer.cc",
     "fake_peer.h",
+    "fake_sdp_server.cc",
+    "fake_sdp_server.h",
     "fake_signaling_server.cc",
     "fake_signaling_server.h",
   ]
@@ -48,11 +53,13 @@ source_set("fake_controller") {
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/data:testing",
     "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
 
     # TODO(armansito): Pull in just the hci:definitions target.
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
+    "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/lib/files",
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
