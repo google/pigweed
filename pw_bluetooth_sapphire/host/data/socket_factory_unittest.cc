@@ -19,11 +19,10 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 namespace {
 
 // We'll test the template just for L2CAP channels.
-using FactoryT = internal::SocketFactory<l2cap::Channel>;
+using FactoryT = SocketFactory<l2cap::Channel>;
 
 constexpr l2cap::ChannelId kDynamicChannelIdMin = 0x0040;
 constexpr l2cap::ChannelId kRemoteChannelId = 0x0050;
@@ -120,6 +119,5 @@ TEST_F(DATA_SocketFactoryTest, SameChannelIdDifferentHandles) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace data
 }  // namespace bt

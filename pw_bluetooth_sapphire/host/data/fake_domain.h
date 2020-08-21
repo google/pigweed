@@ -153,7 +153,7 @@ class FakeDomain final : public Domain {
   std::unordered_map<l2cap::PSM, ServiceInfo> registered_services_;
 
   // Makes sockets for RegisterService
-  internal::SocketFactory<l2cap::Channel> socket_factory_;
+  SocketFactory<l2cap::Channel> socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDomain);
 };

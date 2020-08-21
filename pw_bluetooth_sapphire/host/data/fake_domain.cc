@@ -163,9 +163,6 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                    [this, cb = std::move(socket_callback), handle](auto channel) {
                      zx::socket s = socket_factory_.MakeSocketForChannel(channel);
                      auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-                     if (chan_info) {
-                       chan_info->handle = handle;
-                     }
                      l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
 
                      cb(std::move(chan_sock), handle);

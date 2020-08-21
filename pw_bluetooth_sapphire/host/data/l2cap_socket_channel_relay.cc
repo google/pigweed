@@ -8,10 +8,8 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 
 template class SocketChannelRelay<l2cap::Channel>;
 
-}  // namespace internal
 }  // namespace data
 }  // namespace bt

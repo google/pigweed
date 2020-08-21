@@ -14,7 +14,6 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 
 template <typename ChannelT>
 SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<ChannelT> channel,
@@ -426,6 +425,5 @@ trace_flow_id_t SocketChannelRelay<ChannelT>::GetTraceId(uint32_t id) {
          id;
 }
 
-}  // namespace internal
 }  // namespace data
 }  // namespace bt

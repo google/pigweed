@@ -31,7 +31,7 @@ using TestingBase = l2cap::testing::FakeChannelTest;
 constexpr hci::ConnectionHandle kTestHandle1 = 1;
 constexpr hci::ConnectionHandle kTestHandle2 = 2;
 
-void NopConnectCallback(l2cap::ChannelSocket, hci::ConnectionHandle, const DataElement&) {}
+void NopConnectCallback(fbl::RefPtr<l2cap::Channel>, const DataElement&) {}
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
@@ -220,7 +220,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithAdditionalProtocol) {
   psm_additional.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement(uint16_t(psms[2])));
 
   std::vector<uint16_t> protocols_discovered;
-  auto cb = [&](auto /*socket*/, auto /*handle*/, auto& protocol_list) {
+  auto cb = [&](auto /*channel*/, auto& protocol_list) {
     EXPECT_EQ(DataElement::Type::kSequence, protocol_list.type());
     auto* psm = protocol_list.At(0);
     EXPECT_EQ(DataElement::Type::kSequence, psm->type());
@@ -263,7 +263,7 @@ TEST_F(SDP_ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
   psm_additional.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement());
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*socket*/, auto /*handle*/, auto& /* protocol_list */) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /* protocol_list */) { cb_count++; };
 
   std::vector<ServiceRecord> records;
   records.emplace_back(std::move(psm_additional));
@@ -384,7 +384,7 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSuccess) {
   records.emplace_back(std::move(record2));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*socket*/, auto /*handle*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
 
   auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
   EXPECT_TRUE(handle);
@@ -423,7 +423,7 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSamePSM) {
   records.emplace_back(std::move(controller_record));
 
   std::vector<uint16_t> protocols_discovered;
-  auto cb = [&](auto /*socket*/, auto /*handle*/, auto& protocol_list) {
+  auto cb = [&](auto /*channel*/, auto& protocol_list) {
     EXPECT_EQ(DataElement::Type::kSequence, protocol_list.type());
     auto* psm = protocol_list.At(0);
     EXPECT_EQ(DataElement::Type::kSequence, psm->type());
@@ -1022,14 +1022,14 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  std::vector<zx::socket> socks;
+  std::vector<fbl::RefPtr<l2cap::Channel>> channels;
   hci::ConnectionHandle latest_handle;
 
   // Register a service
-  AddA2DPSink([&socks, &latest_handle](auto chan_sock, auto handle, const auto& protocol) {
-    bt_log(TRACE, "test", "Got socket for the a2dp sink");
-    socks.emplace_back(std::move(chan_sock.socket));
-    latest_handle = handle;
+  AddA2DPSink([&channels, &latest_handle](auto chan, const auto& protocol) {
+    bt_log(TRACE, "test", "Got channel for the a2dp sink");
+    latest_handle = chan->link_handle();
+    channels.emplace_back(std::move(chan));
   });
 
   // Connect to the service
@@ -1037,8 +1037,8 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
       l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVDTP, kSdpChannel + 1, 0x0b00));
   RunLoopUntilIdle();
 
-  // It should get a callback with a socket
-  EXPECT_EQ(1u, socks.size());
+  // It should get a callback with a channel
+  EXPECT_EQ(1u, channels.size());
   EXPECT_EQ(kTestHandle1, latest_handle);
 
   // Connect to the same service again with the same PSM (on a different
@@ -1047,9 +1047,9 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
       l2cap()->TriggerInboundL2capChannel(kTestHandle2, l2cap::kAVDTP, kSdpChannel + 2, 0x0b01));
   RunLoopUntilIdle();
 
-  ASSERT_EQ(2u, socks.size());
+  ASSERT_EQ(2u, channels.size());
   EXPECT_EQ(kTestHandle2, latest_handle);
-  EXPECT_NE(socks.front(), socks.back());
+  EXPECT_NE(channels.front(), channels.back());
 }
 
 // Browse Group gets set correctly
@@ -1109,11 +1109,10 @@ TEST_F(SDP_ServerTest, RegisterServiceWithChannelParameters) {
 
   std::optional<l2cap::ChannelInfo> params;
   size_t chan_cb_count = 0;
-  ASSERT_TRUE(AddL2capService(kPSM, preferred_params,
-                              [&](auto chan_sock, auto /*handle*/, auto& /*protocol*/) {
-                                chan_cb_count++;
-                                params = chan_sock.params;
-                              }));
+  ASSERT_TRUE(AddL2capService(kPSM, preferred_params, [&](auto chan, auto& /*protocol*/) {
+    chan_cb_count++;
+    params = chan->info();
+  }));
 
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, kPSM, 0x40, 0x41));
   RunLoopUntilIdle();

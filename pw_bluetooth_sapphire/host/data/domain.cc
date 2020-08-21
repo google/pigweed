@@ -34,7 +34,7 @@ class Impl final : public Domain {
         std::move(send_packets), std::move(drop_queued_acl), dispatcher_);
     hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
-    l2cap_socket_factory_ = std::make_unique<internal::SocketFactory<l2cap::Channel>>();
+    l2cap_socket_factory_ = std::make_unique<SocketFactory<l2cap::Channel>>();
 
     bt_log(DEBUG, "data-domain", "initialized");
   }
@@ -102,9 +102,6 @@ class Impl final : public Domain {
                        // that have failed to open).
                        zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
                        auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-                       if (chan_info) {
-                         chan_info->handle = handle;
-                       }
                        l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
                        cb(std::move(chan_sock), handle);
                      });
@@ -140,7 +137,7 @@ class Impl final : public Domain {
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
 
   // Creates sockets that bridge internal L2CAP channels to profile processes.
-  std::unique_ptr<internal::SocketFactory<l2cap::Channel>> l2cap_socket_factory_;
+  std::unique_ptr<SocketFactory<l2cap::Channel>> l2cap_socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };

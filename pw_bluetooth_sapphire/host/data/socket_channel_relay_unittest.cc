@@ -23,7 +23,7 @@ namespace data {
 namespace {
 
 // We'll test the template just for L2CAP channels.
-using RelayT = internal::SocketChannelRelay<l2cap::Channel>;
+using RelayT = SocketChannelRelay<l2cap::Channel>;
 
 class DATA_SocketChannelRelayTest : public ::testing::Test {
  public:

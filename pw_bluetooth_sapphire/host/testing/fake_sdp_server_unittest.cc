@@ -26,9 +26,8 @@ l2cap::PSM kPsm = l2cap::kSDP;
 l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
 
 auto SdpErrorResponse(uint16_t t_id, sdp::ErrorCode code) {
-  return StaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00,
-                                                  0x02, UpperBits(uint16_t(code)),
-                                                  LowerBits(uint16_t(code)));
+  return StaticByteBuffer(0x01, UpperBits(t_id), LowerBits(t_id), 0x00, 0x02,
+                          UpperBits(uint16_t(code)), LowerBits(uint16_t(code)));
 }
 
 std::vector<sdp::ServiceRecord> GetSPPServiceRecord() {
@@ -74,23 +73,23 @@ TEST(TESTING_FakeSdpServerTest, SuccessfulSearch) {
   auto sdp_server = FakeSdpServer();
 
   // Configure the SDP server to provide a response to the search.
-  auto NopConnectCallback = [](l2cap::ChannelSocket, hci::ConnectionHandle,
-                               const sdp::DataElement&) {};
+  auto NopConnectCallback = [](auto /*channel*/, const sdp::DataElement&) {};
   sdp::Server::RegistrationHandle spp_handle = sdp_server.server()->RegisterService(
       GetSPPServiceRecord(), kChannelParams, NopConnectCallback);
   EXPECT_TRUE(spp_handle);
   sdp::Server::RegistrationHandle a2dp_handle = sdp_server.server()->RegisterService(
       GetA2DPServiceRecord(), kChannelParams, NopConnectCallback);
   EXPECT_TRUE(a2dp_handle);
-  const StaticByteBuffer kL2capSearch = CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
-                                                   0x10, 0x01,  // Transaction ID (0x1001)
-                                                   0x00, 0x08,  // Parameter length (8 bytes)
-                                                   // ServiceSearchPattern
-                                                   0x35, 0x03,        // Sequence uint8 3 bytes
-                                                   0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
-                                                   0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-                                                   0x00         // Contunuation State: none
-  );
+  const StaticByteBuffer kL2capSearch =
+      CreateStaticByteBuffer(0x02,        // SDP_ServiceSearchRequest
+                             0x10, 0x01,  // Transaction ID (0x1001)
+                             0x00, 0x08,  // Parameter length (8 bytes)
+                             // ServiceSearchPattern
+                             0x35, 0x03,        // Sequence uint8 3 bytes
+                             0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
+                             0xFF, 0xFF,        // MaximumServiceRecordCount: (none)
+                             0x00               // Contunuation State: none
+      );
   const StaticByteBuffer kL2capSearchResponse = CreateStaticByteBuffer(
       0x03,                             // SDP_ServicesearchResponse
       0x10, 0x01,                       // Transaction ID (0x1001)

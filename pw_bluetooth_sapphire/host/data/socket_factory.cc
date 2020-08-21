@@ -11,7 +11,6 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 
 template <typename ChannelT>
 SocketFactory<ChannelT>::SocketFactory() : weak_ptr_factory_(this) {}
@@ -64,6 +63,5 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> c
   return remote_socket;
 }
 
-}  // namespace internal
 }  // namespace data
 }  // namespace bt

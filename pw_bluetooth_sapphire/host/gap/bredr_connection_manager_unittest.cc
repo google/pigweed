@@ -1641,9 +1641,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bredr()->connected());
 
-  std::optional<zx::socket> connected_socket;
+  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
-  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
+  auto chan_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1682,13 +1682,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
 
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
-                              kChannelParams, socket_cb);
+                              kChannelParams, chan_cb);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  // We should not have a socket because the L2CAP open callback shouldn't have been called, but
+  // We should not have a channel because the L2CAP open callback shouldn't have been called, but
   // the LTK should be stored since the link key got received.
-  ASSERT_FALSE(connected_socket);
+  ASSERT_FALSE(connected_chan);
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
@@ -1698,20 +1698,20 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   // The socket should be returned.
-  ASSERT_TRUE(connected_socket);
+  ASSERT_TRUE(connected_chan);
 
-  connected_socket.reset();
+  connected_chan.reset();
 
   data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
                                             kChannelParams);
 
   // A second connection request should not require another authentication.
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
-                              kChannelParams, socket_cb);
+                              kChannelParams, chan_cb);
 
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(connected_socket);
+  ASSERT_TRUE(connected_chan);
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -1738,9 +1738,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   ASSERT_TRUE(peer->bredr()->connected());
 
-  std::optional<zx::socket> connected_socket;
+  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
-  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
+  auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
   // Initial connection request
 
@@ -1756,7 +1756,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
 
   // L2CAP connect shouldn't have been called, and callback shouldn't be called.
   // We should not have a socket.
-  ASSERT_FALSE(connected_socket);
+  ASSERT_FALSE(connected_chan);
 
   // The authentication flow will request the existing link key, which should be
   // returned and stored, and then the authentication is complete.
@@ -1772,7 +1772,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   RunLoopUntilIdle();
 
   // No socket until the encryption verification completes.
-  ASSERT_FALSE(connected_socket);
+  ASSERT_FALSE(connected_chan);
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
@@ -1782,7 +1782,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
   RunLoopUntilIdle();
 
   // The socket should be connected.
-  ASSERT_TRUE(connected_socket);
+  ASSERT_TRUE(connected_chan);
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -1803,9 +1803,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bredr()->connected());
 
-  std::optional<zx::socket> connected_socket;
+  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
-  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
+  auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
   // Initial connection request
 
@@ -1820,8 +1820,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   RunLoopUntilIdle();
 
   // The L2CAP shouldn't have been called
-  // We should not have a socket, and the callback shouldn't have been called.
-  ASSERT_FALSE(connected_socket);
+  // We should not have a channel, and the callback shouldn't have been called.
+  ASSERT_FALSE(connected_chan);
 
   test_device()->SendCommandChannelPacket(kAuthenticationCompleteFailed);
 
@@ -1832,9 +1832,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   RunLoopUntilIdle();
 
-  // An invalid socket should have been sent because the connection failed.
-  ASSERT_TRUE(connected_socket);
-  ASSERT_EQ(ZX_HANDLE_INVALID, *connected_socket);
+  // An invalid channel should have been sent because the connection failed.
+  ASSERT_TRUE(connected_chan);
+  ASSERT_EQ(connected_chan.value(), nullptr);
 
   ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
 }
@@ -1853,9 +1853,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bredr()->connected());
 
-  std::optional<zx::socket> connected_socket;
+  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
 
-  auto socket_cb = [&](auto chan_sock) { connected_socket = std::move(chan_sock.socket); };
+  auto socket_cb = [&](auto chan) { connected_chan = std::move(chan); };
 
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
@@ -1900,7 +1900,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
 
   // We should not have a socket because the L2CAP open callback shouldn't have been called, but
   // the LTK should be stored since the link key got received.
-  ASSERT_FALSE(connected_socket);
+  ASSERT_FALSE(connected_chan);
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
@@ -1910,7 +1910,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
   // The socket should be returned.
-  ASSERT_TRUE(connected_socket);
+  ASSERT_TRUE(connected_chan);
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -2778,10 +2778,10 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
 
   std::optional<l2cap::ChannelInfo> chan_info;
   size_t sock_cb_count = 0;
-  auto sock_cb = [&](auto chan_sock) {
+  auto sock_cb = [&](auto chan) {
     sock_cb_count++;
-    EXPECT_TRUE(chan_sock);
-    chan_info = chan_sock.params;
+    ASSERT_TRUE(chan);
+    chan_info = chan->info();
   };
   connmgr()->OpenL2capChannel(peer->identifier(), kPSM, kNoSecurityRequirements, params, sock_cb);
 

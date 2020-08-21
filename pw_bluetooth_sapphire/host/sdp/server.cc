@@ -317,7 +317,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
     data_domain_->RegisterService(
         psm, chan_params,
-        [psm = psm, conn_cb = conn_cb.share()](auto chan_sock, auto handle) mutable {
+        [psm = psm, conn_cb = conn_cb.share()](fbl::RefPtr<l2cap::Channel> channel) mutable {
           bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;
@@ -325,7 +325,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
           protocol_l2cap.emplace_back(DataElement(psm));
           std::vector<DataElement> protocol;
           protocol.emplace_back(std::move(protocol_l2cap));
-          conn_cb(std::move(chan_sock), handle, DataElement(std::move(protocol)));
+          conn_cb(std::move(channel), DataElement(std::move(protocol)));
         });
   }
 

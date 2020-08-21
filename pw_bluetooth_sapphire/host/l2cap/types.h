@@ -99,9 +99,6 @@ struct ChannelInfo {
   uint16_t max_rx_sdu_size;
   uint16_t max_tx_sdu_size;
 
-  // TODO(57163): Remove after profile server hack is removed.
-  std::optional<hci::ConnectionHandle> handle;
-
   // For Enhanced Retransmission Mode only. See Core Spec v5.0 Vol 3, Part A, Sec 5.4 for details on
   // each field. Values are not meaningful if mode = ChannelMode::kBasic.
   uint8_t n_frames_in_tx_window;

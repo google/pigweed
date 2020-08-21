@@ -58,9 +58,8 @@ class BrEdrConnection final {
   void Start(data::Domain& domain);
 
   // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
-  // the Domain provided. Otherwise, calls |cb| with a |ZX_HANDLE_INVALID| socket.
-  void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
-                        data::Domain::SocketCallback cb);
+  // the Domain provided. Otherwise, calls |cb| with a nullptr.
+  void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
@@ -116,14 +115,11 @@ class BrEdrConnectionManager final {
   // the link key and report an error via |cb| if the upgrade fails. Returns false if the peer is
   // not already connected.
   //
-  // |cb| will be called with a zx::socket corresponding to the channel created to the remote or
-  // ZX_INVALID_HANDLE if the channel creation resulted in an error.
-  //
-  // On successful channel creation, |chan_info| will contain the configured channel parameters.
-  using SocketCallback = fit::function<void(l2cap::ChannelSocket)>;
+  // |cb| will be called with the channel created to the peer, or nullptr if the channel creation
+  // resulted in an error.
   bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                         BrEdrSecurityRequirements security_requirements,
-                        l2cap::ChannelParameters params, SocketCallback cb);
+                        l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
   // Add a service search to be performed on new connected remote peers.
   // This search will happen on every peer connection.

@@ -22,7 +22,6 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 
 // SocketChannelRelay relays data between a zx::socket and a Channel. This class
 // should not be used directly. Instead, see SocketFactory.
@@ -174,7 +173,6 @@ class SocketChannelRelay final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
 };
 
-}  // namespace internal
 }  // namespace data
 }  // namespace bt
 

@@ -5,13 +5,14 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_FACTORY_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_SOCKET_FACTORY_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async/dispatcher.h>
 #include <lib/zx/socket.h>
 
 #include <memory>
 #include <unordered_map>
+
+#include <fbl/macros.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_channel_relay.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -19,7 +20,6 @@
 
 namespace bt {
 namespace data {
-namespace internal {
 
 // A SocketFactory vends zx::socket objects that an IPC peer can use to
 // communicate with l2cap::Channels.
@@ -71,7 +71,6 @@ class SocketFactory final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketFactory);
 };
 
-}  // namespace internal
 }  // namespace data
 }  // namespace bt
 

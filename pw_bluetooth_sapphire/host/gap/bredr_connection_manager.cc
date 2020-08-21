@@ -96,12 +96,12 @@ void BrEdrConnection::Start(data::Domain& domain) {
 }
 
 void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
-                                       data::Domain::SocketCallback cb) {
+                                       l2cap::ChannelCallback cb) {
   if (!domain_.has_value()) {
-    // Connection is not yet ready for L2CAP; return a ZX_HANDLE_INVALID socket.
-    bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling socket to PSM %.4x",
+    // Connection is not yet ready for L2CAP; return a null channel.
+    bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling channel to PSM %.4x",
            bt_str(peer_id()), psm);
-    cb(l2cap::ChannelSocket(), link().handle());
+    cb(nullptr);
     return;
   }
 
@@ -252,14 +252,15 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, BrEdrSecurityRequirements secu
 
 bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               BrEdrSecurityRequirements security_reqs,
-                                              l2cap::ChannelParameters params, SocketCallback cb) {
+                                              l2cap::ChannelParameters params,
+                                              l2cap::ChannelCallback cb) {
   auto pairing_cb = [self = weak_ptr_factory_.GetWeakPtr(), peer_id, psm, params,
                      cb = std::move(cb)](auto status) mutable {
     bt_log(TRACE, "gap-bredr", "got pairing status %s, %sreturning socket to %s", bt_str(status),
            status ? "" : "not ", bt_str(peer_id));
     if (!status || !self) {
-      // Report the failure to the user with a ZX_HANDLE_INVALID socket.
-      cb(l2cap::ChannelSocket());
+      // Report the failure to the user with a null channel.
+      cb(nullptr);
       return;
     }
 
@@ -270,8 +271,8 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     }
     auto& [handle, connection] = *conn_pair;
 
-    connection->OpenL2capChannel(
-        psm, params, [cb = std::move(cb)](auto chan_sock, auto) { cb(std::move(chan_sock)); });
+    connection->OpenL2capChannel(psm, params,
+                                 [cb = std::move(cb)](auto chan) { cb(std::move(chan)); });
   };
 
   Pair(peer_id, security_reqs, std::move(pairing_cb));

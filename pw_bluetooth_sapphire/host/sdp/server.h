@@ -59,10 +59,8 @@ class Server final {
   // If any record in |records| fails registration checks, none of the services will be registered.
   //
   // |conn_cb| will be called for any connections made to any of the services in |records| with a
-  // connected socket, the accepted channel parameters, the connection handle the channel was opened
-  // on, and the descriptor list for the endpoint which was connected.
-  using ConnectCallback =
-      fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle, const DataElement&)>;
+  // connected channel and the descriptor list for the endpoint which was connected.
+  using ConnectCallback = fit::function<void(fbl::RefPtr<l2cap::Channel>, const DataElement&)>;
   RegistrationHandle RegisterService(std::vector<ServiceRecord> records,
                                      l2cap::ChannelParameters chan_params, ConnectCallback conn_cb);
 

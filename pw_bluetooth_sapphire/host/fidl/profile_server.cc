@@ -58,17 +58,6 @@ fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
   }
 }
 
-fidlbredr::Channel ChannelSocketToFidlChannel(bt::l2cap::ChannelSocket chan_sock) {
-  fidlbredr::Channel chan;
-  if (!chan_sock) {
-    return chan;
-  }
-  chan.set_socket(std::move(chan_sock.socket));
-  chan.set_channel_mode(ChannelModeToFidl(chan_sock.params->mode));
-  chan.set_max_tx_sdu_size(chan_sock.params->max_tx_sdu_size);
-  return chan;
-}
-
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = fidlbredr::DataElement::New();
   bt_log(TRACE, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
@@ -225,11 +214,11 @@ void ProfileServer::Advertise(
 
   uint64_t next = advertised_total_ + 1;
 
-  auto registration_handle = sdp->RegisterService(
-      std::move(registering), FidlToChannelParameters(parameters),
-      [this, next](auto chan_sock, auto handle, const auto& protocol_list) {
-        OnChannelConnected(next, std::move(chan_sock), handle, std::move(protocol_list));
-      });
+  auto registration_handle =
+      sdp->RegisterService(std::move(registering), FidlToChannelParameters(parameters),
+                           [this, next](auto channel, const auto& protocol_list) {
+                             OnChannelConnected(next, std::move(channel), std::move(protocol_list));
+                           });
 
   if (!registration_handle) {
     callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
@@ -297,8 +286,8 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
   auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(),
-                       cb = callback.share()](auto chan_sock) {
-    if (!chan_sock) {
+                       cb = callback.share()](fbl::RefPtr<bt::l2cap::Channel> chan) {
+    if (!chan) {
       bt_log(TRACE, "profile_server", "Channel socket is empty, returning failed.");
       cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
@@ -309,14 +298,13 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
       return;
     }
 
-    ZX_ASSERT(chan_sock.params->handle.has_value());
-    auto handle = chan_sock.params->handle.value();
+    auto handle = chan->link_handle();
     auto audio_direction_ext_client = self->BindAudioDirectionExtServer(handle);
 
-    auto chan = ChannelSocketToFidlChannel(std::move(chan_sock));
-    chan.set_ext_direction(std::move(audio_direction_ext_client));
+    auto fidl_chan = self->ChannelToFidl(std::move(chan));
+    fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
 
-    cb(fit::ok(std::move(chan)));
+    cb(fit::ok(std::move(fidl_chan)));
   };
   ZX_DEBUG_ASSERT(adapter());
 
@@ -328,8 +316,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   }
 }
 
-void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket chan_sock,
-                                       bt::hci::ConnectionHandle handle,
+void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Channel> channel,
                                        const bt::sdp::DataElement& protocol_list) {
   auto it = current_advertised_.find(ad_id);
   if (it == current_advertised_.end()) {
@@ -338,6 +325,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket 
   }
 
   ZX_DEBUG_ASSERT(adapter());
+  auto handle = channel->link_handle();
   auto id = adapter()->bredr_connection_manager()->GetPeerId(handle);
 
   // The protocol that is connected should be L2CAP, because that is the only thing that
@@ -355,10 +343,10 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::ChannelSocket 
 
   auto audio_direction_ext_client = BindAudioDirectionExtServer(handle);
 
-  auto chan = ChannelSocketToFidlChannel(std::move(chan_sock));
-  chan.set_ext_direction(std::move(audio_direction_ext_client));
+  auto fidl_chan = ChannelToFidl(std::move(channel));
+  fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
 
-  it->second.receiver->Connected(peer_id, std::move(chan), std::move(list));
+  it->second.receiver->Connected(peer_id, std::move(fidl_chan), std::move(list));
 }
 
 void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
@@ -508,6 +496,17 @@ fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDire
   audio_direction_ext_servers_[server_ptr] = std::move(audio_direction_ext_server);
 
   return client;
+}
+
+fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
+    fbl::RefPtr<bt::l2cap::Channel> channel) {
+  ZX_ASSERT(channel);
+  fidlbredr::Channel fidl_chan;
+  fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
+  fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());
+  auto sock = l2cap_socket_factory_.MakeSocketForChannel(std::move(channel));
+  fidl_chan.set_socket(std::move(sock));
+  return fidl_chan;
 }
 
 ProfileServer::AudioDirectionExt::AudioDirectionExt(
