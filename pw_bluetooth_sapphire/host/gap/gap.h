@@ -127,6 +127,15 @@ constexpr zx::duration kCacheTimeout = zx::sec(60);
 // T_GAP(private_addr_int) in 5.0 Vol 3, Part C, Appendix A)
 constexpr zx::duration kPrivateAddressTimeout = zx::min(15);
 
+// Maximum duration for which a scannable advertisement will be stored and not reported to
+// clients until a corresponding scan response is received.
+//
+// This number has been determined empirically but over a limited number of devices. According to
+// Core Spec. v5.2 Vol 6, Part B, Section 4.4 and in practice, the typical gap between the two
+// events from the same peer is <=10ms. However in practice it's possible to see gaps as high as
+// 1.5 seconds or more.
+constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
+
 }  // namespace gap
 }  // namespace bt
 

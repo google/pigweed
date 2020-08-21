@@ -144,10 +144,6 @@ class Peer final {
     // and updates the known RSSI with the given value.
     void SetAdvertisingData(int8_t rssi, const ByteBuffer& data);
 
-    // Appends the given scan response payload to the internal advertising data buffer. Updates the
-    // known RSSI with the given value.
-    void AppendScanResponse(int8_t rssi, const ByteBuffer& scan_response);
-
     // Updates the connection state and notifies listeners if necessary.
     void SetConnectionState(ConnectionState state);
 
@@ -171,10 +167,6 @@ class Peer final {
     // addresses.
 
    private:
-    // Update the RSSI and the fields obtained from |new_data| and notify any listeners. This also
-    // prolongs the peer's expiration timeout if it is temporary.
-    void ProcessNewAdvertisingData(int8_t rssi, const ByteBuffer& new_data);
-
     Peer* peer_;  // weak
 
     inspect::Node node_;

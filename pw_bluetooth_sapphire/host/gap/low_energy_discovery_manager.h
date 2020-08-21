@@ -169,7 +169,7 @@ using LowEnergyDiscoverySessionPtr = std::unique_ptr<LowEnergyDiscoverySession>;
 // See comments above.
 class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
  public:
-  // |peer_cache| MUST out-live this LowEnergyDiscoveryManager.
+  // |peer_cache| and |scanner| MUST out-live this LowEnergyDiscoveryManager.
   LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci::LowEnergyScanner* scanner,
                             PeerCache* peer_cache);
   virtual ~LowEnergyDiscoveryManager();

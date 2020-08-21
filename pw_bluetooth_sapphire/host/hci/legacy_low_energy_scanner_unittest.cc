@@ -7,7 +7,6 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
@@ -22,9 +21,19 @@ using testing::FakePeer;
 using TestingBase = testing::ControllerTest<FakeController>;
 
 constexpr zx::duration kScanPeriod = zx::sec(10);
+constexpr zx::duration kScanResponseTimeout = zx::sec(2);
 
-constexpr char kAdvData[] = "Test";
-constexpr char kScanRsp[] = "Data";
+// The unit tests below assume that the scan period is longer than the scan response timeout when
+// exercising timeout expiration.
+static_assert(kScanResponseTimeout < kScanPeriod,
+              "expected a smaller scan response timeout for testing");
+
+const StaticByteBuffer kPlainAdvDataBytes('T', 'e', 's', 't');
+const StaticByteBuffer kPlainScanRspBytes('D', 'a', 't', 'a');
+
+constexpr char kPlainAdvData[] = "Test";
+constexpr char kPlainScanRsp[] = "Data";
+constexpr char kAdvDataAndScanRsp[] = "TestData";
 
 const DeviceAddress kPublicAddress1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kPublicAddress2(DeviceAddress::Type::kLEPublic, {2});
@@ -69,9 +78,11 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
   void set_directed_adv_callback(DirectedAdvCallback cb) { directed_adv_cb_ = std::move(cb); }
 
   bool StartScan(bool active, zx::duration period = LowEnergyScanner::kPeriodInfinite) {
-    return scanner()->StartScan(active, defaults::kLEScanInterval, defaults::kLEScanWindow, true,
-                                LEScanFilterPolicy::kNoWhiteList, period,
-                                [this](auto status) { last_scan_status_ = status; });
+    LowEnergyScanner::ScanOptions options{.active = active,
+                                          .filter_duplicates = true,
+                                          .period = period,
+                                          .scan_response_timeout = kScanResponseTimeout};
+    return scanner()->StartScan(options, [this](auto status) { last_scan_status_ = status; });
   }
 
   // LowEnergyScanner::Observer override:
@@ -90,47 +101,41 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
 
   // Adds 6 fake peers using kAddress[0-5] above.
   void AddFakePeers() {
-    // We use malformed data for testing purposes, as we don't care about
-    // integrity here.
-    auto adv_data = CreateStaticByteBuffer('T', 'e', 's', 't');
-    auto scan_rsp = CreateStaticByteBuffer('D', 'a', 't', 'a');
-    auto empty_data = DynamicByteBuffer();
-
     // Generates ADV_IND, scan response is reported in a single HCI event.
     auto fake_peer = std::make_unique<FakePeer>(kPublicAddress1, true, true);
-    fake_peer->SetAdvertisingData(adv_data);
-    fake_peer->SetScanResponse(true, scan_rsp);
+    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+    fake_peer->SetScanResponse(true, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_SCAN_IND, scan response is reported over multiple HCI
     // events.
     fake_peer = std::make_unique<FakePeer>(kRandomAddress1, false, true);
-    fake_peer->SetAdvertisingData(adv_data);
-    fake_peer->SetScanResponse(false, scan_rsp);
+    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+    fake_peer->SetScanResponse(false, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty scan response is reported over multiple HCI
     // events.
     fake_peer = std::make_unique<FakePeer>(kPublicAddress2, true, true);
-    fake_peer->SetAdvertisingData(adv_data);
-    fake_peer->SetScanResponse(false, empty_data);
+    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+    fake_peer->SetScanResponse(false, DynamicByteBuffer());
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, empty adv data and non-empty scan response is reported
     // over multiple HCI events.
     fake_peer = std::make_unique<FakePeer>(kRandomAddress2, true, true);
-    fake_peer->SetScanResponse(false, scan_rsp);
+    fake_peer->SetScanResponse(false, kPlainScanRspBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_IND, a scan response is never sent even though ADV_IND is
     // scannable.
     fake_peer = std::make_unique<FakePeer>(kRandomAddress3, true, false);
-    fake_peer->SetAdvertisingData(adv_data);
+    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
 
     // Generates ADV_NONCONN_IND
     fake_peer = std::make_unique<FakePeer>(kRandomAddress4, false, false);
-    fake_peer->SetAdvertisingData(adv_data);
+    fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
     test_device()->AddPeer(std::move(fake_peer));
   }
 
@@ -276,49 +281,91 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopScanWhileInitiating) {
   EXPECT_FALSE(scanner()->IsScanning());
 }
 
+TEST_F(HCI_LegacyLowEnergyScannerTest, ScanResponseTimeout) {
+  constexpr zx::duration kHalfTimeout = kScanResponseTimeout / 2;
+
+  std::unordered_set<DeviceAddress> results;
+  set_peer_found_callback(
+      [&](const auto& result, const auto& data) { results.insert(result.address); });
+
+  // Add a peer that sends a scan response and one that doesn't.
+  auto fake_peer = std::make_unique<FakePeer>(kRandomAddress1, false, true);
+  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+  fake_peer->SetScanResponse(false, kPlainScanRspBytes);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  fake_peer = std::make_unique<FakePeer>(kRandomAddress2, true, false);
+  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  EXPECT_TRUE(StartScan(true));
+  RunLoopUntilIdle();
+  ASSERT_EQ(1u, results.size());
+  EXPECT_EQ(1u, results.count(kRandomAddress1));
+
+  // Advance the time but do not expire the timeout.
+  RunLoopFor(kHalfTimeout);
+  ASSERT_EQ(1u, results.size());
+
+  // Add another peer that doesn't send a scan response after the kHalfTimeout delay.
+  // This is to test that a separate timeout is kept for every peer.
+  fake_peer = std::make_unique<FakePeer>(kRandomAddress3, true, false);
+  fake_peer->SetAdvertisingData(kPlainAdvDataBytes);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Expire the first timeout.
+  RunLoopFor(kHalfTimeout);
+  ASSERT_EQ(2u, results.size());
+  EXPECT_EQ(1u, results.count(kRandomAddress1));
+  EXPECT_EQ(1u, results.count(kRandomAddress2));
+
+  // Expire the second timeout.
+  RunLoopFor(kHalfTimeout);
+  ASSERT_EQ(3u, results.size());
+  EXPECT_EQ(1u, results.count(kRandomAddress1));
+  EXPECT_EQ(1u, results.count(kRandomAddress2));
+  EXPECT_EQ(1u, results.count(kRandomAddress3));
+}
+
 TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
+  // One of the 6 fake peers is scannable but never sends scan response
+  // packets. That peer doesn't get reported until the end of the scan period.
+  constexpr size_t kExpectedResultCount = 5u;
+
   AddFakePeers();
 
-  // Index all scan results by device address. Since all of our test advertising data contain
-  // strings, we use that type to verify the contents.
-  using ResultList = std::vector<std::pair<LowEnergyScanResult, std::string>>;
-  std::map<DeviceAddress, ResultList> results;
+  std::map<DeviceAddress, std::pair<LowEnergyScanResult, std::string>> results;
   set_peer_found_callback([&](const auto& result, const auto& data) {
-    auto iter = results.try_emplace(result.address).first;
-    iter->second.push_back(std::make_pair(result, data.ToString()));
+    results[result.address] = std::make_pair(result, data.ToString());
   });
 
   // Perform an active scan.
-  EXPECT_TRUE(StartScan(true));
+  EXPECT_TRUE(StartScan(true, kScanPeriod));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());
+
   RunLoopUntilIdle();
 
-  // Scan results should have been received for all 6 fake peers that we initialized.
-  ASSERT_EQ(6u, results.size());
+  ASSERT_EQ(kExpectedResultCount, results.size());
 
-  // Each fake peer is configured to send a scan response packet in different configurations (see
-  // AddFakePeers() for details). Here we verify the events for each fake peer.
+  // Ending the scan period should notify Fake Peer #4.
+  RunLoopFor(kScanPeriod);
+  EXPECT_EQ(LowEnergyScanner::ScanStatus::kComplete, last_scan_status());
+  ASSERT_EQ(kExpectedResultCount + 1, results.size());
+
+  // Verify the 6 results against the fake peers that were set up by AddFakePeers(). Since the scan
+  // period ended naturally, LowEnergyScanner should generate a peer found event for all pending
+  // reports even if a scan response was not received for a scannable peer (see Fake Peer 4, i.e.
+  // kRandomAddress3).
 
   // Result 0 (ADV_IND)
   {
     const auto& iter = results.find(kPublicAddress1);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(2u, events.size());
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ(kAdvData, first_adv_data);
-    EXPECT_EQ(kPublicAddress1, first_result.address);
-    EXPECT_TRUE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
-    const auto& [second_result, second_adv_data] = events[1];
-    EXPECT_EQ(kScanRsp, second_adv_data);
-    EXPECT_EQ(kPublicAddress1, second_result.address);
-    EXPECT_FALSE(second_result.connectable);
-    EXPECT_TRUE(second_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kAdvDataAndScanRsp, result_pair.second);
+    EXPECT_EQ(kPublicAddress1, result_pair.first.address);
+    EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
   }
 
@@ -327,21 +374,10 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
     const auto& iter = results.find(kRandomAddress1);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(2u, events.size());
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ(kAdvData, first_adv_data);
-    EXPECT_EQ(kRandomAddress1, first_result.address);
-    EXPECT_FALSE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
-    const auto& [second_result, second_adv_data] = events[1];
-    EXPECT_EQ(kScanRsp, second_adv_data);
-    EXPECT_EQ(kRandomAddress1, second_result.address);
-    EXPECT_FALSE(second_result.connectable);
-    EXPECT_TRUE(second_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kAdvDataAndScanRsp, result_pair.second);
+    EXPECT_EQ(kRandomAddress1, result_pair.first.address);
+    EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);
   }
 
@@ -350,21 +386,10 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
     const auto& iter = results.find(kPublicAddress2);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(2u, events.size());
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ(kAdvData, first_adv_data);
-    EXPECT_EQ(kPublicAddress2, first_result.address);
-    EXPECT_TRUE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
-    const auto& [second_result, second_adv_data] = events[1];
-    EXPECT_EQ("", second_adv_data);  // Empty scan response
-    EXPECT_EQ(kPublicAddress2, second_result.address);
-    EXPECT_FALSE(second_result.connectable);
-    EXPECT_TRUE(second_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kPublicAddress2, result_pair.first.address);
+    EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
   }
 
@@ -373,21 +398,10 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
     const auto& iter = results.find(kRandomAddress2);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(2u, events.size());
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ("", first_adv_data);  // Empty advertising data
-    EXPECT_EQ(kRandomAddress2, first_result.address);
-    EXPECT_TRUE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
-    const auto& [second_result, second_adv_data] = events[1];
-    EXPECT_EQ(kScanRsp, second_adv_data);
-    EXPECT_EQ(kRandomAddress2, second_result.address);
-    EXPECT_FALSE(second_result.connectable);
-    EXPECT_TRUE(second_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kPlainScanRsp, result_pair.second);
+    EXPECT_EQ(kRandomAddress2, result_pair.first.address);
+    EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
   }
 
@@ -396,15 +410,10 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
     const auto& iter = results.find(kRandomAddress3);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(1u, events.size());  // No scan response
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ(kAdvData, first_adv_data);  // Empty advertising data
-    EXPECT_EQ(kRandomAddress3, first_result.address);
-    EXPECT_TRUE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kRandomAddress3, result_pair.first.address);
+    EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
   }
 
@@ -413,19 +422,14 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, ActiveScanResults) {
     const auto& iter = results.find(kRandomAddress4);
     ASSERT_NE(iter, results.end());
 
-    const ResultList& events = iter->second;
-    ASSERT_EQ(1u, events.size());  // Not scannable
-
-    const auto& [first_result, first_adv_data] = events[0];
-    EXPECT_EQ(kAdvData, first_adv_data);  // Empty advertising data
-    EXPECT_EQ(kRandomAddress4, first_result.address);
-    EXPECT_FALSE(first_result.connectable);
-    EXPECT_FALSE(first_result.scan_response);
-
+    const auto& result_pair = iter->second;
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
+    EXPECT_EQ(kRandomAddress4, result_pair.first.address);
+    EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);
   }
 
-  // No other reports are expected.
+  // No other reports are expected
   EXPECT_TRUE(results.empty());
 }
 
@@ -444,11 +448,22 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopDuringActiveScan) {
   RunLoopUntilIdle();
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
 
+  // Run the loop until we've seen an event for the last peer that we
+  // added. Fake Peer 4 (i.e. kRandomAddress3) is scannable but it never sends
+  // a scan response so we expect that to remain in the scanner's pending reports
+  // list.
+  RunLoopUntilIdle();
+  EXPECT_EQ(5u, results.size());
+  EXPECT_EQ(results.find(kRandomAddress3), results.end());
+
   // Stop the scan. Since we are terminating the scan period early,
   // LowEnergyScanner should not send a report for the pending peer.
   EXPECT_TRUE(scanner()->StopScan());
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsIdle());
+
+  EXPECT_EQ(5u, results.size());
+  EXPECT_EQ(results.find(kRandomAddress3), results.end());
 }
 
 TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
@@ -479,7 +494,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvData, result_pair.second);
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
     EXPECT_EQ(kPublicAddress1, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -491,7 +506,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvData, result_pair.second);
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress1, result_pair.first.address);
     EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);
@@ -503,7 +518,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvData, result_pair.second);
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
     EXPECT_EQ(kPublicAddress2, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -527,7 +542,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvData, result_pair.second);
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress3, result_pair.first.address);
     EXPECT_TRUE(result_pair.first.connectable);
     results.erase(iter);
@@ -539,7 +554,7 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, PassiveScanResults) {
     ASSERT_NE(iter, results.end());
 
     const auto& result_pair = iter->second;
-    EXPECT_EQ(kAdvData, result_pair.second);
+    EXPECT_EQ(kPlainAdvData, result_pair.second);
     EXPECT_EQ(kRandomAddress4, result_pair.first.address);
     EXPECT_FALSE(result_pair.first.connectable);
     results.erase(iter);

@@ -53,9 +53,6 @@ const std::string kName = "TestName";
 const auto kAdvData = CreateStaticByteBuffer(0x05,  // Length
                                              0x09,  // AD type: Complete Local Name
                                              'T', 'e', 's', 't');
-const auto kScanRsp = CreateStaticByteBuffer(0x05,  // Length
-                                             0x09,  // AD type: Complete Local Name
-                                             'D', 'a', 't', 'a');
 const auto kEirData = kAdvData;
 
 const bt::sm::LTK kLTK;
@@ -374,46 +371,6 @@ TEST_F(GAP_PeerCacheTest, LowEnergyPeerBecomesDualModeWhenConnectedOverClassic) 
   ASSERT_EQ(peer(), bredr_peer);
   EXPECT_EQ(DeviceAddress::Type::kLEPublic, peer()->address().type());
   EXPECT_EQ(kAddrBrEdr, peer()->bredr()->address());
-}
-
-TEST_F(GAP_PeerCacheTest, AppendScanResponseEmptyAdvertisingData) {
-  ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
-  ASSERT_TRUE(peer()->le());
-  EXPECT_FALSE(peer()->name());
-  EXPECT_EQ(hci::kRSSIInvalid, peer()->rssi());
-
-  peer()->MutLe().AppendScanResponse(kTestRSSI, kScanRsp);
-  ASSERT_TRUE(peer()->name());
-  EXPECT_EQ("Data", *peer()->name());
-  EXPECT_EQ(kTestRSSI, peer()->rssi());
-  EXPECT_TRUE(ContainersEqual(kScanRsp, peer()->le()->advertising_data()));
-}
-
-TEST_F(GAP_PeerCacheTest, AppendScanResponseOnAdvertisingData) {
-  ASSERT_TRUE(NewPeer(kAddrLeAlias, true));
-  ASSERT_TRUE(peer()->le());
-  EXPECT_FALSE(peer()->name());
-  EXPECT_EQ(hci::kRSSIInvalid, peer()->rssi());
-
-  peer()->MutLe().SetAdvertisingData(kTestRSSI, kAdvData);
-  ASSERT_TRUE(peer()->name());
-  EXPECT_EQ("Test", *peer()->name());
-  EXPECT_EQ(kTestRSSI, peer()->rssi());
-  EXPECT_TRUE(ContainersEqual(kAdvData, peer()->le()->advertising_data()));
-
-  // Both advertising and scan response data contain a complete local name. In our implementation
-  // the latter one wins.
-  peer()->MutLe().AppendScanResponse(kTestRSSI, kScanRsp);
-  EXPECT_EQ("Data", *peer()->name());
-  EXPECT_EQ(kTestRSSI, peer()->rssi());
-
-  const auto kAppended = CreateStaticByteBuffer(0x05,  // Length
-                                                0x09,  // AD type: Complete Local Name
-                                                'T', 'e', 's', 't',
-                                                0x05,  // Length
-                                                0x09,  // AD type: Complete Local Name
-                                                'D', 'a', 't', 'a');
-  EXPECT_TRUE(ContainersEqual(kAppended, peer()->le()->advertising_data()));
 }
 
 TEST_F(GAP_PeerCacheTest, InitialAutoConnectBehavior) {
@@ -1369,14 +1326,6 @@ TEST_F(GAP_PeerCacheExpirationTest, SetAdvertisingDataUpdatesExpiration) {
   RunLoopFor(kCacheTimeout - zx::msec(1));
   ASSERT_TRUE(IsDefaultPeerPresent());
   GetDefaultPeer()->MutLe().SetAdvertisingData(kTestRSSI, StaticByteBuffer<1>{});
-  RunLoopFor(zx::msec(1));
-  EXPECT_TRUE(IsDefaultPeerPresent());
-}
-
-TEST_F(GAP_PeerCacheExpirationTest, AppendScanResponseUpdatesExpiration) {
-  RunLoopFor(kCacheTimeout - zx::msec(1));
-  ASSERT_TRUE(IsDefaultPeerPresent());
-  GetDefaultPeer()->MutLe().AppendScanResponse(kTestRSSI, StaticByteBuffer<1>{});
   RunLoopFor(zx::msec(1));
   EXPECT_TRUE(IsDefaultPeerPresent());
 }

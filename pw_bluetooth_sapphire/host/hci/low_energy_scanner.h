@@ -13,6 +13,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
@@ -25,30 +26,20 @@ class Transport;
 
 // Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
-  LowEnergyScanResult();
-  LowEnergyScanResult(const DeviceAddress& address, bool resolved, bool connectable,
-                      bool scan_response, int8_t rssi);
-
   // The device address of the remote peer.
   DeviceAddress address;
 
   // True if |address| is a static or random identity address resolved by the
   // controller.
-  bool resolved;
+  bool resolved = false;
 
   // True if this peer accepts connections. This is the case if this peer
-  // sent a connectable advertising PDU. If true, |scan_response| will always be false.
-  bool connectable;
-
-  // True if the scan result was generated due to a response to a scan request during an active
-  // scan. A scan response always follows a regular advertising report. When |scan_response| is
-  // true, |connectable| will always be false. This does not indicate that the peer is not
-  // connectable but rather that the advertising event isn't.
-  bool scan_response;
+  // sent a connectable advertising PDU.
+  bool connectable = false;
 
   // The received signal strength of the advertisement packet corresponding to
   // this peer.
-  int8_t rssi;
+  int8_t rssi = kRSSIInvalid;
 };
 
 // LowEnergyScanner manages Low Energy scan procedures that are used
@@ -86,9 +77,9 @@ class LowEnergyScanner : public LocalAddressClient {
    public:
     virtual ~Delegate() = default;
 
-    // Called when a peer is found due to a connectable, non-connectable, or scannable advertising
-    // event. |data| contains the advertising data or the scan reponse data if
-    // |result.scan_response| is true.
+    // Called when a peer is found. During a passive scan |data| contains the advertising data.
+    // During an active scan |data| contains the combined advertising and scan response data (if the
+    // peer is scannable).
     virtual void OnPeerFound(const LowEnergyScanResult& result, const ByteBuffer& data);
 
     // Called when a directed advertising report is received from the peer
@@ -142,9 +133,18 @@ class LowEnergyScanner : public LocalAddressClient {
   // StopScan() method. Otherwise, an ongoing scan will terminate at the end of
   // the scan period if a finite value for |period| was provided.
   //
-  // If an active scan is being performed then scannable advertising reports (ADV_IND and
-  // ADV_SCAN_IND) as well as any following scan response events will be reported in separate calls
-  // to Delegate::OnPeerFound().
+  // During an active scan, scannable advertisements are reported alongside their
+  // corresponding scan response. Every scannable advertisement is stored and not
+  // reported until either
+  //   a) a scan response is received
+  //   b) an implementation determined timeout period expires
+  //   c) for periodic scans, when the scan period expires
+  //
+  // Since a passive scan involves no scan request/response, all advertisements are
+  // reported immediately without waiting for a scan response.
+  //
+  // (For more information about passive and active scanning, see Core Spec. v5.2,
+  // Vol 6, Part B, 4.4.3.1 and 4.4.3.2).
   enum class ScanStatus {
     // Reported when the scan could not be started.
     kFailed,
@@ -162,10 +162,37 @@ class LowEnergyScanner : public LocalAddressClient {
     // Called when the scan was terminated due to a call to StopScan().
     kStopped,
   };
+  struct ScanOptions {
+    // Perform an active scan if true. During an active scan, scannable advertisements
+    // are reported alongside their corresponding scan response.
+    bool active = false;
+
+    // When enabled, the controller will filter out duplicate advertising reports. This means that
+    // Delegate::OnPeerFound will be called only once per device address during the scan period.
+    //
+    // When disabled, Delegate::OnPeerFound will get called once for every observed advertisement
+    // (depending on |filter_policy|).
+    bool filter_duplicates = false;
+
+    // Determines the type of filtering the controller should perform to limit the number of
+    // advertising reports.
+    LEScanFilterPolicy filter_policy = LEScanFilterPolicy::kNoWhiteList;
+
+    // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
+    // then the scan will remain enabled until StopScan() gets called. For all other values, the
+    // scan will be disabled after the duration expires.
+    zx::duration period;
+
+    // Maximum time duration during an active scan for which a scannable advertisement will be
+    // stored and not reported to clients until a corresponding scan response is received.
+    zx::duration scan_response_timeout;
+
+    // Scan parameters.
+    uint16_t interval = defaults::kLEScanInterval;
+    uint16_t window = defaults::kLEScanWindow;
+  };
   using ScanStatusCallback = fit::function<void(ScanStatus)>;
-  virtual bool StartScan(bool active, uint16_t scan_interval, uint16_t scan_window,
-                         bool filter_duplicates, LEScanFilterPolicy filter_policy,
-                         zx::duration period, ScanStatusCallback callback) = 0;
+  virtual bool StartScan(const ScanOptions& options, ScanStatusCallback callback) = 0;
 
   // Stops a previously started scan. Returns false if a scan is not in
   // progress. Otherwise, cancels any in progress scan procedure and returns

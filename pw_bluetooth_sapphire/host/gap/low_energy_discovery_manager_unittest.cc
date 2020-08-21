@@ -12,7 +12,6 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
@@ -858,103 +857,6 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDual
   ASSERT_EQ(3u, addresses_found.size());
   EXPECT_TRUE(addresses_found.find(kAddrAlias0) != addresses_found.end());
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
-}
-
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResponseWithoutPriorAdvertisementIsIgnored) {
-  bool found = false;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&](const auto&) { found = true; };
-  auto session = StartDiscoverySession();
-  session->SetResultCallback(std::move(result_cb));
-  test_device()->SendCommandChannelPacket(CreateStaticByteBuffer(
-      hci::kLEMetaEventCode, 13, hci::kLEAdvertisingReportSubeventCode,
-      hci::LEAdvertisingEventType::kScanRsp, hci::LEAddressType::kPublic, 0, 1, 2, 3, 4,
-      5,        // address
-      2, 1, 2,  // data
-      1         // scan response
-      ));
-
-  RunLoopUntilIdle();
-  EXPECT_FALSE(found);
-}
-
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResponseAppendedToPeer) {
-  // The complete advertising data + scan response.
-  const auto kExpectedData = CreateStaticByteBuffer(0x05,  // Length
-                                                    0x09,  // AD type: Complete Local Name
-                                                    'T', 'e', 's', 't',
-                                                    0x03,       // length
-                                                    0x03,       // AD type: Incomplete service UUIDs
-                                                    0x0d, 0x18  // UUID: Heart Rate service
-  );
-  constexpr size_t kAdvDataLength = 6u;
-
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, true);
-  fake_peer->SetAdvertisingData(kExpectedData.view(0, kAdvDataLength));
-  fake_peer->SetScanResponse(/*should_batch_reports=*/false, kExpectedData.view(kAdvDataLength));
-  test_device()->AddPeer(std::move(fake_peer));
-
-  std::vector<DeviceAddress> addresses_found;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb = [&addresses_found](const auto& peer) {
-    addresses_found.push_back(peer.address());
-  };
-  auto session = StartDiscoverySession();
-  session->SetResultCallback(std::move(result_cb));
-  RunLoopUntilIdle();
-
-  ASSERT_EQ(1u, addresses_found.size());
-  EXPECT_EQ(kAddress0, addresses_found[0]);
-
-  // The PeerCache entry should contain both advertising and scan response data.
-  auto* peer = peer_cache()->FindByAddress(kAddress0);
-  ASSERT_TRUE(peer);
-  EXPECT_TRUE(ContainersEqual(kExpectedData, peer->le()->advertising_data()));
-}
-
-// Tests that the cached advertising data and scan response gets cleared between every scan period
-// in which a peer is found. This test first discovers AD+SR and then AD-only.
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, AdvertisingDataResetBetweenScanPeriods) {
-  // The complete advertising data + scan response.
-  const auto kExpectedData = CreateStaticByteBuffer(0x05,  // Length
-                                                    0x09,  // AD type: Complete Local Name
-                                                    'T', 'e', 's', 't',
-                                                    0x03,       // length
-                                                    0x03,       // AD type: Incomplete service UUIDs
-                                                    0x0d, 0x18  // UUID: Heart Rate service
-  );
-  constexpr size_t kAdvDataLength = 6u;
-  const auto kAdvData = kExpectedData.view(0, kAdvDataLength);
-
-  {
-    auto fake_peer = std::make_unique<FakePeer>(kAddress0, true, true);
-    fake_peer->SetAdvertisingData(kExpectedData.view(0, kAdvDataLength));
-    fake_peer->SetScanResponse(/*should_batch_reports=*/false, kExpectedData.view(kAdvDataLength));
-    test_device()->AddPeer(std::move(fake_peer));
-  }
-
-  // The test below expects the peer cache entry to not expire between scan periods.
-  static_assert(kTestScanPeriod < kCacheTimeout,
-                "expected a scan period shorter than cache expiry");
-  discovery_manager()->set_scan_period(kTestScanPeriod);
-
-  auto session = StartDiscoverySession();
-  RunLoopUntilIdle();
-
-  // The PeerCache entry should contain both advertising and scan response data.
-  auto* peer = peer_cache()->FindByAddress(kAddress0);
-  ASSERT_TRUE(peer);
-  EXPECT_TRUE(ContainersEqual(kExpectedData, peer->le()->advertising_data()));
-
-  // Clear the scan response data and advance the scan period. The PeerCache entry should then only
-  // contain the advertising data.
-  auto* fake_peer = test_device()->FindPeer(kAddress0);
-  ASSERT_TRUE(fake_peer);
-  fake_peer->SetScanResponse(/*should_batch_reports=*/false, BufferView());
-
-  RunLoopFor(kTestScanPeriod);
-
-  // The PeerCache entry should only contain advertising data.
-  EXPECT_TRUE(
-      ContainersEqual(kExpectedData.view(0, kAdvDataLength), peer->le()->advertising_data()));
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScan) {

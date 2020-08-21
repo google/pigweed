@@ -19,20 +19,6 @@ void LowEnergyScanner::Delegate::OnPeerFound(const LowEnergyScanResult& result,
 
 void LowEnergyScanner::Delegate::OnDirectedAdvertisement(const LowEnergyScanResult& result) {}
 
-LowEnergyScanResult::LowEnergyScanResult()
-    : resolved(false), connectable(false), rssi(hci::kRSSIInvalid) {}
-
-LowEnergyScanResult::LowEnergyScanResult(const DeviceAddress& address, bool resolved,
-                                         bool connectable, bool scan_response, int8_t rssi)
-    : address(address),
-      resolved(resolved),
-      connectable(connectable),
-      scan_response(scan_response),
-      rssi(rssi) {
-  ZX_DEBUG_ASSERT_MSG(!connectable || !scan_response,
-                      "cannot be both connectable and a scan response");
-}
-
 LowEnergyScanner::LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher_t* dispatcher)
     : state_(State::kIdle),
       active_scan_requested_(false),

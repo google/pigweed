@@ -190,19 +190,9 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
-    if (result.scan_response) {
-      bt_log(DEBUG, "gap-le", "scan response received from unknown peer: %s",
-             result.address.ToString().c_str());
-      return;
-    }
     peer = peer_cache_->NewPeer(result.address, result.connectable);
   }
-
-  if (result.scan_response) {
-    peer->MutLe().AppendScanResponse(result.rssi, data);
-  } else {
-    peer->MutLe().SetAdvertisingData(result.rssi, data);
-  }
+  peer->MutLe().SetAdvertisingData(result.rssi, data);
 
   cached_scan_results_.insert(peer->identifier());
 
@@ -333,15 +323,21 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   // on the host will take away CPU cycles from other things. It's a valid use
   // case but needs proper management. For now we always make the controller
   // filter duplicate reports.
+  hci::LowEnergyScanner::ScanOptions options{
+      .active = active,
+      .filter_duplicates = true,
+      .filter_policy = hci::LEScanFilterPolicy::kNoWhiteList,
+      .period = scan_period_,
+      .scan_response_timeout = kLEScanResponseTimeout,
+  };
 
   // See Vol 3, Part C, 9.3.11 "Connection Establishment Timing Parameters".
-  uint16_t interval, window;
   if (active) {
-    interval = kLEScanFastInterval;
-    window = kLEScanFastWindow;
+    options.interval = kLEScanFastInterval;
+    options.window = kLEScanFastWindow;
   } else {
-    interval = kLEScanSlowInterval1;
-    window = kLEScanSlowWindow1;
+    options.interval = kLEScanSlowInterval1;
+    options.window = kLEScanSlowWindow1;
     // TODO(armansito): Use the controller whitelist to filter advertisements.
   }
 
@@ -349,8 +345,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   // to re-process advertisements. We use the minimum required scan period for
   // general discovery (by default; |scan_period_| can be modified, e.g. by unit
   // tests).
-  scanner_->StartScan(active, interval, window, true /* filter_duplicates */,
-                      hci::LEScanFilterPolicy::kNoWhiteList, scan_period_, cb);
+  scanner_->StartScan(options, std::move(cb));
 }
 
 void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
