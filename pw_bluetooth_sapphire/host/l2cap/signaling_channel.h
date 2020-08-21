@@ -51,9 +51,9 @@ class SignalingChannelInterface {
     kCompleteOutboundTransaction,
   };
 
-  // Callback invoked to handle a response received from the remote. If |status|
-  // is kSuccess or kReject, then |rsp_payload| will contain any payload
-  // received.
+  // Callback invoked to handle a response received from the remote. If |status| is kSuccess or
+  // kReject, then |rsp_payload| will contain any payload received. This callback is allowed to
+  // destroy the SignalingChannel, but must return kCompleteOutboundTransaction if it does.
   using ResponseHandler =
       fit::function<ResponseHandlerAction(Status, const ByteBuffer& rsp_payload)>;
 

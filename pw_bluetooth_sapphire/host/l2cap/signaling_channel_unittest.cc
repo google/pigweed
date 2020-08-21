@@ -402,6 +402,33 @@ TEST_F(L2CAP_SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
   EXPECT_EQ(kMaxCommandId + 1, req_count);
 }
 
+// Ensure that a response handler may destroy the signaling channel.
+TEST_F(L2CAP_SignalingChannelTest, ResponseHandlerThatDestroysSigDoesNotCrash) {
+  fake_chan()->SetSendCallback([](auto) {}, dispatcher());
+
+  const StaticByteBuffer req_data('h', 'e', 'l', 'l', 'o');
+  bool rx_success = false;
+  EXPECT_TRUE(
+      sig()->SendRequest(kEchoRequest, req_data, [this, &rx_success](Status, const ByteBuffer&) {
+        rx_success = true;
+        DestroySig();
+        return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
+      }));
+
+  constexpr CommandId kReqId = 1;
+  const StaticByteBuffer echo_rsp(
+      // Command header (Echo Response, length 1)
+      kEchoResponse, kReqId, 0x01, 0x00,
+
+      // Payload
+      0x23);
+  fake_chan()->Receive(echo_rsp);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(sig());
+  EXPECT_TRUE(rx_success);
+}
+
 // Ensure that the signaling channel plumbs a rejection command from remote to
 // the appropriate response handler.
 TEST_F(L2CAP_SignalingChannelTest, RemoteRejectionPassedToHandler) {

@@ -160,7 +160,8 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
   }
 
   Status status;
-  auto& [_, pending_command] = *iter;
+  auto command_node = pending_commands_.extract(iter);
+  auto& pending_command = command_node.mapped();
   if (packet.header().code == pending_command.response_code) {
     status = Status::kSuccess;
   } else if (packet.header().code == kCommandRejectCode) {
@@ -174,20 +175,22 @@ void SignalingChannel::OnRxResponse(const SignalingPacket& packet) {
 
   if (pending_command.response_handler(status, packet.payload_data()) ==
       ResponseHandlerAction::kCompleteOutboundTransaction) {
-    pending_commands_.erase(iter);
-  } else {
-    // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
-    // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so that total
-    // timeout duration is <= 300 seconds.
-    pending_command.response_timeout_task.Cancel();
-    pending_command.timer_duration = kSignalingChannelExtendedResponseTimeout;
-    // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the
-    // request and has been given a large amount of time.
-    pending_command.response_timeout_task.set_handler(
-        std::bind(&SignalingChannel::OnResponseTimeout, this, cmd_id, /*retransmit=*/false));
-    pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
-                                                      pending_command.timer_duration);
+    // Note that the response handler may have destroyed |this| at this point.
+    return;
   }
+
+  // Renew the timer as an ERTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.2.
+  // TODO(fxbug.dev/55361): Limit the number of times the ERTX timer is reset so that total
+  // timeout duration is <= 300 seconds.
+  pending_command.response_timeout_task.Cancel();
+  pending_command.timer_duration = kSignalingChannelExtendedResponseTimeout;
+  // Don't retransmit after an ERTX timeout as the peer has already indicated that it received the
+  // request and has been given a large amount of time.
+  pending_command.response_timeout_task.set_handler(
+      std::bind(&SignalingChannel::OnResponseTimeout, this, cmd_id, /*retransmit=*/false));
+  pending_command.response_timeout_task.PostDelayed(async_get_default_dispatcher(),
+                                                    pending_command.timer_duration);
+  pending_commands_.insert(std::move(command_node));
 }
 
 void SignalingChannel::OnResponseTimeout(CommandId id, bool retransmit) {
