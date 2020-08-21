@@ -161,10 +161,12 @@ def install(
         # Run through sorted so pw_cli (on which other packages depend) comes
         # early in the list.
         # TODO(mohrr) come up with a way better than just using sorted().
+        find_args = tuple('--find-links={}'.format(package(x))
+                          for x in setup_py_files)
         package_args = tuple('--editable={}'.format(package(path))
                              for path in sorted(setup_py_files))
         pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
-                    *package_args)
+                    *(find_args + package_args))
 
     if env:
         env.set('VIRTUAL_ENV', venv_path)
