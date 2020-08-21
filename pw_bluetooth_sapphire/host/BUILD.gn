@@ -17,6 +17,24 @@ driver_module("driver") {
   configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
 }
 
+# Conversions between host FIDL and internal library types.
+source_set("fidl_helpers") {
+  sources = [
+    "fidl/helpers.cc",
+    "fidl/helpers.h",
+  ]
+  public_deps = [
+    "common",
+    "gap",
+    "gatt",
+    "sdp",
+    "//sdk/fidl/fuchsia.bluetooth",
+    "//sdk/fidl/fuchsia.bluetooth.control",
+    "//sdk/fidl/fuchsia.bluetooth.gatt",
+    "//src/connectivity/bluetooth/fidl:host",
+  ]
+}
+
 source_set("sources") {
   sources = [
     "gatt_host.cc",
@@ -35,8 +53,6 @@ source_set("sources") {
     "fidl/gatt_remote_service_server.h",
     "fidl/gatt_server_server.cc",
     "fidl/gatt_server_server.h",
-    "fidl/helpers.cc",
-    "fidl/helpers.h",
     "fidl/host_server.cc",
     "fidl/host_server.h",
     "fidl/low_energy_central_server.cc",
@@ -56,6 +72,7 @@ source_set("sources") {
   ]
 
   public_deps = [
+    ":fidl_helpers",
     ":stack",
     "//sdk/banjo/ddk.protocol.bt.gattsvc",
     "//sdk/fidl/fuchsia.bluetooth",

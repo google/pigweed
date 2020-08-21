@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_gatt_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_sdp_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
 
 namespace bt {
@@ -140,6 +141,9 @@ class FakePeer {
   // Returns the FakeController that has been assigned to this device.
   FakeController* ctrl() const { return ctrl_; }
 
+  // Returns the FakeSdpServer associated with this device.
+  FakeSdpServer* sdp_server() { return &sdp_server_; }
+
  private:
   friend class FakeController;
 
@@ -193,8 +197,9 @@ class FakePeer {
   DeviceClass class_of_device_;
 
   FakeL2cap l2cap_;
-  FakeSignalingServer signaling_server_;
   FakeGattServer gatt_server_;
+  FakeSignalingServer signaling_server_;
+  FakeSdpServer sdp_server_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
 };
 

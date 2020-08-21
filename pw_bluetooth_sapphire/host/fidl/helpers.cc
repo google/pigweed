@@ -11,7 +11,6 @@
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/fidl/profile_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
