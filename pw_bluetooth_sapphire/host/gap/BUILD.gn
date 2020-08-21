@@ -122,6 +122,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/data:testing",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
+    "//src/connectivity/bluetooth/core/bt-host/sm:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
     "//zircon/public/lib/async-cpp",

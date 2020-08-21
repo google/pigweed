@@ -481,7 +481,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
                                                        PeerCache* peer_cache,
                                                        fbl::RefPtr<data::Domain> data_domain,
                                                        fxl::WeakPtr<gatt::GATT> gatt,
-                                                       SecurityManagerFactory sm_creator)
+                                                       sm::SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
       security_mode_(LeSecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),

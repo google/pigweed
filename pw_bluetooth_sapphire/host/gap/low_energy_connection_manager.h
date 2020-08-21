@@ -41,8 +41,6 @@ namespace internal {
 class LowEnergyConnection;
 }  // namespace internal
 
-using SecurityManagerFactory = std::function<decltype(sm::SecurityManager::Create)>;
-
 // TODO(armansito): Document the usage pattern.
 
 class LowEnergyConnectionManager;
@@ -114,7 +112,7 @@ class LowEnergyConnectionManager final {
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt,
-                             SecurityManagerFactory sm_creator);
+                             sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
 
   // Options for the |Connect| method.
@@ -234,7 +232,7 @@ class LowEnergyConnectionManager final {
   void SetSecurityMode(LeSecurityMode mode);
 
   LeSecurityMode security_mode() const { return security_mode_; }
-  SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
+  sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
 
  private:
   friend class LowEnergyConnectionRef;
@@ -421,7 +419,7 @@ class LowEnergyConnectionManager final {
   LeSecurityMode security_mode_;
 
   // The function used to create each channel's SecurityManager implementation.
-  SecurityManagerFactory sm_factory_func_;
+  sm::SecurityManagerFactory sm_factory_func_;
 
   // Time after which a connection attempt is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.

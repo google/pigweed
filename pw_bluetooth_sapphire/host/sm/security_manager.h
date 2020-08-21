@@ -40,6 +40,8 @@ namespace sm {
 // implements the functionality detailed in README.md. Clients should obtain a production object
 // through the SecurityManager::Create factory function.
 //
+// A SecurityManager test double can be obtained through `TestSecurityManager::Create`.
+//
 /// See README.md for more overview of this library.
 class SecurityManager {
  public:
@@ -126,6 +128,8 @@ class SecurityManager {
   // Current security properties of the LE-U link.
   SecurityProperties le_sec_ = SecurityProperties();
 };
+
+using SecurityManagerFactory = std::function<decltype(sm::SecurityManager::Create)>;
 
 }  // namespace sm
 }  // namespace bt

@@ -57,12 +57,23 @@ static_library("sm") {
   ]
 }
 
+source_set("testing") {
+  testonly = true
+
+  sources = [
+    "fake_phase_listener.h",
+    "test_security_manager.cc",
+    "test_security_manager.h",
+  ]
+
+  deps = [ ":sm" ]
+}
+
 source_set("tests") {
   testonly = true
 
   sources = [
     "ecdh_key_unittest.cc",
-    "fake_phase_listener.h",
     "idle_phase_unittest.cc",
     "packet_unittest.cc",
     "pairing_channel_unittest.cc",
@@ -80,6 +91,7 @@ source_set("tests") {
 
   deps = [
     ":sm",
+    ":testing",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//third_party/googletest:gtest",

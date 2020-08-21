@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
+#include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include <cstddef>
@@ -18,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -30,6 +32,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/test_security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
@@ -46,6 +49,8 @@ using bt::testing::FakePeer;
 
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 using l2cap::testing::FakeChannel;
+using TestSm = sm::testing::TestSecurityManager;
+using TestSmFactory = sm::testing::TestSecurityManagerFactory;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());
@@ -80,9 +85,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnIncomingConnection));
 
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+    sm_factory_ = std::make_unique<TestSmFactory>();
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_,
-        gatt_->AsWeakPtr(), sm::SecurityManager::Create);
+        gatt_->AsWeakPtr(), fit::bind_member(sm_factory_.get(), &TestSmFactory::CreateSm));
 
     test_device()->set_connection_state_callback(
         fit::bind_member(this, &LowEnergyConnectionManagerTest::OnConnectionStateChanged));
@@ -118,6 +124,10 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   const PeerList& canceled_peers() const { return canceled_peers_; }
 
   hci::ConnectionPtr MoveLastRemoteInitiated() { return std::move(last_remote_initiated_); }
+
+  fxl::WeakPtr<TestSm> TestSmByHandle(hci::ConnectionHandle handle) {
+    return sm_factory_->GetTestSm(handle);
+  }
 
  private:
   // Called by |connector_| when a new remote initiated connection is received.
@@ -156,6 +166,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
+  std::unique_ptr<TestSmFactory> sm_factory_;
   std::unique_ptr<LowEnergyConnectionManager> conn_mgr_;
 
   // The most recent remote-initiated connection reported by |connector_|.
@@ -1238,28 +1249,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairUnconnectedPeer) {
   ASSERT_EQ(count_cb_called, 1u);
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-      0x01,  // code: "Pairing Request"
-      0x03,  // IO cap.: NoInputNoOutput
-      0x00,  // OOB: not present
-      0x09,  // AuthReq: bonding, no MITM, Secure Connections
-      0x10,  // encr. key size: 16 (default max)
-      0x01,  // initiator keys: enc key
-      0x03   // responder keys: enc key and identity info
-  );
-
+TEST_F(GAP_LowEnergyConnectionManagerTest, PairWithBondableModes) {
   // clang-format on
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   EXPECT_TRUE(peer->temporary());
-  // This is to capture the channel created during the Connection process
-  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
-  // SM-internal message
-  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
-  FakeChannel* fake_chan = nullptr;
-  fake_l2cap()->set_channel_callback(
-      [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
@@ -1277,87 +1270,26 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PairBondable) {
   ASSERT_TRUE(peer->le());
 
   RunLoopUntilIdle();
+  fxl::WeakPtr<TestSm> mock_sm = TestSmByHandle(conn_ref->handle());
+  ASSERT_TRUE(mock_sm);
 
   ASSERT_TRUE(status);
   ASSERT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
 
-  ASSERT_TRUE(fake_chan);
-
-  bool cb_called = false;
-  // This test only checks that SecurityManager kicks off a pairing feature exchange correctly, as
-  // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
-  auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
-    ASSERT_TRUE(sent);
-    ASSERT_EQ(*sent, kExpected);
-    cb_called = true;
-  };
-  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
-
+  EXPECT_FALSE(mock_sm->last_requested_upgrade().has_value());
   conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::Bondable,
                    [](sm::Status cb_status) {});
   RunLoopUntilIdle();
-  ASSERT_TRUE(cb_called);
-}
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, PairNonBondable) {
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-      0x01,  // code: "Pairing Request"
-      0x03,  // IO cap.: NoInputNoOutput
-      0x00,  // OOB: not present
-      0x08,  // AuthReq: non-bondable, no MITM, Secure Connections
-      0x10,  // encr. key size: 16 (default max)
-      0x00,  // initiator keys: none
-      0x00   // responder keys: enc key and identity info
-  );
+  EXPECT_EQ(BondableMode::Bondable, mock_sm->bondable_mode());
+  EXPECT_EQ(sm::SecurityLevel::kEncrypted, mock_sm->last_requested_upgrade());
 
-  // clang-format on
-  auto* peer = peer_cache()->NewPeer(kAddress0, true);
-  EXPECT_TRUE(peer->temporary());
-  // This is to capture the channel created during the Connection process
-  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
-  // SM-internal message
-  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
-  FakeChannel* fake_chan = nullptr;
-  fake_l2cap()->set_channel_callback(
-      [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
-
-  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  test_device()->AddPeer(std::move(fake_peer));
-  // Initialize as error to verify that |callback| assigns success.
-  hci::Status status(HostError::kFailed);
-  LowEnergyConnectionRefPtr conn_ref;
-  auto callback = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
-    EXPECT_TRUE(cb_conn_ref);
-    status = cb_status;
-    conn_ref = std::move(cb_conn_ref);
-    EXPECT_TRUE(conn_ref->active());
-  };
-
-  ASSERT_TRUE(conn_mgr()->Connect(peer->identifier(), callback));
-  ASSERT_TRUE(peer->le());
-
+  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kAuthenticated,
+                   sm::BondableMode::NonBondable, [](sm::Status cb_status) {});
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(status);
-  ASSERT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
-
-  ASSERT_TRUE(fake_chan);
-
-  bool cb_called = false;
-  // This test only checks that SecurityManager kicks off a pairing feature exchange correctly, as
-  // LowEnergyConnectionManager is only responsible for starting pairing, not for completing it.
-  auto expect_default_bytebuffer = [&cb_called, kExpected](ByteBufferPtr sent) {
-    ASSERT_TRUE(sent);
-    ASSERT_EQ(*sent, kExpected);
-    cb_called = true;
-  };
-  fake_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
-
-  conn_mgr()->Pair(peer->identifier(), sm::SecurityLevel::kEncrypted, sm::BondableMode::NonBondable,
-                   [](sm::Status cb_status) {});
-  RunLoopUntilIdle();
-  ASSERT_TRUE(cb_called);
+  EXPECT_EQ(BondableMode::NonBondable, mock_sm->bondable_mode());
+  EXPECT_EQ(sm::SecurityLevel::kAuthenticated, mock_sm->last_requested_upgrade());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
@@ -2100,32 +2032,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuf
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress3));
 
-  // Store bonds for the "secure" peers to emulate encrypted connections without emulating the
-  // entire pairing process.
-  const UInt128 kKey1Val = {1, 2, 3}, kKey2Val = {4, 5, 6};
-  const sm::LTK kEncryptedLtk(
-      sm::SecurityProperties(true /*encrypted*/, false /*authenticated*/,
-                             true /*secure connections*/, sm::kMaxEncryptionKeySize),
-      hci::LinkKey(kKey1Val, 0, 0));
-  const sm::LTK kSecureAuthenticatedLtk(
-      sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
-                             true /*secure connections*/, sm::kMaxEncryptionKeySize),
-      hci::LinkKey(kKey2Val, 0, 0));
-  const sm::PairingData kEncryptedData{.local_ltk = kEncryptedLtk, .peer_ltk = kEncryptedLtk};
-  const sm::PairingData kSecureAuthenticatedData{.local_ltk = kSecureAuthenticatedLtk,
-                                                 .peer_ltk = kSecureAuthenticatedLtk};
-  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(encrypted_peer->identifier(), kEncryptedData));
-  EXPECT_TRUE(peer_cache()->StoreLowEnergyBond(secure_authenticated_peer->identifier(),
-                                               kSecureAuthenticatedData));
-  RunLoopUntilIdle();
-
   hci::Status unencrypted_status(HostError::kFailed), encrypted_status(HostError::kFailed),
       secure_authenticated_status(HostError::kFailed);
   LowEnergyConnectionRefPtr unencrypted_conn_ref, encrypted_conn_ref, secure_authenticated_conn_ref;
   EXPECT_TRUE(connected_peers().empty());
-
-  // The bonded peers will attempt to encrypt the link upon successful connection, and the fake
-  // controller will respond that the link has been successfully encrypted.
   EXPECT_TRUE(
       conn_mgr()->Connect(unencrypted_peer->identifier(),
                           MakeConnectionResultCallback(unencrypted_status, unencrypted_conn_ref)));
@@ -2136,7 +2046,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuf
       secure_authenticated_peer->identifier(),
       MakeConnectionResultCallback(secure_authenticated_status, secure_authenticated_conn_ref)));
   RunLoopUntilIdle();
-
+  std::function<void(sm::Status)> pair_cb = [](sm::Status s) { ASSERT_EQ(sm::Status(), s); };
   EXPECT_EQ(3u, connected_peers().size());
   ASSERT_TRUE(unencrypted_conn_ref);
   ASSERT_TRUE(encrypted_conn_ref);
@@ -2144,6 +2054,13 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuf
   EXPECT_TRUE(unencrypted_conn_ref->active());
   EXPECT_TRUE(secure_authenticated_conn_ref->active());
   EXPECT_TRUE(encrypted_conn_ref->active());
+
+  // "Pair" to the encrypted peers to get to the correct security level.
+  conn_mgr()->Pair(encrypted_peer->identifier(), sm::SecurityLevel::kEncrypted,
+                   sm::BondableMode::Bondable, pair_cb);
+  conn_mgr()->Pair(secure_authenticated_peer->identifier(), sm::SecurityLevel::kSecureAuthenticated,
+                   sm::BondableMode::Bondable, pair_cb);
+  RunLoopUntilIdle();
   EXPECT_EQ(sm::SecurityLevel::kNoSecurity, unencrypted_conn_ref->security().level());
   EXPECT_EQ(sm::SecurityLevel::kEncrypted, encrypted_conn_ref->security().level());
   EXPECT_EQ(sm::SecurityLevel::kSecureAuthenticated,
@@ -2165,9 +2082,6 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SecureConnectionsOnlyDisconnectsInsuf
 TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   // LE Connection Manager defaults to Mode 1.
   EXPECT_EQ(LeSecurityMode::Mode1, conn_mgr()->security_mode());
-  // We need a non-NoInputNoOutput IOCapability to Pair in SC-only mode at the end of the test
-  FakePairingDelegate fake_delegate(sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(fake_delegate.GetWeakPtr());
 
   // This peer will already be connected when we set LE Secure Connections Only mode.
   Peer* existing_peer = peer_cache()->NewPeer(kAddress1, true);
@@ -2175,22 +2089,19 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   LowEnergyConnectionRefPtr existing_conn_ref;
   hci::Status s;
   RunLoopUntilIdle();
-  // This captures the channel created during the Connection process.
-  FakeChannel* fake_chan = nullptr;
-  // TODO(fxbug.dev/886): this is a fragile way to validate SM, as it depends both on the
-  // SM-internal message
-  //            format and the order of channel creation in data::Domain. Use DI for a Fake SM.
-  fake_l2cap()->set_channel_callback([&fake_chan](const fbl::RefPtr<FakeChannel>& new_fake_chan) {
-    fake_chan = new_fake_chan.get();
-  });
+
   EXPECT_TRUE(conn_mgr()->Connect(existing_peer->identifier(),
                                   MakeConnectionResultCallback(s, existing_conn_ref)));
   RunLoopUntilIdle();
-  ASSERT_TRUE(fake_chan);
-  FakeChannel* existing_chan = fake_chan;
+  fxl::WeakPtr<TestSm> existing_peer_sm = TestSmByHandle(existing_conn_ref->handle());
+  ASSERT_TRUE(existing_peer_sm);
+  EXPECT_EQ(LeSecurityMode::Mode1, existing_peer_sm->security_mode());
   EXPECT_EQ(1u, connected_peers().size());
 
   conn_mgr()->SetSecurityMode(LeSecurityMode::SecureConnectionsOnly);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, existing_peer_sm->security_mode());
 
   // This peer is connected after setting LE Secure Connections Only mode.
   Peer* new_peer = peer_cache()->NewPeer(kAddress3, true);
@@ -2199,39 +2110,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   EXPECT_TRUE(
       conn_mgr()->Connect(new_peer->identifier(), MakeConnectionResultCallback(s, new_conn_ref)));
   RunLoopUntilIdle();
-  EXPECT_NE(existing_chan, fake_chan);
-  FakeChannel* new_chan = fake_chan;
-
+  fxl::WeakPtr<TestSm> new_peer_sm = TestSmByHandle(new_conn_ref->handle());
+  ASSERT_TRUE(new_peer_sm);
   EXPECT_EQ(2u, connected_peers().size());
-  // Validate that future pairings enforce the SC only conditions
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-    0x01,  // code: "Pairing Request"
-    sm::IOCapability::kDisplayYesNo,
-    0x00,  // OOB: not present
-    sm::AuthReq::kBondingFlag |sm::AuthReq::kMITM | sm::AuthReq::kSC,
-    0x10,  // encr. key size: 16 (default max)
-    0x01,  // initiator keys: enc key
-    0x03   // responder keys: enc key and identity info
-  );
-  // clang-format on
 
-  int cb_called_count = 0;
-  // Although the `Pair` command only requests kEncrypted security, MITM is expected in the Pairing
-  // Request due to Secure Connections Only mode.
-  auto expect_default_bytebuffer = [&cb_called_count, kExpected](ByteBufferPtr sent) {
-    ASSERT_TRUE(sent);
-    ASSERT_EQ(*sent, kExpected);
-    cb_called_count++;
-  };
-  existing_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
-  new_chan->SetSendCallback(expect_default_bytebuffer, dispatcher());
-  conn_mgr()->Pair(existing_peer->identifier(), sm::SecurityLevel::kEncrypted,
-                   sm::BondableMode::Bondable, [](auto /**/) {});
-  conn_mgr()->Pair(new_peer->identifier(), sm::SecurityLevel::kEncrypted,
-                   sm::BondableMode::Bondable, [](auto /**/) {});
-  RunLoopUntilIdle();
-  EXPECT_EQ(2, cb_called_count);
+  EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, new_peer_sm->security_mode());
 }
 
 // Tests for assertions that enforce invariants.
