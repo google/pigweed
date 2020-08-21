@@ -32,11 +32,11 @@ extern "C" {
 #endif
 // Define the global heap variables.
 void pw_MallocInit() {
-  // pw_heap_low_addr and pw_heap_high_addr specifies the heap region from
-  // the linker script in "pw_boot_armv7m".
+  // pw_boot_heap_low_addr and pw_boot_heap_high_addr specifies the heap region
+  // from the linker script in "pw_boot_armv7m".
   std::span<std::byte> pw_allocator_freelist_raw_heap =
-      std::span(reinterpret_cast<std::byte*>(&pw_heap_low_addr),
-                &pw_heap_high_addr - &pw_heap_low_addr);
+      std::span(reinterpret_cast<std::byte*>(&pw_boot_heap_low_addr),
+                &pw_boot_heap_high_addr - &pw_boot_heap_low_addr);
   pw_freelist_heap = new (&buf)
       pw::allocator::FreeListHeapBuffer(pw_allocator_freelist_raw_heap);
 }

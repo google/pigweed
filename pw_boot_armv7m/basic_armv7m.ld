@@ -60,7 +60,7 @@
  *       (Reset_Handler). However, this DOES tell the compiler how to optimize
  *       when --gc-sections is enabled.
  */
-ENTRY(pw_BootEntry)
+ENTRY(pw_boot_Entry)
 
 MEMORY
 {
@@ -88,11 +88,11 @@ SECTIONS
    * Register) MUST point to this memory location in order to be used. This can
    * be done by ensuring this section exists at the default location of the VTOR
    * so it's used on reset, or by explicitly setting the VTOR in a bootloader
-   * manually to point to &pw_vector_table_addr before interrupts are enabled.
+   * manually to point to &pw_boot_vector_table_addr before interrupts are enabled.
    */
   .vector_table : ALIGN(512)
   {
-    pw_vector_table_addr = .;
+    pw_boot_vector_table_addr = .;
     KEEP(*(.vector_table))
   } >VECTOR_TABLE
 
@@ -149,7 +149,7 @@ SECTIONS
   } >RAM AT> FLASH
 
   /* Zero initialized global/static data. (.bss)
-   * This section is zero initialized in pw_BootEntry(). */
+   * This section is zero initialized in pw_boot_Entry(). */
   .zero_init_ram : ALIGN(8)
   {
     *(.bss)
@@ -160,24 +160,24 @@ SECTIONS
 
   .heap : ALIGN(8)
   {
-    pw_heap_low_addr = .;
+    pw_boot_heap_low_addr = .;
     . = . + PW_BOOT_HEAP_SIZE;
     . = ALIGN(8);
-    pw_heap_high_addr = .;
+    pw_boot_heap_high_addr = .;
   } >RAM
 
   /* Link-time check for stack overlaps. */
   .stack (NOLOAD) : ALIGN(8)
   {
     /* Set the address that the main stack pointer should be initialized to. */
-    pw_stack_low_addr = .;
+    pw_boot_stack_low_addr = .;
     HIDDEN(_stack_size = ORIGIN(RAM) + LENGTH(RAM) - .);
     /* Align the stack to a lower address to ensure it isn't out of range. */
     HIDDEN(_stack_high = (. + _stack_size) & ~0x7);
     ASSERT(_stack_high - . >= PW_BOOT_MIN_STACK_SIZE,
            "Error: Not enough RAM for desired minimum stack size.");
     . = _stack_high;
-    pw_stack_high_addr = .;
+    pw_boot_stack_high_addr = .;
   } >RAM
 }
 

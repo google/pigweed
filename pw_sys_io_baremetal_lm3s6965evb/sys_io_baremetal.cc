@@ -105,11 +105,11 @@ const InterruptHandler vector_table[] = {
     // This address is NOT an interrupt handler/function pointer, it is simply
     // the address that the main stack pointer should be initialized to. The
     // value is reinterpret casted because it needs to be in the vector table.
-    [0] = reinterpret_cast<InterruptHandler>(&pw_stack_high_addr),
+    [0] = reinterpret_cast<InterruptHandler>(&pw_boot_stack_high_addr),
 
     // Reset handler, dictates how to handle reset interrupt. This is the
     // address that the Program Counter (PC) is initialized to at boot.
-    [1] = pw_BootEntry,
+    [1] = pw_boot_Entry,
 
     // NMI handler.
     [2] = DefaultFaultHandler,
@@ -119,7 +119,7 @@ const InterruptHandler vector_table[] = {
 
 }  // namespace
 
-extern "C" void pw_PreMainInit() {
+extern "C" void pw_boot_PreMainInit() {
   // Force RCC to be at default at boot.
   rcc = kRccDefault;
   rcc2 = kRcc2Default;

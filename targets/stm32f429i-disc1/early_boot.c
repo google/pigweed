@@ -16,7 +16,7 @@
 #include "pw_malloc/malloc.h"
 #include "pw_sys_io_baremetal_stm32f429/init.h"
 
-void pw_PreStaticConstructorInit() {
+void pw_boot_PreStaticMemoryInit() {
   // TODO(pwbug/17): Optionally enable Replace when Pigweed config system is
   // added.
 #if PW_ARMV7M_ENABLE_FPU
@@ -29,9 +29,12 @@ void pw_PreStaticConstructorInit() {
 
   *arm_v7m_cpacr |= kFpuEnableMask;
 #endif  // PW_ARMV7M_ENABLE_FPU
+}
+
+void pw_boot_PreStaticConstructorInit() {
 #if PW_MALLOC_ACTIVE
   pw_MallocInit();
 #endif  // PW_MALLOC_ACTIVE
 }
 
-void pw_PreMainInit() { pw_sys_io_Init(); }
+void pw_boot_PreMainInit() { pw_sys_io_Init(); }

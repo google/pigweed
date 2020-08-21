@@ -42,10 +42,13 @@
 // The simple flow is as follows:
 //   1. Power on
 //   2. PC and SP set (from vector_table by SoC, or by bootloader)
-//   3. pw_BootEntry()
-//     3.1. Static-init RAM (.data, .bss, C++ constructors)
-//     3.2. pw_PreMainInit()
-//     3.3. main()
+//   3. pw_boot_Entry()
+//     3.1. pw_boot_PreStaticMemoryInit();
+//     3.2. Static-init memory (.data, .bss)
+//     3.3. pw_boot_PreStaticConstructorInit();
+//     3.4. Static C++ constructors
+//     3.5. pw_boot_PreMainInit()
+//     3.6. main()
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -69,7 +72,7 @@ void __libc_init_array(void);
 // completes. The context before this function violates the C spec
 // (Section 6.7.8, paragraph 10 for example, which requires uninitialized static
 // values to be zero-initialized).
-void StaticInit(void) {
+void StaticMemoryInit(void) {
   // Static-init RAM (load static values into ram, .data section init).
   memcpy(&_pw_static_init_ram_start,
          &_pw_static_init_flash_start,
@@ -79,12 +82,6 @@ void StaticInit(void) {
   memset(&_pw_zero_init_ram_start,
          0,
          &_pw_zero_init_ram_end - &_pw_zero_init_ram_start);
-
-  // Run any init that must be done before C++ static constructors.
-  pw_PreStaticConstructorInit();
-
-  // Call static constructors.
-  __libc_init_array();
 }
 
 // WARNING: This code is run immediately upon boot, and performs initialization
@@ -96,12 +93,28 @@ void StaticInit(void) {
 //
 // This function runs immediately at boot because it is at index 1 of the
 // interrupt vector table.
-void pw_BootEntry() {
-  StaticInit();
+void pw_boot_Entry() {
+  // Run any init that must be done before static init of RAM which preps the
+  // .data (static values not yet loaded into ram) and .bss sections (not yet
+  // zero-initialized).
+  pw_boot_PreStaticMemoryInit();
+
+  // Note that code running before this function finishes memory
+  // initialization will violate the C spec (Section 6.7.8, paragraph 10 for
+  // example, which requires uninitialized static values to be
+  // zero-initialized). Be EXTREMELY careful when running code before this
+  // function finishes static memory initialization.
+  StaticMemoryInit();
+
+  // Run any init that must be done before C++ static constructors.
+  pw_boot_PreStaticConstructorInit();
+
+  // Call static constructors.
+  __libc_init_array();
 
   // This function is not provided by pw_boot_armv7m, a platform layer, project,
   // or application is expected to implement it.
-  pw_PreMainInit();
+  pw_boot_PreMainInit();
 
   // Run main.
   main();

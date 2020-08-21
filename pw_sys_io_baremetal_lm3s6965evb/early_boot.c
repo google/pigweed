@@ -14,4 +14,5 @@
 
 #include "pw_boot_armv7m/boot.h"
 
-void pw_PreStaticConstructorInit() {}
+void pw_boot_PreStaticMemoryInit() {}
+void pw_boot_PreStaticConstructorInit() {}
