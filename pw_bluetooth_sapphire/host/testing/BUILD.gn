@@ -6,13 +6,13 @@ source_set("testing") {
   testonly = true
 
   sources = [
-    "fake_controller_test.h",
+    "controller_test.h",
     "fake_dynamic_channel_unittest.cc",
     "fake_l2cap_unittest.cc",
     "fake_sdp_server_unittest.cc",
     "fake_signaling_server_unittest.cc",
-    "test_controller.cc",
-    "test_controller.h",
+    "mock_controller.cc",
+    "mock_controller.h",
     "test_packets.cc",
     "test_packets.h",
   ]
@@ -32,10 +32,10 @@ source_set("fake_controller") {
   testonly = true
 
   sources = [
+    "controller_test_double_base.cc",
+    "controller_test_double_base.h",
     "fake_controller.cc",
     "fake_controller.h",
-    "fake_controller_base.cc",
-    "fake_controller_base.h",
     "fake_dynamic_channel.cc",
     "fake_dynamic_channel.h",
     "fake_gatt_server.cc",

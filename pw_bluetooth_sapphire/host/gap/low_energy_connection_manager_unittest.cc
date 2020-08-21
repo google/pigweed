@@ -31,8 +31,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
@@ -44,7 +44,7 @@ using bt::sm::BondableMode;
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 using l2cap::testing::FakeChannel;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {1});

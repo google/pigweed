@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 
 #include <lib/async/cpp/wait.h>
 #include <lib/zx/channel.h>
@@ -21,10 +21,10 @@ namespace testing {
 // Abstract base for implementing a fake HCI controller endpoint. This can
 // directly send ACL data and event packets on request and forward outgoing ACL
 // data packets to subclass implementations.
-class FakeControllerBase {
+class ControllerTestDoubleBase {
  public:
-  FakeControllerBase();
-  virtual ~FakeControllerBase();
+  ControllerTestDoubleBase();
+  virtual ~ControllerTestDoubleBase();
 
   // Closes all open bt-hci protocol channels.
   void Stop();
@@ -88,15 +88,15 @@ class FakeControllerBase {
   zx::channel acl_channel_;
   zx::channel snoop_channel_;
 
-  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleCommandPacket> cmd_channel_wait_{
-      this};
-  async::WaitMethod<FakeControllerBase, &FakeControllerBase::HandleACLPacket> acl_channel_wait_{
-      this};
+  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleCommandPacket>
+      cmd_channel_wait_{this};
+  async::WaitMethod<ControllerTestDoubleBase, &ControllerTestDoubleBase::HandleACLPacket>
+      acl_channel_wait_{this};
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerBase);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };
 
 }  // namespace testing
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_BASE_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_

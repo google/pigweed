@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_
 
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
@@ -21,36 +21,36 @@
 namespace bt {
 namespace testing {
 
-class FakeControllerBase;
+class ControllerTestDoubleBase;
 
-// FakeControllerTest is a test harness intended for tests that rely on HCI
-// transactions. It is templated on FakeControllerType which must derive from
-// FakeControllerBase and must be able to send and receive HCI packets over
+// ControllerTest is a test harness intended for tests that rely on HCI
+// transactions. It is templated on ControllerTestDoubleType which must derive from
+// ControllerTestDoubleBase and must be able to send and receive HCI packets over
 // Zircon channels, acting as the controller endpoint of HCI.
 //
 // The testing library provides two such types:
 //
-//   - TestController (test_controller.h): Routes HCI packets directly to the
+//   - MockController (mock_controller.h): Routes HCI packets directly to the
 //     test harness. It allows tests to setup expectations based on the receipt
 //     of HCI packets.
 //
 //   - FakeController (fake_controller.h): Emulates a Bluetooth controller. This
 //     can respond to HCI commands the way a real controller would (albeit in a
 //     contrived fashion), emulate discovery and connection events, etc.
-template <class FakeControllerType>
-class FakeControllerTest : public ::gtest::TestLoopFixture {
+template <class ControllerTestDoubleType>
+class ControllerTest : public ::gtest::TestLoopFixture {
  public:
   // Default data buffer information used by ACLDataChannel.
   static constexpr size_t kDefaultMaxDataPacketLength = 1024;
   static constexpr size_t kDefaultMaxPacketCount = 5;
 
-  FakeControllerTest() = default;
-  virtual ~FakeControllerTest() = default;
+  ControllerTest() = default;
+  virtual ~ControllerTest() = default;
 
  protected:
   // TestBase overrides:
   void SetUp() override {
-    transport_ = hci::Transport::Create(FakeControllerTest<FakeControllerType>::SetUpTestDevice())
+    transport_ = hci::Transport::Create(ControllerTest<ControllerTestDoubleType>::SetUpTestDevice())
                      .take_value();
   }
 
@@ -77,7 +77,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     }
 
     transport_->acl_data_channel()->SetDataRxHandler(std::bind(
-        &FakeControllerTest<FakeControllerType>::OnDataReceived, this, std::placeholders::_1));
+        &ControllerTest<ControllerTestDoubleType>::OnDataReceived, this, std::placeholders::_1));
 
     return true;
   }
@@ -102,7 +102,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
   void DeleteTransport() { transport_ = nullptr; }
 
   // Getters for internal fields frequently used by tests.
-  FakeControllerType* test_device() const { return test_device_.get(); }
+  ControllerTestDoubleType* test_device() const { return test_device_.get(); }
   zx::channel test_cmd_chan() { return std::move(cmd1_); }
   zx::channel test_acl_chan() { return std::move(acl1_); }
 
@@ -130,7 +130,7 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     ZX_DEBUG_ASSERT(ZX_OK == status);
 
     auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0), std::move(acl0));
-    test_device_ = std::make_unique<FakeControllerType>();
+    test_device_ = std::make_unique<ControllerTestDoubleType>();
 
     return hci_dev;
   }
@@ -146,16 +146,16 @@ class FakeControllerTest : public ::gtest::TestLoopFixture {
     });
   }
 
-  std::unique_ptr<FakeControllerType> test_device_;
+  std::unique_ptr<ControllerTestDoubleType> test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeControllerTest);
-  static_assert(std::is_base_of<FakeControllerBase, FakeControllerType>::value,
-                "TestBase must be used with a derivative of FakeControllerBase");
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
+  static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,
+                "TestBase must be used with a derivative of ControllerTestDoubleBase");
 };
 
 }  // namespace testing
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_TEST_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_

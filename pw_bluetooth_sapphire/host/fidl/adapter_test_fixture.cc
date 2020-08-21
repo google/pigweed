@@ -8,7 +8,7 @@ namespace bthost {
 namespace testing {
 
 using bt::testing::FakeController;
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 void AdapterTestFixture::SetUp() {
   TestingBase::SetUp();

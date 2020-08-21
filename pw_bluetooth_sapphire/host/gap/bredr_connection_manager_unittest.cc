@@ -14,9 +14,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
@@ -28,7 +28,7 @@ using bt::hci::AuthRequirements;
 using bt::hci::IOCapability;
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 constexpr hci::ConnectionHandle kConnectionHandle = 0x0BAA;
 constexpr hci::ConnectionHandle kConnectionHandle2 = 0x0BAB;

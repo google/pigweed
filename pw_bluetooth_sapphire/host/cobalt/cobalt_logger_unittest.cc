@@ -12,8 +12,8 @@
 #include "lib/fidl/cpp/interface_request.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
 namespace bt {
 namespace cobalt {

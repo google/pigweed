@@ -8,17 +8,17 @@
 
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
 namespace bt {
 namespace gap {
 namespace {
 
 using testing::CommandTransaction;
-using testing::TestController;
+using testing::MockController;
 
-using TestingBase = testing::FakeControllerTest<TestController>;
+using TestingBase = testing::ControllerTest<MockController>;
 
 const DeviceAddress kPublic(DeviceAddress::Type::kLEPublic, {0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA});
 

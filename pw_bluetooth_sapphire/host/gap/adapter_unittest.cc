@@ -19,8 +19,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
@@ -30,7 +30,7 @@ namespace {
 using namespace inspect::testing;
 using testing::FakeController;
 using testing::FakePeer;
-using TestingBase = testing::FakeControllerTest<FakeController>;
+using TestingBase = testing::ControllerTest<FakeController>;
 
 const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});

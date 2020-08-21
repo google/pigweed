@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 
 namespace bt {
 namespace sdp {
@@ -26,8 +25,6 @@ using RegistrationHandle = Server::RegistrationHandle;
 namespace {
 
 using namespace inspect::testing;
-
-using bt::testing::FakeController;
 
 using TestingBase = l2cap::testing::FakeChannelTest;
 

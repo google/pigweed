@@ -17,8 +17,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 // This test harness provides test cases for interations between L2CAP, RFCOMM,
@@ -31,8 +31,8 @@ namespace {
 
 using namespace inspect::testing;
 
-using bt::testing::TestController;
-using TestingBase = bt::testing::FakeControllerTest<TestController>;
+using bt::testing::MockController;
+using TestingBase = bt::testing::ControllerTest<MockController>;
 
 // Sized intentionally to cause fragmentation for outbound dynamic channel data but not others. May
 // need adjustment if Signaling Channel Configuration {Request,Response} default transactions get
@@ -254,7 +254,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_EQ(ZX_OK, status);
   EXPECT_EQ(80u, bytes_written);
 
-  // Run until the data is flushed out to the TestController.
+  // Run until the data is flushed out to the MockController.
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
@@ -491,7 +491,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   }
 
   EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
-  // Run until the data is flushed out to the TestController.
+  // Run until the data is flushed out to the MockController.
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 

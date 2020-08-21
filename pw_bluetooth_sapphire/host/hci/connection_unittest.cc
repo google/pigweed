@@ -7,8 +7,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt {
@@ -32,7 +32,7 @@ const DataBufferInfo kLeBufferInfo(1024, 1);
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 class ConnectionTest : public TestingBase {
  public:
@@ -890,7 +890,7 @@ TEST_F(HCI_ConnectionTest,
   // Should register connection with ACL Data Channel.
   auto conn0 = NewACLConnection(Connection::Role::kMaster, kHandle);
 
-  testing::TestController::DataCallback data_cb = [](const ByteBuffer& packet) {};
+  testing::MockController::DataCallback data_cb = [](const ByteBuffer& packet) {};
   size_t packet_count = 0;
   auto data_cb_wrapper = [&data_cb, &packet_count](const ByteBuffer& packet) {
     packet_count++;
@@ -912,7 +912,7 @@ TEST_F(HCI_ConnectionTest,
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
   }
 
-  // Run until the data is flushed out to the TestController.
+  // Run until the data is flushed out to the MockController.
   RunLoopUntilIdle();
 
   // Only packets that fit in buffer should have been received.

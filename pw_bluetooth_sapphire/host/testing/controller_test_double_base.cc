@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "fake_controller_base.h"
+#include "controller_test_double_base.h"
 
 #include <lib/async/default.h>
 #include <zircon/device/bt-hci.h>
@@ -15,16 +15,16 @@
 namespace bt {
 namespace testing {
 
-FakeControllerBase::FakeControllerBase() {}
+ControllerTestDoubleBase::ControllerTestDoubleBase() {}
 
-FakeControllerBase::~FakeControllerBase() {
+ControllerTestDoubleBase::~ControllerTestDoubleBase() {
   // When this destructor gets called any subclass state will be undefined. If
   // Stop() has not been called before reaching this point this can cause
   // runtime errors when our event loop handlers attempt to invoke the pure
   // virtual methods of this class.
 }
 
-bool FakeControllerBase::StartCmdChannel(zx::channel chan) {
+bool ControllerTestDoubleBase::StartCmdChannel(zx::channel chan) {
   if (cmd_channel_.is_valid()) {
     return false;
   }
@@ -41,7 +41,7 @@ bool FakeControllerBase::StartCmdChannel(zx::channel chan) {
   return true;
 }
 
-bool FakeControllerBase::StartAclChannel(zx::channel chan) {
+bool ControllerTestDoubleBase::StartAclChannel(zx::channel chan) {
   if (acl_channel_.is_valid()) {
     return false;
   }
@@ -58,7 +58,7 @@ bool FakeControllerBase::StartAclChannel(zx::channel chan) {
   return true;
 }
 
-bool FakeControllerBase::StartSnoopChannel(zx::channel chan) {
+bool ControllerTestDoubleBase::StartSnoopChannel(zx::channel chan) {
   if (snoop_channel_.is_valid()) {
     return false;
   }
@@ -66,13 +66,13 @@ bool FakeControllerBase::StartSnoopChannel(zx::channel chan) {
   return true;
 }
 
-void FakeControllerBase::Stop() {
+void ControllerTestDoubleBase::Stop() {
   CloseCommandChannel();
   CloseACLDataChannel();
   CloseSnoopChannel();
 }
 
-zx_status_t FakeControllerBase::SendCommandChannelPacket(const ByteBuffer& packet) {
+zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet) {
   zx_status_t status = cmd_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to control channel: %s",
@@ -85,7 +85,7 @@ zx_status_t FakeControllerBase::SendCommandChannelPacket(const ByteBuffer& packe
   return ZX_OK;
 }
 
-zx_status_t FakeControllerBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
+zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
   zx_status_t status = acl_channel_.write(0, packet.data(), packet.size(), nullptr, 0);
   if (status != ZX_OK) {
     bt_log(WARN, "fake-hci", "failed to write to ACL data channel: %s",
@@ -98,8 +98,9 @@ zx_status_t FakeControllerBase::SendACLDataChannelPacket(const ByteBuffer& packe
   return ZX_OK;
 }
 
-void FakeControllerBase::SendSnoopChannelPacket(const ByteBuffer& packet,
-                                                bt_hci_snoop_type_t packet_type, bool is_received) {
+void ControllerTestDoubleBase::SendSnoopChannelPacket(const ByteBuffer& packet,
+                                                      bt_hci_snoop_type_t packet_type,
+                                                      bool is_received) {
   if (snoop_channel_.is_valid()) {
     uint8_t snoop_buffer[packet.size() + 1];
     uint8_t flags = bt_hci_snoop_flags(packet_type, is_received);
@@ -115,7 +116,7 @@ void FakeControllerBase::SendSnoopChannelPacket(const ByteBuffer& packet,
   }
 }
 
-void FakeControllerBase::CloseCommandChannel() {
+void ControllerTestDoubleBase::CloseCommandChannel() {
   if (cmd_channel_.is_valid()) {
     cmd_channel_wait_.Cancel();
     cmd_channel_wait_.set_object(ZX_HANDLE_INVALID);
@@ -123,7 +124,7 @@ void FakeControllerBase::CloseCommandChannel() {
   }
 }
 
-void FakeControllerBase::CloseACLDataChannel() {
+void ControllerTestDoubleBase::CloseACLDataChannel() {
   if (acl_channel_.is_valid()) {
     acl_channel_wait_.Cancel();
     acl_channel_wait_.set_object(ZX_HANDLE_INVALID);
@@ -131,15 +132,15 @@ void FakeControllerBase::CloseACLDataChannel() {
   }
 }
 
-void FakeControllerBase::CloseSnoopChannel() {
+void ControllerTestDoubleBase::CloseSnoopChannel() {
   if (snoop_channel_.is_valid()) {
     snoop_channel_.reset();
   }
 }
 
-void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                                             zx_status_t wait_status,
-                                             const zx_packet_signal_t* signal) {
+void ControllerTestDoubleBase::HandleCommandPacket(async_dispatcher_t* dispatcher,
+                                                   async::WaitBase* wait, zx_status_t wait_status,
+                                                   const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci::kMaxCommandPacketPayloadSize> buffer;
   uint32_t read_size;
   zx_status_t status = cmd_channel_.read(0u, buffer.mutable_data(), nullptr,
@@ -171,9 +172,9 @@ void FakeControllerBase::HandleCommandPacket(async_dispatcher_t* dispatcher, asy
   }
 }
 
-void FakeControllerBase::HandleACLPacket(async_dispatcher_t* dispatcher, async::WaitBase* wait,
-                                         zx_status_t wait_status,
-                                         const zx_packet_signal_t* signal) {
+void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
+                                               async::WaitBase* wait, zx_status_t wait_status,
+                                               const zx_packet_signal_t* signal) {
   StaticByteBuffer<hci::kMaxACLPayloadSize + sizeof(hci::ACLDataHeader)> buffer;
   uint32_t read_size;
   zx_status_t status =

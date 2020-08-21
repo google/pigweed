@@ -7,8 +7,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
 namespace bt {
 namespace gap {
@@ -16,7 +16,7 @@ namespace {
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 // clang-format off
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
@@ -918,7 +918,7 @@ TEST_F(GAP_BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
   test_device()->SendCommandChannelPacket(kReadScanEnableRspBoth);
 
   // This shouldn't send any WriteScanEnable because we're already in the right
-  // mode (TestController will assert if we do as it's not expecting)
+  // mode (MockController will assert if we do as it's not expecting)
   RunLoopUntilIdle();
 
   EXPECT_EQ(1u, sessions.size());

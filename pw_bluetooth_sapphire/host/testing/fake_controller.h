@@ -23,7 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 
 namespace bt {
@@ -33,7 +33,7 @@ class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to
 // respond to HCI commands in a predictable manner.
-class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeController> {
+class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<FakeController> {
  public:
   // Global settings for the FakeController. These can be used to initialize a
   // FakeController and/or to re-configure an existing one.
@@ -419,7 +419,7 @@ class FakeController : public FakeControllerBase, public fbl::RefCounted<FakeCon
   // Called when a command with an OGF of hci::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci::CommandHeader>& command_packet);
 
-  // FakeControllerBase overrides:
+  // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 

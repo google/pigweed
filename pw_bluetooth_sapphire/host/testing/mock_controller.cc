@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "test_controller.h"
+#include "mock_controller.h"
 
 #include <lib/async/cpp/task.h>
 #include <zircon/status.h>
@@ -40,13 +40,13 @@ bool CommandTransaction::Match(const ByteBuffer& cmd) {
                          (prefix_ ? cmd.view(0, expected().data.size()) : cmd.view()));
 }
 
-TestController::TestController()
-    : FakeControllerBase(),
+MockController::MockController()
+    : ControllerTestDoubleBase(),
       data_expectations_enabled_(false),
       data_dispatcher_(nullptr),
       transaction_dispatcher_(nullptr) {}
 
-TestController::~TestController() {
+MockController::~MockController() {
   while (!cmd_transactions_.empty()) {
     auto& transaction = cmd_transactions_.front();
     auto meta = transaction.expected().meta;
@@ -67,36 +67,36 @@ TestController::~TestController() {
   Stop();
 }
 
-void TestController::QueueCommandTransaction(CommandTransaction transaction) {
+void MockController::QueueCommandTransaction(CommandTransaction transaction) {
   cmd_transactions_.push(std::move(transaction));
 }
 
-void TestController::QueueCommandTransaction(const ByteBuffer& expected,
+void MockController::QueueCommandTransaction(const ByteBuffer& expected,
                                              const std::vector<const ByteBuffer*>& replies,
                                              ExpectationMetadata meta) {
   QueueCommandTransaction(CommandTransaction(DynamicByteBuffer(expected), replies, meta));
 }
 
-void TestController::QueueCommandTransaction(hci::OpCode expected_opcode,
+void MockController::QueueCommandTransaction(hci::OpCode expected_opcode,
                                              const std::vector<const ByteBuffer*>& replies,
                                              ExpectationMetadata meta) {
   QueueCommandTransaction(CommandTransaction(expected_opcode, replies, meta));
 }
 
-void TestController::QueueDataTransaction(DataTransaction transaction) {
+void MockController::QueueDataTransaction(DataTransaction transaction) {
   ZX_ASSERT(data_expectations_enabled_);
   data_transactions_.push(std::move(transaction));
 }
 
-void TestController::QueueDataTransaction(const ByteBuffer& expected,
+void MockController::QueueDataTransaction(const ByteBuffer& expected,
                                           const std::vector<const ByteBuffer*>& replies,
                                           ExpectationMetadata meta) {
   QueueDataTransaction(DataTransaction(DynamicByteBuffer(expected), replies, meta));
 }
 
-bool TestController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
+bool MockController::AllExpectedDataPacketsSent() const { return data_transactions_.empty(); }
 
-void TestController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
+void MockController::SetDataCallback(DataCallback callback, async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);
   ZX_DEBUG_ASSERT(!data_callback_);
@@ -106,16 +106,16 @@ void TestController::SetDataCallback(DataCallback callback, async_dispatcher_t* 
   data_dispatcher_ = dispatcher;
 }
 
-void TestController::ClearDataCallback() {
+void MockController::ClearDataCallback() {
   // Leave dispatcher set (if already set) to preserve its write-once-ness.
   data_callback_ = nullptr;
 }
 
-void TestController::SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher) {
+void MockController::SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher) {
   SetTransactionCallback([f = std::move(callback)](const auto&) { f(); }, dispatcher);
 }
 
-void TestController::SetTransactionCallback(TransactionCallback callback,
+void MockController::SetTransactionCallback(TransactionCallback callback,
                                             async_dispatcher_t* dispatcher) {
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(dispatcher);
@@ -126,12 +126,12 @@ void TestController::SetTransactionCallback(TransactionCallback callback,
   transaction_dispatcher_ = dispatcher;
 }
 
-void TestController::ClearTransactionCallback() {
+void MockController::ClearTransactionCallback() {
   // Leave dispatcher set (if already set) to preserve its write-once-ness.
   transaction_callback_ = nullptr;
 }
 
-void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
+void MockController::OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) {
   uint16_t opcode = le16toh(command_packet.header().opcode);
   uint8_t ogf = hci::GetOGF(opcode);
   uint16_t ocf = hci::GetOCF(opcode);
@@ -171,7 +171,7 @@ void TestController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
   }
 }
 
-void TestController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
+void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
   if (data_expectations_enabled_) {
     ASSERT_FALSE(data_transactions_.empty()) << "Received unexpected acl data packet: { "
                                              << ByteContainerToString(acl_data_packet) << "}";

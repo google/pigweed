@@ -10,8 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
 namespace bt {
 namespace hci {
@@ -22,7 +22,7 @@ using bt::UpperBits;
 using bt::testing::CommandTransaction;
 using EventCallbackResult = CommandChannel::EventCallbackResult;
 
-using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 // A reference counted object used to verify that HCI command completion and
 // status callbacks are properly cleaned up after the end of a transaction.

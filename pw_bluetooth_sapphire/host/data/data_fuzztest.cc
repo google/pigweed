@@ -7,8 +7,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 // Prevent "undefined symbol: __zircon_driver_rec__" error.
@@ -30,7 +30,7 @@ constexpr hci::ConnectionHandle kHandle = 0x0001;
 // Don't toggle connection too often or else l2cap won't get very far.
 constexpr float kToggleConnectionChance = 0.04;
 
-class FuzzerController : public FakeControllerBase {
+class FuzzerController : public ControllerTestDoubleBase {
  public:
   FuzzerController() {}
   ~FuzzerController() override = default;
@@ -40,8 +40,8 @@ class FuzzerController : public FakeControllerBase {
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
 };
 
-// Reuse FakeControllerTest test fixture code even though we're not using gtest.
-using TestingBase = FakeControllerTest<FuzzerController>;
+// Reuse ControllerTest test fixture code even though we're not using gtest.
+using TestingBase = ControllerTest<FuzzerController>;
 class DataFuzzTest : public TestingBase {
  public:
   DataFuzzTest(const uint8_t* data, size_t size) : data_(data, size), connection_(false) {

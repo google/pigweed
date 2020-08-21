@@ -6,8 +6,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
 namespace bt {
 namespace hci {
@@ -18,7 +18,7 @@ constexpr OpCode kTestOpCode2 = 0xF00F;
 
 using bt::testing::CommandTransaction;
 
-using TestingBase = bt::testing::FakeControllerTest<bt::testing::TestController>;
+using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 class SequentialCommandRunnerTest : public TestingBase {
  public:
@@ -288,7 +288,7 @@ TEST_F(HCI_SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
     EXPECT_EQ(2, status_cb_called);
     EXPECT_EQ(HostError::kCanceled, status.error());
 
-    // Queue multiple commands (only one will execute since TestController
+    // Queue multiple commands (only one will execute since MockController
     // will send back an error status.
     cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
     cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),

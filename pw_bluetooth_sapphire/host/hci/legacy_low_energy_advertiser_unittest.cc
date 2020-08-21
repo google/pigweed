@@ -12,8 +12,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
@@ -27,7 +27,7 @@ using AdvertisingOptions = LegacyLowEnergyAdvertiser::AdvertisingOptions;
 
 namespace {
 
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 constexpr ConnectionHandle kHandle = 0x0001;
 

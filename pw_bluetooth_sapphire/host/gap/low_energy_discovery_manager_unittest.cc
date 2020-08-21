@@ -17,8 +17,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bt {
@@ -28,7 +28,7 @@ namespace {
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
-using TestingBase = bt::testing::FakeControllerTest<FakeController>;
+using TestingBase = bt::testing::ControllerTest<FakeController>;
 
 const DeviceAddress kAddress0(DeviceAddress::Type::kLEPublic, {0});
 const DeviceAddress kAddrAlias0(DeviceAddress::Type::kBREDR, kAddress0.value());

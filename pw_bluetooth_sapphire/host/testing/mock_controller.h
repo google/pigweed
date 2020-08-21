@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
@@ -15,7 +15,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller_base.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 
 namespace bt {
 namespace testing {
@@ -95,7 +95,7 @@ class DataTransaction final : public Transaction {
 };
 
 // Helper macro for expecting a data packet and specifying a variable number of responses that the
-// TestController should send in response to the expected packet.
+// MockController should send in response to the expected packet.
 #define EXPECT_ACL_PACKET_OUT(device, expected, ...)        \
   (device)->QueueDataTransaction((expected), {__VA_ARGS__}, \
                                  bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
@@ -105,18 +105,18 @@ class DataTransaction final : public Transaction {
   (device)->QueueCommandTransaction(                 \
       (expected), {__VA_ARGS__}, bt::testing::ExpectationMetadata(__FILE__, __LINE__, #expected))
 
-// TestController allows unit tests to set up an expected sequence of HCI
+// MockController allows unit tests to set up an expected sequence of HCI
 // command packets and ACL data packets and any packets that should be sent back in response. The
 // code internally verifies each received packet using gtest ASSERT_* macros.
-class TestController : public FakeControllerBase {
+class MockController : public ControllerTestDoubleBase {
  public:
-  TestController();
-  ~TestController() override;
+  MockController();
+  ~MockController() override;
 
-  // Queues a transaction into the TestController's expected command queue. Each
+  // Queues a transaction into the MockController's expected command queue. Each
   // packet received through the command channel endpoint will be verified
   // against the next expected transaction in the queue. A mismatch will cause a
-  // fatal assertion. On a match, TestController will send back the replies
+  // fatal assertion. On a match, MockController will send back the replies
   // provided in the transaction.
   void QueueCommandTransaction(CommandTransaction transaction);
   void QueueCommandTransaction(const ByteBuffer& expected,
@@ -125,10 +125,10 @@ class TestController : public FakeControllerBase {
                                const std::vector<const ByteBuffer*>& replies,
                                ExpectationMetadata meta);
 
-  // Queues a transaction into the TestController's expected ACL data queue. Each
+  // Queues a transaction into the MockController's expected ACL data queue. Each
   // packet received through the ACL data channel endpoint will be verified
   // against the next expected transaction in the queue. A mismatch will cause a
-  // fatal assertion. On a match, TestController will send back the replies
+  // fatal assertion. On a match, MockController will send back the replies
   // provided in the transaction.
   void QueueDataTransaction(DataTransaction transaction);
   void QueueDataTransaction(const ByteBuffer& expected,
@@ -138,7 +138,7 @@ class TestController : public FakeControllerBase {
   // Returns true iff all transactions queued with QueueDataTransaction() have been received.
   bool AllExpectedDataPacketsSent() const;
 
-  // TODO(benlawson): remove after all TestController tests have been refactored to use data
+  // TODO(benlawson): remove after all MockController tests have been refactored to use data
   // expectations
   void set_data_expectations_enabled(bool enabled) { data_expectations_enabled_ = enabled; }
 
@@ -158,7 +158,7 @@ class TestController : public FakeControllerBase {
   void ClearTransactionCallback();
 
  private:
-  // FakeControllerBase overrides:
+  // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
 
@@ -170,10 +170,10 @@ class TestController : public FakeControllerBase {
   TransactionCallback transaction_callback_;
   async_dispatcher_t* transaction_dispatcher_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestController);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };
 
 }  // namespace testing
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_CONTROLLER_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_
