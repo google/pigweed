@@ -1991,7 +1991,7 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   ServiceData data(ServiceKind::PRIMARY, 1, 3, kTestServiceUuid1);
   auto service = SetUpFakeService(data);
 
-  // No "write without response" property.
+  // No "write" or "write without response" property.
   CharacteristicData chr(0, std::nullopt, 2, 3, kTestUuid3);
   SetupCharacteristics(service, {{chr}});
 
@@ -2003,11 +2003,31 @@ TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseNotSupported) {
   EXPECT_FALSE(called);
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccess) {
+TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteWithoutResponseProperty) {
   const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
 
   CharacteristicData chr(Property::kWriteWithoutResponse, std::nullopt, 2, kDefaultChrcValueHandle,
                          kTestUuid3);
+  auto service = SetupServiceWithChrcs(
+      ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1), {chr});
+
+  bool called = false;
+  fake_client()->set_write_without_rsp_callback([&](att::Handle handle, const auto& value) {
+    EXPECT_EQ(kDefaultChrcValueHandle, handle);
+    EXPECT_TRUE(std::equal(kValue.begin(), kValue.end(), value.begin(), value.end()));
+    called = true;
+  });
+
+  service->WriteCharacteristicWithoutResponse(kDefaultCharacteristic, kValue);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(called);
+}
+
+TEST_F(GATT_RemoteServiceManagerTest, WriteWithoutResponseSuccessWithWriteProperty) {
+  const std::vector<uint8_t> kValue{{'t', 'e', 's', 't'}};
+
+  CharacteristicData chr(Property::kWrite, std::nullopt, 2, kDefaultChrcValueHandle, kTestUuid3);
   auto service = SetupServiceWithChrcs(
       ServiceData(ServiceKind::PRIMARY, 1, kDefaultChrcValueHandle, kTestServiceUuid1), {chr});
 

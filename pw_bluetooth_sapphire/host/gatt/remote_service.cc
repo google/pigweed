@@ -329,7 +329,7 @@ void RemoteService::WriteCharacteristicWithoutResponse(CharacteristicHandle id,
       return;
     }
 
-    if (!(chrc->info().properties & Property::kWriteWithoutResponse)) {
+    if (!(chrc->info().properties & (Property::kWrite | Property::kWriteWithoutResponse))) {
       bt_log(DEBUG, "gatt", "characteristic does not support \"write without response\"");
       return;
     }
