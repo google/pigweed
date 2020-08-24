@@ -49,6 +49,7 @@
 //     3.4. Static C++ constructors
 //     3.5. pw_boot_PreMainInit()
 //     3.6. main()
+//     3.7. pw_boot_PostMain()
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -119,13 +120,8 @@ void pw_boot_Entry() {
   // Run main.
   main();
 
-#if PW_BOOT_ARMV7M_QEMU_SHUTDOWN
-  // QEMU requires a special command to tell the VM to shut down.
-  volatile uint32_t* aircr = (uint32_t*)(0xE000ED0CU);
-  *aircr = 0x5fa0004;
-#endif  // PW_BOOT_ARMV7M_QEMU_SHUTDOWN
+  // In case main() returns, invoke this hook.
+  pw_boot_PostMain();
 
-  // In case main() returns, just sit here until the device is reset.
-  while (true) {
-  }
+  PW_UNREACHABLE;
 }

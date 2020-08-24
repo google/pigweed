@@ -22,10 +22,6 @@ declare_args() {
   # TODO(frolv): Move this into pw_boot module when it is created.
   pw_boot_BACKEND = ""
 
-  # Whether or not to include code that signals to QEMU to shut down the
-  # emulator. This should only be enabled on QEMU targets.
-  pw_boot_armv7m_QEMU_SHUTDOWN = false
-
   # This list should contain the necessary defines for setting pw_boot linker
   # script memory regions.
   pw_boot_armv7m_LINK_CONFIG_DEFINES = []
@@ -49,9 +45,6 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
       ":armv7m_linker_script",
       "$dir_pw_preprocessor",
     ]
-    if (pw_boot_armv7m_QEMU_SHUTDOWN) {
-      defines = [ "PW_BOOT_ARMV7M_QEMU_SHUTDOWN=1" ]
-    }
     public = [ "public/pw_boot_armv7m/boot.h" ]
     sources = [ "core_init.c" ]
   }

@@ -14,6 +14,7 @@
 
 #include "pw_boot_armv7m/boot.h"
 #include "pw_malloc/malloc.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_stm32f429/init.h"
 
 void pw_boot_PreStaticMemoryInit() {
@@ -38,3 +39,10 @@ void pw_boot_PreStaticConstructorInit() {
 }
 
 void pw_boot_PreMainInit() { pw_sys_io_Init(); }
+
+PW_NO_RETURN void pw_boot_PostMain() {
+  // In case main() returns, just sit here until the device is reset.
+  while (1) {
+  }
+  PW_UNREACHABLE;
+}

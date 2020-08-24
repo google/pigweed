@@ -13,6 +13,7 @@
 // the License.
 
 #include "pw_boot_armv7m/boot.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_lm3s6965evb/init.h"
 
 void pw_boot_PreStaticMemoryInit() {
@@ -28,3 +29,14 @@ void pw_boot_PreStaticMemoryInit() {
 void pw_boot_PreStaticConstructorInit() {}
 
 void pw_boot_PreMainInit() { pw_sys_io_Init(); }
+
+PW_NO_RETURN void pw_boot_PostMain() {
+  // QEMU requires a special command to tell the VM to shut down.
+  volatile uint32_t* aircr = (uint32_t*)(0xE000ED0CU);
+  *aircr = 0x5fa0004;
+
+  // In case main() returns, just sit here until the device is reset.
+  while (1) {
+  }
+  PW_UNREACHABLE;
+}

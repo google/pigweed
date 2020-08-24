@@ -70,7 +70,7 @@
 
 // Indicate to the compiler that the annotated function won't return. Example:
 //
-//   void HandleAssertFailure(ErrorCode error_code) PW_NO_RETURN;
+//   PW_NO_RETURN void HandleAssertFailure(ErrorCode error_code);
 //
 #define PW_NO_RETURN __attribute__((noreturn))
 

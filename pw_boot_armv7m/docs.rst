@@ -41,6 +41,8 @@ invocation of the user-implemented functions:
     // C++ static constructors are invoked.
     pw_boot_PreMainInit();  // User-implemented function.
     main();  // User-implemented function.
+    pw_boot_PostMain();  // User-implemented function.
+    PW_UNREACHABLE;
   }
 
 Setup
@@ -48,7 +50,8 @@ Setup
 
 User-Implemented Functions
 --------------------------
-This module expects three extern "C" functions to be defined outside this module.
+This module expects all of these extern "C" functions to be defined outside this
+module:
 
  - ``int main()``: This is where applications reside.
  - ``void pw_boot_PreStaticMemoryInit()``: This function executes just before
@@ -88,6 +91,13 @@ This module expects three extern "C" functions to be defined outside this module
    can be used for any device initialization that isn't application specific.
    Depending on your platform, this might be turning on a UART, setting up
    default clocks, etc.
+
+ - ``PW_NO_RETURN void pw_boot_PostMain()``: This function executes after main
+   has returned. This could be used for device specific teardown such as an
+   infinite loop, soft reset, or QEMU shutdown. In addition, if relevant for
+   your application, this would be the place to invoke the global static
+   destructors. This function must not return!
+
 
 If any of these functions are unimplemented, executables will encounter a link
 error.

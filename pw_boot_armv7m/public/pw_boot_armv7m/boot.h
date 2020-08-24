@@ -95,7 +95,8 @@ PW_NO_PROLOGUE void pw_boot_Entry();
 // .data section in an ELF file).
 // WARNING: Be EXTREMELY careful when in the context of this function as it
 // violates the C spec in several ways as .bss has not yet been zero-initialized
-// and static values have not yet been loaded into memory.
+// and static values have not yet been loaded into memory. This function is NOT
+// implemented by pw_boot_armv7m.
 void pw_boot_PreStaticMemoryInit();
 
 // pw_boot hook: Before C++ static constructors are invoked (user supplied).
@@ -104,7 +105,8 @@ void pw_boot_PreStaticMemoryInit();
 // after zero initialization of RAM and loading values into static memory
 // (commonly labeled as the .data section in an ELF file). Per the naming, this
 // function is called just before C++ static constructors are invoked. It is
-// safe to run C code, but NOT safe to call out to any C++ code.
+// safe to run C code, but NOT safe to call out to any C++ code. This function
+// is NOT implemented by pw_boot_armv7m.
 void pw_boot_PreStaticConstructorInit();
 
 // pw_boot hook: Before main is invoked (user supplied).
@@ -115,5 +117,12 @@ void pw_boot_PreStaticConstructorInit();
 // the main() implementation. This function is NOT implemented by
 // pw_boot_armv7m.
 void pw_boot_PreMainInit();
+
+// pw_boot hook: After main returned (user supplied).
+//
+// This is a hook function that users of pw_boot must supply. It is called by
+// pw_boot_Entry() after main() has returned. This function must not return!
+// This function is NOT implemented by pw_boot_armv7m.
+PW_NO_RETURN void pw_boot_PostMain();
 
 PW_EXTERN_C_END

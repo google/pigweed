@@ -33,9 +33,6 @@ _target_config = {
 
   pw_unit_test_AUTOMATIC_RUNNER = get_path_info(_test_runner_script, "abspath")
 
-  # Tell QEMU to shut down after running a binary.
-  pw_boot_armv7m_QEMU_SHUTDOWN = true
-
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic
   pw_boot_BACKEND = dir_pw_boot_armv7m
