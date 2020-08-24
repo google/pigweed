@@ -58,8 +58,9 @@ class TraceEvent(NamedTuple):
 
 def event_has_trace_id(event_type):
     return event_type in {
-        "kPwTraceEvent_AsyncStart", "kPwTraceEvent_AsyncStep",
-        "kPwTraceEvent_AsyncEnd"
+        "PW_TRACE_EVENT_TYPE_ASYNC_START",
+        "PW_TRACE_EVENT_TYPE_ASYNC_STEP",
+        "PW_TRACE_EVENT_TYPE_ASYNC_END",
     }
 
 
