@@ -41,11 +41,9 @@ if (pw_boot_BACKEND == dir_pw_boot_armv7m) {
 
   pw_source_set("pw_boot_armv7m") {
     public_configs = [ ":default_config" ]
-    deps = [
-      ":armv7m_linker_script",
-      "$dir_pw_preprocessor",
-    ]
     public = [ "public/pw_boot_armv7m/boot.h" ]
+    public_deps = [ "$dir_pw_preprocessor" ]
+    deps = [ ":armv7m_linker_script" ]
     sources = [ "core_init.c" ]
   }
 }

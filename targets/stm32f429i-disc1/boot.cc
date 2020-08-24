@@ -13,22 +13,28 @@
 // the License.
 
 #include "pw_boot_armv7m/boot.h"
+
 #include "pw_malloc/malloc.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_baremetal_stm32f429/init.h"
 
+// Note that constexpr is used inside of this function instead of using a static
+// constexpr or declaring it outside of this function in an anonymous namespace,
+// because constexpr makes it available for the compiler to evaluate during
+// copmile time but does NOT require it to be evaluated at compile team and we
+// have to be incredibly careful that this does not end up in the .data section.
 void pw_boot_PreStaticMemoryInit() {
   // TODO(pwbug/17): Optionally enable Replace when Pigweed config system is
   // added.
 #if PW_ARMV7M_ENABLE_FPU
   // Enable FPU if built using hardware FPU instructions.
   // CPCAR mask that enables FPU. (ARMv7-M Section B3.2.20)
-  const uint32_t kFpuEnableMask = (0xFu << 20);
+  constexpr uint32_t kFpuEnableMask = (0xFu << 20);
 
   // Memory mapped register to enable FPU. (ARMv7-M Section B3.2.2, Table B3-4)
-  volatile uint32_t* arm_v7m_cpacr = (volatile uint32_t*)0xE000ED88u;
-
-  *arm_v7m_cpacr |= kFpuEnableMask;
+  volatile uint32_t& arm_v7m_cpacr =
+      *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
+  arm_v7m_cpacr |= kFpuEnableMask;
 #endif  // PW_ARMV7M_ENABLE_FPU
 }
 
@@ -42,7 +48,7 @@ void pw_boot_PreMainInit() { pw_sys_io_Init(); }
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  while (1) {
+  while (true) {
   }
   PW_UNREACHABLE;
 }

@@ -31,7 +31,7 @@ if (current_toolchain != default_toolchain) {
     ]
     deps = [ "$dir_pw_preprocessor" ]
     sources = [
-      "early_boot.c",
+      "boot.cc",
       "vector_table.cc",
     ]
   }
