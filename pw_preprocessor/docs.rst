@@ -17,6 +17,51 @@ Headers
 =======
 The preprocessor module provides several headers.
 
+pw_preprocessor/arguments.h
+---------------------------------
+Defines macros for handling variadic arguments to function-like macros. Macros
+include the following:
+
+.. c:function:: PW_DELEGATE_BY_ARG_COUNT(name, ...)
+
+  Selects and invokes a macro based on the number of arguments provided. Expands
+  to ``<name><arg_count>(...)``. For example,
+  ``PW_DELEGATE_BY_ARG_COUNT(foo_, 1, 2, 3)`` expands to ``foo_3(1, 2, 3)``.
+
+  This example shows how ``PW_DELEGATE_BY_ARG_COUNT`` could be used to log a
+  customized message based on the number of arguments provided.
+
+  .. code-block:: cpp
+
+      #define ARG_PRINT(...)  PW_DELEGATE_BY_ARG_COUNT(_ARG_PRINT, __VA_ARGS__)
+      #define _ARG_PRINT_0(a)        LOG_INFO("nothing!")
+      #define _ARG_PRINT_1(a)        LOG_INFO("1 arg: %s", a)
+      #define _ARG_PRINT_2(a, b)     LOG_INFO("2 args: %s, %s", a, b)
+      #define _ARG_PRINT_3(a, b, c)  LOG_INFO("3 args: %s, %s, %s", a, b, c)
+
+  When used, ``ARG_PRINT`` expands to the ``_ARG_PRINT_#`` macro corresponding
+  to the number of arguments.
+
+  .. code-block:: cpp
+
+      ARG_PRINT();               // Outputs: nothing!
+      ARG_PRINT("a");            // Outputs: 1 arg: a
+      ARG_PRINT("a", "b");       // Outputs: 2 args: a, b
+      ARG_PRINT("a", "b", "c");  // Outputs: 3 args: a, b, c
+
+.. c:function:: PW_COMMA_ARGS(...)
+
+  Expands to a comma followed by the arguments if any arguments are provided.
+  Otherwise, expands to nothing. If the final argument is empty, it is omitted.
+  This is useful when passing ``__VA_ARGS__`` to a variadic function or template
+  parameter list, since it removes the extra comma when no arguments are
+  provided. ``PW_COMMA_ARGS`` must NOT be used when invoking a macro from
+  another macro.
+
+  For example. ``PW_COMMA_ARGS(1, 2, 3)``, expands to ``, 1, 2, 3``, while
+  ``PW_COMMA_ARGS()`` expands to nothing. ``PW_COMMA_ARGS(1, 2, )`` expands to
+  ``, 1, 2``.
+
 pw_preprocessor/boolean.h
 -------------------------
 Defines macros for boolean logic on literal 1s and 0s. This is useful for
@@ -31,19 +76,6 @@ pw_preprocessor/concat.h
 Defines the ``PW_CONCAT(...)`` macro, which expands its arguments if they are
 macros and token pastes the results. This can be used for building names of
 classes, variables, macros, etc.
-
-pw_preprocessor/macro_arg_count.h
----------------------------------
-Defines the ``PW_ARG_COUNT(...)`` macro, which counts the number of arguments it
-was passed. It can be invoked directly or with ``__VA_ARGS__`` in another macro.
-``PW_ARG_COUNT(...)``  evaluates to a literal of the number of arguments which
-can be used directly or concatenated to build other names. Unlike many common
-implementations, this macro correctly evaluates to ``0`` when it is invoked
-without arguments.
-
-This header also defines ``PW_HAS_ARGS(...)`` and ``PW_HAS_NO_ARGS(...)``,
-which evaluate to ``1`` or ``0`` depending on whether they are invoked with
-arguments.
 
 pw_preprocessor/util.h
 ----------------------

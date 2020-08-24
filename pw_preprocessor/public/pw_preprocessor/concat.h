@@ -18,10 +18,11 @@
 
 // Expands macros and concatenates the results using preprocessor ##
 // concatentation. Supports up to 32 arguments.
-#define PW_CONCAT(...) _PW_CONCAT_IMPL1(PW_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
+#define PW_CONCAT(...) \
+  _PW_CONCAT_IMPL1(PW_MACRO_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
 
-// Expand the macro to allow PW_ARG_COUNT and any caller-provided macros to be
-// evaluated before concatenating the tokens.
+// Expand the macro to allow PW_MACRO_ARG_COUNT and any caller-provided macros
+// to be evaluated before concatenating the tokens.
 #define _PW_CONCAT_IMPL1(count, ...) _PW_CONCAT_IMPL2(count, __VA_ARGS__)
 #define _PW_CONCAT_IMPL2(count, ...) _PW_CONCAT_##count(__VA_ARGS__)
 

@@ -11,11 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-//
-// All of these tests are static asserts. If the test compiles, it has already
-// passed. The TEST functions are used for organization only.
+
+// Many of these tests are static asserts. If these compile, they pass. The TEST
+// functions are used for organization only.
 
 #include "pw_preprocessor/arguments.h"
+
+#include <tuple>
 
 #include "pw_unit_test/framework.h"
 
@@ -126,45 +128,38 @@ TEST(CommaVarargs, EmptyFinalArgument) {
 #define BAD_DEMO(fmt, ...) _BAD_DEMO_ADD_123(fmt PW_COMMA_ARGS(__VA_ARGS__))
 
 #define _BAD_DEMO_ADD_123(fmt, ...) \
-  _BAD_DEMO_STRINGIFY("%d: " fmt, 123 PW_COMMA_ARGS(__VA_ARGS__))
+  _BAD_DEMO_CAPTURE_ARGS("%d: " fmt, 123 PW_COMMA_ARGS(__VA_ARGS__))
 
-#define _BAD_DEMO_STRINGIFY(...) PW_STRINGIFY(__VA_ARGS__)
+#define _BAD_DEMO_CAPTURE_ARGS(...) std::make_tuple(__VA_ARGS__)
 
-TEST(CommaVarargs, MisbehavesWithMacroToMacroUse) {
-// Disable this EXPECT for now; it breaks on ARM/discovery due to the
-// preprocessor adding space before the comma after Hello World:
-//
-//   "Hello world" , 123
-//
-// rather than (as on host builds):
-//
-//   "Hello world", 123
-//
-// TODO(keir): Fix the inconsistency and restore this expectation.
-#if 0
-  // With no additional arguments, everything is OK
-  EXPECT_STREQ(BAD_DEMO("Hello world"), R"("%d: " "Hello world", 123)");
-#endif
+TEST(CommaVarargs, MisbehavesWithMacroToMacroUse_NoArgs_ArgsAreOkay) {
+  auto [a1, a2] = BAD_DEMO("Hello world");
+  EXPECT_STREQ(a1, "%d: Hello world");
+  EXPECT_EQ(a2, 123);
+}
 
+TEST(CommaVarargs, MisbehavesWithMacroToMacroUse_WithArgs_ArgsOutOfOrder) {
   // If there is an additional argument, the order is incorrect! The 123
   // argument should go before the "world?" argument, but it is inserted after.
   // This would be a compilation error if these arguments were passed to printf.
   // What's worse is that this can silently fail if the arguments happen to be
   // compatible types.
-  EXPECT_STREQ(BAD_DEMO("Hello %s", "world?"),
-               R"("%d: " "Hello %s" , "world?", 123)");
+  const auto [a1, a2, a3] = BAD_DEMO("Hello %s", "world?");
+  EXPECT_STREQ(a1, "%d: Hello %s");
+  EXPECT_STREQ(a2, "world?");
+  EXPECT_EQ(a3, 123);
 }
 
 TEST(CountArgs, Zero) {
-  static_assert(PW_ARG_COUNT() == 0);
-  static_assert(PW_ARG_COUNT(/**/) == 0);
-  static_assert(PW_ARG_COUNT(/* uhm, hi */) == 0);
+  static_assert(PW_MACRO_ARG_COUNT() == 0);
+  static_assert(PW_MACRO_ARG_COUNT(/**/) == 0);
+  static_assert(PW_MACRO_ARG_COUNT(/* uhm, hi */) == 0);
 
   // clang-format off
-  static_assert(PW_ARG_COUNT(     ) == 0);
-  static_assert(PW_ARG_COUNT(
+  static_assert(PW_MACRO_ARG_COUNT(     ) == 0);
+  static_assert(PW_MACRO_ARG_COUNT(
       ) == 0);
-  static_assert(PW_ARG_COUNT(
+  static_assert(PW_MACRO_ARG_COUNT(
       // wow
       // This is a comment.
       ) == 0);
@@ -173,23 +168,23 @@ TEST(CountArgs, Zero) {
 
 TEST(CountArgs, Commas) {
   // clang-format off
-  static_assert(PW_ARG_COUNT(,) == 2);
-  static_assert(PW_ARG_COUNT(,,) == 3);
-  static_assert(PW_ARG_COUNT(,,,) == 4);
+  static_assert(PW_MACRO_ARG_COUNT(,) == 2);
+  static_assert(PW_MACRO_ARG_COUNT(,,) == 3);
+  static_assert(PW_MACRO_ARG_COUNT(,,,) == 4);
   // clang-format on
-  static_assert(PW_ARG_COUNT(, ) == 2);
-  static_assert(PW_ARG_COUNT(, , ) == 3);
-  static_assert(PW_ARG_COUNT(, , , ) == 4);
+  static_assert(PW_MACRO_ARG_COUNT(, ) == 2);
+  static_assert(PW_MACRO_ARG_COUNT(, , ) == 3);
+  static_assert(PW_MACRO_ARG_COUNT(, , , ) == 4);
 }
 
 TEST(CountArgs, Parentheses) {
-  static_assert(PW_ARG_COUNT(()) == 1);
-  static_assert(PW_ARG_COUNT((1, 2, 3, 4)) == 1);
-  static_assert(PW_ARG_COUNT((1, 2, 3), (1, 2, 3, 4)) == 2);
-  static_assert(PW_ARG_COUNT((), ()) == 2);
-  static_assert(PW_ARG_COUNT((-), (o)) == 2);
-  static_assert(PW_ARG_COUNT((, , (, , ), ), (123, 4)) == 2);
-  static_assert(PW_ARG_COUNT(1, (2, 3, 4), (<5, 6>)) == 3);
+  static_assert(PW_MACRO_ARG_COUNT(()) == 1);
+  static_assert(PW_MACRO_ARG_COUNT((1, 2, 3, 4)) == 1);
+  static_assert(PW_MACRO_ARG_COUNT((1, 2, 3), (1, 2, 3, 4)) == 2);
+  static_assert(PW_MACRO_ARG_COUNT((), ()) == 2);
+  static_assert(PW_MACRO_ARG_COUNT((-), (o)) == 2);
+  static_assert(PW_MACRO_ARG_COUNT((, , (, , ), ), (123, 4)) == 2);
+  static_assert(PW_MACRO_ARG_COUNT(1, (2, 3, 4), (<5, 6>)) == 3);
 }
 
 template <typename... Args>
@@ -260,7 +255,7 @@ TEST(DropLastArgIfEmpty, EmptyLastArg) {
   static_assert(FunctionArgCount(PW_DROP_LAST_ARG_IF_EMPTY(1, 2, 3, )) == 3);
 }
 
-#define SOME_VARIADIC_MACRO(...) PW_ARG_COUNT(__VA_ARGS__)
+#define SOME_VARIADIC_MACRO(...) PW_MACRO_ARG_COUNT(__VA_ARGS__)
 
 #define ANOTHER_VARIADIC_MACRO(arg, ...) SOME_VARIADIC_MACRO(__VA_ARGS__)
 
@@ -295,75 +290,75 @@ TEST(CountArgs, NestedMacros) {
    Python 3 code:
 for i in range(64 + 1):
   args = [f'X{x}' for x in range(1, i + 1)]
-  print(f'  static_assert(PW_ARG_COUNT({", ".join(args)}) == {i})  ')
+  print(f'  static_assert(PW_MACRO_ARG_COUNT({", ".join(args)}) == {i})  ')
 */
 TEST(CountArgs, AllSupported) {
   // clang-format off
-  static_assert(PW_ARG_COUNT() == 0);
-  static_assert(PW_ARG_COUNT(X1) == 1);
-  static_assert(PW_ARG_COUNT(X1, X2) == 2);
-  static_assert(PW_ARG_COUNT(X1, X2, X3) == 3);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4) == 4);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5) == 5);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6) == 6);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7) == 7);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8) == 8);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9) == 9);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10) == 10);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11) == 11);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12) == 12);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13) == 13);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14) == 14);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15) == 15);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16) == 16);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17) == 17);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18) == 18);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19) == 19);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20) == 20);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21) == 21);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22) == 22);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23) == 23);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24) == 24);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25) == 25);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26) == 26);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27) == 27);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28) == 28);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29) == 29);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30) == 30);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31) == 31);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32) == 32);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33) == 33);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34) == 34);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35) == 35);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36) == 36);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37) == 37);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38) == 38);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39) == 39);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40) == 40);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41) == 41);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42) == 42);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43) == 43);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44) == 44);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45) == 45);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46) == 46);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47) == 47);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48) == 48);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49) == 49);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50) == 50);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51) == 51);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52) == 52);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53) == 53);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54) == 54);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55) == 55);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56) == 56);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57) == 57);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58) == 58);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59) == 59);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60) == 60);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61) == 61);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62) == 62);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62, X63) == 63);
-  static_assert(PW_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62, X63, X64) == 64);
+  static_assert(PW_MACRO_ARG_COUNT() == 0);
+  static_assert(PW_MACRO_ARG_COUNT(X1) == 1);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2) == 2);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3) == 3);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4) == 4);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5) == 5);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6) == 6);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7) == 7);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8) == 8);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9) == 9);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10) == 10);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11) == 11);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12) == 12);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13) == 13);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14) == 14);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15) == 15);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16) == 16);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17) == 17);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18) == 18);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19) == 19);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20) == 20);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21) == 21);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22) == 22);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23) == 23);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24) == 24);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25) == 25);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26) == 26);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27) == 27);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28) == 28);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29) == 29);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30) == 30);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31) == 31);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32) == 32);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33) == 33);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34) == 34);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35) == 35);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36) == 36);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37) == 37);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38) == 38);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39) == 39);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40) == 40);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41) == 41);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42) == 42);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43) == 43);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44) == 44);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45) == 45);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46) == 46);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47) == 47);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48) == 48);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49) == 49);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50) == 50);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51) == 51);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52) == 52);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53) == 53);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54) == 54);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55) == 55);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56) == 56);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57) == 57);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58) == 58);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59) == 59);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60) == 60);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61) == 61);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62) == 62);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62, X63) == 63);
+  static_assert(PW_MACRO_ARG_COUNT(X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, X16, X17, X18, X19, X20, X21, X22, X23, X24, X25, X26, X27, X28, X29, X30, X31, X32, X33, X34, X35, X36, X37, X38, X39, X40, X41, X42, X43, X44, X45, X46, X47, X48, X49, X50, X51, X52, X53, X54, X55, X56, X57, X58, X59, X60, X61, X62, X63, X64) == 64);
   // clang-format on
 }
 

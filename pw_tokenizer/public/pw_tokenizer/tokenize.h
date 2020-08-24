@@ -190,11 +190,11 @@ PW_EXTERN_C_END
                                                                                \
   /* Check that the macro is invoked with a supported number of arguments. */  \
   static_assert(                                                               \
-      PW_ARG_COUNT(__VA_ARGS__) <= PW_TOKENIZER_MAX_SUPPORTED_ARGS,            \
+      PW_FUNCTION_ARG_COUNT(__VA_ARGS__) <= PW_TOKENIZER_MAX_SUPPORTED_ARGS,   \
       "Tokenized strings cannot have more than "                               \
       PW_STRINGIFY(PW_TOKENIZER_MAX_SUPPORTED_ARGS) " arguments; "             \
-      PW_STRINGIFY(PW_ARG_COUNT(__VA_ARGS__)) " arguments were used for "      \
-      #format " (" #__VA_ARGS__ ")");                                          \
+      PW_STRINGIFY(PW_FUNCTION_ARG_COUNT(__VA_ARGS__))                         \
+      " arguments were used for " #format " (" #__VA_ARGS__ ")");              \
                                                                                \
   /* Tokenize the string to a pw_tokenizer_Token at compile time. */           \
   _PW_TOKENIZER_CONST pw_tokenizer_Token _pw_tokenizer_token =                 \

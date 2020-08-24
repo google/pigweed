@@ -75,7 +75,7 @@ static_assert(_PW_VARARGS_TYPE(nullptr) ==
 // uint64_t).
 #define PACKED_TYPES(...)                                                 \
   ((PW_CONCAT(0b, __VA_ARGS__, u) << PW_TOKENIZER_TYPE_COUNT_SIZE_BITS) | \
-   PW_ARG_COUNT(__VA_ARGS__))
+   PW_MACRO_ARG_COUNT(__VA_ARGS__))
 
 // Test this test macro for both uint32_t and uint64_t.
 #if PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4
