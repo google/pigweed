@@ -371,15 +371,12 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 
     self->requesting_names_.erase(id);
     const auto& params = event.view().template payload<hci::RemoteNameRequestCompleteEventParams>();
-    for (size_t len = 0; len <= hci::kMaxNameLength; len++) {
-      if (params.remote_name[len] == 0 || len == hci::kMaxNameLength) {
-        Peer* peer = self->cache_->FindById(id);
-        if (peer) {
-          peer->SetName(std::string(params.remote_name, params.remote_name + len));
-        }
-        return;
-      }
+    Peer* const peer = self->cache_->FindById(id);
+    if (!peer) {
+      return;
     }
+    const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
+    peer->SetName(std::string(params.remote_name, remote_name_end));
   };
 
   auto cmd_id = hci_->command_channel()->SendExclusiveCommand(

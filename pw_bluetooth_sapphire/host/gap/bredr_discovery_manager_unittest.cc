@@ -9,6 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt {
 namespace gap {
@@ -185,23 +186,15 @@ const auto kRemoteNameRequestRsp =
 
 #undef COMMAND_STATUS_RSP
 
-const auto kRemoteNameRequestComplete1 = CreateStaticByteBuffer(
-    hci::kRemoteNameRequestCompleteEventCode,
-    0x20,                                // parameter_total_size (32)
-    hci::StatusCode::kSuccess,           // status
-    BD_ADDR(0x01),                       // BD_ADDR (00:00:00:00:00:01)
-    'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96, 0x00, 0x14, 0x15,
-    0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
-    // remote name (Fuchsia 💖)
+const auto kRemoteNameRequestComplete1 = testing::RemoteNameRequestCompletePacket(
+    kDeviceAddress1, {'F',    'u',    'c',    'h',    's',    'i',    'a',    '\xF0', '\x9F',
+                      '\x92', '\x96', '\x00', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19',
+                      '\x1a', '\x1b', '\x1c', '\x1d', '\x1e', '\x1f', '\x20'}
+    // remote name (Fuchsia💖)
     // Everything after the 0x00 should be ignored.
 );
-const auto kRemoteNameRequestComplete2 = CreateStaticByteBuffer(
-    hci::kRemoteNameRequestCompleteEventCode,
-    0x10,                                // parameter_total_size (16)
-    hci::StatusCode::kSuccess,           // status
-    BD_ADDR(0x02),                       // BD_ADDR (00:00:00:00:00:02)
-    'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e', 0x00 // remote name (Sapphire)
-);
+const auto kRemoteNameRequestComplete2 =
+    testing::RemoteNameRequestCompletePacket(kDeviceAddress2, "Sapphire");
 
 const auto kExtendedInquiryResult = CreateStaticByteBuffer(
   hci::kExtendedInquiryResultEventCode,

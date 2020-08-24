@@ -65,7 +65,7 @@ class BrEdrInterrogatorTest : public TestingBase {
 
  protected:
   void QueueSuccessfulInterrogation(DeviceAddress addr, hci::ConnectionHandle conn) const {
-    const DynamicByteBuffer remote_name_complete_packet =
+    const DynamicByteBuffer remote_name_request_complete_packet =
         testing::RemoteNameRequestCompletePacket(addr);
     const DynamicByteBuffer remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
@@ -73,7 +73,7 @@ class BrEdrInterrogatorTest : public TestingBase {
         testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
 
     EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
-                          &kRemoteNameRequestRsp, &remote_name_complete_packet);
+                          &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
     EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
                           &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
     EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
@@ -105,6 +105,32 @@ class BrEdrInterrogatorTest : public TestingBase {
 };
 
 using GAP_BrEdrInterrogatorTest = BrEdrInterrogatorTest;
+
+TEST_F(GAP_BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestComplete) {
+  // Remote Name Request Complete event with insufficient length.
+  const auto addr = kTestDevAddr.value().bytes();
+  StaticByteBuffer remote_name_request_complete_packet(hci::kRemoteNameRequestCompleteEventCode,
+                                                       0x08,  // parameter_total_size (8)
+                                                       hci::StatusCode::kSuccess,  // status
+                                                       addr[0], addr[1], addr[2], addr[3], addr[4],
+                                                       addr[5],  // peer address
+                                                       'F'       // remote name
+  );
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
+                        &kRemoteNameRequestRsp, &remote_name_request_complete_packet);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle));
+
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+
+  std::optional<hci::Status> status;
+  interrogator()->Start(peer->identifier(), kConnectionHandle,
+                        [&status](hci::Status cb_status) { status = cb_status; });
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(status.value_or(hci::Status()));
+}
 
 TEST_F(GAP_BrEdrInterrogatorTest, SuccessfulInterrogation) {
   QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);

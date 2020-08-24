@@ -82,18 +82,13 @@ void BrEdrInterrogator::MakeRemoteNameRequest(InterrogationRefPtr interrogation)
 
     const auto& params = event.params<hci::RemoteNameRequestCompleteEventParams>();
 
-    size_t len = 0;
-    for (; len < hci::kMaxNameLength; len++) {
-      if (params.remote_name[len] == 0) {
-        break;
-      }
-    }
-    Peer* peer = self->peer_cache()->FindById(interrogation->peer_id());
+    Peer* const peer = self->peer_cache()->FindById(interrogation->peer_id());
     if (!peer) {
       interrogation->Complete(hci::Status(HostError::kFailed));
       return;
     }
-    peer->SetName(std::string(params.remote_name, params.remote_name + len));
+    const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
+    peer->SetName(std::string(params.remote_name, remote_name_end));
   };
 
   bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)",

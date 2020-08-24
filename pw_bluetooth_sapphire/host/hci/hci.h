@@ -1105,8 +1105,6 @@ struct AuthenticationCompleteEventParams {
 constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
 
 struct RemoteNameRequestCompleteEventParams {
-  RemoteNameRequestCompleteEventParams() = delete;
-  DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteNameRequestCompleteEventParams);
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
@@ -1116,7 +1114,7 @@ struct RemoteNameRequestCompleteEventParams {
   // Remote Name - UTF-8 encoded friendly name.
   // If the name is less than 248 characters, it is null terminated and
   // the remaining bytes are not valid.
-  uint8_t remote_name[];
+  uint8_t remote_name[kMaxNameLength];
 } __PACKED;
 
 // ============================================

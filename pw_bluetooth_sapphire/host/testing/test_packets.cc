@@ -7,6 +7,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
 namespace bt {
 namespace testing {
@@ -138,18 +140,20 @@ DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
       ));
 }
 
-DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address) {
+DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address, const std::string& name) {
   auto addr = address.value().bytes();
-  return DynamicByteBuffer(CreateStaticByteBuffer(
-      hci::kRemoteNameRequestCompleteEventCode,
-      0x20,                                                  // parameter_total_size (32)
-      hci::StatusCode::kSuccess,                             // status
-      addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
-      'F', 'u', 'c', 'h', 's', 'i', 'a', 0xF0, 0x9F, 0x92, 0x96, 0x00, 0x14, 0x15, 0x16, 0x17, 0x18,
-      0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20
-      // remote name (Fuchsia 💖)
-      // Everything after the 0x00 should be ignored.
-      ));
+  auto event = DynamicByteBuffer(sizeof(hci::EventHeader) +
+                                 sizeof(hci::RemoteNameRequestCompleteEventParams));
+  event.SetToZeros();
+  const StaticByteBuffer header(hci::kRemoteNameRequestCompleteEventCode,
+                                0xff,                       // parameter_total_size (255)
+                                hci::StatusCode::kSuccess,  // status
+                                addr[0], addr[1], addr[2], addr[3], addr[4],
+                                addr[5]  // peer address
+  );
+  header.Copy(&event);
+  event.Write(reinterpret_cast<const uint8_t*>(name.data()), name.size(), header.size());
+  return event;
 }
 
 DynamicByteBuffer ReadRemoteVersionInfoPacket(hci::ConnectionHandle conn) {
