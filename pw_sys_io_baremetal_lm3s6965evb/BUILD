@@ -12,14 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+		"pw_cc_library",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-filegroup(
+pw_cc_library(
     name = "pw_sys_io_baremetal_lm3s6965evb",
-    srcs = [
-        "early_boot.c",
-        "sys_io_baremetal.cc",
-    ],
+    hdrs = ["public/pw_sys_io_baremetal_lm3s6965evb/init.h"],
+    srcs = ["sys_io_baremetal.cc"],
+		deps = [
+        "//pw_preprocessor",
+				"//pw_sys_io",
+		],
 )
+

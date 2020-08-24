@@ -13,6 +13,18 @@
 // the License.
 
 #include "pw_boot_armv7m/boot.h"
+#include "pw_sys_io_baremetal_lm3s6965evb/init.h"
 
-void pw_boot_PreStaticMemoryInit() {}
+void pw_boot_PreStaticMemoryInit() {
+  // Force RCC to be at default at boot.
+  const uint32_t kRccDefault = 0x078E3AD1U;
+  volatile uint32_t* rcc = (volatile uint32_t*)0x400FE070U;
+  *rcc = kRccDefault;
+  const uint32_t kRcc2Default = 0x07802810U;
+  volatile uint32_t* rcc2 = (volatile uint32_t*)0x400FE070U;
+  *rcc2 = kRcc2Default;
+}
+
 void pw_boot_PreStaticConstructorInit() {}
+
+void pw_boot_PreMainInit() { pw_sys_io_Init(); }

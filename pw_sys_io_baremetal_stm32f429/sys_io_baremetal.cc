@@ -14,7 +14,6 @@
 
 #include <cinttypes>
 
-#include "pw_boot_armv7m/boot.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io/sys_io.h"
 

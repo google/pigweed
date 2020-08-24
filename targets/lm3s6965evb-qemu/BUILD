@@ -12,16 +12,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
-import("//build_overrides/pigweed.gni")
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
 
-# Executable wrapper that includes some baremetal startup code.
-template("lm3s6965evb_executable") {
-  target("executable", target_name) {
-    forward_variables_from(invoker, "*")
-    if (!defined(deps)) {
-      deps = []
-    }
-    deps += [ "$dir_pigweed/targets/lm3s6965evb-qemu:pre_init" ]
-  }
-}
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "pre_init",
+    srcs = [
+        "early_boot.c",
+        "vector_table.cc"
+    ],
+    deps = [
+        "//pw_boot_armv7m",
+        "//pw_preprocessor",
+        "//pw_sys_io_baremetal_lm3s6965evb",
+    ],
+)

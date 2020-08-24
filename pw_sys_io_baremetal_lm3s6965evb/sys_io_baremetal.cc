@@ -14,7 +14,6 @@
 
 #include <cinttypes>
 
-#include "pw_boot_armv7m/boot.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io/sys_io.h"
 
@@ -62,12 +61,6 @@ volatile UartBlock& uart0 = *reinterpret_cast<volatile UartBlock*>(0x4000C000U);
 constexpr uint32_t kRcgcUart0EnableMask = 0x1;
 volatile uint32_t& rcgc1 = *reinterpret_cast<volatile uint32_t*>(0x400FE104U);
 
-constexpr uint32_t kRccDefault = 0x078E3AD1U;
-volatile uint32_t& rcc = *reinterpret_cast<volatile uint32_t*>(0x400FE070U);
-
-constexpr uint32_t kRcc2Default = 0x07802810U;
-volatile uint32_t& rcc2 = *reinterpret_cast<volatile uint32_t*>(0x400FE070U);
-
 // Calculate a baud rate multiplier such that we have 16 bits of precision for
 // the integer portion and 6 bits for the fractional portion.
 void SetBaudRate(uint32_t clock, uint32_t target_baud) {
@@ -77,53 +70,9 @@ void SetBaudRate(uint32_t clock, uint32_t target_baud) {
   uart0.fractional_baud = (((remainder << 7) / divisor + 1) >> 1) & 0x3f;
 }
 
-// Default handler to insert into the ARMv7-M vector table (below).
-// This function exists for convenience. If a device isn't doing what you
-// expect, it might have hit a fault and ended up here.
-void DefaultFaultHandler(void) {
-  while (true) {
-    // Wait for debugger to attach.
-  }
-}
-
-// This is the device's interrupt vector table. It's not referenced in any code
-// because the platform expects this table to be present at the beginning of
-// flash. The exact address is specified in the pw_boot_armv7m configuration as
-// part of the target config.
-//
-// For more information, see ARMv7-M Architecture Reference Manual DDI 0403E.b
-// section B1.5.3.
-
-// This typedef is for convenience when building the vector table. With the
-// exception of SP_main (0th entry in the vector table), all the entries of the
-// vector table are function pointers.
-typedef void (*InterruptHandler)();
-
-PW_KEEP_IN_SECTION(".vector_table")
-const InterruptHandler vector_table[] = {
-    // The starting location of the stack pointer.
-    // This address is NOT an interrupt handler/function pointer, it is simply
-    // the address that the main stack pointer should be initialized to. The
-    // value is reinterpret casted because it needs to be in the vector table.
-    [0] = reinterpret_cast<InterruptHandler>(&pw_boot_stack_high_addr),
-
-    // Reset handler, dictates how to handle reset interrupt. This is the
-    // address that the Program Counter (PC) is initialized to at boot.
-    [1] = pw_boot_Entry,
-
-    // NMI handler.
-    [2] = DefaultFaultHandler,
-    // HardFault handler.
-    [3] = DefaultFaultHandler,
-};
-
 }  // namespace
 
-extern "C" void pw_boot_PreMainInit() {
-  // Force RCC to be at default at boot.
-  rcc = kRccDefault;
-  rcc2 = kRcc2Default;
-
+extern "C" void pw_sys_io_Init() {
   rcgc1 |= kRcgcUart0EnableMask;
   for (volatile int i = 0; i < 3; ++i) {
     // We must wait after enabling uart.

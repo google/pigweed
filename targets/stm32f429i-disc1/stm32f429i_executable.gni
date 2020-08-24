@@ -23,7 +23,7 @@ template("stm32f429i_executable") {
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ "$dir_pigweed/targets/stm32f429i-disc1:pw_pre_init" ]
+    deps += [ "$dir_pigweed/targets/stm32f429i-disc1:pre_init" ]
     if (pw_malloc_BACKEND != "") {
       if (!defined(configs)) {
         configs = []

@@ -31,7 +31,7 @@ config("pw_malloc_active") {
 }
 
 if (current_toolchain != default_toolchain) {
-  pw_source_set("pw_pre_init") {
+  pw_source_set("pre_init") {
     configs = [ ":pw_malloc_active" ]
     public_deps = [
       "$dir_pw_boot_armv7m",
