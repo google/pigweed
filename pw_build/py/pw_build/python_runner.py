@@ -124,7 +124,7 @@ class Label:
 
         # Resolve the directory to an absolute path
         set_attr('dir', paths.resolve(directory))
-        set_attr('relative_dir', self.dir.relative_to(paths.root))
+        set_attr('relative_dir', self.dir.relative_to(paths.root.resolve()))
 
         set_attr(
             'out_dir',
