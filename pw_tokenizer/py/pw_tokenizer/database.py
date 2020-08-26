@@ -260,8 +260,12 @@ def _read_elf_with_domain(elf: str, domain: str) -> Iterable[tokens.Database]:
                 _read_strings_from_elf(file, domain))
 
 
-class _LoadTokenDatabases(argparse.Action):
-    """Argparse action that reads tokenize databases from paths or globs."""
+class LoadTokenDatabases(argparse.Action):
+    """Argparse action that reads tokenize databases from paths or globs.
+
+    ELF files may have #domain appended to them to specify a tokenization domain
+    other than the default.
+    """
     def __call__(self, parser, namespace, values, option_string=None):
         databases: List[tokens.Database] = []
         paths: Set[Path] = set()
@@ -295,7 +299,7 @@ def token_databases_parser() -> argparse.ArgumentParser:
         'databases',
         metavar='elf_or_token_database',
         nargs='+',
-        action=_LoadTokenDatabases,
+        action=LoadTokenDatabases,
         help=('ELF or token database files from which to read strings and '
               'tokens. For ELF files, the tokenization domain to read from '
               'may specified after the path as #domain_name (e.g. '

@@ -171,7 +171,7 @@ def _parse_args():
     parser.add_argument(
         'databases',
         nargs='+',
-        action=database._LoadTokenDatabases,  # pylint: disable=protected-access
+        action=database.LoadTokenDatabases,
         help='Databases (ELF, binary, or CSV) to use to lookup tokens.')
     parser.add_argument(
         '-i',
