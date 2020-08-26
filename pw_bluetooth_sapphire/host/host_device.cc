@@ -21,15 +21,9 @@ const char* kDeviceName = "bt_host";
 
 }  // namespace
 
-HostDevice::HostDevice(zx_device_t* device)
-    : dev_(nullptr), parent_(device), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
-  ZX_DEBUG_ASSERT(parent_);
-
-  dev_proto_.version = DEVICE_OPS_VERSION;
-  dev_proto_.init = &HostDevice::DdkInit;
-  dev_proto_.unbind = &HostDevice::DdkUnbind;
-  dev_proto_.release = &HostDevice::DdkRelease;
-  dev_proto_.message = &HostDevice::DdkMessage;
+HostDevice::HostDevice(zx_device_t* parent)
+    : HostDeviceType(parent), loop_(&kAsyncLoopConfigNoAttachToCurrentThread) {
+  ZX_DEBUG_ASSERT(parent);
 
   inspect_.GetRoot().CreateString("name", kDeviceName, &inspect_);
 }
@@ -68,15 +62,12 @@ zx_status_t HostDevice::Bind() {
 
   device_add_args_t args = {
       .version = DEVICE_ADD_ARGS_VERSION,
-      .name = kDeviceName,
-      .ctx = this,
-      .ops = &dev_proto_,
       .proto_id = ZX_PROTOCOL_BT_HOST,
       .flags = DEVICE_ADD_NON_BINDABLE,
       .inspect_vmo = inspect_.DuplicateVmo().release(),
   };
+  status = DdkAdd("bt_host", args);
 
-  status = device_add(parent_, &args, &dev_);
   if (status != ZX_OK) {
     bt_log(ERROR, "bt-host", "Failed to publish device: %s", zx_status_get_string(status));
     return status;
@@ -86,7 +77,7 @@ zx_status_t HostDevice::Bind() {
   // Since we define an init hook, Init will be called by the DDK after this method finishes.
 }
 
-void HostDevice::Init() {
+void HostDevice::DdkInit(ddk::InitTxn txn) {
   bt_log(DEBUG, "bt-host", "init");
 
   std::lock_guard<std::mutex> lock(mtx_);
@@ -95,35 +86,34 @@ void HostDevice::Init() {
 
   // Send the bootstrap message to Host. The Host object can only be accessed on
   // the Host thread.
-  async::PostTask(loop_.dispatcher(), [this] {
+  async::PostTask(loop_.dispatcher(), [this, txn{std::move(txn)}]() mutable {
     bt_log(TRACE, "bt-host", "host thread start");
 
     std::lock_guard<std::mutex> lock(mtx_);
     host_ = fxl::MakeRefCounted<Host>(hci_proto_);
-    host_->Initialize(inspect_.GetRoot(), [this](bool success) {
+    host_->Initialize(inspect_.GetRoot(), [this, txn{std::move(txn)}](bool success) mutable {
       std::lock_guard<std::mutex> lock(mtx_);
 
-      // host_ and dev_ must be defined here as Bind() must have been called and the runloop has not
+      // host_ must be defined here as Bind() must have been called and the runloop has not
       // yet been been drained in Unbind().
       ZX_DEBUG_ASSERT(host_);
-      ZX_DEBUG_ASSERT(dev_);
 
       if (!success) {
         bt_log(ERROR, "bt-host", "failed to initialize adapter; cleaning up");
-        device_init_reply(dev_, ZX_ERR_INTERNAL, nullptr /* No arguments */);
+        txn.Reply(ZX_ERR_INTERNAL);
         // DDK will call Unbind here to clean up.
       } else {
         bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
         host_->gatt_host()->SetRemoteServiceWatcher(
             fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
-        device_init_reply(dev_, ZX_OK, nullptr /* No arguments */);
+        txn.Reply(ZX_OK);
         return;
       }
     });
   });
 }
 
-void HostDevice::Unbind() {
+void HostDevice::DdkUnbindNew(ddk::UnbindTxn txn) {
   bt_log(DEBUG, "bt-host", "unbind");
 
   {
@@ -143,18 +133,30 @@ void HostDevice::Unbind() {
     // Don't hold lock waiting on the loop to terminate.
   }
 
-  // Make sure that the ShutDown task runs before this returns. We re
+  // Make sure that the ShutDown task runs before this returns.
   bt_log(TRACE, "bt-host", "waiting for shut down tasks to complete");
   loop_.JoinThreads();
 
-  device_unbind_reply(dev_);
+  txn.Reply();
 
   bt_log(DEBUG, "bt-host", "GAP has been shut down");
 }
 
-void HostDevice::Release() {
+void HostDevice::DdkRelease() {
   bt_log(DEBUG, "bt-host", "release");
   delete this;
+}
+
+// Route ddk fidl messages to the dispatcher function
+zx_status_t HostDevice::DdkMessage(fidl_msg_t* msg, fidl_txn_t* txn) {
+  // Struct containing function pointers for all fidl ops to be dispatched on
+  static constexpr fuchsia_hardware_bluetooth_Host_ops_t fidl_ops = {
+      .Open = [](void* ctx, zx_handle_t channel) {
+        return static_cast<HostDevice*>(ctx)->OpenHostChannel(zx::channel(channel));
+      }};
+
+  bt_log(DEBUG, "bt-host", "fidl message");
+  return fuchsia_hardware_bluetooth_Host_dispatch(this, txn, msg, &fidl_ops);
 }
 
 zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
@@ -162,10 +164,9 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
   std::lock_guard<std::mutex> lock(mtx_);
 
   // This is called from the fidl operation OpenChannelOp.  No fidl calls will be delivered to the
-  // driver before dev_ is initialized by Bind() nor host_ initialized by Init(), and no fidl calls
+  // driver before host_ is initialized by Init(), and no fidl calls
   // will be delivered after the DDK calls Unbind() and host_ is removed.
   ZX_DEBUG_ASSERT(host_);
-  ZX_DEBUG_ASSERT(dev_);
 
   // Tell Host to start processing messages on this handle.
   async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(channel)]() mutable {
@@ -187,11 +188,10 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
   std::lock_guard<std::mutex> lock(mtx_);
 
   // This is run on the host event loop. Bind(), Init() and Unbind() should maintain the invariant
-  // that dev_ and host_ are initialized when the event loop is running.
+  // that  host_ are initialized when the event loop is running.
   ZX_DEBUG_ASSERT(host_);
-  ZX_DEBUG_ASSERT(dev_);
 
-  __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(dev_, peer_id, service);
+  __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(zxdev(), peer_id, service);
 }
 
 }  // namespace bthost
