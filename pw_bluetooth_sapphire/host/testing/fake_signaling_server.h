@@ -15,11 +15,6 @@
 namespace bt {
 namespace testing {
 
-// This class unpacks data units received from ACL-U and LE-U logical links
-// into L2CAP SDUs and then routes them to indvidually-registered handler
-// functions. Each FakePeer should have its own FakeL2cap instance and its
-// own set of ACL-U and LE-U logical links.
-
 // This class unpacks signaling packets (generally received over a FakeL2cap
 // link). Each FakePeer should own its own FakeSignalingServer.
 class FakeSignalingServer final {
