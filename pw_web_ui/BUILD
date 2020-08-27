@@ -12,3 +12,18 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 exports_files(["rollup.config.js"], visibility = ["//:__subpackages__"])
+
+alias(
+    name = "devserver",
+    actual = "//pw_web_ui/src/frontend:devserver",
+)
+
+alias(
+    name = "prodserver",
+    actual = "//pw_web_ui/src/frontend:prodserver",
+)
+
+alias(
+    name = "app_bundle",
+    actual = "//pw_web_ui/src/frontend:app_bundle",
+)

@@ -50,3 +50,13 @@ ts_devserver(
         ":app_bundle",
     ]
 )
+
+ts_devserver(
+    # Bundles and serves the production bundle for testing.
+    # Should NOT be used for serving in production.
+    name = "prodserver",
+    static_files = [
+        "index.html",
+        ":app_bundle",
+    ]
+)
