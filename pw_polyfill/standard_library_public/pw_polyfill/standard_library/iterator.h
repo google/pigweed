@@ -19,6 +19,7 @@
 
 // Define std::data and std::size.
 #ifndef __cpp_lib_nonmember_container_access
+#define __cpp_lib_nonmember_container_access 201411L
 
 #include <cstddef>
 

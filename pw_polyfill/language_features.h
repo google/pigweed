@@ -46,6 +46,8 @@
 // so the static_assert arguments are passed to an overloaded C++ function. The
 // full stringified static_assert arguments are used as the message.
 #if __cpp_static_assert < 201411L
+#undef __cpp_static_assert
+#define __cpp_static_assert 201411L
 
 #define static_assert(...)                                                     \
   static_assert(::pw::polyfill::internal::StaticAssertExpression(__VA_ARGS__), \

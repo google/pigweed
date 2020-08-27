@@ -50,10 +50,12 @@ pw_source_set("overrides") {
   remove_public_deps = [ "*" ]
   public_deps = [ ":standard_library" ]
   inputs = [
+    "public_overrides/array",
     "public_overrides/assert.h",
     "public_overrides/cstddef",
     "public_overrides/iterator",
     "public_overrides/type_traits",
+    "public_overrides/utility",
   ]
   sources = [ "language_features.h" ]
 }
@@ -66,11 +68,13 @@ pw_source_set("standard_library") {
   public_configs = [ ":standard_library_public" ]
   remove_public_deps = [ "*" ]
   public = [
+    "standard_library_public/pw_polyfill/standard_library/array.h",
     "standard_library_public/pw_polyfill/standard_library/assert.h",
     "standard_library_public/pw_polyfill/standard_library/cstddef.h",
     "standard_library_public/pw_polyfill/standard_library/iterator.h",
     "standard_library_public/pw_polyfill/standard_library/namespace.h",
     "standard_library_public/pw_polyfill/standard_library/type_traits.h",
+    "standard_library_public/pw_polyfill/standard_library/utility.h",
   ]
   visibility = [
     ":overrides",

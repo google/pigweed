@@ -20,6 +20,7 @@
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
 #include "pw_polyfill/standard_library/type_traits.h"
+#include "pw_polyfill/standard_library/utility.h"
 
 namespace pw {
 namespace polyfill {
@@ -43,6 +44,42 @@ static_assert(PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be not supported");
 #else
 static_assert(!PW_CXX_STANDARD_IS_SUPPORTED(17), "C++17 must be supported");
 #endif  // __cplusplus >= 201703L
+
+TEST(Array, ToArray_StringLiteral) {
+  std::array<char, sizeof("literally!")> array = std::to_array("literally!");
+  EXPECT_TRUE(std::strcmp(array.data(), "literally!") == 0);
+}
+
+TEST(Array, ToArray_Inline) {
+  constexpr std::array<int, 3> kArray = std::to_array({1, 2, 3});
+  static_assert(kArray.size() == 3);
+  EXPECT_TRUE(kArray[0] == 1);
+}
+
+TEST(Array, ToArray_Array) {
+  char c_array[] = "array!";
+  std::array<char, sizeof("array!")> array = std::to_array(c_array);
+  EXPECT_TRUE(std::strcmp(array.data(), "array!") == 0);
+}
+
+struct MoveOnly {
+  MoveOnly(char ch) : value(ch) {}
+
+  MoveOnly(const MoveOnly&) = delete;
+  MoveOnly& operator=(const MoveOnly&) = delete;
+
+  MoveOnly(MoveOnly&&) = default;
+  MoveOnly& operator=(MoveOnly&&) = default;
+
+  char value;
+};
+
+TEST(Array, ToArray_MoveOnly) {
+  MoveOnly c_array[]{MoveOnly('a'), MoveOnly('b')};
+  std::array<MoveOnly, 2> array = std::to_array(std::move(c_array));
+  EXPECT_TRUE(array[0].value == 'a');
+  EXPECT_TRUE(array[1].value == 'b');
+}
 
 TEST(Cstddef, Byte_Operators) {
   std::byte value = std::byte(0);
@@ -131,6 +168,13 @@ TEST(TypeTraits, Aliases) {
   static_assert(std::is_same<std::remove_reference_t<int>,
                              typename std::remove_reference<int>::type>::value,
                 "Alias must be defined");
+}
+
+TEST(Utility, IntegerSequence) {
+  static_assert(std::integer_sequence<int>::size() == 0);
+  static_assert(std::integer_sequence<int, 9, 8, 7>::size() == 3);
+  static_assert(std::make_index_sequence<1>::size() == 1);
+  static_assert(std::make_index_sequence<123>::size() == 123);
 }
 
 }  // namespace

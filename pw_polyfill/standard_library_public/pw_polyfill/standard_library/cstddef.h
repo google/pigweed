@@ -19,6 +19,7 @@
 
 // Defines the std::byte type if it is not present.
 #ifndef __cpp_lib_byte
+#define __cpp_lib_byte 201603L
 
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
 

@@ -36,10 +36,12 @@ pw_cc_library(
     name = "overrides",
     srcs = ["language_features.h"],
     hdrs = [
+        "public_overrides/array",
         "public_overrides/assert.h",
         "public_overrides/cstddef",
         "public_overrides/iterator",
         "public_overrides/type_traits",
+        "public_overrides/utility",
     ],
     copts = [
         "-include",
@@ -52,11 +54,13 @@ pw_cc_library(
 pw_cc_library(
     name = "standard_library",
     hdrs = [
+        "standard_library_public/pw_polyfill/standard_library/array.h",
         "standard_library_public/pw_polyfill/standard_library/assert.h",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",
         "standard_library_public/pw_polyfill/standard_library/iterator.h",
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
         "standard_library_public/pw_polyfill/standard_library/type_traits.h",
+        "standard_library_public/pw_polyfill/standard_library/utility.h",
     ],
     includes = ["standard_library_public"],
     visibility = ["//visibility:private"],
