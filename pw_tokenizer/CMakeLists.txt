@@ -17,6 +17,7 @@ pw_add_module_library(pw_tokenizer
     encode_args.cc
     tokenize.cc
   PUBLIC_DEPS
+    pw_polyfill.overrides
     pw_preprocessor
     pw_span
   PRIVATE_DEPS

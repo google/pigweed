@@ -294,6 +294,30 @@ line of the log message does not generate a new token. There is no overhead for
 additional tokens, but it may not be desirable to fill a token database with
 duplicate log lines.
 
+Tokenizing function names
+-------------------------
+The string literal tokenization functions support tokenizing string literals or
+constexpr character arrays (``constexpr const char[]``). In GCC and Clang, the
+special ``__func__`` variable and ``__PRETTY_FUNCTION__`` extension are declared
+as ``static constexpr char[]`` in C++ instead of the standard ``static const
+char[]``. This means that ``__func__`` and ``__PRETTY_FUNCTION__`` can be
+tokenized while compiling C++ with GCC or Clang.
+
+.. code-block:: cpp
+
+  // Tokenize the special function name variables.
+  constexpr uint32_t function = PW_TOKENIZE_STRING(__func__);
+  constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
+
+  // Tokenize the function name variables to a handler function.
+  PW_TOKENIZE_TO_GLOBAL_HANDLER(__func__)
+  PW_TOKENIZE_TO_GLOBAL_HANDLER(__PRETTY_FUNCTION__)
+
+Note that ``__func__`` and ``__PRETTY_FUNCTION__`` are not string literals.
+They are defined as static character arrays, so they cannot be implicitly
+concatentated with string literals. For example, ``printf(__func__ ": %d",
+123);`` will not compile.
+
 Tokenization in Python
 ----------------------
 The Python ``pw_tokenizer.encode`` module has limited support for encoding

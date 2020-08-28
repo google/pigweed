@@ -32,7 +32,7 @@ namespace {
 // configuration.
 template <size_t kSize>
 constexpr uint32_t TestHash(const char (&string)[kSize]) {
-  constexpr unsigned kTestHashLength = 48;
+  constexpr unsigned kTestHashLength = 64;
   static_assert(kTestHashLength <= PW_TOKENIZER_CFG_HASH_LENGTH);
   static_assert(kSize <= kTestHashLength + 1);
   return PwTokenizer65599FixedLengthHash(std::string_view(string, kSize - 1),
@@ -51,20 +51,58 @@ constexpr auto ExpectedData(const char (&format)[kSize]) {
       kData...};
 }
 
-TEST(TokenizeStringLiteral, EmptyString_IsZero) {
+TEST(TokenizeString, EmptyString_IsZero) {
   constexpr pw_TokenizerStringToken token = PW_TOKENIZE_STRING("");
   EXPECT_EQ(0u, token);
 }
 
-TEST(TokenizeStringLiteral, String_MatchesHash) {
+TEST(TokenizeString, String_MatchesHash) {
   constexpr uint32_t token = PW_TOKENIZE_STRING("[:-)");
   EXPECT_EQ(TestHash("[:-)"), token);
 }
 
 constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING(">:-[]");
 
-TEST(TokenizeStringLiteral, GlobalVariable_MatchesHash) {
+TEST(TokenizeString, GlobalVariable_MatchesHash) {
   EXPECT_EQ(TestHash(">:-[]"), kGlobalToken);
+}
+
+struct TokenizedWithinClass {
+  static constexpr uint32_t kThisToken = PW_TOKENIZE_STRING("???");
+};
+
+static_assert(TestHash("???") == TokenizedWithinClass::kThisToken);
+
+TEST(TokenizeString, ClassMember_MatchesHash) {
+  EXPECT_EQ(TestHash("???"), TokenizedWithinClass().kThisToken);
+}
+
+// Use a function with a shorter name to test tokenizing __func__ and
+// __PRETTY_FUNCTION__.
+//
+// WARNING: This function might cause errors for compilers other than GCC and
+// clang. It relies on two GCC/clang extensions:
+//
+//   1 - The __PRETTY_FUNCTION__ C++ function name variable.
+//   2 - __func__ as a static constexpr array instead of static const. See
+//       https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66639 for background.
+//
+void TestName() {
+  constexpr uint32_t function_hash = PW_TOKENIZE_STRING(__func__);
+  EXPECT_EQ(pw::tokenizer::TestHash(__func__), function_hash);
+
+  // Check the non-standard __PRETTY_FUNCTION__ name.
+  constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
+  EXPECT_EQ(pw::tokenizer::TestHash(__PRETTY_FUNCTION__), pretty_function);
+}
+
+TEST(TokenizeString, FunctionName) { TestName(); }
+
+TEST(TokenizeString, Array) {
+  constexpr char array[] = "won-won-won-wonderful";
+
+  const uint32_t array_hash = PW_TOKENIZE_STRING(array);
+  EXPECT_EQ(TestHash(array), array_hash);
 }
 
 // Verify that we can tokenize multiple strings from one source line.
@@ -76,7 +114,7 @@ TEST(TokenizeStringLiteral, GlobalVariable_MatchesHash) {
   [[maybe_unused]] constexpr uint32_t token_3 =     \
       PW_TOKENIZE_STRING_DOMAIN("ignored", third);
 
-TEST(TokenizeStringLiteral, MultipleTokenizationsInOneMacroExpansion) {
+TEST(TokenizeString, MultipleTokenizationsInOneMacroExpansion) {
   // This verifies that we can safely tokenize multiple times in a single macro
   // expansion. This can be useful when for example a name and description are
   // both tokenized after being passed into a macro.
@@ -238,6 +276,16 @@ TEST_F(TokenizeToBuffer, String_ZeroBytesLeft_WritesNothing) {
   constexpr std::array<uint8_t, 4> empty = ExpectedData<>("The answer is: %s");
   ASSERT_EQ(empty.size(), message_size);
   EXPECT_EQ(std::memcmp(empty.data(), buffer_, empty.size()), 0);
+}
+
+TEST_F(TokenizeToBuffer, Array) {
+  static constexpr char array[] = "1234";
+  size_t message_size = 4;
+  PW_TOKENIZE_TO_BUFFER(buffer_, &message_size, array);
+
+  constexpr std::array<uint8_t, 4> result = ExpectedData<>("1234");
+  ASSERT_EQ(result.size(), message_size);
+  EXPECT_EQ(std::memcmp(result.data(), buffer_, result.size()), 0);
 }
 
 TEST_F(TokenizeToBuffer, NullptrString_EncodesNull) {

@@ -13,9 +13,19 @@
 // the License.
 #pragma once
 
+#ifdef __cplusplus
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+
+#else
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#endif  // __cplusplus
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/concat.h"
@@ -32,9 +42,12 @@
 // If no domain is specified, this default is used.
 #define PW_TOKENIZER_DEFAULT_DOMAIN "default"
 
-// Tokenizes a string literal and converts it to a pw_TokenizerStringToken. This
-// expression can be assigned to a local or global variable, but cannot be used
-// in another expression. For example:
+// Tokenizes a string and converts it to a pw_TokenizerStringToken. In C++, the
+// string may be a literal or a constexpr char array. In C, the argument must be
+// a string literal.
+//
+// This expression can be assigned to a local or global variable, but cannot be
+// used in another expression. For example:
 //
 //   constexpr uint32_t global = PW_TOKENIZE_STRING("Wow!");  // This works.
 //
@@ -48,16 +61,10 @@
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
 // Same as PW_TOKENIZE_STRING, but tokenizes to the specified domain.
-#define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)                     \
-  /* assign to a variable */ PW_TOKENIZER_STRING_TOKEN(string_literal);       \
-                                                                              \
-  /* Declare the format string as an array in the special tokenized string */ \
-  /* section, which should be excluded from the final binary. Use __LINE__ */ \
-  /* to create unique names for the section and variable, which avoids     */ \
-  /* compiler warnings.                                                    */ \
-  static _PW_TOKENIZER_CONST char PW_CONCAT(                                  \
-      _pw_tokenizer_string_literal_DO_NOT_USE_,                               \
-      __COUNTER__)[] _PW_TOKENIZER_SECTION(domain) = string_literal
+#define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)               \
+  /* assign to a variable */ PW_TOKENIZER_STRING_TOKEN(string_literal); \
+                                                                        \
+  _PW_TOKENIZER_RECORD_ORIGINAL_STRING(domain, string_literal)
 
 // Encodes a tokenized string and arguments to the provided buffer. The size of
 // the buffer is passed via a pointer to a size_t. After encoding is complete,
@@ -253,3 +260,25 @@ PW_EXTERN_C_END
 #define _PW_TOKENIZER_SECTION(domain) \
   PW_KEEP_IN_SECTION(".pw_tokenized." domain "." PW_STRINGIFY(__LINE__))
 #endif  // __APPLE__
+
+// Declare the format string as an array in the special tokenized string
+// section, which should be excluded from the final binary. Use __COUNTER__
+// to create unique names for the section and variable, which avoids
+// compiler warnings.
+#ifdef __cplusplus
+
+// In C++, use std::to_array to support tokenizing string literals or constexpr
+// char arrays.
+#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(domain, string)   \
+  static constexpr std::array<char, sizeof(string)> PW_CONCAT( \
+      _pw_tokenizer_string_literal_DO_NOT_USE_, __COUNTER__)   \
+      _PW_TOKENIZER_SECTION(domain) = std::to_array<const char>(string)
+
+#else  // In C, only string literals may be tokenized.
+
+#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(domain, string_literal)         \
+  static const char PW_CONCAT(_pw_tokenizer_string_literal_DO_NOT_USE_,      \
+                              __COUNTER__)[] _PW_TOKENIZER_SECTION(domain) = \
+      string_literal
+
+#endif  // __cplusplus

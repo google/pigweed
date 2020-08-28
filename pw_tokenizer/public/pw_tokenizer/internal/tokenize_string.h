@@ -33,9 +33,8 @@
 #include "pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h"
 
 #define PW_TOKENIZER_STRING_TOKEN(format)                \
-  pw::tokenizer::PwTokenizer65599FixedLengthHash(        \
-      std::string_view((format), sizeof(format "") - 1), \
-      PW_TOKENIZER_CFG_HASH_LENGTH)
+  ::pw::tokenizer::PwTokenizer65599FixedLengthHashArray( \
+      format, PW_TOKENIZER_CFG_HASH_LENGTH)
 
 #else  // In C or older C++ code, use the hashing macro.
 

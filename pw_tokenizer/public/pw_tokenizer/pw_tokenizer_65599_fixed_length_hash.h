@@ -61,4 +61,14 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(std::string_view string,
   return hash;
 }
 
+// Take the string as an array to support either literals or character arrays,
+// but not const char*.
+template <size_t length>
+constexpr uint32_t PwTokenizer65599FixedLengthHashArray(
+    const char (&string)[length], size_t hash_length) {
+  static_assert(length > 0);
+  return PwTokenizer65599FixedLengthHash(std::string_view(string, length - 1),
+                                         hash_length);
+}
+
 }  // namespace pw::tokenizer
