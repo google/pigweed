@@ -2,7 +2,7 @@
 
 .. highlight:: sh
 
-.. _chapter-bloat:
+.. _chapter-pw-bloat:
 
 --------
 pw_bloat

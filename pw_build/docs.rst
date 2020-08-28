@@ -79,6 +79,8 @@ template for a project.
 All of the ``pw_*`` target type overrides accept any arguments, as they simply
 forward them through to the underlying target.
 
+.. _pw-build-python-script:
+
 pw_python_script
 ^^^^^^^^^^^^^^^^
 The ``pw_python_script`` template is a convenience wrapper around ``action`` for

@@ -2,7 +2,7 @@
 
 .. highlight:: sh
 
-.. _chapter-watch:
+.. _chapter-pw-watch:
 
 --------
 pw_watch

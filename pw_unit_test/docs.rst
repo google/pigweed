@@ -1,7 +1,8 @@
-.. _chapter-pw-unit-test:
 .. default-domain:: cpp
 
 .. highlight:: sh
+
+.. _chapter-pw-unit-test:
 
 ------------
 pw_unit_test
