@@ -242,7 +242,9 @@ class Group : public IntrusiveList<Group>::Item {
 // NOTE: If you want a globally registered metric, see pw_metric/global.h; in
 // that contexts, metrics are globally registered without the need to centrally
 // register in a single place.
-#define PW_METRIC(...) PW_DELEGATE_BY_ARG_COUNT(_PW_METRIC_, __VA_ARGS__)
+#define PW_METRIC(...) PW_DELEGATE_BY_ARG_COUNT(_PW_METRIC_, , __VA_ARGS__)
+#define PW_METRIC_STATIC(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_METRIC_, static, __VA_ARGS__)
 
 // Force conversion to uint32_t for non-float types, no matter what the
 // platform uses as the "u" suffix literal. This enables dispatching to the
@@ -253,18 +255,18 @@ class Group : public IntrusiveList<Group>::Item {
                      uint32_t>
 
 // Case: PW_METRIC(name, initial_value)
-#define _PW_METRIC_3(variable_name, metric_name, init)                        \
-  static constexpr uint32_t variable_name##_token =                           \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #metric_name);                     \
-  ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> variable_name = \
-      {variable_name##_token, init}
+#define _PW_METRIC_4(static_def, variable_name, metric_name, init)       \
+  static constexpr uint32_t variable_name##_token =                      \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", metric_name);                 \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> \
+      variable_name = {variable_name##_token, init}
 
 // Case: PW_METRIC(group, name, initial_value)
-#define _PW_METRIC_4(group, variable_name, metric_name, init)                 \
-  static constexpr uint32_t variable_name##_token =                           \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #metric_name);                     \
-  ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> variable_name = \
-      {variable_name##_token, init, group.metrics()}
+#define _PW_METRIC_5(static_def, group, variable_name, metric_name, init) \
+  static constexpr uint32_t variable_name##_token =                       \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", metric_name);                  \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>  \
+      variable_name = {variable_name##_token, init, group.metrics()}
 
 // Define a metric group. Works like PW_METRIC, and works in the same contexts.
 //
@@ -287,9 +289,20 @@ class Group : public IntrusiveList<Group>::Item {
 //     PW_METRIC(metrics_, successes_, "successes", 0u);
 //   };
 //
-#define PW_METRIC_GROUP(variable_name, group_name)       \
-  static constexpr uint32_t variable_name##_token =      \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #group_name); \
-  ::pw::metric::Group variable_name = {variable_name##_token};
+#define PW_METRIC_GROUP(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_METRIC_GROUP_, , __VA_ARGS__)
+#define PW_METRIC_GROUP_STATIC(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_METRIC_GROUP_, static, __VA_ARGS__)
+
+#define _PW_METRIC_GROUP_3(static_def, variable_name, group_name) \
+  static constexpr uint32_t variable_name##_token =               \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", group_name);           \
+  static_def ::pw::metric::Group variable_name = {variable_name##_token};
+
+#define _PW_METRIC_GROUP_4(static_def, parent, variable_name, group_name) \
+  static constexpr uint32_t variable_name##_token =                       \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", group_name);                   \
+  static_def ::pw::metric::Group variable_name = {variable_name##_token,  \
+                                                  parent.children()};
 
 }  // namespace pw::metric

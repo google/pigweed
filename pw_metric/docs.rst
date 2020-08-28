@@ -254,6 +254,8 @@ tokenizing the metric and group names.
 
 .. cpp:function:: PW_METRIC(identifier, name, value)
 .. cpp:function:: PW_METRIC(group, identifier, name, value)
+.. cpp:function:: PW_METRIC_STATIC(identifier, name, value)
+.. cpp:function:: PW_METRIC_STATIC(group, identifier, name, value)
 
   Declare a metric, optionally adding it to a group.
 
@@ -273,6 +275,9 @@ tokenizing the metric and group names.
   The macro declares a variable or member named "name" with type
   ``pw::metric::Metric``, and works in three contexts: global, local, and
   member.
+
+  If the `_STATIC` variant is used, the macro declares a variable with static
+  storage. These can be used in function scopes, but not in classes.
 
   1. At global scope:
 
@@ -323,10 +328,16 @@ tokenizing the metric and group names.
     centrally register in a single place.
 
 .. cpp:function:: PW_METRIC_GROUP(identifier, name)
+.. cpp:function:: PW_METRIC_GROUP(parent_group, identifier, name)
+.. cpp:function:: PW_METRIC_GROUP_STATIC(identifier, name)
+.. cpp:function:: PW_METRIC_GROUP_STATIC(parent_group, identifier, name)
 
   Declares a ``pw::metric::Group`` with name name; the name is tokenized.
   Works similar to ``PW_METRIC`` and can be used in the same contexts (global,
-  local, and member).
+  local, and member). Optionally, the group can be added to a parent group.
+
+  If the `_STATIC` variant is used, the macro declares a variable with static
+  storage. These can be used in function scopes, but not in classes.
 
   Example:
 

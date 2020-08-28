@@ -210,4 +210,36 @@ TEST(Metric, InlineConstructionWithGroups) {
   i2c_bus.stats().Dump();
 }
 
+// PW_METRIC_STATIC doesn't support class scopes, since a definition must be
+// provided outside of the class body.
+// TODO(paulmathieu): add support for class scopes and enable this test
+#if 0
+class MetricTest: public ::testing::Test {
+  public:
+    void Increment() {
+      metric_.Increment();
+    }
+
+  private:
+    PW_METRIC_STATIC(metric_, "metric", 0u);
+};
+
+TEST_F(MetricTest, StaticWithinAClass) {
+  Increment();
+}
+#endif
+
+Metric* StaticMetricIncrement() {
+  PW_METRIC_STATIC(metric, "metric", 0u);
+  metric.Increment();
+  return &metric;
+}
+
+TEST(Metric, StaticWithinAFunction) {
+  Metric* metric = StaticMetricIncrement();
+  EXPECT_EQ(metric->as_int(), 1u);
+  StaticMetricIncrement();
+  EXPECT_EQ(metric->as_int(), 2u);
+}
+
 }  // namespace pw::metric
