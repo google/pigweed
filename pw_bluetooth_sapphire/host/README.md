@@ -2,7 +2,14 @@
 
 ## Inspect
 
-The Inspect hierarchy is only exposed through the `Host::GetInspectVmo()` FIDL API.
+`bt-host` uses the [standard driver processes](https://fuchsia.googlesource.com/fuchsia/+/57edce1df72b148c33e8f219bddbd038cdbb861b/zircon/system/ulib/inspect/) to expose its inspect hierarchy
+to the Fuchsia system.
+
+### Usage
+
+To query the current state of the `bt-host` Inspect hierarchy through `fx` tooling, run
+
+`fx iquery show-file /dev/diagnostics/class/bt-host/000.inspect`
 
 ### Hierarchy
 ```
