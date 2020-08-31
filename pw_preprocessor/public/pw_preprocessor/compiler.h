@@ -74,6 +74,9 @@
 //
 #define PW_NO_RETURN __attribute__((noreturn))
 
+// Prevents the compiler from inlining a fuction.
+#define PW_NO_INLINE __attribute__((noinline))
+
 // Indicate to the compiler that the given section of code will not be reached.
 // Example:
 //

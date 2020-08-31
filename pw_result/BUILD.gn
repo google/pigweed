@@ -15,6 +15,7 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -42,4 +43,27 @@ pw_test("result_test") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  report_deps = [ ":result_size" ]
+}
+
+pw_size_report("result_size") {
+  title = "pw::Result vs. pw::Status and out pointer"
+
+  binaries = [
+    {
+      target = "size_report:result_simple"
+      base = "size_report:pointer_simple"
+      label = "Simple function"
+    },
+    {
+      target = "size_report:result_noinline"
+      base = "size_report:pointer_noinline"
+      label = "Simple function without inlining"
+    },
+    {
+      target = "size_report:result_read"
+      base = "size_report:pointer_read"
+      label = "Returning a larger object (std::span)"
+    },
+  ]
 }
