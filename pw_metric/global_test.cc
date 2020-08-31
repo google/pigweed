@@ -57,7 +57,7 @@ PW_METRIC(power_metrics, current_ma, "current_ma", 35.2f);
 
 TEST(Global, Groups) {
   Group::Dump(global_groups);
-  EXPECT_EQ(Size(global_groups), 3);
+  EXPECT_EQ(Size(global_groups), 4);
 
   EXPECT_EQ(Size(gyro_metrics.metrics()), 1);
   EXPECT_EQ(Size(comms_metrics.metrics()), 2);
@@ -66,3 +66,7 @@ TEST(Global, Groups) {
 
 }  // namespace metric
 }  // namespace pw
+
+// this is a compilation test to make sure metrics can be defined outside of
+// ::pw::metric
+PW_METRIC_GROUP_GLOBAL(global_group, "global group");

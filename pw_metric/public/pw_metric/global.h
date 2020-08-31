@@ -33,12 +33,13 @@ extern IntrusiveList<Metric> global_metrics;
   static constexpr uint32_t variable_name##_token =                           \
       PW_TOKENIZE_STRING_DOMAIN("metrics", #metric_name);                     \
   ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> variable_name = \
-      {variable_name##_token, init, global_metrics}
+      {variable_name##_token, init, ::pw::metric::global_metrics}
 
 // Define a group that is registered in pw::metric::global_groups.
-#define PW_METRIC_GROUP_GLOBAL(variable_name, group_name) \
-  static constexpr uint32_t variable_name##_token =       \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #group_name);  \
-  ::pw::metric::Group variable_name = {variable_name##_token, global_groups}
+#define PW_METRIC_GROUP_GLOBAL(variable_name, group_name)     \
+  static constexpr uint32_t variable_name##_token =           \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", #group_name);      \
+  ::pw::metric::Group variable_name = {variable_name##_token, \
+                                       ::pw::metric::global_groups}
 
 }  // namespace pw::metric
