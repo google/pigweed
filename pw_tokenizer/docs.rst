@@ -165,15 +165,15 @@ buffer on the stack. The size of the buffer is set with
 ``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
 
 This macro is provided by the ``pw_tokenizer:global_handler`` facade. The
-backend for this facade must define the ``pw_TokenizerHandleEncodedMessage``
+backend for this facade must define the ``pw_tokenizer_HandleEncodedMessage``
 C-linkage function.
 
 .. code-block:: cpp
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER(format_string_literal, arguments...);
 
-  void pw_TokenizerHandleEncodedMessage(const uint8_t encoded_message[],
-                                        size_t size_bytes);
+  void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
+                                         size_t size_bytes);
 
 ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` is similar, but passes a
 ``uintptr_t`` argument to the global handler function. Values like a log level
@@ -181,7 +181,7 @@ can be packed into the ``uintptr_t``.
 
 This macro is provided by the ``pw_tokenizer:global_handler_with_payload``
 facade. The backend for this facade must define the
-``pw_TokenizerHandleEncodedMessageWithPayload`` C-linkage function.
+``pw_tokenizer_HandleEncodedMessageWithPayload`` C-linkage function.
 
 .. code-block:: cpp
 
@@ -189,9 +189,8 @@ facade. The backend for this facade must define the
                                              format_string_literal,
                                              arguments...);
 
-  void pw_TokenizerHandleEncodedMessageWithPayload(uintptr_t payload,
-                                                   const uint8_t encoded_message[],
-                                                   size_t size_bytes);
+  void pw_tokenizer_HandleEncodedMessageWithPayload(
+      uintptr_t payload, const uint8_t encoded_message[], size_t size_bytes);
 
 .. admonition:: When to use these macros
 
@@ -268,19 +267,19 @@ result.
 It is trivial to convert this to a binary log using the tokenizer. The
 ``RecordLog`` call is replaced with a
 ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` invocation. The
-``pw_TokenizerHandleEncodedMessageWithPayload`` implementation collects the
+``pw_tokenizer_HandleEncodedMessageWithPayload`` implementation collects the
 timestamp and transmits the message with ``TransmitLog``.
 
 .. code-block:: cpp
 
   #define LOG_INFO(format, ...)                   \
       PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD( \
-          (uintptr_t)LogLevel_INFO,                   \
+          (pw_tokenizer_Payload)LogLevel_INFO,    \
           __FILE_NAME__ ":%d " format,            \
           __LINE__,                               \
           __VA_ARGS__);                           \
 
-  extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
+  extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
       uintptr_t level, const uint8_t encoded_message[], size_t size_bytes) {
     if (static_cast<LogLevel>(level) >= current_log_level) {
       TransmitLog(TimeSinceBootMillis(), encoded_message, size_bytes);
@@ -673,12 +672,12 @@ string's token is 0x4b016e66.
 Encoding
 --------
 To encode with the Base64 format, add a call to
-``pw::tokenizer::PrefixedBase64Encode`` or ``pw_TokenizerPrefixedBase64Encode``
+``pw::tokenizer::PrefixedBase64Encode`` or ``pw_tokenizer_PrefixedBase64Encode``
 in the tokenizer handler function. For example,
 
 .. code-block:: cpp
 
-  void pw_TokenizerHandleEncodedMessage(const uint8_t encoded_message[],
+  void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
                                         size_t size_bytes) {
     char base64_buffer[64];
     size_t base64_size = pw::tokenizer::PrefixedBase64Encode(
@@ -707,12 +706,12 @@ the ``detokenize_base64`` and related functions.
    "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
 
 Base64 decoding is supported in C++ or C with the
-``pw::tokenizer::PrefixedBase64Decode`` or ``pw_TokenizerPrefixedBase64Decode``
+``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
 functions.
 
 .. code-block:: cpp
 
-  void pw_TokenizerHandleEncodedMessage(const uint8_t encoded_message[],
+  void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
                                         size_t size_bytes) {
     char base64_buffer[64];
     size_t base64_size = pw::tokenizer::PrefixedBase64Encode(
@@ -780,7 +779,7 @@ Firmware deployment
   * The log level was passed as the payload argument to facilitate runtime log
     level control.
   * For this project, it was necessary to encode the log messages as text. In
-    ``pw_TokenizerHandleEncodedMessageWithPayload``, the log messages were
+    ``pw_tokenizer_HandleEncodedMessageWithPayload``, the log messages were
     encoded in the $-prefixed `Base64 format`_, then dispatched as normal log
     messages.
   * Asserts were tokenized using ``PW_TOKENIZE_TO_CALLBACK``.

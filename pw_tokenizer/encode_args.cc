@@ -124,7 +124,7 @@ size_t EncodeString(const char* string, const std::span<uint8_t>& output) {
 
 }  // namespace
 
-size_t EncodeArgs(pw_TokenizerArgTypes types,
+size_t EncodeArgs(_pw_tokenizer_ArgTypes types,
                   va_list args,
                   std::span<uint8_t> output) {
   size_t arg_count = types & PW_TOKENIZER_TYPE_COUNT_MASK;

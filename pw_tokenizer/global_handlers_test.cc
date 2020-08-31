@@ -104,7 +104,7 @@ TEST_F(TokenizeToGlobalHandler, Domain_Strings) {
 }
 
 TEST_F(TokenizeToGlobalHandler, C_SequentialZigZag) {
-  pw_TokenizeToGlobalHandlerTest_SequentialZigZag();
+  pw_tokenizer_ToGlobalHandlerTest_SequentialZigZag();
 
   constexpr std::array<uint8_t, 18> expected =
       ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(
@@ -113,15 +113,15 @@ TEST_F(TokenizeToGlobalHandler, C_SequentialZigZag) {
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
 
-extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t* encoded_message,
-                                                 size_t size_bytes) {
+extern "C" void pw_tokenizer_HandleEncodedMessage(
+    const uint8_t* encoded_message, size_t size_bytes) {
   TokenizeToGlobalHandler::SetMessage(encoded_message, size_bytes);
 }
 
 class TokenizeToGlobalHandlerWithPayload
     : public GlobalMessage<TokenizeToGlobalHandlerWithPayload> {
  public:
-  static void SetPayload(pw_TokenizerPayload payload) {
+  static void SetPayload(pw_tokenizer_Payload payload) {
     payload_ = static_cast<intptr_t>(payload);
   }
 
@@ -140,13 +140,18 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Variety) {
       ExpectedData<0, 0, 0x00, 0x00, 0x00, 0x80, 0>("%x%lld%1.2f%s");
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(123), "%x%lld%1.2f%s", 0, 0ll, -0.0, "");
+      static_cast<pw_tokenizer_Payload>(123),
+      "%x%lld%1.2f%s",
+      0,
+      0ll,
+      -0.0,
+      "");
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
   EXPECT_EQ(payload_, 123);
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(-543),
+      static_cast<pw_tokenizer_Payload>(-543),
       "%x%lld%1.2f%s",
       0,
       0ll,
@@ -170,7 +175,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Strings_ZeroPayload) {
 
 TEST_F(TokenizeToGlobalHandlerWithPayload, Strings_NonZeroPayload) {
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(5432), "The answer is: %s", "5432!");
+      static_cast<pw_tokenizer_Payload>(5432), "The answer is: %s", "5432!");
 
   ASSERT_EQ(kExpected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(kExpected.data(), message_, kExpected.size()), 0);
@@ -180,7 +185,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Strings_NonZeroPayload) {
 TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Strings) {
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(
       "TEST_DOMAIN",
-      static_cast<pw_TokenizerPayload>(5432),
+      static_cast<pw_tokenizer_Payload>(5432),
       "The answer is: %s",
       "5432!");
   ASSERT_EQ(kExpected.size(), message_size_bytes_);
@@ -197,7 +202,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, PointerToStack) {
   Foo foo{254u, true};
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      reinterpret_cast<pw_TokenizerPayload>(&foo), "Boring!");
+      reinterpret_cast<pw_tokenizer_Payload>(&foo), "Boring!");
 
   constexpr auto expected = ExpectedData("Boring!");
   static_assert(expected.size() == 4);
@@ -211,7 +216,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, PointerToStack) {
 }
 
 TEST_F(TokenizeToGlobalHandlerWithPayload, C_SequentialZigZag) {
-  pw_TokenizeToGlobalHandlerWithPayloadTest_SequentialZigZag();
+  pw_tokenizer_ToGlobalHandlerWithPayloadTest_SequentialZigZag();
 
   constexpr std::array<uint8_t, 18> expected =
       ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(
@@ -221,8 +226,8 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, C_SequentialZigZag) {
   EXPECT_EQ(payload_, 600613);
 }
 
-extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
-    pw_TokenizerPayload payload,
+extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_tokenizer_Payload payload,
     const uint8_t* encoded_message,
     size_t size_bytes) {
   TokenizeToGlobalHandlerWithPayload::SetMessage(encoded_message, size_bytes);
@@ -261,7 +266,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Default) {
   const char* string_literal = nullptr;
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(123), "Wow%s", "???");
+      static_cast<pw_tokenizer_Payload>(123), "Wow%s", "???");
 
   EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
   EXPECT_STREQ(string_literal, "Wow%s");
@@ -272,7 +277,7 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Specified) {
   const char* string_literal = nullptr;
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(
-      "THEDOMAIN", static_cast<pw_TokenizerPayload>(123), "1234567890");
+      "THEDOMAIN", static_cast<pw_tokenizer_Payload>(123), "1234567890");
 
   EXPECT_STREQ(tokenizer_domain, "THEDOMAIN");
   EXPECT_STREQ(string_literal, "1234567890");

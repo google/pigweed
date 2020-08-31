@@ -22,7 +22,7 @@
 // Like PW_TOKENIZE_TO_GLOBAL_HANDLER, encodes a tokenized string and arguments
 // to a buffer on the stack. The macro adds a payload argument, which is passed
 // through to the global handler function
-// pw_TokenizerHandleEncodedMessageWithPayload, which must be defined by the
+// pw_tokenizer_HandleEncodedMessageWithPayload, which must be defined by the
 // user of pw_tokenizer. The payload is a uintptr_t.
 //
 // For example, the following tokenizes a log string and passes the log level as
@@ -31,8 +31,8 @@
      #define LOG_ERROR(...) \
          PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(kLogLevelError, __VA_ARGS__)
 
-     void pw_TokenizerHandleEncodedMessageWithPayload(
-         pw_TokenizerPayload log_level,
+     void pw_tokenizer_HandleEncodedMessageWithPayload(
+         pw_tokenizer_Payload log_level,
          const uint8_t encoded_message[],
          size_t size_bytes) {
        if (log_level >= kLogLevelWarning) {
@@ -46,33 +46,42 @@
 
 // Same as PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD, but tokenizes to the
 // specified domain.
-#define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(                     \
-    domain, payload, format, ...)                                              \
-  do {                                                                         \
-    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);                   \
-    _pw_TokenizeToGlobalHandlerWithPayload(payload,                            \
-                                           _pw_tokenizer_token,                \
-                                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
-                                               PW_COMMA_ARGS(__VA_ARGS__));    \
+#define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(               \
+    domain, payload, format, ...)                                        \
+  do {                                                                   \
+    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);             \
+    _pw_tokenizer_ToGlobalHandlerWithPayload(                            \
+        payload,                                                         \
+        _pw_tokenizer_token,                                             \
+        PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) PW_COMMA_ARGS(__VA_ARGS__)); \
   } while (0)
 
 PW_EXTERN_C_START
 
-typedef uintptr_t pw_TokenizerPayload;
+typedef uintptr_t pw_tokenizer_Payload;
+
+// TODO(hepler): Remove this alias when all projects have migrated to the new
+//     typedef name.
+typedef pw_tokenizer_Payload pw_TokenizerPayload;
 
 // This function must be defined pw_tokenizer:global_handler_with_payload
 // backend. This function is called with the encoded message by
-// pw_TokenizeToGlobalHandler and a caller-provided payload argument.
-void pw_TokenizerHandleEncodedMessageWithPayload(
-    pw_TokenizerPayload payload,
+// pw_tokenizer_ToGlobalHandler and a caller-provided payload argument.
+void pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_tokenizer_Payload payload,
     const uint8_t encoded_message[],
     size_t size_bytes);
 
+// TODO(hepler): Remove this alias when all projects have migrated to the new
+//     function name.
+#define pw_TokenizerHandleEncodedMessageWithPayload \
+  pw_tokenizer_HandleEncodedMessageWithPayload
+
 // This function encodes the tokenized strings. Do not call it directly;
 // instead, use the PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD macro.
-void _pw_TokenizeToGlobalHandlerWithPayload(pw_TokenizerPayload payload,
-                                            pw_TokenizerStringToken token,
-                                            pw_TokenizerArgTypes types,
-                                            ...);
+void _pw_tokenizer_ToGlobalHandlerWithPayload(pw_tokenizer_Payload payload,
+                                              pw_tokenizer_Token token,
+                                              _pw_tokenizer_ArgTypes types,
+                                              ...);
 
 PW_EXTERN_C_END

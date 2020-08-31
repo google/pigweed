@@ -34,6 +34,10 @@
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/internal/tokenize_string.h"
 
+// The type of the token used in place of a format string. Also available as
+// pw::tokenizer::Token.
+typedef uint32_t pw_tokenizer_Token;
+
 // Strings may optionally be tokenized to a domain. Strings in different domains
 // can be processed separately by the token database tools. Each domain in use
 // must have a corresponding section declared in the linker script. See
@@ -42,7 +46,7 @@
 // If no domain is specified, this default is used.
 #define PW_TOKENIZER_DEFAULT_DOMAIN "default"
 
-// Tokenizes a string and converts it to a pw_TokenizerStringToken. In C++, the
+// Tokenizes a string and converts it to a pw_tokenizer_Token. In C++, the
 // string may be a literal or a constexpr char array. In C, the argument must be
 // a string literal.
 //
@@ -94,15 +98,15 @@
                                __VA_ARGS__)
 
 // Same as PW_TOKENIZE_TO_BUFFER, but tokenizes to the specified domain.
-#define PW_TOKENIZE_TO_BUFFER_DOMAIN(                        \
-    domain, buffer, buffer_size_pointer, format, ...)        \
-  do {                                                       \
-    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__); \
-    _pw_TokenizeToBuffer(buffer,                             \
-                         buffer_size_pointer,                \
-                         _pw_tokenizer_token,                \
-                         PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
-                             PW_COMMA_ARGS(__VA_ARGS__));    \
+#define PW_TOKENIZE_TO_BUFFER_DOMAIN(                          \
+    domain, buffer, buffer_size_pointer, format, ...)          \
+  do {                                                         \
+    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);   \
+    _pw_tokenizer_ToBuffer(buffer,                             \
+                           buffer_size_pointer,                \
+                           _pw_tokenizer_token,                \
+                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
+                               PW_COMMA_ARGS(__VA_ARGS__));    \
   } while (0)
 
 // Encodes a tokenized string and arguments to a buffer on the stack. The
@@ -140,33 +144,33 @@
 #define PW_TOKENIZE_TO_CALLBACK_DOMAIN(domain, callback, format, ...) \
   do {                                                                \
     _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);          \
-    _pw_TokenizeToCallback(callback,                                  \
-                           _pw_tokenizer_token,                       \
-                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)        \
-                               PW_COMMA_ARGS(__VA_ARGS__));           \
+    _pw_tokenizer_ToCallback(callback,                                \
+                             _pw_tokenizer_token,                     \
+                             PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)      \
+                                 PW_COMMA_ARGS(__VA_ARGS__));         \
   } while (0)
 
 PW_EXTERN_C_START
 
 // These functions encode the tokenized strings. These should not be called
 // directly. Instead, use the corresponding PW_TOKENIZE_TO_* macros above.
-void _pw_TokenizeToBuffer(void* buffer,
-                          size_t* buffer_size_bytes,  // input and output arg
-                          pw_TokenizerStringToken token,
-                          pw_TokenizerArgTypes types,
-                          ...);
-
-void _pw_TokenizeToCallback(void (*callback)(const uint8_t* encoded_message,
-                                             size_t size_bytes),
-                            pw_TokenizerStringToken token,
-                            pw_TokenizerArgTypes types,
+void _pw_tokenizer_ToBuffer(void* buffer,
+                            size_t* buffer_size_bytes,  // input and output arg
+                            pw_tokenizer_Token token,
+                            _pw_tokenizer_ArgTypes types,
                             ...);
 
+void _pw_tokenizer_ToCallback(void (*callback)(const uint8_t* encoded_message,
+                                               size_t size_bytes),
+                              pw_tokenizer_Token token,
+                              _pw_tokenizer_ArgTypes types,
+                              ...);
+
 // This empty function allows the compiler to check the format string.
-inline void pw_TokenizerCheckFormatString(const char* format, ...)
+static inline void pw_tokenizer_CheckFormatString(const char* format, ...)
     PW_PRINTF_FORMAT(1, 2);
 
-inline void pw_TokenizerCheckFormatString(const char* format, ...) {
+static inline void pw_tokenizer_CheckFormatString(const char* format, ...) {
   PW_UNUSED(format);
 }
 
@@ -179,9 +183,9 @@ PW_EXTERN_C_END
 // checks that the arguments are correct, stores the format string in a special
 // section, and calculates the string's token at compile time.
 // clang-format off
-#define _PW_TOKENIZE_FORMAT_STRING(domain, format, ...)                     \
+#define _PW_TOKENIZE_FORMAT_STRING(domain, format, ...)                        \
   if (0) { /* Do not execute to prevent double evaluation of the arguments. */ \
-    pw_TokenizerCheckFormatString(format PW_COMMA_ARGS(__VA_ARGS__));          \
+    pw_tokenizer_CheckFormatString(format PW_COMMA_ARGS(__VA_ARGS__));         \
   }                                                                            \
                                                                                \
   /* Check that the macro is invoked with a supported number of arguments. */  \
@@ -192,16 +196,28 @@ PW_EXTERN_C_END
       PW_STRINGIFY(PW_ARG_COUNT(__VA_ARGS__)) " arguments were used for "      \
       #format " (" #__VA_ARGS__ ")");                                          \
                                                                                \
-  /* Tokenize the string to a pw_TokenizerStringToken at compile time. */      \
-  _PW_TOKENIZER_CONST pw_TokenizerStringToken _pw_tokenizer_token =            \
+  /* Tokenize the string to a pw_tokenizer_Token at compile time. */           \
+  _PW_TOKENIZER_CONST pw_tokenizer_Token _pw_tokenizer_token =                 \
       PW_TOKENIZE_STRING_DOMAIN(domain, format)
 
 // clang-format on
 
 #ifdef __cplusplus  // use constexpr for C++
+
 #define _PW_TOKENIZER_CONST constexpr
+
+namespace pw {
+namespace tokenizer {
+
+using Token = ::pw_tokenizer_Token;
+
+}  // namespace tokenizer
+}  // namespace pw
+
 #else  // use const for C
+
 #define _PW_TOKENIZER_CONST const
+
 #endif  // __cplusplus
 
 // _PW_TOKENIZER_SECTION places the format string in a special .pw_tokenized

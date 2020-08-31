@@ -52,7 +52,7 @@ constexpr auto ExpectedData(const char (&format)[kSize]) {
 }
 
 TEST(TokenizeString, EmptyString_IsZero) {
-  constexpr pw_TokenizerStringToken token = PW_TOKENIZE_STRING("");
+  constexpr pw_tokenizer_Token token = PW_TOKENIZE_STRING("");
   EXPECT_EQ(0u, token);
 }
 
@@ -364,7 +364,7 @@ TEST_F(TokenizeToBuffer, NoRoomForToken) {
 
 TEST_F(TokenizeToBuffer, C_StringShortFloat) {
   size_t size = sizeof(buffer_);
-  pw_TokenizeToBufferTest_StringShortFloat(buffer_, &size);
+  pw_tokenizer_ToBufferTest_StringShortFloat(buffer_, &size);
   constexpr std::array<uint8_t, 11> expected =  // clang-format off
       ExpectedData<1, '1',                 // string '1'
                    3,                      // -2 (zig-zag encoded)
@@ -376,7 +376,7 @@ TEST_F(TokenizeToBuffer, C_StringShortFloat) {
 
 TEST_F(TokenizeToBuffer, C_SequentialZigZag) {
   size_t size = sizeof(buffer_);
-  pw_TokenizeToBufferTest_SequentialZigZag(buffer_, &size);
+  pw_tokenizer_ToBufferTest_SequentialZigZag(buffer_, &size);
   constexpr std::array<uint8_t, 18> expected =
       ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(
           TEST_FORMAT_SEQUENTIAL_ZIG_ZAG);
@@ -390,7 +390,7 @@ TEST_F(TokenizeToBuffer, C_Overflow) {
 
   {
     size_t size = 7;
-    pw_TokenizeToBufferTest_Requires8(buffer_, &size);
+    pw_tokenizer_ToBufferTest_Requires8(buffer_, &size);
     constexpr std::array<uint8_t, 7> expected =
         ExpectedData<2, 'h', 'i'>(TEST_FORMAT_REQUIRES_8);
     ASSERT_EQ(expected.size(), size);
@@ -400,7 +400,7 @@ TEST_F(TokenizeToBuffer, C_Overflow) {
 
   {
     size_t size = 8;
-    pw_TokenizeToBufferTest_Requires8(buffer_, &size);
+    pw_tokenizer_ToBufferTest_Requires8(buffer_, &size);
     constexpr std::array<uint8_t, 8> expected =
         ExpectedData<2, 'h', 'i', 13>(TEST_FORMAT_REQUIRES_8);
     ASSERT_EQ(expected.size(), size);
@@ -470,7 +470,7 @@ TEST_F(TokenizeToCallback, Domain_Strings) {
 }
 
 TEST_F(TokenizeToCallback, C_SequentialZigZag) {
-  pw_TokenizeToCallbackTest_SequentialZigZag(SetMessage);
+  pw_tokenizer_ToCallbackTest_SequentialZigZag(SetMessage);
 
   constexpr std::array<uint8_t, 18> expected =
       ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(

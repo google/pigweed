@@ -24,12 +24,12 @@
 // PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD. The log level, module token, and
 // flags are packed into the payload argument.
 //
-// To use this macro, implement pw_TokenizerHandleEncodedMessageWithPayload,
+// To use this macro, implement pw_tokenizer_HandleEncodedMessageWithPayload,
 // which is defined in pw_tokenizer/tokenize.h. The log metadata can be accessed
 // using pw::log_tokenized::Metadata. For example:
 //
-//   extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
-//       pw_TokenizerPayload payload, const uint8_t data[], size_t size) {
+//   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+//       pw_tokenizer_Payload payload, const uint8_t data[], size_t size) {
 //     pw::log_tokenized::Metadata metadata(payload);
 //
 //     if (metadata.level() >= kLogLevel && ModuleEnabled(metadata.module())) {

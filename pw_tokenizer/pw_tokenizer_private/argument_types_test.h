@@ -20,27 +20,27 @@
 
 PW_EXTERN_C_START
 
-pw_TokenizerArgTypes pw_TestTokenizerNoArgs(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerNoArgs(void);
 
-pw_TokenizerArgTypes pw_TestTokenizerChar(void);
-pw_TokenizerArgTypes pw_TestTokenizerUint8(void);
-pw_TokenizerArgTypes pw_TestTokenizerUint16(void);
-pw_TokenizerArgTypes pw_TestTokenizerInt32(void);
-pw_TokenizerArgTypes pw_TestTokenizerInt64(void);
-pw_TokenizerArgTypes pw_TestTokenizerUint64(void);
-pw_TokenizerArgTypes pw_TestTokenizerFloat(void);
-pw_TokenizerArgTypes pw_TestTokenizerDouble(void);
-pw_TokenizerArgTypes pw_TestTokenizerString(void);
-pw_TokenizerArgTypes pw_TestTokenizerMutableString(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerChar(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerUint8(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerUint16(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerInt32(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerInt64(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerUint64(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerFloat(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerDouble(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerString(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerMutableString(void);
 
-pw_TokenizerArgTypes pw_TestTokenizerIntFloat(void);
-pw_TokenizerArgTypes pw_TestTokenizerUint64Char(void);
-pw_TokenizerArgTypes pw_TestTokenizerStringString(void);
-pw_TokenizerArgTypes pw_TestTokenizerUint16Int(void);
-pw_TokenizerArgTypes pw_TestTokenizerFloatString(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerIntFloat(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerUint64Char(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerStringString(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerUint16Int(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerFloatString(void);
 
-pw_TokenizerArgTypes pw_TestTokenizerNull(void);
-pw_TokenizerArgTypes pw_TestTokenizerPointer(void);
-pw_TokenizerArgTypes pw_TestTokenizerPointerPointer(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerNull(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerPointer(void);
+_pw_tokenizer_ArgTypes pw_TestTokenizerPointerPointer(void);
 
 PW_EXTERN_C_END

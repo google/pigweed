@@ -22,8 +22,8 @@
 #error "This is a test of C code and must be compiled as C, not C++."
 #endif  // __cplusplus
 
-void pw_TokenizeToBufferTest_StringShortFloat(void* buffer,
-                                              size_t* buffer_size) {
+void pw_tokenizer_ToBufferTest_StringShortFloat(void* buffer,
+                                                size_t* buffer_size) {
   char str[] = "1";
   PW_TOKENIZE_TO_BUFFER(
       buffer, buffer_size, TEST_FORMAT_STRING_SHORT_FLOAT, str, (short)-2, 3.0);
@@ -32,8 +32,8 @@ void pw_TokenizeToBufferTest_StringShortFloat(void* buffer,
 // This test invokes the tokenization API with a variety of types. To simplify
 // validating the encoded data, numbers that are sequential when zig-zag encoded
 // are used as arguments.
-void pw_TokenizeToBufferTest_SequentialZigZag(void* buffer,
-                                              size_t* buffer_size) {
+void pw_tokenizer_ToBufferTest_SequentialZigZag(void* buffer,
+                                                size_t* buffer_size) {
   PW_TOKENIZE_TO_BUFFER(buffer,
                         buffer_size,
                         TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
@@ -53,7 +53,7 @@ void pw_TokenizeToBufferTest_SequentialZigZag(void* buffer,
                         (signed char)-7);
 }
 
-void pw_TokenizeToCallbackTest_SequentialZigZag(
+void pw_tokenizer_ToCallbackTest_SequentialZigZag(
     void (*callback)(const uint8_t* buffer, size_t size)) {
   PW_TOKENIZE_TO_CALLBACK(callback,
                           TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
@@ -73,6 +73,6 @@ void pw_TokenizeToCallbackTest_SequentialZigZag(
                           (signed char)-7);
 }
 
-void pw_TokenizeToBufferTest_Requires8(void* buffer, size_t* buffer_size) {
+void pw_tokenizer_ToBufferTest_Requires8(void* buffer, size_t* buffer_size) {
   PW_TOKENIZE_TO_BUFFER(buffer, buffer_size, TEST_FORMAT_REQUIRES_8, "hi", -7);
 }

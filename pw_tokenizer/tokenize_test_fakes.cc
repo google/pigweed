@@ -22,14 +22,14 @@
 
 #if PW_TOKENIZER_CFG_ENABLE_TOKENIZE_TO_GLOBAL_HANDLER
 
-PW_EXTERN_C void pw_TokenizerHandleEncodedMessage(
+PW_EXTERN_C void pw_tokenizer_HandleEncodedMessage(
     const uint8_t encoded_message[], size_t size_bytes) {
   PW_UNUSED(encoded_message[0]);
   PW_UNUSED(size_bytes);
 }
 
-PW_EXTERN_C void pw_TokenizerHandleEncodedMessageWithPayload(
-    pw_TokenizerPayload payload,
+PW_EXTERN_C void pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_tokenizer_Payload payload,
     const uint8_t encoded_message[],
     size_t size_bytes) {
   PW_UNUSED(payload);

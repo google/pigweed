@@ -19,9 +19,9 @@
 namespace pw {
 namespace tokenizer {
 
-extern "C" void _pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
-                                            pw_TokenizerArgTypes types,
-                                            ...) {
+extern "C" void _pw_tokenizer_ToGlobalHandler(pw_tokenizer_Token token,
+                                              _pw_tokenizer_ArgTypes types,
+                                              ...) {
   EncodedMessage encoded;
   encoded.token = token;
 
@@ -30,8 +30,8 @@ extern "C" void _pw_TokenizeToGlobalHandler(pw_TokenizerStringToken token,
   const size_t encoded_bytes = EncodeArgs(types, args, encoded.args);
   va_end(args);
 
-  pw_TokenizerHandleEncodedMessage(reinterpret_cast<const uint8_t*>(&encoded),
-                                   sizeof(encoded.token) + encoded_bytes);
+  pw_tokenizer_HandleEncodedMessage(reinterpret_cast<const uint8_t*>(&encoded),
+                                    sizeof(encoded.token) + encoded_bytes);
 }
 
 }  // namespace tokenizer

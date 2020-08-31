@@ -25,11 +25,11 @@
 namespace pw {
 namespace tokenizer {
 
-extern "C" void _pw_TokenizeToBuffer(void* buffer,
-                                     size_t* buffer_size_bytes,
-                                     pw_TokenizerStringToken token,
-                                     pw_TokenizerArgTypes types,
-                                     ...) {
+extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
+                                       size_t* buffer_size_bytes,
+                                       Token token,
+                                       _pw_tokenizer_ArgTypes types,
+                                       ...) {
   if (*buffer_size_bytes < sizeof(token)) {
     *buffer_size_bytes = 0;
     return;
@@ -49,10 +49,10 @@ extern "C" void _pw_TokenizeToBuffer(void* buffer,
   *buffer_size_bytes = sizeof(token) + encoded_bytes;
 }
 
-extern "C" void _pw_TokenizeToCallback(
+extern "C" void _pw_tokenizer_ToCallback(
     void (*callback)(const uint8_t* encoded_message, size_t size_bytes),
-    pw_TokenizerStringToken token,
-    pw_TokenizerArgTypes types,
+    Token token,
+    _pw_tokenizer_ArgTypes types,
     ...) {
   EncodedMessage encoded;
   encoded.token = token;

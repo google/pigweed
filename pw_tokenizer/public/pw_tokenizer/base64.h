@@ -43,20 +43,20 @@ PW_EXTERN_C_START
 // too small.
 //
 // Equivalent to pw::tokenizer::PrefixedBase64Encode.
-size_t pw_TokenizerPrefixedBase64Encode(const void* binary_message,
-                                        size_t binary_size_bytes,
-                                        void* output_buffer,
-                                        size_t output_buffer_size_bytes);
+size_t pw_tokenizer_PrefixedBase64Encode(const void* binary_message,
+                                         size_t binary_size_bytes,
+                                         void* output_buffer,
+                                         size_t output_buffer_size_bytes);
 // Decodes a prefixed Base64 tokenized message to binary. Returns the size of
 // the decoded binary data. The resulting data is ready to be passed to
 // pw::tokenizer::Detokenizer::Detokenize. Returns 0 if the buffer is too small,
 // the expected prefix character is missing, or the Base64 data is corrupt.
 //
 // Equivalent to pw::tokenizer::PrefixedBase64Encode.
-size_t pw_TokenizerPrefixedBase64Decode(const void* base64_message,
-                                        size_t base64_size_bytes,
-                                        void* output_buffer,
-                                        size_t output_buffer_size);
+size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,
+                                         size_t base64_size_bytes,
+                                         void* output_buffer,
+                                         size_t output_buffer_size);
 
 PW_EXTERN_C_END
 
@@ -74,10 +74,10 @@ inline constexpr char kBase64Prefix = PW_TOKENIZER_BASE64_PREFIX;
 // too small or does not start with kBase64Prefix.
 inline size_t PrefixedBase64Encode(std::span<const std::byte> binary_message,
                                    std::span<char> output_buffer) {
-  return pw_TokenizerPrefixedBase64Encode(binary_message.data(),
-                                          binary_message.size(),
-                                          output_buffer.data(),
-                                          output_buffer.size());
+  return pw_tokenizer_PrefixedBase64Encode(binary_message.data(),
+                                           binary_message.size(),
+                                           output_buffer.data(),
+                                           output_buffer.size());
 }
 
 // Also accept a std::span<const uint8_t> for the binary message.
@@ -91,16 +91,16 @@ inline size_t PrefixedBase64Encode(std::span<const uint8_t> binary_message,
 // pw::tokenizer::Detokenizer::Detokenize.
 inline size_t PrefixedBase64Decode(std::string_view base64_message,
                                    std::span<std::byte> output_buffer) {
-  return pw_TokenizerPrefixedBase64Decode(base64_message.data(),
-                                          base64_message.size(),
-                                          output_buffer.data(),
-                                          output_buffer.size());
+  return pw_tokenizer_PrefixedBase64Decode(base64_message.data(),
+                                           base64_message.size(),
+                                           output_buffer.data(),
+                                           output_buffer.size());
 }
 
 // Decodes a prefixed Base64 tokenized message to binary in place. Returns the
 // size of the decoded binary data.
 inline size_t PrefixedBase64DecodeInPlace(std::span<std::byte> buffer) {
-  return pw_TokenizerPrefixedBase64Decode(
+  return pw_tokenizer_PrefixedBase64Decode(
       buffer.data(), buffer.size(), buffer.data(), buffer.size());
 }
 

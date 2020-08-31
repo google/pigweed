@@ -50,7 +50,7 @@ uint32_t TestHash(const char (&str)[kSize])
 }
 
 TEST(TokenizeStringLiteral, EmptyString_IsZero) {
-  constexpr pw_TokenizerStringToken token = PW_TOKENIZE_STRING("");
+  constexpr pw_tokenizer_Token token = PW_TOKENIZE_STRING("");
   EXPECT_TRUE(0u == token);
 }
 
@@ -139,15 +139,15 @@ TEST_F(TokenizeToGlobalHandler, Variety) {
   EXPECT_TRUE(std::memcmp(expected.data(), message_, expected.size()) == 0);
 }
 
-extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t* encoded_message,
-                                                 size_t size_bytes) {
+extern "C" void pw_tokenizer_HandleEncodedMessage(
+    const uint8_t* encoded_message, size_t size_bytes) {
   TokenizeToGlobalHandler::SetMessage(encoded_message, size_bytes);
 }
 
 class TokenizeToGlobalHandlerWithPayload
     : public GlobalMessage<TokenizeToGlobalHandlerWithPayload> {
  public:
-  static void SetPayload(pw_TokenizerPayload payload) {
+  static void SetPayload(pw_tokenizer_Payload payload) {
     payload_ = static_cast<intptr_t>(payload);
   }
 
@@ -166,13 +166,18 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Variety) {
       ExpectedData<0, 0, 0x00, 0x00, 0x00, 0x80, 0>("%x%lld%1.2f%s");
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(123), "%x%lld%1.2f%s", 0, 0ll, -0.0, "");
+      static_cast<pw_tokenizer_Payload>(123),
+      "%x%lld%1.2f%s",
+      0,
+      0ll,
+      -0.0,
+      "");
   ASSERT_TRUE(expected.size() == message_size_bytes_);
   EXPECT_TRUE(std::memcmp(expected.data(), message_, expected.size()) == 0);
   EXPECT_TRUE(payload_ == 123);
 
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
-      static_cast<pw_TokenizerPayload>(-543),
+      static_cast<pw_tokenizer_Payload>(-543),
       "%x%lld%1.2f%s",
       0,
       0ll,
@@ -183,8 +188,8 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Variety) {
   EXPECT_TRUE(payload_ == -543);
 }
 
-extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
-    pw_TokenizerPayload payload,
+extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_tokenizer_Payload payload,
     const uint8_t* encoded_message,
     size_t size_bytes) {
   TokenizeToGlobalHandlerWithPayload::SetMessage(encoded_message, size_bytes);

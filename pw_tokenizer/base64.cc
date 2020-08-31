@@ -20,7 +20,7 @@
 
 namespace pw::tokenizer {
 
-extern "C" size_t pw_TokenizerPrefixedBase64Encode(
+extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
     const void* binary_message,
     size_t binary_size_bytes,
     void* output_buffer,
@@ -41,10 +41,10 @@ extern "C" size_t pw_TokenizerPrefixedBase64Encode(
   return encoded_size;
 }
 
-extern "C" size_t pw_TokenizerPrefixedBase64Decode(const void* base64_message,
-                                                   size_t base64_size_bytes,
-                                                   void* output_buffer,
-                                                   size_t output_buffer_size) {
+extern "C" size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,
+                                                    size_t base64_size_bytes,
+                                                    void* output_buffer,
+                                                    size_t output_buffer_size) {
   const char* base64 = static_cast<const char*>(base64_message);
 
   if (base64_size_bytes == 0 || base64[0] != kBase64Prefix) {

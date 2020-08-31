@@ -26,13 +26,11 @@ namespace {
 Metadata metadata(0);
 size_t encoded_data_size = 0;
 
-extern "C" void pw_TokenizerHandleEncodedMessageWithPayload(
-    pw_TokenizerPayload payload, const uint8_t[], size_t size) {
+extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_tokenizer_Payload payload, const uint8_t[], size_t size) {
   metadata = payload;
   encoded_data_size = size;
 }
-
-extern "C" void pw_TokenizerHandleEncodedMessage(const uint8_t[], size_t) {}
 
 constexpr uintptr_t kModuleToken =
     PW_TOKENIZER_STRING_TOKEN(PW_LOG_MODULE_NAME) &

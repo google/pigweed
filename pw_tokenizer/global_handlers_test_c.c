@@ -26,7 +26,7 @@
 // This test invokes the tokenization API with a variety of types. To simplify
 // validating the encoded data, numbers that are sequential when zig-zag encoded
 // are used as arguments.
-void pw_TokenizeToGlobalHandlerTest_SequentialZigZag(void) {
+void pw_tokenizer_ToGlobalHandlerTest_SequentialZigZag(void) {
   PW_TOKENIZE_TO_GLOBAL_HANDLER(TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
                                 0u,
                                 -1,
@@ -44,8 +44,8 @@ void pw_TokenizeToGlobalHandlerTest_SequentialZigZag(void) {
                                 (signed char)-7);
 }
 
-void pw_TokenizeToGlobalHandlerWithPayloadTest_SequentialZigZag(void) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD((pw_TokenizerPayload)600613,
+void pw_tokenizer_ToGlobalHandlerWithPayloadTest_SequentialZigZag(void) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD((pw_tokenizer_Payload)600613,
                                              TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
                                              0u,
                                              -1,

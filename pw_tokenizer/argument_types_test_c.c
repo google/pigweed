@@ -72,10 +72,10 @@ static_assert(_PW_VARARGS_TYPE(NULL) == _PW_TOKENIZER_SELECT_INT_TYPE(void*),
 static char char_array[16];
 
 // Define the test functions that are called by the C++ unit test.
-#define DEFINE_TEST_FUNCTION(name, ...)               \
-  pw_TokenizerArgTypes pw_TestTokenizer##name(void) { \
-    (void)char_array;                                 \
-    return PW_TOKENIZER_ARG_TYPES(__VA_ARGS__);       \
+#define DEFINE_TEST_FUNCTION(name, ...)                 \
+  _pw_tokenizer_ArgTypes pw_TestTokenizer##name(void) { \
+    (void)char_array;                                   \
+    return PW_TOKENIZER_ARG_TYPES(__VA_ARGS__);         \
   }
 
 DEFINE_TEST_FUNCTION(NoArgs);

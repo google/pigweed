@@ -26,7 +26,7 @@ namespace pw::metric {
 
 // Currently, this is for tokens, but later may be a char* when non-tokenized
 // metric names are supported.
-typedef uint32_t Token;
+using tokenizer::Token;
 
 // An individual metric. There are only two supported types: uint32_t and
 // float. More complicated compound metrics can be built on these primitives.

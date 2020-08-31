@@ -64,6 +64,3 @@
 #endif  // PW_TOKENIZER_CFG_HASH_LENGTH
 
 #endif  // __cpp_constexpr >= 201304L && defined(__cpp_inline_variables)
-
-// The type of the token used in place of a format string.
-typedef uint32_t pw_TokenizerStringToken;
