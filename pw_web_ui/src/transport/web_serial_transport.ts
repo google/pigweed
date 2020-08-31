@@ -13,7 +13,7 @@
 // the License.
 
 /* eslint-env browser */
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject, Subject, Subscription, Observable} from 'rxjs';
 import DeviceTransport from './device_transport';
 
 const DEFAULT_SERIAL_OPTIONS: SerialOptions = {
@@ -23,14 +23,36 @@ const DEFAULT_SERIAL_OPTIONS: SerialOptions = {
   stopbits: 1,
 };
 
+interface PortReadConnection {
+  chunks: Observable<Uint8Array>;
+  errors: Observable<Error>;
+}
+
+interface PortConnection extends PortReadConnection {
+  sendChunk: (chunk: Uint8Array) => Promise<void>;
+}
+
+export class DeviceLostError extends Error {
+  message = 'The device has been lost';
+}
+
+export class DeviceLockedError extends Error {
+  message =
+    "The device's port is locked. Try unplugging it" +
+    ' and plugging it back in.';
+}
+
 /**
  * WebSerialTransport sends and receives UInt8Arrays to and
  * from a serial device connected over USB.
  */
 export class WebSerialTransport implements DeviceTransport {
   chunks = new Subject<Uint8Array>();
+  errors = new Subject<Error>();
   connected = new BehaviorSubject<boolean>(false);
-  private writer?: WritableStreamDefaultWriter<Uint8Array>;
+  private portConnections: Map<SerialPort, PortConnection> = new Map();
+  private activePortConnectionConnection: PortConnection | undefined;
+  private rxSubscriptions: Subscription[] = [];
 
   constructor(
     private serial: Serial = navigator.serial,
@@ -43,9 +65,8 @@ export class WebSerialTransport implements DeviceTransport {
    * @param {Uint8Array} chunk The chunk to send
    */
   async sendChunk(chunk: Uint8Array): Promise<void> {
-    if (this.writer !== undefined && this.connected.getValue()) {
-      await this.writer.ready;
-      return this.writer.write(chunk);
+    if (this.activePortConnectionConnection) {
+      return this.activePortConnectionConnection.sendChunk(chunk);
     }
     throw new Error('Device not connected');
   }
@@ -56,41 +77,112 @@ export class WebSerialTransport implements DeviceTransport {
    * be called in response to user interaction.
    */
   async connect(): Promise<void> {
-    let port: SerialPort;
-    try {
-      port = await this.serial.requestPort({filters: this.filters});
-    } catch (e) {
-      // Ignore errors where the user did not select a port.
-      if (!(e instanceof DOMException)) {
-        throw e;
-      }
-      return;
-    }
-
-    await port.open(this.serialOptions);
-    this.writer = port.writable.getWriter();
-
-    this.getChunks(port);
+    const port = await this.serial.requestPort({filters: this.filters});
+    await this.connectPort(port);
   }
 
-  private getChunks(port: SerialPort) {
-    port.readable.pipeTo(
-      new WritableStream({
-        write: chunk => {
+  private disconnect() {
+    for (const subscription of this.rxSubscriptions) {
+      subscription.unsubscribe();
+    }
+    this.rxSubscriptions = [];
+
+    this.activePortConnectionConnection = undefined;
+    this.connected.next(false);
+  }
+
+  private async connectPort(port: SerialPort): Promise<void> {
+    this.disconnect();
+
+    this.activePortConnectionConnection =
+      this.portConnections.get(port) ?? (await this.conectNewPort(port));
+
+    this.connected.next(true);
+
+    this.rxSubscriptions.push(
+      this.activePortConnectionConnection.chunks.subscribe(
+        chunk => {
           this.chunks.next(chunk);
         },
-        close: () => {
-          port.close();
-          this.writer?.releaseLock();
-          this.connected.next(false);
+        err => {
+          throw new Error(`Chunks observable had an unexpeted error ${err}`);
         },
-        abort: () => {
-          // Reconnect to the port
+        () => {
           this.connected.next(false);
-          this.getChunks(port);
-        },
+          this.portConnections.delete(port);
+          // Don't complete the chunks observable because then it would not
+          // be able to forward any future chunks.
+        }
+      )
+    );
+
+    this.rxSubscriptions.push(
+      this.activePortConnectionConnection.errors.subscribe(error => {
+        this.errors.next(error);
+        if (error instanceof DeviceLostError) {
+          // The device has been lost
+          this.connected.next(false);
+        }
       })
     );
-    this.connected.next(true);
+  }
+
+  private async conectNewPort(port: SerialPort): Promise<PortConnection> {
+    await port.open(this.serialOptions);
+    const writer = port.writable.getWriter();
+
+    async function sendChunk(chunk: Uint8Array) {
+      await writer.ready;
+      await writer.write(chunk);
+    }
+
+    const {chunks, errors} = this.getChunks(port);
+
+    const connection: PortConnection = {sendChunk, chunks, errors};
+    this.portConnections.set(port, connection);
+    return connection;
+  }
+
+  private getChunks(port: SerialPort): PortReadConnection {
+    const chunks = new Subject<Uint8Array>();
+    const errors = new Subject<Error>();
+
+    async function read() {
+      if (!port.readable) {
+        throw new DeviceLostError();
+      }
+      if (port.readable.locked) {
+        throw new DeviceLockedError();
+      }
+      await port.readable.pipeTo(
+        new WritableStream({
+          write: chunk => {
+            chunks.next(chunk);
+          },
+          close: () => {
+            chunks.complete();
+            errors.complete();
+          },
+          abort: () => {
+            // Reconnect to the port.
+            connect();
+          },
+        })
+      );
+    }
+
+    function connect() {
+      read().catch(err => {
+        // Don't error the chunks observable since that stops it from
+        // reading any more packets, and we often want to continue
+        // despite an error. Instead, push errors to the 'errors'
+        // observable.
+        errors.next(err);
+      });
+    }
+
+    connect();
+
+    return {chunks, errors};
   }
 }

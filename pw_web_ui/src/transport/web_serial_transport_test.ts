@@ -15,7 +15,7 @@
 /* eslint-env browser, jasmine */
 import {last, take} from 'rxjs/operators';
 import {SerialMock} from './serial_mock';
-import {WebSerialTransport} from './web_serial_transport';
+import {WebSerialTransport, DeviceLockedError} from './web_serial_transport';
 
 describe('WebSerialTransport', () => {
   let serialMock: SerialMock;
@@ -48,13 +48,15 @@ describe('WebSerialTransport', () => {
     expect(serialMock.serialPort.writable.locked).toBeTrue();
   });
 
-  it('stops reading when it reaches the final chunk', async () => {
+  it('is disconnected when it reaches the final chunk', async () => {
     const transport = new WebSerialTransport(serialMock as Serial);
     await transport.connect();
-    const closePromise = transport.connected.pipe(take(2), last()).toPromise();
+    const disconnectPromise = transport.connected
+      .pipe(take(2), last())
+      .toPromise();
     serialMock.closeFromDevice();
 
-    expect(await closePromise).toBeFalse();
+    expect(await disconnectPromise).toBeFalse();
   });
 
   it('waits for the writer to be ready', async () => {
@@ -84,5 +86,22 @@ describe('WebSerialTransport', () => {
 
     await transport.sendChunk(data);
     expect(await dataToDevice).toEqual(data);
+  });
+
+  it('throws an error on failing to connect', async () => {
+    const connectError = new Error('Example connection error');
+    spyOn(serialMock, 'requestPort').and.throwError(connectError);
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await expectAsync(transport.connect()).toBeRejectedWith(connectError);
+  });
+
+  it("emits connection errors in the 'errors' observable", async () => {
+    const transport = new WebSerialTransport(serialMock as Serial);
+    await transport.connect();
+
+    const reportedErrorPromise = transport.errors.pipe(take(1)).toPromise();
+    serialMock.serialPort.errorFromDevice(new Error());
+
+    expect(await reportedErrorPromise).toEqual(new DeviceLockedError());
   });
 });
