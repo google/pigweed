@@ -188,6 +188,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_hdlc_lite:tests",
       "$dir_pw_hex_dump:tests",
       "$dir_pw_log:tests",
+      "$dir_pw_log_null:tests",
       "$dir_pw_log_tokenized:tests",
       "$dir_pw_malloc_freelist:tests",
       "$dir_pw_metric:tests",

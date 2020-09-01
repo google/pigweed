@@ -85,6 +85,7 @@ pw_doc_gen("docs") {
     "$dir_pw_kvs:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_basic:docs",
+    "$dir_pw_log_null:docs",
     "$dir_pw_log_tokenized:docs",
     "$dir_pw_metric:docs",
     "$dir_pw_minimal_cpp_stdlib:docs",
