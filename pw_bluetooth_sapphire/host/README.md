@@ -1,5 +1,9 @@
 # bt-host
 
+## Test
+
+`$ fx test bt-host-unittests`
+
 ## Inspect
 
 `bt-host` uses the [standard driver processes](https://fuchsia.googlesource.com/fuchsia/+/57edce1df72b148c33e8f219bddbd038cdbb861b/zircon/system/ulib/inspect/) to expose its inspect hierarchy

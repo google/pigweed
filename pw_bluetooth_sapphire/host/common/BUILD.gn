@@ -71,6 +71,7 @@ source_set("tests") {
     "device_class_unittest.cc",
     "identifier_unittest.cc",
     "inspectable_unittest.cc",
+    "log_unittest.cc",
     "manufacturer_names_unittest.cc",
     "packet_view_unittest.cc",
     "run_or_post_unittest.cc",
