@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 
 // Expands macros and concatenates the results using preprocessor ##
 // concatentation. Supports up to 32 arguments.

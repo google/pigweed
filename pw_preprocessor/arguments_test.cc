@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,7 +15,7 @@
 // All of these tests are static asserts. If the test compiles, it has already
 // passed. The TEST functions are used for organization only.
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 
 #include "pw_unit_test/framework.h"
 

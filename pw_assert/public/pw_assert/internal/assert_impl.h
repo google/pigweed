@@ -19,7 +19,7 @@
 
 // Note: This file depends on the backend header already being included.
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 
 // Define PW_ASSERT_ENABLE_DCHECK, which controls whether DCHECKs are enabled.
 #if !defined(PW_ASSERT_ENABLE_DCHECK)

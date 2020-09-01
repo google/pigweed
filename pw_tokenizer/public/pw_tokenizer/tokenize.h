@@ -27,9 +27,9 @@
 
 #endif  // __cplusplus
 
+#include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/concat.h"
-#include "pw_preprocessor/macro_arg_count.h"
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/internal/tokenize_string.h"

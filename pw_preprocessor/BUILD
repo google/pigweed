@@ -30,9 +30,9 @@ pw_cc_library(
 )
 
 TESTS = [
+    "arguments_test",
     "boolean_test",
     "concat_test",
-    "macro_arg_count_test",
     "util_test",
 ]
 

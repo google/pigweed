@@ -25,6 +25,7 @@ config("default_config") {
 pw_source_set("pw_preprocessor") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_preprocessor/arguments.h",
     "public/pw_preprocessor/boolean.h",
     "public/pw_preprocessor/compiler.h",
     "public/pw_preprocessor/concat.h",
@@ -41,11 +42,16 @@ pw_doc_group("docs") {
 # All pw_preprocessor test binaries.
 pw_test_group("tests") {
   tests = [
+    ":arguments_test",
     ":boolean_test",
     ":concat_test",
-    ":macro_arg_count_test",
     ":util_test",
   ]
+}
+
+pw_test("arguments_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "arguments_test.cc" ]
 }
 
 pw_test("boolean_test") {
@@ -56,11 +62,6 @@ pw_test("boolean_test") {
 pw_test("concat_test") {
   deps = [ ":pw_preprocessor" ]
   sources = [ "concat_test.cc" ]
-}
-
-pw_test("macro_arg_count_test") {
-  deps = [ ":pw_preprocessor" ]
-  sources = [ "macro_arg_count_test.cc" ]
 }
 
 pw_test("util_test") {

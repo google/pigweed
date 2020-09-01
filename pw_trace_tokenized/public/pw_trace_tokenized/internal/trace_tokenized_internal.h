@@ -19,7 +19,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 
 // Because __FUNCTION__ is not a string literal to the preprocessor it can't be
 // tokenized. So this backend redefines the implementation to instead use the

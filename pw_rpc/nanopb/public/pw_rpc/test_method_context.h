@@ -19,7 +19,7 @@
 #include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/method.h"

@@ -19,7 +19,7 @@
 //
 #pragma once
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 
 // The pw_assert public API:
 //

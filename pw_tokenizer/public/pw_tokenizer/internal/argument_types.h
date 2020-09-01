@@ -17,7 +17,7 @@
 
 #include <stdint.h>
 
-#include "pw_preprocessor/macro_arg_count.h"
+#include "pw_preprocessor/arguments.h"
 #include "pw_tokenizer/config.h"
 
 // The size of the argument types variable determines the number of arguments
