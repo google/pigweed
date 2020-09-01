@@ -345,6 +345,11 @@ def commit_message_format(_: PresubmitContext):
     """Checks that the top commit's message is correctly formatted."""
     lines = git_repo.commit_message().splitlines()
 
+    # Show limits and current commit message in log.
+    _LOG.debug('%-25s%+25s%+22s', 'Line limits', '50|', '72|')
+    for line in lines:
+        _LOG.debug(line)
+
     if not lines:
         _LOG.error('The commit message is too short!')
         raise PresubmitFailure
