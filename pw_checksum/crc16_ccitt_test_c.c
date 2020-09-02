@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_checksum/ccitt_crc16.h"
+#include "pw_checksum/crc16_ccitt.h"
 
 uint16_t CallChecksumCrc16Ccitt(const void* data, size_t size_bytes) {
   return pw_checksum_Crc16Ccitt(data, size_bytes, 0xFFFF);

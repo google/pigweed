@@ -14,7 +14,7 @@
 
 #include "pw_hdlc_lite/decoder.h"
 
-#include "pw_checksum/ccitt_crc16.h"
+#include "pw_checksum/crc16_ccitt.h"
 #include "pw_log/log.h"
 
 using std::byte;

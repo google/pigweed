@@ -25,11 +25,11 @@ config("default_config") {
 pw_source_set("pw_checksum") {
   public_configs = [ ":default_config" ]
   public = [
-    "public/pw_checksum/ccitt_crc16.h",
+    "public/pw_checksum/crc16_ccitt.h",
     "public/pw_checksum/crc32.h",
   ]
   sources = [
-    "ccitt_crc16.cc",
+    "crc16_ccitt.cc",
     "crc32.cc",
   ]
   public_deps = [ dir_pw_span ]
@@ -37,19 +37,19 @@ pw_source_set("pw_checksum") {
 
 pw_test_group("tests") {
   tests = [
-    ":ccitt_crc16_test",
+    ":crc16_ccitt_test",
     ":crc32_test",
   ]
 }
 
-pw_test("ccitt_crc16_test") {
+pw_test("crc16_ccitt_test") {
   deps = [
     ":pw_checksum",
     dir_pw_bytes,
   ]
   sources = [
-    "ccitt_crc16_test.cc",
-    "ccitt_crc16_test_c.c",
+    "crc16_ccitt_test.cc",
+    "crc16_ccitt_test_c.c",
   ]
 }
 

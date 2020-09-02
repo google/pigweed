@@ -20,7 +20,7 @@
 #include <cstring>
 #include <span>
 
-#include "pw_checksum/ccitt_crc16.h"
+#include "pw_checksum/crc16_ccitt.h"
 
 using std::byte;
 

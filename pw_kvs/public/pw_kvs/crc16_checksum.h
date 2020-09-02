@@ -15,7 +15,7 @@
 
 #include <span>
 
-#include "pw_checksum/ccitt_crc16.h"
+#include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/checksum.h"
 
 namespace pw::kvs {

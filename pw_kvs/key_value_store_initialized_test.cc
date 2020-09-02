@@ -19,7 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
-#include "pw_checksum/ccitt_crc16.h"
+#include "pw_checksum/crc16_ccitt.h"
 #include "pw_kvs/crc16_checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/flash_test_partition.h"
