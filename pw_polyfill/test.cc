@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_polyfill/language_feature_macros.h"
 #include "pw_polyfill/standard.h"
+#include "pw_polyfill/standard_library/bit.h"
 #include "pw_polyfill/standard_library/cstddef.h"
 #include "pw_polyfill/standard_library/iterator.h"
 #include "pw_polyfill/standard_library/type_traits.h"
@@ -79,6 +80,16 @@ TEST(Array, ToArray_MoveOnly) {
   std::array<MoveOnly, 2> array = std::to_array(std::move(c_array));
   EXPECT_TRUE(array[0].value == 'a');
   EXPECT_TRUE(array[1].value == 'b');
+}
+
+TEST(Bit, Endian) {
+  if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
+    EXPECT_TRUE(std::endian::native == std::endian::big);
+  } else if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) {
+    EXPECT_TRUE(std::endian::native == std::endian::little);
+  } else {
+    FAIL();
+  }
 }
 
 TEST(Cstddef, Byte_Operators) {

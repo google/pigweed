@@ -35,6 +35,9 @@
 //
 #pragma once
 
+#ifndef __cpp_lib_span
+#define __cpp_lib_span 202002L
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -470,3 +473,4 @@ span(const Container&) -> span<pw_span_internal::ValueType<const Container>>;
 _PW_POLYFILL_END_NAMESPACE_STD
 
 #undef _PW_SPAN_ASSERT
+#endif  // __cpp_lib_span

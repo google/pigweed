@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstring>
 
@@ -24,14 +25,6 @@
 #include "pw_status/status_with_size.h"
 
 namespace pw {
-
-// ByteOrder enum class enables users of ByteBuffer to specify the
-// desired Endianness for ordering the values to be inserted.
-enum class ByteOrder { kLittleEndian, kBigEndian };
-
-inline constexpr ByteOrder kSystemEndianness =
-    (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ? ByteOrder::kLittleEndian
-                                               : ByteOrder::kBigEndian);
 
 // ByteBuilder facilitates building bytes in a fixed-size buffer.
 // BytesBuilders never overflow. Status is tracked for each operation and
@@ -128,27 +121,27 @@ class ByteBuilder {
 
     uint8_t PeekUint8() const { return GetInteger<uint8_t>(); }
 
-    int16_t PeekInt16(ByteOrder order = ByteOrder::kLittleEndian) const {
+    int16_t PeekInt16(std::endian order = std::endian::little) const {
       return static_cast<int16_t>(PeekUint16(order));
     }
 
-    uint16_t PeekUint16(ByteOrder order = ByteOrder::kLittleEndian) const {
+    uint16_t PeekUint16(std::endian order = std::endian::little) const {
       return GetInteger<uint16_t>(order);
     }
 
-    int32_t PeekInt32(ByteOrder order = ByteOrder::kLittleEndian) const {
+    int32_t PeekInt32(std::endian order = std::endian::little) const {
       return static_cast<int32_t>(PeekUint32(order));
     }
 
-    uint32_t PeekUint32(ByteOrder order = ByteOrder::kLittleEndian) const {
+    uint32_t PeekUint32(std::endian order = std::endian::little) const {
       return GetInteger<uint32_t>(order);
     }
 
-    int64_t PeekInt64(ByteOrder order = ByteOrder::kLittleEndian) const {
+    int64_t PeekInt64(std::endian order = std::endian::little) const {
       return static_cast<int64_t>(PeekUint64(order));
     }
 
-    uint64_t PeekUint64(ByteOrder order = ByteOrder::kLittleEndian) const {
+    uint64_t PeekUint64(std::endian order = std::endian::little) const {
       return GetInteger<uint64_t>(order);
     }
 
@@ -163,31 +156,31 @@ class ByteBuilder {
       return value;
     }
 
-    int16_t ReadInt16(ByteOrder order = ByteOrder::kLittleEndian) {
+    int16_t ReadInt16(std::endian order = std::endian::little) {
       return static_cast<int16_t>(ReadUint16(order));
     }
 
-    uint16_t ReadUint16(ByteOrder order = ByteOrder::kLittleEndian) {
+    uint16_t ReadUint16(std::endian order = std::endian::little) {
       uint16_t value = GetInteger<uint16_t>(order);
       byte_ += 2;
       return value;
     }
 
-    int32_t ReadInt32(ByteOrder order = ByteOrder::kLittleEndian) {
+    int32_t ReadInt32(std::endian order = std::endian::little) {
       return static_cast<int32_t>(ReadUint32(order));
     }
 
-    uint32_t ReadUint32(ByteOrder order = ByteOrder::kLittleEndian) {
+    uint32_t ReadUint32(std::endian order = std::endian::little) {
       uint32_t value = GetInteger<uint32_t>(order);
       byte_ += 4;
       return value;
     }
 
-    int64_t ReadInt64(ByteOrder order = ByteOrder::kLittleEndian) {
+    int64_t ReadInt64(std::endian order = std::endian::little) {
       return static_cast<int64_t>(ReadUint64(order));
     }
 
-    uint64_t ReadUint64(ByteOrder order = ByteOrder::kLittleEndian) {
+    uint64_t ReadUint64(std::endian order = std::endian::little) {
       int64_t value = GetInteger<int64_t>(order);
       byte_ += 8;
       return value;
@@ -195,10 +188,10 @@ class ByteBuilder {
 
    private:
     template <typename T>
-    T GetInteger(ByteOrder order = ByteOrder::kLittleEndian) const {
+    T GetInteger(std::endian order = std::endian::little) const {
       T value;
       std::memcpy(&value, byte_, sizeof(T));
-      if (kSystemEndianness != order) {
+      if (std::endian::native != order) {
         if constexpr (sizeof(T) == 1) {
           return value;
         } else if constexpr (sizeof(T) == 2) {
@@ -317,43 +310,43 @@ class ByteBuilder {
 
   // Put methods for inserting different 16-bit ints
   ByteBuilder& PutUint16(uint16_t value,
-                         ByteOrder order = ByteOrder::kLittleEndian) {
-    if (kSystemEndianness != order) {
+                         std::endian order = std::endian::little) {
+    if (std::endian::native != order) {
       value = Reverse2Bytes(value);
     }
     return WriteInOrder(value);
   }
 
   ByteBuilder& PutInt16(int16_t value,
-                        ByteOrder order = ByteOrder::kLittleEndian) {
+                        std::endian order = std::endian::little) {
     return PutUint16(static_cast<uint16_t>(value), order);
   }
 
   // Put methods for inserting different 32-bit ints
   ByteBuilder& PutUint32(uint32_t value,
-                         ByteOrder order = ByteOrder::kLittleEndian) {
-    if (kSystemEndianness != order) {
+                         std::endian order = std::endian::little) {
+    if (std::endian::native != order) {
       value = Reverse4Bytes(value);
     }
     return WriteInOrder(value);
   }
 
   ByteBuilder& PutInt32(int32_t value,
-                        ByteOrder order = ByteOrder::kLittleEndian) {
+                        std::endian order = std::endian::little) {
     return PutUint32(static_cast<uint32_t>(value), order);
   }
 
   // Put methods for inserting different 64-bit ints
   ByteBuilder& PutUint64(uint64_t value,
-                         ByteOrder order = ByteOrder::kLittleEndian) {
-    if (kSystemEndianness != order) {
+                         std::endian order = std::endian::little) {
+    if (std::endian::native != order) {
       value = Reverse8Bytes(value);
     }
     return WriteInOrder(value);
   }
 
   ByteBuilder& PutInt64(int64_t value,
-                        ByteOrder order = ByteOrder::kLittleEndian) {
+                        std::endian order = std::endian::little) {
     return PutUint64(static_cast<uint64_t>(value), order);
   }
 

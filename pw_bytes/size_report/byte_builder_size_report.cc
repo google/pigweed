@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// This size report uses either pw::ByteBuilder or manual bytes manipulation
+// This size report uses either ByteBuilder or manual bytes manipulation
 // depending on whether "USE_BYTE_BUILDER" is set to true/false.
 // Building the file: ninja -C out build_me
 
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <cstdio>
 
@@ -26,20 +27,22 @@
 #error "USE_BYTE_BUILDER must be defined"
 #endif  // !defined(USE_BYTE_BUILDER)
 
+namespace pw::bytes {
+
 #if USE_BYTE_BUILDER
 
-pw::ByteBuffer<8> bb;
+ByteBuffer<8> bb;
 
 void PutBytes() {
   bb.PutUint32(0x482B3D9E);
-  bb.PutInt32(0x482B3D9E, pw::ByteOrder::kBigEndian);
+  bb.PutInt32(0x482B3D9E, std::endian::big);
 }
 
 void ReadBytes() {
   auto it = bb.begin();
 
-  printf("%u\n", static_cast<unsigned>(it.ReadUint32()));
-  printf("%d\n", static_cast<int>(it.ReadInt32(pw::ByteOrder::kBigEndian)));
+  std::printf("%u\n", static_cast<unsigned>(it.ReadUint32()));
+  std::printf("%d\n", static_cast<int>(it.ReadInt32(std::endian::big)));
 }
 
 #else  // !USE_BYTE_BUILDER
@@ -50,7 +53,7 @@ void PutBytes() {
   uint32_t kVal1 = 0x482B3D9E;
   int32_t kVal2 = 0x482B3D9E;
 
-  if (pw::kSystemEndianness == pw::ByteOrder::kLittleEndian) {
+  if (std::endian::native == std::endian::little) {
     std::memcpy(b_array, &kVal1, sizeof(kVal1));
 
     kVal2 = int32_t(((kVal2 & 0x000000FF) << 3 * 8) |  //
@@ -73,7 +76,7 @@ void ReadBytes() {
   uint32_t kVal1;
   int32_t kVal2;
 
-  if (pw::kSystemEndianness == pw::ByteOrder::kLittleEndian) {
+  if (std::endian::native == std::endian::little) {
     std::memcpy(&kVal1, b_array, sizeof(kVal1));
     std::memcpy(&kVal2, b_array + 4, sizeof(kVal2));
     kVal2 = int32_t(((kVal2 & 0x000000FF) << 3 * 8) |  //
@@ -90,14 +93,16 @@ void ReadBytes() {
                      ((kVal1 & 0xFF000000) >> 3 * 8));
   }
 
-  printf("%u\n", static_cast<unsigned>(kVal1));
-  printf("%d\n", static_cast<int>(kVal2));
+  std::printf("%u\n", static_cast<unsigned>(kVal1));
+  std::printf("%d\n", static_cast<int>(kVal2));
 }
 
 #endif  // USE_BYTE_BUILDER
 
+}  // namespace pw::bytes
+
 int main() {
-  PutBytes();
-  ReadBytes();
+  pw::bytes::PutBytes();
+  pw::bytes::ReadBytes();
   return 0;
 }

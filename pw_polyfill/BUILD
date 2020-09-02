@@ -38,6 +38,7 @@ pw_cc_library(
     hdrs = [
         "public_overrides/array",
         "public_overrides/assert.h",
+        "public_overrides/bit",
         "public_overrides/cstddef",
         "public_overrides/iterator",
         "public_overrides/type_traits",
@@ -56,6 +57,7 @@ pw_cc_library(
     hdrs = [
         "standard_library_public/pw_polyfill/standard_library/array.h",
         "standard_library_public/pw_polyfill/standard_library/assert.h",
+        "standard_library_public/pw_polyfill/standard_library/bit.h",
         "standard_library_public/pw_polyfill/standard_library/cstddef.h",
         "standard_library_public/pw_polyfill/standard_library/iterator.h",
         "standard_library_public/pw_polyfill/standard_library/namespace.h",

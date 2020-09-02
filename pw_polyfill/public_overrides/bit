@@ -13,8 +13,8 @@
 // the License.
 #pragma once
 
-#if __has_include_next(<span>)
-#include_next <span>
-#endif  // __has_include_next(<span>)
+#if __has_include_next(<bit>)
+#include_next <bit>
+#endif  // __has_include_next(<bit>)
 
-#include "pw_span/internal/span.h"
+#include "pw_polyfill/standard_library/bit.h"

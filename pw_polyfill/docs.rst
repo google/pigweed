@@ -47,6 +47,7 @@ Backported features
 Header              Feature                           Level of support                              Feature test macro
 ==================  ================================  ============================================  ========================================
 <array>             std::to_array                     full                                          __cpp_lib_to_array
+<bit>               std::endian                       full                                          __cpp_lib_endian
 <cstdlib>           std::byte                         full; some operators not constexpr in C++11   __cpp_lib_byte
 <iterator>          std::data, std::size              full                                          __cpp_lib_nonmember_container_access
 <type_traits>       \*_t trait aliases                partial (can expand as needed)                __cpp_lib_transformation_trait_aliases
