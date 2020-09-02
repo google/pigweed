@@ -442,11 +442,29 @@ def minimal_watch_directories(directory_to_watch, directories_to_exclude):
 
 
 def get_exclude_list(exclude_list):
-    # Preset exclude list for pigweed directory.
+    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+
+    # Preset exclude list for Pigweed's upstream directories.
     pigweed_exclude_list = [
-        pathlib.Path(os.environ['PW_ROOT'], x)
-        for x in ['.cipd', '.git', 'out', '.python3-env', '.presubmit']
+        pw_root_dir / ignored_directory for ignored_directory in [
+            '.environment',  # Bootstrap-created CIPD and Python venv.
+            '.presubmit'  # Presubmit-created CIPD and Python venv.
+            '.git',  # Pigweed's git repo.
+            '.mypy_cache'  # Python static analyzer.
+            '.cargo'  # Rust package manager.
+            'out',  # Typical build directory.
+        ]
     ]
+
+    # Preset exclude for common downstream project structures.
+    #
+    # By convention, Pigweed projects use "out" as a build directory, so if
+    # watch is invoked outside the Pigweed root, also ignore the local out
+    # directory.
+    cur_dir = pathlib.Path.cwd()
+    if cur_dir != pw_root_dir:
+        exclude_list.append(cur_dir / 'out')
+
     return exclude_list + pigweed_exclude_list
 
 
@@ -463,7 +481,7 @@ def watch(build_targets=None,
     if os.environ['PW_ROOT'] is None:
         _exit_due_to_pigweed_not_installed()
     path_of_pigweed = pathlib.Path(os.environ['PW_ROOT'])
-    cur_dir = pathlib.Path(os.getcwd())
+    cur_dir = pathlib.Path.cwd()
     if (not (is_subdirectory(path_of_pigweed, cur_dir)
              or path_of_pigweed == cur_dir)):
         _exit_due_to_pigweed_not_installed()
