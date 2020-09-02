@@ -60,10 +60,6 @@ PW_EXTERN_C_START
 
 typedef uintptr_t pw_tokenizer_Payload;
 
-// TODO(hepler): Remove this alias when all projects have migrated to the new
-//     typedef name.
-typedef pw_tokenizer_Payload pw_TokenizerPayload;
-
 // This function must be defined pw_tokenizer:global_handler_with_payload
 // backend. This function is called with the encoded message by
 // pw_tokenizer_ToGlobalHandler and a caller-provided payload argument.
@@ -71,11 +67,6 @@ void pw_tokenizer_HandleEncodedMessageWithPayload(
     pw_tokenizer_Payload payload,
     const uint8_t encoded_message[],
     size_t size_bytes);
-
-// TODO(hepler): Remove this alias when all projects have migrated to the new
-//     function name.
-#define pw_TokenizerHandleEncodedMessageWithPayload \
-  pw_tokenizer_HandleEncodedMessageWithPayload
 
 // This function encodes the tokenized strings. Do not call it directly;
 // instead, use the PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD macro.

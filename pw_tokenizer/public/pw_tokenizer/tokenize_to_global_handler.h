@@ -63,10 +63,6 @@ PW_EXTERN_C_START
 void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
                                        size_t size_bytes);
 
-// TODO(hepler): Remove this alias when all projects have migrated to the new
-//     function name.
-#define pw_TokenizerHandleEncodedMessage pw_tokenizer_HandleEncodedMessage
-
 // This function encodes the tokenized strings. Do not call it directly;
 // instead, use the PW_TOKENIZE_TO_GLOBAL_HANDLER macro.
 void _pw_tokenizer_ToGlobalHandler(pw_tokenizer_Token token,
