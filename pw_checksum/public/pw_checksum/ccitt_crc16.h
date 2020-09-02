@@ -12,11 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// Provides an implementation of the CCITT CRC16 for the polynomial
+// Provides an implementation of the CRC-16-CCITT or CRC-CCITT checksum, which
+// uses the polynomial 0x1021:
 //
 //   x^16 + x^12 + x^5 + 1
 //
-// Polynomial 0x1021, initial value 0xFFFF. See https://www.zlib.net/crc_v3.txt.
+// with initial value 0xFFFF. See https://www.zlib.net/crc_v3.txt.
 #pragma once
 
 #include <stddef.h>
@@ -26,10 +27,10 @@
 extern "C" {
 #endif  // __cplusplus
 
-// C API for calculating the CCITT CRC16 of an array of data.
-uint16_t pw_ChecksumCcittCrc16(const void* data,
-                               size_t size_bytes,
-                               uint16_t initial_value);
+// C API for calculating the CRC-16-CCITT of an array of data.
+uint16_t pw_checksum_Crc16Ccitt(const void* data,
+                                size_t size_bytes,
+                                uint16_t initial_value);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -38,22 +39,42 @@ uint16_t pw_ChecksumCcittCrc16(const void* data,
 
 namespace pw::checksum {
 
-inline constexpr uint16_t kCcittCrc16DefaultInitialValue = 0xFFFF;
+// Calculates the CRC-16-CCITT for all data passed to Update.
+class Crc16Ccitt {
+ public:
+  static constexpr uint16_t kInitialValue = 0xFFFF;
 
-// Calculates the CCITT CRC16 for the provided data. To update an existing CRC,
-// pass the previous value as the initial_value argument.
-inline uint16_t CcittCrc16(
-    std::span<const std::byte> data,
-    uint16_t initial_value = kCcittCrc16DefaultInitialValue) {
-  return pw_ChecksumCcittCrc16(data.data(), data.size_bytes(), initial_value);
-}
+  // Calculates the CRC-16-CCITT for the provided data and returns it as a
+  // uint16_t. To update a CRC in multiple calls, use an instance of the
+  // Crc16Ccitt class or pass the previous value as the initial_value argument.
+  static uint16_t Calculate(std::span<const std::byte> data,
+                            uint16_t initial_value = kInitialValue) {
+    return pw_checksum_Crc16Ccitt(
+        data.data(), data.size_bytes(), initial_value);
+  }
 
-// Calculates the CCITT CRC16 for a single byte. This is useful for updating a
-// CRC byte-by-byte.
-inline uint16_t CcittCrc16(
-    std::byte value, uint16_t initial_value = kCcittCrc16DefaultInitialValue) {
-  return pw_ChecksumCcittCrc16(&value, sizeof(value), initial_value);
-}
+  static uint16_t Calculate(std::byte data,
+                            uint16_t initial_value = kInitialValue) {
+    return Calculate(std::span(&data, 1), initial_value);
+  }
+
+  constexpr Crc16Ccitt() : value_(kInitialValue) {}
+
+  void Update(std::span<const std::byte> data) {
+    value_ = Calculate(data, value_);
+  }
+
+  void Update(std::byte data) { Update(std::span(&data, 1)); }
+
+  // Returns the value of the CRC-16-CCITT for all data passed to Update.
+  uint16_t value() const { return value_; }
+
+  // Resets the CRC to the initial value.
+  void clear() { value_ = kInitialValue; }
+
+ private:
+  uint16_t value_;
+};
 
 }  // namespace pw::checksum
 

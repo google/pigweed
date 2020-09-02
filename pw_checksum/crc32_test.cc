@@ -17,6 +17,7 @@
 #include <string_view>
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 
 namespace pw::checksum {
 namespace {
@@ -27,9 +28,9 @@ namespace {
 //
 // with polynomial 0x4C11DB7, initial value 0xFFFFFFFF.
 
-constexpr uint8_t kBytes[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-constexpr uint8_t kBytesPart0[] = {1, 2, 3, 4, 5};
-constexpr uint8_t kBytesPart1[] = {6, 7, 8, 9};
+constexpr auto kBytes = bytes::Array<1, 2, 3, 4, 5, 6, 7, 8, 9>();
+constexpr auto kBytesPart0 = bytes::Array<1, 2, 3, 4, 5>();
+constexpr auto kBytesPart1 = bytes::Array<6, 7, 8, 9>();
 constexpr uint32_t kBufferCrc = 0x40EFAB9E;
 
 constexpr std::string_view kString =
@@ -38,37 +39,51 @@ constexpr std::string_view kString =
 constexpr uint32_t kStringCrc = 0x9EC87F88;
 
 TEST(Crc32, Empty) {
-  EXPECT_EQ(Crc32(std::span<std::byte>()), ~kCrc32InitialValue);
-}
-
-TEST(Crc32, ByteByByte) {
-  uint32_t crc;
-  crc = Crc32(std::byte{kBytes[0]});
-  for (size_t i = 1; i < sizeof(kBytes); i++) {
-    crc = Crc32(std::byte{kBytes[i]}, crc);
-  }
-  EXPECT_EQ(crc, kBufferCrc);
+  EXPECT_EQ(Crc32::Calculate(std::span<std::byte>()), PW_CHECKSUM_EMPTY_CRC32);
 }
 
 TEST(Crc32, Buffer) {
-  EXPECT_EQ(Crc32(as_bytes(std::span(kBytes))), kBufferCrc);
-}
-
-TEST(Crc32, BufferAppend) {
-  uint32_t crc = Crc32(as_bytes(std::span(kBytesPart0)));
-  EXPECT_EQ(Crc32(as_bytes(std::span(kBytesPart1)), crc), kBufferCrc);
+  EXPECT_EQ(Crc32::Calculate(std::as_bytes(std::span(kBytes))), kBufferCrc);
 }
 
 TEST(Crc32, String) {
-  EXPECT_EQ(Crc32(as_bytes(std::span(kString))), kStringCrc);
+  EXPECT_EQ(Crc32::Calculate(std::as_bytes(std::span(kString))), kStringCrc);
+}
+
+TEST(Crc32Class, ByteByByte) {
+  Crc32 crc;
+  for (std::byte b : kBytes) {
+    crc.Update(b);
+  }
+  EXPECT_EQ(crc.value(), kBufferCrc);
+}
+
+TEST(Crc32Class, Buffer) {
+  Crc32 crc32;
+  crc32.Update(std::as_bytes(std::span(kBytes)));
+  EXPECT_EQ(crc32.value(), kBufferCrc);
+}
+
+TEST(Crc32Class, BufferAppend) {
+  Crc32 crc32;
+  crc32.Update(kBytesPart0);
+  crc32.Update(kBytesPart1);
+  EXPECT_EQ(crc32.value(), kBufferCrc);
+}
+
+TEST(Crc32Class, String) {
+  Crc32 crc32;
+  crc32.Update(std::as_bytes(std::span(kString)));
+  EXPECT_EQ(crc32.value(), kStringCrc);
 }
 
 extern "C" uint32_t CallChecksumCrc32(const void* data, size_t size_bytes);
 extern "C" uint32_t CallChecksumCrc32Append(const void* data,
-                                            size_t size_bytes);
+                                            size_t size_bytes,
+                                            uint32_t value);
 
 TEST(Crc32FromC, Buffer) {
-  EXPECT_EQ(CallChecksumCrc32(kBytes, sizeof(kBytes)), kBufferCrc);
+  EXPECT_EQ(CallChecksumCrc32(kBytes.data(), kBytes.size()), kBufferCrc);
 }
 
 TEST(Crc32FromC, String) {
@@ -76,11 +91,17 @@ TEST(Crc32FromC, String) {
 }
 
 TEST(Crc32AppendFromC, Buffer) {
-  EXPECT_EQ(CallChecksumCrc32(kBytes, sizeof(kBytes)), kBufferCrc);
+  uint32_t crc = PW_CHECKSUM_EMPTY_CRC32;
+  for (std::byte b : kBytes) {
+    crc = CallChecksumCrc32Append(&b, 1, crc);
+  }
+
+  EXPECT_EQ(crc, kBufferCrc);
 }
 
 TEST(Crc32AppendFromC, String) {
-  EXPECT_EQ(CallChecksumCrc32Append(kString.data(), kString.size()),
+  EXPECT_EQ(CallChecksumCrc32Append(
+                kString.data(), kString.size(), PW_CHECKSUM_EMPTY_CRC32),
             kStringCrc);
 }
 

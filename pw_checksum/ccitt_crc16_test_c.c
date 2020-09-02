@@ -14,6 +14,6 @@
 
 #include "pw_checksum/ccitt_crc16.h"
 
-uint16_t CallChecksumCcittCrc16(const void* data, size_t size_bytes) {
-  return pw_ChecksumCcittCrc16(data, size_bytes, 0xFFFF);
+uint16_t CallChecksumCrc16Ccitt(const void* data, size_t size_bytes) {
+  return pw_checksum_Crc16Ccitt(data, size_bytes, 0xFFFF);
 }

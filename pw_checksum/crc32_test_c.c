@@ -15,9 +15,11 @@
 #include "pw_checksum/crc32.h"
 
 uint32_t CallChecksumCrc32(const void* data, size_t size_bytes) {
-  return pw_ChecksumCrc32(data, size_bytes);
+  return pw_checksum_Crc32(data, size_bytes);
 }
 
-uint32_t CallChecksumCrc32Append(const void* data, size_t size_bytes) {
-  return pw_ChecksumCrc32Append(data, size_bytes, ~0xFFFFFFFFu);
+uint32_t CallChecksumCrc32Append(const void* data,
+                                 size_t size_bytes,
+                                 uint32_t value) {
+  return pw_checksum_Crc32Append(data, size_bytes, value);
 }

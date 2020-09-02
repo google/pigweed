@@ -91,7 +91,7 @@ Result<ConstByteSpan> Decoder::AddByte(const byte new_byte) {
 
 bool Decoder::CheckCrc() const {
   uint16_t expected_crc =
-      checksum::CcittCrc16(frame_buffer_.first(size_ - 2), 0xFFFF);
+      checksum::Crc16Ccitt::Calculate(frame_buffer_.first(size_ - 2), 0xFFFF);
   uint16_t actual_crc;
   std::memcpy(&actual_crc, (frame_buffer_.data() + size_ - 2), 2);
   return actual_crc == expected_crc;

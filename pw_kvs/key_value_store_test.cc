@@ -406,11 +406,11 @@ TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
   ASSERT_EQ(Status::OK, kvs.Delete(keys[0]));
 
   // Compare before / after checksums to verify that nothing was written.
-  const uint16_t crc = checksum::CcittCrc16(flash.memory.buffer());
+  const uint16_t crc = checksum::Crc16Ccitt::Calculate(flash.memory.buffer());
 
   EXPECT_EQ(kvs.Delete(keys[0]), Status::NOT_FOUND);
 
-  EXPECT_EQ(crc, checksum::CcittCrc16(flash.memory.buffer()));
+  EXPECT_EQ(crc, checksum::Crc16Ccitt::Calculate(flash.memory.buffer()));
 }
 
 class LargeEmptyInitializedKvs : public ::testing::Test {

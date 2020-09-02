@@ -35,33 +35,48 @@ constexpr std::string_view kString =
 constexpr uint16_t kStringCrc = 0xC184;
 
 TEST(Crc16, Empty) {
-  EXPECT_EQ(CcittCrc16(std::span<std::byte>()), kCcittCrc16DefaultInitialValue);
+  EXPECT_EQ(Crc16Ccitt::Calculate(std::span<std::byte>()),
+            Crc16Ccitt::kInitialValue);
 }
 
 TEST(Crc16, ByteByByte) {
-  uint16_t crc = kCcittCrc16DefaultInitialValue;
+  uint16_t crc = Crc16Ccitt::kInitialValue;
   for (size_t i = 0; i < sizeof(kBytes); i++) {
-    crc = CcittCrc16(std::byte{kBytes[i]}, crc);
+    crc = Crc16Ccitt::Calculate(std::byte{kBytes[i]}, crc);
   }
   EXPECT_EQ(crc, kBufferCrc);
 }
 
 TEST(Crc16, Buffer) {
-  EXPECT_EQ(CcittCrc16(std::as_bytes(std::span(kBytes))), kBufferCrc);
+  EXPECT_EQ(Crc16Ccitt::Calculate(std::as_bytes(std::span(kBytes))),
+            kBufferCrc);
 }
 
 TEST(Crc16, String) {
-  EXPECT_EQ(CcittCrc16(std::as_bytes(std::span(kString))), kStringCrc);
+  EXPECT_EQ(Crc16Ccitt::Calculate(std::as_bytes(std::span(kString))),
+            kStringCrc);
 }
 
-extern "C" uint16_t CallChecksumCcittCrc16(const void* data, size_t size_bytes);
+TEST(Crc16Class, Buffer) {
+  Crc16Ccitt crc16;
+  crc16.Update(std::as_bytes(std::span(kBytes)));
+  EXPECT_EQ(crc16.value(), kBufferCrc);
+}
+
+TEST(Crc16Class, String) {
+  Crc16Ccitt crc16;
+  crc16.Update(std::as_bytes(std::span(kString)));
+  EXPECT_EQ(crc16.value(), kStringCrc);
+}
+
+extern "C" uint16_t CallChecksumCrc16Ccitt(const void* data, size_t size_bytes);
 
 TEST(Crc16FromC, Buffer) {
-  EXPECT_EQ(CallChecksumCcittCrc16(kBytes, sizeof(kBytes)), kBufferCrc);
+  EXPECT_EQ(CallChecksumCrc16Ccitt(kBytes, sizeof(kBytes)), kBufferCrc);
 }
 
 TEST(Crc16FromC, String) {
-  EXPECT_EQ(CallChecksumCcittCrc16(kString.data(), kString.size()), kStringCrc);
+  EXPECT_EQ(CallChecksumCrc16Ccitt(kString.data(), kString.size()), kStringCrc);
 }
 
 }  // namespace

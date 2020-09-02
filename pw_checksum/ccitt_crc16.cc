@@ -17,7 +17,7 @@
 namespace pw::checksum {
 namespace {
 
-constexpr uint16_t kCcittCrc16Table[256]{
+constexpr uint16_t kCrc16CcittTable[256]{
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
     0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
     0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
@@ -54,13 +54,13 @@ constexpr uint16_t kCcittCrc16Table[256]{
 
 }  // namespace
 
-extern "C" uint16_t pw_ChecksumCcittCrc16(const void* data,
-                                          size_t size_bytes,
-                                          uint16_t value) {
+extern "C" uint16_t pw_checksum_Crc16Ccitt(const void* data,
+                                           size_t size_bytes,
+                                           uint16_t value) {
   const uint8_t* const array = static_cast<const uint8_t*>(data);
 
   for (size_t i = 0; i < size_bytes; ++i) {
-    value = kCcittCrc16Table[((value >> 8) ^ array[i]) & 0xffu] ^ (value << 8);
+    value = kCrc16CcittTable[((value >> 8) ^ array[i]) & 0xffu] ^ (value << 8);
   }
 
   return value;

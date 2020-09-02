@@ -61,8 +61,6 @@ bool NeedsEscaping(byte b) {
 }  // namespace
 
 Status EncodeAndWritePayload(ConstByteSpan payload, stream::Writer& writer) {
-  uint16_t crc = 0xFFFF;
-
   if (Status status = WriteFrameDelimiter(writer); !status.ok()) {
     return status;
   }
@@ -74,19 +72,19 @@ Status EncodeAndWritePayload(ConstByteSpan payload, stream::Writer& writer) {
     if (Status status = writer.Write(std::span(begin, end)); !status.ok()) {
       return status;
     }
-    crc = checksum::CcittCrc16(std::span(begin, end), crc);
 
     if (end == payload.end()) {
       break;
     }
-    crc = checksum::CcittCrc16(*end, crc);
     if (Status status = EscapeAndWriteByte(*end, writer); !status.ok()) {
       return status;
     }
     begin = end + 1;
   }
 
-  if (Status status = WriteCrc(crc, writer); !status.ok()) {
+  if (Status status =
+          WriteCrc(checksum::Crc16Ccitt::Calculate(payload), writer);
+      !status.ok()) {
     return status;
   }
   if (Status status = WriteFrameDelimiter(writer); !status.ok()) {

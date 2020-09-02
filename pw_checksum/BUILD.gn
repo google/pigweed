@@ -43,7 +43,10 @@ pw_test_group("tests") {
 }
 
 pw_test("ccitt_crc16_test") {
-  deps = [ ":pw_checksum" ]
+  deps = [
+    ":pw_checksum",
+    dir_pw_bytes,
+  ]
   sources = [
     "ccitt_crc16_test.cc",
     "ccitt_crc16_test_c.c",
@@ -51,7 +54,10 @@ pw_test("ccitt_crc16_test") {
 }
 
 pw_test("crc32_test") {
-  deps = [ ":pw_checksum" ]
+  deps = [
+    ":pw_checksum",
+    dir_pw_bytes,
+  ]
   sources = [
     "crc32_test.cc",
     "crc32_test_c.c",
