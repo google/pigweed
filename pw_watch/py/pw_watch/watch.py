@@ -448,10 +448,10 @@ def get_exclude_list(exclude_list):
     pigweed_exclude_list = [
         pw_root_dir / ignored_directory for ignored_directory in [
             '.environment',  # Bootstrap-created CIPD and Python venv.
-            '.presubmit'  # Presubmit-created CIPD and Python venv.
+            '.presubmit',  # Presubmit-created CIPD and Python venv.
             '.git',  # Pigweed's git repo.
-            '.mypy_cache'  # Python static analyzer.
-            '.cargo'  # Rust package manager.
+            '.mypy_cache',  # Python static analyzer.
+            '.cargo',  # Rust package manager.
             'out',  # Typical build directory.
         ]
     ]
