@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstring>
 
+#include "pw_bytes/endian.h"
 #include "pw_bytes/span.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
@@ -191,18 +192,7 @@ class ByteBuilder {
     T GetInteger(std::endian order = std::endian::little) const {
       T value;
       std::memcpy(&value, byte_, sizeof(T));
-      if (std::endian::native != order) {
-        if constexpr (sizeof(T) == 1) {
-          return value;
-        } else if constexpr (sizeof(T) == 2) {
-          return Reverse2Bytes(value);
-        } else if constexpr (sizeof(T) == 4) {
-          return Reverse4Bytes(value);
-        } else if constexpr (sizeof(T) == 8) {
-          return Reverse8Bytes(value);
-        }
-      }
-      return value;
+      return bytes::ConvertOrderFrom(order, value);
     }
 
     const std::byte* byte_;
@@ -311,10 +301,7 @@ class ByteBuilder {
   // Put methods for inserting different 16-bit ints
   ByteBuilder& PutUint16(uint16_t value,
                          std::endian order = std::endian::little) {
-    if (std::endian::native != order) {
-      value = Reverse2Bytes(value);
-    }
-    return WriteInOrder(value);
+    return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
   ByteBuilder& PutInt16(int16_t value,
@@ -325,10 +312,7 @@ class ByteBuilder {
   // Put methods for inserting different 32-bit ints
   ByteBuilder& PutUint32(uint32_t value,
                          std::endian order = std::endian::little) {
-    if (std::endian::native != order) {
-      value = Reverse4Bytes(value);
-    }
-    return WriteInOrder(value);
+    return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
   ByteBuilder& PutInt32(int32_t value,
@@ -339,10 +323,7 @@ class ByteBuilder {
   // Put methods for inserting different 64-bit ints
   ByteBuilder& PutUint64(uint64_t value,
                          std::endian order = std::endian::little) {
-    if (std::endian::native != order) {
-      value = Reverse8Bytes(value);
-    }
-    return WriteInOrder(value);
+    return WriteInOrder(bytes::ConvertOrderTo(order, value));
   }
 
   ByteBuilder& PutInt64(int64_t value,
@@ -361,28 +342,6 @@ class ByteBuilder {
   };
 
  private:
-  static constexpr uint16_t Reverse2Bytes(uint16_t value) {
-    return uint16_t(((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8));
-  }
-
-  static constexpr uint32_t Reverse4Bytes(uint32_t value) {
-    return uint32_t(((value & 0x000000FF) << 3 * 8) |  //
-                    ((value & 0x0000FF00) << 1 * 8) |  //
-                    ((value & 0x00FF0000) >> 1 * 8) |  //
-                    ((value & 0xFF000000) >> 3 * 8));
-  }
-
-  static constexpr uint64_t Reverse8Bytes(uint64_t value) {
-    return uint64_t(((value & 0x00000000000000FF) << 7 * 8) |  //
-                    ((value & 0x000000000000FF00) << 5 * 8) |  //
-                    ((value & 0x0000000000FF0000) << 3 * 8) |  //
-                    ((value & 0x00000000FF000000) << 1 * 8) |  //
-                    ((value & 0x000000FF00000000) >> 1 * 8) |  //
-                    ((value & 0x0000FF0000000000) >> 3 * 8) |  //
-                    ((value & 0x00FF000000000000) >> 5 * 8) |  //
-                    ((value & 0xFF00000000000000) >> 7 * 8));
-  }
-
   template <typename T>
   ByteBuilder& WriteInOrder(T value) {
     return append(&value, sizeof(value));

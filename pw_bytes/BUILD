@@ -30,6 +30,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_bytes/array.h",
         "public/pw_bytes/byte_builder.h",
+        "public/pw_bytes/endian.h",
         "public/pw_bytes/span.h",
     ],
     includes = ["public"],
@@ -52,6 +53,15 @@ pw_cc_test(
 pw_cc_test(
     name = "byte_builder_test",
     srcs = ["byte_builder_test.cc"],
+    deps = [
+        ":pw_bytes",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "endian_test",
+    srcs = ["endian_test.cc"],
     deps = [
         ":pw_bytes",
         "//pw_unit_test",

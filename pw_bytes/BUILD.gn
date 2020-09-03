@@ -29,6 +29,7 @@ pw_source_set("pw_bytes") {
   public = [
     "public/pw_bytes/array.h",
     "public/pw_bytes/byte_builder.h",
+    "public/pw_bytes/endian.h",
     "public/pw_bytes/span.h",
   ]
   sources = [ "byte_builder.cc" ]
@@ -41,8 +42,9 @@ pw_source_set("pw_bytes") {
 
 pw_test_group("tests") {
   tests = [
-    ":array",
+    ":array_test",
     ":byte_builder_test",
+    ":endian_test",
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
@@ -51,14 +53,19 @@ pw_test_group("tests") {
   ]
 }
 
+pw_test("array_test") {
+  deps = [ ":pw_bytes" ]
+  sources = [ "array_test.cc" ]
+}
+
 pw_test("byte_builder_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "byte_builder_test.cc" ]
 }
 
-pw_test("array") {
+pw_test("endian_test") {
   deps = [ ":pw_bytes" ]
-  sources = [ "array_test.cc" ]
+  sources = [ "endian_test.cc" ]
 }
 
 pw_doc_group("docs") {
