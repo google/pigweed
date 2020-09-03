@@ -441,11 +441,13 @@ def minimal_watch_directories(directory_to_watch, directories_to_exclude):
     return subdirectories_to_watch
 
 
-def get_exclude_list(exclude_list):
-    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+def get_common_excludes():
+    """Find commonly excluded directories, and return them as a [Path]"""
+    exclude_list = []
 
     # Preset exclude list for Pigweed's upstream directories.
-    pigweed_exclude_list = [
+    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+    exclude_list.extend([
         pw_root_dir / ignored_directory for ignored_directory in [
             '.environment',  # Bootstrap-created CIPD and Python venv.
             '.presubmit',  # Presubmit-created CIPD and Python venv.
@@ -454,7 +456,7 @@ def get_exclude_list(exclude_list):
             '.cargo',  # Rust package manager.
             'out',  # Typical build directory.
         ]
-    ]
+    ])
 
     # Preset exclude for common downstream project structures.
     #
@@ -465,7 +467,24 @@ def get_exclude_list(exclude_list):
     if cur_dir != pw_root_dir:
         exclude_list.append(cur_dir / 'out')
 
-    return exclude_list + pigweed_exclude_list
+    # Check for and warn about legacy directories.
+    legacy_directories = [
+        '.cipd',  # Legacy CIPD location.
+        '.python3-venv',  # Legacy Python venv location.
+    ]
+    found_legacy = False
+    for legacy_directory in legacy_directories:
+        full_legacy_directory = pw_root_dir / legacy_directory
+        if full_legacy_directory.is_dir():
+            _LOG.warning('Legacy environment directory found: %s',
+                         str(full_legacy_directory))
+            exclude_list.append(full_legacy_directory)
+            found_legacy = True
+    if found_legacy:
+        _LOG.warning('Found legacy environment directory(s); these '
+                     'should be deleted')
+
+    return exclude_list
 
 
 def watch(build_targets=None,
@@ -487,7 +506,7 @@ def watch(build_targets=None,
         _exit_due_to_pigweed_not_installed()
 
     # Preset exclude list for pigweed directory.
-    exclude_list = get_exclude_list(exclude_list)
+    exclude_list += get_common_excludes()
 
     subdirectories_to_watch \
         = minimal_watch_directories(cur_dir, exclude_list)
