@@ -40,6 +40,11 @@ using std::byte;
 
 namespace pw::rpc {
 namespace {
+
+constexpr byte kFlag = byte{0x7E};
+constexpr uint8_t kAddress = 0x7b;  // 123
+constexpr byte kControl = byte{0};
+
 // Size of the in-memory buffer to use for this test.
 constexpr size_t kSinkBufferSize = 15;
 
@@ -48,24 +53,23 @@ TEST(HdlcChannelOutput, 1BytePayload) {
   std::array<byte, kSinkBufferSize> channel_output_buffer;
   stream::MemoryWriter memory_writer(memory_buffer);
 
-  HdlcChannelOutput channel_output(
-      memory_writer, channel_output_buffer, "HdlcChannelOutput");
+  HdlcChannelOutput output(
+      memory_writer, channel_output_buffer, kAddress, "HdlcChannelOutput");
 
-  constexpr std::array<byte, 1> test_array = bytes::Array<0x41>();
-  memcpy(channel_output.AcquireBuffer().data(),
-         test_array.data(),
-         test_array.size());
+  constexpr byte test_data = byte{'A'};
+  std::memcpy(output.AcquireBuffer().data(), &test_data, sizeof(test_data));
 
-  constexpr std::array<byte, 5> expected_array =
-      bytes::Array<0x7E, 0x41, 0x15, 0xB9, 0x7E>();
-  channel_output.SendAndReleaseBuffer(test_array.size());
+  constexpr auto expected = bytes::Concat(
+      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
 
-  EXPECT_STREQ("HdlcChannelOutput", channel_output.name());
-  EXPECT_EQ(memory_writer.bytes_written(), 5u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+  output.SendAndReleaseBuffer(sizeof(test_data));
+
+  EXPECT_STREQ("HdlcChannelOutput", output.name());
+  ASSERT_EQ(memory_writer.bytes_written(), expected.size());
+  EXPECT_EQ(
+      std::memcmp(
+          memory_writer.data(), expected.data(), memory_writer.bytes_written()),
+      0);
 }
 
 TEST(HdlcChannelOutput, EscapingPayloadTest) {
@@ -73,24 +77,28 @@ TEST(HdlcChannelOutput, EscapingPayloadTest) {
   std::array<byte, kSinkBufferSize> channel_output_buffer;
   stream::MemoryWriter memory_writer(memory_buffer);
 
-  HdlcChannelOutput channel_output(
-      memory_writer, channel_output_buffer, "HdlcChannelOutput");
+  HdlcChannelOutput output(
+      memory_writer, channel_output_buffer, kAddress, "HdlcChannelOutput");
 
-  constexpr std::array<byte, 1> test_array = bytes::Array<0x7D>();
-  memcpy(channel_output.AcquireBuffer().data(),
-         test_array.data(),
-         test_array.size());
+  constexpr auto test_data = bytes::Array<0x7D>();
+  std::memcpy(
+      output.AcquireBuffer().data(), test_data.data(), test_data.size());
 
-  constexpr std::array<byte, 6> expected_array =
-      bytes::Array<0x7E, 0x7D, 0x5D, 0xCA, 0x4E, 0x7E>();
-  channel_output.SendAndReleaseBuffer(test_array.size());
+  constexpr auto expected = bytes::Concat(kFlag,
+                                          kAddress,
+                                          kControl,
+                                          byte{0x7d},
+                                          byte{0x7d} ^ byte{0x20},
+                                          uint32_t{0x89515322},
+                                          kFlag);
+  output.SendAndReleaseBuffer(test_data.size());
 
-  EXPECT_STREQ("HdlcChannelOutput", channel_output.name());
-  EXPECT_EQ(memory_writer.bytes_written(), 6u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+  EXPECT_STREQ("HdlcChannelOutput", output.name());
+  ASSERT_EQ(memory_writer.bytes_written(), 10u);
+  EXPECT_EQ(
+      std::memcmp(
+          memory_writer.data(), expected.data(), memory_writer.bytes_written()),
+      0);
 }
 
 }  // namespace

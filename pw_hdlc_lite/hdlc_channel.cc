@@ -20,7 +20,7 @@ namespace pw::rpc {
 
 void HdlcChannelOutput::SendAndReleaseBuffer(size_t size) {
   Status status =
-      hdlc_lite::EncodeAndWritePayload(buffer_.first(size), *writer_);
+      hdlc_lite::WriteInformationFrame(address_, buffer_.first(size), *writer_);
   if (!status.ok()) {
     PW_LOG_ERROR("Failed writing to %s: %s", name(), status.str());
   }

@@ -29,8 +29,12 @@ class HdlcChannelOutput : public ChannelOutput {
   // a writer object to which will be used to write and send the bytes.
   constexpr HdlcChannelOutput(stream::Writer& writer,
                               std::span<std::byte> buffer,
+                              uint8_t address,
                               const char* channel_name)
-      : ChannelOutput(channel_name), buffer_(buffer), writer_(&writer) {}
+      : ChannelOutput(channel_name),
+        buffer_(buffer),
+        address_(address),
+        writer_(&writer) {}
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
@@ -40,6 +44,7 @@ class HdlcChannelOutput : public ChannelOutput {
 
  private:
   std::span<std::byte> buffer_;
+  uint8_t address_;
   stream::Writer* writer_;
 };
 

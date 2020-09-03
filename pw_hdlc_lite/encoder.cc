@@ -20,77 +20,108 @@
 #include <cstring>
 #include <span>
 
-#include "pw_checksum/crc16_ccitt.h"
+#include "pw_bytes/endian.h"
+#include "pw_checksum/crc32.h"
 
 using std::byte;
 
 namespace pw::hdlc_lite {
 namespace {
 
-constexpr byte kHdlcFrameDelimiter = byte{0x7E};
+constexpr byte kHdlcFlag = byte{0x7E};
 constexpr byte kHdlcEscape = byte{0x7D};
-constexpr std::array<byte, 2> kEscapedFrameDelimiterArray = {byte{0x7D},
-                                                             byte{0x5E}};
-constexpr std::array<byte, 2> kEscapedEscapeFlagArray = {byte{0x7D},
-                                                         byte{0x5D}};
 
-Status WriteFrameDelimiter(stream::Writer& writer) {
-  return writer.Write(kHdlcFrameDelimiter);
-}
+// Indicates this an information packet with sequence numbers set to 0.
+constexpr byte kUnusedControl = byte{0};
 
-Status EscapeAndWriteByte(const byte b, stream::Writer& writer) {
-  if (b == kHdlcFrameDelimiter) {
-    return writer.Write(kEscapedFrameDelimiterArray);
-  } else if (b == kHdlcEscape) {
-    return writer.Write(kEscapedEscapeFlagArray);
+constexpr std::array<byte, 2> kEscapedFlag = {byte{0x7D}, byte{0x5E}};
+constexpr std::array<byte, 2> kEscapedEscape = {byte{0x7D}, byte{0x5D}};
+
+Status EscapeAndWrite(const byte b, stream::Writer& writer) {
+  if (b == kHdlcFlag) {
+    return writer.Write(kEscapedFlag);
+  }
+  if (b == kHdlcEscape) {
+    return writer.Write(kEscapedEscape);
   }
   return writer.Write(b);
 }
 
-Status WriteCrc(uint16_t crc, stream::Writer& writer) {
-  if (Status status = EscapeAndWriteByte(byte(crc & 0x00FF), writer)) {
+bool NeedsEscaping(byte b) { return (b == kHdlcFlag || b == kHdlcEscape); }
+
+// Encodes and writes HDLC frames.
+class Encoder {
+ public:
+  constexpr Encoder(stream::Writer& output) : writer_(output) {}
+
+  // Writes the header for an I-frame. After successfully calling
+  // StartInformationFrame, WriteData may be called any number of times.
+  Status StartInformationFrame(uint8_t address);
+
+  // Writes data for an ongoing frame. Must only be called after a successful
+  // StartInformationFrame call, and prior to a FinishFrame() call.
+  Status WriteData(ConstByteSpan data);
+
+  // Finishes a frame. Writes the frame check sequence and a terminating flag.
+  Status FinishFrame();
+
+ private:
+  stream::Writer& writer_;
+  checksum::Crc32 fcs_;
+};
+
+Status Encoder::StartInformationFrame(uint8_t address) {
+  fcs_.clear();
+  if (Status status = writer_.Write(kHdlcFlag); !status.ok()) {
     return status;
   }
-  return EscapeAndWriteByte(byte((crc & 0xFF00) >> 8), writer);
+
+  const byte address_and_control[] = {std::byte{address}, kUnusedControl};
+  return WriteData(address_and_control);
 }
 
-bool NeedsEscaping(byte b) {
-  return (b == kHdlcFrameDelimiter || b == kHdlcEscape);
-}
-
-}  // namespace
-
-Status EncodeAndWritePayload(ConstByteSpan payload, stream::Writer& writer) {
-  if (Status status = WriteFrameDelimiter(writer); !status.ok()) {
-    return status;
-  }
-
-  auto begin = payload.begin();
+Status Encoder::WriteData(ConstByteSpan data) {
+  auto begin = data.begin();
   while (true) {
-    auto end = std::find_if(begin, payload.end(), NeedsEscaping);
+    auto end = std::find_if(begin, data.end(), NeedsEscaping);
 
-    if (Status status = writer.Write(std::span(begin, end)); !status.ok()) {
+    if (Status status = writer_.Write(std::span(begin, end)); !status.ok()) {
       return status;
     }
-
-    if (end == payload.end()) {
-      break;
+    if (end == data.end()) {
+      fcs_.Update(data);
+      return Status::OK;
     }
-    if (Status status = EscapeAndWriteByte(*end, writer); !status.ok()) {
+    if (Status status = EscapeAndWrite(*end, writer_); !status.ok()) {
       return status;
     }
     begin = end + 1;
   }
+}
 
+Status Encoder::FinishFrame() {
   if (Status status =
-          WriteCrc(checksum::Crc16Ccitt::Calculate(payload), writer);
+          WriteData(bytes::CopyInOrder(std::endian::little, fcs_.value()));
       !status.ok()) {
     return status;
   }
-  if (Status status = WriteFrameDelimiter(writer); !status.ok()) {
+  return writer_.Write(kHdlcFlag);
+}
+
+}  // namespace
+
+Status WriteInformationFrame(uint8_t address,
+                             ConstByteSpan payload,
+                             stream::Writer& writer) {
+  Encoder encoder(writer);
+
+  if (Status status = encoder.StartInformationFrame(address); !status.ok()) {
     return status;
   }
-  return Status::OK;
+  if (Status status = encoder.WriteData(payload); !status.ok()) {
+    return status;
+  }
+  return encoder.FinishFrame();
 }
 
 }  // namespace pw::hdlc_lite

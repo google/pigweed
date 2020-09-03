@@ -19,173 +19,152 @@
 #include <cstddef>
 
 #include "gtest/gtest.h"
+#include "pw_bytes/array.h"
 #include "pw_stream/memory_stream.h"
 
 using std::byte;
 
-template <typename... Args>
-constexpr std::array<byte, sizeof...(Args)> MakeBytes(Args... args) noexcept {
-  return {static_cast<byte>(args)...};
-}
-
 namespace pw::hdlc_lite {
 namespace {
-// Size of the in-memory buffer to use for this test.
-constexpr size_t kSinkBufferSize = 15;
 
-TEST(Encoder, FrameFormatTest_1BytePayload) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
+constexpr byte kFlag = byte{0x7E};
+constexpr byte kEscape = byte{0x7D};
+constexpr uint8_t kAddress = 0x7B;  // 123
+constexpr byte kControl = byte{0};
 
-  constexpr std::array<byte, 1> test_array = MakeBytes(0x41);
-  constexpr std::array<byte, 5> expected_array =
-      MakeBytes(0x7E, 0x41, 0x15, 0xB9, 0x7E);
+class WriteInfoFrame : public ::testing::Test {
+ protected:
+  WriteInfoFrame() : writer_(buffer_) {}
 
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 5u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+  stream::MemoryWriter writer_;
+  std::array<byte, 32> buffer_;
+};
+
+#define EXPECT_ENCODER_WROTE(...)                                           \
+  do {                                                                      \
+    constexpr auto expected_data = (__VA_ARGS__);                           \
+    EXPECT_EQ(writer_.bytes_written(), expected_data.size());               \
+    EXPECT_EQ(                                                              \
+        std::memcmp(                                                        \
+            writer_.data(), expected_data.data(), writer_.bytes_written()), \
+        0);                                                                 \
+  } while (0)
+
+TEST_F(WriteInfoFrame, EmptyPayload) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, std::span<byte>(), writer_));
+  EXPECT_ENCODER_WROTE(
+      bytes::Concat(kFlag, kAddress, kControl, uint32_t{0x8D12B2C2}, kFlag));
 }
 
-TEST(Encoder, FrameFormatTest_EmptyPayload) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
-
-  constexpr std::array<byte, 4> expected_array =
-      MakeBytes(0x7E, 0xFF, 0xFF, 0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(std::span<byte>(), memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 4u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+TEST_F(WriteInfoFrame, OneBytePayload) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::String("A"), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(
+      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag));
 }
 
-TEST(Encoder, FrameFormatTest_9BytePayload) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
-
-  constexpr std::array<byte, 9> test_array =
-      MakeBytes(0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39);
-  constexpr std::array<byte, 13> expected_array = MakeBytes(0x7E,
-                                                            0x31,
-                                                            0x32,
-                                                            0x33,
-                                                            0x34,
-                                                            0x35,
-                                                            0x36,
-                                                            0x37,
-                                                            0x38,
-                                                            0x39,
-                                                            0xB1,
-                                                            0x29,
-                                                            0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 13u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7d) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::Array<0x7d>(), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kAddress,
+                                     kControl,
+                                     kEscape,
+                                     byte{0x7d} ^ byte{0x20},
+                                     uint32_t{0x89515322},
+                                     kFlag));
 }
 
-TEST(Encoder, EncodingMultiplePayloads) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
-
-  constexpr std::array<byte, 1> test_array = MakeBytes(0x41);
-  constexpr std::array<byte, 5> expected_array_1 =
-      MakeBytes(0x7E, 0x41, 0x15, 0xB9, 0x7E);
-  constexpr std::array<byte, 10> expected_array_2 =
-      MakeBytes(0x7E, 0x41, 0x15, 0xB9, 0x7E, 0x7E, 0x41, 0x15, 0xB9, 0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 5u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array_1.data(),
-                        memory_writer.bytes_written()),
-            0);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 10u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array_2.data(),
-                        memory_writer.bytes_written()),
-            0);
+TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7E) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::Array<0x7e>(), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kAddress,
+                                     kControl,
+                                     kEscape,
+                                     byte{0x7e} ^ byte{0x20},
+                                     uint32_t{0x10580298},
+                                     kFlag));
 }
 
-TEST(Encoder, EscapingTest_0x7D) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
-
-  constexpr std::array<byte, 1> test_array = MakeBytes(0x7D);
-  constexpr std::array<byte, 6> expected_array =
-      MakeBytes(0x7E, 0x7D, 0x5D, 0xCA, 0x4E, 0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 6u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+TEST_F(WriteInfoFrame, AddressNeedsEscaping) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(0x7d, bytes::String("A"), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(
+      kFlag, kEscape, byte{0x5d}, kControl, 'A', uint32_t{0xA2B35317}, kFlag));
 }
 
-TEST(Encoder, EscapingTest_0x7E) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
+TEST_F(WriteInfoFrame, Crc32NeedsEscaping) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::String("abcdefg"), writer_));
 
-  constexpr std::array<byte, 1> test_array = MakeBytes(0x7E);
-  constexpr std::array<byte, 7> expected_array =
-      MakeBytes(0x7E, 0x7D, 0x5E, 0xA9, 0x7D, 0x5E, 0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 7u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+  // The CRC-32 is 0x38B9FC7E, so the 0x7E must be escaped.
+  constexpr auto expected_crc32 = bytes::Array<0x7d, 0x5e, 0xfc, 0xb9, 0x38>();
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kAddress,
+                                     kControl,
+                                     bytes::String("abcdefg"),
+                                     expected_crc32,
+                                     kFlag));
 }
 
-TEST(Encoder, EscapingTest_Mix) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
-
-  constexpr std::array<byte, 7> test_array =
-      MakeBytes(0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E);
-  constexpr std::array<byte, 14> expected_array = MakeBytes(0x7E,
-                                                            0x7D,
-                                                            0x5E,
-                                                            0x7B,
-                                                            0x61,
-                                                            0x62,
-                                                            0x63,
-                                                            0x7D,
-                                                            0x5D,
-                                                            0x7D,
-                                                            0x5E,
-                                                            0x49,
-                                                            0xE5,
-                                                            0x7E);
-
-  EXPECT_TRUE(EncodeAndWritePayload(test_array, memory_writer).ok());
-  EXPECT_EQ(memory_writer.bytes_written(), 14u);
-  EXPECT_EQ(std::memcmp(memory_writer.data(),
-                        expected_array.data(),
-                        memory_writer.bytes_written()),
-            0);
+TEST_F(WriteInfoFrame, MultiplePayloads) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::String("ABC"), writer_));
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(kAddress, bytes::String("DEF"), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kAddress,
+                                     kControl,
+                                     bytes::String("ABC"),
+                                     uint32_t{0x14E2FC99},
+                                     kFlag,
+                                     kFlag,
+                                     kAddress,
+                                     kControl,
+                                     bytes::String("DEF"),
+                                     uint32_t{0x2D025C3A},
+                                     kFlag));
 }
 
-TEST(Encoder, WriterErrorTest) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
+TEST_F(WriteInfoFrame, PayloadWithNoEscapes) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(
+                kAddress, bytes::String("123456789012345678901234"), writer_));
 
-  constexpr std::array<byte, 12> test_array = MakeBytes(
-      0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x40, 0x41);
+  // Fill the memory writer's buffer.
+  ASSERT_EQ(writer_.bytes_written(), buffer_.size());
 
-  EXPECT_FALSE(EncodeAndWritePayload(test_array, memory_writer).ok());
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kAddress,
+                                     kControl,
+                                     bytes::String("123456789012345678901234"),
+                                     uint32_t{0x50AA35EC},
+                                     kFlag));
+}
+
+TEST_F(WriteInfoFrame, PayloadWithMultipleEscapes) {
+  ASSERT_EQ(Status::OK,
+            WriteInformationFrame(
+                kAddress,
+                bytes::Array<0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E>(),
+                writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(
+      kFlag,
+      kAddress,
+      kControl,
+      bytes::
+          Array<0x7D, 0x5E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x5D, 0x7D, 0x5E>(),
+      uint32_t{0x1B8D505E},
+      kFlag));
+}
+
+TEST_F(WriteInfoFrame, WriterError) {
+  constexpr auto data = bytes::Initialized<sizeof(buffer_)>(0x7e);
+
+  EXPECT_EQ(Status::RESOURCE_EXHAUSTED,
+            WriteInformationFrame(kAddress, data, writer_));
 }
 
 }  // namespace

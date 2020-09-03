@@ -23,6 +23,9 @@
 namespace pw::bytes {
 namespace internal {
 
+template <typename T>
+constexpr bool UseBytesDirectly = std::is_integral_v<T> || std::is_enum_v<T>;
+
 // Internal implementation functions. CopyBytes copies bytes from an array of
 // byte-sized elements or the underlying bytes of an integer (as little-endian).
 // std::memcpy cannot be used since it is not constexpr.
@@ -30,7 +33,7 @@ template <typename B, typename T, typename... Args>
 consteval void CopyBytes(B* array, T value, Args... args) {
   static_assert(sizeof(B) == sizeof(std::byte));
 
-  if constexpr (std::is_integral_v<T>) {
+  if constexpr (UseBytesDirectly<T>) {
     if constexpr (sizeof(T) == 1u) {
       *array++ = static_cast<B>(value);
     } else {
@@ -54,7 +57,7 @@ consteval void CopyBytes(B* array, T value, Args... args) {
 // Evaluates to the size in bytes of an integer or byte array.
 template <typename T>
 consteval size_t SizeOfBytes(const T& arg) {
-  if constexpr (std::is_integral_v<T>) {
+  if constexpr (UseBytesDirectly<T>) {
     return sizeof(arg);
   } else {
     static_assert(sizeof(arg[0]) == sizeof(std::byte));

@@ -19,11 +19,18 @@
 
 namespace pw::hdlc_lite {
 
-// Function used to encode 0-kMaxPayloadSize bytes and write it to our
-// pw::stream::writer. This function is safe to call multiple times in
-// succession since it automatically writes a delimiter byte at the
-// beginning and the end. This enables successive encoding of multiple
-// data frames.
-Status EncodeAndWritePayload(ConstByteSpan payload, stream::Writer& writer);
+// Writes an HDLC information frame (I-frame) to the provided writer. The frame
+// contains the following:
+//
+//   - HDLC flag byte (0x7e)
+//   - Address
+//   - Control byte (fixed at 0; sequence numbers are not used currently).
+//   - Data (0 or more bytes)
+//   - Frame check sequence (CRC-32)
+//   - HDLC flag byte (0x7e)
+//
+Status WriteInformationFrame(uint8_t address,
+                             ConstByteSpan data,
+                             stream::Writer& writer);
 
 }  // namespace pw::hdlc_lite
