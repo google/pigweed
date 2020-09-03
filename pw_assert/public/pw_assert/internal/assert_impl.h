@@ -19,18 +19,8 @@
 
 // Note: This file depends on the backend header already being included.
 
+#include "pw_assert/options.h"
 #include "pw_preprocessor/arguments.h"
-
-// Define PW_ASSERT_ENABLE_DCHECK, which controls whether DCHECKs are enabled.
-#if !defined(PW_ASSERT_ENABLE_DCHECK)
-#if defined(NDEBUG)
-// Release mode; remove all DCHECK*() asserts.
-#define PW_ASSERT_ENABLE_DCHECK 0
-#else
-// Debug mode; keep all DCHECK*() asserts.
-#define PW_ASSERT_ENABLE_DCHECK 1
-#endif  // defined (NDEBUG)
-#endif  // !defined(PW_ASSERT_ENABLE_DCHECK)
 
 // PW_CRASH - Crash the system, with a message.
 #define PW_CRASH PW_HANDLE_CRASH
@@ -44,8 +34,8 @@
     }                                                         \
   } while (0)
 
-#define PW_DCHECK(...)         \
-  if (PW_ASSERT_ENABLE_DCHECK) \
+#define PW_DCHECK(...)        \
+  if (PW_ASSERT_ENABLE_DEBUG) \
   PW_CHECK(__VA_ARGS__)
 
 // PW_D?CHECK_<type>_<comparison> macros - Binary comparison asserts.
@@ -66,12 +56,12 @@
 #define PW_CHECK_INT_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, int, "%d", __VA_ARGS__)
 
 // Debug checks for int: LE, LT, GE, GT, EQ.
-#define PW_DCHECK_INT_LE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_LE(__VA_ARGS__)
-#define PW_DCHECK_INT_LT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_LT(__VA_ARGS__)
-#define PW_DCHECK_INT_GE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_GE(__VA_ARGS__)
-#define PW_DCHECK_INT_GT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_GT(__VA_ARGS__)
-#define PW_DCHECK_INT_EQ(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_EQ(__VA_ARGS__)
-#define PW_DCHECK_INT_NE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_INT_NE(__VA_ARGS__)
+#define PW_DCHECK_INT_LE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_LE(__VA_ARGS__)
+#define PW_DCHECK_INT_LT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_LT(__VA_ARGS__)
+#define PW_DCHECK_INT_GE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_GE(__VA_ARGS__)
+#define PW_DCHECK_INT_GT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_GT(__VA_ARGS__)
+#define PW_DCHECK_INT_EQ(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_EQ(__VA_ARGS__)
+#define PW_DCHECK_INT_NE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_INT_NE(__VA_ARGS__)
 
 // Checks for unsigned int: LE, LT, GE, GT, EQ.
 #define PW_CHECK_UINT_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, unsigned int, "%u", __VA_ARGS__)
@@ -82,12 +72,12 @@
 #define PW_CHECK_UINT_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, unsigned int, "%u", __VA_ARGS__)
 
 // Debug checks for unsigned int: LE, LT, GE, GT, EQ.
-#define PW_DCHECK_UINT_LE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_LE(__VA_ARGS__)
-#define PW_DCHECK_UINT_LT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_LT(__VA_ARGS__)
-#define PW_DCHECK_UINT_GE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_GE(__VA_ARGS__)
-#define PW_DCHECK_UINT_GT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_GT(__VA_ARGS__)
-#define PW_DCHECK_UINT_EQ(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_EQ(__VA_ARGS__)
-#define PW_DCHECK_UINT_NE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_UINT_NE(__VA_ARGS__)
+#define PW_DCHECK_UINT_LE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_LE(__VA_ARGS__)
+#define PW_DCHECK_UINT_LT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_LT(__VA_ARGS__)
+#define PW_DCHECK_UINT_GE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_GE(__VA_ARGS__)
+#define PW_DCHECK_UINT_GT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_GT(__VA_ARGS__)
+#define PW_DCHECK_UINT_EQ(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_EQ(__VA_ARGS__)
+#define PW_DCHECK_UINT_NE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_UINT_NE(__VA_ARGS__)
 
 // Checks for pointer: LE, LT, GE, GT, EQ, NE.
 #define PW_CHECK_PTR_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, void*, "%p", __VA_ARGS__)
@@ -107,14 +97,14 @@
 #endif  // __cplusplus
 
 // Debug checks for pointer: LE, LT, GE, GT, EQ, NE, and NOTNULL.
-#define PW_DCHECK_PTR_LE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_LE(__VA_ARGS__)
-#define PW_DCHECK_PTR_LT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_LT(__VA_ARGS__)
-#define PW_DCHECK_PTR_GE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_GE(__VA_ARGS__)
-#define PW_DCHECK_PTR_GT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_GT(__VA_ARGS__)
-#define PW_DCHECK_PTR_EQ(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_EQ(__VA_ARGS__)
-#define PW_DCHECK_PTR_NE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_PTR_NE(__VA_ARGS__)
+#define PW_DCHECK_PTR_LE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_LE(__VA_ARGS__)
+#define PW_DCHECK_PTR_LT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_LT(__VA_ARGS__)
+#define PW_DCHECK_PTR_GE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_GE(__VA_ARGS__)
+#define PW_DCHECK_PTR_GT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_GT(__VA_ARGS__)
+#define PW_DCHECK_PTR_EQ(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_EQ(__VA_ARGS__)
+#define PW_DCHECK_PTR_NE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_PTR_NE(__VA_ARGS__)
 #define PW_DCHECK_NOTNULL(...) \
-  if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_NOTNULL(__VA_ARGS__)
+  if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_NOTNULL(__VA_ARGS__)
 
 // Checks for float: EXACT_LE, EXACT_LT, EXACT_GE, EXACT_GT, EXACT_EQ, EXACT_NE,
 // NEAR.
@@ -130,13 +120,13 @@
 // Debug checks for float: NEAR, EXACT_LE, EXACT_LT, EXACT_GE, EXACT_GT,
 // EXACT_EQ.
 #define PW_DCHECK_FLOAT_NEAR(...) \
-  if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_NEAR(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_LE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_LE(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_LT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_LT(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_GE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_GE(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_GT(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_GT(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_EQ(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_EQ(__VA_ARGS__)
-#define PW_DCHECK_FLOAT_EXACT_NE(...) if (PW_ASSERT_ENABLE_DCHECK) PW_CHECK_FLOAT_EXACT_NE(__VA_ARGS__)
+  if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_NEAR(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_LE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_LE(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_LT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_LT(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_GE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_GE(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_GT(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_GT(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_EQ(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_EQ(__VA_ARGS__)
+#define PW_DCHECK_FLOAT_EXACT_NE(...) if (PW_ASSERT_ENABLE_DEBUG) PW_CHECK_FLOAT_EXACT_NE(__VA_ARGS__)
 
 // clang-format on
 
@@ -151,8 +141,8 @@
     }                                                     \
   } while (0)
 
-#define PW_DCHECK_OK(...)      \
-  if (PW_ASSERT_ENABLE_DCHECK) \
+#define PW_DCHECK_OK(...)     \
+  if (PW_ASSERT_ENABLE_DEBUG) \
   PW_CHECK_OK(__VA_ARGS__)
 
 // =========================================================================

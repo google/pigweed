@@ -31,6 +31,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    srcs = [
+        "assert_log.cc",
+    ],
     deps = [
         "//pw_preprocessor",
     ],

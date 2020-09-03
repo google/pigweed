@@ -384,7 +384,7 @@ TEST(AssertFail, BinaryOpTwoSideEffectingCalls) {
 
 // Verify side effects of debug checks work as expected.
 // Only check a couple of cases, since the logic is all the same.
-#if PW_ASSERT_ENABLE_DCHECK
+#if PW_ASSERT_ENABLE_DEBUG
 // When DCHECKs are enabled, they behave the same as normal checks.
 TEST(AssertPass, DCheckEnabledSingleSideEffectingCall) {
   global_state_for_multi_evaluate_test = 0;
@@ -417,7 +417,7 @@ TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
 }
 
-#else  // PW_ASSERT_ENABLE_DCHECK
+#else  // PW_ASSERT_ENABLE_DEBUG
 
 // When DCHECKs are disabled, they should not trip, and their arguments
 // shouldn't be evaluated.
@@ -451,7 +451,7 @@ TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls) {
   PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-#endif  // PW_ASSERT_ENABLE_DCHECK
+#endif  // PW_ASSERT_ENABLE_DEBUG
 
 // Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
 TEST(Check, ShortNamesWork) {
@@ -512,7 +512,7 @@ TEST_F(AssertFail, Constant) { PW_CHECK_OK(pw::Status::UNKNOWN); }
 TEST_F(AssertFail, Dynamic) { PW_CHECK_OK(MakeStatus(pw::Status::UNKNOWN)); }
 TEST_F(AssertFail, Enum) { PW_CHECK_OK(PW_STATUS_UNKNOWN); }
 
-#if PW_ASSERT_ENABLE_DCHECK
+#if PW_ASSERT_ENABLE_DEBUG
 
 // In debug mode, the asserts should check their arguments.
 TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
@@ -521,7 +521,7 @@ TEST_F(AssertFail, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
 TEST_F(AssertFail, DCheckDynamic) {
   PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
 }
-#else  // PW_ASSERT_ENABLE_DCHECK
+#else  // PW_ASSERT_ENABLE_DEBUG
 
 // In release mode, all the asserts should pass.
 TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
@@ -530,7 +530,7 @@ TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
 TEST_F(AssertPass, DCheckDynamic) {
   PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
 }
-#endif  // PW_ASSERT_ENABLE_DCHECK
+#endif  // PW_ASSERT_ENABLE_DEBUG
 
 // TODO: Figure out how to run some of these tests is C.
 

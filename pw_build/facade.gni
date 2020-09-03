@@ -18,9 +18,10 @@ import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
 
 # Declare a facade.
-# A Pigweed facade is an API layer that has a single implementation it must link
-# against. Typically this will be done by pointing `dir_pw_[module]_backend` at
-# a backend implementation for that module.
+#
+# A Pigweed facade is an API layer that has a single implementation it must
+# link against. Typically this will be done by pointing a build arg like
+# `pw_[module]_BACKEND` at a backend implementation for that module.
 #
 # Example facade:
 #

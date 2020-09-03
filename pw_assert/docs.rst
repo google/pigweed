@@ -29,6 +29,7 @@ The ``pw_assert`` API provides three classes of macros:
   a message.
 - **PW_CHECK_<type>_<cmp>(a, b[, fmt, ...])** - Assert that the expression ``a
   <cmp> b`` is true, optionally with a message.
+- **PW_ASSERT(condition)** - Header- and constexpr- assert.
 
 .. tip::
 
@@ -73,6 +74,11 @@ Example
     // The functions ItemCount() and GetStateStr() are never called.
     PW_DCHECK_INT_LE(ItemCount(), 100, "System state: %s", GetStateStr());
 
+.. tip::
+
+  Use ``PW_ASSERT`` from ``pw_assert/light.h`` for asserts in headers or
+  asserting in ``constexpr`` contexts.
+
 Structure of assert modules
 ---------------------------
 The module is split into two components:
@@ -97,12 +103,12 @@ The module is split into two components:
 
 See the Backend API section below for more details.
 
---------------------
-Facade API reference
---------------------
+----------
+Facade API
+----------
 
 The below functions describe the assert API functions that applications should
-invoke to assert.
+invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
 
 .. cpp:function:: PW_CRASH(format, ...)
 
@@ -391,9 +397,90 @@ invoke to assert.
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.
 
----------------------
-Backend API reference
----------------------
+---------
+Light API
+---------
+The normal ``PW_CHECK_*`` and ``PW_DCHECK_*`` family of macros are intended to
+provide rich debug information, like the file, line number, value of operands
+in boolean comparisons, and more. However, this comes at a cost: these macros
+depend directly on the backend headers, and may perform complicated call-site
+transformations like tokenization.
+
+There are several issues with the normal ``PW_CHECK_*`` suite of macros:
+
+1. ``PW_CHECK_*`` in headers can cause ODR violations in the case of tokenized
+   asserts, due to differing module choices.
+2. ``PW_CHECK_*`` is not constexpr-safe.
+3. ``PW_CHECK_*`` can cause code bloat with some backends; this is the tradeoff
+   to get rich assert information.
+4. ``PW_CHECK_*`` can trigger circular dependencies when asserts are used from
+   low-level contexts, like in ``<span>``.
+
+**Light asserts** solve all of the above three problems: No risk of ODR
+violations, are constexpr safe, and have a tiny call site footprint; and there
+is no header dependency on the backend preventing circular include issues.
+However, there are **no format messages, no captured line number, no captured
+file, no captured expression, or anything other than a binary indication of
+failure**.
+
+Example
+-------
+
+.. code-block:: cpp
+
+  // This example demonstrates asserting in a header.
+
+  #include "pw_assert/light.h"
+
+  class InlinedSubsystem {
+   public:
+    void DoSomething() {
+      // GOOD: No problem; PW_ASSERT is fine to inline and place in a header.
+      PW_ASSERT(IsEnabled());
+    }
+    void DoSomethingElse() {
+      // BAD: Generally avoid using PW_DCHECK() or PW_CHECK in headers. If you
+      // want rich asserts or logs, move the function into the .cc file, and
+      // then use PW_CHECK there.
+      PW_DCHECK(IsEnabled());  // DON'T DO THIS
+    }
+  };
+
+Light API reference
+-------------------
+.. cpp:function:: PW_ASSERT(condition)
+
+  A header- and constexpr-safe version of ``PW_CHECK()``.
+
+  If the given condition is false, crash the system. Otherwise, do nothing.
+  The condition is guaranteed to be evaluated. This assert implementation is
+  guaranteed to be constexpr-safe.
+
+.. cpp:function:: PW_DASSERT(condition)
+
+  A header- and constexpr-safe version of ``PW_DCHECK()``.
+
+  Same as ``PW_ASSERT()``, except that if ``PW_ASSERT_ENABLE_DEBUG == 1``, the
+  assert is disabled and condition is not evaluated.
+
+.. attention::
+
+  Unlike the ``PW_CHECK_*()`` suite of macros, ``PW_ASSERT()`` and
+  ``PW_DASSERT()`` capture no rich information like line numbers, the file,
+  expression arguments, or the stringified expression. Use these macros **only
+  when absolutely necessary**--in headers, constexr contexts, or in rare cases
+  where the call site overhead of a full PW_CHECK must be avoided.
+
+  Use ``PW_CHECK_*()`` whenever possible.
+
+Light API backend
+-----------------
+The light API ultimately calls the C function ``pw_assert_HandleFailure()``,
+which must be provided by the assert backend.
+
+-----------
+Backend API
+-----------
 
 The backend controls what to do in the case of an assertion failure. In the
 most basic cases, the backend could display the assertion failure on something
@@ -464,6 +551,17 @@ and that header must define the following macros:
 
     See :ref:`chapter-pw-assert-basic` for one way to combine these arguments
     into a meaningful error message.
+
+Additionally, the backend must provide a link-time function for the light
+assert handler. This does not need to appear in the backend header, but instead
+is in a ``.cc`` file.
+
+.. cpp:function:: pw_assert_HandleFailure()
+
+  Handle a low-level crash. This crash entry happens through
+  ``pw_assert/light.h``. In this crash handler, there is no access to line,
+  file, expression, or other rich assert information. Backends should do
+  something reasonable in this case; typically, capturing the stack is useful.
 
 --------------------------
 Frequently asked questions
@@ -582,17 +680,16 @@ The facade is compatible with both C and C++.
 ----------------
 Roadmap & Status
 ----------------
-
 The Pigweed assert subsystem consiststs of several modules that work in
-coordination. In particular, there is the facade (this module), then a number
-of backends to handle assert failures. In some cases, the backends will have
-backends (like log_tokenized). Not all of those modules are ready today. Below
-is a brief summary of what modules are ready now, and which need to be written
-or need more work:
+coordination. This module is the facade (API), then a number of backends are
+available to handle assert failures. Products can also define their own
+backends. In some cases, the backends will have backends (like
+``pw_log_tokenized``).
 
-Currently implemented modules
------------------------------
+Below is a brief summary of what modules are ready for use:
 
+Available assert backends
+-------------------------
 - ``pw_assert`` - **Stable** - The assert facade (this module). This module is
   stable, and in production use. The documentation is comprehensive and covers
   the functionality. There are (a) tests for the facade macro processing logic,
@@ -603,46 +700,20 @@ Currently implemented modules
   arguments. Output is directed to ``pw_sys_io``. This module is a great
   ready-to-roll module when bringing up a system, but is likely not the best
   choice for production.
+- ``pw_assert_log`` - **Stable** - This assert backend redirects to logging,
+  but with a logging flag set that indicates an assert failure. This is our
+  advised approach to get **tokenized asserts**--by using tokenized logging,
+  then using the ``pw_assert_log`` backend.
 
-Not yet written modules
------------------------
-
-- ``pw_assert_tokenized`` - **Not started** - Just like there is a
-  ``pw_log_tokenized`` module that leverages the tokenizer to strip log string
-  literals from binaries, there will be an implementation that tokenizes the
-  assert contents (such as the captured source expression string). We may
-  combine ``pw_log_tokenized`` and ``pw_assert_tokenized`` into
-  ``pw_log_assert_tokenized`` since much of the details would be shared between
-  them.
-- ``pw_assert_log`` - **Not started** - This would use ``pw_log`` on assert
-  failure to communicate the failure information. Instead of being a separate
-  module, this might be an optional flag added to ``pw_assert_basic``.
+Note: If one desires a null assert module (where asserts are removed), use
+``pw_assert_log`` in combination with ``pw_log_null``. This will direct asserts
+to logs, then the logs are removed due to the null backend.
 
 Missing functionality
 ---------------------
-
 - **Stack traces** - Pigweed doesn't have a reliable stack walker, which makes
   displaying a stack trace on crash harder. We plan to add this eventually.
 - **Snapshot integration** - Pigweed doesn't yet have a rich system state
   capture system that can capture state like number of tasks, available memory,
   and so on. Snapshot facilities are the obvious ones to run inside an assert
   handler. It'll happen someday.
-- **Light asserts to break circular dependencies** - The Pigweed assert API is
-  flexible thanks to the facade structure; however, this can trigger circular
-  header dependencies due to facade directly including the backend. This can
-  happen when adding asserts to low-level functionality in headers, like for
-  example inside ``<span>``. Our polyfill span is used extensively in low level
-  components (like malloc and vector), including in some assert backends, which
-  leads to circular dependencies when span itself tries to assert.
-
-  There is no solution to this problem that doesn't require a compromise. The
-  easiest solution to enabling asserts everywhere is to shift to a C ABI with
-  link time dependency resolution; this breaks the header cycles. However, such
-  a structure would prevent custom compile-time filtering and tokenization.
-
-  Our current plan is to offer a simple C-function based assert API, with the
-  backend provided at link time rather than through header redirection. For
-  example, the API could be as simple as ``void pw_assert(bool condition)`` or
-  ``pw_assert_crash()`` if the condition check was done in a macro. This assert
-  API is intended for contexts where including the backend header would trigger
-  these problems, for use in common low level headers like ``<span>``.

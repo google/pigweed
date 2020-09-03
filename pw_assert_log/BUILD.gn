@@ -40,6 +40,7 @@ pw_source_set("core") {
   public_deps = [ "$dir_pw_log" ]
   deps = [ "$dir_pw_preprocessor" ]
   public = [ "public/pw_assert_log/assert_log.h" ]
+  sources = [ "assert_log.cc" ]
 }
 
 pw_doc_group("docs") {

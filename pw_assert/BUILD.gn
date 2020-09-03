@@ -34,18 +34,50 @@ pw_facade("pw_assert") {
     "public/pw_assert/assert.h",
     "public/pw_assert/internal/assert_impl.h",
   ]
-  public_deps = [ dir_pw_preprocessor ]
+  public_deps = [
+    dir_pw_preprocessor,
+
+    # Also expose light.h to all users of pw_assert.
+    ":light",
+  ]
+}
+
+# Provide a way include "pw_assert/light.h" without depending on the full
+# assert facade. This enables relying on light asserts from low-level headers
+# like polyfill or span that might trigger circular includes due to the
+# backend.
+#
+# See the docs for more discussion around where to use which assert system.
+pw_source_set("light") {
+  public_configs = [ ":default_config" ]
+  public = [
+    "public/pw_assert/light.h",
+
+    # Needed for PW_ASSERT_ENABLE_DEBUG. Note that depending on :pw_assert to
+    # get options.h won't work here since it will trigger the circular include
+    # problem that light asserts are designed to solve.
+    "public/pw_assert/options.h",
+  ]
+}
+
+# Note: While this is technically a test, doesn't verify any of the output and
+# is more of a compile test. The results can be visually verified if desired.
+pw_test("light_test") {
+  configs = [ ":default_config" ]
+  sources = [ "light_test.cc" ]
+  deps = [ ":pw_assert" ]
 }
 
 pw_test_group("tests") {
   tests = [
     ":assert_backend_compile_test",
     ":assert_facade_test",
+    ":light_test",
   ]
 }
 
 # The assert facade test doesn't require a backend since a fake one is
-# provided.  However, since this doesn't depend on the backend it re-includes
+# provided. However, since this doesn't depend on the backend it re-includes
 # the facade headers.
 pw_test("assert_facade_test") {
   configs = [ ":default_config" ]  # For internal/assert_impl.h
@@ -55,7 +87,10 @@ pw_test("assert_facade_test") {
     "public/pw_assert/internal/assert_impl.h",
     "pw_assert_test/fake_backend.h",
   ]
-  deps = [ dir_pw_status ]
+  deps = [
+    ":light",
+    dir_pw_status,
+  ]
 
   # TODO(frolv): Fix this test on the QEMU target.
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "lm3s6965evb_executable"
