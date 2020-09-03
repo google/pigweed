@@ -33,7 +33,7 @@ config("sanitize_undefined") {
 
 # Locate XCode's sysroot for Clang.
 config("xcode_sysroot") {
-  if (host_os == "mac") {
+  if (current_os == "mac") {
     _xcode_sysroot = exec_script("$dir_pw_build/py/pw_build/exec.py",
                                  [
                                    "--",
@@ -53,7 +53,7 @@ config("xcode_sysroot") {
 #
 # Pull the appropriate pathd from our Pigweed env setup.
 config("no_system_libcpp") {
-  if (host_os == "mac") {
+  if (current_os == "mac") {
     install_dir = getenv("PW_PIGWEED_CIPD_INSTALL_DIR")
     assert(install_dir != "",
            "You forgot to activate the Pigweed environment; " +
