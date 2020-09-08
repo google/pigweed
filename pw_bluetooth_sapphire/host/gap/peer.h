@@ -35,15 +35,15 @@ class PeerCache;
 // PeerCache.
 class Peer final {
  public:
-  using DeviceCallback = fit::function<void(const Peer&)>;
+  using PeerCallback = fit::function<void(const Peer&)>;
 
   // Caller must ensure that callbacks are non-empty.
   // Note that the ctor is only intended for use by PeerCache.
   // Expanding access would a) violate the constraint that all Peers
   // are created through a PeerCache, and b) introduce lifetime issues
   // (do the callbacks outlive |this|?).
-  Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
-       DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
+  Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_callback,
+       PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
        bool connectable);
 
   // Connection state as considered by the GAP layer. This may not correspond
@@ -433,9 +433,9 @@ class Peer final {
   inspect::Node node_;
 
   // Callbacks used to notify state changes.
-  DeviceCallback notify_listeners_callback_;
-  DeviceCallback update_expiry_callback_;
-  DeviceCallback dual_mode_callback_;
+  PeerCallback notify_listeners_callback_;
+  PeerCallback update_expiry_callback_;
+  PeerCallback dual_mode_callback_;
 
   ToStringInspectable<PeerId> identifier_;
   StringInspectable<TechnologyType> technology_;

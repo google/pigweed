@@ -289,8 +289,8 @@ void Peer::BrEdrData::ClearBondData() {
   link_key_.Set(std::nullopt);
 }
 
-Peer::Peer(DeviceCallback notify_listeners_callback, DeviceCallback update_expiry_callback,
-           DeviceCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
+Peer::Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_callback,
+           PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
            bool connectable)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),

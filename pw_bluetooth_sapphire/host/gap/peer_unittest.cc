@@ -42,9 +42,9 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 
  protected:
   Peer& peer() { return *peer_; }
-  void set_notify_listeners_cb(Peer::DeviceCallback cb) { notify_listeners_cb_ = std::move(cb); }
-  void set_update_expiry_cb(Peer::DeviceCallback cb) { update_expiry_cb_ = std::move(cb); }
-  void set_dual_mode_cb(Peer::DeviceCallback cb) { dual_mode_cb_ = std::move(cb); }
+  void set_notify_listeners_cb(Peer::PeerCallback cb) { notify_listeners_cb_ = std::move(cb); }
+  void set_update_expiry_cb(Peer::PeerCallback cb) { update_expiry_cb_ = std::move(cb); }
+  void set_dual_mode_cb(Peer::PeerCallback cb) { dual_mode_cb_ = std::move(cb); }
 
   // Run a promise to completion on the default async executor.
   void RunPromiseToCompletion(fit::promise<> promise) {
@@ -74,9 +74,9 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 
   std::unique_ptr<Peer> peer_;
   DeviceAddress address_;
-  Peer::DeviceCallback notify_listeners_cb_;
-  Peer::DeviceCallback update_expiry_cb_;
-  Peer::DeviceCallback dual_mode_cb_;
+  Peer::PeerCallback notify_listeners_cb_;
+  Peer::PeerCallback update_expiry_cb_;
+  Peer::PeerCallback dual_mode_cb_;
   async::Executor executor_;
 };
 
