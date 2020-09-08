@@ -38,8 +38,8 @@ void PutBytes() {
 void ReadBytes() {
   auto it = bb.begin();
 
-  printf("%lu\n", it.ReadUint32());
-  printf("%ld\n", it.ReadInt32(pw::ByteOrder::kBigEndian));
+  printf("%u\n", static_cast<unsigned>(it.ReadUint32()));
+  printf("%d\n", static_cast<int>(it.ReadInt32(pw::ByteOrder::kBigEndian)));
 }
 
 #else  // !USE_BYTE_BUILDER
@@ -90,8 +90,8 @@ void ReadBytes() {
                      ((kVal1 & 0xFF000000) >> 3 * 8));
   }
 
-  printf("%lu\n", kVal1);
-  printf("%ld\n", kVal2);
+  printf("%u\n", static_cast<unsigned>(kVal1));
+  printf("%d\n", static_cast<int>(kVal2));
 }
 
 #endif  // USE_BYTE_BUILDER

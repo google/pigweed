@@ -22,7 +22,7 @@ int main() {
   pw::bloat::BloatThisBinary();
 
   // Ensure we are paying the cost for log and assert.
-  PW_CHECK_INT_GE(unoptimizable, 0, "Ensure this CHECK logic stays");
+  PW_CHECK_INT_GE(*unoptimizable, 0, "Ensure this CHECK logic stays");
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
   // This matches the log preventing optimizing the "m" metric in one_metric.cc.
   PW_LOG_INFO("some_metric: %d", *unoptimizable);

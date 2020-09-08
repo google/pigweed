@@ -51,7 +51,7 @@ int main() {
   metric_y.Increment();
 
   // Ensure log and assert aren't optimized out.
-  PW_CHECK_INT_GE(unoptimizable, 0, "Ensure this CHECK logic stays");
+  PW_CHECK_INT_GE(*unoptimizable, 0, "Ensure this CHECK logic stays");
   PW_LOG_INFO("Ensure logs are pulled in: %d", *unoptimizable);
 
   // Ensure metric_x isn't optimized out.
