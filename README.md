@@ -70,7 +70,7 @@ With `pw format`, you can format C, C++, Python, GN, and Go code according to
 configurations defined by your project. `pw format` leverages existing tools
 like `clang-format`, and it’s simple to add support for new languages.
 
-![pw presubmit demo](docs/images/pw_presubmit_demo.gif)
+![pw presubmit demo](pw_presubmit/docs/pw_presubmit_demo.gif)
 
 ## `pw_env_setup` - Cross platform embedded compiler setup
 

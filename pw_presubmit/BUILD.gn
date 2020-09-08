@@ -19,6 +19,7 @@ import("$dir_pw_docgen/docs.gni")
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [
+    "docs/pw_presubmit_demo.gif",
     "py/pw_presubmit/cli.py",
     "py/pw_presubmit/presubmit.py",
   ]

@@ -136,7 +136,7 @@ This will be effectively the same as running the following command before every
 $ pw presubmit --program quick
 ```
 
-![pigweed presubmit demonstration](docs/images/pw_presubmit_demo.gif)
+![pigweed presubmit demonstration](pw_presubmit/docs/pw_presubmit_demo.gif)
 
 Running `pw presubmit` manually will default to running the `full` presubmit
 program.
