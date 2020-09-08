@@ -49,12 +49,15 @@ class BlobStore {
  public:
   // Implement the stream::Writer and erase interface for a BlobStore. If not
   // already erased, the Write will do any needed erase.
-  class BlobWriter final : public stream::Writer {
+  //
+  // Only one writter (of either type) is allowed to be open at a time.
+  // Additionally, writters are unable to open if a reader is already open.
+  class BlobWriter : public stream::Writer {
    public:
     constexpr BlobWriter(BlobStore& store) : store_(store), open_(false) {}
     BlobWriter(const BlobWriter&) = delete;
     BlobWriter& operator=(const BlobWriter&) = delete;
-    ~BlobWriter() {
+    virtual ~BlobWriter() {
       if (open_) {
         Close();
       }
@@ -95,7 +98,7 @@ class BlobStore {
     // [error status] - flash erase failed.
     Status Erase() {
       PW_DCHECK(open_);
-      return Status::UNIMPLEMENTED;
+      return store_.Erase();
     }
 
     // Discard blob (in-progress or valid stored). Any written bytes are
@@ -109,7 +112,8 @@ class BlobStore {
     }
 
     // Probable (not guaranteed) minimum number of bytes at this time that can
-    // be written. Returns zero if, in the current state, Write would return
+    // be written. This is not necessarily the full number of bytes remaining in
+    // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeWriteLimit() const override {
       PW_DCHECK(open_);
@@ -121,7 +125,7 @@ class BlobStore {
       return store_.write_address_;
     }
 
-   private:
+   protected:
     Status DoWrite(ConstByteSpan data) override {
       PW_DCHECK(open_);
       return store_.Write(data);
@@ -129,6 +133,43 @@ class BlobStore {
 
     BlobStore& store_;
     bool open_;
+  };
+
+  // Implement the stream::Writer and erase interface with deferred action for a
+  // BlobStore. If not already erased, the Flush will do any needed erase.
+  //
+  // Only one writter (of either type) is allowed to be open at a time.
+  // Additionally, writters are unable to open if a reader is already open.
+  class DeferredWriter final : public BlobWriter {
+   public:
+    constexpr DeferredWriter(BlobStore& store) : BlobWriter(store) {}
+    DeferredWriter(const DeferredWriter&) = delete;
+    DeferredWriter& operator=(const DeferredWriter&) = delete;
+    virtual ~DeferredWriter() {}
+
+    // Flush data in the write buffer. Only a multiple of flash_write_size_bytes
+    // are written in the flush. Any remainder is held until later for either
+    // a flush with flash_write_size_bytes buffered or the writer is closed.
+    Status Flush() {
+      PW_DCHECK(open_);
+      return store_.Flush();
+    }
+
+    // Probable (not guaranteed) minimum number of bytes at this time that can
+    // be written. This is not necessarily the full number of bytes remaining in
+    // the blob. Returns zero if, in the current state, Write would return
+    // status other than OK. See stream.h for additional details.
+    size_t ConservativeWriteLimit() const override {
+      PW_DCHECK(open_);
+      // Deferred writes need to fit in the write buffer.
+      return store_.WriteBufferBytesFree();
+    }
+
+   private:
+    Status DoWrite(ConstByteSpan data) override {
+      PW_DCHECK(open_);
+      return store_.AddToWriteBuffer(data);
+    }
   };
 
   // Implement stream::Reader interface for BlobStore.
@@ -197,16 +238,31 @@ class BlobStore {
     size_t offset_;
   };
 
+  // BlobStore
+  // name - Name of blob store, used for metadata KVS key
+  // partition - Flash partiton to use for this blob. Blob uses the entire
+  //     partition.
+  // checksum_algo - Optional checksum for blob integrity checking. Use nullptr
+  //     for no check.
+  // kvs - KVS used for storing blob metadata.
+  // write_buffer - Used for buffering writes. Needs to be at least
+  //     flash_write_size_bytes.
+  // flash_write_size_bytes - Size in bytes to use for flash write operations.
+  //     This should be chosen to balance optimal write size and required buffer
+  //     size. Must be greater than or equal to flash write alignment, less than
+  //     or equal to flash sector size.
   BlobStore(std::string_view name,
             kvs::FlashPartition* partition,
             kvs::ChecksumAlgorithm* checksum_algo,
             kvs::KeyValueStore& kvs,
-            ByteSpan write_buffer)
+            ByteSpan write_buffer,
+            size_t flash_write_size_bytes)
       : name_(name),
         partition_(*partition),
         checksum_algo_(checksum_algo),
         kvs_(kvs),
         write_buffer_(write_buffer),
+        flash_write_size_bytes_(flash_write_size_bytes),
         initialized_(false),
         valid_data_(false),
         flash_erased_(false),
@@ -231,9 +287,6 @@ class BlobStore {
  private:
   typedef uint32_t ChecksumValue;
 
-  // Is the blob erased and ready to write.
-  bool erased() const { return flash_erased_; }
-
   // Open to do a blob write. Returns:
   //
   // OK - success.
@@ -251,7 +304,8 @@ class BlobStore {
   // store blob metadata. Returns:
   //
   // OK - success.
-  // FAILED_PRECONDITION - blob is not open.
+  // DATA_LOSS - Error during write (this close or previous write/flush). Blob
+  //     is closed and marked as invalid.
   Status CloseWrite();
   Status CloseRead();
 
@@ -260,33 +314,70 @@ class BlobStore {
   // not guaranteed to be fully written out to storage on Write return. Returns:
   //
   // OK - successful write/enqueue of data.
-  // FAILED_PRECONDITION - blob is not in an open (in-progress) write state.
   // RESOURCE_EXHAUSTED - unable to write all of requested data at this time. No
   //     data written.
   // OUT_OF_RANGE - Writer has been exhausted, similar to EOF. No data written,
   //     no more will be written.
+  // DATA_LOSS - Error during write (this write or previous write/flush). No
+  //     more will be written by following Write calls for current blob (until
+  //     erase/new blob started).
   Status Write(ConstByteSpan data);
+
+  // Similar to Write, but instead immediately writing out to flash, it only
+  // buffers the data. A flush or Close is reqired to get bytes writen out to
+  // flash
+  //
+  // OK - successful write/enqueue of data.
+  // RESOURCE_EXHAUSTED - unable to write all of requested data at this time. No
+  //     data written.
+  // OUT_OF_RANGE - Writer has been exhausted, similar to EOF. No data written,
+  //     no more will be written.
+  // DATA_LOSS - Error during a previous write/flush. No more will be written by
+  //     following Write calls for current blob (until erase/new blob started).
+  Status AddToWriteBuffer(ConstByteSpan data);
+
+  // Flush data in the write buffer. Only a multiple of flash_write_size_bytes
+  // are written in the flush. Any remainder is held until later for either a
+  // flush with flash_write_size_bytes buffered or the writer is closed.
+  //
+  // OK - successful write/enqueue of data.
+  // DATA_LOSS - Error during write (this flush or previous write/flush). No
+  //     more will be written by following Write calls for current blob (until
+  //     erase/new blob started).
+  Status Flush();
+
+  // Flush a chunk of data in the write buffer smaller than
+  // flash_write_size_bytes. This is only for the final flush as part of the
+  // CloseWrite. The partial chunk is padded to flash_write_size_bytes and a
+  // flash_write_size_bytes chunk is written to flash.
+  //
+  // OK - successful write/enqueue of data.
+  // DATA_LOSS - Error during write (this flush or previous write/flush). No
+  //     more will be written by following Write calls for current blob (until
+  //     erase/new blob started).
+  Status FlushFinalPartialChunk();
 
   // Commit data to flash and update flash_address_ with data bytes written. The
   // only time data_bytes should be manually specified is for a CloseWrite with
   // an unaligned-size chunk remaining in the buffer that has been zero padded
   // to alignment.
-  Status CommitToFlash(ConstByteSpan source, size_t data_bytes = 0) {
-    if (data_bytes == 0) {
-      data_bytes = source.size_bytes();
-    }
-    flash_erased_ = false;
-    valid_data_ = true;
-    StatusWithSize result = partition_.Write(flash_address_, source);
-    flash_address_ += data_bytes;
-    if (checksum_algo_ != nullptr) {
-      checksum_algo_->Update(source.first(data_bytes));
-    }
+  Status CommitToFlash(ConstByteSpan source, size_t data_bytes = 0);
 
-    return result.status();
-  }
+  // Blob is valid/OK to write to. Blob is considered valid to write if no data
+  // has been written due to the auto/implicit erase on write start.
+  //
+  // true - Blob is valid and OK to write to.
+  // false - Blob has previously had an error and not valid for writing new
+  //     data.
+  bool ValidToWrite() { return (valid_data_ == true) || (write_address_ == 0); }
 
-  bool WriteBufferEmpty() { return flash_address_ == write_address_; }
+  bool WriteBufferEmpty() const { return flash_address_ == write_address_; }
+
+  size_t WriteBufferBytesUsed() const;
+
+  size_t WriteBufferBytesFree() const;
+
+  Status EraseIfNeeded();
 
   // Read valid data. Attempts to read the lesser of output.size_bytes() or
   // available bytes worth of data. Returns:
@@ -352,6 +443,11 @@ class BlobStore {
   kvs::KeyValueStore& kvs_;
   ByteSpan write_buffer_;
 
+  // Size in bytes of flash write operations. This should be chosen to balance
+  // optimal write size and required buffer size. Must be GE flash write
+  // alignment, LE flash sector size.
+  const size_t flash_write_size_bytes_;
+
   //
   // Internal state for Blob store
   //
@@ -360,7 +456,8 @@ class BlobStore {
   // Initialization has been done.
   bool initialized_;
 
-  // Bytes stored are valid and good.
+  // Bytes stored are valid and good. Blob is OK to read and write to. Set as
+  // soon as is valid, even when bytes written is still 0.
   bool valid_data_;
 
   // Blob partition is currently erased and ready to write a new blob.
@@ -391,8 +488,14 @@ class BlobStoreBuffer : public BlobStore {
   explicit BlobStoreBuffer(std::string_view name,
                            kvs::FlashPartition* partition,
                            kvs::ChecksumAlgorithm* checksum_algo,
-                           kvs::KeyValueStore& kvs)
-      : BlobStore(name, partition, checksum_algo, kvs, buffer_) {}
+                           kvs::KeyValueStore& kvs,
+                           size_t flash_write_size_bytes = kBufferSizeBytes)
+      : BlobStore(name,
+                  partition,
+                  checksum_algo,
+                  kvs,
+                  buffer_,
+                  flash_write_size_bytes) {}
 
  private:
   std::array<std::byte, kBufferSizeBytes> buffer_;

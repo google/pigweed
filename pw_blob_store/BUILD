@@ -53,3 +53,19 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+pw_cc_test(
+    name = "blob_store_deferred_write_test",
+    srcs = [
+        "blob_store_deferred_write_test.cc",
+    ],
+    deps = [
+        ":pw_blob_store",
+        "//pw_kvs:crc16",
+        "//pw_kvs:fake_flash",
+        "//pw_kvs:fake_flash_test_key_value_store",
+        "//pw_log",
+        "//pw_random",
+        "//pw_unit_test",
+    ],
+)
