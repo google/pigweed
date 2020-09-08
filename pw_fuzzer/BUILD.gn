@@ -76,7 +76,7 @@ pw_source_set("pw_fuzzer") {
   public_deps = [ "$dir_pw_log" ]
 }
 
-source_set("run_as_unit_test") {
+pw_source_set("run_as_unit_test") {
   configs = [ ":default_config" ]
   sources = [ "pw_fuzzer_disabled.cc" ]
   deps = [

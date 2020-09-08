@@ -30,7 +30,7 @@ pw_source_set("bloat_this_binary") {
   sources = [ "bloat_this_binary.cc" ]
 }
 
-source_set("base_main") {
+pw_source_set("base_main") {
   sources = [ "base_main.cc" ]
 }
 

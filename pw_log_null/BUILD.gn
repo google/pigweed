@@ -15,6 +15,7 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 config("config") {
@@ -25,7 +26,7 @@ config("config") {
   visibility = [ ":*" ]
 }
 
-source_set("pw_log_null") {
+pw_source_set("pw_log_null") {
   public_configs = [ ":config" ]
   public = [ "public_overrides/pw_log_backend/log_backend.h" ]
   sources = [ "public/pw_log_null/log_null.h" ]
