@@ -367,7 +367,6 @@ fuchsia::bluetooth::gatt::Error GattStatusToFidl(bt::Status<bt::att::ErrorCode> 
 }
 
 bt::UUID UuidFromFidl(const fuchsia::bluetooth::Uuid& input) {
-  bt::UUID output;
   // Conversion must always succeed given the defined size of |input|.
   static_assert(sizeof(input.value) == 16, "FIDL UUID definition malformed!");
   return bt::UUID(bt::BufferView(input.value.data(), input.value.size()));

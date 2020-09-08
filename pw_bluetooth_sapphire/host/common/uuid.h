@@ -45,7 +45,7 @@ class UUID final {
         value_(BuildSIGUUID(uuid32)) {}
 
   // The default constructor initializes all values to zero.
-  UUID();
+  constexpr UUID() : type_(Type::k128Bit), value_() {}
 
   // Equality operators.
   bool operator==(const UUID& uuid) const;

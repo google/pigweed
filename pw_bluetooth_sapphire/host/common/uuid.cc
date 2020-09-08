@@ -92,8 +92,6 @@ UUID::UUID(const ByteBuffer& bytes) {
   ZX_ASSERT_MSG(result, "|bytes| must contain a 16, 32, or 128-bit UUID");
 }
 
-UUID::UUID() : type_(Type::k128Bit) { value_.fill(0); }
-
 bool UUID::operator==(const UUID& uuid) const { return value_ == uuid.value_; }
 
 bool UUID::operator==(uint16_t uuid16) const {
