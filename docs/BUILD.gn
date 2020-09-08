@@ -45,21 +45,8 @@ group("target_docs") {
   ]
 }
 
-pw_doc_gen("docs") {
-  conf = "conf.py"
-  sources = [
-    "../CODE_OF_CONDUCT.md",
-    "../CONTRIBUTING.md",
-    "../README.md",
-    "build_system.rst",
-    "index.rst",
-    "module_guides.rst",
-    "targets.rst",
-  ]
-  output_directory = target_gen_dir
+group("module_docs") {
   deps = [
-    ":core_docs",
-    ":target_docs",
     "$dir_docker:docs",
     "$dir_pw_allocator:docs",
     "$dir_pw_assert:docs",
@@ -115,5 +102,24 @@ pw_doc_gen("docs") {
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",
     "$dir_pw_web_ui:docs",
+  ]
+}
+
+pw_doc_gen("docs") {
+  conf = "conf.py"
+  sources = [
+    "../CODE_OF_CONDUCT.md",
+    "../CONTRIBUTING.md",
+    "../README.md",
+    "build_system.rst",
+    "index.rst",
+    "module_guides.rst",
+    "targets.rst",
+  ]
+  output_directory = target_gen_dir
+  deps = [
+    ":core_docs",
+    ":module_docs",
+    ":target_docs",
   ]
 }
