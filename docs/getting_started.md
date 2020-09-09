@@ -273,7 +273,7 @@ USB port on the board (**not** the micro USB). Pigweed will automatically detect
 the boards and distribute the tests across the devices. More boards = faster
 tests! Keep in mind that you may have to make some environment specific updates
 to ensure you have permissions to use the USB device. For example, on Linux you
-may need to update your udev rules and ensure you're in the plugdev and dailout
+may need to update your udev rules and ensure you're in the plugdev and dialout
 groups.
 
 ![development boards connected via USB](images/stm32f429i-disc1_connected.jpg)
