@@ -24,7 +24,7 @@ constexpr uint16_t kSubversion = 0x0002;
 
 class GAP_PeerTest : public ::gtest::TestLoopFixture {
  public:
-  GAP_PeerTest() : executor_(dispatcher()) {}
+  GAP_PeerTest() = default;
 
   void SetUp() override {
     TestLoopFixture::SetUp();
@@ -45,13 +45,6 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
   void set_notify_listeners_cb(Peer::PeerCallback cb) { notify_listeners_cb_ = std::move(cb); }
   void set_update_expiry_cb(Peer::PeerCallback cb) { update_expiry_cb_ = std::move(cb); }
   void set_dual_mode_cb(Peer::PeerCallback cb) { dual_mode_cb_ = std::move(cb); }
-
-  // Run a promise to completion on the default async executor.
-  void RunPromiseToCompletion(fit::promise<> promise) {
-    bool done = false;
-    executor_.schedule_task(std::move(promise).and_then([&]() { done = true; }));
-    RunLoopUntilIdle();
-  }
 
  private:
   void NotifyListenersCallback(const Peer& peer) {
@@ -77,7 +70,6 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
   Peer::PeerCallback notify_listeners_cb_;
   Peer::PeerCallback update_expiry_cb_;
   Peer::PeerCallback dual_mode_cb_;
-  async::Executor executor_;
 };
 
 TEST_F(GAP_PeerTest, InspectHierarchy) {
@@ -130,6 +122,25 @@ TEST_F(GAP_PeerTest, InspectHierarchy) {
     ChildrenMatch(UnorderedElementsAre(bredr_data_matcher, le_data_matcher)));
   // clang-format on
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
+}
+
+TEST_F(GAP_PeerTest, BrEdrDataAddServiceNotifiesListeners) {
+  // Initialize BrEdrData.
+  peer().MutBrEdr();
+  ASSERT_TRUE(peer().bredr()->services().empty());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&) { listener_notified = true; });
+
+  constexpr UUID kServiceUuid;
+  peer().MutBrEdr().AddService(kServiceUuid);
+  EXPECT_TRUE(listener_notified);
+  EXPECT_EQ(1u, peer().bredr()->services().count(kServiceUuid));
+
+  // De-duplicate subsequent additions of the same service.
+  listener_notified = false;
+  peer().MutBrEdr().AddService(kServiceUuid);
+  EXPECT_FALSE(listener_notified);
 }
 
 }  // namespace

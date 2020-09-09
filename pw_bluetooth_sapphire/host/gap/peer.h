@@ -10,12 +10,14 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -228,6 +230,8 @@ class Peer final {
 
     const std::optional<sm::LTK>& link_key() const { return *link_key_; }
 
+    const std::unordered_set<UUID>& services() const { return services_; }
+
     // Setters:
 
     // Updates the inquiry data and notifies listeners. These
@@ -249,6 +253,10 @@ class Peer final {
     // Removes any stored link key. Does not make the device temporary, even if
     // it is disconnected. Does not notify listeners.
     void ClearBondData();
+
+    // Adds a service discovered on the peer, identified by |uuid|, then notifies listeners. No-op
+    // if already present.
+    void AddService(UUID uuid);
 
     // TODO(armansito): Store BD_ADDR here, once PeerCache can index
     // devices by multiple addresses.
@@ -276,8 +284,7 @@ class Peer final {
     size_t eir_len_;
     DynamicByteBuffer eir_buffer_;
     BoolInspectable<std::optional<sm::LTK>> link_key_;
-
-    // TODO(armansito): Store traditional service UUIDs.
+    std::unordered_set<UUID> services_;
   };
 
   // Number that uniquely identifies this device with respect to the bt-host

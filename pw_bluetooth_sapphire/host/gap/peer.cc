@@ -289,6 +289,13 @@ void Peer::BrEdrData::ClearBondData() {
   link_key_.Set(std::nullopt);
 }
 
+void Peer::BrEdrData::AddService(UUID uuid) {
+  auto [_, inserted] = services_.insert(uuid);
+  if (inserted) {
+    peer_->NotifyListeners();
+  }
+}
+
 Peer::Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_callback,
            PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
            bool connectable)
