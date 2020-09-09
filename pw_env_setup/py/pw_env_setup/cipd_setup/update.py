@@ -193,6 +193,7 @@ def update(
             '-ensure-file', ensure_file,
             '-root', install_dir,
             '-log-level', 'warning',
+            '-cache-dir', cache_dir,
             '-max-threads', '0',  # 0 means use CPU count.
         ]  # yapf: disable
 
