@@ -336,7 +336,7 @@ projects use that approach unless absolutely necessary.
 Why does the facade use header redirection instead of C functions?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Without header redirection, it is not possible to do sophisticated macro
-transforms in the backkend. For example, to apply tokenization to log strings,
+transforms in the backend. For example, to apply tokenization to log strings,
 the backend must define the handling macros. Additionally, compile-time
 filtering by log level or flags is not possible without header redirection.
 While it may be possible to do the filtering in the facade, that would imply
