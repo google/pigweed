@@ -15,10 +15,10 @@
 
 import binascii
 
-from pw_hdlc_lite import constants
+from pw_hdlc_lite import protocol
 
-_HDLC_ESCAPE = bytes([constants.HDLC_ESCAPE])
-_HDLC_FRAME_DELIMITER = bytes([constants.HDLC_FRAME_DELIMITER])
+_HDLC_ESCAPE = bytes([protocol.ESCAPE])
+_HDLC_FRAME_DELIMITER = bytes([protocol.FLAG])
 
 
 def encode_and_write_payload(payload, write):

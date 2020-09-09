@@ -84,17 +84,16 @@ def construct_rpc_client(ser):
 
 def read_and_process_data(rpc_client, ser):
     """Reads in the data, decodes the bytes and then processes the rpc."""
-    decode = decoder.Decoder()
+    decode = decoder.FrameDecoder()
 
     while True:
         byte = ser.read()
-        try:
-            for packet in decode.add_bytes(byte):
-                if not rpc_client.process_packet(packet):
-                    _LOG.error('Packet not handled by rpc client: %s', packet)
-        except decoder.CrcMismatchError:
-            _LOG.exception('CRC verification failed')
-            return
+        for frame in decode.process(byte):
+            if frame.ok():
+                if not rpc_client.process_packet(frame):
+                    _LOG.error('Packet not handled by rpc client: %s', frame)
+            else:
+                _LOG.error('Failed to parse frame: %s', frame.status.value)
 
 
 def main():
