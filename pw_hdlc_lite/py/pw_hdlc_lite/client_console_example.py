@@ -29,7 +29,7 @@ import code
 import serial
 
 from pw_hdlc_lite import decoder
-from pw_hdlc_lite import encoder
+from pw_hdlc_lite.encoder import encode_information_frame
 from pw_protobuf_compiler import python_protos
 from pw_rpc import callback_client, client, descriptors
 
@@ -67,8 +67,8 @@ def construct_rpc_client(ser):
             ser.write(bytes([byte]))
 
     # Creating a channel object
-    hdlc_channel_output = lambda data: encoder.encode_and_write_payload(
-        data, delayed_write)
+    hdlc_channel_output = lambda data: ser.write(
+        encode_information_frame(data, delayed_write))
     channel = descriptors.Channel(1, hdlc_channel_output)
 
     # Creating a list of modules that provide the .proto service methods

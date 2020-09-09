@@ -13,24 +13,17 @@
 # the License.
 """Encoder functions for encoding bytes using HDLC-Lite protocol"""
 
-import binascii
-
 from pw_hdlc_lite import protocol
 
-_HDLC_ESCAPE = bytes([protocol.ESCAPE])
-_HDLC_FRAME_DELIMITER = bytes([protocol.FLAG])
+_ESCAPE_BYTE = bytes([protocol.ESCAPE])
+_FLAG_BYTE = bytes([protocol.FLAG])
+_CONTROL = 0  # Currently, hard-coded to 0; no sequence numbers are used
 
 
-def encode_and_write_payload(payload, write):
-    """Escapes the payload and writes the data-frame to the serial device."""
-
-    write(_HDLC_FRAME_DELIMITER)
-
-    # The crc_hqx function computes the 2-byte CCITT-CRC16 value
-    crc = binascii.crc_hqx(payload, 0xFFFF).to_bytes(2, byteorder='little')
-    payload += crc
-    payload = payload.replace(_HDLC_ESCAPE, b'\x7D\x5D')
-    payload = payload.replace(_HDLC_FRAME_DELIMITER, b'\x7D\x5E')
-    write(payload)
-
-    write(_HDLC_FRAME_DELIMITER)
+def encode_information_frame(address: int, data: bytes) -> bytes:
+    """Encodes an HDLC I-frame."""
+    frame = bytearray([address, _CONTROL]) + data
+    frame += protocol.frame_check_sequence(frame)
+    frame = frame.replace(_ESCAPE_BYTE, b'\x7d\x5d')
+    frame = frame.replace(_FLAG_BYTE, b'\x7d\x5e')
+    return b''.join([_FLAG_BYTE, frame, _FLAG_BYTE])

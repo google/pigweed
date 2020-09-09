@@ -16,60 +16,41 @@
 
 import unittest
 
-from pw_hdlc_lite import encoder
+from pw_hdlc_lite.encoder import encode_information_frame
+from pw_hdlc_lite import protocol
+from pw_hdlc_lite.protocol import frame_check_sequence as _fcs
+
+FLAG = bytes([protocol.FLAG])
 
 
-class TestEncoderFunctions(unittest.TestCase):
+def _with_fcs(data: bytes) -> bytes:
+    return data + _fcs(data)
+
+
+class TestEncodeInformationFrame(unittest.TestCase):
     """Tests Encoding bytes with different arguments using a custom serial."""
-    def test_encode_1byte_payload(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'A', data.extend)
+    def test_empty(self):
+        self.assertEqual(encode_information_frame(0, b''),
+                         FLAG + _with_fcs(b'\0\0') + FLAG)
+        self.assertEqual(encode_information_frame(0x1a, b''),
+                         FLAG + _with_fcs(b'\x1a\0') + FLAG)
 
-        expected_bytes = b'\x7EA\x15\xB9\x7E'
-        self.assertEqual(data, expected_bytes)
+    def test_1byte(self):
+        self.assertEqual(encode_information_frame(0, b'A'),
+                         FLAG + _with_fcs(b'\0\0A') + FLAG)
 
-    def test_encode_empty_payload(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'', data.extend)
+    def test_multibyte(self):
+        self.assertEqual(encode_information_frame(0, b'123456789'),
+                         FLAG + _with_fcs(b'\x00\x00123456789') + FLAG)
 
-        expected_bytes = b'\x7E\xFF\xFF\x7E'
-        self.assertEqual(data, expected_bytes)
-
-    def test_encode_9byte_payload(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'123456789', data.extend)
-
-        expected_bytes = b'\x7E123456789\xB1\x29\x7E'
-        self.assertEqual(data, expected_bytes)
-
-    def test_encode_unescaping_payload_escapeflag(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'\x7D', data.extend)
-
-        expected_bytes = b'\x7E\x7D\x5D\xCA\x4E\x7E'
-        self.assertEqual(data, expected_bytes)
-
-    def test_encode_unescaping_payload_framedelimiter(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'\x7E', data.extend)
-
-        expected_bytes = b'\x7E\x7D\x5E\xA9\x7D\x5E\x7E'
-        self.assertEqual(data, expected_bytes)
-
-    def test_encode_unescaping_payload_mix(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'~{abc}~', data.extend)
-
-        expected_bytes = b'\x7E\x7D\x5E\x7Babc\x7D\x5D\x7D\x5E\x49\xE5\x7E'
-        self.assertEqual(data, expected_bytes)
-
-    def test_encode_multiple_payloads(self):
-        data = bytearray()
-        encoder.encode_and_write_payload(b'A', data.extend)
-        encoder.encode_and_write_payload(b'A', data.extend)
-
-        expected_bytes = b'\x7EA\x15\xB9\x7E\x7EA\x15\xB9\x7E'
-        self.assertEqual(data, expected_bytes)
+    def test_escape(self):
+        self.assertEqual(
+            encode_information_frame(0x7e, b'\x7d'),
+            FLAG + b'\x7d\x5e\x00\x7d\x5d' + _fcs(b'\x7e\x00\x7d') + FLAG)
+        self.assertEqual(
+            encode_information_frame(0x7d, b'A\x7e\x7dBC'),
+            FLAG + b'\x7d\x5d\x00A\x7d\x5e\x7d\x5dBC' +
+            _fcs(b'\x7d\x00A\x7e\x7dBC') + FLAG)
 
 
 if __name__ == '__main__':
