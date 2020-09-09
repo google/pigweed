@@ -185,10 +185,13 @@ if [ -z "$PW_ENVSETUP_QUIET" ] && [ -z "$PW_ENVSETUP_NO_BANNER" ]; then
 fi
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
-[ "$(basename "$PW_SETUP_SCRIPT_PATH")" = "bootstrap.sh" ] || \
+if [ "$(basename "$PW_SETUP_SCRIPT_PATH")" = "bootstrap.sh" ] || \
   [ ! -f "$SETUP_SH" ] || \
-  [ ! -s "$SETUP_SH" ]
-_PW_IS_BOOTSTRAP="$?"
+  [ ! -s "$SETUP_SH" ]; then
+  _PW_IS_BOOTSTRAP=0
+else
+  _PW_IS_BOOTSTRAP=1
+fi
 
 if [ "$_PW_IS_BOOTSTRAP" -eq 0 ]; then
   _PW_NAME="bootstrap"
