@@ -14,10 +14,10 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@npm_bazel_typescript//:index.bzl", "ts_library")
-load("@npm_bazel_jasmine//:index.bzl", "jasmine_node_test")
+load("@npm//@bazel/typescript:index.bzl", "ts_library")
+load("@npm//@bazel/jasmine:index.bzl", "jasmine_node_test")
 load("//pw_web_ui:web_bundle.bzl", "web_bundle")
-load("@npm_bazel_karma//:index.bzl", "karma_web_test")
+load("@npm//@bazel/karma:index.bzl", "karma_web_test")
 
 ts_library(
     name = "device_transport_lib",
