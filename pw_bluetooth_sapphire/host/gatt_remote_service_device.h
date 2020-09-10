@@ -25,7 +25,7 @@ namespace bthost {
 // GATT services can be implimented as drivers (eg HID over GATT as HIDBUS
 // device).
 class GattRemoteServiceDevice final
-    : public ddk::Device<GattRemoteServiceDevice, ddk::UnbindableNew>,
+    : public ddk::Device<GattRemoteServiceDevice, ddk::Unbindable>,
       public ddk::BtGattSvcProtocol<GattRemoteServiceDevice, ddk::base_protocol> {
  public:
   GattRemoteServiceDevice(zx_device_t* parent, bt::gatt::PeerId peer_id,
@@ -38,7 +38,7 @@ class GattRemoteServiceDevice final
 
   // ddk::Device operations
   void DdkRelease();
-  void DdkUnbindNew(ddk::UnbindTxn txn);
+  void DdkUnbind(ddk::UnbindTxn txn);
 
   // ddk::BtGattSvcProtocol operations:
   void BtGattSvcConnect(bt_gatt_svc_connect_callback connect_cb, void* cookie);

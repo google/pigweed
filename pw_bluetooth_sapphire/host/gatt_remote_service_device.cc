@@ -110,7 +110,7 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
 
 GattRemoteServiceDevice::GattRemoteServiceDevice(zx_device_t* parent, bt::gatt::PeerId peer_id,
                                                  fbl::RefPtr<bt::gatt::RemoteService> service)
-    : ddk::Device<GattRemoteServiceDevice, ddk::UnbindableNew>(parent),
+    : ddk::Device<GattRemoteServiceDevice, ddk::Unbindable>(parent),
       loop_(&kAsyncLoopConfigNoAttachToCurrentThread),
       peer_id_(peer_id),
       service_(service) {}
@@ -176,7 +176,7 @@ void GattRemoteServiceDevice::DdkRelease() {
   delete this;
 }
 
-void GattRemoteServiceDevice::DdkUnbindNew(ddk::UnbindTxn txn) {
+void GattRemoteServiceDevice::DdkUnbind(ddk::UnbindTxn txn) {
   bt_log(DEBUG, "bt-host", "bt-gatt-svc: unbind");
 
   async::PostTask(loop_.dispatcher(), [this]() { loop_.Shutdown(); });
@@ -221,7 +221,7 @@ void GattRemoteServiceDevice::StartThread() {
   //      unbinding.
   //   b. GattRemoteServiceDevice always drains and shuts down its own |loop_| before its unbind
   //      finishes, and thus this callback must finish running before release gets called.
-  //   c. #1 is not an issue because DdkUnbindNew should only get called after HostDevice finishes
+  //   c. #1 is not an issue because DdkUnbind should only get called after HostDevice finishes
   //      unbinding.
   //   d. #3 is not an issue because it is guaranteed to occur before HostDevice finishes unbinding,
   //      due to invariant a.

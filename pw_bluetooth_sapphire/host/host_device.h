@@ -25,7 +25,7 @@ namespace bthost {
 // thread's event loop to be processed by the Host.
 class HostDevice;
 using HostDeviceType =
-    ddk::Device<HostDevice, ddk::Initializable, ddk::Messageable, ddk::UnbindableNew>;
+    ddk::Device<HostDevice, ddk::Initializable, ddk::Messageable, ddk::Unbindable>;
 class HostDevice final : public HostDeviceType {
  public:
   explicit HostDevice(zx_device_t* parent);
@@ -34,7 +34,7 @@ class HostDevice final : public HostDeviceType {
   // DDK methods
   void DdkInit(ddk::InitTxn txn);
   zx_status_t DdkMessage(fidl_msg_t* msg, fidl_txn_t* txn);
-  void DdkUnbindNew(ddk::UnbindTxn txn);
+  void DdkUnbind(ddk::UnbindTxn txn);
   void DdkRelease();
 
  private:

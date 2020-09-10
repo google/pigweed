@@ -113,7 +113,7 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
   });
 }
 
-void HostDevice::DdkUnbindNew(ddk::UnbindTxn txn) {
+void HostDevice::DdkUnbind(ddk::UnbindTxn txn) {
   bt_log(DEBUG, "bt-host", "unbind");
 
   {
