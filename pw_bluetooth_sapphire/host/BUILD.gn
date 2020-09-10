@@ -33,6 +33,9 @@ source_set("fidl_helpers") {
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//src/connectivity/bluetooth/fidl:host",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("sources") {

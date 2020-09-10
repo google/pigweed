@@ -43,6 +43,9 @@ static_library("gatt") {
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//zircon/public/lib/fit",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -86,4 +89,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }

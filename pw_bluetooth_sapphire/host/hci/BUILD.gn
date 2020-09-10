@@ -21,6 +21,9 @@ source_set("definitions") {
   ]
 
   public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 static_library("hci") {
@@ -77,6 +80,9 @@ static_library("hci") {
     "//zircon/system/ulib/fzl",
     "//zircon/system/ulib/trace:trace-driver",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -118,6 +124,9 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 fuzzer("read_acl_data_packet_fuzzer") {
@@ -126,6 +135,9 @@ fuzzer("read_acl_data_packet_fuzzer") {
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 fuzzer("read_command_event_packet_fuzzer") {
@@ -134,4 +146,7 @@ fuzzer("read_command_event_packet_fuzzer") {
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }

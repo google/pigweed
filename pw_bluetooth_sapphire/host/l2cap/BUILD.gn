@@ -77,6 +77,9 @@ static_library("l2cap") {
     "//src/lib/fxl",
     "//zircon/public/lib/fit",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
@@ -101,6 +104,9 @@ source_set("testing") {
     "//src/lib/fxl",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {
@@ -141,6 +147,9 @@ source_set("tests") {
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 fuzzer("basic_mode_rx_engine_fuzzer") {

@@ -68,6 +68,9 @@ source_set("fake_controller") {
     "//zircon/public/lib/zx",
     "//zircon/system/ulib/async-default",
   ]
+
+  # TODO(fxb/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 # Main entry point for host library unittests.
