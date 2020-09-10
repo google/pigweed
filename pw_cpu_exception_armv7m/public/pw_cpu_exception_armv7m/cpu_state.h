@@ -68,6 +68,8 @@ PW_PACKED(struct) ArmV7mExtraRegisters {
   uint32_t mmfar;
   uint32_t bfar;
   uint32_t icsr;
+  uint32_t hfsr;
+  uint32_t shcsr;
   // Special registers.
   uint32_t exc_return;
   uint32_t msp;

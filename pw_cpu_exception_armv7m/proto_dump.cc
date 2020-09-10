@@ -23,16 +23,18 @@ Status DumpCpuStateProto(protobuf::Encoder& dest,
   armv7m::ArmV7mCpuState::Encoder state_encoder(&dest);
 
   // Special and mem-mapped registers.
-  state_encoder.WriteCfsr(cpu_state.extended.cfsr);
   state_encoder.WritePc(cpu_state.base.pc);
   state_encoder.WriteLr(cpu_state.base.lr);
   state_encoder.WritePsr(cpu_state.base.psr);
+  state_encoder.WriteMsp(cpu_state.extended.msp);
+  state_encoder.WritePsp(cpu_state.extended.psp);
+  state_encoder.WriteExcReturn(cpu_state.extended.exc_return);
+  state_encoder.WriteCfsr(cpu_state.extended.cfsr);
   state_encoder.WriteMmfar(cpu_state.extended.mmfar);
   state_encoder.WriteBfar(cpu_state.extended.bfar);
   state_encoder.WriteIcsr(cpu_state.extended.icsr);
-  state_encoder.WriteExcReturn(cpu_state.extended.exc_return);
-  state_encoder.WriteMsp(cpu_state.extended.msp);
-  state_encoder.WritePsp(cpu_state.extended.psp);
+  state_encoder.WriteHfsr(cpu_state.extended.hfsr);
+  state_encoder.WriteShcsr(cpu_state.extended.shcsr);
   state_encoder.WriteControl(cpu_state.extended.control);
 
   // General purpose registers.

@@ -39,14 +39,18 @@ constexpr uint32_t kExcReturnStackMask = (0x1u << 2);
 constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-volatile uint32_t& arm_v7m_icsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED04u);
 volatile uint32_t& arm_v7m_cfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
 volatile uint32_t& arm_v7m_mmfar =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED34u);
 volatile uint32_t& arm_v7m_bfar =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED38u);
+volatile uint32_t& arm_v7m_icsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED04u);
+volatile uint32_t& arm_v7m_hfsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
+volatile uint32_t& arm_v7m_shcsr =
+    *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
 
 // If the CPU fails to capture some registers, the captured struct members will
 // be populated with this value. The only registers that this value should be
@@ -167,9 +171,11 @@ extern "C" {
 PW_USED void pw_PackageAndHandleCpuException(pw_CpuExceptionState* cpu_state) {
   // Capture memory mapped registers.
   cpu_state->extended.cfsr = arm_v7m_cfsr;
-  cpu_state->extended.icsr = arm_v7m_icsr;
-  cpu_state->extended.bfar = arm_v7m_bfar;
   cpu_state->extended.mmfar = arm_v7m_mmfar;
+  cpu_state->extended.bfar = arm_v7m_bfar;
+  cpu_state->extended.icsr = arm_v7m_icsr;
+  cpu_state->extended.hfsr = arm_v7m_hfsr;
+  cpu_state->extended.shcsr = arm_v7m_shcsr;
 
   // CPU may have automatically pushed state to the program stack. If it did,
   // the values can be copied into in the pw_CpuExceptionState struct that is

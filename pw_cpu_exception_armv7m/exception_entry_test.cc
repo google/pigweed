@@ -570,6 +570,7 @@ void TestingExceptionHandler(pw_CpuExceptionState* state) {
 
   // Clear HFSR forced (nested) hard fault mask if set. This will only be
   // set by the nested fault test.
+  EXPECT_EQ(state->extended.hfsr, arm_v7m_hfsr);
   if (arm_v7m_hfsr & kForcedHardfaultMask) {
     arm_v7m_hfsr = kForcedHardfaultMask;
   }
@@ -606,6 +607,8 @@ void TestingExceptionHandler(pw_CpuExceptionState* state) {
     exceptions_handled++;
     return;
   }
+
+  EXPECT_EQ(state->extended.shcsr, arm_v7m_shcsr);
 
   // If an unexpected exception occurred, just enter an infinite loop.
   while (true) {

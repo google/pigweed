@@ -51,6 +51,8 @@ void ToString(const pw_CpuExceptionState& cpu_state,
   _PW_FORMAT_REGISTER(extended, mmfar);
   _PW_FORMAT_REGISTER(extended, bfar);
   _PW_FORMAT_REGISTER(extended, icsr);
+  _PW_FORMAT_REGISTER(extended, hfsr);
+  _PW_FORMAT_REGISTER(extended, shcsr);
   _PW_FORMAT_REGISTER(extended, control);
 
   // General purpose registers.
@@ -92,6 +94,8 @@ void LogCpuState(const pw_CpuExceptionState& cpu_state) {
   _PW_LOG_REGISTER(extended, mmfar);
   _PW_LOG_REGISTER(extended, bfar);
   _PW_LOG_REGISTER(extended, icsr);
+  _PW_LOG_REGISTER(extended, hfsr);
+  _PW_LOG_REGISTER(extended, shcsr);
   _PW_LOG_REGISTER(extended, control);
 
   // General purpose registers.

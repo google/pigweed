@@ -26,6 +26,8 @@ message ArmV7mCpuState {
   optional uint32 mmfar = 8;
   optional uint32 bfar = 9;
   optional uint32 icsr = 10;
+  optional uint32 hfsr = 25;
+  optional uint32 shcsr = 26;
   optional uint32 control = 11;
 
   // General purpose registers.
@@ -42,4 +44,6 @@ message ArmV7mCpuState {
   optional uint32 r10 = 22;
   optional uint32 r11 = 23;
   optional uint32 r12 = 24;
+
+  // Next tag: 27
 }
