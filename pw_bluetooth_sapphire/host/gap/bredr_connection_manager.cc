@@ -282,7 +282,16 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
 BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
     const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
     BrEdrConnectionManager::SearchCallback callback) {
-  return discoverer_.AddSearch(uuid, std::move(attributes), std::move(callback));
+  auto on_service_discovered = [self = weak_ptr_factory_.GetWeakPtr(), uuid,
+                                client_cb = std::move(callback)](PeerId peer_id, auto& attributes) {
+    if (self) {
+      Peer* const peer = self->cache_->FindById(peer_id);
+      ZX_ASSERT(peer);
+      peer->MutBrEdr().AddService(uuid);
+    }
+    client_cb(peer_id, attributes);
+  };
+  return discoverer_.AddSearch(uuid, std::move(attributes), std::move(on_service_discovered));
 }
 
 bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {

@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
@@ -1418,6 +1419,106 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectedPeerTimeout) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSearchedFor) {
+  constexpr UUID kServiceUuid1 = sdp::profile::kAudioSink;
+  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  peer->MutBrEdr().AddService(kServiceUuid1);
+
+  // Search for different service.
+  constexpr UUID kServiceUuid2 = sdp::profile::kAudioSource;
+  size_t search_cb_count = 0;
+  connmgr()->AddServiceSearch(kServiceUuid2, {sdp::kServiceId},
+                              [&](auto, auto&) { search_cb_count++; });
+
+  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  std::optional<uint32_t> sdp_request_tid;
+
+  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+    new_chan->SetSendCallback(
+        [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
+        async_get_default_dispatcher());
+    sdp_chan = std::move(new_chan);
+  });
+
+  // No searches in this connection.
+  QueueSuccessfulIncomingConn();
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(sdp_chan);
+  ASSERT_EQ(0u, search_cb_count);
+
+  // Positive response to search.
+  sdp::ServiceSearchAttributeResponse rsp;
+  rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(UUID()));
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
+
+  sdp_chan->Receive(*rsp_ptr);
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(1u, search_cb_count);
+
+  // Prior connections' services retained and newly discovered service added.
+  ASSERT_TRUE(peer->connected());
+  EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid1));
+  EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid2));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOfSameService) {
+  constexpr UUID kServiceUuid = sdp::profile::kAudioSink;
+  auto* const peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  peer->MutBrEdr().AddService(kServiceUuid);
+
+  size_t search_cb_count = 0;
+  connmgr()->AddServiceSearch(kServiceUuid, {sdp::kServiceId},
+                              [&](auto, auto&) { search_cb_count++; });
+
+  fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
+  std::optional<uint32_t> sdp_request_tid;
+
+  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+    new_chan->SetSendCallback(
+        [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
+        async_get_default_dispatcher());
+    sdp_chan = std::move(new_chan);
+  });
+
+  QueueSuccessfulIncomingConn();
+  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
+                                            kChannelParams);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(sdp_chan);
+  ASSERT_EQ(0u, search_cb_count);
+
+  sdp::ServiceSearchAttributeResponse empty_rsp;
+  auto rsp_ptr =
+      empty_rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
+
+  sdp_chan->Receive(*rsp_ptr);
+
+  RunLoopUntilIdle();
+
+  // Search callback isn't called by empty attribute list from peer.
+  ASSERT_EQ(0u, search_cb_count);
+
+  ASSERT_TRUE(peer->connected());
+  EXPECT_EQ(1u, peer->bredr()->services().count(kServiceUuid));
+
+  QueueDisconnection(kConnectionHandle);
+}
+
 TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
@@ -1451,7 +1552,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 || (*packet)[2];
+          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
         },
         async_get_default_dispatcher());
     sdp_chan = std::move(new_chan);
@@ -1541,7 +1642,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 || (*packet)[2];
+          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
         },
         async_get_default_dispatcher());
     sdp_chan = std::move(new_chan);
@@ -2124,7 +2225,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
           ASSERT_LE(3u, packet->size());
           ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
           ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 || (*packet)[2];
+          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
         },
         async_get_default_dispatcher());
     sdp_chan = std::move(new_chan);

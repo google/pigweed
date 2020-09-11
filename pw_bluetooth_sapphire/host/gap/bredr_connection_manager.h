@@ -123,13 +123,12 @@ class BrEdrConnectionManager final {
 
   // Add a service search to be performed on new connected remote peers.
   // This search will happen on every peer connection.
-  // |callback| will be called with the |attributes| that exist in the service
-  // entry on the remote SDP server.  This callback is called in the same
-  // dispatcher as BrEdrConnectionManager was created.
-  // If |attributes| is empty, all attributes on the server will be returned.
-  // Returns a SearchId which can be used to remove the search later.
-  // Identical searches will perform the same search for each search added.
-  // TODO(BT-785): Make identifcal searches just search once
+  // |callback| will be called with the |attributes| that exist in the service entry on the peer's
+  // SDP server. If |attributes| is empty, all attributes on the server will be returned. Returns a
+  // SearchId which can be used to remove the search later. Identical searches will perform the same
+  // search for each search added. Results of added service searches will be added to each Peer's
+  // BrEdrData.
+  // TODO(fxbug.dev/1378): Make identifcal searches just search once
   using SearchCallback = sdp::ServiceDiscoverer::ResultCallback;
   using SearchId = sdp::ServiceDiscoverer::SearchId;
   SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
