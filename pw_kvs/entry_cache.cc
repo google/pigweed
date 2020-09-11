@@ -21,7 +21,6 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/hash.h"
-#include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs::internal {

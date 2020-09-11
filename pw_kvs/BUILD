@@ -39,7 +39,6 @@ pw_cc_library(
         "public/pw_kvs/internal/sectors.h",
         "public/pw_kvs/internal/span_traits.h",
         "pw_kvs_private/config.h",
-        "pw_kvs_private/macros.h",
         "sectors.cc",
     ],
     hdrs = [

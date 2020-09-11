@@ -48,7 +48,6 @@ pw_source_set("pw_kvs") {
     "public/pw_kvs/internal/sectors.h",
     "public/pw_kvs/internal/span_traits.h",
     "pw_kvs_private/config.h",
-    "pw_kvs_private/macros.h",
     "sectors.cc",
   ]
   public_deps = [

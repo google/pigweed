@@ -23,8 +23,8 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
-#include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
+#include "pw_status/try.h"
 
 namespace pw::kvs {
 namespace {

@@ -25,7 +25,6 @@
 #include "pw_kvs/flash_test_partition.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/key_value_store.h"
-#include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"

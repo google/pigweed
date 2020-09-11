@@ -14,7 +14,7 @@
 
 #include "pw_kvs/alignment.h"
 
-#include "pw_kvs_private/macros.h"
+#include "pw_status/try.h"
 
 namespace pw {
 

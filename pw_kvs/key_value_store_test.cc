@@ -34,7 +34,6 @@
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
-#include "pw_kvs_private/macros.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"

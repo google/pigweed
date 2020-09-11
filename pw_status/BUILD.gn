@@ -27,6 +27,7 @@ pw_source_set("pw_status") {
   public = [
     "public/pw_status/status.h",
     "public/pw_status/status_with_size.h",
+    "public/pw_status/try.h",
   ]
   sources = [ "status.cc" ]
 }
@@ -35,6 +36,7 @@ pw_test_group("tests") {
   tests = [
     ":status_test",
     ":status_with_size_test",
+    ":try_test",
   ]
 }
 
@@ -49,6 +51,11 @@ pw_test("status_test") {
 pw_test("status_with_size_test") {
   deps = [ ":pw_status" ]
   sources = [ "status_with_size_test.cc" ]
+}
+
+pw_test("try_test") {
+  deps = [ ":pw_status" ]
+  sources = [ "try_test.cc" ]
 }
 
 pw_doc_group("docs") {

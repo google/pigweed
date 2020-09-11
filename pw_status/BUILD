@@ -28,6 +28,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_status/status.h",
         "public/pw_status/status_with_size.h",
+        "public/pw_status/try.h",
     ],
     includes = ["public"],
 )
@@ -47,6 +48,15 @@ pw_cc_test(
 pw_cc_test(
     name = "status_with_size_test",
     srcs = ["status_with_size_test.cc"],
+    deps = [
+        ":pw_status",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "try_test",
+    srcs = ["try_test.cc"],
     deps = [
         ":pw_status",
         "//pw_unit_test",
