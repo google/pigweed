@@ -179,13 +179,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Returns true if |id| is valid and supported by the peer.
   bool AllowsFixedChannel(ChannelId id);
 
-  // Called by ChannelImpl::Deactivate(). Removes the channel from the given
-  // link.
+  // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Calls |close_cb|
+  // when channel closure completes, which may be asynchronous for dynamic channels.
   //
-  // Does nothing if the link is closed.
-  void RemoveChannel(Channel* chan);
+  // Does nothing if the link is closed, but |close_cb| will still be called.
+  void RemoveChannel(Channel* chan, fit::closure close_cb);
 
-  // Called by ChannelImpl::SignalLinkError(). Has no effect if the link is
+  // Called by ChannelImpl::SignalLinkError() to disconnect all channels then signal an error to the
+  // lower layers (usually GAP, to request a link disconnection). Has no effect if the link is
   // closed.
   void SignalError();
 

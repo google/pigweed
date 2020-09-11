@@ -234,6 +234,21 @@ DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle
       LowerBits(src_id), UpperBits(src_id)));
 }
 
+DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+                                      l2cap::ChannelId src_id, l2cap::ChannelId dst_id) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: |link handle|, length: 12 bytes)
+      LowerBits(link_handle), UpperBits(link_handle), 0x0c, 0x00,
+      // L2CAP B-frame header: length 8, channel-id 1 (signaling)
+      0x08, 0x00, 0x01, 0x00,
+      // Disconnection Response, id, length 4
+      l2cap::kDisconnectionResponse, id, 0x04, 0x00,
+      // Destination CID
+      LowerBits(dst_id), UpperBits(dst_id),
+      // Source CID
+      LowerBits(src_id), UpperBits(src_id)));
+}
+
 DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
                                                   hci::ConnectionHandle link_handle,
                                                   uint16_t interval_min, uint16_t interval_max,

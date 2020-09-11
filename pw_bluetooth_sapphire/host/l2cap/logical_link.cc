@@ -11,6 +11,7 @@
 #include "bredr_dynamic_channel.h"
 #include "bredr_signaling_channel.h"
 #include "channel.h"
+#include "fbl/ref_ptr.h"
 #include "le_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
@@ -309,24 +310,29 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
                                                    : IsValidBREDRFixedChannel(id);
 }
 
-void LogicalLink::RemoveChannel(Channel* chan) {
+void LogicalLink::RemoveChannel(Channel* chan, fit::closure close_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
+    close_cb();
     return;
   }
 
   const ChannelId id = chan->id();
   auto iter = channels_.find(id);
-  if (iter == channels_.end())
+  if (iter == channels_.end()) {
+    close_cb();
     return;
+  }
 
   // Ignore if the found channel doesn't match the requested one (even though
   // their IDs are the same).
-  if (iter->second.get() != chan)
+  if (iter->second.get() != chan) {
+    close_cb();
     return;
+  }
 
   pending_pdus_.erase(id);
   channels_.erase(iter);
@@ -342,8 +348,9 @@ void LogicalLink::RemoveChannel(Channel* chan) {
   // TODO(armansito): Change this if statement into an assert when a registry
   // gets created for LE channels.
   if (dynamic_registry_) {
-    // TODO(xow): Add continuation for when channel is disconnected.
-    dynamic_registry_->CloseChannel(id, [] {});
+    dynamic_registry_->CloseChannel(id, std::move(close_cb));
+  } else {
+    close_cb();
   }
 }
 
@@ -355,27 +362,46 @@ void LogicalLink::SignalError() {
     return;
   }
 
-  bt_log(INFO, "l2cap", "Signal upper layer error on link %#.4x; closing all channels", handle());
+  bt_log(INFO, "l2cap", "Upper layer error on link %#.4x; closing all channels", handle());
+
+  auto signaling_channel_iter = channels_.count(kSignalingChannelId)
+                                    ? channels_.find(kSignalingChannelId)
+                                    : channels_.find(kLESignalingChannelId);
+  ZX_ASSERT(signaling_channel_iter != channels_.end());
+  fbl::RefPtr<ChannelImpl> signaling_channel = signaling_channel_iter->second;
+
+  // The signaling channel is skipped in this count.
+  const size_t num_channels_to_close = channels_.size() - 1;
+  fit::closure error_signaler = [num_channels_to_close = num_channels_to_close, handle = handle(),
+                                 link_error_cb = link_error_cb_.share()]() mutable {
+    if (num_channels_to_close <= 1) {
+      bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer", handle);
+      std::exchange(link_error_cb, nullptr)();
+
+      // Link is expected to be closed by its owner.
+    }
+    num_channels_to_close--;
+  };
+
+  if (num_channels_to_close == 0) {
+    error_signaler();
+    return;
+  }
 
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
     auto& [_, channel] = *channel_iter++;
+
+    // Do not close the signaling channel, as it is used to close the dynamic channels.
+    if (channel == signaling_channel) {
+      continue;
+    }
 
     // Signal the channel, as it did not request the closure.
     channel->OnClosed();
 
     // This erases from |channel_| and invalidates any iterator pointing to |channel|.
-    RemoveChannel(channel.get());
+    RemoveChannel(channel.get(), error_signaler.share());
   }
-
-  if (link_error_cb_) {
-    // TODO(fxbug.dev/53985): This should be removed when l2cap::Channel is no longer a thread-safe
-    // message-passing interface. But while it is, the above channel teardown work will be posting
-    // L2CAP Signaling Channel Disconnection Requests that must go out before we request a GAP
-    // disconnection of the underlying link with this callback.
-    async::PostTask(dispatcher(), link_error_cb_.share());
-  }
-
-  // Link is expected to be closed by its owner.
 }
 
 void LogicalLink::Close() {

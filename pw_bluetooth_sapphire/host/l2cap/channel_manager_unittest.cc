@@ -1083,10 +1083,6 @@ TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
   auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   chan->SignalLinkError();
 
-  // The event will run asynchronously.
-  EXPECT_FALSE(link_error);
-
-  RunLoopUntilIdle();
   EXPECT_TRUE(link_error);
 }
 
@@ -1099,10 +1095,6 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
   chan->SignalLinkError();
 
-  // The event will run asynchronously.
-  EXPECT_FALSE(link_error);
-
-  RunLoopUntilIdle();
   EXPECT_TRUE(link_error);
 }
 
@@ -1160,9 +1152,19 @@ TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_TRUE(link_error);
+  // link_error_cb is not called until Disconnection Response is received for each dynamic channel.
+  EXPECT_FALSE(link_error);
+
+  // But channels should be deactivated to prevent any activity.
   EXPECT_EQ(1, fixed_channel_closed);
   EXPECT_EQ(1, dynamic_channel_closed);
+
+  ASSERT_TRUE(AllExpectedPacketsSent());
+  const auto disconnection_rsp =
+      testing::AclDisconnectionRsp(disconn_req_id, kTestHandle1, kLocalId, kRemoteId);
+  ReceiveAclDataPacket(disconnection_rsp);
+
+  EXPECT_TRUE(link_error);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, LEConnectionParameterUpdateRequest) {
@@ -2026,7 +2028,6 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
   };
   ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1, 1);
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(channel);
 
   const StaticByteBuffer payload('h', 'i');
@@ -2035,7 +2036,6 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
                         kLowPriority);
   channel->Send(std::make_unique<DynamicByteBuffer>(payload));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_ACL_PACKET_OUT(testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId,
@@ -2050,9 +2050,13 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMonitorTimerExp
   // Monitor Timer expires without a response from the peer, signaling a link error that also
   // disconnects this channel.
   EXPECT_FALSE(link_error);
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
+  auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
   RETURN_IF_FATAL(RunLoopFor(kErtmMonitorTimerDuration));
 
+  const auto disconnection_rsp =
+      testing::AclDisconnectionRsp(disconn_req_id, kTestHandle1, kLocalId, kRemoteId);
+  ReceiveAclDataPacket(disconnection_rsp);
   EXPECT_TRUE(link_error);
 }
 
@@ -2074,7 +2078,6 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
   };
   ActivateOutboundErtmChannel(std::move(channel_cb), kTestHandle1, 1);
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
   ASSERT_TRUE(channel);
 
   const StaticByteBuffer payload('h', 'i');
@@ -2083,7 +2086,6 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
                         kLowPriority);
   channel->Send(std::make_unique<DynamicByteBuffer>(payload));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   EXPECT_ACL_PACKET_OUT(testing::AclSFrameReceiverReady(kTestHandle1, kRemoteId,
@@ -2097,14 +2099,16 @@ TEST_F(L2CAP_ChannelManagerTest, ErtmChannelSignalsLinkErrorAfterMaxTransmitExha
 
   // Peer response doesn't acknowledge the I-Frame's TxSeq and we already used up MaxTransmit, so
   // signal a link error that also disconnects this channel.
-  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
+  auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
   ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1, kLocalId,
                                                        /*receive_seq_num=*/0,
                                                        /*is_poll_request=*/false,
                                                        /*is_poll_response=*/true));
 
-  RETURN_IF_FATAL(RunLoopUntilIdle());
-
+  const auto disconnection_rsp =
+      testing::AclDisconnectionRsp(disconn_req_id, kTestHandle1, kLocalId, kRemoteId);
+  ReceiveAclDataPacket(disconnection_rsp);
   EXPECT_TRUE(link_error);
 }
 

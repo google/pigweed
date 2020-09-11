@@ -35,6 +35,8 @@ DynamicByteBuffer AclConnectionRsp(l2cap::CommandId id, hci::ConnectionHandle li
                                    ConnectionResult result = ConnectionResult::kSuccess);
 DynamicByteBuffer AclDisconnectionReq(l2cap::CommandId id, hci::ConnectionHandle link_handle,
                                       l2cap::ChannelId src_id, l2cap::ChannelId dst_id);
+DynamicByteBuffer AclDisconnectionRsp(l2cap::CommandId id, hci::ConnectionHandle link_handle,
+                                      l2cap::ChannelId src_id, l2cap::ChannelId dst_id);
 DynamicByteBuffer AclConnectionParameterUpdateReq(l2cap::CommandId id,
                                                   hci::ConnectionHandle link_handle,
                                                   uint16_t interval_min, uint16_t interval_max,
