@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include <gtest/gtest.h>
+
 #include "lib/fit/result.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -17,7 +19,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace bt {
 namespace sm {
