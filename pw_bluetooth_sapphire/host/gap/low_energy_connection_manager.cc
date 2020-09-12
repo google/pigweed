@@ -56,7 +56,8 @@ class LowEnergyConnection final : public sm::Delegate {
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       async_dispatcher_t* dispatcher,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt)
+                      fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt,
+                      PendingRequestData request)
       : peer_id_(peer_id),
         link_(std::move(link)),
         dispatcher_(dispatcher),
@@ -64,6 +65,7 @@ class LowEnergyConnection final : public sm::Delegate {
         data_domain_(data_domain),
         gatt_(gatt),
         conn_pause_central_expiry_(zx::time(async_now(dispatcher_)) + kLEConnectionPauseCentral),
+        request_(std::move(request)),
         weak_ptr_factory_(this) {
     ZX_DEBUG_ASSERT(peer_id_.IsValid());
     ZX_DEBUG_ASSERT(link_);
@@ -80,6 +82,14 @@ class LowEnergyConnection final : public sm::Delegate {
   }
 
   ~LowEnergyConnection() override {
+    if (request_.has_value()) {
+      bt_log(TRACE, "gap-le",
+             "destroying connection, notifying request callbacks of failure (handle %#.4x)",
+             handle());
+      request_->NotifyCallbacks(hci::Status(HostError::kFailed), [] { return nullptr; });
+      request_.reset();
+    }
+
     // Unregister this link from the GATT profile and the L2CAP plane. This
     // invalidates all L2CAP channels that are associated with this link.
     gatt_->RemoveConnection(peer_id());
@@ -88,6 +98,22 @@ class LowEnergyConnection final : public sm::Delegate {
     // Notify all active references that the link is gone. This will
     // synchronously notify all refs.
     CloseRefs();
+  }
+
+  void AddRequestCallback(LowEnergyConnectionManager::ConnectionResultCallback cb) {
+    if (request_.has_value()) {
+      request_->AddCallback(std::move(cb));
+    } else {
+      cb(hci::Status(), AddRef());
+    }
+  }
+
+  void NotifyRequestCallbacks() {
+    if (request_.has_value()) {
+      bt_log(TRACE, "gap-le", "notifying connection request callbacks (handle %#.4x)", handle());
+      request_->NotifyCallbacks(hci::Status(), std::bind(&LowEnergyConnection::AddRef, this));
+      request_.reset();
+    }
   }
 
   LowEnergyConnectionRefPtr AddRef() {
@@ -401,6 +427,10 @@ class LowEnergyConnection final : public sm::Delegate {
   // Set to the time when connection parameters should be sent as LE central.
   const zx::time conn_pause_central_expiry_;
 
+  // Request callbacks that will be notified by |NotifyRequestCallbacks()| when interrogation
+  // completes or by the dtor.
+  std::optional<PendingRequestData> request_;
+
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
   std::unordered_set<LowEnergyConnectionRef*> refs_;
@@ -458,21 +488,6 @@ sm::SecurityProperties LowEnergyConnectionRef::security() const {
   auto conn_iter = manager_->connections_.find(peer_id_);
   ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
   return conn_iter->second->security();
-}
-
-LowEnergyConnectionManager::PendingRequestData::PendingRequestData(
-    const DeviceAddress& address, ConnectionResultCallback first_callback,
-    ConnectionOptions connection_options)
-    : address_(address), connection_options_(connection_options) {
-  callbacks_.push_back(std::move(first_callback));
-}
-
-void LowEnergyConnectionManager::PendingRequestData::NotifyCallbacks(hci::Status status,
-                                                                     const RefFunc& func) {
-  ZX_DEBUG_ASSERT(!callbacks_.empty());
-  for (const auto& callback : callbacks_) {
-    callback(status, func());
-  }
 }
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
@@ -567,33 +582,23 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   // either success of failure).
   auto pending_iter = pending_requests_.find(peer_id);
   if (pending_iter != pending_requests_.end()) {
-    // TODO(fxbug.dev/52283): add connection state asserts for invariants
+    ZX_ASSERT(connections_.find(peer_id) == connections_.end());
+    ZX_ASSERT(connector_->request_pending());
     pending_iter->second.AddCallback(std::move(callback));
     return true;
   }
 
-  // If there is already an active connection then we add a new reference and
-  // succeed.
-  auto conn_ref = AddConnectionRef(peer_id);
-  if (conn_ref) {
-    async::PostTask(dispatcher_,
-                    [conn_ref = std::move(conn_ref), callback = std::move(callback)]() mutable {
-                      // Do not report success if the link has been disconnected (e.g. via
-                      // Disconnect() or other circumstances).
-                      if (!conn_ref->active()) {
-                        bt_log(DEBUG, "gap-le", "link disconnected, ref is inactive");
-                        callback(hci::Status(HostError::kFailed), nullptr);
-                      } else {
-                        callback(hci::Status(), std::move(conn_ref));
-                      }
-                    });
-
+  // If there is already an active connection then we add a callback to be called after
+  // interrogation completes.
+  auto conn_iter = connections_.find(peer_id);
+  if (conn_iter != connections_.end()) {
+    conn_iter->second->AddRequestCallback(std::move(callback));
     return true;
   }
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
   pending_requests_[peer_id] =
-      PendingRequestData(peer->address(), std::move(callback), connection_options);
+      internal::PendingRequestData(peer->address(), std::move(callback), connection_options);
 
   TryCreateNextConnection();
 
@@ -670,20 +675,15 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
 
-  ConnectionOptions connection_options(bondable_mode, std::nullopt);
+  ConnectionOptions connection_options(bondable_mode);
+  internal::PendingRequestData request(peer->address(), std::move(callback), connection_options);
 
   // TODO(armansito): Use own address when storing the connection (NET-321).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
-  InitializeConnection(peer_id, std::move(link), connection_options,
-                       [peer_id, cb = std::move(callback), this](
-                           hci::Status status, LowEnergyConnectionRefPtr conn_ref) {
-                         auto peer = peer_cache_->FindById(peer_id);
-                         if (conn_ref && peer) {
-                           peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-                         }
-                         cb(status, std::move(conn_ref));
-                       });
+  if (InitializeConnection(peer_id, std::move(link), std::move(request))) {
+    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
+  }
 }
 
 void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
@@ -748,7 +748,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
     const auto& next_peer_addr = iter.second.address();
     Peer* peer = peer_cache_->FindByAddress(next_peer_addr);
     if (peer) {
-      RequestCreateConnection(peer, iter.second.connection_options());
+      RequestCreateConnection(peer);
       break;
     }
 
@@ -761,8 +761,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
   }
 }
 
-void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer,
-                                                         ConnectionOptions connection_options) {
+void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
   ZX_DEBUG_ASSERT(peer);
 
   // During the initial connection to a peripheral we use the initial high
@@ -779,10 +778,9 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer,
                                                       hci::defaults::kLESupervisionTimeout);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [connection_options, self, peer_id = peer->identifier()](hci::Status status,
-                                                                            auto link) {
+  auto status_cb = [self, peer_id = peer->identifier()](hci::Status status, auto link) {
     if (self)
-      self->OnConnectResult(peer_id, status, std::move(link), connection_options);
+      self->OnConnectResult(peer_id, status, std::move(link));
   };
 
   // We set the scan window and interval to the same value for continuous
@@ -791,10 +789,9 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer,
                                kLEScanFastInterval, initial_params, status_cb, request_timeout_);
 }
 
-void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
+bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
                                                       std::unique_ptr<hci::Connection> link,
-                                                      ConnectionOptions connection_options,
-                                                      ConnectionResultCallback callback) {
+                                                      internal::PendingRequestData request) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
 
@@ -806,12 +803,11 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   // destination for remote initiated connections (see NET-321).
   if (connections_.find(peer_id) != connections_.end()) {
     bt_log(DEBUG, "gap-le", "multiple links from peer; connection refused");
-    callback(hci::Status(HostError::kFailed), nullptr);
-    return;
+    // Notify request that duplicate connection could not be initialized.
+    request.NotifyCallbacks(hci::Status(HostError::kFailed), [] { return nullptr; });
+    return false;
   }
 
-  // Add the connection to the L2CAP table. Incoming data will be buffered until
-  // the channels are open.
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto conn_param_update_cb = [self, handle, peer_id](const auto& params) {
     if (self) {
@@ -827,10 +823,11 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   };
 
   // Initialize connection.
-  auto conn = std::make_unique<internal::LowEnergyConnection>(peer_id, std::move(link), dispatcher_,
-                                                              self, data_domain_, gatt_);
+  auto conn_options = request.connection_options();
+  auto conn = std::make_unique<internal::LowEnergyConnection>(
+      peer_id, std::move(link), dispatcher_, self, data_domain_, gatt_, std::move(request));
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
-                                connection_options);
+                                conn_options);
   conn->StartConnectionPausePeripheralTimeout();
 
   auto first_ref = conn->AddRef();
@@ -858,26 +855,25 @@ void LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   }
 
   interrogator_.Start(peer_id, handle,
-                      [peer_id, conn_ref = std::move(first_ref), cb = std::move(callback),
-                       self](hci::Status status) mutable {
-                        if (!self) {
-                          return;
+                      [peer_id, first_ref = std::move(first_ref), self](auto status) mutable {
+                        if (self) {
+                          self->OnInterrogationComplete(peer_id, status, std::move(first_ref));
                         }
-
-                        if (!status.is_success()) {
-                          // Releasing ref will disconnect.
-                          conn_ref.release();
-                          cb(status, nullptr);
-                          return;
-                        }
-
-                        self->OnInterrogationComplete(peer_id);
-
-                        cb(status, std::move(conn_ref));
                       });
+
+  return true;
 }
 
-void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id) {
+void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id, hci::Status status,
+                                                         LowEnergyConnectionRefPtr first_ref) {
+  if (!status.is_success()) {
+    bt_log(TRACE, "gap-le", "interrogation failed, releasing ref");
+
+    // Releasing ref will disconnect and notify request callbacks of failure.
+    first_ref = nullptr;
+    return;
+  }
+
   auto it = connections_.find(peer_id);
   if (it == connections_.end()) {
     bt_log(INFO, "gap", "OnInterrogationComplete called for non-connected peer");
@@ -893,14 +889,9 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id) {
       RequestConnectionParameterUpdate(peer_id, *conn, kDefaultPreferredConnectionParameters);
     });
   }
-}
 
-LowEnergyConnectionRefPtr LowEnergyConnectionManager::AddConnectionRef(PeerId peer_id) {
-  auto iter = connections_.find(peer_id);
-  if (iter == connections_.end())
-    return nullptr;
-
-  return iter->second->AddRef();
+  // Distribute refs to requesters.
+  conn->NotifyRequestCallbacks();
 }
 
 void LowEnergyConnectionManager::CleanUpConnection(
@@ -916,68 +907,25 @@ void LowEnergyConnectionManager::CleanUpConnection(
   conn.reset();
 }
 
-void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci::Connection> link,
-                                                            ConnectionOptions connection_options) {
+void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci::Connection> link) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
   bt_log(INFO, "gap-le", "new connection %s", bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
+  auto peer_id = peer->identifier();
 
-  // Initialize the connection  and obtain the initial reference.
-  // On successful initialization, this reference lasts until this method returns to prevent it from
-  // dropping to 0 due to an unclaimed reference while notifying pending callbacks and listeners
-  // below.
-  InitializeConnection(peer->identifier(), std::move(link), connection_options,
-                       [this, peer_id = peer->identifier()](hci::Status status,
-                                                            LowEnergyConnectionRefPtr first_ref) {
-                         OnLocalInitiatedLinkInitialized(status, std::move(first_ref), peer_id);
-                       });
-}
+  auto request_iter = pending_requests_.find(peer_id);
+  ZX_ASSERT(request_iter != pending_requests_.end());
+  auto request = std::move(request_iter->second);
+  pending_requests_.erase(request_iter);
 
-void LowEnergyConnectionManager::OnLocalInitiatedLinkInitialized(hci::Status status,
-                                                                 LowEnergyConnectionRefPtr conn_ref,
-                                                                 PeerId peer_id) {
-  if (!status.is_success()) {
-    ZX_ASSERT(!conn_ref);
-
-    auto iter = pending_requests_.find(peer_id);
-    if (iter != pending_requests_.end()) {
-      // Remove the entry from |pending_requests_| before notifying the
-      // callbacks.
-      auto pending_req_data = std::move(iter->second);
-      pending_requests_.erase(iter);
-
-      pending_req_data.NotifyCallbacks(status, [] { return nullptr; });
-    }
-  } else {
-    // We take care never to initiate more than one connection to the same
-    // peer.
-    ZX_ASSERT(conn_ref);
-
+  if (InitializeConnection(peer_id, std::move(link), std::move(request))) {
     auto conn_iter = connections_.find(peer_id);
     ZX_ASSERT(conn_iter != connections_.end());
 
-    auto peer = peer_cache_->FindById(peer_id);
-    ZX_ASSERT(peer);
-
     // For now, jump to the initialized state.
     peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-
-    auto iter = pending_requests_.find(peer_id);
-    if (iter != pending_requests_.end()) {
-      // Remove the entry from |pending_requests_| before notifying the
-      // callbacks.
-      auto pending_req_data = std::move(iter->second);
-      pending_requests_.erase(iter);
-
-      pending_req_data.NotifyCallbacks(status,
-                                       [&conn_iter] { return conn_iter->second->AddRef(); });
-    }
-
-    // Release the extra reference before attempting the next connection.
-    // This will disconnect the link if no callback retained its reference.
-    conn_ref = nullptr;
   }
 
   ZX_ASSERT(!connector_->request_pending());
@@ -996,13 +944,12 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link
 }
 
 void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status status,
-                                                 hci::ConnectionPtr link,
-                                                 ConnectionOptions connection_options) {
-  ZX_DEBUG_ASSERT(connections_.find(peer_id) == connections_.end());
+                                                 hci::ConnectionPtr link) {
+  ZX_ASSERT(connections_.find(peer_id) == connections_.end());
 
   if (status) {
     bt_log(TRACE, "gap-le", "connection request successful");
-    RegisterLocalInitiatedLink(std::move(link), connection_options);
+    RegisterLocalInitiatedLink(std::move(link));
     return;
   }
 
@@ -1014,7 +961,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
 
   // Notify the matching pending callbacks about the failure.
   auto iter = pending_requests_.find(peer_id);
-  ZX_DEBUG_ASSERT(iter != pending_requests_.end());
+  ZX_ASSERT(iter != pending_requests_.end());
 
   // Remove the entry from |pending_requests_| before notifying callbacks.
   auto pending_req_data = std::move(iter->second);
@@ -1022,8 +969,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   pending_req_data.NotifyCallbacks(status, [] { return nullptr; });
 
   // Process the next pending attempt.
-  ZX_DEBUG_ASSERT(!connector_->request_pending());
-
+  ZX_ASSERT(!connector_->request_pending());
   TryCreateNextConnection();
 }
 
@@ -1268,6 +1214,23 @@ LowEnergyConnectionManager::ConnectionMap::iterator LowEnergyConnectionManager::
   }
   return iter;
 }
+
+namespace internal {
+
+PendingRequestData::PendingRequestData(const DeviceAddress& address,
+                                       ConnectionResultCallback first_callback,
+                                       ConnectionOptions connection_options)
+    : address_(address), connection_options_(connection_options) {
+  callbacks_.push_back(std::move(first_callback));
+}
+
+void PendingRequestData::NotifyCallbacks(hci::Status status, const RefFunc& func) {
+  for (const auto& callback : callbacks_) {
+    callback(status, func());
+  }
+}
+
+}  // namespace internal
 
 }  // namespace gap
 }  // namespace bt

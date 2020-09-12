@@ -931,41 +931,47 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectAfterRefsReleased) {
   EXPECT_TRUE(canceled_peers().empty());
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectWhileRefPending) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectAfterSecondConnectionRequestInvalidatesRefs) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
-  LowEnergyConnectionRefPtr conn_ref;
-  auto success_cb = [&conn_ref](auto status, auto cb_conn_ref) {
+  LowEnergyConnectionRefPtr conn_ref_0;
+  auto success_cb = [&conn_ref_0](auto status, auto cb_conn_ref) {
     EXPECT_TRUE(status);
     ASSERT_TRUE(cb_conn_ref);
     EXPECT_TRUE(cb_conn_ref->active());
 
-    conn_ref = std::move(cb_conn_ref);
+    conn_ref_0 = std::move(cb_conn_ref);
   };
 
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), success_cb));
   RunLoopUntilIdle();
-  ASSERT_TRUE(conn_ref);
+  ASSERT_TRUE(conn_ref_0);
+  EXPECT_TRUE(conn_ref_0->active());
 
-  auto ref_cb = [](auto status, auto conn_ref) {
-    EXPECT_FALSE(conn_ref);
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kFailed, status.error());
+  LowEnergyConnectionRefPtr conn_ref_1;
+  auto ref_cb = [&conn_ref_1](auto status, auto conn_ref) {
+    EXPECT_TRUE(status);
+    conn_ref_1 = std::move(conn_ref);
   };
 
+  // Callback should be run synchronously with success status because connection already exists.
   EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), ref_cb));
+  EXPECT_TRUE(conn_ref_1);
+  EXPECT_TRUE(conn_ref_1->active());
 
-  // This should invalidate the ref that was bound to |ref_cb|.
+  // This should invalidate the refs.
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
+  EXPECT_FALSE(conn_ref_1->active());
+  EXPECT_FALSE(conn_ref_0->active());
 
   RunLoopUntilIdle();
 }
 
-// This tests that a connection reference callback returns nullptr if a HCI
+// This tests that a connection reference callback succeeds if a HCI
 // Disconnection Complete event is received for the corresponding ACL link
-// BEFORE the callback gets run.
-TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectCompleteEventWhileRefPending) {
+// immediately after the callback gets run.
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectCompleteEventAfterConnect) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
 
@@ -987,18 +993,19 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectCompleteEventWhileRefPendin
   size_t ref_cb_count = 0;
   auto ref_cb = [&ref_cb_count](auto status, auto conn_ref) {
     ref_cb_count++;
-    EXPECT_FALSE(conn_ref);
-    EXPECT_FALSE(status);
-    EXPECT_EQ(HostError::kFailed, status.error());
+    EXPECT_TRUE(conn_ref);
+    EXPECT_TRUE(status);
   };
 
   size_t disconn_cb_count = 0;
-  auto disconn_cb = [this, ref_cb, peer, &disconn_cb_count](auto) {
+  auto disconn_cb = [this, ref_cb, peer, &disconn_cb_count, &ref_cb_count](auto) {
     disconn_cb_count++;
     // The link is gone but conn_mgr() hasn't updated the connection state yet.
-    // The request to connect will attempt to add a new reference which will be
-    // invalidated before |ref_cb| gets called.
+    // The request to connect will attempt to add a new reference which will succeed because ref_cb
+    // is called synchronously.
+    EXPECT_EQ(0u, ref_cb_count);
     EXPECT_TRUE(conn_mgr()->Connect(peer->identifier(), ref_cb));
+    EXPECT_EQ(1u, ref_cb_count);
   };
   conn_mgr()->SetDisconnectCallbackForTesting(disconn_cb);
 
@@ -1591,7 +1598,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailu
   ASSERT_TRUE(peer);
   EXPECT_FALSE(peer->connected());
   EXPECT_FALSE(peer->le()->connected());
-  EXPECT_TRUE(peer->temporary());
+  EXPECT_FALSE(peer->temporary());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterrogation) {
@@ -2115,6 +2122,128 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   EXPECT_EQ(2u, connected_peers().size());
 
   EXPECT_EQ(LeSecurityMode::SecureConnectionsOnly, new_peer_sm->security_mode());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       ConnectAndInterrogateSecondPeerDuringInterrogationOfFirstPeer) {
+  auto* peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer_0->le());
+
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  auto fake_peer_0_ptr = fake_peer_0.get();
+  test_device()->AddPeer(std::move(fake_peer_0));
+
+  // Prevent remote features event from being received.
+  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+
+  LowEnergyConnectionRefPtr conn_0;
+  conn_mgr()->Connect(
+      peer_0->identifier(),
+      [&](auto, auto conn) {
+        EXPECT_TRUE(conn);
+        conn_0 = std::move(conn);
+      },
+      BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+  // Interrogation should not complete.
+  EXPECT_TRUE(peer_0->le()->connected());
+  EXPECT_FALSE(conn_0);
+
+  auto* peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  ASSERT_TRUE(peer_1->le());
+
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1);
+  auto fake_peer_1_ptr = fake_peer_1.get();
+  test_device()->AddPeer(std::move(fake_peer_1));
+
+  // Connect to different peer, before interrogation has completed.
+  LowEnergyConnectionRefPtr conn_1;
+  conn_mgr()->Connect(
+      peer_1->identifier(),
+      [&](auto, auto conn) {
+        EXPECT_TRUE(conn);
+        conn_1 = std::move(conn);
+      },
+      BondableMode::Bondable);
+  RunLoopUntilIdle();
+
+  // Complete interrogation of peer_0
+  ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
+  auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
+  hci::LEReadRemoteFeaturesCompleteSubeventParams response;
+  response.connection_handle = htole16(handle_0);
+  response.status = hci::kSuccess;
+  response.le_features = 0u;
+  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+                                 BufferView(&response, sizeof(response)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_0);
+  EXPECT_TRUE(peer_0->le()->connected());
+
+  // Complete interrogation of peer_1
+  ASSERT_FALSE(fake_peer_1_ptr->logical_links().empty());
+  auto handle_1 = *fake_peer_0_ptr->logical_links().begin();
+  response.connection_handle = htole16(handle_1);
+  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+                                 BufferView(&response, sizeof(response)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_1);
+  EXPECT_TRUE(peer_1->le()->connected());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFirstPeer) {
+  auto* peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer_0->le());
+
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  auto fake_peer_0_ptr = fake_peer_0.get();
+  test_device()->AddPeer(std::move(fake_peer_0));
+
+  // Prevent remote features event from being received.
+  test_device()->SetDefaultCommandStatus(hci::kLEReadRemoteFeatures, hci::StatusCode::kSuccess);
+
+  LowEnergyConnectionRefPtr conn_0;
+  conn_mgr()->Connect(
+      peer_0->identifier(),
+      [&](auto, auto conn) {
+        EXPECT_TRUE(conn);
+        conn_0 = std::move(conn);
+      },
+      BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+  // Interrogation should not complete.
+  EXPECT_TRUE(peer_0->le()->connected());
+  EXPECT_FALSE(conn_0);
+
+  test_device()->ClearDefaultCommandStatus(hci::kLEReadRemoteFeatures);
+  // Stall connection complete for peer 1.
+  test_device()->SetDefaultCommandStatus(hci::kLECreateConnection, hci::StatusCode::kSuccess);
+
+  auto* peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  ASSERT_TRUE(peer_1->le());
+
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1);
+  test_device()->AddPeer(std::move(fake_peer_1));
+
+  // Connect to different peer, before interrogation has completed.
+  conn_mgr()->Connect(
+      peer_1->identifier(), [&](auto, auto conn) { EXPECT_FALSE(conn); }, BondableMode::Bondable);
+  RunLoopUntilIdle();
+
+  // Complete interrogation of peer_0. No asserts should fail.
+  ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
+  auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
+  hci::LEReadRemoteFeaturesCompleteSubeventParams response;
+  response.connection_handle = htole16(handle_0);
+  response.status = hci::kSuccess;
+  response.le_features = 0u;
+  test_device()->SendLEMetaEvent(hci::kLEReadRemoteFeaturesCompleteSubeventCode,
+                                 BufferView(&response, sizeof(response)));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_0);
+  EXPECT_TRUE(peer_0->le()->connected());
 }
 
 // Tests for assertions that enforce invariants.

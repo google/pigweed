@@ -39,6 +39,7 @@ namespace gap {
 
 namespace internal {
 class LowEnergyConnection;
+class PendingRequestData;
 }  // namespace internal
 
 // TODO(armansito): Document the usage pattern.
@@ -94,6 +95,8 @@ class LowEnergyConnectionRef final {
 
 using LowEnergyConnectionRefPtr = std::unique_ptr<LowEnergyConnectionRef>;
 
+// LowEnergyConnectionManager is responsible for connecting and initializing new connections,
+// interrogating connections, intiating pairing, and disconnecting connections.
 class LowEnergyConnectionManager final {
  public:
   // |hci|: The HCI transport used to track link layer connection events from
@@ -240,34 +243,6 @@ class LowEnergyConnectionManager final {
   // Mapping from peer identifiers to open LE connections.
   using ConnectionMap = std::unordered_map<PeerId, std::unique_ptr<internal::LowEnergyConnection>>;
 
-  class PendingRequestData {
-   public:
-    PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback,
-                       ConnectionOptions connection_options);
-    PendingRequestData() = default;
-    ~PendingRequestData() = default;
-
-    PendingRequestData(PendingRequestData&&) = default;
-    PendingRequestData& operator=(PendingRequestData&&) = default;
-
-    void AddCallback(ConnectionResultCallback cb) { callbacks_.push_back(std::move(cb)); }
-
-    // Notifies all elements in |callbacks| with |status| and the result of
-    // |func|.
-    using RefFunc = fit::function<LowEnergyConnectionRefPtr()>;
-    void NotifyCallbacks(hci::Status status, const RefFunc& func);
-
-    const DeviceAddress& address() const { return address_; }
-    ConnectionOptions connection_options() const { return connection_options_; }
-
-   private:
-    DeviceAddress address_;
-    std::list<ConnectionResultCallback> callbacks_;
-    ConnectionOptions connection_options_;
-
-    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
-  };
-
   // Called by LowEnergyConnectionRef::Release().
   void ReleaseReference(LowEnergyConnectionRef* conn_ref);
 
@@ -276,22 +251,21 @@ class LowEnergyConnectionManager final {
   void TryCreateNextConnection();
 
   // Initiates a connection attempt to |peer|.
-  void RequestCreateConnection(Peer* peer, ConnectionOptions connection_options);
+  void RequestCreateConnection(Peer* peer);
 
-  // Initializes the connection to the peer with the given identifier, performs interrogation,
-  // and returns the initial reference to it via |callback|. This method is responsible for setting
-  // up all data bearers.
-  void InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
-                            ConnectionOptions connection_options,
-                            ConnectionResultCallback callback);
+  // Initializes the connection to the peer with the given identifier and starts interrogation.
+  // |request| will be notified when interrogation completes.
+  // This method is responsible for setting up all data bearers.
+  // Returns true on success, or false otherwise.
+  bool InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
+                            internal::PendingRequestData request);
 
-  // Called upon successful interrogation of a new connection.
-  void OnInterrogationComplete(PeerId peer_id);
-
-  // Adds a new connection reference to an existing connection to the peer
-  // with the ID |peer_id| and returns it. Returns nullptr if
-  // |peer_id| is not recognized.
-  LowEnergyConnectionRefPtr AddConnectionRef(PeerId peer_id);
+  // Called upon interrogation completion for a new connection.
+  // Notifies connection request callbacks.
+  // Takes ownership of the |first_ref|, the first connection reference, to ensure the connection
+  // exists until callbacks have been notified.
+  void OnInterrogationComplete(PeerId peer_id, hci::Status status,
+                               LowEnergyConnectionRefPtr first_ref);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command if the connection has
   // not already been disconnected, and notifies any referenced LowEnergyConnectionRefs of the
@@ -305,14 +279,10 @@ class LowEnergyConnectionManager final {
   // (e.g. L2CAP).
   void CleanUpConnection(std::unique_ptr<internal::LowEnergyConnection> conn);
 
-  // Called by |connector_| when a new locally initiated LE connection has been
+  // Called by |OnConnectResult()| when a new locally initiated LE connection has been
   // created. Notifies pending connection request callbacks when connection initialization
   // completes.
-  void RegisterLocalInitiatedLink(hci::ConnectionPtr link, ConnectionOptions connection_options);
-
-  // Called by RegisterLocalInitiatedLink() when connection has been initialized.
-  void OnLocalInitiatedLinkInitialized(hci::Status status, LowEnergyConnectionRefPtr conn_ref,
-                                       PeerId peer_id);
+  void RegisterLocalInitiatedLink(hci::ConnectionPtr link);
 
   // Updates |peer_cache_| with the given |link| and returns the corresponding
   // Peer.
@@ -328,8 +298,7 @@ class LowEnergyConnectionManager final {
   Peer* UpdatePeerWithLink(const hci::Connection& link);
 
   // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link,
-                       ConnectionOptions connection_options);
+  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link);
 
   // Event handler for the HCI LE Connection Update Complete event. This event may be generated by
   // the Link Layer either autonomously by the LE central's controller, as a result of a Link Layer
@@ -459,7 +428,7 @@ class LowEnergyConnectionManager final {
   DisconnectCallback test_disconn_cb_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<PeerId, PendingRequestData> pending_requests_;
+  std::unordered_map<PeerId, internal::PendingRequestData> pending_requests_;
 
   // Mapping from peer identifiers to currently open LE connections.
   ConnectionMap connections_;
@@ -483,6 +452,43 @@ class LowEnergyConnectionManager final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
 };
 
+namespace internal {
+
+// PendingRequestData is used to model queued outbound connection and interrogation requests in both
+// LowEnergyConnectionManager and LowEnergyConnection. Duplicate connection request callbacks are
+// added with |AddCallback|, and |NotifyCallbacks| is called when the request is completed.
+class PendingRequestData final {
+ public:
+  using ConnectionResultCallback = LowEnergyConnectionManager::ConnectionResultCallback;
+  using ConnectionOptions = LowEnergyConnectionManager::ConnectionOptions;
+
+  PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback,
+                     ConnectionOptions connection_options);
+  PendingRequestData() = default;
+  ~PendingRequestData() = default;
+
+  PendingRequestData(PendingRequestData&&) = default;
+  PendingRequestData& operator=(PendingRequestData&&) = default;
+
+  void AddCallback(ConnectionResultCallback cb) { callbacks_.push_back(std::move(cb)); }
+
+  // Notifies all elements in |callbacks| with |status| and the result of
+  // |func|.
+  using RefFunc = fit::function<LowEnergyConnectionRefPtr()>;
+  void NotifyCallbacks(hci::Status status, const RefFunc& func);
+
+  const DeviceAddress& address() const { return address_; }
+  ConnectionOptions connection_options() const { return connection_options_; }
+
+ private:
+  DeviceAddress address_;
+  std::list<ConnectionResultCallback> callbacks_;
+  ConnectionOptions connection_options_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
+};
+
+}  // namespace internal
 }  // namespace gap
 }  // namespace bt
 

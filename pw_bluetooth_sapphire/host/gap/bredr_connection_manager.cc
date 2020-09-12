@@ -871,6 +871,7 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   ZX_ASSERT(peer->connectable());
 
   // Succeed immediately if there is already an active connection.
+  // TODO(fxbug.dev/59744): Don't succeed immediately if interrogation hasn't yet completed.
   auto conn = FindConnectionById(peer_id);
   if (conn) {
     async::PostTask(dispatcher_,
