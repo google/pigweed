@@ -17,12 +17,52 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <functional>  // std::invoke
 
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::hdlc_lite {
+
+// Represents the contents of an HDLC frame -- the unescaped data between two
+// flag bytes. Instances of Frame are only created when a full, valid frame has
+// been read.
+//
+// For now, the Frame class assumes single-byte address and control fields and a
+// 32-bit frame check sequence (FCS).
+class Frame {
+ private:
+  static constexpr size_t kAddressSize = 1;
+  static constexpr size_t kControlSize = 1;
+  static constexpr size_t kFcsSize = sizeof(uint32_t);
+
+ public:
+  // The minimum size of a frame, excluding control bytes (flag or escape).
+  static constexpr size_t kMinSizeBytes =
+      kAddressSize + kControlSize + kFcsSize;
+
+  // Creates a Frame with the specified data. The data MUST be valid frame data
+  // with a verified frame check sequence.
+  explicit constexpr Frame(ConstByteSpan data) : frame_(data) {
+    // TODO(pwbug/246): Use PW_DASSERT when available.
+    // PW_DASSERT(data.size() >= kMinSizeBytes);
+  }
+
+  constexpr unsigned address() const {
+    return std::to_integer<unsigned>(frame_[0]);
+  }
+
+  constexpr std::byte control() const { return frame_[kAddressSize]; }
+
+  constexpr ConstByteSpan data() const {
+    return frame_.subspan(kAddressSize + kControlSize,
+                          frame_.size() - kMinSizeBytes);
+  }
+
+ private:
+  ConstByteSpan frame_;
+};
 
 // The Decoder class facilitates decoding of data frames using the HDLC-Lite
 // protocol, by returning packets as they are decoded and storing incomplete
@@ -34,80 +74,64 @@ namespace pw::hdlc_lite {
 class Decoder {
  public:
   constexpr Decoder(ByteSpan buffer)
-      : frame_buffer_(buffer), state_(DecoderState::kNoPacket), size_(0) {}
+      : buffer_(buffer), current_frame_size_(0), state_(State::kInterFrame) {}
 
-  // Parse a single byte of a HDLC stream. Returns a result object with the
-  // complete packet if the latest byte finishes a frame, or a variety of
-  // statuses in other cases, as follows:
-  //
-  //     OK - If the end of the data-frame was found and the packet was decoded
-  //         successfully. The value of this Result<ConstByteSpan> object will
-  //         be the payload.
-  //     RESOURCE_EXHAUSTED - If the number of bytes added to the Decoder is
-  //         greater than the buffer size. This function call will clear the
-  //         decoder before returning.
-  //     UNAVAILABLE - If the byte has been successfully escaped and added to
-  //         the buffer, but we havent reached the end of the data-frame.
-  //     DATA_LOSS - If the CRC verification process fails after seeing the
-  //         ending Frame Delimiter byte (0x7E). Additionally happens when the
-  //         FCS is not in the payload or when the data-frame does not start
-  //         with the initial Frame Delimiter byte (0x7E).
-  //
-  Result<ConstByteSpan> AddByte(const std::byte b);
-
-  // Returns the number of bytes of the active packet that are added to the
-  // frame buffer.
-  size_t size() const { return size_; }
-
-  // Returns the maximum size of the Decoder's frame buffer.
-  size_t max_size() const { return frame_buffer_.size(); }
-
-  // Clears the frame buffer at the beginning of decoding the next packet.
-  void clear() { size_ = 0; };
-
-  // Indicates if the decoder is currently in the process of decoding a packet.
-  bool IsPacketActive() { return state_ != DecoderState::kNoPacket; }
-
- private:
-  // DecoderState enum class is used to make the Decoder a finite state machine.
-  enum class DecoderState {
-    kNoPacket,
-    kPacketActive,
-    kEscapeNextByte,
-  };
-
-  // Disallow Copy and Assign.
   Decoder(const Decoder&) = delete;
-
   Decoder& operator=(const Decoder&) = delete;
 
-  // Will return true if the CRC is successfully verified.
-  bool CheckCrc() const;
-
-  // Attempts to write the escaped byte to the buffer and returns a Status
-  // object accordingly:
+  // Parses a single byte of an HDLC stream. Returns a Result with the complete
+  // frame if the byte completes a frame. The status is the following:
   //
-  //     RESOURCE_EXHAUSTED - If the buffer is out of space.
-  //     UNAVAILABLE - If the byte has been successfully added to the buffer.
+  //     OK - A frame was successfully decoded. The Result contains the Frame,
+  //         which is invalidated by the next Process call.
+  //     UNAVAILABLE - No frame is available.
+  //     RESOURCE_EXHAUSTED - A frame completed, but it was too large to fit in
+  //         the decoder's buffer.
+  //     DATA_LOSS - A frame completed, but it was invalid. The frame was
+  //         incomplete or the frame check sequence verification failed.
   //
-  Status AddEscapedByte(std::byte new_byte);
+  Result<Frame> Process(std::byte b);
 
-  // Ensures the packet is correctly decoded and returns a status object
-  // indicating if the packet can be returned. The three checks it does are:
-  //     1. Checks if there are packet meets the minimum size of a HDLC-Lite
-  //        packet.
-  //     2. Checks that the frame buffer wasnt overflowed.
-  //     3. Verifies if the CRC is correct
-  // Will log errors accordingly.
-  //
-  Status PacketStatus() const;
+  // Calls the provided callback with each frame or error.
+  template <typename F, typename... Args>
+  void Process(ConstByteSpan data, F&& callback, Args&&... args) {
+    for (std::byte b : data) {
+      auto result = Process(b);
+      if (result.status() != Status::UNAVAILABLE) {
+        std::invoke(
+            std::forward<F>(callback), std::forward<Args>(args)..., result);
+      }
+    }
+  }
 
-  ByteSpan frame_buffer_;
-  DecoderState state_;
+  // Returns the maximum size of the Decoder's frame buffer.
+  size_t max_size() const { return buffer_.size(); }
 
-  // The size_ variable represents the number of decoded bytes of the current
-  // active packet.
-  size_t size_;
+  // Clears and resets the decoder.
+  void clear() {
+    current_frame_size_ = 0;
+    state_ = State::kInterFrame;
+  };
+
+ private:
+  // State enum class is used to make the Decoder a finite state machine.
+  enum class State {
+    kInterFrame,
+    kFrame,
+    kFrameEscape,
+  };
+
+  void AppendByte(std::byte new_byte);
+
+  Status CheckFrame() const;
+
+  bool VerifyFrameCheckSequence() const;
+
+  const ByteSpan buffer_;
+
+  size_t current_frame_size_;
+
+  State state_;
 };
 
 // DecoderBuffers declare a buffer along with a Decoder.
@@ -121,6 +145,8 @@ class DecoderBuffer : public Decoder {
   static constexpr size_t max_size() { return size_bytes; }
 
  private:
+  static_assert(size_bytes >= Frame::kMinSizeBytes);
+
   std::array<std::byte, size_bytes> frame_buffer_;
 };
 

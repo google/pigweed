@@ -14,7 +14,10 @@
 
 #include "pw_hdlc_lite/decoder.h"
 
-#include "pw_checksum/crc16_ccitt.h"
+#include "pw_assert/assert.h"
+#include "pw_bytes/endian.h"
+#include "pw_checksum/crc32.h"
+#include "pw_hdlc_lite_private/protocol.h"
 #include "pw_log/log.h"
 
 using std::byte;
@@ -22,112 +25,114 @@ using std::byte;
 namespace pw::hdlc_lite {
 namespace {
 
-constexpr byte kHdlcFrameDelimiter = byte{0x7E};
-constexpr byte kHdlcEscape = byte{0x7D};
-constexpr byte kHdlcUnescapingConstant = byte{0x20};
+constexpr byte kUnescapeConstant = byte{0x20};
 
 }  // namespace
 
-Result<ConstByteSpan> Decoder::AddByte(const byte new_byte) {
+Result<Frame> Decoder::Process(const byte new_byte) {
   switch (state_) {
-    case DecoderState::kPacketActive: {
-      if (new_byte != kHdlcFrameDelimiter) {
-        // Packet active case
-        if (new_byte != kHdlcEscape) {
-          return Result<ConstByteSpan>(AddEscapedByte(new_byte));
+    case State::kInterFrame: {
+      if (new_byte == kFlag) {
+        state_ = State::kFrame;
+
+        // Report an error if non-flag bytes were read between frames.
+        if (current_frame_size_ != 0u) {
+          current_frame_size_ = 0;
+          return Status::DATA_LOSS;
         }
-        state_ = DecoderState::kEscapeNextByte;
-        return Result<ConstByteSpan>(Status::UNAVAILABLE);
+      } else {
+        // Count bytes to track how many are discarded.
+        current_frame_size_ += 1;
       }
-      // Packet complete case
-      state_ = DecoderState::kNoPacket;
-      Status status = PacketStatus();
-      if (status.ok()) {
-        // Common case: Happy Packet
-        // Returning size_ - 2 is to trim off the 2-byte CRC value.
-        return Result<ConstByteSpan>(frame_buffer_.first(size_ - 2));
-      }
-      if (status == Status::DATA_LOSS && size_ == 0) {
-        // Uncommon case: Dropped an ending frame delimiter byte somewhere.
-        // This happens if a delimiter byte was lost or corrupted which causes
-        // the decoder to fall out of sync with the incoming flow of packets.
-        // Recovery is done by switching to active mode assuming that the frame
-        // delimiter "close" byte we just saw is actually a start delimiter.
-        PW_LOG_ERROR(
-            "Detected empty packet. Assuming out of sync; trying recovery");
-        clear();
-        state_ = DecoderState::kPacketActive;
-        return Result<ConstByteSpan>(Status::UNAVAILABLE);
-      }
-      // Otherwise, forward the status from PacketStatus().
-      return Result<ConstByteSpan>(status);
+      return Status::UNAVAILABLE;  // Report error when starting a new frame.
     }
+    case State::kFrame: {
+      if (new_byte == kFlag) {
+        const Status status = CheckFrame();
 
-    case DecoderState::kEscapeNextByte: {
-      byte escaped_byte = new_byte ^ kHdlcUnescapingConstant;
-      if (escaped_byte != kHdlcEscape && escaped_byte != kHdlcFrameDelimiter) {
-        PW_LOG_WARN(
-            "Suspicious escaped byte: 0x%02x; should only need to escape frame "
-            "delimiter and escape byte",
-            static_cast<int>(escaped_byte));
+        state_ = State::kFrame;
+        const size_t completed_frame_size = current_frame_size_;
+        current_frame_size_ = 0;
+
+        if (status.ok()) {
+          return Frame(buffer_.first(completed_frame_size));
+        }
+        return status;
       }
-      state_ = DecoderState::kPacketActive;
-      return Result<ConstByteSpan>(AddEscapedByte(escaped_byte));
+
+      if (new_byte == kEscape) {
+        state_ = State::kFrameEscape;
+      } else {
+        AppendByte(new_byte);
+      }
+      return Status::UNAVAILABLE;
     }
-
-    case DecoderState::kNoPacket: {
-      if (new_byte != kHdlcFrameDelimiter) {
-        PW_LOG_ERROR("Unexpected starting byte to the frame: 0x%02x",
-                     static_cast<int>(new_byte));
-        return Result<ConstByteSpan>(Status::UNAVAILABLE);
+    case State::kFrameEscape: {
+      // The flag character cannot be escaped; return an error.
+      if (new_byte == kFlag) {
+        state_ = State::kFrame;
+        current_frame_size_ = 0;
+        return Status::DATA_LOSS;
       }
-      clear();
-      state_ = DecoderState::kPacketActive;
-      return Result<ConstByteSpan>(Status::UNAVAILABLE);
+
+      if (new_byte == kEscape) {
+        // Two escape characters in a row is illegal -- invalidate this frame.
+        // The frame is reported abandoned when the next flag byte appears.
+        state_ = State::kInterFrame;
+
+        // Count the escape byte so that the inter-frame state detects an error.
+        current_frame_size_ += 1;
+      } else {
+        state_ = State::kFrame;
+        AppendByte(new_byte ^ kUnescapeConstant);
+      }
+      return Status::UNAVAILABLE;
     }
   }
-  return Result<ConstByteSpan>(Status::UNAVAILABLE);
+  PW_CRASH("Bad decoder state");
 }
 
-bool Decoder::CheckCrc() const {
-  uint16_t expected_crc =
-      checksum::Crc16Ccitt::Calculate(frame_buffer_.first(size_ - 2), 0xFFFF);
-  uint16_t actual_crc;
-  std::memcpy(&actual_crc, (frame_buffer_.data() + size_ - 2), 2);
-  return actual_crc == expected_crc;
-}
-
-Status Decoder::AddEscapedByte(const byte new_byte) {
-  if (size_ >= max_size()) {
-    // Increasing the size to flag the overflow case when the packet is complete
-    size_++;
-    return Status::RESOURCE_EXHAUSTED;
+void Decoder::AppendByte(byte new_byte) {
+  if (current_frame_size_ < max_size()) {
+    buffer_[current_frame_size_] = new_byte;
   }
-  frame_buffer_[size_++] = new_byte;
-  return Status::UNAVAILABLE;
+
+  // Always increase size: if it is larger than the buffer, overflow occurred.
+  current_frame_size_ += 1;
 }
 
-Status Decoder::PacketStatus() const {
-  if (size_ < 2) {
-    PW_LOG_ERROR(
-        "Received %d-byte packet; packets must at least have 2 CRC bytes",
-        static_cast<int>(size_));
+Status Decoder::CheckFrame() const {
+  // Empty frames are not an error; repeated flag characters are okay.
+  if (current_frame_size_ == 0u) {
+    return Status::UNAVAILABLE;
+  }
+
+  if (current_frame_size_ < Frame::kMinSizeBytes) {
+    PW_LOG_ERROR("Received %lu-byte frame; frame must be at least 6 bytes",
+                 static_cast<unsigned long>(current_frame_size_));
     return Status::DATA_LOSS;
   }
 
-  if (size_ > max_size()) {
-    PW_LOG_ERROR("Packet size [%zu] exceeds the maximum buffer size [%zu]",
-                 size_,
-                 max_size());
+  if (current_frame_size_ > max_size()) {
+    PW_LOG_ERROR("Frame size [%lu] exceeds the maximum buffer size [%lu]",
+                 static_cast<unsigned long>(current_frame_size_),
+                 static_cast<unsigned long>(max_size()));
     return Status::RESOURCE_EXHAUSTED;
   }
 
-  if (!CheckCrc()) {
-    PW_LOG_ERROR("CRC verification failed for packet");
+  if (!VerifyFrameCheckSequence()) {
+    PW_LOG_ERROR("Frame check sequence verification failed");
     return Status::DATA_LOSS;
   }
 
   return Status::OK;
+}
+
+bool Decoder::VerifyFrameCheckSequence() const {
+  uint32_t fcs = bytes::ReadInOrder<uint32_t>(
+      std::endian::little, buffer_.data() + current_frame_size_ - sizeof(fcs));
+  return fcs == checksum::Crc32::Calculate(
+                    buffer_.first(current_frame_size_ - sizeof(fcs)));
 }
 
 }  // namespace pw::hdlc_lite

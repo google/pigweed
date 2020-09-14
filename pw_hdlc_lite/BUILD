@@ -23,28 +23,29 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_hdlc_lite",
-    hdrs = [
-      "public/pw_hdlc_lite/decoder.h",
-      "public/pw_hdlc_lite/encoder.h",
-      "public/pw_hdlc_lite/rpc_server_packets.h",
-      "public/pw_hdlc_lite/sys_io_stream.h",
-      "public/pw_hdlc_lite/hdlc_channel.h",
-    ],
     srcs = [
-      "encoder.cc",
-      "decoder.cc",
-      "hdlc_channel.cc"
+        "decoder.cc",
+        "encoder.cc",
+        "hdlc_channel.cc",
+        "pw_hdlc_lite_private/protocol.h",
+    ],
+    hdrs = [
+        "public/pw_hdlc_lite/decoder.h",
+        "public/pw_hdlc_lite/encoder.h",
+        "public/pw_hdlc_lite/hdlc_channel.h",
+        "public/pw_hdlc_lite/rpc_server_packets.h",
+        "public/pw_hdlc_lite/sys_io_stream.h",
     ],
     includes = ["public"],
     deps = [
+        "//pw_bytes",
+        "//pw_checksum",
         "//pw_log",
+        "//pw_result",
+        "//pw_rpc",
         "//pw_span",
         "//pw_status",
         "//pw_stream",
-        "//pw_checksum",
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_rpc",
     ],
 )
 
@@ -54,20 +55,20 @@ pw_cc_library(
         "hdlc_server_example.cc",
     ],
     hdrs = [
-      "public/pw_hdlc_lite/decoder.h",
-      "public/pw_hdlc_lite/rpc_server_packets.h",
-      "public/pw_hdlc_lite/hdlc_channel.h",
+        "public/pw_hdlc_lite/decoder.h",
+        "public/pw_hdlc_lite/hdlc_channel.h",
+        "public/pw_hdlc_lite/rpc_server_packets.h",
     ],
     includes = ["public"],
     deps = [
+        "//pw_bytes",
+        "//pw_checksum",
         "//pw_log",
+        "//pw_result",
+        "//pw_rpc",
         "//pw_span",
         "//pw_status",
         "//pw_stream",
-        "//pw_checksum",
-        "//pw_bytes",
-        "//pw_result",
-        "//pw_rpc",
     ],
 )
 
@@ -86,9 +87,9 @@ cc_test(
     srcs = ["decoder_test.cc"],
     deps = [
         ":pw_hdlc_lite",
+        "//pw_result",
         "//pw_stream",
         "//pw_unit_test",
-        "//pw_result",
     ],
 )
 

@@ -32,6 +32,7 @@ pw_source_set("pw_hdlc_lite") {
   sources = [
     "decoder.cc",
     "encoder.cc",
+    "pw_hdlc_lite_private/protocol.h",
   ]
   public_deps = [
     dir_pw_bytes,
@@ -44,6 +45,7 @@ pw_source_set("pw_hdlc_lite") {
     dir_pw_checksum,
     dir_pw_log,
   ]
+  friend = [ ":*" ]
 }
 
 pw_source_set("pw_rpc") {
@@ -94,9 +96,18 @@ pw_test("encoder_test") {
   sources = [ "encoder_test.cc" ]
 }
 
+action("generate_decoder_test") {
+  outputs = [ "$target_gen_dir/generated_decoder_test.cc" ]
+  script = "py/decoder_test.py"
+  args = [ "--generate-cc-decode-test" ] + rebase_path(outputs)
+}
+
 pw_test("decoder_test") {
-  deps = [ ":pw_hdlc_lite" ]
-  sources = [ "decoder_test.cc" ]
+  deps = [
+    ":generate_decoder_test",
+    ":pw_hdlc_lite",
+  ]
+  sources = [ "decoder_test.cc" ] + get_target_outputs(":generate_decoder_test")
 }
 
 pw_test("hdlc_channel_test") {

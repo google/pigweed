@@ -20,6 +20,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
+#include "pw_hdlc_lite_private/protocol.h"
 #include "pw_stream/memory_stream.h"
 
 using std::byte;
@@ -27,8 +28,6 @@ using std::byte;
 namespace pw::hdlc_lite {
 namespace {
 
-constexpr byte kFlag = byte{0x7E};
-constexpr byte kEscape = byte{0x7D};
 constexpr uint8_t kAddress = 0x7B;  // 123
 constexpr byte kControl = byte{0};
 

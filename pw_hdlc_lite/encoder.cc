@@ -22,32 +22,25 @@
 
 #include "pw_bytes/endian.h"
 #include "pw_checksum/crc32.h"
+#include "pw_hdlc_lite_private/protocol.h"
 
 using std::byte;
 
 namespace pw::hdlc_lite {
 namespace {
 
-constexpr byte kHdlcFlag = byte{0x7E};
-constexpr byte kHdlcEscape = byte{0x7D};
-
 // Indicates this an information packet with sequence numbers set to 0.
 constexpr byte kUnusedControl = byte{0};
 
-constexpr std::array<byte, 2> kEscapedFlag = {byte{0x7D}, byte{0x5E}};
-constexpr std::array<byte, 2> kEscapedEscape = {byte{0x7D}, byte{0x5D}};
-
 Status EscapeAndWrite(const byte b, stream::Writer& writer) {
-  if (b == kHdlcFlag) {
+  if (b == kFlag) {
     return writer.Write(kEscapedFlag);
   }
-  if (b == kHdlcEscape) {
+  if (b == kEscape) {
     return writer.Write(kEscapedEscape);
   }
   return writer.Write(b);
 }
-
-bool NeedsEscaping(byte b) { return (b == kHdlcFlag || b == kHdlcEscape); }
 
 // Encodes and writes HDLC frames.
 class Encoder {
@@ -72,7 +65,7 @@ class Encoder {
 
 Status Encoder::StartInformationFrame(uint8_t address) {
   fcs_.clear();
-  if (Status status = writer_.Write(kHdlcFlag); !status.ok()) {
+  if (Status status = writer_.Write(kFlag); !status.ok()) {
     return status;
   }
 
@@ -105,7 +98,7 @@ Status Encoder::FinishFrame() {
       !status.ok()) {
     return status;
   }
-  return writer_.Write(kHdlcFlag);
+  return writer_.Write(kFlag);
 }
 
 }  // namespace
