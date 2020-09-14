@@ -26,6 +26,7 @@ constexpr ChannelId kTestChannelId = 0x0001;
 constexpr uint8_t kExtendedControlFBitMask = 0b1000'0000;
 constexpr uint8_t kExtendedControlPBitMask = 0b0001'0000;
 constexpr uint8_t kExtendedControlRejFunctionMask = 0b0000'0100;
+constexpr uint8_t kExtendedControlReceiverNotReadyFunctionMask = 0b0000'1000;
 constexpr uint8_t kExtendedControlSrejFunctionMask = 0b0000'1100;
 
 void NoOpTxCallback(ByteBufferPtr){};
@@ -77,7 +78,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 
   // Receive an I-frame containing an acknowledgment including the frame that we transmitted.
   // See Core Spec, v5, Vol 3, Part A, Section 3.3.2, I-Frame Enhanced Control Field.
-  auto info_frame = StaticByteBuffer(0, 1, 'p', 'o', 'n', 'g');
+  StaticByteBuffer info_frame(0, 1, 'p', 'o', 'n', 'g');
   EXPECT_TRUE(rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, info_frame, FrameCheckSequenceOption::kIncludeFcs)));
@@ -85,6 +86,97 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 
   tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'b', 'y', 'e', 'e'}));
   EXPECT_EQ(3, tx_count);
+}
+
+// This test simulates a peer's non-response to our S-Frame poll request which causes us to
+// raise a channel error after the monitor timer expires. This mirrors L2CAP Test Specification
+// v5.0.2 L2CAP/ERM/BV-11-C.
+TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMonitorTimerExpiry) {
+  int tx_count = 0;
+  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+    ASSERT_TRUE(pdu);
+    // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame with a Receiver
+    // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
+    if (tx_count == 0) {
+      ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      EXPECT_EQ(0, header.tx_seq());
+      EXPECT_EQ(0, header.receive_seq_num());
+    } else if (tx_count == 1) {
+      ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+    }
+    tx_count++;
+  };
+  bool failure_cb_called = false;
+  auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  EXPECT_EQ(1, tx_count);
+
+  // Send a poll request after timer expiry waiting for peer acknowledgment.
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_EQ(2, tx_count);
+
+  // Monitor Timer expires without a response from the peer, signaling a channel failure.
+  EXPECT_FALSE(failure_cb_called);
+  RETURN_IF_FATAL(RunLoopFor(kErtmMonitorTimerDuration));
+  EXPECT_TRUE(failure_cb_called);
+}
+
+// This test simulates non-acknowledgment of an I-Frame that the local host sends which causes us
+// to meet the MaxTransmit that the peer specified, raising a local error for the channel. This
+// mirrors L2CAP Test Specification v5.0.2 L2CAP/ERM/BV-12-C.
+TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, SignalFailureAfterMaxTransmitExhausted) {
+  int tx_count = 0;
+  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+    ASSERT_TRUE(pdu);
+    // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame with a Receiver
+    // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
+    if (tx_count == 0) {
+      ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      EXPECT_EQ(0, header.tx_seq());
+      EXPECT_EQ(0, header.receive_seq_num());
+    } else if (tx_count == 1) {
+      ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+    }
+    tx_count++;
+  };
+  bool failure_cb_called = false;
+  auto failure_cb = [&failure_cb_called] { failure_cb_called = true; };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, /*max_transmissions=*/1, kTxWindow, tx_callback, failure_cb);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  EXPECT_EQ(1, tx_count);
+
+  // Send a poll request after timer expiry waiting for peer acknowledgment.
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_EQ(2, tx_count);
+
+  // Peer response doesn't acknowledge the I-Frame's TxSeq and we already used up MaxTransmit,
+  // signaling a channel failure.
+  EXPECT_FALSE(failure_cb_called);
+
+  // Receive an S-frame containing an acknowledgment not including the frame that we transmitted. F
+  // is set. See Core Spec, v5, Vol 3, Part A, Section 3.3.2, S-Frame Enhanced Control Field.
+  StaticByteBuffer receiver_ready(0b1 | kExtendedControlFBitMask, 0);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
+  EXPECT_TRUE(failure_cb_called);
 }
 
 // This tests the integration of receiving Reject frames with triggering retransmission of requested
@@ -121,7 +213,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingReje
 
   // Receive an S-frame containing a retransmission request starting at seq = 0. See Core Spec v5.0,
   // Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto reject = StaticByteBuffer(0b1 | kExtendedControlRejFunctionMask, 0);
+  StaticByteBuffer reject(0b1 | kExtendedControlRejFunctionMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, reject, FrameCheckSequenceOption::kIncludeFcs));
@@ -205,7 +297,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSele
 
   // Receive an S-frame containing a retransmission request for seq = 1. See Core Spec v5.0, Vol 3,
   // Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto selective_reject = StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask, 1);
+  StaticByteBuffer selective_reject(0b1 | kExtendedControlSrejFunctionMask, 1);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
@@ -215,7 +307,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSele
   EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 2, 1, 0));
 
   // Receive an S-frame containing an acknowledgment up to seq = 3.
-  auto ack_3 = StaticByteBuffer(0b1, 3);
+  StaticByteBuffer ack_3(0b1, 3);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, ack_3, FrameCheckSequenceOption::kIncludeFcs));
@@ -225,7 +317,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest, RetransmitAfterReceivingSele
   EXPECT_THAT(iframe_tx_counts, testing::ElementsAre(1, 2, 1, 1));
 
   // Receive an S-frame containing an acknowledgment up to seq = 3.
-  auto ack_4 = StaticByteBuffer(0b1, 4);
+  StaticByteBuffer ack_4(0b1, 4);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, ack_4, FrameCheckSequenceOption::kIncludeFcs));
@@ -264,7 +356,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 
   // Receive an S-frame containing an acknowledgment not including the frame that we transmitted. F
   // is set. See Core Spec, v5, Vol 3, Part A, Section 3.3.2, S-Frame Enhanced Control Field.
-  auto receiver_ready = StaticByteBuffer(0b1 | kExtendedControlFBitMask, 0);
+  StaticByteBuffer receiver_ready(0b1 | kExtendedControlFBitMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
@@ -273,6 +365,53 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(3, tx_count);
 }
 
+// This test simulates the peer declaring that it is busy by sending the ReceiverNotReady S-Frame,
+// which prevents us from retransmitting an unacknowledged outbound I-Frame. This mirrors L2CAP Test
+// Specification v5.0.2 L2CAP/ERM/BV-20-C.
+TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
+       DoNotRetransmitAfterReceivingReceiverNotReadyPollResponse) {
+  int tx_count = 0;
+  auto tx_callback = [&tx_count](ByteBufferPtr pdu) {
+    ASSERT_TRUE(pdu);
+    // Unlike the Test Spec's sequence diagram, we respond to the peer's I-Frame with a Receiver
+    // Ready (which is always allowed), so our subsequent I-Frame is actually the third outbound.
+    if (tx_count == 0) {
+      ASSERT_LE(sizeof(SimpleInformationFrameHeader), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_information_frame());
+      const auto& header = pdu->As<SimpleInformationFrameHeader>();
+      EXPECT_EQ(0, header.tx_seq());
+      EXPECT_EQ(0, header.receive_seq_num());
+    } else if (tx_count == 1) {
+      ASSERT_EQ(sizeof(SimpleSupervisoryFrame), pdu->size());
+      ASSERT_TRUE(pdu->As<EnhancedControlField>().designates_supervisory_frame());
+      ASSERT_TRUE(pdu->As<SimpleSupervisoryFrame>().is_poll_request());
+    }
+    tx_count++;
+  };
+  auto [rx_engine, tx_engine] = MakeLinkedEnhancedRetransmissionModeEngines(
+      kTestChannelId, kDefaultMTU, kMaxTransmissions, kTxWindow, tx_callback, NoOpFailureCallback);
+  ASSERT_TRUE(rx_engine);
+  ASSERT_TRUE(tx_engine);
+
+  tx_engine->QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer{'p', 'i', 'n', 'g'}));
+  EXPECT_EQ(1, tx_count);
+
+  // Send a poll request after timer expiry waiting for peer acknowledgment.
+  RETURN_IF_FATAL(RunLoopFor(kErtmReceiverReadyPollTimerDuration));
+  EXPECT_EQ(2, tx_count);
+
+  // Receive an Receiver Not Ready containing an acknowledgment not including the frame that we
+  // transmitted. F is set. See Core Spec, v5, Vol 3, Part A, Section 3.3.2, S-Frame Enhanced
+  // Control Field.
+  StaticByteBuffer receiver_not_ready(
+      0b1 | kExtendedControlReceiverNotReadyFunctionMask | kExtendedControlFBitMask, 0);
+  rx_engine->ProcessPdu(
+      Fragmenter(kTestHandle)
+          .BuildFrame(kTestChannelId, receiver_not_ready, FrameCheckSequenceOption::kIncludeFcs));
+
+  // RNR sets our RemoteBusy flag, so we should not transmit anything.
+  EXPECT_EQ(2, tx_count);
+}
 // This tests that explicitly a requested selective retransmission and another for the same I-Frame
 // that is a poll response causes only one retransmission. This mirrors the L2CAP Test Specification
 // v5.0.2 L2CAP/ERM/BI-03-C.
@@ -318,7 +457,7 @@ TEST_F(
 
   // Receive an S-frame containing a retransmission request for I-Frame 0. See Core Spec v5.0, Vol
   // 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto selective_reject = StaticByteBuffer(0b1 | kExtendedControlSrejFunctionMask, 0);
+  StaticByteBuffer selective_reject(0b1 | kExtendedControlSrejFunctionMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, selective_reject, FrameCheckSequenceOption::kIncludeFcs));
@@ -336,7 +475,7 @@ TEST_F(
   EXPECT_EQ(1, iframe_1_tx_count);
 
   // Acknowledge all of the outbound I-Frames per the specification's sequence diagram.
-  auto receiver_ready_2 = StaticByteBuffer(0b1, 2);
+  StaticByteBuffer receiver_ready_2(0b1, 2);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready_2, FrameCheckSequenceOption::kIncludeFcs));
@@ -387,14 +526,14 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 
   // Receive an S-frame containing a retransmission request starting at seq = 0. See Core Spec v5.0,
   // Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto reject = StaticByteBuffer(0b1 | kExtendedControlRejFunctionMask, 0);
+  StaticByteBuffer reject(0b1 | kExtendedControlRejFunctionMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, reject, FrameCheckSequenceOption::kIncludeFcs));
 
   // Receive an S-frame containing an acknowledgment not including the frames that we transmitted. F
   // is set. See Core Spec v5.0, Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto receiver_ready_0 = StaticByteBuffer(0b1 | kExtendedControlFBitMask, 0);
+  StaticByteBuffer receiver_ready_0(0b1 | kExtendedControlFBitMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready_0, FrameCheckSequenceOption::kIncludeFcs));
@@ -405,7 +544,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(2, iframe_1_tx_count);
 
   // Acknowledge all of the outbound I-Frames per the specification's sequence diagram.
-  auto receiver_ready_2 = StaticByteBuffer(0b1, 2);
+  StaticByteBuffer receiver_ready_2(0b1, 2);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready_2, FrameCheckSequenceOption::kIncludeFcs));
@@ -467,14 +606,14 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
 
   // Receive an S-frame containing a retransmission request starting at seq = 0. See Core Spec v5.0,
   // Vol 3, Part A, Section 3.3.2 S-Frame Enhanced Control Field.
-  auto reject = StaticByteBuffer(0b1 | kExtendedControlRejFunctionMask, 0);
+  StaticByteBuffer reject(0b1 | kExtendedControlRejFunctionMask, 0);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, reject, FrameCheckSequenceOption::kIncludeFcs));
 
   // Receive an I-frame containing an acknowledgment not including the frames that we transmitted. F
   // is set. See Core Spec v5.0, Vol 3, Part A, Section 3.3.2 I-Frame Enhanced Control Field.
-  auto inbound_iframe = StaticByteBuffer(kExtendedControlFBitMask, 0, 'A');
+  StaticByteBuffer inbound_iframe(kExtendedControlFBitMask, 0, 'A');
   auto inbound_pdu = rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, inbound_iframe, FrameCheckSequenceOption::kIncludeFcs));
@@ -487,7 +626,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeEnginesTest,
   EXPECT_EQ(2, iframe_1_tx_count);
 
   // Acknowledge all of the outbound I-Frames per the specification's sequence diagram.
-  auto receiver_ready = StaticByteBuffer(0b1, 2);
+  StaticByteBuffer receiver_ready(0b1, 2);
   rx_engine->ProcessPdu(
       Fragmenter(kTestHandle)
           .BuildFrame(kTestChannelId, receiver_ready, FrameCheckSequenceOption::kIncludeFcs));
