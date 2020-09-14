@@ -114,7 +114,7 @@ class ChannelClientTest(unittest.TestCase):
             'Unary')
         self.assertEqual(
             self._channel_client.rpcs.pw.test2.Alpha.Unary.method.full_name,
-            'pw.test2.Alpha/Unary')
+            'pw.test2.Alpha.Unary')
 
     def test_iterate_over_all_methods(self):
         channel_client = self._channel_client

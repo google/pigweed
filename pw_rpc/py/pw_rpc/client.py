@@ -139,13 +139,24 @@ class ClientImpl(abc.ABC):
 class _MethodClients(descriptors.ServiceAccessor):
     """Navigates the methods in a service provided by a ChannelClient."""
     def __init__(self, rpcs: PendingRpcs, client_impl: ClientImpl,
-                 channel: Channel, methods: Collection[Method]):
+                 channel: Channel, service: Service):
         super().__init__(
             {
                 method: client_impl.method_client(rpcs, channel, method)
-                for method in methods
+                for method in service.methods
             },
             as_attrs='members')
+
+        self._channel = channel
+        self._service = service
+
+    def __repr__(self) -> str:
+        return (f'Service({self._service.full_name!r}, '
+                f'methods={[m.name for m in self._service.methods]}, '
+                f'channel={self._channel.id})')
+
+    def __str__(self) -> str:
+        return str(self._service)
 
 
 class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
@@ -154,10 +165,17 @@ class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
                  services: Collection[Service]):
         super().__init__(
             {
-                s: _MethodClients(rpcs, client_impl, channel, s.methods)
+                s: _MethodClients(rpcs, client_impl, channel, s)
                 for s in services
             },
             as_attrs='packages')
+
+        self._channel = channel
+        self._services = services
+
+    def __repr__(self) -> str:
+        return (f'Services(channel={self._channel.id}, '
+                f'services={[s.full_name for s in self._services]})')
 
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
@@ -227,10 +245,17 @@ class ChannelClient:
         """
         return descriptors.get_method(self.rpcs, method_name)
 
+    def services(self) -> Iterator:
+        return iter(self.rpcs)
+
     def methods(self) -> Iterator:
         """Iterates over all method clients in this ChannelClient."""
         for service_client in self.rpcs:
             yield from service_client
+
+    def __repr__(self) -> str:
+        return (f'ChannelClient(channel={self.channel.id}, '
+                f'services={[str(s) for s in self.services()]})')
 
 
 class Client:
@@ -370,3 +395,7 @@ class Client:
                 f'No method ID {packet.method_id} in service {service.name}')
 
         return PendingRpc(channel_client.channel, service, method)
+
+    def __repr__(self) -> str:
+        return (f'pw_rpc.Client(channels={list(self._channels_by_id)}, '
+                f'services={[s.full_name for s in self.services]})')

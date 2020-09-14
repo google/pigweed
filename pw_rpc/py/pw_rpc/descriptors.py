@@ -107,7 +107,7 @@ class Method:
 
     @property
     def full_name(self) -> str:
-        return f'{self.service.full_name}/{self.name}'
+        return f'{self.service.full_name}.{self.name}'
 
     @property
     def type(self) -> 'Method.Type':
@@ -151,7 +151,18 @@ class Method:
         return proto
 
     def __repr__(self) -> str:
-        return f'Method({self.name!r})'
+        req = self._method_parameter(self.request_type, self.client_streaming)
+        res = self._method_parameter(self.response_type, self.server_streaming)
+        return f'<{self.full_name}({req}) returns ({res})>'
+
+    def _method_parameter(self, proto, streaming: bool) -> str:
+        """Returns a description of the method's request or response type."""
+        stream = 'stream ' if streaming else ''
+
+        if proto.DESCRIPTOR.file.package == self.service.package:
+            return stream + proto.DESCRIPTOR.name
+
+        return stream + proto.DESCRIPTOR.full_name
 
     def __str__(self) -> str:
         return self.full_name

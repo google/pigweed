@@ -88,6 +88,9 @@ class _MethodClient:
                           override_pending=True)
         return _AsyncCall(self._rpcs, self._rpc)
 
+    def __repr__(self) -> str:
+        return repr(self.method)
+
 
 class _AsyncCall:
     """Represents an ongoing callback-based call."""
@@ -129,7 +132,7 @@ class _StreamingResponses:
 class UnaryMethodClient(_MethodClient):
     def __call__(self, _request=None, **request_fields) -> Tuple[Status, Any]:
         responses: queue.SimpleQueue = queue.SimpleQueue()
-        self.invoke(
+        self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
             _request, **request_fields)
         return responses.get()
@@ -138,7 +141,7 @@ class UnaryMethodClient(_MethodClient):
 class ServerStreamingMethodClient(_MethodClient):
     def __call__(self, _request=None, **request_fields) -> _StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
-        self.invoke(
+        self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
             _request, **request_fields)
         return _StreamingResponses(responses)

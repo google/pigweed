@@ -148,14 +148,21 @@ class _NestedPackage(Generic[T]):
         self._items: List[T] = []
         self._package = package
 
-    def __getattr__(self, attr: str):
-        """Descends into subpackages or access proto entities in a package."""
-        if attr in self._packages:
-            return self._packages[attr]
+    def _add_package(self, subpackage: str, package: '_NestedPackage') -> None:
+        self._packages[subpackage] = package
+        setattr(self, subpackage, package)
 
-        for module in self._items:
-            if hasattr(module, attr):
-                return getattr(module, attr)
+    def _add_item(self, item) -> None:
+        self._items.append(item)
+        for attr, value in vars(item).items():
+            if not attr.startswith('_'):
+                setattr(self, attr, value)
+
+    def __getattr__(self, attr: str):
+        # Fall back to item attributes, which includes private attributes.
+        for item in self._items:
+            if hasattr(item, attr):
+                return getattr(item, attr)
 
         raise AttributeError(
             f'Proto package "{self._package}" does not contain "{attr}"')
@@ -164,7 +171,19 @@ class _NestedPackage(Generic[T]):
         return iter(self._packages.values())
 
     def __repr__(self) -> str:
-        return f'_NestedPackage({self._package!r})'
+        msg = [f'ProtoPackage({self._package!r}']
+
+        public_members = [
+            i for i in vars(self)
+            if i not in self._packages and not i.startswith('_')
+        ]
+        if public_members:
+            msg.append(f'members={str(public_members)}')
+
+        if self._packages:
+            msg.append(f'subpackages={str(list(self._packages))}')
+
+        return ', '.join(msg) + ')'
 
     def __str__(self) -> str:
         return self._package
@@ -196,12 +215,12 @@ def as_packages(items: Iterable[Tuple[str, T]],
         # pylint: disable=protected-access
         for i, subpackage in enumerate(subpackages, 1):
             if subpackage not in entry._packages:
-                entry._packages[subpackage] = _NestedPackage('.'.join(
-                    subpackages[:i]))
+                entry._add_package(subpackage,
+                                   _NestedPackage('.'.join(subpackages[:i])))
 
             entry = entry._packages[subpackage]
 
-        entry._items.append(item)
+        entry._add_item(item)
         # pylint: enable=protected-access
 
     return packages
