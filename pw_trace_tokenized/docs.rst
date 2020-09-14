@@ -182,6 +182,31 @@ Added dependencies
 ``pw_varint``
 
 
+-------
+Logging
+-------
+The optional trace buffer logging adds support to dump trace buffers to the log.
+Buffers are converted to base64-encoding then split across log lines. Trace logs
+are surrounded by 'begin' and 'end' tags.
+
+Ex. Invoking PW_TRACE_INSTANT with 'test1' and 'test2', then calling this
+function would produce this in the output logs:
+
+.. code:: sh
+
+  [TRACE] begin
+  [TRACE] data: BWdDMRoABWj52YMB
+  [TRACE] end
+
+Added dependencies
+------------------
+``pw_base64``
+``pw_log``
+``pw_ring_buffer``
+``pw_string``
+``pw_tokenizer``
+``pw_varint``
+
 --------
 Examples
 --------

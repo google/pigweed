@@ -87,6 +87,22 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "pw_trace_tokenized_buffer_log",
+    hdrs = [
+        "public/pw_trace_tokenized/trace_buffer_log.h",
+    ],
+    srcs = [
+        "trace_buffer_log.cc",
+    ],
+    deps = [
+        ":trace_buffer_headers",
+	"//pw_base64",
+	"//pw_log",
+	"//pw_string",
+    ],
+)
+
+pw_cc_library(
     name = "pw_trace_tokenized_fake_time",
     srcs = [
         "fake_trace_time.cc",
@@ -123,6 +139,20 @@ pw_cc_test(
         ":backend",
         ":facade",
         ":pw_trace",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "trace_tokenized_buffer_log_test",
+    srcs = [
+        "trace_buffer_log_test.cc",
+    ],
+    deps = [
+        ":backend",
+        ":facade",
+        ":pw_trace_log",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

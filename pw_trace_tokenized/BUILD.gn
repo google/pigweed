@@ -37,6 +37,7 @@ pw_test_group("tests") {
   tests = [
     ":trace_tokenized_test",
     ":tokenized_trace_buffer_test",
+    ":tokenized_trace_buffer_log_test",
   ]
 }
 
@@ -94,6 +95,26 @@ pw_test("tokenized_trace_buffer_test") {
   ]
 
   sources = [ "trace_buffer_test.cc" ]
+}
+
+pw_source_set("tokenized_trace_buffer_log") {
+  deps = [
+    "$dir_pw_base64",
+    "$dir_pw_log",
+    "$dir_pw_string",
+  ]
+  public_deps = [ ":tokenized_trace_buffer" ]
+  sources = [ "trace_buffer_log.cc" ]
+  public = [ "public/pw_trace_tokenized/trace_buffer_log.h" ]
+}
+
+pw_test("tokenized_trace_buffer_log_test") {
+  enable_if = pw_trace_tokenizer_time != ""
+  deps = [
+    ":tokenized_trace_buffer_log",
+    "$dir_pw_trace",
+  ]
+  sources = [ "trace_buffer_log_test.cc" ]
 }
 
 pw_source_set("fake_trace_time") {
