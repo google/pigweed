@@ -40,7 +40,7 @@ Status Entry::Read(FlashPartition& partition,
                    const internal::EntryFormats& formats,
                    Entry* entry) {
   EntryHeader header;
-  TRY(partition.Read(address, sizeof(header), &header));
+  PW_TRY(partition.Read(address, sizeof(header), &header));
 
   if (partition.AppearsErased(std::as_bytes(std::span(&header.magic, 1)))) {
     return Status::NOT_FOUND;
@@ -134,11 +134,11 @@ StatusWithSize Entry::Copy(Address new_address) const {
 
   // Use this object's header rather than the header in flash of flash, since
   // this Entry may have been updated.
-  TRY_WITH_SIZE(writer.Write(&header_, sizeof(header_)));
+  PW_TRY_WITH_SIZE(writer.Write(&header_, sizeof(header_)));
 
   // Write only the key and value from the original entry.
   FlashPartition::Input input(partition(), address() + sizeof(EntryHeader));
-  TRY_WITH_SIZE(writer.Write(input, key_length() + value_size()));
+  PW_TRY_WITH_SIZE(writer.Write(input, key_length() + value_size()));
   return writer.Flush();
 }
 
@@ -154,7 +154,7 @@ StatusWithSize Entry::ReadValue(std::span<byte> buffer,
   StatusWithSize result = partition().Read(
       address_ + sizeof(EntryHeader) + key_length() + offset_bytes,
       buffer.subspan(0, read_size));
-  TRY_WITH_SIZE(result);
+  PW_TRY_WITH_SIZE(result);
 
   if (read_size != remaining_bytes) {
     return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
@@ -174,7 +174,7 @@ Status Entry::ValueMatches(std::span<const std::byte> value) const {
   std::array<std::byte, 2 * kMinAlignmentBytes> buffer;
   while (address < end) {
     const size_t read_size = std::min(size_t(end - address), buffer.size());
-    TRY(partition_->Read(address, std::span(buffer).first(read_size)));
+    PW_TRY(partition_->Read(address, std::span(buffer).first(read_size)));
 
     if (std::memcmp(buffer.data(), value_ptr, read_size) != 0) {
       return Status::NOT_FOUND;
@@ -210,7 +210,7 @@ Status Entry::VerifyChecksumInFlash() const {
   Address read_address = address_;
 
   // Read the first chunk, which includes the header, and compare the checksum.
-  TRY(partition().Read(read_address, read_size, buffer));
+  PW_TRY(partition().Read(read_address, read_size, buffer));
 
   if (header_to_verify.checksum != header_.checksum) {
     PW_LOG_ERROR("Expected checksum 0x%08" PRIx32 ", found 0x%08" PRIx32,
@@ -240,7 +240,7 @@ Status Entry::VerifyChecksumInFlash() const {
     // Read the next chunk into the buffer.
     read_address += read_size;
     read_size = std::min(sizeof(buffer), bytes_to_read);
-    TRY(partition().Read(read_address, read_size, buffer));
+    PW_TRY(partition().Read(read_address, read_size, buffer));
   }
 
   checksum_algo_->Finish();
@@ -295,7 +295,7 @@ Status Entry::CalculateChecksumFromFlash() {
   std::array<std::byte, 2 * kMinAlignmentBytes> buffer;
   while (address < end) {
     const size_t read_size = std::min(size_t(end - address), buffer.size());
-    TRY(partition_->Read(address, std::span(buffer).first(read_size)));
+    PW_TRY(partition_->Read(address, std::span(buffer).first(read_size)));
 
     checksum_algo_->Update(buffer.data(), read_size);
     address += read_size;

@@ -30,7 +30,7 @@ namespace pw::kvs {
 using std::byte;
 
 StatusWithSize FlashPartition::Output::DoWrite(std::span<const byte> data) {
-  TRY_WITH_SIZE(flash_.Write(address_, data));
+  PW_TRY_WITH_SIZE(flash_.Write(address_, data));
   address_ += data.size();
   return StatusWithSize(data.size());
 }
@@ -46,7 +46,7 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
     return Status::PERMISSION_DENIED;
   }
 
-  TRY(CheckBounds(address, num_sectors * sector_size_bytes()));
+  PW_TRY(CheckBounds(address, num_sectors * sector_size_bytes()));
   const size_t address_sector_offset = address % sector_size_bytes();
   PW_CHECK_UINT_EQ(address_sector_offset, 0u);
 
@@ -54,7 +54,7 @@ Status FlashPartition::Erase(Address address, size_t num_sectors) {
 }
 
 StatusWithSize FlashPartition::Read(Address address, std::span<byte> output) {
-  TRY_WITH_SIZE(CheckBounds(address, output.size()));
+  PW_TRY_WITH_SIZE(CheckBounds(address, output.size()));
   return flash_.Read(PartitionToFlashAddress(address), output);
 }
 
@@ -63,7 +63,7 @@ StatusWithSize FlashPartition::Write(Address address,
   if (permission_ == PartitionPermission::kReadOnly) {
     return StatusWithSize::PERMISSION_DENIED;
   }
-  TRY_WITH_SIZE(CheckBounds(address, data.size()));
+  PW_TRY_WITH_SIZE(CheckBounds(address, data.size()));
   const size_t address_alignment_offset = address % alignment_bytes();
   PW_CHECK_UINT_EQ(address_alignment_offset, 0u);
   const size_t size_alignment_offset = data.size() % alignment_bytes();
@@ -96,7 +96,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   while (length > 0u) {
     // Check earlier that length is aligned, no need to round up
     size_t read_size = std::min(sizeof(buffer), length);
-    TRY(Read(source_flash_address + offset, read_size, buffer).status());
+    PW_TRY(Read(source_flash_address + offset, read_size, buffer).status());
 
     for (byte b : std::span(buffer, read_size)) {
       if (b != erased_byte) {

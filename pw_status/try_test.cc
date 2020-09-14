@@ -23,7 +23,7 @@ Status ReturnStatus(Status status) { return status; }
 StatusWithSize ReturnStatusWithSize(StatusWithSize status) { return status; }
 
 Status TryStatus(Status status) {
-  TRY(ReturnStatus(status));
+  PW_TRY(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
   EXPECT_EQ(status, Status::OK);
@@ -31,7 +31,7 @@ Status TryStatus(Status status) {
 }
 
 Status TryStatus(StatusWithSize status) {
-  TRY(ReturnStatusWithSize(status));
+  PW_TRY(ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
   EXPECT_EQ(status.status(), Status::OK);
@@ -98,7 +98,7 @@ TEST(Status, TryAssignError) {
 }
 
 StatusWithSize TryStatusWithSize(StatusWithSize status) {
-  TRY_WITH_SIZE(ReturnStatusWithSize(status));
+  PW_TRY_WITH_SIZE(ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
   EXPECT_TRUE(status.ok());
@@ -106,7 +106,7 @@ StatusWithSize TryStatusWithSize(StatusWithSize status) {
 }
 
 StatusWithSize TryStatusWithSize(Status status) {
-  TRY_WITH_SIZE(ReturnStatus(status));
+  PW_TRY_WITH_SIZE(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
   EXPECT_EQ(status, Status::OK);

@@ -51,23 +51,20 @@
 #define _PW_TRY_UNIQUE(line) _PW_TRY_UNIQUE_EXPANDED(line)
 #define _PW_TRY_UNIQUE_EXPANDED(line) _pw_try_unique_name_##line
 
-#define TRY PW_TRY
-#define TRY_WITH_SIZE PW_TRY_WITH_SIZE
-#define TRY_ASSIGN PW_TRY_ASSIGN
-
 namespace pw::internal {
 
-inline Status ConvertToStatus(Status status) { return status; }
+constexpr Status ConvertToStatus(Status status) { return status; }
 
-inline Status ConvertToStatus(StatusWithSize status_with_size) {
+constexpr Status ConvertToStatus(StatusWithSize status_with_size) {
   return status_with_size.status();
 }
 
-inline StatusWithSize ConvertToStatusWithSize(Status status) {
+constexpr StatusWithSize ConvertToStatusWithSize(Status status) {
   return StatusWithSize(status, 0);
 }
 
-inline StatusWithSize ConvertToStatusWithSize(StatusWithSize status_with_size) {
+constexpr StatusWithSize ConvertToStatusWithSize(
+    StatusWithSize status_with_size) {
   return status_with_size;
 }
 
