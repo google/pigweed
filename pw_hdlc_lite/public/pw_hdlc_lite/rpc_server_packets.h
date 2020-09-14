@@ -39,7 +39,7 @@ void ReadAndProcessData(Server& server) {
   std::byte data;
 
   while (true) {
-    if (pw::sys_io::ReadByte(&data).ok()) {
+    if (!pw::sys_io::ReadByte(&data).ok()) {
       return;
     }
 
