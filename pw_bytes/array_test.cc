@@ -47,6 +47,7 @@ constexpr uint32_t kEllo =
     static_cast<uint32_t>('l') << 16 | static_cast<uint32_t>('o') << 24;
 
 static_assert(Equal(String("Hello"), kHello));
+static_assert(Equal(String(""), std::array<std::byte, 0>{}));
 static_assert(Equal(MakeArray('H', 'e', 'l', 'l', 'o'), kHello));
 static_assert(Equal(Concat('H', kEllo), kHello));
 

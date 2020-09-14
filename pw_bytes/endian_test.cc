@@ -160,5 +160,121 @@ static_assert(Equal(CopyInOrder(std::endian::big, static_cast<int64_t>(0xAABBCCD
 
 // clang-format on
 
+constexpr const char* kNumber = "\x11\x22\x33\x44\xaa\xbb\xcc\xdd";
+
+TEST(ReadInOrder, 8Bit_Big) {
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::big, "\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::big, "\x80"), 0x80u);
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::big, kNumber), 0x11u);
+
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::big, "\0"), 0);
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::big, "\x80"), -128);
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::big, kNumber), 0x11);
+}
+
+TEST(ReadInOrder, 8Bit_Little) {
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::little, "\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::little, "\x80"), 0x80u);
+  EXPECT_EQ(ReadInOrder<uint8_t>(std::endian::little, kNumber), 0x11u);
+
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::little, "\0"), 0);
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::little, "\x80"), -128);
+  EXPECT_EQ(ReadInOrder<int8_t>(std::endian::little, kNumber), 0x11);
+}
+
+TEST(ReadInOrder, 16Bit_Big) {
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::big, "\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::big, "\x80\0"), 0x8000u);
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::big, kNumber), 0x1122u);
+
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::big, "\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::big, "\x80\0"), -32768);
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::big, kNumber), 0x1122);
+}
+
+TEST(ReadInOrder, 16Bit_Little) {
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::little, "\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::little, "\x80\0"), 0x80u);
+  EXPECT_EQ(ReadInOrder<uint16_t>(std::endian::little, kNumber), 0x2211u);
+
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::little, "\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::little, "\x80\0"), 0x80);
+  EXPECT_EQ(ReadInOrder<int16_t>(std::endian::little, kNumber), 0x2211);
+}
+
+TEST(ReadInOrder, 32Bit_Big) {
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::big, "\0\0\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::big, "\x80\0\0\0"), 0x80000000u);
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::big, kNumber), 0x11223344u);
+
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::big, "\0\0\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::big, "\x80\0\0\0"), -2147483648);
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::big, kNumber), 0x11223344);
+}
+
+TEST(ReadInOrder, 32Bit_Little) {
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::little, "\0\0\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::little, "\x80\0\0\0"), 0x80u);
+  EXPECT_EQ(ReadInOrder<uint32_t>(std::endian::little, kNumber), 0x44332211u);
+
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::little, "\0\0\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::little, "\x80\0\0\0"), 0x80);
+  EXPECT_EQ(ReadInOrder<int32_t>(std::endian::little, kNumber), 0x44332211);
+}
+
+TEST(ReadInOrder, 64Bit_Big) {
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::big, "\0\0\0\0\0\0\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::big, "\x80\0\0\0\0\0\0\0"),
+            0x80000000'00000000llu);
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::big, kNumber),
+            0x11223344AABBCCDDu);
+
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::big, "\0\0\0\0\0\0\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::big, "\x80\0\0\0\0\0\0\0"),
+            static_cast<int64_t>(1llu << 63));
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::big, kNumber),
+            0x11223344AABBCCDD);
+}
+
+TEST(ReadInOrder, 64Bit_Little) {
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::little, "\0\0\0\0\0\0\0\0"), 0u);
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::little, "\x80\0\0\0\0\0\0\0"),
+            0x80u);
+  EXPECT_EQ(ReadInOrder<uint64_t>(std::endian::little, kNumber),
+            0xDDCCBBAA44332211u);
+
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::little, "\0\0\0\0\0\0\0\0"), 0);
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::little, "\x80\0\0\0\0\0\0\0"),
+            0x80);
+  EXPECT_EQ(ReadInOrder<int64_t>(std::endian::little, kNumber),
+            static_cast<int64_t>(0xDDCCBBAA44332211));
+}
+
+TEST(ReadInOrder, StdArray) {
+  std::array<std::byte, 4> buffer = Array<1, 2, 3, 4>();
+  EXPECT_EQ(0x04030201, ReadInOrder<int32_t>(std::endian::little, buffer));
+  EXPECT_EQ(0x01020304, ReadInOrder<int32_t>(std::endian::big, buffer));
+}
+
+TEST(ReadInOrder, CArray) {
+  char buffer[5] = {1, 2, 3, 4, 99};
+  EXPECT_EQ(0x04030201, ReadInOrder<int32_t>(std::endian::little, buffer));
+  EXPECT_EQ(0x01020304, ReadInOrder<int32_t>(std::endian::big, buffer));
+}
+
+TEST(ReadInOrder, BoundsChecking_Ok) {
+  constexpr auto buffer = Array<1, 2, 3, 4>();
+  uint16_t value;
+  EXPECT_TRUE(ReadInOrder(std::endian::little, buffer, value));
+  EXPECT_EQ(0x0201, value);
+}
+
+TEST(ReadInOrder, BoundsChecking_TooSmall) {
+  constexpr auto buffer = Array<1, 2, 3>();
+  int32_t value = 0;
+  EXPECT_FALSE(ReadInOrder(std::endian::little, buffer, value));
+  EXPECT_EQ(0, value);
+}
+
 }  // namespace
 }  // namespace pw::bytes

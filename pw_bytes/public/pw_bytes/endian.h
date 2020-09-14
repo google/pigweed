@@ -16,9 +16,11 @@
 #include <array>
 #include <bit>
 #include <cstring>
+#include <span>
 #include <type_traits>
 
 #include "pw_bytes/array.h"
+#include "pw_bytes/span.h"
 
 namespace pw::bytes {
 namespace internal {
@@ -134,6 +136,55 @@ constexpr T ConvertOrderFrom(std::endian from_endianness, T value) {
 template <typename T>
 constexpr auto CopyInOrder(std::endian order, T value) {
   return internal::CopyLittleEndian(ConvertOrderTo(order, value));
+}
+
+// Reads a value from a buffer with the specified endianness.
+//
+// The buffer **MUST** be at least sizeof(T) bytes large! If you are not
+// absolutely certain the input buffer is large enough, use the ReadInOrder
+// overload that returns bool, which checks the buffer size at runtime.
+template <typename T>
+T ReadInOrder(std::endian order, const void* buffer) {
+  T value;
+  std::memcpy(&value, buffer, sizeof(value));
+  return ConvertOrderFrom(order, value);
+}
+
+// ReadInOrder from a static-extent span, with compile-time bounds checking.
+template <typename T,
+          typename B,
+          size_t buffer_size,
+          typename = std::enable_if_t<buffer_size != std::dynamic_extent &&
+                                      sizeof(B) == sizeof(std::byte)>>
+T ReadInOrder(std::endian order, std::span<B, buffer_size> buffer) {
+  static_assert(buffer_size >= sizeof(T));
+  return ReadInOrder<T>(order, buffer.data());
+}
+
+// ReadInOrder from a std::array, with compile-time bounds checking.
+template <typename T, typename B, size_t buffer_size>
+T ReadInOrder(std::endian order, const std::array<B, buffer_size>& buffer) {
+  return ReadInOrder<T>(order, std::span(buffer));
+}
+
+// ReadInOrder from a C array, with compile-time bounds checking.
+template <typename T, typename B, size_t buffer_size>
+T ReadInOrder(std::endian order, const B (&buffer)[buffer_size]) {
+  return ReadInOrder<T>(order, std::span(buffer));
+}
+
+// Reads a value with the specified endianness from the buffer, with bounds
+// checking. Returns true if successful, false if buffer is too small for a T.
+template <typename T>
+[[nodiscard]] bool ReadInOrder(std::endian order,
+                               ConstByteSpan buffer,
+                               T& value) {
+  if (buffer.size() < sizeof(T)) {
+    return false;
+  }
+
+  value = ReadInOrder<T>(order, buffer.data());
+  return true;
 }
 
 }  // namespace pw::bytes

@@ -94,6 +94,12 @@ consteval auto String(const char (&str)[size]) {
   return internal::String<B>(str, Indices{});
 }
 
+// String overload for the empty string "".
+template <typename B = std::byte>
+consteval auto String(const char (&)[1]) {
+  return std::array<B, 0>{};
+}
+
 // Creates an array of bytes from values passed as template parameters. The
 // values are guaranteed to be representable in the destination byte type.
 template <typename B, auto... values>

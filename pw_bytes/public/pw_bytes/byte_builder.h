@@ -120,14 +120,16 @@ class ByteBuilder {
     // located at the iterator position without moving the iterator forward.
     int8_t PeekInt8() const { return static_cast<int8_t>(PeekUint8()); }
 
-    uint8_t PeekUint8() const { return GetInteger<uint8_t>(); }
+    uint8_t PeekUint8() const {
+      return bytes::ReadInOrder<uint8_t>(std::endian::little, byte_);
+    }
 
     int16_t PeekInt16(std::endian order = std::endian::little) const {
       return static_cast<int16_t>(PeekUint16(order));
     }
 
     uint16_t PeekUint16(std::endian order = std::endian::little) const {
-      return GetInteger<uint16_t>(order);
+      return bytes::ReadInOrder<uint16_t>(order, byte_);
     }
 
     int32_t PeekInt32(std::endian order = std::endian::little) const {
@@ -135,7 +137,7 @@ class ByteBuilder {
     }
 
     uint32_t PeekUint32(std::endian order = std::endian::little) const {
-      return GetInteger<uint32_t>(order);
+      return bytes::ReadInOrder<uint32_t>(order, byte_);
     }
 
     int64_t PeekInt64(std::endian order = std::endian::little) const {
@@ -143,7 +145,7 @@ class ByteBuilder {
     }
 
     uint64_t PeekUint64(std::endian order = std::endian::little) const {
-      return GetInteger<uint64_t>(order);
+      return bytes::ReadInOrder<uint64_t>(order, byte_);
     }
 
     // The Read methods will retreive ordered (Little/Big Endian) values
@@ -152,7 +154,7 @@ class ByteBuilder {
     int8_t ReadInt8() { return static_cast<int8_t>(ReadUint8()); }
 
     uint8_t ReadUint8() {
-      uint8_t value = GetInteger<uint8_t>();
+      uint8_t value = bytes::ReadInOrder<uint8_t>(std::endian::little, byte_);
       byte_ += 1;
       return value;
     }
@@ -162,7 +164,7 @@ class ByteBuilder {
     }
 
     uint16_t ReadUint16(std::endian order = std::endian::little) {
-      uint16_t value = GetInteger<uint16_t>(order);
+      uint16_t value = bytes::ReadInOrder<uint16_t>(order, byte_);
       byte_ += 2;
       return value;
     }
@@ -172,7 +174,7 @@ class ByteBuilder {
     }
 
     uint32_t ReadUint32(std::endian order = std::endian::little) {
-      uint32_t value = GetInteger<uint32_t>(order);
+      uint32_t value = bytes::ReadInOrder<uint32_t>(order, byte_);
       byte_ += 4;
       return value;
     }
@@ -182,19 +184,12 @@ class ByteBuilder {
     }
 
     uint64_t ReadUint64(std::endian order = std::endian::little) {
-      int64_t value = GetInteger<int64_t>(order);
+      int64_t value = bytes::ReadInOrder<int64_t>(order, byte_);
       byte_ += 8;
       return value;
     }
 
    private:
-    template <typename T>
-    T GetInteger(std::endian order = std::endian::little) const {
-      T value;
-      std::memcpy(&value, byte_, sizeof(T));
-      return bytes::ConvertOrderFrom(order, value);
-    }
-
     const std::byte* byte_;
   };
 
