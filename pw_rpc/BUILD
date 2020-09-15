@@ -154,3 +154,15 @@ pw_cc_test(
         "//pw_assert",
     ],
 )
+
+pw_cc_test(
+    name = "service_test",
+    srcs = [
+        "service_test.cc",
+    ],
+    deps = [
+        ":common",
+        ":internal_test_utils",
+        "//pw_assert",
+    ],
+)

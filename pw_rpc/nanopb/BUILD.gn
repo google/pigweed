@@ -34,6 +34,7 @@ pw_source_set("nanopb") {
   public = [ "public_overrides/pw_rpc/internal/method.h" ]
   sources = [ "method.cc" ]
   public_deps = [ "..:server_library_deps" ]
+  deps = [ dir_pw_log ]
 
   if (dir_pw_third_party_nanopb != "") {
     public_deps += [ "$dir_pw_third_party/nanopb" ]

@@ -15,6 +15,7 @@
 #include "pw_rpc/internal/base_server_writer.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 
@@ -27,8 +28,7 @@ namespace pw::rpc {
 
 class TestService : public Service {
  public:
-  constexpr TestService(uint32_t id)
-      : Service(id, std::span(&method, 1)), method(8) {}
+  constexpr TestService(uint32_t id) : Service(id, method), method(8) {}
 
   internal::Method method;
 };

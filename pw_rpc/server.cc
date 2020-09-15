@@ -17,7 +17,6 @@
 #include <algorithm>
 
 #include "pw_log/log.h"
-#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
 #include "pw_rpc/server_context.h"
@@ -120,7 +119,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
   return Status::OK;
 }
 
-std::tuple<Service*, const internal::Method*> Server::FindMethod(
+std::tuple<Service*, const internal::BaseMethod*> Server::FindMethod(
     const internal::Packet& packet) {
   // Packets always include service and method IDs.
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {
@@ -169,9 +168,5 @@ internal::Channel* Server::AssignChannel(uint32_t id,
   *channel = internal::Channel(id, &interface);
   return channel;
 }
-
-static_assert(std::is_base_of<internal::BaseMethod, internal::Method>(),
-              "The Method implementation must be derived from "
-              "pw::rpc::internal::BaseMethod");
 
 }  // namespace pw::rpc
