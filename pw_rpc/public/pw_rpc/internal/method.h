@@ -22,9 +22,8 @@ namespace pw::rpc::internal {
 
 class Packet;
 
-// RPC server implementations provide a Method class in the
-// pw_rpc/internal/method.h header that is derived from BaseMethod.
-class BaseMethod {
+// RPC server implementations provide a class that dervies from Method.
+class Method {
  public:
   constexpr uint32_t id() const { return id_; }
 
@@ -37,10 +36,9 @@ class BaseMethod {
   }
 
  protected:
-  using Invoker = void (&)(const BaseMethod&, ServerCall&, const Packet&);
+  using Invoker = void (&)(const Method&, ServerCall&, const Packet&);
 
-  constexpr BaseMethod(uint32_t id, Invoker invoker)
-      : id_(id), invoker_(invoker) {}
+  constexpr Method(uint32_t id, Invoker invoker) : id_(id), invoker_(invoker) {}
 
  private:
   uint32_t id_;

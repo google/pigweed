@@ -15,27 +15,27 @@
 #include "pw_rpc/service.h"
 
 #include "gtest/gtest.h"
-#include "pw_rpc/internal/base_method.h"
+#include "pw_rpc/internal/method.h"
 
 namespace pw::rpc {
 
 class ServiceTestHelper {
  public:
-  static const internal::BaseMethod* FindMethod(Service& service, uint32_t id) {
+  static const internal::Method* FindMethod(Service& service, uint32_t id) {
     return service.FindMethod(id);
   }
 };
 
 namespace {
 
-void InvokeIt(const internal::BaseMethod&,
+void InvokeIt(const internal::Method&,
               internal::ServerCall&,
               const internal::Packet&) {}
 
-class ServiceTestMethod : public internal::BaseMethod {
+class ServiceTestMethod : public internal::Method {
  public:
   constexpr ServiceTestMethod(uint32_t id, char the_value)
-      : internal::BaseMethod(id, InvokeIt), value(the_value) {}
+      : internal::Method(id, InvokeIt), value(the_value) {}
 
   char value;  // Add a member so the class is larger than the base Method.
 };

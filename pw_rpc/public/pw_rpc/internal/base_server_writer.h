@@ -18,9 +18,9 @@
 #include <utility>
 
 #include "pw_containers/intrusive_list.h"
-#include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/call.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
@@ -58,7 +58,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
 
-  const BaseMethod& method() const { return call_.method(); }
+  const Method& method() const { return call_.method(); }
 
   const Channel& channel() const { return call_.channel(); }
 

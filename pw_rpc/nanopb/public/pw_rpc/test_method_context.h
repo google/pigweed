@@ -22,7 +22,7 @@
 #include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
-#include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/nanopb_method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
 #include "pw_rpc/internal/service_method_traits.h"
@@ -82,7 +82,7 @@ namespace internal::test {
 template <typename Response>
 class MessageOutput final : public ChannelOutput {
  public:
-  MessageOutput(const internal::Method& method,
+  MessageOutput(const internal::NanopbMethod& method,
                 Vector<Response>& responses,
                 std::span<std::byte> buffer)
       : ChannelOutput("internal::test::MessageOutput"),
@@ -106,7 +106,7 @@ class MessageOutput final : public ChannelOutput {
 
   void SendAndReleaseBuffer(size_t size) override;
 
-  const internal::Method& method_;
+  const internal::NanopbMethod& method_;
   Vector<Response>& responses_;
   std::span<std::byte> buffer_;
   size_t total_responses_;

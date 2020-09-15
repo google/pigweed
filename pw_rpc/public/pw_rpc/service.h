@@ -18,7 +18,7 @@
 #include <span>
 
 #include "pw_containers/intrusive_list.h"
-#include "pw_rpc/internal/base_method.h"
+#include "pw_rpc/internal/method.h"
 
 namespace pw::rpc {
 
@@ -52,10 +52,10 @@ class Service : public IntrusiveList<Service>::Item {
   friend class ServiceTestHelper;
 
   // Finds the method with the provided method_id. Returns nullptr if no match.
-  const internal::BaseMethod* FindMethod(uint32_t method_id) const;
+  const internal::Method* FindMethod(uint32_t method_id) const;
 
   const uint32_t id_;
-  const internal::BaseMethod* const methods_;
+  const internal::Method* const methods_;
   const uint16_t method_size_;
   const uint16_t method_count_;
 };

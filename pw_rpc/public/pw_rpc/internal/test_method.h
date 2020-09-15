@@ -17,7 +17,7 @@
 #include <cstring>
 #include <span>
 
-#include "pw_rpc/internal/base_method.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status_with_size.h"
@@ -26,10 +26,10 @@ namespace pw::rpc::internal {
 
 // This is a fake RPC method implementation for testing only. It stores the
 // channel ID, request, and payload buffer, and optionally provides a response.
-class Method : public BaseMethod {
+class TestMethod : public Method {
  public:
-  constexpr Method(uint32_t id)
-      : BaseMethod(id, InvokeForTest), last_channel_id_(0) {}
+  constexpr TestMethod(uint32_t id)
+      : Method(id, InvokeForTest), last_channel_id_(0) {}
 
   uint32_t last_channel_id() const { return last_channel_id_; }
   const Packet& last_request() const { return last_request_; }
@@ -38,11 +38,12 @@ class Method : public BaseMethod {
   void set_status(Status status) { response_status_ = status; }
 
  private:
-  static void InvokeForTest(const BaseMethod& method,
+  static void InvokeForTest(const Method& method,
                             ServerCall& call,
                             const Packet& request) {
-    static_cast<const Method&>(method).last_channel_id_ = call.channel().id();
-    static_cast<const Method&>(method).last_request_ = request;
+    const auto& test_method = static_cast<const TestMethod&>(method);
+    test_method.last_channel_id_ = call.channel().id();
+    test_method.last_request_ = request;
   }
 
   // Make these mutable so they can be set in the Invoke method, which is const.

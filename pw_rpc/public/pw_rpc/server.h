@@ -19,9 +19,9 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/base_server_writer.h"
 #include "pw_rpc/internal/channel.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
@@ -56,7 +56,7 @@ class Server {
   IntrusiveList<internal::BaseServerWriter>& writers() { return writers_; }
 
  private:
-  std::tuple<Service*, const internal::BaseMethod*> FindMethod(
+  std::tuple<Service*, const internal::Method*> FindMethod(
       const internal::Packet& packet);
 
   void HandleCancelPacket(const internal::Packet& request,

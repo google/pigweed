@@ -24,83 +24,7 @@ config("default_config") {
   visibility = [ ":*" ]
 }
 
-# pw_rpc servers depend on the protobuf library used to encode and decode
-# requests and responses when invoking methods. This template is used to create
-# instances of the pw_rpc server library with different implementations.
-#
-# The implementation parameter must refer to a library that provides the
-# definition of the Method class in pw_rpc/internal/method.h. The Method class
-# provides the Invoke function, which handles the server use to call into the
-# RPC functions themselves.
-template("_pw_rpc_server_library") {
-  assert(defined(invoker.implementation),
-         "_pw_rpc_server_library requires an implementation to be set")
-  _target_name = target_name
-
-  pw_source_set(_target_name) {
-    forward_variables_from(invoker, "*")
-
-    public_deps = [
-      ":server_library_deps",
-      implementation,
-    ]
-    deps = [
-      dir_pw_assert,
-      dir_pw_log,
-    ]
-    public = [
-      "public/pw_rpc/server.h",
-      "public/pw_rpc/server_context.h",
-    ]
-    sources = [
-      "base_server_writer.cc",
-      "public/pw_rpc/internal/base_server_writer.h",
-      "public/pw_rpc/internal/server.h",
-      "server.cc",
-      "service.cc",
-    ]
-    allow_circular_includes_from = [ implementation ]
-    friend = [ "./*" ]
-  }
-
-  pw_source_set("internal_test_utils_$_target_name") {
-    public = [ "pw_rpc_private/internal_test_utils.h" ]
-    public_configs = [ ":private_includes" ]
-    public_deps = [
-      ":$_target_name",
-      ":common",
-      dir_pw_span,
-      dir_pw_unit_test,
-    ]
-    visibility = [ "./*" ]
-  }
-}
-
-# Provides the public RPC service definition (but not implementation). Can be
-# used to expose global service registration without depending on the complete
-# RPC library.
-# TODO(hepler): Remove this after making the RPC implementation classes fully
-#     independent of the particular implementation. Targets needing the service
-#     should be able to depend on the main RPC library.
-group("service") {
-  deps = [ ":common" ]
-}
-
-# Put these dependencies into a group since they need to be shared by the server
-# library and its implementation library.
-group("server_library_deps") {
-  public_configs = [ ":default_config" ]
-  public_deps = [
-    ":common",
-    ":service",
-    dir_pw_span,
-    dir_pw_status,
-  ]
-  visibility = [ "./*" ]
-}
-
-# Classes with no dependencies on the protobuf library for method invocations.
-pw_source_set("common") {
+pw_source_set("server") {
   public_configs = [ ":default_config" ]
   public_deps = [
     ":protos_pwpb",
@@ -109,27 +33,56 @@ pw_source_set("common") {
     dir_pw_span,
     dir_pw_status,
   ]
+  deps = [ dir_pw_log ]
   public = [
     "public/pw_rpc/channel.h",
+    "public/pw_rpc/server.h",
+    "public/pw_rpc/server_context.h",
     "public/pw_rpc/service.h",
   ]
   sources = [
+    "base_server_writer.cc",
     "channel.cc",
     "packet.cc",
-    "public/pw_rpc/internal/base_method.h",
+    "public/pw_rpc/internal/base_server_writer.h",
     "public/pw_rpc/internal/call.h",
     "public/pw_rpc/internal/channel.h",
     "public/pw_rpc/internal/hash.h",
+    "public/pw_rpc/internal/method.h",
     "public/pw_rpc/internal/packet.h",
+    "public/pw_rpc/internal/server.h",
+    "server.cc",
+    "service.cc",
   ]
-  deps = [ dir_pw_log ]
   friend = [ "./*" ]
+}
+
+pw_source_set("test_utils") {
+  public = [
+    "public/pw_rpc/internal/test_method.h",
+    "pw_rpc_private/internal_test_utils.h",
+  ]
+  public_configs = [ ":private_includes" ]
+  public_deps = [
+    ":server",
+    dir_pw_span,
+  ]
+  visibility = [ "./*" ]
+}
+
+# Provides the public RPC service definition (but not implementation). Can be
+# used to expose global service registration without depending on the complete
+# RPC library.
+# TODO(hepler): Remove this unnecessary alias.
+group("service") {
+  deps = [ ":server" ]
 }
 
 # RPC server that uses Nanopb to encode and decode protobufs. RPCs use Nanopb
 # structs as their requests and responses.
-_pw_rpc_server_library("nanopb_server") {
-  implementation = "nanopb"
+# TODO(hepler): Remove this unnecessary alias.
+group("nanopb_server") {
+  deps = [ ":server" ]
 }
 
 config("private_includes") {
@@ -176,12 +129,6 @@ pw_test_group("tests") {
   group_deps = [ "nanopb:tests" ]
 }
 
-# RPC server for tests only. A mock method implementation is used.
-_pw_rpc_server_library("test_server") {
-  implementation = "test_impl"
-  visibility = [ ":*" ]
-}
-
 pw_proto_library("test_protos") {
   sources = [ "pw_rpc_test_protos/test.proto" ]
   visibility = [ "./*" ]
@@ -189,23 +136,28 @@ pw_proto_library("test_protos") {
 
 pw_test("base_server_writer_test") {
   deps = [
-    ":internal_test_utils_test_server",
-    ":test_server",
+    ":server",
+    ":test_utils",
   ]
   sources = [ "base_server_writer_test.cc" ]
 }
 
 pw_test("channel_test") {
   deps = [
-    ":common",
-    ":internal_test_utils_test_server",
+    ":server",
+    ":test_utils",
   ]
   sources = [ "channel_test.cc" ]
 }
 
+pw_test("hash_test") {
+  deps = [ ":server" ]
+  sources = [ "hash_test.cc" ]
+}
+
 pw_test("packet_test") {
   deps = [
-    ":common",
+    ":server",
     dir_pw_bytes,
     dir_pw_protobuf,
   ]
@@ -214,9 +166,8 @@ pw_test("packet_test") {
 
 pw_test("service_test") {
   deps = [
-    ":common",
     ":protos_pwpb",
-    ":test_server",
+    ":server",
     dir_pw_assert,
   ]
   sources = [ "service_test.cc" ]
@@ -224,9 +175,9 @@ pw_test("service_test") {
 
 pw_test("server_test") {
   deps = [
-    ":internal_test_utils_test_server",
     ":protos_pwpb",
-    ":test_server",
+    ":server",
+    ":test_utils",
     dir_pw_assert,
   ]
   sources = [ "server_test.cc" ]

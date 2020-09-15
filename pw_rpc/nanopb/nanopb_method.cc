@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/nanopb_method.h"
 
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -39,8 +39,8 @@ using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
 
 using std::byte;
 
-StatusWithSize Method::EncodeResponse(const void* proto_struct,
-                                      std::span<byte> buffer) const {
+StatusWithSize NanopbMethod::EncodeResponse(const void* proto_struct,
+                                            std::span<byte> buffer) const {
   auto output = pb_ostream_from_buffer(
       reinterpret_cast<pb_byte_t*>(buffer.data()), buffer.size());
   if (pb_encode(&output, static_cast<Fields>(response_fields_), proto_struct)) {
@@ -49,17 +49,17 @@ StatusWithSize Method::EncodeResponse(const void* proto_struct,
   return StatusWithSize::INTERNAL;
 }
 
-bool Method::DecodeResponse(std::span<const byte> response,
-                            void* proto_struct) const {
+bool NanopbMethod::DecodeResponse(std::span<const byte> response,
+                                  void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(response.data()), response.size());
   return pb_decode(&input, static_cast<Fields>(response_fields_), proto_struct);
 }
 
-void Method::CallUnary(ServerCall& call,
-                       const Packet& request,
-                       void* request_struct,
-                       void* response_struct) const {
+void NanopbMethod::CallUnary(ServerCall& call,
+                             const Packet& request,
+                             void* request_struct,
+                             void* response_struct) const {
   if (!DecodeRequest(call.channel(), request, request_struct)) {
     return;
   }
@@ -68,9 +68,9 @@ void Method::CallUnary(ServerCall& call,
   SendResponse(call.channel(), request, response_struct, status);
 }
 
-void Method::CallServerStreaming(ServerCall& call,
-                                 const Packet& request,
-                                 void* request_struct) const {
+void NanopbMethod::CallServerStreaming(ServerCall& call,
+                                       const Packet& request,
+                                       void* request_struct) const {
   if (!DecodeRequest(call.channel(), request, request_struct)) {
     return;
   }
@@ -79,9 +79,9 @@ void Method::CallServerStreaming(ServerCall& call,
   function_.server_streaming(call, request_struct, server_writer);
 }
 
-bool Method::DecodeRequest(Channel& channel,
-                           const Packet& request,
-                           void* proto_struct) const {
+bool NanopbMethod::DecodeRequest(Channel& channel,
+                                 const Packet& request,
+                                 void* proto_struct) const {
   auto input = pb_istream_from_buffer(
       reinterpret_cast<const pb_byte_t*>(request.payload().data()),
       request.payload().size());
@@ -95,10 +95,10 @@ bool Method::DecodeRequest(Channel& channel,
   return false;
 }
 
-void Method::SendResponse(Channel& channel,
-                          const Packet& request,
-                          const void* response_struct,
-                          Status status) const {
+void NanopbMethod::SendResponse(Channel& channel,
+                                const Packet& request,
+                                const void* response_struct,
+                                Status status) const {
   Channel::OutputBuffer response_buffer = channel.AcquireBuffer();
   std::span payload_buffer = response_buffer.payload(request);
 

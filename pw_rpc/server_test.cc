@@ -19,7 +19,9 @@
 
 #include "gtest/gtest.h"
 #include "pw_assert/assert.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
 
@@ -28,21 +30,21 @@ namespace {
 
 using std::byte;
 
-using internal::Method;
 using internal::Packet;
 using internal::PacketType;
+using internal::TestMethod;
 
 class TestService : public Service {
  public:
   TestService(uint32_t service_id)
       : Service(service_id, methods_),
         methods_{
-            Method(100),
-            Method(200),
+            TestMethod(100),
+            TestMethod(200),
         } {}
 
-  Method& method(uint32_t id) {
-    for (Method& method : methods_) {
+  TestMethod& method(uint32_t id) {
+    for (TestMethod& method : methods_) {
       if (method.id() == id) {
         return method;
       }
@@ -52,7 +54,7 @@ class TestService : public Service {
   }
 
  private:
-  std::array<Method, 2> methods_;
+  std::array<TestMethod, 2> methods_;
 };
 
 class BasicServer : public ::testing::Test {
@@ -97,7 +99,7 @@ TEST_F(BasicServer, ProcessPacket_ValidMethod_InvokesMethod) {
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, 1, 42, 100), output_));
 
-  const Method& method = service_.method(100);
+  const TestMethod& method = service_.method(100);
   EXPECT_EQ(1u, method.last_channel_id());
   ASSERT_EQ(sizeof(kDefaultPayload), method.last_request().payload().size());
   EXPECT_EQ(std::memcmp(kDefaultPayload,

@@ -119,7 +119,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
   return Status::OK;
 }
 
-std::tuple<Service*, const internal::BaseMethod*> Server::FindMethod(
+std::tuple<Service*, const internal::Method*> Server::FindMethod(
     const internal::Packet& packet) {
   // Packets always include service and method IDs.
   auto service = std::find_if(services_.begin(), services_.end(), [&](auto& s) {

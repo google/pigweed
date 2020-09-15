@@ -51,7 +51,7 @@ pw_source_set("pw_rpc") {
   public = [ "public/pw_hdlc_lite/hdlc_channel.h" ]
   sources = [ "hdlc_channel.cc" ]
   public_deps = [
-    "$dir_pw_rpc:common",
+    "$dir_pw_rpc:server",
     dir_pw_stream,
   ]
   deps = [

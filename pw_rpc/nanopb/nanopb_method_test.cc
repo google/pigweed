@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/nanopb_method.h"
 
 #include <array>
 
@@ -73,12 +73,12 @@ class FakeGeneratedService : public Service {
         .StartStream(call.context(), request, writer);
   }
 
-  static constexpr std::array<Method, 3> kMethods = {
-      Method::Unary<DoNothing>(
+  static constexpr std::array<NanopbMethod, 3> kMethods = {
+      NanopbMethod::Unary<DoNothing>(
           10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
-      Method::Unary<AddFive>(
+      NanopbMethod::Unary<AddFive>(
           11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
-      Method::ServerStreaming<StartStream>(
+      NanopbMethod::ServerStreaming<StartStream>(
           12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
   };
 };
@@ -113,10 +113,10 @@ class FakeGeneratedServiceImpl
   }
 };
 
-TEST(Method, UnaryRpc_SendsResponse) {
+TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
-  const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
   method.Invoke(context.get(), context.packet(request));
 
@@ -134,10 +134,10 @@ TEST(Method, UnaryRpc_SendsResponse) {
   EXPECT_EQ(123, last_request.integer);
 }
 
-TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
+TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
   std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
 
-  const Method& method = std::get<0>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method = std::get<0>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
   method.Invoke(context.get(), context.packet(bad_payload));
 
@@ -148,12 +148,12 @@ TEST(Method, UnaryRpc_InvalidPayload_SendsError) {
   EXPECT_EQ(method.id(), packet.method_id());
 }
 
-TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
+TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
   ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
-  const Method& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
   // Output buffer is too small for the response, but can fit an error packet.
   ServerContextForTest<FakeGeneratedServiceImpl, 22> context(method);
   ASSERT_LT(context.output().buffer_size(),
@@ -170,10 +170,10 @@ TEST(Method, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   EXPECT_EQ(value, last_request.integer);
 }
 
-TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
+TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   ENCODE_PB(pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
-  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
   method.Invoke(context.get(), context.packet(request));
@@ -182,8 +182,8 @@ TEST(Method, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   EXPECT_EQ(555, last_request.integer);
 }
 
-TEST(Method, ServerWriter_SendsResponse) {
-  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+TEST(NanopbMethod, ServerWriter_SendsResponse) {
+  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
   method.Invoke(context.get(), context.packet({}));
@@ -202,8 +202,9 @@ TEST(Method, ServerWriter_SendsResponse) {
                         encoded.size()));
 }
 
-TEST(Method, ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
-  const Method& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+TEST(NanopbMethod,
+     ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
+  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
 
   constexpr size_t kNoPayloadPacketSize = 2 /* type */ + 2 /* channel */ +
                                           5 /* service */ + 5 /* method */ +

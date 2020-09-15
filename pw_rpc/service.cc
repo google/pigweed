@@ -19,8 +19,8 @@
 
 namespace pw::rpc {
 
-const internal::BaseMethod* Service::FindMethod(uint32_t method_id) const {
-  const internal::BaseMethod* method = methods_;
+const internal::Method* Service::FindMethod(uint32_t method_id) const {
+  const internal::Method* method = methods_;
 
   for (size_t i = 0; i < method_count_; ++i) {
     if (method->id() == method_id) {
@@ -28,7 +28,7 @@ const internal::BaseMethod* Service::FindMethod(uint32_t method_id) const {
     }
 
     const auto raw = reinterpret_cast<const std::byte*>(method);
-    method = reinterpret_cast<const internal::BaseMethod*>(raw + method_size_);
+    method = reinterpret_cast<const internal::Method*>(raw + method_size_);
   }
 
   return nullptr;

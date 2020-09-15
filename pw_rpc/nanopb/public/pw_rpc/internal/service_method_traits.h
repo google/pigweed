@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/nanopb_method.h"
 
 namespace pw::rpc::internal {
 
@@ -39,7 +39,7 @@ class ServiceMethodTraits {
       decltype(BaseFromMember(&Service::_PwRpcInternalGeneratedBase));
 
   // Reference to the Method object corresponding to this method.
-  static constexpr const Method& method() {
+  static constexpr const NanopbMethod& method() {
     return *BaseService::template MethodFor<impl_method>();
   }
 

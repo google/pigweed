@@ -162,7 +162,8 @@ template("_pw_nanopb_rpc_proto_library") {
     all_dependent_configs = [ ":$_include_config_target" ]
     deps = [ ":$_gen_target" ]
     public_deps = [
-                    "$dir_pw_rpc:nanopb_server",
+                    "$dir_pw_rpc:server",
+                    "$dir_pw_rpc/nanopb:method",
                     "$dir_pw_third_party/nanopb",
                   ] + invoker.gen_deps
     public = get_target_outputs(":$_gen_target")

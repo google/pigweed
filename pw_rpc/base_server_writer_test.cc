@@ -20,6 +20,7 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/test_method.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
@@ -30,7 +31,7 @@ class TestService : public Service {
  public:
   constexpr TestService(uint32_t id) : Service(id, method), method(8) {}
 
-  internal::Method method;
+  internal::TestMethod method;
 };
 
 namespace internal {

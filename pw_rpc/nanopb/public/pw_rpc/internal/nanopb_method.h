@@ -19,8 +19,8 @@
 #include <span>
 #include <type_traits>
 
-#include "pw_rpc/internal/base_method.h"
 #include "pw_rpc/internal/base_server_writer.h"
+#include "pw_rpc/internal/method.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -110,53 +110,54 @@ using Request = typename RpcTraits<decltype(method)>::Request;
 template <auto method>
 using Response = typename RpcTraits<decltype(method)>::Response;
 
-// The Method class invokes user-defined service methods. When a pw::rpc::Server
-// receives an RPC request packet, it looks up the matching Method instance and
-// calls its Invoke method, which eventually calls into the user-defined RPC
-// function.
+// The NanopbMethod class invokes user-defined service methods. When a
+// pw::rpc::Server receives an RPC request packet, it looks up the matching
+// NanopbMethod instance and calls its Invoke method, which eventually calls
+// into the user-defined RPC function.
 //
-// A Method instance is created for each user-defined RPC in the pw_rpc
-// generated code. The Nanopb Method stores a pointer to the RPC function, a
+// A NanopbMethod instance is created for each user-defined RPC in the pw_rpc
+// generated code. The NanopbMethod stores a pointer to the RPC function, a
 // pointer to an "invoker" function that calls that function, and pointers to
 // the Nanopb descriptors used to encode and decode request and response
 // structs.
-class Method : public BaseMethod {
+class NanopbMethod : public Method {
  public:
-  // Creates a Method for a unary RPC.
+  // Creates a NanopbMethod for a unary RPC.
   template <auto method>
-  static constexpr Method Unary(uint32_t id,
-                                NanopbMessageDescriptor request,
-                                NanopbMessageDescriptor response) {
+  static constexpr NanopbMethod Unary(uint32_t id,
+                                      NanopbMessageDescriptor request,
+                                      NanopbMessageDescriptor response) {
     // Define a wrapper around the user-defined function that takes the
     // request and response protobuf structs as void*. This wrapper is stored
     // generically in the Function union, defined below.
     //
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
-    return Method(id,
-                  UnaryInvoker<AllocateSpaceFor<Request<method>>(),
-                               AllocateSpaceFor<Response<method>>()>,
-                  {.unary =
-                       [](ServerCall& call, const void* req, void* resp) {
-                         return method(
-                             call,
-                             *static_cast<const Request<method>*>(req),
-                             *static_cast<Response<method>*>(resp));
-                       }},
-                  request,
-                  response);
+    return NanopbMethod(id,
+                        UnaryInvoker<AllocateSpaceFor<Request<method>>(),
+                                     AllocateSpaceFor<Response<method>>()>,
+                        {.unary =
+                             [](ServerCall& call, const void* req, void* resp) {
+                               return method(
+                                   call,
+                                   *static_cast<const Request<method>*>(req),
+                                   *static_cast<Response<method>*>(resp));
+                             }},
+                        request,
+                        response);
   }
 
-  // Creates a Method for a server-streaming RPC.
+  // Creates a NanopbMethod for a server-streaming RPC.
   template <auto method>
-  static constexpr Method ServerStreaming(uint32_t id,
-                                          NanopbMessageDescriptor request,
-                                          NanopbMessageDescriptor response) {
+  static constexpr NanopbMethod ServerStreaming(
+      uint32_t id,
+      NanopbMessageDescriptor request,
+      NanopbMessageDescriptor response) {
     // Define a wrapper around the user-defined function that takes the request
     // struct as void* and a BaseServerWriter instead of the templated
     // ServerWriter class. This wrapper is stored generically in the Function
     // union, defined below.
-    return Method(
+    return NanopbMethod(
         id,
         ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
         {.server_streaming =
@@ -211,12 +212,12 @@ class Method : public BaseMethod {
     return std::max(sizeof(T), size_t(64));
   }
 
-  constexpr Method(uint32_t id,
-                   Invoker invoker,
-                   Function function,
-                   NanopbMessageDescriptor request,
-                   NanopbMessageDescriptor response)
-      : BaseMethod(id, invoker),
+  constexpr NanopbMethod(uint32_t id,
+                         Invoker invoker,
+                         Function function,
+                         NanopbMessageDescriptor request,
+                         NanopbMessageDescriptor response)
+      : Method(id, invoker),
         function_(function),
         request_fields_(request),
         response_fields_(response) {}
@@ -236,7 +237,7 @@ class Method : public BaseMethod {
   // size, with maximum alignment, to avoid generating unnecessary copies of
   // this function for each request/response type.
   template <size_t request_size, size_t response_size>
-  static void UnaryInvoker(const BaseMethod& method,
+  static void UnaryInvoker(const Method& method,
                            ServerCall& call,
                            const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
@@ -244,7 +245,7 @@ class Method : public BaseMethod {
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
         response_struct{};
 
-    static_cast<const Method&>(method).CallUnary(
+    static_cast<const NanopbMethod&>(method).CallUnary(
         call, request, &request_struct, &response_struct);
   }
 
@@ -252,13 +253,13 @@ class Method : public BaseMethod {
   // struct. Ignores the payload buffer since resposnes are sent through the
   // ServerWriter.
   template <size_t request_size>
-  static void ServerStreamingInvoker(const BaseMethod& method,
+  static void ServerStreamingInvoker(const Method& method,
                                      ServerCall& call,
                                      const Packet& request) {
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 
-    static_cast<const Method&>(method).CallServerStreaming(
+    static_cast<const NanopbMethod&>(method).CallServerStreaming(
         call, request, &request_struct);
   }
 
@@ -289,7 +290,7 @@ Status ServerWriter<T>::Write(const T& response) {
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (auto result =
-          static_cast<const internal::Method&>(method()).EncodeResponse(
+          static_cast<const internal::NanopbMethod&>(method()).EncodeResponse(
               &response, buffer);
       result.ok()) {
     return ReleasePayloadBuffer(buffer.first(result.size()));

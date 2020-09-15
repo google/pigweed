@@ -23,51 +23,28 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "pw_rpc",
+    name = "server",
     srcs = [
         "base_server_writer.cc",
+        "channel.cc",
+        "packet.cc",
         "public/pw_rpc/internal/base_server_writer.h",
+        "public/pw_rpc/internal/call.h",
+        "public/pw_rpc/internal/channel.h",
+        "public/pw_rpc/internal/hash.h",
+        "public/pw_rpc/internal/method.h",
+        "public/pw_rpc/internal/packet.h",
+        "public/pw_rpc/internal/server.h",
         "server.cc",
         "service.cc",
     ],
     hdrs = [
+        "public/pw_rpc/channel.h",
         "public/pw_rpc/server.h",
         "public/pw_rpc/server_context.h",
         "public/pw_rpc/service.h",
-        "public/pw_rpc/internal/channel.h",
-        "public/pw_rpc/internal/server.h",
-        "public/pw_rpc/internal/hash.h",
-        # TODO(hepler): Only building the test version of the server for now.
-        "test_impl/public_overrides/pw_rpc/internal/method.h",
-    ],
-    includes = [
-        "public",
-        "test_impl/public_overrides/",
-    ],
-    deps = [
-        ":common",
-        "//pw_assert",
-        "//pw_log",
-        "//pw_span",
-        "//pw_status",
-    ],
-)
-
-pw_cc_library(
-    name = "common",
-    srcs = [
-        "channel.cc",
-        "packet.cc",
-    ],
-    hdrs = [
-        "public/pw_rpc/channel.h",
-        "public/pw_rpc/internal/base_method.h",
-        "public/pw_rpc/internal/call.h",
-        "public/pw_rpc/internal/packet.h",
-        "public/pw_rpc/server.h",
     ],
     includes = ["public"],
-    visibility = ["//visibility:private"],
     deps = [
         "//pw_assert",
         "//pw_log",
@@ -78,10 +55,13 @@ pw_cc_library(
 
 pw_cc_library(
     name = "internal_test_utils",
-    hdrs = ["pw_rpc_private/internal_test_utils.h"],
+    hdrs = [
+        "public/pw_rpc/internal/test_method.h",
+        "pw_rpc_private/internal_test_utils.h",
+    ],
     visibility = ["//visibility:private"],
     deps = [
-        ":common",
+        ":server",
         "//pw_span",
     ],
 )
@@ -93,12 +73,12 @@ filegroup(
     srcs = [
         "nanopb/codegen_test.cc",
         "nanopb/echo_service_test.cc",
-        "nanopb/method.cc",
-        "nanopb/method_test.cc",
+        "nanopb/nanopb_method.cc",
+        "nanopb/nanopb_method_test.cc",
         "nanopb/public/pw_rpc/echo_service_nanopb.h",
+        "nanopb/public/pw_rpc/internal/nanopb_method.h",
         "nanopb/public/pw_rpc/internal/service_method_traits.h",
         "nanopb/public/pw_rpc/test_method_context.h",
-        "nanopb/public_overrides/pw_rpc/internal/method.h",
         "nanopb/service_method_traits_test.cc",
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",
@@ -113,7 +93,7 @@ pw_cc_test(
     ],
     deps = [
         ":internal_test_utils",
-        ":pw_rpc",
+        ":server",
     ],
 )
 
@@ -121,7 +101,7 @@ pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
     deps = [
-        ":common",
+        ":server",
         ":test_utils_test_server",
     ],
 )
@@ -132,7 +112,7 @@ pw_cc_test(
         "packet_test.cc",
     ],
     deps = [
-        ":common",
+        ":server",
     ],
 )
 
@@ -150,7 +130,7 @@ pw_cc_test(
     ],
     deps = [
         ":internal_test_utils",
-        ":pw_rpc",
+        ":server",
         "//pw_assert",
     ],
 )
@@ -161,8 +141,8 @@ pw_cc_test(
         "service_test.cc",
     ],
     deps = [
-        ":common",
         ":internal_test_utils",
+        ":server",
         "//pw_assert",
     ],
 )

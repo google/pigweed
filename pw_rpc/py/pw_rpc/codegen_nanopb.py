@@ -58,7 +58,7 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
                                 output: OutputFile) -> None:
     """Generates a nanopb method descriptor for an RPC method."""
 
-    method_class = f'{RPC_NAMESPACE}::internal::Method'
+    method_class = f'{RPC_NAMESPACE}::internal::NanopbMethod'
 
     if method.type() == ProtoServiceMethod.Type.UNARY:
         func = f'{method_class}::Unary<{_invoker_name(method)}>'
@@ -121,7 +121,8 @@ def _generate_method_lookup_function(service: ProtoService,
     """Generates a function that gets the Method from a function pointer."""
     output.write_line('template <auto impl_method>')
     output.write_line(
-        'static constexpr const ::pw::rpc::internal::Method* MethodFor() {')
+        'static constexpr const ::pw::rpc::internal::NanopbMethod* '
+        'MethodFor() {')
 
     with output.indent():
         for i, method in enumerate(service.methods()):
@@ -195,9 +196,9 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
         output.write_line()
 
         # Generate the method table
-        output.write_line(
-            f'static constexpr std::array<{RPC_NAMESPACE}::internal::Method,'
-            f' {len(service.methods())}> kMethods = {{')
+        output.write_line('static constexpr std::array<'
+                          f'{RPC_NAMESPACE}::internal::NanopbMethod,'
+                          f' {len(service.methods())}> kMethods = {{')
 
         with output.indent(4):
             for method in service.methods():
@@ -230,7 +231,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
     output.write_line('#include <type_traits>\n')
-    output.write_line('#include "pw_rpc/internal/method.h"')
+    output.write_line('#include "pw_rpc/internal/nanopb_method.h"')
     output.write_line('#include "pw_rpc/server_context.h"')
     output.write_line('#include "pw_rpc/service.h"')
 

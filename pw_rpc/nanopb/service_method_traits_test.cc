@@ -29,7 +29,7 @@ static_assert(
 
 static_assert(
     std::is_same_v<decltype(ServiceMethodTraits<&EchoService::Echo>::method()),
-                   const Method&>);
+                   const NanopbMethod&>);
 
 }  // namespace
 }  // namespace pw::rpc::internal
