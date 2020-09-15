@@ -11,7 +11,10 @@ driver_module("driver") {
 
   sources = [ "driver.cc" ]
 
-  deps = [ ":sources" ]
+  deps = [
+    ":sources",
+    "//sdk/lib/syslog/cpp:backend_legacy",
+  ]
 
   configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
   configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
@@ -174,6 +177,7 @@ executable("tests") {
     "sdp:tests",
     "sm:tests",
     "testing:gtest_main",
+    "//sdk/lib/syslog/cpp:backend_legacy",
     "//src/devices/lib/driver",
     "//third_party/googletest:gtest",
   ]

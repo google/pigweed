@@ -157,6 +157,7 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//sdk/lib/syslog/cpp:backend_legacy",
   ]
 }
 
@@ -165,6 +166,7 @@ fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//sdk/lib/syslog/cpp:backend_legacy",
   ]
 }
 
@@ -173,6 +175,7 @@ fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//sdk/lib/syslog/cpp:backend_legacy",
   ]
 }
 
@@ -181,6 +184,7 @@ fuzzer("channel_configuration_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//sdk/lib/syslog/cpp:backend_legacy",
   ]
 }
 
@@ -189,5 +193,6 @@ fuzzer("common_handler_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//sdk/lib/syslog/cpp:backend_legacy",
   ]
 }
