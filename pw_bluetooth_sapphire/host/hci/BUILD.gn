@@ -133,7 +133,6 @@ fuzzer("read_acl_data_packet_fuzzer") {
   sources = [ "acl_data_channel_read_acl_data_packet_fuzztest.cc" ]
   deps = [
     ":testing",
-    "//sdk/lib/syslog/cpp:backend_legacy",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 
@@ -145,7 +144,6 @@ fuzzer("read_command_event_packet_fuzzer") {
   sources = [ "command_channel_read_event_packet_fuzztest.cc" ]
   deps = [
     ":testing",
-    "//sdk/lib/syslog/cpp:backend_legacy",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
 

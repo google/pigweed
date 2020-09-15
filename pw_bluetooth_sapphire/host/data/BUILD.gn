@@ -65,7 +65,6 @@ fuzzer("data_fuzzer") {
   sources = [ "data_fuzztest.cc" ]
   deps = [
     ":data",
-    "//sdk/lib/syslog/cpp:backend_legacy",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]

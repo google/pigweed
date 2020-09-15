@@ -78,16 +78,10 @@ source_set("tests") {
 
 fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
-  deps = [
-    ":definitions",
-    "//sdk/lib/syslog/cpp:backend_legacy",
-  ]
+  deps = [ ":definitions" ]
 }
 
 fuzzer("pdu_fuzzer") {
   sources = [ "pdu_fuzztest.cc" ]
-  deps = [
-    ":sdp",
-    "//sdk/lib/syslog/cpp:backend_legacy",
-  ]
+  deps = [ ":sdp" ]
 }
