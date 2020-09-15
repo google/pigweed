@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <span>
 
@@ -49,8 +50,12 @@ class RandomGenerator {
   // assumed to be stored in the least significant bits of `data`.
   virtual void InjectEntropyBits(uint32_t data, uint_fast8_t num_bits) = 0;
 
-  // Injects entropy into the pool.
-  virtual void InjectEntropy(ConstByteSpan data) = 0;
+  // Injects entropy into the pool byte-by-byte.
+  void InjectEntropy(ConstByteSpan data) {
+    for (std::byte b : data) {
+      InjectEntropyBits(std::to_integer<uint32_t>(b), /*num_bits=*/8);
+    }
+  }
 };
 
 }  // namespace pw::random

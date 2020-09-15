@@ -37,7 +37,7 @@ class XorShiftStarRng64 : public RandomGenerator {
 
   // This generator uses entropy-seeded PRNG to never exhaust its random number
   // pool.
-  StatusWithSize Get(ByteSpan dest) override {
+  StatusWithSize Get(ByteSpan dest) final {
     const size_t bytes_written = dest.size_bytes();
     while (!dest.empty()) {
       uint64_t random = Regenerate();
@@ -53,7 +53,7 @@ class XorShiftStarRng64 : public RandomGenerator {
   // before xoring the entropy with the current state. This ensures seeding
   // the random value with single bits will progressively fill the state with
   // more entropy.
-  void InjectEntropyBits(uint32_t data, uint_fast8_t num_bits) override {
+  void InjectEntropyBits(uint32_t data, uint_fast8_t num_bits) final {
     if (num_bits == 0) {
       return;
     } else if (num_bits > 32) {
@@ -66,20 +66,6 @@ class XorShiftStarRng64 : public RandomGenerator {
     // Zero-out all irrelevant bits, then XOR entropy into state.
     uint32_t mask = (1 << num_bits) - 1;
     state_ ^= (data & mask);
-  }
-
-  void InjectEntropy(ConstByteSpan data) override {
-    while (!data.empty()) {
-      size_t chunk_size = std::min(data.size_bytes(), sizeof(state_));
-      uint64_t entropy = 0;
-      std::memcpy(&entropy, data.data(), chunk_size);
-      // Rotate state. When chunk_size == sizeof(state_), this does nothing.
-      uint64_t old_state = state_ >> (kNumStateBits - 8 * chunk_size);
-      state_ = old_state | (state_ << (8 * chunk_size));
-      // XOR entropy into state.
-      state_ ^= entropy;
-      data = data.subspan(chunk_size);
-    }
   }
 
  private:
