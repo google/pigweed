@@ -47,6 +47,17 @@ using LEFixedChannelsCallback =
 using SecurityUpgradeCallback = fit::function<void(
     hci::ConnectionHandle ll_handle, sm::SecurityLevel level, sm::StatusCallback callback)>;
 
+// Indicates the priority of ACL data on a link. Corresponds to priorities in the ACL priority
+// vendor command.
+enum class AclPriority : uint8_t {
+  // Default. Do not prioritize data.
+  kNormal,
+  // Prioritize receiving data in the inbound direction.
+  kSink,
+  // Prioritize sending data in the outbound direction.
+  kSource,
+};
+
 // Channel configuration parameters specified by higher layers.
 struct ChannelParameters {
   std::optional<ChannelMode> mode;

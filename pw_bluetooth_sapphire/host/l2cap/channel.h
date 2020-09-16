@@ -21,6 +21,7 @@
 #include <fbl/ref_counted.h>
 #include <fbl/ref_ptr.h>
 
+#include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -173,6 +174,16 @@ class Channel : public fbl::RefCounted<Channel> {
   // failure, or remote errors.
   virtual bool Send(ByteBufferPtr sdu) = 0;
 
+  // Request that the ACL priority of this channel be changed to |priority|.
+  // Calls |callback| with success if the request succeeded, or error otherwise.
+  // Requests may fail if the controller does not support changing the ACL priority or the indicated
+  // priority conflicts with another channel.
+  virtual void RequestAclPriority(AclPriority priority,
+                                  fit::callback<void(fit::result<>)> callback) = 0;
+
+  // The ACL priority that was both requested and accepted by the controller.
+  AclPriority requested_acl_priority() const { return requested_acl_priority_; }
+
  protected:
   friend class fbl::RefPtr<Channel>;
   // TODO(1022): define a preferred MTU somewhere
@@ -185,6 +196,8 @@ class Channel : public fbl::RefCounted<Channel> {
   const hci::Connection::LinkType link_type_;
   const hci::ConnectionHandle link_handle_;
   const ChannelInfo info_;
+  // The ACL priority that was requested by a client and accepted by the controller.
+  AclPriority requested_acl_priority_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
@@ -229,8 +242,6 @@ class ChannelImpl : public Channel {
                                                        ChannelInfo info);
 
   // Called by |link_| to notify us when the channel can no longer process data.
-  // This MUST NOT call any locking methods of |link_| as that WILL cause a
-  // deadlock.
   void OnClosed();
 
   // Called by |link_| when a PDU targeting this channel has been received.
@@ -245,6 +256,8 @@ class ChannelImpl : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
+  void RequestAclPriority(AclPriority priority,
+                          fit::callback<void(fit::result<>)> callback) override;
 
  private:
   friend class fbl::RefPtr<ChannelImpl>;
@@ -252,6 +265,9 @@ class ChannelImpl : public Channel {
   ChannelImpl(ChannelId id, ChannelId remote_id, fxl::WeakPtr<internal::LogicalLink> link,
               ChannelInfo info);
   ~ChannelImpl() override = default;
+
+  // Common channel closure logic. Called on Deactivate/OnClosed.
+  void CleanUp();
 
   bool active_;
   RxCallback rx_cb_;

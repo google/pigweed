@@ -20,6 +20,14 @@ CreateStaticByteBuffer(hci::kCommandStatusEventCode, 0x04,         \
                                 LowerBits((opcode)), UpperBits((opcode)))
 // clang-format on
 
+DynamicByteBuffer CommandCompletePacket(hci::OpCode opcode, hci::StatusCode status) {
+  return DynamicByteBuffer(StaticByteBuffer(hci::kCommandCompleteEventCode,
+                                            0x04,  // size
+                                            0x01,  // Num HCI command packets
+                                            LowerBits(opcode), UpperBits(opcode),  // Op code
+                                            status));
+}
+
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
   const auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
@@ -286,6 +294,19 @@ DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn) 
       0x03,                              // max_page_number (3 pages)
       0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xFF, 0x00
       // lmp_features  - All the bits should be ignored.
+      ));
+}
+
+DynamicByteBuffer BcmAclPriorityPacket(hci::ConnectionHandle conn, l2cap::AclPriority priority) {
+  constexpr hci::OpCode op_code = hci::VendorOpCode(0x011A);
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(op_code), UpperBits(op_code),  // Op code
+      0x04,                                    // Size
+
+      LowerBits(conn),
+      UpperBits(conn),                                        // Little-Endian Connection_handle
+      priority == l2cap::AclPriority::kNormal ? 0x00 : 0x01,  // priority
+      priority == l2cap::AclPriority::kSource ? 0x00 : 0x01   // direction
       ));
 }
 

@@ -29,7 +29,8 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
       remote_id_(remote_id),
       link_type_(link_type),
       link_handle_(link_handle),
-      info_(info) {
+      info_(info),
+      requested_acl_priority_(AclPriority::kNormal) {
   ZX_DEBUG_ASSERT(id_);
   ZX_DEBUG_ASSERT(link_type_ == hci::Connection::LinkType::kLE ||
                   link_type_ == hci::Connection::LinkType::kACL);
@@ -139,14 +140,9 @@ void ChannelImpl::Deactivate() {
     return;
   }
 
-  active_ = false;
-  rx_cb_ = {};
-  closed_cb_ = {};
-  rx_engine_ = {};
-  tx_engine_ = {};
-
   auto link = link_;
-  link_ = nullptr;
+
+  CleanUp();
 
   // |link| is expected to ignore this call if it has been closed.
   link->RemoveChannel(this, [] {});
@@ -191,6 +187,23 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   link_->UpgradeSecurity(level, std::move(callback), dispatcher);
 }
 
+void ChannelImpl::RequestAclPriority(AclPriority priority,
+                                     fit::callback<void(fit::result<>)> callback) {
+  if (!link_ || !active_) {
+    bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
+    callback(fit::error());
+    return;
+  }
+
+  link_->RequestAclPriority(this, priority,
+                            [this, priority, cb = std::move(callback)](auto result) mutable {
+                              if (result.is_ok()) {
+                                requested_acl_priority_ = priority;
+                              }
+                              cb(result);
+                            });
+}
+
 void ChannelImpl::OnClosed() {
   bt_log(TRACE, "l2cap", "channel closed (link: %#.4x, id: %#.4x)", link_handle(), id());
 
@@ -201,10 +214,8 @@ void ChannelImpl::OnClosed() {
 
   ZX_ASSERT(closed_cb_);
   auto closed_cb = std::move(closed_cb_);
-  active_ = false;
-  link_ = nullptr;
-  rx_engine_ = nullptr;
-  tx_engine_ = nullptr;
+
+  CleanUp();
 
   closed_cb();
 }
@@ -248,6 +259,21 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu callback");
     rx_cb_(std::move(sdu));
   }
+}
+
+void ChannelImpl::CleanUp() {
+  RequestAclPriority(AclPriority::kNormal, [](auto result) {
+    if (result.is_error()) {
+      bt_log(WARN, "l2cap", "Resetting ACL priority on channel closed failed");
+    }
+  });
+
+  active_ = false;
+  link_ = nullptr;
+  rx_cb_ = nullptr;
+  closed_cb_ = nullptr;
+  rx_engine_ = nullptr;
+  tx_engine_ = nullptr;
 }
 
 }  // namespace internal

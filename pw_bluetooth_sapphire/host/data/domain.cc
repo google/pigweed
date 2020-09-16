@@ -7,6 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/task_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 
@@ -28,10 +29,11 @@ class Impl final : public Domain {
         fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::SendPackets);
     auto drop_queued_acl =
         fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::DropQueuedPackets);
+    auto acl_priority = fit::bind_member(this, &Impl::RequestAclPriority);
 
     channel_manager_ = std::make_unique<l2cap::ChannelManager>(
         acl_buffer_info.max_data_length(), le_buffer_info.max_data_length(),
-        std::move(send_packets), std::move(drop_queued_acl), dispatcher_);
+        std::move(send_packets), std::move(drop_queued_acl), std::move(acl_priority));
     hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
     l2cap_socket_factory_ = std::make_unique<SocketFactory<l2cap::Channel>>();
@@ -126,6 +128,36 @@ class Impl final : public Domain {
   void UnregisterService(l2cap::PSM psm) override { channel_manager_->UnregisterService(psm); }
 
  private:
+  void RequestAclPriority(l2cap::AclPriority priority, hci::ConnectionHandle handle,
+                          fit::callback<void(fit::result<>)> cb) {
+    bt_log(TRACE, "data-domain", "sending ACL priority command");
+
+    auto packet = bt::hci::CommandPacket::New(bt::hci::kBcmSetAclPriority,
+                                              sizeof(bt::hci::BcmSetAclPriorityCommandParams));
+    auto params = packet->mutable_payload<bt::hci::BcmSetAclPriorityCommandParams>();
+    params->handle = htole16(handle);
+    params->priority = bt::hci::BcmAclPriority::kHigh;
+    params->direction = bt::hci::BcmAclPriorityDirection::kSink;
+    if (priority == l2cap::AclPriority::kSource) {
+      params->direction = bt::hci::BcmAclPriorityDirection::kSource;
+    } else if (priority == l2cap::AclPriority::kNormal) {
+      params->priority = bt::hci::BcmAclPriority::kNormal;
+    }
+
+    hci_->command_channel()->SendCommand(
+        std::move(packet),
+        [cb = std::move(cb), priority](auto id, const bt::hci::EventPacket& event) mutable {
+          if (hci_is_error(event, WARN, "data-domain", "BCM acl priority failed")) {
+            cb(fit::error());
+            return;
+          }
+
+          bt_log(DEBUG, "data-domain", "BCM acl priority updated (priority: %#.8x)",
+                 static_cast<uint32_t>(priority));
+          cb(fit::ok());
+        });
+  }
+
   async_dispatcher_t* dispatcher_;
 
   // Inspect hierarchy node representing the data domain.

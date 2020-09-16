@@ -9,6 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt {
 namespace testing {
@@ -17,6 +18,8 @@ namespace testing {
 // common behaviors with respect to expected devices and connections.
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
+
+DynamicByteBuffer CommandCompletePacket(hci::OpCode opcode, hci::StatusCode);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
@@ -68,6 +71,8 @@ DynamicByteBuffer ReadRemoteExtended1Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
+
+DynamicByteBuffer BcmAclPriorityPacket(hci::ConnectionHandle conn, l2cap::AclPriority priority);
 
 }  // namespace testing
 }  // namespace bt

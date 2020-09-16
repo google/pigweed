@@ -71,17 +71,22 @@ class ChannelManager final {
   // not have not yet been transmitted to the controller.
   using DropQueuedAclCallback = fit::function<void(hci::ACLPacketPredicate predicate)>;
 
+  // Used to request that the ACL priority vendor command be sent with the indicated priority and
+  // connection handle.
+  using RequestAclPriorityCallback = fit::function<void(l2cap::AclPriority, hci::ConnectionHandle,
+                                                        fit::callback<void(fit::result<>)>)>;
+
   // Creates L2CAP state for logical links and channels.
   //
-  // |max_acl_payload_size| and |max_le_payload_size| are the "maximum size[s] of HCI ACL (excluding
-  // header) Data Packets... sent from the Host to the Controller" (Core v5.0 Vol 2, Part E, Section
-  // 4.1) used for fragmenting outbound data. Data that is fragmented will be passed contiguously as
-  // invocations of |send_packets_cb|.
+  // |max_acl_payload_size| and |max_le_payload_size| are the "maximum size[s] of HCI ACL
+  // (excluding header) Data Packets... sent from the Host to the Controller" (Core v5.0 Vol 2,
+  // Part E, Section 4.1) used for fragmenting outbound data. Data that is fragmented will be
+  // passed contiguously as invocations of |send_packets_cb|.
   //
   // State changes are processed on |l2cap_dispatcher|.
   ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
                  SendAclCallback send_acl_cb, DropQueuedAclCallback filter_acl_cb,
-                 async_dispatcher_t* l2cap_dispatcher);
+                 RequestAclPriorityCallback priority_cb);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -207,7 +212,8 @@ class ChannelManager final {
   // Drops data packets pending delivery to the controller.
   DropQueuedAclCallback drop_queued_acl_cb_;
 
-  async_dispatcher_t* l2cap_dispatcher_;
+  // Requests that the ACL priority vendor command be sent.
+  RequestAclPriorityCallback acl_priority_cb_;
 
   using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
   LinkMap ll_map_;

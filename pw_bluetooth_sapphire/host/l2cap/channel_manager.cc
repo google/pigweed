@@ -17,16 +17,16 @@ namespace l2cap {
 ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
                                SendAclCallback send_acl_cb,
                                DropQueuedAclCallback drop_queued_acl_cb,
-                               async_dispatcher_t* l2cap_dispatcher)
+                               RequestAclPriorityCallback priority_cb)
     : max_acl_payload_size_(max_acl_payload_size),
       max_le_payload_size_(max_le_payload_size),
       send_acl_cb_(std::move(send_acl_cb)),
       drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
-      l2cap_dispatcher_(l2cap_dispatcher),
+      acl_priority_cb_(std::move(priority_cb)),
       weak_ptr_factory_(this) {
   ZX_ASSERT(send_acl_cb_);
   ZX_ASSERT(drop_queued_acl_cb_);
-  ZX_ASSERT(l2cap_dispatcher_);
+  ZX_ASSERT(acl_priority_cb_);
 }
 
 ChannelManager::~ChannelManager() {
@@ -227,9 +227,9 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
                         ChannelManager::ChannelPriority(channel_id));
   };
 
-  auto ll = internal::LogicalLink::New(handle, ll_type, role, l2cap_dispatcher_, max_payload_size,
-                                       std::move(send_acl_cb), drop_queued_acl_cb_.share(),
-                                       fit::bind_member(this, &ChannelManager::QueryService));
+  auto ll = internal::LogicalLink::New(
+      handle, ll_type, role, max_payload_size, std::move(send_acl_cb), drop_queued_acl_cb_.share(),
+      fit::bind_member(this, &ChannelManager::QueryService), acl_priority_cb_.share());
 
   // Route all pending packets to the link.
   auto pp_iter = pending_packets_.find(handle);

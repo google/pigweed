@@ -36,9 +36,10 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
     auto send_packets_cb = [](auto, auto) { return true; };
     auto drop_acl_cb = [](hci::ACLPacketPredicate) {};
     auto query_service_cb = [](hci::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, dispatcher(), kMaxPayload,
+    auto acl_priority_cb = [](auto, auto, auto) {};
+    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, kMaxPayload,
                              std::move(send_packets_cb), std::move(drop_acl_cb),
-                             std::move(query_service_cb));
+                             std::move(query_service_cb), std::move(acl_priority_cb));
   }
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }

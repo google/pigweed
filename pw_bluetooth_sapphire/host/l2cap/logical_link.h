@@ -18,6 +18,7 @@
 #include <fbl/macros.h>
 #include <fbl/ref_counted.h>
 
+#include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -55,6 +56,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   using DropQueuedAclCallback = ChannelManager::DropQueuedAclCallback;
 
+  using RequestAclPriorityCallback = ChannelManager::RequestAclPriorityCallback;
+
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
   // registered for that PSM.
@@ -68,10 +71,11 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Both |query_service_cb| and the inbound channel delivery callback that it returns will be
   // executed on this object's creation thread.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-                                      hci::Connection::Role role, async_dispatcher_t* dispatcher,
-                                      size_t max_payload_size, SendPacketsCallback send_packets_cb,
+                                      hci::Connection::Role role, size_t max_payload_size,
+                                      SendPacketsCallback send_packets_cb,
                                       DropQueuedAclCallback drop_queued_acl_cb,
-                                      QueryServiceCallback query_service_cb);
+                                      QueryServiceCallback query_service_cb,
+                                      RequestAclPriorityCallback acl_priority_cb);
 
   // Notifies and closes all open channels on this link. This must be called to
   // cleanly shut down a LogicalLink. WARNING: Failure to do so will cause the
@@ -128,6 +132,16 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   void SendConnectionParameterUpdateRequest(hci::LEPreferredConnectionParameters params,
                                             ConnectionParameterUpdateRequestCallback request_cb);
 
+  // Request a change of this link's ACL priority to |priority|.
+  // |channel| must indicate the channel making the request.
+  // |callback| will be called with the result of the request.
+  // The request will fail if |priority| conflicts with another channel's priority or the
+  // controller does not support changing the ACL priority.
+  //
+  // Requests are queued and handled sequentially in order to prevent race conditions.
+  void RequestAclPriority(Channel* channel, AclPriority priority,
+                          fit::callback<void(fit::result<>)> callback);
+
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
   void set_error_callback(fit::closure callback);
@@ -139,17 +153,11 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // on the signaling channel.
   void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
-  // Returns the dispatcher that this LogicalLink operates on.
-  async_dispatcher_t* dispatcher() const { return dispatcher_; }
-
   hci::Connection::LinkType type() const { return type_; }
   hci::Connection::Role role() const { return role_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
-  const sm::SecurityProperties security() {
-    std::lock_guard<std::mutex> lock(mtx_);
-    return security_;
-  }
+  const sm::SecurityProperties security() { return security_; }
 
   // Returns the LE signaling channel implementation or nullptr if this is not a
   // LE-U link.
@@ -162,9 +170,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend fbl::RefPtr<LogicalLink>;
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-              hci::Connection::Role role, async_dispatcher_t* dispatcher,
-              size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
-              DropQueuedAclCallback drop_queued_acl_cb, QueryServiceCallback query_service_cb);
+              hci::Connection::Role role, size_t max_acl_payload_size,
+              SendPacketsCallback send_packets_cb, DropQueuedAclCallback drop_queued_acl_cb,
+              QueryServiceCallback query_service_cb, RequestAclPriorityCallback acl_priority_cb);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -230,12 +238,12 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
       uint16_t timeout_multiplier,
       LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder);
 
-  // Members that can be accessed from any thread.
-  std::mutex mtx_;
-  sm::SecurityProperties security_ __TA_GUARDED(mtx_);
+  // Processes the next ACL priority request in the  |pending_acl_requests_| queue.
+  // In order to optimize radio performance, ACL priority is downgraded whenever possible (i.e. when
+  // no more channels are requesting high priority).
+  void HandleNextAclPriorityRequest();
 
-  // All members below must be accessed on the L2CAP dispatcher thread.
-  async_dispatcher_t* dispatcher_;
+  sm::SecurityProperties security_;
 
   // Information about the underlying controller logical link.
   hci::ConnectionHandle handle_;
@@ -271,6 +279,13 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   using PendingPduMap = std::unordered_map<ChannelId, std::list<PDU>>;
   PendingPduMap pending_pdus_;
 
+  struct PendingAclRequest {
+    fbl::RefPtr<ChannelImpl> channel;
+    AclPriority priority;
+    fit::callback<void(fit::result<>)> callback;
+  };
+  std::queue<PendingAclRequest> pending_acl_requests_;
+
   // Dynamic channels opened with the remote. The registry is destroyed and all
   // procedures terminated when this link gets closed.
   std::unique_ptr<DynamicChannelRegistry> dynamic_registry_;
@@ -280,6 +295,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Drops data packets queued for delivery to controller.
   DropQueuedAclCallback drop_queued_acl_cb_;
+
+  // Requests that the ACL priority vendor command be sent.
+  RequestAclPriorityCallback acl_priority_cb_;
 
   // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;

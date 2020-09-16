@@ -634,6 +634,79 @@ TEST_F(DATA_DomainTest, AddLEConnectionReturnsFixedChannels) {
   EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
+TEST_F(DATA_DomainTest, RequestAclPrioritySendsCommand) {}
+
+class AclPriorityTest : public DATA_DomainTest,
+                        public ::testing::WithParamInterface<std::pair<l2cap::AclPriority, bool>> {
+};
+
+TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
+  const auto kPriority = GetParam().first;
+  const bool kExpectSuccess = GetParam().second;
+
+  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  const auto kSetAclPriorityCommand = testing::BcmAclPriorityPacket(kLinkHandle, kPriority);
+
+  QueueAclConnection(kLinkHandle);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  fbl::RefPtr<l2cap::Channel> channel = nullptr;
+  auto chan_cb = [&](auto chan) { channel = std::move(chan); };
+
+  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  // We should have opened a channel successfully.
+  ASSERT_TRUE(channel);
+  channel->Activate([](auto) {}, []() {});
+
+  if (kPriority != l2cap::AclPriority::kNormal) {
+    auto cmd_complete = testing::CommandCompletePacket(
+        hci::kBcmSetAclPriority,
+        kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
+    EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityCommand, &cmd_complete);
+  }
+
+  size_t request_cb_count = 0;
+  channel->RequestAclPriority(kPriority, [&](auto result) {
+    request_cb_count++;
+    EXPECT_EQ(kExpectSuccess, result.is_ok());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
+
+  if (kPriority != l2cap::AclPriority::kNormal && kExpectSuccess) {
+    const auto kSetAclPriorityNormalCommand =
+        testing::BcmAclPriorityPacket(kLinkHandle, l2cap::AclPriority::kNormal);
+    auto cmd_complete =
+        testing::CommandCompletePacket(hci::kBcmSetAclPriority, hci::StatusCode::kSuccess);
+    EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityNormalCommand, &cmd_complete);
+  }
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
+
+  // Deactivating channel should send priority command to revert priority back to normal if it was
+  // changed.
+  channel->Deactivate();
+  RunLoopUntilIdle();
+}
+
+const std::array<std::pair<l2cap::AclPriority, bool>, 4> kPriorityParams = {
+    {{l2cap::AclPriority::kSource, false},
+     {l2cap::AclPriority::kSource, true},
+     {l2cap::AclPriority::kSink, true},
+     {l2cap::AclPriority::kNormal, true}}};
+INSTANTIATE_TEST_SUITE_P(DATA_DomainTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
+
 }  // namespace
 }  // namespace data
 }  // namespace bt

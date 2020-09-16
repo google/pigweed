@@ -71,6 +71,7 @@ class FakeChannel : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
+  void RequestAclPriority(AclPriority priority, fit::callback<void(fit::result<>)>) override {}
 
  private:
   hci::ConnectionHandle handle_;
