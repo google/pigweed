@@ -29,46 +29,44 @@
 namespace pw::blob_store {
 namespace {
 
-class DeferredWriteTest : public ::testing::Test {
+class BlobStoreChunkTest : public ::testing::Test {
  protected:
-  DeferredWriteTest() : flash_(kFlashAlignment), partition_(&flash_) {}
+  BlobStoreChunkTest() : flash_(kFlashAlignment), partition_(&flash_) {}
 
   void InitFlashTo(std::span<const std::byte> contents) {
     partition_.Erase();
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
-  void InitBufferToRandom(uint64_t seed) {
+  void InitSourceBufferToRandom(uint64_t seed) {
     partition_.Erase();
     random::XorShiftStarRng64 rng(seed);
-    rng.Get(buffer_);
+    rng.Get(source_buffer_);
   }
 
-  void InitBufferToFill(char fill) {
+  void InitSourceBufferToFill(char fill) {
     partition_.Erase();
-    std::memset(buffer_.data(), fill, buffer_.size());
+    std::memset(source_buffer_.data(), fill, source_buffer_.size());
   }
 
   // Fill the source buffer with random pattern based on given seed, written to
   // BlobStore in specified chunk size.
-  void ChunkWriteTest(size_t chunk_size, size_t flush_interval) {
+  void ChunkWriteTest(size_t chunk_size) {
     constexpr size_t kBufferSize = 256;
-    constexpr size_t kWriteSize = 64;
     kvs::ChecksumCrc16 checksum;
-
-    size_t bytes_since_flush = 0;
 
     char name[16] = {};
     snprintf(name, sizeof(name), "Blob%u", static_cast<unsigned>(chunk_size));
 
     BlobStoreBuffer<kBufferSize> blob(
-        name, &partition_, &checksum, kvs::TestKvs(), kWriteSize);
+        name, &partition_, &checksum, kvs::TestKvs());
     EXPECT_EQ(Status::OK, blob.Init());
 
-    BlobStore::DeferredWriter writer(blob);
+    BlobStore::BlobWriter writer(blob);
     EXPECT_EQ(Status::OK, writer.Open());
+    EXPECT_EQ(Status::OK, writer.Erase());
 
-    ByteSpan source = buffer_;
+    ByteSpan source = source_buffer_;
     while (source.size_bytes() > 0) {
       const size_t write_size = std::min(source.size_bytes(), chunk_size);
 
@@ -77,15 +75,8 @@ class DeferredWriteTest : public ::testing::Test {
                    static_cast<unsigned>(source.size_bytes()));
 
       ASSERT_EQ(Status::OK, writer.Write(source.first(write_size)));
-      // TODO: Add check that the write did not go to flash yet.
 
       source = source.subspan(write_size);
-      bytes_since_flush += write_size;
-
-      if (bytes_since_flush >= flush_interval) {
-        bytes_since_flush = 0;
-        ASSERT_EQ(Status::OK, writer.Flush());
-      }
     }
 
     EXPECT_EQ(Status::OK, writer.Close());
@@ -101,78 +92,80 @@ class DeferredWriteTest : public ::testing::Test {
 
   void VerifyFlash(ByteSpan verify_bytes) {
     // Should be defined as same size.
-    EXPECT_EQ(buffer_.size(), flash_.buffer().size_bytes());
+    EXPECT_EQ(source_buffer_.size(), flash_.buffer().size_bytes());
 
-    // Can't allow it to march off the end of buffer_.
-    ASSERT_LE(verify_bytes.size_bytes(), buffer_.size());
+    // Can't allow it to march off the end of source_buffer_.
+    ASSERT_LE(verify_bytes.size_bytes(), source_buffer_.size());
 
     for (size_t i = 0; i < verify_bytes.size_bytes(); i++) {
-      EXPECT_EQ(buffer_[i], verify_bytes[i]);
+      EXPECT_EQ(source_buffer_[i], verify_bytes[i]);
     }
   }
 
   static constexpr size_t kFlashAlignment = 16;
   static constexpr size_t kSectorSize = 2048;
   static constexpr size_t kSectorCount = 2;
+  static constexpr size_t kBlobDataSize = (kSectorCount * kSectorSize);
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
-  std::array<std::byte, kSectorCount * kSectorSize> buffer_;
+  std::array<std::byte, kBlobDataSize> source_buffer_;
 };
 
-TEST_F(DeferredWriteTest, ChunkWrite1) {
-  InitBufferToRandom(0x8675309);
-  ChunkWriteTest(1, 16);
+TEST_F(BlobStoreChunkTest, ChunkWrite1) {
+  InitSourceBufferToRandom(0x8675309);
+  ChunkWriteTest(1);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite2) {
-  InitBufferToRandom(0x8675);
-  ChunkWriteTest(2, 16);
+TEST_F(BlobStoreChunkTest, ChunkWrite2) {
+  InitSourceBufferToRandom(0x8675);
+  ChunkWriteTest(2);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite3) {
-  InitBufferToFill(0);
-  ChunkWriteTest(3, 16);
+TEST_F(BlobStoreChunkTest, ChunkWrite3) {
+  InitSourceBufferToFill(0);
+  ChunkWriteTest(3);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite4) {
-  InitBufferToFill(1);
-  ChunkWriteTest(4, 64);
+TEST_F(BlobStoreChunkTest, ChunkWrite4) {
+  InitSourceBufferToFill(1);
+  ChunkWriteTest(4);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite5) {
-  InitBufferToFill(0xff);
-  ChunkWriteTest(5, 64);
+TEST_F(BlobStoreChunkTest, ChunkWrite5) {
+  InitSourceBufferToFill(0xff);
+  ChunkWriteTest(5);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite16) {
-  InitBufferToRandom(0x86);
-  ChunkWriteTest(16, 128);
+TEST_F(BlobStoreChunkTest, ChunkWrite16) {
+  InitSourceBufferToRandom(0x86);
+  ChunkWriteTest(16);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite64) {
-  InitBufferToRandom(0x9);
-  ChunkWriteTest(64, 128);
+TEST_F(BlobStoreChunkTest, ChunkWrite64) {
+  InitSourceBufferToRandom(0x9);
+  ChunkWriteTest(64);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite64FullBufferFill) {
-  InitBufferToRandom(0x9);
-  ChunkWriteTest(64, 256);
+TEST_F(BlobStoreChunkTest, ChunkWrite256) {
+  InitSourceBufferToRandom(0x12345678);
+  ChunkWriteTest(256);
 }
 
-TEST_F(DeferredWriteTest, ChunkWrite256) {
-  InitBufferToRandom(0x12345678);
-  ChunkWriteTest(256, 256);
+TEST_F(BlobStoreChunkTest, ChunkWrite512) {
+  InitSourceBufferToRandom(0x42);
+  ChunkWriteTest(512);
 }
 
-// TODO: test that has dirty flash, invalidated blob, open writer, invalidate
-// (not erase) and start writing (does the auto/implicit erase).
+TEST_F(BlobStoreChunkTest, ChunkWrite4096) {
+  InitSourceBufferToRandom(0x89);
+  ChunkWriteTest(4096);
+}
 
-// TODO: test that has dirty flash, invalidated blob, open writer, explicit
-// erase and start writing.
-
-// TODO: test start with dirty flash/invalid blob, open writer, write, close.
-// Verifies erase logic when write buffer has contents.
+TEST_F(BlobStoreChunkTest, ChunkWriteSingleFull) {
+  InitSourceBufferToRandom(0x98765);
+  ChunkWriteTest(kBlobDataSize);
+}
 
 }  // namespace
 }  // namespace pw::blob_store

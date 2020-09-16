@@ -30,8 +30,8 @@ namespace pw::blob_store {
 //
 // Write and read are only done using the BlobWriter and BlobReader classes.
 //
-// Once a blob write is closed, reopening followed by a Discard(), Write(), or
-// Erase() will discard the previous blob.
+// Once a blob write is closed, reopening to write will discard the previous
+// blob.
 //
 // Write blob:
 //  0) Create BlobWriter instance
@@ -63,8 +63,9 @@ class BlobStore {
       }
     }
 
-    // Open a blob for writing/erasing. Can not open when already open. Only one
-    // writer is allowed to be open at a time. Returns:
+    // Open a blob for writing/erasing. Open will invalidate any existing blob
+    // that may be stored. Can not open when already open. Only one writer is
+    // allowed to be open at a time. Returns:
     //
     // OK - success.
     // UNAVAILABLE - Unable to open, another writer or reader instance is
@@ -91,7 +92,9 @@ class BlobStore {
       return store_.CloseWrite();
     }
 
-    // Erase the partition and reset state for a new blob. Returns:
+    // Erase the blob partition and reset state for a new blob. Explicit calls
+    // to Erase are optional, beginning a write will do any needed Erase.
+    // Returns:
     //
     // OK - success.
     // UNAVAILABLE - Unable to erase while reader is open.
@@ -101,8 +104,8 @@ class BlobStore {
       return store_.Erase();
     }
 
-    // Discard blob (in-progress or valid stored). Any written bytes are
-    // considered invalid. Returns:
+    // Discard the current blob. Any written bytes to this point are considered
+    // invalid. Returns:
     //
     // OK - success.
     // FAILED_PRECONDITION - not open.
@@ -172,11 +175,12 @@ class BlobStore {
     }
   };
 
-  // Implement stream::Reader interface for BlobStore.
+  // Implement stream::Reader interface for BlobStore. Multiple readers may be
+  // open at the same time, but readers may not be open with a writer open.
   class BlobReader final : public stream::Reader {
    public:
-    constexpr BlobReader(BlobStore& store, size_t offset)
-        : store_(store), open_(false), offset_(offset) {}
+    constexpr BlobReader(BlobStore& store)
+        : store_(store), open_(false), offset_(0) {}
     BlobReader(const BlobReader&) = delete;
     BlobReader& operator=(const BlobReader&) = delete;
     ~BlobReader() {
@@ -185,13 +189,19 @@ class BlobStore {
       }
     }
 
-    // Open to do a blob read. Can not open when already open. Multiple readers
-    // can be open at the same time. Returns:
+    // Open to do a blob read at the given offset in to the blob. Can not open
+    // when already open. Multiple readers can be open at the same time.
+    // Returns:
     //
     // OK - success.
     // UNAVAILABLE - Unable to open, already open.
-    Status Open() {
+    Status Open(size_t offset = 0) {
       PW_DCHECK(!open_);
+      if (offset >= store_.ReadableDataBytes()) {
+        return Status::INVALID_ARGUMENT;
+      }
+
+      offset_ = offset;
       Status status = store_.OpenRead();
       if (status.ok()) {
         open_ = true;
@@ -230,7 +240,12 @@ class BlobStore {
    private:
     StatusWithSize DoRead(ByteSpan dest) override {
       PW_DCHECK(open_);
-      return store_.Read(offset_, dest);
+      StatusWithSize status = store_.Read(offset_, dest);
+      if (status.ok()) {
+        PW_DCHECK_UINT_EQ(status.size(), dest.size_bytes());
+        offset_ += status.size();
+      }
+      return status;
     }
 
     BlobStore& store_;
@@ -287,6 +302,8 @@ class BlobStore {
  private:
   typedef uint32_t ChecksumValue;
 
+  Status LoadMetadata();
+
   // Open to do a blob write. Returns:
   //
   // OK - success.
@@ -303,7 +320,7 @@ class BlobStore {
   // Finalize a blob write. Flush all remaining buffered data to storage and
   // store blob metadata. Returns:
   //
-  // OK - success.
+  // OK - success, valid complete blob.
   // DATA_LOSS - Error during write (this close or previous write/flush). Blob
   //     is closed and marked as invalid.
   Status CloseWrite();
@@ -379,6 +396,9 @@ class BlobStore {
 
   Status EraseIfNeeded();
 
+  // Blob is valid/OK and has data to read.
+  bool ValidToRead() const { return (valid_data_ && ReadableDataBytes() > 0); }
+
   // Read valid data. Attempts to read the lesser of output.size_bytes() or
   // available bytes worth of data. Returns:
   //
@@ -390,7 +410,7 @@ class BlobStore {
   //     Try again once bytes become available.
   // OUT_OF_RANGE - Reader has been exhausted, similar to EOF. No bytes read, no
   //     more will be read.
-  StatusWithSize Read(size_t offset, ByteSpan dest);
+  StatusWithSize Read(size_t offset, ByteSpan dest) const;
 
   // Get a span with the MCU pointer and size of the data. Returns:
   //
@@ -399,8 +419,7 @@ class BlobStore {
   // UNIMPLEMENTED - Memory mapped access not supported for this blob.
   Result<ByteSpan> GetMemoryMappedBlob() const;
 
-  // Current size of blob/readable data, in bytes. For a completed write this is
-  // the size of the data blob. For all other cases this is zero bytes.
+  // Size of blob/readable data, in bytes.
   size_t ReadableDataBytes() const;
 
   size_t WriteBytesRemaining() const {
@@ -419,8 +438,7 @@ class BlobStore {
 
   Status ValidateChecksum();
 
-  Result<BlobStore::ChecksumValue> CalculateChecksumFromFlash(
-      size_t bytes_to_check);
+  Status CalculateChecksumFromFlash(size_t bytes_to_check);
 
   const std::string_view MetadataKey() { return name_; }
 
@@ -433,8 +451,12 @@ class BlobStore {
     // Number of blob data bytes stored in flash.
     size_t data_size_bytes;
 
-    // This blob is complete (the write was properly closed).
-    bool complete;
+    constexpr void reset() {
+      *this = {
+          .checksum = 0,
+          .data_size_bytes = 0,
+      };
+    }
   };
 
   std::string_view name_;
@@ -457,7 +479,7 @@ class BlobStore {
   bool initialized_;
 
   // Bytes stored are valid and good. Blob is OK to read and write to. Set as
-  // soon as is valid, even when bytes written is still 0.
+  // soon as blob is erased. Even when bytes written is still 0, they are valid.
   bool valid_data_;
 
   // Blob partition is currently erased and ready to write a new blob.

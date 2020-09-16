@@ -52,12 +52,12 @@ class BlobStoreTest : public ::testing::Test {
 
   // Fill the source buffer with random pattern based on given seed, written to
   // BlobStore in specified chunk size.
-  void ChunkWriteTest(size_t chunk_size) {
+  void WriteTestBlock() {
     constexpr size_t kBufferSize = 256;
     kvs::ChecksumCrc16 checksum;
 
     char name[16] = {};
-    snprintf(name, sizeof(name), "Blob%u", static_cast<unsigned>(chunk_size));
+    snprintf(name, sizeof(name), "TestBlobBlock");
 
     BlobStoreBuffer<kBufferSize> blob(
         name, &partition_, &checksum, kvs::TestKvs());
@@ -65,50 +65,80 @@ class BlobStoreTest : public ::testing::Test {
 
     BlobStore::BlobWriter writer(blob);
     EXPECT_EQ(Status::OK, writer.Open());
-
-    ByteSpan source = source_buffer_;
-    while (source.size_bytes() > 0) {
-      const size_t write_size = std::min(source.size_bytes(), chunk_size);
-
-      PW_LOG_DEBUG("Do write of %u bytes, %u bytes remain",
-                   static_cast<unsigned>(write_size),
-                   static_cast<unsigned>(source.size_bytes()));
-
-      EXPECT_EQ(Status::OK, writer.Write(source.first(write_size)));
-
-      source = source.subspan(write_size);
-    }
-
+    EXPECT_EQ(Status::OK, writer.Erase());
+    ASSERT_EQ(Status::OK, writer.Write(source_buffer_));
     EXPECT_EQ(Status::OK, writer.Close());
 
     // Use reader to check for valid data.
-    BlobStore::BlobReader reader(blob, 0);
-    EXPECT_EQ(Status::OK, reader.Open());
+    BlobStore::BlobReader reader(blob);
+    ASSERT_EQ(Status::OK, reader.Open());
     Result<ByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
     EXPECT_EQ(Status::OK, reader.Close());
   }
 
-  void VerifyFlash(ByteSpan verify_bytes) {
+  // Open a new blob instance and read the blob using the given read chunk size.
+  void ChunkReadTest(size_t read_chunk_size) {
+    kvs::ChecksumCrc16 checksum;
+
+    VerifyFlash(flash_.buffer());
+
+    char name[16] = "TestBlobBlock";
+    BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+    EXPECT_EQ(Status::OK, blob.Init());
+
+    // Use reader to check for valid data.
+    BlobStore::BlobReader reader1(blob);
+    ASSERT_EQ(Status::OK, reader1.Open());
+    Result<ByteSpan> result = reader1.GetMemoryMappedBlob();
+    ASSERT_TRUE(result.ok());
+    VerifyFlash(result.value());
+    EXPECT_EQ(Status::OK, reader1.Close());
+
+    BlobStore::BlobReader reader(blob);
+    ASSERT_EQ(Status::OK, reader.Open());
+
+    std::array<std::byte, kBlobDataSize> read_buffer_;
+
+    ByteSpan read_span = read_buffer_;
+    while (read_span.size_bytes() > 0) {
+      size_t read_size = std::min(read_span.size_bytes(), read_chunk_size);
+
+      PW_LOG_DEBUG("Do write of %u bytes, %u bytes remain",
+                   static_cast<unsigned>(read_size),
+                   static_cast<unsigned>(read_span.size_bytes()));
+
+      ASSERT_EQ(read_span.size_bytes(), reader.ConservativeReadLimit());
+      auto result = reader.Read(read_span.first(read_size));
+      ASSERT_EQ(result.status(), Status::OK);
+      read_span = read_span.subspan(read_size);
+    }
+    EXPECT_EQ(Status::OK, reader.Close());
+
+    VerifyFlash(read_buffer_);
+  }
+
+  void VerifyFlash(ByteSpan verify_bytes, size_t offset = 0) {
     // Should be defined as same size.
     EXPECT_EQ(source_buffer_.size(), flash_.buffer().size_bytes());
 
     // Can't allow it to march off the end of source_buffer_.
-    ASSERT_LE(verify_bytes.size_bytes(), source_buffer_.size());
+    ASSERT_LE((verify_bytes.size_bytes() + offset), source_buffer_.size());
 
     for (size_t i = 0; i < verify_bytes.size_bytes(); i++) {
-      EXPECT_EQ(source_buffer_[i], verify_bytes[i]);
+      ASSERT_EQ(source_buffer_[i + offset], verify_bytes[i]);
     }
   }
 
   static constexpr size_t kFlashAlignment = 16;
   static constexpr size_t kSectorSize = 2048;
   static constexpr size_t kSectorCount = 2;
+  static constexpr size_t kBlobDataSize = (kSectorCount * kSectorSize);
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
-  std::array<std::byte, kSectorCount * kSectorSize> source_buffer_;
+  std::array<std::byte, kBlobDataSize> source_buffer_;
 };
 
 TEST_F(BlobStoreTest, Init_Ok) {
@@ -128,59 +158,86 @@ TEST_F(BlobStoreTest, MultipleErase) {
   EXPECT_EQ(Status::OK, writer.Erase());
 }
 
-TEST_F(BlobStoreTest, ChunkWrite1) {
+TEST_F(BlobStoreTest, OffsetRead) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  constexpr size_t kOffset = 10;
+  ASSERT_LT(kOffset, kBlobDataSize);
+
+  kvs::ChecksumCrc16 checksum;
+
+  char name[16] = "TestBlobBlock";
+  BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+  EXPECT_EQ(Status::OK, blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(Status::OK, reader.Open(kOffset));
+
+  std::array<std::byte, kBlobDataSize - kOffset> read_buffer_;
+  ByteSpan read_span = read_buffer_;
+  ASSERT_EQ(read_span.size_bytes(), reader.ConservativeReadLimit());
+
+  auto result = reader.Read(read_span);
+  ASSERT_EQ(result.status(), Status::OK);
+  EXPECT_EQ(Status::OK, reader.Close());
+  VerifyFlash(read_buffer_, kOffset);
+}
+
+TEST_F(BlobStoreTest, InvalidReadOffset) {
+  InitSourceBufferToRandom(0x11309);
+  WriteTestBlock();
+
+  constexpr size_t kOffset = kBlobDataSize;
+
+  kvs::ChecksumCrc16 checksum;
+
+  char name[16] = "TestBlobBlock";
+  BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+  EXPECT_EQ(Status::OK, blob.Init());
+  BlobStore::BlobReader reader(blob);
+  ASSERT_EQ(Status::INVALID_ARGUMENT, reader.Open(kOffset));
+}
+
+TEST_F(BlobStoreTest, ChunkRead1) {
   InitSourceBufferToRandom(0x8675309);
-  ChunkWriteTest(1);
+  WriteTestBlock();
+  ChunkReadTest(1);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite2) {
-  InitSourceBufferToRandom(0x8675);
-  ChunkWriteTest(2);
-}
-
-TEST_F(BlobStoreTest, ChunkWrite3) {
+TEST_F(BlobStoreTest, ChunkRead3) {
   InitSourceBufferToFill(0);
-  ChunkWriteTest(3);
+  WriteTestBlock();
+  ChunkReadTest(3);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite4) {
+TEST_F(BlobStoreTest, ChunkRead4) {
   InitSourceBufferToFill(1);
-  ChunkWriteTest(4);
+  WriteTestBlock();
+  ChunkReadTest(4);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite5) {
+TEST_F(BlobStoreTest, ChunkRead5) {
   InitSourceBufferToFill(0xff);
-  ChunkWriteTest(5);
+  WriteTestBlock();
+  ChunkReadTest(5);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite16) {
+TEST_F(BlobStoreTest, ChunkRead16) {
   InitSourceBufferToRandom(0x86);
-  ChunkWriteTest(16);
+  WriteTestBlock();
+  ChunkReadTest(16);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite64) {
+TEST_F(BlobStoreTest, ChunkRead64) {
   InitSourceBufferToRandom(0x9);
-  ChunkWriteTest(64);
+  WriteTestBlock();
+  ChunkReadTest(64);
 }
 
-TEST_F(BlobStoreTest, ChunkWrite256) {
-  InitSourceBufferToRandom(0x12345678);
-  ChunkWriteTest(256);
-}
-
-TEST_F(BlobStoreTest, ChunkWrite512) {
-  InitSourceBufferToRandom(0x42);
-  ChunkWriteTest(512);
-}
-
-TEST_F(BlobStoreTest, ChunkWrite4096) {
-  InitSourceBufferToRandom(0x89);
-  ChunkWriteTest(4096);
-}
-
-TEST_F(BlobStoreTest, ChunkWriteSingleFull) {
-  InitSourceBufferToRandom(0x98765);
-  ChunkWriteTest((kSectorCount * kSectorSize));
+TEST_F(BlobStoreTest, ChunkReadFull) {
+  InitSourceBufferToRandom(0x9);
+  WriteTestBlock();
+  ChunkReadTest(kBlobDataSize);
 }
 
 // TODO: test that does close with bytes still in the buffer to test zero fill
