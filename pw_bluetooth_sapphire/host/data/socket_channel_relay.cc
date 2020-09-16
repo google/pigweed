@@ -238,8 +238,6 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
     ZX_DEBUG_ASSERT_MSG(n_bytes_read <= read_buf_size, "(n_bytes_read=%zu, read_buf_size=%zu)",
                         n_bytes_read, read_buf_size);
     if (read_res == ZX_ERR_SHOULD_WAIT) {
-      bt_log(TRACE, "l2cap", "Failed to read from socket for channel %u: %s", channel_->id(),
-             zx_status_get_string(read_res));
       return true;
     }
 
