@@ -63,11 +63,13 @@ class Channel {
  protected:
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : id_(id), output_(output) {
-    PW_CHECK_UINT_NE(id, kUnassignedChannelId);
+    // TODO(pwbug/246): Use PW_ASSERT when that is available.
+    // PW_ASSERT(id != kUnassignedChannelId);
   }
 
   ChannelOutput& output() const {
-    PW_CHECK_NOTNULL(output_);
+    // TODO(pwbug/246): Use PW_ASSERT when that is available.
+    // PW_ASSERT(output_ != nullptr);
     return *output_;
   }
 
