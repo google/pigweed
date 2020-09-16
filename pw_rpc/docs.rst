@@ -443,6 +443,17 @@ Declare an instance of ``rpc::Server`` and register services with it.
 
   Document the public interface
 
+Size report
+-----------
+The following size report showcases the memory usage of the core RPC server. It
+is configured with a single channel using a basic transport interface that
+directly reads from and writes to ``pw_sys_io``. The transport has a 128-byte
+packet buffer, which comprises the plurality of the example's RAM usage. This is
+not a suitable transport for an actual product; a real implementation would have
+additional overhead proportional to the complexity of the transport.
+
+.. include:: server_size
+
 RPC server implementation
 -------------------------
 

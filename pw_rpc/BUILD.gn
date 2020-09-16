@@ -15,9 +15,11 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 config("default_config") {
   include_dirs = [ "public" ]
@@ -116,6 +118,29 @@ pw_doc_group("docs") {
     "pw_rpc_protos/packet.proto",
   ]
   group_deps = [ "nanopb:docs" ]
+  report_deps = [ ":server_size" ]
+}
+
+pw_size_report("server_size") {
+  title = "Pigweed RPC server size report"
+
+  binaries = [
+    {
+      target = "size_report:server_only"
+      base = "size_report:base"
+      label = "Server by itself"
+    },
+  ]
+
+  if (dir_pw_third_party_nanopb != "") {
+    binaries += [
+      {
+        target = "size_report:server_with_echo_service"
+        base = "size_report:base_with_nanopb"
+        label = "Server with a registered nanopb EchoService"
+      },
+    ]
+  }
 }
 
 pw_test_group("tests") {
