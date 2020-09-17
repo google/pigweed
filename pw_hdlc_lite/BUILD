@@ -27,37 +27,15 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "hdlc_channel.cc",
+        "rpc_packets.cc",
         "pw_hdlc_lite_private/protocol.h",
     ],
     hdrs = [
         "public/pw_hdlc_lite/decoder.h",
         "public/pw_hdlc_lite/encoder.h",
         "public/pw_hdlc_lite/hdlc_channel.h",
-        "public/pw_hdlc_lite/rpc_server_packets.h",
+        "public/pw_hdlc_lite/rpc_packets.h",
         "public/pw_hdlc_lite/sys_io_stream.h",
-    ],
-    includes = ["public"],
-    deps = [
-        "//pw_bytes",
-        "//pw_checksum",
-        "//pw_log",
-        "//pw_result",
-        "//pw_rpc",
-        "//pw_span",
-        "//pw_status",
-        "//pw_stream",
-    ],
-)
-
-pw_cc_library(
-    name = "client_server_test",
-    srcs = [
-        "hdlc_server_example.cc",
-    ],
-    hdrs = [
-        "public/pw_hdlc_lite/decoder.h",
-        "public/pw_hdlc_lite/hdlc_channel.h",
-        "public/pw_hdlc_lite/rpc_server_packets.h",
     ],
     includes = ["public"],
     deps = [
