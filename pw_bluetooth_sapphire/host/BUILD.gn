@@ -11,7 +11,10 @@ driver_module("driver") {
 
   sources = [ "driver.cc" ]
 
-  deps = [ ":sources" ]
+  deps = [
+    ":sources",
+    "//sdk/lib/syslog/cpp:backend_legacy",
+  ]
 
   configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
   configs += [ "//build/config/fuchsia:static_cpp_standard_library" ]
