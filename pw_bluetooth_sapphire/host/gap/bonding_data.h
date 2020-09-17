@@ -5,6 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BONDING_DATA_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BONDING_DATA_H_
 
+#include <vector>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -19,6 +22,7 @@ struct BondingData {
   std::optional<std::string> name;
   sm::PairingData le_pairing_data;
   std::optional<sm::LTK> bredr_link_key;
+  std::vector<UUID> bredr_services;
 };
 
 }  // namespace gap

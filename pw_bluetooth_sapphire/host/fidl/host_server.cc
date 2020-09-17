@@ -367,8 +367,9 @@ void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
     // TODO(armansito): BondingData should contain the identity address for both
     // transports instead of storing them separately. For now use the one we
     // obtained from |bond.le|.
+    // TODO(fxbug.dev/59645): Convert bond.bredr.services to BondingData::bredr_services
     if (!adapter()->AddBondedPeer(
-            bt::gap::BondingData{*peer_id, address, peer_name, le_bond_data, bredr_link_key})) {
+            bt::gap::BondingData{*peer_id, address, peer_name, le_bond_data, bredr_link_key, {}})) {
       failed_ids.push_back(bond.identifier);
       continue;
     }

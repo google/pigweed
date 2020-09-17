@@ -98,6 +98,10 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   if (bond_bredr) {
     peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
     ZX_DEBUG_ASSERT(peer->bredr()->bonded());
+
+    for (auto& service : bd.bredr_services) {
+      peer->MutBrEdr().AddService(std::move(service));
+    }
   }
 
   if (peer->technology() == TechnologyType::kDualMode) {

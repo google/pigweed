@@ -6,6 +6,8 @@
 
 #include <lib/inspect/testing/cpp/inspect.h>
 
+#include <vector>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -14,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -59,6 +62,8 @@ const bt::sm::LTK kLTK;
 const bt::sm::Key kKey{};
 
 const bt::sm::LTK kBrEdrKey;
+
+const std::vector<bt::UUID> kBrEdrServices = {UUID(uint16_t{0x110a}), UUID(uint16_t{0x110b})};
 
 // Phone (Networking)
 const DeviceClass kTestDeviceClass({0x06, 0x02, 0x02});
@@ -535,7 +540,8 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
   EXPECT_TRUE(cache()->AddBondedPeer(BondingData{.identifier = kId,
                                                  .address = kAddrBrEdr,
                                                  .le_pairing_data = data,
-                                                 .bredr_link_key = kBrEdrKey}));
+                                                 .bredr_link_key = kBrEdrKey,
+                                                 .bredr_services = kBrEdrServices}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrBrEdr));
@@ -547,6 +553,7 @@ TEST_F(GAP_PeerCacheTest_BondingTest, AddBrEdrBondedPeerSuccess) {
   EXPECT_TRUE(peer->bredr()->bonded());
   ASSERT_TRUE(peer->bredr()->link_key());
   EXPECT_EQ(kBrEdrKey, *peer->bredr()->link_key());
+  EXPECT_THAT(peer->bredr()->services(), testing::UnorderedElementsAreArray(kBrEdrServices));
   EXPECT_FALSE(peer->le());
   EXPECT_EQ(TechnologyType::kClassic, peer->technology());
 
@@ -797,7 +804,8 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
                                                  .address = address,
                                                  .name = kName,
                                                  .le_pairing_data = data,
-                                                 .bredr_link_key = kBrEdrKey}));
+                                                 .bredr_link_key = kBrEdrKey,
+                                                 .bredr_services = kBrEdrServices}));
   auto* peer = cache()->FindById(kId);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer, cache()->FindByAddress(kAddrLeAlias));
@@ -815,6 +823,7 @@ TEST_P(DualModeBondingTest, AddBondedPeerSuccess) {
   EXPECT_TRUE(peer->bredr()->bonded());
   ASSERT_TRUE(peer->bredr()->link_key());
   EXPECT_EQ(kBrEdrKey, *peer->bredr()->link_key());
+  EXPECT_THAT(peer->bredr()->services(), testing::UnorderedElementsAreArray(kBrEdrServices));
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
 
   // The "new bond" callback should not be called when restoring a previously

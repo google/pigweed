@@ -363,7 +363,7 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
   ASSERT_TRUE(fidl.has_device_class());
   EXPECT_EQ(fbt::MAJOR_DEVICE_CLASS_PERIPHERAL, fidl.device_class().value);
 
-  // TODO(fxbug.dev/37485): Add a test when this field gets populated.
+  // TODO(fxbug.dev/59645): Add a test when this field gets populated.
   EXPECT_FALSE(fidl.has_services());
 }
 
