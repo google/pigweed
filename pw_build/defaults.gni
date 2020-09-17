@@ -40,7 +40,7 @@ _pw_build_defaults = {
     "$dir_pw_build:strict_warnings",
     "$dir_pw_build:cpp17",
   ]
-  public_deps = [ "$dir_pw_polyfill:overrides" ]
+  public_deps += [ "$dir_pw_polyfill:overrides" ]
 }
 
 # One more pass, to remove configs
