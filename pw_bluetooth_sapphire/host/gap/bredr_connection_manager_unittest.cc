@@ -1093,8 +1093,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
 
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(GAP_BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
-  ASSERT_TRUE(
-      peer_cache()->AddBondedPeer(BondingData{PeerId(999), kTestDevAddr, {}, {}, kLinkKey}));
+  ASSERT_TRUE(peer_cache()->AddBondedPeer(
+      BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connected());
@@ -1817,8 +1817,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 // Test: when the peer is already bonded, the link key gets stored when it is provided to the
 // connection.
 TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries) {
-  ASSERT_TRUE(
-      peer_cache()->AddBondedPeer(BondingData{PeerId(999), kTestDevAddr, {}, {}, kLinkKey}));
+  ASSERT_TRUE(peer_cache()->AddBondedPeer(
+      BondingData{.identifier = PeerId(999), .address = kTestDevAddr, .bredr_link_key = kLinkKey}));
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
   ASSERT_FALSE(peer->connected());

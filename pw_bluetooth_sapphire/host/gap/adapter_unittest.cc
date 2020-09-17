@@ -432,7 +432,8 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   sm::PairingData pdata;
   pdata.peer_ltk = sm::LTK();
   pdata.local_ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(BondingData{kPeerId, kTestAddr, {}, pdata, {}});
+  adapter()->peer_cache()->AddBondedPeer(
+      BondingData{.identifier = kPeerId, .address = kTestAddr, .le_pairing_data = pdata});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
   RunLoopFor(kTestScanPeriod);
 
@@ -470,7 +471,8 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
   sm::PairingData pdata;
   pdata.peer_ltk = sm::LTK();
   pdata.local_ltk = sm::LTK();
-  adapter()->peer_cache()->AddBondedPeer(BondingData{kPeerId, kTestAddr, {}, pdata, {}});
+  adapter()->peer_cache()->AddBondedPeer(
+      BondingData{.identifier = kPeerId, .address = kTestAddr, .le_pairing_data = pdata});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
 
   // Fake a manual disconnect to skip auto-connect behavior.
