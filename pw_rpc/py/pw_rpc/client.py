@@ -86,16 +86,6 @@ class PendingRpcs:
 
         return True
 
-    def clear(self, rpc: PendingRpc) -> bool:
-        """Clears the RPC's pending status without sending a CANCEL packet."""
-        try:
-            _LOG.debug('Clearing %s', rpc)
-            del self._pending[rpc]
-        except KeyError:
-            return False
-
-        return True
-
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
         if status is None:
             return self._pending[rpc][0]  # Unwrap the context from the list
@@ -349,13 +339,9 @@ class Client:
 
         status = _decode_status(rpc, packet)
 
-        if packet.type == PacketType.SERVER_ERROR:
-            self._rpcs.clear(rpc)
-            _LOG.warning('%s: invocation failed with %s', rpc, status)
-            return Status.OK  # Handled packet, even though it was an error
-
         if packet.type not in (PacketType.RESPONSE,
-                               PacketType.SERVER_STREAM_END):
+                               PacketType.SERVER_STREAM_END,
+                               PacketType.SERVER_ERROR):
             _LOG.error('%s: unexpected PacketType %s', rpc, packet.type)
             _LOG.debug('Packet:\n%s', packet)
             return Status.OK
@@ -370,6 +356,12 @@ class Client:
                                             Status.FAILED_PRECONDITION))
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
             return Status.OK
+
+        if packet.type == PacketType.SERVER_ERROR:
+            _LOG.warning('%s: invocation failed with %s', rpc, status)
+
+            # Do not return yet -- call process_response so the ClientImpl can
+            # do any necessary cleanup.
 
         self._impl.process_response(self._rpcs,
                                     rpc,

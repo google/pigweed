@@ -27,7 +27,7 @@ A few variables will be defined:
 
 An example echo RPC command:
 
-  cmd.rpcs.pw.rpc.EchoService.Echo(msg="hello!")
+  rpcs.pw.rpc.EchoService.Echo(msg="hello!")
 """
 
 import argparse
@@ -128,7 +128,8 @@ def console(device: serial.Serial, protos: Iterable[Path]) -> None:
     _start_ipython_terminal(device, client)
 
 
-def main(device: str, baudrate: int, proto_globs: Collection[str]) -> int:
+def _prepare_console(device: str, baudrate: int,
+                     proto_globs: Collection[str]) -> int:
     if not proto_globs:
         proto_globs = ['**/*.proto']
 
@@ -147,5 +148,9 @@ def main(device: str, baudrate: int, proto_globs: Collection[str]) -> int:
     return 0
 
 
+def main() -> int:
+    return _prepare_console(**vars(_parse_args()))
+
+
 if __name__ == '__main__':
-    sys.exit(main(**vars(_parse_args())))
+    sys.exit(main())
