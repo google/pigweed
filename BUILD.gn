@@ -123,7 +123,7 @@ group("pigweed_default") {
 if (current_toolchain != default_toolchain) {
   group("apps") {
     # Application images built for all targets.
-    deps = []
+    deps = [ "$dir_pw_hdlc_lite/rpc_example" ]
 
     # Add target-specific images.
     deps += pw_TARGET_APPLICATIONS

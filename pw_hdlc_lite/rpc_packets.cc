@@ -11,24 +11,31 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
 
-#include <cstdint>
+#include "pw_hdlc_lite/rpc_packets.h"
 
-#include "pw_hdlc_lite/decoder.h"
-#include "pw_rpc/channel.h"
-#include "pw_rpc/server.h"
-#include "pw_status/status.h"
+#include "pw_status/try.h"
+#include "pw_sys_io/sys_io.h"
 
 namespace pw::hdlc_lite {
 
-inline constexpr uint8_t kDefaultRpcAddress = 'R';
-
-// Reads HDLC frames with sys_io::ReadByte, using decode_buffer to store frames.
-// HDLC frames sent to rpc_address are passed to the RPC server.
 Status ReadAndProcessPackets(rpc::Server& server,
                              rpc::ChannelOutput& output,
                              std::span<std::byte> decode_buffer,
-                             unsigned rpc_address = kDefaultRpcAddress);
+                             unsigned rpc_address) {
+  Decoder decoder(decode_buffer);
+
+  while (true) {
+    std::byte data;
+    PW_TRY(sys_io::ReadByte(&data));
+
+    if (auto result = decoder.Process(data); result.ok()) {
+      Frame& frame = result.value();
+      if (frame.address() == rpc_address) {
+        server.ProcessPacket(frame.data(), output);
+      }
+    }
+  }
+}
 
 }  // namespace pw::hdlc_lite

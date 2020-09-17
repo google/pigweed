@@ -11,28 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
 
-#include <array>
-#include <cstddef>
-#include <limits>
-#include <span>
+namespace hdlc_example {
 
-#include "pw_stream/stream.h"
-#include "pw_sys_io/sys_io.h"
+void Start();
 
-namespace pw::stream {
+}  // namespace hdlc_example
 
-class SysIoWriter : public Writer {
- public:
-  size_t ConservativeWriteLimit() const override {
-    return std::numeric_limits<size_t>::max();
-  }
-
- private:
-  Status DoWrite(std::span<const std::byte> data) override {
-    return pw::sys_io::WriteBytes(data).status();
-  }
-};
-
-}  // namespace pw::stream
+int main() {
+  hdlc_example::Start();
+  return 0;
+}

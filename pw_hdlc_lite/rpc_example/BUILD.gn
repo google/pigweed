@@ -22,7 +22,10 @@ if (dir_pw_third_party_nanopb == "") {
   }
 } else {
   pw_executable("rpc_example") {
-    sources = [ "hdlc_rpc_server.cc" ]
+    sources = [
+      "hdlc_rpc_server.cc",
+      "main.cc",
+    ]
     deps = [
       "$dir_pw_rpc:server",
       "$dir_pw_rpc/nanopb:echo_service",

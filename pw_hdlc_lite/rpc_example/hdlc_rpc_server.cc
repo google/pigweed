@@ -16,35 +16,61 @@
 #include <span>
 #include <string_view>
 
+#include "pw_hdlc_lite/encoder.h"
 #include "pw_hdlc_lite/hdlc_channel.h"
-#include "pw_hdlc_lite/rpc_server_packets.h"
+#include "pw_hdlc_lite/rpc_packets.h"
 #include "pw_hdlc_lite/sys_io_stream.h"
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
 #include "pw_rpc/server.h"
 
+namespace hdlc_example {
+namespace {
+
 using std::byte;
 
-constexpr size_t kMaxTransmissionUnit = 100;
+constexpr size_t kMaxTransmissionUnit = 256;
 
-void ConstructServerAndReadAndProcessData() {
-  pw::stream::SerialWriter channel_output_serial;
-  std::array<byte, kMaxTransmissionUnit> channel_output_buffer;
-  pw::rpc::HdlcChannelOutput hdlc_channel_output(
-      channel_output_serial, channel_output_buffer, "HdlcChannelOutput");
+// Used to write HDLC data to pw::sys_io.
+pw::stream::SysIoWriter writer;
 
-  pw::rpc::Channel kChannels[] = {
-      pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
-  pw::rpc::Server server(kChannels);
+// Set up the output channel for the pw_rpc server to use to use.
+std::array<byte, kMaxTransmissionUnit> output_buffer;
+pw::rpc::HdlcChannelOutput hdlc_channel_output(
+    writer,
+    output_buffer,
+    pw::hdlc_lite::kDefaultRpcAddress,
+    "HdlcChannelOutput");
 
-  pw::rpc::EchoService echo_service;
+pw::rpc::Channel channels[] = {
+    pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
 
-  server.RegisterService(echo_service);
+// Declare the pw_rpc server with the HDLC channel.
+pw::rpc::Server server(channels);
 
-  pw::rpc::ReadAndProcessData<kMaxTransmissionUnit>(server);
+pw::rpc::EchoService echo_service;
+
+void RegisterServices() { server.RegisterService(echo_service); }
+
+}  // namespace
+
+void Start() {
+  // Send log messages to HDLC address 1. This prevents logs from interfering
+  // with pw_rpc communications.
+  pw::log_basic::SetOutput([](std::string_view log) {
+    pw::hdlc_lite::WriteInformationFrame(
+        1, std::as_bytes(std::span(log)), writer);
+  });
+
+  // Set up the server and start processing data.
+  RegisterServices();
+
+  // Declare a buffer for decoding incoming HDLC frames.
+  std::array<std::byte, kMaxTransmissionUnit> input_buffer;
+
+  PW_LOG_INFO("Starting pw_rpc server");
+  pw::hdlc_lite::ReadAndProcessPackets(
+      server, hdlc_channel_output, input_buffer);
 }
 
-int main() {
-  ConstructServerAndReadAndProcessData();
-  return 0;
-}
+}  // namespace hdlc_example

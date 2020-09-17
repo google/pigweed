@@ -22,4 +22,5 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Tools for Encoding/Decoding data using the HDLC-Lite protocol',
     packages=setuptools.find_packages(),
+    install_requires=['ipython'],
 )

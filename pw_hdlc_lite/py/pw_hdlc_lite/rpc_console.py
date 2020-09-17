@@ -11,106 +11,141 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Example console for creating a client.
+"""Console for interacting with pw_rpc over HDLC.
 
-Console can be initiated by running:
+To start the console, provide a serial port as the --device argument and paths
+or globs for .proto files that define the RPC services to support:
 
-  python -m pw_hdlc_lite.client_console --device /dev/ttyUSB0
+  python -m pw_hdlc_lite.rpc_console --device /dev/ttyUSB0 --protos my.proto
+
+This will start an IPython console for communicating with the connected device.
+A few variables will be defined:
+
+    rpcs - used to invoke RPCs
+    device - the serial device used for communication
+    client - the pw_rpc.Client
 
 An example echo RPC command:
-print(rpc_client.channel(1).rpcs.pw.rpc.EchoService.Echo(msg="hello!"))
+
+  cmd.rpcs.pw.rpc.EchoService.Echo(msg="hello!")
 """
-from pathlib import Path
+
 import argparse
-import threading
+import glob
 import logging
-import time
-import code
+from pathlib import Path
+import sys
+import threading
+from typing import Collection, Iterable, Iterator, NoReturn
+
+import IPython
 import serial
 
-from pw_hdlc_lite import decoder
-from pw_hdlc_lite.encoder import encode_information_frame
+from pw_hdlc_lite import decoder, rpc
 from pw_protobuf_compiler import python_protos
-from pw_rpc import callback_client, client, descriptors
+from pw_rpc import callback_client, descriptors
+from pw_rpc.client import Client
 
 _LOG = logging.getLogger(__name__)
 
 
-def parse_arguments():
+def _parse_args():
     """Parses and returns the command line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-d',
                         '--device',
                         required=True,
-                        help='used to specify device port')
+                        help='the serial port to use')
     parser.add_argument('-b',
                         '--baudrate',
                         type=int,
-                        required=True,
-                        help='used to specify baudrate')
+                        default=115200,
+                        help='the baud rate to use')
+    parser.add_argument('-p',
+                        '--protos',
+                        dest='proto_globs',
+                        action='append',
+                        help='glob pattern for .proto files')
     return parser.parse_args()
 
 
-def configure_serial(device_port, baudrate):
-    """Configures and returns a serial."""
-    ser = serial.Serial(device_port)
-    ser.baudrate = baudrate
-    return ser
-
-
-def construct_rpc_client(ser):
-    """Constructs and returns an RPC client using serial ser."""
-    def delayed_write(data):
-        """Adds a delay between consective bytes written over serial"""
-        for byte in data:
-            time.sleep(0.001)
-            ser.write(bytes([byte]))
-
-    # Creating a channel object
-    hdlc_channel_output = lambda data: ser.write(
-        encode_information_frame(data, delayed_write))
-    channel = descriptors.Channel(1, hdlc_channel_output)
-
-    # Creating a list of modules that provide the .proto service methods
-    modules = python_protos.compile_and_import([
-        Path(__file__, '..', '..', '..', '..', 'pw_rpc', 'pw_rpc_protos',
-             'echo.proto')
-    ])
-
-    # Using the modules and channel to create and return an RPC Client
-    return client.Client.from_modules(callback_client.Impl(), [channel],
-                                      modules)
-
-
-def read_and_process_data(rpc_client, ser):
-    """Reads in the data, decodes the bytes and then processes the rpc."""
+def read_and_process_data(rpc_client: Client,
+                          device: serial.Serial) -> NoReturn:
+    """Reads HDLC frames from the device and passes them to the RPC client."""
     decode = decoder.FrameDecoder()
 
     while True:
-        byte = ser.read()
-        for frame in decode.process(byte):
-            if frame.ok():
-                if not rpc_client.process_packet(frame):
-                    _LOG.error('Packet not handled by rpc client: %s', frame)
-            else:
+        byte = device.read()
+        for frame in decode.process_valid_frames(byte):
+            if not frame.ok():
                 _LOG.error('Failed to parse frame: %s', frame.status.value)
+                continue
+
+            if frame.address == rpc.DEFAULT_ADDRESS:
+                if not rpc_client.process_packet(frame.data):
+                    _LOG.error('Packet not handled by rpc client: %s', frame)
+            elif frame.address == 1:
+                print(f'{device.port}:', frame.data.decode(errors='replace'))
+            else:
+                _LOG.error('Unhandled frame for address %d: %s', frame.address,
+                           frame.data.decode(errors='replace'))
 
 
-def main():
-    """Main function."""
-    args = parse_arguments()
-    ser = configure_serial(args.device, args.baudrate)
+def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
+    for pattern in globs:
+        for file in glob.glob(pattern, recursive=True):
+            yield Path(file)
 
-    rpc_client = construct_rpc_client(ser)
 
-    # Starting the reading and processing on a thread
+def _start_ipython_terminal(  # pylint: disable=unused-argument
+        device: serial.Serial, client: Client) -> None:
+    """Starts IPython with local variables available."""
+    channel_client = client.channel(1)  # pylint: disable=unused-variable
+    rpcs = channel_client.rpcs  # pylint: disable=unused-variable
+    IPython.terminal.embed.InteractiveShellEmbed(banner1=__doc__)()
+
+
+def console(device: serial.Serial, protos: Iterable[Path]) -> None:
+    """Starts an interactive RPC console for HDLC.
+
+    Args:
+      device: the serial device from which to read HDLC frames
+      protos: .proto files with RPC services
+    """
+
+    # Compile the proto files that define the RPC services to expose.
+    modules = python_protos.compile_and_import(protos)
+
+    # Set up the pw_rpc server.
+    channel = descriptors.Channel(1, rpc.channel_output(device.write))
+    client = Client.from_modules(callback_client.Impl(), [channel], modules)
+
+    # Start background thread that reads serial data and processes RPC packets.
     threading.Thread(target=read_and_process_data,
                      daemon=True,
-                     args=(rpc_client, ser)).start()
+                     args=(client, device)).start()
 
-    # Opening an interactive console that allows sending RPCs.
-    code.interact(banner="Interactive console to run RPCs", local=locals())
+    _start_ipython_terminal(device, client)
 
 
-if __name__ == "__main__":
-    main()
+def main(device: str, baudrate: int, proto_globs: Collection[str]) -> int:
+    if not proto_globs:
+        proto_globs = ['**/*.proto']
+
+    protos = list(_expand_globs(proto_globs))
+
+    if not protos:
+        _LOG.critical('No .proto files were found with %s',
+                      ', '.join(proto_globs))
+        _LOG.critical('At least one .proto file is required')
+        return 1
+
+    _LOG.debug('Found %d .proto files found with %s', len(protos),
+               ', '.join(proto_globs))
+
+    console(serial.Serial(device, baudrate), protos)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(**vars(_parse_args())))
