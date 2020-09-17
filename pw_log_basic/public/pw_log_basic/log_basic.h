@@ -49,3 +49,17 @@ PW_EXTERN_C_END
            __func__,                              \
            message PW_COMMA_ARGS(__VA_ARGS__));   \
   } while (0)
+
+#ifdef __cplusplus
+
+#include <string_view>
+
+namespace pw::log_basic {
+
+// Sets the function to use to send log messages. Defaults to
+// pw::sys_io::WriteLine.
+void SetOutput(void (*log_output)(std::string_view log));
+
+}  // namespace pw::log_basic
+
+#endif  // __cplusplus

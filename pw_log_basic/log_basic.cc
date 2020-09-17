@@ -47,6 +47,7 @@
 #define PW_LOG_SHOW_FLAG 0
 #define PW_LOG_SHOW_MODULE 0
 
+namespace pw::log_basic {
 namespace {
 
 const char* LogLevelToLogLevelName(int level) {
@@ -90,6 +91,10 @@ const char* GetFileBasename(const char* filename) {
   return basename;
 }
 #endif  // PW_LOG_SHOW_FILENAME
+
+void (*write_log)(std::string_view) = [](std::string_view log) {
+  sys_io::WriteLine(log);
+};
 
 }  // namespace
 
@@ -151,5 +156,11 @@ extern "C" void pw_Log(int level,
   va_end(args);
 
   // All done; flush the log.
-  pw::sys_io::WriteLine(buffer.view());
+  write_log(buffer);
 }
+
+void SetOutput(void (*log_output)(std::string_view log)) {
+  write_log = log_output;
+}
+
+}  // namespace pw::log_basic
