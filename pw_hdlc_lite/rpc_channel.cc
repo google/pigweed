@@ -11,7 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_hdlc_lite/hdlc_channel.h"
+#include "pw_hdlc_lite/rpc_channel.h"
 
 #include "pw_hdlc_lite/encoder.h"
 #include "pw_log/log.h"

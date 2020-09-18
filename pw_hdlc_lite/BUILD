@@ -26,14 +26,14 @@ pw_cc_library(
     srcs = [
         "decoder.cc",
         "encoder.cc",
-        "hdlc_channel.cc",
-        "rpc_packets.cc",
         "pw_hdlc_lite_private/protocol.h",
+        "rpc_channel.cc",
+        "rpc_packets.cc",
     ],
     hdrs = [
         "public/pw_hdlc_lite/decoder.h",
         "public/pw_hdlc_lite/encoder.h",
-        "public/pw_hdlc_lite/hdlc_channel.h",
+        "public/pw_hdlc_lite/rpc_channel.h",
         "public/pw_hdlc_lite/rpc_packets.h",
         "public/pw_hdlc_lite/sys_io_stream.h",
     ],
@@ -72,8 +72,8 @@ cc_test(
 )
 
 cc_test(
-    name = "hdlc_channel_test",
-    srcs = ["hdlc_channel_test.cc"],
+    name = "rpc_channel_test",
+    srcs = ["rpc_channel_test.cc"],
     deps = [
         ":pw_hdlc_lite",
         "//pw_stream",

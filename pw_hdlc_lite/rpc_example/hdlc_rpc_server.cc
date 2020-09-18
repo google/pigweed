@@ -17,7 +17,7 @@
 #include <string_view>
 
 #include "pw_hdlc_lite/encoder.h"
-#include "pw_hdlc_lite/hdlc_channel.h"
+#include "pw_hdlc_lite/rpc_channel.h"
 #include "pw_hdlc_lite/rpc_packets.h"
 #include "pw_hdlc_lite/sys_io_stream.h"
 #include "pw_log/log.h"

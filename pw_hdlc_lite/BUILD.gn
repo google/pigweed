@@ -51,11 +51,11 @@ pw_source_set("pw_hdlc_lite") {
 pw_source_set("pw_rpc") {
   public_configs = [ ":default_config" ]
   public = [
-    "public/pw_hdlc_lite/hdlc_channel.h",
+    "public/pw_hdlc_lite/rpc_channel.h",
     "public/pw_hdlc_lite/rpc_packets.h",
   ]
   sources = [
-    "hdlc_channel.cc",
+    "rpc_channel.cc",
     "rpc_packets.cc",
   ]
   public_deps = [
@@ -73,7 +73,7 @@ pw_test_group("tests") {
   tests = [
     ":encoder_test",
     ":decoder_test",
-    ":hdlc_channel_test",
+    ":rpc_channel_test",
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
@@ -102,12 +102,12 @@ pw_test("decoder_test") {
   sources = [ "decoder_test.cc" ] + get_target_outputs(":generate_decoder_test")
 }
 
-pw_test("hdlc_channel_test") {
+pw_test("rpc_channel_test") {
   deps = [
     ":pw_hdlc_lite",
     ":pw_rpc",
   ]
-  sources = [ "hdlc_channel_test.cc" ]
+  sources = [ "rpc_channel_test.cc" ]
 }
 
 pw_doc_group("docs") {
