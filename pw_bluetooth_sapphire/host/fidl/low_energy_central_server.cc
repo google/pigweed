@@ -228,8 +228,9 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
 
   auto iter = connections_.find(*peer_id);
   if (iter == connections_.end()) {
-    bt_log(DEBUG, "bt-host", "client not connected to peer (id: %s)", identifier.c_str());
-    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "peer not connected"));
+    bt_log(DEBUG, "bt-host", "DisconnectPeripheral: client not connected to peer (id: %s)",
+           identifier.c_str());
+    callback(Status());
     return;
   }
 

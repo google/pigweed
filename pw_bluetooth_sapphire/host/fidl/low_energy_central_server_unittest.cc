@@ -163,5 +163,16 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConn
   ASSERT_EQ(conn_ref_ptr->bondable_mode(), bt::sm::BondableMode::NonBondable);
 }
 
+TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSuccess) {
+  auto status =
+      fidl_helpers::NewFidlError(fuchsia::bluetooth::ErrorCode::BAD_STATE, "this should change");
+  auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
+    status = std::move(cb_status);
+  };
+  central_proxy()->DisconnectPeripheral(bt::PeerId(1).ToString(), std::move(callback));
+  RunLoopUntilIdle();
+  EXPECT_EQ(status.error, nullptr);
+}
+
 }  // namespace
 }  // namespace bthost
