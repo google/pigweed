@@ -327,6 +327,8 @@ TEST(FidlHelpersTest, PeerToFidlMandatoryFields) {
   EXPECT_FALSE(fidl.has_tx_power());
   EXPECT_FALSE(fidl.has_device_class());
   EXPECT_FALSE(fidl.has_services());
+  EXPECT_FALSE(fidl.has_le_services());
+  EXPECT_FALSE(fidl.has_bredr_services());
 }
 
 TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
@@ -365,6 +367,8 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
 
   // TODO(fxbug.dev/59645): Add a test when this field gets populated.
   EXPECT_FALSE(fidl.has_services());
+  EXPECT_FALSE(fidl.has_le_services());
+  EXPECT_FALSE(fidl.has_bredr_services());
 }
 
 TEST(FidlHelpersTest, ReliableModeFromFidl) {
