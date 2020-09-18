@@ -42,6 +42,7 @@ group("default") {
   deps = [
     ":docs",
     ":host",
+    ":stm32f429i",
   ]
 }
 

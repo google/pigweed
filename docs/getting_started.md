@@ -43,7 +43,7 @@ Done. Made 1047 targets from 91 files in 114ms
 (4) Start the watcher. The watcher will invoke Ninja to build all the targets
 
 ```bash
-$ pw watch out default stm32f429i
+$ pw watch out default
 
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
   ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
@@ -52,7 +52,7 @@ $ pw watch out default stm32f429i
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
 20200707 17:24:06 INF Starting Pigweed build watcher
-20200707 17:24:06 INF Will build [1/1]: out default stm32f429i
+20200707 17:24:06 INF Will build [1/1]: out default
 20200707 17:24:06 INF Attaching filesystem watcher to $HOME/wrk/pigweed/...
 20200707 17:24:06 INF Triggering initial build...
 ...
@@ -232,32 +232,24 @@ Depending on your host OS, the compiler will default to either `clang` or `gcc`.
 
 ## Building for a Device
 
-As mentioned previously, Pigweed builds for host by default. In the context of
-Pigweed, a Pigweed "target" is a build configuration that includes a toolchain,
-default library configurations, and more to result in binaries that run
-natively on the target.
+A Pigweed "target" is a build configuration that includes a toolchain, default
+library configurations, and more to result in binaries that run natively on the
+target. With the default build invocation, you're already building for a device
+target (the STMicroelectronics STM32F429I-DISC1) in parallel with the host
+build!
 
-Switch to the window running `pw_watch`, and quit using `ctrl+c`. To get
-`pw_watch` to build the new STM32F429I-DISC1 target, re-launch by specifying
-which Ninja targets to build:
+If you want to build JUST for the device, you can kick of watch with:
 
 ```bash
-$ pw watch out default stm32f429i
+$ pw watch out stm32f429i
 ```
 
 This is equivalent to the following Ninja invocation:
 
 ```bash
-$ ninja -C out default stm32f429i
+$ ninja -C out stm32f429i
 ```
 
-Or since the "default" target builds host and docs,
-
-```bash
-$ ninja -C out host docs stm32f429i
-```
-
-Now `pw_watch` is building for host and a device!
 
 ## Running Tests on a Device
 
