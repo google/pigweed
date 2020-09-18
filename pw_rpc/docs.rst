@@ -10,9 +10,150 @@ pw_rpc
 The ``pw_rpc`` module provides a system for defining and invoking remote
 procedure calls (RPCs) on a device.
 
+.. admonition:: Try it out!
+
+  For a quick intro to ``pw_rpc``, see the :ref:`chapter-pw-hdlc-rpc-example` in
+  the :ref:`chapter-pw-hdlc-lite` module.
+
 .. attention::
 
-  Under construction.
+  This documentation is under construction.
+
+Creating an RPC
+===============
+
+1. RPC service declaration
+--------------------------
+Pigweed RPCs are declared in a protocol buffer service definition.
+
+* `Protocol Buffer service documentation
+  <https://developers.google.com/protocol-buffers/docs/proto3#services>`_
+* `gRPC service definition documentation
+  <https://grpc.io/docs/what-is-grpc/core-concepts/#service-definition>`_
+
+.. code-block:: protobuf
+
+  syntax = "proto3";
+
+  package foo.bar;
+
+  message Request {}
+
+  message Response {
+    int32 number = 1;
+  }
+
+  service TheService {
+    rpc MethodOne(Request) returns (Response) {}
+    rpc MethodTwo(Request) returns (stream Response) {}
+  }
+
+This protocol buffer is declared in a ``BUILD.gn`` file as follows:
+
+.. code-block:: python
+
+  import("//build_overrides/pigweed.gni")
+  import("$dir_pw_protobuf_compiler/proto.gni")
+
+  pw_proto_library("the_service_proto") {
+    sources = [ "foo_bar/the_service.proto" ]
+  }
+
+2. RPC service definition
+-------------------------
+``pw_rpc`` generates a C++ base class for each RPC service declared in a .proto
+file. The serivce class is implemented by inheriting from this generated base
+and defining a method for each RPC.
+
+A service named ``TheService`` in package ``foo.bar`` will generate the
+following class:
+
+.. cpp:class:: template <typename Implementation> foo::bar::generated::TheService
+
+A Nanopb implementation of this service would be as follows:
+
+.. code-block:: cpp
+
+  namespace foo::bar {
+
+  class TheService : public generated::TheService<TheService> {
+   public:
+    pw::Status MethodOne(ServerContext& ctx,
+                         const foo_bar_Request& request,
+                         foo_bar_Response& response) {
+      // implementation
+      return pw::Status::OK;
+    }
+
+    void MethodTwo(ServerContext& ctx,
+                   const foo_bar_Request& request,
+                   ServerWriter<foo_bar_Response>& response) {
+      // implementation
+      response.Write(foo_bar_Response{.number = 123});
+    }
+  };
+
+  }  // namespace foo::bar
+
+The Nanopb implementation would be declared in a ``BUILD.gn``:
+
+.. code-block:: python
+
+  import("//build_overrides/pigweed.gni")
+
+  import("$dir_pw_build/target_types.gni")
+
+  pw_source_set("the_service") {
+    public_configs = [ ":public" ]
+    public = [ "public/foo_bar/service.h" ]
+    public_deps = [ ":the_service_proto_nanopb_rpc" ]
+  }
+
+.. attention::
+
+  pw_rpc's generated classes will support using ``pw_protobuf`` or raw buffers
+  (no protobuf library) in the future.
+
+3. Register the service with a server
+-------------------------------------
+This example code sets up an RPC server with an
+:ref:`HDLC<chapter-pw-hdlc-lite>` channel output and the example service.
+
+.. code-block:: cpp
+
+  // Set up the output channel for the pw_rpc server to use. This configures the
+  // pw_rpc server to use HDLC over UART; projects not using UART and HDLC must
+  // adapt this as necessary.
+  pw::stream::SysIoWriter writer;
+  pw::rpc::RpcChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
+      writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC output");
+
+  pw::rpc::Channel channels[] = {
+      pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
+
+  // Declare the pw_rpc server with the HDLC channel.
+  pw::rpc::Server server(channels);
+
+  pw::rpc::TheService the_service;
+
+  void RegisterServices() {
+    // Register the foo.bar.TheService example service.
+    server.Register(the_service);
+
+    // Register other services
+  }
+
+  int main() {
+    // Set up the server.
+    RegisterServices();
+
+    // Declare a buffer for decoding incoming HDLC frames.
+    std::array<std::byte, kMaxTransmissionUnit> input_buffer;
+
+    PW_LOG_INFO("Starting pw_rpc server");
+    pw::hdlc_lite::ReadAndProcessPackets(
+        server, hdlc_channel_output, input_buffer);
+  }
 
 Services
 ========

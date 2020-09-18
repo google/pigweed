@@ -123,5 +123,12 @@ pw_test("rpc_channel_test") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "docs.rst",
+    "rpc_example/docs.rst",
+  ]
+  inputs = [
+    "py/pw_hdlc_lite/decode.py",
+    "py/pw_hdlc_lite/encode.py",
+  ]
 }

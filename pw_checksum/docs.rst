@@ -2,6 +2,8 @@
 
 .. highlight:: sh
 
+.. _chapter-pw-checksum:
+
 -----------
 pw_checksum
 -----------

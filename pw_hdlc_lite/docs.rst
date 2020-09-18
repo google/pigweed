@@ -1,130 +1,117 @@
-.. _chapter-pw-hdlc:
-
 .. default-domain:: cpp
 
 .. highlight:: sh
 
+.. _chapter-pw-hdlc-lite:
+
 ------------
 pw_hdlc_lite
 ------------
-pw_hdlc_lite is a module that enables serial communication between devices
-using the HDLC-Lite protocol.
+`High-Level Data Link Control (HDLC)
+<https://en.wikipedia.org/wiki/High-Level_Data_Link_Control>`_ is a data link
+layer protocol intended for serial communication between devices. HDLC is
+standardized as `ISO/IEC 13239:2002 <https://www.iso.org/standard/37010.html>`_.
 
-Compatibility
-=============
-C++17
+The ``pw_hdlc_lite`` module provides a simple, robust frame-oriented
+transport that uses a subset of the HDLC protocol. ``pw_hdlc_lite`` supports
+sending between embedded devices or the host. It can be used with
+:ref:`chapter-pw-rpc` to enable remote procedure calls (RPCs) on embedded on
+devices.
 
-Dependencies
-============
-* ``pw_bytes``
-* ``pw_log``
-* ``pw_preprocessor``
-* ``pw_result``
-* ``pw_rpc``
-* ``pw_status``
-* ``pw_span``
-* ``pw_stream``
-* ``pw_sys_io``
+**Why use the pw_hdlc_lite module?**
 
-HDLC-Lite Overview
-==================
-High-Level Data Link Control (HDLC) is a data link layer protocol which uses
-synchronous serial transmissions for communication between two devices. Unlike
-the standard HDLC protocol which uses six fields of embedded information, the
-HDLC-Lite protocol is a minimal version that only uses the bare essentials.
+  * Enables the transmission of RPCs and other data between devices over serial.
+  * Detects corruption and data loss.
+  * Light-weight, simple, and easy to use.
+  * Supports streaming to transport without buffering, since the length is not
+    encoded.
 
-The HDLC-Lite data frame in ``pw_hdlc_lite`` uses a start and end frame
-delimiter (0x7E), the escaped binary payload and the CCITT-CRC16 value.
-It looks like:
+.. admonition:: Try it out!
 
-.. code-block:: text
+  For an example of how to use HDLC with :ref:`chapter-pw-rpc`, see the
+  :ref:`chapter-pw-hdlc-rpc-example`.
 
-                                        [More frames]
-    _________________________________________   _______
-    | |                              |  | | |...|   | |
-    | |                              |  | | |...|   | |
-    |_|______________________________|__|_|_|...|___|_|
-     F         Payload               CRC F F     CRC F
+.. toctree::
+  :maxdepth: 1
+  :hidden:
 
-Basic Overview
-==============
-The ``pw_hdlc_lite`` module provides a simple, reliable packet-oriented
-transport that uses the HDLC-Lite protocol to send and receive data to and from
-embedded devices. This is especially needed for making RPC calls on devices
-during testing because the ``pw_rpc`` module does not handle the transmission of
-RPCs. This module enables the transmission of RPCs and other bytes through a
-serial connection.
-
-There are essentially two main functions of the ``pw_hdlc_lite`` module:
-
-  * **Encoding** the data by escaping the bytes of the payload, calculating the
-    CCITT-CRC16 value, constructing a data frame and sending the
-    resulting data packet through serial.
-  * **Decoding** the data by unescaping the received bytes, verifying the
-    CCITT-CRC16 value and returning the successfully decoded packets.
-
-**Why use the ``pw_hdlc_lite`` module?**
-
-  * Enables the transmission of RPCs and other data between devices over serial
-  * Resilient to corruption and data loss.
-  * Light-weight, simple and easy to use.
-  * Supports streaming to transport without buffering - e.g. protocol buffers
-    have length-prefix.
+  rpc_example/docs
 
 Protocol Description
 ====================
+
+Frames
+------
+The HDLC implementation in ``pw_hdlc_lite`` supports only HDLC information
+frames. These frames are encoded as follows:
+
+.. code-block:: text
+
+    _________________________________________
+    | | | |                          |    | |...
+    | | | |                          |    | |... [More frames]
+    |_|_|_|__________________________|____|_|...
+     F A C       Payload              FCS  F
+
+     F = flag byte (0x7e, the ~ character)
+     A = address field
+     C = control field
+     FCS = frame check sequence (CRC-32)
+
 
 Encoding and sending data
 -------------------------
 This module first writes an initial frame delimiter byte (0x7E) to indicate the
 beginning of the frame. Before sending any of the payload data through serial,
-the special bytes are escaped accordingly:
+the special bytes are escaped:
 
-            +-----------------------+----------------------+
-            |Unescaped Special Bytes| Escaped Special Bytes|
-            +=======================+======================+
-            |       0x7E            |       0x7D5E         |
-            +-----------------------+----------------------+
-            |       0x7D            |       0x7D5D         |
-            +-----------------------+----------------------+
+            +-------------------------+-----------------------+
+            | Unescaped Special Bytes | Escaped Special Bytes |
+            +=========================+=======================+
+            |           7E            |        7D 5E          |
+            +-------------------------+-----------------------+
+            |           7D            |        7D 5D          |
+            +-------------------------+-----------------------+
 
 The bytes of the payload are escaped and written in a single pass. The
-CCITT-CRC16 value is calculated, escaped and written after. After this, a final
-frame delimiter byte (0x7E) is written to mark the end of the frame.
+frame check sequence is calculated, escaped, and written after. After this, a
+final frame delimiter byte (0x7E) is written to mark the end of the frame.
 
 Decoding received bytes
 -----------------------
-Packets may be received in multiple parts, so we need to store the received data
+Frames may be received in multiple parts, so we need to store the received data
 in a buffer until the ending frame delimiter (0x7E) is read. When the
-pw_hdlc_lite decoder receives data, it unescapes it and adds it to a buffer.
-When the frame is complete, it calculates and verifies the CCITT-CRC16 bytes and
-does the following:
+``pw_hdlc_lite`` decoder receives data, it unescapes it and adds it to a buffer.
+When the frame is complete, it calculates and verifies the frame check sequence
+and does the following:
 
-* If correctly verified, the decoder returns the decoded packet.
-* If the checksum verification fails, the data packet is discarded.
-
-During the decoding process, the decoder essentially transitions between 3
-states, where each state indicates the method of decoding that particular byte:
-
-NO_PACKET --> PACKET_ACTIVE --> (ESCAPE | NO_PACKET).
+* If correctly verified, the decoder returns the decoded frame.
+* If the checksum verification fails, the frame is discarded and an error is
+  reported.
 
 API Usage
 =========
+There are two primary functions of the ``pw_hdlc_lite`` module:
+
+  * **Encoding** data by constructing a frame with the escaped payload bytes and
+    frame check sequence.
+  * **Decoding** data by unescaping the received bytes, verifying the frame
+    check sequence, and returning successfully decoded frames.
 
 Encoder
 -------
-The Encoder API invloves a single function that encodes the data using the
-HDLC-Lite protocol and sends the data through the serial.
+The Encoder API provides a single function that encodes data as an HDLC
+information frame.
 
 C++
 ^^^
-In C++, this function is called ``EncodeAndWritePayload`` and it accepts a
-ConstByteSpan called payload and an object of type Writer& as arguments. It
-returns a Status object that indicates if the write was successful. This
-implementation uses the ``pw_checksum`` module to compute the CRC16 value. Since
-the function writes a starting and ending frame delimiter byte at the beginnning
-and the end of frames, it is safe to encode multiple spans. The usage of this
-function is as follows:
+.. cpp:namespace:: pw
+
+.. cpp:function:: Status hdlc_lite::WriteInformationFrame(uint8_t address, ConstByteSpan data, stream::Writer& writer)
+
+  Writes a span of data to a :ref:`pw::stream::Writer <chapter-pw-stream>` and
+  returns the status. This implementation uses the :ref:`chapter-pw-checksum`
+  module to compute the CRC-32 frame check sequence.
 
 .. code-block:: cpp
 
@@ -132,70 +119,57 @@ function is as follows:
   #include "pw_hdlc_lite/sys_io_stream.h"
 
   int main() {
-      pw::stream::SerialWriter serial_writer;
-      constexpr std::array<byte, 1> test_array = { byte(0x41) };
-      auto status = EncodeAndWritePayload(test_array, serial_writer);
+    pw::stream::SysIoWriter serial_writer;
+    Status status = WriteInformationFrame(123 /* address */,
+                                          data,
+                                          serial_writer);
+    if (!status.ok()) {
+      PW_LOG_INFO("Writing frame failed! %s", status.str());
+    }
   }
-
-In the example above, we expect the encoder to send the following bytes:
-
-- **0x7E** - Initial Frame Delimiter
-- **0x41** - Payload
-- **0x15** - LSB of the CCITT-CRC16 value
-- **0xB9** - MSB of the CCITT-CRC16 value
-- **0x7E** - End Frame Delimiter
 
 Python
 ^^^^^^
-In Python, the function is called ``encode_and_write_payload`` and it accepts
-the payload as a byte object and a callable to which is used to write the data.
-This function does not return anything, and uses the binascii library function
-called crc_hqx to compute the CRC16 bytes. Like the C++ function, the Python
-function also writes a frame delimiter at the beginnning and the end of frames
-so it is safe to encode multiple spans consecutively. The usage of this function
-is as follows:
+.. automodule:: pw_hdlc_lite.encode
+  :members:
 
 .. code-block:: python
 
   import serial
-  from pw_hdlc_lite import encoder
+  from pw_hdlc_lite import encode
 
   ser = serial.Serial()
-  encoder.encode_and_write_payload(b'A', ser.write)
-
-We expect this example to give us the same result as the C++ example above since
-it encodes the same payload.
+  ser.write(encode.information_frame(b'your data here!'))
 
 Decoder
 -------
-The Decoder API involves a Decoder class whose main functionality is a function
-that unescapes the received bytes, adds them to a buffer and returns the
-successfully decoded packets. A class is used so that the user can call the
-decoder object's adding bytes functionality on the currently received bytes
-instead of waiting on the entire packet to arrive.
+The decoder class unescapes received bytes and adds them to a buffer. Complete,
+valid HDLC frames are yielded as they are received.
 
 C++
 ^^^
-The main functionality of the C++ ``Decoder`` class is the 'AddByte' function
-which accepts a single byte as an argument, unescapes it and adds it to the
-buffer. If the byte is the ending frame delimiter flag (0x7E) it attempts to
-decode the packet and returns a ``Result`` object indicating the success of the
-operation:
+.. cpp:class:: pw::hdlc_lite::Decoder
 
-  * The returned ``pw::Result`` object will have status ``Status::OK`` and
-    value ConstByteSpan containing the most recently decoded packet if it finds
-    the end of the data-frame and successfully verifies the CRC.
-  * The returned ``pw::Result`` object will have status ``Status::UNAVAILABLE``
-    if it doesnt find the end of the data-frame during that function call.
-  * The returned ``pw::Result`` object will have status ``Status::DATA_LOSS``
-    if it finds the end of the data-frame, but the CRC-verification fails. It
-    also returns this status if the packet in question does not have the
-    2-byte CRC in it.
-  * The returned ``pw::Result`` object will have status
-    ``Status::RESOURCE_EXHAUSTED`` if the decoder buffer runs out of space.
+  .. cpp:function:: pw::Result<Frame> Process(std::byte b)
 
-Here's a C++ example of reading individual bytes from serial and then using the
-decoder object to decode the received data:
+    Parses a single byte of an HDLC stream. Returns a Result with the complete
+    frame if the byte completes a frame. The status is the following:
+
+      - OK - A frame was successfully decoded. The Result contains the Frame,
+        which is invalidated by the next Process call.
+      - UNAVAILABLE - No frame is available.
+      - RESOURCE_EXHAUSTED - A frame completed, but it was too large to fit in
+        the decoder's buffer.
+      - DATA_LOSS - A frame completed, but it was invalid. The frame was
+        incomplete or the frame check sequence verification failed.
+
+  .. cpp:function:: void Process(pw::ConstByteSpan data, F&& callback, Args&&... args)
+
+    Processes a span of data and calls the provided callback with each frame or
+    error.
+
+This example demonstrates reading individual bytes from ``pw::sys_io`` and
+decoding HDLC frames:
 
 .. code-block:: cpp
 
@@ -203,66 +177,62 @@ decoder object to decode the received data:
   #include "pw_sys_io/sys_io.h"
 
   int main() {
-    byte data;
+    std::byte data;
     while (true) {
       if (!pw::sys_io::ReadByte(&data).ok()) {
         // Log serial reading error
       }
-      auto decoded_packet = decoder.AddByte(data);
+      Result<Frame> decoded_frame = decoder.Process(data);
 
-      if (decoded_packet.ok()) {
-       // Use decoded_packet to get access to the most recently decoded packet
+      if (decoded_frame.ok()) {
+        // Handle the decoded frame
       }
     }
   }
 
 Python
 ^^^^^^
-The main functionality of the Python ``Decoder`` class is the ``add_bytes``
-generator which unescapes the bytes object argument and adds them to a buffer
-until it encounters the ending frame delimiter (0x7E) flag. The generator yields
-the decoded packets as byte objects upon successfully verification of the CRC16
-value of the received bytes. If the CRC verification fails it raises a
-CrcMismatchError exception.
+.. autoclass:: pw_hdlc_lite.decode.FrameDecoder
+  :members:
 
-Below is an example of the usage of the decoder class to decode bytes read from
-serial:
+Below is an example using the decoder class to decode data read from serial:
 
 .. code-block:: python
 
   import serial
-  from pw_hdlc_lite import decoder
+  from pw_hdlc_lite import decode
 
   ser = serial.Serial()
-  decode = decoder.Decoder()
+  decoder = decode.FrameDecoder()
 
-  while true:
-    byte = ser.read(1)
+  while True:
+      for frame in decoder.process_valid_frames(ser.read()):
+          # Handle the decoded frame
 
-    for decoded_packet in decode.add_bytes(byte):
-      # Do something with the decoded packet
+Additional features
+===================
 
-Like the C++ example, this reads individual bytes and adds them to the decoder.
-
-Features
-========
-
-pw::stream::SerialWriter
+pw::stream::SysIoWriter
 ------------------------
-The ``SerialWriter`` class implements the ``Writer`` interface by using sys_io
-to write data over a serial connection. This Writer object is used by the C++
-encoder to send the encoded bytes to the device.
+The ``SysIoWriter`` C++ class implements the ``Writer`` interface with
+``pw::sys_io``. This Writer may be used by the C++ encoder to send HDLC frames
+over serial.
 
-Roadmap & Status
-================
+HdlcRpcClient
+-------------
+.. autoclass:: pw_hdlc_lite.rpc.HdlcRpcClient
+  :members:
 
-- **Additional fields** - As it currently stands, ``pw_hdlc_lite`` uses only
-  three fields of control bytes: starting frame delimiter, 2-byte CRC and an
-  ending frame delimiter. However, if we decided to send larger, more
-  complicated RPCs and if wanted to stream log debug and error messages, we will
-  require additional fields of data to ensure the different packets are sent
-  correctly. Thus, in the future, we plan to add additional channel and sequence
-  byte fields that could enable separate channels for pw_rpc, QoS etc.
+Roadmap
+=======
+- **Expanded protocol support** - ``pw_hdlc_lite`` currently only supports
+  information frames with a single address byte and control byte. Support for
+  different frame types and extended address or control fields may be added in
+  the future.
 
 - **Higher performance** - We plan to improve the overall performance of the
   decoder and encoder implementations by using SIMD/NEON.
+
+Compatibility
+=============
+C++17

@@ -92,7 +92,8 @@ class Decoder {
   //
   Result<Frame> Process(std::byte b);
 
-  // Calls the provided callback with each frame or error.
+  // Processes a span of data and calls the provided callback with each frame or
+  // error.
   template <typename F, typename... Args>
   void Process(ConstByteSpan data, F&& callback, Args&&... args) {
     for (std::byte b : data) {
