@@ -72,7 +72,7 @@ class BlobStoreTest : public ::testing::Test {
     // Use reader to check for valid data.
     BlobStore::BlobReader reader(blob);
     ASSERT_EQ(Status::OK, reader.Open());
-    Result<ByteSpan> result = reader.GetMemoryMappedBlob();
+    Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
     EXPECT_EQ(Status::OK, reader.Close());
@@ -91,7 +91,7 @@ class BlobStoreTest : public ::testing::Test {
     // Use reader to check for valid data.
     BlobStore::BlobReader reader1(blob);
     ASSERT_EQ(Status::OK, reader1.Open());
-    Result<ByteSpan> result = reader1.GetMemoryMappedBlob();
+    Result<ConstByteSpan> result = reader1.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
     EXPECT_EQ(Status::OK, reader1.Close());
@@ -119,7 +119,7 @@ class BlobStoreTest : public ::testing::Test {
     VerifyFlash(read_buffer_);
   }
 
-  void VerifyFlash(ByteSpan verify_bytes, size_t offset = 0) {
+  void VerifyFlash(ConstByteSpan verify_bytes, size_t offset = 0) {
     // Should be defined as same size.
     EXPECT_EQ(source_buffer_.size(), flash_.buffer().size_bytes());
 

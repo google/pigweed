@@ -423,7 +423,7 @@ StatusWithSize BlobStore::Read(size_t offset, ByteSpan dest) const {
   return partition_.Read(offset, dest.first(read_size));
 }
 
-Result<ByteSpan> BlobStore::GetMemoryMappedBlob() const {
+Result<ConstByteSpan> BlobStore::GetMemoryMappedBlob() const {
   if (!ValidToRead()) {
     return Status::FAILED_PRECONDITION;
   }
@@ -432,7 +432,7 @@ Result<ByteSpan> BlobStore::GetMemoryMappedBlob() const {
   if (mcu_address == nullptr) {
     return Status::UNIMPLEMENTED;
   }
-  return std::span(mcu_address, ReadableDataBytes());
+  return ConstByteSpan(mcu_address, ReadableDataBytes());
 }
 
 size_t BlobStore::ReadableDataBytes() const {

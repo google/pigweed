@@ -93,13 +93,13 @@ class DeferredWriteTest : public ::testing::Test {
     // Use reader to check for valid data.
     BlobStore::BlobReader reader(blob);
     ASSERT_EQ(Status::OK, reader.Open());
-    Result<ByteSpan> result = reader.GetMemoryMappedBlob();
+    Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
     EXPECT_EQ(Status::OK, reader.Close());
   }
 
-  void VerifyFlash(ByteSpan verify_bytes) {
+  void VerifyFlash(ConstByteSpan verify_bytes) {
     // Should be defined as same size.
     EXPECT_EQ(buffer_.size(), flash_.buffer().size_bytes());
 

@@ -194,9 +194,14 @@ class BlobStore {
     // Returns:
     //
     // OK - success.
+    // FAILED_PRECONDITION - No readable blob available.
+    // INVALID_ARGUMENT - Invalid offset.
     // UNAVAILABLE - Unable to open, already open.
     Status Open(size_t offset = 0) {
       PW_DCHECK(!open_);
+      if (!store_.ValidToRead()) {
+        return Status::FAILED_PRECONDITION;
+      }
       if (offset >= store_.ReadableDataBytes()) {
         return Status::INVALID_ARGUMENT;
       }
@@ -232,7 +237,7 @@ class BlobStore {
     // OK with span - Valid span respresenting the blob data
     // FAILED_PRECONDITION - Reader not open.
     // UNIMPLEMENTED - Memory mapped access not supported for this blob.
-    Result<ByteSpan> GetMemoryMappedBlob() {
+    Result<ConstByteSpan> GetMemoryMappedBlob() {
       PW_DCHECK(open_);
       return store_.GetMemoryMappedBlob();
     }
@@ -417,7 +422,7 @@ class BlobStore {
   // OK with span - Valid span respresenting the blob data
   // FAILED_PRECONDITION - Blob not in a state to read data
   // UNIMPLEMENTED - Memory mapped access not supported for this blob.
-  Result<ByteSpan> GetMemoryMappedBlob() const;
+  Result<ConstByteSpan> GetMemoryMappedBlob() const;
 
   // Size of blob/readable data, in bytes.
   size_t ReadableDataBytes() const;
