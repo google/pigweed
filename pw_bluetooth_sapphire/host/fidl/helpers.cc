@@ -6,6 +6,8 @@
 
 #include <endian.h>
 
+#include <algorithm>
+#include <iterator>
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
@@ -548,8 +550,13 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
     output.set_rssi(peer.rssi());
   }
 
-  // TODO(fxbug.dev/37485): Populate service UUIDs based on GATT and SDP results as well as
-  // advertising and inquiry data.
+  if (peer.bredr()) {
+    std::transform(peer.bredr()->services().begin(), peer.bredr()->services().end(),
+                   std::back_inserter(*output.mutable_bredr_services()), UuidToFidl);
+  }
+
+  // TODO(fxbug.dev/57344): Populate le_service UUIDs based on GATT results as well as advertising
+  // and inquiry data.
 
   return output;
 }

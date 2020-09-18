@@ -4,12 +4,18 @@
 
 #include "helpers.h"
 
+#include <algorithm>
+#include <iterator>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
 #include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
+#include "lib/fidl/cpp/comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -18,6 +24,11 @@ namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace fbg = fuchsia::bluetooth::gatt;
 namespace fbredr = fuchsia::bluetooth::bredr;
+
+namespace fuchsia::bluetooth {
+// Make UUIDs equality comparable for advanced testing matchers. ADL rules mandate the namespace.
+bool operator==(const Uuid& a, const Uuid& b) { return fidl::Equals(a, b); }
+}  // namespace fuchsia::bluetooth
 
 namespace bthost {
 namespace fidl_helpers {
@@ -343,6 +354,7 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
                                  0x02, 0x0A, 0x06,               // Tx-Power: 5
                                  0x05, 0x09, 't', 'e', 's', 't'  // Complete Local Name: "test"
       );
+  const std::vector kBrEdrServices = {bt::UUID(uint16_t{0x110a}), bt::UUID(uint16_t{0x110b})};
 
   inspect::Inspector inspector;
   bt::gap::PeerCache cache;
@@ -352,6 +364,9 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
   peer->MutBrEdr().SetInquiryData(bt::hci::InquiryResult{
       bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci::PageScanRepetitionMode::kR0, 0, 0,
       bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
+  for (auto& service : kBrEdrServices) {
+    peer->MutBrEdr().AddService(service);
+  }
 
   auto fidl = PeerToFidl(*peer);
   ASSERT_TRUE(fidl.has_name());
@@ -365,10 +380,17 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
   ASSERT_TRUE(fidl.has_device_class());
   EXPECT_EQ(fbt::MAJOR_DEVICE_CLASS_PERIPHERAL, fidl.device_class().value);
 
-  // TODO(fxbug.dev/59645): Add a test when this field gets populated.
+  // Deprecated and never implemented (see fxbug.dev/57344).
   EXPECT_FALSE(fidl.has_services());
+
+  // TODO(fxbug.dev/57344): Add a test when this field gets populated.
   EXPECT_FALSE(fidl.has_le_services());
-  EXPECT_FALSE(fidl.has_bredr_services());
+
+  ASSERT_TRUE(fidl.has_bredr_services());
+  std::vector<fbt::Uuid> expected_uuids;
+  std::transform(kBrEdrServices.begin(), kBrEdrServices.end(), std::back_inserter(expected_uuids),
+                 UuidToFidl);
+  EXPECT_THAT(fidl.bredr_services(), ::testing::UnorderedElementsAreArray(expected_uuids));
 }
 
 TEST(FidlHelpersTest, ReliableModeFromFidl) {
