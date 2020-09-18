@@ -26,8 +26,8 @@ class Output : public pw::rpc::ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  void SendAndReleaseBuffer(size_t size) override {
-    pw::sys_io::WriteBytes(std::span(buffer_, size));
+  pw::Status SendAndReleaseBuffer(size_t size) override {
+    return pw::sys_io::WriteBytes(std::span(buffer_, size)).status();
   }
 
  private:

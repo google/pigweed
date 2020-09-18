@@ -38,7 +38,7 @@
 
 using std::byte;
 
-namespace pw::rpc {
+namespace pw::hdlc_lite {
 namespace {
 
 constexpr byte kFlag = byte{0x7E};
@@ -48,13 +48,12 @@ constexpr byte kControl = byte{0};
 // Size of the in-memory buffer to use for this test.
 constexpr size_t kSinkBufferSize = 15;
 
-TEST(HdlcChannelOutput, 1BytePayload) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
+TEST(RpcChannelOutput, 1BytePayload) {
   std::array<byte, kSinkBufferSize> channel_output_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
+  stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;
 
-  HdlcChannelOutput output(
-      memory_writer, channel_output_buffer, kAddress, "HdlcChannelOutput");
+  RpcChannelOutput output(
+      memory_writer, channel_output_buffer, kAddress, "RpcChannelOutput");
 
   constexpr byte test_data = byte{'A'};
   std::memcpy(output.AcquireBuffer().data(), &test_data, sizeof(test_data));
@@ -62,9 +61,8 @@ TEST(HdlcChannelOutput, 1BytePayload) {
   constexpr auto expected = bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
 
-  output.SendAndReleaseBuffer(sizeof(test_data));
+  EXPECT_EQ(Status::OK, output.SendAndReleaseBuffer(sizeof(test_data)));
 
-  EXPECT_STREQ("HdlcChannelOutput", output.name());
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(
       std::memcmp(
@@ -72,13 +70,12 @@ TEST(HdlcChannelOutput, 1BytePayload) {
       0);
 }
 
-TEST(HdlcChannelOutput, EscapingPayloadTest) {
-  std::array<byte, kSinkBufferSize> memory_buffer;
+TEST(RpcChannelOutput, EscapingPayloadTest) {
   std::array<byte, kSinkBufferSize> channel_output_buffer;
-  stream::MemoryWriter memory_writer(memory_buffer);
+  stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;
 
-  HdlcChannelOutput output(
-      memory_writer, channel_output_buffer, kAddress, "HdlcChannelOutput");
+  RpcChannelOutput output(
+      memory_writer, channel_output_buffer, kAddress, "RpcChannelOutput");
 
   constexpr auto test_data = bytes::Array<0x7D>();
   std::memcpy(
@@ -91,9 +88,8 @@ TEST(HdlcChannelOutput, EscapingPayloadTest) {
                                           byte{0x7d} ^ byte{0x20},
                                           uint32_t{0x89515322},
                                           kFlag);
-  output.SendAndReleaseBuffer(test_data.size());
+  EXPECT_EQ(Status::OK, output.SendAndReleaseBuffer(test_data.size()));
 
-  EXPECT_STREQ("HdlcChannelOutput", output.name());
   ASSERT_EQ(memory_writer.bytes_written(), 10u);
   EXPECT_EQ(
       std::memcmp(
@@ -101,5 +97,26 @@ TEST(HdlcChannelOutput, EscapingPayloadTest) {
       0);
 }
 
+TEST(RpcChannelOutputBuffer, 1BytePayload) {
+  stream::MemoryWriterBuffer<kSinkBufferSize> memory_writer;
+
+  RpcChannelOutputBuffer<kSinkBufferSize> output(
+      memory_writer, kAddress, "RpcChannelOutput");
+
+  constexpr byte test_data = byte{'A'};
+  std::memcpy(output.AcquireBuffer().data(), &test_data, sizeof(test_data));
+
+  constexpr auto expected = bytes::Concat(
+      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
+
+  EXPECT_EQ(Status::OK, output.SendAndReleaseBuffer(sizeof(test_data)));
+
+  ASSERT_EQ(memory_writer.bytes_written(), expected.size());
+  EXPECT_EQ(
+      std::memcmp(
+          memory_writer.data(), expected.data(), memory_writer.bytes_written()),
+      0);
+}
+
 }  // namespace
-}  // namespace pw::rpc
+}  // namespace pw::hdlc_lite

@@ -28,7 +28,7 @@ TEST(ChannelOutput, Name) {
    public:
     NameTester(const char* name) : ChannelOutput(name) {}
     std::span<std::byte> AcquireBuffer() override { return {}; }
-    void SendAndReleaseBuffer(size_t) override {}
+    Status SendAndReleaseBuffer(size_t) override { return Status::OK; }
   };
 
   EXPECT_STREQ("hello_world", NameTester("hello_world").name());
@@ -97,6 +97,16 @@ TEST(Channel, OutputBuffer_ExtraRoom) {
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
 
   EXPECT_EQ(Status::OK, channel.Send(output_buffer, kTestPacket));
+}
+
+TEST(Channel, OutputBuffer_ReturnsStatusFromChannelOutputSend) {
+  TestOutput<kReservedSize * 3> output;
+  internal::Channel channel(100, &output);
+
+  Channel::OutputBuffer output_buffer = channel.AcquireBuffer();
+  output.set_send_status(Status::ABORTED);
+
+  EXPECT_EQ(Status::ABORTED, channel.Send(output_buffer, kTestPacket));
 }
 
 }  // namespace

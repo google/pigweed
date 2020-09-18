@@ -34,8 +34,11 @@ class ChannelOutput {
   // Acquire a buffer into which to write an outgoing RPC packet.
   virtual std::span<std::byte> AcquireBuffer() = 0;
 
-  // Sends the contents of the buffer from AcquireBuffer().
-  virtual void SendAndReleaseBuffer(size_t size) = 0;
+  // Sends the contents of the buffer from AcquireBuffer(). Returns OK if the
+  // operation succeeded, on an implementation-defined Status value if there was
+  // an error. The implementation must NOT return FAILED_PRECONDITION or
+  // INTERNAL, which are reserved by pw_rpc.
+  virtual Status SendAndReleaseBuffer(size_t size) = 0;
 
  private:
   const char* name_;

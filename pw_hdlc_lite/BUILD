@@ -27,14 +27,11 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "pw_hdlc_lite_private/protocol.h",
-        "rpc_channel.cc",
         "rpc_packets.cc",
     ],
     hdrs = [
         "public/pw_hdlc_lite/decoder.h",
         "public/pw_hdlc_lite/encoder.h",
-        "public/pw_hdlc_lite/rpc_channel.h",
-        "public/pw_hdlc_lite/rpc_packets.h",
         "public/pw_hdlc_lite/sys_io_stream.h",
     ],
     includes = ["public"],
@@ -43,10 +40,23 @@ pw_cc_library(
         "//pw_checksum",
         "//pw_log",
         "//pw_result",
-        "//pw_rpc",
         "//pw_span",
         "//pw_status",
         "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_rpc",
+    srcs = ["rpc_packets.cc"],
+    hdrs = [
+        "public/pw_hdlc_lite/rpc_channel.h",
+        "public/pw_hdlc_lite/rpc_packets.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":pw_hdlc_lite",
+        "//pw_rpc:server",
     ],
 )
 

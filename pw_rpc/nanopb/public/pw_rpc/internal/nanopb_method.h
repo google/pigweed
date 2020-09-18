@@ -38,8 +38,14 @@ class ServerWriter : public internal::BaseServerWriter {
   ServerWriter(ServerWriter&&) = default;
   ServerWriter& operator=(ServerWriter&&) = default;
 
-  // Writes a response struct. Returns Status::OK on success, or
-  // Status::FAILED_PRECONDITION if the writer is closed.
+  // Writes a response struct. Returns the following Status codes:
+  //
+  //   OK - the response was successfully sent
+  //   FAILED_PRECONDITION - the writer is closed
+  //   INTERNAL - pw_rpc was unable to encode the Nanopb protobuf
+  //   other errors - the ChannelOutput failed to send the packet; the error
+  //       codes are determined by the ChannelOutput implementation
+  //
   Status Write(const T& response);
 };
 

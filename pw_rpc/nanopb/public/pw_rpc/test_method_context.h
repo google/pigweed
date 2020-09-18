@@ -16,7 +16,6 @@
 #include <tuple>
 #include <utility>
 
-#include "gtest/gtest.h"
 #include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
 #include "pw_preprocessor/arguments.h"
@@ -104,7 +103,7 @@ class MessageOutput final : public ChannelOutput {
  private:
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  void SendAndReleaseBuffer(size_t size) override;
+  Status SendAndReleaseBuffer(size_t size) override;
 
   const internal::NanopbMethod& method_;
   Vector<Response>& responses_;
@@ -242,11 +241,11 @@ void MessageOutput<Response>::clear() {
 }
 
 template <typename Response>
-void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
+Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
   PW_CHECK(!stream_ended_);
 
   if (size == 0u) {
-    return;
+    return Status::OK;
   }
 
   internal::Packet packet;
@@ -269,6 +268,7 @@ void MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
     default:
       PW_CRASH("Unhandled PacketType");
   }
+  return Status::OK;
 }
 
 }  // namespace internal::test

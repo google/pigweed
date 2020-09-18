@@ -35,12 +35,8 @@ constexpr size_t kMaxTransmissionUnit = 256;
 pw::stream::SysIoWriter writer;
 
 // Set up the output channel for the pw_rpc server to use to use.
-std::array<byte, kMaxTransmissionUnit> output_buffer;
-pw::rpc::HdlcChannelOutput hdlc_channel_output(
-    writer,
-    output_buffer,
-    pw::hdlc_lite::kDefaultRpcAddress,
-    "HdlcChannelOutput");
+pw::hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
+    writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC channel");
 
 pw::rpc::Channel channels[] = {
     pw::rpc::Channel::Create<1>(&hdlc_channel_output)};

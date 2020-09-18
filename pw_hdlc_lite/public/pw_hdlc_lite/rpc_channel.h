@@ -13,39 +13,64 @@
 // the License.
 #pragma once
 
+#include <array>
 #include <span>
 
+#include "pw_hdlc_lite/encoder.h"
 #include "pw_rpc/channel.h"
 #include "pw_stream/stream.h"
 
-namespace pw::rpc {
+namespace pw::hdlc_lite {
 
 // Custom HDLC ChannelOutput class to write and read data through serial using
 // the HDLC-Lite protocol.
-class HdlcChannelOutput : public ChannelOutput {
+class RpcChannelOutput : public rpc::ChannelOutput {
  public:
-  // The HdlcChannelOutput class does not own the buffer it uses to store the
+  // The RpcChannelOutput class does not own the buffer it uses to store the
   // protobuf bytes. This buffer is specified at the time of creation along with
   // a writer object to which will be used to write and send the bytes.
-  constexpr HdlcChannelOutput(stream::Writer& writer,
-                              std::span<std::byte> buffer,
-                              uint8_t address,
-                              const char* channel_name)
+  constexpr RpcChannelOutput(stream::Writer& writer,
+                             std::span<std::byte> buffer,
+                             uint8_t address,
+                             const char* channel_name)
       : ChannelOutput(channel_name),
+        writer_(writer),
         buffer_(buffer),
-        address_(address),
-        writer_(&writer) {}
+        address_(address) {}
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  // Any errors that may arise while encoding and writing the payload will be
-  // logged.
-  void SendAndReleaseBuffer(size_t size) override;
+  Status SendAndReleaseBuffer(size_t size) override {
+    return hdlc_lite::WriteInformationFrame(
+        address_, buffer_.first(size), writer_);
+  }
 
  private:
-  std::span<std::byte> buffer_;
-  uint8_t address_;
-  stream::Writer* writer_;
+  stream::Writer& writer_;
+  const std::span<std::byte> buffer_;
+  const uint8_t address_;
 };
 
-}  // namespace pw::rpc
+// RpcChannelOutput with its own buffer.
+template <size_t buffer_size>
+class RpcChannelOutputBuffer : public rpc::ChannelOutput {
+ public:
+  constexpr RpcChannelOutputBuffer(stream::Writer& writer,
+                                   uint8_t address,
+                                   const char* channel_name)
+      : ChannelOutput(channel_name), writer_(writer), address_(address) {}
+
+  std::span<std::byte> AcquireBuffer() override { return buffer_; }
+
+  Status SendAndReleaseBuffer(size_t size) override {
+    return hdlc_lite::WriteInformationFrame(
+        address_, std::span(buffer_.data(), size), writer_);
+  }
+
+ private:
+  stream::Writer& writer_;
+  std::array<std::byte, buffer_size> buffer_;
+  const uint8_t address_;
+};
+
+}  // namespace pw::hdlc_lite

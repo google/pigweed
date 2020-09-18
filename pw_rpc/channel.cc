@@ -37,8 +37,7 @@ Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
     return Status::INTERNAL;
   }
 
-  output().SendAndReleaseBuffer(encoded.size());
-  return Status::OK;
+  return output().SendAndReleaseBuffer(encoded.size());
 }
 
 }  // namespace pw::rpc::internal

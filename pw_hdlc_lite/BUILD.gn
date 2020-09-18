@@ -54,18 +54,10 @@ pw_source_set("pw_rpc") {
     "public/pw_hdlc_lite/rpc_channel.h",
     "public/pw_hdlc_lite/rpc_packets.h",
   ]
-  sources = [
-    "rpc_channel.cc",
-    "rpc_packets.cc",
-  ]
+  sources = [ "rpc_packets.cc" ]
   public_deps = [
-    "$dir_pw_rpc:server",
-    dir_pw_stream,
-  ]
-  deps = [
     ":pw_hdlc_lite",
-    dir_pw_checksum,
-    dir_pw_log,
+    "$dir_pw_rpc:server",
   ]
 }
 

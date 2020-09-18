@@ -38,20 +38,23 @@ class TestOutput : public ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  void SendAndReleaseBuffer(size_t size) override {
+  Status SendAndReleaseBuffer(size_t size) override {
     if (size == 0u) {
-      return;
+      return Status::OK;
     }
 
     packet_count_ += 1;
     sent_data_ = std::span(buffer_.data(), size);
-    EXPECT_EQ(Status::OK,
-              internal::Packet::FromBuffer(sent_data_, sent_packet_));
+    Status status = internal::Packet::FromBuffer(sent_data_, sent_packet_);
+    EXPECT_EQ(Status::OK, status);
+    return send_status_;
   }
 
   std::span<const std::byte> buffer() const { return buffer_; }
 
   size_t packet_count() const { return packet_count_; }
+
+  void set_send_status(Status status) { send_status_ = status; }
 
   const std::span<const std::byte>& sent_data() const { return sent_data_; }
   const internal::Packet& sent_packet() const {
@@ -64,6 +67,7 @@ class TestOutput : public ChannelOutput {
   std::span<const std::byte> sent_data_;
   internal::Packet sent_packet_;
   size_t packet_count_ = 0;
+  Status send_status_;
 };
 
 // Version of the internal::Server with extra methods exposed for testing.
