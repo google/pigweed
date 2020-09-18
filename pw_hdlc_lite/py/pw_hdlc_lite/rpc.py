@@ -13,11 +13,20 @@
 # the License.
 """Utilities for using HDLC with pw_rpc."""
 
+import logging
+import os
 import time
-from typing import Any, Callable
+from typing import Any, Callable, NoReturn, BinaryIO
 
+import serial
+
+from pw_hdlc_lite.decoder import FrameDecoder
 from pw_hdlc_lite.encoder import encode_information_frame
+from pw_rpc.client import Client
 
+_LOG = logging.getLogger(__name__)
+
+STDOUT_ADDRESS = 1
 DEFAULT_ADDRESS = ord('R')
 
 
@@ -37,3 +46,30 @@ def channel_output(writer: Callable[[bytes], Any],
         return lambda data: slow_write(encode_information_frame(address, data))
 
     return lambda data: writer(encode_information_frame(address, data))
+
+
+def read_and_process_data(rpc_client: Client,
+                          device: serial.Serial,
+                          output: BinaryIO,
+                          output_sep: bytes = os.linesep.encode(),
+                          rpc_address: int = DEFAULT_ADDRESS) -> NoReturn:
+    """Reads HDLC frames from the device and passes them to the RPC client."""
+    decoder = FrameDecoder()
+
+    while True:
+        byte = device.read()
+        for frame in decoder.process_valid_frames(byte):
+            if not frame.ok():
+                _LOG.error('Failed to parse frame: %s', frame.status.value)
+                continue
+
+            if frame.address == rpc_address:
+                if not rpc_client.process_packet(frame.data):
+                    _LOG.error('Packet not handled by RPC client: %s', frame)
+            elif frame.address == STDOUT_ADDRESS:
+                output.write(frame.data)
+                output.write(output_sep)
+                output.flush()
+            else:
+                _LOG.error('Unhandled frame for address %d: %s', frame.address,
+                           frame.data.decoder(errors='replace'))
