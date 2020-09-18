@@ -34,3 +34,6 @@ class Status(enum.Enum):
     INTERNAL = 13
     UNAVAILABLE = 14
     DATA_LOSS = 15
+
+    def ok(self) -> bool:
+        return self is self.OK

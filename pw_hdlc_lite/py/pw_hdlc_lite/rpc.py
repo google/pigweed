@@ -15,14 +15,18 @@
 
 import logging
 import os
+from pathlib import Path
+import sys
+import threading
 import time
-from typing import Any, Callable, NoReturn, BinaryIO
-
-import serial
+from types import ModuleType
+from typing import Any, BinaryIO, Callable, Iterable, List, NoReturn, Union
 
 from pw_hdlc_lite.decoder import FrameDecoder
 from pw_hdlc_lite.encoder import encode_information_frame
-from pw_rpc.client import Client
+import pw_rpc
+from pw_rpc import callback_client
+from pw_protobuf_compiler import python_protos
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,7 +42,7 @@ def channel_output(writer: Callable[[bytes], Any],
     if delay_s:
 
         def slow_write(data: bytes) -> None:
-            """Slows down writes to support unbuffered serial."""
+            """Slows down writes in case unbuffered serial is in use."""
             for byte in data:
                 time.sleep(delay_s)
                 writer(bytes([byte]))
@@ -48,8 +52,8 @@ def channel_output(writer: Callable[[bytes], Any],
     return lambda data: writer(encode_information_frame(address, data))
 
 
-def read_and_process_data(rpc_client: Client,
-                          device: serial.Serial,
+def read_and_process_data(rpc_client: pw_rpc.Client,
+                          device: BinaryIO,
                           output: BinaryIO,
                           output_sep: bytes = os.linesep.encode(),
                           rpc_address: int = DEFAULT_ADDRESS) -> NoReturn:
@@ -73,3 +77,60 @@ def read_and_process_data(rpc_client: Client,
             else:
                 _LOG.error('Unhandled frame for address %d: %s', frame.address,
                            frame.data.decoder(errors='replace'))
+
+
+_PathOrModule = Union[str, Path, ModuleType]
+
+
+class HdlcRpcClient:
+    """An RPC client configured to run over HDLC."""
+    def __init__(self,
+                 device: BinaryIO,
+                 proto_paths_or_modules: Iterable[_PathOrModule],
+                 output: BinaryIO = sys.stdout.buffer,
+                 channels: Iterable[pw_rpc.Channel] = None,
+                 client_impl: pw_rpc.client.ClientImpl = None):
+        """Creates an RPC client configured to communicate using HDLC.
+
+        Args:
+          device: serial.Serial (or any BinaryIO class) for reading/writing data
+          proto_paths_or_modules: paths to .proto files or proto modules
+          output: where to write "stdout" output from the device
+        """
+        self.device = device
+
+        proto_modules = []
+        proto_paths: List[Union[Path, str]] = []
+        for proto in proto_paths_or_modules:
+            if isinstance(proto, (Path, str)):
+                proto_paths.append(proto)
+            else:
+                proto_modules.append(proto)
+
+        proto_modules += python_protos.compile_and_import(proto_paths)
+
+        if channels is None:
+            channels = [pw_rpc.Channel(1, channel_output(device.write))]
+
+        if client_impl is None:
+            client_impl = callback_client.Impl()
+
+        self.client = pw_rpc.Client.from_modules(client_impl, channels,
+                                                 proto_modules)
+
+        # Start background thread that reads and processes RPC packets.
+        threading.Thread(target=read_and_process_data,
+                         daemon=True,
+                         args=(self.client, device, output)).start()
+
+    def rpcs(self, channel_id: int = None) -> pw_rpc.client.Services:
+        """Returns object for accessing services on the specified channel.
+
+        This skips some intermediate layers to make it simpler to invoke RPCs
+        from an HdlcRpcClient. If only one channel is in use, the channel ID is
+        not necessary.
+        """
+        if channel_id is None:
+            return next(iter(self.client.channels())).rpcs
+
+        return self.client.channel(channel_id).rpcs

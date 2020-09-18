@@ -126,7 +126,7 @@ class ClientImpl(abc.ABC):
         """
 
 
-class _MethodClients(descriptors.ServiceAccessor):
+class ServiceClient(descriptors.ServiceAccessor):
     """Navigates the methods in a service provided by a ChannelClient."""
     def __init__(self, rpcs: PendingRpcs, client_impl: ClientImpl,
                  channel: Channel, service: Service):
@@ -149,13 +149,13 @@ class _MethodClients(descriptors.ServiceAccessor):
         return str(self._service)
 
 
-class _ServiceClients(descriptors.ServiceAccessor[_MethodClients]):
+class Services(descriptors.ServiceAccessor[ServiceClient]):
     """Navigates the services provided by a ChannelClient."""
     def __init__(self, rpcs: PendingRpcs, client_impl, channel: Channel,
                  services: Collection[Service]):
         super().__init__(
             {
-                s: _MethodClients(rpcs, client_impl, channel, s)
+                s: ServiceClient(rpcs, client_impl, channel, s)
                 for s in services
             },
             as_attrs='packages')
@@ -221,7 +221,7 @@ class ChannelClient:
     """
     client: 'Client'
     channel: Channel
-    rpcs: _ServiceClients
+    rpcs: Services
 
     def method(self, method_name: str):
         """Returns a method client matching the given name.
@@ -272,14 +272,17 @@ class Client:
         self._channels_by_id = {
             channel.id: ChannelClient(
                 self, channel,
-                _ServiceClients(self._rpcs, self._impl, channel,
-                                self.services))
+                Services(self._rpcs, self._impl, channel, self.services))
             for channel in channels
         }
 
     def channel(self, channel_id: int) -> ChannelClient:
         """Returns a ChannelClient, which is used to call RPCs on a channel."""
         return self._channels_by_id[channel_id]
+
+    def channels(self) -> Iterable[ChannelClient]:
+        """Accesses the ChannelClients in this client."""
+        return self._channels_by_id.values()
 
     def method(self, method_name: str) -> Method:
         """Returns a Method matching the given name.

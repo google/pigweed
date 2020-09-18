@@ -35,16 +35,12 @@ import glob
 import logging
 from pathlib import Path
 import sys
-import threading
 from typing import Collection, Iterable, Iterator, BinaryIO
 
 import IPython
 import serial
 
-from pw_hdlc_lite import rpc
-from pw_protobuf_compiler import python_protos
-from pw_rpc import callback_client, descriptors
-from pw_rpc.client import Client
+from pw_hdlc_lite.rpc import HdlcRpcClient
 
 _LOG = logging.getLogger(__name__)
 
@@ -82,46 +78,22 @@ def _expand_globs(globs: Iterable[str]) -> Iterator[Path]:
             yield Path(file)
 
 
-def _start_ipython_terminal(device: serial.Serial, client: Client) -> None:
+def _start_ipython_terminal(client: HdlcRpcClient) -> None:
     """Starts an interactive IPython terminal with preset variables."""
     local_variables = dict(
         client=client,
-        device=device,
-        channel_client=client.channel(1),
-        rpcs=client.channel(1).rpcs,
+        channel_client=client.client.channel(1),
+        rpcs=client.client.channel(1).rpcs,
     )
-    module = argparse.Namespace()  # serves as an empty module
 
-    IPython.terminal.embed.InteractiveShellEmbed(banner1=__doc__).mainloop(
-        local_variables, module)
-
-
-def console(device: serial.Serial, protos: Iterable[Path],
-            output: BinaryIO) -> None:
-    """Starts an interactive RPC console for HDLC.
-
-    Args:
-      device: the serial device from which to read HDLC frames
-      protos: .proto files with RPC services
-    """
-
-    # Compile the proto files that define the RPC services to expose.
-    modules = python_protos.compile_and_import(protos)
-
-    # Set up the pw_rpc server with a single channel with ID 1.
-    channel = descriptors.Channel(1, rpc.channel_output(device.write))
-    client = Client.from_modules(callback_client.Impl(), [channel], modules)
-
-    # Start background thread that reads serial data and processes RPC packets.
-    threading.Thread(target=rpc.read_and_process_data,
-                     daemon=True,
-                     args=(client, device, output)).start()
-
-    _start_ipython_terminal(device, client)
+    print(__doc__)  # Print the banner
+    IPython.terminal.embed.InteractiveShellEmbed().mainloop(
+        local_ns=local_variables, module=argparse.Namespace())
 
 
-def _prepare_console(device: str, baudrate: int, proto_globs: Collection[str],
-                     output: BinaryIO) -> int:
+def console(device: str, baudrate: int, proto_globs: Collection[str],
+            output: BinaryIO) -> int:
+    """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
         output = sys.stdout.buffer
@@ -140,12 +112,13 @@ def _prepare_console(device: str, baudrate: int, proto_globs: Collection[str],
     _LOG.debug('Found %d .proto files found with %s', len(protos),
                ', '.join(proto_globs))
 
-    console(serial.Serial(device, baudrate), protos, output)
+    _start_ipython_terminal(
+        HdlcRpcClient(serial.Serial(device, baudrate), protos, output))
     return 0
 
 
 def main() -> int:
-    return _prepare_console(**vars(_parse_args()))
+    return console(**vars(_parse_args()))
 
 
 if __name__ == '__main__':
