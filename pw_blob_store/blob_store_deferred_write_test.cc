@@ -62,7 +62,7 @@ class DeferredWriteTest : public ::testing::Test {
     snprintf(name, sizeof(name), "Blob%u", static_cast<unsigned>(chunk_size));
 
     BlobStoreBuffer<kBufferSize> blob(
-        name, &partition_, &checksum, kvs::TestKvs(), kWriteSize);
+        name, partition_, &checksum, kvs::TestKvs(), kWriteSize);
     EXPECT_EQ(Status::OK, blob.Init());
 
     BlobStore::DeferredWriter writer(blob);

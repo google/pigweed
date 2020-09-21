@@ -261,7 +261,7 @@ class BlobStore {
   // BlobStore
   // name - Name of blob store, used for metadata KVS key
   // partition - Flash partiton to use for this blob. Blob uses the entire
-  //     partition.
+  //     partition for blob data.
   // checksum_algo - Optional checksum for blob integrity checking. Use nullptr
   //     for no check.
   // kvs - KVS used for storing blob metadata.
@@ -272,13 +272,13 @@ class BlobStore {
   //     size. Must be greater than or equal to flash write alignment, less than
   //     or equal to flash sector size.
   BlobStore(std::string_view name,
-            kvs::FlashPartition* partition,
+            kvs::FlashPartition& partition,
             kvs::ChecksumAlgorithm* checksum_algo,
             kvs::KeyValueStore& kvs,
             ByteSpan write_buffer,
             size_t flash_write_size_bytes)
       : name_(name),
-        partition_(*partition),
+        partition_(partition),
         checksum_algo_(checksum_algo),
         kvs_(kvs),
         write_buffer_(write_buffer),
@@ -466,6 +466,7 @@ class BlobStore {
 
   std::string_view name_;
   kvs::FlashPartition& partition_;
+  // checksum_algo_ of nullptr indicates no checksum algorithm.
   kvs::ChecksumAlgorithm* const checksum_algo_;
   kvs::KeyValueStore& kvs_;
   ByteSpan write_buffer_;
@@ -509,11 +510,26 @@ class BlobStore {
 };
 
 // Creates a BlobStore with the buffer of kBufferSizeBytes.
+//
+// kBufferSizeBytes - Size in bytes of write buffer to create.
+// name - Name of blob store, used for metadata KVS key
+// partition - Flash partiton to use for this blob. Blob uses the entire
+//     partition for blob data.
+// checksum_algo - Optional checksum for blob integrity checking. Use nullptr
+//     for no check.
+// kvs - KVS used for storing blob metadata.
+// write_buffer - Used for buffering writes. Needs to be at least
+//     flash_write_size_bytes.
+// flash_write_size_bytes - Size in bytes to use for flash write operations.
+//     This should be chosen to balance optimal write size and required buffer
+//     size. Must be greater than or equal to flash write alignment, less than
+//     or equal to flash sector size.
+
 template <size_t kBufferSizeBytes>
 class BlobStoreBuffer : public BlobStore {
  public:
   explicit BlobStoreBuffer(std::string_view name,
-                           kvs::FlashPartition* partition,
+                           kvs::FlashPartition& partition,
                            kvs::ChecksumAlgorithm* checksum_algo,
                            kvs::KeyValueStore& kvs,
                            size_t flash_write_size_bytes = kBufferSizeBytes)

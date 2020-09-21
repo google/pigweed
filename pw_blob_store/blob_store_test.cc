@@ -60,7 +60,7 @@ class BlobStoreTest : public ::testing::Test {
     snprintf(name, sizeof(name), "TestBlobBlock");
 
     BlobStoreBuffer<kBufferSize> blob(
-        name, &partition_, &checksum, kvs::TestKvs());
+        name, partition_, &checksum, kvs::TestKvs());
     EXPECT_EQ(Status::OK, blob.Init());
 
     BlobStore::BlobWriter writer(blob);
@@ -85,7 +85,7 @@ class BlobStoreTest : public ::testing::Test {
     VerifyFlash(flash_.buffer());
 
     char name[16] = "TestBlobBlock";
-    BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+    BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
     EXPECT_EQ(Status::OK, blob.Init());
 
     // Use reader to check for valid data.
@@ -142,12 +142,12 @@ class BlobStoreTest : public ::testing::Test {
 };
 
 TEST_F(BlobStoreTest, Init_Ok) {
-  BlobStoreBuffer<256> blob("Blob_OK", &partition_, nullptr, kvs::TestKvs());
+  BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
   EXPECT_EQ(Status::OK, blob.Init());
 }
 
 TEST_F(BlobStoreTest, MultipleErase) {
-  BlobStoreBuffer<256> blob("Blob_OK", &partition_, nullptr, kvs::TestKvs());
+  BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
   EXPECT_EQ(Status::OK, blob.Init());
 
   BlobStore::BlobWriter writer(blob);
@@ -168,7 +168,7 @@ TEST_F(BlobStoreTest, OffsetRead) {
   kvs::ChecksumCrc16 checksum;
 
   char name[16] = "TestBlobBlock";
-  BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+  BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
   EXPECT_EQ(Status::OK, blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::OK, reader.Open(kOffset));
@@ -192,7 +192,7 @@ TEST_F(BlobStoreTest, InvalidReadOffset) {
   kvs::ChecksumCrc16 checksum;
 
   char name[16] = "TestBlobBlock";
-  BlobStoreBuffer<16> blob(name, &partition_, &checksum, kvs::TestKvs());
+  BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
   EXPECT_EQ(Status::OK, blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::INVALID_ARGUMENT, reader.Open(kOffset));
