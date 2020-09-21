@@ -16,7 +16,7 @@
 To start the console, provide a serial port as the --device argument and paths
 or globs for .proto files that define the RPC services to support:
 
-  python -m pw_hdlc_lite.rpc_console --device /dev/ttyUSB0 --protos my.proto
+  python -m pw_hdlc_lite.rpc_console --device /dev/ttyUSB0 sample.proto
 
 This starts an IPython console for communicating with the connected device. A
 few variables are predefined in the interactive console. These include:
@@ -57,11 +57,6 @@ def _parse_args():
                         type=int,
                         default=115200,
                         help='the baud rate to use')
-    parser.add_argument('-p',
-                        '--protos',
-                        dest='proto_globs',
-                        action='append',
-                        help='glob pattern for .proto files')
     parser.add_argument(
         '-o',
         '--output',
@@ -69,6 +64,9 @@ def _parse_args():
         default=sys.stdout.buffer,
         help=('The file to which to write device output (HDLC channel 1); '
               'provide - or omit for stdout.'))
+    parser.add_argument('proto_globs',
+                        nargs='+',
+                        help='glob pattern for .proto files')
     return parser.parse_args()
 
 
