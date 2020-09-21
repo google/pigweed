@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -57,57 +58,6 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
 }
 
 }  // namespace
-
-BrEdrConnection::BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
-                                 std::unique_ptr<hci::Connection> link,
-                                 fit::closure send_auth_request_cb, PeerCache* peer_cache,
-                                 std::optional<Request> request)
-    : peer_id_(peer_id),
-      link_(std::move(link)),
-      pairing_state_(peer_id, link_.get(), peer_cache, std::move(send_auth_request_cb),
-                     [peer_id, mgr = connection_manager](auto, hci::Status status) {
-                       if (bt_is_error(status, DEBUG, "gap-bredr",
-                                       "PairingState error status, disconnecting (peer id: %s)",
-                                       bt_str(peer_id))) {
-                         mgr->Disconnect(peer_id);
-                       }
-                     }),
-      request_(std::move(request)),
-      domain_(std::nullopt) {
-  link_->set_peer_disconnect_callback(
-      fit::bind_member(connection_manager, &BrEdrConnectionManager::OnPeerDisconnect));
-}
-
-BrEdrConnection::~BrEdrConnection() {
-  if (request_.has_value()) {
-    // Connection never completed so signal the requester(s).
-    request_->NotifyCallbacks(hci::Status(HostError::kNotSupported), [] { return nullptr; });
-  }
-}
-
-void BrEdrConnection::Start(data::Domain& domain) {
-  ZX_ASSERT_MSG(!domain_.has_value(), "Start on a connection that's already started");
-  domain_ = std::ref(domain);
-
-  // Fulfill and clear request so that the dtor does not signal requester(s) with errors.
-  if (auto request = std::exchange(request_, std::nullopt); request.has_value()) {
-    request->NotifyCallbacks(hci::Status(), [this] { return this; });
-  }
-}
-
-void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
-                                       l2cap::ChannelCallback cb) {
-  if (!domain_.has_value()) {
-    // Connection is not yet ready for L2CAP; return a null channel.
-    bt_log(INFO, "gap-bredr", "Connection to %s not complete; canceling channel to PSM %.4x",
-           bt_str(peer_id()), psm);
-    cb(nullptr);
-    return;
-  }
-
-  bt_log(TRACE, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
-  domain_->get().OpenL2capChannel(link().handle(), psm, params, std::move(cb));
-}
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci::EventCode& code, hci::CommandChannel::EventCallback cb) {
@@ -408,15 +358,16 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
                                          local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
+  auto peer_id = peer->identifier();
 
   // We should never have more than one link to a given peer
-  ZX_DEBUG_ASSERT(!FindConnectionById(peer->identifier()));
+  ZX_DEBUG_ASSERT(!FindConnectionById(peer_id));
   peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
 
   // The controller has completed the HCI connection procedure, so the connection request can no
   // longer be failed by a lower layer error. Now tie error reporting of the request to the lifetime
   // of the connection state object (BrEdrConnection RAII).
-  auto request_node = connection_requests_.extract(peer->identifier());
+  auto request_node = connection_requests_.extract(peer_id);
   std::optional<BrEdrConnection::Request> request =
       request_node ? std::move(request_node.mapped()) : std::optional<BrEdrConnection::Request>();
   const hci::ConnectionHandle handle = link->handle();
@@ -426,10 +377,14 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                   handle);
     });
   };
+  auto disconnect_cb = [this, peer_id] { Disconnect(peer_id); };
+  auto on_peer_disconnect_cb =
+      std::bind(&BrEdrConnectionManager::OnPeerDisconnect, this, link.get());
   BrEdrConnection& connection =
       connections_
-          .try_emplace(handle, this, peer->identifier(), std::move(link),
-                       std::move(send_auth_request_cb), cache_, std::move(request))
+          .try_emplace(handle, peer_id, std::move(link), std::move(send_auth_request_cb),
+                       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_,
+                       data_domain_, std::move(request))
           .first->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
 
@@ -512,7 +467,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
         });
   }
 
-  conn_state.Start(*data_domain_);
+  conn_state.Start();
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticationComplete(

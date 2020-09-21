@@ -9,9 +9,9 @@
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
@@ -35,46 +35,6 @@ namespace gap {
 
 class PairingDelegate;
 class PeerCache;
-class BrEdrConnectionManager;
-
-// Represents a connection that is currently open with the controller (i.e. after receiving a
-// Connection Complete and before either user disconnection or Disconnection Complete).
-class BrEdrConnection final {
- public:
-  using Request = ConnectionRequest<BrEdrConnection*>;
-  BrEdrConnection(BrEdrConnectionManager* connection_manager, PeerId peer_id,
-                  std::unique_ptr<hci::Connection> link, fit::closure send_auth_request_cb,
-                  PeerCache* peer_cache, std::optional<Request> request);
-
-  ~BrEdrConnection();
-
-  BrEdrConnection(BrEdrConnection&&) = default;
-  BrEdrConnection& operator=(BrEdrConnection&&) = default;
-
-  // Called after interrogation completes to mark this connection as available for upper layers,
-  // i.e. L2CAP on |domain|. Also signals any requesters with a successful status and this
-  // connection. If not called and this connection is deleted (e.g. by disconnection), requesters
-  // will be signaled with |HostError::kNotSupported| (to indicate interrogation error).
-  void Start(data::Domain& domain);
-
-  // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
-  // the Domain provided. Otherwise, calls |cb| with a nullptr.
-  void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
-
-  const hci::Connection& link() const { return *link_; }
-  hci::Connection& link() { return *link_; }
-  PeerId peer_id() const { return peer_id_; }
-  PairingState& pairing_state() { return pairing_state_; }
-
- private:
-  PeerId peer_id_;
-  std::unique_ptr<hci::Connection> link_;
-  PairingState pairing_state_;
-  std::optional<Request> request_;
-  std::optional<std::reference_wrapper<data::Domain>> domain_;  // clear until Start is called
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
-};
 
 // Manages all activity related to connections in the BR/EDR section of the
 // controller, including whether the peer can be connected to, incoming

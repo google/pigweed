@@ -16,6 +16,8 @@ static_library("gap") {
     "adapter.h",
     "adapter_state.cc",
     "adapter_state.h",
+    "bredr_connection.cc",
+    "bredr_connection.h",
     "bredr_connection_manager.cc",
     "bredr_connection_manager.h",
     "bredr_discovery_manager.cc",
