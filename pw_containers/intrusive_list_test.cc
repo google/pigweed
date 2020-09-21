@@ -561,5 +561,48 @@ TEST(IntrusiveList, ItemsRemoveThemselvesFromListsWhenDestructed) {
   EXPECT_EQ(list.end(), it);
 }
 
+TEST(IntrusiveList, SizeBasic) {
+  IntrusiveList<TestItem> list;
+  EXPECT_EQ(list.size(), 0u);
+
+  TestItem one(55);
+  list.push_front(one);
+  EXPECT_EQ(list.size(), static_cast<size_t>(1));
+
+  TestItem two(66);
+  list.push_back(two);
+  EXPECT_EQ(list.size(), static_cast<size_t>(2));
+
+  TestItem thr(77);
+  list.push_back(thr);
+  EXPECT_EQ(list.size(), static_cast<size_t>(3));
+}
+
+TEST(IntrusiveList, SizeScoped) {
+  IntrusiveList<TestItem> list;
+  EXPECT_EQ(list.size(), 0u);
+
+  // Add elements in new scopes; verify size on the way in and on the way out.
+  {
+    TestItem one(55);
+    list.push_back(one);
+    EXPECT_EQ(list.size(), static_cast<size_t>(1));
+
+    {
+      TestItem two(66);
+      list.push_back(two);
+      EXPECT_EQ(list.size(), static_cast<size_t>(2));
+      {
+        TestItem thr(77);
+        list.push_back(thr);
+        EXPECT_EQ(list.size(), static_cast<size_t>(3));
+      }
+      EXPECT_EQ(list.size(), static_cast<size_t>(2));
+    }
+    EXPECT_EQ(list.size(), static_cast<size_t>(1));
+  }
+  EXPECT_EQ(list.size(), static_cast<size_t>(0));
+}
+
 }  // namespace
 }  // namespace pw

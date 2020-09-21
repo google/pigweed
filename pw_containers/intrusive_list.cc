@@ -68,4 +68,14 @@ bool List::remove(const Item& item_to_remove) {
   return false;
 }
 
+size_t List::size() const {
+  size_t total = 0;
+  Item* item = head_.next_;
+  while (item != &head_) {
+    item = item->next_;
+    total++;
+  }
+  return total;
+}
+
 }  // namespace pw::intrusive_list_impl

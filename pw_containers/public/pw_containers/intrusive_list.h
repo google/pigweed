@@ -146,6 +146,9 @@ class IntrusiveList {
   }
   const_iterator cend() const noexcept { return end(); }
 
+  // Operation is O(size).
+  size_t size() const { return list_.size(); }
+
  private:
   // Check that T is an Item in a function, since the class T will not be fully
   // defined when the IntrusiveList<T> class is instantiated.

@@ -133,6 +133,8 @@ class List {
   constexpr Item* end() noexcept { return &head_; }
   constexpr const Item* end() const noexcept { return &head_; }
 
+  size_t size() const;
+
  private:
   template <typename Iterator>
   void AssignFromIterator(Iterator first, Iterator last);
