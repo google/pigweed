@@ -292,6 +292,10 @@ class FlashPartition {
     return permission_ == PartitionPermission::kReadAndWrite;
   }
 
+  constexpr std::byte erased_memory_content() const {
+    return flash_.erased_memory_content();
+  }
+
   uint32_t start_sector_index() const { return start_sector_index_; }
 
  protected:
