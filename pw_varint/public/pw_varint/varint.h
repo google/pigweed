@@ -48,9 +48,12 @@ size_t pw_VarintZigZagEncodedSize(int64_t integer);
 namespace pw {
 namespace varint {
 
-// The maximum number of bytes occupied by an encoded varint. The maximum
-// uint64_t occupies 10 bytes when encoded.
-PW_INLINE_VARIABLE constexpr size_t kMaxVarintSizeBytes = 10;
+// The maximum number of bytes occupied by an encoded varint.
+PW_INLINE_VARIABLE constexpr size_t kMaxVarint32SizeBytes = 5;
+PW_INLINE_VARIABLE constexpr size_t kMaxVarint64SizeBytes = 10;
+
+// TODO(ewout): deprecate use of this constant.
+PW_INLINE_VARIABLE constexpr size_t kMaxVarintSizeBytes = kMaxVarint64SizeBytes;
 
 // ZigZag encodes a signed integer. This maps small negative numbers to small,
 // unsigned positive numbers, which improves their density for LEB128 encoding.

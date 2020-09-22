@@ -53,7 +53,7 @@ extern "C" size_t pw_VarintDecode(const void* input,
   const std::byte* buffer = static_cast<const std::byte*>(input);
 
   // The largest 64-bit ints require 10 B.
-  const size_t max_count = std::min(kMaxVarintSizeBytes, input_size);
+  const size_t max_count = std::min(kMaxVarint64SizeBytes, input_size);
 
   while (true) {
     if (count >= max_count) {

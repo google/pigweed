@@ -123,7 +123,7 @@ TEST(TokenizedStringDecode, UnterminatedVarint_ConsumesUpToMaxVarintSize) {
   EXPECT_EQ(result.value_with_errors(),
             "The " ERR("%d ERROR") " " ERR("%s SKIPPED"));
   EXPECT_EQ(result.remaining_bytes(),
-            data.size() - varint::kMaxVarintSizeBytes);
+            data.size() - varint::kMaxVarint64SizeBytes);
   EXPECT_EQ(result.decoding_errors(), 2u);
 }
 

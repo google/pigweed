@@ -74,8 +74,8 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
 
   // Create header to store trace info
   static constexpr size_t kMaxHeaderSize =
-      sizeof(trace_token) + pw::varint::kMaxVarintSizeBytes +  // time
-      pw::varint::kMaxVarintSizeBytes;                         // trace_id
+      sizeof(trace_token) + pw::varint::kMaxVarint64SizeBytes +  // time
+      pw::varint::kMaxVarint64SizeBytes;                         // trace_id
   std::byte header[kMaxHeaderSize];
   memcpy(header, &trace_token, sizeof(trace_token));
   size_t header_size = sizeof(trace_token);

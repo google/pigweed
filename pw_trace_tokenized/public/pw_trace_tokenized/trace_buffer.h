@@ -36,10 +36,10 @@
 #define PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES (32)
 #endif  // PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES
 
-#define PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES                                 \
-  (pw::varint::kMaxVarintSizeBytes) +     /* worst case delta time varint */ \
-      (sizeof(uint32_t)) +                /* trace token size */             \
-      (pw::varint::kMaxVarintSizeBytes) + /* worst case trace id varint */   \
+#define PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES                                   \
+  (pw::varint::kMaxVarint64SizeBytes) +     /* worst case delta time varint */ \
+      (sizeof(uint32_t)) +                  /* trace token size */             \
+      (pw::varint::kMaxVarint64SizeBytes) + /* worst case trace id varint */   \
       PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES
 #endif  // PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES
 
