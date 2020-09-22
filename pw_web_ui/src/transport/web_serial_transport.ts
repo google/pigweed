@@ -16,8 +16,11 @@
 import {BehaviorSubject, Subject, Subscription, Observable} from 'rxjs';
 import DeviceTransport from './device_transport';
 
-const DEFAULT_SERIAL_OPTIONS: SerialOptions = {
+const DEFAULT_SERIAL_OPTIONS: SerialOptions & {baudRate: number} = {
+  // Some versions of chrome use `baudrate` (linux)
   baudrate: 921600,
+  // Some versions use `baudRate` (chromebook)
+  baudRate: 921600,
   databits: 8,
   parity: 'none',
   stopbits: 1,
