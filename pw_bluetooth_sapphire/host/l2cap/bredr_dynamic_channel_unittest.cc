@@ -22,7 +22,7 @@ namespace l2cap {
 namespace internal {
 namespace {
 
-// TODO(NET-1093): Add integration test with FakeChannelTest and
+// TODO(fxbug.dev/1049): Add integration test with FakeChannelTest and
 // BrEdrSignalingChannel using snooped connection data to verify signaling
 // channel traffic.
 

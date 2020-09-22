@@ -66,7 +66,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_ASSERT(sdu);
-  // TODO(BT-440): Add support for segmentation
+  // TODO(fxbug.dev/1033): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
     bt_log(DEBUG, "l2cap", "SDU size exceeds channel TxMTU (channel-id: %#.4x)", channel_id_);
     return false;
@@ -79,7 +79,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
   frame.WriteObj(header);
   sdu->Copy(&body);
 
-  // TODO(BT-773): Limit the size of the queue.
+  // TODO(fxbug.dev/1366): Limit the size of the queue.
   pending_pdus_.push_back(std::move(frame));
   MaybeSendQueuedData();
   return true;
@@ -183,7 +183,7 @@ void Engine::ClearRemoteBusy() {
 
 void Engine::SetRemoteBusy() {
   ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  // TODO(BT-774): Signal backpressure to the Channel.
+  // TODO(fxbug.dev/1367): Signal backpressure to the Channel.
   remote_is_busy_ = true;
   receiver_ready_poll_task_.Cancel();
 }
@@ -386,7 +386,7 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
       set_is_poll_response = false;
     }
 
-    // TODO(BT-860): If the task is already running, we should not restart it.
+    // TODO(fxbug.dev/1453): If the task is already running, we should not restart it.
     SendPdu(&*cur_frame);
     cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
   }

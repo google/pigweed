@@ -163,8 +163,8 @@ class SocketChannelRelay final {
   // SDU). This comes, however, at the cost of higher memory usage when the
   // number of SDUs is small. (libc++ uses a minimum of 4KB per deque.)
   //
-  // TODO(NET-1478): Switch to LinkedList.
-  // TODO(NET-1476): We should set an upper bound on the size of this queue.
+  // TODO(fxbug.dev/670): Switch to LinkedList.
+  // TODO(fxbug.dev/709): We should set an upper bound on the size of this queue.
   std::deque<ByteBufferPtr> socket_write_queue_;
 
   const fxl::ThreadChecker thread_checker_;

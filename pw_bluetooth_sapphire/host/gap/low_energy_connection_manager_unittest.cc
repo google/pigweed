@@ -275,7 +275,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerTimeout) {
 TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDoesNotExpireDuringTimeout) {
   // Set a connection timeout that is longer than the PeerCache expiry
   // timeout.
-  // TODO(BT-825): Consider configuring the cache timeout explicitly rather than
+  // TODO(fxbug.dev/1418): Consider configuring the cache timeout explicitly rather than
   // relying on the kCacheTimeout constant.
   constexpr zx::duration kTestRequestTimeout = kCacheTimeout + zx::sec(1);
   conn_mgr()->set_request_timeout_for_testing(kTestRequestTimeout);

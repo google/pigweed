@@ -349,7 +349,7 @@ bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_ASSERT(!ltk_type().has_value());
 
-  // TODO(BT-208): Tell the data channel to stop data flow.
+  // TODO(fxbug.dev/801): Tell the data channel to stop data flow.
 
   auto cmd = CommandPacket::New(kLEStartEncryption, sizeof(LEStartEncryptionCommandParams));
   auto* params = cmd->mutable_payload<LEStartEncryptionCommandParams>();
@@ -391,7 +391,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
   if (!status) {
     Disconnect(StatusCode::kAuthenticationFailure);
   } else {
-    // TODO(BT-208): Tell the data channel to resume data flow.
+    // TODO(fxbug.dev/801): Tell the data channel to resume data flow.
   }
 
   if (!encryption_change_callback()) {
@@ -530,7 +530,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  // TODO(BT-767): Tell the data channel to stop data flow.
+  // TODO(fxbug.dev/1360): Tell the data channel to stop data flow.
 
   std::unique_ptr<CommandPacket> cmd;
 

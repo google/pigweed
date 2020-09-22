@@ -3091,7 +3091,7 @@ TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
       ".*");
 }
 
-// TODO(BT-819) Connecting a peer that's being interrogated
+// TODO(fxbug.dev/1412) Connecting a peer that's being interrogated
 
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP

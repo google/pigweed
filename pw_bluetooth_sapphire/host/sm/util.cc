@@ -338,7 +338,7 @@ DeviceAddress GenerateRpa(const UInt128& irk) {
   // The specification requires that at least one bit of the address is 1 and at
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
-  // TODO(SEC-87): Maybe generate within a range to enforce this?
+  // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
   prand_bytes.FillWithRandomBytes();
 
   // Make sure that the highest two bits are 0 and 1 respectively.
@@ -364,7 +364,7 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
   // The specification requires that at least one bit of the address is 1 and at
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
-  // TODO(SEC-87): Maybe generate within a range to enforce this?
+  // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
   addr_bytes.FillWithRandomBytes();
 
   if (is_static) {

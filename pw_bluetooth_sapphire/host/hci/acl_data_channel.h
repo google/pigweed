@@ -289,7 +289,7 @@ class ACLDataChannel final {
   // The ACL data packet queue contains the data packets that are waiting to be
   // sent to the controller.
   // TODO(armansito): Use priority_queue based on L2CAP channel priority.
-  // TODO(NET-1211): Keep a separate queue for each open connection. Benefits:
+  // TODO(fxbug.dev/944): Keep a separate queue for each open connection. Benefits:
   //   * Helps address the packet-prioritization TODO above.
   //   * Also: having separate queues, which know their own
   //     Connection::LinkType, would let us replace std::list<QueuedDataPacket>

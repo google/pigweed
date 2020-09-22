@@ -198,7 +198,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
     kDisconnected = (1 << 6),
   };
 
-  // TODO(NET-1319): Add Extended Flow Specification steps (exchange &
+  // TODO(fxbug.dev/996): Add Extended Flow Specification steps (exchange &
   // controller configuration)
 
   BrEdrDynamicChannel(DynamicChannelRegistry* registry,

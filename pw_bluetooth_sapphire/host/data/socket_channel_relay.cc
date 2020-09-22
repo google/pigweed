@@ -187,7 +187,7 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) 
   // as voice calls. In the future, we may want to make the drop-head vs.
   // drop-tail choice configurable.
   if (socket_write_queue_.size() == socket_write_queue_max_frames_) {
-    // TODO(BT-732): Add a metric for number of dropped frames.
+    // TODO(fxbug.dev/1325): Add a metric for number of dropped frames.
     socket_write_queue_.pop_front();
   }
 
@@ -223,7 +223,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
   // detect truncated datagrams.
   const size_t read_buf_size = channel_->max_tx_sdu_size() + 1;
 
-  // TODO(NET-1390): Consider yielding occasionally. As-is, we run the risk of
+  // TODO(fxbug.dev/735): Consider yielding occasionally. As-is, we run the risk of
   // starving other SocketChannelRelays on the same |dispatcher| (and anyone
   // else on |dispatcher|), if a misbehaving process spams its zx::socket. And
   // even if starvation isn't an issue, latency/jitter might be.
@@ -255,7 +255,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
       return false;
     }
 
-    // TODO(NET-1391): For low latency and low jitter, IWBN to avoid allocating
+    // TODO(fxbug.dev/734): For low latency and low jitter, IWBN to avoid allocating
     // dynamic memory on every read.
     bool write_success =
         channel_->Send(std::make_unique<DynamicByteBuffer>(BufferView(read_buf, n_bytes_read)));
@@ -271,7 +271,7 @@ bool SocketChannelRelay<ChannelT>::CopyFromSocketToChannel() {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
-  // TODO(NET-1477): Similarly to CopyFromSocketToChannel(), we may want to
+  // TODO(fxbug.dev/708): Similarly to CopyFromSocketToChannel(), we may want to
   // consider yielding occasionally. The data-rate from the Channel into the
   // socket write queue should be bounded by PHY layer data rates, which are
   // much lower than the CPU's data processing throughput, so starvation

@@ -223,7 +223,7 @@ TEST_F(GAP_AdapterTest, TransportClosedCallback) {
   EXPECT_TRUE(transport_closed_called());
 }
 
-// TODO(BT-919): Add a unit test for Adapter::ShutDown() and update
+// TODO(fxbug.dev/1512): Add a unit test for Adapter::ShutDown() and update
 // ShutDownDuringInitialize() with the same expectations.
 
 TEST_F(GAP_AdapterTest, ShutDownDuringInitialize) {
@@ -702,7 +702,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   // Some of the behavior below stems from the fact that kTestTimeout is longer
   // than kCacheTimeout. This assertion is here to catch regressions in this
   // test if the values ever change.
-  // TODO(BT-825): Configuring the cache expiration timeout explicitly would
+  // TODO(fxbug.dev/1418): Configuring the cache expiration timeout explicitly would
   // remove some of the unnecessary invariants from this test case.
   static_assert(kTestTimeout > kCacheTimeout, "expected a shorter device cache timeout");
 

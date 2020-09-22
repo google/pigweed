@@ -1139,7 +1139,7 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
     return;
   }
 
-  // TODO(NET-825): Validate size of payload to be the correct length below.
+  // TODO(fxbug.dev/937): Validate size of payload to be the correct length below.
   switch (opcode) {
     case hci::kReadLocalVersionInfo: {
       hci::ReadLocalVersionInfoReturnParams params;

@@ -528,7 +528,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
     return;
   }
 
-  // TODO(NET-770): Do not allow asynchronous commands to finish with Command
+  // TODO(fxbug.dev/1109): Do not allow asynchronous commands to finish with Command
   // Complete.
   if (event_code == kCommandCompleteEventCode) {
     bt_log(WARN, "hci", "async command received CommandComplete");

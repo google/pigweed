@@ -151,7 +151,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
     // maps to this peer.
   }
 
-  // TODO(BT-619): Check that we're not downgrading the security level before
+  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level before
   // overwriting the bond.
   peer->MutLe().SetBondData(bond_data);
   ZX_DEBUG_ASSERT(!peer->temporary());
@@ -179,7 +179,7 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address, const sm::LTK& link
     return false;
   }
 
-  // TODO(BT-619): Check that we're not downgrading the security level before
+  // TODO(fxbug.dev/1212): Check that we're not downgrading the security level before
   // overwriting the bond.
   peer->MutBrEdr().SetBondData(link_key);
   ZX_DEBUG_ASSERT(!peer->temporary());

@@ -89,7 +89,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Status status) {
       return;
     }
 
-    // TODO(NET-682): Allow async commands to be queued.
+    // TODO(fxbug.dev/641): Allow async commands to be queued.
     ZX_DEBUG_ASSERT(!status || event_packet.event_code() == kCommandCompleteEventCode);
 
     if (cmd_cb) {

@@ -619,10 +619,10 @@ fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap
 
     out_data.bredr->address = peer.bredr()->address().value().ToString();
 
-    // TODO(BT-669): Populate with history of role switches.
+    // TODO(fxbug.dev/1262): Populate with history of role switches.
     out_data.bredr->piconet_leader = false;
 
-    // TODO(BT-670): Populate with discovered SDP services.
+    // TODO(fxbug.dev/1263): Populate with discovered SDP services.
     out_data.bredr->services.resize(0);
 
     if (peer.bredr()->link_key()) {

@@ -68,7 +68,7 @@ void AdvertisementInstance::Reset() {
 
 class LowEnergyAdvertisingManager::ActiveAdvertisement final {
  public:
-  // TODO(BT-270): Don't randomly generate the ID of an advertisement.
+  // TODO(fxbug.dev/863): Don't randomly generate the ID of an advertisement.
   // Instead use a counter like other internal IDs once this ID is not visible
   // outside of bt-host.
   explicit ActiveAdvertisement(const DeviceAddress& address)
@@ -124,7 +124,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
 
   auto self = weak_ptr_factory_.GetWeakPtr();
 
-  // TODO(BT-742): The address used for legacy advertising must be
+  // TODO(fxbug.dev/1335): The address used for legacy advertising must be
   // coordinated via |local_addr_delegate_| however a unique address can be
   // generated and assigned to each advertising set when the controller
   // supports 5.0 extended advertising. hci::LowEnergyAdvertiser needs to be

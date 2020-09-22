@@ -20,7 +20,7 @@ namespace gap {
 // given RPA. Resolution is performed using identity information stored in the
 // registry.
 //
-// TODO(NET-1165): Manage the controller-based list here.
+// TODO(fxbug.dev/835): Manage the controller-based list here.
 class IdentityResolvingList final {
  public:
   IdentityResolvingList() = default;

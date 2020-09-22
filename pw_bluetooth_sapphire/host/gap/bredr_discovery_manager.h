@@ -201,7 +201,7 @@ class BrEdrDiscoveryManager final {
   std::unordered_set<BrEdrDiscoverySession*> discovering_;
   // Sessions that have been removed but are still active.
   // Inquiry persists until we receive a Inquiry Complete event.
-  // TODO(NET-619): we should not need these once we can Inquiry Cancel.
+  // TODO(fxbug.dev/668): we should not need these once we can Inquiry Cancel.
   std::unordered_set<BrEdrDiscoverySession*> zombie_discovering_;
 
   // The set of peers that we have pending name requests for.

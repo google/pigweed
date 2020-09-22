@@ -133,7 +133,7 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     InformationType type, BrEdrCommandHandler::InformationResponder* responder) {
   bt_log(TRACE, "l2cap-bredr", "Got Information Request for type %#.4hx", type);
 
-  // TODO(NET-1074): The responses here will likely remain hardcoded magics, but
+  // TODO(fxbug.dev/933): The responses here will likely remain hardcoded magics, but
   // maybe they should live elsewhere.
   switch (type) {
     case InformationType::kConnectionlessMTU: {
@@ -154,7 +154,7 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
       const FixedChannelsSupported channels_supported = kFixedChannelsSupportedBitSignaling;
 
       // Express support for the ACL-U Signaling Channel (as required)
-      // TODO(NET-1074): Set the bit for SM's fixed channel
+      // TODO(fxbug.dev/933): Set the bit for SM's fixed channel
       responder->SendFixedChannelsSupported(channels_supported);
       break;
     }
@@ -480,7 +480,7 @@ void BrEdrDynamicChannel::OnRxConfigReq(uint16_t flags, ChannelConfiguration con
     return;
   }
 
-  // TODO(NET-1084): Defer accepting config req using a Pending response
+  // TODO(fxbug.dev/1059): Defer accepting config req using a Pending response
   state_ |= kRemoteConfigAccepted;
 
   ChannelConfiguration response_config;

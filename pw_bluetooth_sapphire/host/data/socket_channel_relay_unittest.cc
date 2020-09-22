@@ -119,7 +119,7 @@ class DATA_SocketChannelRelayTest : public ::testing::Test {
   zx::socket local_socket_;
   zx::socket remote_socket_;
   zx::unowned_socket local_socket_unowned_;
-  // TODO(NET-1526): Move to FakeChannelTest, which incorporates
+  // TODO(fxbug.dev/716): Move to FakeChannelTest, which incorporates
   // async::TestLoop.
   async::Loop loop_;
 };

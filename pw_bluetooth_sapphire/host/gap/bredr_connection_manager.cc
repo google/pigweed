@@ -354,7 +354,7 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
 // this link but pairing is allowed before interrogation completes.
 void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                                   hci::ConnectionHandle connection_handle) {
-  // TODO(BT-288): support non-master connections.
+  // TODO(fxbug.dev/881): support non-master connections.
   auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
                                          local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
@@ -604,10 +604,10 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
 
   const hci::IOCapability io_capability = *reply;
 
-  // TODO(BT-8): Add OOB status from PeerCache.
+  // TODO(fxbug.dev/601): Add OOB status from PeerCache.
   const uint8_t oob_data_present = 0x00;  // None present.
 
-  // TODO(BT-656): Determine this based on the service requirements.
+  // TODO(fxbug.dev/1249): Determine this based on the service requirements.
   const hci::AuthRequirements auth_requirements =
       io_capability == hci::IOCapability::kNoInputNoOutput
           ? hci::AuthRequirements::kGeneralBonding

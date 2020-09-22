@@ -105,7 +105,7 @@ class BrEdrConnectionManager final {
   // the peer identified by |peer_id|. Returns false if the connection
   // request was invalid, otherwise returns true and |callback| will be called
   // with the result of the procedure, whether successful or not
-  // TODO(BT-820) - implement a timeout
+  // TODO(fxbug.dev/1413) - implement a timeout
   [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback);
 
   // Initiate pairing to the peer with |peer_id| using the bondable preference. Pairing will only be

@@ -27,7 +27,7 @@ std::variant<std::monostate, const SimpleInformationFrameHeader, const SimpleSta
 GetFrameHeaderFromPdu(const PDU& pdu) {
   const auto control_field_opt = TryCopyFromPdu<EnhancedControlField>(pdu);
   if (!control_field_opt) {
-    // TODO(BT-713): Add metric counting runt frames.
+    // TODO(fxbug.dev/1306): Add metric counting runt frames.
     return std::monostate();
   }
 
@@ -35,7 +35,7 @@ GetFrameHeaderFromPdu(const PDU& pdu) {
   if (control_field.designates_supervisory_frame()) {
     const auto frame_opt = TryCopyFromPdu<SimpleSupervisoryFrame>(pdu);
     if (!frame_opt) {
-      // TODO(BT-713): Add metric counting runt S-frames.
+      // TODO(fxbug.dev/1306): Add metric counting runt S-frames.
       return std::monostate();
     }
     return frame_opt.value();
@@ -44,7 +44,7 @@ GetFrameHeaderFromPdu(const PDU& pdu) {
   if (control_field.designates_start_of_segmented_sdu()) {
     const auto frame_opt = TryCopyFromPdu<SimpleStartOfSduFrameHeader>(pdu);
     if (!frame_opt) {
-      // TODO(BT-713): Add metric counting runt Start-of-SDU frames.
+      // TODO(fxbug.dev/1306): Add metric counting runt Start-of-SDU frames.
       return std::monostate();
     }
     return frame_opt.value();
@@ -52,7 +52,7 @@ GetFrameHeaderFromPdu(const PDU& pdu) {
 
   const auto frame_opt = TryCopyFromPdu<SimpleInformationFrameHeader>(pdu);
   if (!frame_opt) {
-    // TODO(BT-713): Add metric counting runt I-frames.
+    // TODO(fxbug.dev/1306): Add metric counting runt I-frames.
     return std::monostate();
   }
   return frame_opt.value();
@@ -95,7 +95,7 @@ ByteBufferPtr Engine::ProcessPdu(PDU pdu) {
 
   if (!IsMpsValid(pdu)) {
     // TODO(quiche): Close connection.
-    // TODO(BT-713): Add metric counting oversized frames.
+    // TODO(fxbug.dev/1306): Add metric counting oversized frames.
     return nullptr;
   }
 

@@ -154,7 +154,7 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(!closed_);
 
-  // TODO(NET-1437): Implement channels for LE credit-based connections
+  // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
   if (type_ == hci::Connection::LinkType::kLE) {
     bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
     CompleteDynamicOpen(nullptr, std::move(callback));

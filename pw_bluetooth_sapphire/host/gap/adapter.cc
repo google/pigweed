@@ -524,7 +524,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   SetLocalName(kDefaultLocalName, [self, callback = std::move(callback)](auto status) mutable {
     // Set the default device class - a computer with audio.
-    // TODO(BT-641): set this from a platform configuration file
+    // TODO(fxbug.dev/1234): set this from a platform configuration file
     DeviceClass dev_class(DeviceClass::MajorClass::kComputer);
     dev_class.SetServiceClasses({DeviceClass::ServiceClass::kAudio});
     self->SetDeviceClass(dev_class, [self, callback = std::move(callback)](const auto&) {

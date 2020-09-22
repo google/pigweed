@@ -95,7 +95,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduTransmitsMaximalSiz
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest, QueueSduSurvivesOversizedSdu) {
-  // TODO(BT-440): Update this test when we add support for segmentation.
+  // TODO(fxbug.dev/1033): Update this test when we add support for segmentation.
   constexpr size_t kMtu = 1;
   TxEngine(kTestChannelId, kMtu, kDefaultMaxTransmissions, kDefaultTxWindow, NoOpTxCallback,
            NoOpFailureCallback)

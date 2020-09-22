@@ -41,7 +41,7 @@ class DiscoveryFilter;
 namespace bthost {
 namespace fidl_helpers {
 
-// TODO(BT-305): Temporary logic for converting between the stack identifier
+// TODO(fxbug.dev/898): Temporary logic for converting between the stack identifier
 // type (integer) and FIDL identifier type (string). Remove these once all FIDL
 // interfaces have been converted to use integer IDs.
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id);

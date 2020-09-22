@@ -411,7 +411,7 @@ void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr 
 
 void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback callback) {
   bt_log(DEBUG, "bt-host", "SetDiscoverable(%s)", discoverable ? "true" : "false");
-  // TODO(NET-830): advertise LE here
+  // TODO(fxbug.dev/955): advertise LE here
   if (!discoverable) {
     bredr_discoverable_session_ = nullptr;
     NotifyInfoChange();

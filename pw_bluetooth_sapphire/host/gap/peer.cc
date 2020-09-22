@@ -76,7 +76,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv)
     if (type == DataType::kCompleteLocalName || type == DataType::kShortenedLocalName) {
       // TODO(armansito): Parse more advertising data fields, such as preferred
       // connection parameters.
-      // TODO(NET-607): SetName should be a no-op if a name was obtained via
+      // TODO(fxbug.dev/793): SetName should be a no-op if a name was obtained via
       // the name discovery procedure.
       if (peer_->SetNameInternal(data.ToString())) {
         notify_listeners = true;

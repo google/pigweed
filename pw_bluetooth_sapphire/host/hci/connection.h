@@ -220,7 +220,7 @@ class Connection {
 
   PeerDisconnectCallback peer_disconnect_callback_;
 
-  // TODO(BT-715): Add a BREDRParameters struct.
+  // TODO(fxbug.dev/1308): Add a BREDRParameters struct.
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };

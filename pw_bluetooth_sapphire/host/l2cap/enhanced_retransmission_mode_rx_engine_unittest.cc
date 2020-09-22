@@ -231,7 +231,7 @@ TEST(L2CAP_EnhancedRetransmissionModeRxEngineTest, ProcessPduDoesNotAckOutOfSequ
   // out-of-sequence frame should cause us to transmit a Reject frame. We assume
   // that we should _not_ also transmit a ReceiverReady frame.
   //
-  // TODO(BT-448): Revise this test when we start sending Reject frames.
+  // TODO(fxbug.dev/1041): Revise this test when we start sending Reject frames.
   ASSERT_FALSE(Engine(tx_callback, NoOpFailureCallback)
                    .ProcessPdu(Fragmenter(kTestHandle)
                                    .BuildFrame(kTestChannelId, payload,

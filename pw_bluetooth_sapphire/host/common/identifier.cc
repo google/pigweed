@@ -11,7 +11,7 @@ namespace bt {
 PeerId RandomPeerId() {
   PeerId id = kInvalidPeerId;
   while (id == kInvalidPeerId) {
-    // TODO(BT-748): zx_cprng_draw() current guarantees this random ID to be
+    // TODO(fxbug.dev/1341): zx_cprng_draw() current guarantees this random ID to be
     // unique and that there will be no collisions. Re-consider where this
     // address is generated and whether we need to provide unique-ness
     // guarantees beyond device scope.

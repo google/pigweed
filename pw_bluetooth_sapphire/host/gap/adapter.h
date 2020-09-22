@@ -46,7 +46,7 @@ class LowEnergyAddressManager;
 class LowEnergyAdvertisingManager;
 class LowEnergyDiscoveryManager;
 
-// TODO(BT-734): Consider removing this identifier from the bt-host layer.
+// TODO(fxbug.dev/1327): Consider removing this identifier from the bt-host layer.
 class AdapterId : public Identifier<uint64_t> {
  public:
   constexpr explicit AdapterId(uint64_t value) : Identifier<uint64_t>(value) {}

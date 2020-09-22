@@ -135,7 +135,7 @@ void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
     bt_log(DEBUG, "l2cap", "Failed to open dynamic channel %#.4x (remote %#.4x) for PSM %#.4x",
            channel->local_cid(), channel->remote_cid(), channel->psm());
 
-    // TODO(NET-1084): Maybe negotiate channel parameters here? For now, just
+    // TODO(fxbug.dev/1059): Maybe negotiate channel parameters here? For now, just
     // disconnect the channel.
     // Move the callback to the stack to prepare for channel destruction.
     auto pass_failure = [open_cb = std::move(open_cb), pass_failed] {

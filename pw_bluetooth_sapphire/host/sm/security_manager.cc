@@ -668,7 +668,7 @@ void SecurityManagerImpl::OnPairingFailed(Status status) {
   bt_log(ERROR, "sm", "LE pairing failed: %s. Current pairing phase: %s", status.ToString().c_str(),
          phase_status.c_str());
   StopTimer();
-  // TODO(NET-1201): implement "waiting interval" to prevent repeated attempts
+  // TODO(fxbug.dev/910): implement "waiting interval" to prevent repeated attempts
   // as described in Vol 3, Part H, 2.3.6.
 
   ZX_ASSERT(delegate_);
