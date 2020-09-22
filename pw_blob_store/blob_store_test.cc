@@ -146,6 +146,21 @@ TEST_F(BlobStoreTest, Init_Ok) {
   EXPECT_EQ(Status::OK, blob.Init());
 }
 
+TEST_F(BlobStoreTest, Discard) {
+  InitSourceBufferToRandom(0x8675309);
+  WriteTestBlock();
+
+  kvs::ChecksumCrc16 checksum;
+  BlobStoreBuffer<256> blob(
+      "TestBlobBlock", partition_, &checksum, kvs::TestKvs());
+  EXPECT_EQ(Status::OK, blob.Init());
+
+  BlobStore::BlobWriter writer(blob);
+  EXPECT_EQ(Status::OK, writer.Open());
+  EXPECT_EQ(Status::OK, writer.Discard());
+  EXPECT_EQ(Status::OK, writer.Close());
+}
+
 TEST_F(BlobStoreTest, MultipleErase) {
   BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
   EXPECT_EQ(Status::OK, blob.Init());

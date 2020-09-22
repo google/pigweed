@@ -478,7 +478,11 @@ Status BlobStore::Invalidate() {
   write_address_ = 0;
   flash_address_ = 0;
 
-  return kvs_.Delete(MetadataKey());
+  Status status = kvs_.Delete(MetadataKey());
+
+  return (status == Status::OK || status == Status::NOT_FOUND)
+             ? Status::OK
+             : Status::INTERNAL;
 }
 
 Status BlobStore::ValidateChecksum() {
