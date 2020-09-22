@@ -68,6 +68,11 @@ pw::stream::MemoryReader
 The ``MemoryReader`` class implements the ``Reader`` interface by backing the
 data source with an **externally-provided** memory buffer.
 
+pw::stream::NullWriter
+------------------------
+The ``NullWriter`` class implements the ``Writer`` interface by dropping all
+requested data writes, similar to ``/dev/null``.
+
 Why use pw_stream?
 ==================
 

@@ -27,6 +27,7 @@ pw_cc_library(
     hdrs = [
       "public/pw_stream/buffered_stream.h",
       "public/pw_stream/memory_stream.h",
+      "public/pw_stream/null_stream.h",
       "public/pw_stream/stream.h",
     ],
     srcs = [
