@@ -45,6 +45,10 @@ if (dir_pw_third_party_arduino != "") {
 
     sources = _core_c_files + _core_s_files + _core_cpp_files +
               _variant_c_files + _variant_s_files + _variant_cpp_files
+
+    # Rename main() to ArduinoMain()
+    # See //pw_arduino_build/docs.rst for details on this approach.
+    defines = [ "main(...)=ArduinoMain()" ]
   }
 } else {
   group("arduino_core_sources") {

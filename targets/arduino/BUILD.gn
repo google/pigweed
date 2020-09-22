@@ -77,11 +77,15 @@ if (dir_pw_third_party_arduino != "") {
 
   if (current_toolchain != default_toolchain) {
     pw_source_set("pre_init") {
+      sources = [ "init.cc" ]
       public_deps = [
         "$dir_pw_sys_io_arduino",
         "$dir_pw_third_party_arduino:arduino_core_sources",
       ]
-      deps = [ "$dir_pw_preprocessor" ]
+      deps = [
+        "$dir_pw_arduino_build:arduino_init_facade",
+        "$dir_pw_preprocessor",
+      ]
     }
   }
 } else {

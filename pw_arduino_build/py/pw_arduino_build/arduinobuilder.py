@@ -556,6 +556,11 @@ class ArduinoBuilder:
             _LOG.error("\n".join(possible_alternatives))
             sys.exit(1)
 
+        # Grab all folder names in the cores directory. These are typically
+        # sub-core source files.
+        self.sub_core_folders = os.listdir(
+            os.path.join(self.package_path, "cores"))
+
         self._find_tools_variables()
 
         self.boards_txt = os.path.join(self.package_path, "boards.txt")
@@ -696,9 +701,15 @@ class ArduinoBuilder:
             self.board[current_board_name]["build.system.path"] = os.path.join(
                 self.package_path, "system")
 
+            # Set the {build.core.path} variable that pointing to a sub-core
+            # folder. For Teensys this is:
+            # 'teensy/hardware/teensy/avr/cores/teensy{3,4}'. For other cores
+            # it's typically just the 'arduino' folder. For example:
+            # 'arduino-samd/hardware/samd/1.8.8/cores/arduino'
             core_path = os.path.join(
                 self.package_path, "cores",
-                self.board[current_board_name]["build.core"])
+                self.board[current_board_name].get("build.core",
+                                                   self.sub_core_folders[0]))
             self.board[current_board_name]["build.core.path"] = core_path
 
             self.board[current_board_name]["build.arch"] = self.build_arch

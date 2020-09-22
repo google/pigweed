@@ -16,7 +16,7 @@
 import("//build_overrides/pigweed.gni")
 declare_args() {
   # Expected args for an Arduino build:
-  arduino_package_path = "third_party/arduino/cores/teensy"
+  arduino_core_name = "teensy"
   arduino_package_name = "teensy/avr"
   arduino_board = "teensy40"
 
@@ -27,14 +27,15 @@ declare_args() {
   ]
 
   # Enable/disable Arduino builds via group("arduino").
-  # Set to "//third_party/arduino".
+  # Set to the full path of ./third_party/arduino
   dir_pw_third_party_arduino = ""
 }
 
 arduino_builder_script =
     get_path_info("py/pw_arduino_build/arduinobuilder.py", "abspath")
 
-_arduino_core_path = rebase_path("../$arduino_package_path")
+_arduino_core_path =
+    rebase_path("../third_party/arduino/cores/$arduino_core_name")
 _compiler_path_override =
     rebase_path(getenv("_PW_ACTUAL_ENVIRONMENT_ROOT") + "/cipd/pigweed/bin")
 

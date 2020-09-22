@@ -23,6 +23,6 @@ template("arduino_executable") {
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ "$dir_pigweed/targets/arduino:pre_init" ]
+    deps += [ "$dir_pw_arduino_build:arduino_main_wrapper" ]
   }
 }

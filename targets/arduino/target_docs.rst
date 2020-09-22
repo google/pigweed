@@ -1,14 +1,18 @@
-.. _chapter-arduino:
-
 .. default-domain:: cpp
 
 .. highlight:: sh
+
+.. _chapter-arduino:
 
 -------
 Arduino
 -------
 
 This target supports building Pigweed on a few Arduino cores.
+
+.. seealso::
+   There are a few caveats when running Pigweed on top of the Arduino API. See
+   :ref:`chapter-pw-arduino-build` for details.
 
 Supported Boards
 ================
@@ -133,7 +137,7 @@ script to run all tests on a Linux machine.
   #!/bin/bash
   gn gen out --export-compile-commands \
       --args='dir_pw_third_party_arduino="//third_party/arduino"
-              arduino_package_path="third_party/arduino/cores/teensy"
+              arduino_core_name="teensy"
               arduino_package_name="teensy/avr"
               arduino_board="teensy40"
               arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]' && \
@@ -158,5 +162,5 @@ script to run all tests on a Linux machine.
       while true; do
           sleep .1; ls $SERIAL_PORT 2>/dev/null && break
       done
-      miniterm.py $SERIAL_PORT 115200
+      python3 -m serial.tools.miniterm $SERIAL_PORT 115200
   done

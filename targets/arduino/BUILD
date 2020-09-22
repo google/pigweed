@@ -20,3 +20,14 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "pre_init",
+    srcs = [
+        "init.cc",
+    ],
+    deps = [
+        "//pw_preprocessor",
+        "//pw_sys_io_arduino",
+    ],
+)

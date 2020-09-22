@@ -22,14 +22,10 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "main_arduino",
-    srcs = [
-        "simple_printing_main_arduino.cc",
-    ],
+    name = "pw_arduino_build",
+    srcs = ["arduino_main_wrapper.cc"],
+    hdrs = ["public/pw_arduino_build/init.h"],
     deps = [
-        ":pw_unit_test",
-        ":simple_printing_event_handler",
-        "//pw_span",
         "//pw_sys_io",
     ],
 )

@@ -21,7 +21,7 @@ _target_config = {
   pw_use_test_server = false
 
   # Use the logging main.
-  pw_unit_test_MAIN = "$dir_pw_arduino_build:simple_printing_main_arduino"
+  pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
 
   # Configuration options for Pigweed executable targets.
   pw_build_EXECUTABLE_TARGET_TYPE = "arduino_executable"
@@ -36,6 +36,7 @@ _target_config = {
   pw_assert_BACKEND = dir_pw_assert_basic
   pw_log_BACKEND = dir_pw_log_basic
   pw_sys_io_BACKEND = dir_pw_sys_io_arduino
+  pw_arduino_build_INIT_BACKEND = "$dir_pigweed/targets/arduino:pre_init"
 
   current_cpu = "arm"
   current_os = ""
