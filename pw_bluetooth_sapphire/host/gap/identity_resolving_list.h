@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_
 
-#include <fbl/macros.h>
-
 #include <optional>
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"

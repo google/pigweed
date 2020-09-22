@@ -182,7 +182,7 @@ class ACLDataChannel final {
   // ZX_ERR_IO means error happens while reading from the channel.
   // ZX_ERR_INVALID_ARGS means the packet is malformed.
   // Otherwise, ZX_OK is returned.
-  static zx_status_t ReadACLDataPacketFromChannel(const zx::channel &channel,
+  static zx_status_t ReadACLDataPacketFromChannel(const zx::channel& channel,
                                                   const ACLDataPacketPtr& packet);
 
  private:

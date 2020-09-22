@@ -335,8 +335,9 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
   // local address however this address may be invalid if we're not advertising. This is OK as the
   // link will be disconnected in that case before it can propagate to higher layers.
   //
-  // TODO(fxbug.dev/2761): We can't assign the default address since an LE connection cannot have a BR/EDR
-  // type. This temporary default won't be necessary was we remove transport from the address type.
+  // TODO(fxbug.dev/2761): We can't assign the default address since an LE connection cannot have a
+  // BR/EDR type. This temporary default won't be necessary was we remove transport from the address
+  // type.
   auto local_address =
       advertising() ? advertised_ : DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
   auto link = Connection::CreateLE(handle, role, local_address, peer_address, conn_params, hci_);

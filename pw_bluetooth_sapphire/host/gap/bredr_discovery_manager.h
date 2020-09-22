@@ -104,7 +104,8 @@ class BrEdrDiscoverableSession final {
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci::InquiryMode mode, PeerCache* peer_cache);
+  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci::InquiryMode mode,
+                        PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
 

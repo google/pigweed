@@ -666,12 +666,12 @@ void CommandChannel::OnChannelReady(async_dispatcher_t* dispatcher, async::WaitB
   }
 }
 
-zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel &channel,
+zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channel,
                                                        const EventPacketPtr& packet) {
   uint32_t read_size;
   auto packet_bytes = packet->mutable_view()->mutable_data();
   zx_status_t read_status = channel.read(0u, packet_bytes.mutable_data(), nullptr,
-                                          packet_bytes.size(), 0, &read_size, nullptr);
+                                         packet_bytes.size(), 0, &read_size, nullptr);
   if (read_status < 0) {
     bt_log(DEBUG, "hci", "Failed to read event bytes: %s", zx_status_get_string(read_status));
     // Clear the handler so that we stop receiving events from it.
