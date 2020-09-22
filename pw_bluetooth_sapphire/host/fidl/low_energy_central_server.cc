@@ -34,13 +34,13 @@ LowEnergyCentralServer::~LowEnergyCentralServer() {
   gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this));
 }
 
-bt::gap::LowEnergyConnectionRef* LowEnergyCentralServer::FindConnectionForTesting(
+std::optional<bt::gap::LowEnergyConnectionRef*> LowEnergyCentralServer::FindConnectionForTesting(
     bt::PeerId identifier) {
   auto conn_iter = connections_.find(identifier);
   if (conn_iter != connections_.end()) {
     return conn_iter->second.get();
   }
-  return nullptr;
+  return std::nullopt;
 }
 
 void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
@@ -167,6 +167,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
     if (!status) {
       ZX_DEBUG_ASSERT(!conn_ref);
       bt_log(DEBUG, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
+      self->connections_.erase(peer_id);
       callback(fidl_helpers::StatusToFidlDeprecated(status, "failed to connect"));
       return;
     }

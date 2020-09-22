@@ -95,10 +95,11 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionR
                                      std::move(gatt_client_req), callback);
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()));
   RunLoopUntilIdle();
-  auto conn_ref_ptr = server()->FindConnectionForTesting(peer->identifier());
+  auto conn_ref = server()->FindConnectionForTesting(peer->identifier());
   ASSERT_EQ(status.error, nullptr);
-  ASSERT_TRUE(conn_ref_ptr);
-  ASSERT_EQ(conn_ref_ptr->bondable_mode(), bt::sm::BondableMode::Bondable);
+  ASSERT_TRUE(conn_ref.has_value());
+  ASSERT_TRUE(conn_ref.value());
+  ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
 // Tests that setting ConnectionOptions.bondable_mode to true and connecting to a peer in bondable
@@ -126,10 +127,11 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectBondableResultsBondableConnection
                                      std::move(gatt_client_req), callback);
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()));
   RunLoopUntilIdle();
-  auto conn_ref_ptr = server()->FindConnectionForTesting(peer->identifier());
+  auto conn_ref = server()->FindConnectionForTesting(peer->identifier());
   ASSERT_EQ(status.error, nullptr);
-  ASSERT_TRUE(conn_ref_ptr);
-  ASSERT_EQ(conn_ref_ptr->bondable_mode(), bt::sm::BondableMode::Bondable);
+  ASSERT_TRUE(conn_ref.has_value());
+  ASSERT_TRUE(conn_ref.value());
+  ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
 // Tests that setting ConnectionOptions.bondable_mode to false and connecting to a peer results in
@@ -157,10 +159,11 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConn
                                      std::move(gatt_client_req), callback);
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()));
   RunLoopUntilIdle();
-  auto conn_ref_ptr = server()->FindConnectionForTesting(peer->identifier());
+  auto conn_ref = server()->FindConnectionForTesting(peer->identifier());
   ASSERT_EQ(status.error, nullptr);
-  ASSERT_TRUE(conn_ref_ptr);
-  ASSERT_EQ(conn_ref_ptr->bondable_mode(), bt::sm::BondableMode::NonBondable);
+  ASSERT_TRUE(conn_ref.has_value());
+  ASSERT_TRUE(conn_ref.value());
+  ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::NonBondable);
 }
 
 TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSuccess) {
@@ -172,6 +175,35 @@ TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectUnconnectedPeripheralReturnsSu
   central_proxy()->DisconnectPeripheral(bt::PeerId(1).ToString(), std::move(callback));
   RunLoopUntilIdle();
   EXPECT_EQ(status.error, nullptr);
+}
+
+TEST_F(FIDL_LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
+
+  fble::ConnectionOptions options;
+
+  fidl::InterfaceHandle<fuchsia::bluetooth::gatt::Client> gatt_client;
+  fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> gatt_client_req =
+      gatt_client.NewRequest();
+
+  fuchsia::bluetooth::Status status;
+  auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
+    status = std::move(cb_status);
+  };
+
+  test_device()->SetDefaultCommandStatus(bt::hci::kReadRemoteVersionInfo,
+                                         bt::hci::StatusCode::kConnectionFailedToBeEstablished);
+
+  ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
+  central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),
+                                     std::move(gatt_client_req), callback);
+  RunLoopUntilIdle();
+  auto conn = server()->FindConnectionForTesting(peer->identifier());
+  EXPECT_NE(status.error, nullptr);
+  EXPECT_FALSE(conn.has_value());
 }
 
 }  // namespace

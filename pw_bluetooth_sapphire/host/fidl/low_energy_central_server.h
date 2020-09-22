@@ -28,9 +28,9 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
                          fxl::WeakPtr<GattHost> gatt_host);
   ~LowEnergyCentralServer() override;
 
-  // If we have connected to the |identifier|-associated peer, this function returns the pointer
-  // to the underlying connection, or nullptr otherwise. Should only be used for testing.
-  bt::gap::LowEnergyConnectionRef* FindConnectionForTesting(bt::PeerId identifier);
+  // Returns the connection pointer in the connections_ map, if it exists. The pointer will be
+  // nullptr if a request is pending. Should only be used for testing.
+  std::optional<bt::gap::LowEnergyConnectionRef*> FindConnectionForTesting(bt::PeerId identifier);
 
  private:
   // fuchsia::bluetooth::le::Central overrides:
