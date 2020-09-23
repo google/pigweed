@@ -64,6 +64,7 @@ into pw_env_setup.
 
     * ``PW_CIPD_PACKAGE_FILES``
     * ``PW_VIRTUALENV_REQUIREMENTS``
+    * ``PW_VIRTUALENV_REQUIREMENTS_APPEND_DEFAULT``
     * ``PW_VIRTUALENV_SETUP_PY_ROOTS``
     * ``PW_CARGO_PACKAGE_FILES``
 
@@ -110,6 +111,9 @@ assumes `bootstrap.sh` is at the top level of your repository.
   # Process the project-specific requirements.txt file.
   PW_VIRTUALENV_REQUIREMENTS="$PROJ_ROOT/tools/requirements.txt:$PW_VIRTUALENV_REQUIREMENTS"
   export PW_VIRTUALENV_REQUIREMENTS
+
+  # Add default requirements (if requirements don't conflict)
+  PW_VIRTUALENV_REQUIREMENTS_APPEND_DEFAULT=1
 
   # Source Pigweed's bootstrap script.
   # Using '.' instead of 'source' for dash compatibility. Since users don't use
