@@ -52,9 +52,6 @@ namespace varint {
 PW_INLINE_VARIABLE constexpr size_t kMaxVarint32SizeBytes = 5;
 PW_INLINE_VARIABLE constexpr size_t kMaxVarint64SizeBytes = 10;
 
-// TODO(ewout): deprecate use of this constant.
-PW_INLINE_VARIABLE constexpr size_t kMaxVarintSizeBytes = kMaxVarint64SizeBytes;
-
 // ZigZag encodes a signed integer. This maps small negative numbers to small,
 // unsigned positive numbers, which improves their density for LEB128 encoding.
 //
