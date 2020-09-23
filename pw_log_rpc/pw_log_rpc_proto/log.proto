@@ -1,0 +1,168 @@
+// Copyright 2020 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+syntax = "proto2";
+
+package pw.log_rpc;
+
+option java_package = "pw.rpc.proto";
+option java_outer_classname = "Log";
+
+// Note: The level is packed into the "line_level" field of LogMessage below.
+// Additionally, this breaks from the Pigweed log levels to enable packing the
+// log level into just 3 bits.
+enum LogLevel {
+  LOG_LEVEL_UNKNOWN = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARNING = 3;
+  LOG_LEVEL_ERROR = 4;
+  LOG_LEVEL_CRITICAL = 5;
+}
+
+// A log with a tokenized message, a string message, or dropped indicator.  A
+// message can be one of three types:
+//
+//  1. A tokenized log message (recommended for production)
+//  2. A non-tokenized log message (good for development)
+//  3. A "log missed" tombstone, indicating that some logs were dropped
+//
+// Size analysis:
+//
+// For tokenized log messages in the common case; including the proto tag for
+// the field (so adding the fields gives the total proto message size):
+//
+//  - message_tokenized  - 6-12 bytes, depending on # and value of arguments
+//  - line_level         - 3 bytes; 4 bytes if line > 2048 (uncommon)
+//  - timestamp          - 3 bytes; assuming delta encoding
+//  - thread_tokenized   - 3 bytes
+//
+// Total:
+//
+//    6-12 bytes - log
+//    9-15 bytes - log + level + line
+//   12-18 bytes - log + level + line + timestamp
+//   15-21 bytes - log + level + line + timestamp + task
+//
+// An analysis of a project's log token database revealed the following
+// distribution of the number of arguments to log messages:
+//
+//   # args   # messages
+//     0         2,700
+//     1         2,400
+//     2         1,200
+//     3+        1,000
+//
+// Note: The below proto makes some compromises compared to what one might
+// expect for a "clean" proto design, in order to shave bytes off of the
+// messages. It is critical that the log messages are as small as possible to
+// enable storing more logs in limited memory. This is why, for example, there
+// is no separate "DroppedLog" type, or a "TokenizedLog" and "StringLog", which
+// would add at least 2 extra bytes per message
+// Note: Time-related fields will likely support specifying the time as a ratio
+// (period) and an absolute time separate from the current delta fields.
+message LogEntry {
+  // The tokenized log message. Internally, the format has a 32-bit token
+  // followed by the arguments for that message. The unformatted log string
+  // corresponding to the token in the token database must follow this format:
+  //
+  //   file|module|message
+  //
+  // For example:
+  //
+  //   ../boot/bluetooth.cc|BOOT|Bluetooth is on the fritz; error code: %d
+  //
+  // Note: The level and flags are not included since level and flags are
+  // runtime values and so cannot be tokenized.
+  //
+  // Size analysis:
+  //
+  //   tag+wire = 1 byte
+  //   size     = 1 byte; payload will almost always be < 127 bytes
+  //   payload  = N bytes; typically 4-10 in practice
+  //
+  // Total: 2 + N ~= 6-12 bytes
+  optional bytes message_tokenized = 1;
+
+  // Packed log level and line number. Structure:
+  //
+  //   Level: Bottom 3 bits; level = line_level & 0x7
+  //   Line: Remaining bits; line = (line_level >> 3)
+  //
+  // Note: This packing saves two bytes per log message in most cases compared
+  // to having line and level separately; and is zero-cost if the log backend
+  // omits the line number.
+  optional uint32 line_level = 2;
+
+  // Some log messages have flags to indicate for example assert or PII. The
+  // particular flags are product- and implementation-dependent. When no flags
+  // are present, the field is omitted entirely.
+  optional uint32 flags = 3;
+
+  // The task or thread that created the log message.
+  //
+  // In practice, the task token and tag should be just 3 bytes, since a 14 bit
+  // token for the task name should be enough.
+  optional uint32 thread_tokenized = 4;
+
+  // Timestamp. Note: The units here are TBD and will likely require a separate
+  // mechanism to indicate units. This field is likely to change as we figure
+  // out the right strategy for timestamps in Pigweed. This is a variable-sized
+  // integer to enable scaling this up to a uint64 later on without impacting
+  // the wire format.
+  optional uint64 timestamp = 5;
+
+  // Time since the last entry. Generally, one of timestamp or this field will
+  // be specified. This enables delta encoding when batching entries together.
+  //
+  // Size analysis for this field including tag and varint:
+  //
+  //           < 127 ms gap == 127 ms      ==  7 bits == 2 bytes
+  //        < 16,000 ms gap ==  16 seconds == 14 bits == 3 bytes
+  //     < 2,000,000 ms gap ==  35 minutes == 21 bits == 4 bytes
+  //   < 300,000,000 ms gap ==  74 hours   == 28 bits == 5 bytes
+  //
+  // Log bursts will thus consume just 2 bytes (tag + up to 127ms delta) for
+  // the timestamp, which is a good improvement over timestamp in many cases.
+  // Note: The units of this field are TBD and will likely require a separate
+  // mechanism to indicate units. The calculations above assume milliseconds
+  // and may change if the units differ.
+  optional uint64 elapsed_time_since_last_entry = 6;
+
+  // Fully formatted textual log message.
+  optional string message_string = 16;
+
+  // For non-tokenized logging, the file name.
+  optional string file = 17;
+
+  // String representation of the task that created the log message.
+  optional string thread_string = 18;
+
+  // When the log buffers are full but more logs come in, the logs are counted
+  // and a special log message is omitted with only counts for the number of
+  // messages dropped. The timestamp indicates the time that the "missed logs"
+  // message was inserted into the queue.
+  //
+  // Missed logs messages will only have one of the timestamp fields and these
+  // counters specified.
+  optional uint32 dropped = 19;
+  optional uint32 dropped_warning_or_above = 20;
+
+  // Some messages are associated with trace events, which may carry additional
+  // contextual data. This is a tuple of a data format string which could be
+  // used by the decoder to identify the data (e.g. printf-style tokens) and the
+  // data itself in bytes.
+  optional string data_format_string = 21;
+  optional bytes data = 22;
+}
