@@ -43,16 +43,16 @@ class PendingRpc(NamedTuple):
 
 
 class PendingRpcs:
-    """Internal object for tracking whether an RPC is pending."""
+    """Tracks pending RPCs and encodes outgoing RPC packets."""
     def __init__(self):
         self._pending: Dict[PendingRpc, List] = {}
 
-    def invoke(self,
-               rpc: PendingRpc,
-               request,
-               context,
-               override_pending=False) -> None:
-        """Invokes the provided RPC."""
+    def request(self,
+                rpc: PendingRpc,
+                request,
+                context,
+                override_pending: bool = False) -> bytes:
+        """Starts the provided RPC and returns the encoded packet to send."""
         # Ensure that every context is a unique object by wrapping it in a list.
         unique_ctx = [context]
 
@@ -64,29 +64,50 @@ class PendingRpcs:
                         'Cancel the RPC before invoking it again')
 
         _LOG.debug('Starting %s', rpc)
-        # TODO(hepler): Remove `type: ignore` on this and other lines when
+        return packets.encode_request(rpc, request)
+
+    def send_request(self,
+                     rpc: PendingRpc,
+                     request,
+                     context,
+                     override_pending: bool = False) -> None:
+        """Calls request and sends the resulting packet to the channel."""
+        # TODO(hepler): Remove `type: ignore` on this and similar lines when
         #     https://github.com/python/mypy/issues/5485 is fixed
         rpc.channel.output(  # type: ignore
-            packets.encode_request(rpc, request))
+            self.request(rpc, request, context, override_pending))
 
-    def cancel(self, rpc: PendingRpc) -> bool:
-        """Cancels the RPC, including sending a CANCEL packet.
+    def cancel(self, rpc: PendingRpc) -> Optional[bytes]:
+        """Cancels the RPC. Returns the CANCEL packet to send.
 
         Returns:
           True if the RPC was cancelled; False if it was not pending
+
+        Raises:
+          KeyError if the RPC is not pending
         """
+        _LOG.debug('Cancelling %s', rpc)
+        del self._pending[rpc]
+
+        if rpc.method.type is Method.Type.UNARY:
+            return None
+
+        return packets.encode_cancel(rpc)
+
+    def send_cancel(self, rpc: PendingRpc) -> bool:
+        """Calls cancel and sends the cancel packet, if any, to the channel."""
         try:
-            _LOG.debug('Cancelling %s', rpc)
-            del self._pending[rpc]
+            packet = self.cancel(rpc)
         except KeyError:
             return False
 
-        if rpc.method.type is not Method.Type.UNARY:
-            rpc.channel.output(packets.encode_cancel(rpc))  # type: ignore
+        if packet:
+            rpc.channel.output(packet)  # type: ignore
 
         return True
 
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
+        """Gets the pending RPC's context. If status is set, clears the RPC."""
         if status is None:
             return self._pending[rpc][0]  # Unwrap the context from the list
 

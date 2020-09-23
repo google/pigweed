@@ -75,17 +75,20 @@ class _MethodClient:
 
     def invoke(self, callback: Callback, _request=None, **request_fields):
         """Invokes an RPC with a callback."""
-        self._rpcs.invoke(self._rpc,
-                          self.method.get_request(_request, request_fields),
-                          callback)
+        self._rpcs.send_request(self._rpc,
+                                self.method.get_request(
+                                    _request, request_fields),
+                                callback,
+                                override_pending=False)
         return _AsyncCall(self._rpcs, self._rpc)
 
     def reinvoke(self, callback: Callback, _request=None, **request_fields):
         """Invokes an RPC with a callback, overriding any pending requests."""
-        self._rpcs.invoke(self._rpc,
-                          self.method.get_request(_request, request_fields),
-                          callback,
-                          override_pending=True)
+        self._rpcs.send_request(self._rpc,
+                                self.method.get_request(
+                                    _request, request_fields),
+                                callback,
+                                override_pending=True)
         return _AsyncCall(self._rpcs, self._rpc)
 
     def __repr__(self) -> str:
@@ -102,7 +105,7 @@ class _AsyncCall:
         self._rpcs = rpcs
 
     def cancel(self) -> bool:
-        return self._rpcs.cancel(self.rpc)
+        return self._rpcs.send_cancel(self.rpc)
 
     def __enter__(self) -> '_AsyncCall':
         return self
@@ -204,5 +207,5 @@ class Impl(client.ClientImpl):
         try:
             context(rpc, status, payload, *args, **kwargs)
         except:  # pylint: disable=bare-except
-            rpcs.cancel(rpc)
+            rpcs.send_cancel(rpc)
             _LOG.exception('Callback %s for %s raised exception', context, rpc)
