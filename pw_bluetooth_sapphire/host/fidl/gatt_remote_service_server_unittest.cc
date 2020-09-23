@@ -24,8 +24,6 @@ constexpr bt::att::Handle kServiceStartHandle = 0x0021;
 constexpr bt::att::Handle kServiceEndHandle = 0x002C;
 const bt::UUID kServiceUuid((uint16_t)0x180D);
 
-void NopStatusCallback(bt::att::Status) {}
-
 class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
   FIDL_GattRemoteServiceServerTest() = default;
