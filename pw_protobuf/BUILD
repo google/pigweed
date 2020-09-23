@@ -34,6 +34,7 @@ pw_cc_library(
         "public/pw_protobuf/decoder.h",
         "public/pw_protobuf/encoder.h",
         "public/pw_protobuf/find.h",
+        "public/pw_protobuf/serialized_size.h",
         "public/pw_protobuf/wire_format.h",
     ],
     includes = ["public"],
