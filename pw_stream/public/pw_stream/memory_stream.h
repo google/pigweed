@@ -49,7 +49,7 @@ class MemoryWriter : public Writer {
 };
 
 template <size_t size_bytes>
-class MemoryWriterBuffer : public MemoryWriter {
+class MemoryWriterBuffer final : public MemoryWriter {
  public:
   MemoryWriterBuffer() : MemoryWriter(buffer_) {}
 
@@ -57,7 +57,7 @@ class MemoryWriterBuffer : public MemoryWriter {
   std::array<std::byte, size_bytes> buffer_;
 };
 
-class MemoryReader : public Reader {
+class MemoryReader final : public Reader {
  public:
   MemoryReader(ConstByteSpan source) : source_(source), bytes_read_(0) {}
 

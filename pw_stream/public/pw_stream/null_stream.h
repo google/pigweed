@@ -24,7 +24,7 @@
 namespace pw::stream {
 
 // Stream writer which quietly drops all of the data, similar to /dev/null.
-class NullWriter : public Writer {
+class NullWriter final : public Writer {
  public:
   size_t ConservativeWriteLimit() const override {
     // In theory this can sink as much as is addressable, however this way it is
@@ -33,7 +33,7 @@ class NullWriter : public Writer {
   }
 
  private:
-  Status DoWrite(ConstByteSpan data) { return Status::OK; }
+  Status DoWrite(ConstByteSpan data) override { return Status::OK; }
 };
 
 }  // namespace pw::stream
