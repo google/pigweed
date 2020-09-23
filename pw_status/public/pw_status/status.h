@@ -159,6 +159,35 @@ const char* pw_StatusString(pw_Status status);
 
 }  // extern "C"
 
+// This header violates the Pigweed style guide! It declares constants that use
+// macro naming style, rather than constant naming style (kConstant). This is
+// done for readability and for consistency with Google's standard status codes
+// (e.g. as in gRPC).
+//
+// The problem is that the status code names might overlap with macro
+// definitions. To workaround this, this header undefines any macros with these
+// names.
+//
+// If your project relies on a macro with one of these names (e.g. INTERNAL),
+// make sure it is included after status.h so that the macro is defined.
+#undef OK
+#undef CANCELLED
+#undef UNKNOWN
+#undef INVALID_ARGUMENT
+#undef DEADLINE_EXCEEDED
+#undef NOT_FOUND
+#undef ALREADY_EXISTS
+#undef PERMISSION_DENIED
+#undef UNAUTHENTICATED
+#undef RESOURCE_EXHAUSTED
+#undef FAILED_PRECONDITION
+#undef ABORTED
+#undef OUT_OF_RANGE
+#undef UNIMPLEMENTED
+#undef INTERNAL
+#undef UNAVAILABLE
+#undef DATA_LOSS
+
 namespace pw {
 
 // The Status class is a thin, zero-cost abstraction around the pw_Status enum.

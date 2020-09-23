@@ -12,6 +12,25 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// Make sure status works if these macros are defined.
+#define OK Uh oh, this macro is defined !
+#define CANCELLED Uh oh, this macro is defined !
+#define UNKNOWN Uh oh, this macro is defined !
+#define INVALID_ARGUMENT Uh oh, this macro is defined !
+#define DEADLINE_EXCEEDED Uh oh, this macro is defined !
+#define NOT_FOUND Uh oh, this macro is defined !
+#define ALREADY_EXISTS Uh oh, this macro is defined !
+#define PERMISSION_DENIED Uh oh, this macro is defined !
+#define UNAUTHENTICATED Uh oh, this macro is defined !
+#define RESOURCE_EXHAUSTED Uh oh, this macro is defined !
+#define FAILED_PRECONDITION Uh oh, this macro is defined !
+#define ABORTED Uh oh, this macro is defined !
+#define OUT_OF_RANGE Uh oh, this macro is defined !
+#define UNIMPLEMENTED Uh oh, this macro is defined !
+#define INTERNAL Uh oh, this macro is defined !
+#define UNAVAILABLE Uh oh, this macro is defined !
+#define DATA_LOSS Uh oh, this macro is defined !
+
 #include "pw_status/status.h"
 
 #include "gtest/gtest.h"
