@@ -26,40 +26,40 @@ static_assert(StatusWithSize::max_size() ==
 TEST(StatusWithSize, Default) {
   StatusWithSize result;
   EXPECT_TRUE(result.ok());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(0u, result.size());
 }
 
 TEST(StatusWithSize, ConstructWithSize) {
   StatusWithSize result = StatusWithSize(456);
   EXPECT_TRUE(result.ok());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(456u, result.size());
 }
 
 TEST(StatusWithSize, ConstructWithError) {
-  StatusWithSize result(Status::RESOURCE_EXHAUSTED, 123);
+  StatusWithSize result(Status::ResourceExhausted(), 123);
   EXPECT_FALSE(result.ok());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(123u, result.size());
 }
 
 TEST(StatusWithSize, ConstructWithOkAndSize) {
-  StatusWithSize result(Status::OK, 99);
+  StatusWithSize result(Status::Ok(), 99);
   EXPECT_TRUE(result.ok());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(99u, result.size());
 }
 
 TEST(StatusWithSize, ConstructFromConstant) {
-  StatusWithSize result(StatusWithSize::ALREADY_EXISTS);
+  StatusWithSize result(StatusWithSize::AlreadyExists());
 
-  EXPECT_EQ(Status::ALREADY_EXISTS, result.status());
+  EXPECT_EQ(Status::AlreadyExists(), result.status());
   EXPECT_EQ(0u, result.size());
 
-  result = StatusWithSize::NOT_FOUND;
+  result = StatusWithSize::NotFound();
 
-  EXPECT_EQ(Status::NOT_FOUND, result.status());
+  EXPECT_EQ(Status::NotFound(), result.status());
   EXPECT_EQ(0u, result.size());
 }
 
@@ -92,22 +92,101 @@ TEST(StatusWithSize, AllStatusValues_MaxSize) {
 }
 
 TEST(StatusWithSize, Assignment) {
-  StatusWithSize result = StatusWithSize(Status::INTERNAL, 0x123);
+  StatusWithSize result = StatusWithSize(Status::Internal(), 0x123);
   EXPECT_FALSE(result.ok());
-  EXPECT_EQ(Status::INTERNAL, result.status());
+  EXPECT_EQ(Status::Internal(), result.status());
   EXPECT_EQ(0x123u, result.size());
 
   result = StatusWithSize(300);
   EXPECT_TRUE(result.ok());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(300u, result.size());
 }
 
 TEST(StatusWithSize, Constexpr) {
-  constexpr StatusWithSize result(Status::CANCELLED, 1234);
-  static_assert(Status::CANCELLED == result.status());
+  constexpr StatusWithSize result(Status::Cancelled(), 1234);
+  static_assert(Status::Cancelled() == result.status());
   static_assert(!result.ok());
   static_assert(1234u == result.size());
+}
+
+TEST(Status, Functions_Status) {
+  // clang-format off
+  static_assert(StatusWithSize::Ok(0).status() == Status::Ok());
+  static_assert(StatusWithSize::Cancelled().status() == Status::Cancelled());
+  static_assert(StatusWithSize::Unknown().status() == Status::Unknown());
+  static_assert(StatusWithSize::InvalidArgument().status() == Status::InvalidArgument());
+  static_assert(StatusWithSize::DeadlineExceeded().status() == Status::DeadlineExceeded());
+  static_assert(StatusWithSize::NotFound().status() == Status::NotFound());
+  static_assert(StatusWithSize::AlreadyExists().status() == Status::AlreadyExists());
+  static_assert(StatusWithSize::PermissionDenied().status() == Status::PermissionDenied());
+  static_assert(StatusWithSize::Unauthenticated().status() == Status::Unauthenticated());
+  static_assert(StatusWithSize::ResourceExhausted().status() == Status::ResourceExhausted());
+  static_assert(StatusWithSize::FailedPrecondition().status() == Status::FailedPrecondition());
+  static_assert(StatusWithSize::Aborted().status() == Status::Aborted());
+  static_assert(StatusWithSize::OutOfRange().status() == Status::OutOfRange());
+  static_assert(StatusWithSize::Unimplemented().status() == Status::Unimplemented());
+  static_assert(StatusWithSize::Internal().status() == Status::Internal());
+  static_assert(StatusWithSize::Unavailable().status() == Status::Unavailable());
+  static_assert(StatusWithSize::DataLoss().status() == Status::DataLoss());
+
+  static_assert(StatusWithSize::Ok(123).status() == Status::Ok());
+  static_assert(StatusWithSize::Cancelled(123).status() == Status::Cancelled());
+  static_assert(StatusWithSize::Unknown(123).status() == Status::Unknown());
+  static_assert(StatusWithSize::InvalidArgument(123).status() == Status::InvalidArgument());
+  static_assert(StatusWithSize::DeadlineExceeded(123).status() == Status::DeadlineExceeded());
+  static_assert(StatusWithSize::NotFound(123).status() == Status::NotFound());
+  static_assert(StatusWithSize::AlreadyExists(123).status() == Status::AlreadyExists());
+  static_assert(StatusWithSize::PermissionDenied(123).status() == Status::PermissionDenied());
+  static_assert(StatusWithSize::Unauthenticated(123).status() == Status::Unauthenticated());
+  static_assert(StatusWithSize::ResourceExhausted(123).status() == Status::ResourceExhausted());
+  static_assert(StatusWithSize::FailedPrecondition(123).status() == Status::FailedPrecondition());
+  static_assert(StatusWithSize::Aborted(123).status() == Status::Aborted());
+  static_assert(StatusWithSize::OutOfRange(123).status() == Status::OutOfRange());
+  static_assert(StatusWithSize::Unimplemented(123).status() == Status::Unimplemented());
+  static_assert(StatusWithSize::Internal(123).status() == Status::Internal());
+  static_assert(StatusWithSize::Unavailable(123).status() == Status::Unavailable());
+  static_assert(StatusWithSize::DataLoss(123).status() == Status::DataLoss());
+  // clang-format on
+}
+
+TEST(Status, Functions_DefaultSize) {
+  static_assert(StatusWithSize::Cancelled().size() == 0u);
+  static_assert(StatusWithSize::Unknown().size() == 0u);
+  static_assert(StatusWithSize::InvalidArgument().size() == 0u);
+  static_assert(StatusWithSize::DeadlineExceeded().size() == 0u);
+  static_assert(StatusWithSize::NotFound().size() == 0u);
+  static_assert(StatusWithSize::AlreadyExists().size() == 0u);
+  static_assert(StatusWithSize::PermissionDenied().size() == 0u);
+  static_assert(StatusWithSize::Unauthenticated().size() == 0u);
+  static_assert(StatusWithSize::ResourceExhausted().size() == 0u);
+  static_assert(StatusWithSize::FailedPrecondition().size() == 0u);
+  static_assert(StatusWithSize::Aborted().size() == 0u);
+  static_assert(StatusWithSize::OutOfRange().size() == 0u);
+  static_assert(StatusWithSize::Unimplemented().size() == 0u);
+  static_assert(StatusWithSize::Internal().size() == 0u);
+  static_assert(StatusWithSize::Unavailable().size() == 0u);
+  static_assert(StatusWithSize::DataLoss().size() == 0u);
+}
+
+TEST(Status, Functions_SpecifiedSize) {
+  static_assert(StatusWithSize::Ok(123).size() == 123u);
+  static_assert(StatusWithSize::Cancelled(123).size() == 123u);
+  static_assert(StatusWithSize::Unknown(123).size() == 123u);
+  static_assert(StatusWithSize::InvalidArgument(123).size() == 123u);
+  static_assert(StatusWithSize::DeadlineExceeded(123).size() == 123u);
+  static_assert(StatusWithSize::NotFound(123).size() == 123u);
+  static_assert(StatusWithSize::AlreadyExists(123).size() == 123u);
+  static_assert(StatusWithSize::PermissionDenied(123).size() == 123u);
+  static_assert(StatusWithSize::Unauthenticated(123).size() == 123u);
+  static_assert(StatusWithSize::ResourceExhausted(123).size() == 123u);
+  static_assert(StatusWithSize::FailedPrecondition(123).size() == 123u);
+  static_assert(StatusWithSize::Aborted(123).size() == 123u);
+  static_assert(StatusWithSize::OutOfRange(123).size() == 123u);
+  static_assert(StatusWithSize::Unimplemented(123).size() == 123u);
+  static_assert(StatusWithSize::Internal(123).size() == 123u);
+  static_assert(StatusWithSize::Unavailable(123).size() == 123u);
+  static_assert(StatusWithSize::DataLoss(123).size() == 123u);
 }
 
 }  // namespace

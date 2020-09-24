@@ -24,6 +24,7 @@ class StatusWithSize;
 
 namespace internal {
 
+// TODO(pwbug/268): Remove this class after migrating to the helper functions.
 template <int kStatusShift>
 class StatusWithSizeConstant {
  private:
@@ -76,6 +77,10 @@ class StatusWithSize {
   //
   //   StatusWithSize result = StatusWithSize::NOT_FOUND;
   //
+  // These constants are DEPRECATED! Use the helper functions below instead. For
+  // example, change StatusWithSize::NOT_FOUND to StatusWithSize::NotFound().
+  //
+  // TODO(pwbug/268): Migrate to the functions and remove these constants.
   static constexpr Constant CANCELLED{Status::CANCELLED};
   static constexpr Constant UNKNOWN{Status::UNKNOWN};
   static constexpr Constant INVALID_ARGUMENT{Status::INVALID_ARGUMENT};
@@ -93,17 +98,71 @@ class StatusWithSize {
   static constexpr Constant DATA_LOSS{Status::DATA_LOSS};
   static constexpr Constant UNAUTHENTICATED{Status::UNAUTHENTICATED};
 
-  // Creates a StatusWithSize with Status::OK and a size of 0.
+  // Functions that create a StatusWithSize with the specified status code. For
+  // codes other than OK, the size defaults to 0.
+  static constexpr StatusWithSize Ok(size_t size) {
+    return StatusWithSize(size);
+  }
+  static constexpr StatusWithSize Cancelled(size_t size = 0) {
+    return StatusWithSize(Status::Cancelled(), size);
+  }
+  static constexpr StatusWithSize Unknown(size_t size = 0) {
+    return StatusWithSize(Status::Unknown(), size);
+  }
+  static constexpr StatusWithSize InvalidArgument(size_t size = 0) {
+    return StatusWithSize(Status::InvalidArgument(), size);
+  }
+  static constexpr StatusWithSize DeadlineExceeded(size_t size = 0) {
+    return StatusWithSize(Status::DeadlineExceeded(), size);
+  }
+  static constexpr StatusWithSize NotFound(size_t size = 0) {
+    return StatusWithSize(Status::NotFound(), size);
+  }
+  static constexpr StatusWithSize AlreadyExists(size_t size = 0) {
+    return StatusWithSize(Status::AlreadyExists(), size);
+  }
+  static constexpr StatusWithSize PermissionDenied(size_t size = 0) {
+    return StatusWithSize(Status::PermissionDenied(), size);
+  }
+  static constexpr StatusWithSize Unauthenticated(size_t size = 0) {
+    return StatusWithSize(Status::Unauthenticated(), size);
+  }
+  static constexpr StatusWithSize ResourceExhausted(size_t size = 0) {
+    return StatusWithSize(Status::ResourceExhausted(), size);
+  }
+  static constexpr StatusWithSize FailedPrecondition(size_t size = 0) {
+    return StatusWithSize(Status::FailedPrecondition(), size);
+  }
+  static constexpr StatusWithSize Aborted(size_t size = 0) {
+    return StatusWithSize(Status::Aborted(), size);
+  }
+  static constexpr StatusWithSize OutOfRange(size_t size = 0) {
+    return StatusWithSize(Status::OutOfRange(), size);
+  }
+  static constexpr StatusWithSize Unimplemented(size_t size = 0) {
+    return StatusWithSize(Status::Unimplemented(), size);
+  }
+  static constexpr StatusWithSize Internal(size_t size = 0) {
+    return StatusWithSize(Status::Internal(), size);
+  }
+  static constexpr StatusWithSize Unavailable(size_t size = 0) {
+    return StatusWithSize(Status::Unavailable(), size);
+  }
+  static constexpr StatusWithSize DataLoss(size_t size = 0) {
+    return StatusWithSize(Status::DataLoss(), size);
+  }
+
+  // Creates a StatusWithSize with Status::Ok() and a size of 0.
   explicit constexpr StatusWithSize() : size_(0) {}
 
-  // Creates a StatusWithSize with Status::OK and the provided size.
+  // Creates a StatusWithSize with Status::Ok() and the provided size.
   // std::enable_if is used to prevent enum types (e.g. Status) from being used.
   // TODO(hepler): Add debug-only assert that size <= max_size().
   template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
   explicit constexpr StatusWithSize(T size) : size_(size) {}
 
   // Creates a StatusWithSize with the provided status and size.
-  constexpr StatusWithSize(Status::Code status, size_t size)
+  explicit constexpr StatusWithSize(Status status, size_t size)
       : StatusWithSize((static_cast<size_t>(status) << kStatusShift) | size) {}
 
   // Allow implicit conversions from the StatusWithSize constants.

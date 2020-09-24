@@ -13,6 +13,7 @@
 // the License.
 
 // Make sure status works if these macros are defined.
+// TODO(pwbug/268): Remove these macros after migrating from these aliases.
 #define OK Uh oh, this macro is defined !
 #define CANCELLED Uh oh, this macro is defined !
 #define UNKNOWN Uh oh, this macro is defined !
@@ -41,59 +42,98 @@ namespace {
 constexpr Status::Code kInvalidCode = static_cast<Status::Code>(30);
 
 TEST(Status, Default) {
-  Status status;
-  EXPECT_TRUE(status.ok());
-  EXPECT_EQ(Status(), status);
+  constexpr Status status;
+  static_assert(status.ok());
+  static_assert(Status() == status);
 }
 
 TEST(Status, ConstructWithStatusCode) {
-  Status status(Status::ABORTED);
-  EXPECT_EQ(Status::ABORTED, status);
+  constexpr Status status(PW_STATUS_ABORTED);
+  static_assert(Status::Aborted() == status);
 }
 
 TEST(Status, AssignFromStatusCode) {
   Status status;
-  status = Status::INTERNAL;
-  EXPECT_EQ(Status::INTERNAL, status);
-}
-
-TEST(Status, CompareToStatusCode) {
-  EXPECT_EQ(Status(), Status::OK);
-  EXPECT_EQ(Status::ABORTED, Status(Status::ABORTED));
-  EXPECT_NE(Status(), Status::ABORTED);
+  status = PW_STATUS_INTERNAL;
+  EXPECT_EQ(Status::Internal(), status);
 }
 
 TEST(Status, Ok_OkIsTrue) {
-  EXPECT_TRUE(Status().ok());
-  EXPECT_TRUE(Status(Status::OK).ok());
+  static_assert(Status().ok());
+  static_assert(Status(PW_STATUS_OK).ok());
+  static_assert(Status::Ok().ok());
 }
 
 TEST(Status, NotOk_OkIsFalse) {
-  EXPECT_FALSE(Status(Status::DATA_LOSS).ok());
-  EXPECT_FALSE(Status(kInvalidCode).ok());
+  static_assert(!Status::DataLoss().ok());
+  static_assert(!Status(kInvalidCode).ok());
 }
 
-TEST(Status, KnownString) {
-  EXPECT_STREQ("OK", Status(Status::OK).str());
-  EXPECT_STREQ("CANCELLED", Status(Status::CANCELLED).str());
-  EXPECT_STREQ("DEADLINE_EXCEEDED", Status(Status::DEADLINE_EXCEEDED).str());
-  EXPECT_STREQ("NOT_FOUND", Status(Status::NOT_FOUND).str());
-  EXPECT_STREQ("ALREADY_EXISTS", Status(Status::ALREADY_EXISTS).str());
-  EXPECT_STREQ("PERMISSION_DENIED", Status(Status::PERMISSION_DENIED).str());
-  EXPECT_STREQ("UNAUTHENTICATED", Status(Status::UNAUTHENTICATED).str());
-  EXPECT_STREQ("RESOURCE_EXHAUSTED", Status(Status::RESOURCE_EXHAUSTED).str());
-  EXPECT_STREQ("FAILED_PRECONDITION",
-               Status(Status::FAILED_PRECONDITION).str());
-  EXPECT_STREQ("ABORTED", Status(Status::ABORTED).str());
-  EXPECT_STREQ("OUT_OF_RANGE", Status(Status::OUT_OF_RANGE).str());
-  EXPECT_STREQ("UNIMPLEMENTED", Status(Status::UNIMPLEMENTED).str());
-  EXPECT_STREQ("INTERNAL", Status(Status::INTERNAL).str());
-  EXPECT_STREQ("UNAVAILABLE", Status(Status::UNAVAILABLE).str());
-  EXPECT_STREQ("DATA_LOSS", Status(Status::DATA_LOSS).str());
+TEST(Status, EqualCodes) {
+  static_assert(PW_STATUS_OK == Status());
+  static_assert(PW_STATUS_OK == Status::Ok());
+  static_assert(PW_STATUS_CANCELLED == Status::Cancelled());
+  static_assert(PW_STATUS_UNKNOWN == Status::Unknown());
+  static_assert(PW_STATUS_INVALID_ARGUMENT == Status::InvalidArgument());
+  static_assert(PW_STATUS_DEADLINE_EXCEEDED == Status::DeadlineExceeded());
+  static_assert(PW_STATUS_NOT_FOUND == Status::NotFound());
+  static_assert(PW_STATUS_ALREADY_EXISTS == Status::AlreadyExists());
+  static_assert(PW_STATUS_PERMISSION_DENIED == Status::PermissionDenied());
+  static_assert(PW_STATUS_UNAUTHENTICATED == Status::Unauthenticated());
+  static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::ResourceExhausted());
+  static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FailedPrecondition());
+  static_assert(PW_STATUS_ABORTED == Status::Aborted());
+  static_assert(PW_STATUS_OUT_OF_RANGE == Status::OutOfRange());
+  static_assert(PW_STATUS_UNIMPLEMENTED == Status::Unimplemented());
+  static_assert(PW_STATUS_INTERNAL == Status::Internal());
+  static_assert(PW_STATUS_UNAVAILABLE == Status::Unavailable());
+  static_assert(PW_STATUS_DATA_LOSS == Status::DataLoss());
+}
+
+TEST(Status, Strings) {
+  EXPECT_STREQ("OK", Status().str());
+  EXPECT_STREQ("OK", Status::Ok().str());
+  EXPECT_STREQ("CANCELLED", Status::Cancelled().str());
+  EXPECT_STREQ("UNKNOWN", Status::Unknown().str());
+  EXPECT_STREQ("INVALID_ARGUMENT", Status::InvalidArgument().str());
+  EXPECT_STREQ("DEADLINE_EXCEEDED", Status::DeadlineExceeded().str());
+  EXPECT_STREQ("NOT_FOUND", Status::NotFound().str());
+  EXPECT_STREQ("ALREADY_EXISTS", Status::AlreadyExists().str());
+  EXPECT_STREQ("PERMISSION_DENIED", Status::PermissionDenied().str());
+  EXPECT_STREQ("UNAUTHENTICATED", Status::Unauthenticated().str());
+  EXPECT_STREQ("RESOURCE_EXHAUSTED", Status::ResourceExhausted().str());
+  EXPECT_STREQ("FAILED_PRECONDITION", Status::FailedPrecondition().str());
+  EXPECT_STREQ("ABORTED", Status::Aborted().str());
+  EXPECT_STREQ("OUT_OF_RANGE", Status::OutOfRange().str());
+  EXPECT_STREQ("UNIMPLEMENTED", Status::Unimplemented().str());
+  EXPECT_STREQ("INTERNAL", Status::Internal().str());
+  EXPECT_STREQ("UNAVAILABLE", Status::Unavailable().str());
+  EXPECT_STREQ("DATA_LOSS", Status::DataLoss().str());
 }
 
 TEST(Status, UnknownString) {
-  EXPECT_STREQ("INVALID STATUS", Status(static_cast<Status::Code>(30)).str());
+  EXPECT_STREQ("INVALID STATUS", Status(kInvalidCode).str());
+}
+
+TEST(Status, DeprecatedAliases) {
+  // TODO(pwbug/268): Remove this test after migrating from these aliases.
+  static_assert(PW_STATUS_OK == Status::OK);
+  static_assert(PW_STATUS_CANCELLED == Status::CANCELLED);
+  static_assert(PW_STATUS_UNKNOWN == Status::UNKNOWN);
+  static_assert(PW_STATUS_INVALID_ARGUMENT == Status::INVALID_ARGUMENT);
+  static_assert(PW_STATUS_DEADLINE_EXCEEDED == Status::DEADLINE_EXCEEDED);
+  static_assert(PW_STATUS_NOT_FOUND == Status::NOT_FOUND);
+  static_assert(PW_STATUS_ALREADY_EXISTS == Status::ALREADY_EXISTS);
+  static_assert(PW_STATUS_PERMISSION_DENIED == Status::PERMISSION_DENIED);
+  static_assert(PW_STATUS_UNAUTHENTICATED == Status::UNAUTHENTICATED);
+  static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::RESOURCE_EXHAUSTED);
+  static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FAILED_PRECONDITION);
+  static_assert(PW_STATUS_ABORTED == Status::ABORTED);
+  static_assert(PW_STATUS_OUT_OF_RANGE == Status::OUT_OF_RANGE);
+  static_assert(PW_STATUS_UNIMPLEMENTED == Status::UNIMPLEMENTED);
+  static_assert(PW_STATUS_INTERNAL == Status::INTERNAL);
+  static_assert(PW_STATUS_UNAVAILABLE == Status::UNAVAILABLE);
+  static_assert(PW_STATUS_DATA_LOSS == Status::DATA_LOSS);
 }
 
 // Functions for executing the C pw_Status tests.
@@ -110,11 +150,11 @@ int TestStatusStringsFromC(void);
 }  // extern "C"
 
 TEST(StatusCLinkage, CallCFunctionWithStatus) {
-  EXPECT_EQ(Status::ABORTED, PassStatusFromC(Status::ABORTED));
-  EXPECT_EQ(Status::UNKNOWN, PassStatusFromC(Status(Status::UNKNOWN)));
+  EXPECT_EQ(Status::Aborted(), PassStatusFromC(PW_STATUS_ABORTED));
+  EXPECT_EQ(Status::Unknown(), PassStatusFromC(Status::Unknown()));
 
-  EXPECT_EQ(Status(Status::NOT_FOUND), PassStatusFromC(Status::NOT_FOUND));
-  EXPECT_EQ(Status(Status::OK), PassStatusFromC(Status(Status::OK)));
+  EXPECT_EQ(Status::NotFound(), PassStatusFromC(PW_STATUS_NOT_FOUND));
+  EXPECT_EQ(Status::Ok(), PassStatusFromC(Status::Ok()));
 }
 
 TEST(StatusCLinkage, TestStatusFromC) { EXPECT_EQ(0, TestStatusFromC()); }

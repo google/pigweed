@@ -170,6 +170,9 @@ const char* pw_StatusString(pw_Status status);
 //
 // If your project relies on a macro with one of these names (e.g. INTERNAL),
 // make sure it is included after status.h so that the macro is defined.
+//
+// TODO(pwbug/268): Remove these #undefs after removing the names that violate
+//     the style guide.
 #undef OK
 #undef CANCELLED
 #undef UNKNOWN
@@ -199,6 +202,11 @@ class Status {
 
   // All of the pw_Status codes are available in the Status class as, e.g.
   // pw::Status::OK or pw::Status::OUT_OF_RANGE.
+  //
+  // These aliases are DEPRECATED -- prefer using the helper functions below.
+  // For example, change Status::CANCELLED to Status::Cancelled().
+  //
+  // TODO(pwbug/268): Migrate to the helper functions and remove these aliases.
   static constexpr Code OK = PW_STATUS_OK;
   static constexpr Code CANCELLED = PW_STATUS_CANCELLED;
   static constexpr Code UNKNOWN = PW_STATUS_UNKNOWN;
@@ -217,8 +225,63 @@ class Status {
   static constexpr Code UNAVAILABLE = PW_STATUS_UNAVAILABLE;
   static constexpr Code DATA_LOSS = PW_STATUS_DATA_LOSS;
 
+  // Functions that create a Status with the specified code.
+  // clang-format off
+  static constexpr Status Ok() {
+    return PW_STATUS_OK;
+  }
+  static constexpr Status Cancelled() {
+    return PW_STATUS_CANCELLED;
+  }
+  static constexpr Status Unknown() {
+    return PW_STATUS_UNKNOWN;
+  }
+  static constexpr Status InvalidArgument() {
+    return PW_STATUS_INVALID_ARGUMENT;
+  }
+  static constexpr Status DeadlineExceeded() {
+    return PW_STATUS_DEADLINE_EXCEEDED;
+  }
+  static constexpr Status NotFound() {
+    return PW_STATUS_NOT_FOUND;
+  }
+  static constexpr Status AlreadyExists() {
+    return PW_STATUS_ALREADY_EXISTS;
+  }
+  static constexpr Status PermissionDenied() {
+    return PW_STATUS_PERMISSION_DENIED;
+  }
+  static constexpr Status Unauthenticated() {
+    return PW_STATUS_UNAUTHENTICATED;
+  }
+  static constexpr Status ResourceExhausted() {
+    return PW_STATUS_RESOURCE_EXHAUSTED;
+  }
+  static constexpr Status FailedPrecondition() {
+    return PW_STATUS_FAILED_PRECONDITION;
+  }
+  static constexpr Status Aborted() {
+    return PW_STATUS_ABORTED;
+  }
+  static constexpr Status OutOfRange() {
+    return PW_STATUS_OUT_OF_RANGE;
+  }
+  static constexpr Status Unimplemented() {
+    return PW_STATUS_UNIMPLEMENTED;
+  }
+  static constexpr Status Internal() {
+    return PW_STATUS_INTERNAL;
+  }
+  static constexpr Status Unavailable() {
+    return PW_STATUS_UNAVAILABLE;
+  }
+  static constexpr Status DataLoss() {
+    return PW_STATUS_DATA_LOSS;
+  }
+  // clang-format on
+
   // Statuses are created with a Status::Code.
-  constexpr Status(Code code = OK) : code_(code) {}
+  constexpr Status(Code code = PW_STATUS_OK) : code_(code) {}
 
   constexpr Status(const Status&) = default;
   constexpr Status& operator=(const Status&) = default;
@@ -227,7 +290,7 @@ class Status {
   constexpr operator Code() const { return code_; }
 
   // True if the status is Status::OK.
-  constexpr bool ok() const { return code_ == OK; }
+  constexpr bool ok() const { return code_ == PW_STATUS_OK; }
 
   // Returns a null-terminated string representation of the Status.
   const char* str() const { return pw_StatusString(code_); }
