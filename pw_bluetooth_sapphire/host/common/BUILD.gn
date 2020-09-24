@@ -60,7 +60,7 @@ source_set("common") {
   # misaligned address in byte_buffer.h.
   public_configs = [ "//build/config:temporarily_disable_ubsan_do_not_use" ]
 
-  # TODO(fxb/58162): delete the below and fix compiler warnings
+  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
   public_configs += [ "//build/config:Wno-conversion" ]
 }
 
