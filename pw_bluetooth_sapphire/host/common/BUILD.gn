@@ -61,7 +61,7 @@ source_set("common") {
   public_configs = [ "//build/config:temporarily_disable_ubsan_do_not_use" ]
 
   # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  public_configs += [ "//build/config:Wno-conversion" ]
+  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {
