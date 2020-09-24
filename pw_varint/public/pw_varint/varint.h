@@ -134,13 +134,13 @@ inline size_t Decode(const std::span<const std::byte>& input, uint64_t* value) {
 }
 
 // Returns a size of an integer when encoded as a varint.
-inline size_t EncodedSize(uint64_t integer) {
-  return pw_VarintEncodedSize(integer);
+constexpr size_t EncodedSize(uint64_t integer) {
+  return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
 }
 
 // Returns a size of an signed integer when ZigZag encoded as a varint.
-inline size_t ZigZagEncodedSize(int64_t integer) {
-  return pw_VarintZigZagEncodedSize(integer);
+constexpr size_t ZigZagEncodedSize(int64_t integer) {
+  return EncodedSize(ZigZagEncode(integer));
 }
 
 }  // namespace varint

@@ -15,6 +15,7 @@
 
 #include <cstdint>
 
+#include "pw_protobuf/wire_format.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -42,5 +43,10 @@ inline constexpr size_t kMaxSizeBytesBool = 1;
 inline constexpr size_t kMaxSizeOfFieldKey = varint::kMaxVarint32SizeBytes;
 
 inline constexpr size_t kMaxSizeOfLength = varint::kMaxVarint32SizeBytes;
+
+constexpr size_t SizeOfFieldKey(uint32_t field_number) {
+  // The wiretype is ignored as this does not impact the serialized size.
+  return varint::EncodedSize(field_number << kFieldNumberShift);
+}
 
 }  // namespace pw::protobuf

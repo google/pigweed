@@ -84,11 +84,11 @@ extern "C" size_t pw_VarintZigZagDecode(const void* input,
 }
 
 extern "C" size_t pw_VarintEncodedSize(uint64_t integer) {
-  return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
+  return EncodedSize(integer);
 }
 
 extern "C" size_t pw_VarintZigZagEncodedSize(int64_t integer) {
-  return pw_VarintEncodedSize(ZigZagEncode(integer));
+  return ZigZagEncodedSize(integer);
 }
 
 }  // namespace varint
