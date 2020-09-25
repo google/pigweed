@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LINKED_LIST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LINKED_LIST_H_
 
-#include <fbl/intrusive_double_list.h>
-
 #include <memory>
+
+#include <fbl/intrusive_double_list.h>
 
 namespace bt {
 
