@@ -180,11 +180,11 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
   // timeout has already finished.
-  void on_peripheral_pause_timeout(fit::callback<void()> callback) {
+  void on_peripheral_pause_timeout(fit::callback<void(LowEnergyConnection*)> callback) {
     // Check if timeout already completed.
     if (conn_pause_peripheral_timeout_.has_value() &&
         !conn_pause_peripheral_timeout_->is_pending()) {
-      callback();
+      callback(this);
       return;
     }
     conn_pause_peripheral_callback_ = std::move(callback);
@@ -200,7 +200,7 @@ class LowEnergyConnection final : public sm::Delegate {
       }
 
       if (self->conn_pause_peripheral_callback_) {
-        self->conn_pause_peripheral_callback_();
+        self->conn_pause_peripheral_callback_(self.get());
       }
     });
     conn_pause_peripheral_timeout_->PostDelayed(dispatcher_, kLEConnectionPausePeripheral);
@@ -422,7 +422,7 @@ class LowEnergyConnection final : public sm::Delegate {
   std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
 
   // Called by |conn_pause_peripheral_timeout_|.
-  fit::callback<void()> conn_pause_peripheral_callback_;
+  fit::callback<void(LowEnergyConnection*)> conn_pause_peripheral_callback_;
 
   // Set to the time when connection parameters should be sent as LE central.
   const zx::time conn_pause_central_expiry_;
@@ -681,9 +681,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   // TODO(armansito): Use own address when storing the connection (NET-321).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
-  if (InitializeConnection(peer_id, std::move(link), std::move(request))) {
-    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-  }
+  InitializeConnection(peer_id, std::move(link), std::move(request));
 }
 
 void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
@@ -846,9 +844,9 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   if (role == hci::Connection::Role::kMaster) {
     // After the Central device has no further pending actions to perform and the
     // Peripheral device has not initiated any other actions within
-    // kLEConnectionPauseCentral, then the Central device should update the connection parameters to
-    // either the Peripheral Preferred Connection Parameters or self-determined values (Core Spec
-    // v5.2, Vol 3, Part C, Sec 9.3.12).
+    // kLEConnectionPauseCentral, then the Central device should update the connection parameters
+    // to either the Peripheral Preferred Connection Parameters or self-determined values (Core
+    // Spec v5.2, Vol 3, Part C, Sec 9.3.12).
     connections_[peer_id]->PostCentralPauseTimeoutCallback([this, handle]() {
       UpdateConnectionParams(handle, kDefaultPreferredConnectionParameters);
     });
@@ -868,15 +866,21 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id, hci::St
                                                          LowEnergyConnectionRefPtr first_ref) {
   if (!status.is_success()) {
     bt_log(TRACE, "gap-le", "interrogation failed, releasing ref");
+    // Releasing first_ref will disconnect and notify request callbacks of failure.
+    return;
+  }
 
-    // Releasing ref will disconnect and notify request callbacks of failure.
-    first_ref = nullptr;
+  Peer* peer = peer_cache_->FindById(peer_id);
+  if (!peer) {
+    bt_log(INFO, "gap", "OnInterrogationComplete called for unknown peer");
+    // Releasing first_ref will disconnect and notify request callbacks of failure.
     return;
   }
 
   auto it = connections_.find(peer_id);
   if (it == connections_.end()) {
-    bt_log(INFO, "gap", "OnInterrogationComplete called for non-connected peer");
+    bt_log(INFO, "gap", "OnInterrogationComplete called for removed connection");
+    // Releasing first_ref will disconnect and notify request callbacks of failure.
     return;
   }
   auto& conn = it->second;
@@ -885,10 +889,12 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id, hci::St
     // "The peripheral device should not perform a connection parameter update procedure within
     // kLEConnectionPausePeripheral after establishing a connection." (Core Spec v5.2, Vol 3, Part
     // C, Sec 9.3.12).
-    conn->on_peripheral_pause_timeout([&conn, peer_id, this]() {
+    conn->on_peripheral_pause_timeout([peer_id, this](auto conn) {
       RequestConnectionParameterUpdate(peer_id, *conn, kDefaultPreferredConnectionParameters);
     });
   }
+
+  peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
 
   // Distribute refs to requesters.
   conn->NotifyRequestCallbacks();
@@ -920,13 +926,9 @@ void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci:
   auto request = std::move(request_iter->second);
   pending_requests_.erase(request_iter);
 
-  if (InitializeConnection(peer_id, std::move(link), std::move(request))) {
-    auto conn_iter = connections_.find(peer_id);
-    ZX_ASSERT(conn_iter != connections_.end());
-
-    // For now, jump to the initialized state.
-    peer->MutLe().SetConnectionState(Peer::ConnectionState::kConnected);
-  }
+  InitializeConnection(peer_id, std::move(link), std::move(request));
+  // If interrogation completes synchronously and the client does not retain a connection ref from
+  // its callback,  the connection may already have been removed from connections_.
 
   ZX_ASSERT(!connector_->request_pending());
   TryCreateNextConnection();
@@ -1134,7 +1136,8 @@ void LowEnergyConnectionManager::RequestConnectionParameterUpdate(
           }
           auto& conn = it->second;
 
-          // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
+          // Retry connection parameter update with l2cap if the peer doesn't support LL
+          // procedure.
           if (status == hci::StatusCode::kUnsupportedRemoteFeature) {
             bt_log(TRACE, "gap-le",
                    "peer does not support HCI LE Connection Update command, trying l2cap request");
@@ -1199,8 +1202,9 @@ void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(
            accepted ? "accepted" : "rejected", handle);
   };
 
-  // TODO(fxbug.dev/49717): don't send request until after kLEConnectionParameterTimeout of an l2cap
-  // conn parameter update response being received (Core Spec v5.2, Vol 3, Part C, Sec 9.3.9).
+  // TODO(fxbug.dev/49717): don't send request until after kLEConnectionParameterTimeout of an
+  // l2cap conn parameter update response being received (Core Spec v5.2, Vol 3, Part C,
+  // Sec 9.3.9).
   data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb));
 }
 

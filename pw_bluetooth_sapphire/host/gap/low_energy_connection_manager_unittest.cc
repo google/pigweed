@@ -1598,7 +1598,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailu
   ASSERT_TRUE(peer);
   EXPECT_FALSE(peer->connected());
   EXPECT_FALSE(peer->le()->connected());
-  EXPECT_FALSE(peer->temporary());
+  EXPECT_TRUE(peer->temporary());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterrogation) {
@@ -2147,7 +2147,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
 
   RunLoopUntilIdle();
   // Interrogation should not complete.
-  EXPECT_TRUE(peer_0->le()->connected());
+  EXPECT_FALSE(peer_0->le()->connected());
   EXPECT_FALSE(conn_0);
 
   auto* peer_1 = peer_cache()->NewPeer(kAddress1, true);
@@ -2214,7 +2214,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationO
 
   RunLoopUntilIdle();
   // Interrogation should not complete.
-  EXPECT_TRUE(peer_0->le()->connected());
+  EXPECT_FALSE(peer_0->le()->connected());
   EXPECT_FALSE(conn_0);
 
   test_device()->ClearDefaultCommandStatus(hci::kLEReadRemoteFeatures);
@@ -2244,6 +2244,46 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationO
   RunLoopUntilIdle();
   EXPECT_TRUE(conn_0);
   EXPECT_TRUE(peer_0->le()->connected());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       SynchonousInterrogationAndNoCallbackRetainsConnectionRef) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  ASSERT_TRUE(peer->le());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn;
+  conn_mgr()->Connect(
+      peer->identifier(),
+      [&](auto, auto cb_conn) {
+        EXPECT_TRUE(cb_conn);
+        conn = std::move(cb_conn);
+      },
+      BondableMode::Bondable);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->le()->connected());
+  EXPECT_TRUE(conn);
+
+  // Disconnect
+  conn = nullptr;
+  RunLoopUntilIdle();
+
+  // Second interrogation will complete synchronously because peer has already been interrogated.
+  bool conn_cb_called = false;
+  conn_mgr()->Connect(
+      peer->identifier(),
+      [&](auto, auto cb_conn) {
+        conn_cb_called = true;
+        EXPECT_TRUE(cb_conn);
+        // Don't retain ref.
+      },
+      BondableMode::Bondable);
+  // Wait for connect complete event.
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_cb_called);
 }
 
 // Tests for assertions that enforce invariants.
