@@ -355,7 +355,7 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
 
 void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
   bt_log(DEBUG, "bt-host", "OnPeerBonded()");
-  binding()->events().OnNewBondingData(fidl_helpers::NewBondingData(*adapter(), peer));
+  binding()->events().OnNewBondingData(fidl_helpers::PeerToFidlBondingData(*adapter(), peer));
 }
 
 void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref,

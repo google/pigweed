@@ -119,9 +119,11 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
 bt::sm::PairingData LePairingDataFromFidl(const fuchsia::bluetooth::sys::LeData& data);
 std::optional<bt::sm::LTK> BredrKeyFromFidl(const fuchsia::bluetooth::sys::BredrData& data);
 
+// Function to construct a bonding data structure for a peer.
+fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,
+                                                           const bt::gap::Peer& peer);
+
 // Functions to convert Control FIDL library objects.
-fuchsia::bluetooth::control::BondingData NewBondingData(const bt::gap::Adapter& adapter,
-                                                        const bt::gap::Peer& peer);
 std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
     const fuchsia::bluetooth::control::PairingSecurityLevel level);
 

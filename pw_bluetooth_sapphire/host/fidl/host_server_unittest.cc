@@ -969,5 +969,79 @@ TEST_F(FIDL_HostServerTest, SetHostData) {
   EXPECT_EQ(irk.value, adapter()->le_address_manager()->irk().value());
 }
 
+TEST_F(FIDL_HostServerTest, OnNewBondingData) {
+  const std::string kTestName = "florp";
+  const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
+                                                 true);
+  const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+  const fsys::PeerKey kTestKeyFidl{
+      .security =
+          fsys::SecurityProperties{
+              .authenticated = true,
+              .secure_connections = true,
+              .encryption_key_size = 16,
+          },
+      .data = fsys::Key{.value = kTestKeyValue},
+  };
+  const fsys::Ltk kTestLtkFidl{.key = kTestKeyFidl, .ediv = 0, .rand = 0};
+
+  std::optional<fsys::BondingData> data;
+  host_client_ptr().events().OnNewBondingData = [&](auto _data) { data = std::move(_data); };
+
+  auto* peer = adapter()->peer_cache()->NewPeer(kBredrTestAddr, /*connectable=*/true);
+  peer->SetName(kTestName);
+  adapter()->peer_cache()->StoreLowEnergyBond(peer->identifier(),
+                                              bt::sm::PairingData{.peer_ltk = {kTestLtk}});
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(data);
+  ASSERT_TRUE(data->has_identifier());
+  ASSERT_TRUE(data->has_local_address());
+  ASSERT_TRUE(data->has_address());
+  ASSERT_TRUE(data->has_name());
+
+  EXPECT_TRUE(fidl::Equals((fbt::Address{fbt::AddressType::PUBLIC, std::array<uint8_t, 6>{0}}),
+                           data->local_address()));
+  EXPECT_TRUE(fidl::Equals(kTestFidlAddrPublic, data->address()));
+  EXPECT_EQ(kTestName, data->name());
+
+  ASSERT_TRUE(data->has_le());
+  EXPECT_FALSE(data->has_bredr());
+
+  ASSERT_TRUE(data->le().has_peer_ltk());
+  EXPECT_FALSE(data->le().has_local_ltk());
+  EXPECT_FALSE(data->le().has_irk());
+  EXPECT_FALSE(data->le().has_csrk());
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le().peer_ltk()));
+
+  // Add BR/EDR data.
+  data.reset();
+  adapter()->peer_cache()->StoreBrEdrBond(kBredrTestAddr, kTestLtk);
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(data);
+  ASSERT_TRUE(data->has_identifier());
+  ASSERT_TRUE(data->has_local_address());
+  ASSERT_TRUE(data->has_address());
+  ASSERT_TRUE(data->has_name());
+
+  EXPECT_TRUE(fidl::Equals((fbt::Address{fbt::AddressType::PUBLIC, std::array<uint8_t, 6>{0}}),
+                           data->local_address()));
+  EXPECT_TRUE(fidl::Equals(kTestFidlAddrPublic, data->address()));
+  EXPECT_EQ(kTestName, data->name());
+
+  ASSERT_TRUE(data->has_le());
+  ASSERT_TRUE(data->le().has_peer_ltk());
+  EXPECT_FALSE(data->le().has_local_ltk());
+  EXPECT_FALSE(data->le().has_irk());
+  EXPECT_FALSE(data->le().has_csrk());
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le().peer_ltk()));
+
+  ASSERT_TRUE(data->has_bredr());
+  ASSERT_TRUE(data->bredr().has_link_key());
+  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data->bredr().link_key()));
+}
+
 }  // namespace
 }  // namespace bthost

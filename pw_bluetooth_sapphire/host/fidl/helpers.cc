@@ -26,13 +26,12 @@ using fuchsia::bluetooth::Int8;
 using fuchsia::bluetooth::Status;
 
 namespace fble = fuchsia::bluetooth::le;
+namespace fbredr = fuchsia::bluetooth::bredr;
 namespace fbt = fuchsia::bluetooth;
 namespace fctrl = fuchsia::bluetooth::control;
 namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
-namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace fsys = fuchsia::bluetooth::sys;
-namespace fbredr = fuchsia::bluetooth::bredr;
 
 namespace bthost {
 namespace fidl_helpers {
@@ -90,29 +89,14 @@ bt::sm::SecurityProperties SecurityPropsFromFidl(const fsys::SecurityProperties&
                                     sec_prop.secure_connections);
 }
 
-fctrl::SecurityProperties SecurityPropsToFidl(const bt::sm::SecurityProperties& sec_prop) {
-  fctrl::SecurityProperties result;
-  result.authenticated = sec_prop.authenticated();
-  result.secure_connections = sec_prop.secure_connections();
-  result.encryption_key_size = sec_prop.enc_key_size();
-  return result;
-}
+fsys::SecurityProperties SecurityPropsToFidl(const bt::sm::SecurityProperties& sec_prop) {
+  return fsys::SecurityProperties{
+      .authenticated = sec_prop.authenticated(),
+      .secure_connections = sec_prop.secure_connections(),
 
-fctrl::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
-  switch (type) {
-    case bt::DeviceAddress::Type::kLERandom:
-      return fctrl::AddressType::LE_RANDOM;
-    case bt::DeviceAddress::Type::kLEPublic:
-      return fctrl::AddressType::LE_PUBLIC;
-    case bt::DeviceAddress::Type::kBREDR:
-      return fctrl::AddressType::BREDR;
-    default:
-      // Anonymous is not a valid address type to use for bonding, so we treat
-      // that as a programming error.
-      ZX_PANIC("invalid address type for bonding: %u", static_cast<unsigned int>(type));
-      break;
-  }
-  return fctrl::AddressType::BREDR;
+      // TODO(armansito): Declare the key size as uint8_t in bt::sm?
+      .encryption_key_size = static_cast<uint8_t>(sec_prop.enc_key_size()),
+  };
 }
 
 bt::sm::LTK LtkFromFidl(const fsys::Ltk& ltk) {
@@ -120,28 +104,30 @@ bt::sm::LTK LtkFromFidl(const fsys::Ltk& ltk) {
                      bt::hci::LinkKey(ltk.key.data.value, ltk.rand, ltk.ediv));
 }
 
-fctrl::LTK LtkToFidl(const bt::sm::LTK& ltk) {
-  fctrl::LTK result;
-  result.key.security_properties = SecurityPropsToFidl(ltk.security());
-  result.key.value = ltk.key().value();
+fsys::PeerKey LtkToFidlPeerKey(const bt::sm::LTK& ltk) {
+  return fsys::PeerKey{
+      .security = SecurityPropsToFidl(ltk.security()),
+      .data = fsys::Key{ltk.key().value()},
+  };
+}
 
-  // TODO(armansito): Remove this field since its already captured in security
-  // properties.
-  result.key_size = ltk.security().enc_key_size();
-  result.rand = ltk.key().rand();
-  result.ediv = ltk.key().ediv();
-  return result;
+fsys::Ltk LtkToFidl(const bt::sm::LTK& ltk) {
+  return fsys::Ltk{
+      .key = LtkToFidlPeerKey(ltk),
+      .ediv = ltk.key().ediv(),
+      .rand = ltk.key().rand(),
+  };
 }
 
 bt::sm::Key PeerKeyFromFidl(const fsys::PeerKey& key) {
   return bt::sm::Key(SecurityPropsFromFidl(key.security), key.data.value);
 }
 
-fctrl::RemoteKey KeyToFidl(const bt::sm::Key& key) {
-  fctrl::RemoteKey result;
-  result.security_properties = SecurityPropsToFidl(key.security());
-  result.value = key.value();
-  return result;
+fsys::PeerKey PeerKeyToFidl(const bt::sm::Key& key) {
+  return fsys::PeerKey{
+      .security = SecurityPropsToFidl(key.security()),
+      .data = {key.value()},
+  };
 }
 
 fbt::DeviceClass DeviceClassToFidl(bt::DeviceClass input) {
@@ -150,32 +136,32 @@ fbt::DeviceClass DeviceClassToFidl(bt::DeviceClass input) {
   return output;
 }
 
-std::optional<bt::sdp::DataElement> FidlToDataElement(const fidlbredr::DataElement& fidl) {
+std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement& fidl) {
   bt::sdp::DataElement out;
   switch (fidl.Which()) {
-    case fidlbredr::DataElement::Tag::kInt8:
+    case fbredr::DataElement::Tag::kInt8:
       return bt::sdp::DataElement(fidl.int8());
-    case fidlbredr::DataElement::Tag::kInt16:
+    case fbredr::DataElement::Tag::kInt16:
       return bt::sdp::DataElement(fidl.int16());
-    case fidlbredr::DataElement::Tag::kInt32:
+    case fbredr::DataElement::Tag::kInt32:
       return bt::sdp::DataElement(fidl.int32());
-    case fidlbredr::DataElement::Tag::kInt64:
+    case fbredr::DataElement::Tag::kInt64:
       return bt::sdp::DataElement(fidl.int64());
-    case fidlbredr::DataElement::Tag::kUint8:
+    case fbredr::DataElement::Tag::kUint8:
       return bt::sdp::DataElement(fidl.uint8());
-    case fidlbredr::DataElement::Tag::kUint16:
+    case fbredr::DataElement::Tag::kUint16:
       return bt::sdp::DataElement(fidl.uint16());
-    case fidlbredr::DataElement::Tag::kUint32:
+    case fbredr::DataElement::Tag::kUint32:
       return bt::sdp::DataElement(fidl.uint32());
-    case fidlbredr::DataElement::Tag::kUint64:
+    case fbredr::DataElement::Tag::kUint64:
       return bt::sdp::DataElement(fidl.uint64());
-    case fidlbredr::DataElement::Tag::kStr:
+    case fbredr::DataElement::Tag::kStr:
       return bt::sdp::DataElement(fidl.str());
-    case fidlbredr::DataElement::Tag::kB:
+    case fbredr::DataElement::Tag::kB:
       return bt::sdp::DataElement(fidl.b());
-    case fidlbredr::DataElement::Tag::kUuid:
+    case fbredr::DataElement::Tag::kUuid:
       out.Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
-    case fidlbredr::DataElement::Tag::kSequence: {
+    case fbredr::DataElement::Tag::kSequence: {
       std::vector<bt::sdp::DataElement> seq;
       for (const auto& fidl_elem : fidl.sequence()) {
         auto it = FidlToDataElement(*fidl_elem);
@@ -187,7 +173,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fidlbredr::DataEleme
       out.Set(std::move(seq));
       break;
     }
-    case fidlbredr::DataElement::Tag::kAlternatives: {
+    case fbredr::DataElement::Tag::kAlternatives: {
       std::vector<bt::sdp::DataElement> alts;
       for (const auto& fidl_elem : fidl.alternatives()) {
         auto elem = FidlToDataElement(*fidl_elem);
@@ -207,9 +193,9 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fidlbredr::DataEleme
   return out;
 }
 
-bool AddProtocolDescriptorList(
-    bt::sdp::ServiceRecord* rec, bt::sdp::ServiceRecord::ProtocolListId id,
-    const ::std::vector<fidlbredr::ProtocolDescriptor>& descriptor_list) {
+bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,
+                               bt::sdp::ServiceRecord::ProtocolListId id,
+                               const ::std::vector<fbredr::ProtocolDescriptor>& descriptor_list) {
   bt_log(TRACE, "profile_server", "ProtocolDescriptorList %d", id);
   for (auto& descriptor : descriptor_list) {
     bt::sdp::DataElement protocol_params;
@@ -567,77 +553,55 @@ std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrData& data) {
   return bt::sm::LTK(key.security(), bt::hci::LinkKey(key.value(), 0, 0));
 }
 
-fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap::Peer& peer) {
-  fctrl::BondingData out_data;
-  out_data.identifier = peer.identifier().ToString();
-  out_data.local_address = adapter.state().controller_address().ToString();
+fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,
+                                                           const bt::gap::Peer& peer) {
+  fsys::BondingData out;
+
+  out.set_identifier(fbt::PeerId{peer.identifier().value()});
+  out.set_local_address(
+      AddressToFidl(fbt::AddressType::PUBLIC, adapter.state().controller_address()));
+  out.set_address(AddressToFidl(peer.address()));
 
   if (peer.name()) {
-    out_data.name = *peer.name();
+    out.set_name(*peer.name());
   }
 
-  // Store LE data.
+  // LE
   if (peer.le() && peer.le()->bond_data()) {
-    out_data.le = fctrl::LEData::New();
+    fsys::LeData out_le;
+    const auto& bond = *peer.le()->bond_data();
 
-    const auto& le_data = *peer.le()->bond_data();
-    const auto& identity = le_data.identity_address ? *le_data.identity_address : peer.address();
-    out_data.le->address = identity.value().ToString();
-    out_data.le->address_type = BondingAddrTypeToFidl(identity.type());
+    // TODO(armansito): Store the peer's preferred connection parameters.
+    // TODO(fxbug.dev/59645): Store GATT and AD service UUIDs.
 
-    // TODO(armansito): Populate the preferred connection parameters here.
+    if (bond.local_ltk) {
+      out_le.set_local_ltk(LtkToFidl(*bond.local_ltk));
+    }
+    if (bond.peer_ltk) {
+      out_le.set_peer_ltk(LtkToFidl(*bond.peer_ltk));
+    }
+    if (bond.irk) {
+      out_le.set_irk(PeerKeyToFidl(*bond.irk));
+    }
+    if (bond.csrk) {
+      out_le.set_csrk(PeerKeyToFidl(*bond.csrk));
+    }
 
-    // TODO(armansito): Populate with discovered GATT services. We initialize
-    // this as empty as |services| is not nullable.
-    out_data.le->services.resize(0);
-
-    // If only one LTK is present, we store that LTK in out_data.
-    if (le_data.local_ltk) {
-      out_data.le->ltk = fctrl::LTK::New();
-      *out_data.le->ltk = LtkToFidl(*le_data.local_ltk);
-    }
-    // For Secure Connections pairing, both LTKs will be present and equal, so it is safe to
-    // arbitrarily overwrite the out_data LTK with the peer_ltk. If both LTKs are present in Legacy
-    // pairing, we prefer to store the peer LTK as we generally expect to connect as link-level
-    // master, which encrypts with a previously-paired device using the peer LTK.
-    //
-    // TODO(35008, 49371): Migrate from fuchsia.bluetooth.control to fuchsia.bluetooth.sys, which
-    // has support for peer/local LTKs so we can avoid potentially losing the local_ltk bond.
-    if (le_data.peer_ltk) {
-      ZX_ASSERT(!le_data.peer_ltk->security().secure_connections() ||
-                le_data.peer_ltk == le_data.local_ltk);
-      out_data.le->ltk = fctrl::LTK::New();
-      *out_data.le->ltk = LtkToFidl(*le_data.peer_ltk);
-    }
-    if (le_data.irk) {
-      out_data.le->irk = fctrl::RemoteKey::New();
-      *out_data.le->irk = KeyToFidl(*le_data.irk);
-    }
-    if (le_data.csrk) {
-      out_data.le->csrk = fctrl::RemoteKey::New();
-      *out_data.le->csrk = KeyToFidl(*le_data.csrk);
-    }
+    out.set_le(std::move(out_le));
   }
 
-  // Store BR/EDR data.
+  // BR/EDR
   if (peer.bredr() && peer.bredr()->link_key()) {
-    out_data.bredr = fctrl::BREDRData::New();
-
-    out_data.bredr->address = peer.bredr()->address().value().ToString();
+    fsys::BredrData out_bredr;
 
     // TODO(fxbug.dev/1262): Populate with history of role switches.
-    out_data.bredr->piconet_leader = false;
+    // TODO(fxbug.dev/59645): Store SDP and EIR service UUIDs.
 
-    // TODO(fxbug.dev/1263): Populate with discovered SDP services.
-    out_data.bredr->services.resize(0);
-
-    if (peer.bredr()->link_key()) {
-      out_data.bredr->link_key = fctrl::LTK::New();
-      *out_data.bredr->link_key = LtkToFidl(*peer.bredr()->link_key());
-    }
+    out_bredr.set_link_key(LtkToFidlPeerKey(*peer.bredr()->link_key()));
+    out.set_bredr(std::move(out_bredr));
   }
 
-  return out_data;
+  return out;
 }
 
 std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
