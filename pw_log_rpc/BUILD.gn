@@ -24,10 +24,37 @@ config("default_config") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("log_queue") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_log_rpc/log_queue.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_ring_buffer",
+    "$dir_pw_status",
+  ]
+  sources = [ "log_queue.cc" ]
+  deps = [ ":protos_pwpb" ]
+}
+
 pw_proto_library("protos") {
   sources = [ "pw_log_rpc_proto/log.proto" ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test("log_queue_test") {
+  sources = [ "log_queue_test.cc" ]
+  deps = [
+    ":log_queue",
+    ":protos_pwpb",
+    dir_pw_protobuf,
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":log_queue_test" ]
 }

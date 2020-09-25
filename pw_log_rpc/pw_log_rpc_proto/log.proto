@@ -19,6 +19,10 @@ package pw.log_rpc;
 option java_package = "pw.rpc.proto";
 option java_outer_classname = "Log";
 
+message Log {
+  repeated LogEntry entries = 1;
+}
+
 // A log with a tokenized message, a string message, or dropped indicator.  A
 // message can be one of three types:
 //
@@ -109,7 +113,7 @@ message LogEntry {
   // out the right strategy for timestamps in Pigweed. This is a variable-sized
   // integer to enable scaling this up to a uint64 later on without impacting
   // the wire format.
-  optional uint64 timestamp = 5;
+  optional int64 timestamp = 5;
 
   // Time since the last entry. Generally, one of timestamp or this field will
   // be specified. This enables delta encoding when batching entries together.
@@ -126,7 +130,7 @@ message LogEntry {
   // Note: The units of this field are TBD and will likely require a separate
   // mechanism to indicate units. The calculations above assume milliseconds
   // and may change if the units differ.
-  optional uint64 elapsed_time_since_last_entry = 6;
+  optional int64 elapsed_time_since_last_entry = 6;
 
   // Fully formatted textual log message.
   optional string message_string = 16;
