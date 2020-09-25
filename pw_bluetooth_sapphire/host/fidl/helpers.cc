@@ -81,7 +81,7 @@ fctrl::TechnologyType TechnologyTypeToFidlDeprecated(bt::gap::TechnologyType typ
   return fctrl::TechnologyType::DUAL_MODE;
 }
 
-bt::sm::SecurityProperties SecurityPropsFromFidl(const fctrl::SecurityProperties& sec_prop) {
+bt::sm::SecurityProperties SecurityPropsFromFidl(const fsys::SecurityProperties& sec_prop) {
   auto level = bt::sm::SecurityLevel::kEncrypted;
   if (sec_prop.authenticated) {
     level = bt::sm::SecurityLevel::kAuthenticated;
@@ -96,21 +96,6 @@ fctrl::SecurityProperties SecurityPropsToFidl(const bt::sm::SecurityProperties& 
   result.secure_connections = sec_prop.secure_connections();
   result.encryption_key_size = sec_prop.enc_key_size();
   return result;
-}
-
-bt::DeviceAddress::Type BondingAddrTypeFromFidl(const fctrl::AddressType& type) {
-  switch (type) {
-    case fctrl::AddressType::LE_RANDOM:
-      return bt::DeviceAddress::Type::kLERandom;
-    case fctrl::AddressType::LE_PUBLIC:
-      return bt::DeviceAddress::Type::kLEPublic;
-    case fctrl::AddressType::BREDR:
-      return bt::DeviceAddress::Type::kBREDR;
-    default:
-      ZX_PANIC("invalid address type: %u", static_cast<unsigned int>(type));
-      break;
-  }
-  return bt::DeviceAddress::Type::kBREDR;
 }
 
 fctrl::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
@@ -130,9 +115,9 @@ fctrl::AddressType BondingAddrTypeToFidl(bt::DeviceAddress::Type type) {
   return fctrl::AddressType::BREDR;
 }
 
-bt::sm::LTK LtkFromFidl(const fctrl::LTK& ltk) {
-  return bt::sm::LTK(SecurityPropsFromFidl(ltk.key.security_properties),
-                     bt::hci::LinkKey(ltk.key.value, ltk.rand, ltk.ediv));
+bt::sm::LTK LtkFromFidl(const fsys::Ltk& ltk) {
+  return bt::sm::LTK(SecurityPropsFromFidl(ltk.key.security),
+                     bt::hci::LinkKey(ltk.key.data.value, ltk.rand, ltk.ediv));
 }
 
 fctrl::LTK LtkToFidl(const bt::sm::LTK& ltk) {
@@ -148,8 +133,8 @@ fctrl::LTK LtkToFidl(const bt::sm::LTK& ltk) {
   return result;
 }
 
-bt::sm::Key KeyFromFidl(const fctrl::RemoteKey& key) {
-  return bt::sm::Key(SecurityPropsFromFidl(key.security_properties), key.value);
+bt::sm::Key PeerKeyFromFidl(const fsys::PeerKey& key) {
+  return bt::sm::Key(SecurityPropsFromFidl(key.security), key.data.value);
 }
 
 fctrl::RemoteKey KeyToFidl(const bt::sm::Key& key) {
@@ -412,35 +397,6 @@ bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) 
   return bt::gap::LeSecurityMode::SecureConnectionsOnly;
 }
 
-bt::sm::PairingData PairingDataFromFidl(const fctrl::LEData& data) {
-  bt::sm::PairingData result;
-
-  auto addr = AddressBytesFromString(data.address);
-  ZX_ASSERT(addr);
-  result.identity_address = bt::DeviceAddress(BondingAddrTypeFromFidl(data.address_type), *addr);
-
-  if (data.ltk) {
-    result.local_ltk = LtkFromFidl(*data.ltk);
-    result.peer_ltk = result.local_ltk;
-  }
-  if (data.irk) {
-    result.irk = KeyFromFidl(*data.irk);
-  }
-  if (data.csrk) {
-    result.csrk = KeyFromFidl(*data.csrk);
-  }
-  return result;
-}
-
-bt::UInt128 LocalKeyFromFidl(const fctrl::LocalKey& key) { return key.value; }
-
-std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fctrl::BREDRData& data) {
-  if (data.link_key) {
-    return LtkFromFidl(*data.link_key);
-  }
-  return std::nullopt;
-}
-
 fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
   fctrl::RemoteDevice fidl_device;
   fidl_device.identifier = peer.identifier().ToString();
@@ -559,6 +515,56 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
   // and inquiry data.
 
   return output;
+}
+
+std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
+    const fuchsia::bluetooth::sys::BondingData& bond) {
+  bt::DeviceAddressBytes bytes(bond.address().bytes);
+  bt::DeviceAddress::Type type;
+  if (bond.has_bredr()) {
+    // A random identity address can only be present in a LE-only bond.
+    if (bond.address().type == fbt::AddressType::RANDOM) {
+      bt_log(ERROR, "bt-host", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
+      return std::nullopt;
+    }
+    // TODO(fxb/2761): We currently assign kBREDR as the address type for dual-mode bonds. This
+    // makes address management for dual-mode devices a bit confusing as we have two "public"
+    // address types (i.e. kBREDR and kLEPublic). We should align the stack address types with
+    // the FIDL address types, such that both kBREDR and kLEPublic are represented as the same
+    // kind of "PUBLIC".
+    type = bt::DeviceAddress::Type::kBREDR;
+  } else {
+    type = bond.address().type == fbt::AddressType::RANDOM ? bt::DeviceAddress::Type::kLERandom
+                                                           : bt::DeviceAddress::Type::kLEPublic;
+  }
+
+  return {bt::DeviceAddress(type, bytes)};
+}
+
+bt::sm::PairingData LePairingDataFromFidl(const fsys::LeData& data) {
+  bt::sm::PairingData result;
+
+  if (data.has_peer_ltk()) {
+    result.peer_ltk = LtkFromFidl(data.peer_ltk());
+  }
+  if (data.has_local_ltk()) {
+    result.local_ltk = LtkFromFidl(data.local_ltk());
+  }
+  if (data.has_irk()) {
+    result.irk = PeerKeyFromFidl(data.irk());
+  }
+  if (data.has_csrk()) {
+    result.csrk = PeerKeyFromFidl(data.csrk());
+  }
+  return result;
+}
+
+std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrData& data) {
+  if (!data.has_link_key()) {
+    return std::nullopt;
+  }
+  auto key = PeerKeyFromFidl(data.link_key());
+  return bt::sm::LTK(key.security(), bt::hci::LinkKey(key.value(), 0, 0));
 }
 
 fctrl::BondingData NewBondingData(const bt::gap::Adapter& adapter, const bt::gap::Peer& peer) {

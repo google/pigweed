@@ -81,10 +81,10 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // ::fuchsia::bluetooth::host::Host overrides:
   void WatchState(WatchStateCallback callback) override;
-  void SetLocalData(::fuchsia::bluetooth::control::HostData host_data) override;
+  void SetLocalData(::fuchsia::bluetooth::sys::HostData host_data) override;
   void WatchPeers(WatchPeersCallback callback) override;
-  void AddBondedDevices(::std::vector<fuchsia::bluetooth::control::BondingData> bonds,
-                        AddBondedDevicesCallback callback) override;
+  void RestoreBonds(::std::vector<fuchsia::bluetooth::sys::BondingData> bonds,
+                    RestoreBondsCallback callback) override;
   void SetLocalName(::std::string local_name, SetLocalNameCallback callback) override;
   void SetDeviceClass(fuchsia::bluetooth::DeviceClass device_class,
                       SetDeviceClassCallback callback) override;

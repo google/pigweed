@@ -34,7 +34,22 @@ namespace bthost {
 namespace fidl_helpers {
 namespace {
 
-TEST(FidlHelpersTest, HostErrorToFidl) {
+const fbt::Address kPublicAddr = fbt::Address{fbt::AddressType::PUBLIC, {1, 0, 0, 0, 0, 0}};
+const fbt::Address kRandomAddr = fbt::Address{fbt::AddressType::RANDOM, {2, 0, 0, 0, 0, 0}};
+
+const bt::UInt128 kTestKeyValue{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+const fsys::PeerKey kTestKey{
+    .security =
+        fsys::SecurityProperties{
+            .authenticated = true,
+            .secure_connections = true,
+            .encryption_key_size = 16,
+        },
+    .data = fsys::Key{.value = kTestKeyValue},
+};
+const fsys::Ltk kTestLtk{.key = kTestKey, .ediv = 0, .rand = 0};
+
+TEST(FIDL_HelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kFailed));
   EXPECT_EQ(fsys::Error::TIMED_OUT, HostErrorToFidl(bt::HostError::kTimedOut));
   EXPECT_EQ(fsys::Error::INVALID_ARGUMENTS, HostErrorToFidl(bt::HostError::kInvalidParameters));
@@ -47,7 +62,7 @@ TEST(FidlHelpersTest, HostErrorToFidl) {
   EXPECT_EQ(fsys::Error::FAILED, HostErrorToFidl(bt::HostError::kProtocolError));
 }
 
-TEST(FidlHelpersTest, GattStatusToFidl) {
+TEST(FIDL_HelpersTest, GattStatusToFidl) {
   // Host errors
   EXPECT_EQ(fbg::Error::INVALID_RESPONSE,
             GattStatusToFidl(bt::att::Status(bt::HostError::kPacketMalformed)));
@@ -276,28 +291,6 @@ TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
             TechnologyTypeToFidl(bt::gap::TechnologyType::kDualMode));
 }
 
-class FIDL_HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
-
-TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
-  // Verify that the default parameters are populated as expected.
-  auto host_info = HostInfoToFidl(*adapter());
-  ASSERT_TRUE(host_info.has_id());
-  ASSERT_TRUE(host_info.has_technology());
-  ASSERT_TRUE(host_info.has_address());
-  ASSERT_TRUE(host_info.has_local_name());
-  ASSERT_TRUE(host_info.has_discoverable());
-  ASSERT_TRUE(host_info.has_discovering());
-
-  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
-  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
-  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
-  EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address().bytes(), host_info.address().bytes));
-  EXPECT_EQ("fuchsia", host_info.local_name());
-  EXPECT_FALSE(host_info.discoverable());
-  EXPECT_FALSE(host_info.discovering());
-}
-
 TEST(FIDL_HelpersTest, SecurityLevelFromFidl) {
   using FidlSecurityLevel = fuchsia::bluetooth::control::PairingSecurityLevel;
   const FidlSecurityLevel level = FidlSecurityLevel::AUTHENTICATED;
@@ -311,7 +304,7 @@ TEST(FIDL_HelpersTest, SecurityLevelFromBadFidlFails) {
   EXPECT_EQ(std::nullopt, SecurityLevelFromFidl(level));
 }
 
-TEST(FidlHelpersTest, PeerToFidlMandatoryFields) {
+TEST(FIDL_HelpersTest, PeerToFidlMandatoryFields) {
   // Required by PeerCache expiry functions.
   async::TestLoop dispatcher;
 
@@ -342,7 +335,7 @@ TEST(FidlHelpersTest, PeerToFidlMandatoryFields) {
   EXPECT_FALSE(fidl.has_bredr_services());
 }
 
-TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
+TEST(FIDL_HelpersTest, PeerToFidlOptionalFields) {
   // Required by PeerCache expiry functions.
   async::TestLoop dispatcher;
 
@@ -393,7 +386,7 @@ TEST(FidlHelpersTest, PeerToFidlOptionalFields) {
   EXPECT_THAT(fidl.bredr_services(), ::testing::UnorderedElementsAreArray(expected_uuids));
 }
 
-TEST(FidlHelpersTest, ReliableModeFromFidl) {
+TEST(FIDL_HelpersTest, ReliableModeFromFidl) {
   using WriteOptions = fuchsia::bluetooth::gatt::WriteOptions;
   using ReliableMode = fuchsia::bluetooth::gatt::ReliableMode;
   WriteOptions options;
@@ -408,10 +401,10 @@ TEST(FidlHelpersTest, ReliableModeFromFidl) {
   EXPECT_EQ(bt::gatt::ReliableMode::kDisabled, ReliableModeFromFidl(options));
 }
 
-// TODO: Set infomration w/o setting language, set a FIDL type that cannot be converted
+// TODO: Set information w/o setting language, set a FIDL type that cannot be converted
 // - make sure the expected attributes are set and have the correct type
 // - make sure the profile descriptor sets the right attributes
-TEST(FidlHelpersTest, ServiceDefinitionToServiceRecord) {
+TEST(FIDL_HelpersTest, ServiceDefinitionToServiceRecord) {
   fuchsia::bluetooth::bredr::ServiceDefinition def_should_fail;
   // Should fail to convert without service class UUIDs.
   auto rec_no_uuids = ServiceDefinitionToServiceRecord(def_should_fail);
@@ -540,7 +533,7 @@ TEST(FidlHelpersTest, ServiceDefinitionToServiceRecord) {
   EXPECT_FALSE(rec.value().HasAttribute(invalid_att_id));
 }
 
-TEST(FidlHelpersTest, FidlToBrEdrSecurityRequirements) {
+TEST(FIDL_HelpersTest, FidlToBrEdrSecurityRequirements) {
   fbredr::ChannelParameters params;
   EXPECT_EQ(
       FidlToBrEdrSecurityRequirements(params),
@@ -576,6 +569,125 @@ TEST(FidlHelpersTest, FidlToBrEdrSecurityRequirements) {
   EXPECT_EQ(
       FidlToBrEdrSecurityRequirements(params),
       (bt::gap::BrEdrSecurityRequirements{.authentication = true, .secure_connections = true}));
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
+  fsys::BondingData bond;
+  bond.set_address(kRandomAddr);
+  bond.set_bredr(fsys::BredrData());
+
+  EXPECT_EQ(std::nullopt, AddressFromFidlBondingData(bond));
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataBredr) {
+  fsys::BondingData bond;
+  bond.set_address(kPublicAddr);
+  bond.set_bredr(fsys::BredrData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  ASSERT_TRUE(addr);
+  EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kBREDR);
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataDualMode) {
+  fsys::BondingData bond;
+  bond.set_address(kPublicAddr);
+  bond.set_bredr(fsys::BredrData());
+  bond.set_le(fsys::LeData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  ASSERT_TRUE(addr);
+  EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kBREDR);
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLePublic) {
+  fsys::BondingData bond;
+  bond.set_address(kPublicAddr);
+  bond.set_le(fsys::LeData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  ASSERT_TRUE(addr);
+  EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kLEPublic);
+}
+
+TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
+  fsys::BondingData bond;
+  bond.set_address(kRandomAddr);
+  bond.set_le(fsys::LeData());
+
+  auto addr = AddressFromFidlBondingData(bond);
+  ASSERT_TRUE(addr);
+  EXPECT_EQ(addr->type(), bt::DeviceAddress::Type::kLERandom);
+}
+
+TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
+  bt::sm::PairingData result = LePairingDataFromFidl(fsys::LeData());
+  EXPECT_FALSE(result.identity_address);
+  EXPECT_FALSE(result.local_ltk);
+  EXPECT_FALSE(result.peer_ltk);
+  EXPECT_FALSE(result.irk);
+  EXPECT_FALSE(result.csrk);
+}
+
+TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
+  const bt::sm::SecurityProperties expected_sec(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
+                                                true);
+  const bt::sm::LTK expected_ltk(expected_sec, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+  const bt::sm::Key expected_key(expected_sec, kTestKeyValue);
+
+  fsys::LeData le;
+  le.set_local_ltk(kTestLtk);
+  le.set_peer_ltk(kTestLtk);
+  le.set_irk(kTestKey);
+  le.set_csrk(kTestKey);
+
+  bt::sm::PairingData result = LePairingDataFromFidl(std::move(le));
+  EXPECT_FALSE(result.identity_address);
+  ASSERT_TRUE(result.local_ltk);
+  ASSERT_TRUE(result.peer_ltk);
+  ASSERT_TRUE(result.irk);
+  ASSERT_TRUE(result.csrk);
+
+  EXPECT_EQ(expected_ltk, *result.local_ltk);
+  EXPECT_EQ(expected_ltk, *result.peer_ltk);
+  EXPECT_EQ(expected_key, *result.irk);
+  EXPECT_EQ(expected_key, *result.csrk);
+}
+
+TEST(FIDL_HelpersTest, BredrKeyFromFidlEmpty) { EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrData())); }
+
+TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
+  const bt::sm::SecurityProperties expected_sec(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
+                                                true);
+  const bt::sm::LTK expected_ltk(expected_sec, bt::hci::LinkKey(kTestKeyValue, 0, 0));
+
+  fsys::BredrData bredr;
+  bredr.set_link_key(kTestKey);
+  std::optional<bt::sm::LTK> result = BredrKeyFromFidl(bredr);
+  ASSERT_TRUE(result);
+  EXPECT_EQ(expected_ltk, *result);
+}
+
+class FIDL_HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
+
+TEST_F(FIDL_HelpersAdapterTest, HostInfoToFidl) {
+  // Verify that the default parameters are populated as expected.
+  auto host_info = HostInfoToFidl(*adapter());
+  ASSERT_TRUE(host_info.has_id());
+  ASSERT_TRUE(host_info.has_technology());
+  ASSERT_TRUE(host_info.has_address());
+  ASSERT_TRUE(host_info.has_local_name());
+  ASSERT_TRUE(host_info.has_discoverable());
+  ASSERT_TRUE(host_info.has_discovering());
+
+  EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
+  EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
+  EXPECT_TRUE(
+      ContainersEqual(adapter()->state().controller_address().bytes(), host_info.address().bytes));
+  EXPECT_EQ("fuchsia", host_info.local_name());
+  EXPECT_FALSE(host_info.discoverable());
+  EXPECT_FALSE(host_info.discovering());
 }
 
 }  // namespace

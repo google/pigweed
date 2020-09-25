@@ -23,6 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -47,8 +48,12 @@ namespace fbt = fuchsia::bluetooth;
 namespace fctrl = fuchsia::bluetooth::control;
 namespace fsys = fuchsia::bluetooth::sys;
 
+const bt::PeerId kTestId(1);
 const bt::DeviceAddress kLeTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const bt::DeviceAddress kBredrTestAddr(bt::DeviceAddress::Type::kBREDR, {0x01, 0, 0, 0, 0, 0});
+
+const fbt::Address kTestFidlAddrPublic{fbt::AddressType::PUBLIC, {1, 0, 0, 0, 0, 0}};
+const fbt::Address kTestFidlAddrRandom{fbt::AddressType::RANDOM, {2, 0, 0, 0, 0, 0}};
 
 class MockPairingDelegate : public fsys::testing::PairingDelegate_TestBase {
  public:
@@ -163,6 +168,20 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
     return std::make_tuple(peer, fake_chan);
   }
 
+  // Calls the RestoreBonds method and verifies that the callback is run with the expected output.
+  void TestRestoreBonds(std::vector<fsys::BondingData> bonds,
+                        std::vector<fsys::BondingData> expected) {
+    bool called = false;
+    host_server()->RestoreBonds(std::move(bonds), [&](auto errors) {
+      called = true;
+      ASSERT_EQ(expected.size(), errors.size());
+      for (size_t i = 0; i < errors.size(); i++) {
+        EXPECT_TRUE(fidl::Equals(errors[i], expected[i]));
+      }
+    });
+    EXPECT_TRUE(called);
+  }
+
  private:
   std::unique_ptr<HostServer> host_server_;
   std::unique_ptr<GattHost> gatt_host_;
@@ -212,6 +231,35 @@ class FIDL_HostServerPairingTest : public FIDL_HostServerTest {
   bt::gap::Peer* fake_peer_ = nullptr;
   FakeChannel* fake_chan_ = nullptr;
 };
+
+// Constructs a vector of a fidl::Clone'able data type that contains a copy of the input |data|.
+// This allows move-only FIDL types to be re-used in test cases that need to refer to such data.
+//
+// Returns an empty vector if |data| could not be copied, e.g. because it contains handles that
+// cannot be duplicated.
+template <typename T>
+std::vector<T> MakeClonedVector(const T& data) {
+  std::vector<T> output;
+  T clone;
+
+  zx_status_t status = fidl::Clone(data, &clone);
+  EXPECT_EQ(ZX_OK, status);
+  if (status == ZX_OK) {
+    output.push_back(std::move(clone));
+  }
+
+  return output;
+}
+
+// Construct bonding data structure for testing using the given ID and address and an empty LE bond
+// structure.
+fsys::BondingData MakeTestBond(bt::PeerId id, fbt::Address address) {
+  fsys::BondingData bond;
+  bond.set_identifier(fbt::PeerId{id.value()});
+  bond.set_address(address);
+  bond.set_le(fsys::LeData());
+  return bond;
+}
 
 TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
@@ -747,6 +795,178 @@ TEST_F(FIDL_HostServerTest, ConnectDualMode) {
   EXPECT_FALSE(peer->le()->connected());
   EXPECT_EQ(0, test_device()->le_create_connection_command_count());
   EXPECT_EQ(1, test_device()->acl_create_connection_command_count());
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsErrorDataMissing) {
+  fsys::BondingData bond;
+
+  // Empty bond.
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // ID missing.
+  bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  bond.clear_identifier();
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // Address missing.
+  bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  bond.clear_address();
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // Transport data missing.
+  bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  bond.clear_le();
+  bond.clear_bredr();
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // Transport data missing keys.
+  bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsInvalidAddress) {
+  // LE Random address on dual-mode or BR/EDR-only bond should not be supported.
+  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
+  bond.set_bredr(fsys::BredrData());
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+
+  // BR/EDR only
+  bond.clear_le();
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsDeprecatedLeLtkFieldNotSupported) {
+  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
+  fsys::LeData le;
+  le.set_ltk(
+      fsys::Ltk{.key =
+                    fsys::PeerKey{
+                        .security =
+                            fsys::SecurityProperties{
+                                .authenticated = true,
+                                .secure_connections = true,
+                                .encryption_key_size = 16,
+                            },
+                        .data =
+                            fsys::Key{
+                                .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+                            },
+                    },
+                .ediv = 0,
+                .rand = 0});
+  bond.set_le(std::move(le));
+
+  // This should fail as the LTK is missing. This is because the `ltk` field at this
+  // layer is no longer supported.
+  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {
+  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
+  auto ltk =
+      fsys::Ltk{.key =
+                    fsys::PeerKey{
+                        .security =
+                            fsys::SecurityProperties{
+                                .authenticated = true,
+                                .secure_connections = true,
+                                .encryption_key_size = 16,
+                            },
+                        .data =
+                            fsys::Key{
+                                .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+                            },
+                    },
+                .ediv = 0,
+                .rand = 0};
+  fsys::LeData le;
+  le.set_peer_ltk(ltk);
+  le.set_local_ltk(ltk);
+  bond.set_le(std::move(le));
+
+  // This should succeed.
+  TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
+
+  auto* peer = adapter()->peer_cache()->FindById(kTestId);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->le());
+  EXPECT_FALSE(peer->bredr());
+  EXPECT_EQ(bt::DeviceAddress::Type::kLERandom, peer->address().type());
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
+  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  bond.clear_le();
+
+  fsys::BredrData bredr;
+  bredr.set_link_key(fsys::PeerKey{
+      .security =
+          fsys::SecurityProperties{
+              .authenticated = true,
+              .secure_connections = true,
+              .encryption_key_size = 16,
+          },
+      .data =
+          fsys::Key{
+              .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+          },
+  });
+  bond.set_bredr(std::move(bredr));
+
+  // This should succeed.
+  TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
+
+  auto* peer = adapter()->peer_cache()->FindById(kTestId);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->bredr());
+  EXPECT_FALSE(peer->le());
+  EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
+}
+
+TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
+  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  auto key = fsys::PeerKey{
+      .security =
+          fsys::SecurityProperties{
+              .authenticated = true,
+              .secure_connections = true,
+              .encryption_key_size = 16,
+          },
+      .data =
+          fsys::Key{
+              .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+          },
+  };
+  auto ltk = fsys::Ltk{.key = key, .ediv = 0, .rand = 0};
+  fsys::LeData le;
+  le.set_peer_ltk(ltk);
+  le.set_local_ltk(ltk);
+  bond.set_le(std::move(le));
+
+  fsys::BredrData bredr;
+  bredr.set_link_key(key);
+  bond.set_bredr(std::move(bredr));
+
+  // This should succeed.
+  TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
+
+  auto* peer = adapter()->peer_cache()->FindById(kTestId);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->le());
+  EXPECT_TRUE(peer->bredr());
+  EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
+}
+
+TEST_F(FIDL_HostServerTest, SetHostData) {
+  EXPECT_FALSE(adapter()->le_address_manager()->irk());
+
+  fsys::Key irk{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
+  fsys::HostData data;
+  data.set_irk(irk);
+
+  host_server()->SetLocalData(std::move(data));
+  ASSERT_TRUE(adapter()->le_address_manager()->irk());
+  EXPECT_EQ(irk.value, adapter()->le_address_manager()->irk().value());
 }
 
 }  // namespace

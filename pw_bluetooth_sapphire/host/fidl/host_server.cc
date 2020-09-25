@@ -38,7 +38,6 @@ namespace fsys = fuchsia::bluetooth::sys;
 using bt::PeerId;
 using bt::gap::LeSecurityModeToString;
 using bt::sm::IOCapability;
-using fidl_helpers::AddressBytesFromString;
 using fidl_helpers::HostErrorToFidl;
 using fidl_helpers::LeSecurityModeFromFidl;
 using fidl_helpers::NewFidlError;
@@ -49,10 +48,7 @@ using fidl_helpers::StatusToFidlDeprecated;
 using fuchsia::bluetooth::Bool;
 using fuchsia::bluetooth::ErrorCode;
 using fuchsia::bluetooth::Status;
-using fuchsia::bluetooth::control::AdapterState;
-using fuchsia::bluetooth::control::BondingData;
 using fuchsia::bluetooth::control::PairingOptions;
-using fuchsia::bluetooth::control::RemoteDevice;
 using fuchsia::bluetooth::control::TechnologyType;
 
 std::pair<PeerTracker::Updated, PeerTracker::Removed> PeerTracker::ToFidl(
@@ -145,12 +141,12 @@ void HostServer::WatchState(WatchStateCallback callback) {
   info_getter_.Watch(std::move(callback));
 }
 
-void HostServer::SetLocalData(::fuchsia::bluetooth::control::HostData host_data) {
-  if (host_data.irk) {
+void HostServer::SetLocalData(fsys::HostData host_data) {
+  if (host_data.has_irk()) {
     bt_log(DEBUG, "bt-host", "assign IRK");
     auto addr_mgr = adapter()->le_address_manager();
     if (addr_mgr) {
-      addr_mgr->set_irk(fidl_helpers::LocalKeyFromFidl(*host_data.irk));
+      addr_mgr->set_irk(host_data.irk().value);
     }
   }
 }
@@ -197,7 +193,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
   le_manager->StartDiscovery(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto session) {
         // End the new session if this AdapterServer got destroyed in the
-        // mean time (e.g. because the client disconnected).
+        // meantime (e.g. because the client disconnected).
         if (!self) {
           callback(fit::error(fsys::Error::FAILED));
           return;
@@ -308,80 +304,53 @@ void HostServer::SetConnectable(bool connectable, SetConnectableCallback callbac
       [callback = std::move(callback)](const auto& status) { callback(StatusToFidl(status)); });
 }
 
-void HostServer::AddBondedDevices(::std::vector<BondingData> bonds,
-                                  AddBondedDevicesCallback callback) {
-  bt_log(DEBUG, "bt-host", "AddBondedDevices");
+void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
+                              RestoreBondsCallback callback) {
+  bt_log(DEBUG, "bt-host", "RestoreBonds");
+
+  std::vector<fsys::BondingData> errors;
+
   if (bonds.empty()) {
-    // A request to restore an empty list of bonds succeeds immediately, as there is nothing to do
-    callback(Status());
+    // Nothing to do. Reply with an empty list.
+    callback(std::move(errors));
     return;
   }
 
-  std::vector<std::string> failed_ids;
-
   for (auto& bond : bonds) {
-    auto peer_id = PeerIdFromString(bond.identifier);
-    if (!peer_id) {
-      failed_ids.push_back(bond.identifier);
+    if (!bond.has_identifier() || !bond.has_address() || !(bond.has_le() || bond.has_bredr())) {
+      bt_log(ERROR, "bt-host", "BondingData mandatory fields missing!");
+      errors.push_back(std::move(bond));
       continue;
     }
 
-    std::optional<std::string> peer_name;
-    if (bond.name) {
-      peer_name = std::move(bond.name);
-    }
-
-    bt::DeviceAddress address;
-    bt::sm::PairingData le_bond_data;
-    if (bond.le) {
-      if (bond.bredr && bond.le->address != bond.bredr->address) {
-        bt_log(ERROR, "bt-host", "Dual-mode bonding data mismatched (id: %s)",
-               bond.identifier.c_str());
-        failed_ids.push_back(bond.identifier);
-        continue;
-      }
-      le_bond_data = fidl_helpers::PairingDataFromFidl(*bond.le);
-
-      // The |identity_address| field in bt::sm::PairingData is optional
-      // however it is not nullable in the FIDL struct. Hence it must be
-      // present.
-      ZX_DEBUG_ASSERT(le_bond_data.identity_address);
-      address = *le_bond_data.identity_address;
-    }
-
-    std::optional<bt::sm::LTK> bredr_link_key;
-    if (bond.bredr) {
-      // Dual-mode peers will have a BR/EDR-typed address.
-      auto addr = AddressBytesFromString(bond.bredr->address);
-      ZX_DEBUG_ASSERT(addr);
-      address = bt::DeviceAddress(bt::DeviceAddress::Type::kBREDR, *addr);
-      bredr_link_key = fidl_helpers::BrEdrKeyFromFidl(*bond.bredr);
-    }
-
-    if (!bond.le && !bond.bredr) {
-      bt_log(ERROR, "bt-host", "Required bonding data missing (id: %s)", bond.identifier.c_str());
-      failed_ids.push_back(bond.identifier);
+    auto address = fidl_helpers::AddressFromFidlBondingData(bond);
+    if (!address) {
+      errors.push_back(std::move(bond));
       continue;
     }
 
-    // TODO(armansito): BondingData should contain the identity address for both
-    // transports instead of storing them separately. For now use the one we
-    // obtained from |bond.le|.
+    bt::gap::BondingData bd;
+    bd.identifier = bt::PeerId{bond.identifier().value};
+    bd.address = *address;
+    if (bond.has_name()) {
+      bd.name = {bond.name()};
+    }
+
+    if (bond.has_le()) {
+      bd.le_pairing_data = fidl_helpers::LePairingDataFromFidl(bond.le());
+    }
+    if (bond.has_bredr()) {
+      bd.bredr_link_key = fidl_helpers::BredrKeyFromFidl(bond.bredr());
+    }
+
     // TODO(fxbug.dev/59645): Convert bond.bredr.services to BondingData::bredr_services
-    if (!adapter()->AddBondedPeer(
-            bt::gap::BondingData{*peer_id, address, peer_name, le_bond_data, bredr_link_key, {}})) {
-      failed_ids.push_back(bond.identifier);
-      continue;
+    if (!adapter()->AddBondedPeer(bd)) {
+      bt_log(ERROR, "bt-host", "failed to load bonding data entry");
+      errors.push_back(std::move(bond));
     }
   }
 
-  if (!failed_ids.empty()) {
-    callback(fidl_helpers::NewFidlError(
-        ErrorCode::FAILED, fxl::StringPrintf("Some peers failed to load (ids: %s)",
-                                             fxl::JoinStrings(failed_ids, ", ").c_str())));
-  } else {
-    callback(Status());
-  }
+  callback(std::move(errors));
 }
 
 void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {

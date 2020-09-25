@@ -52,8 +52,6 @@ void PeerCache::ForEach(PeerCallback f) {
 
 bool PeerCache::AddBondedPeer(BondingData bd) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
-  ZX_DEBUG_ASSERT(!bd.le_pairing_data.identity_address ||
-                  bd.address.value() == bd.le_pairing_data.identity_address->value());
   ZX_DEBUG_ASSERT(bd.address.type() != DeviceAddress::Type::kLEAnonymous);
 
   const bool bond_le =

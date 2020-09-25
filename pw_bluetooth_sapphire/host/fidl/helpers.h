@@ -113,10 +113,13 @@ fuchsia::bluetooth::sys::TechnologyType TechnologyTypeToFidl(bt::gap::Technology
 fuchsia::bluetooth::sys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter);
 fuchsia::bluetooth::sys::Peer PeerToFidl(const bt::gap::Peer& peer);
 
+// Functions to convert bonding data structures from FIDL.
+std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
+    const fuchsia::bluetooth::sys::BondingData& data);
+bt::sm::PairingData LePairingDataFromFidl(const fuchsia::bluetooth::sys::LeData& data);
+std::optional<bt::sm::LTK> BredrKeyFromFidl(const fuchsia::bluetooth::sys::BredrData& data);
+
 // Functions to convert Control FIDL library objects.
-bt::sm::PairingData PairingDataFromFidl(const fuchsia::bluetooth::control::LEData& data);
-bt::UInt128 LocalKeyFromFidl(const fuchsia::bluetooth::control::LocalKey& key);
-std::optional<bt::sm::LTK> BrEdrKeyFromFidl(const fuchsia::bluetooth::control::BREDRData& data);
 fuchsia::bluetooth::control::BondingData NewBondingData(const bt::gap::Adapter& adapter,
                                                         const bt::gap::Peer& peer);
 std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
