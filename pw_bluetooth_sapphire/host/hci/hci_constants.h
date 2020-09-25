@@ -752,8 +752,8 @@ enum class EncryptionStatus : uint8_t {
 };
 
 // HCI command timeout interval (milliseconds)
-// TODO(BT-603/BT-604) This was increased to handle flaking integration tests.
-// We may want to reduce this to something lower again once we have a better 
+// TODO(fxbug.dev/1196,fxbug.dev/1197) This was increased to handle flaking integration tests.
+// We may want to reduce this to something lower again once we have a better
 // resolution to this issue.
 constexpr zx::duration kCommandTimeout = zx::sec(10);
 

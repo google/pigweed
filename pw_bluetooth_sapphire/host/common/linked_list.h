@@ -11,7 +11,7 @@
 
 namespace bt {
 
-// TODO(armansito): Use this in more places where it makes sense (see NET-176).
+// TODO(armansito): Use this in more places where it makes sense (see fxbug.dev/652).
 
 // Convenience template aliases for an fbl intrusive container backed
 // LinkedList.

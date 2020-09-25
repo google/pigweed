@@ -267,7 +267,7 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
   }
 
   mtu_ = min_mtu();
-  // TODO (BT-854): Dynamically configure preferred MTU value.
+  // TODO (fxbug.dev/1447): Dynamically configure preferred MTU value.
   preferred_mtu_ = kLEMaxMTU;
 }
 

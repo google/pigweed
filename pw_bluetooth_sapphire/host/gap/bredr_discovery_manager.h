@@ -40,7 +40,7 @@ class PeerCache;
 // Ownership of this session is passed to the caller; when no sessions exist,
 // discovery is halted.
 //
-// TODO(jamuraa): Name resolution should also happen here. (NET-509)
+// TODO(jamuraa): Name resolution should also happen here. (fxbug.dev/851)
 //
 // This class is not thread-safe, BrEdrDiscoverySessions should be created and
 // accessed on the same thread the BrEdrDiscoveryManager is created.

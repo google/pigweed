@@ -137,7 +137,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   bt::gap::LowEnergyAdvertisingManager::ConnectionCallback connect_cb;
   // TODO(armansito): The conversion from hci::Connection to
   // gap::LowEnergyConnectionRef should be performed by a gap library object
-  // and not in this layer (see NET-355).
+  // and not in this layer (see fxbug.dev/648).
 
   // Per the API contract of `AdvertisingParameters` FIDL, if `connection_options` is present or
   // the deprecated `connectable` parameter is true, advertisements will be connectable.

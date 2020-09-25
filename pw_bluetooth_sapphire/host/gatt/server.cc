@@ -494,7 +494,7 @@ void Server::OnReadBlobRequest(att::Bearer::TransactionId tid, const att::Packet
     return;
   }
 
-  // TODO(bwb): Add a timeout to this as per NET-434
+  // TODO(bwb): Add a timeout to this as per fxbug.dev/643
   if (!attr->ReadAsync(peer_id_, offset, callback)) {
     att_->ReplyWithError(tid, handle, att::ErrorCode::kReadNotPermitted);
   }

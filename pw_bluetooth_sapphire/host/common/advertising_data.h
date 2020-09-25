@@ -175,7 +175,7 @@ class AdvertisingData {
 
  private:
   // TODO(armansito): Consider storing the payload in its serialized form and
-  // have these point into the structure (see NET-209).
+  // have these point into the structure (see fxbug.dev/907).
   std::optional<std::string> local_name_;
   std::optional<int8_t> tx_power_;
   std::optional<uint16_t> appearance_;

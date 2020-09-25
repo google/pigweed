@@ -58,7 +58,7 @@ class GATT_ServerTest : public l2cap::testing::FakeChannelTest {
 
   att::Database* db() const { return db_.get(); }
 
-  // TODO(armansito): Consider introducing a FakeBearer for testing (NET-318).
+  // TODO(armansito): Consider introducing a FakeBearer for testing (fxbug.dev/642).
   att::Bearer* att() const { return att_.get(); }
 
  private:
@@ -1439,7 +1439,7 @@ TEST_F(GATT_ServerTest, WriteRequestSuccess) {
 }
 
 // TODO(bwb): Add test cases for the error conditions involved in a Write
-// Command (NET-387)
+// Command (fxbug.dev/675)
 
 TEST_F(GATT_ServerTest, WriteCommandSuccess) {
   const auto kTestValue = CreateStaticByteBuffer('f', 'o', 'o');

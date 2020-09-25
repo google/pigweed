@@ -36,7 +36,7 @@ class DeviceWrapper;
 // TODO(armansito): This object has become too heavy-weight. I think it will be
 // cleaner to have CommandChannel and ACLDataChannel each be owned directly by
 // the main and L2CAP domains. Transport should go away as part of the HCI layer
-// clean up (and also NET-388).
+// clean up (and also fxbug.dev/721).
 class Transport final {
  public:
   // Initializes the command channel.

@@ -99,9 +99,9 @@ class GATT {
   // |value|: The attribute value that will be included in the notification.
   // |indicate|: If true, an indication will be sent.
   //
-  // TODO(armansito): Revise this API to involve fewer lookups (NET-483).
+  // TODO(armansito): Revise this API to involve fewer lookups (fxbug.dev/809).
   // TODO(armansito): Fix this to notify all registered peers when |peer_id| is
-  // empty (NET-589).
+  // empty (fxbug.dev/657).
   virtual void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                                 ::std::vector<uint8_t> value, bool indicate) = 0;
 

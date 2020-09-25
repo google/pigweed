@@ -170,7 +170,7 @@ class Domain : public fbl::RefCounted<Domain> {
   //
   // TODO(armansito): Return the socket in a data structure that contains
   // additional meta-data about the connection, such as its link type and
-  // channel configuration parameters (see NET-1084 and TODOs for
+  // channel configuration parameters (see fxbug.dev/1059 and TODOs for
   // RegisterService above.
   virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                SocketCallback socket_callback) = 0;

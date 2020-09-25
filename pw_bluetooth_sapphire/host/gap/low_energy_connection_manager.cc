@@ -678,14 +678,14 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   ConnectionOptions connection_options(bondable_mode);
   internal::PendingRequestData request(peer->address(), std::move(callback), connection_options);
 
-  // TODO(armansito): Use own address when storing the connection (NET-321).
+  // TODO(armansito): Use own address when storing the connection (fxbug.dev/653).
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
   InitializeConnection(peer_id, std::move(link), std::move(request));
 }
 
 void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
-  // TODO(armansito): Add a test case for this once NET-1179 is done.
+  // TODO(armansito): Add a test case for this once fxbug.dev/886 is done.
   pairing_delegate_ = delegate;
 
   // Tell existing connections to abort ongoing pairing procedures. The new
@@ -732,7 +732,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
   }
 
   // TODO(armansito): Perform either the General or Auto Connection
-  // Establishment procedure here (see NET-187).
+  // Establishment procedure here (see fxbug.dev/908).
 
   if (pending_requests_.empty()) {
     bt_log(TRACE, "gap-le", "no pending requests remaining");
@@ -755,7 +755,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
 
     // TODO(armansito): For now the requests for this peer won't complete
     // until the next peer discovery. This will no longer be an issue when we
-    // use background scanning (see NET-187).
+    // use background scanning (see fxbug.dev/908).
   }
 }
 
@@ -798,7 +798,7 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
 
   // TODO(armansito): For now reject having more than one link with the same
   // peer. This should change once this has more context on the local
-  // destination for remote initiated connections (see NET-321).
+  // destination for remote initiated connections (see fxbug.dev/653).
   if (connections_.find(peer_id) != connections_.end()) {
     bt_log(DEBUG, "gap-le", "multiple links from peer; connection refused");
     // Notify request that duplicate connection could not be initialized.
