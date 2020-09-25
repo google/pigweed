@@ -12,9 +12,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Decodes and detokenizes Base64-encoded strings in serial output.
+"""Updates pw::Status usages from Status::CODE to Status::Code() style.
 
-The output is printed or saved to a file. Input is not supported.
+Also updates StatusWithSize.
 """
 
 import argparse
