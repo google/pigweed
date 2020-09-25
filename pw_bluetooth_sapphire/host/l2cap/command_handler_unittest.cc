@@ -1,3 +1,7 @@
+// Copyright 2020 The Fuchsia Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/command_handler.h"
 
 #include "lib/gtest/test_loop_fixture.h"
