@@ -175,7 +175,7 @@ class ServiceSearchResponse : public Response {
   // GetPDU();
   void set_service_record_handle_list(std::vector<ServiceHandle> handles) {
     service_record_handle_list_ = handles;
-    total_service_record_count_ = handles.size();
+    total_service_record_count_ = static_cast<uint16_t>(handles.size());
   }
   std::vector<ServiceHandle> service_record_handle_list() const {
     return service_record_handle_list_;

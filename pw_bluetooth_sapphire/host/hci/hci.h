@@ -58,7 +58,7 @@ inline uint16_t GetOCF(const OpCode opcode) { return opcode & 0x3FF; }
 
 // Returns the opcode based on the given OGF and OCF fields.
 constexpr OpCode DefineOpCode(const uint8_t ogf, const uint16_t ocf) {
-  return (static_cast<uint16_t>(ogf & 0x3F) << 10) | (ocf & 0x03FF);
+  return static_cast<uint16_t>(((ogf & 0x3F) << 10) | (ocf & 0x03FF));
 }
 
 // ========================= HCI packet headers ==========================
