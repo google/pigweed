@@ -140,21 +140,20 @@ script to run all tests on a Linux machine.
     ninja -C out arduino
 
   SERIAL_PORT=/dev/ttyACM0
+
   for f in $(find out/arduino_debug/obj/ -iname "*.elf"); do
       BUILD_PATH=$(dirname $f)
       PROJECT_NAME=$(basename -s .elf $f)
-      COMMON_ARGS="--quiet --arduino-package-path ./third_party/arduino/cores/teensy
-                   --arduino-package-name teensy/avr
-                   --compiler-path-override ./.environment/cipd/pigweed/bin
-                   show
-                   --build-path ${BUILD_PATH} --build-project-name ${PROJECT_NAME}
-                   --board teensy40 --menu-options menu.usb.serial menu.keys.en-us"
-      echo "==> OBJCOPY" $f
-      arduino_builder $COMMON_ARGS --run-objcopy
-      # Optional
-      # arduino_builder $COMMON_ARGS --run-postbuild
-      echo "==> FLASH" $f
-      arduino_builder --serial-port $SERIAL_PORT $COMMON_ARGS --run-upload-command teensyloader
+      CORE_ARGS="--quiet --arduino-package-path ./third_party/arduino/cores/teensy
+                 --arduino-package-name teensy/avr
+                 --compiler-path-override ./.environment/cipd/pigweed/bin"
+      BOARD_ARGS="--build-path ${BUILD_PATH} \
+                  --build-project-name ${PROJECT_NAME}
+                  --board teensy40
+                  --menu-options menu.usb.serial menu.keys.en-us"
+      # Run objcopy, postbuild, and upload (flash) steps
+      arduino_builder $CORE_ARGS run $BOARD_ARGS --serial-port $SERIAL_PORT \
+          --run-objcopy --run-postbuild --run-upload-command teensyloader
       while true; do
           sleep .1; ls $SERIAL_PORT 2>/dev/null && break
       done

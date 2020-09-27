@@ -21,26 +21,34 @@ if (dir_pw_third_party_arduino != "") {
   pw_source_set("arduino_core_sources") {
     remove_configs = [ "$dir_pw_build:strict_warnings" ]
 
-    _core_c_files = exec_script(arduino_builder_script,
-                                arduino_global_args + [ "--core-c-files" ],
-                                "list lines")
-    _core_s_files = exec_script(arduino_builder_script,
-                                arduino_global_args + [ "--core-s-files" ],
-                                "list lines")
-    _core_cpp_files = exec_script(arduino_builder_script,
-                                  arduino_global_args + [ "--core-cpp-files" ],
-                                  "list lines")
+    _core_c_files =
+        exec_script(arduino_builder_script,
+                    arduino_show_command_args + [ "--core-c-files" ],
+                    "list lines")
+    _core_s_files = filter_exclude(
+            exec_script(arduino_builder_script,
+                        arduino_show_command_args + [ "--core-s-files" ],
+                        "list lines"),
+            # TODO(tonymd): Conditionally remove this source file unless building for cortex-m0.
+            # Exception for adafruit-samd core
+            # pulse_asm.S is for: '.cpu cortex-m0plus .fpu softvfp'
+            [ "*pulse_asm.S\b" ])
+
+    _core_cpp_files =
+        exec_script(arduino_builder_script,
+                    arduino_show_command_args + [ "--core-cpp-files" ],
+                    "list lines")
     _variant_c_files =
         exec_script(arduino_builder_script,
-                    arduino_global_args + [ "--variant-c-files" ],
+                    arduino_show_command_args + [ "--variant-c-files" ],
                     "list lines")
     _variant_s_files =
         exec_script(arduino_builder_script,
-                    arduino_global_args + [ "--variant-s-files" ],
+                    arduino_show_command_args + [ "--variant-s-files" ],
                     "list lines")
     _variant_cpp_files =
         exec_script(arduino_builder_script,
-                    arduino_global_args + [ "--variant-cpp-files" ],
+                    arduino_show_command_args + [ "--variant-cpp-files" ],
                     "list lines")
 
     sources = _core_c_files + _core_s_files + _core_cpp_files +

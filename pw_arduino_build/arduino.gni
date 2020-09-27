@@ -32,7 +32,7 @@ declare_args() {
 }
 
 arduino_builder_script =
-    get_path_info("py/pw_arduino_build/arduinobuilder.py", "abspath")
+    get_path_info("py/pw_arduino_build/__main__.py", "abspath")
 
 _arduino_core_path =
     rebase_path("../third_party/arduino/cores/$arduino_core_name")
@@ -46,12 +46,20 @@ arduino_global_args = [
   arduino_package_name,
   "--compiler-path-override",
   _compiler_path_override,
-  "show",
-  "--delimit-with-newlines",
+]
+
+arduino_board_args = [
   "--build-path",
   rebase_path(root_build_dir),
   "--board",
   arduino_board,
   "--menu-options",
 ]
-arduino_global_args += arduino_menu_options
+arduino_board_args += arduino_menu_options
+
+arduino_show_command_args = arduino_global_args + [
+                              "show",
+                              "--delimit-with-newlines",
+                            ] + arduino_board_args
+
+arduino_run_command_args = arduino_global_args + [ "run" ] + arduino_board_args

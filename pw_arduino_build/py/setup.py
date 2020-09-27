@@ -24,8 +24,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points={
         'console_scripts':
-        ['arduino_builder = '
-         '    pw_arduino_build.arduinobuilder:main']
+        ['arduino_builder = pw_arduino_build.__main__:main']
     },
     install_requires=[
         'pyserial',

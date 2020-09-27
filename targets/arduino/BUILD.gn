@@ -31,32 +31,32 @@ if (dir_pw_third_party_arduino != "") {
 
   config("arduino_build") {
     # Debug: Print out arduinobuilder.py args
-    # print(string_join(" ", [rebase_path(arduino_builder_script)] + arduino_global_args))
+    # print(string_join(" ", [rebase_path(arduino_builder_script)] + arduino_show_command_args))
 
     # Run prebuilds
     # TODO(tonymd) This only needs to be run once but it's happening multiple times.
     exec_script(arduino_builder_script,
-                arduino_global_args + [ "--run-prebuilds" ],
+                arduino_run_command_args + [ "--run-prebuilds" ],
                 "string")
 
     _exclude_flags = [ "-std=gnu++14" ]
 
     _cflags = exec_script(arduino_builder_script,
-                          arduino_global_args + [ "--c-flags" ],
+                          arduino_show_command_args + [ "--c-flags" ],
                           "list lines")
     cflags = filter_exclude(_cflags, _exclude_flags)
 
     asmflags = exec_script(arduino_builder_script,
-                           arduino_global_args + [ "--s-flags" ],
+                           arduino_show_command_args + [ "--s-flags" ],
                            "list lines")
 
     _cflags_cc = exec_script(arduino_builder_script,
-                             arduino_global_args + [ "--cpp-flags" ],
+                             arduino_show_command_args + [ "--cpp-flags" ],
                              "list lines")
     cflags_cc = filter_exclude(_cflags_cc, _exclude_flags)
 
     _ldflags = exec_script(arduino_builder_script,
-                           arduino_global_args + [ "--ld-flags" ],
+                           arduino_show_command_args + [ "--ld-flags" ],
                            "list lines")
     ldflags =
         filter_exclude(_ldflags,
