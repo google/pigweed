@@ -34,7 +34,7 @@ Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
   if (!encoded.ok()) {
     PW_LOG_ERROR("Failed to encode response packet to channel buffer");
     output().SendAndReleaseBuffer(0);
-    return Status::INTERNAL;
+    return Status::Internal();
   }
 
   return output().SendAndReleaseBuffer(encoded.size());

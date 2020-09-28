@@ -75,28 +75,28 @@ class StatusWithSize {
  public:
   // Non-OK StatusWithSizes can be constructed from these constants, such as:
   //
-  //   StatusWithSize result = StatusWithSize::NOT_FOUND;
+  //   StatusWithSize result = StatusWithSize::NotFound();
   //
   // These constants are DEPRECATED! Use the helper functions below instead. For
-  // example, change StatusWithSize::NOT_FOUND to StatusWithSize::NotFound().
+  // example, change StatusWithSize::NotFound() to StatusWithSize::NotFound().
   //
   // TODO(pwbug/268): Migrate to the functions and remove these constants.
-  static constexpr Constant CANCELLED{Status::CANCELLED};
-  static constexpr Constant UNKNOWN{Status::UNKNOWN};
-  static constexpr Constant INVALID_ARGUMENT{Status::INVALID_ARGUMENT};
-  static constexpr Constant DEADLINE_EXCEEDED{Status::DEADLINE_EXCEEDED};
-  static constexpr Constant NOT_FOUND{Status::NOT_FOUND};
-  static constexpr Constant ALREADY_EXISTS{Status::ALREADY_EXISTS};
-  static constexpr Constant PERMISSION_DENIED{Status::PERMISSION_DENIED};
-  static constexpr Constant RESOURCE_EXHAUSTED{Status::RESOURCE_EXHAUSTED};
-  static constexpr Constant FAILED_PRECONDITION{Status::FAILED_PRECONDITION};
-  static constexpr Constant ABORTED{Status::ABORTED};
-  static constexpr Constant OUT_OF_RANGE{Status::OUT_OF_RANGE};
-  static constexpr Constant UNIMPLEMENTED{Status::UNIMPLEMENTED};
-  static constexpr Constant INTERNAL{Status::INTERNAL};
-  static constexpr Constant UNAVAILABLE{Status::UNAVAILABLE};
-  static constexpr Constant DATA_LOSS{Status::DATA_LOSS};
-  static constexpr Constant UNAUTHENTICATED{Status::UNAUTHENTICATED};
+  static constexpr Constant CANCELLED{Status::Cancelled()};
+  static constexpr Constant UNKNOWN{Status::Unknown()};
+  static constexpr Constant INVALID_ARGUMENT{Status::InvalidArgument()};
+  static constexpr Constant DEADLINE_EXCEEDED{Status::DeadlineExceeded()};
+  static constexpr Constant NOT_FOUND{Status::NotFound()};
+  static constexpr Constant ALREADY_EXISTS{Status::AlreadyExists()};
+  static constexpr Constant PERMISSION_DENIED{Status::PermissionDenied()};
+  static constexpr Constant RESOURCE_EXHAUSTED{Status::ResourceExhausted()};
+  static constexpr Constant FAILED_PRECONDITION{Status::FailedPrecondition()};
+  static constexpr Constant ABORTED{Status::Aborted()};
+  static constexpr Constant OUT_OF_RANGE{Status::OutOfRange()};
+  static constexpr Constant UNIMPLEMENTED{Status::Unimplemented()};
+  static constexpr Constant INTERNAL{Status::Internal()};
+  static constexpr Constant UNAVAILABLE{Status::Unavailable()};
+  static constexpr Constant DATA_LOSS{Status::DataLoss()};
+  static constexpr Constant UNAUTHENTICATED{Status::Unauthenticated()};
 
   // Functions that create a StatusWithSize with the specified status code. For
   // codes other than OK, the size defaults to 0.
@@ -177,7 +177,7 @@ class StatusWithSize {
   // The maximum valid value for size.
   static constexpr size_t max_size() { return kSizeMask; }
 
-  // True if status() == Status::OK.
+  // True if status() == Status::Ok().
   constexpr bool ok() const { return (size_ & kStatusMask) == 0u; }
 
   constexpr Status status() const {

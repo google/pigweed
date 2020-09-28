@@ -38,13 +38,13 @@ Result<Frame> Decoder::Process(const byte new_byte) {
         // Report an error if non-flag bytes were read between frames.
         if (current_frame_size_ != 0u) {
           current_frame_size_ = 0;
-          return Status::DATA_LOSS;
+          return Status::DataLoss();
         }
       } else {
         // Count bytes to track how many are discarded.
         current_frame_size_ += 1;
       }
-      return Status::UNAVAILABLE;  // Report error when starting a new frame.
+      return Status::Unavailable();  // Report error when starting a new frame.
     }
     case State::kFrame: {
       if (new_byte == kFlag) {
@@ -65,14 +65,14 @@ Result<Frame> Decoder::Process(const byte new_byte) {
       } else {
         AppendByte(new_byte);
       }
-      return Status::UNAVAILABLE;
+      return Status::Unavailable();
     }
     case State::kFrameEscape: {
       // The flag character cannot be escaped; return an error.
       if (new_byte == kFlag) {
         state_ = State::kFrame;
         current_frame_size_ = 0;
-        return Status::DATA_LOSS;
+        return Status::DataLoss();
       }
 
       if (new_byte == kEscape) {
@@ -86,7 +86,7 @@ Result<Frame> Decoder::Process(const byte new_byte) {
         state_ = State::kFrame;
         AppendByte(new_byte ^ kUnescapeConstant);
       }
-      return Status::UNAVAILABLE;
+      return Status::Unavailable();
     }
   }
   PW_CRASH("Bad decoder state");
@@ -104,28 +104,28 @@ void Decoder::AppendByte(byte new_byte) {
 Status Decoder::CheckFrame() const {
   // Empty frames are not an error; repeated flag characters are okay.
   if (current_frame_size_ == 0u) {
-    return Status::UNAVAILABLE;
+    return Status::Unavailable();
   }
 
   if (current_frame_size_ < Frame::kMinSizeBytes) {
     PW_LOG_ERROR("Received %lu-byte frame; frame must be at least 6 bytes",
                  static_cast<unsigned long>(current_frame_size_));
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   if (current_frame_size_ > max_size()) {
     PW_LOG_ERROR("Frame size [%lu] exceeds the maximum buffer size [%lu]",
                  static_cast<unsigned long>(current_frame_size_),
                  static_cast<unsigned long>(max_size()));
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   if (!VerifyFrameCheckSequence()) {
     PW_LOG_ERROR("Frame check sequence verification failed");
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 bool Decoder::VerifyFrameCheckSequence() const {

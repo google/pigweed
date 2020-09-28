@@ -421,32 +421,32 @@ TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
 
 // When DCHECKs are disabled, they should not trip, and their arguments
 // shouldn't be evaluated.
-TEST(AssertPass, DCheckDisabledSingleSideEffectingCall) {
+TEST(AssertPass, DCheckDisabledSingleSideEffectingCall_1) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK(IncrementsGlobal() == 0);
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-TEST(AssertPass, DCheckDisabledSingleSideEffectingCall) {
+TEST(AssertPass, DCheckDisabledSingleSideEffectingCall_2) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK(IncrementsGlobal() == 1);
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall) {
+TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall_1) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK_INT_EQ(0, IncrementsGlobal());
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls) {
+TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls_1) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK_INT_EQ(IncrementsGlobal(), IncrementsGlobal());
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall) {
+TEST(AssertPass, DCheckDisabledBinaryOpSingleSideEffectingCall_2) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK_INT_EQ(12314, IncrementsGlobal());
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
-TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls) {
+TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls_2) {
   global_state_for_multi_evaluate_test = 0;
   PW_DCHECK_INT_EQ(IncrementsGlobal() + 10, IncrementsGlobal());
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
@@ -475,25 +475,25 @@ TEST(Check, ShortNamesWork) {
 
 // Verify PW_CHECK_OK, including message handling.
 TEST_F(AssertFail, StatusNotOK) {
-  pw::Status status = pw::Status::UNKNOWN;
+  pw::Status status = pw::Status::Unknown();
   PW_CHECK_OK(status);
   EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). ");
 }
 
 TEST_F(AssertFail, StatusNotOKMessageNoArguments) {
-  pw::Status status = pw::Status::UNKNOWN;
+  pw::Status status = pw::Status::Unknown();
   PW_CHECK_OK(status, "msg");
   EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). msg");
 }
 
 TEST_F(AssertFail, StatusNotOKMessageArguments) {
-  pw::Status status = pw::Status::UNKNOWN;
+  pw::Status status = pw::Status::Unknown();
   PW_CHECK_OK(status, "msg: %d", 5);
   EXPECT_MESSAGE("Check failed: status (=UNKNOWN) == Status::OK (=OK). msg: 5");
 }
 
 // Example expression for the test below.
-pw::Status DoTheThing() { return pw::Status::RESOURCE_EXHAUSTED; }
+pw::Status DoTheThing() { return pw::Status::ResourceExhausted(); }
 
 TEST_F(AssertFail, NonTrivialExpression) {
   PW_CHECK_OK(DoTheThing());
@@ -504,32 +504,25 @@ TEST_F(AssertFail, NonTrivialExpression) {
 // Note: This function seems pointless but it is not, since pw::Status::FOO
 // constants are not actually status objects, but code objects. This way we can
 // ensure the macros work with both real status objects and literals.
-pw::Status MakeStatus(pw::Status status) { return status; }
-TEST_F(AssertPass, Constant) { PW_CHECK_OK(pw::Status::OK); }
-TEST_F(AssertPass, Dynamic) { PW_CHECK_OK(MakeStatus(pw::Status::OK)); }
+TEST_F(AssertPass, Function) { PW_CHECK_OK(pw::Status::Ok()); }
 TEST_F(AssertPass, Enum) { PW_CHECK_OK(PW_STATUS_OK); }
-TEST_F(AssertFail, Constant) { PW_CHECK_OK(pw::Status::UNKNOWN); }
-TEST_F(AssertFail, Dynamic) { PW_CHECK_OK(MakeStatus(pw::Status::UNKNOWN)); }
+TEST_F(AssertFail, Function) { PW_CHECK_OK(pw::Status::Unknown()); }
 TEST_F(AssertFail, Enum) { PW_CHECK_OK(PW_STATUS_UNKNOWN); }
 
 #if PW_ASSERT_ENABLE_DEBUG
 
 // In debug mode, the asserts should check their arguments.
-TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
-TEST_F(AssertPass, DCheckDynamic) { PW_DCHECK_OK(MakeStatus(pw::Status::OK)); }
-TEST_F(AssertFail, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
-TEST_F(AssertFail, DCheckDynamic) {
-  PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
-}
+TEST_F(AssertPass, DCheckFunction) { PW_DCHECK_OK(pw::Status::Ok()); }
+TEST_F(AssertPass, DCheckEnum) { PW_DCHECK_OK(PW_STATUS_OK); }
+TEST_F(AssertFail, DCheckFunction) { PW_DCHECK_OK(pw::Status::Unknown()); }
+TEST_F(AssertFail, DCheckEnum) { PW_DCHECK_OK(PW_STATUS_UNKNOWN); }
 #else  // PW_ASSERT_ENABLE_DEBUG
 
 // In release mode, all the asserts should pass.
-TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::OK); }
-TEST_F(AssertPass, DCheckDynamic) { PW_DCHECK_OK(MakeStatus(pw::Status::OK)); }
-TEST_F(AssertPass, DCheckConstant) { PW_DCHECK_OK(pw::Status::UNKNOWN); }
-TEST_F(AssertPass, DCheckDynamic) {
-  PW_DCHECK_OK(MakeStatus(pw::Status::UNKNOWN));
-}
+TEST_F(AssertPass, DCheckFunction_Ok) { PW_DCHECK_OK(pw::Status::Ok()); }
+TEST_F(AssertPass, DCheckEnum_Ok) { PW_DCHECK_OK(PW_STATUS_OK); }
+TEST_F(AssertPass, DCheckFunction_Err) { PW_DCHECK_OK(pw::Status::Unknown()); }
+TEST_F(AssertPass, DCheckEnum_Err) { PW_DCHECK_OK(PW_STATUS_UNKNOWN); }
 #endif  // PW_ASSERT_ENABLE_DEBUG
 
 // TODO: Figure out how to run some of these tests is C.

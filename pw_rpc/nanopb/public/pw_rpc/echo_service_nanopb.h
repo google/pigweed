@@ -25,7 +25,7 @@ class EchoService final : public generated::EchoService<EchoService> {
               const pw_rpc_EchoMessage& request,
               pw_rpc_EchoMessage& response) {
     std::strncpy(response.msg, request.msg, sizeof(response.msg));
-    return Status::OK;
+    return Status::Ok();
   }
 };
 

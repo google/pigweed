@@ -119,7 +119,7 @@ size_t Encode(T integer, const std::span<std::byte>& output) {
 //     size_t bytes = Decode(data, &value);
 //
 //     if (bytes == 0u) {
-//       return Status::DATA_LOSS;
+//       return Status::DataLoss();
 //     }
 //     results.push_back(value);
 //     data = data.subspan(bytes)

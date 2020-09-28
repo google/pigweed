@@ -48,11 +48,11 @@ char PrintableChar(std::byte b) {
 
 Status DumpAddr(std::span<char> dest, uintptr_t addr) {
   if (dest.data() == nullptr) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
   // Include null terminator.
   if (dest.size() < kHexAddrStringSize + 1) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
   dest[0] = '0';
   dest[1] = 'x';
@@ -123,11 +123,11 @@ Status FormattedHexDumper::PrintFormatHeader() {
 
 Status FormattedHexDumper::DumpLine() {
   if (source_data_.empty()) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   if (!ValidateBufferSize().ok() || dest_.data() == nullptr) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   if (dest_[0] == 0 && flags.show_header) {
@@ -212,22 +212,23 @@ Status FormattedHexDumper::DumpLine() {
 
 Status FormattedHexDumper::SetLineBuffer(std::span<char> dest) {
   if (dest.data() == nullptr || dest.size_bytes() == 0) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
   dest_ = dest;
-  return ValidateBufferSize().ok() ? Status::OK : Status::RESOURCE_EXHAUSTED;
+  return ValidateBufferSize().ok() ? Status::Ok() : Status::ResourceExhausted();
 }
 
 Status FormattedHexDumper::BeginDump(ConstByteSpan data) {
   current_offset_ = 0;
   source_data_ = data;
   if (data.data() == nullptr) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
   if (dest_.data() != nullptr && dest_.size_bytes() > 0) {
     dest_[0] = 0;
   }
-  return ValidateBufferSize().ok() ? Status::OK : Status::FAILED_PRECONDITION;
+  return ValidateBufferSize().ok() ? Status::Ok()
+                                   : Status::FailedPrecondition();
 }
 
 Status FormattedHexDumper::ValidateBufferSize() {
@@ -250,10 +251,10 @@ Status FormattedHexDumper::ValidateBufferSize() {
   }
 
   if (dest_.size_bytes() < required_size) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace pw::dump

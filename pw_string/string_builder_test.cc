@@ -75,7 +75,7 @@ TEST(StringBuilder, EmptyBuffer_StreamOutput_WritesNothing) {
   StringBuilder sb(std::span(buffer, 0));
 
   sb << CustomType() << " is " << 12345;
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_EQ(kNoTouch, std::string_view(buffer, sizeof(buffer)));
 }
 
@@ -102,44 +102,44 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
 
 TEST(StringBuilder, EmptyBuffer_AppendEmpty_ResourceExhausted) {
   StringBuilder sb(std::span<char>{});
-  EXPECT_EQ(Status::OK, sb.last_status());
-  EXPECT_EQ(Status::OK, sb.status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(Status::Ok(), sb.status());
 
   sb << "";
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.last_status());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
 }
 
 TEST(StringBuilder, Status_StartsOk) {
   StringBuffer<16> sb;
-  EXPECT_EQ(Status::OK, sb.status());
-  EXPECT_EQ(Status::OK, sb.last_status());
+  EXPECT_EQ(Status::Ok(), sb.status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
 }
 
 TEST(StringBuilder, Status_StatusAndLastStatusUpdate) {
   StringBuffer<16> sb;
   sb << "Well, if only there were enough room in here for this string";
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.last_status());
 
   sb.resize(1029);
-  EXPECT_EQ(Status::OUT_OF_RANGE, sb.status());
-  EXPECT_EQ(Status::OUT_OF_RANGE, sb.last_status());
+  EXPECT_EQ(Status::OutOfRange(), sb.status());
+  EXPECT_EQ(Status::OutOfRange(), sb.last_status());
 
   sb << "";
-  EXPECT_EQ(Status::OUT_OF_RANGE, sb.status());
-  EXPECT_EQ(Status::OK, sb.last_status());
+  EXPECT_EQ(Status::OutOfRange(), sb.status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
 }
 
 TEST(StringBuilder, Status_ClearStatus_SetsStatuesToOk) {
   StringBuffer<2> sb = MakeString<2>("Won't fit!!!!!");
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.last_status());
 
   sb.clear_status();
-  EXPECT_EQ(Status::OK, sb.status());
-  EXPECT_EQ(Status::OK, sb.last_status());
+  EXPECT_EQ(Status::Ok(), sb.status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
 }
 
 TEST(StringBuilder, StreamOutput_OutputSelf) {
@@ -153,7 +153,7 @@ TEST(StringBuilder, StreamOutput_OutputSelf) {
 TEST(StringBuilder, PushBack) {
   StringBuffer<12> sb;
   sb.push_back('?');
-  EXPECT_EQ(Status::OK, sb.last_status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
   EXPECT_EQ(1u, sb.size());
   EXPECT_STREQ("?", sb.data());
 }
@@ -161,14 +161,14 @@ TEST(StringBuilder, PushBack) {
 TEST(StringBuilder, PushBack_Full) {
   StringBuffer<1> sb;
   sb.push_back('!');
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.last_status());
   EXPECT_EQ(0u, sb.size());
 }
 
 TEST(StringBuilder, PopBack) {
   auto sb = MakeString<12>("Welcome!");
   sb.pop_back();
-  EXPECT_EQ(Status::OK, sb.last_status());
+  EXPECT_EQ(Status::Ok(), sb.last_status());
   EXPECT_EQ(7u, sb.size());
   EXPECT_STREQ("Welcome", sb.data());
 }
@@ -176,7 +176,7 @@ TEST(StringBuilder, PopBack) {
 TEST(StringBuilder, PopBack_Empty) {
   StringBuffer<12> sb;
   sb.pop_back();
-  EXPECT_EQ(Status::OUT_OF_RANGE, sb.last_status());
+  EXPECT_EQ(Status::OutOfRange(), sb.last_status());
   EXPECT_EQ(0u, sb.size());
 }
 
@@ -185,7 +185,7 @@ TEST(StringBuilder, Append_NonTerminatedString) {
   std::memset(bad_string, '?', sizeof(bad_string));
 
   StringBuffer<6> sb;
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.append(bad_string).last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append(bad_string).last_status());
   EXPECT_STREQ("?????", sb.data());
 }
 
@@ -199,7 +199,7 @@ TEST(StringBuilder, Append_Chars) {
 TEST(StringBuilder, Append_Chars_Full) {
   StringBuffer<8> sb;
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.append(8, '?').last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append(8, '?').last_status());
   EXPECT_STREQ("???????", sb.data());
 }
 
@@ -219,8 +219,8 @@ TEST(StringBuilder, Append_CString) {
 
 TEST(StringBuilder, Append_CString_Full) {
   auto sb = MakeString<6>("hello");
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.append("890123", 1).last_status());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append("890123", 1).last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_EQ(sb.max_size(), sb.size());
   EXPECT_STREQ("hello", sb.data());
 }
@@ -263,14 +263,14 @@ TEST(StringBuilder, Resize_Larger_Fails) {
   auto sb = MakeString<12>("Four");
   EXPECT_EQ(4u, sb.size());
   sb.resize(10);
-  EXPECT_EQ(sb.status(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(sb.status(), Status::OutOfRange());
   EXPECT_EQ(4u, sb.size());
 }
 
 TEST(StringBuilder, Resize_LargerThanCapacity_Fails) {
   auto sb = MakeString<12>("Four");
   sb.resize(1234);
-  EXPECT_EQ(sb.status(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(sb.status(), Status::OutOfRange());
   EXPECT_EQ(4u, sb.size());
   EXPECT_STREQ("Four", sb.data());
 }
@@ -289,10 +289,10 @@ TEST(StringBuilder, Format_Normal) {
 
 TEST(StringBuilder, Format_ExhaustBuffer) {
   StringBuffer<6> sb;
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.Format("012345").status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.Format("012345").status());
 
   EXPECT_STREQ("01234", sb.data());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
 }
 
 TEST(StringBuilder, StreamOutput_MultipleTypes) {
@@ -316,7 +316,7 @@ TEST(StringBuilder, StreamOutput_FullBufferIgnoresExtraStrings) {
 
   sb << true << "Now it's way " << static_cast<unsigned char>(2) << " long";
   EXPECT_FALSE(sb.ok());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_STREQ("0true", sb.data());
 }
 
@@ -342,7 +342,7 @@ TEST(StringBuilder, StreamOutput_ExhaustBuffer_InTwoStrings) {
   EXPECT_EQ(2u, sb.size());
   sb << "234";
   EXPECT_STREQ("012", sb.data());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_EQ(3u, sb.size());
 }
 
@@ -353,7 +353,7 @@ TEST(StringBuilder, StreamOutput_NonTerminatedString) {
   StringBuffer<6> sb;
   sb << "hey" << bad_string;
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_STREQ("hey??", sb.data());
 }
 
@@ -362,7 +362,7 @@ TEST(StringBuilder, SteamOutput_StringView) {
   constexpr std::string_view hello("hello");
 
   buffer << hello;
-  EXPECT_EQ(Status::OK, buffer.status());
+  EXPECT_EQ(Status::Ok(), buffer.status());
   EXPECT_STREQ("hello", buffer.data());
 }
 
@@ -390,13 +390,13 @@ TEST(StringBuffer, Assign) {
 
   two << "0123456789";
   ASSERT_STREQ("What heck", two.data());
-  ASSERT_EQ(Status::RESOURCE_EXHAUSTED, two.status());
-  ASSERT_EQ(Status::RESOURCE_EXHAUSTED, two.last_status());
+  ASSERT_EQ(Status::ResourceExhausted(), two.status());
+  ASSERT_EQ(Status::ResourceExhausted(), two.last_status());
 
   one = two;
   EXPECT_STREQ("What heck", one.data());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, one.status());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, one.last_status());
+  EXPECT_EQ(Status::ResourceExhausted(), one.status());
+  EXPECT_EQ(Status::ResourceExhausted(), one.last_status());
 
   StringBuffer<12> three;
   three = two;
@@ -421,8 +421,8 @@ TEST(StringBuffer, CopyConstructFromSameSize) {
   two << "0123456789";
   two << "";
   ASSERT_STREQ("What heck", two.data());
-  ASSERT_EQ(Status::RESOURCE_EXHAUSTED, two.status());
-  ASSERT_EQ(Status::OK, two.last_status());
+  ASSERT_EQ(Status::ResourceExhausted(), two.status());
+  ASSERT_EQ(Status::Ok(), two.last_status());
 }
 
 TEST(StringBuffer, CopyConstructFromSmaller) {
@@ -430,7 +430,7 @@ TEST(StringBuffer, CopyConstructFromSmaller) {
   StringBuffer<12> two(one);
 
   EXPECT_STREQ("You are t", two.data());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, two.status());
+  EXPECT_EQ(Status::ResourceExhausted(), two.status());
 }
 
 TEST(StringBuilder, Object) {
@@ -514,7 +514,7 @@ TEST(MakeString, DefaultSizeString_FitsWholeString) {
 TEST(MakeString, LargerThanDefaultSize_Truncates) {
   auto sb = MakeString("1844674407", 3709551615, 123456);
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_STREQ(kLongestString, sb.data());
 }
 

@@ -33,7 +33,7 @@ class NullWriter final : public Writer {
   }
 
  private:
-  Status DoWrite(ConstByteSpan data) override { return Status::OK; }
+  Status DoWrite(ConstByteSpan data) override { return Status::Ok(); }
 };
 
 }  // namespace pw::stream

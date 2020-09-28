@@ -26,17 +26,20 @@ namespace pw {
 template <typename T>
 class Result {
  public:
-  constexpr Result(T&& value) : value_(std::move(value)), status_(Status::OK) {}
-  constexpr Result(const T& value) : value_(value), status_(Status::OK) {}
+  constexpr Result(T&& value)
+      : value_(std::move(value)), status_(Status::Ok()) {}
+  constexpr Result(const T& value) : value_(value), status_(Status::Ok()) {}
 
   template <typename... Args>
   constexpr Result(std::in_place_t, Args&&... args)
-      : value_(std::forward<Args>(args)...), status_(Status::OK) {}
+      : value_(std::forward<Args>(args)...), status_(Status::Ok()) {}
 
   // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
-  Result(Status status) : status_(status) { PW_CHECK(status_ != Status::OK); }
+  Result(Status status) : status_(status) { PW_CHECK(status_ != Status::Ok()); }
   // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
-  Result(Status::Code code) : status_(code) { PW_CHECK(status_ != Status::OK); }
+  Result(Status::Code code) : status_(code) {
+    PW_CHECK(status_ != Status::Ok());
+  }
 
   constexpr Result(const Result&) = default;
   constexpr Result& operator=(const Result&) = default;

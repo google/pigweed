@@ -43,7 +43,7 @@ TEST(FreeList, CanRetrieveAddedMember) {
   byte data[kN] = {std::byte(0)};
 
   auto status = list.AddChunk(std::span(data, kN));
-  EXPECT_EQ(status, Status::OK);
+  EXPECT_EQ(status, Status::Ok());
 
   auto item = list.FindChunk(kN);
   EXPECT_EQ(item.size(), kN);
@@ -70,7 +70,7 @@ TEST(FreeList, CanRemoveItem) {
 
   list.AddChunk(std::span(data, kN));
   auto status = list.RemoveChunk(std::span(data, kN));
-  EXPECT_EQ(status, Status::OK);
+  EXPECT_EQ(status, Status::Ok());
 
   auto item = list.FindChunk(kN);
   EXPECT_EQ(item.size(), static_cast<size_t>(0));
@@ -148,7 +148,7 @@ TEST(FreeList, RemoveUnknownChunkReturnsNotFound) {
 
   list.AddChunk(std::span(data, kN));
   auto status = list.RemoveChunk(std::span(data2, kN));
-  EXPECT_EQ(status, Status::NOT_FOUND);
+  EXPECT_EQ(status, Status::NotFound());
 }
 
 TEST(FreeList, CanStoreMultipleChunksPerBucket) {

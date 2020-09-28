@@ -83,7 +83,7 @@ Status Encoder::WriteData(ConstByteSpan data) {
     }
     if (end == data.end()) {
       fcs_.Update(data);
-      return Status::OK;
+      return Status::Ok();
     }
     if (Status status = EscapeAndWrite(*end, writer_); !status.ok()) {
       return status;

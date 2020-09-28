@@ -33,7 +33,7 @@ class Packet {
   // Creates an RPC packet with the channel, service, and method ID of the
   // provided packet.
   static constexpr Packet Response(const Packet& request,
-                                   Status status = Status::OK) {
+                                   Status status = Status::Ok()) {
     return Packet(PacketType::RESPONSE,
                   request.channel_id(),
                   request.service_id(),
@@ -62,7 +62,7 @@ class Packet {
                    uint32_t service_id,
                    uint32_t method_id,
                    std::span<const std::byte> payload = {},
-                   Status status = Status::OK)
+                   Status status = Status::Ok())
       : type_(type),
         channel_id_(channel_id),
         service_id_(service_id),

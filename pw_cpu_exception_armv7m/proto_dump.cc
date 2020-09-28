@@ -55,10 +55,10 @@ Status DumpCpuStateProto(protobuf::Encoder& dest,
   // reflected here.
   Status status = state_encoder.WriteR12(cpu_state.base.r12);
   if (!status.ok()) {
-    return status == Status::RESOURCE_EXHAUSTED ? Status::RESOURCE_EXHAUSTED
-                                                : Status::UNKNOWN;
+    return status == Status::ResourceExhausted() ? Status::ResourceExhausted()
+                                                 : Status::Unknown();
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace pw::cpu_exception

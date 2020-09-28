@@ -84,7 +84,7 @@ TEST(TokenizedTrace, Data) {
   std::byte value[expected_max_bytes_used];
   size_t bytes_read = 0;
   EXPECT_EQ(buf->PeekFront(std::span<std::byte>(value), &bytes_read),
-            pw::Status::OK);
+            pw::Status::Ok());
 
   // read size is minus 1, since doesn't include varint size
   EXPECT_GE(bytes_read, expected_min_bytes_used - 1);
@@ -123,8 +123,8 @@ TEST(TokenizedTrace, Overflow) {
     std::byte value[PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES];
     size_t bytes_read = 0;
     EXPECT_EQ(buf->PeekFront(std::span<std::byte>(value), &bytes_read),
-              pw::Status::OK);
-    EXPECT_EQ(buf->PopFront(), pw::Status::OK);
+              pw::Status::Ok());
+    EXPECT_EQ(buf->PopFront(), pw::Status::Ok());
     EXPECT_EQ(*reinterpret_cast<size_t*>(&value[bytes_read - sizeof(size_t)]),
               expected_count);
     expected_count++;

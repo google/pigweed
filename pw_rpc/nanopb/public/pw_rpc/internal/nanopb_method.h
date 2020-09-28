@@ -300,7 +300,7 @@ Status ServerWriter<T>::Write(const T& response) {
   }
 
   ReleasePayloadBuffer({});
-  return Status::INTERNAL;
+  return Status::Internal();
 }
 
 }  // namespace pw::rpc

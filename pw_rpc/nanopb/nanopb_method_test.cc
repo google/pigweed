@@ -77,13 +77,13 @@ class FakeGeneratedServiceImpl
                  pw_rpc_test_TestResponse& response) {
     last_request = request;
     response.value = request.integer + 5;
-    return Status::UNAUTHENTICATED;
+    return Status::Unauthenticated();
   }
 
   Status DoNothing(ServerContext&,
                    const pw_rpc_test_Empty&,
                    pw_rpc_test_Empty&) {
-    return Status::UNKNOWN;
+    return Status::Unknown();
   }
 
   void StartStream(ServerContext&,
@@ -103,7 +103,7 @@ TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   method.Invoke(context.get(), context.packet(request));
 
   const Packet& response = context.output().sent_packet();
-  EXPECT_EQ(response.status(), Status::UNAUTHENTICATED);
+  EXPECT_EQ(response.status(), Status::Unauthenticated());
 
   // Field 1 (encoded as 1 << 3) with 128 as the value.
   constexpr std::byte expected[]{
@@ -125,7 +125,7 @@ TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
-  EXPECT_EQ(Status::DATA_LOSS, packet.status());
+  EXPECT_EQ(Status::DataLoss(), packet.status());
   EXPECT_EQ(context.kServiceId, packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());
 }
@@ -145,7 +145,7 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
-  EXPECT_EQ(Status::INTERNAL, packet.status());
+  EXPECT_EQ(Status::Internal(), packet.status());
   EXPECT_EQ(context.kServiceId, packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());
 
@@ -171,12 +171,12 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 
   method.Invoke(context.get(), context.packet({}));
 
-  EXPECT_EQ(Status::OK, last_writer.Write({.value = 100}));
+  EXPECT_EQ(Status::Ok(), last_writer.Write({.value = 100}));
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet(payload).Encode(encoded_response);
-  ASSERT_EQ(Status::OK, encoded.status());
+  ASSERT_EQ(Status::Ok(), encoded.status());
 
   ASSERT_EQ(encoded.size(), context.output().sent_data().size());
   EXPECT_EQ(0,
@@ -200,13 +200,13 @@ TEST(NanopbMethod,
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet({}).Encode(encoded_response);
-  ASSERT_EQ(Status::OK, encoded.status());
+  ASSERT_EQ(Status::Ok(), encoded.status());
   ASSERT_EQ(kNoPayloadPacketSize, encoded.size());
 
   method.Invoke(context.get(), context.packet({}));
 
-  EXPECT_EQ(Status::OK, last_writer.Write({}));                  // Barely fits
-  EXPECT_EQ(Status::INTERNAL, last_writer.Write({.value = 1}));  // Too big
+  EXPECT_EQ(Status::Ok(), last_writer.Write({}));  // Barely fits
+  EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big
 }
 
 }  // namespace

@@ -100,7 +100,7 @@ class SmallBuffer : public ::testing::Test {
 TEST_F(HexDump, DumpAddr_ZeroSizeT) {
   constexpr const char* expected = EXPECTED_SIGNIFICANT_BYTES("00000000");
   size_t zero = 0;
-  EXPECT_EQ(DumpAddr(dest_, zero), Status::OK);
+  EXPECT_EQ(DumpAddr(dest_, zero), Status::Ok());
   EXPECT_STREQ(expected, dest_.data());
 }
 
@@ -156,7 +156,7 @@ TEST_F(HexDump, FormattedHexDump_DumpEntireBuffer) {
   for (size_t i = 0; i < source_data.size(); i += kTestBytesPerLine) {
     EXPECT_TRUE(dumper_.DumpLine().ok());
   }
-  EXPECT_EQ(dumper_.DumpLine(), Status::RESOURCE_EXHAUSTED);
+  EXPECT_EQ(dumper_.DumpLine(), Status::ResourceExhausted());
 }
 
 // This test is provided for convenience of debugging, as it actually logs the
@@ -172,7 +172,7 @@ TEST_F(HexDump, FormattedHexDump_LogDump) {
   while (dumper_.DumpLine().ok()) {
     PW_LOG_INFO("%s", dest_.data());
   }
-  EXPECT_EQ(dumper_.DumpLine(), Status::RESOURCE_EXHAUSTED);
+  EXPECT_EQ(dumper_.DumpLine(), Status::ResourceExhausted());
 }
 
 TEST_F(HexDump, FormattedHexDump_NoSpaces) {
@@ -351,7 +351,7 @@ TEST_F(SmallBuffer, TooManyBytesPerLine) {
   default_flags_.bytes_per_line = 13;
   dumper_ = FormattedHexDumper(dest_, default_flags_);
 
-  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FailedPrecondition());
   EXPECT_FALSE(dumper_.DumpLine().ok());
   EXPECT_STREQ(expected, dest_.data());
 }
@@ -363,7 +363,7 @@ TEST_F(SmallBuffer, SpacesIncreaseBufferRequirement) {
   default_flags_.group_every = 1;
   dumper_ = FormattedHexDumper(dest_, default_flags_);
 
-  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FailedPrecondition());
   EXPECT_FALSE(dumper_.DumpLine().ok());
   EXPECT_STREQ(expected, dest_.data());
 }
@@ -375,7 +375,7 @@ TEST_F(SmallBuffer, PrefixIncreasesBufferRequirement) {
   default_flags_.prefix_mode = FormattedHexDumper::AddressMode::kOffset;
   dumper_ = FormattedHexDumper(dest_, default_flags_);
 
-  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(dumper_.BeginDump(source_data), Status::FailedPrecondition());
   EXPECT_FALSE(dumper_.DumpLine().ok());
   EXPECT_STREQ(expected, dest_.data());
 }
@@ -383,22 +383,22 @@ TEST_F(SmallBuffer, PrefixIncreasesBufferRequirement) {
 TEST(BadBuffer, ZeroSize) {
   char buffer[1] = {static_cast<char>(0xaf)};
   FormattedHexDumper dumper(std::span<char>(buffer, 0));
-  EXPECT_EQ(dumper.BeginDump(source_data), Status::FAILED_PRECONDITION);
-  EXPECT_EQ(dumper.DumpLine(), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(dumper.BeginDump(source_data), Status::FailedPrecondition());
+  EXPECT_EQ(dumper.DumpLine(), Status::FailedPrecondition());
   EXPECT_EQ(buffer[0], static_cast<char>(0xaf));
 }
 
 TEST(BadBuffer, NullPtrDest) {
   FormattedHexDumper dumper;
-  EXPECT_EQ(dumper.SetLineBuffer(std::span<char>()), Status::INVALID_ARGUMENT);
-  EXPECT_EQ(dumper.BeginDump(source_data), Status::FAILED_PRECONDITION);
-  EXPECT_EQ(dumper.DumpLine(), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(dumper.SetLineBuffer(std::span<char>()), Status::InvalidArgument());
+  EXPECT_EQ(dumper.BeginDump(source_data), Status::FailedPrecondition());
+  EXPECT_EQ(dumper.DumpLine(), Status::FailedPrecondition());
 }
 
 TEST(BadBuffer, NullPtrSrc) {
   char buffer[24] = {static_cast<char>(0)};
   FormattedHexDumper dumper(buffer);
-  EXPECT_EQ(dumper.BeginDump(ByteSpan(nullptr, 64)), Status::INVALID_ARGUMENT);
+  EXPECT_EQ(dumper.BeginDump(ByteSpan(nullptr, 64)), Status::InvalidArgument());
   // Don't actually dump nullptr in this test as it could cause a crash.
 }
 

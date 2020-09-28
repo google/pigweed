@@ -23,7 +23,7 @@ namespace pw::blob_store {
 
 Status BlobStore::Init() {
   if (initialized_) {
-    return Status::OK;
+    return Status::Ok();
   }
 
   PW_LOG_INFO("Init BlobStore");
@@ -46,7 +46,7 @@ Status BlobStore::Init() {
 
     PW_LOG_DEBUG("BlobStore init - Have valid blob of %u bytes",
                  static_cast<unsigned>(write_address_));
-    return Status::OK;
+    return Status::Ok();
   }
 
   // No saved blob, check for flash being erased.
@@ -61,36 +61,36 @@ Status BlobStore::Init() {
   } else {
     PW_LOG_DEBUG("BlobStore init - not erased");
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::LoadMetadata() {
   if (!kvs_.Get(MetadataKey(), &metadata_).ok()) {
     // If no metadata was read, make sure the metadata is reset.
     metadata_.reset();
-    return Status::NOT_FOUND;
+    return Status::NotFound();
   }
 
   if (!ValidateChecksum().ok()) {
     PW_LOG_ERROR("BlobStore init - Invalidating blob with invalid checksum");
     Invalidate();
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 size_t BlobStore::MaxDataSizeBytes() const { return partition_.size_bytes(); }
 
 Status BlobStore::OpenWrite() {
   if (!initialized_) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   // Writer can only be opened if there are no other writer or readers already
   // open.
   if (writer_open_ || readers_open_ != 0) {
-    return Status::UNAVAILABLE;
+    return Status::Unavailable();
   }
 
   PW_LOG_DEBUG("Blob writer open");
@@ -99,28 +99,28 @@ Status BlobStore::OpenWrite() {
 
   Invalidate();
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::OpenRead() {
   if (!initialized_) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   // Reader can only be opened if there is no writer open.
   if (writer_open_) {
-    return Status::UNAVAILABLE;
+    return Status::Unavailable();
   }
 
   if (!ValidToRead()) {
     PW_LOG_ERROR("Blob reader unable open without valid data");
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   PW_LOG_DEBUG("Blob reader open");
 
   readers_open_++;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::CloseWrite() {
@@ -128,11 +128,11 @@ Status BlobStore::CloseWrite() {
     // If not valid to write, there was data loss and the close will result in a
     // not valid blob. Don't need to flush any write buffered bytes.
     if (!ValidToWrite()) {
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
     if (write_address_ == 0) {
-      return Status::OK;
+      return Status::Ok();
     }
 
     PW_LOG_DEBUG(
@@ -164,14 +164,14 @@ Status BlobStore::CloseWrite() {
 
     if (!ValidateChecksum().ok()) {
       Invalidate();
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
     if (!kvs_.Put(MetadataKey(), metadata_).ok()) {
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
-    return Status::OK;
+    return Status::Ok();
   };
 
   const Status status = do_close_write();
@@ -179,36 +179,36 @@ Status BlobStore::CloseWrite() {
 
   if (!status.ok()) {
     valid_data_ = false;
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::CloseRead() {
   PW_CHECK_UINT_GT(readers_open_, 0);
   readers_open_--;
   PW_LOG_DEBUG("Blob reader close");
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::Write(ConstByteSpan data) {
   if (!ValidToWrite()) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
   if (data.size_bytes() == 0) {
-    return Status::OK;
+    return Status::Ok();
   }
   if (WriteBytesRemaining() == 0) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   if (WriteBytesRemaining() < data.size_bytes()) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   Status status = EraseIfNeeded();
   // TODO: switch to TRY once available.
   if (!status.ok()) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   // Write in (up to) 3 steps:
@@ -242,14 +242,14 @@ Status BlobStore::Write(ConstByteSpan data) {
       // If there was not enough bytes to finish filling the write buffer, there
       // should not be any bytes left.
       PW_DCHECK(data.size_bytes() == 0);
-      return Status::OK;
+      return Status::Ok();
     }
 
     // The write buffer is full, flush to flash.
     Status status = CommitToFlash(write_buffer_);
     // TODO: switch to TRY once available.
     if (!status.ok()) {
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
     PW_DCHECK(WriteBufferEmpty());
@@ -267,7 +267,7 @@ Status BlobStore::Write(ConstByteSpan data) {
     Status status = CommitToFlash(data.first(flash_write_size_bytes_));
     // TODO: switch to TRY once available.
     if (!status.ok()) {
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
     data = data.subspan(flash_write_size_bytes_);
@@ -283,18 +283,18 @@ Status BlobStore::Write(ConstByteSpan data) {
     write_address_ += data.size_bytes();
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::AddToWriteBuffer(ConstByteSpan data) {
   if (!ValidToWrite()) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
   if (WriteBytesRemaining() == 0) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   if (WriteBufferBytesFree() < data.size_bytes()) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   size_t bytes_in_buffer = WriteBufferBytesUsed();
@@ -303,15 +303,15 @@ Status BlobStore::AddToWriteBuffer(ConstByteSpan data) {
       write_buffer_.data() + bytes_in_buffer, data.data(), data.size_bytes());
   write_address_ += data.size_bytes();
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::Flush() {
   if (!ValidToWrite()) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
   if (WriteBufferBytesUsed() == 0) {
-    return Status::OK;
+    return Status::Ok();
   }
   // Don't need to check available space, AddToWriteBuffer() will not enqueue
   // more than can be written to flash.
@@ -319,7 +319,7 @@ Status BlobStore::Flush() {
   Status status = EraseIfNeeded();
   // TODO: switch to TRY once available.
   if (!status.ok()) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   ByteSpan data = std::span(write_buffer_.data(), WriteBufferBytesUsed());
@@ -327,7 +327,7 @@ Status BlobStore::Flush() {
     Status status = CommitToFlash(data.first(flash_write_size_bytes_));
     // TODO: switch to TRY once available.
     if (!status.ok()) {
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
     data = data.subspan(flash_write_size_bytes_);
@@ -345,7 +345,7 @@ Status BlobStore::Flush() {
     PW_DCHECK_UINT_EQ(data.size_bytes(), 0);
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status BlobStore::FlushFinalPartialChunk() {
@@ -406,15 +406,15 @@ Status BlobStore::EraseIfNeeded() {
     // Always just erase. Erase is smart enough to only erase if needed.
     return Erase();
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 StatusWithSize BlobStore::Read(size_t offset, ByteSpan dest) const {
   if (!ValidToRead()) {
-    return StatusWithSize::FAILED_PRECONDITION;
+    return StatusWithSize::FailedPrecondition();
   }
   if (offset >= ReadableDataBytes()) {
-    return StatusWithSize::OUT_OF_RANGE;
+    return StatusWithSize::OutOfRange();
   }
 
   size_t available_bytes = ReadableDataBytes() - offset;
@@ -425,12 +425,12 @@ StatusWithSize BlobStore::Read(size_t offset, ByteSpan dest) const {
 
 Result<ConstByteSpan> BlobStore::GetMemoryMappedBlob() const {
   if (!ValidToRead()) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   std::byte* mcu_address = partition_.PartitionAddressToMcuAddress(0);
   if (mcu_address == nullptr) {
-    return Status::UNIMPLEMENTED;
+    return Status::Unimplemented();
   }
   return ConstByteSpan(mcu_address, ReadableDataBytes());
 }
@@ -451,7 +451,7 @@ Status BlobStore::Erase() {
     // Erased blobs should be valid as soon as the flash is erased. Even though
     // there are 0 bytes written, they are valid.
     PW_DCHECK(valid_data_);
-    return Status::OK;
+    return Status::Ok();
   }
 
   Invalidate();
@@ -480,25 +480,25 @@ Status BlobStore::Invalidate() {
 
   Status status = kvs_.Delete(MetadataKey());
 
-  return (status == Status::OK || status == Status::NOT_FOUND)
-             ? Status::OK
-             : Status::INTERNAL;
+  return (status == Status::Ok() || status == Status::NotFound())
+             ? Status::Ok()
+             : Status::Internal();
 }
 
 Status BlobStore::ValidateChecksum() {
   if (metadata_.data_size_bytes == 0) {
     PW_LOG_INFO("Blob unable to validate checksum of an empty blob");
-    return Status::UNAVAILABLE;
+    return Status::Unavailable();
   }
 
   if (checksum_algo_ == nullptr) {
     if (metadata_.checksum != 0) {
       PW_LOG_ERROR(
           "Blob invalid to have a checkum value with no checksum algo");
-      return Status::DATA_LOSS;
+      return Status::DataLoss();
     }
 
-    return Status::OK;
+    return Status::Ok();
   }
 
   PW_LOG_DEBUG("Validate checksum of 0x%08x in flash for blob of %u bytes",
@@ -515,7 +515,7 @@ Status BlobStore::ValidateChecksum() {
 
 Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check) {
   if (checksum_algo_ == nullptr) {
-    return Status::OK;
+    return Status::Ok();
   }
 
   checksum_algo_->Reset();
@@ -536,7 +536,7 @@ Status BlobStore::CalculateChecksumFromFlash(size_t bytes_to_check) {
   // Safe to ignore the return from Finish, checksum_algo_ keeps the state
   // information that it needs.
   checksum_algo_->Finish();
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace pw::blob_store

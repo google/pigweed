@@ -50,21 +50,21 @@ class WriteInfoFrame : public ::testing::Test {
   } while (0)
 
 TEST_F(WriteInfoFrame, EmptyPayload) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, std::span<byte>(), writer_));
   EXPECT_ENCODER_WROTE(
       bytes::Concat(kFlag, kAddress, kControl, uint32_t{0x8D12B2C2}, kFlag));
 }
 
 TEST_F(WriteInfoFrame, OneBytePayload) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::String("A"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag));
 }
 
 TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7d) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::Array<0x7d>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
@@ -76,7 +76,7 @@ TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7d) {
 }
 
 TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7E) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::Array<0x7e>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
@@ -88,14 +88,14 @@ TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7E) {
 }
 
 TEST_F(WriteInfoFrame, AddressNeedsEscaping) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(0x7d, bytes::String("A"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag, kEscape, byte{0x5d}, kControl, 'A', uint32_t{0xA2B35317}, kFlag));
 }
 
 TEST_F(WriteInfoFrame, Crc32NeedsEscaping) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::String("abcdefg"), writer_));
 
   // The CRC-32 is 0x38B9FC7E, so the 0x7E must be escaped.
@@ -109,9 +109,9 @@ TEST_F(WriteInfoFrame, Crc32NeedsEscaping) {
 }
 
 TEST_F(WriteInfoFrame, MultiplePayloads) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::String("ABC"), writer_));
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(kAddress, bytes::String("DEF"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
@@ -128,7 +128,7 @@ TEST_F(WriteInfoFrame, MultiplePayloads) {
 }
 
 TEST_F(WriteInfoFrame, PayloadWithNoEscapes) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(
                 kAddress, bytes::String("123456789012345678901234"), writer_));
 
@@ -144,7 +144,7 @@ TEST_F(WriteInfoFrame, PayloadWithNoEscapes) {
 }
 
 TEST_F(WriteInfoFrame, PayloadWithMultipleEscapes) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             WriteInformationFrame(
                 kAddress,
                 bytes::Array<0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E>(),
@@ -162,7 +162,7 @@ TEST_F(WriteInfoFrame, PayloadWithMultipleEscapes) {
 TEST_F(WriteInfoFrame, WriterError) {
   constexpr auto data = bytes::Initialized<sizeof(buffer_)>(0x7e);
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED,
+  EXPECT_EQ(Status::ResourceExhausted(),
             WriteInformationFrame(kAddress, data, writer_));
 }
 

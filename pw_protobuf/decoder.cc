@@ -27,24 +27,24 @@ Status Decoder::Next() {
     }
   }
   if (proto_.empty()) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   previous_field_consumed_ = false;
-  return FieldSize() == 0 ? Status::DATA_LOSS : Status::OK;
+  return FieldSize() == 0 ? Status::DataLoss() : Status::Ok();
 }
 
 Status Decoder::SkipField() {
   if (proto_.empty()) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
 
   size_t bytes_to_skip = FieldSize();
   if (bytes_to_skip == 0) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   proto_ = proto_.subspan(bytes_to_skip);
-  return proto_.empty() ? Status::OUT_OF_RANGE : Status::OK;
+  return proto_.empty() ? Status::OutOfRange() : Status::Ok();
 }
 
 uint32_t Decoder::FieldNumber() const {
@@ -60,10 +60,10 @@ Status Decoder::ReadUint32(uint32_t* out) {
     return status;
   }
   if (value > std::numeric_limits<uint32_t>::max()) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   *out = value;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadSint32(int32_t* out) {
@@ -73,10 +73,10 @@ Status Decoder::ReadSint32(int32_t* out) {
     return status;
   }
   if (value > std::numeric_limits<int32_t>::max()) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   *out = value;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadSint64(int64_t* out) {
@@ -86,7 +86,7 @@ Status Decoder::ReadSint64(int64_t* out) {
     return status;
   }
   *out = varint::ZigZagDecode(value);
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadBool(bool* out) {
@@ -96,7 +96,7 @@ Status Decoder::ReadBool(bool* out) {
     return status;
   }
   *out = value;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadString(std::string_view* out) {
@@ -107,7 +107,7 @@ Status Decoder::ReadString(std::string_view* out) {
   }
   *out = std::string_view(reinterpret_cast<const char*>(bytes.data()),
                           bytes.size());
-  return Status::OK;
+  return Status::Ok();
 }
 
 size_t Decoder::FieldSize() const {
@@ -159,17 +159,17 @@ Status Decoder::ConsumeKey(WireType expected_type) {
   uint64_t key;
   size_t bytes_read = varint::Decode(proto_, &key);
   if (bytes_read == 0) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   WireType wire_type = static_cast<WireType>(key & kWireTypeMask);
   if (wire_type != expected_type) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   // Advance past the key.
   proto_ = proto_.subspan(bytes_read);
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadVarint(uint64_t* out) {
@@ -179,13 +179,13 @@ Status Decoder::ReadVarint(uint64_t* out) {
 
   size_t bytes_read = varint::Decode(proto_, out);
   if (bytes_read == 0) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   // Advance to the next field.
   proto_ = proto_.subspan(bytes_read);
   previous_field_consumed_ = true;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadFixed(std::byte* out, size_t size) {
@@ -197,14 +197,14 @@ Status Decoder::ReadFixed(std::byte* out, size_t size) {
   }
 
   if (proto_.size() < size) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   std::memcpy(out, proto_.data(), size);
   proto_ = proto_.subspan(size);
   previous_field_consumed_ = true;
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Decoder::ReadDelimited(std::span<const std::byte>* out) {
@@ -216,24 +216,24 @@ Status Decoder::ReadDelimited(std::span<const std::byte>* out) {
   uint64_t length;
   size_t bytes_read = varint::Decode(proto_, &length);
   if (bytes_read == 0) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   proto_ = proto_.subspan(bytes_read);
   if (proto_.size() < length) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   *out = proto_.first(length);
   proto_ = proto_.subspan(length);
   previous_field_consumed_ = true;
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
   if (handler_ == nullptr || state_ != kReady) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
 
   state_ = kDecodeInProgress;
@@ -242,7 +242,7 @@ Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
   // Iterate the proto, calling the handler with each field number.
   while (state_ == kDecodeInProgress) {
     if (Status status = decoder_.Next(); !status.ok()) {
-      if (status == Status::OUT_OF_RANGE) {
+      if (status == Status::OutOfRange()) {
         // Reached the end of the proto.
         break;
       }
@@ -253,7 +253,7 @@ Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
 
     Status status = handler_->ProcessField(*this, decoder_.FieldNumber());
     if (!status.ok()) {
-      state_ = status == Status::CANCELLED ? kDecodeCancelled : kDecodeFailed;
+      state_ = status == Status::Cancelled() ? kDecodeCancelled : kDecodeFailed;
       return status;
     }
 
@@ -265,11 +265,11 @@ Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
   }
 
   if (state_ != kDecodeInProgress) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   state_ = kReady;
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace pw::protobuf

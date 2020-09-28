@@ -200,10 +200,10 @@ class BlobStore {
     Status Open(size_t offset = 0) {
       PW_DCHECK(!open_);
       if (!store_.ValidToRead()) {
-        return Status::FAILED_PRECONDITION;
+        return Status::FailedPrecondition();
       }
       if (offset >= store_.ReadableDataBytes()) {
-        return Status::INVALID_ARGUMENT;
+        return Status::InvalidArgument();
       }
 
       offset_ = offset;

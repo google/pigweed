@@ -43,7 +43,7 @@ StatusWithSize FlashPartition::Input::DoRead(std::span<byte> data) {
 
 Status FlashPartition::Erase(Address address, size_t num_sectors) {
   if (permission_ == PartitionPermission::kReadOnly) {
-    return Status::PERMISSION_DENIED;
+    return Status::PermissionDenied();
   }
 
   PW_TRY(CheckBounds(address, num_sectors * sector_size_bytes()));
@@ -61,7 +61,7 @@ StatusWithSize FlashPartition::Read(Address address, std::span<byte> output) {
 StatusWithSize FlashPartition::Write(Address address,
                                      std::span<const byte> data) {
   if (permission_ == PartitionPermission::kReadOnly) {
-    return StatusWithSize::PERMISSION_DENIED;
+    return StatusWithSize::PermissionDenied();
   }
   PW_TRY_WITH_SIZE(CheckBounds(address, data.size()));
   const size_t address_alignment_offset = address % alignment_bytes();
@@ -76,7 +76,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
                                       bool* is_erased) {
   // Relying on Read() to check address and len arguments.
   if (is_erased == nullptr) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
 
   // TODO(pwbug/214): Currently using a single flash alignment to do both the
@@ -86,7 +86,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
   const size_t alignment = alignment_bytes();
   if (alignment > kMaxFlashAlignment || kMaxFlashAlignment % alignment ||
       length % alignment) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
 
   byte buffer[kMaxFlashAlignment];
@@ -101,7 +101,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
     for (byte b : std::span(buffer, read_size)) {
       if (b != erased_byte) {
         // Detected memory chunk is not entirely erased
-        return Status::OK;
+        return Status::Ok();
       }
     }
 
@@ -109,7 +109,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
     length -= read_size;
   }
   *is_erased = true;
-  return Status::OK;
+  return Status::Ok();
 }
 
 bool FlashPartition::AppearsErased(std::span<const byte> data) const {
@@ -128,9 +128,9 @@ Status FlashPartition::CheckBounds(Address address, size_t length) const {
         "Attempted out-of-bound flash memory access (address: %u length: %u)",
         unsigned(address),
         unsigned(length));
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace pw::kvs

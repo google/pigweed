@@ -30,7 +30,7 @@ TEST(Block, CanCreateSingleBlock) {
   Block* block = nullptr;
   auto status = Block::Init(std::span(bytes, kN), &block);
 
-  ASSERT_EQ(status, Status::OK);
+  ASSERT_EQ(status, Status::Ok());
   EXPECT_EQ(block->OuterSize(), kN);
   EXPECT_EQ(block->InnerSize(),
             kN - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -50,7 +50,7 @@ TEST(Block, CannotCreateUnalignedSingleBlock) {
   Block* block = nullptr;
   auto status = Block::Init(std::span(byte_ptr + 1, kN - 1), &block);
 
-  EXPECT_EQ(status, Status::INVALID_ARGUMENT);
+  EXPECT_EQ(status, Status::InvalidArgument());
 }
 
 TEST(Block, CannotCreateTooSmallBlock) {
@@ -59,7 +59,7 @@ TEST(Block, CannotCreateTooSmallBlock) {
   Block* block = nullptr;
   auto status = Block::Init(std::span(bytes, kN), &block);
 
-  EXPECT_EQ(status, Status::INVALID_ARGUMENT);
+  EXPECT_EQ(status, Status::InvalidArgument());
 }
 
 TEST(Block, CanSplitBlock) {
@@ -73,7 +73,7 @@ TEST(Block, CanSplitBlock) {
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
 
-  ASSERT_EQ(status, Status::OK);
+  ASSERT_EQ(status, Status::Ok());
   EXPECT_EQ(block->InnerSize(), kSplitN);
   EXPECT_EQ(block->OuterSize(),
             kSplitN + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -106,7 +106,7 @@ TEST(Block, CanSplitBlockUnaligned) {
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
 
-  ASSERT_EQ(status, Status::OK);
+  ASSERT_EQ(status, Status::Ok());
   EXPECT_EQ(block->InnerSize(), split_len);
   EXPECT_EQ(block->OuterSize(),
             split_len + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -159,7 +159,7 @@ TEST(Block, CannotSplitBlockWithoutHeaderSpace) {
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
 
-  EXPECT_EQ(status, Status::RESOURCE_EXHAUSTED);
+  EXPECT_EQ(status, Status::ResourceExhausted());
   EXPECT_EQ(next_block, nullptr);
 }
 
@@ -172,7 +172,7 @@ TEST(Block, MustProvideNextBlockPointer) {
   Block::Init(std::span(bytes, kN), &block);
 
   auto status = block->Split(kSplitN, nullptr);
-  EXPECT_EQ(status, Status::INVALID_ARGUMENT);
+  EXPECT_EQ(status, Status::InvalidArgument());
 }
 
 TEST(Block, CannotMakeBlockLargerInSplit) {
@@ -186,7 +186,7 @@ TEST(Block, CannotMakeBlockLargerInSplit) {
   Block* next_block = nullptr;
   auto status = block->Split(block->InnerSize() + 1, &next_block);
 
-  EXPECT_EQ(status, Status::OUT_OF_RANGE);
+  EXPECT_EQ(status, Status::OutOfRange());
 }
 
 TEST(Block, CannotMakeSecondBlockLargerInSplit) {
@@ -202,7 +202,7 @@ TEST(Block, CannotMakeSecondBlockLargerInSplit) {
       block->InnerSize() - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET + 1,
       &next_block);
 
-  ASSERT_EQ(status, Status::RESOURCE_EXHAUSTED);
+  ASSERT_EQ(status, Status::ResourceExhausted());
   EXPECT_EQ(next_block, nullptr);
 }
 
@@ -217,7 +217,7 @@ TEST(Block, CanMakeZeroSizeFirstBlock) {
   Block* next_block = nullptr;
   auto status = block->Split(0, &next_block);
 
-  ASSERT_EQ(status, Status::OK);
+  ASSERT_EQ(status, Status::Ok());
   EXPECT_EQ(block->InnerSize(), static_cast<size_t>(0));
 }
 
@@ -234,7 +234,7 @@ TEST(Block, CanMakeZeroSizeSecondBlock) {
       block->InnerSize() - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET,
       &next_block);
 
-  ASSERT_EQ(status, Status::OK);
+  ASSERT_EQ(status, Status::Ok());
   EXPECT_EQ(next_block->InnerSize(), static_cast<size_t>(0));
 }
 
@@ -267,7 +267,7 @@ TEST(Block, CannotSplitUsedBlock) {
 
   Block* next_block = nullptr;
   auto status = block->Split(512, &next_block);
-  EXPECT_EQ(status, Status::FAILED_PRECONDITION);
+  EXPECT_EQ(status, Status::FailedPrecondition());
 }
 
 TEST(Block, CanMergeWithNextBlock) {
@@ -287,7 +287,7 @@ TEST(Block, CanMergeWithNextBlock) {
   Block* block3 = nullptr;
   block->Split(kSplit2, &block3);
 
-  EXPECT_EQ(block3->MergeNext(), Status::OK);
+  EXPECT_EQ(block3->MergeNext(), Status::Ok());
 
   EXPECT_EQ(block->Next(), block3);
   EXPECT_EQ(block3->Prev(), block);
@@ -312,8 +312,8 @@ TEST(Block, CannotMergeWithFirstOrLastBlock) {
   Block* next_block = nullptr;
   block->Split(512, &next_block);
 
-  EXPECT_EQ(next_block->MergeNext(), Status::OUT_OF_RANGE);
-  EXPECT_EQ(block->MergePrev(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(next_block->MergeNext(), Status::OutOfRange());
+  EXPECT_EQ(block->MergePrev(), Status::OutOfRange());
 }
 
 TEST(Block, CannotMergeUsedBlock) {
@@ -329,8 +329,8 @@ TEST(Block, CannotMergeUsedBlock) {
   block->Split(512, &next_block);
 
   block->MarkUsed();
-  EXPECT_EQ(block->MergeNext(), Status::FAILED_PRECONDITION);
-  EXPECT_EQ(next_block->MergePrev(), Status::FAILED_PRECONDITION);
+  EXPECT_EQ(block->MergeNext(), Status::FailedPrecondition());
+  EXPECT_EQ(next_block->MergePrev(), Status::FailedPrecondition());
 }
 
 TEST(Block, CanCheckValidBlock) {

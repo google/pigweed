@@ -99,7 +99,7 @@ TEST(ByteBuilder, NonEmptyBufferOfSize0_Append_Partial_ResourceExhausted) {
   constexpr auto kBytesTestLiteral = MakeBytes(0x04, 0x05, 0x06, 0x07);
 
   EXPECT_FALSE(bb.append(kBytesTestLiteral.data(), 4).ok());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
   EXPECT_EQ(0u, bb.size());
 }
 
@@ -129,7 +129,7 @@ TEST(ByteBuilder, Append_Bytes_Full) {
 TEST(ByteBuilder, Append_Bytes_Exhausted) {
   ByteBuffer<8> bb;
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.append(9, byte{0x04}).status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.append(9, byte{0x04}).status());
   EXPECT_EQ(0u, bb.size());
 }
 
@@ -156,7 +156,7 @@ TEST(ByteBuilder, EmptyBuffer_Resize_Larger_Fails) {
   ByteBuilder bb(buffer);
 
   bb.resize(1);
-  EXPECT_EQ(Status::OUT_OF_RANGE, bb.append(9, byte{0x04}).status());
+  EXPECT_EQ(Status::OutOfRange(), bb.append(9, byte{0x04}).status());
 }
 
 TEST(ByteBuilder, Resize_Smaller) {
@@ -192,12 +192,12 @@ TEST(ByteBuilder, Resize_Larger_Fails) {
   EXPECT_EQ(3u, bb.size());
   bb.resize(5);
   EXPECT_EQ(3u, bb.size());
-  EXPECT_EQ(bb.status(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(bb.status(), Status::OutOfRange());
 }
 
 TEST(ByteBuilder, Status_StartsOk) {
   ByteBuffer<16> bb;
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuilder, Status_StatusUpdate) {
@@ -205,13 +205,13 @@ TEST(ByteBuilder, Status_StatusUpdate) {
   ByteBuffer<2> bb;
 
   EXPECT_FALSE(bb.append(buffer).ok());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 
   bb.resize(4);
-  EXPECT_EQ(Status::OUT_OF_RANGE, bb.status());
+  EXPECT_EQ(Status::OutOfRange(), bb.status());
 
   EXPECT_FALSE(bb.append(buffer.data(), 0).ok());
-  EXPECT_EQ(Status::OUT_OF_RANGE, bb.status());
+  EXPECT_EQ(Status::OutOfRange(), bb.status());
 }
 
 TEST(ByteBuilder, Status_ClearStatus_SetsStatusToOk) {
@@ -219,16 +219,16 @@ TEST(ByteBuilder, Status_ClearStatus_SetsStatusToOk) {
   ByteBuffer<2> bb;
 
   EXPECT_FALSE(bb.append(buffer).ok());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 
   bb.clear_status();
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuilder, PushBack) {
   ByteBuffer<12> bb;
   bb.push_back(byte{0x01});
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
   EXPECT_EQ(1u, bb.size());
   EXPECT_EQ(byte{0x01}, bb.data()[0]);
 }
@@ -236,7 +236,7 @@ TEST(ByteBuilder, PushBack) {
 TEST(ByteBuilder, PushBack_Full) {
   ByteBuffer<1> bb;
   bb.push_back(byte{0x01});
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
   EXPECT_EQ(1u, bb.size());
 }
 
@@ -245,7 +245,7 @@ TEST(ByteBuilder, PushBack_Full_ResourceExhausted) {
   bb.push_back(byte{0x01});
   bb.push_back(byte{0x01});
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
   EXPECT_EQ(1u, bb.size());
 }
 
@@ -256,7 +256,7 @@ TEST(ByteBuilder, PopBack) {
   bb.append(buffer.data(), 3);
 
   bb.pop_back();
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
   EXPECT_EQ(2u, bb.size());
   EXPECT_EQ(byte{0x01}, bb.data()[0]);
   EXPECT_EQ(byte{0x02}, bb.data()[1]);
@@ -270,7 +270,7 @@ TEST(ByteBuilder, PopBack_Empty) {
   bb.pop_back();
   bb.pop_back();
   bb.pop_back();
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
   EXPECT_EQ(0u, bb.size());
   EXPECT_TRUE(bb.empty());
 }
@@ -306,13 +306,13 @@ TEST(ByteBuffer, Assign) {
   two.push_back(byte{0x01});
   two.push_back(byte{0x01});
   two.push_back(byte{0x01});
-  ASSERT_EQ(Status::RESOURCE_EXHAUSTED, two.status());
+  ASSERT_EQ(Status::ResourceExhausted(), two.status());
 
   one = two;
   EXPECT_EQ(byte{0x01}, two.data()[7]);
   EXPECT_EQ(byte{0x01}, two.data()[8]);
   EXPECT_EQ(byte{0x01}, two.data()[9]);
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, one.status());
+  EXPECT_EQ(Status::ResourceExhausted(), one.status());
 }
 
 TEST(ByteBuffer, CopyConstructFromSameSize) {
@@ -338,7 +338,7 @@ TEST(ByteBuffer, CopyConstructFromSmaller) {
 
   EXPECT_EQ(byte{0x01}, two.data()[0]);
   EXPECT_EQ(byte{0x02}, two.data()[1]);
-  EXPECT_EQ(Status::OK, two.status());
+  EXPECT_EQ(Status::Ok(), two.status());
 }
 
 TEST(ByteBuilder, ResizeError_NoDataAddedAfter) {
@@ -350,11 +350,11 @@ TEST(ByteBuilder, ResizeError_NoDataAddedAfter) {
   EXPECT_EQ(3u, bb.size());
   bb.resize(5);
   EXPECT_EQ(3u, bb.size());
-  EXPECT_EQ(bb.status(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(bb.status(), Status::OutOfRange());
 
   bb.PutInt8(0xFE);
   EXPECT_EQ(3u, bb.size());
-  EXPECT_EQ(bb.status(), Status::OUT_OF_RANGE);
+  EXPECT_EQ(bb.status(), Status::OutOfRange());
 }
 
 TEST(ByteBuilder, AddingNoBytesToZeroSizedByteBuffer) {
@@ -372,7 +372,7 @@ TEST(ByteBuffer, Putting8ByteInts_Full) {
 
   EXPECT_EQ(byte{0xFE}, bb.data()[0]);
   EXPECT_EQ(byte{0x02}, bb.data()[1]);
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuffer, Putting8ByteInts_Exhausted) {
@@ -383,7 +383,7 @@ TEST(ByteBuffer, Putting8ByteInts_Exhausted) {
 
   EXPECT_EQ(byte{0xFE}, bb.data()[0]);
   EXPECT_EQ(byte{0x02}, bb.data()[1]);
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 }
 
 TEST(ByteBuffer, Putting16ByteInts_Full_kLittleEndian) {
@@ -396,7 +396,7 @@ TEST(ByteBuffer, Putting16ByteInts_Full_kLittleEndian) {
   EXPECT_EQ(byte{0x08}, bb.data()[2]);
   EXPECT_EQ(byte{0x00}, bb.data()[3]);
 
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuffer, Putting16ByteInts_Exhausted_kBigEndian) {
@@ -411,7 +411,7 @@ TEST(ByteBuffer, Putting16ByteInts_Exhausted_kBigEndian) {
 
   bb.PutInt16(0xFAFA, std::endian::big);
   EXPECT_EQ(4u, bb.size());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 }
 
 TEST(ByteBuffer, Putting32ByteInts_Full_kLittleEndian) {
@@ -428,7 +428,7 @@ TEST(ByteBuffer, Putting32ByteInts_Full_kLittleEndian) {
   EXPECT_EQ(byte{0x00}, bb.data()[6]);
   EXPECT_EQ(byte{0x00}, bb.data()[7]);
 
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuffer, Putting32ByteInts_Exhausted_kBigEndian) {
@@ -447,7 +447,7 @@ TEST(ByteBuffer, Putting32ByteInts_Exhausted_kBigEndian) {
 
   bb.PutInt32(-114743374, std::endian::big);
   EXPECT_EQ(8u, bb.size());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 }
 
 TEST(ByteBuffer, Putting64ByteInts_Full_kLittleEndian) {
@@ -472,7 +472,7 @@ TEST(ByteBuffer, Putting64ByteInts_Full_kLittleEndian) {
   EXPECT_EQ(byte{0xFF}, bb.data()[14]);
   EXPECT_EQ(byte{0xFF}, bb.data()[15]);
 
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuffer, Putting64ByteInts_Exhausted_kBigEndian) {
@@ -499,7 +499,7 @@ TEST(ByteBuffer, Putting64ByteInts_Exhausted_kBigEndian) {
 
   bb.PutInt64(-6099875637501324530, std::endian::big);
   EXPECT_EQ(16u, bb.size());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, bb.status());
+  EXPECT_EQ(Status::ResourceExhausted(), bb.status());
 }
 
 TEST(ByteBuffer, PuttingInts_MixedTypes_MixedEndian) {
@@ -527,7 +527,7 @@ TEST(ByteBuffer, PuttingInts_MixedTypes_MixedEndian) {
   EXPECT_EQ(byte{0x17}, bb.data()[14]);
   EXPECT_EQ(byte{0xFB}, bb.data()[15]);
 
-  EXPECT_EQ(Status::OK, bb.status());
+  EXPECT_EQ(Status::Ok(), bb.status());
 }
 
 TEST(ByteBuffer, Iterator) {

@@ -26,7 +26,7 @@ Status TryStatus(Status status) {
   PW_TRY(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status, Status::OK);
+  EXPECT_EQ(status, Status::Ok());
   return status;
 }
 
@@ -34,45 +34,46 @@ Status TryStatus(StatusWithSize status) {
   PW_TRY(ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status.status(), Status::OK);
+  EXPECT_EQ(status.status(), Status::Ok());
   return status.status();
 }
 
 TEST(Status, Try_Status) {
-  EXPECT_EQ(TryStatus(Status::OK), Status::OK);
+  EXPECT_EQ(TryStatus(Status::Ok()), Status::Ok());
 
   // Don't need all the status types, just pick a few not-ok ones.
-  EXPECT_EQ(TryStatus(Status::CANCELLED), Status::CANCELLED);
-  EXPECT_EQ(TryStatus(Status::DATA_LOSS), Status::DATA_LOSS);
-  EXPECT_EQ(TryStatus(Status::UNIMPLEMENTED), Status::UNIMPLEMENTED);
+  EXPECT_EQ(TryStatus(Status::Cancelled()), Status::Cancelled());
+  EXPECT_EQ(TryStatus(Status::DataLoss()), Status::DataLoss());
+  EXPECT_EQ(TryStatus(Status::Unimplemented()), Status::Unimplemented());
 }
 
 TEST(Status, Try_StatusWithSizeOk) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::OK, 0);
-    EXPECT_EQ(TryStatus(val), Status::OK);
+    StatusWithSize val(Status::Ok(), 0);
+    EXPECT_EQ(TryStatus(val), Status::Ok());
   }
 }
 
 TEST(Status, Try_StatusWithSizeError) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::DATA_LOSS, i);
-    EXPECT_EQ(TryStatus(val), Status::DATA_LOSS);
+    StatusWithSize val(Status::DataLoss(), i);
+    EXPECT_EQ(TryStatus(val), Status::DataLoss());
   }
 }
 
 TEST(Status, Try_StatusWithSizeFromConstant) {
   // Don't need all the status types, just pick a few not-ok ones.
-  EXPECT_EQ(TryStatus(StatusWithSize::CANCELLED), Status::CANCELLED);
-  EXPECT_EQ(TryStatus(StatusWithSize::DATA_LOSS), Status::DATA_LOSS);
-  EXPECT_EQ(TryStatus(StatusWithSize::UNIMPLEMENTED), Status::UNIMPLEMENTED);
+  EXPECT_EQ(TryStatus(StatusWithSize::Cancelled()), Status::Cancelled());
+  EXPECT_EQ(TryStatus(StatusWithSize::DataLoss()), Status::DataLoss());
+  EXPECT_EQ(TryStatus(StatusWithSize::Unimplemented()),
+            Status::Unimplemented());
 }
 
 Status TryStatusAssign(size_t& size_val, StatusWithSize status) {
   PW_TRY_ASSIGN(size_val, ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status.status(), Status::OK);
+  EXPECT_EQ(status.status(), Status::Ok());
   EXPECT_EQ(size_val, status.size());
   return status.status();
 }
@@ -81,8 +82,8 @@ TEST(Status, TryAssignOk) {
   size_t size_val = 0;
 
   for (size_t i = 1; i < 32; ++i) {
-    StatusWithSize val(Status::OK, i);
-    EXPECT_EQ(TryStatusAssign(size_val, val), Status::OK);
+    StatusWithSize val(Status::Ok(), i);
+    EXPECT_EQ(TryStatusAssign(size_val, val), Status::Ok());
     EXPECT_EQ(size_val, i);
   }
 }
@@ -91,8 +92,8 @@ TEST(Status, TryAssignError) {
   size_t size_val = 0u;
 
   for (size_t i = 1; i < 32; ++i) {
-    StatusWithSize val(Status::OUT_OF_RANGE, i);
-    EXPECT_EQ(TryStatusAssign(size_val, val), Status::OUT_OF_RANGE);
+    StatusWithSize val(Status::OutOfRange(), i);
+    EXPECT_EQ(TryStatusAssign(size_val, val), Status::OutOfRange());
     EXPECT_EQ(size_val, 0u);
   }
 }
@@ -109,52 +110,52 @@ StatusWithSize TryStatusWithSize(Status status) {
   PW_TRY_WITH_SIZE(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status, Status::OK);
+  EXPECT_EQ(status, Status::Ok());
 
   StatusWithSize return_val(status, 0u);
   return return_val;
 }
 
 TEST(Status, TryWithSize_StatusOk) {
-  StatusWithSize result = TryStatusWithSize(Status::OK);
-  EXPECT_EQ(result.status(), Status::OK);
+  StatusWithSize result = TryStatusWithSize(Status::Ok());
+  EXPECT_EQ(result.status(), Status::Ok());
   EXPECT_EQ(result.size(), 0u);
 }
 
 TEST(Status, TryWithSize_StatusError) {
-  StatusWithSize result = TryStatusWithSize(Status::PERMISSION_DENIED);
-  EXPECT_EQ(result.status(), Status::PERMISSION_DENIED);
+  StatusWithSize result = TryStatusWithSize(Status::PermissionDenied());
+  EXPECT_EQ(result.status(), Status::PermissionDenied());
   EXPECT_EQ(result.size(), 0u);
 }
 
 TEST(Status, TryWithSize_StatusWithSizeOk) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::OK, i);
-    EXPECT_EQ(TryStatusWithSize(val).status(), Status::OK);
+    StatusWithSize val(Status::Ok(), i);
+    EXPECT_EQ(TryStatusWithSize(val).status(), Status::Ok());
     EXPECT_EQ(TryStatusWithSize(val).size(), i);
   }
 }
 
 TEST(Status, TryWithSize_StatusWithSizeError) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::DATA_LOSS, i);
+    StatusWithSize val(Status::DataLoss(), i);
     StatusWithSize result = TryStatusWithSize(val);
-    EXPECT_EQ(result.status(), Status::DATA_LOSS);
+    EXPECT_EQ(result.status(), Status::DataLoss());
     EXPECT_EQ(result.size(), i);
   }
 }
 
 TEST(Status, TryWithSize_StatusWithSizeConst) {
-  StatusWithSize result = TryStatusWithSize(StatusWithSize::DATA_LOSS);
-  EXPECT_EQ(result.status(), Status::DATA_LOSS);
+  StatusWithSize result = TryStatusWithSize(StatusWithSize::DataLoss());
+  EXPECT_EQ(result.status(), Status::DataLoss());
   EXPECT_EQ(result.size(), 0u);
 
-  result = TryStatusWithSize(StatusWithSize::NOT_FOUND);
-  EXPECT_EQ(result.status(), Status::NOT_FOUND);
+  result = TryStatusWithSize(StatusWithSize::NotFound());
+  EXPECT_EQ(result.status(), Status::NotFound());
   EXPECT_EQ(result.size(), 0u);
 
-  result = TryStatusWithSize(StatusWithSize::UNIMPLEMENTED);
-  EXPECT_EQ(result.status(), Status::UNIMPLEMENTED);
+  result = TryStatusWithSize(StatusWithSize::Unimplemented());
+  EXPECT_EQ(result.status(), Status::Unimplemented());
   EXPECT_EQ(result.size(), 0u);
 }
 

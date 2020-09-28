@@ -83,7 +83,7 @@ TEST_F(EmptyEntryCache, EntryMetadata_Reset) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
@@ -98,13 +98,13 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry) {
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry_Full) {
   for (uint32_t i = 0; i < kMaxEntries; ++i) {
     ASSERT_EQ(  // Fill up the cache
-        Status::OK,
+        Status::Ok(),
         entries_.AddNewOrUpdateExisting({i, i, EntryState::kValid}, i, 1));
   }
   ASSERT_EQ(kMaxEntries, entries_.total_entries());
   ASSERT_TRUE(entries_.full());
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED,
+  EXPECT_EQ(Status::ResourceExhausted(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 1));
   EXPECT_EQ(kMaxEntries, entries_.total_entries());
 }
@@ -113,7 +113,7 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_UpdatedEntry) {
   KeyDescriptor kd = kDescriptor;
   kd.transaction_id += 3;
 
-  ASSERT_EQ(Status::OK, entries_.AddNewOrUpdateExisting(kd, 3210, 2000));
+  ASSERT_EQ(Status::Ok(), entries_.AddNewOrUpdateExisting(kd, 3210, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
 
@@ -125,15 +125,15 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_UpdatedEntry) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntry) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 2000));
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 3000, 2000));
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 7000, 2000));
 
   // Duplicates beyond the redundancy are ignored.
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 9000, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
@@ -150,9 +150,9 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntry) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntryInSameSector) {
-  ASSERT_EQ(Status::OK,
+  ASSERT_EQ(Status::Ok(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 1000));
-  EXPECT_EQ(Status::DATA_LOSS,
+  EXPECT_EQ(Status::DataLoss(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1950, 1000));
 
   EXPECT_EQ(1u, entries_.present_entries());
@@ -320,7 +320,7 @@ TEST_F(InitializedEntryCache, Find_PresentEntry) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
 
-  ASSERT_EQ(Status::OK, result.status());
+  ASSERT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash(kTheKey), metadata.hash());
   EXPECT_EQ(EntryState::kValid, metadata.state());
@@ -330,14 +330,14 @@ TEST_F(InitializedEntryCache, Find_PresentEntry) {
 TEST_F(InitializedEntryCache, Find_PresentEntryWithSingleReadError) {
   // Inject 2 read errors so that the initial key read and the follow-up full
   // read of the first entry fail.
-  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 2));
+  flash_.InjectReadError(FlashError::Unconditional(Status::Internal(), 2));
 
   EntryMetadata metadata;
 
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
 
-  ASSERT_EQ(Status::OK, result.status());
+  ASSERT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(1u, result.size());
   EXPECT_EQ(Hash(kTheKey), metadata.hash());
   EXPECT_EQ(EntryState::kValid, metadata.state());
@@ -345,14 +345,14 @@ TEST_F(InitializedEntryCache, Find_PresentEntryWithSingleReadError) {
 }
 
 TEST_F(InitializedEntryCache, Find_PresentEntryWithMultiReadError) {
-  flash_.InjectReadError(FlashError::Unconditional(Status::INTERNAL, 4));
+  flash_.InjectReadError(FlashError::Unconditional(Status::Internal(), 4));
 
   EntryMetadata metadata;
 
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
 
-  ASSERT_EQ(Status::DATA_LOSS, result.status());
+  ASSERT_EQ(Status::DataLoss(), result.status());
   EXPECT_EQ(1u, result.size());
   CheckForCorruptSectors(&sectors_.FromAddress(0),
                          &sectors_.FromAddress(kSize1));
@@ -364,7 +364,7 @@ TEST_F(InitializedEntryCache, Find_DeletedEntry) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, "delorted", &metadata);
 
-  ASSERT_EQ(Status::OK, result.status());
+  ASSERT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash("delorted"), metadata.hash());
   EXPECT_EQ(EntryState::kDeleted, metadata.state());
@@ -377,7 +377,7 @@ TEST_F(InitializedEntryCache, Find_MissingEntry) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, "3.141", &metadata);
 
-  ASSERT_EQ(Status::NOT_FOUND, result.status());
+  ASSERT_EQ(Status::NotFound(), result.status());
   EXPECT_EQ(0u, result.size());
   CheckForCorruptSectors();
 }
@@ -387,7 +387,7 @@ TEST_F(InitializedEntryCache, Find_Collision) {
 
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kCollision2, &metadata);
-  EXPECT_EQ(Status::ALREADY_EXISTS, result.status());
+  EXPECT_EQ(Status::AlreadyExists(), result.status());
   EXPECT_EQ(0u, result.size());
   CheckForCorruptSectors();
 }

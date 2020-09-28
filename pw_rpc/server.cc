@@ -45,7 +45,7 @@ bool DecodePacket(ChannelOutput& interface,
     // Only send an ERROR response if a valid channel ID was provided.
     if (packet.channel_id() != Channel::kUnassignedChannelId) {
       internal::Channel temp_channel(packet.channel_id(), &interface);
-      temp_channel.Send(Packet::ServerError(packet, Status::DATA_LOSS));
+      temp_channel.Send(Packet::ServerError(packet, Status::DataLoss()));
     }
     return false;
   }
@@ -67,11 +67,11 @@ Status Server::ProcessPacket(std::span<const byte> data,
                              ChannelOutput& interface) {
   Packet packet;
   if (!DecodePacket(interface, data, packet)) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   if (packet.destination() != Packet::kServer) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
 
   internal::Channel* channel = FindChannel(packet.channel_id());
@@ -82,16 +82,16 @@ Status Server::ProcessPacket(std::span<const byte> data,
       // If a channel can't be assigned, send a RESOURCE_EXHAUSTED error.
       internal::Channel temp_channel(packet.channel_id(), &interface);
       temp_channel.Send(
-          Packet::ServerError(packet, Status::RESOURCE_EXHAUSTED));
-      return Status::OK;  // OK since the packet was handled
+          Packet::ServerError(packet, Status::ResourceExhausted()));
+      return Status::Ok();  // OK since the packet was handled
     }
   }
 
   const auto [service, method] = FindMethod(packet);
 
   if (method == nullptr) {
-    channel->Send(Packet::ServerError(packet, Status::NOT_FOUND));
-    return Status::OK;
+    channel->Send(Packet::ServerError(packet, Status::NotFound()));
+    return Status::Ok();
   }
 
   switch (packet.type()) {
@@ -112,11 +112,11 @@ Status Server::ProcessPacket(std::span<const byte> data,
       HandleCancelPacket(packet, *channel);
       break;
     default:
-      channel->Send(Packet::ServerError(packet, Status::UNIMPLEMENTED));
+      channel->Send(Packet::ServerError(packet, Status::Unimplemented()));
       PW_LOG_WARN("Unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 std::tuple<Service*, const internal::Method*> Server::FindMethod(
@@ -142,10 +142,10 @@ void Server::HandleCancelPacket(const Packet& packet,
   });
 
   if (writer == writers_.end()) {
-    channel.Send(Packet::ServerError(packet, Status::FAILED_PRECONDITION));
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()));
     PW_LOG_WARN("Received CANCEL packet for method that is not pending");
   } else {
-    writer->Finish(Status::CANCELLED);
+    writer->Finish(Status::Cancelled());
   }
 }
 

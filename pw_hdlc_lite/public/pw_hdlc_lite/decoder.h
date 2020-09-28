@@ -97,7 +97,7 @@ class Decoder {
   void Process(ConstByteSpan data, F&& callback, Args&&... args) {
     for (std::byte b : data) {
       auto result = Process(b);
-      if (result.status() != Status::UNAVAILABLE) {
+      if (result.status() != Status::Unavailable()) {
         std::invoke(
             std::forward<F>(callback), std::forward<Args>(args)..., result);
       }

@@ -17,7 +17,7 @@
 
 pw::Result<float> Divide(float a, float b) {
   if (b == 0) {
-    return pw::Status::INVALID_ARGUMENT;
+    return pw::Status::InvalidArgument();
   }
   return a / b;
 }

@@ -99,7 +99,7 @@ Status ReadByte(std::byte* dest) {
       break;
     }
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 // Send a byte over UART0. Since this blocks on every byte, it's rather
@@ -112,7 +112,7 @@ Status WriteByte(std::byte b) {
   while (!(uart0.status_flags & kTxFifoEmptyMask)) {
   }
   uart0.data_register = static_cast<uint32_t>(b);
-  return Status::OK;
+  return Status::Ok();
 }
 
 // Writes a string using pw::sys_io, and add newline characters at the end.

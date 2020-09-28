@@ -21,13 +21,13 @@ namespace {
 
 TEST(EchoService, Echo_EchoesRequestMessage) {
   TestMethodContext<&EchoService::Echo> context;
-  ASSERT_EQ(context.call(_pw_rpc_EchoMessage{"Hello, world"}), Status::OK);
+  ASSERT_EQ(context.call(_pw_rpc_EchoMessage{"Hello, world"}), Status::Ok());
   EXPECT_STREQ(context.response().msg, "Hello, world");
 }
 
 TEST(EchoService, Echo_EmptyRequest) {
   TestMethodContext<&EchoService::Echo> context;
-  ASSERT_EQ(context.call({.msg = {}}), Status::OK);
+  ASSERT_EQ(context.call({.msg = {}}), Status::Ok());
   EXPECT_STREQ(context.response().msg, "");
 }
 

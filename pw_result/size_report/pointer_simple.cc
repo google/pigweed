@@ -17,10 +17,10 @@
 
 pw::Status Divide(float a, float b, float* out) {
   if (b == 0) {
-    return pw::Status::INVALID_ARGUMENT;
+    return pw::Status::InvalidArgument();
   }
   *out = a / b;
-  return pw::Status::OK;
+  return pw::Status::Ok();
 }
 
 int volatile* unoptimizable;

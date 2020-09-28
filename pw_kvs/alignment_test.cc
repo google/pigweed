@@ -141,26 +141,26 @@ TEST(AlignedWriter, Write_VaryingLengths) {
   AlignedWriterBuffer<32> writer(kAlignment, check_against_data);
 
   // Write values smaller than the alignment.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(0, 1)).status());
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(1, 9)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(0, 1)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(1, 9)).status());
 
   // Write values larger than the alignment but smaller than the buffer.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(10, 11)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(10, 11)).status());
 
   // Exactly fill the remainder of the buffer.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(21, 11)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(21, 11)).status());
 
   // Fill the buffer more than once.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(32, 66)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(32, 66)).status());
 
   // Write nothing.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 0)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(98, 0)).status());
 
   // Write the remaining data.
-  EXPECT_EQ(Status::OK, writer.Write(kBytes.subspan(98, 2)).status());
+  EXPECT_EQ(Status::Ok(), writer.Write(kBytes.subspan(98, 2)).status());
 
   auto result = writer.Flush();
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(kData.size(), result.size());
 }
 
@@ -202,7 +202,7 @@ struct OutputWithErrorInjection final : public Output {
         ADD_FAILURE();
         break;
     }
-    return StatusWithSize(Status::UNKNOWN, data.size());
+    return StatusWithSize::Unknown(data.size());
   }
 };
 
@@ -213,7 +213,7 @@ TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
     AlignedWriterBuffer<4> writer(3, output);
     writer.Write(std::as_bytes(std::span("Everything is fine.")));
     output.state = OutputWithErrorInjection::kBreakOnNext;
-    EXPECT_EQ(Status::UNKNOWN,
+    EXPECT_EQ(Status::Unknown(),
               writer.Write(std::as_bytes(std::span("No more writes, okay?")))
                   .status());
     writer.Flush();
@@ -222,7 +222,7 @@ TEST(AlignedWriter, Write_NoFurtherWritesOnFailure) {
 
 TEST(AlignedWriter, Write_ReturnsTotalBytesWritten) {
   static Status return_status;
-  return_status = Status::OK;
+  return_status = Status::Ok();
 
   OutputToFunction output([](std::span<const byte> data) {
     return StatusWithSize(return_status, data.size());
@@ -232,17 +232,17 @@ TEST(AlignedWriter, Write_ReturnsTotalBytesWritten) {
 
   StatusWithSize result =
       writer.Write(std::as_bytes(std::span("12345678901"sv)));
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(0u, result.size());  // No writes; haven't filled buffer.
 
   result = writer.Write(std::as_bytes(std::span("2345678901"sv)));
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(20u, result.size());
 
-  return_status = Status::PERMISSION_DENIED;
+  return_status = Status::PermissionDenied();
 
   result = writer.Write(std::as_bytes(std::span("2345678901234567890"sv)));
-  EXPECT_EQ(Status::PERMISSION_DENIED, result.status());
+  EXPECT_EQ(Status::PermissionDenied(), result.status());
   EXPECT_EQ(40u, result.size());
 }
 
@@ -252,17 +252,17 @@ TEST(AlignedWriter, Flush_Ok_ReturnsTotalBytesWritten) {
 
   AlignedWriterBuffer<4> writer(2, output);
 
-  EXPECT_EQ(Status::OK,
+  EXPECT_EQ(Status::Ok(),
             writer.Write(std::as_bytes(std::span("12345678901"sv))).status());
 
   StatusWithSize result = writer.Flush();
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(12u, result.size());
 }
 
 TEST(AlignedWriter, Flush_Error_ReturnsTotalBytesWritten) {
   OutputToFunction output([](std::span<const byte> data) {
-    return StatusWithSize(Status::ABORTED, data.size());
+    return StatusWithSize::Aborted(data.size());
   });
 
   AlignedWriterBuffer<20> writer(10, output);
@@ -270,7 +270,7 @@ TEST(AlignedWriter, Flush_Error_ReturnsTotalBytesWritten) {
   EXPECT_EQ(0u, writer.Write(std::as_bytes(std::span("12345678901"sv))).size());
 
   StatusWithSize result = writer.Flush();
-  EXPECT_EQ(Status::ABORTED, result.status());
+  EXPECT_EQ(Status::Aborted(), result.status());
   EXPECT_EQ(20u, result.size());
 }
 
@@ -284,12 +284,12 @@ class InputWithErrorInjection final : public Input {
     EXPECT_LE(index_ + data.size(), kBytes.size());
 
     if (index_ + data.size() > kBytes.size()) {
-      return StatusWithSize::INTERNAL;
+      return StatusWithSize::Internal();
     }
 
     // Check if reading from the index that was programmed to cause an error.
     if (index_ <= break_on_index_ && break_on_index_ <= index_ + data.size()) {
-      return StatusWithSize::ABORTED;
+      return StatusWithSize::Aborted();
     }
 
     std::memcpy(data.data(), kBytes.data(), data.size());
@@ -306,11 +306,11 @@ TEST(AlignedWriter, WriteFromInput_Successful) {
 
   InputWithErrorInjection input;
   StatusWithSize result = writer.Write(input, kData.size());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_LE(result.size(), kData.size());  // May not have written it all yet.
 
   result = writer.Flush();
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(kData.size(), result.size());
 }
 
@@ -321,7 +321,7 @@ TEST(AlignedWriter, WriteFromInput_InputError) {
   input.BreakOnIndex(kAlignment + 2);
 
   StatusWithSize result = writer.Write(input, kData.size());
-  EXPECT_EQ(Status::ABORTED, result.status());
+  EXPECT_EQ(Status::Aborted(), result.status());
   EXPECT_LE(result.size(), kAlignment);  // Wrote the first chunk, nothing more.
 }
 
@@ -333,7 +333,7 @@ TEST(AlignedWriter, WriteFromInput_OutputError) {
   output.state = OutputWithErrorInjection::kBreakOnNext;
 
   StatusWithSize result = writer.Write(input, kData.size());
-  EXPECT_EQ(Status::UNKNOWN, result.status());
+  EXPECT_EQ(Status::Unknown(), result.status());
   EXPECT_EQ(3u, result.size());  // Attempted to write 3 bytes.
 }
 

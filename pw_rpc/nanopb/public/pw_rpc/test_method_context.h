@@ -36,7 +36,7 @@ namespace pw::rpc {
 // struct can be accessed via context.response().
 //
 //   pw::rpc::TestMethodContext<&my::CoolService::TheMethod> context;
-//   EXPECT_EQ(Status::OK, context.call({.some_arg = 123}));
+//   EXPECT_EQ(Status::Ok(), context.call({.some_arg = 123}));
 //   EXPECT_EQ(500, context.response().some_response_value);
 //
 // For a server streaming RPC, context.call(request) invokes the method. As in a
@@ -47,7 +47,7 @@ namespace pw::rpc {
 //   context.call({.some_arg = 123});
 //
 //   EXPECT_TRUE(context.done());  // Check that the RPC completed
-//   EXPECT_EQ(Status::OK, context.status());  // Check the status
+//   EXPECT_EQ(Status::Ok(), context.status());  // Check the status
 //
 //   EXPECT_EQ(3u, context.responses().size());
 //   EXPECT_EQ(123, context.responses()[0].value); // check individual responses
@@ -237,7 +237,7 @@ void MessageOutput<Response>::clear() {
   responses_.clear();
   total_responses_ = 0;
   stream_ended_ = false;
-  last_status_ = Status::UNKNOWN;
+  last_status_ = Status::Unknown();
 }
 
 template <typename Response>
@@ -245,7 +245,7 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
   PW_CHECK(!stream_ended_);
 
   if (size == 0u) {
-    return Status::OK;
+    return Status::Ok();
   }
 
   internal::Packet packet;
@@ -268,7 +268,7 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
     default:
       PW_CRASH("Unhandled PacketType");
   }
-  return Status::OK;
+  return Status::Ok();
 }
 
 }  // namespace internal::test

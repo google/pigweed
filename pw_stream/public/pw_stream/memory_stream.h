@@ -41,7 +41,7 @@ class MemoryWriter : public Writer {
   // Implementation for writing data to this stream.
   //
   // If the in-memory buffer is exhausted in the middle of a write, this will
-  // perform a partial write and Status::RESOURCE_EXHAUSTED will be returned.
+  // perform a partial write and Status::ResourceExhausted() will be returned.
   Status DoWrite(ConstByteSpan data) override;
 
   ByteSpan dest_;

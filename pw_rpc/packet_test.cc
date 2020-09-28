@@ -87,12 +87,12 @@ TEST(Packet, Encode_BufferTooSmall) {
 
   auto sws = packet.Encode(buffer);
   EXPECT_EQ(0u, sws.size());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, sws.status());
+  EXPECT_EQ(Status::ResourceExhausted(), sws.status());
 }
 
 TEST(Packet, Decode_ValidPacket) {
   Packet packet;
-  ASSERT_EQ(Status::OK, Packet::FromBuffer(kEncoded, packet));
+  ASSERT_EQ(Status::Ok(), Packet::FromBuffer(kEncoded, packet));
 
   EXPECT_EQ(PacketType::RESPONSE, packet.type());
   EXPECT_EQ(1u, packet.channel_id());
@@ -108,7 +108,7 @@ TEST(Packet, Decode_InvalidPacket) {
   byte bad_data[] = {byte{0xFF}, byte{0x00}, byte{0x00}, byte{0xFF}};
 
   Packet packet;
-  EXPECT_EQ(Status::DATA_LOSS, Packet::FromBuffer(bad_data, packet));
+  EXPECT_EQ(Status::DataLoss(), Packet::FromBuffer(bad_data, packet));
 }
 
 TEST(Packet, EncodeDecode) {
@@ -119,15 +119,15 @@ TEST(Packet, EncodeDecode) {
   packet.set_service_id(0xdeadbeef);
   packet.set_method_id(0x03a82921);
   packet.set_payload(payload);
-  packet.set_status(Status::UNAVAILABLE);
+  packet.set_status(Status::Unavailable());
 
   byte buffer[128];
   StatusWithSize sws = packet.Encode(buffer);
-  ASSERT_EQ(sws.status(), Status::OK);
+  ASSERT_EQ(sws.status(), Status::Ok());
 
   std::span<byte> packet_data(buffer, sws.size());
   Packet decoded;
-  ASSERT_EQ(Status::OK, Packet::FromBuffer(packet_data, decoded));
+  ASSERT_EQ(Status::Ok(), Packet::FromBuffer(packet_data, decoded));
 
   EXPECT_EQ(decoded.type(), packet.type());
   EXPECT_EQ(decoded.channel_id(), packet.channel_id());
@@ -138,7 +138,7 @@ TEST(Packet, EncodeDecode) {
                         packet.payload().data(),
                         packet.payload().size()),
             0);
-  EXPECT_EQ(decoded.status(), Status::UNAVAILABLE);
+  EXPECT_EQ(decoded.status(), Status::Unavailable());
 }
 
 constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +

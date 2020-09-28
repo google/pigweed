@@ -64,7 +64,7 @@ Status Packet::FromBuffer(std::span<const byte> data, Packet& packet) {
     }
   }
 
-  return status == Status::DATA_LOSS ? Status::DATA_LOSS : Status::OK;
+  return status == Status::DataLoss() ? Status::DataLoss() : Status::Ok();
 }
 
 StatusWithSize Packet::Encode(std::span<byte> buffer) const {

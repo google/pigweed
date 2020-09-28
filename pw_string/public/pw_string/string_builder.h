@@ -135,7 +135,7 @@ class StringBuilder {
   // The status from the last operation. May be OK while status() is not OK.
   Status last_status() const { return last_status_; }
 
-  // True if status() is Status::OK.
+  // True if status() is Status::Ok().
   bool ok() const { return status_.ok(); }
 
   // True if the string is empty.
@@ -150,10 +150,10 @@ class StringBuilder {
   // Clears the string and resets its error state.
   void clear();
 
-  // Sets the statuses to Status::OK;
+  // Sets the statuses to Status::Ok();
   void clear_status() {
-    status_ = Status::OK;
-    last_status_ = Status::OK;
+    status_ = Status::Ok();
+    last_status_ = Status::Ok();
   }
 
   // Appends a single character. Stets the status to RESOURCE_EXHAUSTED if the

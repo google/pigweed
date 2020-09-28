@@ -51,7 +51,7 @@ StatusWithSize HandleExhaustedBuffer(std::span<char> buffer) {
   if (!buffer.empty()) {
     buffer[0] = '\0';
   }
-  return StatusWithSize::RESOURCE_EXHAUSTED;
+  return StatusWithSize::ResourceExhausted();
 }
 
 }  // namespace
@@ -183,14 +183,15 @@ StatusWithSize PointerToString(const void* pointer, std::span<char> buffer) {
 StatusWithSize CopyString(const std::string_view& value,
                           std::span<char> buffer) {
   if (buffer.empty()) {
-    return StatusWithSize::RESOURCE_EXHAUSTED;
+    return StatusWithSize::ResourceExhausted();
   }
 
   const size_t copied = value.copy(buffer.data(), buffer.size() - 1);
   buffer[copied] = '\0';
 
   return StatusWithSize(
-      copied == value.size() ? Status::OK : Status::RESOURCE_EXHAUSTED, copied);
+      copied == value.size() ? Status::Ok() : Status::ResourceExhausted(),
+      copied);
 }
 
 StatusWithSize CopyEntireString(const std::string_view& value,

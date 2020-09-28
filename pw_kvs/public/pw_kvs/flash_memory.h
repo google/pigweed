@@ -59,7 +59,7 @@ class FlashMemory {
 
   virtual bool IsEnabled() const = 0;
 
-  virtual Status SelfTest() { return Status::UNIMPLEMENTED; }
+  virtual Status SelfTest() { return Status::Unimplemented(); }
 
   // Erase num_sectors starting at a given address. Blocking call.
   // Address should be on a sector boundary. Returns:
@@ -199,7 +199,7 @@ class FlashPartition {
   virtual ~FlashPartition() = default;
 
   // Performs any required partition or flash-level initialization.
-  virtual Status Init() { return Status::OK; }
+  virtual Status Init() { return Status::Ok(); }
 
   // Erase num_sectors starting at a given address. Blocking call.
   // Address must be on a sector boundary. Returns:

@@ -203,7 +203,7 @@ pw::Status MakeStatus(pw::Status status) { return status; }
 
 TEST(Check, CheckOkMacrosCompile) {
   MAYBE_SKIP_TEST;
-  pw::Status status = pw::Status::UNKNOWN;
+  pw::Status status = pw::Status::Unknown();
 
   // Typical case with long names.
   PW_CHECK_OK(status);
@@ -216,10 +216,10 @@ TEST(Check, CheckOkMacrosCompile) {
   CHECK_OK(status, "msg: %d", 5);
 
   // Status from a literal.
-  PW_CHECK_OK(pw::Status::OK);
+  PW_CHECK_OK(pw::Status::Ok());
 
   // Status from a function.
-  PW_CHECK_OK(MakeStatus(pw::Status::OK));
+  PW_CHECK_OK(MakeStatus(pw::Status::Ok()));
 
   // Status from C enums.
   PW_CHECK_OK(PW_STATUS_OK);

@@ -41,13 +41,13 @@ class TestOutput : public ChannelOutput {
 
   Status SendAndReleaseBuffer(size_t size) override {
     if (size == 0u) {
-      return Status::OK;
+      return Status::Ok();
     }
 
     packet_count_ += 1;
     sent_data_ = std::span(buffer_.data(), size);
     Status status = internal::Packet::FromBuffer(sent_data_, sent_packet_);
-    EXPECT_EQ(Status::OK, status);
+    EXPECT_EQ(Status::Ok(), status);
     return send_status_;
   }
 
@@ -106,7 +106,7 @@ class ServerContextForTest {
                             kServiceId,
                             context_.method().id(),
                             payload,
-                            Status::OK);
+                            Status::Ok());
   }
 
   internal::ServerCall& get() { return context_; }
@@ -144,13 +144,13 @@ class ClientContextForTest {
   // Sends a packet to be processed by the client. Returns the client's
   // ProcessPacket status.
   Status SendPacket(internal::PacketType type,
-                    Status status = Status::OK,
+                    Status status = Status::Ok(),
                     std::span<const std::byte> payload = {}) {
     internal::Packet packet(
         type, kChannelId, kServiceId, kMethodId, payload, status);
     std::byte buffer[input_buffer_size];
     StatusWithSize sws = packet.Encode(buffer);
-    EXPECT_EQ(sws.status(), Status::OK);
+    EXPECT_EQ(sws.status(), Status::Ok());
     return client_.ProcessPacket(std::span(buffer, sws.size()));
   }
 

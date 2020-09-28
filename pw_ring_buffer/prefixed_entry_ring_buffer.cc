@@ -33,24 +33,24 @@ Status PrefixedEntryRingBuffer::SetBuffer(std::span<byte> buffer) {
   if ((buffer.data() == nullptr) ||  //
       (buffer.size_bytes() == 0) ||  //
       (buffer.size_bytes() > kMaxBufferBytes)) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
 
   buffer_ = buffer.data();
   buffer_bytes_ = buffer.size_bytes();
 
   Clear();
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
                                                  byte user_preamble_data,
                                                  bool drop_elements_if_needed) {
   if (buffer_ == nullptr) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
   if (data.size_bytes() == 0) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
 
   // Prepare the preamble, and ensure we can fit the preamble and entry.
@@ -59,7 +59,7 @@ Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
   size_t total_write_bytes =
       (user_preamble_ ? 1 : 0) + varint_bytes + data.size_bytes();
   if (buffer_bytes_ < total_write_bytes) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
 
   if (drop_elements_if_needed) {
@@ -70,7 +70,7 @@ Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
     }
   } else if (RawAvailableBytes() < total_write_bytes) {
     // TryPushBack() case: don't evict items.
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   // Write the new entry into the ring buffer.
@@ -80,7 +80,7 @@ Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
   RawWrite(std::span(varint_buf, varint_bytes));
   RawWrite(data);
   entry_count_++;
-  return Status::OK;
+  return Status::Ok();
 }
 
 auto GetOutput(std::span<byte> data_out, size_t* write_index) {
@@ -90,8 +90,8 @@ auto GetOutput(std::span<byte> data_out, size_t* write_index) {
     memcpy(data_out.data() + *write_index, src.data(), copy_size);
     *write_index += copy_size;
 
-    return (copy_size == src.size_bytes()) ? Status::OK
-                                           : Status::RESOURCE_EXHAUSTED;
+    return (copy_size == src.size_bytes()) ? Status::Ok()
+                                           : Status::ResourceExhausted();
   };
 }
 
@@ -119,10 +119,10 @@ Status PrefixedEntryRingBuffer::PeekFrontWithPreamble(ReadOutput output) {
 template <typename T>
 Status PrefixedEntryRingBuffer::InternalRead(T read_output, bool get_preamble) {
   if (buffer_ == nullptr) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
   if (EntryCount() == 0) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
 
   // Figure out where to start reading (wrapped); accounting for preamble.
@@ -150,10 +150,10 @@ Status PrefixedEntryRingBuffer::InternalRead(T read_output, bool get_preamble) {
 
 Status PrefixedEntryRingBuffer::PopFront() {
   if (buffer_ == nullptr) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
   if (EntryCount() == 0) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
 
   // Advance the read pointer past the front entry to the next one.
@@ -161,16 +161,16 @@ Status PrefixedEntryRingBuffer::PopFront() {
   size_t entry_bytes = info.preamble_bytes + info.data_bytes;
   read_idx_ = IncrementIndex(read_idx_, entry_bytes);
   entry_count_--;
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status PrefixedEntryRingBuffer::Dering() {
   if (buffer_ == nullptr) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
   // Check if by luck we're already deringed.
   if (read_idx_ == 0) {
-    return Status::OK;
+    return Status::Ok();
   }
 
   auto buffer_span = std::span(buffer_, buffer_bytes_);
@@ -184,7 +184,7 @@ Status PrefixedEntryRingBuffer::Dering() {
   }
   write_idx_ -= read_idx_;
   read_idx_ = 0;
-  return Status::OK;
+  return Status::Ok();
 }
 
 size_t PrefixedEntryRingBuffer::FrontEntryDataSizeBytes() {

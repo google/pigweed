@@ -73,7 +73,8 @@ class Writer {
   // written. This number is advisory and not guaranteed to write without a
   // RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Writer processes/handles enqueued of
   // other contexts write data this number can go up or down for some Writers.
-  // Returns zero if, in the current state, Write() would not return Status::OK.
+  // Returns zero if, in the current state, Write() would not return
+  // Status::Ok().
   virtual size_t ConservativeWriteLimit() const = 0;
 
  private:
@@ -125,7 +126,8 @@ class Reader {
   // requested bytes or without a RESOURCE_EXHAUSTED or OUT_OF_RANGE. As Reader
   // processes/handles/receives enqueued data or other contexts read data this
   // number can go up or down for some Readers.
-  // Returns zero if, in the current state, Read() would not return Status::OK.
+  // Returns zero if, in the current state, Read() would not return
+  // Status::Ok().
   virtual size_t ConservativeReadLimit() const = 0;
 
  private:

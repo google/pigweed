@@ -27,39 +27,39 @@ extern "C" {
 // pw_Status uses the canonical Google error codes. The following was copied
 // from Tensorflow and prefixed with PW_STATUS_.
 typedef enum {
-  PW_STATUS_OK = 0,  // Use Status::OK in C++
+  PW_STATUS_OK = 0,  // Use Status::Ok() in C++
 
   // The operation was cancelled (typically by the caller).
-  PW_STATUS_CANCELLED = 1,  // Use Status::CANCELLED in C++
+  PW_STATUS_CANCELLED = 1,  // Use Status::Cancelled() in C++
 
   // Unknown error.  An example of where this error may be returned is
   // if a Status value received from another address space belongs to
   // an error-space that is not known in this address space.  Also,
   // errors raised by APIs that do not return enough error information
   // may be converted to this error.
-  PW_STATUS_UNKNOWN = 2,  // Use Status::UNKNOWN in C++
+  PW_STATUS_UNKNOWN = 2,  // Use Status::Unknown() in C++
 
   // Client specified an invalid argument.  Note that this differs
   // from FAILED_PRECONDITION.  INVALID_ARGUMENT indicates arguments
   // that are problematic regardless of the state of the system
   // (e.g. a malformed file name).
-  PW_STATUS_INVALID_ARGUMENT = 3,  // Use Status::INVALID_ARGUMENT in C++
+  PW_STATUS_INVALID_ARGUMENT = 3,  // Use Status::InvalidArgument() in C++
 
   // Deadline expired before operation could complete.  For operations
   // that change the state of the system, this error may be returned
   // even if the operation has completed successfully.  For example, a
   // successful response from a server could have been delayed long
   // enough for the deadline to expire.
-  PW_STATUS_DEADLINE_EXCEEDED = 4,  // Use Status::DEADLINE_EXCEEDED in C++
+  PW_STATUS_DEADLINE_EXCEEDED = 4,  // Use Status::DeadlineExceeded() in C++
 
   // Some requested entity (e.g. file or directory) was not found.
   // For privacy reasons, this code *may* be returned when the client
   // does not have the access right to the entity.
-  PW_STATUS_NOT_FOUND = 5,  // Use Status::NOT_FOUND in C++
+  PW_STATUS_NOT_FOUND = 5,  // Use Status::NotFound() in C++
 
   // Some entity that we attempted to create (e.g. file or directory)
   // already exists.
-  PW_STATUS_ALREADY_EXISTS = 6,  // Use Status::ALREADY_EXISTS in C++
+  PW_STATUS_ALREADY_EXISTS = 6,  // Use Status::AlreadyExists() in C++
 
   // The caller does not have permission to execute the specified
   // operation.  PERMISSION_DENIED must not be used for rejections
@@ -67,15 +67,15 @@ typedef enum {
   // instead for those errors).  PERMISSION_DENIED must not be
   // used if the caller cannot be identified (use UNAUTHENTICATED
   // instead for those errors).
-  PW_STATUS_PERMISSION_DENIED = 7,  // Use Status::PERMISSION_DENIED in C++
+  PW_STATUS_PERMISSION_DENIED = 7,  // Use Status::PermissionDenied() in C++
 
   // The request does not have valid authentication credentials for the
   // operation.
-  PW_STATUS_UNAUTHENTICATED = 16,  // Use Status::UNAUTHENTICATED in C++
+  PW_STATUS_UNAUTHENTICATED = 16,  // Use Status::Unauthenticated() in C++
 
   // Some resource has been exhausted, perhaps a per-user quota, or
   // perhaps the entire filesystem is out of space.
-  PW_STATUS_RESOURCE_EXHAUSTED = 8,  // Use Status::RESOURCE_EXHAUSTED in C++
+  PW_STATUS_RESOURCE_EXHAUSTED = 8,  // Use Status::ResourceExhausted() in C++
 
   // Operation was rejected because the system is not in a state
   // required for the operation's execution.  For example, directory
@@ -96,14 +96,14 @@ typedef enum {
   //      REST Get/Update/Delete on a resource and the resource on the
   //      server does not match the condition. E.g. conflicting
   //      read-modify-write on the same resource.
-  PW_STATUS_FAILED_PRECONDITION = 9,  // Use Status::FAILED_PRECONDITION in C++
+  PW_STATUS_FAILED_PRECONDITION = 9,  // Use Status::FailedPrecondition() in C++
 
   // The operation was aborted, typically due to a concurrency issue
   // like sequencer check failures, transaction aborts, etc.
   //
   // See litmus test above for deciding between FAILED_PRECONDITION,
   // ABORTED, and UNAVAILABLE.
-  PW_STATUS_ABORTED = 10,  // Use Status::ABORTED in C++
+  PW_STATUS_ABORTED = 10,  // Use Status::Aborted() in C++
 
   // Operation tried to iterate past the valid input range.  E.g. seeking or
   // reading past end of file.
@@ -120,15 +120,15 @@ typedef enum {
   // error) when it applies so that callers who are iterating through
   // a space can easily look for an OUT_OF_RANGE error to detect when
   // they are done.
-  PW_STATUS_OUT_OF_RANGE = 11,  // Use Status::OUT_OF_RANGE in C++
+  PW_STATUS_OUT_OF_RANGE = 11,  // Use Status::OutOfRange() in C++
 
   // Operation is not implemented or not supported/enabled in this service.
-  PW_STATUS_UNIMPLEMENTED = 12,  // Use Status::UNIMPLEMENTED in C++
+  PW_STATUS_UNIMPLEMENTED = 12,  // Use Status::Unimplemented() in C++
 
   // Internal errors.  Means some invariants expected by underlying
   // system has been broken.  If you see one of these errors,
   // something is very broken.
-  PW_STATUS_INTERNAL = 13,  // Use Status::INTERNAL in C++
+  PW_STATUS_INTERNAL = 13,  // Use Status::Internal() in C++
 
   // The service is currently unavailable.  This is a most likely a
   // transient condition and may be corrected by retrying with
@@ -136,10 +136,10 @@ typedef enum {
   //
   // See litmus test above for deciding between FAILED_PRECONDITION,
   // ABORTED, and UNAVAILABLE.
-  PW_STATUS_UNAVAILABLE = 14,  // Use Status::UNAVAILABLE in C++
+  PW_STATUS_UNAVAILABLE = 14,  // Use Status::Unavailable() in C++
 
   // Unrecoverable data loss or corruption.
-  PW_STATUS_DATA_LOSS = 15,  // Use Status::DATA_LOSS in C++
+  PW_STATUS_DATA_LOSS = 15,  // Use Status::DataLoss() in C++
 
   // An extra enum entry to prevent people from writing code that
   // fails to compile when a new code is added.
@@ -194,14 +194,14 @@ const char* pw_StatusString(pw_Status status);
 namespace pw {
 
 // The Status class is a thin, zero-cost abstraction around the pw_Status enum.
-// It initializes to Status::OK by default and adds ok() and str() methods.
+// It initializes to Status::Ok() by default and adds ok() and str() methods.
 // Implicit conversions are permitted between pw_Status and pw::Status.
 class Status {
  public:
   using Code = pw_Status;
 
   // All of the pw_Status codes are available in the Status class as, e.g.
-  // pw::Status::OK or pw::Status::OUT_OF_RANGE.
+  // pw::Status::Ok() or pw::Status::OutOfRange().
   //
   // These aliases are DEPRECATED -- prefer using the helper functions below.
   // For example, change Status::CANCELLED to Status::Cancelled().
@@ -289,7 +289,7 @@ class Status {
   // Status implicitly converts to a Status::Code.
   constexpr operator Code() const { return code_; }
 
-  // True if the status is Status::OK.
+  // True if the status is Status::Ok().
   constexpr bool ok() const { return code_ == PW_STATUS_OK; }
 
   // Returns a null-terminated string representation of the Status.

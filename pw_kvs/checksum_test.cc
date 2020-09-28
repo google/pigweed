@@ -32,19 +32,20 @@ TEST(Checksum, UpdateAndVerify) {
   ChecksumAlgorithm& algo = crc16_algo;
 
   algo.Update(kString.data(), kString.size());
-  EXPECT_EQ(Status::OK, algo.Verify(std::as_bytes(std::span(&kStringCrc, 1))));
+  EXPECT_EQ(Status::Ok(),
+            algo.Verify(std::as_bytes(std::span(&kStringCrc, 1))));
 }
 
 TEST(Checksum, Verify_Failure) {
   ChecksumCrc16 algo;
-  EXPECT_EQ(Status::DATA_LOSS,
+  EXPECT_EQ(Status::DataLoss(),
             algo.Verify(std::as_bytes(std::span(kString.data(), 2))));
 }
 
 TEST(Checksum, Verify_InvalidSize) {
   ChecksumCrc16 algo;
-  EXPECT_EQ(Status::INVALID_ARGUMENT, algo.Verify({}));
-  EXPECT_EQ(Status::INVALID_ARGUMENT,
+  EXPECT_EQ(Status::InvalidArgument(), algo.Verify({}));
+  EXPECT_EQ(Status::InvalidArgument(),
             algo.Verify(std::as_bytes(std::span(kString.substr(0, 1)))));
 }
 
@@ -55,7 +56,7 @@ TEST(Checksum, Verify_LargerState_ComparesToTruncatedData) {
 
   algo.Update(std::as_bytes(std::span(kString)));
 
-  EXPECT_EQ(Status::OK, algo.Verify(crc));
+  EXPECT_EQ(Status::Ok(), algo.Verify(crc));
 }
 
 TEST(Checksum, Reset) {
@@ -71,20 +72,20 @@ TEST(Checksum, Reset) {
 TEST(IgnoreChecksum, NeverUpdate_VerifyWithoutData) {
   IgnoreChecksum checksum;
 
-  EXPECT_EQ(Status::OK, checksum.Verify({}));
+  EXPECT_EQ(Status::Ok(), checksum.Verify({}));
 }
 
 TEST(IgnoreChecksum, NeverUpdate_VerifyWithData) {
   IgnoreChecksum checksum;
 
-  EXPECT_EQ(Status::OK, checksum.Verify(std::as_bytes(std::span(kString))));
+  EXPECT_EQ(Status::Ok(), checksum.Verify(std::as_bytes(std::span(kString))));
 }
 
 TEST(IgnoreChecksum, AfterUpdate_Verify) {
   IgnoreChecksum checksum;
 
   checksum.Update(std::as_bytes(std::span(kString)));
-  EXPECT_EQ(Status::OK, checksum.Verify({}));
+  EXPECT_EQ(Status::Ok(), checksum.Verify({}));
 }
 
 constexpr size_t kAlignment = 10;
@@ -143,7 +144,7 @@ TEST(AlignedChecksum, MaintainsAlignment) {
   EXPECT_EQ(std::string_view(reinterpret_cast<const char*>(state.data()),
                              state.size()),
             kData);
-  EXPECT_EQ(Status::OK, checksum.Verify(kBytes));
+  EXPECT_EQ(Status::Ok(), checksum.Verify(kBytes));
 }
 
 }  // namespace

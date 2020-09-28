@@ -33,7 +33,7 @@ TEST(MetricService, EmptyGroupAndNoMetrics) {
   MetricMethodContext context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::OK, context.status());
+  EXPECT_EQ(Status::Ok(), context.status());
 
   // No metrics should be in the response.
   EXPECT_EQ(0u, context.responses().size());
@@ -52,7 +52,7 @@ TEST(MetricService, FlatMetricsNoGroupsOneResponseOnly) {
   MetricMethodContext context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::OK, context.status());
+  EXPECT_EQ(Status::Ok(), context.status());
 
   // All of the responses should have fit in one proto.
   EXPECT_EQ(1u, context.responses().size());
@@ -77,7 +77,7 @@ TEST(MetricService, NestedGroupsButOnlyOneBatch) {
   MetricMethodContext context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::OK, context.status());
+  EXPECT_EQ(Status::Ok(), context.status());
 
   // All of the responses should fit in one proto.
   EXPECT_EQ(1u, context.responses().size());
@@ -111,7 +111,7 @@ TEST(MetricService, NestedGroupsWithBatches) {
   MetricMethodContext context(root.metrics(), root.children());
   context.call({});
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::OK, context.status());
+  EXPECT_EQ(Status::Ok(), context.status());
 
   // The response had to be split into two parts; check that they have the
   // appropriate sizes.

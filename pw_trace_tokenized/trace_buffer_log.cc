@@ -54,7 +54,7 @@ pw::Status DumpTraceBufferToLog() {
   size_t bytes_read = 0;
   PW_LOG_INFO("[TRACE] begin");
   while (trace_buffer->PeekFront(std::span(entry_buffer).subspan(1),
-                                 &bytes_read) != pw::Status::OUT_OF_RANGE) {
+                                 &bytes_read) != pw::Status::OutOfRange()) {
     trace_buffer->PopFront();
     entry_buffer[0] = static_cast<std::byte>(bytes_read);
     // The entry buffer is formatted as (size, entry) with an extra byte as
@@ -78,7 +78,7 @@ pw::Status DumpTraceBufferToLog() {
     PW_LOG_INFO("[TRACE] data: %s", line_builder.c_str());
   }
   PW_LOG_INFO("[TRACE] end");
-  return pw::Status::OK;
+  return pw::Status::Ok();
 }
 
 }  // namespace trace

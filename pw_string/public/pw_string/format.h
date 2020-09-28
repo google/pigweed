@@ -35,9 +35,9 @@ namespace pw::string {
 //
 // The status is
 //
-//   Status::OK if the operation succeeded,
-//   Status::RESOURCE_EXHAUSTED if the buffer was too small to fit the output,
-//   Status::INVALID_ARGUMENT if there was a formatting error.
+//   Status::Ok() if the operation succeeded,
+//   Status::ResourceExhausted() if the buffer was too small to fit the output,
+//   Status::InvalidArgument() if there was a formatting error.
 //
 PW_PRINTF_FORMAT(2, 3)
 StatusWithSize Format(std::span<char> buffer, const char* format, ...);

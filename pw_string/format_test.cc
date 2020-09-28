@@ -26,7 +26,7 @@ TEST(Format, ValidFormatString_Succeeds) {
   char buffer[32];
   auto result = Format(buffer, "-_-");
 
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(3u, result.size());
   EXPECT_STREQ("-_-", buffer);
 }
@@ -35,7 +35,7 @@ TEST(Format, ValidFormatStringAndArguments_Succeeds) {
   char buffer[32];
   auto result = Format(buffer, "%d4%s", 123, "5");
 
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(5u, result.size());
   EXPECT_STREQ("12345", buffer);
 }
@@ -43,7 +43,7 @@ TEST(Format, ValidFormatStringAndArguments_Succeeds) {
 TEST(Format, EmptyBuffer_ReturnsResourceExhausted) {
   auto result = Format(std::span<char>(), "?");
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(0u, result.size());
 }
 
@@ -51,7 +51,7 @@ TEST(Format, FormatLargerThanBuffer_ReturnsResourceExhausted) {
   char buffer[5];
   auto result = Format(buffer, "2big!");
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(4u, result.size());
   EXPECT_STREQ("2big", buffer);
 }
@@ -60,7 +60,7 @@ TEST(Format, ArgumentLargerThanBuffer_ReturnsResourceExhausted) {
   char buffer[5];
   auto result = Format(buffer, "%s", "2big!");
 
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
   EXPECT_EQ(4u, result.size());
   EXPECT_STREQ("2big", buffer);
 }
@@ -81,7 +81,7 @@ TEST(Format, CallFormatWithVaList_CallsCorrectFormatOverload) {
   char buffer[8];
   auto result = CallFormatWithVaList(buffer, "Yo%s", "?!");
 
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_EQ(4u, result.size());
   EXPECT_STREQ("Yo?!", buffer);
 }

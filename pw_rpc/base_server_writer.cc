@@ -74,7 +74,7 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
 Status BaseServerWriter::ReleasePayloadBuffer(
     std::span<const std::byte> payload) {
   if (!open()) {
-    return Status::FAILED_PRECONDITION;
+    return Status::FailedPrecondition();
   }
   return call_.channel().Send(response_, ResponsePacket(payload));
 }

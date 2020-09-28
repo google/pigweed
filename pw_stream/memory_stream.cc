@@ -23,22 +23,22 @@ namespace pw::stream {
 
 Status MemoryWriter::DoWrite(ConstByteSpan data) {
   if (ConservativeWriteLimit() == 0) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
   if (ConservativeWriteLimit() < data.size_bytes()) {
-    return Status::RESOURCE_EXHAUSTED;
+    return Status::ResourceExhausted();
   }
 
   size_t bytes_to_write = data.size_bytes();
   std::memcpy(dest_.data() + bytes_written_, data.data(), bytes_to_write);
   bytes_written_ += bytes_to_write;
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 StatusWithSize MemoryReader::DoRead(ByteSpan dest) {
   if (source_.size_bytes() == bytes_read_) {
-    return StatusWithSize::OUT_OF_RANGE;
+    return StatusWithSize::OutOfRange();
   }
 
   size_t bytes_to_read =

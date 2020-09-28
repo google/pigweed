@@ -119,7 +119,7 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_TRUE(packet.payload().empty());
-  EXPECT_EQ(packet.status(), Status::OK);
+  EXPECT_EQ(packet.status(), Status::Ok());
 }
 
 TEST(ServerWriter, Close) {
@@ -136,11 +136,11 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   FakeServerWriter writer(context.get());
 
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
-  ASSERT_EQ(Status::OK, writer.Write(data));
+  ASSERT_EQ(Status::Ok(), writer.Write(data));
 
   byte encoded[64];
   auto sws = context.packet(data).Encode(encoded);
-  ASSERT_EQ(Status::OK, sws.status());
+  ASSERT_EQ(Status::Ok(), sws.status());
 
   EXPECT_EQ(sws.size(), context.output().sent_data().size());
   EXPECT_EQ(
@@ -154,7 +154,7 @@ TEST(ServerWriter, Closed_IgnoresPacket) {
   writer.Finish();
 
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
-  EXPECT_EQ(Status::FAILED_PRECONDITION, writer.Write(data));
+  EXPECT_EQ(Status::FailedPrecondition(), writer.Write(data));
 }
 
 }  // namespace

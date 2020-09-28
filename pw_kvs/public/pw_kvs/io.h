@@ -71,7 +71,7 @@ class Input {
 
 // Output adapter that calls a method on a class with a std::span of bytes. If
 // the method returns void instead of the expected Status, Write always returns
-// Status::OK.
+// Status::Ok().
 template <auto kMethod>
 class OutputToMethod final : public Output {
   using Class = typename internal::FunctionTraits<decltype(kMethod)>::Class;

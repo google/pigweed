@@ -55,7 +55,7 @@ bool NanopbMethod::DecodeRequest(Channel& channel,
 
   PW_LOG_WARN("Failed to decode request payload from channel %u",
               unsigned(channel.id()));
-  channel.Send(Packet::ServerError(request, Status::DATA_LOSS));
+  channel.Send(Packet::ServerError(request, Status::DataLoss()));
   return false;
 }
 
@@ -80,7 +80,8 @@ void NanopbMethod::SendResponse(Channel& channel,
 
   PW_LOG_WARN("Failed to encode response packet for channel %u",
               unsigned(channel.id()));
-  channel.Send(response_buffer, Packet::ServerError(request, Status::INTERNAL));
+  channel.Send(response_buffer,
+               Packet::ServerError(request, Status::Internal()));
 }
 
 }  // namespace pw::rpc::internal

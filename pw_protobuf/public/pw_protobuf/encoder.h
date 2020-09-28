@@ -40,7 +40,7 @@ class Encoder {
         blob_count_(0),
         blob_stack_(stack),
         depth_(0),
-        encode_status_(Status::OK) {}
+        encode_status_(Status::Ok()) {}
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   Encoder(const Encoder& other) = delete;
@@ -259,7 +259,7 @@ class Encoder {
   // obtained from Encode().
   void Clear() {
     cursor_ = buffer_.data();
-    encode_status_ = Status::OK;
+    encode_status_ = Status::Ok();
     blob_count_ = 0;
     depth_ = 0;
   }
@@ -278,7 +278,7 @@ class Encoder {
   // Encodes the key for a proto field consisting of its number and wire type.
   Status WriteFieldKey(uint32_t field_number, WireType wire_type) {
     if (!ValidFieldNumber(field_number)) {
-      encode_status_ = Status::INVALID_ARGUMENT;
+      encode_status_ = Status::InvalidArgument();
       return encode_status_;
     }
 

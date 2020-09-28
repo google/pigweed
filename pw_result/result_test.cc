@@ -22,19 +22,19 @@ namespace {
 TEST(Result, CreateOk) {
   Result<const char*> res("hello");
   EXPECT_TRUE(res.ok());
-  EXPECT_EQ(res.status(), Status::OK);
+  EXPECT_EQ(res.status(), Status::Ok());
   EXPECT_EQ(res.value(), "hello");
 }
 
 TEST(Result, CreateNotOk) {
-  Result<int> res(Status::DATA_LOSS);
+  Result<int> res(Status::DataLoss());
   EXPECT_FALSE(res.ok());
-  EXPECT_EQ(res.status(), Status::DATA_LOSS);
+  EXPECT_EQ(res.status(), Status::DataLoss());
 }
 
 TEST(Result, ValueOr) {
   Result<int> good(3);
-  Result<int> bad(Status::DATA_LOSS);
+  Result<int> bad(Status::DataLoss());
   EXPECT_EQ(good.value_or(42), 3);
   EXPECT_EQ(bad.value_or(42), 42);
 }
@@ -55,7 +55,7 @@ TEST(Result, ConstructType) {
 
 Result<float> Divide(float a, float b) {
   if (b == 0) {
-    return Status::INVALID_ARGUMENT;
+    return Status::InvalidArgument();
   }
   return a / b;
 }
@@ -69,7 +69,7 @@ TEST(Divide, ReturnOk) {
 TEST(Divide, ReturnNotOk) {
   Result<float> res = Divide(10, 0);
   EXPECT_FALSE(res.ok());
-  EXPECT_EQ(res.status(), Status::INVALID_ARGUMENT);
+  EXPECT_EQ(res.status(), Status::InvalidArgument());
 }
 
 }  // namespace

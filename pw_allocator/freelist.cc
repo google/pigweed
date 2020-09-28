@@ -19,7 +19,7 @@ namespace pw::allocator {
 Status FreeList::AddChunk(std::span<std::byte> chunk) {
   // Check that the size is enough to actually store what we need
   if (chunk.size() < sizeof(FreeListNode)) {
-    return Status::OUT_OF_RANGE;
+    return Status::OutOfRange();
   }
 
   union {
@@ -36,7 +36,7 @@ Status FreeList::AddChunk(std::span<std::byte> chunk) {
   aliased.node->next = chunks_[chunk_ptr];
   chunks_[chunk_ptr] = aliased.node;
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 std::span<std::byte> FreeList::FindChunk(size_t size) const {
@@ -85,14 +85,14 @@ Status FreeList::RemoveChunk(std::span<std::byte> chunk) {
 
   // Check head first.
   if (chunks_[chunk_ptr] == nullptr) {
-    return Status::NOT_FOUND;
+    return Status::NotFound();
   }
 
   aliased.node = chunks_[chunk_ptr];
   if (aliased.data == chunk.data()) {
     chunks_[chunk_ptr] = aliased.node->next;
 
-    return Status::OK;
+    return Status::Ok();
   }
 
   // No? Walk the nodes.
@@ -103,13 +103,13 @@ Status FreeList::RemoveChunk(std::span<std::byte> chunk) {
     if (aliased_next.data == chunk.data()) {
       // Found it, remove this node out of the chain
       aliased.node->next = aliased_next.node->next;
-      return Status::OK;
+      return Status::Ok();
     }
 
     aliased.node = aliased.node->next;
   }
 
-  return Status::NOT_FOUND;
+  return Status::NotFound();
 }
 
 size_t FreeList::FindChunkPtrForSize(size_t size, bool non_null) const {

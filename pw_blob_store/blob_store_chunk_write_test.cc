@@ -60,11 +60,11 @@ class BlobStoreChunkTest : public ::testing::Test {
 
     BlobStoreBuffer<kBufferSize> blob(
         name, partition_, &checksum, kvs::TestKvs());
-    EXPECT_EQ(Status::OK, blob.Init());
+    EXPECT_EQ(Status::Ok(), blob.Init());
 
     BlobStore::BlobWriter writer(blob);
-    EXPECT_EQ(Status::OK, writer.Open());
-    EXPECT_EQ(Status::OK, writer.Erase());
+    EXPECT_EQ(Status::Ok(), writer.Open());
+    EXPECT_EQ(Status::Ok(), writer.Erase());
 
     ByteSpan source = source_buffer_;
     while (source.size_bytes() > 0) {
@@ -74,20 +74,20 @@ class BlobStoreChunkTest : public ::testing::Test {
                    static_cast<unsigned>(write_size),
                    static_cast<unsigned>(source.size_bytes()));
 
-      ASSERT_EQ(Status::OK, writer.Write(source.first(write_size)));
+      ASSERT_EQ(Status::Ok(), writer.Write(source.first(write_size)));
 
       source = source.subspan(write_size);
     }
 
-    EXPECT_EQ(Status::OK, writer.Close());
+    EXPECT_EQ(Status::Ok(), writer.Close());
 
     // Use reader to check for valid data.
     BlobStore::BlobReader reader(blob);
-    ASSERT_EQ(Status::OK, reader.Open());
+    ASSERT_EQ(Status::Ok(), reader.Open());
     Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
-    EXPECT_EQ(Status::OK, reader.Close());
+    EXPECT_EQ(Status::Ok(), reader.Close());
   }
 
   void VerifyFlash(ConstByteSpan verify_bytes) {

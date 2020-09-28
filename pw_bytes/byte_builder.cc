@@ -34,21 +34,21 @@ size_t ByteBuilder::ResizeForAppend(size_t bytes_to_append) {
   }
 
   if (bytes_to_append > max_size() - size()) {
-    status_ = Status::RESOURCE_EXHAUSTED;
+    status_ = Status::ResourceExhausted();
     return 0;
   }
 
   size_ += bytes_to_append;
-  status_ = Status::OK;
+  status_ = Status::Ok();
   return bytes_to_append;
 }
 
 void ByteBuilder::resize(size_t new_size) {
   if (new_size <= size_) {
     size_ = new_size;
-    status_ = Status::OK;
+    status_ = Status::Ok();
   } else {
-    status_ = Status::OUT_OF_RANGE;
+    status_ = Status::OutOfRange();
   }
 }
 

@@ -43,13 +43,13 @@ StatusWithSize ToString(const CustomType&, std::span<char> buffer) {
   int result =
       std::snprintf(buffer.data(), buffer.size(), CustomType::kToString);
   if (result < 0) {
-    return StatusWithSize::UNKNOWN;
+    return StatusWithSize::Unknown();
   }
   if (static_cast<size_t>(result) < buffer.size()) {
     return StatusWithSize(result);
   }
-  return StatusWithSize(Status::RESOURCE_EXHAUSTED,
-                        buffer.empty() ? 0u : buffer.size() - 1);
+  return StatusWithSize::ResourceExhausted(buffer.empty() ? 0u
+                                                          : buffer.size() - 1);
 }
 
 namespace {
@@ -101,14 +101,14 @@ TEST(ToString, ScopedEnum) {
 
   auto result = ToString(MyEnum::kLuckyNumber, buffer);
   EXPECT_EQ(1u, result.size());
-  EXPECT_EQ(Status::OK, result.status());
+  EXPECT_EQ(Status::Ok(), result.status());
   EXPECT_STREQ("8", buffer);
 }
 
 TEST(ToString, Integer_EmptyBuffer_WritesNothing) {
   auto result = ToString(-1234, std::span(buffer, 0));
   EXPECT_EQ(0u, result.size());
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result.status());
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
 }
 
 TEST(ToString, Integer_BufferTooSmall_WritesNullTerminator) {
@@ -218,7 +218,7 @@ TEST(ToString, Status) {
 
 TEST(ToString, StatusCode) {
   EXPECT_EQ(sizeof("UNAVAILABLE") - 1,
-            ToString(Status::UNAVAILABLE, buffer).size());
+            ToString(Status::Unavailable(), buffer).size());
   EXPECT_STREQ("UNAVAILABLE", buffer);
 }
 

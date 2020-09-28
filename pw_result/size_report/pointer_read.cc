@@ -34,11 +34,11 @@ PW_NO_INLINE pw::Status Read(size_t offset,
                              size_t size,
                              std::span<const std::byte>* out) {
   if (offset + size >= std::size(kArray)) {
-    return pw::Status::OUT_OF_RANGE;
+    return pw::Status::OutOfRange();
   }
 
   *out = std::span<const std::byte>(std::data(kArray) + offset, size);
-  return pw::Status::OK;
+  return pw::Status::Ok();
 }
 
 }  // namespace

@@ -63,10 +63,10 @@ class DeferredWriteTest : public ::testing::Test {
 
     BlobStoreBuffer<kBufferSize> blob(
         name, partition_, &checksum, kvs::TestKvs(), kWriteSize);
-    EXPECT_EQ(Status::OK, blob.Init());
+    EXPECT_EQ(Status::Ok(), blob.Init());
 
     BlobStore::DeferredWriter writer(blob);
-    EXPECT_EQ(Status::OK, writer.Open());
+    EXPECT_EQ(Status::Ok(), writer.Open());
 
     ByteSpan source = buffer_;
     while (source.size_bytes() > 0) {
@@ -76,7 +76,7 @@ class DeferredWriteTest : public ::testing::Test {
                    static_cast<unsigned>(write_size),
                    static_cast<unsigned>(source.size_bytes()));
 
-      ASSERT_EQ(Status::OK, writer.Write(source.first(write_size)));
+      ASSERT_EQ(Status::Ok(), writer.Write(source.first(write_size)));
       // TODO: Add check that the write did not go to flash yet.
 
       source = source.subspan(write_size);
@@ -84,19 +84,19 @@ class DeferredWriteTest : public ::testing::Test {
 
       if (bytes_since_flush >= flush_interval) {
         bytes_since_flush = 0;
-        ASSERT_EQ(Status::OK, writer.Flush());
+        ASSERT_EQ(Status::Ok(), writer.Flush());
       }
     }
 
-    EXPECT_EQ(Status::OK, writer.Close());
+    EXPECT_EQ(Status::Ok(), writer.Close());
 
     // Use reader to check for valid data.
     BlobStore::BlobReader reader(blob);
-    ASSERT_EQ(Status::OK, reader.Open());
+    ASSERT_EQ(Status::Ok(), reader.Open());
     Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
     VerifyFlash(result.value());
-    EXPECT_EQ(Status::OK, reader.Close());
+    EXPECT_EQ(Status::Ok(), reader.Close());
   }
 
   void VerifyFlash(ConstByteSpan verify_bytes) {

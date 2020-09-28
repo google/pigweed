@@ -53,28 +53,28 @@ TEST(NanopbCodegen, CompilesProperly) {
 TEST(NanopbCodegen, InvokeUnaryRpc) {
   TestMethodContext<&test::TestService::TestRpc> context;
 
-  EXPECT_EQ(Status::OK,
-            context.call({.integer = 123, .status_code = Status::OK}));
+  EXPECT_EQ(Status::Ok(),
+            context.call({.integer = 123, .status_code = Status::Ok()}));
 
   EXPECT_EQ(124, context.response().value);
 
   EXPECT_EQ(
-      Status::INVALID_ARGUMENT,
-      context.call({.integer = 999, .status_code = Status::INVALID_ARGUMENT}));
+      Status::InvalidArgument(),
+      context.call({.integer = 999, .status_code = Status::InvalidArgument()}));
   EXPECT_EQ(1000, context.response().value);
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc) {
   TestMethodContext<&test::TestService::TestStreamRpc> context;
 
-  context.call({.integer = 0, .status_code = Status::ABORTED});
+  context.call({.integer = 0, .status_code = Status::Aborted()});
 
-  EXPECT_EQ(Status::ABORTED, context.status());
+  EXPECT_EQ(Status::Aborted(), context.status());
   EXPECT_TRUE(context.done());
   EXPECT_TRUE(context.responses().empty());
   EXPECT_EQ(0u, context.total_responses());
 
-  context.call({.integer = 4, .status_code = Status::OK});
+  context.call({.integer = 4, .status_code = Status::Ok()});
 
   ASSERT_EQ(4u, context.responses().size());
   ASSERT_EQ(4u, context.total_responses());
@@ -83,7 +83,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
     EXPECT_EQ(context.responses()[i].number, i);
   }
 
-  EXPECT_EQ(Status::OK, context.status());
+  EXPECT_EQ(Status::Ok(), context.status());
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
@@ -91,7 +91,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
 
   ASSERT_EQ(3u, context.responses().max_size());
 
-  context.call({.integer = 5, .status_code = Status::NOT_FOUND});
+  context.call({.integer = 5, .status_code = Status::NotFound()});
 
   ASSERT_EQ(3u, context.responses().size());
   ASSERT_EQ(5u, context.total_responses());
@@ -114,9 +114,9 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
 
   EXPECT_FALSE(context.done());
 
-  writer.Finish(Status::CANCELLED);
+  writer.Finish(Status::Cancelled());
   ASSERT_TRUE(context.done());
-  EXPECT_EQ(Status::CANCELLED, context.status());
+  EXPECT_EQ(Status::Cancelled(), context.status());
 
   ASSERT_EQ(3u, context.responses().size());
   ASSERT_EQ(3u, context.total_responses());

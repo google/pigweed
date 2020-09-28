@@ -228,7 +228,7 @@ class ByteBuilder {
     return StatusWithSize(status_, size_);
   }
 
-  // True if status() is Status::OK.
+  // True if status() is Status::Ok().
   bool ok() const { return status_.ok(); }
 
   // True if the bytes builder is empty.
@@ -243,11 +243,11 @@ class ByteBuilder {
   // Clears the bytes and resets its error state.
   void clear() {
     size_ = 0;
-    status_ = Status::OK;
+    status_ = Status::Ok();
   };
 
-  // Sets the statuses to Status::OK;
-  void clear_status() { status_ = Status::OK; }
+  // Sets the statuses to Status::Ok();
+  void clear_status() { status_ = Status::Ok(); }
 
   // Appends a single byte. Sets the status to RESOURCE_EXHAUSTED if the
   // byte cannot be added because the buffer is full.

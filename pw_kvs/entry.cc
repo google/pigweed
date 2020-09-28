@@ -43,10 +43,10 @@ Status Entry::Read(FlashPartition& partition,
   PW_TRY(partition.Read(address, sizeof(header), &header));
 
   if (partition.AppearsErased(std::as_bytes(std::span(&header.magic, 1)))) {
-    return Status::NOT_FOUND;
+    return Status::NotFound();
   }
   if (header.key_length_bytes > kMaxKeyLength) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   const EntryFormat* format = formats.Find(header.magic);
@@ -54,11 +54,11 @@ Status Entry::Read(FlashPartition& partition,
     PW_LOG_ERROR("Found corrupt magic: %" PRIx32 " at address %u",
                  header.magic,
                  unsigned(address));
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   *entry = Entry(&partition, address, *format, header);
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Entry::ReadKey(FlashPartition& partition,
@@ -66,7 +66,7 @@ Status Entry::ReadKey(FlashPartition& partition,
                       size_t key_length,
                       char* key) {
   if (key_length == 0u || key_length > kMaxKeyLength) {
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   return partition.Read(address + sizeof(EntryHeader), key_length, key)
@@ -145,7 +145,7 @@ StatusWithSize Entry::Copy(Address new_address) const {
 StatusWithSize Entry::ReadValue(std::span<byte> buffer,
                                 size_t offset_bytes) const {
   if (offset_bytes > value_size()) {
-    return StatusWithSize::OUT_OF_RANGE;
+    return StatusWithSize::OutOfRange();
   }
 
   const size_t remaining_bytes = value_size() - offset_bytes;
@@ -157,14 +157,14 @@ StatusWithSize Entry::ReadValue(std::span<byte> buffer,
   PW_TRY_WITH_SIZE(result);
 
   if (read_size != remaining_bytes) {
-    return StatusWithSize(Status::RESOURCE_EXHAUSTED, read_size);
+    return StatusWithSize::ResourceExhausted(read_size);
   }
   return StatusWithSize(read_size);
 }
 
 Status Entry::ValueMatches(std::span<const std::byte> value) const {
   if (value_size() != value.size_bytes()) {
-    return Status::NOT_FOUND;
+    return Status::NotFound();
   }
 
   Address address = address_ + sizeof(EntryHeader) + key_length();
@@ -177,20 +177,20 @@ Status Entry::ValueMatches(std::span<const std::byte> value) const {
     PW_TRY(partition_->Read(address, std::span(buffer).first(read_size)));
 
     if (std::memcmp(buffer.data(), value_ptr, read_size) != 0) {
-      return Status::NOT_FOUND;
+      return Status::NotFound();
     }
 
     address += read_size;
     value_ptr += read_size;
   }
 
-  return Status::OK;
+  return Status::Ok();
 }
 
 Status Entry::VerifyChecksum(string_view key,
                              std::span<const byte> value) const {
   if (checksum_algo_ == nullptr) {
-    return header_.checksum == 0 ? Status::OK : Status::DATA_LOSS;
+    return header_.checksum == 0 ? Status::Ok() : Status::DataLoss();
   }
   CalculateChecksum(key, value);
   return checksum_algo_->Verify(checksum_bytes());
@@ -216,11 +216,11 @@ Status Entry::VerifyChecksumInFlash() const {
     PW_LOG_ERROR("Expected checksum 0x%08" PRIx32 ", found 0x%08" PRIx32,
                  header_.checksum,
                  header_to_verify.checksum);
-    return Status::DATA_LOSS;
+    return Status::DataLoss();
   }
 
   if (checksum_algo_ == nullptr) {
-    return header_.checksum == 0 ? Status::OK : Status::DATA_LOSS;
+    return header_.checksum == 0 ? Status::Ok() : Status::DataLoss();
   }
 
   // The checksum is calculated as if the header's checksum field were 0.
@@ -281,7 +281,7 @@ Status Entry::CalculateChecksumFromFlash() {
   header_.checksum = 0;
 
   if (checksum_algo_ == nullptr) {
-    return Status::OK;
+    return Status::Ok();
   }
 
   checksum_algo_->Reset();
@@ -307,7 +307,7 @@ Status Entry::CalculateChecksumFromFlash() {
   std::memcpy(&header_.checksum,
               checksum.data(),
               std::min(checksum.size(), sizeof(header_.checksum)));
-  return Status::OK;
+  return Status::Ok();
 }
 
 void Entry::AddPaddingBytesToChecksum() const {

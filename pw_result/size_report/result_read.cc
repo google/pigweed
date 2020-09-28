@@ -33,7 +33,7 @@ constexpr auto kArray = pw::bytes::Array<
 PW_NO_INLINE pw::Result<std::span<const std::byte>> Read(size_t offset,
                                                          size_t size) {
   if (offset + size >= std::size(kArray)) {
-    return pw::Status::OUT_OF_RANGE;
+    return pw::Status::OutOfRange();
   }
 
   return std::span<const std::byte>(std::data(kArray) + offset, size);

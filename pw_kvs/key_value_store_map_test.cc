@@ -88,9 +88,9 @@ class KvsTester {
         // For KVS magic value always use a random 32 bit integer rather than a
         // human readable 4 bytes. See pw_kvs/format.h for more information.
         kvs_(&partition_, {.magic = 0xc857e51d, .checksum = nullptr}) {
-    EXPECT_EQ(Status::OK, partition_.Erase());
+    EXPECT_EQ(Status::Ok(), partition_.Erase());
     Status result = kvs_.Init();
-    EXPECT_EQ(Status::OK, result);
+    EXPECT_EQ(Status::Ok(), result);
 
     if (!result.ok()) {
       std::abort();
@@ -250,7 +250,7 @@ class KvsTester {
         EXPECT_EQ(map_entry->first, item.key());
 
         char value[kMaxValueLength + 1] = {};
-        EXPECT_EQ(Status::OK,
+        EXPECT_EQ(Status::Ok(),
                   item.Get(std::as_writable_bytes(std::span(value))).status());
         EXPECT_EQ(map_entry->second, std::string(value));
       }
@@ -267,10 +267,10 @@ class KvsTester {
     Status result = kvs_.Put(key, std::as_bytes(std::span(value)));
 
     if (key.empty() || key.size() > internal::Entry::kMaxKeyLength) {
-      EXPECT_EQ(Status::INVALID_ARGUMENT, result);
+      EXPECT_EQ(Status::InvalidArgument(), result);
     } else if (map_.size() == kvs_.max_size()) {
-      EXPECT_EQ(Status::RESOURCE_EXHAUSTED, result);
-    } else if (result == Status::RESOURCE_EXHAUSTED) {
+      EXPECT_EQ(Status::ResourceExhausted(), result);
+    } else if (result == Status::ResourceExhausted()) {
       EXPECT_FALSE(map_.empty());
     } else if (result.ok()) {
       map_[key] = value;
@@ -290,9 +290,9 @@ class KvsTester {
     Status result = kvs_.Delete(key);
 
     if (key.empty() || key.size() > internal::Entry::kMaxKeyLength) {
-      EXPECT_EQ(Status::INVALID_ARGUMENT, result);
+      EXPECT_EQ(Status::InvalidArgument(), result);
     } else if (map_.count(key) == 0) {
-      EXPECT_EQ(Status::NOT_FOUND, result);
+      EXPECT_EQ(Status::NotFound(), result);
     } else if (result.ok()) {
       map_.erase(key);
 
@@ -302,7 +302,7 @@ class KvsTester {
       }
 
       deleted_.insert(key);
-    } else if (result == Status::RESOURCE_EXHAUSTED) {
+    } else if (result == Status::ResourceExhausted()) {
       PW_LOG_WARN("Delete: RESOURCE_EXHAUSTED could not delete key %s",
                   key.c_str());
     } else {
@@ -315,14 +315,14 @@ class KvsTester {
   void Init() {
     StartOperation("Init");
     Status status = kvs_.Init();
-    EXPECT_EQ(Status::OK, status);
+    EXPECT_EQ(Status::Ok(), status);
     FinishOperation("Init", status);
   }
 
   void GCFull() {
     StartOperation("GCFull");
     Status status = kvs_.FullMaintenance();
-    EXPECT_EQ(Status::OK, status);
+    EXPECT_EQ(Status::Ok(), status);
 
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (post_stats.in_use_bytes > ((partition_.size_bytes() * 70) / 100)) {
@@ -338,10 +338,10 @@ class KvsTester {
     Status status = kvs_.PartialMaintenance();
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (pre_stats.reclaimable_bytes != 0) {
-      EXPECT_EQ(Status::OK, status);
+      EXPECT_EQ(Status::Ok(), status);
       EXPECT_LT(post_stats.reclaimable_bytes, pre_stats.reclaimable_bytes);
     } else {
-      EXPECT_EQ(Status::NOT_FOUND, status);
+      EXPECT_EQ(Status::NotFound(), status);
       EXPECT_EQ(post_stats.reclaimable_bytes, 0U);
     }
     FinishOperation("GCPartial", status);
