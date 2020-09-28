@@ -225,7 +225,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Supported information response, which indicates which fixed channels the peer supports (Core
   // Spec v5.1, Vol 3, Part A, Sec 4.13). Except for the signaling channels, fixed channels may not
   // be created until this response has been received.
-  // TODO(43668): save fixed channels mask and use to verify opened fixed channel ids are supported
+  // TODO(fxbug.dev/43668): save fixed channels mask and use to verify opened fixed channel ids are supported
   void OnRxFixedChannelsSupportedInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Start serving Connection Parameter Update Requests on the LE signaling channel.

@@ -186,7 +186,7 @@ class Channel : public fbl::RefCounted<Channel> {
 
  protected:
   friend class fbl::RefPtr<Channel>;
-  // TODO(1022): define a preferred MTU somewhere
+  // TODO(fxbug.dev/1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
           hci::ConnectionHandle link_handle, ChannelInfo info);
   virtual ~Channel() = default;

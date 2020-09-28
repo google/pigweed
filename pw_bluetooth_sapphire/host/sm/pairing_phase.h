@@ -43,7 +43,7 @@ class PairingPhase {
 
     // Ask the user to enter a 6-digit passkey or reject pairing. Reports the result by invoking
     // |respond| with |passkey| - a negative value of |passkey| indicates entry failed.
-    // TODO(49966): Use an optional to convey success/failure instead of the signedness of passkey.
+    // TODO(fxbug.dev/49966): Use an optional to convey success/failure instead of the signedness of passkey.
     using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
     virtual void RequestPasskey(PasskeyResponseCallback respond) = 0;
 

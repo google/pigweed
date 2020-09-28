@@ -53,7 +53,7 @@ class CommandChannel final {
   ~CommandChannel();
 
   // Unregisters event handlers and cleans up.
-  // TODO(667): Remove ShutDown and move logic to destructor. Let Transport destroy CommandChannel
+  // TODO(fxbug.dev/667): Remove ShutDown and move logic to destructor. Let Transport destroy CommandChannel
   // to initiate shut down.
   void ShutDown();
 

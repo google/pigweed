@@ -54,7 +54,7 @@ source_set("common") {
     "//zircon/system/ulib/async-default",
   ]
 
-  # TODO(46637): UBSan has found an instance of undefined behavior in this target.
+  # TODO(fxbug.dev/46637): UBSan has found an instance of undefined behavior in this target.
   # Disable UBSan for this target temporarily until it is migrated into CI/CQ.
   # Add this to public_configs because we detected a reference binding to a
   # misaligned address in byte_buffer.h.

@@ -3513,7 +3513,7 @@ struct LESetPrivacyModeCommandParams {
 constexpr uint8_t kVendorOGF = 0x3F;
 constexpr OpCode VendorOpCode(const uint16_t ocf) { return DefineOpCode(kVendorOGF, ocf); }
 
-// TODO(57163): Remove these definitions in favor of vendor command DDK protocol.
+// TODO(fxbug.dev/57163): Remove these definitions in favor of vendor command DDK protocol.
 constexpr OpCode kBcmSetAclPriority = VendorOpCode(0x011A);
 
 enum class BcmAclPriority : uint8_t { kNormal = 0x00, kHigh = 0x01 };

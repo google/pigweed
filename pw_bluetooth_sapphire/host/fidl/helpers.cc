@@ -513,7 +513,7 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
       bt_log(ERROR, "bt-host", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
       return std::nullopt;
     }
-    // TODO(fxb/2761): We currently assign kBREDR as the address type for dual-mode bonds. This
+    // TODO(fxbug.dev/2761): We currently assign kBREDR as the address type for dual-mode bonds. This
     // makes address management for dual-mode devices a bit confusing as we have two "public"
     // address types (i.e. kBREDR and kLEPublic). We should align the stack address types with
     // the FIDL address types, such that both kBREDR and kLEPublic are represented as the same

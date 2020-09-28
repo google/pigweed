@@ -38,7 +38,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // If called while a start request is pending, then cancels the start
   // request and proceeds with start.
   // Returns false if called while not advertising.
-  // TODO(50542): Update documentation.
+  // TODO(fxbug.dev/50542): Update documentation.
   bool StopAdvertising(const DeviceAddress& address) override;
 
   // Clears the advertising state before passing |link| on to

@@ -50,7 +50,7 @@ class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
   void OnRxExtendedFeaturesInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Send extended features information request.
-  // TODO(929): Send fixed channels information request.
+  // TODO(fxbug.dev/929): Send fixed channels information request.
   void SendInformationRequests();
 
   // If an extended features information response has been received, returns the value of the ERTM

@@ -182,7 +182,7 @@ class CommandHandler {
   //    response handler will not be called.
   //  - |kName| string literal
   //
-  // TODO(36062): Name the return type of CallbackT to make parsing code more readable.
+  // TODO(fxbug.dev/36062): Name the return type of CallbackT to make parsing code more readable.
   template <class ResponseT, typename CallbackT>
   SignalingChannel::ResponseHandler BuildResponseHandler(CallbackT rsp_cb) {
     return [rsp_cb = std::move(rsp_cb), fail_cb = request_fail_callback_.share()](

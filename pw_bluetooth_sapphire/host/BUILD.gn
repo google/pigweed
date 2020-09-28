@@ -181,7 +181,7 @@ executable("tests") {
     "//third_party/googletest:gtest",
   ]
 
-  # TODO(46537): Fix the leaks and remove this.
+  # TODO(fxbug.dev/46537): Fix the leaks and remove this.
   deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
 }
 
