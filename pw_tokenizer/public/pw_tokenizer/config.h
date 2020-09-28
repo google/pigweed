@@ -49,6 +49,9 @@ static_assert(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4 ||
 // (pw_tokenizer/internal/mash_macro_#.h) are supported. Additional macros may
 // be generated with the generate_hash_macro.py function. New macro headers must
 // then be added to pw_tokenizer/internal/hash.h.
+//
+// This MUST match the value of DEFAULT_HASH_LENGTH in
+// pw_tokenizer/py/pw_tokenizer/tokens.py.
 #ifndef PW_TOKENIZER_CFG_HASH_LENGTH
 #define PW_TOKENIZER_CFG_HASH_LENGTH 128
 #endif  // PW_TOKENIZER_CFG_HASH_LENGTH

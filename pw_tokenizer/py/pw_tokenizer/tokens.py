@@ -26,7 +26,9 @@ from typing import Optional, Tuple, Union, ValuesView
 
 DATE_FORMAT = '%Y-%m-%d'
 
-DEFAULT_HASH_LENGTH = 96
+# The default hash length to use. This MUST match the default value of
+# PW_TOKENIZER_CFG_HASH_LENGTH in pw_tokenizer/public/pw_tokenizer/config.h.
+DEFAULT_HASH_LENGTH = 128
 TOKENIZER_HASH_CONSTANT = 65599
 
 _LOG = logging.getLogger('pw_tokenizer')
