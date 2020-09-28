@@ -105,8 +105,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       // TODO(hepler): Support client streaming RPCs.
       break;
     case PacketType::CLIENT_ERROR:
-      // TODO(hepler): Handle errors from the client. If the client wasn't
-      //     expecting a response for a streaming RPC, cancel that RPC.
+      HandleClientError(packet);
       break;
     case PacketType::CANCEL_SERVER_STREAM:
       HandleCancelPacket(packet, *channel);
@@ -146,6 +145,21 @@ void Server::HandleCancelPacket(const Packet& packet,
     PW_LOG_WARN("Received CANCEL packet for method that is not pending");
   } else {
     writer->Finish(Status::Cancelled());
+  }
+}
+
+void Server::HandleClientError(const Packet& packet) {
+  // A client error indicates that the client received a packet that it did not
+  // expect. If the packet belongs to a streaming RPC, cancel the stream without
+  // sending a final SERVER_STREAM_END packet.
+  auto writer = std::find_if(writers_.begin(), writers_.end(), [&](auto& w) {
+    return w.channel_id() == packet.channel_id() &&
+           w.service_id() == packet.service_id() &&
+           w.method_id() == packet.method_id();
+  });
+
+  if (writer != writers_.end()) {
+    writer->Close();
   }
 }
 

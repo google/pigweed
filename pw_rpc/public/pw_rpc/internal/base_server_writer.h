@@ -24,7 +24,11 @@
 #include "pw_rpc/service.h"
 #include "pw_status/status.h"
 
-namespace pw::rpc::internal {
+namespace pw::rpc {
+
+class Server;
+
+namespace internal {
 
 class Packet;
 
@@ -67,6 +71,10 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
  private:
+  friend class rpc::Server;
+
+  void Close();
+
   Packet ResponsePacket(std::span<const std::byte> payload = {}) const;
 
   ServerCall call_;
@@ -74,4 +82,5 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   enum { kClosed, kOpen } state_;
 };
 
-}  // namespace pw::rpc::internal
+}  // namespace internal
+}  // namespace pw::rpc

@@ -50,8 +50,18 @@ Status Client::ProcessPacket(ConstByteSpan data) {
            c.method_id() == packet.method_id();
   });
 
+  auto channel = std::find_if(channels_.begin(), channels_.end(), [&](auto& c) {
+    return c.id() == packet.channel_id();
+  });
+
+  if (channel == channels_.end()) {
+    PW_LOG_WARN("RPC client received a packet for an unregistered channel");
+    return Status::NotFound();
+  }
+
   if (call == calls_.end()) {
     PW_LOG_WARN("RPC client received a packet for a request it did not make");
+    channel->Send(Packet::ClientError(packet, Status::FailedPrecondition()));
     return Status::NotFound();
   }
 

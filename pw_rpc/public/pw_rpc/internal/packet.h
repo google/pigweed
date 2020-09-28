@@ -42,10 +42,21 @@ class Packet {
                   status);
   }
 
-  // Creates an ERROR packet with the channel, service, and method ID of the
-  // provided packet.
+  // Creates a SERVER_ERROR packet with the channel, service, and method ID of
+  // the provided packet.
   static constexpr Packet ServerError(const Packet& packet, Status status) {
     return Packet(PacketType::SERVER_ERROR,
+                  packet.channel_id(),
+                  packet.service_id(),
+                  packet.method_id(),
+                  {},
+                  status);
+  }
+
+  // Creates a CLIENT_ERROR packet with the channel, service, and method ID of
+  // the provided packet.
+  static constexpr Packet ClientError(const Packet& packet, Status status) {
+    return Packet(PacketType::CLIENT_ERROR,
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),

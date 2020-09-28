@@ -61,6 +61,7 @@ class Server {
 
   void HandleCancelPacket(const internal::Packet& request,
                           internal::Channel& channel);
+  void HandleClientError(const internal::Packet& packet);
 
   internal::Channel* FindChannel(uint32_t id) const;
   internal::Channel* AssignChannel(uint32_t id, ChannelOutput& interface);

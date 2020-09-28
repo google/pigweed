@@ -50,8 +50,7 @@ void BaseServerWriter::Finish(Status status) {
     return;
   }
 
-  call_.server().RemoveWriter(*this);
-  state_ = kClosed;
+  Close();
 
   // Send a control packet indicating that the stream (and RPC) has terminated.
   call_.channel().Send(Packet(PacketType::SERVER_STREAM_END,
@@ -77,6 +76,15 @@ Status BaseServerWriter::ReleasePayloadBuffer(
     return Status::FailedPrecondition();
   }
   return call_.channel().Send(response_, ResponsePacket(payload));
+}
+
+void BaseServerWriter::Close() {
+  if (!open()) {
+    return;
+  }
+
+  call_.server().RemoveWriter(*this);
+  state_ = kClosed;
 }
 
 Packet BaseServerWriter::ResponsePacket(

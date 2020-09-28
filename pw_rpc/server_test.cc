@@ -263,6 +263,16 @@ TEST_F(MethodPending, ProcessPacket_Cancel_SendsStreamEndPacket) {
   EXPECT_EQ(packet.status(), Status::Cancelled());
 }
 
+TEST_F(MethodPending,
+       ProcessPacket_ClientError_ClosesServerWriterWithoutStreamEnd) {
+  EXPECT_EQ(Status::OK,
+            server_.ProcessPacket(
+                EncodeRequest(PacketType::CLIENT_ERROR, 1, 42, 100), output_));
+
+  EXPECT_FALSE(writer_.open());
+  EXPECT_EQ(output_.packet_count(), 0u);
+}
+
 TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
   EXPECT_EQ(Status::Ok(),
             server_.ProcessPacket(
