@@ -444,17 +444,17 @@ class Peer final {
   PeerCallback update_expiry_callback_;
   PeerCallback dual_mode_callback_;
 
-  ToStringInspectable<PeerId> identifier_;
+  StringInspectable<PeerId> identifier_;
   StringInspectable<TechnologyType> technology_;
 
-  ToStringInspectable<DeviceAddress> address_;
+  StringInspectable<DeviceAddress> address_;
   bool identity_known_;
 
   std::optional<std::string> name_;
   StringInspectable<std::optional<hci::HCIVersion>> lmp_version_;
   StringInspectable<std::optional<uint16_t>> lmp_manufacturer_;
   std::optional<uint16_t> lmp_subversion_;
-  ToStringInspectable<hci::LMPFeatureSet> lmp_features_;
+  StringInspectable<hci::LMPFeatureSet> lmp_features_;
   BoolInspectable<bool> connectable_;
   BoolInspectable<bool> temporary_;
   int8_t rssi_;

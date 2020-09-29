@@ -11,6 +11,7 @@
 #include <zircon/assert.h>
 
 #include <string>
+#include <type_traits>
 
 #include <fbl/macros.h>
 
@@ -55,15 +56,14 @@ class InspectableGuard {
 // Example:
 //   inspect::Inspector inspector;
 //   auto& root = inspector.GetRoot();
-//   Inspectable inspectable(std::string("A"), root.CreateString(std::string("property_name"));
+//   Inspectable inspectable(std::string("A"), root.CreateString("property_name", "foo"));
 //
 //   // Hierarchy: { root: property_name: "A" }
 //
 //   inspectable.Set("B");
 //
 //   // Hierarchy: { root: property_name: "B" }
-template <typename ValueT, typename PropertyT = inspect::StringProperty,
-          typename PropertyInnerT = std::string>
+template <typename ValueT, typename PropertyT, typename PropertyInnerT = ValueT>
 class Inspectable {
  public:
   // When the desired property type DOES NOT match ValueT, a conversion function |convert| is
@@ -78,21 +78,17 @@ class Inspectable {
   //     convert);
   using ConvertFunction = fit::function<PropertyInnerT(const ValueT&)>;
   Inspectable(ValueT initial_value, PropertyT property,
-              ConvertFunction convert = &Inspectable::DefaultConvert)
+              ConvertFunction convert = Inspectable::DefaultConvert)
       : value_(std::move(initial_value)),
         property_(std::move(property)),
         convert_(std::move(convert)) {
-    static_assert(!std::is_pointer_v<ValueT>, "Pointer passed to Inspectable");
-
     // Update property immediately to ensure consistency between property and initial value.
     UpdateProperty();
   }
 
   // Cosntruct with null property (updates will be no-ops).
-  Inspectable(ValueT initial_value, ConvertFunction convert = &Inspectable::DefaultConvert)
-      : value_(std::move(initial_value)), convert_(std::move(convert)) {
-    static_assert(!std::is_pointer_v<ValueT>, "Pointer passed to Inspectable");
-  }
+  explicit Inspectable(ValueT initial_value, ConvertFunction convert = &Inspectable::DefaultConvert)
+      : value_(std::move(initial_value)), convert_(std::move(convert)) {}
 
   Inspectable(Inspectable&&) = default;
   Inspectable& operator=(Inspectable&&) = default;
@@ -135,6 +131,9 @@ class Inspectable {
   PropertyT property_;
   ConvertFunction convert_;
 
+  static_assert(!std::is_pointer_v<ValueT>, "Pointer passed to Inspectable");
+  static_assert(!std::is_reference_v<ValueT>, "Reference passed to Inspectable");
+
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Inspectable);
 };
 
@@ -149,7 +148,9 @@ class Inspectable {
     void AttachInspect(inspect::Node& node, std::string name) override {            \
       this->SetProperty(node.Create##property_t(name, inner_t()));                  \
     }                                                                               \
-  }
+  };                                                                                \
+  template <typename ValueT>                                                        \
+  property_t##Inspectable(ValueT, ...)->property_t##Inspectable<ValueT>
 
 CREATE_INSPECTABLE_TYPE(Int, int64_t);
 CREATE_INSPECTABLE_TYPE(Uint, uint64_t);
@@ -157,35 +158,18 @@ CREATE_INSPECTABLE_TYPE(Bool, bool);
 CREATE_INSPECTABLE_TYPE(String, std::string);
 
 // A common practice in the Bluetooth stack is to define ToString() for classes.
-// ToStringInspectable is for use with such a class |ValueT| where |ValueT::ToString()| is defined.
-// |PropertyT::Set(std::string)| must accept a string.
+// MakeToStringInspectConvertFunction allows these classes to be used with StringInspectable.
 // Example:
 // class Foo {
 //   public:
 //     std::string ToString() { ... }
 // };
 //
-// ToStringInspectable<Foo> foo(Foo(), inspect_node.CreateString("foo", ""));
-template <class ValueT>
-class ToStringInspectable final : public Inspectable<ValueT, inspect::StringProperty, std::string> {
- public:
-  ToStringInspectable(ValueT value, inspect::StringProperty property)
-      : Inspectable<ValueT, inspect::StringProperty, std::string>(
-            std::move(value), std::move(property), &ToStringInspectable::Convert) {}
-  explicit ToStringInspectable(ValueT value)
-      : Inspectable<ValueT, inspect::StringProperty, std::string>(std::move(value),
-                                                                  &ToStringInspectable::Convert) {}
-  ToStringInspectable(ToStringInspectable&&) = default;
-  ToStringInspectable& operator=(ToStringInspectable&&) = default;
-
-  void AttachInspect(inspect::Node& node, std::string name) override {
-    this->SetProperty(node.CreateString(name, ""));
-  }
-
-  static std::string Convert(const ValueT& value) { return value.ToString(); }
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ToStringInspectable);
-};
+// StringInspectable foo(Foo(), inspect_node.CreateString("foo", ""),
+//                       MakeToStringInspectConvertFunction());
+inline auto MakeToStringInspectConvertFunction() {
+  return [](auto value) { return value.ToString(); };
+}
 
 }  // namespace bt
 

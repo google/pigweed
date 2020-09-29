@@ -118,12 +118,13 @@ TEST(InspectableTest, UpdateValueThroughMutable) {
   EXPECT_EQ(1, prop_value.value());
 }
 
-TEST(InspectableTest, ToStringInspectable) {
+TEST(InspectableTest, MakeToStringInspectConvertFunction) {
   const auto kPropertyName = "test_property";
   inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
 
-  ToStringInspectable inspectable(StringValue{""}, root.CreateString(kPropertyName, ""));
+  StringInspectable inspectable(StringValue{""}, root.CreateString(kPropertyName, ""),
+                                MakeToStringInspectConvertFunction());
 
   const std::string kExpectedValue = "fuchsia";
   inspectable.Mutable()->value = kExpectedValue;
@@ -141,7 +142,8 @@ TEST(InspectableTest, InspectRealStringProperty) {
 
   inspect::Inspector inspector;
   auto& root = inspector.GetRoot();
-  Inspectable inspectable(std::string("A"), root.CreateString(kPropertyName, ""));
+  StringInspectable inspectable(std::string("A"));
+  inspectable.AttachInspect(root, kPropertyName);
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy.is_ok());

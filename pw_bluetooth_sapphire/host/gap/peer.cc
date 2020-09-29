@@ -302,11 +302,11 @@ Peer::Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_ca
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
-      identifier_(identifier),
+      identifier_(identifier, MakeToStringInspectConvertFunction()),
       technology_((address.type() == DeviceAddress::Type::kBREDR) ? TechnologyType::kClassic
                                                                   : TechnologyType::kLowEnergy,
                   [](TechnologyType t) { return TechnologyTypeToString(t); }),
-      address_(address),
+      address_(address, MakeToStringInspectConvertFunction()),
       identity_known_(false),
       lmp_version_(std::nullopt,
                    [](const std::optional<hci::HCIVersion>& v) {
@@ -315,7 +315,7 @@ Peer::Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_ca
       lmp_manufacturer_(
           std::nullopt,
           [](const std::optional<uint16_t>& m) { return m ? GetManufacturerName(*m) : ""; }),
-      lmp_features_(hci::LMPFeatureSet()),
+      lmp_features_(hci::LMPFeatureSet(), MakeToStringInspectConvertFunction()),
       connectable_(connectable),
       temporary_(true),
       rssi_(hci::kRSSIInvalid) {
