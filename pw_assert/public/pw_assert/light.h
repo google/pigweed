@@ -14,8 +14,13 @@
 #pragma once
 
 #include "pw_assert/options.h"  // For PW_ASSERT_ENABLE_DEBUG
+#include "pw_preprocessor/util.h"
 
-extern "C" void pw_assert_HandleFailure();
+PW_EXTERN_C_START
+
+void pw_assert_HandleFailure(void);
+
+PW_EXTERN_C_END
 
 // A header- and constexpr-safe version of PW_CHECK().
 //

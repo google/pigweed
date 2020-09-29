@@ -156,7 +156,7 @@ extern "C" void pw_Crash(const char* file_name,
   }
 }
 
-extern "C" void pw_assert_HandleFailure() {
+extern "C" void pw_assert_HandleFailure(void) {
 #if PW_ASSERT_DEBUG_ENABLED
   pw_Crash("", 0, "", "Crash: PW_ASSERT() or PW_DASSERT() failure");
 #else

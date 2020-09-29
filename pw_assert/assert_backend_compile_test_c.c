@@ -32,6 +32,9 @@ static void EnsureNullIsIncluded() {
   PW_CHECK_NOTNULL(0x0);
 }
 
+#include <stdbool.h>
+
+#include "pw_assert/light.h"
 #include "pw_status/status.h"
 
 #ifdef __cplusplus
@@ -196,13 +199,27 @@ void AssertBackendCompileTestsInC() {
     CHECK_INT_LE(x_int, y_int, "INT: " FAIL_IF_DISPLAYED_ARGS, z);
   }
 
-  {  // Compile tests for PW_ASSERT_OK().
+  {  // Compile tests for PW_CHECK_OK().
     PW_CHECK_OK(PW_STATUS_OK);
     PW_CHECK_OK(PW_STATUS_OK, "msg");
     PW_CHECK_OK(PW_STATUS_OK, "msg: %d", 5);
     PW_DCHECK_OK(PW_STATUS_OK);
     PW_DCHECK_OK(PW_STATUS_OK, "msg");
     PW_DCHECK_OK(PW_STATUS_OK, "msg: %d", 5);
+  }
+
+  {  // TEST(Assert, Basic)
+    MAYBE_SKIP_TEST;
+    PW_ASSERT(false);
+    PW_ASSERT(123 == 456);
+  }
+
+  {  // Compile tests for PW_ASSERT().
+    PW_ASSERT(true);
+    PW_ASSERT(123 != 456);
+
+    PW_DASSERT(true);
+    PW_DASSERT(123 != 456);
   }
 
   EnsureNullIsIncluded();

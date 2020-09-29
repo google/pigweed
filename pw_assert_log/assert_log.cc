@@ -14,7 +14,7 @@
 
 #include "pw_assert_log/assert_log.h"
 
-extern "C" void pw_assert_HandleFailure() {
+extern "C" void pw_assert_HandleFailure(void) {
 #if PW_ASSERT_DEBUG_ENABLED
   PW_LOG(PW_LOG_LEVEL_CRITICAL,
          PW_LOG_ASSERT_FAILED_FLAG,

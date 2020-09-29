@@ -58,6 +58,7 @@ pw_source_set("light") {
     # problem that light asserts are designed to solve.
     "public/pw_assert/options.h",
   ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
 # Note: While this is technically a test, doesn't verify any of the output and
