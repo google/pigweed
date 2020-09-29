@@ -46,27 +46,27 @@ class ArduinoBuilder:
     """Used to interpret arduino boards.txt and platform.txt files."""
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
-    board_menu_regex = re.compile(
+    BOARD_MENU_REGEX = re.compile(
         r"^(?P<name>menu\.[^#=]+)=(?P<description>.*)$", re.MULTILINE)
 
-    board_name_regex = re.compile(
+    BOARD_NAME_REGEX = re.compile(
         r"^(?P<name>[^\s#\.]+)\.name=(?P<description>.*)$", re.MULTILINE)
 
-    variable_regex = re.compile(r"^(?P<name>[^\s#=]+)=(?P<value>.*)$",
+    VARIABLE_REGEX = re.compile(r"^(?P<name>[^\s#=]+)=(?P<value>.*)$",
                                 re.MULTILINE)
 
-    menu_option_regex = re.compile(
+    MENU_OPTION_REGEX = re.compile(
         r"^menu\."  # starts with "menu"
         r"(?P<menu_option_name>[^.]+)\."  # first token after .
         r"(?P<menu_option_value>[^.]+)$")  # second (final) token after .
 
-    tool_name_regex = re.compile(
+    TOOL_NAME_REGEX = re.compile(
         r"^tools\."  # starts with "tools"
         r"(?P<tool_name>[^.]+)\.")  # first token after .
 
-    interpolated_variable_regex = re.compile(r"{[^}]+}", re.MULTILINE)
+    INTERPOLATED_VARIABLE_REGEX = re.compile(r"{[^}]+}", re.MULTILINE)
 
-    objcopy_step_name_regex = re.compile(r"^recipe.objcopy.([^.]+).pattern$")
+    OBJCOPY_STEP_NAME_REGEX = re.compile(r"^recipe.objcopy.([^.]+).pattern$")
 
     def __init__(self,
                  arduino_path,
@@ -106,9 +106,9 @@ class ArduinoBuilder:
         self.hardware_path = os.path.join(self.arduino_path, "hardware")
 
         if not os.path.exists(self.hardware_path):
-            _LOG.error("Error: Arduino package path '%s' does not exist.",
-                       self.arduino_path)
-            raise FileNotFoundError
+            raise FileNotFoundError(
+                "Arduino package path '{}' does not exist.".format(
+                    self.arduino_path))
 
         # Set and check for valid package name
         self.package_path = os.path.join(self.arduino_path, "hardware",
@@ -157,6 +157,18 @@ class ArduinoBuilder:
         self._copy_default_menu_options_to_build_variables()
         self._apply_recipe_overrides()
         self._substitute_variables()
+
+    def set_variables(self, variable_list: List[str]):
+        # Convert the string list containing 'name=value' items into a dict
+        variable_source = {}
+        for var in variable_list:
+            var_name, value = var.split("=")
+            variable_source[var_name] = value
+
+        # Replace variables in platform
+        for var, value in self.platform.items():
+            self.platform[var] = self._replace_variables(
+                value, variable_source)
 
     def _apply_recipe_overrides(self):
         # Override link recipes with per-core exceptions
@@ -215,7 +227,7 @@ class ArduinoBuilder:
             return False
 
         # Override default menu option with new value.
-        menu_match_result = self.menu_option_regex.match(moption)
+        menu_match_result = self.MENU_OPTION_REGEX.match(moption)
         if menu_match_result:
             menu_match = menu_match_result.groupdict()
             menu_value = menu_match["menu_option_value"]
@@ -234,6 +246,9 @@ class ArduinoBuilder:
         https://arduino.github.io/arduino-cli/platform-specification/#global-predefined-properties
         """
 
+        # TODO(tonymd): Make sure these variables are replaced in recipe lines
+        # even if they are None: build_path, project_path, project_source_path,
+        # build_project_name
         for current_board_name in self.board.keys():
             if self.build_path:
                 self.board[current_board_name]["build.path"] = self.build_path
@@ -301,7 +316,7 @@ class ArduinoBuilder:
         # Load platform.txt
         with open(self.platform_txt, "r") as pfile:
             platform_file = pfile.read()
-            platform_var_matches = self.variable_regex.finditer(platform_file)
+            platform_var_matches = self.VARIABLE_REGEX.finditer(platform_file)
             for p_match in [m.groupdict() for m in platform_var_matches]:
                 self.platform[p_match["name"]] = p_match["value"]
 
@@ -309,14 +324,14 @@ class ArduinoBuilder:
         with open(self.boards_txt, "r") as bfile:
             board_file = bfile.read()
             # Get all top-level menu options, e.g. menu.usb=USB Type
-            board_menu_matches = self.board_menu_regex.finditer(board_file)
+            board_menu_matches = self.BOARD_MENU_REGEX.finditer(board_file)
             for menuitem in [m.groupdict() for m in board_menu_matches]:
                 self.menu_options["global_options"][menuitem["name"]] = {
                     "description": menuitem["description"]
                 }
 
             # Get all board names, e.g. teensy40.name=Teensy 4.0
-            board_name_matches = self.board_name_regex.finditer(board_file)
+            board_name_matches = self.BOARD_NAME_REGEX.finditer(board_file)
             for b_match in [m.groupdict() for m in board_name_matches]:
                 self.board[b_match["name"]] = OrderedDict()
                 self.menu_options["default_board_values"][
@@ -377,7 +392,7 @@ class ArduinoBuilder:
         definitions from variable_lookup_source.
         """
         new_line = line
-        for current_var_match in self.interpolated_variable_regex.findall(
+        for current_var_match in self.INTERPOLATED_VARIABLE_REGEX.findall(
                 line):
             # {build.flags.c} --> build.flags.c
             current_var = current_var_match.strip("{}")
@@ -520,7 +535,7 @@ class ArduinoBuilder:
         max_string_length = [0, 0]
 
         for key_name, description in self.board[self.selected_board].items():
-            menu_match_result = self.menu_option_regex.match(key_name)
+            menu_match_result = self.MENU_OPTION_REGEX.match(key_name)
             if menu_match_result:
                 menu_match = menu_match_result.groupdict()
                 name = "menu.{}.{}".format(menu_match["menu_option_name"],
@@ -572,7 +587,7 @@ class ArduinoBuilder:
         return line
 
     def _get_tool_name(self, line):
-        tool_match_result = self.tool_name_regex.match(line)
+        tool_match_result = self.TOOL_NAME_REGEX.match(line)
         if tool_match_result:
             return tool_match_result[1]
         return False
@@ -580,7 +595,7 @@ class ArduinoBuilder:
     def get_upload_tool_names(self):
         return [
             self._get_tool_name(t) for t in self.platform.keys()
-            if self.tool_name_regex.match(t) and 'upload.pattern' in t
+            if self.TOOL_NAME_REGEX.match(t) and 'upload.pattern' in t
         ]
 
     # TODO(tonymd): Use these getters in _replace_variables() or
@@ -595,7 +610,7 @@ class ArduinoBuilder:
         line = self.platform.get(variable, False)
         # Get all unique variables used in this line in line.
         unique_vars = sorted(
-            set(self.interpolated_variable_regex.findall(line)))
+            set(self.INTERPOLATED_VARIABLE_REGEX.findall(line)))
         # Search for each unique_vars in namespace and global.
         for var in unique_vars:
             v_raw_name = var.strip("{}")
@@ -775,14 +790,14 @@ class ArduinoBuilder:
     def get_objcopy_step_names(self):
         names = [
             name for name, line in self.platform.items()
-            if self.objcopy_step_name_regex.match(name)
+            if self.OBJCOPY_STEP_NAME_REGEX.match(name)
         ]
         return names
 
     def get_objcopy_steps(self) -> List[str]:
         lines = [
             line for name, line in self.platform.items()
-            if self.objcopy_step_name_regex.match(name)
+            if self.OBJCOPY_STEP_NAME_REGEX.match(name)
         ]
         lines = [
             self.replace_compile_binary_with_override_path(line)
@@ -802,7 +817,7 @@ class ArduinoBuilder:
 
         objcopy_suffixes = [
             m[1] for m in [
-                self.objcopy_step_name_regex.match(line)
+                self.OBJCOPY_STEP_NAME_REGEX.match(line)
                 for line in objcopy_step_names
             ] if m
         ]

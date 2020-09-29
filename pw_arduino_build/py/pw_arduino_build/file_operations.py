@@ -16,6 +16,7 @@
 
 import glob
 import hashlib
+import json
 import logging
 import os
 import shutil
@@ -38,8 +39,8 @@ def find_files(starting_dir: str,
                directories_only=False) -> List[str]:
     original_working_dir = os.getcwd()
     if not (os.path.exists(starting_dir) and os.path.isdir(starting_dir)):
-        _LOG.error("Directory '%s' does not exist.", starting_dir)
-        raise FileNotFoundError
+        raise FileNotFoundError(
+            "Directory '{}' does not exist.".format(starting_dir))
 
     os.chdir(starting_dir)
     files = []
@@ -72,17 +73,11 @@ def verify_file_checksum(file_path,
                          expected_checksum,
                          sum_function=sha256_sum):
     downloaded_checksum = sum_function(file_path)
-    try:
-        if downloaded_checksum != expected_checksum:
-            raise InvalidChecksumError
-    except InvalidChecksumError:
-        _LOG.exception("Invalid %s\n"
-                       "%s %s\n"
-                       "%s (expected)",
-                       sum_function.__name__, downloaded_checksum,
-                       os.path.basename(file_path), expected_checksum)
-        # Exit to stop installation
-        return sys.exit(1)
+    if downloaded_checksum != expected_checksum:
+        raise InvalidChecksumError(
+            f"Invalid {sum_function.__name__}\n"
+            f"{downloaded_checksum} {os.path.basename(file_path)}\n"
+            f"{expected_checksum} (expected)")
 
     _LOG.info("  %s:", sum_function.__name__)
     _LOG.info("  %s %s", downloaded_checksum, os.path.basename(file_path))
@@ -188,3 +183,22 @@ def remove_empty_directories(directory):
         # if empty directory
         elif path.is_dir() and len(os.listdir(path)) == 0:
             path.rmdir()
+
+
+def decode_file_json(file_name):
+    """Decode JSON values from a file.
+
+    Does not raise an error if the file cannot be decoded."""
+
+    # Get absolute path to the file.
+    file_path = os.path.realpath(
+        os.path.expanduser(os.path.expandvars(file_name)))
+
+    json_file_options = {}
+    try:
+        with open(file_path, "r") as jfile:
+            json_file_options = json.loads(jfile.read())
+    except (FileNotFoundError, json.JSONDecodeError):
+        _LOG.warning("Unable to read file '%s'", file_path)
+
+    return json_file_options, file_path

@@ -15,6 +15,10 @@
 # gn-format disable
 import("//build_overrides/pigweed.gni")
 declare_args() {
+  # Enable/disable Arduino builds via group("arduino").
+  # Set to the full path of ./third_party/arduino
+  dir_pw_third_party_arduino = ""
+
   # Expected args for an Arduino build:
   arduino_core_name = "teensy"
   arduino_package_name = "teensy/avr"
@@ -25,10 +29,6 @@ declare_args() {
     "menu.usb.serial",
     "menu.keys.en-us",
   ]
-
-  # Enable/disable Arduino builds via group("arduino").
-  # Set to the full path of ./third_party/arduino
-  dir_pw_third_party_arduino = ""
 }
 
 arduino_builder_script =
@@ -46,6 +46,11 @@ arduino_global_args = [
   arduino_package_name,
   "--compiler-path-override",
   _compiler_path_override,
+
+  # Save config files to "out/arduino_debug/gen/arduino_builder_config.json"
+  "--config-file",
+  rebase_path(root_gen_dir) + "/arduino_builder_config.json",
+  "--save-config",
 ]
 
 arduino_board_args = [

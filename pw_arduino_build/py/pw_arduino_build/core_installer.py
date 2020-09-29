@@ -28,6 +28,11 @@ import pw_arduino_build.file_operations as file_operations
 
 _LOG = logging.getLogger(__name__)
 
+
+class ArduinoCoreNotSupported(Exception):
+    """Exception raised when a given core can not be installed."""
+
+
 # yapf: disable
 _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
     # pylint: disable=line-too-long
@@ -169,9 +174,9 @@ def install_core_command(args: argparse.Namespace):
     elif args.core_name == "arduino-samd":
         install_arduino_samd_core(install_prefix, install_dir, cache_dir)
     else:
-        _LOG.error("Invalid core '%s'. Supported cores: %s", args.core_name,
-                   ", ".join(supported_cores()))
-        sys.exit(1)
+        raise ArduinoCoreNotSupported(
+            "Invalid core '{}'. Supported cores: {}".format(
+                args.core_name, ", ".join(supported_cores())))
 
 
 def supported_cores():

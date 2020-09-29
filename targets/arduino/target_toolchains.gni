@@ -16,10 +16,11 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
-_target_config = {
+declare_args() {
   # Enable the pw_target_runner for on-device testing.
-  pw_use_test_server = false
-
+  pw_arduino_use_test_server = false
+}
+_target_config = {
   # Use the logging main.
   pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
 
@@ -31,6 +32,13 @@ _target_config = {
 
   # Path to the bloaty config file for the output binaries.
   pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_armv7m/bloaty_config.bloaty"
+
+  if (pw_arduino_use_test_server) {
+    _test_runner_script =
+        "$dir_pw_arduino_build/py/pw_arduino_build/unit_test_client.py"
+    pw_unit_test_AUTOMATIC_RUNNER =
+        get_path_info(_test_runner_script, "abspath")
+  }
 
   # Facade backends
   pw_assert_BACKEND = dir_pw_assert_basic

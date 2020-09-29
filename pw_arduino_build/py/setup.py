@@ -23,8 +23,16 @@ setuptools.setup(
     description='Target-specific python scripts for the arduino target',
     packages=setuptools.find_packages(),
     entry_points={
-        'console_scripts':
-        ['arduino_builder = pw_arduino_build.__main__:main']
+        'console_scripts': [
+            'arduino_builder = pw_arduino_build.__main__:main',
+            'teensy_detector = pw_arduino_build.teensy_detector:main',
+            'arduino_unit_test_runner = '
+            '    pw_arduino_build.unit_test_runner:main',
+            'arduino_test_server = '
+            '    pw_arduino_build.unit_test_server:main',
+            'arduino_test_client = '
+            '    pw_arduino_build.unit_test_client:main',
+        ]
     },
     install_requires=[
         'pyserial',

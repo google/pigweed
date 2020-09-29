@@ -22,16 +22,20 @@ _STDERR_HANDLER = logging.StreamHandler()
 def install(level: int = logging.INFO) -> None:
     """Configure the system logger for the arduino_builder log format."""
 
-    # Set log level on root logger to debug, otherwise any higher levels
-    # elsewhere are ignored.
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    try:
+        import pw_cli.log  # pylint: disable=import-outside-toplevel
+        pw_cli.log.install(level=level)
+    except ImportError:
+        # Set log level on root logger to debug, otherwise any higher levels
+        # elsewhere are ignored.
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
 
-    _STDERR_HANDLER.setLevel(level)
-    _STDERR_HANDLER.setFormatter(
-        logging.Formatter("[%(asctime)s] "
-                          "%(levelname)s %(message)s", "%Y%m%d %H:%M:%S"))
-    root.addHandler(_STDERR_HANDLER)
+        _STDERR_HANDLER.setLevel(level)
+        _STDERR_HANDLER.setFormatter(
+            logging.Formatter("[%(asctime)s] "
+                              "%(levelname)s %(message)s", "%Y%m%d %H:%M:%S"))
+        root.addHandler(_STDERR_HANDLER)
 
 
 def set_level(log_level: int):

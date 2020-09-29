@@ -125,8 +125,8 @@ Run a unit test
 If using ``out`` as a build directory, tests will be located in
 ``out/arduino_debug/obj/[module name]/[test_name].elf``.
 
-For now these tests must be flashed manually on device. Here is a sample bash
-script to run all tests on a Linux machine.
+Tests can be flashed and run using the `arduino_unit_test_runner` tool. Here is
+a sample bash script to run all tests on a Linux machine.
 
 .. code:: sh
 
@@ -139,23 +139,35 @@ script to run all tests on a Linux machine.
               arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]' && \
     ninja -C out arduino
 
-  SERIAL_PORT=/dev/ttyACM0
-
   for f in $(find out/arduino_debug/obj/ -iname "*.elf"); do
-      BUILD_PATH=$(dirname $f)
-      PROJECT_NAME=$(basename -s .elf $f)
-      CORE_ARGS="--quiet --arduino-package-path ./third_party/arduino/cores/teensy
-                 --arduino-package-name teensy/avr
-                 --compiler-path-override ./.environment/cipd/pigweed/bin"
-      BOARD_ARGS="--build-path ${BUILD_PATH} \
-                  --build-project-name ${PROJECT_NAME}
-                  --board teensy40
-                  --menu-options menu.usb.serial menu.keys.en-us"
-      # Run objcopy, postbuild, and upload (flash) steps
-      arduino_builder $CORE_ARGS run $BOARD_ARGS --serial-port $SERIAL_PORT \
-          --run-objcopy --run-postbuild --run-upload-command teensyloader
-      while true; do
-          sleep .1; ls $SERIAL_PORT 2>/dev/null && break
-      done
-      python3 -m serial.tools.miniterm $SERIAL_PORT 115200
+      arduino_unit_test_runner --verbose \
+          --config-file ./out/arduino_debug/gen/arduino_builder_config.json \
+          --upload-tool teensyloader \
+          out/arduino_debug/obj/pw_string/test/format_test.elf
   done
+
+Using the test server
+---------------------
+
+Tests may also be run using the `pw_arduino_use_test_server = true` GN arg.
+The server must be run with an `arduino_builder` config file so it can locate
+the correct Arduino core, compiler path, and Arduino board used.
+
+.. code:: sh
+
+  $ arduino_test_server --verbose \
+        --config-file ./out/arduino_debug/gen/arduino_builder_config.json
+
+.. TODO(tonymd): Flesh out this section similar to the stm32f429i target docs.
+
+Flashing Known Issues
+---------------------
+
+Teensy Boards
+^^^^^^^^^^^^^
+
+By default Teensyduino uses the `Teensy Loader Application
+<https://www.pjrc.com/teensy/loader.html>`_ which has a couple limitations:
+
+- Requires a GUI (or X11 on Linux).
+- Can only flash one board at a time.

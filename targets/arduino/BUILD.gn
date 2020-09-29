@@ -29,53 +29,54 @@ if (dir_pw_third_party_arduino != "") {
     toolchains = pw_target_toolchain_arduino_list
   }
 
-  config("arduino_build") {
-    # Debug: Print out arduinobuilder.py args
-    # print(string_join(" ", [rebase_path(arduino_builder_script)] + arduino_show_command_args))
-
-    # Run prebuilds
-    # TODO(tonymd) This only needs to be run once but it's happening multiple times.
-    exec_script(arduino_builder_script,
-                arduino_run_command_args + [ "--run-prebuilds" ],
-                "string")
-
-    _exclude_flags = [ "-std=gnu++14" ]
-
-    _cflags = exec_script(arduino_builder_script,
-                          arduino_show_command_args + [ "--c-flags" ],
-                          "list lines")
-    cflags = filter_exclude(_cflags, _exclude_flags)
-
-    asmflags = exec_script(arduino_builder_script,
-                           arduino_show_command_args + [ "--s-flags" ],
-                           "list lines")
-
-    _cflags_cc = exec_script(arduino_builder_script,
-                             arduino_show_command_args + [ "--cpp-flags" ],
-                             "list lines")
-    cflags_cc = filter_exclude(_cflags_cc, _exclude_flags)
-
-    _ldflags = exec_script(arduino_builder_script,
-                           arduino_show_command_args + [ "--ld-flags" ],
-                           "list lines")
-    ldflags =
-        filter_exclude(_ldflags,
-                       [
-                         # Remove arguments ending in 'core.a', for example:
-                         # C:/Users/username/pigweed/out/core.a
-                         "*core.a\b",
-
-                         # Remove .elf output file, for example:
-                         # -o C:/Users/username/pigweed/out/pigweed.elf
-                         "\b-o\b",
-                         "*.elf\b",
-
-                         # Remove the Arduino {object_files} variable
-                         "{object_files}",
-                       ])
-  }
-
   if (current_toolchain != default_toolchain) {
+    config("arduino_build") {
+      # Debug: Print out arduinobuilder.py args
+      # print(string_join(" ", [rebase_path(arduino_builder_script)] + arduino_show_command_args))
+
+      # Run prebuilds
+      # TODO(tonymd) This only needs to be run once but it's happening multiple times.
+      exec_script(arduino_builder_script,
+                  filter_exclude(arduino_run_command_args,
+                                 [ "--save-config" ]) + [ "--run-prebuilds" ],
+                  "string")
+
+      _exclude_flags = [ "-std=gnu++14" ]
+
+      _cflags = exec_script(arduino_builder_script,
+                            arduino_show_command_args + [ "--c-flags" ],
+                            "list lines")
+      cflags = filter_exclude(_cflags, _exclude_flags)
+
+      asmflags = exec_script(arduino_builder_script,
+                             arduino_show_command_args + [ "--s-flags" ],
+                             "list lines")
+
+      _cflags_cc = exec_script(arduino_builder_script,
+                               arduino_show_command_args + [ "--cpp-flags" ],
+                               "list lines")
+      cflags_cc = filter_exclude(_cflags_cc, _exclude_flags)
+
+      _ldflags = exec_script(arduino_builder_script,
+                             arduino_show_command_args + [ "--ld-flags" ],
+                             "list lines")
+      ldflags =
+          filter_exclude(_ldflags,
+                         [
+                           # Remove arguments ending in 'core.a', for example:
+                           # C:/Users/username/pigweed/out/core.a
+                           "*core.a\b",
+
+                           # Remove .elf output file, for example:
+                           # -o C:/Users/username/pigweed/out/pigweed.elf
+                           "\b-o\b",
+                           "*.elf\b",
+
+                           # Remove the Arduino {object_files} variable
+                           "{object_files}",
+                         ])
+    }
+
     pw_source_set("pre_init") {
       sources = [ "init.cc" ]
       public_deps = [

@@ -15,7 +15,7 @@
 """Command line interface for arduino_builder."""
 
 import argparse
-import glob
+import json
 import logging
 import os
 import pprint
@@ -26,11 +26,16 @@ from typing import List
 
 from pw_arduino_build import core_installer, log
 from pw_arduino_build.builder import ArduinoBuilder
+from pw_arduino_build.file_operations import decode_file_json
 
 _LOG = logging.getLogger(__name__)
 
 _pretty_print = pprint.PrettyPrinter(indent=1, width=120).pprint
 _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
+
+
+class MissingArduinoCore(Exception):
+    """Exception raised when an Arduino core can not be found."""
 
 
 def list_boards_command(unused_args, builder):
@@ -65,8 +70,8 @@ def list_menu_options_command(args, builder):
     print("\nDefault Options")
     print(separator)
 
-    default_options, unused_column_widths = builder.get_default_menu_options()
-    for name, description in default_options:
+    menu_options, unused_col_widths = builder.get_default_menu_options()
+    for name, description in menu_options:
         print(name.ljust(all_column_widths[0] + 1), description)
 
 
@@ -198,8 +203,11 @@ def show_command(args, builder):
     elif args.core_path:
         print(builder.get_core_path())
 
-    elif args.postbuild:
-        print(builder.get_postbuild_line(args.postbuild))
+    elif args.prebuilds:
+        show_command_print_string_list(args, builder.get_prebuild_steps())
+
+    elif args.postbuilds:
+        show_command_print_string_list(args, builder.get_postbuild_steps())
 
     elif args.upload_command:
         print(builder.get_upload_line(args.upload_command, args.serial_port))
@@ -243,14 +251,13 @@ def show_command(args, builder):
             show_command_print_string_list(args, vfiles)
 
 
-def add_common_options(parser, serial_port, build_path, build_project_name,
-                       project_path, project_source_path):
+def add_common_parser_args(parser, serial_port, build_path, build_project_name,
+                           project_path, project_source_path):
     """Add command line options common to the run and show commands."""
     parser.add_argument(
         "--serial-port",
         default=serial_port,
-        help="Serial port for flashing flash. Default: '{}'".format(
-            serial_port))
+        help="Serial port for flashing. Default: '{}'".format(serial_port))
     parser.add_argument(
         "--build-path",
         default=build_path,
@@ -272,7 +279,98 @@ def add_common_options(parser, serial_port, build_path, build_project_name,
                         help="Name of the board to use.")
     # nargs="+" is one or more args, e.g:
     #   --menu-options menu.usb.serialhid menu.speed.150
-    parser.add_argument("--menu-options", nargs="+", type=str)
+    parser.add_argument(
+        "--menu-options",
+        nargs="+",
+        type=str,
+        metavar="menu.usb.serial",
+        help="Desired Arduino menu options. See the "
+        "'list-menu-options' subcommand for available options.")
+    parser.add_argument("--set-variable",
+                        action="append",
+                        metavar='some.variable=NEW_VALUE',
+                        help="Override an Arduino recipe variable. May be "
+                        "specified multiple times. For example: "
+                        "--set-variable 'serial.port.label=/dev/ttyACM0' "
+                        "--set-variable 'serial.port.protocol=Teensy'")
+
+
+def check_for_missing_args(args):
+    if args.arduino_package_path is None:
+        raise MissingArduinoCore(
+            "Please specify the location of an Arduino core using "
+            "'--arduino-package-path' and '--arduino-package-name'.")
+
+
+# TODO(tonymd): These defaults don't make sense anymore and should be removed.
+def get_default_options():
+    defaults = {}
+    defaults["build_path"] = os.path.realpath(
+        os.path.expanduser(
+            os.path.expandvars(os.path.join(os.getcwd(), "build"))))
+    defaults["project_path"] = os.path.realpath(
+        os.path.expanduser(os.path.expandvars(os.getcwd())))
+    defaults["project_source_path"] = os.path.join(defaults["project_path"],
+                                                   "src")
+    defaults["build_project_name"] = os.path.basename(defaults["project_path"])
+    defaults["serial_port"] = "UNKNOWN"
+    return defaults
+
+
+def load_config_file(args, default_options):
+    """Load a config file and merge with command line options.
+
+    Command line takes precedence over values loaded from a config file."""
+
+    if args.save_config and not args.config_file:
+        raise FileNotFoundError(
+            "'--save-config' requires the '--config-file' option")
+
+    if not args.config_file:
+        return
+
+    commandline_options = {
+        # Global option
+        "arduino_package_path": args.arduino_package_path,
+        "arduino_package_name": args.arduino_package_name,
+        "compiler_path_override": args.compiler_path_override,
+        # These options may not exist unless show or run command
+        "build_path": getattr(args, "build_path", None),
+        "project_path": getattr(args, "project_path", None),
+        "project_source_path": getattr(args, "project_source_path", None),
+        "build_project_name": getattr(args, "build_project_name", None),
+        "board": getattr(args, "board", None),
+        "menu_options": getattr(args, "menu_options", None),
+    }
+
+    # Decode JSON config file.
+    json_file_options, config_file_path = decode_file_json(args.config_file)
+
+    # Merge config file with command line options.
+    merged_options = {}
+    for key, value in commandline_options.items():
+        # Use the command line specified option by default
+        merged_options[key] = value
+
+        # Is this option in the config file?
+        if json_file_options.get(key, None) is not None:
+            # Use the json defined option if it's not set on the command
+            # line (or is a default value).
+            if value is None or value == default_options.get(key, None):
+                merged_options[key] = json_file_options[key]
+
+    # Update args namespace to matched merged_options.
+    for key, value in merged_options.items():
+        setattr(args, key, value)
+
+    # Write merged_options if --save-config.
+    if args.save_config:
+        encoded_json = json.dumps(merged_options, indent=4)
+        # Create parent directories
+        os.makedirs(os.path.dirname(config_file_path), exist_ok=True)
+        # Save json file.
+        with open(config_file_path, "w") as jfile:
+            jfile.write(encoded_json)
 
 
 def main():
@@ -299,20 +397,7 @@ def main():
                         help='Set the log level '
                         '(debug, info, warning, error, critical)')
 
-    build_path = os.path.realpath(
-        os.path.expanduser(os.path.expandvars("./build")))
-    project_path = os.path.realpath(
-        os.path.expanduser(os.path.expandvars("./")))
-    project_source_path = os.path.join(project_path, "src")
-    build_project_name = os.path.basename(project_path)
-
-    serial_port = "UNKNOWN"
-    # TODO(tonymd): Temp solution to passing in serial port. It should use
-    # arduino core discovery tools.
-    possible_serial_ports = glob.glob("/dev/ttyACM*") + glob.glob(
-        "/dev/ttyUSB*")
-    if possible_serial_ports:
-        serial_port = possible_serial_ports[0]
+    default_options = get_default_options()
 
     # Global command line options
     parser.add_argument("--arduino-package-path",
@@ -322,6 +407,10 @@ def main():
     parser.add_argument("--compiler-path-override",
                         help="Path to arm-none-eabi-gcc bin folder. "
                         "Default: Arduino core specified gcc")
+    parser.add_argument("-c", "--config-file", help="Path to a config file.")
+    parser.add_argument("--save-config",
+                        action="store_true",
+                        help="Save command line arguments to the config file.")
 
     # Subcommands
     subparsers = parser.add_subparsers(title="subcommand",
@@ -360,8 +449,11 @@ def main():
     # show command
     show_parser = subparsers.add_parser("show",
                                         help="Return compiler information.")
-    add_common_options(show_parser, serial_port, build_path,
-                       build_project_name, project_path, project_source_path)
+    add_common_parser_args(show_parser, default_options["serial_port"],
+                           default_options["build_path"],
+                           default_options["build_project_name"],
+                           default_options["project_path"],
+                           default_options["project_source_path"])
     show_parser.add_argument("--delimit-with-newlines",
                              help="Separate flag output with newlines.",
                              action="store_true")
@@ -385,8 +477,12 @@ def main():
     output_group.add_argument("--ar-binary", action="store_true")
     output_group.add_argument("--objcopy-binary", action="store_true")
     output_group.add_argument("--size-binary", action="store_true")
-    output_group.add_argument("--postbuild",
-                              help="Show recipe.hooks.postbuild.*.pattern")
+    output_group.add_argument("--prebuilds",
+                              action="store_true",
+                              help="Show prebuild step commands.")
+    output_group.add_argument("--postbuilds",
+                              action="store_true",
+                              help="Show postbuild step commands.")
     output_group.add_argument("--upload-tools", action="store_true")
     output_group.add_argument("--upload-command")
     output_group.add_argument("--library-includes", action="store_true")
@@ -403,8 +499,11 @@ def main():
 
     # run command
     run_parser = subparsers.add_parser("run", help="Run Arduino recipes.")
-    add_common_options(run_parser, serial_port, build_path, build_project_name,
-                       project_path, project_source_path)
+    add_common_parser_args(run_parser, default_options["serial_port"],
+                           default_options["build_path"],
+                           default_options["build_project_name"],
+                           default_options["project_path"],
+                           default_options["project_source_path"])
     run_parser.add_argument("--run-link",
                             nargs="+",
                             type=str,
@@ -417,37 +516,44 @@ def main():
 
     run_parser.set_defaults(func=run_command)
 
+    # Parse command line arguments.
     args = parser.parse_args()
-
-    log.install()
-    log.set_level(args.loglevel)
-
     _LOG.debug(_pretty_format(args))
 
+    log.install(args.loglevel)
+
     # Check for and set alternate compiler path.
-    compiler_path_override = False
     if args.compiler_path_override:
+        # Get absolute path
         compiler_path_override = os.path.realpath(
             os.path.expanduser(os.path.expandvars(
                 args.compiler_path_override)))
+        args.compiler_path_override = compiler_path_override
+
+    load_config_file(args, default_options)
 
     if args.subcommand == "install-core":
         args.func(args)
     elif args.subcommand in ["list-boards", "list-menu-options"]:
+        check_for_missing_args(args)
         builder = ArduinoBuilder(args.arduino_package_path,
                                  args.arduino_package_name)
         builder.load_board_definitions()
         args.func(args, builder)
     else:
-        builder = ArduinoBuilder(args.arduino_package_path,
-                                 args.arduino_package_name,
-                                 build_path=args.build_path,
-                                 build_project_name=args.build_project_name,
-                                 project_path=args.project_path,
-                                 project_source_path=args.project_source_path,
-                                 compiler_path_override=compiler_path_override)
+        check_for_missing_args(args)
+        builder = ArduinoBuilder(
+            args.arduino_package_path,
+            args.arduino_package_name,
+            build_path=args.build_path,
+            build_project_name=args.build_project_name,
+            project_path=args.project_path,
+            project_source_path=args.project_source_path,
+            compiler_path_override=args.compiler_path_override)
         builder.load_board_definitions()
         builder.select_board(args.board, args.menu_options)
+        if args.set_variable:
+            builder.set_variables(args.set_variable)
         args.func(args, builder)
 
     sys.exit(0)
