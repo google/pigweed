@@ -739,6 +739,14 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BothTransportsPresentButNo
   EXPECT_TRUE(fidl::Equals(kPublicAddrFidl, data.address()));
 }
 
+TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrServicesDiscoveredNotBonded) {
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
+  peer->MutBrEdr().AddService(bt::UUID(uint16_t{0x1234}));
+
+  fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
+  EXPECT_FALSE(data.has_bredr());
+}
+
 TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
   peer->MutLe().SetBondData(bt::sm::PairingData());
@@ -784,6 +792,21 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
   ASSERT_TRUE(data.has_bredr());
   ASSERT_TRUE(data.bredr().has_link_key());
   EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.bredr().link_key()));
+}
+
+TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
+  auto* peer = adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
+  peer->MutBrEdr().SetBondData(kTestLtk);
+  peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSink);
+  peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSource);
+
+  fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
+  ASSERT_TRUE(data.has_bredr());
+  ASSERT_TRUE(data.bredr().has_services());
+
+  EXPECT_THAT(data.bredr().services(),
+              ::testing::UnorderedElementsAre(UuidToFidl(bt::sdp::profile::kAudioSink),
+                                              UuidToFidl(bt::sdp::profile::kAudioSource)));
 }
 
 }  // namespace

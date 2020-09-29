@@ -543,8 +543,10 @@ fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapte
     fsys::BredrData out_bredr;
 
     // TODO(fxbug.dev/1262): Populate with history of role switches.
-    // TODO(fxbug.dev/59645): Store SDP and EIR service UUIDs.
 
+    const auto& services = peer.bredr()->services();
+    std::transform(services.begin(), services.end(),
+                   std::back_inserter(*out_bredr.mutable_services()), UuidToFidl);
     out_bredr.set_link_key(LtkToFidlPeerKey(*peer.bredr()->link_key()));
     out.set_bredr(std::move(out_bredr));
   }
