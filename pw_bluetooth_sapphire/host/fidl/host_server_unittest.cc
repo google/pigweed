@@ -174,6 +174,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
       called = true;
       ASSERT_EQ(expected.size(), errors.size());
       for (size_t i = 0; i < errors.size(); i++) {
+        SCOPED_TRACE(i);
         EXPECT_TRUE(fidl::Equals(errors[i], expected[i]));
       }
     });
@@ -909,6 +910,8 @@ TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
               .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
           },
   });
+  constexpr bt::UUID kServiceId = bt::sdp::profile::kAudioSink;
+  bredr.set_services({fidl_helpers::UuidToFidl(kServiceId)});
   bond.set_bredr(std::move(bredr));
 
   // This should succeed.
@@ -916,7 +919,8 @@ TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
 
   auto* peer = adapter()->peer_cache()->FindById(kTestId);
   ASSERT_TRUE(peer);
-  EXPECT_TRUE(peer->bredr());
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_THAT(peer->bredr()->services(), ::testing::ElementsAre(kServiceId));
   EXPECT_FALSE(peer->le());
   EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
 }
@@ -943,6 +947,8 @@ TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
 
   fsys::BredrData bredr;
   bredr.set_link_key(key);
+  constexpr bt::UUID kServiceId = bt::sdp::profile::kAudioSink;
+  bredr.set_services({fidl_helpers::UuidToFidl(kServiceId)});
   bond.set_bredr(std::move(bredr));
 
   // This should succeed.
@@ -951,7 +957,8 @@ TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
   auto* peer = adapter()->peer_cache()->FindById(kTestId);
   ASSERT_TRUE(peer);
   EXPECT_TRUE(peer->le());
-  EXPECT_TRUE(peer->bredr());
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_THAT(peer->bredr()->services(), ::testing::ElementsAre(kServiceId));
   EXPECT_EQ(bt::DeviceAddress::Type::kBREDR, peer->address().type());
 }
 

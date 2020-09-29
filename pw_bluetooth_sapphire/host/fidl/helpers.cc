@@ -452,8 +452,8 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
       bt_log(ERROR, "bt-host", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
       return std::nullopt;
     }
-    // TODO(fxbug.dev/2761): We currently assign kBREDR as the address type for dual-mode bonds. This
-    // makes address management for dual-mode devices a bit confusing as we have two "public"
+    // TODO(fxbug.dev/2761): We currently assign kBREDR as the address type for dual-mode bonds.
+    // This makes address management for dual-mode devices a bit confusing as we have two "public"
     // address types (i.e. kBREDR and kLEPublic). We should align the stack address types with
     // the FIDL address types, such that both kBREDR and kLEPublic are represented as the same
     // kind of "PUBLIC".
@@ -490,6 +490,15 @@ std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrData& data) {
   }
   auto key = PeerKeyFromFidl(data.link_key());
   return bt::sm::LTK(key.security(), bt::hci::LinkKey(key.value(), 0, 0));
+}
+
+std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrData& data) {
+  std::vector<bt::UUID> services_out;
+  if (data.has_services()) {
+    std::transform(data.services().begin(), data.services().end(), std::back_inserter(services_out),
+                   UuidFromFidl);
+  }
+  return services_out;
 }
 
 fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,

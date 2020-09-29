@@ -334,6 +334,7 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
     }
     if (bond.has_bredr()) {
       bd.bredr_link_key = fidl_helpers::BredrKeyFromFidl(bond.bredr());
+      bd.bredr_services = fidl_helpers::BredrServicesFromFidl(bond.bredr());
     }
 
     // TODO(fxbug.dev/59645): Convert bond.bredr.services to BondingData::bredr_services

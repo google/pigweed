@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace fble = fuchsia::bluetooth::le;
@@ -667,6 +668,19 @@ TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
   std::optional<bt::sm::LTK> result = BredrKeyFromFidl(bredr);
   ASSERT_TRUE(result);
   EXPECT_EQ(kTestLtk, *result);
+}
+
+TEST(FIDL_HelpersTest, BredrServicesFromFidlEmpty) {
+  EXPECT_TRUE(BredrServicesFromFidl(fsys::BredrData()).empty());
+}
+
+TEST(FIDL_HelpersTest, BredrServicesFromFidl) {
+  fsys::BredrData bredr;
+  bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSink));
+  bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSource));
+  auto bredr_services = BredrServicesFromFidl(bredr);
+  EXPECT_THAT(bredr_services, ::testing::UnorderedElementsAre(bt::sdp::profile::kAudioSource,
+                                                              bt::sdp::profile::kAudioSink));
 }
 
 class FIDL_HelpersAdapterTest : public bthost::testing::AdapterTestFixture {};
