@@ -15,6 +15,8 @@
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/nanopb_test_method_context.h"
+#include "pw_rpc_nanopb_private/internal_test_utils.h"
+#include "pw_rpc_private/internal_test_utils.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
 namespace pw::rpc {
@@ -50,7 +52,7 @@ TEST(NanopbCodegen, CompilesProperly) {
   EXPECT_STREQ(service.name(), "TestService");
 }
 
-TEST(NanopbCodegen, InvokeUnaryRpc) {
+TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
   EXPECT_EQ(Status::Ok(),
@@ -64,7 +66,7 @@ TEST(NanopbCodegen, InvokeUnaryRpc) {
   EXPECT_EQ(1000, context.response().value);
 }
 
-TEST(NanopbCodegen, InvokeStreamingRpc) {
+TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::Aborted()});
@@ -86,7 +88,8 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
   EXPECT_EQ(Status::Ok(), context.status());
 }
 
-TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
+TEST(NanopbCodegen,
+     Server_InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
@@ -101,7 +104,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
   EXPECT_EQ(context.responses()[2].number, 4u);
 }
 
-TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
+TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
@@ -124,6 +127,63 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
   EXPECT_EQ(context.responses()[0].number, 3u);
   EXPECT_EQ(context.responses()[1].number, 6u);
   EXPECT_EQ(context.responses()[2].number, 9u);
+}
+
+using TestServiceClient = test::nanopb::TestServiceClient;
+using internal::TestServerStreamingResponseHandler;
+using internal::TestUnaryResponseHandler;
+
+TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
+  constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t method_id = internal::Hash("TestRpc");
+
+  ClientContextForTest<128, 128, 99, service_id, method_id> context;
+  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
+
+  auto call = TestServiceClient::TestRpc(
+      context.channel(), {.integer = 123, .status_code = 0}, handler);
+  EXPECT_EQ(context.output().packet_count(), 1u);
+  auto packet = context.output().sent_packet();
+  EXPECT_EQ(packet.channel_id(), context.channel().id());
+  EXPECT_EQ(packet.service_id(), service_id);
+  EXPECT_EQ(packet.method_id(), method_id);
+  PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
+  EXPECT_EQ(sent_proto.integer, 123);
+
+  PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
+  context.SendResponse(Status::Ok(), response);
+  ASSERT_EQ(handler.responses_received(), 1u);
+  EXPECT_EQ(handler.last_status(), Status::Ok());
+  EXPECT_EQ(handler.last_response().value, 42);
+}
+
+TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
+  constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");
+  constexpr uint32_t method_id = internal::Hash("TestStreamRpc");
+
+  ClientContextForTest<128, 128, 99, service_id, method_id> context;
+  TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
+
+  auto call = TestServiceClient::TestStreamRpc(
+      context.channel(), {.integer = 123, .status_code = 0}, handler);
+  EXPECT_EQ(context.output().packet_count(), 1u);
+  auto packet = context.output().sent_packet();
+  EXPECT_EQ(packet.channel_id(), context.channel().id());
+  EXPECT_EQ(packet.service_id(), service_id);
+  EXPECT_EQ(packet.method_id(), method_id);
+  PW_DECODE_PB(pw_rpc_test_TestRequest, sent_proto, packet.payload());
+  EXPECT_EQ(sent_proto.integer, 123);
+
+  PW_ENCODE_PB(
+      pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
+  context.SendResponse(Status::Ok(), response);
+  ASSERT_EQ(handler.responses_received(), 1u);
+  EXPECT_EQ(handler.last_response().number, 11u);
+
+  context.SendPacket(internal::PacketType::SERVER_STREAM_END,
+                     Status::NotFound());
+  EXPECT_FALSE(handler.active());
+  EXPECT_EQ(handler.status(), Status::NotFound());
 }
 
 }  // namespace

@@ -127,9 +127,12 @@ pw_test("client_call_test") {
 
 pw_test("codegen_test") {
   deps = [
+    ":client",
+    ":internal_test_utils",
     ":test_method_context",
     "..:server",
     "..:test_protos.nanopb_rpc",
+    "..:test_utils",
   ]
   sources = [ "codegen_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""

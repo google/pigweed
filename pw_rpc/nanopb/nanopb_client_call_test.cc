@@ -59,52 +59,8 @@ class FakeGeneratedServiceClient {
   }
 };
 
-// TODO(frolv): Maybe extract these into a utils header as it could be useful
-// for other tests.
-template <typename Response>
-class TestUnaryResponseHandler : public UnaryResponseHandler<Response> {
- public:
-  void ReceivedResponse(Status status, const Response& response) override {
-    last_status_ = status;
-    last_response_ = response;
-    ++responses_received_;
-  }
-
-  constexpr Status last_status() const { return last_status_; }
-  constexpr const Response& last_response() const& { return last_response_; }
-  constexpr size_t responses_received() const { return responses_received_; }
-
- private:
-  Status last_status_;
-  Response last_response_;
-  size_t responses_received_ = 0;
-};
-
-template <typename Response>
-class TestServerStreamingResponseHandler
-    : public ServerStreamingResponseHandler<Response> {
- public:
-  void ReceivedResponse(const Response& response) override {
-    last_response_ = response;
-    ++responses_received_;
-  }
-
-  void Complete(Status status) override {
-    active_ = false;
-    status_ = status;
-  }
-
-  constexpr bool active() const { return active_; }
-  constexpr Status status() const { return status_; }
-  constexpr const Response& last_response() const& { return last_response_; }
-  constexpr size_t responses_received() const { return responses_received_; }
-
- private:
-  Status status_;
-  Response last_response_;
-  size_t responses_received_ = 0;
-  bool active_ = true;
-};
+using internal::TestServerStreamingResponseHandler;
+using internal::TestUnaryResponseHandler;
 
 TEST(NanopbClientCall, Unary_SendsRequestPacket) {
   ClientContextForTest context;

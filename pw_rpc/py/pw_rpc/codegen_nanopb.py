@@ -87,6 +87,8 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
 
+    output.write_line('namespace generated {')
+
     base_class = f'{RPC_NAMESPACE}::Service'
     output.write_line('\ntemplate <typename Implementation>')
     output.write_line(
@@ -151,6 +153,82 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
 
     output.write_line('};')
 
+    output.write_line('\n}  // namespace generated\n')
+
+
+def _generate_code_for_client_method(method: ProtoServiceMethod,
+                                     output: OutputFile) -> None:
+    """Outputs client code for a single RPC method."""
+
+    req = method.request_type().nanopb_name()
+    res = method.response_type().nanopb_name()
+    method_id = pw_rpc.ids.calculate(method.name())
+
+    if method.type() == ProtoServiceMethod.Type.UNARY:
+        callback = f'{RPC_NAMESPACE}::UnaryResponseHandler<{res}>'
+    elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
+        callback = f'{RPC_NAMESPACE}::ServerStreamingResponseHandler<{res}>'
+    else:
+        raise NotImplementedError(
+            'Only unary and server streaming RPCs are currently supported')
+
+    output.write_line()
+    output.write_line(f'static NanopbClientCall<\n    {callback}>')
+    output.write_line(f'{method.name()}({RPC_NAMESPACE}::Channel& channel,')
+    with output.indent(len(method.name()) + 1):
+        output.write_line(f'const {req}& request,')
+        output.write_line(f'{callback}& callback) {{')
+
+    with output.indent():
+        output.write_line(f'NanopbClientCall<{callback}>')
+        output.write_line('    call(&channel,')
+        with output.indent(9):
+            output.write_line('kServiceId,')
+            output.write_line(
+                f'0x{method_id:08x},  // Hash of "{method.name()}"')
+            output.write_line('callback,')
+            output.write_line(f'{req}_fields,')
+            output.write_line(f'{res}_fields);')
+        output.write_line('call.SendRequest(&request);')
+        output.write_line('return call;')
+
+    output.write_line('}')
+
+
+def _generate_code_for_client(service: ProtoService, root: ProtoNode,
+                              output: OutputFile) -> None:
+    """Outputs client code for an RPC service."""
+
+    output.write_line('namespace nanopb {')
+
+    class_name = f'{service.cpp_namespace(root)}Client'
+    output.write_line(f'\nclass {class_name} {{')
+    output.write_line(' public:')
+
+    with output.indent():
+        output.write_line('template <typename T>')
+        output.write_line(
+            f'using NanopbClientCall = {RPC_NAMESPACE}::NanopbClientCall<T>;')
+
+        output.write_line('')
+        output.write_line(f'{class_name}() = delete;')
+
+        for method in service.methods():
+            _generate_code_for_client_method(method, output)
+
+    service_name_hash = pw_rpc.ids.calculate(service.proto_path())
+    output.write_line('\n private:')
+
+    with output.indent():
+        output.write_line(f'// Hash of "{service.proto_path()}".')
+        output.write_line(
+            f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
+        )
+
+    output.write_line('};')
+
+    output.write_line('\n}  // namespace nanopb\n')
+
 
 def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
                               output: OutputFile) -> None:
@@ -168,6 +246,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstdint>')
     output.write_line('#include <type_traits>\n')
     output.write_line('#include "pw_rpc/internal/nanopb_method_union.h"')
+    output.write_line('#include "pw_rpc/nanopb_client_call.h"')
     output.write_line('#include "pw_rpc/server_context.h"')
     output.write_line('#include "pw_rpc/service.h"')
 
@@ -190,14 +269,12 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
 
         output.write_line(f'namespace {file_namespace} {{')
 
-    output.write_line('namespace generated {')
-
     for node in package:
         if node.type() == ProtoNode.Type.SERVICE:
             _generate_code_for_service(cast(ProtoService, node), package,
                                        output)
-
-    output.write_line('\n}  // namespace generated')
+            _generate_code_for_client(cast(ProtoService, node), package,
+                                      output)
 
     if package.cpp_namespace():
         output.write_line(f'}}  // namespace {file_namespace}')
