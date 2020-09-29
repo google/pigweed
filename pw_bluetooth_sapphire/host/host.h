@@ -11,6 +11,7 @@
 #include <memory>
 
 #include <ddk/protocol/bt/hci.h>
+#include <ddk/protocol/bt/vendor.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -66,10 +67,12 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   FRIEND_MAKE_REF_COUNTED(Host);
   FRIEND_REF_COUNTED_THREAD_SAFE(Host);
 
-  explicit Host(const bt_hci_protocol_t& hci_proto);
+  explicit Host(const bt_hci_protocol_t& hci_proto,
+                std::optional<bt_vendor_protocol_t> vendor_proto);
   ~Host();
 
   bt_hci_protocol_t hci_proto_;
+  std::optional<bt_vendor_protocol_t> vendor_proto_;
 
   std::unique_ptr<bt::hci::Transport> hci_;
 

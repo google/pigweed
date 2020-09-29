@@ -86,6 +86,13 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   return true;
 }
 
+bt_vendor_features_t Transport::GetVendorFeatures() { return hci_device_->GetVendorFeatures(); }
+
+fit::result<DynamicByteBuffer> Transport::EncodeVendorCommand(bt_vendor_command_t command,
+                                                              bt_vendor_params_t& params) {
+  return hci_device_->EncodeVendorCommand(command, params);
+}
+
 void Transport::SetTransportClosedCallback(fit::closure callback) {
   ZX_ASSERT(callback);
   ZX_ASSERT(!closed_cb_);

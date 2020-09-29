@@ -13,6 +13,7 @@
 
 #include <mutex>
 
+#include <ddk/protocol/bt/vendor.h>
 #include <ddktl/device.h>
 #include <fbl/macros.h>
 
@@ -47,11 +48,16 @@ class HostDevice final : public HostDeviceType {
   void OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
                                 fbl::RefPtr<bt::gatt::RemoteService> service);
 
+  fit::result<bt_vendor_protocol_t, zx_status_t> GetVendorProtocol();
+
   // Guards access to members below.
   std::mutex mtx_;
 
   // HCI protocol struct
   bt_hci_protocol_t hci_proto_;
+
+  // BtVendor protocol struct.
+  std::optional<bt_vendor_protocol_t> vendor_proto_;
 
   // Inspector for driver inspect tree. This object is thread-safe.
   inspect::Inspector inspect_;

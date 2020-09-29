@@ -5,14 +5,21 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_
 
-#include <ddk/protocol/bt/hci.h>
-#include <fbl/macros.h>
-#include <fbl/unique_fd.h>
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <lib/fit/function.h>
+#include <lib/fit/result.h>
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 #include <zircon/types.h>
 
+#include <optional>
+
+#include <ddk/protocol/bt/hci.h>
+#include <ddk/protocol/bt/vendor.h>
+#include <fbl/macros.h>
+#include <fbl/unique_fd.h>
+
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/files/unique_fd.h"
 
 namespace bt {
@@ -31,6 +38,13 @@ class DeviceWrapper {
   // Returns the ACL data channel handle for this device. Returns an invalid
   // handle on failure.
   virtual zx::channel GetACLDataChannel() = 0;
+
+  virtual bt_vendor_features_t GetVendorFeatures() = 0;
+
+  virtual fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                             bt_vendor_params_t& params) {
+    return fit::error();
+  };
 };
 
 // A DeviceWrapper that obtains channels by invoking bt-hci fidl requests on a
@@ -46,25 +60,32 @@ class FidlDeviceWrapper : public DeviceWrapper {
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
 
+  bt_vendor_features_t GetVendorFeatures() override { return 0; };
+
  private:
   zx::channel device_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FidlDeviceWrapper);
 };
 
-// A DeviceWrapper that obtains channels by calling bt-hci protocol ops.
+// A DeviceWrapper that calls bt-hci and bt-vendor DDK protocol ops.
 class DdkDeviceWrapper : public DeviceWrapper {
  public:
   // The contents of |hci| must remain valid while this object is in use.
-  explicit DdkDeviceWrapper(const bt_hci_protocol_t& hci);
+  explicit DdkDeviceWrapper(const bt_hci_protocol_t& hci,
+                            std::optional<bt_vendor_protocol_t> vendor);
   ~DdkDeviceWrapper() override = default;
 
   // DeviceWrapper overrides:
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
+  bt_vendor_features_t GetVendorFeatures() override;
+  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                     bt_vendor_params_t& params) override;
 
  private:
   bt_hci_protocol_t hci_proto_;
+  std::optional<bt_vendor_protocol_t> vendor_proto_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DdkDeviceWrapper);
 };
@@ -74,8 +95,13 @@ class DdkDeviceWrapper : public DeviceWrapper {
 class DummyDeviceWrapper : public DeviceWrapper {
  public:
   // The constructor takes ownership of the provided channels and simply returns
-  // them when asked for them.
-  DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel);
+  // them when asked for them. |vendor_features| will be returned by GetVendorFeatures() and calls
+  // to EncodeVendorCommand() are forwarded to |vendor_encode_cb|.
+  using EncodeCallback =
+      fit::function<fit::result<DynamicByteBuffer>(bt_vendor_command_t, bt_vendor_params_t)>;
+  DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel,
+                     bt_vendor_features_t vendor_features = 0,
+                     EncodeCallback vendor_encode_cb = nullptr);
   ~DummyDeviceWrapper() override = default;
 
   // DeviceWrapper overrides. Since these methods simply forward the handles
@@ -85,9 +111,15 @@ class DummyDeviceWrapper : public DeviceWrapper {
   zx::channel GetCommandChannel() override;
   zx::channel GetACLDataChannel() override;
 
+  bt_vendor_features_t GetVendorFeatures() override { return vendor_features_; }
+  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                     bt_vendor_params_t& params) override;
+
  private:
   zx::channel cmd_channel_;
   zx::channel acl_data_channel_;
+  bt_vendor_features_t vendor_features_;
+  EncodeCallback vendor_encode_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
 };

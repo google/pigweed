@@ -15,6 +15,7 @@
 #include <memory>
 #include <thread>
 
+#include <ddk/protocol/bt/vendor.h>
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
@@ -56,6 +57,11 @@ class Transport final {
   // called successfully prior to calling this method.
   bool InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info);
+
+  bt_vendor_features_t GetVendorFeatures();
+
+  fit::result<DynamicByteBuffer> EncodeVendorCommand(bt_vendor_command_t command,
+                                                     bt_vendor_params_t& params);
 
   // Returns a pointer to the HCI command and event flow control handler.
   CommandChannel* command_channel() const { return command_channel_.get(); }

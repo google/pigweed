@@ -80,6 +80,7 @@ source_set("sources") {
     ":fidl_helpers",
     ":stack",
     "//sdk/banjo/ddk.protocol.bt.gattsvc",
+    "//sdk/banjo/ddk.protocol.bt.vendor",
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//sdk/fidl/fuchsia.bluetooth.le",

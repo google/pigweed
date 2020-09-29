@@ -15,12 +15,13 @@ using namespace bt;
 
 namespace bthost {
 
-Host::Host(const bt_hci_protocol_t& hci_proto) : hci_proto_(hci_proto) {}
+Host::Host(const bt_hci_protocol_t& hci_proto, std::optional<bt_vendor_protocol_t> vendor_proto)
+    : hci_proto_(hci_proto), vendor_proto_(vendor_proto) {}
 
 Host::~Host() {}
 
 bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
-  auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_);
+  auto dev = std::make_unique<hci::DdkDeviceWrapper>(hci_proto_, vendor_proto_);
 
   auto hci_result = hci::Transport::Create(std::move(dev));
   if (hci_result.is_error()) {

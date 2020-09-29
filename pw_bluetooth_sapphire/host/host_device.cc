@@ -82,6 +82,14 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
 
   std::lock_guard<std::mutex> lock(mtx_);
 
+  auto vendor_result = GetVendorProtocol();
+  if (vendor_result.is_ok()) {
+    vendor_proto_ = vendor_result.value();
+  } else {
+    bt_log(WARN, "bt-host", "failed to obtain bt-vendor protocol ops: %s",
+           zx_status_get_string(vendor_result.error()));
+  }
+
   loop_.StartThread("bt-host (gap)");
 
   // Send the bootstrap message to Host. The Host object can only be accessed on
@@ -90,7 +98,7 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
     bt_log(TRACE, "bt-host", "host thread start");
 
     std::lock_guard<std::mutex> lock(mtx_);
-    host_ = fxl::MakeRefCounted<Host>(hci_proto_);
+    host_ = fxl::MakeRefCounted<Host>(hci_proto_, vendor_proto_);
     host_->Initialize(inspect_.GetRoot(), [this, txn{std::move(txn)}](bool success) mutable {
       std::lock_guard<std::mutex> lock(mtx_);
 
@@ -192,6 +200,31 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
   ZX_DEBUG_ASSERT(host_);
 
   __UNUSED zx_status_t status = GattRemoteServiceDevice::Publish(zxdev(), peer_id, service);
+}
+
+fit::result<bt_vendor_protocol_t, zx_status_t> HostDevice::GetVendorProtocol() {
+  bt_vendor_protocol_t vendor_proto = {};
+  zx_status_t status = device_get_protocol(parent_, ZX_PROTOCOL_BT_VENDOR, &vendor_proto);
+  if (status != ZX_OK) {
+    return fit::error(status);
+  }
+
+  if (!vendor_proto.ops) {
+    bt_log(WARN, "bt-host", "bt-vendor device ops required");
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
+  }
+
+  if (!vendor_proto.ops->get_features) {
+    bt_log(WARN, "bt-host", "bt-vendor op required: get_features");
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
+  }
+
+  if (!vendor_proto.ops->encode_command) {
+    bt_log(WARN, "bt-host", "bt-vendor op required: encode_command");
+    return fit::error(ZX_ERR_NOT_SUPPORTED);
+  }
+
+  return fit::ok(vendor_proto);
 }
 
 }  // namespace bthost

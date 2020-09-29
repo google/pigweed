@@ -57,7 +57,9 @@ zx::channel FidlDeviceWrapper::GetACLDataChannel() {
 
 // ================= DdkDeviceWrapper =================
 
-DdkDeviceWrapper::DdkDeviceWrapper(const bt_hci_protocol_t& hci) : hci_proto_(hci) {}
+DdkDeviceWrapper::DdkDeviceWrapper(const bt_hci_protocol_t& hci,
+                                   std::optional<bt_vendor_protocol_t> vendor)
+    : hci_proto_(hci), vendor_proto_(vendor) {}
 
 zx::channel DdkDeviceWrapper::GetCommandChannel() {
   zx::channel ours, theirs;
@@ -89,14 +91,52 @@ zx::channel DdkDeviceWrapper::GetACLDataChannel() {
   return ours;
 }
 
+bt_vendor_features_t DdkDeviceWrapper::GetVendorFeatures() {
+  if (!vendor_proto_) {
+    return 0;
+  }
+  return bt_vendor_get_features(&vendor_proto_.value());
+};
+
+fit::result<DynamicByteBuffer> DdkDeviceWrapper::EncodeVendorCommand(bt_vendor_command_t command,
+                                                                     bt_vendor_params_t& params) {
+  if (!vendor_proto_) {
+    return fit::error();
+  }
+
+  auto buffer = std::unique_ptr<uint8_t[]>(new uint8_t[BT_VENDOR_MAX_COMMAND_BUFFER_LEN]);
+  size_t actual = 0;
+  auto status = bt_vendor_encode_command(&vendor_proto_.value(), command, &params, buffer.get(),
+                                         BT_VENDOR_MAX_COMMAND_BUFFER_LEN, &actual);
+  if (status != ZX_OK || !actual || actual > BT_VENDOR_MAX_COMMAND_BUFFER_LEN) {
+    bt_log(DEBUG, "hci", "Failed to encode vendor command: %s", zx_status_get_string(status));
+    return fit::error();
+  }
+
+  return fit::ok(DynamicByteBuffer(actual, std::move(buffer)));
+};
+
 // ================= DummyDeviceWrapper =================
 
-DummyDeviceWrapper::DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel)
-    : cmd_channel_(std::move(cmd_channel)), acl_data_channel_(std::move(acl_data_channel)) {}
+DummyDeviceWrapper::DummyDeviceWrapper(zx::channel cmd_channel, zx::channel acl_data_channel,
+                                       bt_vendor_features_t vendor_features,
+                                       EncodeCallback vendor_encode_cb)
+    : cmd_channel_(std::move(cmd_channel)),
+      acl_data_channel_(std::move(acl_data_channel)),
+      vendor_features_(vendor_features),
+      vendor_encode_cb_(std::move(vendor_encode_cb)) {}
 
 zx::channel DummyDeviceWrapper::GetCommandChannel() { return std::move(cmd_channel_); }
 
 zx::channel DummyDeviceWrapper::GetACLDataChannel() { return std::move(acl_data_channel_); }
+
+fit::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(bt_vendor_command_t command,
+                                                                       bt_vendor_params_t& params) {
+  if (vendor_encode_cb_) {
+    return vendor_encode_cb_(command, params);
+  }
+  return fit::error();
+}
 
 }  // namespace hci
 }  // namespace bt
