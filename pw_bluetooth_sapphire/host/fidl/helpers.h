@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 
-#include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
@@ -103,10 +102,8 @@ fuchsia::bluetooth::Uuid UuidToFidl(const bt::UUID& uuid);
 bt::sm::IOCapability IoCapabilityFromFidl(const fuchsia::bluetooth::sys::InputCapability,
                                           const fuchsia::bluetooth::sys::OutputCapability);
 bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fuchsia::bluetooth::sys::LeSecurityMode mode);
-
-// Functions to construct FIDL control library objects from library objects.
-fuchsia::bluetooth::control::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer);
-fuchsia::bluetooth::control::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer);
+std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
+    const fuchsia::bluetooth::sys::PairingSecurityLevel level);
 
 // fuchsia.bluetooth.sys library helpers.
 fuchsia::bluetooth::sys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type);
@@ -122,10 +119,6 @@ std::optional<bt::sm::LTK> BredrKeyFromFidl(const fuchsia::bluetooth::sys::Bredr
 // Function to construct a bonding data structure for a peer.
 fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,
                                                            const bt::gap::Peer& peer);
-
-// Functions to convert Control FIDL library objects.
-std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
-    const fuchsia::bluetooth::control::PairingSecurityLevel level);
 
 // Functions to construct FIDL LE library objects from library objects.
 fuchsia::bluetooth::le::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer);

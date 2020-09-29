@@ -10,7 +10,6 @@
 #include <iterator>
 #include <unordered_set>
 
-#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
@@ -28,7 +27,6 @@ using fuchsia::bluetooth::Status;
 namespace fble = fuchsia::bluetooth::le;
 namespace fbredr = fuchsia::bluetooth::bredr;
 namespace fbt = fuchsia::bluetooth;
-namespace fctrl = fuchsia::bluetooth::control;
 namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
@@ -61,23 +59,6 @@ fbt::Address AddressToFidl(fbt::AddressType type, const bt::DeviceAddressBytes& 
 
 fbt::Address AddressToFidl(const bt::DeviceAddress& input) {
   return AddressToFidl(AddressTypeToFidl(input.type()), input.value());
-}
-
-fctrl::TechnologyType TechnologyTypeToFidlDeprecated(bt::gap::TechnologyType type) {
-  switch (type) {
-    case bt::gap::TechnologyType::kLowEnergy:
-      return fctrl::TechnologyType::LOW_ENERGY;
-    case bt::gap::TechnologyType::kClassic:
-      return fctrl::TechnologyType::CLASSIC;
-    case bt::gap::TechnologyType::kDualMode:
-      return fctrl::TechnologyType::DUAL_MODE;
-    default:
-      ZX_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
-      break;
-  }
-
-  // This should never execute.
-  return fctrl::TechnologyType::DUAL_MODE;
 }
 
 bt::sm::SecurityProperties SecurityPropsFromFidl(const fsys::SecurityProperties& sec_prop) {
@@ -383,57 +364,15 @@ bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) 
   return bt::gap::LeSecurityMode::SecureConnectionsOnly;
 }
 
-fctrl::RemoteDevice NewRemoteDevice(const bt::gap::Peer& peer) {
-  fctrl::RemoteDevice fidl_device;
-  fidl_device.identifier = peer.identifier().ToString();
-  fidl_device.address = peer.address().value().ToString();
-  fidl_device.technology = TechnologyTypeToFidlDeprecated(peer.technology());
-  fidl_device.connected = peer.connected();
-  fidl_device.bonded = peer.bonded();
-
-  // Set default value for device appearance.
-  fidl_device.appearance = fctrl::Appearance::UNKNOWN;
-
-  // |service_uuids| is not a nullable field, so we need to assign something
-  // to it.
-  fidl_device.service_uuids.resize(0);
-
-  if (peer.rssi() != bt::hci::kRSSIInvalid) {
-    fidl_device.rssi = Int8::New();
-    fidl_device.rssi->value = peer.rssi();
-  }
-
-  if (peer.name()) {
-    fidl_device.name = *peer.name();
-  }
-
-  if (peer.le()) {
-    bt::AdvertisingData adv_data;
-
-    if (!bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv_data)) {
-      return fidl_device;
-    }
-
-    for (const auto& uuid : adv_data.service_uuids()) {
-      fidl_device.service_uuids.push_back(uuid.ToString());
-    }
-    if (adv_data.appearance()) {
-      fidl_device.appearance = static_cast<fctrl::Appearance>(le16toh(*adv_data.appearance()));
-    }
-    if (adv_data.tx_power()) {
-      auto fidl_tx_power = Int8::New();
-      fidl_tx_power->value = *adv_data.tx_power();
-      fidl_device.tx_power = std::move(fidl_tx_power);
-    }
-  }
-
-  return fidl_device;
-}
-
-fctrl::RemoteDevicePtr NewRemoteDevicePtr(const bt::gap::Peer& peer) {
-  auto fidl_device = fctrl::RemoteDevice::New();
-  *fidl_device = NewRemoteDevice(peer);
-  return fidl_device;
+std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(const fsys::PairingSecurityLevel level) {
+  switch (level) {
+    case fsys::PairingSecurityLevel::ENCRYPTED:
+      return bt::sm::SecurityLevel::kEncrypted;
+    case fsys::PairingSecurityLevel::AUTHENTICATED:
+      return bt::sm::SecurityLevel::kAuthenticated;
+    default:
+      return std::nullopt;
+  };
 }
 
 fsys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
@@ -602,18 +541,6 @@ fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapte
   }
 
   return out;
-}
-
-std::optional<bt::sm::SecurityLevel> SecurityLevelFromFidl(
-    const fuchsia::bluetooth::control::PairingSecurityLevel level) {
-  switch (level) {
-    case fuchsia::bluetooth::control::PairingSecurityLevel::ENCRYPTED:
-      return bt::sm::SecurityLevel::kEncrypted;
-    case fuchsia::bluetooth::control::PairingSecurityLevel::AUTHENTICATED:
-      return bt::sm::SecurityLevel::kAuthenticated;
-    default:
-      return std::nullopt;
-  };
 }
 
 fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {

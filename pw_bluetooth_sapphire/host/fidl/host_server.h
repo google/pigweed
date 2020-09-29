@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HOST_SERVER_H_
 
-#include <fuchsia/bluetooth/control/cpp/fidl.h>
 #include <fuchsia/bluetooth/host/cpp/fidl.h>
 #include <lib/zx/channel.h>
 
@@ -102,7 +101,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
       ::fidl::InterfaceHandle<::fuchsia::bluetooth::sys::PairingDelegate> delegate) override;
   void Connect(::fuchsia::bluetooth::PeerId id, ConnectCallback callback) override;
   void Disconnect(::fuchsia::bluetooth::PeerId id, DisconnectCallback callback) override;
-  void Pair(::fuchsia::bluetooth::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
+  void Pair(::fuchsia::bluetooth::PeerId id, ::fuchsia::bluetooth::sys::PairingOptions options,
             PairCallback callback) override;
   void Forget(::fuchsia::bluetooth::PeerId id, ForgetCallback callback) override;
 
@@ -142,7 +141,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void ConnectLowEnergy(bt::PeerId id, ConnectCallback callback);
   void ConnectBrEdr(bt::PeerId peer_id, ConnectCallback callback);
 
-  void PairLowEnergy(bt::PeerId id, ::fuchsia::bluetooth::control::PairingOptions options,
+  void PairLowEnergy(bt::PeerId id, ::fuchsia::bluetooth::sys::PairingOptions options,
                      PairCallback callback);
   void PairBrEdr(bt::PeerId id, PairCallback callback);
   // Called when a connection is established to a peer, either when initiated

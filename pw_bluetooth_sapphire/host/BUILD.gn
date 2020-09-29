@@ -32,7 +32,6 @@ source_set("fidl_helpers") {
     "gatt",
     "sdp",
     "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.control",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//src/connectivity/bluetooth/fidl:host",
   ]
@@ -82,7 +81,6 @@ source_set("sources") {
     ":stack",
     "//sdk/banjo/ddk.protocol.bt.gattsvc",
     "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.control",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//sdk/fidl/fuchsia.bluetooth.le",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",

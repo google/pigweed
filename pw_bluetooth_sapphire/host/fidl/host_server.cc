@@ -9,7 +9,6 @@
 #include <lib/syslog/cpp/macros.h>
 #include <zircon/assert.h>
 
-#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "helpers.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
@@ -44,12 +43,6 @@ using fidl_helpers::NewFidlError;
 using fidl_helpers::PeerIdFromString;
 using fidl_helpers::SecurityLevelFromFidl;
 using fidl_helpers::StatusToFidl;
-using fidl_helpers::StatusToFidlDeprecated;
-using fuchsia::bluetooth::Bool;
-using fuchsia::bluetooth::ErrorCode;
-using fuchsia::bluetooth::Status;
-using fuchsia::bluetooth::control::PairingOptions;
-using fuchsia::bluetooth::control::TechnologyType;
 
 std::pair<PeerTracker::Updated, PeerTracker::Removed> PeerTracker::ToFidl(
     const bt::gap::PeerCache* peer_cache) {
@@ -590,8 +583,7 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
   }
 }
 
-void HostServer::Pair(fuchsia::bluetooth::PeerId id,
-                      fuchsia::bluetooth::control::PairingOptions options, PairCallback callback) {
+void HostServer::Pair(fbt::PeerId id, fsys::PairingOptions options, PairCallback callback) {
   auto peer_id = bt::PeerId(id.value);
   auto peer = adapter()->peer_cache()->FindById(peer_id);
   if (!peer) {
@@ -602,8 +594,8 @@ void HostServer::Pair(fuchsia::bluetooth::PeerId id,
   // If options specifies a transport preference for LE or BR/EDR, we use that. Otherwise, we use
   // whatever transport exists, defaulting to LE for dual-mode connections.
   bool pair_bredr = !peer->le();
-  if (options.has_transport() && options.transport() != TechnologyType::DUAL_MODE) {
-    pair_bredr = (options.transport() == TechnologyType::CLASSIC);
+  if (options.has_transport() && options.transport() != fsys::TechnologyType::DUAL_MODE) {
+    pair_bredr = (options.transport() == fsys::TechnologyType::CLASSIC);
   }
   if (pair_bredr) {
     PairBrEdr(peer_id, std::move(callback));
@@ -612,7 +604,8 @@ void HostServer::Pair(fuchsia::bluetooth::PeerId id,
   PairLowEnergy(peer_id, std::move(options), std::move(callback));
 }
 
-void HostServer::PairLowEnergy(PeerId peer_id, PairingOptions options, PairCallback callback) {
+void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
+                               PairCallback callback) {
   std::optional<bt::sm::SecurityLevel> security_level;
   if (options.has_le_security_level()) {
     security_level = SecurityLevelFromFidl(options.le_security_level());
@@ -624,7 +617,7 @@ void HostServer::PairLowEnergy(PeerId peer_id, PairingOptions options, PairCallb
     security_level = bt::sm::SecurityLevel::kAuthenticated;
   }
   bt::sm::BondableMode bondable_mode = bt::sm::BondableMode::Bondable;
-  if (options.has_non_bondable() && options.non_bondable()) {
+  if (options.has_bondable_mode() && options.bondable_mode() == fsys::BondableMode::NON_BONDABLE) {
     bondable_mode = bt::sm::BondableMode::NonBondable;
   }
   auto on_complete = [peer_id, callback = std::move(callback)](bt::sm::Status status) {

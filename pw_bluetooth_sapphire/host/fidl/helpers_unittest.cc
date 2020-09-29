@@ -11,7 +11,6 @@
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
-#include "fuchsia/bluetooth/control/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -301,15 +300,13 @@ TEST(FIDL_HelpersTest, TechnologyTypeToFidl) {
 }
 
 TEST(FIDL_HelpersTest, SecurityLevelFromFidl) {
-  using FidlSecurityLevel = fuchsia::bluetooth::control::PairingSecurityLevel;
-  const FidlSecurityLevel level = FidlSecurityLevel::AUTHENTICATED;
+  const fsys::PairingSecurityLevel level = fsys::PairingSecurityLevel::AUTHENTICATED;
   EXPECT_EQ(bt::sm::SecurityLevel::kAuthenticated, SecurityLevelFromFidl(level));
 }
 
 TEST(FIDL_HelpersTest, SecurityLevelFromBadFidlFails) {
-  using FidlSecurityLevel = fuchsia::bluetooth::control::PairingSecurityLevel;
   int nonexistant_security_level = 500000;
-  auto level = static_cast<FidlSecurityLevel>(nonexistant_security_level);
+  auto level = static_cast<fsys::PairingSecurityLevel>(nonexistant_security_level);
   EXPECT_EQ(std::nullopt, SecurityLevelFromFidl(level));
 }
 
