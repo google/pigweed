@@ -22,29 +22,49 @@ config("default_config") {
   include_dirs = [ "public" ]
 }
 
-pw_source_set("pw_hdlc_lite") {
-  public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_hdlc_lite/decoder.h",
-    "public/pw_hdlc_lite/encoder.h",
-    "public/pw_hdlc_lite/sys_io_stream.h",
+group("pw_hdlc_lite") {
+  public_deps = [
+    ":decoder",
+    ":encoder",
   ]
+}
+
+pw_source_set("decoder") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_hdlc_lite/decoder.h" ]
   sources = [
     "decoder.cc",
-    "encoder.cc",
     "pw_hdlc_lite_private/protocol.h",
   ]
   public_deps = [
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
-    dir_pw_stream,
-    dir_pw_sys_io,
   ]
   deps = [
     dir_pw_checksum,
     dir_pw_log,
   ]
+  friend = [ ":*" ]
+}
+
+pw_source_set("encoder") {
+  public_configs = [ ":default_config" ]
+  public = [
+    "public/pw_hdlc_lite/encoder.h",
+    "public/pw_hdlc_lite/sys_io_stream.h",
+  ]
+  sources = [
+    "encoder.cc",
+    "pw_hdlc_lite_private/protocol.h",
+  ]
+  public_deps = [
+    dir_pw_bytes,
+    dir_pw_status,
+    dir_pw_stream,
+    dir_pw_sys_io,
+  ]
+  deps = [ dir_pw_checksum ]
   friend = [ ":*" ]
 }
 
