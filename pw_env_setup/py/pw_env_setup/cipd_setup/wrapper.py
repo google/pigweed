@@ -28,6 +28,7 @@ import platform
 import ssl
 import subprocess
 import sys
+import base64
 
 try:
     import httplib
@@ -145,6 +146,29 @@ def expected_hash():
                                                    DIGESTS_FILE))
 
 
+def https_connect_with_proxy(target_url):
+    """Create HTTPSConnection with proxy support."""
+
+    proxy_env = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+    if proxy_env in (None, ''):
+        conn = httplib.HTTPSConnection(target_url)
+        return conn
+
+    url = urlparse.urlparse(proxy_env)
+    conn = httplib.HTTPSConnection(url.hostname, url.port)
+    headers = {}
+    if url.username and url.password:
+        auth = '%s:%s' % (url.username, url.password)
+        py_version = sys.version_info.major
+        if py_version >= 3:
+            headers['Proxy-Authorization'] = 'Basic ' + str(
+                base64.b64encode(auth.encode()).decode())
+        else:
+            headers['Proxy-Authorization'] = 'Basic ' + base64.b64encode(auth)
+    conn.set_tunnel(target_url, 443, headers)
+    return conn
+
+
 def client_bytes():
     """Pull down the CIPD client and return it as a bytes object.
 
@@ -157,7 +181,7 @@ def client_bytes():
         version = ins.read().strip()
 
     try:
-        conn = httplib.HTTPSConnection(CIPD_HOST)
+        conn = https_connect_with_proxy(CIPD_HOST)
     except AttributeError:
         print('=' * 70)
         print('''
@@ -212,7 +236,7 @@ brew uninstall python && brew install python
             location = res.getheader('location')
             url = urlparse.urlparse(location)
             if url.netloc != conn.host:
-                conn = httplib.HTTPSConnection(url.netloc)
+                conn = https_connect_with_proxy(url.netloc)
             path = '{}?{}'.format(url.path, url.query)
 
         # Some kind of error in this response.
