@@ -163,6 +163,18 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
 
   return desc;
 }
+
+bt::l2cap::AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
+  switch (in) {
+    case fidlbredr::A2dpDirectionPriority::SOURCE:
+      return bt::l2cap::AclPriority::kSource;
+    case fidlbredr::A2dpDirectionPriority::SINK:
+      return bt::l2cap::AclPriority::kSink;
+    default:
+      return bt::l2cap::AclPriority::kNormal;
+  }
+}
+
 }  // namespace
 
 ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
@@ -298,8 +310,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
       return;
     }
 
-    auto handle = chan->link_handle();
-    auto audio_direction_ext_client = self->BindAudioDirectionExtServer(handle);
+    auto audio_direction_ext_client = self->BindAudioDirectionExtServer(chan);
 
     auto fidl_chan = self->ChannelToFidl(std::move(chan));
     fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
@@ -341,7 +352,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Ch
   std::vector<fidlbredr::ProtocolDescriptor> list;
   list.emplace_back(std::move(*desc));
 
-  auto audio_direction_ext_client = BindAudioDirectionExtServer(handle);
+  auto audio_direction_ext_client = BindAudioDirectionExtServer(channel);
 
   auto fidl_chan = ChannelToFidl(std::move(channel));
   fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
@@ -424,39 +435,7 @@ void ProfileServer::OnServiceFound(
                                           std::move(fidl_attrs), []() {});
 }
 
-void ProfileServer::OnSetPriority(bt::hci::ConnectionHandle handle,
-                                  fidlbredr::A2dpDirectionPriority priority,
-                                  fidlbredr::AudioDirectionExt::SetPriorityCallback cb) {
-  auto packet = bt::hci::CommandPacket::New(bt::hci::kBcmSetAclPriority,
-                                            sizeof(bt::hci::BcmSetAclPriorityCommandParams));
-  auto params = packet->mutable_payload<bt::hci::BcmSetAclPriorityCommandParams>();
-  params->handle = htole16(handle);
-  params->priority = bt::hci::BcmAclPriority::kHigh;
-  params->direction = bt::hci::BcmAclPriorityDirection::kSink;
-  if (priority == fidlbredr::A2dpDirectionPriority::SOURCE) {
-    params->direction = bt::hci::BcmAclPriorityDirection::kSource;
-  } else if (priority == fidlbredr::A2dpDirectionPriority::NORMAL) {
-    params->priority = bt::hci::BcmAclPriority::kNormal;
-  }
-
-  // TODO(fxbug.dev/57163): Return error if there is a priority conflict or the controller does not
-  // support the ACL priority command.
-  adapter()->transport()->command_channel()->SendCommand(
-      std::move(packet),
-      [cb = std::move(cb), priority](auto id, const bt::hci::EventPacket& event) {
-        if (hci_is_error(event, WARN, "profile_server", "BCM acl priority failed")) {
-          cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
-          return;
-        }
-
-        bt_log(DEBUG, "profile_server", "BCM acl priority updated (priority: %#.8x)",
-               static_cast<uint32_t>(priority));
-        cb(fit::ok());
-      });
-}
-
-void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server,
-                                             bt::hci::ConnectionHandle handle, zx_status_t status) {
+void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {
   bt_log(TRACE, "profile_server", "audio direction ext server closed (reason: %s)",
          zx_status_get_string(status));
 
@@ -467,31 +446,19 @@ void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server,
     return;
   }
 
-  // Revert any change made to ACL priority by this extension.
-  // TODO(fxbug.dev/57163): Remove this hack and revert priority when a channel is closed and
-  // no other channel is using the current priority.
-  if (ext_server->priority() != fidlbredr::A2dpDirectionPriority::NORMAL) {
-    OnSetPriority(handle, fidlbredr::A2dpDirectionPriority::NORMAL, [](auto result) {});
-  }
-
   audio_direction_ext_servers_.erase(it);
 }
 
 fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDirectionExtServer(
-    bt::hci::ConnectionHandle handle) {
+    fbl::RefPtr<bt::l2cap::Channel> channel) {
   fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> client;
 
-  auto set_priority_cb = [this, handle](auto priority, auto cb) {
-    OnSetPriority(handle, priority, std::move(cb));
-  };
-
   auto audio_direction_ext_server =
-      std::make_unique<AudioDirectionExt>(client.NewRequest(), std::move(set_priority_cb));
+      std::make_unique<AudioDirectionExt>(client.NewRequest(), std::move(channel));
   AudioDirectionExt* server_ptr = audio_direction_ext_server.get();
 
-  audio_direction_ext_server->set_error_handler([this, handle, server_ptr](zx_status_t status) {
-    OnAudioDirectionExtError(server_ptr, handle, status);
-  });
+  audio_direction_ext_server->set_error_handler(
+      [this, server_ptr](zx_status_t status) { OnAudioDirectionExtError(server_ptr, status); });
 
   audio_direction_ext_servers_[server_ptr] = std::move(audio_direction_ext_server);
 
@@ -511,15 +478,19 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
 
 ProfileServer::AudioDirectionExt::AudioDirectionExt(
     fidl::InterfaceRequest<fidlbredr::AudioDirectionExt> request,
-    fit::function<void(fidlbredr::A2dpDirectionPriority, SetPriorityCallback)> cb)
-    : ServerBase(this, std::move(request)),
-      priority_(fidlbredr::A2dpDirectionPriority::NORMAL),
-      cb_(std::move(cb)) {}
+    fbl::RefPtr<bt::l2cap::Channel> channel)
+    : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
 
 void ProfileServer::AudioDirectionExt::SetPriority(
     fuchsia::bluetooth::bredr::A2dpDirectionPriority priority, SetPriorityCallback callback) {
-  priority_ = priority;
-  cb_(priority, std::move(callback));
+  channel_->RequestAclPriority(FidlToAclPriority(priority),
+                               [cb = std::move(callback)](auto result) {
+                                 if (result.is_ok()) {
+                                   cb(fit::ok());
+                                   return;
+                                 }
+                                 cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
+                               });
 }
 
 }  // namespace bthost

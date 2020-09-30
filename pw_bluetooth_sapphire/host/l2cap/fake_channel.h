@@ -63,6 +63,9 @@ class FakeChannel : public Channel {
   // Assigns a link security level.
   void set_security(const sm::SecurityProperties& sec_props) { security_ = sec_props; }
 
+  // RequestAclPriority always fails if true.
+  void set_acl_priority_fails(bool fail) { acl_priority_fails_ = fail; }
+
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
   bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) override;
@@ -71,7 +74,7 @@ class FakeChannel : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
-  void RequestAclPriority(AclPriority priority, fit::callback<void(fit::result<>)>) override {}
+  void RequestAclPriority(AclPriority priority, fit::callback<void(fit::result<>)> cb) override;
 
  private:
   hci::ConnectionHandle handle_;
@@ -91,6 +94,8 @@ class FakeChannel : public Channel {
 
   bool activate_fails_;
   bool link_error_;
+
+  bool acl_priority_fails_;
 
   // The pending SDUs on this channel. Received PDUs are buffered if |rx_cb_| is
   // currently not set.

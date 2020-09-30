@@ -21,6 +21,7 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandl
       send_dispatcher_(nullptr),
       activate_fails_(false),
       link_error_(false),
+      acl_priority_fails_(false),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(handle_);
 }
@@ -122,6 +123,15 @@ void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   async::PostTask(security_dispatcher_,
                   [cb = std::move(result_cb), f = security_cb_.share(), handle = handle_,
                    level]() mutable { f(handle, level, std::move(cb)); });
+}
+
+void FakeChannel::RequestAclPriority(AclPriority priority, fit::callback<void(fit::result<>)> cb) {
+  if (acl_priority_fails_) {
+    cb(fit::error());
+    return;
+  }
+  requested_acl_priority_ = priority;
+  cb(fit::ok());
 }
 
 }  // namespace testing

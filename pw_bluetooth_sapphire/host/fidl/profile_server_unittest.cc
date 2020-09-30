@@ -500,6 +500,9 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
                                             bt::l2cap::ChannelParameters());
 
+  fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
+  data_domain()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
+
   // Expect a non-empty channel result.
   std::optional<fidlbredr::Channel> channel;
   auto chan_cb = [&channel](auto result) {
@@ -516,21 +519,13 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   // Initiates pairing
   client()->Connect(peer_id, std::move(conn_params), std::move(chan_cb));
   RunLoopUntilIdle();
+  ASSERT_TRUE(fake_channel);
   ASSERT_TRUE(channel.has_value());
   ASSERT_TRUE(channel->has_ext_direction());
   auto client = channel->mutable_ext_direction()->Bind();
 
-  std::optional<bt::hci::BcmSetAclPriorityCommandParams> sent_params;
-  test_device()->set_vendor_command_callback(
-      [&sent_params, kExpectSuccess](const bt::PacketView<bt::hci::CommandHeader>& command) {
-        auto opcode = letoh16(command.header().opcode);
-        EXPECT_EQ(opcode, bt::hci::kBcmSetAclPriority);
-        sent_params = command.payload<bt::hci::BcmSetAclPriorityCommandParams>();
-        return kExpectSuccess ? bt::hci::StatusCode::kSuccess
-                              : bt::hci::StatusCode::kUnspecifiedError;
-      });
-
   size_t priority_cb_count = 0;
+  fake_channel->set_acl_priority_fails(!kExpectSuccess);
   client->SetPriority(kPriority, [&](auto result) {
     EXPECT_EQ(result.is_response(), kExpectSuccess);
     priority_cb_count++;
@@ -538,30 +533,22 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(priority_cb_count, 1u);
-  ASSERT_TRUE(sent_params.has_value());
-  EXPECT_EQ(letoh16(sent_params->handle), connection()->link().handle());
-  if (kPriority == fidlbredr::A2dpDirectionPriority::SOURCE) {
-    EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSource);
-  } else {
-    EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSink);
-  }
-  if (kPriority == fidlbredr::A2dpDirectionPriority::NORMAL) {
-    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kNormal);
-  } else {
-    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kHigh);
-  }
-  priority_cb_count = 0;
-  sent_params = std::nullopt;
-
-  // Dropping client should send priority command to revert priority back to normal if it was
-  // changed.
   client = nullptr;
   RunLoopUntilIdle();
-  EXPECT_EQ(priority_cb_count, 0u);
-  if (kPriority == fidlbredr::A2dpDirectionPriority::NORMAL) {
-    EXPECT_FALSE(sent_params.has_value());
+
+  if (kExpectSuccess) {
+    switch (kPriority) {
+      case fidlbredr::A2dpDirectionPriority::SOURCE:
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSource);
+        break;
+      case fidlbredr::A2dpDirectionPriority::SINK:
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSink);
+        break;
+      default:
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kNormal);
+    }
   } else {
-    EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kNormal);
+    EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kNormal);
   }
 }
 
@@ -581,6 +568,9 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+
+  fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
+  data_domain()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
   using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
@@ -605,15 +595,6 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
   ASSERT_TRUE(channel.has_value());
   auto client = channel->mutable_ext_direction()->Bind();
 
-  std::optional<bt::hci::BcmSetAclPriorityCommandParams> sent_params;
-  test_device()->set_vendor_command_callback(
-      [&sent_params](const bt::PacketView<bt::hci::CommandHeader>& command) {
-        auto opcode = letoh16(command.header().opcode);
-        EXPECT_EQ(opcode, bt::hci::kBcmSetAclPriority);
-        sent_params = command.payload<bt::hci::BcmSetAclPriorityCommandParams>();
-        return bt::hci::StatusCode::kSuccess;
-      });
-
   size_t priority_cb_count = 0;
   client->SetPriority(fidlbredr::A2dpDirectionPriority::SINK, [&](auto result) {
     EXPECT_TRUE(result.is_response());
@@ -622,13 +603,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(priority_cb_count, 1u);
-  ASSERT_TRUE(sent_params.has_value());
-  EXPECT_EQ(letoh16(sent_params->handle), connection()->link().handle());
-  EXPECT_EQ(sent_params->direction, bt::hci::BcmAclPriorityDirection::kSink);
-  EXPECT_EQ(sent_params->priority, bt::hci::BcmAclPriority::kHigh);
-
-  test_device()->set_vendor_command_callback(nullptr);
-  client = nullptr;
+  ASSERT_TRUE(fake_channel);
+  EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSink);
 }
 
 // Verifies that a socket channel relay is correctly set up such that bytes written to the socket

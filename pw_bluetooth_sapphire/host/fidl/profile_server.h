@@ -56,19 +56,13 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   void OnServiceFound(uint64_t search_id, bt::PeerId peer_id,
                       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
 
-  // Callback for a channel priority request.
-  void OnSetPriority(bt::hci::ConnectionHandle handle,
-                     fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
-                     fuchsia::bluetooth::bredr::AudioDirectionExt::SetPriorityCallback cb);
-
   // Callback when clients close their audio direction extension.
-  void OnAudioDirectionExtError(AudioDirectionExt* ext_server, bt::hci::ConnectionHandle handle,
-                                zx_status_t status);
+  void OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status);
 
-  // Create an AudioDirectionExt server for the given connection |handle| and set up callbacks.
+  // Create an AudioDirectionExt server for the given channel and set up callbacks.
   // Returns the client end of the channel.
   fidl::InterfaceHandle<fuchsia::bluetooth::bredr::AudioDirectionExt> BindAudioDirectionExtServer(
-      bt::hci::ConnectionHandle handle);
+      fbl::RefPtr<bt::l2cap::Channel> channel);
 
   // Create a FIDL Channel from an l2cap::Channel. A socket channel relay is created from |channel|
   // and returned in the FIDL Channel.
@@ -107,19 +101,15 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   class AudioDirectionExt : public ServerBase<fuchsia::bluetooth::bredr::AudioDirectionExt> {
    public:
     // Calls to SetPriority() are forwarded to |priority_cb|.
-    AudioDirectionExt(
-        fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioDirectionExt> request,
-        fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)>
-            priority_cb);
+    AudioDirectionExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioDirectionExt> request,
+                      fbl::RefPtr<bt::l2cap::Channel> channel);
 
     // fuchsia::bluetooth::bredr::AudioDirectionExt overrides:
     void SetPriority(fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
                      SetPriorityCallback callback) override;
 
-    fuchsia::bluetooth::bredr::A2dpDirectionPriority priority() const { return priority_; }
-
    private:
-    fuchsia::bluetooth::bredr::A2dpDirectionPriority priority_;
+    fbl::RefPtr<bt::l2cap::Channel> channel_;
     fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)> cb_;
   };
   std::unordered_map<AudioDirectionExt*, std::unique_ptr<AudioDirectionExt>>
