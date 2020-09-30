@@ -79,7 +79,6 @@ TEST(Status, EqualCodes) {
   static_assert(PW_STATUS_NOT_FOUND == Status::NotFound());
   static_assert(PW_STATUS_ALREADY_EXISTS == Status::AlreadyExists());
   static_assert(PW_STATUS_PERMISSION_DENIED == Status::PermissionDenied());
-  static_assert(PW_STATUS_UNAUTHENTICATED == Status::Unauthenticated());
   static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::ResourceExhausted());
   static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FailedPrecondition());
   static_assert(PW_STATUS_ABORTED == Status::Aborted());
@@ -88,6 +87,7 @@ TEST(Status, EqualCodes) {
   static_assert(PW_STATUS_INTERNAL == Status::Internal());
   static_assert(PW_STATUS_UNAVAILABLE == Status::Unavailable());
   static_assert(PW_STATUS_DATA_LOSS == Status::DataLoss());
+  static_assert(PW_STATUS_UNAUTHENTICATED == Status::Unauthenticated());
 }
 
 TEST(Status, Strings) {
@@ -100,7 +100,6 @@ TEST(Status, Strings) {
   EXPECT_STREQ("NOT_FOUND", Status::NotFound().str());
   EXPECT_STREQ("ALREADY_EXISTS", Status::AlreadyExists().str());
   EXPECT_STREQ("PERMISSION_DENIED", Status::PermissionDenied().str());
-  EXPECT_STREQ("UNAUTHENTICATED", Status::Unauthenticated().str());
   EXPECT_STREQ("RESOURCE_EXHAUSTED", Status::ResourceExhausted().str());
   EXPECT_STREQ("FAILED_PRECONDITION", Status::FailedPrecondition().str());
   EXPECT_STREQ("ABORTED", Status::Aborted().str());
@@ -109,6 +108,7 @@ TEST(Status, Strings) {
   EXPECT_STREQ("INTERNAL", Status::Internal().str());
   EXPECT_STREQ("UNAVAILABLE", Status::Unavailable().str());
   EXPECT_STREQ("DATA_LOSS", Status::DataLoss().str());
+  EXPECT_STREQ("UNAUTHENTICATED", Status::Unauthenticated().str());
 }
 
 TEST(Status, UnknownString) {
@@ -125,7 +125,6 @@ TEST(Status, DeprecatedAliases) {
   static_assert(PW_STATUS_NOT_FOUND == Status::NOT_FOUND);
   static_assert(PW_STATUS_ALREADY_EXISTS == Status::ALREADY_EXISTS);
   static_assert(PW_STATUS_PERMISSION_DENIED == Status::PERMISSION_DENIED);
-  static_assert(PW_STATUS_UNAUTHENTICATED == Status::UNAUTHENTICATED);
   static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::RESOURCE_EXHAUSTED);
   static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FAILED_PRECONDITION);
   static_assert(PW_STATUS_ABORTED == Status::ABORTED);
@@ -134,6 +133,7 @@ TEST(Status, DeprecatedAliases) {
   static_assert(PW_STATUS_INTERNAL == Status::INTERNAL);
   static_assert(PW_STATUS_UNAVAILABLE == Status::UNAVAILABLE);
   static_assert(PW_STATUS_DATA_LOSS == Status::DATA_LOSS);
+  static_assert(PW_STATUS_UNAUTHENTICATED == Status::UNAUTHENTICATED);
 }
 
 // Functions for executing the C pw_Status tests.

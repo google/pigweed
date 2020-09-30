@@ -19,7 +19,6 @@
     return #value
 
 extern "C" const char* pw_StatusString(pw_Status status) {
-  // Status codes are ordered by assigned number (UNAUTHENTICATED is last).
   switch (status) {
     PW_CASE_RETURN_ENUM_STRING(OK);
     PW_CASE_RETURN_ENUM_STRING(CANCELLED);
