@@ -103,7 +103,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self,
         patterns: Sequence[str] = (),
         ignore_patterns: Sequence[str] = (),
-        case_sensitive: bool = False,
         build_commands: Sequence[BuildCommand] = (),
         ignore_dirs=Optional[List[str]],
         charset: WatchCharset = _ASCII_CHARSET,
@@ -112,12 +111,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
-        self.case_sensitive = case_sensitive
         self.build_commands = build_commands
         self.ignore_dirs = ignore_dirs or []
         self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
-        self.cooldown_finish_time = None
         self.charset: WatchCharset = charset
+
+        self._current_build: Optional[subprocess.Popen] = None
 
         self.debouncer = Debouncer(self)
 
@@ -216,18 +215,22 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.builds_succeeded = []
         num_builds = len(self.build_commands)
         _LOG.info('Starting build with %d directories', num_builds)
+
+        env = os.environ.copy()
+        # Force colors in Pigweed subcommands run through the watcher.
+        env['PW_USE_COLOR'] = '1'
+
         for i, cmd in enumerate(self.build_commands, 1):
             _LOG.info('[%d/%d] Starting build: %s', i, num_builds, cmd)
 
             # Run the build. Put a blank before/after for visual separation.
             print()
-            env = os.environ.copy()
-            # Force colors in Pigweed subcommands run through the watcher.
-            env['PW_USE_COLOR'] = '1'
-            result = subprocess.run(['ninja', '-C', *cmd.args()], env=env)
+            self._current_build = subprocess.Popen(
+                ['ninja', '-C', *cmd.args()], env=env)
+            returncode = self._current_build.wait()
             print()
 
-            build_ok = (result.returncode == 0)
+            build_ok = (returncode == 0)
             if build_ok:
                 level = logging.INFO
                 tag = '(OK)'
@@ -240,10 +243,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
     # Implementation of DebouncedFunction.cancel()
     def cancel(self):
-        # TODO: Finish implementing this by supporting cancelling the currently
-        # running build. This will require some subprocess shenanigans and
-        # so will leave this for later.
-        return False
+        self._current_build.terminate()
+        return True
 
     # Implementation of DebouncedFunction.run()
     def on_complete(self, cancelled=False):

@@ -24,17 +24,17 @@ _LOG = logging.getLogger(__name__)
 class DebouncedFunction(ABC):
     """Function to be run by Debouncer"""
     @abstractmethod
-    def run(self):
+    def run(self) -> None:
         """Run the function"""
 
     @abstractmethod
-    def cancel(self):
+    def cancel(self) -> bool:
         """Cancel an in-progress run of the function.
         Must be called from different thread than run().
         Returns true if run was successfully cancelled, false otherwise"""
 
     @abstractmethod
-    def on_complete(self, cancelled=False):
+    def on_complete(self, cancelled: bool = False) -> bool:
         """Called after run() finishes. If true, cancelled indicates
         cancel() was invoked during the last run()"""
 
