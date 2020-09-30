@@ -45,6 +45,16 @@ _REMAP = {
     'DATA_LOSS': 'DataLoss',
 }
 
+_CODES = '|'.join(_REMAP.keys())
+_FUNCTIONS = '|'.join(_REMAP.values())
+
+_STATUS_WITH_SIZE_CTOR = re.compile(
+    fr'\bStatusWithSize\(Status::({_CODES}),\s*')
+_STATUS = re.compile(fr'\b(Status|StatusWithSize)::({_CODES})(?!")\b')
+_STATUS_EQUALITY = re.compile(
+    fr'Status::(?P<l_func>{_FUNCTIONS})\(\)\s+==\s+(?P<value>[a-zA-Z0-9_.()]+)|'
+    fr'\s+==\s+Status::(?P<r_func>{_FUNCTIONS})\(\)')
+
 
 def _remap_status_with_size(match) -> str:
     return f'StatusWithSize::{_REMAP[match.group(1)]}('
@@ -54,11 +64,10 @@ def _remap_codes(match) -> str:
     return f'{match.group(1)}::{_REMAP[match.group(2)]}()'
 
 
-_CODES = '|'.join(_REMAP.keys())
-
-_STATUS_WITH_SIZE_CTOR = re.compile(
-    fr'\bStatusWithSize\(Status::({_CODES}),\s*')
-_STATUS = re.compile(fr'\b(Status|StatusWithSize)::({_CODES})(?!")\b')
+def _remap_equality(match) -> str:
+    l_func, status, r_func = match.groups('')
+    func = l_func or r_func
+    return f'{status}.ok()' if func == 'Ok' else f'{status}.Is{func}()'
 
 
 def _parse_args():
@@ -91,6 +100,8 @@ def update_status(paths: Iterable[Path]) -> None:
 
             # Replace Status and StatusAWithSize
             text = _STATUS.sub(_remap_codes, text)
+
+            text = _STATUS_EQUALITY.sub(_remap_equality, text)
 
             if orig != text:
                 updated += 1

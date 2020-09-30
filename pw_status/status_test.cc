@@ -90,6 +90,44 @@ TEST(Status, EqualCodes) {
   static_assert(PW_STATUS_UNAUTHENTICATED == Status::Unauthenticated());
 }
 
+TEST(Status, IsError) {
+  static_assert(Status::Cancelled().IsCancelled());
+  static_assert(Status::Unknown().IsUnknown());
+  static_assert(Status::InvalidArgument().IsInvalidArgument());
+  static_assert(Status::DeadlineExceeded().IsDeadlineExceeded());
+  static_assert(Status::NotFound().IsNotFound());
+  static_assert(Status::AlreadyExists().IsAlreadyExists());
+  static_assert(Status::PermissionDenied().IsPermissionDenied());
+  static_assert(Status::ResourceExhausted().IsResourceExhausted());
+  static_assert(Status::FailedPrecondition().IsFailedPrecondition());
+  static_assert(Status::Aborted().IsAborted());
+  static_assert(Status::OutOfRange().IsOutOfRange());
+  static_assert(Status::Unimplemented().IsUnimplemented());
+  static_assert(Status::Internal().IsInternal());
+  static_assert(Status::Unavailable().IsUnavailable());
+  static_assert(Status::DataLoss().IsDataLoss());
+  static_assert(Status::Unauthenticated().IsUnauthenticated());
+}
+
+TEST(Status, IsNotError) {
+  static_assert(!Status::Ok().IsCancelled());
+  static_assert(!Status::Ok().IsUnknown());
+  static_assert(!Status::Ok().IsInvalidArgument());
+  static_assert(!Status::Ok().IsDeadlineExceeded());
+  static_assert(!Status::Ok().IsNotFound());
+  static_assert(!Status::Ok().IsAlreadyExists());
+  static_assert(!Status::Ok().IsPermissionDenied());
+  static_assert(!Status::Ok().IsUnauthenticated());
+  static_assert(!Status::Ok().IsResourceExhausted());
+  static_assert(!Status::Ok().IsFailedPrecondition());
+  static_assert(!Status::Ok().IsAborted());
+  static_assert(!Status::Ok().IsOutOfRange());
+  static_assert(!Status::Ok().IsUnimplemented());
+  static_assert(!Status::Ok().IsInternal());
+  static_assert(!Status::Ok().IsUnavailable());
+  static_assert(!Status::Ok().IsDataLoss());
+}
+
 TEST(Status, Strings) {
   EXPECT_STREQ("OK", Status().str());
   EXPECT_STREQ("OK", Status::Ok().str());

@@ -110,7 +110,7 @@ TEST(StatusWithSize, Constexpr) {
   static_assert(1234u == result.size());
 }
 
-TEST(Status, Functions_Status) {
+TEST(StatusWithSize, Functions_Status) {
   // clang-format off
   static_assert(StatusWithSize::Ok(0).status() == Status::Ok());
   static_assert(StatusWithSize::Cancelled().status() == Status::Cancelled());
@@ -150,7 +150,7 @@ TEST(Status, Functions_Status) {
   // clang-format on
 }
 
-TEST(Status, Functions_DefaultSize) {
+TEST(StatusWithSize, Functions_DefaultSize) {
   static_assert(StatusWithSize::Cancelled().size() == 0u);
   static_assert(StatusWithSize::Unknown().size() == 0u);
   static_assert(StatusWithSize::InvalidArgument().size() == 0u);
@@ -169,7 +169,7 @@ TEST(Status, Functions_DefaultSize) {
   static_assert(StatusWithSize::DataLoss().size() == 0u);
 }
 
-TEST(Status, Functions_SpecifiedSize) {
+TEST(StatusWithSize, Functions_SpecifiedSize) {
   static_assert(StatusWithSize::Ok(123).size() == 123u);
   static_assert(StatusWithSize::Cancelled(123).size() == 123u);
   static_assert(StatusWithSize::Unknown(123).size() == 123u);
@@ -189,5 +189,42 @@ TEST(Status, Functions_SpecifiedSize) {
   static_assert(StatusWithSize::DataLoss(123).size() == 123u);
 }
 
+TEST(StatusWithSize, IsError) {
+  static_assert(StatusWithSize::Cancelled().IsCancelled());
+  static_assert(StatusWithSize::Unknown().IsUnknown());
+  static_assert(StatusWithSize::InvalidArgument().IsInvalidArgument());
+  static_assert(StatusWithSize::DeadlineExceeded().IsDeadlineExceeded());
+  static_assert(StatusWithSize::NotFound().IsNotFound());
+  static_assert(StatusWithSize::AlreadyExists().IsAlreadyExists());
+  static_assert(StatusWithSize::PermissionDenied().IsPermissionDenied());
+  static_assert(StatusWithSize::ResourceExhausted().IsResourceExhausted());
+  static_assert(StatusWithSize::FailedPrecondition().IsFailedPrecondition());
+  static_assert(StatusWithSize::Aborted().IsAborted());
+  static_assert(StatusWithSize::OutOfRange().IsOutOfRange());
+  static_assert(StatusWithSize::Unimplemented().IsUnimplemented());
+  static_assert(StatusWithSize::Internal().IsInternal());
+  static_assert(StatusWithSize::Unavailable().IsUnavailable());
+  static_assert(StatusWithSize::DataLoss().IsDataLoss());
+  static_assert(StatusWithSize::Unauthenticated().IsUnauthenticated());
+}
+
+TEST(StatusWithSize, IsNotError) {
+  static_assert(!StatusWithSize::Ok(0).IsCancelled());
+  static_assert(!StatusWithSize::Ok(0).IsUnknown());
+  static_assert(!StatusWithSize::Ok(0).IsInvalidArgument());
+  static_assert(!StatusWithSize::Ok(0).IsDeadlineExceeded());
+  static_assert(!StatusWithSize::Ok(0).IsNotFound());
+  static_assert(!StatusWithSize::Ok(0).IsAlreadyExists());
+  static_assert(!StatusWithSize::Ok(0).IsPermissionDenied());
+  static_assert(!StatusWithSize::Ok(0).IsUnauthenticated());
+  static_assert(!StatusWithSize::Ok(0).IsResourceExhausted());
+  static_assert(!StatusWithSize::Ok(0).IsFailedPrecondition());
+  static_assert(!StatusWithSize::Ok(0).IsAborted());
+  static_assert(!StatusWithSize::Ok(0).IsOutOfRange());
+  static_assert(!StatusWithSize::Ok(0).IsUnimplemented());
+  static_assert(!StatusWithSize::Ok(0).IsInternal());
+  static_assert(!StatusWithSize::Ok(0).IsUnavailable());
+  static_assert(!StatusWithSize::Ok(0).IsDataLoss());
+}
 }  // namespace
 }  // namespace pw

@@ -184,6 +184,56 @@ class StatusWithSize {
     return static_cast<Status::Code>((size_ & kStatusMask) >> kStatusShift);
   }
 
+  // Functions for checking which status the StatusWithSize contains.
+  [[nodiscard]] constexpr bool IsCancelled() const {
+    return status().IsCancelled();
+  }
+  [[nodiscard]] constexpr bool IsUnknown() const {
+    return status().IsUnknown();
+  }
+  [[nodiscard]] constexpr bool IsInvalidArgument() const {
+    return status().IsInvalidArgument();
+  }
+  [[nodiscard]] constexpr bool IsDeadlineExceeded() const {
+    return status().IsDeadlineExceeded();
+  }
+  [[nodiscard]] constexpr bool IsNotFound() const {
+    return status().IsNotFound();
+  }
+  [[nodiscard]] constexpr bool IsAlreadyExists() const {
+    return status().IsAlreadyExists();
+  }
+  [[nodiscard]] constexpr bool IsPermissionDenied() const {
+    return status().IsPermissionDenied();
+  }
+  [[nodiscard]] constexpr bool IsResourceExhausted() const {
+    return status().IsResourceExhausted();
+  }
+  [[nodiscard]] constexpr bool IsFailedPrecondition() const {
+    return status().IsFailedPrecondition();
+  }
+  [[nodiscard]] constexpr bool IsAborted() const {
+    return status().IsAborted();
+  }
+  [[nodiscard]] constexpr bool IsOutOfRange() const {
+    return status().IsOutOfRange();
+  }
+  [[nodiscard]] constexpr bool IsUnimplemented() const {
+    return status().IsUnimplemented();
+  }
+  [[nodiscard]] constexpr bool IsInternal() const {
+    return status().IsInternal();
+  }
+  [[nodiscard]] constexpr bool IsUnavailable() const {
+    return status().IsUnavailable();
+  }
+  [[nodiscard]] constexpr bool IsDataLoss() const {
+    return status().IsDataLoss();
+  }
+  [[nodiscard]] constexpr bool IsUnauthenticated() const {
+    return status().IsUnauthenticated();
+  }
+
  private:
   size_t size_;
 };

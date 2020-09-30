@@ -313,6 +313,56 @@ class Status {
   // True if the status is Status::Ok().
   [[nodiscard]] constexpr bool ok() const { return code_ == PW_STATUS_OK; }
 
+  // Functions for checking which status this is.
+  [[nodiscard]] constexpr bool IsCancelled() const {
+    return code_ == PW_STATUS_CANCELLED;
+  }
+  [[nodiscard]] constexpr bool IsUnknown() const {
+    return code_ == PW_STATUS_UNKNOWN;
+  }
+  [[nodiscard]] constexpr bool IsInvalidArgument() const {
+    return code_ == PW_STATUS_INVALID_ARGUMENT;
+  }
+  [[nodiscard]] constexpr bool IsDeadlineExceeded() const {
+    return code_ == PW_STATUS_DEADLINE_EXCEEDED;
+  }
+  [[nodiscard]] constexpr bool IsNotFound() const {
+    return code_ == PW_STATUS_NOT_FOUND;
+  }
+  [[nodiscard]] constexpr bool IsAlreadyExists() const {
+    return code_ == PW_STATUS_ALREADY_EXISTS;
+  }
+  [[nodiscard]] constexpr bool IsPermissionDenied() const {
+    return code_ == PW_STATUS_PERMISSION_DENIED;
+  }
+  [[nodiscard]] constexpr bool IsResourceExhausted() const {
+    return code_ == PW_STATUS_RESOURCE_EXHAUSTED;
+  }
+  [[nodiscard]] constexpr bool IsFailedPrecondition() const {
+    return code_ == PW_STATUS_FAILED_PRECONDITION;
+  }
+  [[nodiscard]] constexpr bool IsAborted() const {
+    return code_ == PW_STATUS_ABORTED;
+  }
+  [[nodiscard]] constexpr bool IsOutOfRange() const {
+    return code_ == PW_STATUS_OUT_OF_RANGE;
+  }
+  [[nodiscard]] constexpr bool IsUnimplemented() const {
+    return code_ == PW_STATUS_UNIMPLEMENTED;
+  }
+  [[nodiscard]] constexpr bool IsInternal() const {
+    return code_ == PW_STATUS_INTERNAL;
+  }
+  [[nodiscard]] constexpr bool IsUnavailable() const {
+    return code_ == PW_STATUS_UNAVAILABLE;
+  }
+  [[nodiscard]] constexpr bool IsDataLoss() const {
+    return code_ == PW_STATUS_DATA_LOSS;
+  }
+  [[nodiscard]] constexpr bool IsUnauthenticated() const {
+    return code_ == PW_STATUS_UNAUTHENTICATED;
+  }
+
   // Returns a null-terminated string representation of the Status.
   [[nodiscard]] const char* str() const { return pw_StatusString(code_); }
 
