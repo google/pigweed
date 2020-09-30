@@ -15,8 +15,8 @@
 
 import enum
 import logging
-import zlib
 from typing import Iterator, NamedTuple, Optional, Tuple
+import zlib
 
 from pw_hdlc_lite import protocol
 

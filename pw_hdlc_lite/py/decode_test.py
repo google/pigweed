@@ -21,7 +21,7 @@ from typing import Optional, TextIO, Tuple
 import unittest
 import sys
 
-from pw_hdlc_lite.decoder import Frame, FrameDecoder, FrameStatus, NO_ADDRESS
+from pw_hdlc_lite.decode import Frame, FrameDecoder, FrameStatus, NO_ADDRESS
 from pw_hdlc_lite.protocol import frame_check_sequence as fcs
 
 

@@ -12,11 +12,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Tests the hdlc_lite encoder"""
+"""Tests encoding HDLC frames."""
 
 import unittest
 
-from pw_hdlc_lite.encoder import encode_information_frame
+from pw_hdlc_lite import encode
 from pw_hdlc_lite import protocol
 from pw_hdlc_lite.protocol import frame_check_sequence as _fcs
 
@@ -30,25 +30,25 @@ def _with_fcs(data: bytes) -> bytes:
 class TestEncodeInformationFrame(unittest.TestCase):
     """Tests Encoding bytes with different arguments using a custom serial."""
     def test_empty(self):
-        self.assertEqual(encode_information_frame(0, b''),
+        self.assertEqual(encode.information_frame(0, b''),
                          FLAG + _with_fcs(b'\0\0') + FLAG)
-        self.assertEqual(encode_information_frame(0x1a, b''),
+        self.assertEqual(encode.information_frame(0x1a, b''),
                          FLAG + _with_fcs(b'\x1a\0') + FLAG)
 
     def test_1byte(self):
-        self.assertEqual(encode_information_frame(0, b'A'),
+        self.assertEqual(encode.information_frame(0, b'A'),
                          FLAG + _with_fcs(b'\0\0A') + FLAG)
 
     def test_multibyte(self):
-        self.assertEqual(encode_information_frame(0, b'123456789'),
+        self.assertEqual(encode.information_frame(0, b'123456789'),
                          FLAG + _with_fcs(b'\x00\x00123456789') + FLAG)
 
     def test_escape(self):
         self.assertEqual(
-            encode_information_frame(0x7e, b'\x7d'),
+            encode.information_frame(0x7e, b'\x7d'),
             FLAG + b'\x7d\x5e\x00\x7d\x5d' + _fcs(b'\x7e\x00\x7d') + FLAG)
         self.assertEqual(
-            encode_information_frame(0x7d, b'A\x7e\x7dBC'),
+            encode.information_frame(0x7d, b'A\x7e\x7dBC'),
             FLAG + b'\x7d\x5d\x00A\x7d\x5e\x7d\x5dBC' +
             _fcs(b'\x7d\x00A\x7e\x7dBC') + FLAG)
 

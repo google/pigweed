@@ -102,7 +102,7 @@ pw_test("encoder_test") {
 
 action("generate_decoder_test") {
   outputs = [ "$target_gen_dir/generated_decoder_test.cc" ]
-  script = "py/decoder_test.py"
+  script = "py/decode_test.py"
   args = [ "--generate-cc-decode-test" ] + rebase_path(outputs)
 }
 

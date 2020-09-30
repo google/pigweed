@@ -22,8 +22,8 @@ import time
 from types import ModuleType
 from typing import Any, BinaryIO, Callable, Iterable, List, NoReturn, Union
 
-from pw_hdlc_lite.decoder import FrameDecoder
-from pw_hdlc_lite.encoder import encode_information_frame
+from pw_hdlc_lite.decode import FrameDecoder
+from pw_hdlc_lite import encode
 import pw_rpc
 from pw_rpc import callback_client
 from pw_protobuf_compiler import python_protos
@@ -47,9 +47,9 @@ def channel_output(writer: Callable[[bytes], Any],
                 time.sleep(delay_s)
                 writer(bytes([byte]))
 
-        return lambda data: slow_write(encode_information_frame(address, data))
+        return lambda data: slow_write(encode.information_frame(address, data))
 
-    return lambda data: writer(encode_information_frame(address, data))
+    return lambda data: writer(encode.information_frame(address, data))
 
 
 def read_and_process_data(rpc_client: pw_rpc.Client,

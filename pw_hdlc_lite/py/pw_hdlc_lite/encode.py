@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Encoder functions for encoding bytes using HDLC-Lite protocol"""
+"""The encode module supports encoding HDLC frames."""
 
 from pw_hdlc_lite import protocol
 
@@ -20,8 +20,8 @@ _FLAG_BYTE = bytes([protocol.FLAG])
 _CONTROL = 0  # Currently, hard-coded to 0; no sequence numbers are used
 
 
-def encode_information_frame(address: int, data: bytes) -> bytes:
-    """Encodes an HDLC I-frame."""
+def information_frame(address: int, data: bytes) -> bytes:
+    """Encodes an HDLC I-frame with a CRC-32 frame check sequence."""
     frame = bytearray([address, _CONTROL]) + data
     frame += protocol.frame_check_sequence(frame)
     frame = frame.replace(_ESCAPE_BYTE, b'\x7d\x5d')
