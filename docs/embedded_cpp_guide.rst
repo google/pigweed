@@ -1,8 +1,4 @@
-.. _chapter-embedded-cpp:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _docs-embedded-cpp:
 
 ==================
 Embedded C++ Guide

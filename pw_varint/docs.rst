@@ -1,6 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_varint:
 
 ---------
 pw_varint

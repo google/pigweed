@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-bloat:
+.. _module-pw_bloat:
 
 --------
 pw_bloat

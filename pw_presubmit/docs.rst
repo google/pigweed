@@ -1,8 +1,4 @@
-.. _chapter-pw-presubmit:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_presubmit:
 
 ============
 pw_presubmit
@@ -53,7 +49,7 @@ requires some customization. Projects must define their own presubmit check
 Python script that uses the ``pw_presubmit`` package.
 
 A project's presubmit script can be registered as a
-:ref:`pw_cli <chapter-pw-cli>` plugin, so that it can be run as ``pw
+:ref:`pw_cli <module-pw_cli>` plugin, so that it can be run as ``pw
 presubmit``.
 
 Setting up the command-line interface

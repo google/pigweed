@@ -1,8 +1,4 @@
-.. _chapter-pw-log-basic:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_log_basic:
 
 ------------
 pw_log_basic

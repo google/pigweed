@@ -1,5 +1,4 @@
-.. _chapter-build-system:
-
+.. _docs-build-system:
 
 ============
 Build system
@@ -52,14 +51,14 @@ include:
 * Image signing
 * Creating databases of symbols for debugging
 * Extracting string tokens into a database (for example, with
-  :ref:`chapter-pw-tokenizer`)
+  :ref:`module-pw_tokenizer`)
 
 These are run as steps during a build, facilitated by the build system.
 
 See also
 ^^^^^^^^
 
-* :ref:`pw-build-python-script`
+* :ref:`module-pw_build-python-script`
 
 Python packaging
 ----------------
@@ -80,7 +79,7 @@ up-to-date and allows space usage to be tracked over time.
 See also
 ^^^^^^^^
 
-* :ref:`chapter-pw-bloat`
+* :ref:`module-pw_bloat`
 
 Documentation
 -------------
@@ -92,7 +91,7 @@ size reports, to provide high quality, up-to-date references for developers.
 See also
 ^^^^^^^^
 
-* :ref:`chapter-pw-docgen`
+* :ref:`module-pw_docgen`
 
 Unit testing
 ------------
@@ -118,8 +117,8 @@ across physical devices as part of a build.
 See also
 ^^^^^^^^
 
-* :ref:`chapter-pw-unit-test`
-* :ref:`chapter-pw-target-runner`
+* :ref:`module-pw_unit_test`
+* :ref:`module-pw_target_runner`
 
 Bonus: pw watch
 ---------------
@@ -136,7 +135,7 @@ running in a terminal window.
 See also
 ^^^^^^^^
 
-* :ref:`chapter-pw-watch`
+* :ref:`module-pw_watch`
 
 Pigweed's build systems
 =======================
@@ -415,7 +414,7 @@ Pigweed targets
 To build for a specific hardware platform, builds define Pigweed targets. These
 are essentially GN toolchains which set special arguments telling Pigweed how to
 build. For information on Pigweed's target system, refer to
-:ref:`chapter-targets`.
+:ref:`docs-targets`.
 
 The dummy toolchain
 -------------------

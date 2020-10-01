@@ -1,6 +1,4 @@
-.. _chapter-pw-allocator:
-
-.. default-domain:: cpp
+.. _module-pw_allocator:
 
 ------------
 pw_allocator

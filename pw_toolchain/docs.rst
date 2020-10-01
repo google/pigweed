@@ -1,8 +1,4 @@
-.. _chapter-pw-toolchain:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_toolchain:
 
 ------------
 pw_toolchain

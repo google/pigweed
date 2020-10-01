@@ -1,8 +1,4 @@
-.. _chapter-pw-preprocessor:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_preprocessor:
 
 ---------------
 pw_preprocessor

@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-arduino-build:
+.. _module-pw_arduino_build:
 
 -----------------
 pw_arduino_build
@@ -12,7 +8,7 @@ The ``pw_arduino_build`` module contains both the `arduino_builder`_ command
 line utility and an `Arduino Main Wrapper`_.
 
 .. seealso::
-   See the :ref:`chapter-arduino` target documentation for a list of supported
+   See the :ref:`target-arduino` target documentation for a list of supported
    hardware.
 
 Arduino Main Wrapper
@@ -43,7 +39,7 @@ after that early init we run it within ``setup()``:
   void loop() {}
 
 .. note::
-   ``pw_arduino_Init()`` initializes the :ref:`chapter-pw-sys-io-arduino`
+   ``pw_arduino_Init()`` initializes the :ref:`module-pw_sys_io_arduino`
    module.
 
 .. warning::

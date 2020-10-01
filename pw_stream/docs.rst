@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-stream:
+.. _module-pw_stream:
 
 ---------
 pw_stream

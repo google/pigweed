@@ -1,8 +1,4 @@
-.. _chapter-pw-cli:
-
-.. default-domain:: python
-
-.. highlight:: sh
+.. _module-pw_cli:
 
 ------
 pw_cli

@@ -1,6 +1,4 @@
-.. _chapter-pw-malloc:
-
-.. default-domain:: cpp
+.. _module-pw_malloc:
 
 ---------
 pw_malloc

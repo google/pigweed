@@ -1,6 +1,4 @@
-.. _chapter-pw-malloc-freelist:
-
-.. default-domain:: cpp
+.. _module-pw_malloc_freelist:
 
 ------------------
 pw_malloc_freelist

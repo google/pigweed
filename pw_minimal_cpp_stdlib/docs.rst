@@ -1,6 +1,4 @@
-.. _chapter-pw-minimal-cpp-stdlib:
-
-.. default-domain:: cpp
+.. _module-pw_minimal_cpp_stdlib:
 
 ---------------------
 pw_minimal_cpp_stdlib

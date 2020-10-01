@@ -1,8 +1,4 @@
-.. _chapter-pw-sys-io-baremetal-stm32f429:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_sys_io_baremetal_stm32f429:
 
 -----------------------------
 pw_sys_io_baremetal_stm32f429

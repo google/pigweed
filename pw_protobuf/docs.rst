@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-protobuf:
+.. _module-pw_protobuf:
 
 -----------
 pw_protobuf
@@ -36,7 +32,7 @@ Usage
 ``pw_protobuf`` splits wire format encoding and decoding operations. Links to
 the design and APIs of each are listed in below.
 
-See also :ref:`chapter-pw-protobuf-compiler` for details on ``pw_protobuf``'s
+See also :ref:`module-pw_protobuf_compiler` for details on ``pw_protobuf``'s
 build system integration.
 
 **pw_protobuf functionality**

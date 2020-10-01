@@ -1,5 +1,3 @@
-.. _chapter-docker:
-
 ------
 docker
 ------

@@ -1,8 +1,4 @@
-.. _chapter-lm3s6965evb-qemu:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _target-lm3s6965evb-qemu:
 
 ----------------
 lm3s6965evb-qemu

@@ -1,8 +1,4 @@
-.. _chapter-test-server:
-
-.. default-domain:: go
-
-.. highlight:: go
+.. _module-pw_target_runner-go:
 
 --
 Go
@@ -21,7 +17,7 @@ Example program
 The code below implements a very basic test server with two test workers which
 print out the path of the tests they are scheduled to run.
 
-.. code::
+.. code-block:: go
 
   package main
 

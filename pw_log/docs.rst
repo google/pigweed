@@ -1,8 +1,4 @@
-.. _chapter-pw-log:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_log:
 
 ------
 pw_log
@@ -328,9 +324,9 @@ library for compatibility with non-embedded code. While it is effective for
 porting server code to microcontrollers quickly, we do not advise embedded
 projects use that approach unless absolutely necessary.
 
-- See also :ref:`chapter-pw-log-tokenized` for details on leveraging Pigweed's
+- See also :ref:`module-pw_log_tokenized` for details on leveraging Pigweed's
   tokenizer module for logging.
-- See also :ref:`chapter-pw-tokenizer` for details on Pigweed's tokenizer,
+- See also :ref:`module-pw_tokenizer` for details on Pigweed's tokenizer,
   which is useful for more than just logging.
 
 Why does the facade use header redirection instead of C functions?

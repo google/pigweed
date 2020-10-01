@@ -1,8 +1,4 @@
-.. _chapter-pw-trace:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_trace:
 
 ========
 pw_trace

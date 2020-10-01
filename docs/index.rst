@@ -1,5 +1,3 @@
-.. _chapter-home:
-
 .. highlight:: sh
 
 .. mdinclude:: README.md

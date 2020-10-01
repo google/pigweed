@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: cpp
-
-.. _chapter-pw-assert-basic:
+.. _module-pw_assert_basic:
 
 ===============
 pw_assert_basic

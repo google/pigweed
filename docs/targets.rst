@@ -1,4 +1,4 @@
-.. _chapter-targets:
+.. _docs-targets:
 
 =======
 Targets

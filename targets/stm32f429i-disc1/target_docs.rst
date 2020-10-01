@@ -1,8 +1,4 @@
-.. _chapter-stm32f429i-disc1:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _target-stm32f429i-disc1:
 
 ----------------
 stm32f429i-disc1

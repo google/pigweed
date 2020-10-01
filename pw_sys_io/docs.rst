@@ -1,8 +1,4 @@
-.. _chapter-pw-sys-io:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_sys_io:
 
 ---------
 pw_sys_io

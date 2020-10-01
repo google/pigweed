@@ -1,8 +1,4 @@
-.. _chapter-pw-polyfill:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_polyfill:
 
 ===========
 pw_polyfill

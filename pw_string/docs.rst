@@ -1,8 +1,4 @@
-.. _chapter-pw-string:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_string:
 
 ---------
 pw_string

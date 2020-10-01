@@ -1,8 +1,4 @@
-.. _chapter-pw-hex-dump:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_hex_dump:
 
 -----------
 pw_hex_dump

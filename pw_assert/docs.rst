@@ -1,8 +1,4 @@
-.. _chapter-pw-assert:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_assert:
 
 =========
 pw_assert
@@ -488,7 +484,7 @@ like sys_io and halt in a while loop waiting for a debugger. In other cases,
 the backend could store crash details like the current thread's stack to flash.
 
 This facade module (``pw_assert``) does not provide a backend. See
-:ref:`chapter-pw-assert-basic` for a basic implementation.
+:ref:`module-pw_assert_basic` for a basic implementation.
 
 .. attention::
 
@@ -549,7 +545,7 @@ and that header must define the following macros:
 
   .. tip::
 
-    See :ref:`chapter-pw-assert-basic` for one way to combine these arguments
+    See :ref:`module-pw_assert_basic` for one way to combine these arguments
     into a meaningful error message.
 
 Additionally, the backend must provide a link-time function for the light

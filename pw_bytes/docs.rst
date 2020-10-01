@@ -1,8 +1,4 @@
-.. _chapter-pw-bytes:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_bytes:
 
 ---------
 pw_bytes

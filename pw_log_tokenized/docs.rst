@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-log-tokenized:
+.. _module-pw_log_tokenized:
 
 ----------------
 pw_log_tokenized

@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-module-guide:
+.. _docs-module-structure:
 
 ----------------
 Module Structure
@@ -264,7 +260,7 @@ To create a new Pigweed module, follow the below steps.
 
     - Add in ``docs/BUILD.gn`` to ``pw_doc_gen("docs")``
 
-11. Run :ref:`chapter-module-module-check`
+11. Run :ref:`module-pw_module-module-check`
 
     - ``$ pw module-check {pw_module_dir}``
 

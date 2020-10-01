@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-rpc:
+.. _module-pw_rpc:
 
 ------
 pw_rpc
@@ -12,8 +8,9 @@ procedure calls (RPCs) on a device.
 
 .. admonition:: Try it out!
 
-  For a quick intro to ``pw_rpc``, see the :ref:`chapter-pw-hdlc-rpc-example` in
-  the :ref:`chapter-pw-hdlc-lite` module.
+  For a quick intro to ``pw_rpc``, see the
+  :ref:`module-pw_hdlc_lite-rpc-example` in the :ref:`module-pw_hdlc_lite`
+  module.
 
 .. attention::
 
@@ -116,8 +113,8 @@ The Nanopb implementation would be declared in a ``BUILD.gn``:
 
 3. Register the service with a server
 -------------------------------------
-This example code sets up an RPC server with an
-:ref:`HDLC<chapter-pw-hdlc-lite>` channel output and the example service.
+This example code sets up an RPC server with an :ref:`HDLC<module-pw_hdlc_lite>`
+channel output and the example service.
 
 .. code-block:: cpp
 
@@ -164,7 +161,7 @@ user-defined RPCs are implemented.
 ``pw_rpc`` supports multiple protobuf libraries, and the generated code API
 depends on which is used.
 
-.. _pw-rpc-protobuf-apis:
+.. _module-pw_rpc-protobuf-library-apis:
 
 Protobuf library APIs
 =====================
@@ -717,9 +714,10 @@ RPC calls are not made directly through the client, but using one of its
 registered channels instead. A service client class is generated from a .proto
 file for each selected protobuf library, which is then used to send RPC requests
 through a given channel. The API for this depends on the protobuf library;
-please refer to the :ref:`appropriate documentation <pw-rpc-protobuf-apis>`.
-Multiple service client implementations can exist simulatenously and share the
-same ``Client`` class.
+please refer to the
+:ref:`appropriate documentation<module-pw_rpc-protobuf-library-apis>`. Multiple
+service client implementations can exist simulatenously and share the same
+``Client`` class.
 
 When a call is made, a ``pw::rpc::ClientCall`` object is returned to the caller.
 This object tracks the ongoing RPC call, and can be used to manage it. An RPC

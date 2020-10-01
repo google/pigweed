@@ -1,8 +1,4 @@
-.. _chapter-pw-span:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_span:
 
 -------
 pw_span

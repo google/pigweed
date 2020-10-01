@@ -1,4 +1,4 @@
-.. _chapter-faq:
+.. _docs-faq:
 
 --------------------------
 Frequently Asked Questions
@@ -33,7 +33,7 @@ So, to answer the question:
 Isn't C++ bloated and slow?
 ---------------------------
 In general, no, but it is important to follow some guidelines as discussed in
-the :ref:`Embedded C++ Guide <chapter-embedded-cpp>`.
+the :ref:`Embedded C++ Guide <docs-embedded-cpp>`.
 
 At Google, we have made some quantitative analysis of various common embedded
 patterns in C++ to evaluate the cost of various constructs. We will open source

@@ -1,8 +1,4 @@
-.. _chapter-pw-base64:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_base64:
 
 ---------
 pw_base64

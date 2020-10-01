@@ -1,4 +1,4 @@
-.. _chapter-pw-env_setup:
+.. _module-pw_env_setup:
 
 ------------
 pw_env_setup

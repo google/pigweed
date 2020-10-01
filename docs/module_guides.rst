@@ -1,3 +1,5 @@
+.. _docs-module-guides:
+
 =============
 Module Guides
 =============

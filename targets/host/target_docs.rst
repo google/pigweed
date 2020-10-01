@@ -1,8 +1,4 @@
-.. _chapter-host:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _target-host:
 
 ----
 host

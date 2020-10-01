@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-sys-io-arduino:
+.. _module-pw_sys_io_arduino:
 
 -----------------
 pw_sys_io_arduino
@@ -26,6 +22,6 @@ After ``Serial.begin(115200)`` it will busy wait until a host connects to the
 serial port.
 
 .. seealso::
-   - :ref:`chapter-arduino` target documentation for a list of working hardware.
-   - :ref:`chapter-pw-arduino-build` for caveats when running Pigweed on top of
+   - :ref:`target-arduino` target documentation for a list of working hardware.
+   - :ref:`module-pw_arduino_build` for caveats when running Pigweed on top of
      the Arduino API.

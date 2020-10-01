@@ -1,8 +1,4 @@
-.. _chapter-pw-blob_store:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_blob_store:
 
 -------------
 pw_blob_store

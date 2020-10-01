@@ -1,8 +1,4 @@
-.. _chapter-pw-status:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_status:
 
 ---------
 pw_status

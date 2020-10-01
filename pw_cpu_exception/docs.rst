@@ -1,8 +1,4 @@
-.. _chapter-pw-cpu-exception:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_cpu_exception:
 
 ----------------
 pw_cpu_exception

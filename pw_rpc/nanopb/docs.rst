@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-rpc-nanopb:
+.. _module-pw_rpc_nanopb:
 
 ------
 nanopb
@@ -14,7 +10,7 @@ Usage
 =====
 To enable nanopb code generation, add ``nanopb_rpc`` as a generator to your
 Pigweed target's ``pw_protobuf_GENERATORS`` list. Refer to
-:ref:`chapter-pw-protobuf-compiler` for additional information.
+:ref:`module-pw_protobuf_compiler` for additional information.
 
 .. code::
 

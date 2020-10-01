@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-arduino:
+.. _target-arduino:
 
 -------
 Arduino
@@ -12,7 +8,7 @@ This target supports building Pigweed on a few Arduino cores.
 
 .. seealso::
    There are a few caveats when running Pigweed on top of the Arduino API. See
-   :ref:`chapter-pw-arduino-build` for details.
+   :ref:`module-pw_arduino_build` for details.
 
 Supported Boards
 ================

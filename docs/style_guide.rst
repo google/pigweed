@@ -1,8 +1,4 @@
-.. _chapter-style:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _docs-pw-style:
 
 ===========================
 Style Guide and Conventions

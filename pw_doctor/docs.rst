@@ -1,4 +1,4 @@
-.. _chapter-pw-doctor:
+.. _module-pw_doctor:
 
 ---------
 pw_doctor

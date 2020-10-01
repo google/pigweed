@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-hdlc-lite:
+.. _module-pw_hdlc_lite:
 
 ------------
 pw_hdlc_lite
@@ -15,7 +11,7 @@ standardized as `ISO/IEC 13239:2002 <https://www.iso.org/standard/37010.html>`_.
 The ``pw_hdlc_lite`` module provides a simple, robust frame-oriented
 transport that uses a subset of the HDLC protocol. ``pw_hdlc_lite`` supports
 sending between embedded devices or the host. It can be used with
-:ref:`chapter-pw-rpc` to enable remote procedure calls (RPCs) on embedded on
+:ref:`module-pw_rpc` to enable remote procedure calls (RPCs) on embedded on
 devices.
 
 **Why use the pw_hdlc_lite module?**
@@ -28,8 +24,8 @@ devices.
 
 .. admonition:: Try it out!
 
-  For an example of how to use HDLC with :ref:`chapter-pw-rpc`, see the
-  :ref:`chapter-pw-hdlc-rpc-example`.
+  For an example of how to use HDLC with :ref:`module-pw_rpc`, see the
+  :ref:`module-pw_hdlc_lite-rpc-example`.
 
 .. toctree::
   :maxdepth: 1
@@ -109,8 +105,8 @@ C++
 
 .. cpp:function:: Status hdlc_lite::WriteInformationFrame(uint8_t address, ConstByteSpan data, stream::Writer& writer)
 
-  Writes a span of data to a :ref:`pw::stream::Writer <chapter-pw-stream>` and
-  returns the status. This implementation uses the :ref:`chapter-pw-checksum`
+  Writes a span of data to a :ref:`pw::stream::Writer <module-pw_stream>` and
+  returns the status. This implementation uses the :ref:`module-pw_checksum`
   module to compute the CRC-32 frame check sequence.
 
 .. code-block:: cpp

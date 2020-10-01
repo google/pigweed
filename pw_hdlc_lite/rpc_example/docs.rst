@@ -1,19 +1,15 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-hdlc-rpc-example:
+.. _module-pw_hdlc_lite-rpc-example:
 
 =============================
 RPC over HDLC example project
 =============================
-The :ref:`chapter-pw-hdlc-lite` module includes an example of bringing up a
-:ref:`chapter-pw-rpc` server that can be used to invoke RPCs. The example code
+The :ref:`module-pw_hdlc_lite` module includes an example of bringing up a
+:ref:`module-pw_rpc` server that can be used to invoke RPCs. The example code
 is located at ``pw_hdlc_lite/rpc_example``. This section walks through invoking
 RPCs interactively and with a script using the RPC over HDLC example.
 
 These instructions assume the STM32F429i Discovery board, but they work with
-any target with :ref:`pw::sys_io <chapter-pw-sys-io>` implemented.
+any target with :ref:`pw::sys_io <module-pw_sys_io>` implemented.
 
 ---------------------
 Getting started guide

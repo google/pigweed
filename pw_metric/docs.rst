@@ -1,8 +1,4 @@
-.. _chapter-pw-metric:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_metric:
 
 =========
 pw_metric

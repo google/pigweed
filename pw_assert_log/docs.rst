@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: cpp
-
-.. _chapter-pw-assert-log:
+.. _module-pw_assert_log:
 
 =============
 pw_assert_log

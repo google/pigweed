@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-protobuf-decoder:
+.. _module-pw_protobuf-decoding:
 
 --------
 Decoding

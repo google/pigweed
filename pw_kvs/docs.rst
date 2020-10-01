@@ -1,8 +1,4 @@
-.. _chapter-pw-kvs:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_kvs:
 
 ------
 pw_kvs

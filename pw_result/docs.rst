@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-result:
+.. _module-pw_result:
 
 ---------
 pw_result

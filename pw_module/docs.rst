@@ -1,20 +1,16 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-module:
+.. _module-pw_module:
 
 ---------
 pw_module
 ---------
 The ``pw_module`` module contains tools for managing Pigweed modules.
 For information on the structure of a Pigweed module, refer to
-:ref:`chapter-module-guide`
+:ref:`docs-module-guides`.
 
 Commands
 --------
 
-.. _chapter-module-module-check:
+.. _module-pw_module-module-check:
 
 ``pw module-check``
 ^^^^^^^^^^^^^^^^^^^

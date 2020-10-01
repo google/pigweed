@@ -1,8 +1,4 @@
-.. _chapter-docs:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _target-docs:
 
 ----
 docs

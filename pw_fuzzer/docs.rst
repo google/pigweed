@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-fuzzer:
+.. _module-pw_fuzzer:
 
 ---------
 pw_fuzzer

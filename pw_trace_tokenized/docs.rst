@@ -1,8 +1,4 @@
-.. _chapter-pw-trace_tokenized:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_trace_tokenized:
 
 ==================
 pw_trace_tokenized

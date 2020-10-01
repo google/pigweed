@@ -1,8 +1,4 @@
-.. _chapter-cpu-exception-armv7m:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_cpu_exception_armv7m:
 
 -----------------------
 pw_cpu_exception_armv7m

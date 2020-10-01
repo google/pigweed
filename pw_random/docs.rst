@@ -1,8 +1,4 @@
-.. _chapter-pw-random:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_random:
 
 ---------
 pw_random

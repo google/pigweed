@@ -1,8 +1,4 @@
-.. _chapter-pw-log-rpc:
-
-.. default-domain:: cpp
-
-.. highlight:: cpp
+.. _module-pw_log_rpc:
 
 ----------
 pw_log_rpc

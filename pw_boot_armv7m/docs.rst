@@ -1,8 +1,4 @@
-.. _chapter-pw-boot-armv7m:
-
-.. default-domain:: cpp
-
-.. highlight:: sh
+.. _module-pw_boot_armv7m:
 
 --------------
 pw_boot_armv7m

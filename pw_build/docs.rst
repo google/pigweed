@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-build:
+.. _module-pw_build:
 
 --------
 pw_build
@@ -79,7 +75,7 @@ template for a project.
 All of the ``pw_*`` target type overrides accept any arguments, as they simply
 forward them through to the underlying target.
 
-.. _pw-build-python-script:
+.. _module-pw_build-python-script:
 
 pw_python_script
 ^^^^^^^^^^^^^^^^

@@ -1,8 +1,4 @@
-.. default-domain:: cpp
-
-.. highlight:: sh
-
-.. _chapter-pw-checksum:
+.. _module-pw_checksum:
 
 -----------
 pw_checksum
