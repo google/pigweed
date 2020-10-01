@@ -35,7 +35,8 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
       : channel_(static_cast<Channel*>(channel)),
         service_id_(service_id),
         method_id_(method_id),
-        handler_(handler) {
+        handler_(handler),
+        active_(true) {
     // TODO(pwbug/246): Use PW_ASSERT when that is available.
     // PW_ASSERT(channel_ != nullptr);
 
@@ -49,6 +50,8 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
 
   BaseClientCall(BaseClientCall&& other) { *this = std::move(other); }
   BaseClientCall& operator=(BaseClientCall&& other);
+
+  constexpr bool active() const { return active_; }
 
   void Cancel();
 
@@ -77,6 +80,7 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
   uint32_t method_id_;
   Channel::OutputBuffer request_;
   ResponseHandler handler_;
+  bool active_;
 };
 
 }  // namespace pw::rpc::internal

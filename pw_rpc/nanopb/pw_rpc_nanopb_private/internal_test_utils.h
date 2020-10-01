@@ -71,14 +71,18 @@ class TestUnaryResponseHandler : public UnaryResponseHandler<Response> {
     ++responses_received_;
   }
 
+  void RpcError(Status status) override { rpc_error_ = status; }
+
   constexpr Status last_status() const { return last_status_; }
   constexpr const Response& last_response() const& { return last_response_; }
   constexpr size_t responses_received() const { return responses_received_; }
+  constexpr Status rpc_error() const { return rpc_error_; }
 
  private:
   Status last_status_;
   Response last_response_;
   size_t responses_received_ = 0;
+  Status rpc_error_;
 };
 
 // Client response handler for a unary RPC invocation which stores information
@@ -97,16 +101,20 @@ class TestServerStreamingResponseHandler
     status_ = status;
   }
 
+  void RpcError(Status status) override { rpc_error_ = status; }
+
   constexpr bool active() const { return active_; }
   constexpr Status status() const { return status_; }
   constexpr const Response& last_response() const& { return last_response_; }
   constexpr size_t responses_received() const { return responses_received_; }
+  constexpr Status rpc_error() const { return rpc_error_; }
 
  private:
   Status status_;
   Response last_response_;
   size_t responses_received_ = 0;
   bool active_ = true;
+  Status rpc_error_;
 };
 
 }  // namespace pw::rpc::internal

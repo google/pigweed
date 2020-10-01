@@ -68,14 +68,12 @@ Status Client::ProcessPacket(ConstByteSpan data) {
 
   switch (packet.type()) {
     case PacketType::RESPONSE:
+    case PacketType::SERVER_ERROR:
       call->HandleResponse(packet);
       break;
     case PacketType::SERVER_STREAM_END:
       call->HandleResponse(packet);
       RemoveCall(*call);
-      break;
-    case PacketType::SERVER_ERROR:
-      // TODO(frolv): Handle errors.
       break;
     default:
       return Status::Unimplemented();

@@ -19,16 +19,26 @@
 namespace pw::rpc::internal {
 
 void BaseClientCall::Cancel() {
-  channel_->Send(NewPacket(PacketType::CANCEL_SERVER_STREAM));
+  if (active()) {
+    channel_->Send(NewPacket(PacketType::CANCEL_SERVER_STREAM));
+  }
 }
 
 std::span<std::byte> BaseClientCall::AcquirePayloadBuffer() {
+  if (!active()) {
+    return {};
+  }
+
   request_ = channel_->AcquireBuffer();
   return request_.payload(NewPacket(PacketType::REQUEST));
 }
 
 Status BaseClientCall::ReleasePayloadBuffer(
     std::span<const std::byte> payload) {
+  if (!active()) {
+    return Status::FailedPrecondition();
+  }
+
   return channel_->Send(request_, NewPacket(PacketType::REQUEST, payload));
 }
 
@@ -39,6 +49,11 @@ Packet BaseClientCall::NewPacket(PacketType type,
 
 void BaseClientCall::Register() { channel_->client()->RegisterCall(*this); }
 
-void BaseClientCall::Unregister() { channel_->client()->RemoveCall(*this); }
+void BaseClientCall::Unregister() {
+  if (active()) {
+    channel_->client()->RemoveCall(*this);
+    active_ = false;
+  }
+}
 
 }  // namespace pw::rpc::internal

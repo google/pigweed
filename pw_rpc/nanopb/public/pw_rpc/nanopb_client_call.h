@@ -32,6 +32,9 @@ class UnaryResponseHandler {
   // Called when the response is received from the server with the method's
   // status and the deserialized response struct.
   virtual void ReceivedResponse(Status status, const Response& response) = 0;
+
+  // Called when an error occurs internally in the RPC client or server.
+  virtual void RpcError(Status) {}
 };
 
 // Response handler callbacks for server streaming RPC methods.
@@ -46,6 +49,9 @@ class ServerStreamingResponseHandler {
 
   // Called when the server ends the stream with the overall RPC status.
   virtual void Complete(Status status) = 0;
+
+  // Called when an error occurs internally in the RPC client or server.
+  virtual void RpcError(Status) {}
 };
 
 namespace internal {
@@ -134,19 +140,30 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
   }
 
   void InvokeUnaryCallback(const internal::Packet& packet) {
+    if (packet.type() == internal::PacketType::SERVER_ERROR) {
+      callback_.RpcError(packet.status());
+      return;
+    }
+
     ResponseBuffer response_struct{};
 
-    // TODO(frolv): Report an error to the caller if the decode fails.
     if (serde().DecodeResponse(&response_struct, packet.payload())) {
       callback_.ReceivedResponse(
           packet.status(),
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
+    } else {
+      callback_.RpcError(Status::DataLoss());
     }
 
     Unregister();
   }
 
   void InvokeServerStreamingCallback(const internal::Packet& packet) {
+    if (packet.type() == internal::PacketType::SERVER_ERROR) {
+      callback_.RpcError(packet.status());
+      return;
+    }
+
     if (packet.type() == internal::PacketType::SERVER_STREAM_END) {
       callback_.Complete(packet.status());
       return;
@@ -154,10 +171,11 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
     ResponseBuffer response_struct{};
 
-    // TODO(frolv): Report an error to the caller if the decode fails.
     if (serde().DecodeResponse(&response_struct, packet.payload())) {
       callback_.ReceivedResponse(
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
+    } else {
+      callback_.RpcError(Status::DataLoss());
     }
   }
 

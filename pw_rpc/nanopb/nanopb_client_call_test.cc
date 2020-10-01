@@ -94,7 +94,7 @@ TEST(NanopbClientCall, Unary_InvokesCallbackOnValidResponse) {
   EXPECT_EQ(handler.last_response().value, 42);
 }
 
-TEST(NanopbClientCall, Unary_DoesNothingOnInvalidResponse) {
+TEST(NanopbClientCall, Unary_InvokesErrorCallbackOnInvalidResponse) {
   ClientContextForTest context;
   TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
 
@@ -106,6 +106,20 @@ TEST(NanopbClientCall, Unary_DoesNothingOnInvalidResponse) {
   context.SendResponse(Status::Ok(), bad_payload);
 
   EXPECT_EQ(handler.responses_received(), 0u);
+  EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
+}
+
+TEST(NanopbClientCall, Unary_InvokesErrorCallbackOnServerError) {
+  ClientContextForTest context;
+  TestUnaryResponseHandler<pw_rpc_test_TestResponse> handler;
+
+  auto call = FakeGeneratedServiceClient::TestRpc(
+      context.channel(), {.integer = 123, .status_code = 0}, handler);
+
+  context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
+
+  EXPECT_EQ(handler.responses_received(), 0u);
+  EXPECT_EQ(handler.rpc_error(), Status::NotFound());
 }
 
 TEST(NanopbClientCall, Unary_OnlyReceivesOneResponse) {
@@ -199,7 +213,7 @@ TEST(NanopbClientCall, ServerStreaming_ClosesOnFinish) {
   EXPECT_EQ(handler.responses_received(), 2u);
 }
 
-TEST(NanopbClientCall, ServerStreaming_IgnoresInvalidResponses) {
+TEST(NanopbClientCall, ServerStreaming_InvokesErrorCallbackOnInvalidResponses) {
   ClientContextForTest<128, 128, 99, kServiceId, kServerStreamingMethodId>
       context;
   TestServerStreamingResponseHandler<pw_rpc_test_TestStreamResponse> handler;
@@ -217,12 +231,17 @@ TEST(NanopbClientCall, ServerStreaming_IgnoresInvalidResponses) {
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
   context.SendResponse(Status::Ok(), bad_payload);
   EXPECT_EQ(handler.responses_received(), 1u);
+  EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
   context.SendResponse(Status::Ok(), r2);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 2u);
   EXPECT_EQ(handler.last_response().number, 22u);
+
+  context.SendPacket(internal::PacketType::SERVER_ERROR, Status::NotFound());
+  EXPECT_EQ(handler.responses_received(), 2u);
+  EXPECT_EQ(handler.rpc_error(), Status::NotFound());
 }
 
 }  // namespace
