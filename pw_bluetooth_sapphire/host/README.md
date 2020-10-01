@@ -39,6 +39,7 @@ adapter:
             bredr_data:
                 connection_state
                 bonded
+                services
             le_data:
                 connection_state
                 bonded

@@ -160,7 +160,8 @@ Peer::BrEdrData::BrEdrData(Peer* owner)
     : peer_(owner),
       conn_state_(ConnectionState::kNotConnected, &ConnectionStateToString),
       eir_len_(0u),
-      link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }) {
+      link_key_(std::nullopt, [](const std::optional<sm::LTK>& l) { return l.has_value(); }),
+      services_({}, MakeContainerOfToStringConvertFunction()) {
   ZX_DEBUG_ASSERT(peer_);
   ZX_DEBUG_ASSERT(peer_->identity_known());
 
@@ -175,6 +176,7 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
   node_ = parent.CreateChild(name);
   conn_state_.AttachInspect(node_, BrEdrData::kInspectConnectionStateName);
   link_key_.AttachInspect(node_, BrEdrData::kInspectLinkKeyName);
+  services_.AttachInspect(node_, BrEdrData::kInspectServicesName);
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci::InquiryResult& value) {
@@ -290,7 +292,7 @@ void Peer::BrEdrData::ClearBondData() {
 }
 
 void Peer::BrEdrData::AddService(UUID uuid) {
-  auto [_, inserted] = services_.insert(uuid);
+  auto [_, inserted] = services_.Mutable()->insert(uuid);
   if (inserted) {
     peer_->NotifyListeners();
   }

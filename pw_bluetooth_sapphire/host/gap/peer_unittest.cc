@@ -85,6 +85,8 @@ TEST_F(GAP_PeerTest, InspectHierarchy) {
 
   peer().MutLe().SetFeatures(hci::LESupportedFeatures{0x0000000000000001});
 
+  peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
+
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
 
   // clang-format off
@@ -94,7 +96,8 @@ TEST_F(GAP_PeerTest, InspectHierarchy) {
       PropertyList(UnorderedElementsAre(
         StringIs(Peer::BrEdrData::kInspectConnectionStateName,
                  Peer::ConnectionStateToString(peer().bredr()->connection_state())),
-        BoolIs(Peer::BrEdrData::kInspectLinkKeyName, peer().bredr()->bonded())
+        BoolIs(Peer::BrEdrData::kInspectLinkKeyName, peer().bredr()->bonded()),
+        StringIs(Peer::BrEdrData::kInspectServicesName, "{ 0000110b-0000-1000-8000-00805f9b34fb }")
         )))));
 
   auto le_data_matcher = AllOf(

@@ -199,6 +199,7 @@ class Peer final {
     static constexpr const char* kInspectNodeName = "bredr_data";
     static constexpr const char* kInspectConnectionStateName = "connection_state";
     static constexpr const char* kInspectLinkKeyName = "bonded";
+    static constexpr const char* kInspectServicesName = "services";
 
     BrEdrData(Peer* owner);
 
@@ -230,7 +231,7 @@ class Peer final {
 
     const std::optional<sm::LTK>& link_key() const { return *link_key_; }
 
-    const std::unordered_set<UUID>& services() const { return services_; }
+    const std::unordered_set<UUID>& services() const { return *services_; }
 
     // Setters:
 
@@ -284,7 +285,7 @@ class Peer final {
     size_t eir_len_;
     DynamicByteBuffer eir_buffer_;
     BoolInspectable<std::optional<sm::LTK>> link_key_;
-    std::unordered_set<UUID> services_;
+    StringInspectable<std::unordered_set<UUID>> services_;
   };
 
   // Number that uniquely identifies this device with respect to the bt-host
