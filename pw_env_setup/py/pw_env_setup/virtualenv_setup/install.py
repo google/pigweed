@@ -75,12 +75,16 @@ def _check_call(args, **kwargs):
             raise
 
 
-def _find_files_by_name(roots, name):
+def _find_files_by_name(roots, name, allow_nesting=False):
     matches = []
     for root in roots:
         for dirpart, dirs, files in os.walk(root):
             if name in files:
                 matches.append(os.path.join(dirpart, name))
+                # If this directory is a match don't recurse inside it looking
+                # for more matches.
+                if not allow_nesting:
+                    dirs[:] = []
 
             # Filter directories starting with . to avoid searching unnecessary
             # paths and finding files that should be hidden.
