@@ -30,16 +30,15 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> c
 
   const auto unique_id = channel->unique_id();
   if (channel_to_relay_.find(unique_id) != channel_to_relay_.end()) {
-    bt_log(ERROR, "l2cap", "channel %u @ %u is already bound to a socket", channel->link_handle(),
-           channel->id());
+    bt_log(ERROR, "l2cap", "channel %u is already bound to a socket", channel->id());
     return zx::socket();
   }
 
   zx::socket local_socket, remote_socket;
   const auto status = zx::socket::create(ZX_SOCKET_DATAGRAM, &local_socket, &remote_socket);
   if (status != ZX_OK) {
-    bt_log(ERROR, "l2cap", "Failed to create socket for channel %u @ %u: %s",
-           channel->link_handle(), channel->id(), zx_status_get_string(status));
+    bt_log(ERROR, "data", "Failed to create socket for channel %u: %s", channel->unique_id(),
+           zx_status_get_string(status));
     return zx::socket();
   }
 

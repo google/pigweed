@@ -50,6 +50,10 @@ static_library("gap") {
     "peer.h",
     "peer_cache.cc",
     "peer_cache.h",
+    "sco_connection.cc",
+    "sco_connection.h",
+    "sco_socket_channel_relay.cc",
+    "sco_socket_factory.cc",
     "types.cc",
     "types.h",
   ]
@@ -116,6 +120,7 @@ source_set("tests") {
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
     "peer_unittest.cc",
+    "sco_connection_unittest.cc",
     "types_unittest.cc",
   ]
 
