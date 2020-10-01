@@ -10,6 +10,7 @@
 #include <lib/sys/inspect/cpp/component.h>
 #include <zircon/assert.h>
 
+#include <iterator>
 #include <string>
 #include <type_traits>
 
@@ -169,6 +170,36 @@ CREATE_INSPECTABLE_TYPE(String, std::string);
 //                       MakeToStringInspectConvertFunction());
 inline auto MakeToStringInspectConvertFunction() {
   return [](auto value) { return value.ToString(); };
+}
+
+// Similar to ToStringInspectable, but for containers of types that implement ToString(). The
+// resulting string property will be formatted using the ContainerOfToStringOptions provided.
+// Example:
+// std::vector<Foo> values(2);
+// StringInspectable foo(std::move(values), inspect_node.CreateString("foo", ""),
+//                       MakeContainerOfToStringInspectConvertFunction());
+//
+// This does not generate an node hierarchy based on the container contents and is more appropriate
+// for sequential containers at leaves of the inspect tree. More complex data structures, especially
+// associative ones, should export full inspect trees.
+struct ContainerOfToStringOptions {
+  const char* prologue = "{ ";
+  const char* delimiter = ", ";
+  const char* epilogue = " }";
+};
+inline auto MakeContainerOfToStringConvertFunction(ContainerOfToStringOptions options = {}) {
+  return [options](auto value) {
+    std::string out(options.prologue);
+    for (auto iter = std::begin(value); iter != std::end(value); std::advance(iter, 1)) {
+      out += iter->ToString();
+      if (std::next(iter) == std::end(value)) {
+        continue;
+      }
+      out += options.delimiter;
+    }
+    out += options.epilogue;
+    return out;
+  };
 }
 
 }  // namespace bt

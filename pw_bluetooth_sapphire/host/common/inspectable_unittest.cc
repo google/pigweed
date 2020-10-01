@@ -137,6 +137,23 @@ TEST(InspectableTest, MakeToStringInspectConvertFunction) {
       AllOf(NodeMatches(PropertyList(ElementsAre(StringIs(kPropertyName, kExpectedValue))))));
 }
 
+TEST(InspectableTest, MakeContainerOfToStringConvertFunction) {
+  const auto kPropertyName = "test_property";
+  inspect::Inspector inspector;
+  auto& root = inspector.GetRoot();
+
+  std::array values = {StringValue{"fuchsia"}, StringValue{"purple"}, StringValue{"magenta"}};
+  StringInspectable inspectable(std::move(values), root.CreateString(kPropertyName, ""),
+                                MakeContainerOfToStringConvertFunction(
+                                    {.prologue = u8"👉", .delimiter = u8"🥺", .epilogue = u8"👈"}));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  ASSERT_TRUE(hierarchy.is_ok());
+  EXPECT_THAT(hierarchy.take_value(),
+              AllOf(NodeMatches(PropertyList(ElementsAre(
+                  StringIs(kPropertyName, u8"👉fuchsia🥺purple🥺magenta👈"))))));
+}
+
 TEST(InspectableTest, InspectRealStringProperty) {
   const auto kPropertyName = "test_property";
 
