@@ -425,10 +425,9 @@ void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
 
 void PairingState::OnEncryptionChange(hci::Status status, bool enabled) {
   if (state() != State::kWaitEncryption) {
-    // Ignore encryption changes when not expecting them because they may be
-    // triggered by the peer at any time (v5.0 Vol 2, Part F, Sec 4.4).
-    bt_log(INFO, "gap-bredr",
-           "%#.4x (id: %s): Ignoring %s(%s, %s) in state \"%s\", before pairing completed",
+    // Ignore encryption changes when not expecting them because they may be triggered by the peer
+    // at any time (v5.0 Vol 2, Part F, Sec 4.4).
+    bt_log(TRACE, "gap-bredr", "%#.4x (id: %s): %s(%s, %s) in state \"%s\"; taking no action",
            handle(), bt_str(peer_id()), __func__, bt_str(status), enabled ? "true" : "false",
            ToString(state()));
     return;
