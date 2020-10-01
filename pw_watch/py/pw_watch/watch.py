@@ -106,6 +106,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         build_commands: Sequence[BuildCommand] = (),
         ignore_dirs=Optional[List[str]],
         charset: WatchCharset = _ASCII_CHARSET,
+        restart: bool = False,
     ):
         super(PigweedBuildWatcher, self).__init__()
 
@@ -116,6 +117,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
         self.charset: WatchCharset = charset
 
+        self.restart_on_changes = restart
         self._current_build: Optional[subprocess.Popen] = None
 
         self.debouncer = Debouncer(self)
@@ -193,7 +195,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         if self.matching_path is None:
             self.matching_path = matching_path
 
-        self.debouncer.press('File change detected')
+        self.debouncer.press(
+            f'File change detected: {os.path.relpath(matching_path)}')
 
     # Implementation of DebouncedFunction.run()
     #
@@ -243,8 +246,11 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
     # Implementation of DebouncedFunction.cancel()
     def cancel(self):
-        self._current_build.terminate()
-        return True
+        if self.restart_on_changes:
+            self._current_build.terminate()
+            return True
+
+        return False
 
     # Implementation of DebouncedFunction.run()
     def on_complete(self, cancelled=False):
@@ -327,7 +333,9 @@ def add_parser_arguments(parser):
                         nargs='+',
                         help=('directories to ignore during pw watch'),
                         default=[])
-
+    parser.add_argument('--restart',
+                        action='store_true',
+                        help='restart an ongoing build if files change')
     parser.add_argument(
         'build_targets',
         nargs='*',
@@ -488,11 +496,8 @@ def get_common_excludes():
     return exclude_list
 
 
-def watch(build_targets=None,
-          build_directory=None,
-          patterns=None,
-          ignore_patterns=None,
-          exclude_list=None):
+def watch(build_targets, build_directory, patterns, ignore_patterns,
+          exclude_list, restart: bool):
     """TODO(keir) docstring"""
 
     _LOG.info('Starting Pigweed build watcher')
@@ -509,8 +514,7 @@ def watch(build_targets=None,
     # Preset exclude list for pigweed directory.
     exclude_list += get_common_excludes()
 
-    subdirectories_to_watch \
-        = minimal_watch_directories(cur_dir, exclude_list)
+    subdirectories_to_watch = minimal_watch_directories(cur_dir, exclude_list)
 
     # If no build directory was specified, search the tree for GN build
     # directories and try to build them all. In the future this may cause
@@ -552,18 +556,11 @@ def watch(build_targets=None,
 
     _LOG.debug('Patterns: %s', patterns)
 
-    path_of_directory_to_watch = '.'
-
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
     # who have deeply nested home directories.
-    path_to_log = pathlib.Path(path_of_directory_to_watch).resolve()
-    try:
-        path_to_log = path_to_log.relative_to(pathlib.Path.home())
-        path_to_log = f'$HOME/{path_to_log}'
-    except ValueError:
-        # The directory is somewhere other than inside the users home.
-        path_to_log = path_of_directory_to_watch
+    path_to_log = str(pathlib.Path().resolve()).replace(
+        str(pathlib.Path.home()), '$HOME')
 
     # Ignore the user-specified patterns.
     ignore_patterns = (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
@@ -583,6 +580,7 @@ def watch(build_targets=None,
         build_commands=build_commands,
         ignore_dirs=ignore_dirs,
         charset=charset,
+        restart=restart,
     )
 
     try:
