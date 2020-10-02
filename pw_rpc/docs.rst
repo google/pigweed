@@ -708,6 +708,8 @@ client, the client's ``ProcessPacket`` function is called with the packet data.
     my_client.ProcessPacket(packet);
   }
 
+.. _module-pw_rpc-making-calls:
+
 Making RPC calls
 ----------------
 RPC calls are not made directly through the client, but using one of its

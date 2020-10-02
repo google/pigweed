@@ -150,7 +150,178 @@ Bidirectional streaming RPC
 
 Client-side
 -----------
+A corresponding client class is generated for every service defined in the proto
+file. Like the service class, it is placed under the ``generated`` namespace.
+The class is named after the service, with a ``Client`` suffix. For example, the
+``ChatService`` would create a ``generated::ChatServiceClient``.
 
-.. admonition:: TODO
+The client class contains static methods to call each of the service's methods.
+It is not meant to be instantiated. The signatures for the methods all follow
+the same format, taking a channel through which to communicate, the initial
+request struct, and a response handler.
 
-  Document the generated client interface
+.. code-block:: c++
+
+  static NanopbClientCall<UnaryResponseHandler<RoomInfoResponse>>
+  GetRoomInformation(Channel& channel,
+                     const RoomInfoRequest& request,
+                     UnaryResponseHandler<RoomInfoResponse> handler);
+
+The ``NanopbClientCall`` object returned by the RPC invocation stores the active
+RPC's context. For more information on ``ClientCall`` objects, refer to the
+:ref:`core RPC documentation <module-pw_rpc-making-calls>`.
+
+Response handlers
+^^^^^^^^^^^^^^^^^
+RPC responses are sent back to the caller through a response handler object.
+These are classes with virtual callback functions implemented by the RPC caller
+to handle RPC events.
+
+There are two types of response handlers: unary and server-streaming, which are
+used depending whether the method's responses are a stream or not.
+
+Unary / client streaming RPC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A ``UnaryResponseHandler`` is used by methods where the server returns a single
+response. It contains a callback for the response, which is only called once.
+
+.. code-block:: c++
+
+  template <typename Response>
+  class UnaryResponseHandler {
+   public:
+    virtual ~UnaryResponseHandler() = default;
+
+    // Called when the response is received from the server with the method's
+    // status and the deserialized response struct.
+    virtual void ReceivedResponse(Status status, const Response& response) = 0;
+
+    // Called when an error occurs internally in the RPC client or server.
+    virtual void RpcError(Status) {}
+  };
+
+.. cpp:class:: template <typename Response> UnaryResponseHandler
+
+  A handler for RPC methods which return a single response (i.e. unary and
+  client streaming).
+
+.. cpp:function:: virtual void UnaryResponseHandler::ReceivedResponse(Status status, const Response& response)
+
+  Callback invoked when the response is recieved from the server. Guaranteed to
+  only be called once.
+
+.. cpp:function:: virtual void UnaryResponseHandler::RpcError(Status status)
+
+  Callback invoked if an internal error occurs in the RPC system. Optional;
+  defaults to a no-op.
+
+**Example implementation**
+
+.. code-block:: c++
+
+  class RoomInfoHandler : public UnaryResponseHandler<RoomInfoResponse> {
+   public:
+    void ReceivedResponse(Status status,
+                          const RoomInfoResponse& response) override {
+      if (status.ok()) {
+        response_ = response;
+      }
+    }
+
+    constexpr RoomInfoResponse& response() { return response_; }
+
+   private:
+    RoomInfoResponse response_;
+  };
+
+Server streaming / bidirectional streaming RPC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For methods which return a response stream, a ``ServerStreamingResponseHandler``
+is used.
+
+.. code:: c++
+
+  class ServerStreamingResponseHandler {
+   public:
+    virtual ~ServerStreamingResponseHandler() = default;
+
+    // Called on every response received from the server with the deserialized
+    // response struct.
+    virtual void ReceivedResponse(const Response& response) = 0;
+
+    // Called when the server ends the stream with the overall RPC status.
+    virtual void Complete(Status status) = 0;
+
+    // Called when an error occurs internally in the RPC client or server.
+    virtual void RpcError(Status) {}
+  };
+
+.. cpp:class:: template <typename Response> ServerStreamingResponseHandler
+
+  A handler for RPC methods which return zero or more responses (i.e. server
+  and bidirectional streaming).
+
+.. cpp:function:: virtual void ServerStreamingResponseHandler::ReceivedResponse(const Response& response)
+
+  Callback invoked whenever a response is received from the server.
+
+.. cpp:function:: virtual void ServerStreamingResponseHandler::Complete(Status status)
+
+  Callback invoked when the server ends the stream, with the overall status for
+  the RPC.
+
+.. cpp:function:: virtual void ServerStreamingResponseHandler::RpcError(Status status)
+
+  Callback invoked if an internal error occurs in the RPC system. Optional;
+  defaults to a no-op.
+
+**Example implementation**
+
+.. code-block:: c++
+
+  class ChatHandler : public UnaryResponseHandler<ChatMessage> {
+   public:
+    void ReceivedResponse(const ChatMessage& response) override {
+      gui_.RenderChatMessage(response);
+    }
+
+    void Complete(Status status) override {
+      client_.Exit(status);
+    }
+
+   private:
+    ChatGui& gui_;
+    ChatClient& client_;
+  };
+
+Example usage
+~~~~~~~~~~~~~
+The following example demonstrates how to call an RPC method using a nanopb
+service client and receive the response.
+
+.. code-block:: c++
+
+  #include "chat_protos/chat_service.rpc.pb.h"
+
+  namespace {
+    MyChannelOutput output;
+    pw::rpc::Channel channels[] = {pw::rpc::Channel::Create<0>(&output)};
+    pw::rpc::Client client(channels);
+  }
+
+  void InvokeSomeRpcs() {
+    RoomInfoHandler handler;
+
+    // The RPC will remain active as long as `call` is alive.
+    auto call = ChatServiceClient::GetRoomInformation(channels[0],
+                                                      {.room = "pigweed"},
+                                                      handler);
+
+    // For simplicity, block here. An actual implementation would likely
+    // std::move the call somewhere to keep it active while doing other work.
+    while (call.active()) {
+      Wait();
+    }
+
+    DoStuff(handler.response());
+  }
