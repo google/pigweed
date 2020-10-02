@@ -253,6 +253,89 @@ target, as well as requiring one extra:
 Targets depending on ``foo_metadata`` will rebuild when any of the ``.foo``
 files are modified.
 
+pw_zip
+^^^^^^^^^^^^^^
+``pw_zip`` is a target that allows users to zip up a set of input files and
+directories into a single output ``.zip`` file—a simple automation of a
+potentially repetitive task.
+
+**Arguments**
+
+* ``inputs``: List of source files as well as the desired relative zip
+  destination. See below for the input syntax.
+* ``dirs``: List of entire directories to be zipped as well as the desired
+  relative zip destination. See below for the input syntax.
+* ``output``: Filename of output ``.zip`` file.
+* ``deps``: List of dependencies for the target.
+
+**Input Syntax**
+
+Inputs all need to follow the correct syntax:
+
+#. Path to source file or directory. Directories must end with a ``/``.
+#. The delimiter (defaults to ``>``).
+#. The desired destination of the contents within the ``.zip``. Must start
+   with ``/`` to indicate the zip root. Any number of subdirectories are
+   allowed. If the source is a file it can be put into any subdirectory of the
+   root. If the source is a file, the zip copy can also be renamed by ending
+   the zip destination with a filename (no trailing ``/``).
+
+Thus, it should look like the following: ``"[source file or dir] > /"``.
+
+**Example**
+
+Let's say we have the following structure for a ``//source/`` directory:
+
+.. code::
+
+  source/
+  ├── file1.txt
+  ├── file2.txt
+  ├── file3.txt
+  └── some_dir/
+      ├── file4.txt
+      └── some_other_dir/
+          └── file5.txt
+
+And we create the following build target:
+
+.. code::
+
+  import("$dir_pw_build/zip.gni")
+
+  pw_zip("target_name") {
+    inputs = [
+      "//source/file1.txt > /",             # Copied to the zip root dir.
+      "//source/file2.txt > /renamed.txt",  # File renamed.
+      "//source/file3.txt > /bar/",         # File moved to the /bar/ dir.
+    ]
+
+    dirs = [
+      "//source/some_dir/ > /bar/some_dir/",  # All /some_dir/ contents copied
+                                              # as /bar/some_dir/.
+    ]
+
+    # Note on output: if the specific output directory isn't defined
+    # (such as output = "zoo.zip") then the .zip will output to the
+    # same directory as the BUILD.gn file that called the target.
+    output = "//$target_out_dir/foo.zip"  # Where the foo.zip will end up
+  }
+
+This will result in a ``.zip`` file called ``foo.zip`` stored in
+``//$target_out_dir`` with the following structure:
+
+.. code::
+
+  foo.zip
+  ├── bar/
+  │   ├── file3.txt
+  │   └── some_dir/
+  │       ├── file4.txt
+  │       └── some_other_dir/
+  │           └── file5.txt
+  ├── file1.txt
+  └── renamed.txt
+
 CMake / Ninja
 =============
 
