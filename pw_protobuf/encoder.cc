@@ -126,16 +126,14 @@ Status Encoder::Pop() {
   return Status::Ok();
 }
 
-Status Encoder::Encode(std::span<const std::byte>* out) {
+Result<ConstByteSpan> Encoder::Encode() {
   if (!encode_status_.ok()) {
-    *out = std::span<const std::byte>();
     return encode_status_;
   }
 
   if (blob_count_ == 0) {
     // If there are no nested blobs, the buffer already contains a valid proto.
-    *out = buffer_.first(EncodedSize());
-    return Status::Ok();
+    return Result<ConstByteSpan>(buffer_.first(EncodedSize()));
   }
 
   union {
@@ -179,8 +177,7 @@ Status Encoder::Encode(std::span<const std::byte>* out) {
 
   // Point the cursor to the end of the encoded proto.
   cursor_ = write_cursor;
-  *out = buffer_.first(EncodedSize());
-  return Status::Ok();
+  return Result<ConstByteSpan>(buffer_.first(EncodedSize()));
 }
 
 }  // namespace pw::protobuf

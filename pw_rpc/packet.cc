@@ -80,12 +80,12 @@ StatusWithSize Packet::Encode(std::span<byte> buffer) const {
   rpc_packet.WriteMethodId(method_id_);
   rpc_packet.WriteStatus(status_);
 
-  std::span<const byte> proto;
-  if (Status status = encoder.Encode(&proto); !status.ok()) {
-    return StatusWithSize(status, 0);
+  Result result = encoder.Encode();
+  if (!result.ok()) {
+    return StatusWithSize(result.status(), 0);
   }
 
-  return StatusWithSize(proto.size());
+  return StatusWithSize(result.value().size());
 }
 
 size_t Packet::MinEncodedSizeBytes() const {

@@ -28,8 +28,10 @@ config("default_config") {
 pw_source_set("pw_protobuf") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    "$dir_pw_status",
-    "$dir_pw_varint",
+    dir_pw_bytes,
+    dir_pw_result,
+    dir_pw_status,
+    dir_pw_varint,
   ]
   public = [
     "public/pw_protobuf/codegen.h",

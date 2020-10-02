@@ -166,10 +166,11 @@ TEST(Codegen, Codegen) {
   };
   // clang-format on
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -185,10 +186,11 @@ TEST(CodegenRepeated, NonPackedScalar) {
   constexpr uint8_t expected_proto[] = {
       0x08, 0x00, 0x08, 0x10, 0x08, 0x20, 0x08, 0x30};
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -201,10 +203,11 @@ TEST(CodegenRepeated, PackedScalar) {
   repeated_test.WriteUint32s(values);
 
   constexpr uint8_t expected_proto[] = {0x0a, 0x04, 0x00, 0x10, 0x20, 0x30};
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -221,10 +224,11 @@ TEST(CodegenRepeated, NonScalar) {
   constexpr uint8_t expected_proto[] = {
       0x1a, 0x03, 't', 'h', 'e', 0x1a, 0x5, 'q',  'u', 'i', 'c', 'k',
       0x1a, 0x5,  'b', 'r', 'o', 'w',  'n', 0x1a, 0x3, 'f', 'o', 'x'};
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -245,10 +249,11 @@ TEST(CodegenRepeated, Message) {
     0x01, 0x10, 0x02, 0x2a, 0x04, 0x08, 0x02, 0x10, 0x04};
   // clang-format on
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -269,10 +274,11 @@ TEST(Codegen, Proto2) {
   constexpr uint8_t expected_proto[] = {
       0x08, 0x03, 0x1a, 0x06, 0x0a, 0x04, 0xde, 0xad, 0xbe, 0xef};
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
-  EXPECT_EQ(proto.size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(proto.data(), expected_proto, sizeof(expected_proto)),
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
@@ -293,8 +299,7 @@ TEST(Codegen, Import) {
     end.WriteNanoseconds(490367432);
   }
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
+  EXPECT_EQ(encoder.Encode().status(), Status::Ok());
 }
 
 TEST(Codegen, NonPigweedPackage) {
@@ -306,8 +311,7 @@ TEST(Codegen, NonPigweedPackage) {
   packed.WriteRep(std::span<const int64_t>(repeated));
   packed.WritePacked("packed");
 
-  std::span<const std::byte> proto;
-  EXPECT_EQ(encoder.Encode(&proto), Status::Ok());
+  EXPECT_EQ(encoder.Encode().status(), Status::Ok());
 }
 
 }  // namespace
