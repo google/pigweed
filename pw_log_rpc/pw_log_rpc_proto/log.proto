@@ -19,18 +19,6 @@ package pw.log_rpc;
 option java_package = "pw.rpc.proto";
 option java_outer_classname = "Log";
 
-// Note: The level is packed into the "line_level" field of LogMessage below.
-// Additionally, this breaks from the Pigweed log levels to enable packing the
-// log level into just 3 bits.
-enum LogLevel {
-  LOG_LEVEL_UNKNOWN = 0;
-  LOG_LEVEL_DEBUG = 1;
-  LOG_LEVEL_INFO = 2;
-  LOG_LEVEL_WARNING = 3;
-  LOG_LEVEL_ERROR = 4;
-  LOG_LEVEL_CRITICAL = 5;
-}
-
 // A log with a tokenized message, a string message, or dropped indicator.  A
 // message can be one of three types:
 //
