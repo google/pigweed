@@ -178,11 +178,11 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
   auto encoded = context.packet(payload).Encode(encoded_response);
   ASSERT_EQ(Status::Ok(), encoded.status());
 
-  ASSERT_EQ(encoded.size(), context.output().sent_data().size());
+  ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
   EXPECT_EQ(0,
-            std::memcmp(encoded_response.data(),
+            std::memcmp(encoded.value().data(),
                         context.output().sent_data().data(),
-                        encoded.size()));
+                        encoded.value().size()));
 }
 
 TEST(NanopbMethod,
@@ -201,7 +201,7 @@ TEST(NanopbMethod,
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet({}).Encode(encoded_response);
   ASSERT_EQ(Status::Ok(), encoded.status());
-  ASSERT_EQ(kNoPayloadPacketSize, encoded.size());
+  ASSERT_EQ(kNoPayloadPacketSize, encoded.value().size());
 
   method.Invoke(context.get(), context.packet({}));
 

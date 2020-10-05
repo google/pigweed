@@ -46,8 +46,9 @@ class TestOutput : public ChannelOutput {
 
     packet_count_ += 1;
     sent_data_ = std::span(buffer_.data(), size);
-    Status status = internal::Packet::FromBuffer(sent_data_, sent_packet_);
-    EXPECT_EQ(Status::Ok(), status);
+    Result<internal::Packet> result = internal::Packet::FromBuffer(sent_data_);
+    EXPECT_EQ(Status::Ok(), result.status());
+    sent_packet_ = result.value_or(internal::Packet());
     return send_status_;
   }
 
@@ -149,9 +150,9 @@ class ClientContextForTest {
     internal::Packet packet(
         type, kChannelId, kServiceId, kMethodId, payload, status);
     std::byte buffer[input_buffer_size];
-    StatusWithSize sws = packet.Encode(buffer);
-    EXPECT_EQ(sws.status(), Status::Ok());
-    return client_.ProcessPacket(std::span(buffer, sws.size()));
+    Result result = packet.Encode(buffer);
+    EXPECT_EQ(result.status(), Status::Ok());
+    return client_.ProcessPacket(result.value_or(ConstByteSpan()));
   }
 
   Status SendResponse(Status status, std::span<const std::byte> payload) {

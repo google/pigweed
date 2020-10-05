@@ -248,18 +248,18 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
     return Status::Ok();
   }
 
-  internal::Packet packet;
-  PW_CHECK_OK(
-      internal::Packet::FromBuffer(std::span(buffer_.data(), size), packet));
+  Result<internal::Packet> result =
+      internal::Packet::FromBuffer(std::span(buffer_.data(), size));
 
-  last_status_ = packet.status();
+  last_status_ = result.status();
 
-  switch (packet.type()) {
+  switch (result.value().type()) {
     case internal::PacketType::RESPONSE:
       // If we run out of space, the back message is always the most recent.
       responses_.emplace_back();
       responses_.back() = {};
-      PW_CHECK(method_.DecodeResponse(packet.payload(), &responses_.back()));
+      PW_CHECK(
+          method_.DecodeResponse(result.value().payload(), &responses_.back()));
       total_responses_ += 1;
       break;
     case internal::PacketType::SERVER_STREAM_END:

@@ -27,12 +27,13 @@ using internal::PacketType;
 }  // namespace
 
 Status Client::ProcessPacket(ConstByteSpan data) {
-  Packet packet;
-
-  if (Status status = Packet::FromBuffer(data, packet); !status.ok()) {
+  Result<Packet> result = Packet::FromBuffer(data);
+  if (!result.ok()) {
     PW_LOG_WARN("RPC client failed to decode incoming packet");
     return Status::DataLoss();
   }
+
+  Packet& packet = result.value();
 
   if (packet.destination() != Packet::kClient) {
     return Status::InvalidArgument();

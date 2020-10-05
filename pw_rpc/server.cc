@@ -32,10 +32,13 @@ using internal::PacketType;
 bool DecodePacket(ChannelOutput& interface,
                   std::span<const byte> data,
                   Packet& packet) {
-  if (Status status = Packet::FromBuffer(data, packet); !status.ok()) {
+  Result<Packet> result = Packet::FromBuffer(data);
+  if (!result.ok()) {
     PW_LOG_WARN("Failed to decode packet on interface %s", interface.name());
     return false;
   }
+
+  packet = result.value();
 
   // If the packet is malformed, don't try to process it.
   if (packet.channel_id() == Channel::kUnassignedChannelId ||

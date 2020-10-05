@@ -28,7 +28,7 @@ std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
 }
 
 Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
-  StatusWithSize encoded = packet.Encode(buffer.buffer_);
+  Result encoded = packet.Encode(buffer.buffer_);
   buffer.buffer_ = {};
 
   if (!encoded.ok()) {
@@ -37,7 +37,7 @@ Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
     return Status::Internal();
   }
 
-  return output().SendAndReleaseBuffer(encoded.size());
+  return output().SendAndReleaseBuffer(encoded.value().size());
 }
 
 }  // namespace pw::rpc::internal

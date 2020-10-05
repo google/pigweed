@@ -75,8 +75,9 @@ TEST(Packet, Encode) {
 
   Packet packet(PacketType::RESPONSE, 1, 42, 100, kPayload);
 
-  auto sws = packet.Encode(buffer);
-  ASSERT_EQ(kEncoded.size(), sws.size());
+  auto result = packet.Encode(buffer);
+  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(kEncoded.size(), result.value().size());
   EXPECT_EQ(std::memcmp(kEncoded.data(), buffer, kEncoded.size()), 0);
 }
 
@@ -85,15 +86,15 @@ TEST(Packet, Encode_BufferTooSmall) {
 
   Packet packet(PacketType::RESPONSE, 1, 42, 100, kPayload);
 
-  auto sws = packet.Encode(buffer);
-  EXPECT_EQ(0u, sws.size());
-  EXPECT_EQ(Status::ResourceExhausted(), sws.status());
+  auto result = packet.Encode(buffer);
+  EXPECT_EQ(Status::ResourceExhausted(), result.status());
 }
 
 TEST(Packet, Decode_ValidPacket) {
-  Packet packet;
-  ASSERT_EQ(Status::Ok(), Packet::FromBuffer(kEncoded, packet));
+  auto result = Packet::FromBuffer(kEncoded);
+  ASSERT_TRUE(result.ok());
 
+  auto& packet = result.value();
   EXPECT_EQ(PacketType::RESPONSE, packet.type());
   EXPECT_EQ(1u, packet.channel_id());
   EXPECT_EQ(42u, packet.service_id());
@@ -106,9 +107,7 @@ TEST(Packet, Decode_ValidPacket) {
 
 TEST(Packet, Decode_InvalidPacket) {
   byte bad_data[] = {byte{0xFF}, byte{0x00}, byte{0x00}, byte{0xFF}};
-
-  Packet packet;
-  EXPECT_EQ(Status::DataLoss(), Packet::FromBuffer(bad_data, packet));
+  EXPECT_EQ(Status::DataLoss(), Packet::FromBuffer(bad_data).status());
 }
 
 TEST(Packet, EncodeDecode) {
@@ -122,13 +121,14 @@ TEST(Packet, EncodeDecode) {
   packet.set_status(Status::Unavailable());
 
   byte buffer[128];
-  StatusWithSize sws = packet.Encode(buffer);
-  ASSERT_EQ(sws.status(), Status::Ok());
+  Result result = packet.Encode(buffer);
+  ASSERT_EQ(result.status(), Status::Ok());
 
-  std::span<byte> packet_data(buffer, sws.size());
-  Packet decoded;
-  ASSERT_EQ(Status::Ok(), Packet::FromBuffer(packet_data, decoded));
+  std::span<byte> packet_data(buffer, result.value().size());
+  auto decode_result = Packet::FromBuffer(packet_data);
+  ASSERT_TRUE(decode_result.ok());
 
+  auto& decoded = decode_result.value();
   EXPECT_EQ(decoded.type(), packet.type());
   EXPECT_EQ(decoded.channel_id(), packet.channel_id());
   EXPECT_EQ(decoded.service_id(), packet.service_id());

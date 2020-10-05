@@ -20,12 +20,10 @@ namespace pw::rpc::internal {
 
 using std::byte;
 
-Status Packet::FromBuffer(std::span<const byte> data, Packet& packet) {
-  packet = Packet();
-
-  protobuf::Decoder decoder(data);
-
+Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
+  Packet packet;
   Status status;
+  protobuf::Decoder decoder(data);
 
   while ((status = decoder.Next()).ok()) {
     RpcPacket::Fields field =
@@ -64,10 +62,14 @@ Status Packet::FromBuffer(std::span<const byte> data, Packet& packet) {
     }
   }
 
-  return status == Status::DataLoss() ? Status::DataLoss() : Status::Ok();
+  if (status == Status::DataLoss()) {
+    return status;
+  }
+
+  return packet;
 }
 
-StatusWithSize Packet::Encode(std::span<byte> buffer) const {
+Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
   pw::protobuf::NestedEncoder encoder(buffer);
   RpcPacket::Encoder rpc_packet(&encoder);
 
@@ -80,12 +82,7 @@ StatusWithSize Packet::Encode(std::span<byte> buffer) const {
   rpc_packet.WriteMethodId(method_id_);
   rpc_packet.WriteStatus(status_);
 
-  Result result = encoder.Encode();
-  if (!result.ok()) {
-    return StatusWithSize(result.status(), 0);
-  }
-
-  return StatusWithSize(result.value().size());
+  return encoder.Encode();
 }
 
 size_t Packet::MinEncodedSizeBytes() const {

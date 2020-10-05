@@ -79,10 +79,10 @@ class BasicServer : public ::testing::Test {
       uint32_t service_id,
       uint32_t method_id,
       std::span<const byte> payload = kDefaultPayload) {
-    auto sws = Packet(type, channel_id, service_id, method_id, payload)
-                   .Encode(request_buffer_);
-    EXPECT_EQ(Status::Ok(), sws.status());
-    return std::span(request_buffer_, sws.size());
+    auto result = Packet(type, channel_id, service_id, method_id, payload)
+                      .Encode(request_buffer_);
+    EXPECT_EQ(Status::Ok(), result.status());
+    return result.value_or(ConstByteSpan());
   }
 
   TestOutput<128> output_;

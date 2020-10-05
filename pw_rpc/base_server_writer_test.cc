@@ -139,12 +139,14 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   ASSERT_EQ(Status::Ok(), writer.Write(data));
 
   byte encoded[64];
-  auto sws = context.packet(data).Encode(encoded);
-  ASSERT_EQ(Status::Ok(), sws.status());
+  auto result = context.packet(data).Encode(encoded);
+  ASSERT_EQ(Status::Ok(), result.status());
 
-  EXPECT_EQ(sws.size(), context.output().sent_data().size());
+  EXPECT_EQ(result.value().size(), context.output().sent_data().size());
   EXPECT_EQ(
-      0, std::memcmp(encoded, context.output().sent_data().data(), sws.size()));
+      0,
+      std::memcmp(
+          encoded, context.output().sent_data().data(), result.value().size()));
 }
 
 TEST(ServerWriter, Closed_IgnoresPacket) {
