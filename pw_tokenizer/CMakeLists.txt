@@ -28,10 +28,10 @@ pw_add_module_library(pw_tokenizer.base64
   SOURCES
     base64.cc
   PUBLIC_DEPS
+    pw_base64
+    pw_containers
     pw_preprocessor
     pw_span
-  PRIVATE_DEPS
-    pw_base64
 )
 
 pw_add_module_library(pw_tokenizer.decoder

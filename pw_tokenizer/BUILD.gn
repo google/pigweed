@@ -97,10 +97,12 @@ pw_source_set("base64") {
   public = [ "public/pw_tokenizer/base64.h" ]
   sources = [ "base64.cc" ]
   public_deps = [
+    ":pw_tokenizer",
+    dir_pw_base64,
+    dir_pw_containers,
     dir_pw_preprocessor,
     dir_pw_span,
   ]
-  deps = [ dir_pw_base64 ]
 }
 
 pw_source_set("decoder") {
@@ -164,7 +166,6 @@ pw_test_group("tests") {
   group_deps = [
     "$dir_pw_preprocessor:tests",
     "$dir_pw_span:tests",
-    "$dir_pw_status:tests",
   ]
 }
 

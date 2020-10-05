@@ -14,10 +14,6 @@
 
 #include "pw_tokenizer/base64.h"
 
-#include <span>
-
-#include "pw_base64/base64.h"
-
 namespace pw::tokenizer {
 
 extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
@@ -25,19 +21,22 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
     size_t binary_size_bytes,
     void* output_buffer,
     size_t output_buffer_size_bytes) {
-  const size_t encoded_size = base64::EncodedSize(binary_size_bytes) + 1;
+  char* output = static_cast<char*>(output_buffer);
+  const size_t encoded_size = Base64EncodedSize(binary_size_bytes);
 
-  if (output_buffer_size_bytes < encoded_size) {
+  if (output_buffer_size_bytes < encoded_size + sizeof('\0')) {
+    if (output_buffer_size_bytes > 0u) {
+      output[0] = '\0';
+    }
+
     return 0;
   }
 
-  char* output = static_cast<char*>(output_buffer);
   output[0] = kBase64Prefix;
-
   base64::Encode(std::span(static_cast<const std::byte*>(binary_message),
                            binary_size_bytes),
                  &output[1]);
-
+  output[encoded_size] = '\0';
   return encoded_size;
 }
 
