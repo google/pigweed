@@ -88,7 +88,7 @@ def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
 class HdlcRpcClient:
     """An RPC client configured to run over HDLC."""
     def __init__(self,
-                 device: BinaryIO,
+                 device: Any,
                  proto_paths_or_modules: Iterable[python_protos.PathOrModule],
                  output: Callable[[bytes], Any] = write_to_file,
                  channels: Iterable[pw_rpc.Channel] = None,
@@ -96,9 +96,10 @@ class HdlcRpcClient:
         """Creates an RPC client configured to communicate using HDLC.
 
         Args:
-          device: serial.Serial (or any BinaryIO class) for reading/writing data
-          proto_paths_or_modules: paths to .proto files or proto modules
-          output: where to write "stdout" output from the device
+          device: serial.Serial (or any class that implements read and
+          write) for reading/writing data proto_paths_or_modules: paths
+          to .proto files or proto modules output: where to write
+          "stdout" output from the device
         """
         self.device = device
         self.protos = python_protos.Library.from_paths(proto_paths_or_modules)

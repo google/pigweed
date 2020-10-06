@@ -32,7 +32,6 @@ pw_cc_library(
     hdrs = [
         "public/pw_hdlc_lite/decoder.h",
         "public/pw_hdlc_lite/encoder.h",
-        "public/pw_hdlc_lite/sys_io_stream.h",
     ],
     includes = ["public"],
     deps = [

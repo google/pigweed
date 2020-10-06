@@ -36,7 +36,8 @@ import glob
 import logging
 from pathlib import Path
 import sys
-from typing import BinaryIO, Collection, Iterable, Iterator
+from typing import Any, Collection, Iterable, Iterator
+import socket
 
 import IPython  # type: ignore
 import serial  # type: ignore
@@ -45,14 +46,17 @@ from pw_hdlc_lite.rpc import HdlcRpcClient, write_to_file
 
 _LOG = logging.getLogger(__name__)
 
+PW_RPC_MAX_PACKET_SIZE = 256
+SOCKET_SERVER = 'localhost'
+SOCKET_PORT = 33000
+MKFIFO_MODE = 0o666
+
 
 def _parse_args():
     """Parses and returns the command line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-d',
-                        '--device',
-                        required=True,
-                        help='the serial port to use')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-d', '--device', help='the serial port to use')
     parser.add_argument('-b',
                         '--baudrate',
                         type=int,
@@ -65,6 +69,11 @@ def _parse_args():
         default=sys.stdout.buffer,
         help=('The file to which to write device output (HDLC channel 1); '
               'provide - or omit for stdout.'))
+    group.add_argument('-s',
+                       '--socket-addr',
+                       type=str,
+                       help='use socket to connect to server, type default for\
+            localhost:33000, or manually input the server address:port')
     parser.add_argument('proto_globs',
                         nargs='+',
                         help='glob pattern for .proto files')
@@ -91,8 +100,32 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
         local_ns=local_variables, module=argparse.Namespace())
 
 
+class SocketClientImpl():
+    def __init__(self, config: str):
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socket_server = ''
+        socket_port = 0
+        if config == 'default':
+            socket_server = SOCKET_SERVER
+            socket_port = SOCKET_PORT
+        else:
+            socket_server, socket_port_str = config.split(':')
+            try:
+                socket_port = int(socket_port_str)
+            except ValueError as err:
+                raise Exception('Invalid port number provided') from err
+        self.socket.connect((socket_server, socket_port))
+
+    def write(self, data: bytes):
+        self.socket.sendall(data)
+
+    def read(self, num_bytes: int = PW_RPC_MAX_PACKET_SIZE):
+        return self.socket.recv(num_bytes)
+
+
 def console(device: str, baudrate: int, proto_globs: Collection[str],
-            output: BinaryIO) -> int:
+            socket_addr: str, output: Any) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
@@ -112,8 +145,17 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
     _LOG.debug('Found %d .proto files found with %s', len(protos),
                ', '.join(proto_globs))
 
+    if socket_addr is None:
+        client_device = serial.Serial(device, baudrate)
+    else:
+        try:
+            client_device = SocketClientImpl(socket_addr)
+        except ValueError as err:
+            print("ValueError: {0}".format(err), file=sys.stderr)
+            sys.exit(1)
+
     _start_ipython_terminal(
-        HdlcRpcClient(serial.Serial(device, baudrate), protos,
+        HdlcRpcClient(client_device, protos,
                       lambda data: write_to_file(data, output)))
     return 0
 

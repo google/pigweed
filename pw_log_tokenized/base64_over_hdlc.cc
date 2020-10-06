@@ -20,7 +20,7 @@
 #include <span>
 
 #include "pw_hdlc_lite/encoder.h"
-#include "pw_hdlc_lite/sys_io_stream.h"
+#include "pw_stream/sys_io_stream.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 

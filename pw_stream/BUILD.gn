@@ -39,6 +39,25 @@ pw_source_set("pw_stream") {
   ]
 }
 
+pw_source_set("socket_stream") {
+  public_configs = [ ":default_config" ]
+  deps = [
+    "$dir_pw_stream",
+    "$dir_pw_sys_io",
+  ]
+  sources = [ "socket_stream.cc" ]
+  public = [ "public/pw_stream/socket_stream.h" ]
+}
+
+pw_source_set("sys_io_stream") {
+  public_configs = [ ":default_config" ]
+  deps = [
+    "$dir_pw_stream",
+    "$dir_pw_sys_io",
+  ]
+  public = [ "public/pw_stream/sys_io_stream.h" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

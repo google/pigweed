@@ -50,15 +50,13 @@ pw_source_set("decoder") {
 
 pw_source_set("encoder") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_hdlc_lite/encoder.h",
-    "public/pw_hdlc_lite/sys_io_stream.h",
-  ]
+  public = [ "public/pw_hdlc_lite/encoder.h" ]
   sources = [
     "encoder.cc",
     "pw_hdlc_lite_private/protocol.h",
   ]
   public_deps = [
+    "$dir_pw_stream:sys_io_stream",
     dir_pw_bytes,
     dir_pw_status,
     dir_pw_stream,

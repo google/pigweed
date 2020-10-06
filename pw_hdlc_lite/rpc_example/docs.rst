@@ -98,3 +98,37 @@ serial port for your device.
   The payload was msg: "Hello"
 
   The device says: Goodbye!
+
+-------------------------
+Local RPC example project
+-------------------------
+
+This example is similar to the above example, except it use socket to
+connect server and client running on the host.
+
+1. Build Pigweed
+================
+Activate the Pigweed environment and build the code.
+
+.. code-block:: sh
+
+  source activate.sh
+  gn gen out
+  pw watch
+
+2. Start client side and server side
+====================================
+
+Run pw_rpc client (i.e. use echo.proto)
+
+.. code-block:: sh
+
+  python -m pw_hdlc_lite.rpc_console path/to/echo.proto -s localhost:33000
+
+Run pw_rpc server
+
+.. code-block:: sh
+
+  out/host_clang_debug/obj/pw_hdlc_lite/rpc_example/bin/rpc_example
+
+Then you can invoke RPCs from the interactive console on the client side.

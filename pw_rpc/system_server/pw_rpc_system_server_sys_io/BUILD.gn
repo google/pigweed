@@ -11,35 +11,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_third_party/nanopb/nanopb.gni")
-
-if (dir_pw_third_party_nanopb == "") {
-  group("rpc_example") {
-  }
-} else {
-  pw_executable("rpc_example") {
-    sources = [
-      "hdlc_rpc_server.cc",
-      "main.cc",
-      "rpc_task_loop.h",
-    ]
-    deps = [
-      "$dir_pw_rpc:server",
-      "$dir_pw_rpc/nanopb:echo_service",
-      "$dir_pw_rpc/system_server",
-      "..:pw_rpc",
-      dir_pw_hdlc_lite,
-      dir_pw_log,
-    ]
-  }
-}
-
-pw_python_script("example_script") {
-  sources = [ "example_script.py" ]
-  pylintrc = "$dir_pigweed/.pylintrc"
+import("$dir_pw_docgen/docs.gni")
+pw_source_set("pw_rpc_system_server_sys_io") {
+  deps = [
+    "$dir_pw_hdlc_lite:pw_rpc",
+    "$dir_pw_rpc/system_server:facade",
+    "$dir_pw_stream:sys_io_stream",
+    dir_pw_log,
+  ]
+  sources = [ "rpc_server.cc" ]
 }

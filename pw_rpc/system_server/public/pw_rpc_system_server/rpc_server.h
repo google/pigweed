@@ -13,26 +13,13 @@
 // the License.
 #pragma once
 
-#include <array>
-#include <cstddef>
-#include <limits>
-#include <span>
-
+#include "pw_rpc/server.h"
 #include "pw_stream/stream.h"
-#include "pw_sys_io/sys_io.h"
-
-namespace pw::stream {
-
-class SysIoWriter : public Writer {
- public:
-  size_t ConservativeWriteLimit() const override {
-    return std::numeric_limits<size_t>::max();
-  }
-
- private:
-  Status DoWrite(std::span<const std::byte> data) override {
-    return pw::sys_io::WriteBytes(data).status();
-  }
-};
-
-}  // namespace pw::stream
+namespace pw::rpc_system_server {
+// Initialization.
+void Init();
+// Get the reference of RPC Server instance.
+pw::rpc::Server& Server();
+// Start the server and processing packets. May not return.
+Status Start();
+}  // namespace pw::rpc_system_server

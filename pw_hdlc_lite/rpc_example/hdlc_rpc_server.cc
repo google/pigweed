@@ -17,59 +17,32 @@
 #include <string_view>
 
 #include "pw_hdlc_lite/encoder.h"
-#include "pw_hdlc_lite/rpc_channel.h"
 #include "pw_hdlc_lite/rpc_packets.h"
-#include "pw_hdlc_lite/sys_io_stream.h"
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
 #include "pw_rpc/server.h"
-#include "rpc_task_loop.h"
+#include "pw_rpc_system_server/rpc_server.h"
 
 namespace hdlc_example {
 namespace {
 
 using std::byte;
 
-constexpr size_t kMaxTransmissionUnit = 256;
-
-// Used to write HDLC data to pw::sys_io.
-pw::stream::SysIoWriter writer;
-
-// Set up the output channel for the pw_rpc server to use to use.
-pw::hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
-    writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC channel");
-
-pw::rpc::Channel channels[] = {
-    pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
-
-// Declare the pw_rpc server with the HDLC channel.
-pw::rpc::Server server(channels);
-
 pw::rpc::EchoService echo_service;
 
-void RegisterServices() { server.RegisterService(echo_service); }
-
-static void PumpServices(void*){};
+void RegisterServices() {
+  pw::rpc_system_server::Server().RegisterService(echo_service);
+}
 
 }  // namespace
 
 void Start() {
-  // Send log messages to HDLC address 1. This prevents logs from interfering
-  // with pw_rpc communications.
-  pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc_lite::WriteInformationFrame(
-        1, std::as_bytes(std::span(log)), writer);
-  });
-
+  pw::rpc_system_server::Init();
   // Set up the server and start processing data.
   RegisterServices();
 
-  // Declare a buffer for decoding incoming HDLC frames.
-  std::array<std::byte, kMaxTransmissionUnit> input_buffer;
-
   PW_LOG_INFO("Starting pw_rpc server");
-  RpcTaskLoop::RunForever(
-      server, hdlc_channel_output, input_buffer, PumpServices);
+  pw::rpc_system_server::Start();
 }
 
 }  // namespace hdlc_example

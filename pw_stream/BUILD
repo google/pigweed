@@ -44,6 +44,25 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "pw_stream_socket",
+    srcs = ["socket_stream.cc"],
+    hdrs = ["public/pw_stream/socket_stream.h"],
+    deps = [
+        "//pw_sys_io",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_stream_sys_io",
+    hdrs = ["public/pw_stream/sys_io_stream.h"],
+    deps = [
+        "//pw_sys_io",
+        "//pw_stream",
+    ],
+)
+
 pw_cc_test(
     name = "memory_stream_test",
     srcs = [

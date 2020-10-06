@@ -35,6 +35,9 @@ _host_common = {
   # Configure backend for pw_sys_io facade.
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
+  # Configure backend for pw_rpc_system_server.
+  pw_rpc_system_server_BACKEND = "$dir_pw_rpc/system_server:socket"
+
   # Configure backend for trace facade.
   pw_trace_BACKEND = "$dir_pw_trace_tokenized"
 
