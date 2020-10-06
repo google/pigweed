@@ -26,6 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -41,6 +42,8 @@ using bt::CreateStaticByteBuffer;
 using bt::LowerBits;
 using bt::UpperBits;
 using bt::l2cap::testing::FakeChannel;
+using bt::sm::AuthReq;
+using bt::sm::KeyDistGen;
 using bt::testing::FakePeer;
 
 namespace fbt = fuchsia::bluetooth;
@@ -507,17 +510,15 @@ TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
 }
 
 TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-      0x01,  // code: "Pairing Request"
-      0x04,  // IO cap.: KeyboardDisplay
-      0x00,  // OOB: not present
-      0x0D,  // AuthReq: bonding, MITM (Authenticated), Secure Connections
-      0x10,  // encr. key size: 16 (default max)
-      0x01,  // initiator keys: enc key
-      0x03   // responder keys: enc key and identity info
-  );
-  // clang-format on
+  const auto kExpected =
+      CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
+                             0x04,  // IO cap.: KeyboardDisplay
+                             0x00,  // OOB: not present
+                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
+                             0x10,                 // encr. key size: 16 (default max)
+                             KeyDistGen::kEncKey,  // initiator keys
+                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+      );
 
   // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.
   NewPairingTest(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
@@ -546,17 +547,15 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
 }
 
 TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-      0x01,  // code: "Pairing Request"
-      0x03,  // IO cap.: NoInputNoOutput
-      0x00,  // OOB: not present
-      0x09,  // AuthReq: bonding, no MITM (not authenticated), Secure Connections
-      0x10,  // encr. key size: 16 (default max)
-      0x01,  // initiator keys: enc key
-      0x03   // responder keys: enc key and identity info
-  );
-  // clang-format on
+  const auto kExpected =
+      CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
+                             0x03,  // IO cap.: NoInputNoOutput
+                             0x00,  // OOB: not present
+                             AuthReq::kBondingFlag | AuthReq::kSC,
+                             0x10,                 // encr. key size: 16 (default max)
+                             KeyDistGen::kEncKey,  // initiator keys
+                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+      );
 
   bool pairing_request_sent = false;
   // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
@@ -583,17 +582,14 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
 }
 
 TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
-  // clang-format off
-  const auto kExpected = CreateStaticByteBuffer(
-      0x01,  // code: "Pairing Request"
-      0x04,  // IO cap.: KeyboardDisplay
-      0x00,  // OOB: not present
-      0x0C,  // AuthReq: no bonding, MITM (authenticated), Secure Connections
-      0x10,  // encr. key size: 16 (default max)
-      0x00,  // initiator keys: none
-      0x00   // responder keys: none
+  const auto kExpected = CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
+                                                0x04,  // IO cap.: KeyboardDisplay
+                                                0x00,  // OOB: not present
+                                                AuthReq::kMITM | AuthReq::kSC,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                0x00,  // initiator keys: none
+                                                0x00   // responder keys: none
   );
-  // clang-format on
 
   // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.
   NewPairingTest(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
