@@ -89,7 +89,7 @@ if (dir_pw_third_party_arduino != "") {
     }
   }
 } else {
-  group("arduino_build") {
+  config("arduino_build") {
   }
   group("pre_init") {
   }
