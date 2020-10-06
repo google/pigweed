@@ -15,6 +15,7 @@
 
 #include <span>
 
+#include "pw_assert/light.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"
@@ -71,7 +72,7 @@ class BlobStore {
     // UNAVAILABLE - Unable to open, another writer or reader instance is
     //     already open.
     Status Open() {
-      PW_DCHECK(!open_);
+      PW_DASSERT(!open_);
       Status status = store_.OpenWrite();
       if (status.ok()) {
         open_ = true;
@@ -87,7 +88,7 @@ class BlobStore {
     // OK - success.
     // DATA_LOSS - Error writing data or fail to verify written data.
     Status Close() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       open_ = false;
       return store_.CloseWrite();
     }
@@ -100,7 +101,7 @@ class BlobStore {
     // UNAVAILABLE - Unable to erase while reader is open.
     // [error status] - flash erase failed.
     Status Erase() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.Erase();
     }
 
@@ -110,7 +111,7 @@ class BlobStore {
     // OK - success.
     // FAILED_PRECONDITION - not open.
     Status Discard() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.Invalidate();
     }
 
@@ -119,18 +120,18 @@ class BlobStore {
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeWriteLimit() const override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.WriteBytesRemaining();
     }
 
     size_t CurrentSizeBytes() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.write_address_;
     }
 
    protected:
     Status DoWrite(ConstByteSpan data) override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.Write(data);
     }
 
@@ -154,7 +155,7 @@ class BlobStore {
     // are written in the flush. Any remainder is held until later for either
     // a flush with flash_write_size_bytes buffered or the writer is closed.
     Status Flush() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.Flush();
     }
 
@@ -163,14 +164,14 @@ class BlobStore {
     // the blob. Returns zero if, in the current state, Write would return
     // status other than OK. See stream.h for additional details.
     size_t ConservativeWriteLimit() const override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       // Deferred writes need to fit in the write buffer.
       return store_.WriteBufferBytesFree();
     }
 
    private:
     Status DoWrite(ConstByteSpan data) override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.AddToWriteBuffer(data);
     }
   };
@@ -198,7 +199,7 @@ class BlobStore {
     // INVALID_ARGUMENT - Invalid offset.
     // UNAVAILABLE - Unable to open, already open.
     Status Open(size_t offset = 0) {
-      PW_DCHECK(!open_);
+      PW_DASSERT(!open_);
       if (!store_.ValidToRead()) {
         return Status::FailedPrecondition();
       }
@@ -219,7 +220,7 @@ class BlobStore {
     //
     // OK - success.
     Status Close() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       open_ = false;
       return store_.CloseRead();
     }
@@ -228,7 +229,7 @@ class BlobStore {
     // be read. Returns zero if, in the current state, Read would return status
     // other than OK. See stream.h for additional details.
     size_t ConservativeReadLimit() const override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.ReadableDataBytes() - offset_;
     }
 
@@ -238,16 +239,16 @@ class BlobStore {
     // FAILED_PRECONDITION - Reader not open.
     // UNIMPLEMENTED - Memory mapped access not supported for this blob.
     Result<ConstByteSpan> GetMemoryMappedBlob() {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       return store_.GetMemoryMappedBlob();
     }
 
    private:
     StatusWithSize DoRead(ByteSpan dest) override {
-      PW_DCHECK(open_);
+      PW_DASSERT(open_);
       StatusWithSize status = store_.Read(offset_, dest);
       if (status.ok()) {
-        PW_DCHECK_UINT_EQ(status.size(), dest.size_bytes());
+        PW_DASSERT(status.size() == dest.size_bytes());
         offset_ += status.size();
       }
       return status;
