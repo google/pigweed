@@ -99,21 +99,6 @@ pw_source_set("test_utils") {
   visibility = [ "./*" ]
 }
 
-# Provides the public RPC service definition (but not implementation). Can be
-# used to expose global service registration without depending on the complete
-# RPC library.
-# TODO(hepler): Remove this unnecessary alias.
-group("service") {
-  deps = [ ":server" ]
-}
-
-# RPC server that uses Nanopb to encode and decode protobufs. RPCs use Nanopb
-# structs as their requests and responses.
-# TODO(hepler): Remove this unnecessary alias.
-group("nanopb_server") {
-  deps = [ ":server" ]
-}
-
 config("private_includes") {
   include_dirs = [ "." ]
   visibility = [ ":*" ]
