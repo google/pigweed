@@ -630,7 +630,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
   EXPECT_EQ(1, listener()->pairing_error_count());
 }
 
-// Verify that Pairing Requests can only be received in IdlePhase, not in Phase1.
+// Verify that Pairing Requests are rejected by Phase1 - these are handled elsewhere in our stack.
 TEST_F(SMP_Phase1Test, Phase1ResponderRejectsPairingRequest) {
   const auto kRequest =
       CreateStaticByteBuffer(0x01,                 // code: Pairing Request

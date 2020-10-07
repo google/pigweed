@@ -23,8 +23,6 @@ static_library("sm") {
   sources = [
     "ecdh_key.cc",
     "ecdh_key.h",
-    "idle_phase.cc",
-    "idle_phase.h",
     "pairing_channel.cc",
     "pairing_channel.h",
     "pairing_phase.cc",
@@ -44,6 +42,8 @@ static_library("sm") {
     "sc_stage_1_passkey.h",
     "security_manager.cc",
     "security_manager.h",
+    "security_request_phase.cc",
+    "security_request_phase.h",
     "util.cc",
     "util.h",
   ]
@@ -74,7 +74,6 @@ source_set("tests") {
 
   sources = [
     "ecdh_key_unittest.cc",
-    "idle_phase_unittest.cc",
     "packet_unittest.cc",
     "pairing_channel_unittest.cc",
     "pairing_phase_unittest.cc",
@@ -85,6 +84,7 @@ source_set("tests") {
     "sc_stage_1_just_works_numeric_comparison_unittest.cc",
     "sc_stage_1_passkey_unittest.cc",
     "security_manager_unittest.cc",
+    "security_request_phase_unittest.cc",
     "types_unittest.cc",
     "util_unittest.cc",
   ]

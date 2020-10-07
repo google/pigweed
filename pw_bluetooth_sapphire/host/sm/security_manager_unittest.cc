@@ -4,6 +4,8 @@
 
 #include "security_manager.h"
 
+#include <cstdlib>
+
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -18,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "util.h"
 
@@ -832,6 +835,20 @@ class SMP_ResponderPairingTest : public SMP_SecurityManagerTest {
  private:
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SMP_ResponderPairingTest);
 };
+
+// Calling `Abort` with no in-progress security upgrade should not cause a PairingComplete event.
+TEST_F(SMP_InitiatorPairingTest, AbortNoSecurityUpgradeInProgress) {
+  pairing()->Abort();
+  RunLoopUntilIdle();
+  EXPECT_EQ(0, pairing_complete_count());
+}
+
+// Disconnecting with no in-progress security upgrade should not cause a PairingComplete event.
+TEST_F(SMP_InitiatorPairingTest, DisconnectNoSecurityUpgradeInProgress) {
+  fake_chan()->Close();
+  RunLoopUntilIdle();
+  EXPECT_EQ(0, pairing_complete_count());
+}
 
 // Requesting pairing at the current security level should succeed immediately.
 TEST_F(SMP_InitiatorPairingTest, UpgradeSecurityCurrentLevel) {
@@ -2619,6 +2636,25 @@ TEST_F(SMP_InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCause
   ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
+TEST_F(SMP_ResponderPairingTest, SuccessfulPairAfterResetInProgressPairing) {
+  ReceivePairingRequest();
+  RunLoopUntilIdle();
+  // At this point, we expect to have completed Phase 1, and pairing should still be in progress.
+  EXPECT_EQ(1, pairing_response_count());
+
+  pairing()->Abort();
+  RunLoopUntilIdle();
+  // Pairing should have failed and ended.
+  EXPECT_EQ(1, pairing_failed_count());
+  EXPECT_EQ(1, pairing_complete_count());
+
+  // Verify that the next pairing request is properly handled
+  ReceivePairingRequest();
+  RunLoopUntilIdle();
+  // At this point, we expect to have completed Phase 1, and pairing should still be in progress.
+  EXPECT_EQ(2, pairing_response_count());
+}
+
 TEST_F(SMP_ResponderPairingTest, SecurityRequestCausesPairing) {
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();
@@ -3210,10 +3246,14 @@ TEST_F(SMP_ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   ASSERT_EQ(hci::StatusCode::kPinOrKeyMissing, auth_failure_status().protocol_error());
 }
 
+// As responder, we ignore security requests and don't send a Pairing Request or encrypt the link
+// in response.
 TEST_F(SMP_ResponderPairingTest, ReceiveSecurityRequest) {
   ReceiveSecurityRequest();
-  EXPECT_EQ(ErrorCode::kCommandNotSupported, received_error_code());
+  EXPECT_EQ(0, pairing_request_count());
+  EXPECT_EQ(0, fake_link()->start_encryption_count());
 }
+
 // Test that LTK is generated and passed up to SecurityManager when both sides request bonding
 TEST_F(SMP_ResponderPairingTest, BothSidesRequestBondingLTKCreated) {
   UInt128 stk;

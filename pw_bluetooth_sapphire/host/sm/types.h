@@ -251,6 +251,9 @@ using PairingProcedureId = uint64_t;
 // this is the LTK which may be persisted.
 using OnPhase2KeyGeneratedCallback = fit::function<void(const UInt128&)>;
 
+// Used to notify classes of peer Pairing Requests.
+using PairingRequestCallback = fit::function<void(PairingRequestParams)>;
+
 }  // namespace sm
 }  // namespace bt
 

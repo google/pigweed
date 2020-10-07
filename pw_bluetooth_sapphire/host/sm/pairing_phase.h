@@ -43,7 +43,8 @@ class PairingPhase {
 
     // Ask the user to enter a 6-digit passkey or reject pairing. Reports the result by invoking
     // |respond| with |passkey| - a negative value of |passkey| indicates entry failed.
-    // TODO(fxbug.dev/49966): Use an optional to convey success/failure instead of the signedness of passkey.
+    // TODO(fxbug.dev/49966): Use an optional to convey success/failure instead of the signedness of
+    // passkey.
     using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
     virtual void RequestPasskey(PasskeyResponseCallback respond) = 0;
 
@@ -67,9 +68,9 @@ class PairingPhase {
   // Cleans up pairing state and and invokes Listener::OnPairingFailed.
   void OnFailure(Status status);
 
-  // Default implementation ends the current pairing procedure unsuccessfully with |ecode| as the
-  // reason, and calls OnFailure.
-  virtual void Abort(ErrorCode ecode);
+  // Ends the current pairing procedure unsuccessfully with |ecode| as the reason, and calls
+  // OnFailure.
+  void Abort(ErrorCode ecode);
 
   // Called by the owning class when the SMP pairing timer expires, calls OnFailure.
   void OnPairingTimeout();

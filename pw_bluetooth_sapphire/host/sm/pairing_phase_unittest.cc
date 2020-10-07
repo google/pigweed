@@ -40,9 +40,7 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
     return weak_ptr_factory_.GetWeakPtr();
   }
 
-  std::string ToStringInternal() override {
-    return "";
-  }
+  std::string ToStringInternal() override { return ""; }
 
   // PairingPhase override, not tested as PairingPhase does not implement this pure virtual
   // function.

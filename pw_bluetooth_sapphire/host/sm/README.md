@@ -47,7 +47,7 @@ Each of these files represents a single stateful class which implements a portio
 
 - [`SecurityManager`](/src/connectivity/bluetooth/core/bt-host/sm/security_manager.h)
   - [`PairingChannel`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h)
-  - [`IdlePhase`](/src/connectivity/bluetooth/core/bt-host/sm/idle_phase.h)
+  - [`SecurityRequestPhase`](/src/connectivity/bluetooth/core/bt-host/sm/security_request_phase.h)
   - [`Phase1`](/src/connectivity/bluetooth/core/bt-host/sm/phase_1.h)
   - [`Phase2Legacy`](/src/connectivity/bluetooth/core/bt-host/sm/phase_2_legacy.h)
   - [`Phase2SecureConnections`](/src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h)
@@ -57,7 +57,7 @@ Each of these files represents a single stateful class which implements a portio
 
 #### Abstract pairing classes
 These are abstract classes subclassed by many of the "stateful pairing classes".
-* [`PairingPhase`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h) - `IdlePhase`, `Phase1`, `Phase2Legacy`, `Phase2SecureConnections`, and `Phase3` subclass this class. `PairingPhase` provides interfaces and functionality relevant to all phases of pairing.
+* [`PairingPhase`](/src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h) - `SecurityRequestPhase`, `Phase1`, `Phase2Legacy`, `Phase2SecureConnections`, and `Phase3` subclass this class. `PairingPhase` provides interfaces and functionality relevant to all phases of pairing.
 * [`ScStage1`](/src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h) - `ScStage1JustWorksNumericComparison` and `ScStage1Passkey` subclass this pure interface. `ScStage1` provides methods for `Phase2SecureConnections` to polymorphically interact with both of the Stage 1 classes.
 
 #### Utility files:
