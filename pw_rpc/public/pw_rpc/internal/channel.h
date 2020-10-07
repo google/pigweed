@@ -51,6 +51,11 @@ class Channel : public rpc::Channel {
     // Returns a portion of this OutputBuffer to use as the packet payload.
     std::span<std::byte> payload(const Packet& packet) const;
 
+    bool Contains(std::span<const std::byte> buffer) const {
+      return buffer.data() >= buffer_.data() &&
+             buffer.data() + buffer.size() <= buffer_.data() + buffer_.size();
+    }
+
    private:
     friend class Channel;
 

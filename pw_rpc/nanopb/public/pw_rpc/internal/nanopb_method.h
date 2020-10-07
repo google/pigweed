@@ -164,10 +164,10 @@ class NanopbMethod : public Method {
         id,
         ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
         {.server_streaming =
-             [](ServerCall& call, const void* req, BaseServerWriter& resp) {
+             [](ServerCall& call, const void* req, BaseServerWriter& writer) {
                method(call,
                       *static_cast<const Request<method>*>(req),
-                      static_cast<ServerWriter<Response<method>>&>(resp));
+                      static_cast<ServerWriter<Response<method>>&>(writer));
              }},
         request,
         response);

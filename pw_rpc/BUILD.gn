@@ -166,7 +166,10 @@ pw_test_group("tests") {
     ":server_test",
     ":service_test",
   ]
-  group_deps = [ "nanopb:tests" ]
+  group_deps = [
+    "nanopb:tests",
+    "raw:tests",
+  ]
 }
 
 pw_proto_library("test_protos") {

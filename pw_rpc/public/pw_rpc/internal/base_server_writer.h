@@ -66,6 +66,8 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   const Channel& channel() const { return call_.channel(); }
 
+  constexpr const Channel::OutputBuffer& buffer() const { return response_; }
+
   std::span<std::byte> AcquirePayloadBuffer();
 
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
