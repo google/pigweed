@@ -94,7 +94,11 @@ export class WebSerialTransport implements DeviceTransport {
     this.connected.next(false);
   }
 
-  private async connectPort(port: SerialPort): Promise<void> {
+  /**
+   * Connect to a given SerialPort. This involves no user interaction.
+   * and can be called whenever a port is available.
+   */
+  async connectPort(port: SerialPort): Promise<void> {
     this.disconnect();
 
     this.activePortConnectionConnection =
