@@ -22,9 +22,13 @@ namespace bt::gap {
 // This class is intended to be owned by a ScoConnectionManager.
 class ScoConnection final : public fbl::RefCounted<ScoConnection> {
  public:
-  static fbl::RefPtr<ScoConnection> Create(std::unique_ptr<hci::Connection> connection);
+  // |connection| is the underlying connection and must have the link type kSCO or kESCO.
+  // |deactivated_cb| will be called when the connection has been Deactivated and should be
+  // destroyed.
+  static fbl::RefPtr<ScoConnection> Create(std::unique_ptr<hci::Connection> connection,
+                                           fit::closure deactivated_cb);
 
-  hci::ConnectionHandle handle() const { return connection_->handle(); }
+  hci::ConnectionHandle handle() const { return handle_; }
 
   // Called by ScoConnectionManager to notify a connection it can no longer process data and its
   // hci::Connection should be closed.
@@ -60,8 +64,7 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
  private:
   friend class fbl::RefPtr<ScoConnection>;
 
-  // |connection| is the underlying connection and must have the link type kSCO or kESCO.
-  explicit ScoConnection(std::unique_ptr<hci::Connection> connection);
+  explicit ScoConnection(std::unique_ptr<hci::Connection> connection, fit::closure closed_cb);
 
   // Destroying this object will disconnect the underlying HCI connection.
   ~ScoConnection() = default;
@@ -73,9 +76,15 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
   // True if Activate() has been called and neither Close() or Deactivate() has been called yet.
   bool active_;
 
+  hci::ConnectionHandle handle_;
+
   std::unique_ptr<hci::Connection> connection_;
 
-  fit::closure closed_cb_;
+  // Called to notify the caller of Activate() that the connection was closed.
+  fit::closure activator_closed_cb_;
+
+  // Called to notify the owner that the connection was deactivated.
+  fit::closure deactivated_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);
 };

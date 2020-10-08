@@ -488,6 +488,100 @@ struct IOCapabilityRequestNegativeReplyReturnParams {
   DeviceAddressBytes bd_addr;
 } __PACKED;
 
+// ======================================================
+// Enhanced Setup Synchronous Connection Command (BR/EDR)
+constexpr OpCode kEnhancedSetupSynchronousConnection = LinkControlOpCode(0x003D);
+
+struct VendorCodingFormat {
+  CodingFormat coding_format;
+
+  // See assigned numbers.
+  uint16_t company_id;
+
+  // Shall be ignored if |coding_format| is not kVendorSpecific.
+  uint16_t vendor_codec_id;
+};
+
+struct SynchronousConnectionParameters {
+  // Transmit bandwidth in octets per second.
+  uint32_t transmit_bandwidth;
+
+  // Receive bandwidth in octets per second.
+  uint32_t receive_bandwidth;
+
+  // Local Controller -> Remote Controller coding format.
+  VendorCodingFormat transmit_coding_format;
+
+  // Remote Controller -> Local Controller coding format.
+  VendorCodingFormat receive_coding_format;
+
+  uint16_t transmit_codec_frame_size_bytes;
+
+  uint16_t receive_codec_frame_size_bytes;
+
+  // Host->Controller data rate in octets per second.
+  uint32_t input_bandwidth;
+
+  // Controller->Host data rate in octets per second.
+  uint32_t output_bandwidth;
+
+  // Host->Controller coding format.
+  VendorCodingFormat input_coding_format;
+
+  // Controller->Host coding format.
+  VendorCodingFormat output_coding_format;
+
+  // Size, in bits, of the sample or framed data.
+  uint16_t input_coded_data_size_bits;
+
+  // Size, in bits, of the sample or framed data.
+  uint16_t output_coded_data_size_bits;
+
+  PcmDataFormat input_pcm_data_format;
+
+  PcmDataFormat output_pcm_data_format;
+
+  // The number of bit positions within an audio sample that the MSB of
+  // the sample is away from starting at the MSB of the data.
+  uint8_t input_pcm_sample_payload_msb_position;
+
+  // The number of bit positions within an audio sample that the MSB of
+  // the sample is away from starting at the MSB of the data.
+  uint8_t output_pcm_sample_payload_msb_position;
+
+  ScoDataPath input_data_path;
+
+  ScoDataPath output_data_path;
+
+  // The number of bits in each unit of data received from the Host over the audio data transport.
+  // 0 indicates "not applicable"  (implied by the choice of audio data transport).
+  uint8_t input_transport_unit_size_bits;
+
+  // The number of bits in each unit of data sent to the Host over the audio data transport.
+  // 0 indicates "not applicable"  (implied by the choice of audio data transport).
+  uint8_t output_transport_unit_size_bits;
+
+  // The value in milliseconds representing the upper limit of the sum of
+  // the synchronous interval, and the size of the eSCO window, where the
+  // eSCO window is the reserved slots plus the retransmission window.
+  // Minimum: 0x0004
+  // Don't care: 0xFFFF
+  uint16_t max_latency_ms;
+
+  // Bitmask of allowed packet types.
+  uint8_t packet_types;
+
+  ScoRetransmissionEffort retransmission_effort;
+};
+
+struct EnhancedSetupSynchronousConnectionCommandParams {
+  // The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
+  // handle of an existing eSCO link if updating connection parameters.
+  ConnectionHandle connection_handle;
+
+  SynchronousConnectionParameters connection_parameters;
+} __PACKED;
+
 // ======= Controller & Baseband Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.3
 constexpr uint8_t kControllerAndBasebandOGF = 0x03;
@@ -1048,7 +1142,6 @@ struct ConnectionCompleteEventParams {
   DeviceAddressBytes bd_addr;
 
   // See enum LinkType in hci_constants.h.
-  // ExtendedSCO is not valid as a link type.
   LinkType link_type;
 
   // Whether Link level encryption is enabled
@@ -1342,6 +1435,41 @@ struct ReadRemoteExtendedFeaturesCompleteEventParams {
   // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
   // for how to interpret this bitfield.
   uint64_t lmp_features;
+} __PACKED;
+
+// ============================================================
+// Synchronous Connection Complete Event (BR/EDR)
+constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
+
+struct SynchronousConnectionCompleteEventParams {
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
+
+  // A connection handle for the newly created SCO connection.
+  ConnectionHandle connection_handle;
+
+  // BD_ADDR of the other connected device forming the connection.
+  DeviceAddressBytes bd_addr;
+
+  LinkType link_type;
+
+  // Time between two consecutive eSCO instants measured in slots. Shall be
+  // zero for SCO links.
+  uint8_t transmission_interval;
+
+  // The size of the retransmission window measured in slots. Shall be zero for
+  // SCO links.
+  uint8_t retransmission_window;
+
+  // Length in bytes of the eSCO payload in the receive direction. Shall be
+  // zero for SCO links.
+  uint16_t rx_packet_length;
+
+  // Length in bytes of the eSCO payload in the transmit direction. Shall be
+  // zero for SCO links.
+  uint16_t tx_packet_length;
+
+  CodingFormat air_coding_format;
 } __PACKED;
 
 // =============================================

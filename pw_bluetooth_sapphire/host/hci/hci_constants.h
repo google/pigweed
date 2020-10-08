@@ -1443,6 +1443,62 @@ enum class RoleSwitchBits : uint8_t {
   kAllowRoleSwitch = 0x1
 };
 
+// Coding formats from assigned numbers.
+// (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+enum class CodingFormat : uint8_t {
+  kMuLaw = 0x0,
+  kALaw = 0x1,
+  kCvsd = 0x2,
+  kTransparent = 0x3,
+  kLinearPcm = 0x4,
+  kMSbc = 0x5,
+  kVendorSpecific = 0xFF,
+};
+
+// PCM data formats from assigned numbers.
+// (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+enum class PcmDataFormat : uint8_t {
+  kNotApplicable = 0x0,
+  k1sComplement = 0x1,
+  k2sComplement = 0x2,
+  kSignMagnitude = 0x3,
+  kUnsigned = 0x4,
+};
+
+enum class ScoDataPath : uint8_t {
+  kHci = 0x00,
+  // 0x01 - 0xFE specify the logical channel number (vendor specific)
+  kAudioTestMode = 0xFF,
+};
+
+// Bitmask values for allowed SCO packet types.
+enum class ScoPacketTypeBits : uint16_t {
+  kHv1 = (1 << 0),
+  kHv2 = (1 << 1),
+  kHv3 = (1 << 2),
+  kEv3 = (1 << 3),
+  kEv4 = (1 << 4),
+  kEv5 = (1 << 5),
+  kNot2Ev3 = (1 << 6),
+  kNot3Ev3 = (1 << 7),
+  kNot2Ev5 = (1 << 8),
+  kNot3Ev5 = (1 << 9),
+};
+
+enum class ScoRetransmissionEffort : uint8_t {
+  // SCO or eSCO
+  kNone = 0x00,
+
+  // eSCO only
+  kPowerOptimized  = 0x01,
+
+  // eSCO only
+  kQualityOptimized  = 0x02,
+
+  // SCO or eSCO
+  kDontCare = 0xFF,
+};
+
 }  // namespace hci
 }  // namespace bt
 

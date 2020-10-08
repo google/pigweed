@@ -151,6 +151,22 @@ std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role 
   return conn;
 }
 
+std::unique_ptr<Connection> Connection::CreateSCO(hci::LinkType link_type, ConnectionHandle handle,
+                                                  const DeviceAddress& local_address,
+                                                  const DeviceAddress& peer_address,
+                                                  fxl::WeakPtr<Transport> hci) {
+  ZX_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
+  ZX_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
+  ZX_ASSERT(link_type == hci::LinkType::kSCO || link_type == hci::LinkType::kExtendedSCO);
+
+  LinkType conn_type = link_type == hci::LinkType::kSCO ? LinkType::kSCO : LinkType::kESCO;
+
+  // TODO(fxb/61070): remove role for SCO connections, as it has no meaning
+  auto conn = std::make_unique<ConnectionImpl>(handle, conn_type, Role::kMaster, local_address,
+                                               peer_address, std::move(hci));
+  return conn;
+}
+
 Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
                        const DeviceAddress& local_address, const DeviceAddress& peer_address)
     : ll_type_(ll_type),

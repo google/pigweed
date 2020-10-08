@@ -120,6 +120,43 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
       ));
 }
 
+DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
+    hci::ConnectionHandle conn, hci::SynchronousConnectionParameters params) {
+  StaticByteBuffer<sizeof(hci::CommandHeader) +
+                   sizeof(hci::EnhancedSetupSynchronousConnectionCommandParams)>
+      buffer;
+  auto& header = buffer.AsMutable<hci::CommandHeader>();
+  header.opcode = htole16(hci::kEnhancedSetupSynchronousConnection);
+  header.parameter_total_size = sizeof(hci::EnhancedSetupSynchronousConnectionCommandParams);
+
+  buffer.mutable_view(sizeof(hci::CommandHeader)).AsMutable<hci::ConnectionHandle>() =
+      htole16(conn);
+
+  auto& payload = buffer.mutable_view(sizeof(hci::CommandHeader) + sizeof(hci::ConnectionHandle))
+                      .AsMutable<hci::SynchronousConnectionParameters>();
+  payload = params;
+  payload.transmit_bandwidth = htole32(payload.transmit_bandwidth);
+  payload.receive_bandwidth = htole32(payload.receive_bandwidth);
+  payload.transmit_coding_format.company_id = htole16(payload.transmit_coding_format.company_id);
+  payload.transmit_coding_format.vendor_codec_id =
+      htole16(payload.transmit_coding_format.vendor_codec_id);
+  payload.receive_coding_format.company_id = htole16(payload.receive_coding_format.company_id);
+  payload.receive_coding_format.vendor_codec_id =
+      htole16(payload.receive_coding_format.vendor_codec_id);
+  payload.transmit_codec_frame_size_bytes = htole16(payload.transmit_codec_frame_size_bytes);
+  payload.receive_codec_frame_size_bytes = htole16(payload.receive_codec_frame_size_bytes);
+  payload.input_bandwidth = htole32(payload.input_bandwidth);
+  payload.output_bandwidth = htole32(payload.output_bandwidth);
+  payload.input_coding_format.company_id = htole16(payload.input_coding_format.company_id);
+  payload.input_coding_format.vendor_codec_id =
+      htole16(payload.input_coding_format.vendor_codec_id);
+  payload.output_coding_format.company_id = htole16(payload.output_coding_format.company_id);
+  payload.output_coding_format.vendor_codec_id =
+      htole16(payload.output_coding_format.vendor_codec_id);
+  payload.max_latency_ms = htole16(payload.max_latency_ms);
+  return DynamicByteBuffer(buffer);
+}
+
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       0x13, 0x05,  // Number Of Completed Packet HCI event header, parameters length
@@ -212,6 +249,24 @@ DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enabl
       LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),
       0x03,  // parameter total size (3 bytes)
       LowerBits(conn), UpperBits(conn), static_cast<uint8_t>(enable)));
+}
+
+DynamicByteBuffer SynchronousConnectionCompletePacket(hci::ConnectionHandle conn,
+                                                      DeviceAddress address,
+                                                      hci::LinkType link_type,
+                                                      hci::StatusCode status) {
+  auto addr_bytes = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(
+      hci::kSynchronousConnectionCompleteEventCode,
+      0x11,  // parameter_total_size (17 bytes)
+      status, LowerBits(conn), UpperBits(conn), addr_bytes[0], addr_bytes[1], addr_bytes[2],
+      addr_bytes[3], addr_bytes[4], addr_bytes[5], link_type,  // peer address
+      0x00,                                                    // transmission interval
+      0x00,                                                    // retransmission window
+      0x00, 0x00,                                              // rx packet length
+      0x00, 0x00,                                              // tx packet length
+      0x00                                                     // coding format
+      ));
 }
 
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn) {

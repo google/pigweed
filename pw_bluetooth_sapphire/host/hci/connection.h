@@ -47,6 +47,8 @@ class Transport;
 //
 // This class is not thread-safe. Instances should only be accessed on their
 // creation thread.
+//
+// TODO(fxb/61070): create subclasses for each link type
 class Connection {
  public:
   // This defines the various connection types. These do not exactly correspond
@@ -92,6 +94,12 @@ class Connection {
 
   // Initializes this as a BR/EDR ACL connection.
   static std::unique_ptr<Connection> CreateACL(ConnectionHandle handle, Role role,
+                                               const DeviceAddress& local_address,
+                                               const DeviceAddress& peer_address,
+                                               fxl::WeakPtr<Transport> hci);
+
+  // |link_type| must be either SCO or eSCO.
+  static std::unique_ptr<Connection> CreateSCO(hci::LinkType link_type, ConnectionHandle handle,
                                                const DeviceAddress& local_address,
                                                const DeviceAddress& peer_address,
                                                fxl::WeakPtr<Transport> hci);

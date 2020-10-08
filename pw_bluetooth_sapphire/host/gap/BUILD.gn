@@ -52,6 +52,8 @@ static_library("gap") {
     "peer_cache.h",
     "sco_connection.cc",
     "sco_connection.h",
+    "sco_connection_manager.cc",
+    "sco_connection_manager.h",
     "sco_socket_channel_relay.cc",
     "sco_socket_factory.cc",
     "types.cc",
@@ -120,6 +122,7 @@ source_set("tests") {
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
     "peer_unittest.cc",
+    "sco_connection_manager_unittest.cc",
     "sco_connection_unittest.cc",
     "types_unittest.cc",
   ]

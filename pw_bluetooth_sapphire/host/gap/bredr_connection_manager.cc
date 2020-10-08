@@ -514,6 +514,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   }
 
   // Reject this connection.
+  // TODO(fxbug.dev/58458): Ignore this request as it will be handled by ScoConnectionManager.
   bt_log(INFO, "gap-bredr", "reject unsupported connection");
 
   auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,

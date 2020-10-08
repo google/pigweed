@@ -30,7 +30,8 @@ class GAP_ScoConnectionTest : public TestingBase {
         kConnectionHandle, hci::Connection::LinkType::kSCO, hci::Connection::Role::kMaster,
         DeviceAddress(), DeviceAddress());
     hci_conn_ = fake_conn->WeakPtr();
-    sco_conn_ = ScoConnection::Create(std::move(fake_conn));
+    deactivated_cb_count_ = 0;
+    sco_conn_ = ScoConnection::Create(std::move(fake_conn), [this] { deactivated_cb_count_++; });
   }
 
   void TearDown() override {
@@ -42,7 +43,10 @@ class GAP_ScoConnectionTest : public TestingBase {
 
   auto hci_conn() { return hci_conn_; }
 
+  size_t deactivated_count() const { return deactivated_cb_count_; }
+
  private:
+  size_t deactivated_cb_count_;
   fbl::RefPtr<ScoConnection> sco_conn_;
   fxl::WeakPtr<hci::Connection> hci_conn_;
 };
@@ -61,10 +65,13 @@ TEST_F(GAP_ScoConnectionTest, ActivateAndDeactivate) {
 
   sco_conn()->Deactivate();
   EXPECT_EQ(close_count, 0u);
+  EXPECT_EQ(deactivated_count(), 1u);
   EXPECT_FALSE(hci_conn());
 
   // Deactivating should be idempotent.
   sco_conn()->Deactivate();
+  EXPECT_EQ(close_count, 0u);
+  EXPECT_EQ(deactivated_count(), 1u);
 }
 
 TEST_F(GAP_ScoConnectionTest, ActivateAndClose) {
@@ -77,14 +84,23 @@ TEST_F(GAP_ScoConnectionTest, ActivateAndClose) {
 
   sco_conn()->Close();
   EXPECT_EQ(close_count, 1u);
+  EXPECT_EQ(deactivated_count(), 0u);
   EXPECT_FALSE(hci_conn());
 
   // Closing should be idempotent.
   sco_conn()->Close();
   EXPECT_EQ(close_count, 1u);
+  EXPECT_EQ(deactivated_count(), 0u);
 }
 
 TEST_F(GAP_ScoConnectionTest, UniqueId) { EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle); }
+
+TEST_F(GAP_ScoConnectionTest, CloseWithoutActivating) {
+  EXPECT_TRUE(hci_conn());
+  sco_conn()->Close();
+  EXPECT_EQ(deactivated_count(), 0u);
+  EXPECT_FALSE(hci_conn());
+}
 
 }  // namespace
 }  // namespace bt::gap

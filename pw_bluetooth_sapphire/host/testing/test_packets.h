@@ -41,6 +41,9 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
                                               hci::ConnectionHandle conn,
                                               hci::EncryptionStatus encryption_enabled);
 
+DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
+    hci::ConnectionHandle conn, hci::SynchronousConnectionParameters params);
+
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci::ConnectionHandle conn, uint16_t num_packets);
 
 DynamicByteBuffer CommandStatusPacket(hci::OpCode op_code, hci::StatusCode status_code);
@@ -57,6 +60,11 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandl
                                                             bool extended_features);
 
 DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable);
+
+DynamicByteBuffer SynchronousConnectionCompletePacket(hci::ConnectionHandle conn,
+                                                      DeviceAddress address,
+                                                      hci::LinkType link_type,
+                                                      hci::StatusCode status);
 
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci::ConnectionHandle conn,
