@@ -39,22 +39,35 @@ class BlobStoreTest : public ::testing::Test {
     std::memcpy(flash_.buffer().data(), contents.data(), contents.size());
   }
 
-  void InitSourceBufferToRandom(uint64_t seed) {
-    partition_.Erase();
+  void InitSourceBufferToRandom(uint64_t seed,
+                                size_t init_size_bytes = kBlobDataSize) {
+    ASSERT_LE(init_size_bytes, source_buffer_.size());
     random::XorShiftStarRng64 rng(seed);
-    rng.Get(source_buffer_);
+
+    std::memset(source_buffer_.data(),
+                static_cast<int>(flash_.erased_memory_content()),
+                source_buffer_.size());
+    rng.Get(std::span(source_buffer_).first(init_size_bytes));
   }
 
-  void InitSourceBufferToFill(char fill) {
-    partition_.Erase();
-    std::memset(source_buffer_.data(), fill, source_buffer_.size());
+  void InitSourceBufferToFill(char fill,
+                              size_t fill_size_bytes = kBlobDataSize) {
+    ASSERT_LE(fill_size_bytes, source_buffer_.size());
+    std::memset(source_buffer_.data(),
+                static_cast<int>(flash_.erased_memory_content()),
+                source_buffer_.size());
+    std::memset(source_buffer_.data(), fill, fill_size_bytes);
   }
 
   // Fill the source buffer with random pattern based on given seed, written to
   // BlobStore in specified chunk size.
-  void WriteTestBlock() {
+  void WriteTestBlock(size_t write_size_bytes = kBlobDataSize) {
+    ASSERT_LE(write_size_bytes, source_buffer_.size());
     constexpr size_t kBufferSize = 256;
     kvs::ChecksumCrc16 checksum;
+
+    ConstByteSpan write_data =
+        std::span(source_buffer_).first(write_size_bytes);
 
     char name[16] = {};
     snprintf(name, sizeof(name), "TestBlobBlock");
@@ -64,18 +77,19 @@ class BlobStoreTest : public ::testing::Test {
     EXPECT_EQ(Status::Ok(), blob.Init());
 
     BlobStore::BlobWriter writer(blob);
-    EXPECT_EQ(Status::Ok(), writer.Open());
-    EXPECT_EQ(Status::Ok(), writer.Erase());
-    ASSERT_EQ(Status::Ok(), writer.Write(source_buffer_));
-    EXPECT_EQ(Status::Ok(), writer.Close());
+    EXPECT_EQ(Status::OK, writer.Open());
+    ASSERT_EQ(Status::OK, writer.Write(write_data));
+    EXPECT_EQ(Status::OK, writer.Close());
 
     // Use reader to check for valid data.
     BlobStore::BlobReader reader(blob);
     ASSERT_EQ(Status::Ok(), reader.Open());
     Result<ConstByteSpan> result = reader.GetMemoryMappedBlob();
     ASSERT_TRUE(result.ok());
+    EXPECT_EQ(write_size_bytes, result.value().size_bytes());
     VerifyFlash(result.value());
-    EXPECT_EQ(Status::Ok(), reader.Close());
+    VerifyFlash(flash_.buffer());
+    EXPECT_EQ(Status::OK, reader.Close());
   }
 
   // Open a new blob instance and read the blob using the given read chunk size.
@@ -142,6 +156,8 @@ class BlobStoreTest : public ::testing::Test {
 };
 
 TEST_F(BlobStoreTest, Init_Ok) {
+  // TODO: Do init test with flash/kvs explicitly in the different possible
+  // entry states.
   BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
   EXPECT_EQ(Status::Ok(), blob.Init());
 }
@@ -149,16 +165,35 @@ TEST_F(BlobStoreTest, Init_Ok) {
 TEST_F(BlobStoreTest, Discard) {
   InitSourceBufferToRandom(0x8675309);
   WriteTestBlock();
+  constexpr char blob_title[] = "TestBlobBlock";
+  std::array<std::byte, 64> tmp_buffer = {};
 
   kvs::ChecksumCrc16 checksum;
-  BlobStoreBuffer<256> blob(
-      "TestBlobBlock", partition_, &checksum, kvs::TestKvs());
-  EXPECT_EQ(Status::Ok(), blob.Init());
+
+  // TODO: Do this test with flash/kvs in the different entry state
+  // combinations.
+
+  BlobStoreBuffer<256> blob(blob_title, partition_, &checksum, kvs::TestKvs());
+  EXPECT_EQ(Status::OK, blob.Init());
 
   BlobStore::BlobWriter writer(blob);
-  EXPECT_EQ(Status::Ok(), writer.Open());
-  EXPECT_EQ(Status::Ok(), writer.Discard());
-  EXPECT_EQ(Status::Ok(), writer.Close());
+
+  EXPECT_EQ(Status::OK, writer.Open());
+  EXPECT_EQ(Status::OK, writer.Write(tmp_buffer));
+
+  // The write does an implicit erase so there should be no key for this blob.
+  EXPECT_EQ(Status::NOT_FOUND,
+            kvs::TestKvs().Get(blob_title, tmp_buffer).status());
+  EXPECT_EQ(Status::OK, writer.Close());
+
+  EXPECT_EQ(Status::OK, kvs::TestKvs().Get(blob_title, tmp_buffer).status());
+
+  EXPECT_EQ(Status::OK, writer.Open());
+  EXPECT_EQ(Status::OK, writer.Discard());
+  EXPECT_EQ(Status::OK, writer.Close());
+
+  EXPECT_EQ(Status::NOT_FOUND,
+            kvs::TestKvs().Get(blob_title, tmp_buffer).status());
 }
 
 TEST_F(BlobStoreTest, MultipleErase) {
@@ -255,19 +290,27 @@ TEST_F(BlobStoreTest, ChunkReadFull) {
   ChunkReadTest(kBlobDataSize);
 }
 
-// TODO: test that does close with bytes still in the buffer to test zero fill
-// to alignment and write on close.
+TEST_F(BlobStoreTest, PartialBufferThenClose) {
+  // Do write of only a partial chunk, which will only have bytes in buffer
+  // (none written to flash) at close.
+  size_t data_bytes = 12;
+  InitSourceBufferToRandom(0x111, data_bytes);
+  WriteTestBlock(data_bytes);
 
-// TODO: test to do write/close, write/close multiple times.
+  // Do write with several full chunks and then some partial.
+  data_bytes = 158;
+  InitSourceBufferToRandom(0x3222, data_bytes);
+}
 
-// TODO: test start with old blob (with KVS entry), open, invalidate, no writes,
-// close. Verify the KVS entry is gone and blob is fully invalid.
-
-// TODO: test that checks doing read after bytes are in write buffer but before
-// any bytes are flushed to flash.
-
-// TODO: test mem mapped read when bytes in write buffer but nothing written to
-// flash.
+// Test to do write/close, write/close multiple times.
+TEST_F(BlobStoreTest, MultipleWrites) {
+  InitSourceBufferToRandom(0x1121);
+  WriteTestBlock();
+  InitSourceBufferToRandom(0x515);
+  WriteTestBlock();
+  InitSourceBufferToRandom(0x4321);
+  WriteTestBlock();
+}
 
 }  // namespace
 }  // namespace pw::blob_store

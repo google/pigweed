@@ -362,9 +362,9 @@ Status BlobStore::FlushFinalPartialChunk() {
 
   // Zero out the remainder of the buffer.
   auto zero_span = write_buffer_.subspan(bytes_in_buffer);
-  std::memset(zero_span.data(), 0, zero_span.size_bytes());
-  // TODO: look in to using flash erased value for fill, to possibly allow
-  // better resuming of writing.
+  std::memset(zero_span.data(),
+              static_cast<int>(partition_.erased_memory_content()),
+              zero_span.size_bytes());
 
   ConstByteSpan remaining_bytes = write_buffer_.first(flash_write_size_bytes_);
   return CommitToFlash(remaining_bytes, bytes_in_buffer);
