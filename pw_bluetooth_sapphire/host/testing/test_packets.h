@@ -25,7 +25,8 @@ DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
 DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn);
 
-DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address);
+DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
+                                          hci::LinkType link_type = hci::LinkType::kACL);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
 
@@ -40,6 +41,9 @@ DynamicByteBuffer DisconnectionCompletePacket(
 DynamicByteBuffer EncryptionChangeEventPacket(hci::StatusCode status_code,
                                               hci::ConnectionHandle conn,
                                               hci::EncryptionStatus encryption_enabled);
+
+DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
+    DeviceAddress peer_address, hci::SynchronousConnectionParameters params);
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci::ConnectionHandle conn, hci::SynchronousConnectionParameters params);
@@ -58,6 +62,9 @@ DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci::ConnectionHandle conn
 DynamicByteBuffer ReadRemoteSupportedFeaturesPacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandle conn,
                                                             bool extended_features);
+
+DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
+                                                     hci::StatusCode status_code);
 
 DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable);
 

@@ -24,11 +24,18 @@ class ScoConnectionManager final {
                        DeviceAddress local_address, fxl::WeakPtr<hci::Transport> transport);
   ~ScoConnectionManager();
 
-  // On error, |callback| will be called with nullptr.
+  // Initiate and outbound connection. A request will be queued if a connection is already in
+  // progress. On error, |callback| will be called with nullptr.
   using ConnectionCallback = fit::function<void(fbl::RefPtr<ScoConnection>)>;
   void OpenConnection(hci::SynchronousConnectionParameters parameters, ConnectionCallback callback);
 
-  // TODO(fxbug.dev/58458): Add method for accepting a connection request
+  // Accept the next inbound connection request and establish a new SCO connection using
+  // |parameters|.
+  // On error, |callback| will be called with nullptr.
+  // If another Open/Accept request is made before the peer sends a connection request, this request
+  // will be cancelled.
+  void AcceptConnection(hci::SynchronousConnectionParameters parameters,
+                        ConnectionCallback callback);
 
  private:
   hci::CommandChannel::EventHandlerId AddEventHandler(const hci::EventCode& code,
@@ -37,6 +44,7 @@ class ScoConnectionManager final {
   // Event handlers:
   hci::CommandChannel::EventCallbackResult OnSynchronousConnectionComplete(
       const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
 
   void TryCreateNextConnection();
 
@@ -47,6 +55,7 @@ class ScoConnectionManager final {
 
   struct ConnectionRequest {
     bool initiator;
+    bool received_request = false;
     hci::SynchronousConnectionParameters parameters;
     ConnectionCallback callback;
   };
@@ -54,8 +63,6 @@ class ScoConnectionManager final {
   std::queue<ConnectionRequest> connection_requests_;
 
   std::optional<ConnectionRequest> in_progress_request_;
-
-  // TODO(fxbug.dev/58458): Add timeout for responder requests.
 
   // Holds active connections.
   std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<ScoConnection>> connections_;

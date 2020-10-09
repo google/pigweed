@@ -398,6 +398,18 @@ struct ReadRemoteVersionInfoCommandParams {
 // Read Remote Version Information Complete event will indicate that this
 // command has been completed.
 
+// =============================================
+// Reject Synchronous Connection Comman (BR/EDR)
+constexpr OpCode kRejectSynchronousConnectionRequest = LinkControlOpCode(0x002A);
+
+struct RejectSynchronousConnectionRequestCommandParams {
+  // Address of the remote device that sent the request.
+  DeviceAddressBytes bd_addr;
+
+  // Reason the connection request was rejected.
+  StatusCode reason;
+} __PACKED;
+
 // =========================================================
 // IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
@@ -578,6 +590,17 @@ struct EnhancedSetupSynchronousConnectionCommandParams {
   // The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
   // handle of an existing eSCO link if updating connection parameters.
   ConnectionHandle connection_handle;
+
+  SynchronousConnectionParameters connection_parameters;
+} __PACKED;
+
+// ===============================================================
+// Enhanced Accept Synchronous Connection Request Command (BR/EDR)
+constexpr OpCode kEnhancedAcceptSynchronousConnectionRequest = LinkControlOpCode(0x003E);
+
+struct EnhancedAcceptSynchronousConnectionRequestCommandParams {
+  // The BD_ADDR of the remote device requesting the connection.
+  DeviceAddressBytes bd_addr;
 
   SynchronousConnectionParameters connection_parameters;
 } __PACKED;
