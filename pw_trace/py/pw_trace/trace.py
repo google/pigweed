@@ -140,6 +140,8 @@ def generate_trace_json(events: Iterable[TraceEvent]):
                 for i, item in enumerate(items):
                     args["data_" + str(i)] = item
                 line["args"] = args
+            else:
+                line["args"] = {"data": event.data.hex()}
 
         # Encode as JSON
         json_lines.append(json.dumps(line))
