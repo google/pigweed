@@ -34,6 +34,15 @@ const std::unordered_map<Code, size_t> kCodeToPayloadSize{
     {kPairingDHKeyCheck, sizeof(PairingDHKeyCheckValueE)},
 };
 
+// The available algorithms used to generate the cross-transport key during pairing.
+enum CrossTransportKeyAlgo {
+  // Use only the H6 function during cross-transport derivation (v5.2 Vol. 3 Part H 2.2.10).
+  kUseH6,
+
+  // Use the H7 function during cross-transport derivation (v5.2 Vol. 3 Part H 2.2.11).
+  kUseH7
+};
+
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
   PairingFeatures();

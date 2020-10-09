@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 
@@ -493,6 +494,40 @@ std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& res
   // Implements the "mod 32" part of G2 on the little-endian output of AES-CMAC.
   return (uint32_t)cmac_output[3] << 24 | (uint32_t)cmac_output[2] << 16 |
          (uint32_t)cmac_output[1] << 8 | (uint32_t)cmac_output[0];
+}
+
+std::optional<UInt128> H6(const UInt128& w, uint32_t key_id) {
+  StaticByteBuffer<sizeof(key_id)> data_to_encrypt;
+  data_to_encrypt.WriteObj(key_id);
+  return AesCmac(w, data_to_encrypt);
+}
+
+std::optional<UInt128> H7(const UInt128& salt, const UInt128& w) {
+  StaticByteBuffer<kUInt128Size> data_to_encrypt;
+  data_to_encrypt.WriteObj(w);
+  return AesCmac(salt, data_to_encrypt);
+}
+
+std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
+                                           CrossTransportKeyAlgo hash_function) {
+  std::optional<UInt128> intermediate_key;
+  if (hash_function == CrossTransportKeyAlgo::kUseH7) {
+    const UInt128 salt = {0x31, 0x70, 0x6D, 0x74, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    intermediate_key = H7(salt, le_ltk);
+  } else if (hash_function == CrossTransportKeyAlgo::kUseH6) {
+    // The string "tmp1" mapped into extended ASCII per spec v5.2 Vol. 3 Part H 2.4.2.4.
+    const uint32_t tmp1_key_id = 0x746D7031;
+    intermediate_key = H6(le_ltk, tmp1_key_id);
+  } else {
+    bt_log(WARN, "sm", "unexpected CrossTransportAction passed to link key generation!");
+  }
+  if (!intermediate_key.has_value()) {
+    return std::nullopt;
+  }
+  // The string "lebr" mapped into extended ASCII per spec v5.2 Vol. 3 Part H 2.4.2.4.
+  const uint32_t lebr_key_id = 0x6C656272;
+  return H6(*intermediate_key, lebr_key_id);
 }
 
 }  // namespace util

@@ -176,6 +176,25 @@ std::optional<UInt128> F6(const UInt128& mackey, const UInt128& n1, const UInt12
 std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& responder_pubkey_x,
                            const UInt128& initiator_nonce, const UInt128& responder_nonce);
 
+// Implements the "Link key conversion function h6" per Vol. 3, Part H, 2.2.10. `w` is the
+// encryption key for AES-CMAC, and `key_id` is used as the input value.
+//
+// A return value of std::nullopt indicates the calculation failed.
+std::optional<UInt128> H6(const UInt128& w, uint32_t key_id);
+
+// Implements the "Link key conversion function h7" per Vol. 3, Part H, 2.2.11. `salt` is the
+// encryption key for AES-CMAC, and `w` is the input value.
+//
+// A return value of std::nullopt indicates the calculation failed.
+std::optional<UInt128> H7(const UInt128& salt, const UInt128& w);
+
+// Converts an LE LTK to a BR/EDR link key for Cross Transport Key Derivation as defined in v5.2
+// Vol. 3 Part H 2.4.2.4.
+//
+// A return value of std::nullopt indicates the conversion failed.
+std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
+                                           CrossTransportKeyAlgo hash_function);
+
 }  // namespace util
 }  // namespace sm
 }  // namespace bt
