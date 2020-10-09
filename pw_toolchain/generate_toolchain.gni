@@ -19,6 +19,11 @@ declare_args() {
   # by the generate_toolchain template.
   pw_toolchain_SCOPE = {
   }
+
+  # Prefix for compilation commands (e.g. the path to a Goma or CCache compiler
+  # launcher). Example for ccache:
+  #   gn gen out --args='pw_command_launcher="ccache"'
+  pw_command_launcher = ""
 }
 
 # Creates a toolchain target.
@@ -69,6 +74,9 @@ template("generate_toolchain") {
     toolchain(target_name) {
       assert(defined(invoker.cc), "toolchain is missing 'cc'")
       tool("asm") {
+        if (pw_command_launcher != "") {
+          command_launcher = pw_command_launcher
+        }
         depfile = "{{output}}.d"
         command = string_join(" ",
                               [
@@ -92,6 +100,9 @@ template("generate_toolchain") {
       }
 
       tool("cc") {
+        if (pw_command_launcher != "") {
+          command_launcher = pw_command_launcher
+        }
         depfile = "{{output}}.d"
         command = string_join(" ",
                               [
@@ -113,6 +124,9 @@ template("generate_toolchain") {
 
       assert(defined(invoker.cxx), "toolchain is missing 'cxx'")
       tool("cxx") {
+        if (pw_command_launcher != "") {
+          command_launcher = pw_command_launcher
+        }
         depfile = "{{output}}.d"
         command = string_join(" ",
                               [
@@ -133,6 +147,9 @@ template("generate_toolchain") {
       }
 
       tool("objc") {
+        if (pw_command_launcher != "") {
+          command_launcher = pw_command_launcher
+        }
         depfile = "{{output}}.d"
         command =
             string_join(" ",
@@ -155,6 +172,9 @@ template("generate_toolchain") {
       }
 
       tool("objcxx") {
+        if (pw_command_launcher != "") {
+          command_launcher = pw_command_launcher
+        }
         depfile = "{{output}}.d"
         command =
             string_join(" ",
