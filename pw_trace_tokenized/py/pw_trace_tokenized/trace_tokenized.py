@@ -90,13 +90,13 @@ def has_data(token_string):
     return len(token_values) > TokenIdx.data_fmt
 
 
-def create_trace_event(token_string, timestamp, trace_id, data):
+def create_trace_event(token_string, timestamp_us, trace_id, data):
     token_values = token_string.split("|")
     return trace.TraceEvent(event_type=get_trace_type(
         token_values[TokenIdx.EventType]),
                             module=token_values[TokenIdx.Module],
                             label=token_values[TokenIdx.Label],
-                            timestamp=timestamp,
+                            timestamp_us=timestamp_us,
                             group=token_values[TokenIdx.Group],
                             trace_id=trace_id,
                             flags=token_values[TokenIdx.Flag],
@@ -106,7 +106,8 @@ def create_trace_event(token_string, timestamp, trace_id, data):
                             data=data if has_data(token_string) else b'')
 
 
-def parse_trace_event(buffer, db, last_time):
+def parse_trace_event(buffer, db, last_time, ticks_per_second=1000):
+    us_per_tick = 1000000 / ticks_per_second
     idx = 0
     # Read token
     token = struct.unpack('I', buffer[idx:idx + 4])[0]
@@ -114,12 +115,12 @@ def parse_trace_event(buffer, db, last_time):
 
     # Decode token
     if len(db.token_to_entries[token]) == 0:
-        _LOG.error("token not found")
+        _LOG.error("token not found: %08x", token)
     token_string = str(db.token_to_entries[token][0])
 
     # Read time
     time_delta, time_bytes = varint_decode(buffer[idx:])
-    timestamp = last_time + time_delta
+    timestamp_us = last_time + us_per_tick * time_delta
     idx += time_bytes
 
     # Trace ID
@@ -134,7 +135,7 @@ def parse_trace_event(buffer, db, last_time):
         data = buffer[idx:]
 
     # Create trace event
-    return create_trace_event(token_string, timestamp, trace_id, data)
+    return create_trace_event(token_string, timestamp_us, trace_id, data)
 
 
 def get_trace_events_from_file(databases, input_file_name):
@@ -156,7 +157,7 @@ def get_trace_events_from_file(databases, input_file_name):
 
             event = parse_trace_event(bytes_read[idx + 1:idx + 1 + size], db,
                                       last_timestamp)
-            last_timestamp = event.timestamp
+            last_timestamp = event.timestamp_us
             events.append(event)
             idx = idx + size + 1
     return events

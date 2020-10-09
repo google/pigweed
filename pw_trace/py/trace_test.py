@@ -54,7 +54,7 @@ class TestTraceGenerateJson(unittest.TestCase):
         event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
                                  module="module",
                                  label="label",
-                                 timestamp=10)
+                                 timestamp_us=10)
         json_lines = trace.generate_trace_json([event])
         self.assertEqual(1, len(json_lines))
         self.assertEqual(json.loads(json_lines[0]), {
@@ -76,7 +76,7 @@ class TestTraceGenerateJson(unittest.TestCase):
             event_type=trace.TraceType.Instantaneous,
             module="module",
             label="",  # Is replaced by data string
-            timestamp=10,
+            timestamp_us=10,
             has_data=True,
             data_fmt="@pw_arg_label",
             data=bytes("arg", "utf-8"))
@@ -94,7 +94,7 @@ class TestTraceGenerateJson(unittest.TestCase):
         event = trace.TraceEvent(event_type=trace.TraceType.InstantaneousGroup,
                                  module="module",
                                  label="label",
-                                 timestamp=10,
+                                 timestamp_us=10,
                                  has_data=True,
                                  data_fmt="@pw_arg_group",
                                  data=bytes("arg", "utf-8"))
@@ -114,7 +114,7 @@ class TestTraceGenerateJson(unittest.TestCase):
         event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
                                  module="module",
                                  label="counter",
-                                 timestamp=10,
+                                 timestamp_us=10,
                                  has_data=True,
                                  data_fmt="@pw_arg_counter",
                                  data=(5).to_bytes(4, byteorder="little"))
@@ -136,7 +136,7 @@ class TestTraceGenerateJson(unittest.TestCase):
         event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
                                  module="module",
                                  label="counter",
-                                 timestamp=10,
+                                 timestamp_us=10,
                                  has_data=True,
                                  data_fmt="@pw_py_struct_fmt:H",
                                  data=(5).to_bytes(2, byteorder="little"))
@@ -158,7 +158,7 @@ class TestTraceGenerateJson(unittest.TestCase):
         event = trace.TraceEvent(event_type=trace.TraceType.Instantaneous,
                                  module="module",
                                  label="counter",
-                                 timestamp=10,
+                                 timestamp_us=10,
                                  has_data=True,
                                  data_fmt="@pw_py_struct_fmt:Hl",
                                  data=struct.pack("Hl", 5, 2))
