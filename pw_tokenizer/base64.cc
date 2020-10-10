@@ -22,9 +22,9 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
     void* output_buffer,
     size_t output_buffer_size_bytes) {
   char* output = static_cast<char*>(output_buffer);
-  const size_t encoded_size = Base64EncodedSize(binary_size_bytes);
+  const size_t encoded_size = Base64EncodedBufferSize(binary_size_bytes);
 
-  if (output_buffer_size_bytes < encoded_size + sizeof('\0')) {
+  if (output_buffer_size_bytes < encoded_size) {
     if (output_buffer_size_bytes > 0u) {
       output[0] = '\0';
     }
@@ -36,8 +36,8 @@ extern "C" size_t pw_tokenizer_PrefixedBase64Encode(
   base64::Encode(std::span(static_cast<const std::byte*>(binary_message),
                            binary_size_bytes),
                  &output[1]);
-  output[encoded_size] = '\0';
-  return encoded_size;
+  output[encoded_size - 1] = '\0';
+  return encoded_size - sizeof('\0');  // exclude the null terminator
 }
 
 extern "C" size_t pw_tokenizer_PrefixedBase64Decode(const void* base64_message,

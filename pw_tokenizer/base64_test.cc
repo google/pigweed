@@ -74,6 +74,7 @@ TEST_F(PrefixedBase64, Encode) {
 TEST_F(PrefixedBase64, Encode_EmptyInput_WritesPrefix) {
   EXPECT_EQ(1u, PrefixedBase64Encode(std::span<byte>(), base64_));
   EXPECT_EQ('$', base64_[0]);
+  EXPECT_EQ('\0', base64_[1]);
 }
 
 TEST_F(PrefixedBase64, Encode_EmptyOutput_WritesNothing) {
@@ -114,12 +115,25 @@ TEST_F(PrefixedBase64, EncodeToVector_Successful) {
 }
 
 TEST_F(PrefixedBase64, EncodeToVector_VectorTooSmall_OnlyNullTerminates) {
-  constexpr byte big[Base64EncodedSize(
+  constexpr byte big[Base64EncodedBufferSize(
       PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES + 1)] = {};
 
   auto buffer = PrefixedBase64Encode(big);
   ASSERT_EQ(0u, buffer.size());
   EXPECT_EQ('\0', buffer[0]);
+}
+
+TEST_F(PrefixedBase64, Base64EncodedBufferSize_Empty_RoomForPrefixAndNull) {
+  EXPECT_EQ(2u, Base64EncodedBufferSize(0));
+}
+
+TEST_F(PrefixedBase64, Base64EncodedBufferSize_PositiveSizes) {
+  for (unsigned i = 1; i <= 3; ++i) {
+    EXPECT_EQ(6u, Base64EncodedBufferSize(i));
+  }
+  for (unsigned i = 4; i <= 6; ++i) {
+    EXPECT_EQ(10u, Base64EncodedBufferSize(i));
+  }
 }
 
 TEST_F(PrefixedBase64, Decode) {
