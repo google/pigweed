@@ -79,6 +79,8 @@ bool Adapter::Initialize(InitializeCallback callback, fit::closure transport_clo
 
   transport_closed_cb_ = std::move(transport_closed_cb);
 
+  state_.vendor_features_ = transport()->GetVendorFeatures();
+
   // Start by resetting the controller to a clean state and then send
   // informational parameter commands that are not specific to LE or BR/EDR. The
   // commands sent here are mandatory for all LE controllers.

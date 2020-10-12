@@ -35,13 +35,17 @@ using TestingBase = testing::ControllerTest<FakeController>;
 const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
 
+const bt_vendor_features_t kVendorFeatures = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND;
+
 class AdapterTest : public TestingBase {
  public:
   AdapterTest() = default;
   ~AdapterTest() override = default;
 
   void SetUp() override {
+    set_vendor_features(kVendorFeatures);
     TestingBase::SetUp();
+
     transport_closed_called_ = false;
 
     auto data_domain = data::testing::FakeDomain::Create();
@@ -882,6 +886,18 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
 
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),
                                ChildrenMatch(UnorderedElementsAre(adapter_matcher))));
+}
+
+TEST_F(GAP_AdapterTest, VendorFeatures) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  test_device()->set_settings(settings);
+
+  bool success = false;
+  auto init_cb = [&](bool cb_success) { success = cb_success; };
+  InitializeAdapter(std::move(init_cb));
+  EXPECT_TRUE(success);
+  EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeatures);
 }
 
 }  // namespace

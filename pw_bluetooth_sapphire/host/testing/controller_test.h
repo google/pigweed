@@ -112,6 +112,12 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     test_device()->StartAclChannel(test_acl_chan());
   }
 
+  // Set the vendor features that the transport will be configured to return.
+  void set_vendor_features(bt_vendor_features_t features) {
+    ZX_ASSERT(!transport_);
+    vendor_features_ = features;
+  }
+
  private:
   // Channels to be moved to the tests
   zx::channel cmd1_;
@@ -129,7 +135,8 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     status = zx::channel::create(0, &acl0, &acl1_);
     ZX_DEBUG_ASSERT(ZX_OK == status);
 
-    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0), std::move(acl0));
+    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0), std::move(acl0),
+                                                             vendor_features_);
     test_device_ = std::make_unique<ControllerTestDoubleType>();
 
     return hci_dev;
@@ -149,6 +156,8 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   std::unique_ptr<ControllerTestDoubleType> test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
+
+  bt_vendor_features_t vendor_features_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
   static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,

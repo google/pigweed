@@ -9,6 +9,8 @@
 
 #include <cstdint>
 
+#include <ddk/protocol/bt/vendor.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_state.h"
@@ -46,6 +48,9 @@ class AdapterState final {
 
   // The features that are supported by this controller.
   const hci::LMPFeatureSet& features() const { return features_; }
+
+  // Features reported by vendor driver.
+  bt_vendor_features_t vendor_features() const { return vendor_features_; }
 
   // Helpers for querying LMP capabilities.
   inline bool IsBREDRSupported() const {
@@ -87,6 +92,9 @@ class AdapterState final {
 
   // The Features that are supported by this adapter.
   hci::LMPFeatureSet features_;
+
+  // Features reported by vendor driver.
+  bt_vendor_features_t vendor_features_;
 
   // Bitmask list of HCI commands that the controller supports.
   uint8_t supported_commands_[64];
