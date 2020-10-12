@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/host_tool.gni")
+import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -69,19 +70,21 @@ template("_build_pigweed_default_at_all_optimization_levels") {
   }
 }
 
+# Select a default toolchain based on host OS.
+if (host_os == "linux") {
+  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+} else if (host_os == "mac") {
+  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
+} else if (host_os == "win") {
+  _default_toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
+} else {
+  assert(false, "Please define a host config for your system: $host_os")
+}
+
 # Below are a list of GN targets you can build to force Pigweed to build for a
 # specific Pigweed target.
 _build_pigweed_default_at_all_optimization_levels("host") {
-  # Select a toolchain based on host OS.
-  if (host_os == "linux") {
-    toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
-  } else if (host_os == "mac") {
-    toolchain_prefix = "$dir_pigweed/targets/host:host_clang_"
-  } else if (host_os == "win") {
-    toolchain_prefix = "$dir_pigweed/targets/host:host_gcc_"
-  } else {
-    assert(false, "Please define a host config for your system: $host_os")
-  }
+  toolchain_prefix = _default_toolchain_prefix
 }
 
 _build_pigweed_default_at_all_optimization_levels("host_clang") {
@@ -110,6 +113,10 @@ group("docs") {
   deps = [ ":pigweed_default($dir_pigweed/targets/docs)" ]
 }
 
+pw_python_group("python") {
+  python_deps = [ ":python_packages($_default_toolchain_prefix$pw_default_optimization_level)" ]
+}
+
 # By default, Pigweed will build this target when invoking ninja.
 group("pigweed_default") {
   deps = []
@@ -119,7 +126,11 @@ group("pigweed_default") {
     if (pw_docgen_BUILD_DOCS) {
       deps += [ "$dir_pigweed/docs" ]
     } else {
-      deps += [ ":apps" ]
+      deps += [
+        ":apps",
+        ":python.lint",
+        ":python.tests",
+      ]
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {
         # Without a test runner defined, build the tests but don't run them.
         deps += [ ":pw_module_tests" ]
@@ -149,6 +160,13 @@ group("pigweed_default") {
 
 # Prevent the default toolchain from parsing any other BUILD.gn files.
 if (current_toolchain != default_toolchain) {
+  pw_python_group("python_packages") {
+    python_deps = [
+      "$dir_pw_tokenizer/py",
+      # TODO(pwbug/239): Add all Pigweed Python packages
+    ]
+  }
+
   group("apps") {
     # Application images built for all targets.
     deps = [ "$dir_pw_hdlc_lite/rpc_example" ]

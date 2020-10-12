@@ -1,0 +1,239 @@
+# Copyright 2020 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("python_script.gni")
+import("target_types.gni")
+
+# Defines a Python package. GN Python packages contain several GN targets:
+#
+#   - $name - Provides the Python files in the build, but does not take any
+#         actions. All subtargets depend on this target.
+#   - $name.lint - Runs static analyis tools on the Python code. This is a group
+#     of two subtargets:
+#     - $name.lint.mypy - Runs mypy.
+#     - $name.lint.pylint - Runs pylint.
+#   - $name.tests - Runs all tests for this package.
+#   - $name.install - Installs the package in a venv. (Not implemented.)
+#   - $name.wheel - Builds a Python wheel for the package. (Not implemented.)
+#
+# TODO(pwbug/239): Implement installation and wheel building.
+#
+# Args:
+#   setup: List of setup file paths (setup.py or pyproject.toml & setup.cfg),
+#       which must all be in the same directory.
+#   sources: Python sources files in the package.
+#   tests: Test files for this Python package.
+#   python_deps: Dependencies on other pw_python_packages in the GN build.
+#   other_deps: Dependencies on GN targets that are not pw_python_packages.
+#   inputs: Other files to track, such as package_data.
+#
+template("pw_python_package") {
+  assert(defined(invoker.setup) && invoker.setup != [],
+         "pw_python_package requires 'setup' to point to a setup.py or " +
+             "pyproject.toml and setup.cfg file")
+
+  if (defined(invoker.python_deps)) {
+    _python_deps = invoker.python_deps
+  } else {
+    _python_deps = []
+  }
+
+  if (defined(invoker.sources)) {
+    _all_sources = invoker.sources
+  } else {
+    _all_sources = []
+  }
+
+  if (defined(invoker.tests)) {
+    _test_sources = invoker.tests
+  } else {
+    _test_sources = []
+  }
+
+  _all_sources += _test_sources
+
+  # Get the directory of the setup files. All files must be in the same dir.
+  _setup_dirs = get_path_info(invoker.setup, "dir")
+  _setup_dir = _setup_dirs[0]
+
+  foreach(dir, _setup_dirs) {
+    assert(dir == _setup_dir,
+           "All files in 'setup' must be in the same directory")
+  }
+
+  # Declare the main Python package group. This represents the Python files, but
+  # does not take any actions. GN targets can depend on the package name to run
+  # when any files in the package change.
+  pw_source_set(target_name) {
+    inputs = _all_sources + invoker.setup
+    if (defined(invoker.inputs)) {
+      inputs += invoker.inputs
+    }
+
+    deps = _python_deps
+
+    if (defined(invoker.other_deps)) {
+      deps += invoker.other_deps
+    }
+  }
+
+  _package_target = ":$target_name"
+
+  # TODO(pwbug/239): Add support for installing this package and dependencies
+  #     with correct dependency ordering in a virtual environment. The code
+  #     below is incomplete and untested.
+  pw_python_script("$target_name.install") {
+    module = "pip"
+    args = [
+      "install",
+      "--editable",
+      rebase_path(_setup_dir),
+    ]
+
+    stamp = true
+
+    deps = [ _package_target ]
+    foreach(dep, _python_deps) {
+      deps += [ "$dep.install" ]
+    }
+  }
+
+  # TODO(pwbug/239): Add support for building groups of wheels. The code below
+  #     is incomplete and untested.
+  pw_python_script("$target_name.wheel") {
+    script = "$dir_pw_build/py/pw_build/python_wheels.py"
+
+    args = [
+      "--out_dir",
+      rebase_path(target_out_dir),
+    ]
+    args += rebase_path(invoker.sources)
+
+    deps = [ _package_target ]
+    stamp = true
+  }
+
+  # Define the static analysis targets for this package.
+  group("$target_name.lint") {
+    deps = [
+      "$_package_target.lint.mypy",
+      "$_package_target.lint.pylint",
+    ]
+  }
+
+  pw_python_script_foreach("$target_name.lint.mypy") {
+    module = "mypy"
+    args = [
+      "{{source}}",
+      "--pretty",
+      "--show-error-codes",
+      "--color-output",
+    ]
+    sources = _all_sources
+
+    # Use this environment variable to force mypy to colorize output.
+    # See https://github.com/python/mypy/issues/7771
+    environment = [ "MYPY_FORCE_COLOR=1" ]
+
+    stamp = "$target_gen_dir/{{source_file_part}}.mypy.pw_pystamp"
+
+    deps = [ _package_target ]
+    foreach(dep, _python_deps) {
+      deps += [ "$dep.lint.mypy" ]
+    }
+  }
+
+  pw_python_script_foreach("$target_name.lint.pylint") {
+    module = "pylint"
+    args = [
+      "{{source_root_relative_dir}}/{{source_file_part}}",
+      "--jobs=1",
+    ]
+    sources = _all_sources
+
+    stamp = "$target_gen_dir/{{source_file_part}}.pylint.pw_pystamp"
+
+    # Run pylint from the source root so that pylint detects rcfiles (.pylintrc)
+    # in the source tree.
+    directory = rebase_path("//")
+
+    deps = [ _package_target ]
+    foreach(dep, _python_deps) {
+      deps += [ "$dep.lint.pylint" ]
+    }
+  }
+
+  # Create a target for each test file.
+  _test_targets = []
+
+  foreach(test, _test_sources) {
+    _test_name = string_replace(test, "/", "_")
+    _test_target = "$target_name.tests.$_test_name"
+
+    pw_python_script(_test_target) {
+      script = test
+      stamp = true
+
+      deps = [ _package_target ]
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.tests" ]
+      }
+    }
+
+    _test_targets += [ ":$_test_target" ]
+  }
+
+  group("$target_name.tests") {
+    deps = _test_targets
+  }
+}
+
+# Declares a group of Python packages or other Python groups. pw_python_groups
+# expose the same set of subtargets as pw_python_package (e.g.
+# "$group_name.lint" and "$group_name.tests"), but these apply to all packages
+# in deps and their dependencies.
+template("pw_python_group") {
+  if (defined(invoker.python_deps)) {
+    _python_deps = invoker.python_deps
+  } else {
+    _python_deps = []
+  }
+
+  group(target_name) {
+    deps = _python_deps
+  }
+
+  _subtargets = [
+    "tests",
+    "lint",
+    "lint.mypy",
+    "lint.pylint",
+    "install",
+    "wheel",
+  ]
+
+  foreach(subtarget, _subtargets) {
+    group("$target_name.$subtarget") {
+      deps = []
+      foreach(dep, _python_deps) {
+        # Split out the toolchain to support deps with a toolchain specified.
+        _target = get_label_info(dep, "label_no_toolchain")
+        _toolchain = get_label_info(dep, "toolchain")
+        deps += [ "$_target.$subtarget($_toolchain)" ]
+      }
+    }
+  }
+}

@@ -21,7 +21,7 @@ import argparse
 import sys
 from typing import BinaryIO, Iterable
 
-import serial
+import serial  # type: ignore
 from pw_tokenizer import database, detokenize, tokens
 
 
