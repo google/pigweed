@@ -21,6 +21,7 @@ import argparse
 from dataclasses import dataclass
 import enum
 import logging
+import os
 from pathlib import Path
 import re
 import shlex
@@ -51,6 +52,13 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument('--current-toolchain',
                         required=True,
                         help='Value of current_toolchain')
+    parser.add_argument('--directory',
+                        type=Path,
+                        help='Execute the command from this directory')
+    parser.add_argument('--module', help='Run this module instead of a script')
+    parser.add_argument('--env',
+                        action='append',
+                        help='Environment variables to set as NAME=VALUE')
     parser.add_argument(
         '--touch',
         type=Path,
@@ -400,9 +408,12 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
 def main(
     gn_root: Path,
     current_path: Path,
+    directory: Optional[Path],
     original_cmd: List[str],
     default_toolchain: str,
     current_toolchain: str,
+    module: Optional[str],
+    env: Optional[List[str]],
     capture_output: bool,
     touch: Optional[Path],
 ) -> int:
@@ -422,6 +433,23 @@ def main(
                     toolchain=tool)
 
     command = [sys.executable]
+
+    if module is not None:
+        command += ['-m', module]
+
+    run_args: dict = dict(cwd=directory)
+
+    if env is not None:
+        environment = os.environ.copy()
+        environment.update((k, v) for k, v in (a.split('=', 1) for a in env))
+        run_args['env'] = environment
+
+    if capture_output:
+        # Combine stdout and stderr so that error messages are correctly
+        # interleaved with the rest of the output.
+        run_args['stdout'] = subprocess.PIPE
+        run_args['stderr'] = subprocess.STDOUT
+
     try:
         for arg in original_cmd[1:]:
             command += expand_expressions(paths, arg)
@@ -431,22 +459,11 @@ def main(
 
     _LOG.debug('RUN %s', ' '.join(shlex.quote(arg) for arg in command))
 
-    if capture_output:
-        completed_process = subprocess.run(
-            command,
-            # Combine stdout and stderr so that error messages are correctly
-            # interleaved with the rest of the output.
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-    else:
-        completed_process = subprocess.run(command)
+    completed_process = subprocess.run(command, **run_args)
 
     if completed_process.returncode != 0:
         _LOG.debug('Command failed; exit code: %d',
                    completed_process.returncode)
-        # TODO(pwbug/34): Print a cross-platform pastable-in-shell command, to
-        # help users track down what is happening when a command is broken.
         if capture_output:
             sys.stdout.buffer.write(completed_process.stdout)
     elif touch:

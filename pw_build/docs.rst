@@ -95,6 +95,8 @@ dummy output file for the action.
 ``pw_python_script`` accepts all of the arguments of a regular ``action``
 target. Additionally, it has some of its own arguments:
 
+* ``module``: Run the specified Python module instead of a script. Either
+  ``script`` or ``module`` must be specified, but not both.
 * ``capture_output``: Optional boolean. If true, script output is hidden unless
   the script fails with an error. Defaults to true.
 * ``stamp``: Optional variable indicating whether to automatically create a
@@ -102,6 +104,10 @@ target. Additionally, it has some of its own arguments:
   specifying ``outputs``. If ``stamp`` is true, a generic output file is
   used. If ``stamp`` is a file path, that file is used as a stamp file. Like any
   output file, ``stamp`` must be in the build directory. Defaults to false.
+* ``directory``: Optional path. Change to this directory before executing the
+  command. Paths in arguments may need to be adjusted.
+* ``environment``: Optional list of strings. Environment variables to set,
+  passed as NAME=VALUE strings.
 
 **Expressions**
 

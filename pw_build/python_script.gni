@@ -62,6 +62,10 @@ import("//build_overrides/pigweed.gni")
 #
 # Arguments beyond normal action() target arguments:
 #
+#   module                  Used in place of the script argument to run the
+#                           provided Python module with `python -m` instead of a
+#                           script. Either script or module must be provided.
+#
 #   capture_output (=true)  If true, script output is hidden unless the script
 #                           fails with an error. Defaults to true.
 #
@@ -69,8 +73,17 @@ import("//build_overrides/pigweed.gni")
 #                           true, a generic file is used. If false or not set,
 #                           no file is touched.
 #
+#   directory               The directory from which to execute the Python
+#                           script. Paths in args may need to be adjusted to be
+#                           relative to this directory.
+#
+#   environment             Environment variables to set, passed as a list of
+#                           NAME=VALUE strings.
+#
 template("pw_python_script") {
-  assert(defined(invoker.script), "pw_python_script requires a script to run")
+  assert(defined(invoker.script) != defined(invoker.module),
+         "pw_python_script must have either a script or module to run, " +
+             "but not both")
 
   _script_args = [
     # GN root directory relative to the build directory (in which the runner
@@ -86,6 +99,19 @@ template("pw_python_script") {
     "--current-toolchain=$current_toolchain",
   ]
 
+  if (defined(invoker.directory)) {
+    _script_args += [
+      "--directory",
+      rebase_path(invoker.directory),
+    ]
+  }
+
+  if (defined(invoker.environment)) {
+    foreach(variable, invoker.environment) {
+      _script_args += [ "--env=$variable" ]
+    }
+  }
+
   if (defined(invoker.inputs)) {
     _inputs = invoker.inputs
   } else {
@@ -94,7 +120,9 @@ template("pw_python_script") {
 
   # List the script to run as an input so that the action is re-run when it is
   # modified.
-  _inputs += [ invoker.script ]
+  if (defined(invoker.script)) {
+    _inputs += [ invoker.script ]
+  }
 
   if (defined(invoker.outputs)) {
     _outputs = invoker.outputs
@@ -128,18 +156,33 @@ template("pw_python_script") {
     _script_args += [ "--capture-output" ]
   }
 
+  if (defined(invoker.module)) {
+    _script_args += [
+      "--module",
+      invoker.module,
+    ]
+  }
+
   # "--" indicates the end of arguments to the runner script.
   # Everything beyond this point is interpreted as the command and arguments
   # of the Python script to run.
   _script_args += [ "--" ]
 
-  _script_args += [ rebase_path(invoker.script) ]
+  if (defined(invoker.script)) {
+    _script_args += [ rebase_path(invoker.script) ]
+  }
 
   if (defined(invoker.args)) {
     _script_args += invoker.args
   }
 
-  action(target_name) {
+  if (defined(invoker._pw_action_foreach) && invoker._pw_action_foreach) {
+    _action_type = "action_foreach"
+  } else {
+    _action_type = "action"
+  }
+
+  target(_action_type, target_name) {
     _ignore_vars = [
       "script",
       "args",
@@ -152,5 +195,35 @@ template("pw_python_script") {
     args = _script_args
     inputs = _inputs
     outputs = _outputs
+  }
+}
+
+# Runs pw_python_script once per file over a set of sources.
+#
+# This template brings pw_python_script's features to action_foreach. Usage is
+# the same as pw_python_script, except that sources must be provided and source
+# expansion (e.g. "{{source}}") may be used in args and outputs.
+#
+# See the pw_python_script and action_foreach documentation for full details.
+template("pw_python_script_foreach") {
+  assert(defined(invoker.sources) && invoker.sources != [],
+         "pw_python_script_foreach requires a list of one or more sources")
+
+  pw_python_script(target_name) {
+    if (defined(invoker.stamp) && invoker.stamp != false) {
+      if (invoker.stamp == true) {
+        # Use source file names in the generated stamp file path so they are
+        # unique for each source.
+        stamp = "$target_gen_dir/{{source_file_part}}.pw_pystamp"
+      } else {
+        stamp = invoker.stamp
+      }
+    } else {
+      stamp = false
+    }
+
+    forward_variables_from(invoker, "*", [ "stamp" ])
+
+    _pw_action_foreach = true
   }
 }
