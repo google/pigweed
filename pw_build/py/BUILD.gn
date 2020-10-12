@@ -11,17 +11,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""pw_hdlc_lite"""
 
-import setuptools
+# gn-format disable
+import("//build_overrides/pigweed.gni")
 
-setuptools.setup(
-    name='pw_hdlc_lite',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Tools for Encoding/Decoding data using the HDLC-Lite protocol',
-    packages=setuptools.find_packages(),
-    install_requires=['ipython'],
-    tests_require=['pw_build'],
-)
+import("$dir_pw_build/input_group.gni")
+
+# TODO(hepler): Replace this with a pw_python_package.
+pw_input_group("py") {
+  inputs = [ "pw_build/generated_tests.py" ]
+}
