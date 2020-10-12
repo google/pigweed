@@ -12,6 +12,8 @@ bazel-*
 .clangd/
 *.swp
 *.swo
+*flycheck_*
+*_flymake.*
 
 # Python
 *.pyc

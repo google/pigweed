@@ -450,6 +450,21 @@ def minimal_watch_directories(directory_to_watch, directories_to_exclude):
     return subdirectories_to_watch
 
 
+def gitignore_patterns():
+    """Load patterns in pw_root_dir/.gitignore and return as [str]"""
+    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+
+    # Get top level .gitignore entries
+    gitignore_path = pw_root_dir / pathlib.Path('.gitignore')
+    if gitignore_path.exists():
+        for line in gitignore_path.read_text().splitlines():
+            globname = line.strip()
+            # If line is empty or a comment.
+            if not globname or globname.startswith('#'):
+                continue
+            yield line
+
+
 def get_common_excludes():
     """Find commonly excluded directories, and return them as a [Path]"""
     exclude_list = []
@@ -565,6 +580,8 @@ def watch(build_targets, build_directory, patterns, ignore_patterns,
     # Ignore the user-specified patterns.
     ignore_patterns = (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
                        if ignore_patterns else [])
+    # Ignore top level pw_root_dir/.gitignore patterns.
+    ignore_patterns += gitignore_patterns()
 
     ignore_dirs = ['.presubmit', '.python3-env']
 
