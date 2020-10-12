@@ -179,7 +179,7 @@ class PeerCache final {
 
   // Notifies interested parties that |peer| has seen a significant change.
   // |peer| must already exist in the cache.
-  void NotifyPeerUpdated(const Peer& peer);
+  void NotifyPeerUpdated(const Peer& peer, Peer::NotifyListenersChange change);
 
   // Updates the expiration time for |peer|, if a temporary. Cancels expiry,
   // if a non-temporary. Pre-conditions:

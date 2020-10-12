@@ -39,12 +39,19 @@ class Peer final {
  public:
   using PeerCallback = fit::function<void(const Peer&)>;
 
+  // Describes the change(s) that caused the peer to notify listeners.
+  enum class NotifyListenersChange {
+    kBondNotUpdated,  // No persistent data has changed
+    kBondUpdated,     // Persistent data has changed
+  };
+  using NotifyListenersCallback = fit::function<void(const Peer&, NotifyListenersChange)>;
+
   // Caller must ensure that callbacks are non-empty.
   // Note that the ctor is only intended for use by PeerCache.
   // Expanding access would a) violate the constraint that all Peers
   // are created through a PeerCache, and b) introduce lifetime issues
   // (do the callbacks outlive |this|?).
-  Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_callback,
+  Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
        PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
        bool connectable);
 
@@ -430,7 +437,7 @@ class Peer final {
   void UpdateExpiry();
 
   // Signal to the cache to notify listeners.
-  void NotifyListeners();
+  void NotifyListeners(NotifyListenersChange change);
 
   // Mark this device as dual mode and signal the cache.
   void MakeDualMode();
@@ -441,7 +448,7 @@ class Peer final {
   inspect::Node node_;
 
   // Callbacks used to notify state changes.
-  PeerCallback notify_listeners_callback_;
+  NotifyListenersCallback notify_listeners_callback_;
   PeerCallback update_expiry_callback_;
   PeerCallback dual_mode_callback_;
 

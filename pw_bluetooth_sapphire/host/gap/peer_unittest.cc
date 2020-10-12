@@ -42,14 +42,16 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 
  protected:
   Peer& peer() { return *peer_; }
-  void set_notify_listeners_cb(Peer::PeerCallback cb) { notify_listeners_cb_ = std::move(cb); }
+  void set_notify_listeners_cb(Peer::NotifyListenersCallback cb) {
+    notify_listeners_cb_ = std::move(cb);
+  }
   void set_update_expiry_cb(Peer::PeerCallback cb) { update_expiry_cb_ = std::move(cb); }
   void set_dual_mode_cb(Peer::PeerCallback cb) { dual_mode_cb_ = std::move(cb); }
 
  private:
-  void NotifyListenersCallback(const Peer& peer) {
+  void NotifyListenersCallback(const Peer& peer, Peer::NotifyListenersChange change) {
     if (notify_listeners_cb_) {
-      notify_listeners_cb_(peer);
+      notify_listeners_cb_(peer, change);
     }
   }
 
@@ -67,7 +69,7 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
 
   std::unique_ptr<Peer> peer_;
   DeviceAddress address_;
-  Peer::PeerCallback notify_listeners_cb_;
+  Peer::NotifyListenersCallback notify_listeners_cb_;
   Peer::PeerCallback update_expiry_cb_;
   Peer::PeerCallback dual_mode_cb_;
 };
@@ -133,7 +135,11 @@ TEST_F(GAP_PeerTest, BrEdrDataAddServiceNotifiesListeners) {
   ASSERT_TRUE(peer().bredr()->services().empty());
 
   bool listener_notified = false;
-  set_notify_listeners_cb([&](auto&) { listener_notified = true; });
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange change) {
+    listener_notified = true;
+    // Non-bonded peer should not update bond
+    EXPECT_EQ(Peer::NotifyListenersChange::kBondNotUpdated, change);
+  });
 
   constexpr UUID kServiceUuid;
   peer().MutBrEdr().AddService(kServiceUuid);
@@ -144,6 +150,22 @@ TEST_F(GAP_PeerTest, BrEdrDataAddServiceNotifiesListeners) {
   listener_notified = false;
   peer().MutBrEdr().AddService(kServiceUuid);
   EXPECT_FALSE(listener_notified);
+}
+
+TEST_F(GAP_PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBond) {
+  // Initialize BrEdrData.
+  peer().MutBrEdr().SetBondData({});
+  ASSERT_TRUE(peer().bredr()->services().empty());
+
+  bool listener_notified = false;
+  set_notify_listeners_cb([&](auto&, Peer::NotifyListenersChange change) {
+    listener_notified = true;
+    // Bonded peer should update bond
+    EXPECT_EQ(Peer::NotifyListenersChange::kBondUpdated, change);
+  });
+
+  peer().MutBrEdr().AddService(UUID());
+  EXPECT_TRUE(listener_notified);
 }
 
 }  // namespace

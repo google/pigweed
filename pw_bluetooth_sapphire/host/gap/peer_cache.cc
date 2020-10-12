@@ -37,7 +37,7 @@ Peer* PeerCache::NewPeer(const DeviceAddress& address, bool connectable) {
   auto* const peer = InsertPeerRecord(RandomPeerId(), address, connectable);
   if (peer) {
     UpdateExpiry(*peer);
-    NotifyPeerUpdated(*peer);
+    NotifyPeerUpdated(*peer, Peer::NotifyListenersChange::kBondNotUpdated);
   }
   return peer;
 }
@@ -94,12 +94,12 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
   }
 
   if (bond_bredr) {
-    peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
-    ZX_DEBUG_ASSERT(peer->bredr()->bonded());
-
     for (auto& service : bd.bredr_services) {
       peer->MutBrEdr().AddService(std::move(service));
     }
+
+    peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
+    ZX_DEBUG_ASSERT(peer->bredr()->bonded());
   }
 
   if (peer->technology() == TechnologyType::kDualMode) {
@@ -113,7 +113,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
 
   // Don't call UpdateExpiry(). Since a bonded peer starts out as
   // non-temporary it is not necessary to ever set up the expiration callback.
-  NotifyPeerUpdated(*peer);
+  NotifyPeerUpdated(*peer, Peer::NotifyListenersChange::kBondNotUpdated);
   return true;
 }
 
@@ -325,11 +325,19 @@ void PeerCache::NotifyPeerBonded(const Peer& peer) {
   }
 }
 
-void PeerCache::NotifyPeerUpdated(const Peer& peer) {
+void PeerCache::NotifyPeerUpdated(const Peer& peer, Peer::NotifyListenersChange change) {
   ZX_DEBUG_ASSERT(peers_.find(peer.identifier()) != peers_.end());
   ZX_DEBUG_ASSERT(peers_.at(peer.identifier()).peer() == &peer);
-  if (peer_updated_callback_)
+  if (peer_updated_callback_) {
     peer_updated_callback_(peer);
+  }
+  if (change == Peer::NotifyListenersChange::kBondUpdated) {
+    ZX_ASSERT(peer.bonded());
+    bt_log(INFO, "gap", "peer bond updated %s", bt_str(peer));
+    if (peer_bonded_callback_) {
+      peer_bonded_callback_(peer);
+    }
+  }
 }
 
 void PeerCache::UpdateExpiry(const Peer& peer) {
@@ -361,7 +369,7 @@ void PeerCache::MakeDualMode(const Peer& peer) {
 
   // The peer became dual mode in lieu of adding a new peer but is as
   // significant, so notify listeners of the change.
-  NotifyPeerUpdated(peer);
+  NotifyPeerUpdated(peer, Peer::NotifyListenersChange::kBondNotUpdated);
 }
 
 void PeerCache::RemovePeer(Peer* peer) {

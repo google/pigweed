@@ -427,8 +427,8 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
   void SetUp() override {
     GAP_PeerCacheTest::SetUp();
     ASSERT_TRUE(NewPeer(kAddrLePublic, true));
-    bonded_callback_called_ = false;
-    cache()->set_peer_bonded_callback([this](const auto&) { bonded_callback_called_ = true; });
+    bonded_callback_count_ = 0;
+    cache()->set_peer_bonded_callback([this](const auto&) { bonded_callback_count_++; });
     updated_callback_count_ = 0;
     cache()->set_peer_updated_callback([this](auto&) { updated_callback_count_++; });
     removed_callback_count_ = 0;
@@ -441,20 +441,22 @@ class GAP_PeerCacheTest_BondingTest : public GAP_PeerCacheTest {
     cache()->set_peer_updated_callback(nullptr);
     updated_callback_count_ = 0;
     cache()->set_peer_bonded_callback(nullptr);
-    bonded_callback_called_ = false;
+    bonded_callback_count_ = 0;
     GAP_PeerCacheTest::TearDown();
   }
 
  protected:
-  bool bonded_callback_called() const { return bonded_callback_called_; }
+  bool bonded_callback_called() const { return bonded_callback_count_ != 0; }
 
   // Returns 0 at the beginning of each test case.
+  int bonded_callback_count() const { return bonded_callback_count_; }
+
   int updated_callback_count() const { return updated_callback_count_; }
 
   int removed_callback_count() const { return removed_callback_count_; }
 
  private:
-  bool bonded_callback_called_;
+  int bonded_callback_count_;
   int updated_callback_count_;
   int removed_callback_count_;
 };
@@ -763,6 +765,20 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreBondsForBothTech) {
   EXPECT_TRUE(peer()->bonded());
   EXPECT_TRUE(peer()->bredr()->bonded());
   EXPECT_TRUE(peer()->le()->bonded());
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, BondsUpdatedWhenNewServicesAdded) {
+  ASSERT_TRUE(NewPeer(kAddrBrEdr, true));
+  ASSERT_EQ(peer(), cache()->FindByAddress(kAddrBrEdr));
+  ASSERT_FALSE(peer()->bonded());
+
+  ASSERT_FALSE(kBrEdrKey.security().secure_connections());
+  EXPECT_TRUE(cache()->StoreBrEdrBond(kAddrBrEdr, kBrEdrKey));
+  EXPECT_TRUE(peer()->bredr()->bonded());
+  EXPECT_EQ(1, bonded_callback_count());
+
+  peer()->MutBrEdr().AddService(UUID());
+  EXPECT_EQ(2, bonded_callback_count());
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, RemoveDisconnectedPeerOnUnknownPeer) {

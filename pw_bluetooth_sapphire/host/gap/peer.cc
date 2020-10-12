@@ -86,7 +86,7 @@ void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv)
 
   if (notify_listeners) {
     peer_->UpdateExpiry();
-    peer_->NotifyListeners();
+    peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 }
 
@@ -115,7 +115,7 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
   }
 
   peer_->UpdateExpiry();
-  peer_->NotifyListeners();
+  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::SetConnectionParameters(const hci::LEConnectionParameters& params) {
@@ -145,7 +145,8 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
     peer_->set_address(*bond_data.identity_address);
   }
 
-  peer_->NotifyListeners();
+  // PeerCache notifies listeners of new bonds, so no need to request that here.
+  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::LowEnergyData::ClearBondData() {
@@ -212,7 +213,7 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
 
   conn_state_.Set(state);
   peer_->UpdateExpiry();
-  peer_->NotifyListeners();
+  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
 
   // Become non-temporary if we became connected. BR/EDR device remain
   // non-temporary afterwards.
@@ -245,7 +246,7 @@ void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_of
   }
 
   if (notify_listeners) {
-    peer_->NotifyListeners();
+    peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 }
 
@@ -283,7 +284,8 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
   // Storing the key establishes the bond.
   link_key_.Set(link_key);
 
-  peer_->NotifyListeners();
+  // PeerCache notifies listeners of new bonds, so no need to request that here.
+  peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
 }
 
 void Peer::BrEdrData::ClearBondData() {
@@ -294,11 +296,13 @@ void Peer::BrEdrData::ClearBondData() {
 void Peer::BrEdrData::AddService(UUID uuid) {
   auto [_, inserted] = services_.Mutable()->insert(uuid);
   if (inserted) {
-    peer_->NotifyListeners();
+    auto update_bond =
+        bonded() ? NotifyListenersChange::kBondUpdated : NotifyListenersChange::kBondNotUpdated;
+    peer_->NotifyListeners(update_bond);
   }
 }
 
-Peer::Peer(PeerCallback notify_listeners_callback, PeerCallback update_expiry_callback,
+Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
            PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
            bool connectable)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
@@ -394,7 +398,9 @@ std::string Peer::ToString() const {
 void Peer::SetName(const std::string& name) {
   if (SetNameInternal(name)) {
     UpdateExpiry();
-    NotifyListeners();
+
+    // TODO(fxbug.dev/61739): Update the bond when this happens
+    NotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 }
 
@@ -429,7 +435,7 @@ bool Peer::TryMakeNonTemporary() {
   if (*temporary_) {
     temporary_.Set(false);
     UpdateExpiry();
-    NotifyListeners();
+    NotifyListeners(NotifyListenersChange::kBondNotUpdated);
   }
 
   return true;
@@ -440,9 +446,9 @@ void Peer::UpdateExpiry() {
   update_expiry_callback_(*this);
 }
 
-void Peer::NotifyListeners() {
+void Peer::NotifyListeners(NotifyListenersChange change) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
-  notify_listeners_callback_(*this);
+  notify_listeners_callback_(*this, change);
 }
 
 void Peer::MakeDualMode() {
