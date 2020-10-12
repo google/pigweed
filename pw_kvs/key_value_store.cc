@@ -53,7 +53,7 @@ KeyValueStore::KeyValueStore(FlashPartition* partition,
       options_(options),
       initialized_(InitializationState::kNotInitialized),
       error_detected_(false),
-      error_stats_({}),
+      internal_stats_({}),
       last_transaction_id_(0) {}
 
 Status KeyValueStore::Init() {
@@ -97,12 +97,12 @@ Status KeyValueStore::Init() {
 
     if (options_.recovery != ErrorRecovery::kManual) {
       size_t pre_fix_redundancy_errors =
-          error_stats_.missing_redundant_entries_recovered;
+          internal_stats_.missing_redundant_entries_recovered;
       Status recovery_status = FixErrors();
 
       if (recovery_status.ok()) {
         if (metadata_result == Status::OutOfRange()) {
-          error_stats_.missing_redundant_entries_recovered =
+          internal_stats_.missing_redundant_entries_recovered =
               pre_fix_redundancy_errors;
           INF("KVS init: Redundancy level successfully updated");
         } else {
@@ -301,9 +301,10 @@ KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
   StorageStats stats{};
   const size_t sector_size = partition_.sector_size_bytes();
   bool found_empty_sector = false;
-  stats.corrupt_sectors_recovered = error_stats_.corrupt_sectors_recovered;
+  stats.sector_erase_count = internal_stats_.sector_erase_count;
+  stats.corrupt_sectors_recovered = internal_stats_.corrupt_sectors_recovered;
   stats.missing_redundant_entries_recovered =
-      error_stats_.missing_redundant_entries_recovered;
+      internal_stats_.missing_redundant_entries_recovered;
 
   for (const SectorDescriptor& sector : sectors_) {
     stats.in_use_bytes += sector.valid_bytes();
@@ -867,7 +868,7 @@ Status KeyValueStore::RelocateEntry(
   return Status::Ok();
 }
 
-Status KeyValueStore::FullMaintenance() {
+Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
   if (initialized_ == InitializationState::kNotInitialized) {
     return Status::FailedPrecondition();
   }
@@ -897,7 +898,8 @@ Status KeyValueStore::FullMaintenance() {
   // Is bytes in use over the threshold.
   StorageStats stats = GetStorageStats();
   bool over_usage_threshold = stats.in_use_bytes > threshold_bytes;
-  bool force_gc = over_usage_threshold || (update_status.size() > 0);
+  bool heavy = (maintenance_type == MaintenanceType::kHeavy);
+  bool force_gc = heavy || over_usage_threshold || (update_status.size() > 0);
 
   // TODO: look in to making an iterator method for cycling through sectors
   // starting from last_new_sector_.
@@ -982,6 +984,7 @@ Status KeyValueStore::GarbageCollectSector(
     SectorDescriptor& sector_to_gc,
     std::span<const Address> reserved_addresses) {
   DBG("  Garbage Collect sector %u", sectors_.Index(sector_to_gc));
+
   // Step 1: Move any valid entries in the GC sector to other sectors
   if (sector_to_gc.valid_bytes() != 0) {
     for (EntryMetadata& metadata : entry_cache_) {
@@ -998,9 +1001,12 @@ Status KeyValueStore::GarbageCollectSector(
   }
 
   // Step 2: Reinitialize the sector
-  sector_to_gc.mark_corrupt();
-  PW_TRY(partition_.Erase(sectors_.BaseAddress(sector_to_gc), 1));
-  sector_to_gc.set_writable_bytes(partition_.sector_size_bytes());
+  if (!sector_to_gc.Empty(partition_.sector_size_bytes())) {
+    sector_to_gc.mark_corrupt();
+    internal_stats_.sector_erase_count++;
+    PW_TRY(partition_.Erase(sectors_.BaseAddress(sector_to_gc), 1));
+    sector_to_gc.set_writable_bytes(partition_.sector_size_bytes());
+  }
 
   DBG("  Garbage Collect sector %u complete", sectors_.Index(sector_to_gc));
   return Status::Ok();
@@ -1098,7 +1104,7 @@ Status KeyValueStore::RepairCorruptSectors() {
         DBG("   Found sector %u with corruption", sectors_.Index(sector));
         Status sector_status = GarbageCollectSector(sector, {});
         if (sector_status.ok()) {
-          error_stats_.corrupt_sectors_recovered += 1;
+          internal_stats_.corrupt_sectors_recovered += 1;
         } else if (repair_status.ok() ||
                    repair_status == Status::ResourceExhausted()) {
           repair_status = sector_status;
@@ -1156,7 +1162,7 @@ Status KeyValueStore::EnsureEntryRedundancy() {
         unsigned(redundancy()));
     Status fill_status = AddRedundantEntries(metadata);
     if (fill_status.ok()) {
-      error_stats_.missing_redundant_entries_recovered += 1;
+      internal_stats_.missing_redundant_entries_recovered += 1;
       DBG("   Key missing copies added");
     } else {
       DBG("   Failed to add key missing copies");

@@ -180,10 +180,26 @@ class KeyValueStore {
   StatusWithSize ValueSize(std::string_view key) const;
 
   // Perform all maintenance possible, including all neeeded repairing of
-  // corruption and garbage collection of all reclaimable space in the KVS. When
-  // configured for manual recovery, this is the only way KVS repair is
-  // triggered.
-  Status FullMaintenance();
+  // corruption and garbage collection of reclaimable space in the KVS. When
+  // configured for manual recovery, this (along with FullMaintenance) is the
+  // only way KVS repair is triggered.
+  //
+  // - Heavy garbage collection of all reclaimable space, regardless of valid
+  //   data in the sector.
+  Status HeavyMaintenance() {
+    return FullMaintenanceHelper(MaintenanceType::kHeavy);
+  }
+
+  // Perform all maintenance possible, including all neeeded repairing of
+  // corruption and garbage collection of reclaimable space in the KVS. When
+  // configured for manual recovery, this (along with HeavyMaintenance) is the
+  // only way KVS repair is triggered.
+  //
+  // - Regular will not garbage collect sectors with valid data unless the KVS
+  //   is mostly full.
+  Status FullMaintenance() {
+    return FullMaintenanceHelper(MaintenanceType::kRegular);
+  }
 
   // Perform a portion of KVS maintenance. If configured for at least lazy
   // recovery, will do any needed repairing of corruption. Does garbage
@@ -292,6 +308,7 @@ class KeyValueStore {
     size_t writable_bytes;
     size_t in_use_bytes;
     size_t reclaimable_bytes;
+    size_t sector_erase_count;
     size_t corrupt_sectors_recovered;
     size_t missing_redundant_entries_recovered;
   };
@@ -445,6 +462,21 @@ class KeyValueStore {
                        KeyValueStore::Address& address,
                        std::span<const Address> addresses_to_skip);
 
+  // Perform all maintenance possible, including all neeeded repairing of
+  // corruption and garbage collection of reclaimable space in the KVS. When
+  // configured for manual recovery, this is the only way KVS repair is
+  // triggered.
+  //
+  // - Regular will not garbage collect sectors with valid data unless the KVS
+  //   is mostly full.
+  // - Heavy will garbage collect all reclaimable space regardless of valid data
+  //   in the sector.
+  enum class MaintenanceType {
+    kRegular,
+    kHeavy,
+  };
+  Status FullMaintenanceHelper(MaintenanceType maintenance_type);
+
   // Find and garbage collect a singe sector that does not include an address to
   // skip.
   Status GarbageCollect(std::span<const Address> addresses_to_skip);
@@ -519,11 +551,12 @@ class KeyValueStore {
   // make it mutable.
   mutable bool error_detected_;
 
-  struct ErrorStats {
+  struct InternalStats {
+    size_t sector_erase_count;
     size_t corrupt_sectors_recovered;
     size_t missing_redundant_entries_recovered;
   };
-  ErrorStats error_stats_;
+  InternalStats internal_stats_;
 
   uint32_t last_transaction_id_;
 };

@@ -439,6 +439,35 @@ TEST_F(LargeEmptyInitializedKvs, Basic) {
   EXPECT_EQ(kvs_.size(), 1u);
 }
 
+TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
+  const uint8_t kValue1 = 0xDA;
+  const uint8_t kValue2 = 0x12;
+
+  // Write a key and write again with a different value, resulting in a stale
+  // entry from the first write.
+  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[0], kValue1));
+  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[0], kValue2));
+  EXPECT_EQ(kvs_.size(), 1u);
+
+  KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.sector_erase_count, 0u);
+  EXPECT_GT(stats.reclaimable_bytes, 0u);
+
+  // Do regular FullMaintenance, which should not touch the sector with valid
+  // data.
+  EXPECT_EQ(Status::Ok(), kvs_.FullMaintenance());
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.sector_erase_count, 0u);
+  EXPECT_GT(stats.reclaimable_bytes, 0u);
+
+  // Do aggressive FullMaintenance, which should GC the sector with valid data,
+  // resulting in no reclaimable bytes and an erased sector.
+  EXPECT_EQ(Status::Ok(), kvs_.HeavyMaintenance());
+  stats = kvs_.GetStorageStats();
+  EXPECT_EQ(stats.sector_erase_count, 1u);
+  EXPECT_EQ(stats.reclaimable_bytes, 0u);
+}
+
 TEST(InMemoryKvs, Put_MaxValueSize) {
   // Create and erase the fake flash.
   Flash flash;
