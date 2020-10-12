@@ -542,5 +542,34 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestRe
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 
+TEST_F(GAP_ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet);
+
+  size_t conn_0_cb_count = 0;
+  auto conn_cb_0 = [&conn_0_cb_count](auto cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    conn_0_cb_count++;
+  };
+  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+
+  size_t conn_1_cb_count = 0;
+  auto conn_cb_1 = [&conn_1_cb_count](auto cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    conn_1_cb_count++;
+  };
+  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  RunLoopUntilIdle();
+
+  DestroyManager();
+  EXPECT_EQ(conn_0_cb_count, 1u);
+  EXPECT_EQ(conn_1_cb_count, 1u);
+}
+
 }  // namespace
 }  // namespace bt::gap

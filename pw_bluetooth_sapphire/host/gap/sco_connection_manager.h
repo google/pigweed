@@ -22,6 +22,7 @@ class ScoConnectionManager final {
   // |transport| must outlive this object.
   ScoConnectionManager(PeerId peer_id, hci::ConnectionHandle acl_handle, DeviceAddress peer_address,
                        DeviceAddress local_address, fxl::WeakPtr<hci::Transport> transport);
+  // Closes connections and cancels connection requests.
   ~ScoConnectionManager();
 
   // Initiate and outbound connection. A request will be queued if a connection is already in

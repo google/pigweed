@@ -63,7 +63,18 @@ ScoConnectionManager::~ScoConnectionManager() {
     conn->Close();
   }
 
-  // TODO(fxbug.dev/58458): Fail all pending requests.
+  // Cancel in progress request.
+  if (in_progress_request_) {
+    bt_log(DEBUG, "gap-sco", "ScoConnectionManager destroyed while request in progress");
+    in_progress_request_->callback(nullptr);
+    in_progress_request_.reset();
+  }
+
+  // Cancel queued requests.
+  while (!connection_requests_.empty()) {
+    connection_requests_.front().callback(nullptr);
+    connection_requests_.pop();
+  }
 }
 
 void ScoConnectionManager::OpenConnection(hci::SynchronousConnectionParameters params,
