@@ -27,4 +27,5 @@ setuptools.setup(
         'protobuf',
         'pw_protobuf',
     ],
+    tests_require=['pw_build'],
 )

@@ -161,6 +161,7 @@ pw_test_group("tests") {
     ":base_server_writer_test",
     ":channel_test",
     ":client_test",
+    ":ids_test",
     ":packet_test",
     ":server_test",
     ":service_test",
@@ -190,9 +191,19 @@ pw_test("channel_test") {
   sources = [ "channel_test.cc" ]
 }
 
-pw_test("hash_test") {
-  deps = [ ":server" ]
-  sources = [ "hash_test.cc" ]
+action("generate_ids_test") {
+  outputs = [ "$target_gen_dir/generated_ids_test.cc" ]
+  script = "py/ids_test.py"
+  args = [ "--generate-cc-test" ] + rebase_path(outputs)
+  deps = [ "$dir_pw_build/py" ]
+}
+
+pw_test("ids_test") {
+  deps = [
+    ":generate_ids_test",
+    ":server",
+  ]
+  sources = get_target_outputs(":generate_ids_test")
 }
 
 pw_test("packet_test") {
