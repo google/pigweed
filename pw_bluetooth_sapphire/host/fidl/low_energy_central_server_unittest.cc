@@ -206,5 +206,58 @@ TEST_F(FIDL_LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
   EXPECT_FALSE(conn.has_value());
 }
 
+TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm) {
+  auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
+
+  bt::gap::LowEnergyConnectionRefPtr le_conn;
+  adapter()->le_connection_manager()->Connect(peer->identifier(),
+                                              [&le_conn](auto status, auto cb_conn) {
+                                                ASSERT_TRUE(status);
+                                                le_conn = std::move(cb_conn);
+                                              });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(le_conn);
+  ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
+
+  fuchsia::bluetooth::Status status;
+  auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
+    status = std::move(cb_status);
+  };
+
+  fble::ConnectionOptions options;
+  fidl::InterfaceHandle<fuchsia::bluetooth::gatt::Client> gatt_client;
+  fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> gatt_client_req =
+      gatt_client.NewRequest();
+  central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),
+                                     std::move(gatt_client_req), callback);
+  RunLoopUntilIdle();
+  EXPECT_EQ(status.error, nullptr);
+  auto server_conn = server()->FindConnectionForTesting(peer->identifier());
+  ASSERT_TRUE(server_conn.has_value());
+  EXPECT_NE(server_conn.value(), nullptr);
+}
+
+TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralUnknownPeer) {
+  fuchsia::bluetooth::Status status;
+  auto callback = [&status](::fuchsia::bluetooth::Status cb_status) {
+    status = std::move(cb_status);
+  };
+
+  const bt::PeerId peer_id(1);
+
+  fble::ConnectionOptions options;
+  fidl::InterfaceHandle<fuchsia::bluetooth::gatt::Client> gatt_client;
+  fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> gatt_client_req =
+      gatt_client.NewRequest();
+  central_proxy()->ConnectPeripheral(peer_id.ToString(), std::move(options),
+                                     std::move(gatt_client_req), callback);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(status.error);
+  EXPECT_EQ(status.error->error_code, fuchsia::bluetooth::ErrorCode::NOT_FOUND);
+  auto server_conn = server()->FindConnectionForTesting(peer_id);
+  EXPECT_FALSE(server_conn.has_value());
+}
+
 }  // namespace
 }  // namespace bthost

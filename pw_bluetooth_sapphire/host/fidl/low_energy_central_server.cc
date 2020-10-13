@@ -209,14 +209,18 @@ void LowEnergyCentralServer::ConnectPeripheral(
           : std::nullopt;
   bt::gap::LowEnergyConnectionManager::ConnectionOptions mgr_connection_options(bondable_mode,
                                                                                 service_uuid);
+
+  // An entry for the connection must be created here so that a synchronous call to conn_cb below
+  // does not cause conn_cb to treat the connection as cancelled.
+  connections_[*peer_id] = nullptr;
+
   if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb),
                                                    mgr_connection_options)) {
     bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
+    connections_.erase(*peer_id);
     callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
     return;
   }
-
-  connections_[*peer_id] = nullptr;
 }
 
 void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,

@@ -143,8 +143,8 @@ class LowEnergyConnectionManager final {
   // requested remote LE peer identified by |peer_id|. Returns
   // false, if |peer_id| is not recognized, otherwise:
   //
-  //   * If the requested peer is already connected, this method
-  //     asynchronously returns a LowEnergyConnectionRef after interrogation (if necessary).
+  //   * If the requested peer is already connected, |callback| is called with a
+  //     LowEnergyConnectionRef after interrogation (if necessary).
   //     This is done for both local and remote initiated connections (i.e. the local adapter
   //     can either be in the LE central or peripheral roles).
   //
@@ -158,6 +158,8 @@ class LowEnergyConnectionManager final {
   //     error.
   //
   // |callback| is posted on the creation thread's dispatcher.
+  //
+  // TODO(fxbug.dev/61704): Return void and always call callback with result.
   using ConnectionResultCallback = fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
   bool Connect(PeerId peer_id, ConnectionResultCallback callback,
                ConnectionOptions connection_options = ConnectionOptions());
