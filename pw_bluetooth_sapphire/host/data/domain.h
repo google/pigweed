@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_DOMAIN_H_
 
 #include <lib/sys/inspect/cpp/component.h>
-#include <lib/zx/socket.h>
 
 #include <fbl/macros.h>
 #include <fbl/ref_counted.h>
@@ -20,18 +19,13 @@ namespace bt {
 
 namespace l2cap {
 struct ChannelParameters;
-struct ChannelSocket;
 }  // namespace l2cap
 
 namespace data {
 
 // Represents the task domain that implements the host subsystem's data plane.
 // This domain runs on the thread it is created on, and is not thread-safe.
-// Protocols implemented here are:
-//
-//   a. L2CAP and SCO.
-//   b. RFCOMM.
-//   c. Data sockets that bridge out-of-process users to above protocols.
+// Protocols implemented here are: L2CAP.
 class Domain : public fbl::RefCounted<Domain> {
  public:
   // Constructs an uninitialized data domain that can be used in production.
@@ -123,25 +117,6 @@ class Domain : public fbl::RefCounted<Domain> {
   virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                                 l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 
-  // Open an outbound dynamic channel against a peer's Protocol/Service
-  // Multiplexing (PSM) code |psm| on a link identified by |handle| using the preferred channel
-  // parameters |params|.
-  //
-  // |socket_callback| will be called with a zx::socket corresponding to the channel created to the
-  // remote or ZX_INVALID_HANDLE if the channel creation resulted in an error.
-  //
-  // Regardless of success, |link_handle| will be the same as the initial
-  // |handle| argument.
-  //
-  // On successful channel creation, |chan_info| contains the configured channel parameters.
-  //
-  // Has no effect if this Domain is uninitialized or shut down.
-  using SocketCallback =
-      fit::function<void(l2cap::ChannelSocket, hci::ConnectionHandle link_handle)>;
-  virtual void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                l2cap::ChannelParameters params,
-                                SocketCallback socket_callback) = 0;
-
   // Registers a handler for peer-initiated dynamic channel requests that have
   // the Protocol/Service Multiplexing (PSM) code |psm|. The local device will attempt to configure
   // these channels using the preferred parameters |params|, but will accept different channel
@@ -160,20 +135,6 @@ class Domain : public fbl::RefCounted<Domain> {
   // TODO(xow): Dynamic PSMs may need their routing space (ACL or LE) identified
   virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                l2cap::ChannelCallback callback) = 0;
-
-  // Similar to RegisterService, but instead of providing a l2cap::Channel,
-  // provides a zx::socket which can be used to communicate on the channel.
-  // The underlying l2cap::Channel is activated; the socket provided will
-  // receive any data sent to the channel and any data sent to the socket
-  // will be sent as if sent by l2cap::Channel::Send.
-  // |link_handle| disambiguates which remote device initiated the channel.
-  //
-  // TODO(armansito): Return the socket in a data structure that contains
-  // additional meta-data about the connection, such as its link type and
-  // channel configuration parameters (see fxbug.dev/1059 and TODOs for
-  // RegisterService above.
-  virtual void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                               SocketCallback socket_callback) = 0;
 
   // Removes the handler for inbound channel requests for the previously-
   // registered service identified by |psm|. This only prevents new inbound

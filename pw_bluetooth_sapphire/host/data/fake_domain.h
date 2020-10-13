@@ -71,12 +71,8 @@ class FakeDomain final : public Domain {
       l2cap::ConnectionParameterUpdateRequestCallback request_cb) override;
   void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                         l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override;
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, SocketCallback socket_callback) override;
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                        l2cap::ChannelCallback channel_callback) override;
-  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       SocketCallback socket_callback) override;
   void UnregisterService(l2cap::PSM psm) override;
 
   // Called when a new channel gets opened. Tests can use this to obtain a
@@ -151,9 +147,6 @@ class FakeDomain final : public Domain {
 
   using ServiceInfo = l2cap::ServiceInfo<l2cap::ChannelCallback>;
   std::unordered_map<l2cap::PSM, ServiceInfo> registered_services_;
-
-  // Makes sockets for RegisterService
-  SocketFactory<l2cap::Channel> socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDomain);
 };

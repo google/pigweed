@@ -157,32 +157,10 @@ void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
                   [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
 }
 
-void FakeDomain::OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                                  l2cap::ChannelParameters params, SocketCallback socket_callback) {
-  OpenL2capChannel(handle, psm, params,
-                   [this, cb = std::move(socket_callback), handle](auto channel) {
-                     zx::socket s = socket_factory_.MakeSocketForChannel(channel);
-                     auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-                     l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-
-                     cb(std::move(chan_sock), handle);
-                   });
-}
-
 void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                                  l2cap::ChannelCallback channel_callback) {
   ZX_DEBUG_ASSERT(registered_services_.count(psm) == 0);
   registered_services_.emplace(psm, ServiceInfo(params, std::move(channel_callback)));
-}
-
-void FakeDomain::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                                 SocketCallback socket_callback) {
-  RegisterService(psm, params, [this, cb = std::move(socket_callback)](auto channel) {
-    zx::socket s = socket_factory_.MakeSocketForChannel(channel);
-    auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-    l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-    cb(std::move(chan_sock), channel->link_handle());
-  });
 }
 
 void FakeDomain::UnregisterService(l2cap::PSM psm) { registered_services_.erase(psm); }

@@ -36,14 +36,11 @@ class Impl final : public Domain {
         std::move(send_packets), std::move(drop_queued_acl), std::move(acl_priority));
     hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
-    l2cap_socket_factory_ = std::make_unique<SocketFactory<l2cap::Channel>>();
-
     bt_log(DEBUG, "data-domain", "initialized");
   }
 
   ~Impl() {
     bt_log(DEBUG, "data-domain", "shutting down");
-    l2cap_socket_factory_ = nullptr;
 
     ZX_ASSERT(hci_->acl_data_channel());
     hci_->acl_data_channel()->SetDataRxHandler(nullptr);
@@ -96,33 +93,10 @@ class Impl final : public Domain {
     channel_manager_->OpenChannel(handle, psm, params, std::move(cb));
   }
 
-  void OpenL2capChannel(hci::ConnectionHandle handle, l2cap::PSM psm,
-                        l2cap::ChannelParameters params, SocketCallback socket_callback) override {
-    OpenL2capChannel(handle, psm, params,
-                     [this, handle, cb = std::move(socket_callback)](auto channel) {
-                       // MakeSocketForChannel makes invalid sockets for null channels (i.e.
-                       // that have failed to open).
-                       zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-                       auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-                       l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-                       cb(std::move(chan_sock), handle);
-                     });
-  }
-
   void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
                        l2cap::ChannelCallback callback) override {
     const bool result = channel_manager_->RegisterService(psm, params, std::move(callback));
     ZX_DEBUG_ASSERT(result);
-  }
-
-  void RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
-                       SocketCallback socket_callback) override {
-    RegisterService(psm, params, [this, cb = std::move(socket_callback)](auto channel) {
-      zx::socket s = l2cap_socket_factory_->MakeSocketForChannel(channel);
-      auto chan_info = channel ? std::optional(channel->info()) : std::nullopt;
-      l2cap::ChannelSocket chan_sock(std::move(s), chan_info);
-      cb(std::move(chan_sock), channel->link_handle());
-    });
   }
 
   void UnregisterService(l2cap::PSM psm) override { channel_manager_->UnregisterService(psm); }
@@ -167,9 +141,6 @@ class Impl final : public Domain {
   fxl::WeakPtr<hci::Transport> hci_;
 
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
-
-  // Creates sockets that bridge internal L2CAP channels to profile processes.
-  std::unique_ptr<SocketFactory<l2cap::Channel>> l2cap_socket_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
