@@ -15,6 +15,7 @@
 """Tests for the database module."""
 
 import io
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -95,7 +96,7 @@ def _mock_output():
     return io.TextIOWrapper(output, write_through=True)
 
 
-REPORT_DEFAULT_DOMAIN = b'''\
+REPORT_DEFAULT_DOMAIN = '''\
 example_binary_with_tokenized_strings.elf]
                  Domain: default
         Entries present: 17
@@ -103,9 +104,9 @@ example_binary_with_tokenized_strings.elf]
           Total entries: 17
   Total size of strings: 205 B
              Collisions: 0 tokens
-'''
+'''.replace('\n', os.linesep).encode()
 
-REPORT_TEST_DOMAIN = b'''\
+REPORT_TEST_DOMAIN = '''\
 example_binary_with_tokenized_strings.elf]
                  Domain: TEST_DOMAIN
         Entries present: 3
@@ -113,7 +114,7 @@ example_binary_with_tokenized_strings.elf]
           Total entries: 3
   Total size of strings: 38 B
              Collisions: 0 tokens
-'''
+'''.replace('\n', os.linesep).encode()
 
 
 class DatabaseCommandLineTest(unittest.TestCase):
