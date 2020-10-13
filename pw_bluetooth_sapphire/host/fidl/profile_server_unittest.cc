@@ -363,6 +363,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   EXPECT_EQ(channel->channel_mode(), fidl_params.channel_mode());
   // FakeDomain returns channels with max tx sdu size of kDefaultMTU.
   EXPECT_EQ(channel->max_tx_sdu_size(), bt::l2cap::kDefaultMTU);
+  EXPECT_FALSE(channel->has_ext_direction());
 }
 
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
@@ -473,6 +474,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
         ASSERT_TRUE(channel.has_socket());
         EXPECT_EQ(channel.channel_mode(), fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
         EXPECT_EQ(channel.max_tx_sdu_size(), kTxMtu);
+        EXPECT_FALSE(channel.has_ext_direction());
       });
 
   EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
@@ -480,8 +482,16 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   RunLoopUntilIdle();
 }
 
+class AclPrioritySupportedTest : public FIDL_ProfileServerTest_ConnectedPeer {
+ public:
+  void SetUp() override {
+    set_vendor_features(BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND);
+    FIDL_ProfileServerTest_ConnectedPeer::SetUp();
+  }
+};
+
 class PriorityTest
-    : public FIDL_ProfileServerTest_ConnectedPeer,
+    : public AclPrioritySupportedTest,
       public ::testing::WithParamInterface<std::pair<fidlbredr::A2dpDirectionPriority, bool>> {};
 
 TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
@@ -560,7 +570,7 @@ const std::array<std::pair<fidlbredr::A2dpDirectionPriority, bool>, 4> kPriority
 INSTANTIATE_TEST_SUITE_P(FIDL_ProfileServerTest_ConnectedPeer, PriorityTest,
                          ::testing::ValuesIn(kPriorityParams));
 
-TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
+TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
   fidlbredr::ChannelParameters fidl_chan_params;
 
   constexpr uint16_t kTxMtu = bt::l2cap::kMinACLMTU;
@@ -593,6 +603,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, InboundConnectAndSetPriority) {
                                                         0x41, kTxMtu));
   RunLoopUntilIdle();
   ASSERT_TRUE(channel.has_value());
+  ASSERT_TRUE(channel->has_ext_direction());
   auto client = channel->mutable_ext_direction()->Bind();
 
   size_t priority_cb_count = 0;

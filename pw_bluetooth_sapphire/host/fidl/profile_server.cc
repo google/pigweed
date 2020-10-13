@@ -310,10 +310,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
       return;
     }
 
-    auto audio_direction_ext_client = self->BindAudioDirectionExtServer(chan);
-
     auto fidl_chan = self->ChannelToFidl(std::move(chan));
-    fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
 
     cb(fit::ok(std::move(fidl_chan)));
   };
@@ -352,10 +349,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Ch
   std::vector<fidlbredr::ProtocolDescriptor> list;
   list.emplace_back(std::move(*desc));
 
-  auto audio_direction_ext_client = BindAudioDirectionExtServer(channel);
-
   auto fidl_chan = ChannelToFidl(std::move(channel));
-  fidl_chan.set_ext_direction(std::move(audio_direction_ext_client));
 
   it->second.receiver->Connected(peer_id, std::move(fidl_chan), std::move(list));
 }
@@ -471,8 +465,13 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   fidlbredr::Channel fidl_chan;
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());
-  auto sock = l2cap_socket_factory_.MakeSocketForChannel(std::move(channel));
+  auto sock = l2cap_socket_factory_.MakeSocketForChannel(channel);
   fidl_chan.set_socket(std::move(sock));
+
+  if (adapter()->state().vendor_features() & BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND) {
+    fidl_chan.set_ext_direction(BindAudioDirectionExtServer(std::move(channel)));
+  }
+
   return fidl_chan;
 }
 
