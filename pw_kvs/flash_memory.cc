@@ -41,6 +41,28 @@ StatusWithSize FlashPartition::Input::DoRead(std::span<byte> data) {
   return result;
 }
 
+FlashPartition::FlashPartition(
+    FlashMemory* flash,
+    uint32_t start_sector_index,
+    uint32_t sector_count,
+    uint32_t alignment_bytes,  // Defaults to flash alignment
+    PartitionPermission permission)
+
+    : flash_(*flash),
+      start_sector_index_(start_sector_index),
+      sector_count_(sector_count),
+      alignment_bytes_(
+          alignment_bytes == 0
+              ? flash_.alignment_bytes()
+              : std::max(alignment_bytes, uint32_t(flash_.alignment_bytes()))),
+      permission_(permission) {
+  uint32_t misalignment = (alignment_bytes_ % flash_.alignment_bytes());
+  PW_DCHECK_UINT_EQ(misalignment,
+                    0,
+                    "Flash partition alignmentmust be a multiple of the flash "
+                    "memory alignment");
+}
+
 Status FlashPartition::Erase(Address address, size_t num_sectors) {
   if (permission_ == PartitionPermission::kReadOnly) {
     return Status::PermissionDenied();
