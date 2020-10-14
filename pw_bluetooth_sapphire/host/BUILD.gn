@@ -14,6 +14,9 @@ driver_module("driver") {
   deps = [
     ":sources",
     "//sdk/lib/syslog/cpp:backend_legacy",
+
+    # TODO(fxb/38132): Migrate to the new bind rules and delete the below
+    "//src/lib/ddk:ddk-deprecated-binding-headers",
   ]
 
   configs -= [ "//build/config/fuchsia:no_cpp_standard_library" ]
@@ -88,6 +91,9 @@ source_set("sources") {
     "//src/connectivity/bluetooth/fidl:host",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/ddk",
+
+    # TODO(fxb/38132): Migrate to the new bind rules and delete the below
+    "//src/lib/ddk:ddk-deprecated-binding-headers",
     "//src/lib/fxl",
     "//zircon/public/lib/fbl",
     "//zircon/public/lib/fit",
