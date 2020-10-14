@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_LEVEL PW_KVS_LOG_LEVEL
 
 #include "pw_kvs/flash_memory.h"
 
@@ -20,6 +21,7 @@
 #include <cinttypes>
 #include <cstring>
 
+#include "pw_assert/assert.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_status/status_with_size.h"

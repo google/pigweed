@@ -18,7 +18,7 @@
 #include <initializer_list>
 #include <span>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/light.h"
 #include "pw_kvs/alignment.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -48,7 +48,7 @@ class FlashMemory {
         start_address_(start_address),
         start_sector_(sector_start),
         erased_memory_content_(erased_memory_content) {
-    PW_DCHECK_UINT_NE(alignment_, 0);
+    PW_ASSERT(alignment_ != 0u);
   }
 
   virtual ~FlashMemory() = default;

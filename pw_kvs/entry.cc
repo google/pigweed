@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_LEVEL PW_KVS_LOG_LEVEL
 
 #include "pw_kvs/internal/entry.h"
 

@@ -14,16 +14,25 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_kvs_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("pw_kvs") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_kvs/alignment.h",
     "public/pw_kvs/checksum.h",
@@ -47,7 +56,6 @@ pw_source_set("pw_kvs") {
     "public/pw_kvs/internal/key_descriptor.h",
     "public/pw_kvs/internal/sectors.h",
     "public/pw_kvs/internal/span_traits.h",
-    "pw_kvs_private/config.h",
     "sectors.cc",
   ]
   public_deps = [
@@ -57,10 +65,17 @@ pw_source_set("pw_kvs") {
     dir_pw_status,
   ]
   deps = [
+    ":config",
     dir_pw_checksum,
     dir_pw_log,
   ]
   friend = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public_deps = [ pw_kvs_CONFIG ]
+  public = [ "pw_kvs_private/config.h" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("crc16") {
@@ -82,7 +97,7 @@ pw_source_set("test_key_value_store") {
 }
 
 pw_source_set("fake_flash") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/fake_flash_memory.h" ]
   sources = [ "fake_flash_memory.cc" ]
   public_deps = [
@@ -91,11 +106,14 @@ pw_source_set("fake_flash") {
     dir_pw_span,
     dir_pw_status,
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    ":config",
+    dir_pw_log,
+  ]
 }
 
 pw_source_set("fake_flash_small_partition") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
   public_deps = [ ":flash_test_partition" ]
@@ -106,7 +124,7 @@ pw_source_set("fake_flash_small_partition") {
 }
 
 pw_source_set("fake_flash_64_aligned_partition") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
   public_deps = [ ":flash_test_partition" ]
@@ -118,7 +136,7 @@ pw_source_set("fake_flash_64_aligned_partition") {
 }
 
 pw_source_set("fake_flash_256_aligned_partition") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_test_partition.h" ]
   sources = [ "fake_flash_test_partition.cc" ]
   public_deps = [ ":flash_test_partition" ]
@@ -130,7 +148,7 @@ pw_source_set("fake_flash_256_aligned_partition") {
 }
 
 pw_source_set("fake_flash_test_key_value_store") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   sources = [ "fake_flash_test_key_value_store.cc" ]
   public_deps = [ ":test_key_value_store" ]
   deps = [
@@ -142,6 +160,7 @@ pw_source_set("fake_flash_test_key_value_store") {
 
 pw_source_set("flash_partition_test_100_iterations") {
   deps = [
+    ":config",
     ":flash_test_partition",
     dir_pw_kvs,
     dir_pw_log,
@@ -153,6 +172,7 @@ pw_source_set("flash_partition_test_100_iterations") {
 
 pw_source_set("flash_partition_test_2_iterations") {
   deps = [
+    ":config",
     ":flash_test_partition",
     dir_pw_kvs,
     dir_pw_log,
@@ -185,7 +205,7 @@ pw_source_set("test_key_value_store_test") {
 }
 
 pw_source_set("test_partition") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_kvs/flash_partition_with_stats.h" ]
   sources = [ "flash_partition_with_stats.cc" ]
   visibility = [ ":*" ]
@@ -194,6 +214,7 @@ pw_source_set("test_partition") {
     dir_pw_log,
     dir_pw_status,
   ]
+  deps = [ ":config" ]
 }
 
 pw_test_group("tests") {

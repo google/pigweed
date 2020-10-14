@@ -17,7 +17,12 @@
 
 #include <cstddef>
 
-// The maximum flash alignment supported
+// Which log level to use for pw_kvs logs.
+#ifndef PW_KVS_LOG_LEVEL
+#define PW_KVS_LOG_LEVEL PW_LOG_LEVEL_INFO
+#endif  // PW_KVS_LOG_LEVEL
+
+// The maximum flash alignment supported.
 #ifndef PW_KVS_MAX_FLASH_ALIGNMENT
 #define PW_KVS_MAX_FLASH_ALIGNMENT 256UL
 #endif  // PW_KVS_MAX_FLASH_ALIGNMENT
@@ -26,5 +31,7 @@ static_assert((PW_KVS_MAX_FLASH_ALIGNMENT >= 16UL),
               "Max flash alignment is required to be at least 16");
 
 namespace pw::kvs {
+
 inline constexpr size_t kMaxFlashAlignment = PW_KVS_MAX_FLASH_ALIGNMENT;
+
 }  // namespace pw::kvs

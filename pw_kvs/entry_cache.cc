@@ -13,6 +13,7 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_LEVEL PW_KVS_LOG_LEVEL
 
 #include "pw_kvs/internal/entry_cache.h"
 
@@ -21,6 +22,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_kvs/internal/hash.h"
+#include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs::internal {

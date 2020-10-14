@@ -13,9 +13,11 @@
 // the License.
 
 #define PW_LOG_MODULE_NAME "KVS"
+#define PW_LOG_LEVEL PW_KVS_LOG_LEVEL
 
 #include "pw_kvs/fake_flash_memory.h"
 
+#include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 
 namespace pw::kvs {

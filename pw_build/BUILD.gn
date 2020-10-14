@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -107,6 +107,13 @@ config("cpp17") {
     # Allow uses of the register keyword, which may appear in C headers.
     "-Wno-register",
   ]
+}
+
+# This empty target is used as the default value for module configurations.
+# Projects may set pw_build_DEFAULT_MODULE_CONFIG to a different GN target that
+# overrides modules' configuration options via macro definitions or a header
+# forcibly included with `-include`.
+group("empty") {
 }
 
 pw_doc_group("docs") {
