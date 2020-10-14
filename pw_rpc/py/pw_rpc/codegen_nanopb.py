@@ -58,86 +58,36 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
                                 output: OutputFile) -> None:
     """Generates a nanopb method descriptor for an RPC method."""
 
-    method_class = f'{RPC_NAMESPACE}::internal::NanopbMethod'
-
-    if method.type() == ProtoServiceMethod.Type.UNARY:
-        func = f'{method_class}::Unary<{_invoker_name(method)}>'
-    elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        func = f'{method_class}::ServerStreaming<{_invoker_name(method)}>'
-    else:
-        raise NotImplementedError(
-            'Only unary and server streaming RPCs are currently supported')
-
     method_id = pw_rpc.ids.calculate(method.name())
     req_fields = f'{method.request_type().nanopb_name()}_fields'
     res_fields = f'{method.response_type().nanopb_name()}_fields'
+    impl_method = f'&Implementation::{method.name()}'
 
-    output.write_line(f'{func}(')
+    output.write_line(
+        f'{RPC_NAMESPACE}::internal::GetNanopbOrRawMethodFor<{impl_method}>(')
     with output.indent(4):
         output.write_line(f'0x{method_id:08x},  // Hash of "{method.name()}"')
         output.write_line(f'{req_fields},')
         output.write_line(f'{res_fields}),')
 
 
-def _generate_code_for_method(method: ProtoServiceMethod,
-                              output: OutputFile) -> None:
-    """Generates the function singature of a nanopb RPC method."""
+def _generate_method_lookup_function(output: OutputFile):
+    """Generates a function that gets the Method from its ID."""
+    nanopb_method = f'{RPC_NAMESPACE}::internal::NanopbMethod'
 
-    req_type = method.request_type().nanopb_name()
-    res_type = method.response_type().nanopb_name()
-    implementation_cast = 'static_cast<Implementation&>(call.service())'
-
-    output.write_line()
-
-    if method.type() == ProtoServiceMethod.Type.UNARY:
-        output.write_line(f'static ::pw::Status {_invoker_name(method)}(')
-        with output.indent(4):
-            output.write_line('::pw::rpc::internal::ServerCall& call,')
-            output.write_line(f'const {req_type}& request,')
-            output.write_line(f'{res_type}& response) {{')
-        with output.indent():
-            output.write_line(f'return {implementation_cast}')
-            output.write_line(
-                f'    .{method.name()}(call.context(), request, response);')
-        output.write_line('}')
-    elif method.type() == ProtoServiceMethod.Type.SERVER_STREAMING:
-        output.write_line(f'static void {_invoker_name(method)}(')
-        with output.indent(4):
-            output.write_line('::pw::rpc::internal::ServerCall& call,')
-            output.write_line(f'const {req_type}& request,')
-            output.write_line(f'ServerWriter<{res_type}>& writer) {{')
-        with output.indent():
-            output.write_line(implementation_cast)
-            output.write_line(
-                f'    .{method.name()}(call.context(), request, writer);')
-        output.write_line('}')
-    else:
-        raise NotImplementedError(
-            'Only unary and server streaming RPCs are currently supported')
-
-
-def _generate_method_lookup_function(service: ProtoService,
-                                     output: OutputFile):
-    """Generates a function that gets the Method from a function pointer."""
-    output.write_line('template <auto impl_method>')
     output.write_line(
-        'static constexpr const ::pw::rpc::internal::NanopbMethod* '
-        'MethodFor() {')
+        f'static constexpr const {nanopb_method}* NanopbMethodFor(')
+    output.write_line('    uint32_t id) {')
 
     with output.indent():
-        for i, method in enumerate(service.methods()):
+        output.write_line('for (auto& method : kMethods) {')
+        with output.indent():
+            output.write_line('if (method.nanopb_method().id() == id) {')
             output.write_line(
-                'if constexpr (std::is_same_v<decltype(impl_method), '
-                f'decltype(&Implementation::{method.name()})>) {{')
-
-            with output.indent():
-                output.write_line(
-                    'if constexpr ('
-                    f'impl_method == &Implementation::{method.name()}) {{')
-                output.write_line(f'  return &std::get<{i}>(kMethods);')
-                output.write_line('}')
-
+                f'  return &static_cast<const {nanopb_method}&>(')
+            output.write_line('    method.nanopb_method());')
             output.write_line('}')
+        output.write_line('}')
 
         output.write_line('return nullptr;')
 
@@ -190,14 +140,11 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
             f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
         )
 
-        for method in service.methods():
-            _generate_code_for_method(method, output)
-
         output.write_line()
 
         # Generate the method table
         output.write_line('static constexpr std::array<'
-                          f'{RPC_NAMESPACE}::internal::NanopbMethod,'
+                          f'{RPC_NAMESPACE}::internal::NanopbMethodUnion,'
                           f' {len(service.methods())}> kMethods = {{')
 
         with output.indent(4):
@@ -206,10 +153,10 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
 
         output.write_line('};\n')
 
-        _generate_method_lookup_function(service, output)
+        _generate_method_lookup_function(output)
 
         output.write_line()
-        output.write_line('template <auto>')
+        output.write_line('template <typename, uint32_t>')
         output.write_line(
             'friend class ::pw::rpc::internal::ServiceMethodTraits;')
 
@@ -231,7 +178,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
     output.write_line('#include <type_traits>\n')
-    output.write_line('#include "pw_rpc/internal/nanopb_method.h"')
+    output.write_line('#include "pw_rpc/internal/nanopb_method_union.h"')
     output.write_line('#include "pw_rpc/server_context.h"')
     output.write_line('#include "pw_rpc/service.h"')
 
@@ -243,7 +190,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line(f'#include "{nanopb_header}"\n')
 
     output.write_line('namespace pw::rpc::internal {\n')
-    output.write_line('template <auto>')
+    output.write_line('template <typename, uint32_t>')
     output.write_line('class ServiceMethodTraits;')
     output.write_line('\n}  // namespace pw::rpc::internal\n')
 

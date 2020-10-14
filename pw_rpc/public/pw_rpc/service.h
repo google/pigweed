@@ -19,15 +19,16 @@
 
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_union.h"
 
 namespace pw::rpc {
 
 // Base class for all RPC services. This cannot be instantiated directly; use a
 // generated subclass instead.
 //
-// Services store a span of concrete method classes. To support different Method
-// implementations, Service stores as base Method* and the size of the concrete
-// method object.
+// Services store a span of concrete method implementation classes. To support
+// different Method implementations, Service stores a base MethodUnion* and the
+// size of the concrete MethodUnion object.
 class Service : public IntrusiveList<Service>::Item {
  public:
   uint32_t id() const { return id_; }
@@ -55,7 +56,7 @@ class Service : public IntrusiveList<Service>::Item {
   const internal::Method* FindMethod(uint32_t method_id) const;
 
   const uint32_t id_;
-  const internal::Method* const methods_;
+  const internal::MethodUnion* const methods_;
   const uint16_t method_size_;
   const uint16_t method_count_;
 };

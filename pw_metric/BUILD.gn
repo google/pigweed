@@ -93,7 +93,8 @@ pw_test_group("tests") {
     ":global_test",
   ]
   if (dir_pw_third_party_nanopb != "") {
-    tests += [ ":metric_service_nanopb_test" ]
+    # TODO(frolv): Re-enable when TestMethodContext is updated.
+    # tests += [ ":metric_service_nanopb_test" ]
   }
 }
 

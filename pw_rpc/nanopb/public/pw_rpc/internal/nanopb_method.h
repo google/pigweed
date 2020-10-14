@@ -57,12 +57,12 @@ class Packet;
 
 // Templated false value for use in static_assert(false) statements.
 template <typename...>
-constexpr std::false_type kFalse{};
+constexpr std::false_type kFalseValue{};
 
 // Extracts the request and response proto types from a method.
 template <typename Method>
 struct RpcTraits {
-  static_assert(kFalse<Method>,
+  static_assert(kFalseValue<Method>,
                 "The selected function is not an RPC service method");
 };
 

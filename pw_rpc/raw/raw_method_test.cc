@@ -20,6 +20,7 @@
 #include "pw_bytes/array.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_rpc/internal/raw_method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
@@ -28,93 +29,55 @@
 namespace pw::rpc::internal {
 namespace {
 
-template <typename Implementation>
-class FakeGeneratedService : public Service {
- public:
-  constexpr FakeGeneratedService(uint32_t id) : Service(id, kMethods) {}
-
-  static StatusWithSize Invoke_DoNothing(ServerCall& call,
-                                         ConstByteSpan request,
-                                         ByteSpan response) {
-    return static_cast<Implementation&>(call.service())
-        .DoNothing(call.context(), request, response);
-  }
-
-  static StatusWithSize Invoke_AddFive(ServerCall& call,
-                                       ConstByteSpan request,
-                                       ByteSpan response) {
-    return static_cast<Implementation&>(call.service())
-        .AddFive(call.context(), request, response);
-  }
-
-  static void Invoke_StartStream(ServerCall& call,
-                                 ConstByteSpan request,
-                                 RawServerWriter& writer) {
-    static_cast<Implementation&>(call.service())
-        .StartStream(call.context(), request, writer);
-  }
-
-  static constexpr std::array<RawMethod, 3> kMethods = {
-      RawMethod::Unary<Invoke_DoNothing>(10u),
-      RawMethod::Unary<Invoke_AddFive>(11u),
-      RawMethod::ServerStreaming<Invoke_StartStream>(12u),
-  };
-};
-
 struct {
   int64_t integer;
   uint32_t status_code;
 } last_request;
 RawServerWriter last_writer;
 
-class FakeGeneratedServiceImpl
-    : public FakeGeneratedService<FakeGeneratedServiceImpl> {
- public:
-  FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
+void DecodeRawTestRequest(ConstByteSpan request) {
+  protobuf::Decoder decoder(request);
 
-  StatusWithSize DoNothing(ServerContext&, ConstByteSpan, ByteSpan) {
-    return StatusWithSize::Unknown();
-  }
+  while (decoder.Next().ok()) {
+    test::TestRequest::Fields field =
+        static_cast<test::TestRequest::Fields>(decoder.FieldNumber());
 
-  StatusWithSize AddFive(ServerContext&,
-                         ConstByteSpan request,
-                         ByteSpan response) {
-    DecodeRawTestRequest(request);
-
-    protobuf::NestedEncoder encoder(response);
-    test::TestResponse::Encoder test_response(&encoder);
-    test_response.WriteValue(last_request.integer + 5);
-    ConstByteSpan payload;
-    encoder.Encode(&payload);
-
-    return StatusWithSize::Unauthenticated(payload.size());
-  }
-
-  void StartStream(ServerContext&,
-                   ConstByteSpan request,
-                   RawServerWriter& writer) {
-    DecodeRawTestRequest(request);
-    last_writer = std::move(writer);
-  }
-
- private:
-  void DecodeRawTestRequest(ConstByteSpan request) {
-    protobuf::Decoder decoder(request);
-
-    while (decoder.Next().ok()) {
-      test::TestRequest::Fields field =
-          static_cast<test::TestRequest::Fields>(decoder.FieldNumber());
-
-      switch (field) {
-        case test::TestRequest::Fields::INTEGER:
-          decoder.ReadInt64(&last_request.integer);
-          break;
-        case test::TestRequest::Fields::STATUS_CODE:
-          decoder.ReadUint32(&last_request.status_code);
-          break;
-      }
+    switch (field) {
+      case test::TestRequest::Fields::INTEGER:
+        decoder.ReadInt64(&last_request.integer);
+        break;
+      case test::TestRequest::Fields::STATUS_CODE:
+        decoder.ReadUint32(&last_request.status_code);
+        break;
     }
   }
+};
+
+StatusWithSize AddFive(ServerCall&, ConstByteSpan request, ByteSpan response) {
+  DecodeRawTestRequest(request);
+
+  protobuf::NestedEncoder encoder(response);
+  test::TestResponse::Encoder test_response(&encoder);
+  test_response.WriteValue(last_request.integer + 5);
+  ConstByteSpan payload;
+  encoder.Encode(&payload);
+
+  return StatusWithSize::Unauthenticated(payload.size());
+}
+
+void StartStream(ServerCall&, ConstByteSpan request, RawServerWriter& writer) {
+  DecodeRawTestRequest(request);
+  last_writer = std::move(writer);
+}
+
+class FakeService : public Service {
+ public:
+  FakeService(uint32_t id) : Service(id, kMethods) {}
+
+  static constexpr std::array<RawMethodUnion, 2> kMethods = {
+      RawMethod::Unary<AddFive>(10u),
+      RawMethod::ServerStreaming<StartStream>(11u),
+  };
 };
 
 TEST(RawMethod, UnaryRpc_SendsResponse) {
@@ -124,8 +87,8 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
-  const RawMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
   method.Invoke(context.get(), context.packet(encoder.Encode().value()));
 
   EXPECT_EQ(last_request.integer, 456);
@@ -148,8 +111,8 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 
-  const RawMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet(encoder.Encode().value()));
 
@@ -161,8 +124,8 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
 }
 
 TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
-  const RawMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 
@@ -183,8 +146,8 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
 }
 
 TEST(RawServerWriter, Write_SendsExternalBuffer) {
-  const RawMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 
@@ -201,8 +164,8 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
 }
 
 TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
-  const RawMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl, 16> context(method);
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService, 16> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 

@@ -18,6 +18,7 @@
 #include <span>
 
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_union.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/server_context.h"
 #include "pw_status/status_with_size.h"
@@ -54,6 +55,20 @@ class TestMethod : public Method {
 
   std::span<const std::byte> response_;
   Status response_status_;
+};
+
+class TestMethodUnion : public MethodUnion {
+ public:
+  constexpr TestMethodUnion(TestMethod&& method) : impl_({.test = method}) {}
+
+  constexpr const Method& method() const { return impl_.method; }
+  constexpr const TestMethod& test_method() const { return impl_.test; }
+
+ private:
+  union {
+    Method method;
+    TestMethod test;
+  } impl_;
 };
 
 }  // namespace pw::rpc::internal

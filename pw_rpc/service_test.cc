@@ -40,25 +40,39 @@ class ServiceTestMethod : public internal::Method {
   char value;  // Add a member so the class is larger than the base Method.
 };
 
+class ServiceTestMethodUnion : public internal::MethodUnion {
+ public:
+  constexpr ServiceTestMethodUnion(ServiceTestMethod&& method)
+      : impl_({.service_test = method}) {}
+
+  constexpr const internal::Method& method() const { return impl_.method; }
+
+ private:
+  union {
+    internal::Method method;
+    ServiceTestMethod service_test;
+  } impl_;
+};
+
 class TestService : public Service {
  public:
   constexpr TestService() : Service(0xabcd, kMethods) {}
 
-  static constexpr std::array<ServiceTestMethod, 3> kMethods = {{
+  static constexpr std::array<ServiceTestMethodUnion, 3> kMethods = {
       ServiceTestMethod(123, 'a'),
       ServiceTestMethod(456, 'b'),
       ServiceTestMethod(789, 'c'),
-  }};
+  };
 };
 
 TEST(Service, MultipleMethods_FindMethod_Present) {
   TestService service;
   EXPECT_EQ(ServiceTestHelper::FindMethod(service, 123),
-            &TestService::kMethods[0]);
+            &TestService::kMethods[0].method());
   EXPECT_EQ(ServiceTestHelper::FindMethod(service, 456),
-            &TestService::kMethods[1]);
+            &TestService::kMethods[1].method());
   EXPECT_EQ(ServiceTestHelper::FindMethod(service, 789),
-            &TestService::kMethods[2]);
+            &TestService::kMethods[2].method());
 }
 
 TEST(Service, MultipleMethods_FindMethod_NotPresent) {
@@ -71,7 +85,7 @@ TEST(Service, MultipleMethods_FindMethod_NotPresent) {
 class EmptyTestService : public Service {
  public:
   constexpr EmptyTestService() : Service(0xabcd, kMethods) {}
-  static constexpr std::array<ServiceTestMethod, 0> kMethods = {{}};
+  static constexpr std::array<ServiceTestMethodUnion, 0> kMethods = {};
 };
 
 TEST(Service, NoMethods_FindMethod_NotPresent) {

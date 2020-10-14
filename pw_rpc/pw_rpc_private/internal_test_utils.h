@@ -98,8 +98,6 @@ class ServerContextForTest {
     server_.RegisterService(service_);
   }
 
-  ServerContextForTest() : ServerContextForTest(service_.method) {}
-
   // Creates a response packet for this context's channel, service, and method.
   internal::Packet packet(std::span<const std::byte> payload) const {
     return internal::Packet(internal::PacketType::RESPONSE,

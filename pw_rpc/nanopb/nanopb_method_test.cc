@@ -17,6 +17,7 @@
 #include <array>
 
 #include "gtest/gtest.h"
+#include "pw_rpc/internal/nanopb_method_union.h"
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
@@ -28,33 +29,33 @@ namespace {
 
 using std::byte;
 
-template <typename Implementation>
-class FakeGeneratedService : public Service {
+pw_rpc_test_TestRequest last_request;
+ServerWriter<pw_rpc_test_TestResponse> last_writer;
+
+Status AddFive(ServerCall&,
+               const pw_rpc_test_TestRequest& request,
+               pw_rpc_test_TestResponse& response) {
+  last_request = request;
+  response.value = request.integer + 5;
+  return Status::Unauthenticated();
+}
+
+Status DoNothing(ServerCall&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
+  return Status::Unknown();
+}
+
+void StartStream(ServerCall&,
+                 const pw_rpc_test_TestRequest& request,
+                 ServerWriter<pw_rpc_test_TestResponse>& writer) {
+  last_request = request;
+  last_writer = std::move(writer);
+}
+
+class FakeService : public Service {
  public:
-  constexpr FakeGeneratedService(uint32_t id) : Service(id, kMethods) {}
+  FakeService(uint32_t id) : Service(id, kMethods) {}
 
-  static Status DoNothing(ServerCall& call,
-                          const pw_rpc_test_Empty& request,
-                          pw_rpc_test_Empty& response) {
-    return static_cast<Implementation&>(call.service())
-        .DoNothing(call.context(), request, response);
-  }
-
-  static Status AddFive(ServerCall& call,
-                        const pw_rpc_test_TestRequest& request,
-                        pw_rpc_test_TestResponse& response) {
-    return static_cast<Implementation&>(call.service())
-        .AddFive(call.context(), request, response);
-  }
-
-  static void StartStream(ServerCall& call,
-                          const pw_rpc_test_TestRequest& request,
-                          ServerWriter<pw_rpc_test_TestResponse>& writer) {
-    static_cast<Implementation&>(call.service())
-        .StartStream(call.context(), request, writer);
-  }
-
-  static constexpr std::array<NanopbMethod, 3> kMethods = {
+  static constexpr std::array<NanopbMethodUnion, 3> kMethods = {
       NanopbMethod::Unary<DoNothing>(
           10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
       NanopbMethod::Unary<AddFive>(
@@ -64,42 +65,13 @@ class FakeGeneratedService : public Service {
   };
 };
 
-pw_rpc_test_TestRequest last_request;
-ServerWriter<pw_rpc_test_TestResponse> last_writer;
-
-class FakeGeneratedServiceImpl
-    : public FakeGeneratedService<FakeGeneratedServiceImpl> {
- public:
-  FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
-
-  Status AddFive(ServerContext&,
-                 const pw_rpc_test_TestRequest& request,
-                 pw_rpc_test_TestResponse& response) {
-    last_request = request;
-    response.value = request.integer + 5;
-    return Status::Unauthenticated();
-  }
-
-  Status DoNothing(ServerContext&,
-                   const pw_rpc_test_Empty&,
-                   pw_rpc_test_Empty&) {
-    return Status::Unknown();
-  }
-
-  void StartStream(ServerContext&,
-                   const pw_rpc_test_TestRequest& request,
-                   ServerWriter<pw_rpc_test_TestResponse>& writer) {
-    last_request = request;
-    last_writer = std::move(writer);
-  }
-};
-
 TEST(NanopbMethod, UnaryRpc_SendsResponse) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 123, .status_code = 0);
 
-  const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const NanopbMethod& method =
+      std::get<1>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
   method.Invoke(context.get(), context.packet(request));
 
   const Packet& response = context.output().sent_packet();
@@ -119,8 +91,9 @@ TEST(NanopbMethod, UnaryRpc_SendsResponse) {
 TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
   std::array<byte, 8> bad_payload{byte{0xFF}, byte{0xAA}, byte{0xDD}};
 
-  const NanopbMethod& method = std::get<0>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const NanopbMethod& method =
+      std::get<0>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
   method.Invoke(context.get(), context.packet(bad_payload));
 
   const Packet& packet = context.output().sent_packet();
@@ -135,9 +108,10 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = value, .status_code = 0);
 
-  const NanopbMethod& method = std::get<1>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method =
+      std::get<1>(FakeService::kMethods).nanopb_method();
   // Output buffer is too small for the response, but can fit an error packet.
-  ServerContextForTest<FakeGeneratedServiceImpl, 22> context(method);
+  ServerContextForTest<FakeService, 22> context(method);
   ASSERT_LT(context.output().buffer_size(),
             context.packet(request).MinEncodedSizeBytes() + request.size() + 1);
 
@@ -156,8 +130,9 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   PW_ENCODE_PB(
       pw_rpc_test_TestRequest, request, .integer = 555, .status_code = 0);
 
-  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const NanopbMethod& method =
+      std::get<2>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet(request));
 
@@ -166,8 +141,9 @@ TEST(NanopbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
 }
 
 TEST(NanopbMethod, ServerWriter_SendsResponse) {
-  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
-  ServerContextForTest<FakeGeneratedServiceImpl> context(method);
+  const NanopbMethod& method =
+      std::get<2>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 
@@ -187,15 +163,15 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 
 TEST(NanopbMethod,
      ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
-  const NanopbMethod& method = std::get<2>(FakeGeneratedServiceImpl::kMethods);
+  const NanopbMethod& method =
+      std::get<2>(FakeService::kMethods).nanopb_method();
 
   constexpr size_t kNoPayloadPacketSize = 2 /* type */ + 2 /* channel */ +
                                           5 /* service */ + 5 /* method */ +
                                           2 /* payload */ + 2 /* status */;
 
   // Make the buffer barely fit a packet with no payload.
-  ServerContextForTest<FakeGeneratedServiceImpl, kNoPayloadPacketSize> context(
-      method);
+  ServerContextForTest<FakeService, kNoPayloadPacketSize> context(method);
 
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};

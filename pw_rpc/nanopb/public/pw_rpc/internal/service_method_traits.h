@@ -24,15 +24,12 @@ T BaseFromMember(U T::*);
 
 // Gets information about a service and method at compile-time. Uses a pointer
 // to a member function of the service implementation to identify the service
-// class, generated service class, and Method object.This class is friended by
+// class, generated service class, and Method object. This class is friended by
 // the generated service classes to give it access to the internal method list.
-template <auto impl_method>
+template <typename Service, uint32_t method_id>
 class ServiceMethodTraits {
  public:
   ServiceMethodTraits() = delete;
-
-  // Type of the service implementation derived class.
-  using Service = typename internal::RpcTraits<decltype(impl_method)>::Service;
 
   // Type of the generic service base class.
   using BaseService =
@@ -40,10 +37,10 @@ class ServiceMethodTraits {
 
   // Reference to the Method object corresponding to this method.
   static constexpr const NanopbMethod& method() {
-    return *BaseService::template MethodFor<impl_method>();
+    return *BaseService::NanopbMethodFor(method_id);
   }
 
-  static_assert(BaseService::template MethodFor<impl_method>() != nullptr,
+  static_assert(BaseService::NanopbMethodFor(method_id) != nullptr,
                 "The selected function is not an RPC service method");
 };
 

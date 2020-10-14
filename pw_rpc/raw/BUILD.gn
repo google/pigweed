@@ -34,16 +34,35 @@ pw_source_set("method") {
   deps = [ dir_pw_log ]
 }
 
+pw_source_set("method_union") {
+  public_configs = [ ":public" ]
+  public = [ "public/pw_rpc/internal/raw_method_union.h" ]
+  public_deps = [ ":method" ]
+}
+
 pw_test_group("tests") {
-  tests = [ ":raw_method_test" ]
+  tests = [
+    ":raw_method_test",
+    ":raw_method_union_test",
+  ]
 }
 
 pw_test("raw_method_test") {
   deps = [
-    ":method",
+    ":method_union",
     "..:test_protos_pwpb",
     "..:test_utils",
     dir_pw_protobuf,
   ]
   sources = [ "raw_method_test.cc" ]
+}
+
+pw_test("raw_method_union_test") {
+  deps = [
+    ":method_union",
+    "..:test_protos_pwpb",
+    "..:test_utils",
+    dir_pw_protobuf,
+  ]
+  sources = [ "raw_method_union_test.cc" ]
 }

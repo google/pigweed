@@ -17,19 +17,19 @@
 #include <type_traits>
 
 #include "pw_rpc/echo_service_nanopb.h"
+#include "pw_rpc/internal/hash.h"
 
 namespace pw::rpc::internal {
 namespace {
 
-static_assert(std::is_same_v<ServiceMethodTraits<&EchoService::Echo>::Service,
-                             EchoService>);
 static_assert(
-    std::is_same_v<ServiceMethodTraits<&EchoService::Echo>::BaseService,
+    std::is_same_v<ServiceMethodTraits<EchoService, Hash("Echo")>::BaseService,
                    generated::EchoService<EchoService>>);
 
 static_assert(
-    std::is_same_v<decltype(ServiceMethodTraits<&EchoService::Echo>::method()),
-                   const NanopbMethod&>);
+    std::is_same_v<
+        decltype(ServiceMethodTraits<EchoService, Hash("Echo")>::method()),
+        const NanopbMethod&>);
 
 }  // namespace
 }  // namespace pw::rpc::internal

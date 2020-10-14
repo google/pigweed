@@ -29,9 +29,9 @@ namespace pw::rpc {
 
 class TestService : public Service {
  public:
-  constexpr TestService(uint32_t id) : Service(id, method), method(8) {}
+  constexpr TestService(uint32_t id) : Service(id, method) {}
 
-  internal::TestMethod method;
+  static constexpr internal::TestMethodUnion method = internal::TestMethod(8);
 };
 
 namespace internal {
@@ -40,7 +40,7 @@ namespace {
 using std::byte;
 
 TEST(BaseServerWriter, ConstructWithContext_StartsOpen) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
 
   BaseServerWriter writer(context.get());
 
@@ -48,7 +48,7 @@ TEST(BaseServerWriter, ConstructWithContext_StartsOpen) {
 }
 
 TEST(BaseServerWriter, Move_ClosesOriginal) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
 
   BaseServerWriter moved(context.get());
   BaseServerWriter writer(std::move(moved));
@@ -79,7 +79,7 @@ TEST(ServerWriter, DefaultConstruct_Closed) {
 }
 
 TEST(ServerWriter, Construct_RegistersWithServer) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   auto& writers = context.server().writers();
@@ -90,7 +90,7 @@ TEST(ServerWriter, Construct_RegistersWithServer) {
 }
 
 TEST(ServerWriter, Destruct_RemovesFromServer) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   { FakeServerWriter writer(context.get()); }
 
   auto& writers = context.server().writers();
@@ -98,7 +98,7 @@ TEST(ServerWriter, Destruct_RemovesFromServer) {
 }
 
 TEST(ServerWriter, Finish_RemovesFromServer) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   writer.Finish();
@@ -108,7 +108,7 @@ TEST(ServerWriter, Finish_RemovesFromServer) {
 }
 
 TEST(ServerWriter, Finish_SendsCancellationPacket) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   writer.Finish();
@@ -123,7 +123,7 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
 }
 
 TEST(ServerWriter, Close) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   ASSERT_TRUE(writer.open());
@@ -132,7 +132,7 @@ TEST(ServerWriter, Close) {
 }
 
 TEST(ServerWriter, Open_SendsPacketWithPayload) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
@@ -150,7 +150,7 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
 }
 
 TEST(ServerWriter, Closed_IgnoresPacket) {
-  ServerContextForTest<TestService> context;
+  ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   writer.Finish();

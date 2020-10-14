@@ -36,13 +36,35 @@ pw_cc_library(
     ]
 )
 
+pw_cc_library(
+    name = "method_union",
+    hdrs = [
+        "public/pw_rpc/internal/raw_method_union.h",
+    ],
+    deps = [
+        ":method",
+    ]
+)
+
 pw_cc_test(
     name = "raw_method_test",
     srcs = [
         "raw_method_test.cc",
     ],
     deps = [
-        ":method",
+        ":method_union",
+        "//pw_protobuf",
+        "//pw_rpc:internal_test_utils",
+    ],
+)
+
+pw_cc_test(
+    name = "raw_method_union_test",
+    srcs = [
+        "raw_method_union_test.cc",
+    ],
+    deps = [
+        ":method_union",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
     ],

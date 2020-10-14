@@ -33,6 +33,7 @@ using std::byte;
 using internal::Packet;
 using internal::PacketType;
 using internal::TestMethod;
+using internal::TestMethodUnion;
 
 class TestService : public Service {
  public:
@@ -43,10 +44,10 @@ class TestService : public Service {
             TestMethod(200),
         } {}
 
-  TestMethod& method(uint32_t id) {
-    for (TestMethod& method : methods_) {
-      if (method.id() == id) {
-        return method;
+  const TestMethod& method(uint32_t id) {
+    for (TestMethodUnion& method : methods_) {
+      if (method.method().id() == id) {
+        return method.test_method();
       }
     }
 
@@ -54,7 +55,7 @@ class TestService : public Service {
   }
 
  private:
-  std::array<TestMethod, 2> methods_;
+  std::array<TestMethodUnion, 2> methods_;
 };
 
 class BasicServer : public ::testing::Test {
