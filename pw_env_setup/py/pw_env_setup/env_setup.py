@@ -136,8 +136,7 @@ class _Result:
         return self._messages
 
 
-def _get_env(varname):
-    globs = os.environ.get(varname, '').split(os.pathsep)
+def _process_globs(globs):
     unique_globs = []
     for pat in globs:
         if pat and pat not in unique_globs:
@@ -150,12 +149,11 @@ def _get_env(varname):
             matches = glob.glob(pat)
             if not matches:
                 warnings.append(
-                    'warning: pattern "{}" in {} matched 0 files'.format(
-                        pat, varname))
+                    'warning: pattern "{}" matched 0 files'.format(pat))
             files.extend(matches)
 
     if not files:
-        warnings.append('warning: variable {} matched 0 files'.format(varname))
+        warnings.append('warning: matched 0 total files')
 
     return files, warnings
 
@@ -169,10 +167,14 @@ def result_func(glob_warnings):
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-arguments
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
-                 *args, **kwargs):
+                 use_pigweed_defaults, cipd_package_file,
+                 virtualenv_requirements, virtualenv_setup_py_root,
+                 cargo_package_file, enable_cargo, *args, **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
         self._env = environment.Environment()
         self._pw_root = pw_root
@@ -189,6 +191,38 @@ class EnvSetup(object):
 
         if isinstance(self._pw_root, bytes) and bytes != str:
             self._pw_root = self._pw_root.decode()
+
+        self._cipd_package_file = []
+        self._virtualenv_requirements = []
+        self._virtualenv_setup_py_root = []
+        self._cargo_package_file = []
+        self._enable_cargo = enable_cargo
+
+        setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
+                                  'pw_env_setup')
+
+        # TODO(pwbug/67, pwbug/68) Investigate pulling these files into an
+        # oxidized env setup executable instead of referring to them in the
+        # source tree. Note that this could be error-prone because users expect
+        # changes to the files in the source tree to affect bootstrap.
+        if use_pigweed_defaults:
+            # If updating this section make sure to update
+            # $PW_ROOT/pw_env_setup/docs.rst as well.
+            self._cipd_package_file.append(
+                os.path.join(setup_root, 'cipd_setup', 'pigweed.json'))
+            self._cipd_package_file.append(
+                os.path.join(setup_root, 'cipd_setup', 'luci.json'))
+            self._virtualenv_requirements.append(
+                os.path.join(setup_root, 'virtualenv_setup',
+                             'requirements.txt'))
+            self._virtualenv_setup_py_root.append(pw_root)
+            self._cargo_package_file.append(
+                os.path.join(setup_root, 'cargo_setup', 'packages.txt'))
+
+        self._cipd_package_file.extend(cipd_package_file)
+        self._virtualenv_requirements.extend(virtualenv_requirements)
+        self._virtualenv_setup_py_root.extend(virtualenv_setup_py_root)
+        self._cargo_package_file.extend(cargo_package_file)
 
         # No need to set PW_ROOT or _PW_ACTUAL_ENVIRONMENT_ROOT, that will be
         # done by bootstrap.sh and bootstrap.bat for both bootstrap and
@@ -217,7 +251,7 @@ class EnvSetup(object):
         ]
 
         # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
-        if not self._is_windows and os.environ.get('PW_CARGO_SETUP', ''):
+        if not self._is_windows and self._enable_cargo:
             steps.append(("Rust cargo", self.cargo))
 
         self._log(
@@ -310,7 +344,7 @@ Then use `set +x` to go back to normal.
 
         cipd_client = cipd_wrapper.init(install_dir, silent=True)
 
-        package_files, glob_warnings = _get_env('PW_CIPD_PACKAGE_FILES')
+        package_files, glob_warnings = _process_globs(self._cipd_package_file)
         result = result_func(glob_warnings)
 
         if not package_files:
@@ -330,10 +364,10 @@ Then use `set +x` to go back to normal.
 
         venv_path = os.path.join(self._install_dir, 'python3-env')
 
-        requirements, req_glob_warnings = _get_env(
-            'PW_VIRTUALENV_REQUIREMENTS')
-        setup_py_roots, setup_glob_warnings = _get_env(
-            'PW_VIRTUALENV_SETUP_PY_ROOTS')
+        requirements, req_glob_warnings = _process_globs(
+            self._virtualenv_requirements)
+        setup_py_roots, setup_glob_warnings = _process_globs(
+            self._virtualenv_setup_py_root)
         result = result_func(req_glob_warnings + setup_glob_warnings)
 
         orig_python3 = _which('python3')
@@ -373,17 +407,9 @@ Then use `set +x` to go back to normal.
         return _Result(_Result.Status.DONE)
 
     def cargo(self):
-        if not os.environ.get('PW_CARGO_SETUP', ''):
-            return _Result(
-                _Result.Status.SKIPPED,
-                '    Note: Re-run bootstrap with PW_CARGO_SETUP=1 set '
-                'in your environment',
-                '          to enable Rust. (Rust is usually not needed.)',
-            )
-
         install_dir = os.path.join(self._install_dir, 'cargo')
 
-        package_files, glob_warnings = _get_env('PW_CARGO_PACKAGE_FILES')
+        package_files, glob_warnings = _process_globs(self._cargo_package_file)
         result = result_func(glob_warnings)
 
         if not package_files:
@@ -441,7 +467,64 @@ def parse(argv=None):
         required=True,
     )
 
-    return parser.parse_args(argv)
+    parser.add_argument(
+        '--use-pigweed-defaults',
+        help='Use Pigweed default values in addition to the given environment '
+        'variables.',
+        action='store_true',
+    )
+
+    parser.add_argument(
+        '--cipd-package-file',
+        help='CIPD package file. JSON file consisting of a list of dicts with '
+        '"path" and "tags" keys, where "tags" a list of str.',
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--virtualenv-requirements',
+        help='Pip requirements file. Compiled with pip-compile.',
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--virtualenv-setup-py-root',
+        help='Directory in which to recursively search for setup.py files.',
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--cargo-package-file',
+        help='Rust cargo packages to install. Lines with package name and '
+        'version separated by a space.',
+        default=[],
+        action='append',
+    )
+
+    parser.add_argument(
+        '--enable-cargo',
+        help='Enable cargo installation.',
+        action='store_true',
+    )
+
+    args = parser.parse_args(argv)
+
+    one_required = (
+        'use_pigweed_defaults',
+        'cipd_package_file',
+        'virtualenv_requirements',
+        'virtualenv_setup_py_root',
+        'cargo_package_file',
+    )
+
+    if not any(getattr(args, x) for x in one_required):
+        parser.error('At least one of ({}) is required'.format(', '.join(
+            '"--{}"'.format(x.replace('_', '-')) for x in one_required)))
+
+    return args
 
 
 def main():

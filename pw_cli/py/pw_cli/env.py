@@ -23,7 +23,6 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser = envparse.EnvironmentParser(prefix='PW_')
 
     parser.add_var('PW_BOOTSTRAP_PYTHON')
-    parser.add_var('PW_CARGO_SETUP', type=envparse.strict_bool, default=False)
     parser.add_var('PW_ENABLE_PRESUBMIT_HOOK_WARNING', default=False)
     parser.add_var('PW_EMOJI', type=envparse.strict_bool, default=False)
     parser.add_var('PW_ENVSETUP')
@@ -45,12 +44,18 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
 
     parser.add_var('PW_DOCTOR_SKIP_CIPD_CHECKS')
 
+    # TODO(pwbug/274) Remove after some transition time. These are no longer
+    # used but may be set by users or downstream projects, or just in currently
+    # active shells.
     parser.add_var('PW_CIPD_PACKAGE_FILES')
     parser.add_var('PW_VIRTUALENV_REQUIREMENTS')
     parser.add_var('PW_VIRTUALENV_REQUIREMENTS_APPEND_DEFAULT')
     parser.add_var('PW_VIRTUALENV_SETUP_PY_ROOTS')
     parser.add_var('PW_CARGO_PACKAGE_FILES')
+    parser.add_var('PW_CARGO_SETUP', type=envparse.strict_bool, default=False)
+    parser.add_var('PW_VIRTUALENV_REQUIREMENTS_APPEND_DEFAULT')
 
+    parser.add_var('PW_BANNER_FUNC')
     parser.add_var('PW_BRANDING_BANNER')
     parser.add_var('PW_BRANDING_BANNER_COLOR', default='magenta')
 

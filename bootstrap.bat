@@ -69,16 +69,6 @@ if "%PW_ENVIRONMENT_ROOT%"=="" (
 )
 set "shell_file=%_PW_ACTUAL_ENVIRONMENT_ROOT%\activate.bat"
 
-set _PW_OLD_CIPD_PACKAGE_FILES=%PW_CIPD_PACKAGE_FILES%
-set _PW_OLD_VIRTUALENV_REQUIREMENTS=%PW_VIRTUALENV_REQUIREMENTS%
-set _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS=%PW_VIRTUALENV_SETUP_PY_ROOTS%
-set _PW_OLD_CARGO_PACKAGE_FILES=%PW_CARGO_PACKAGE_FILES%
-
-set PW_CIPD_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\pigweed.json;%PW_ROOT%\pw_env_setup\py\pw_env_setup\cipd_setup\luci.json;%PW_CIPD_PACKAGE_FILES%
-set PW_VIRTUALENV_REQUIREMENTS=%PW_ROOT%\pw_env_setup\py\pw_env_setup\virtualenv_setup\requirements.txt;%PW_VIRTUALENV_REQUIREMENTS%
-set PW_VIRTUALENV_SETUP_PY_ROOTS=%PW_ROOT%;%PW_VIRTUALENV_SETUP_PY_ROOTS%
-set PW_CARGO_PACKAGE_FILES=%PW_ROOT%\pw_env_setup\py\pw_env_setup\cargo_setup\packages.txt;%PW_CARGO_PACKAGE_FILES%
-
 set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
 
 :: If PW_SKIP_BOOTSTRAP is set, only run the activation stage instead of the
@@ -89,7 +79,8 @@ if "%PW_SKIP_BOOTSTRAP%" == "" (
   call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
       --pw-root "%PW_ROOT%/" ^
       --shell-file "%shell_file%" ^
-      --install-dir "%_PW_ACTUAL_ENVIRONMENT_ROOT%"
+      --install-dir "%_PW_ACTUAL_ENVIRONMENT_ROOT%" ^
+      --use-pigweed-defaults
 ) else (
   if exist "%shell_file%" (
     call "%python%" "%_pw_start_script%"
@@ -98,11 +89,6 @@ if "%PW_SKIP_BOOTSTRAP%" == "" (
     goto finish
   )
 )
-
-set PW_CIPD_PACKAGE_FILES=%_PW_OLD_CIPD_PACKAGE_FILES%
-set PW_VIRTUALENV_REQUIREMENTS=%_PW_OLD_VIRTUALENV_REQUIREMENTS%
-set PW_VIRTUALENV_SETUP_PY_ROOTS=%_PW_OLD_VIRTUALENV_SETUP_PY_ROOTS%
-set PW_CARGO_PACKAGE_FILES=%_PW_OLD_CARGO_PACKAGE_FILES%
 
 call "%shell_file%"
 
