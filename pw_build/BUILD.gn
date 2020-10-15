@@ -72,6 +72,7 @@ config("strict_warnings") {
     "-Wextra",
     "-Wimplicit-fallthrough",
     "-Wcast-qual",
+    "-Wundef",
 
     # Make all warnings errors, except for the exemptions below.
     "-Werror",

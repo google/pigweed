@@ -23,7 +23,7 @@
 
 namespace pw::allocator {
 
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
 // Add poison offset of sizeof(void*) bytes before and after usable space in all
 // Blocks.
 #define PW_ALLOCATOR_POISON_OFFSET sizeof(void*)

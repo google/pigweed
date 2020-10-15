@@ -131,7 +131,8 @@ TEST(MemoryWriter, ValidateContents_SingleByteWrites) {
   EXPECT_EQ(memory_writer.data()[1], std::byte{0x7E});
 }
 
-#if CHECK_TEST_CRASHES
+#define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
+#if TESTING_CHECK_FAILURES_IS_SUPPORTED
 
 // TODO(amontanez): Ensure that this test triggers an assert.
 TEST(MemoryWriter, NullPointer) {
@@ -152,7 +153,7 @@ TEST(MemoryReader, NullPointer) {
   memory_reader.Read(nullptr, 21);
 }
 
-#endif  // CHECK_TEST_CRASHES
+#endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
 TEST(MemoryReader, SingleFullRead) {
   constexpr size_t kTempBufferSize = 32;

@@ -111,7 +111,7 @@ TEST(FreeListHeap, ReturnedPointersAreAligned) {
   EXPECT_EQ(ptr2_start % alignment, static_cast<size_t>(0));
 }
 
-#if CHECK_TEST_CRASHES
+#if defined(CHECK_TEST_CRASHES) && CHECK_TEST_CRASHES
 
 // TODO(amontanez): Ensure that this test triggers an assert.
 TEST(FreeListHeap, CannotFreeNonOwnedPointer) {

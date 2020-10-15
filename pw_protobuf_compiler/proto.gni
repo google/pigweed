@@ -239,6 +239,9 @@ template("_pw_nanopb_proto_library") {
       "$_proto_gen_dir",
       "$_proto_gen_dir/$_include_root",
     ]
+
+    # Nanopb uses __cplusplus with the implicit default of 0.
+    cflags = [ "-Wno-undef" ]
   }
 
   # Create a library with the generated source files.

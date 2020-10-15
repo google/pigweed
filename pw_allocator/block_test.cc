@@ -374,7 +374,7 @@ TEST(Block, CanCheckInalidBlock) {
   EXPECT_EQ(third_block->IsValid(), true);
   EXPECT_EQ(fourth_block->IsValid(), true);
 
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   std::byte fault_poison[PW_ALLOCATOR_POISON_OFFSET] = {std::byte(0)};
   std::byte* front_poison =
       reinterpret_cast<std::byte*>(third_block) + sizeof(*third_block);
@@ -389,7 +389,7 @@ TEST(Block, CanCheckInalidBlock) {
 }
 
 TEST(Block, CanPoisonBlock) {
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   constexpr size_t kN = 1024;
   byte bytes[kN];
 

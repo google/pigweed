@@ -13,8 +13,12 @@
 // the License.
 #pragma once
 
+#ifdef __cplusplus
 #define PW_CXX_STANDARD_IS_SUPPORTED(std) \
   (__cplusplus >= _PW_CXX_STANDARD_##std())
+#else
+#define PW_CXX_STANDARD_IS_SUPPORTED(std) (0 >= _PW_CXX_STANDARD_##std())
+#endif
 
 #define _PW_CXX_STANDARD_98() 199711L
 #define _PW_CXX_STANDARD_11() 201103L

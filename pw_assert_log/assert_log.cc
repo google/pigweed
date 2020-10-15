@@ -14,8 +14,10 @@
 
 #include "pw_assert_log/assert_log.h"
 
+#include "pw_assert/options.h"
+
 extern "C" void pw_assert_HandleFailure(void) {
-#if PW_ASSERT_DEBUG_ENABLED
+#if PW_ASSERT_ENABLE_DEBUG
   PW_LOG(PW_LOG_LEVEL_CRITICAL,
          PW_LOG_ASSERT_FAILED_FLAG,
          "Crash: PW_ASSERT() or PW_DASSERT() failure");
@@ -23,6 +25,6 @@ extern "C" void pw_assert_HandleFailure(void) {
   PW_LOG(PW_LOG_LEVEL_CRITICAL,
          PW_LOG_ASSERT_FAILED_FLAG,
          "Crash: PW_ASSERT() failure. Note: PW_DASSERT disabled");
-#endif  // PW_ASSERT_DEBUG_ENABLED
+#endif  // PW_ASSERT_ENABLE_DEBUG
   PW_UNREACHABLE;
 }

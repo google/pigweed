@@ -130,10 +130,7 @@ pw_executable("generate_decoding_test_data") {
     ":pw_tokenizer",
     dir_pw_varint,
   ]
-  sources = [
-    "generate_decoding_test_data.cc",
-    "tokenize_test_fakes.cc",
-  ]
+  sources = [ "generate_decoding_test_data.cc" ]
 }
 
 # Executable for generating a test ELF file for elf_reader_test.py. A host
@@ -174,7 +171,6 @@ pw_test("argument_types_test") {
     "argument_types_test.cc",
     "argument_types_test_c.c",
     "pw_tokenizer_private/argument_types_test.h",
-    "tokenize_test_fakes.cc",
   ]
   deps = [ ":pw_tokenizer" ]
 
@@ -224,7 +220,6 @@ pw_test("hash_test") {
   sources = [
     "hash_test.cc",
     "pw_tokenizer_private/generated_hash_test_cases.h",
-    "tokenize_test_fakes.cc",
   ]
   deps = [ ":pw_tokenizer" ]
 }

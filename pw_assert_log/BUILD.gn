@@ -38,7 +38,10 @@ pw_source_set("pw_assert_log") {
 pw_source_set("core") {
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_log" ]
-  deps = [ "$dir_pw_preprocessor" ]
+  deps = [
+    "$dir_pw_assert:facade",
+    "$dir_pw_preprocessor",
+  ]
   public = [ "public/pw_assert_log/assert_log.h" ]
   sources = [ "assert_log.cc" ]
 }

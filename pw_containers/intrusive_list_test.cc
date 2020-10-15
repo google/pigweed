@@ -376,9 +376,10 @@ TEST(IntrusiveList, ConstIteratorRead) {
   }
 }
 
-#if NO_COMPILE_TESTS
 // TODO(pwbug/47): These tests should fail to compile, enable when no-compile
 // tests are set up in Pigweed.
+#define NO_COMPILE_TESTS 0
+#if NO_COMPILE_TESTS
 TEST(IntrusiveList, ConstIteratorModify) {
   TestItem item1(1);
   TestItem item2(99);
@@ -395,13 +396,12 @@ TEST(IntrusiveList, ConstIteratorModify) {
     it++;
   }
 }
-
 #endif  // NO_COMPILE_TESTS
 
 // TODO(pwbug/88): These tests should trigger a CHECK failure. This requires
 // using a testing version of pw_assert.
+#define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
-
 TEST(IntrusiveList, Construct_DuplicateItems) {
   TestItem item(1);
   IntrusiveList<TestItem> list({&item, &item});
@@ -434,7 +434,6 @@ TEST(IntrusiveList, PushFront_SameItem) {
 
   list.push_front(item);
 }
-
 #endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
 TEST(IntrusiveList, EraseAfter_FirstItem) {

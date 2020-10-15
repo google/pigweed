@@ -43,7 +43,7 @@ Status Block::Init(const std::span<std::byte> region, Block** block) {
 
   aliased.block->prev = nullptr;
   *block = aliased.block;
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   (*block)->PoisonBlock();
 #endif  // PW_ALLOCATOR_POISON_ENABLE
   return Status::Ok();
@@ -113,7 +113,7 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
 
   *new_block = next;
 
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   PoisonBlock();
   (*new_block)->PoisonBlock();
 #endif  // PW_ALLOCATOR_POISON_ENABLE
@@ -208,7 +208,7 @@ Block::BlockStatus Block::CheckStatus() const {
     return BlockStatus::PREV_MISMATCHED;
   }
 
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   if (!this->CheckPoisonBytes()) {
     return BlockStatus::POISON_CORRUPTED;
   }
@@ -219,7 +219,7 @@ Block::BlockStatus Block::CheckStatus() const {
 // Paint sizeof(void*) bytes before and after the usable space in Block as the
 // randomized function pattern.
 void Block::PoisonBlock() {
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   std::byte* front_region = reinterpret_cast<std::byte*>(this) + sizeof(*this);
   memcpy(front_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET);
 
@@ -230,7 +230,7 @@ void Block::PoisonBlock() {
 }
 
 bool Block::CheckPoisonBytes() const {
-#if PW_ALLOCATOR_POISON_ENABLE
+#if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   std::byte* front_region = reinterpret_cast<std::byte*>(
       reinterpret_cast<intptr_t>(this) + sizeof(*this));
   if (std::memcmp(front_region, POISON_PATTERN, PW_ALLOCATOR_POISON_OFFSET)) {

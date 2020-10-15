@@ -85,7 +85,7 @@ typedef uint64_t _pw_tokenizer_ArgTypes;
 namespace pw {
 namespace tokenizer {
 
-#if __cpp_if_constexpr  // C++17 version
+#ifdef __cpp_if_constexpr  // C++17 version
 
 // This function selects the matching type enum for supported argument types.
 template <typename T>

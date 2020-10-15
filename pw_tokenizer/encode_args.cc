@@ -45,7 +45,7 @@ static_assert(sizeof(Metadata) == 32);
 // Store tokenization metadata in its own section. Mach-O files are not
 // supported by pw_tokenizer, but a short, Mach-O compatible section name is
 // used on macOS so that this file can at least compile.
-#if __APPLE__
+#ifdef __APPLE__
 #define PW_TOKENIZER_INFO_SECTION PW_KEEP_IN_SECTION(".pw_info")
 #else
 #define PW_TOKENIZER_INFO_SECTION PW_KEEP_IN_SECTION(".pw_tokenzier_info")

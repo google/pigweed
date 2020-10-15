@@ -193,8 +193,8 @@ TEST(FlashPartitionTest, AlignmentCheck) {
   EXPECT_LE(sector_size_bytes % kMaxFlashAlignment, 0U);
 }
 
-#if CHECK_TEST_CRASHES
-
+#define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
+#if TESTING_CHECK_FAILURES_IS_SUPPORTED
 // TODO: Ensure that this test triggers an assert.
 TEST(FlashPartitionTest, BadWriteAddressAlignment) {
   FlashPartition& test_partition = FlashTestPartition();
@@ -234,7 +234,7 @@ TEST(FlashPartitionTest, BadEraseAddressAlignment) {
   test_partition.Erase(1, 1);
 }
 
-#endif  // CHECK_TEST_CRASHES
+#endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
 TEST(FlashPartitionTest, IsErased) {
   FlashPartition& test_partition = FlashTestPartition();

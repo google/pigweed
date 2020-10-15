@@ -21,6 +21,7 @@
 
 #include <cstring>
 
+#include "pw_assert/options.h"
 #include "pw_preprocessor/util.h"
 #include "pw_string/string_builder.h"
 #include "pw_sys_io/sys_io.h"
@@ -157,9 +158,9 @@ extern "C" void pw_Crash(const char* file_name,
 }
 
 extern "C" void pw_assert_HandleFailure(void) {
-#if PW_ASSERT_DEBUG_ENABLED
+#if PW_ASSERT_ENABLE_DEBUG
   pw_Crash("", 0, "", "Crash: PW_ASSERT() or PW_DASSERT() failure");
 #else
   pw_Crash("", 0, "", "Crash: PW_ASSERT() failure. Note: PW_DASSERT disabled");
-#endif  // PW_ASSERT_DEBUG_ENABLED
+#endif  // PW_ASSERT_ENABLE_DEBUG
 }

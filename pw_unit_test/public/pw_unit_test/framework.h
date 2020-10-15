@@ -36,11 +36,10 @@
   _PW_TEST(test_suite_name, test_name, ::pw::unit_test::Test)
 
 // TEST() is a pretty generic macro name which could conflict with other code.
-// If PW_TEST_DONT_DEFINE_TEST is set, don't alias PW_TEST to TEST.
-// GTEST_DONT_DEFINE_TEST is also accepted for compatibility.
-#if !PW_TEST_DONT_DEFINE_TEST && !GTEST_DONT_DEFINE_TEST
+// If GTEST_DONT_DEFINE_TEST is set, don't alias PW_TEST to TEST.
+#if !(defined(GTEST_DONT_DEFINE_TEST) && GTEST_DONT_DEFINE_TEST)
 #define TEST PW_TEST
-#endif  // !PW_TEST_DONT_DEFINE_TEST && !GTEST_DONT_DEFINE_TEST
+#endif  // !GTEST_DONT_DEFINE_TEST
 
 #define TEST_F(test_fixture, test_name) \
   _PW_TEST(test_fixture, test_name, test_fixture)
@@ -76,18 +75,18 @@
 
 // Define either macro to 1 to omit the definition of FAIL(), which is a
 // generic name and clashes with some other libraries.
-#if !PW_TEST_DONT_DEFINE_FAIL && !GTEST_DONT_DEFINE_FAIL
+#if !(defined(GTEST_DONT_DEFINE_FAIL) && GTEST_DONT_DEFINE_FAIL)
 #define FAIL() GTEST_FAIL()
-#endif  // !PW_TEST_DONT_DEFINE_FAIL && !GTEST_DONT_DEFINE_FAIL
+#endif  // !GTEST_DONT_DEFINE_FAIL
 
 // Generates a success with a generic message.
 #define GTEST_SUCCEED() _PW_TEST_MESSAGE("(success)", "(success)", true)
 
 // Define either macro to 1 to omit the definition of SUCCEED(), which
 // is a generic name and clashes with some other libraries.
-#if !PW_TEST_DONT_DEFINE_SUCCEED && !GTEST_DONT_DEFINE_SUCCEED
+#if !(defined(GTEST_DONT_DEFINE_SUCCEED) && GTEST_DONT_DEFINE_SUCCEED)
 #define SUCCEED() GTEST_SUCCEED()
-#endif  // !PW_TEST_DONT_DEFINE_SUCCEED && !GTEST_DONT_DEFINE_SUCCEED
+#endif  // !GTEST_DONT_DEFINE_SUCCEED
 
 // pw_unit_test framework entry point. Runs every registered test case and
 // dispatches the results through the event handler. Returns a status of zero

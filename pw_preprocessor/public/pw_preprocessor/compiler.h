@@ -49,7 +49,7 @@
 
 // When compiling for host using MinGW, use gnu_printf() rather than printf()
 // to support %z format specifiers.
-#if __USE_MINGW_ANSI_STDIO
+#ifdef __USE_MINGW_ANSI_STDIO
 #define _PW_PRINTF_FORMAT_TYPE gnu_printf
 #else
 #define _PW_PRINTF_FORMAT_TYPE printf
@@ -62,7 +62,7 @@
 // to keep the variable, even if it is not used. Depending on the linker
 // options, the linker may still remove this section if it is not declared in
 // the linker script and marked KEEP.
-#if __APPLE__
+#ifdef __APPLE__
 #define PW_KEEP_IN_SECTION(name) __attribute__((section("__DATA," name), used))
 #else
 #define PW_KEEP_IN_SECTION(name) __attribute__((section(name), used))
@@ -101,7 +101,7 @@
 //     }
 //     return hash;
 //   }
-#if __clang__
+#ifdef __clang__
 #define PW_NO_SANITIZE(check) __attribute__((no_sanitize(check)))
 #else
 #define PW_NO_SANITIZE(check)

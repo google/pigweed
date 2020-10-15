@@ -28,7 +28,8 @@
 #include <stdint.h>
 
 // In C++17, use a constexpr function to calculate the hash.
-#if __cpp_constexpr >= 201304L && defined(__cpp_inline_variables)
+#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L && \
+    defined(__cpp_inline_variables)
 
 #include "pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h"
 

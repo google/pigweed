@@ -269,7 +269,7 @@ using Token = ::pw_tokenizer_Token;
 // pw_tokenizer is intended for use with ELF files only. Mach-O files (macOS
 // executables) do not support section names longer than 16 characters, so a
 // short, dummy section name is used on macOS.
-#if __APPLE__
+#ifdef __APPLE__
 #define _PW_TOKENIZER_SECTION(unused_domain) \
   PW_KEEP_IN_SECTION(".pw." PW_STRINGIFY(__LINE__))
 #else
