@@ -370,7 +370,7 @@ def commit_message_format(_: PresubmitContext):
     lines = git_repo.commit_message().splitlines()
 
     # Show limits and current commit message in log.
-    _LOG.debug('%-25s%+25s%+22s', 'Line limits', '50|', '72|')
+    _LOG.debug('%-25s%+25s%+22s', 'Line limits', '72|', '72|')
     for line in lines:
         _LOG.debug(line)
 
@@ -380,9 +380,9 @@ def commit_message_format(_: PresubmitContext):
 
     errors = 0
 
-    if len(lines[0]) > 50:
+    if len(lines[0]) > 72:
         _LOG.warning("The commit message's first line must be no longer than "
-                     '50 characters.')
+                     '72 characters.')
         _LOG.warning('The first line is %d characters:\n  %s', len(lines[0]),
                      lines[0])
         errors += 1
