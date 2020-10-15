@@ -51,7 +51,7 @@ void VerifyLogEntry(pw::protobuf::Decoder& log_decoder,
   EXPECT_EQ(1U, entry_decoder.FieldNumber());
   EXPECT_TRUE(entry_decoder.ReadBytes(&tokenized_message).ok());
   EXPECT_TRUE(std::memcmp(tokenized_message.begin(),
-                          (void*)expected_tokenized_message,
+                          (const void*)expected_tokenized_message,
                           tokenized_message.size()) == 0);
 
   uint32_t line_level;

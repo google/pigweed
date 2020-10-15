@@ -21,6 +21,7 @@
 
 #include "pw_assert/options.h"
 #include "pw_preprocessor/arguments.h"
+#include "pw_preprocessor/compiler.h"
 
 // PW_CRASH - Crash the system, with a message.
 #define PW_CRASH PW_HANDLE_CRASH
@@ -93,10 +94,10 @@
 // Check for pointer: NOTNULL. Use "nullptr" in C++, "NULL" in C.
 #ifdef __cplusplus
 #define PW_CHECK_NOTNULL(arga, ...) \
-  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, nullptr, void*, "%p", __VA_ARGS__)
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, nullptr, const void*, "%p", __VA_ARGS__)
 #else  // __cplusplus
 #define PW_CHECK_NOTNULL(arga, ...) \
-  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, NULL, void*, "%p", __VA_ARGS__)
+  _PW_CHECK_BINARY_CMP_IMPL(arga, !=, NULL, const void*, "%p", __VA_ARGS__)
 #endif  // __cplusplus
 
 // Debug checks for pointer: LE, LT, GE, GT, EQ, NE, and NOTNULL.
