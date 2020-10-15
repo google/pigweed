@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("docs.gni")
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

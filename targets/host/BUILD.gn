@@ -12,12 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("target_toolchains.gni")
+
 generate_toolchains("host_toolchains") {
   toolchains = pw_target_toolchain_host_list
 }

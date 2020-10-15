@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # Sets the sanitizer to pass to clang. Valid values are those for "-fsanitize"
   # listed in https://clang.llvm.org/docs/UsersManual.html#id9.

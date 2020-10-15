@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # Default configs and dependencies targets provided by the toolchain. These
   # are applied to all of the pw_* target types. They are set from a toolchain's

@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # The name of the GN target type used to build Pigweed executables.
   #
@@ -186,6 +186,7 @@ template("pw_executable") {
 
   target(pw_build_EXECUTABLE_TARGET_TYPE, target_name) {
     import("$dir_pw_build/defaults.gni")
+
     forward_variables_from(invoker, "*", _supported_toolchain_defaults)
 
     if (!defined(configs)) {

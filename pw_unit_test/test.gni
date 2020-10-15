@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python_script.gni")
 import("$dir_pw_build/target_types.gni")
+
 declare_args() {
   # Path to a test runner to automatically run unit tests after they are built.
   #

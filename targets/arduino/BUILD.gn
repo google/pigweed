@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
@@ -25,6 +24,7 @@ pw_doc_group("target_docs") {
 
 if (dir_pw_third_party_arduino != "") {
   import("target_toolchains.gni")
+
   generate_toolchains("target_toolchains") {
     toolchains = pw_target_toolchain_arduino_list
   }

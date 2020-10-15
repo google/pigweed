@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+
 _test_runner_script = "py/lm3s6965evb_qemu_utils/unit_test_runner.py"
 
 _target_config = {

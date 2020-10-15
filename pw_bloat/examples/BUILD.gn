@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("../bloat.gni")
+
 pw_toolchain_size_report("simple_bloat_loop") {
   base_executable = {
     sources = [ "simple_base.cc" ]

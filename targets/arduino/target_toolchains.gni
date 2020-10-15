@@ -12,10 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+
 declare_args() {
   # Enable the pw_target_runner for on-device testing.
   pw_arduino_use_test_server = false

@@ -523,7 +523,6 @@ referenced with specific toolchains.
 
 .. code-block::
 
-  # gn-format disable
   import("//build_overrides/pigweed.gni")
 
   import("$dir_pw_tokenizer/database.gni")
