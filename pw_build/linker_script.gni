@@ -83,7 +83,9 @@ template("pw_linker_script") {
 
     # Add defines.
     if (defined(invoker.defines)) {
-      args += process_file_template(invoker.defines, "-D{{source_name_part}}")
+      foreach(compiler_define, invoker.defines) {
+        args += [ "-D${compiler_define}" ]
+      }
     }
 
     # Set output file.
