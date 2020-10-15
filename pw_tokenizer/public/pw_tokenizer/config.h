@@ -16,9 +16,6 @@
 #pragma once
 
 #include <assert.h>
-#include <stdint.h>
-
-// TODO(pwbug/17): Configure these options in the config system.
 
 // For a tokenized string that has arguments, the types of the arguments are
 // encoded in either a 4-byte (uint32_t) or a 8-byte (uint64_t) value. The 4 or

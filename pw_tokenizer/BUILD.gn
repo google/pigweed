@@ -16,19 +16,35 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
-config("default_config") {
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_tokenizer_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_tokenizer/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_tokenizer_CONFIG ]
 }
 
 pw_source_set("pw_tokenizer") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":config",
     dir_pw_preprocessor,
     dir_pw_span,
   ]
@@ -39,7 +55,6 @@ pw_source_set("pw_tokenizer") {
   ]
   sources = [
     "encode_args.cc",
-    "public/pw_tokenizer/config.h",
     "public/pw_tokenizer/internal/argument_types.h",
     "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
     "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
@@ -76,7 +91,7 @@ pw_facade("global_handler") {
   facade_name = "global_handler_facade"
   backend = pw_tokenizer_GLOBAL_HANDLER_BACKEND
 
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_tokenizer/tokenize_to_global_handler.h" ]
   sources = [ "tokenize_to_global_handler.cc" ]
   public_deps = [ ":pw_tokenizer" ]
@@ -86,14 +101,14 @@ pw_facade("global_handler_with_payload") {
   facade_name = "global_handler_with_payload_facade"
   backend = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND
 
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
   sources = [ "tokenize_to_global_handler_with_payload.cc" ]
   public_deps = [ ":pw_tokenizer" ]
 }
 
 pw_source_set("base64") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_tokenizer/base64.h" ]
   sources = [ "base64.cc" ]
   public_deps = [
@@ -106,7 +121,7 @@ pw_source_set("base64") {
 }
 
 pw_source_set("decoder") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_span ]
   deps = [ dir_pw_varint ]
   public = [
@@ -249,7 +264,7 @@ _simple_tokenize_test_sources = [
   "tokenize_to_global_handler_with_payload.cc",
 ]
 _simple_tokenize_test_configs = [
-  ":default_config",
+  ":public_include_path",
   "$dir_pw_varint:default_config",
 ]
 
@@ -328,7 +343,7 @@ declare_args() {
 # the JNI headers must be available in the system or provided with the
 # pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS variable.
 pw_shared_library("detokenizer_jni") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   include_dirs = pw_JAVA_NATIVE_INTERFACE_INCLUDE_DIRS
   sources = [ "java/dev/pigweed/tokenizer/detokenizer.cc" ]
   public_deps = [
