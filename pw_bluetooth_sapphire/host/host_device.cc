@@ -156,7 +156,7 @@ void HostDevice::DdkRelease() {
 }
 
 // Route ddk fidl messages to the dispatcher function
-zx_status_t HostDevice::DdkMessage(fidl_msg_t* msg, fidl_txn_t* txn) {
+zx_status_t HostDevice::DdkMessage(fidl_incoming_msg_t* msg, fidl_txn_t* txn) {
   // Struct containing function pointers for all fidl ops to be dispatched on
   static constexpr fuchsia_hardware_bluetooth_Host_ops_t fidl_ops = {
       .Open = [](void* ctx, zx_handle_t channel) {
