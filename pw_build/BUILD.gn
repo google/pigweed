@@ -70,6 +70,7 @@ config("strict_warnings") {
   cflags = [
     "-Wall",
     "-Wextra",
+    "-Wimplicit-fallthrough",
 
     # Make all warnings errors, except for the exemptions below.
     "-Werror",
