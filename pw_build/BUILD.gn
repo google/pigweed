@@ -87,7 +87,10 @@ config("strict_warnings") {
 # enable, but are enabled for upstream Pigweed for maximum project
 # compatibility.
 config("extra_strict_warnings") {
-  cflags = [ "-Wshadow" ]
+  cflags = [
+    "-Wshadow",
+    "-Wredundant-decls",
+  ]
 }
 
 config("cpp11") {
