@@ -205,9 +205,7 @@ Status BlobStore::Write(ConstByteSpan data) {
     return Status::ResourceExhausted();
   }
 
-  Status status = EraseIfNeeded();
-  // TODO: switch to TRY once available.
-  if (!status.ok()) {
+  if (!EraseIfNeeded().ok()) {
     return Status::DataLoss();
   }
 
@@ -246,9 +244,7 @@ Status BlobStore::Write(ConstByteSpan data) {
     }
 
     // The write buffer is full, flush to flash.
-    Status status = CommitToFlash(write_buffer_);
-    // TODO: switch to TRY once available.
-    if (!status.ok()) {
+    if (!CommitToFlash(write_buffer_).ok()) {
       return Status::DataLoss();
     }
 
@@ -264,9 +260,7 @@ Status BlobStore::Write(ConstByteSpan data) {
     PW_DCHECK(WriteBufferEmpty());
 
     write_address_ += flash_write_size_bytes_;
-    Status status = CommitToFlash(data.first(flash_write_size_bytes_));
-    // TODO: switch to TRY once available.
-    if (!status.ok()) {
+    if (!CommitToFlash(data.first(flash_write_size_bytes_)).ok()) {
       return Status::DataLoss();
     }
 
@@ -316,17 +310,13 @@ Status BlobStore::Flush() {
   // Don't need to check available space, AddToWriteBuffer() will not enqueue
   // more than can be written to flash.
 
-  Status status = EraseIfNeeded();
-  // TODO: switch to TRY once available.
-  if (!status.ok()) {
+  if (!EraseIfNeeded().ok()) {
     return Status::DataLoss();
   }
 
   ByteSpan data = std::span(write_buffer_.data(), WriteBufferBytesUsed());
   while (data.size_bytes() >= flash_write_size_bytes_) {
-    Status status = CommitToFlash(data.first(flash_write_size_bytes_));
-    // TODO: switch to TRY once available.
-    if (!status.ok()) {
+    if (!CommitToFlash(data.first(flash_write_size_bytes_)).ok()) {
       return Status::DataLoss();
     }
 

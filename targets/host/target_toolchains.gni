@@ -80,6 +80,8 @@ _os_specific_config = {
   }
 }
 
+_target_default_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+
 pw_target_toolchain_host = {
   _excluded_members = [
     "defaults",
@@ -94,6 +96,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -105,6 +108,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -116,6 +120,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -127,6 +132,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -138,6 +144,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 
@@ -149,6 +156,7 @@ pw_target_toolchain_host = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_host_common, "*")
       forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
     }
   }
 }

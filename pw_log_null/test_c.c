@@ -29,8 +29,6 @@ bool CTest() {
   PW_LOG(1, 2, "%s", "hello");
   PW_LOG(1, 2, "%d + %s == %p", 1, "two", NULL);
 
-  static int global;
-
   global = 0;
   bool local = true;
 

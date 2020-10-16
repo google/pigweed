@@ -105,9 +105,9 @@ class BlobStoreTest : public ::testing::Test {
     // Use reader to check for valid data.
     BlobStore::BlobReader reader1(blob);
     ASSERT_EQ(Status::Ok(), reader1.Open());
-    Result<ConstByteSpan> result = reader1.GetMemoryMappedBlob();
-    ASSERT_TRUE(result.ok());
-    VerifyFlash(result.value());
+    Result<ConstByteSpan> possible_blob = reader1.GetMemoryMappedBlob();
+    ASSERT_TRUE(possible_blob.ok());
+    VerifyFlash(possible_blob.value());
     EXPECT_EQ(Status::Ok(), reader1.Close());
 
     BlobStore::BlobReader reader(blob);

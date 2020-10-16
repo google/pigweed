@@ -111,7 +111,7 @@ class MetricWalker {
  private:
   // Exists to safely push/pop parent groups from the explicit stack.
   struct ScopedName {
-    ScopedName(Token name, MetricWalker& walker) : walker(walker) {
+    ScopedName(Token name, MetricWalker& rhs) : walker(rhs) {
       PW_CHECK_INT_LT(walker.path_.size(),
                       walker.path_.capacity(),
                       "Metrics are too deep; bump path_ capacity");

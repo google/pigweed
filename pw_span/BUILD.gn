@@ -38,6 +38,7 @@ pw_test_group("tests") {
 
 pw_test("test") {
   deps = [ ":pw_span" ]
+  remove_configs = [ "$dir_pw_build:strict_warnings" ]
   sources = [ "span_test.cc" ]
 }
 

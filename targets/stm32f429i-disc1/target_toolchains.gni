@@ -73,7 +73,10 @@ _toolchain_properties = {
   final_binary_extension = ".elf"
 }
 
-_target_default_configs = [ "$dir_pw_toolchain/arm_gcc:enable_float_printf" ]
+_target_default_configs = [
+  "$dir_pw_build:extra_strict_warnings",
+  "$dir_pw_toolchain/arm_gcc:enable_float_printf",
+]
 
 pw_target_toolchain_stm32f429i_disc1 = {
   _excluded_members = [
