@@ -140,6 +140,22 @@ TEST(SMP_TypesTest, PropertiesLevelConstructorWorks) {
   }
 }
 
+TEST(SMP_TypesTest, HasKeysToDistribute) {
+  PairingFeatures local_link_key_and_others;
+  local_link_key_and_others.local_key_distribution = KeyDistGen::kLinkKey | KeyDistGen::kEncKey;
+  EXPECT_TRUE(HasKeysToDistribute(local_link_key_and_others));
+
+  PairingFeatures remote_link_key_and_others;
+  remote_link_key_and_others.remote_key_distribution = KeyDistGen::kLinkKey | KeyDistGen::kIdKey;
+  EXPECT_TRUE(HasKeysToDistribute(remote_link_key_and_others));
+
+  PairingFeatures remote_link_key_only;
+  remote_link_key_only.remote_key_distribution = KeyDistGen::kLinkKey;
+  EXPECT_FALSE(HasKeysToDistribute(remote_link_key_only));
+
+  // No keys set.
+  EXPECT_FALSE(HasKeysToDistribute(PairingFeatures{}));
+}
 }  // namespace
 }  // namespace sm
 }  // namespace bt

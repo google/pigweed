@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -37,8 +38,8 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
   // LTKs may not be distributed during Secure Connections.
   ZX_ASSERT_MSG(!(features_.secure_connections && (ShouldSendLtk() || ShouldReceiveLtk())),
                 "Phase 3 may not distribute the LTK in Secure Connections pairing");
-  // There should be some keys to distribute if Phase 3 exists.
-  ZX_ASSERT(features_.local_key_distribution || features_.remote_key_distribution);
+
+  ZX_ASSERT(HasKeysToDistribute(features_));
   // The link must be encrypted with at least an STK in order for Phase 3 to take place.
   ZX_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
   sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
@@ -352,14 +353,19 @@ void Phase3::OnRxBFrame(ByteBufferPtr sdu) {
 }
 
 bool Phase3::RequestedKeysObtained() const {
-  // Return true if we expect no keys from the remote.
-  return !features_.remote_key_distribution ||
-         (features_.remote_key_distribution == obtained_remote_keys_);
+  // DistributableKeys masks key fields that don't correspond to keys exchanged in Phase 3.
+  const KeyDistGenField kMaskedRemoteKeys = DistributableKeys(features_.remote_key_distribution);
+  // Return true if we expect no keys from the remote. We keep track of received keys individually
+  // in `obtained_remote_keys` as they are received asynchronously from the peer.
+  return !kMaskedRemoteKeys || (kMaskedRemoteKeys == obtained_remote_keys_);
 }
 
 bool Phase3::LocalKeysSent() const {
-  // Return true if we didn't agree to send any keys.
-  return !features_.local_key_distribution || sent_local_keys_;
+  // DistributableKeys masks key fields that don't correspond to keys exchanged in Phase 3.
+  const KeyDistGenField kMaskedLocalKeys = DistributableKeys(features_.local_key_distribution);
+  // Return true if we didn't agree to send any keys. We need only store a boolean to track whether
+  // we've sent the keys, as sending the keys to the peer occurs sequentially.
+  return !kMaskedLocalKeys || sent_local_keys_;
 }
 
 bool Phase3::ShouldReceiveLtk() const {

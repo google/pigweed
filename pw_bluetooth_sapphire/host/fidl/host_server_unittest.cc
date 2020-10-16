@@ -510,15 +510,15 @@ TEST_F(FIDL_HostServerTest, WatchDiscoverableState) {
 }
 
 TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
-  const auto kExpected =
-      CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
-                             0x04,  // IO cap.: KeyboardDisplay
-                             0x00,  // OOB: not present
-                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
-                             0x10,                 // encr. key size: 16 (default max)
-                             KeyDistGen::kEncKey,  // initiator keys
-                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
-      );
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x04,  // IO cap.: KeyboardDisplay
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
 
   // IOCapabilities must be KeyboardDisplay to support default MITM pairing request.
   NewPairingTest(fsys::InputCapability::KEYBOARD, fsys::OutputCapability::DISPLAY);
@@ -547,15 +547,15 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeDefault) {
 }
 
 TEST_F(FIDL_HostServerPairingTest, InitiatePairingLeEncrypted) {
-  const auto kExpected =
-      CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             AuthReq::kBondingFlag | AuthReq::kSC,
-                             0x10,                 // encr. key size: 16 (default max)
-                             KeyDistGen::kEncKey,  // initiator keys
-                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
-      );
+  const auto kExpected = CreateStaticByteBuffer(
+      0x01,  // code: "Pairing Request"
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
 
   bool pairing_request_sent = false;
   // This test only checks that PairingState kicks off an LE pairing feature exchange correctly, as
@@ -585,7 +585,7 @@ TEST_F(FIDL_HostServerPairingTest, InitiatePairingNonBondableLe) {
   const auto kExpected = CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                                                 0x04,  // IO cap.: KeyboardDisplay
                                                 0x00,  // OOB: not present
-                                                AuthReq::kMITM | AuthReq::kSC,
+                                                AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 0x00,  // initiator keys: none
                                                 0x00   // responder keys: none

@@ -2478,6 +2478,24 @@ TEST_F(SMP_InitiatorPairingTest, Phase3CompleteWithAllKeys) {
   EXPECT_EQ(kPeerAddr, *identity());
 }
 
+TEST_F(SMP_InitiatorPairingTest, GenerateCrossTransportLinkKey) {
+  UInt128 stk;
+  // Indicate support for SC and for link keys in both directions to enable CTKG.
+  FastForwardToPhase3(&stk, true /*secure connections*/, SecurityLevel::kEncrypted,
+                      KeyDistGen::kLinkKey, KeyDistGen::kLinkKey);
+  RunLoopUntilIdle();
+
+  // Pairing should have succeeded
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, security_callback_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_TRUE(security_status());
+  EXPECT_EQ(security_status(), pairing_complete_status());
+
+  // The PairingData should contain the CTKGenerated BR/EDR link key.
+  EXPECT_TRUE(pairing_data().cross_transport_key.has_value());
+}
+
 TEST_F(SMP_InitiatorPairingTest, AssignLongTermKeyFailsDuringPairing) {
   UpgradeSecurity(SecurityLevel::kEncrypted);  // Initiate pairing.
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);

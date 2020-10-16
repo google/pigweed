@@ -22,6 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
@@ -480,7 +481,7 @@ void SecurityManagerImpl::EndPhase2() {
 
   SetSecurityProperties(FeaturesToProperties(*features_));
   // If there are no keys to distribute, don't bother creating Phase 3
-  if (!features_->local_key_distribution && !features_->remote_key_distribution) {
+  if (!HasKeysToDistribute(*features_)) {
     OnPairingComplete(PairingData());
     return;
   }
@@ -494,8 +495,7 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   // We must either be in Phase3 or Phase 2 with no keys to distribute if pairing has completed.
   if (!std::holds_alternative<Phase3>(current_phase_)) {
     ZX_ASSERT(InPhase2());
-    ZX_ASSERT(!features_->local_key_distribution);
-    ZX_ASSERT(!features_->remote_key_distribution);
+    ZX_ASSERT(!HasKeysToDistribute(*features_));
   }
   ZX_ASSERT(delegate_);
   ZX_ASSERT(features_.has_value());
@@ -516,6 +516,22 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
       OnNewLongTermKey(*new_ltk);
     }
   }
+
+  if (features_->generate_ct_key.has_value()) {
+    // If we are generating the CT key, we must be using secure connections, and as such the peer
+    // and local LTKs will be equivalent.
+    ZX_ASSERT(features_->secure_connections);
+    ZX_ASSERT(pairing_data.peer_ltk == pairing_data.local_ltk);
+    std::optional<UInt128> ct_key_value =
+        util::LeLtkToBrEdrLinkKey(ltk_->key().value(), features_->generate_ct_key.value());
+    if (ct_key_value) {
+      pairing_data.cross_transport_key =
+          sm::LTK(ltk_->security(), hci::LinkKey(*ct_key_value, 0, 0));
+    } else {
+      bt_log(WARN, "sm", "failed to generate cross-transport key");
+    }
+  }
+
   if (features_->will_bond) {
     delegate_->OnNewPairingData(pairing_data);
   } else {

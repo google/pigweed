@@ -520,7 +520,7 @@ std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
     const uint32_t tmp1_key_id = 0x746D7031;
     intermediate_key = H6(le_ltk, tmp1_key_id);
   } else {
-    bt_log(WARN, "sm", "unexpected CrossTransportAction passed to link key generation!");
+    bt_log(WARN, "sm", "unexpected CrossTransportKeyAlgo passed to link key generation!");
   }
   if (!intermediate_key.has_value()) {
     return std::nullopt;

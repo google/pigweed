@@ -74,9 +74,9 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   // (V5.1 Vol 3, Part H, 2.3).
   void RespondToPairingRequest(const PairingRequestParams& req_params);
 
-  // The returned `LocalPairingParams` structure contains the locally-preferred pairing parameters.
-  // The caller is responsible for making any adjustments necessary (e.g. due to peer preferences)
-  // before converting the `LocalPairingParams` to SMP PairingResponse/PairingRequest PDUs.
+  // The returned `LocalPairingParams` contains the locally-preferred pairing parameters for the LE
+  // transport. The caller is responsible for making any adjustments necessary (e.g. due to peer
+  // preferences) before converting the `LocalPairingParams` to SMP Pairing(Response|Request) PDUs.
   LocalPairingParams BuildPairingParameters();
 
   // Called to complete a feature exchange. Returns the resulting PairingFeatures if the parameters

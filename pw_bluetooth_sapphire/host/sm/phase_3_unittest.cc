@@ -35,6 +35,7 @@ const PairingFeatures kDefaultFeatures(
     true,   // initiator
     false,  // secure_connections
     true,   // will_bond
+    std::optional<CrossTransportKeyAlgo>{std::nullopt},
     PairingMethod::kJustWorks,
     kMaxEncryptionKeySize,    // encryption_key_size
     KeyDistGen::kIdKey,       // local_key_distribution
@@ -207,7 +208,7 @@ TEST_F(SMP_Phase3DeathTest, Phase3MustDistributeKeys) {
   Phase3Args args;
   args.features.remote_key_distribution = args.features.local_key_distribution = 0;
   // Phase 3 should only be instantiated if there are keys to distribute
-  ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*key_distribution.*key_distribution.*");
+  ASSERT_DEATH_IF_SUPPORTED(NewPhase3(args), ".*HasKeysToDistribute.*");
 }
 
 // The peer sends EDIV and Rand before LTK.

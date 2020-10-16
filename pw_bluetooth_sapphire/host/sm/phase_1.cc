@@ -10,6 +10,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -120,17 +122,21 @@ void Phase1::RespondToPairingRequest(const PairingRequestParams& req_params) {
 }
 
 LocalPairingParams Phase1::BuildPairingParameters() {
+  // We build `local_params` to reflect the capabilities of this device over the LE transport.
   LocalPairingParams local_params;
-  // If we are in non-bondable mode we will not distribute or request distribution of any bonding
-  // data (i.e. there will be no key distribution phase) per V5.1 Vol 3 Part C Section 9.4.2.2
-  if (bondable_mode_ == BondableMode::NonBondable) {
-    local_params.auth_req = 0u;
-    local_params.remote_keys = local_params.local_keys = 0;
-  } else {
-    local_params.auth_req = AuthReq::kBondingFlag;
+  if (sm_chan().SupportsSecureConnections()) {
+    local_params.auth_req |= AuthReq::kSC;
+  }
+  if (requested_level_ >= SecurityLevel::kAuthenticated) {
+    local_params.auth_req |= AuthReq::kMITM;
+  }
+
+  // If we are in non-bondable mode there will be no key distribution per V5.1 Vol 3 Part C Section
+  // 9.4.2.2, so we use the default "no keys" value for LocalPairingParams.
+  if (bondable_mode_ == BondableMode::Bondable) {
+    local_params.auth_req |= AuthReq::kBondingFlag;
     // We always request identity information from the remote.
     local_params.remote_keys = KeyDistGen::kIdKey;
-    local_params.local_keys = 0;
 
     ZX_ASSERT(listener());
     if (listener()->OnIdentityRequest().has_value()) {
@@ -142,16 +148,18 @@ LocalPairingParams Phase1::BuildPairingParameters() {
     // of LTKs by both the local and remote device (V5.0 Vol. 3 Part H 2.4.2.3).
     local_params.remote_keys |= KeyDistGen::kEncKey;
     local_params.local_keys |= KeyDistGen::kEncKey;
-  }
-  if (sm_chan().SupportsSecureConnections()) {
-    local_params.auth_req |= AuthReq::kSC;
-  }
-  if (requested_level_ >= SecurityLevel::kAuthenticated) {
-    local_params.auth_req |= AuthReq::kMITM;
-  }
 
+    // If we support SC over LE, we always try to generate the cross-transport BR/EDR key by
+    // setting the link key bit (V5.0 Vol. 3 Part H 3.6.1).
+    if (local_params.auth_req & AuthReq::kSC) {
+      local_params.local_keys |= KeyDistGen::kLinkKey;
+      local_params.remote_keys |= KeyDistGen::kLinkKey;
+    }
+  }
+  // The CT2 bit indicates support for the 2nd Cross-Transport Key Derivation hashing function,
+  // a.k.a. H7 (v5.2 Vol. 3 Part H 3.5.1 and 2.4.2.4).
+  local_params.auth_req |= AuthReq::kCT2;
   local_params.io_capability = io_capability_;
-  local_params.max_encryption_key_size = kMaxEncryptionKeySize;
   local_params.oob_data_flag = oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
   return local_params;
 }
@@ -230,20 +238,34 @@ fit::result<PairingFeatures, ErrorCode> Phase1::ResolveFeatures(bool local_initi
   if (!will_bond && (local_keys || remote_keys)) {
     return fit::error(ErrorCode::kInvalidParameters);
   }
-  // "In LE Secure Connections pairing, when SMP is running on the LE transport, then the EncKey
-  // field is ignored" (V5.0 Vol. 3 Part H 3.6.1). We ignore the Encryption Key bit here to allow
-  // for uniform handling of it later.
+
+  // "If both [...] devices support [LE] Secure Connections [...] the devices may optionally
+  // generate the BR/EDR key [..] as part of the LE pairing procedure" (v5.2 Vol. 3 Part C 14.1).
+  std::optional<CrossTransportKeyAlgo> generate_ct_key = std::nullopt;
   if (sc) {
+    // "In LE Secure Connections pairing, when SMP is running on the LE transport, then the EncKey
+    // field is ignored" (V5.0 Vol. 3 Part H 3.6.1). We ignore the Encryption Key bit here to allow
+    // for uniform handling of it later.
     local_keys &= ~KeyDistGen::kEncKey;
     remote_keys &= ~KeyDistGen::kEncKey;
+
+    // "When LinkKey is set to 1 by both devices in the initiator and responder [KeyDistGen] fields,
+    // the procedures for calculating the BR/EDR link key from the LTK shall be used". The chosen
+    // procedure depends on the CT2 bit of the AuthReq (v5.2 Vol. 3 Part H 3.5.1 and 3.6.1).
+    if (local_keys & remote_keys & KeyDistGen::kLinkKey) {
+      generate_ct_key = (preq.auth_req & AuthReq::kCT2) && (pres.auth_req & AuthReq::kCT2)
+                            ? CrossTransportKeyAlgo::kUseH7
+                            : CrossTransportKeyAlgo::kUseH6;
+    }
+
   } else if (requested_level_ == SecurityLevel::kSecureAuthenticated) {
     // SecureAuthenticated means Secure Connections is required, so if this pairing would not use
     // Secure Connections it does not meet the requirements of `requested_level_`
     return fit::error(ErrorCode::kAuthenticationRequirements);
   }
 
-  return fit::ok(PairingFeatures(local_initiator, sc, will_bond, method, enc_key_size, local_keys,
-                                 remote_keys));
+  return fit::ok(PairingFeatures(local_initiator, sc, will_bond, generate_ct_key, method,
+                                 enc_key_size, local_keys, remote_keys));
 }
 
 void Phase1::OnPairingResponse(const PairingResponseParams& response_params) {

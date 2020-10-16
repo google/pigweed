@@ -31,6 +31,7 @@ const PairingFeatures kDefaultFeatures(
     true,                                     // initiator
     false,                                    // secure_connections
     true,                                     // will_bond
+    std::optional<CrossTransportKeyAlgo>{std::nullopt},
     PairingMethod::kJustWorks,
     kMaxEncryptionKeySize,                    // encryption_key_size
     KeyDistGen::kIdKey,                       // local_key_distribution

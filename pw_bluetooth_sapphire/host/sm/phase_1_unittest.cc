@@ -105,7 +105,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartDefaultParams) {
       CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -126,7 +126,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeStartCustomParams) {
   const auto kRequest = CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                                                0x01,  // IO cap.: DisplayYesNo
                                                0x00,  // OOB: not present
-                                               AuthReq::kMITM | AuthReq::kSC,
+                                               AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
                                                0x10,  // encr. key size: 16 (default max)
                                                0x00,  // initiator keys: none - non-bondable mode
                                                0x00   // responder keys: none - non-bondable mode
@@ -144,7 +144,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorWithIdentityInfo) {
       CreateStaticByteBuffer(0x01,  // code: "Pairing Request"
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,  // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey   // responder keys
@@ -173,7 +173,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedInitiatorKeys) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -209,7 +209,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalRejectsUnsupportedResponderKeys) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -246,7 +246,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeFailureAuthenticationRequirements) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -302,13 +302,14 @@ TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportSCFeaturesHaveSC) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
-  const auto kRequest = StaticByteBuffer(0x01,  // code: Pairing Request
-                                         0x03,  // IO cap.: NoInputNoOutput
-                                         0x00,  // OOB: not present
-                                         AuthReq::kBondingFlag | AuthReq::kSC,
-                                         0x10,                 // encr. key size: 16 (default max)
-                                         KeyDistGen::kEncKey,  // initiator keys
-                                         KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
   );
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x00,  // IO cap.: DisplayOnly
@@ -341,13 +342,14 @@ TEST_F(SMP_Phase1Test, FeatureExchangeScIgnoresEncKeyBit) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
-  const auto kRequest = StaticByteBuffer(0x01,  // code: Pairing Request
-                                         0x03,  // IO cap.: NoInputNoOutput
-                                         0x00,  // OOB: not present
-                                         AuthReq::kBondingFlag | AuthReq::kSC,
-                                         0x10,                 // encr. key size: 16 (default max)
-                                         KeyDistGen::kEncKey,  // initiator keys
-                                         KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
   );
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x00,  // IO cap.: DisplayOnly
@@ -384,13 +386,14 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalSCRemoteNoSCFeaturesNoSc) {
   Phase1Args args;
   args.sc_supported = true;
   NewPhase1(Role::kInitiator, args);
-  const auto kRequest = StaticByteBuffer(0x01,  // code: Pairing Request
-                                         0x03,  // IO cap.: NoInputNoOutput
-                                         0x00,  // OOB: not present
-                                         AuthReq::kBondingFlag | AuthReq::kSC,
-                                         0x10,                 // encr. key size: 16 (default max)
-                                         KeyDistGen::kEncKey,  // initiator keys
-                                         KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
   );
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x00,  // IO cap.: DisplayOnly
@@ -424,7 +427,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyJustWorks) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -467,7 +470,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangePairingResponseLegacyMITM) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x01,  // IO cap.: DisplayYesNo
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -507,7 +510,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeEncryptionKeySize) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -541,15 +544,15 @@ TEST_F(SMP_Phase1Test, FeatureExchangeSecureAuthenticatedEncryptionKeySize) {
                                .level = SecurityLevel::kSecureAuthenticated,
                                .sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
-  const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                             0x04,  // IO cap.: KeyboardDisplay
-                             0x00,  // OOB: not present
-                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
-                             0x10,                 // encr. key size: 16 (default max)
-                             KeyDistGen::kEncKey,  // initiator keys
-                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
-      );
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x04,  // IO cap.: KeyboardDisplay
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
   const auto kResponse = CreateStaticByteBuffer(
       0x02,  // code: Pairing Response
       0x04,  // IO cap.: KeyboardDisplay
@@ -579,15 +582,15 @@ TEST_F(SMP_Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
                                .level = SecurityLevel::kSecureAuthenticated,
                                .sc_supported = true};
   NewPhase1(Role::kInitiator, phase_args);
-  const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                             0x04,  // IO cap.: KeyboardDisplay
-                             0x00,  // OOB: not present
-                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
-                             0x10,                 // encr. key size: 16 (default max)
-                             KeyDistGen::kEncKey,  // initiator keys
-                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
-      );
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x04,  // IO cap.: KeyboardDisplay
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x04,  // IO cap.: KeyboardDisplay
                                                 0x00,  // OOB: not present
@@ -610,6 +613,168 @@ TEST_F(SMP_Phase1Test, FeatureExchangeSecureConnectionsRequiredNotPresent) {
   EXPECT_EQ(0, feature_exchange_count());
   EXPECT_EQ(1, listener()->pairing_error_count());
   ASSERT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangeBothSupportScLinkKeyAndCt2GenerateH7CtKey) {
+  auto phase_args = Phase1Args{.sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      IOCapability::kNoInputNoOutput,
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
+  const auto kResponse =
+      CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                             0x04,  // IO cap.: KeyboardDisplay
+                             0x00,  // OOB: not present
+                             AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+                             0x10,                  // encr. key size: 16 (default max)
+                             KeyDistGen::kLinkKey,  // initiator keys
+                             KeyDistGen::kLinkKey   // responder keys
+      );
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, feature_exchange_count());
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(CrossTransportKeyAlgo::kUseH7, features().generate_ct_key);
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportCt2GenerateH6CtKey) {
+  auto phase_args = Phase1Args{.sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      IOCapability::kNoInputNoOutput,
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                0x04,  // IO cap.: KeyboardDisplay
+                                                0x00,  // OOB: not present
+                                                AuthReq::kBondingFlag | AuthReq::kSC,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                KeyDistGen::kLinkKey,  // initiator keys
+                                                KeyDistGen::kLinkKey   // responder keys
+  );
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, feature_exchange_count());
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(CrossTransportKeyAlgo::kUseH6, features().generate_ct_key);
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangePeerDoesntSupportScDoNotGenerateCtKey) {
+  const auto kRequest =
+      CreateStaticByteBuffer(0x01,  // code: Pairing Request
+                             IOCapability::kNoInputNoOutput,
+                             0x00,  // OOB: not present
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
+                             0x10,                 // encr. key size: 16 (default max)
+                             KeyDistGen::kEncKey,  // initiator keys
+                             KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+      );
+  // Although the peer supports CTKG through the LinkKey field and SC, locally we do not support
+  // SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                0x04,  // IO cap.: KeyboardDisplay
+                                                0x00,  // OOB: not present
+                                                AuthReq::kBondingFlag | AuthReq::kSC,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                KeyDistGen::kEncKey,  // initiator keys
+                                                KeyDistGen::kEncKey   // responder keys
+  );
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().generate_ct_key.has_value());
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangePeerSupportsCt2ButNotLinkKeyDoNotGenerateCtKey) {
+  auto phase_args = Phase1Args{.sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      IOCapability::kNoInputNoOutput,
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
+  // The peer indicates support for the Link Key (CTKG) on only one of the Initiator/Responder
+  // Key Dist./Gen. fields, as such we do not generate the CT key.
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                0x04,  // IO cap.: KeyboardDisplay
+                                                0x00,  // OOB: not present
+                                                AuthReq::kBondingFlag | AuthReq::kSC | kCT2,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                0x00,  // initiator keys - none
+                                                0x00   // responder keys - none
+  );
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().generate_ct_key.has_value());
+}
+
+TEST_F(SMP_Phase1Test, FeatureExchangePeerOnlyIndicatesOneLinkKeyDoNotGenerateCtKey) {
+  auto phase_args = Phase1Args{.sc_supported = true};
+  NewPhase1(Role::kInitiator, phase_args);
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      IOCapability::kNoInputNoOutput,
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
+  // The peer indicates support for the Link Key (CTKG) on only one of the Initiator/Responder
+  // Key Dist./Gen. fields, as such we do not generate the CT key.
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                0x04,  // IO cap.: KeyboardDisplay
+                                                0x00,  // OOB: not present
+                                                AuthReq::kBondingFlag | AuthReq::kSC,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                KeyDistGen::kLinkKey,  // initiator keys
+                                                0x00                   // responder keys - none
+  );
+
+  // Initiate the request in a loop task for Expect to detect it.
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  ASSERT_TRUE(Expect(kRequest));
+
+  fake_chan()->Receive(kResponse);
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().generate_ct_key.has_value());
 }
 
 TEST_F(SMP_Phase1Test, FeatureExchangeResponderErrorMaster) {
@@ -653,7 +818,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderBothSupportSCFeaturesHaveSC) {
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x03,  // IO cap.: NoInputNoOutput
                                           0x00,  // OOB: not present
-                                          AuthReq::kBondingFlag | AuthReq::kSC,
+                                          AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
                                           0x10,                // encr. key size: 7 (default min)
                                           0x00,                // initiator keys: none
                                           KeyDistGen::kEncKey  // responder keys
@@ -686,7 +851,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderLocalSCRemoteNoSCFeaturesNoSC) {
   const auto kResponse = StaticByteBuffer(0x02,  // code: Pairing Response
                                           0x03,  // IO cap.: NoInputNoOutput
                                           0x00,  // OOB: not present
-                                          AuthReq::kBondingFlag | AuthReq::kSC,
+                                          AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
                                           0x10,                // encr. key size: 7 (default min)
                                           0x00,                // initiator keys: none
                                           KeyDistGen::kEncKey  // responder keys
@@ -728,7 +893,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeLocalResponderDoesNotRequestUnsupportedKey
       0x02,  // code: Pairing Response
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      AuthReq::kBondingFlag,
+      AuthReq::kBondingFlag | AuthReq::kCT2,
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none - we shouldn't request the SignKey as we don't support it
       0x00   // responder keys: none
@@ -755,7 +920,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderDistributesIdKey) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x03,  // IO cap.: NoInputNoOutput
                                                 0x00,  // OOB: not present
-                                                AuthReq::kBondingFlag,
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 0x00,  // initiator keys: none
                                                 KeyDistGen::kIdKey  // responder keys
@@ -787,7 +952,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsInitiatorForIdKey) {
       0x02,  // code: Pairing Response
       0x03,  // IO cap.: NoInputNoOutput
       0x00,  // OOB: not present
-      AuthReq::kBondingFlag,
+      AuthReq::kBondingFlag | AuthReq::kCT2,
       0x10,  // encr. key size: 16 (default max)
       0x00,  // initiator keys: none
       0x00   // responder keys: none - we shouldn't distribute IdKey even though we have it
@@ -844,7 +1009,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderJustWorks) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x03,  // IO cap.: NoInputNoOutput
                                                 0x00,  // OOB: not present
-                                                AuthReq::kBondingFlag,
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 KeyDistGen::kIdKey,  // initiator keys
                                                 KeyDistGen::kEncKey  // responder keys
@@ -889,7 +1054,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRequestInitiatorEncKey) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x03,  // IO cap.: NoInputNoOutput
                                                 0x00,  // OOB: not present
-                                                AuthReq::kBondingFlag,
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 KeyDistGen::kEncKey,  // initiator keys
                                                 KeyDistGen::kEncKey   // responder keys
@@ -929,7 +1094,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderSendsOnlyRequestedKeys) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x03,  // IO cap.: NoInputNoOutput
                                                 0x00,  // OOB: not present
-                                                AuthReq::kBondingFlag,
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 KeyDistGen::kIdKey,  // initiator keys
                                                 0x00                 // responder keys: none
@@ -958,7 +1123,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderMITM) {
   const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
                                                 0x01,  // IO cap.: DisplayYesNo
                                                 0x00,  // OOB: not present
-                                                AuthReq::kBondingFlag,
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
                                                 0x10,  // encr. key size: 16 (default max)
                                                 KeyDistGen::kIdKey,  // initiator keys
                                                 KeyDistGen::kEncKey  // responder keys
@@ -1007,7 +1172,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderRespectsDesiredLevel) {
       CreateStaticByteBuffer(0x02,  // code: Pairing Response
                              0x01,  // IO cap.: KeyboardDisplay
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC,
+                             AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC | AuthReq::kCT2,
                              0x10,                // encr. key size: 16 (default max)
                              0x00,                // initiator keys: none
                              KeyDistGen::kEncKey  // responder keys
@@ -1091,6 +1256,38 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderSecureAuthenticatedInitiatorNoInp
   EXPECT_EQ(ErrorCode::kAuthenticationRequirements, listener()->last_error().protocol_error());
 }
 
+TEST_F(SMP_Phase1Test, FeatureExchangeResponderDoesntSupportScDoNotGenerateCtKey) {
+  const auto kRequest = CreateStaticByteBuffer(
+      0x01,  // code: Pairing Request
+      IOCapability::kNoInputNoOutput,
+      0x00,  // OOB: not present
+      AuthReq::kBondingFlag | AuthReq::kSC | AuthReq::kCT2,
+      0x10,                                        // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kLinkKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey | KeyDistGen::kLinkKey  // responder keys
+  );
+  // Although the peer supports CTKG through the LinkKey field and SC, locally we do not support
+  // support SC, so CTKG is not allowed (v5.2 Vol. 3 Part H 3.6.1).
+  const auto kResponse = CreateStaticByteBuffer(0x02,  // code: Pairing Response
+                                                IOCapability::kNoInputNoOutput,
+                                                0x00,  // OOB: not present
+                                                AuthReq::kBondingFlag | AuthReq::kCT2,
+                                                0x10,  // encr. key size: 16 (default max)
+                                                KeyDistGen::kEncKey,  // initiator keys
+                                                KeyDistGen::kEncKey   // responder keys
+  );
+
+  auto reader = PacketReader(&kRequest);
+  auto phase_args =
+      Phase1Args{.preq = reader.payload<PairingRequestParams>(), .sc_supported = false};
+  NewPhase1(Role::kResponder, phase_args);
+  async::PostTask(dispatcher(), [this] { phase_1()->Start(); });
+  EXPECT_TRUE(Expect(kResponse));
+
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().generate_ct_key.has_value());
+}
+
 TEST_F(SMP_Phase1Test, UnsupportedCommandDuringPairing) {
   phase_1()->Start();
 
@@ -1123,7 +1320,7 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
       CreateStaticByteBuffer(0x01,  // code: Pairing Request
                              0x03,  // IO cap.: NoInputNoOutput
                              0x00,  // OOB: not present
-                             AuthReq::kBondingFlag,
+                             AuthReq::kBondingFlag | AuthReq::kCT2,
                              0x10,                 // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
@@ -1155,13 +1352,13 @@ TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqBondResNoBond) {
 TEST_F(SMP_Phase1Test, FeatureExchangeInitiatorReqNoBondResBond) {
   auto phase_args = Phase1Args{.bondable_mode = BondableMode::NonBondable};
   NewPhase1(Role::kInitiator, phase_args);
-  const auto kRequest = CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                                               0x03,  // IO cap.: NoInputNoOutput
-                                               0x00,  // OOB: not present
-                                               0x00,  // AuthReq: non-bondable
-                                               0x10,  // encr. key size: 16 (default max)
-                                               0x00,  // initiator keys: none
-                                               0x00   // responder keys: none
+  const auto kRequest = CreateStaticByteBuffer(0x01,           // code: Pairing Request
+                                               0x03,           // IO cap.: NoInputNoOutput
+                                               0x00,           // OOB: not present
+                                               AuthReq::kCT2,  // AuthReq: non-bondable
+                                               0x10,           // encr. key size: 16 (default max)
+                                               0x00,           // initiator keys: none
+                                               0x00            // responder keys: none
   );
   const auto kResponse =
       CreateStaticByteBuffer(0x02,  // code: Pairing Response
@@ -1198,12 +1395,12 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqBondResNoBond) {
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
       );
   const auto kResponse =
-      CreateStaticByteBuffer(0x02,  // code: Pairing Response
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: non-bondable to match local mode, even though
-                                    // kRequest was bondable
-                             0x10,  // encr. key size: 16 (default max)
+      CreateStaticByteBuffer(0x02,           // code: Pairing Response
+                             0x03,           // IO cap.: NoInputNoOutput
+                             0x00,           // OOB: not present
+                             AuthReq::kCT2,  // AuthReq: non-bondable to match local mode,
+                                             // even though kRequest was bondable
+                             0x10,           // encr. key size: 16 (default max)
                              0x00,  // initiator keys: none - should not change request field
                              0x00   // responder keys: none - should not change request field
       );
@@ -1233,12 +1430,12 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
                                                0x00   // responder keys: none
   );
   const auto kResponse =
-      CreateStaticByteBuffer(0x02,  // code: Pairing Response
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: non-bondable to match peer mode, even though Phase1
-                                    // is bondable.
-                             0x10,  // encr. key size: 16 (default max)
+      CreateStaticByteBuffer(0x02,           // code: Pairing Response
+                             0x03,           // IO cap.: NoInputNoOutput
+                             0x00,           // OOB: not present
+                             AuthReq::kCT2,  // AuthReq: non-bondable to match peer mode, even
+                                             // though Phase1 is bondable.
+                             0x10,           // encr. key size: 16 (default max)
                              0x00,  // initiator keys: none - should not change request field
                              0x00   // responder keys: none - should not change request field
       );
@@ -1262,11 +1459,11 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondResNoBond) {
 
 TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   const auto kRequest =
-      CreateStaticByteBuffer(0x01,  // code: Pairing Request
-                             0x03,  // IO cap.: NoInputNoOutput
-                             0x00,  // OOB: not present
-                             0x00,  // AuthReq: non-bondable
-                             0x10,  // encr. key size: 16 (default max)
+      CreateStaticByteBuffer(0x01,           // code: Pairing Request
+                             0x03,           // IO cap.: NoInputNoOutput
+                             0x00,           // OOB: not present
+                             AuthReq::kCT2,  // AuthReq: non-bondable
+                             0x10,           // encr. key size: 16 (default max)
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey,  // initiator keys
                              KeyDistGen::kEncKey | KeyDistGen::kIdKey   // responder keys
       );

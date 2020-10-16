@@ -46,7 +46,8 @@ enum CrossTransportKeyAlgo {
 // Represents the features exchanged during Pairing Phase 1.
 struct PairingFeatures final {
   PairingFeatures();
-  PairingFeatures(bool initiator, bool sc, bool will_bond, PairingMethod method,
+  PairingFeatures(bool initiator, bool sc, bool will_bond,
+                  std::optional<CrossTransportKeyAlgo> algo, PairingMethod method,
                   uint8_t enc_key_size, KeyDistGenField local_kd, KeyDistGenField remote_kd);
 
   // True if the local device is in the "initiator" role.
@@ -58,6 +59,10 @@ struct PairingFeatures final {
 
   // True if pairing is to be performed with bonding, false if not
   bool will_bond;
+
+  // If present, prescribes the algorithm to use during cross-transport key derivation. If not
+  // present, cross-transport key derivation should not take place.
+  std::optional<CrossTransportKeyAlgo> generate_ct_key;
 
   // Indicates the key generation model used for Phase 2.
   PairingMethod method;
@@ -71,6 +76,16 @@ struct PairingFeatures final {
   // The keys that will be distributed to us by the peer.
   KeyDistGenField remote_key_distribution;
 };
+
+constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys) {
+  // The link key field never affects the distributed keys. It only has meaning when the devices use
+  // LE Secure Connections, where it means the devices should generate the BR/EDR Link Key locally.
+  return keys & ~KeyDistGen::kLinkKey;
+}
+
+// Returns a bool indicating whether `features` calls for the devices to exchange key information
+// during the Key Distribution/Generation Phase 3. 
+bool HasKeysToDistribute(PairingFeatures features);
 
 // Each enum variant corresponds to an LE security mode 1 level in v5.2 Vol. Part C 10.2.1. Fuchsia
 // only supports encryption based security (Security Mode 1 and Secure Connections Only mode).
@@ -201,6 +216,9 @@ struct PairingData final {
   // Connections, this will be the same as local_ltk.
   std::optional<sm::LTK> peer_ltk;
 
+  // The cross-transport key for pairing-free encryption on the other transport.
+  std::optional<sm::LTK> cross_transport_key;
+
   // The identity resolving key used to resolve RPAs to |identity|.
   std::optional<sm::Key> irk;
 
@@ -232,16 +250,18 @@ enum class BondableMode {
 struct LocalPairingParams {
   // The local I/O capability.
   IOCapability io_capability;
-  // Whether or not OOB authentication data is available locally.
-  OOBDataFlag oob_data_flag;
-  // The local requested security properties (Vol 3, Part H, 2.3.1).
-  AuthReqField auth_req;
-  // Maximum encryption key size supported by the local device. Valid values are 7-16.
-  uint8_t max_encryption_key_size;
-  // The keys that the local system is able to distribute.
-  KeyDistGenField local_keys;
-  // The keys that are desired from the peer.
-  KeyDistGenField remote_keys;
+  // Whether or not OOB authentication data is available locally. Defaults to no OOB data.
+  OOBDataFlag oob_data_flag = OOBDataFlag::kNotPresent;
+  // The local requested security properties (Vol 3, Part H, 2.3.1). Defaults to no Authentication
+  // Requirements.
+  AuthReqField auth_req = 0u;
+  // Maximum encryption key size supported by the local device. Valid values are 7-16. Defaults
+  // to maximum allowed encryption key size.
+  uint8_t max_encryption_key_size = kMaxEncryptionKeySize;
+  // The keys that the local system is able to distribute. Defaults to distributing no keys.
+  KeyDistGenField local_keys = 0u;
+  // The keys that are desired from the peer. Defaults to distributing no keys.
+  KeyDistGenField remote_keys = 0u;
 };
 
 // These roles correspond to the device which starts pairing.
