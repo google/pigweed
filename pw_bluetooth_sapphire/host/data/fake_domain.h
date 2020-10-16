@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_DATA_FAKE_DOMAIN_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 

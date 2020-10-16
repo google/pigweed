@@ -8,12 +8,6 @@ static_library("data") {
   sources = [
     "domain.cc",
     "domain.h",
-    "l2cap_socket_channel_relay.cc",
-    "l2cap_socket_factory.cc",
-    "socket_channel_relay.cc",
-    "socket_channel_relay.h",
-    "socket_factory.cc",
-    "socket_factory.h",
   ]
 
   deps = [
@@ -42,17 +36,14 @@ source_set("testing") {
 source_set("tests") {
   testonly = true
 
-  sources = [
-    "domain_unittest.cc",
-    "socket_channel_relay_unittest.cc",
-    "socket_factory_unittest.cc",
-  ]
+  sources = [ "domain_unittest.cc" ]
 
   deps = [
     ":data",
     "//garnet/public/lib/gtest",
     "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]

@@ -10,12 +10,12 @@
 #include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
+#include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
@@ -118,7 +118,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   fxl::WeakPtr<bt::gap::Adapter> adapter_;
 
   // Creates sockets that bridge L2CAP channels to profile processes.
-  bt::data::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;
+  bt::socket::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

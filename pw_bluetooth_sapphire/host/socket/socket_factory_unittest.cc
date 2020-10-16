@@ -12,13 +12,13 @@
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 namespace bt {
-namespace data {
+namespace socket {
 namespace {
 
 // We'll test the template just for L2CAP channels.
@@ -53,6 +53,11 @@ class DATA_SocketFactoryTest : public ::testing::Test {
   async::Loop loop_;
   fbl::RefPtr<l2cap::testing::FakeChannel> channel_;
 };
+
+TEST_F(DATA_SocketFactoryTest, TemplatesCompile) {
+  socket::SocketFactory<l2cap::Channel> l2cap_factory;
+  socket::SocketFactory<gap::ScoConnection> sco_factory;
+}
 
 TEST_F(DATA_SocketFactoryTest, CanCreateSocket) {
   FactoryT socket_factory;
@@ -119,5 +124,5 @@ TEST_F(DATA_SocketFactoryTest, SameChannelIdDifferentHandles) {
 }
 
 }  // namespace
-}  // namespace data
+}  // namespace socket
 }  // namespace bt

@@ -54,8 +54,6 @@ static_library("gap") {
     "sco_connection.h",
     "sco_connection_manager.cc",
     "sco_connection_manager.h",
-    "sco_socket_channel_relay.cc",
-    "sco_socket_factory.cc",
     "types.cc",
     "types.h",
   ]
@@ -136,6 +134,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/sm:testing",
+    "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
     "//zircon/public/lib/async-cpp",

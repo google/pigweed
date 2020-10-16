@@ -11,13 +11,13 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -68,7 +68,7 @@ class DATA_DomainTest : public TestingBase {
 
     next_command_id_ = 1;
 
-    socket_factory_ = std::make_unique<SocketFactory<l2cap::Channel>>();
+    socket_factory_ = std::make_unique<socket::SocketFactory<l2cap::Channel>>();
   }
 
   void TearDown() override {
@@ -174,7 +174,7 @@ class DATA_DomainTest : public TestingBase {
  private:
   fbl::RefPtr<Domain> domain_;
   l2cap::CommandId next_command_id_;
-  std::unique_ptr<SocketFactory<l2cap::Channel>> socket_factory_;
+  std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
 };

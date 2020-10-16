@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 
 namespace bt {
 namespace l2cap {

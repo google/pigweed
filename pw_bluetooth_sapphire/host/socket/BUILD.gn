@@ -1,0 +1,38 @@
+# Copyright 2020 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("socket") {
+  sources = [
+    "socket_channel_relay.h",
+    "socket_factory.h",
+  ]
+
+  deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//zircon/system/ulib/trace:trace-driver",
+  ]
+
+  public_deps = [
+    "//src/lib/fxl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zx",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "socket_channel_relay_unittest.cc",
+    "socket_factory_unittest.cc",
+  ]
+
+  deps = [
+    ":socket",
+    "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/gap",
+    "//third_party/googletest:gtest",
+  ]
+}
