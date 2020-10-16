@@ -73,6 +73,7 @@ config("strict_warnings") {
     "-Wimplicit-fallthrough",
     "-Wcast-qual",
     "-Wundef",
+    "-Wpointer-arith",
 
     # Make all warnings errors, except for the exemptions below.
     "-Werror",
