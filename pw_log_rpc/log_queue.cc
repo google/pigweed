@@ -15,7 +15,7 @@
 #include "pw_log_rpc/log_queue.h"
 
 #include "pw_log/levels.h"
-#include "pw_log_rpc_proto/log.pwpb.h"
+#include "pw_log_proto/log.pwpb.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/try.h"
 
@@ -24,7 +24,7 @@ namespace {
 
 using pw::protobuf::WireType;
 constexpr std::byte kLogKey = static_cast<std::byte>(pw::protobuf::MakeKey(
-    static_cast<uint32_t>(pw::log_rpc::Log::Fields::ENTRIES),
+    static_cast<uint32_t>(pw::log::LogEntries::Fields::ENTRIES),
     WireType::kDelimited));
 
 }  // namespace
@@ -36,7 +36,7 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
                                       uint32_t thread,
                                       int64_t timestamp) {
   pw::protobuf::NestedEncoder nested_encoder(encode_buffer_);
-  LogEntry::Encoder encoder(&nested_encoder);
+  pw::log::LogEntry::Encoder encoder(&nested_encoder);
   Status status;
 
   encoder.WriteMessageTokenized(message);
@@ -55,10 +55,14 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
 
   ConstByteSpan log_entry;
   status = nested_encoder.Encode(&log_entry);
-  if (!status.ok()) {
-    // When encoding failures occur, map the error to INTERNAL, as the
-    // underlying allocation of this encode buffer and the nested encoding
-    // sequencing are not the caller's responsibility.
+  if (!status.ok() || log_entry.size_bytes() > max_log_entry_size_) {
+    // If an encoding failure occurs or the constructed log entry is larger
+    // than the configured max size, map the error to INTERNAL. If the
+    // underlying allocation of this encode buffer or the nested encoding
+    // sequencing are at fault, they are not the caller's responsibility. If
+    // the log entry is larger than the max allowed size, the log is dropped
+    // intentionally, and it is expected that the caller accepts this
+    // possibility.
     status = PW_STATUS_INTERNAL;
   } else {
     // Try to push back the encoded log entry.
@@ -78,26 +82,41 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
   return Status::Ok();
 }
 
-Result<ConstByteSpan> LogQueue::Pop(ByteSpan entry_buffer) {
+Result<LogEntries> LogQueue::Pop(LogEntriesBuffer entry_buffer) {
   size_t ring_buffer_entry_size = 0;
+  PW_TRY(pop_status_for_test_);
+  // The caller must provide a buffer that is at minimum max_log_entry_size, to
+  // ensure that the front entry of the ring buffer can be popped.
+  PW_DCHECK_UINT_GE(entry_buffer.size_bytes(), max_log_entry_size_);
   PW_TRY(ring_buffer_.PeekFrontWithPreamble(entry_buffer,
                                             &ring_buffer_entry_size));
   PW_DCHECK_OK(ring_buffer_.PopFront());
-  return ConstByteSpan(entry_buffer.first(ring_buffer_entry_size));
+
+  return LogEntries{
+      .entries = ConstByteSpan(entry_buffer.first(ring_buffer_entry_size)),
+      .entry_count = 1};
 }
 
-Result<ConstByteSpan> LogQueue::PopMultiple(ByteSpan entries_buffer) {
+LogEntries LogQueue::PopMultiple(LogEntriesBuffer entries_buffer) {
   size_t offset = 0;
+  size_t entry_count = 0;
+
+  // The caller must provide a buffer that is at minimum max_log_entry_size, to
+  // ensure that the front entry of the ring buffer can be popped.
+  PW_DCHECK_UINT_GE(entries_buffer.size_bytes(), max_log_entry_size_);
+
   while (ring_buffer_.EntryCount() > 0 &&
-         (entries_buffer.size_bytes() - offset) >
-             ring_buffer_.FrontEntryTotalSizeBytes()) {
-    const Result<ConstByteSpan> result = Pop(entries_buffer.subspan(offset));
+         (entries_buffer.size_bytes() - offset) > max_log_entry_size_) {
+    const Result<LogEntries> result = Pop(entries_buffer.subspan(offset));
     if (!result.ok()) {
       break;
     }
-    offset += result.value().size_bytes();
+    offset += result.value().entries.size_bytes();
+    entry_count += result.value().entry_count;
   }
-  return ConstByteSpan(entries_buffer.first(offset));
+
+  return LogEntries{.entries = ConstByteSpan(entries_buffer.first(offset)),
+                    .entry_count = entry_count};
 }
 
 }  // namespace pw::log_rpc

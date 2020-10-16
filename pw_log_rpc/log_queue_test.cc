@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_log/levels.h"
-#include "pw_log_rpc_proto/log.pwpb.h"
+#include "pw_log_proto/log.pwpb.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::log_rpc {
@@ -97,10 +97,11 @@ TEST(LogQueue, SinglePushPopTokenizedMessage) {
                 kTimestamp));
 
   std::byte log_entry[kEncodeBufferSize];
-  Result<ConstByteSpan> pop_result = log_queue.Pop(std::span(log_entry));
+  Result<LogEntries> pop_result = log_queue.Pop(std::span(log_entry));
   EXPECT_TRUE(pop_result.ok());
 
-  pw::protobuf::Decoder log_decoder(pop_result.value());
+  pw::protobuf::Decoder log_decoder(pop_result.value().entries);
+  EXPECT_EQ(pop_result.value().entry_count, 1U);
   VerifyLogEntry(log_decoder,
                  kTokenizedMessage,
                  kFlags,
@@ -111,12 +112,12 @@ TEST(LogQueue, SinglePushPopTokenizedMessage) {
 }
 
 TEST(LogQueue, MultiplePushPopTokenizedMessage) {
-  constexpr int kEntryCount = 3;
+  constexpr size_t kEntryCount = 3;
 
   std::byte log_buffer[1024];
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue(log_buffer);
 
-  for (int i = 0; i < kEntryCount; i++) {
+  for (size_t i = 0; i < kEntryCount; i++) {
     EXPECT_EQ(Status::OK,
               log_queue.PushTokenizedMessage(
                   std::as_bytes(std::span(kTokenizedMessage)),
@@ -128,11 +129,12 @@ TEST(LogQueue, MultiplePushPopTokenizedMessage) {
   }
 
   std::byte log_entry[kEncodeBufferSize];
-  for (int i = 0; i < kEntryCount; i++) {
-    Result<ConstByteSpan> pop_result = log_queue.Pop(std::span(log_entry));
+  for (size_t i = 0; i < kEntryCount; i++) {
+    Result<LogEntries> pop_result = log_queue.Pop(std::span(log_entry));
     EXPECT_TRUE(pop_result.ok());
 
-    pw::protobuf::Decoder log_decoder(pop_result.value());
+    pw::protobuf::Decoder log_decoder(pop_result.value().entries);
+    EXPECT_EQ(pop_result.value().entry_count, 1U);
     VerifyLogEntry(log_decoder,
                    kTokenizedMessage,
                    kFlags,
@@ -144,12 +146,12 @@ TEST(LogQueue, MultiplePushPopTokenizedMessage) {
 }
 
 TEST(LogQueue, PopMultiple) {
-  constexpr int kEntryCount = 3;
+  constexpr size_t kEntryCount = 3;
 
   std::byte log_buffer[kLogBufferSize];
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue(log_buffer);
 
-  for (int i = 0; i < kEntryCount; i++) {
+  for (size_t i = 0; i < kEntryCount; i++) {
     EXPECT_EQ(Status::OK,
               log_queue.PushTokenizedMessage(
                   std::as_bytes(std::span(kTokenizedMessage)),
@@ -161,11 +163,12 @@ TEST(LogQueue, PopMultiple) {
   }
 
   std::byte log_entries[kLogBufferSize];
-  Result<ConstByteSpan> pop_result = log_queue.PopMultiple(log_entries);
+  Result<LogEntries> pop_result = log_queue.PopMultiple(log_entries);
   EXPECT_TRUE(pop_result.ok());
 
-  pw::protobuf::Decoder log_decoder(pop_result.value());
-  for (int i = 0; i < kEntryCount; i++) {
+  pw::protobuf::Decoder log_decoder(pop_result.value().entries);
+  EXPECT_EQ(pop_result.value().entry_count, kEntryCount);
+  for (size_t i = 0; i < kEntryCount; i++) {
     VerifyLogEntry(log_decoder,
                    kTokenizedMessage,
                    kFlags,

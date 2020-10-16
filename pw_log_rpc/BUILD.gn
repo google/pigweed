@@ -24,6 +24,17 @@ config("default_config") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("logs") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_log_rpc/logs_rpc.h" ]
+  sources = [ "logs_rpc.cc" ]
+  public_deps = [
+    ":log_queue",
+    ":protos.pwpb",
+    ":protos.raw_rpc",
+  ]
+}
+
 pw_source_set("log_queue") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_log_rpc/log_queue.h" ]
@@ -38,8 +49,16 @@ pw_source_set("log_queue") {
   deps = [ ":protos.pwpb" ]
 }
 
+pw_test("logs_rpc_test") {
+  deps = [
+    ":logs",
+    "$dir_pw_rpc/raw:test_method_context",
+  ]
+  sources = [ "logs_rpc_test.cc" ]
+}
+
 pw_proto_library("protos") {
-  sources = [ "pw_log_rpc_proto/log.proto" ]
+  sources = [ "pw_log_proto/log.proto" ]
 }
 
 pw_doc_group("docs") {
@@ -56,5 +75,8 @@ pw_test("log_queue_test") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":log_queue_test" ]
+  tests = [
+    ":log_queue_test",
+    ":logs_rpc_test",
+  ]
 }

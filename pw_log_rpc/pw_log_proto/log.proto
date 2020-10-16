@@ -14,14 +14,10 @@
 
 syntax = "proto2";
 
-package pw.log_rpc;
+package pw.log;
 
 option java_package = "pw.rpc.proto";
 option java_outer_classname = "Log";
-
-message Log {
-  repeated LogEntry entries = 1;
-}
 
 // A log with a tokenized message, a string message, or dropped indicator.  A
 // message can be one of three types:
@@ -157,4 +153,13 @@ message LogEntry {
   // data itself in bytes.
   optional string data_format_string = 21;
   optional bytes data = 22;
+}
+
+message LogRequest {}
+message LogEntries {
+  repeated LogEntry entries = 1;
+}
+
+service Logs {
+  rpc Get(LogRequest) returns (stream LogEntries) {}
 }
