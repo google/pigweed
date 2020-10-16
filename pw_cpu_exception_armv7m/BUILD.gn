@@ -26,7 +26,7 @@ config("default_config") {
 pw_source_set("support") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    "$dir_pw_cpu_exception:support_facade",
+    "$dir_pw_cpu_exception:support.facade",
     dir_pw_preprocessor,
     dir_pw_string,
   ]
@@ -56,7 +56,7 @@ pw_source_set("pw_cpu_exception_armv7m") {
   public_deps = [
     ":proto_dump",
     ":support",
-    "$dir_pw_cpu_exception:entry_facade",
+    "$dir_pw_cpu_exception:entry.facade",
     "$dir_pw_cpu_exception:handler",
     "$dir_pw_preprocessor",
   ]

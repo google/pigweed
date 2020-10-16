@@ -88,7 +88,6 @@ if (pw_tokenizer_GLOBAL_HANDLER_BACKEND == "" &&
 }
 
 pw_facade("global_handler") {
-  facade_name = "global_handler_facade"
   backend = pw_tokenizer_GLOBAL_HANDLER_BACKEND
 
   public_configs = [ ":public_include_path" ]
@@ -98,7 +97,6 @@ pw_facade("global_handler") {
 }
 
 pw_facade("global_handler_with_payload") {
-  facade_name = "global_handler_with_payload_facade"
   backend = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND
 
   public_configs = [ ":public_include_path" ]

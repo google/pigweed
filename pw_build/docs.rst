@@ -42,7 +42,7 @@ Templates
 
 Target types
 ^^^^^^^^^^^^
-.. code::
+.. code-block::
 
   import("$dir_pw_build/target_types.gni")
 
@@ -74,6 +74,34 @@ template for a project.
 
 All of the ``pw_*`` target type overrides accept any arguments, as they simply
 forward them through to the underlying target.
+
+.. _module-pw_build-facade:
+
+pw_facade
+^^^^^^^^^
+In their simplest form, a :ref:`facade<docs-module-structure-facades>` is a GN
+build arg used to change a dependency at compile time. Pigweed targets configure
+these facades as needed.
+
+The ``pw_facade`` template bundles a ``pw_source_set`` with a facade build arg.
+This allows the facade to provide header files, compilation options or anything
+else a GN ``source_set`` provides.
+
+The ``pw_facade`` template declares two targets:
+
+* ``$target_name``: the public-facing ``pw_source_set``, with a ``public_dep``
+  on the backend
+* ``$target_name.facade``: target used by the backend to avoid circular
+  dependencies
+
+.. code-block::
+
+  # Declares ":foo" and ":foo.facade" GN targets
+  pw_facade("foo") {
+    backend = pw_log_BACKEND
+    public_configs = [ ":public_include_path" ]
+    public = [ "public/pw_foo/foo.h" ]
+  }
 
 .. _module-pw_build-python-script:
 
@@ -127,13 +155,13 @@ The following expressions are supported:
   Evaluates to the output file of the provided GN target. For example, the
   expression
 
-  .. code::
+  .. code-block::
 
     "<TARGET_FILE(//foo/bar:static_lib)>"
 
   might expand to
 
-  .. code::
+  .. code-block::
 
     "/home/User/project_root/out/obj/foo/bar/static_lib.a"
 
@@ -158,14 +186,14 @@ The following expressions are supported:
 
   For example, consider this expression:
 
-  .. code::
+  .. code-block::
 
     "--database=<TARGET_FILE_IF_EXISTS(//alpha/bravo)>"
 
   If the ``//alpha/bravo`` target file exists, this might expand to the
   following:
 
-  .. code::
+  .. code-block::
 
     "--database=/home/User/project/out/obj/alpha/bravo/bravo.elf"
 
@@ -181,13 +209,13 @@ The following expressions are supported:
 
   For example, the expression
 
-  .. code::
+  .. code-block::
 
     "<TARGET_OBJECTS(//foo/bar:a_source_set)>"
 
   might expand to multiple separate arguments:
 
-  .. code::
+  .. code-block::
 
     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_a.cc.o"
     "/home/User/project_root/out/obj/foo/bar/a_source_set.file_b.cc.o"
@@ -195,7 +223,7 @@ The following expressions are supported:
 
 **Example**
 
-.. code::
+.. code-block::
 
   import("$dir_pw_build/python_action.gni")
 
@@ -235,7 +263,7 @@ target, as well as requiring one extra:
 
 **Example**
 
-.. code::
+.. code-block::
 
   import("$dir_pw_build/input_group.gni")
 
@@ -254,7 +282,7 @@ Targets depending on ``foo_metadata`` will rebuild when any of the ``.foo``
 files are modified.
 
 pw_zip
-^^^^^^^^^^^^^^
+^^^^^^
 ``pw_zip`` is a target that allows users to zip up a set of input files and
 directories into a single output ``.zip`` file—a simple automation of a
 potentially repetitive task.
@@ -286,7 +314,7 @@ Thus, it should look like the following: ``"[source file or dir] > /"``.
 
 Let's say we have the following structure for a ``//source/`` directory:
 
-.. code::
+.. code-block::
 
   source/
   ├── file1.txt
@@ -299,7 +327,7 @@ Let's say we have the following structure for a ``//source/`` directory:
 
 And we create the following build target:
 
-.. code::
+.. code-block::
 
   import("$dir_pw_build/zip.gni")
 
@@ -324,7 +352,7 @@ And we create the following build target:
 This will result in a ``.zip`` file called ``foo.zip`` stored in
 ``//$target_out_dir`` with the following structure:
 
-.. code::
+.. code-block::
 
   foo.zip
   ├── bar/
@@ -345,7 +373,7 @@ system.
 
 The following command generates Ninja build files in the out/cmake directory.
 
-.. code:: sh
+.. code-block:: sh
 
   cmake -B out/cmake -S /path/to/pigweed -G Ninja
 
@@ -373,7 +401,7 @@ Use Pigweed from an existing CMake project
 To use Pigweed libraries form a CMake-based project, simply include the Pigweed
 repository from a ``CMakeLists.txt``.
 
-.. code:: cmake
+.. code-block:: cmake
 
   add_subdirectory(path/to/pigweed pigweed)
 
@@ -382,7 +410,7 @@ All module libraries will be available as ``module_name`` or
 
 If desired, modules can be included individually.
 
-.. code:: cmake
+.. code-block:: cmake
 
   include(path/to/pigweed/pw_build/pigweed.cmake)
 

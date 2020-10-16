@@ -28,7 +28,6 @@ if (dir_pw_third_party_arduino != "") {
   pw_facade("arduino_init") {
     backend = pw_arduino_build_INIT_BACKEND
     public = [ "public/pw_arduino_build/init.h" ]
-    facade_name = "arduino_init_facade"
     public_configs = [ ":default_config" ]
   }
   config("default_config") {

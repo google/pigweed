@@ -394,8 +394,10 @@ reference these module variables.
 
 .. code::
 
-  # This must be imported before .gni files from any other Pigweed modules.
-  # To prevent gn format from reordering this import, a comment is added above.
+  # This must be imported before .gni files from any other Pigweed modules. To
+  # prevent gn format from reordering this import, it must be separated by a
+  # blank line from other imports.
+
   import("//build_overrides/pigweed.gni")
 
 GN target type wrappers

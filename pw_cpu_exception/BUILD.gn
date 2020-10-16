@@ -52,16 +52,14 @@ group("pw_cpu_exception") {
 
 pw_facade("entry") {
   backend = pw_cpu_exception_ENTRY_BACKEND
-  facade_name = "entry_facade"
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_preprocessor" ]
-  deps = [ ":handler_facade" ]
+  deps = [ ":handler.facade" ]
   public = [ "public/pw_cpu_exception/entry.h" ]
 }
 
 pw_facade("handler") {
   backend = pw_cpu_exception_HANDLER_BACKEND
-  facade_name = "handler_facade"
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_preprocessor",
@@ -77,7 +75,6 @@ pw_facade("handler") {
 # pw_CpuExceptionState members.
 pw_facade("support") {
   backend = pw_cpu_exception_SUPPORT_BACKEND
-  facade_name = "support_facade"
   public_configs = [ ":default_config" ]
   public_deps = [ "$dir_pw_span" ]
   public = [ "public/pw_cpu_exception/support.h" ]
@@ -85,7 +82,7 @@ pw_facade("support") {
 
 pw_source_set("basic_handler") {
   deps = [
-    ":handler_facade",
+    ":handler.facade",
     dir_pw_log,
   ]
   sources = [ "basic_handler.cc" ]

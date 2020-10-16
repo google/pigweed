@@ -33,7 +33,7 @@ config("backend_config") {
 # backend.
 #
 # This target depends on the pw_tokenizer facade target
-# (dir_pw_tokenizer:global_handler_with_payload_facade) to avoid circular
+# (dir_pw_tokenizer:global_handler_with_payload.facade) to avoid circular
 # dependencies. The dependency graph for pw_log_tokenized is the following:
 #
 #   pw_log:facade <---   :pw_log_tokenized
@@ -45,7 +45,7 @@ pw_source_set("pw_log_tokenized") {
   public_configs = [ ":default_config" ]
   public_deps = [
     "$dir_pw_log:facade",
-    "$dir_pw_tokenizer:global_handler_with_payload_facade",
+    "$dir_pw_tokenizer:global_handler_with_payload.facade",
     dir_pw_preprocessor,
   ]
   public = [ "public/pw_log_tokenized/log_tokenized.h" ]

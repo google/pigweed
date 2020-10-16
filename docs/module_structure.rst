@@ -27,7 +27,7 @@ Example module structure
     public/pw_foo/foo.h
     public/pw_foo/baz.h
 
-    # Exposed public headers go under internal/
+    # Exposed private headers go under internal/
     public/pw_foo/internal/bar.h
     public/pw_foo/internal/qux.h
 
@@ -185,6 +185,169 @@ Example:
     test.gni
     BUILD.gn
     README.md
+
+Compile-time configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pigweed modules are intended to be used in a wide variety of environments.
+In support of this, some modules expose compile-time configuration options.
+Pigweed has an established pattern for declaring and overriding module
+configuration.
+
+.. tip::
+
+  Compile-time configuration provides flexibility, but also imposes
+  restrictions. A module can only have one configuration in a given build.
+  Compile-time configuration also makes testing more difficult. Where
+  appropriate, consider alternatives such as C++ templates or runtime
+  configuration.
+
+Declaring configuration
+^^^^^^^^^^^^^^^^^^^^^^^
+Configuration values are declared in a header file with macros. If the macro
+value is not already defined, a default definition is provided. Otherwise,
+nothing is done. Configuration headers may include ``static_assert`` statements
+to validate configuration values.
+
+.. code-block:: c++
+
+  // Example configuration header
+
+  #ifndef PW_FOO_INPUT_BUFFER_SIZE_BYTES
+  #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 128
+  #endif  // PW_FOO_INPUT_BUFFER_SIZE_BYTES
+
+  static_assert(PW_FOO_INPUT_BUFFER_SIZE_BYTES >= 64);
+
+The configuration header may go in one of three places in the module, depending
+on whether the header should be exposed by the module or not.
+
+.. code-block::
+
+  pw_foo/...
+
+    # Publicly accessible configuration header
+    public/pw_foo/config.h
+
+    # Internal configuration header that is included by other module headers
+    public/pw_foo/internal/config.h
+
+    # Internal configuration header
+    pw_foo_private/config.h
+
+The configuration header is provided by a build system library. This library
+acts as a :ref:`facade<docs-module-structure-facades>`. The facade uses a
+variable such as ``pw_foo_CONFIG``. In upstream Pigweed, all config facades
+default to the ``pw_build_DEFAULT_MODULE_CONFIG`` backend. In the GN build
+system, the config facade is declared as follows:
+
+.. code-block::
+
+  declare_args() {
+    # The build target that overrides the default configuration options for this
+    # module. This should point to a source set that provides defines through a
+    # public config (which may -include a file or add defines directly).
+    pw_foo_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+  }
+
+  # Publicly accessible configuration header (most common)
+  pw_source_set("config") {
+    public = [ "public/pw_foo/config.h" ]
+    public_configs = [ ":public_include_path" ]
+    public_deps = [ pw_foo_CONFIG ]
+  }
+
+  # Internal configuration header that is included by other module headers
+  pw_source_set("config") {
+    sources = [ "public/pw_foo/internal/config.h" ]
+    public_configs = [ ":public_include_path" ]
+    public_deps = [ pw_foo_CONFIG ]
+    visibility = [":*"]  # Only allow this module to depend on ":config"
+    friend = [":*"]  # Allow this module to access the config.h header.
+  }
+
+  # Internal configuration header
+  pw_source_set("config") {
+    public = [ "pw_foo_private/config.h" ]
+    public_deps = [ pw_foo_CONFIG ]
+    visibility = [":*"]  # Only allow this module to depend on ":config"
+  }
+
+Overriding configuration
+^^^^^^^^^^^^^^^^^^^^^^^^
+As noted above, all module configuration facades default to the same backend
+(``pw_build_DEFAULT_MODULE_CONFIG``). This allows projects to override
+configuration values for multiple modules from a single configuration backend,
+if desired. The configuration values may also be overridden individually by
+setting backends for the individual module configurations (e.g. in GN,
+``pw_foo_CONFIG = "//configuration:my_foo_config"``).
+
+Configurations are overridden by setting compilation options in the config
+backend. These options could be set through macro definitions, such as
+``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``, or in a header file included with the
+``-include`` option.
+
+This example shows how two ways to configure a module in the GN build system.
+
+.. code-block::
+
+  # In the toolchain, set either pw_build_DEFAULT_MODULE_CONFIG or pw_foo_CONFIG
+  pw_build_DEFAULT_MODULE_CONFIG = get_path_info(":define_overrides", "abspath")
+
+  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES using the -D macro.
+  pw_source_set("define_overrides") {
+    public_configs = [ ":define_options" ]
+  }
+
+  config("define_options") {
+    defines = [ "-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
+  }
+
+  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES with a header file.
+  pw_source_set("include_overrides") {
+    public_configs = [ ":header_options" ]
+
+    # Header file with #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 256
+    sources = [ "my_config_overrides.h" ]
+  }
+
+  config("header_options") {
+    cflags = [
+      "-include",
+      "my_config_overrides.h",
+    ]
+  }
+
+.. _docs-module-structure-facades:
+
+Facades
+-------
+In Pigweed, facades represent a dependency that can be swapped at compile time.
+Facades are similar in concept to a virtual interface, but the implementation is
+set by the build system. Runtime polymorphism with facades is not
+possible, and each facade may only have one implementation (backend) per
+toolchain compilation.
+
+In the simplest sense, a facade is just a dependency represented by a variable.
+For example, the ``pw_log`` facade is represented by the ``pw_log_BACKEND``
+build variable. Facades typically are bundled with a build system library that
+depends on the backend.
+
+Modules should only use facades when necessary. Since they are fixed at compile
+time, runtime dependency injection is not possible. Where appropriate, modules
+should use other mechanisms, such as virtual interfaces or callbacks, in place
+of facades.
+
+Facades are essential in some circumstances:
+
+* Low-level, platform-specific features (:ref:`module-pw_cpu_exception`).
+* Features that require a macro or non-virtual function interface
+  (:ref:`module-pw_tokenizer`),
+* Highly leveraged code where a virtual interface or callback is too costly or
+  cumbersome (:ref:`module-pw_log`, :ref:`module-pw_assert`).
+
+The GN build system provides the
+:ref:`pw_facade template<module-pw_build-facade>` as a convenient way to declare
+facades.
 
 Documentation
 -------------
