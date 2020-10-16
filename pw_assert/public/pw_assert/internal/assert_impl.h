@@ -84,12 +84,12 @@
 #define PW_DCHECK_UINT_NE(...) if (!(PW_ASSERT_ENABLE_DEBUG)) {} else PW_CHECK_UINT_NE(__VA_ARGS__)
 
 // Checks for pointer: LE, LT, GE, GT, EQ, NE.
-#define PW_CHECK_PTR_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, void*, "%p", __VA_ARGS__)
-#define PW_CHECK_PTR_LT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, < , argb, void*, "%p", __VA_ARGS__)
-#define PW_CHECK_PTR_GE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, void*, "%p", __VA_ARGS__)
-#define PW_CHECK_PTR_GT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, > , argb, void*, "%p", __VA_ARGS__)
-#define PW_CHECK_PTR_EQ(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, void*, "%p", __VA_ARGS__)
-#define PW_CHECK_PTR_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_LE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, <=, argb, const void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_LT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, < , argb, const void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_GE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, >=, argb, const void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_GT(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, > , argb, const void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_EQ(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, ==, argb, const void*, "%p", __VA_ARGS__)
+#define PW_CHECK_PTR_NE(arga, argb, ...) _PW_CHECK_BINARY_CMP_IMPL(arga, !=, argb, const void*, "%p", __VA_ARGS__)
 
 // Check for pointer: NOTNULL. Use "nullptr" in C++, "NULL" in C.
 #ifdef __cplusplus

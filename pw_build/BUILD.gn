@@ -71,6 +71,7 @@ config("strict_warnings") {
     "-Wall",
     "-Wextra",
     "-Wimplicit-fallthrough",
+    "-Wcast-qual",
 
     # Make all warnings errors, except for the exemptions below.
     "-Werror",
@@ -84,12 +85,7 @@ config("strict_warnings") {
 # enable, but are enabled for upstream Pigweed for maximum project
 # compatibility.
 config("extra_strict_warnings") {
-  cflags = [
-    "-Wshadow",
-
-    # Migrate the warning(s) below to strict_warnings once customers support it.
-    "-Wcast-qual",
-  ]
+  cflags = [ "-Wshadow" ]
 }
 
 config("cpp11") {
