@@ -156,6 +156,66 @@ TEST(SMP_TypesTest, HasKeysToDistribute) {
   // No keys set.
   EXPECT_FALSE(HasKeysToDistribute(PairingFeatures{}));
 }
+
+TEST(SMP_TypesTest, SecurityPropertiesComparisonWorks) {
+  const SecurityProperties kInsecure(SecurityLevel::kNoSecurity, kMinEncryptionKeySize, false),
+      kEncryptedLegacy(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, false),
+      kEncryptedSecure(SecurityLevel::kEncrypted, kMaxEncryptionKeySize, true),
+      kAuthenticatedLegacy(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, false),
+      kAuthenticatedSecure(SecurityLevel::kAuthenticated, kMaxEncryptionKeySize, true),
+      kAuthenticatedSecureShortKey(SecurityLevel::kAuthenticated, kMinEncryptionKeySize, true);
+
+  const std::array kTestProperties{kInsecure,
+                                   kEncryptedLegacy,
+                                   kEncryptedSecure,
+                                   kAuthenticatedLegacy,
+                                   kAuthenticatedSecure,
+                                   kAuthenticatedSecureShortKey};
+  // Tests that are true for all of kTestProperties
+  for (auto props : kTestProperties) {
+    SCOPED_TRACE(props.ToString());
+    ASSERT_TRUE(props.IsAsSecureAs(props));
+    // kAuthenticatedSecure is the "most secure" possible properties.
+    ASSERT_TRUE(kAuthenticatedSecure.IsAsSecureAs(props));
+  }
+
+  // Test based on the least secure SecurityProperties in kTestProperties
+  for (auto props : kTestProperties) {
+    SCOPED_TRACE(props.ToString());
+    if (props != kInsecure) {
+      ASSERT_FALSE(kInsecure.IsAsSecureAs(props));
+      ASSERT_TRUE(props.IsAsSecureAs(kInsecure));
+      if (props != kAuthenticatedSecureShortKey) {
+        ASSERT_FALSE(kAuthenticatedSecureShortKey.IsAsSecureAs(props));
+      }
+    }
+  }
+
+  // Test Encrypted Legacy properties
+  for (auto props : kTestProperties) {
+    SCOPED_TRACE(props.ToString());
+    if (props != kInsecure && props != kEncryptedLegacy) {
+      ASSERT_FALSE(kEncryptedLegacy.IsAsSecureAs(props));
+    }
+  }
+
+  // Test Encrypted Secure properties
+  ASSERT_TRUE(kEncryptedSecure.IsAsSecureAs(kEncryptedLegacy));
+  for (auto props :
+       std::array{kAuthenticatedLegacy, kAuthenticatedSecure, kAuthenticatedSecureShortKey}) {
+    SCOPED_TRACE(props.ToString());
+    ASSERT_FALSE(kEncryptedSecure.IsAsSecureAs(props));
+  }
+
+  // Test Authenticated Legacy properties
+  ASSERT_TRUE(kAuthenticatedLegacy.IsAsSecureAs(kEncryptedLegacy));
+  for (auto props :
+       std::array{kEncryptedSecure, kAuthenticatedSecure, kAuthenticatedSecureShortKey}) {
+    SCOPED_TRACE(props.ToString());
+    ASSERT_FALSE(kAuthenticatedLegacy.IsAsSecureAs(props));
+  }
+}
+
 }  // namespace
 }  // namespace sm
 }  // namespace bt

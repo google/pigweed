@@ -148,6 +148,11 @@ class SecurityProperties final {
   // Returns a string representation of these properties.
   std::string ToString() const;
 
+  // Returns whether `this` SecurityProperties is at least as secure as |other|. This checks the
+  // encryption/authentication level of `this` vs. other, that `this` used secure connections if
+  // |other| did, and that `this` encryption key size is at least as large as |others|.
+  bool IsAsSecureAs(const SecurityProperties& other) const;
+
   // Compare two properties for equality.
   bool operator==(const SecurityProperties& other) const {
     return properties_ == other.properties_ && enc_key_size_ == other.enc_key_size_;

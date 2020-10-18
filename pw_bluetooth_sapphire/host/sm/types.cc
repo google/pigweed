@@ -134,6 +134,16 @@ std::string SecurityProperties::ToString() const {
                            enc_key_size());
 }
 
+bool SecurityProperties::IsAsSecureAs(const SecurityProperties& other) const {
+  // clang-format off
+  return
+    (encrypted() || !other.encrypted()) &&
+    (authenticated() || !other.authenticated()) &&
+    (secure_connections() || !other.secure_connections()) &&
+    (enc_key_size_ >= other.enc_key_size_);
+  // clang-format on
+}
+
 LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)
     : security_(security), key_(key) {}
 
