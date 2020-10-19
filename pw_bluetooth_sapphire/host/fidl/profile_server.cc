@@ -324,6 +324,16 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   }
 }
 
+void ProfileServer::ConnectSco(
+    ::fuchsia::bluetooth::PeerId peer_id, bool initiator,
+    fuchsia::bluetooth::bredr::ScoConnectionParameters params,
+    fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ScoConnectionReceiver> receiver) {
+  bt_log(ERROR, "profile_server", "%s not implemented", __func__);
+
+  auto server = receiver.Bind();
+  server->Error(fuchsia::bluetooth::bredr::ScoErrorCode::FAILURE);
+}
+
 void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Channel> channel,
                                        const bt::sdp::DataElement& protocol_list) {
   auto it = current_advertised_.find(ad_id);
