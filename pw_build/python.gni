@@ -14,8 +14,8 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("python_action.gni")
-import("target_types.gni")
+import("$dir_pw_build/input_group.gni")
+import("$dir_pw_build/python_action.gni")
 
 # Defines a Python package. GN Python packages contain several GN targets:
 #
@@ -77,7 +77,7 @@ template("pw_python_package") {
   # Declare the main Python package group. This represents the Python files, but
   # does not take any actions. GN targets can depend on the package name to run
   # when any files in the package change.
-  pw_source_set(target_name) {
+  pw_input_group(target_name) {
     inputs = _all_sources + invoker.setup
     if (defined(invoker.inputs)) {
       inputs += invoker.inputs
@@ -134,21 +134,20 @@ template("pw_python_package") {
     ]
   }
 
-  pw_python_action_foreach("$target_name.lint.mypy") {
+  pw_python_action("$target_name.lint.mypy") {
     module = "mypy"
     args = [
-      "{{source}}",
       "--pretty",
       "--show-error-codes",
       "--color-output",
     ]
-    sources = _all_sources
+    args += rebase_path(_all_sources)
 
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771
     environment = [ "MYPY_FORCE_COLOR=1" ]
 
-    stamp = "$target_gen_dir/{{source_file_part}}.mypy.pw_pystamp"
+    stamp = true
 
     deps = [ _package_target ]
     foreach(dep, _python_deps) {
@@ -161,7 +160,14 @@ template("pw_python_package") {
     args = [
       "{{source_root_relative_dir}}/{{source_file_part}}",
       "--jobs=1",
+      "--output-format=colorized",
     ]
+
+    if (host_os == "win") {
+      # Allow CRLF on Windows, in case Git is set to switch line endings.
+      args += [ "--disable=unexpected-line-ending-format" ]
+    }
+
     sources = _all_sources
 
     stamp = "$target_gen_dir/{{source_file_part}}.pylint.pw_pystamp"
