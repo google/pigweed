@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("python_script.gni")
+import("python_action.gni")
 
 # Creates an action that doesn't do anything that depends on a list of input
 # files. This allows modifications to these files to trigger targets depending

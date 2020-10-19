@@ -197,7 +197,7 @@ The following expressions are supported:
 
 .. code::
 
-  import("$dir_pw_build/python_script.gni")
+  import("$dir_pw_build/python_action.gni")
 
   pw_python_script("postprocess_main_image") {
     script = "py/postprocess_binary.py"

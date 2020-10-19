@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("python_script.gni")
+import("python_action.gni")
 
 # Runs a program which isn't in Python.
 #

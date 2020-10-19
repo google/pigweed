@@ -14,7 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("python_script.gni")
+import("python_action.gni")
 import("target_types.gni")
 
 # Defines a Python package. GN Python packages contain several GN targets:
