@@ -71,9 +71,10 @@ template("pw_source_set") {
       public_deps = []
     }
     if (defined(remove_public_deps)) {
-      if (remove_public_deps[0] == "*") {
+      if (remove_public_deps != [] && remove_public_deps[0] == "*") {
         public_deps = []
       } else {
+        public_deps += remove_public_deps
         public_deps -= remove_public_deps
       }
     }
@@ -117,9 +118,10 @@ template("pw_static_library") {
       public_deps = []
     }
     if (defined(remove_public_deps)) {
-      if (remove_public_deps[0] == "*") {
+      if (remove_public_deps != [] && remove_public_deps[0] == "*") {
         public_deps = []
       } else {
+        public_deps += remove_public_deps
         public_deps -= remove_public_deps
       }
     }
@@ -165,9 +167,10 @@ template("pw_shared_library") {
       public_deps = []
     }
     if (defined(remove_public_deps)) {
-      if (remove_public_deps[0] == "*") {
+      if (remove_public_deps != [] && remove_public_deps[0] == "*") {
         public_deps = []
       } else {
+        public_deps += remove_public_deps
         public_deps -= remove_public_deps
       }
     }
@@ -216,9 +219,10 @@ template("pw_executable") {
       public_deps = []
     }
     if (defined(remove_public_deps)) {
-      if (remove_public_deps[0] == "*") {
+      if (remove_public_deps != [] && remove_public_deps[0] == "*") {
         public_deps = []
       } else {
+        public_deps += remove_public_deps
         public_deps -= remove_public_deps
       }
     }
