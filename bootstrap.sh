@@ -74,6 +74,7 @@ export PW_ROOT
 pw_eval_sourced "$_pw_sourced"
 pw_check_root "$PW_ROOT"
 _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
+export _PW_ACTUAL_ENVIRONMENT_ROOT
 SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
 
 # Downstream projects may wish to set PW_BANNER_FUNC to a function that prints
