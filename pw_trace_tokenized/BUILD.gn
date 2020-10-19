@@ -14,10 +14,16 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_trace_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+
   # Tokenizer trace time, gets included if provided
   pw_trace_tokenizer_time = ""
 
@@ -25,12 +31,19 @@ declare_args() {
   pw_trace_tokenized_BUFFER_SIZE = 256
 }
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
+}
+
+pw_source_set("config") {
+  public_deps = [ pw_trace_CONFIG ]
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_trace_tokenized/config.h" ]
 }
 
 pw_test_group("tests") {
@@ -44,13 +57,13 @@ pw_test_group("tests") {
 pw_source_set("pw_trace_tokenized") {
   public_configs = [
     ":backend_config",
-    ":default_config",
+    ":public_include_path",
   ]
   public_deps = [
+    ":config",
     ":pw_trace_tokenized_core",
     "$dir_pw_tokenizer",
   ]
-
   if (pw_trace_tokenizer_time != "") {
     deps = [ "$pw_trace_tokenizer_time" ]
   }
@@ -75,13 +88,14 @@ config("trace_buffer_size") {
 pw_source_set("tokenized_trace_buffer") {
   deps = [ ":pw_trace_tokenized_core" ]
   public_deps = [
+    ":config",
     "$dir_pw_ring_buffer",
     "$dir_pw_tokenizer",
     "$dir_pw_varint",
   ]
   sources = [ "trace_buffer.cc" ]
   public_configs = [
-    ":default_config",
+    ":public_include_path",
     ":trace_buffer_size",
   ]
   public = [ "public/pw_trace_tokenized/trace_buffer.h" ]
@@ -130,10 +144,11 @@ pw_source_set("host_trace_time") {
 pw_source_set("pw_trace_tokenized_core") {
   public_configs = [
     ":backend_config",
-    ":default_config",
+    ":public_include_path",
   ]
   public_deps = [ "$dir_pw_tokenizer" ]
   deps = [
+    ":config",
     "$dir_pw_assert",
     "$dir_pw_ring_buffer",
     "$dir_pw_status",

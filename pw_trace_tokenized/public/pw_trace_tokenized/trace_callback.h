@@ -25,20 +25,8 @@
 #include <span>
 
 #include "pw_status/status.h"
+#include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
-
-// Config options
-// PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS is the maximum number of event callbacks
-// which can be registered at a time.
-#ifndef PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS
-#define PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS 2
-#endif  // PW_TRACE_CONFIG_MAX_EVENT_CALLBACKS
-
-// PW_TRACE_CONFIG_MAX_SINKS is the maximum number of encoded event sinks which
-// can be registered at a time.
-#ifndef PW_TRACE_CONFIG_MAX_SINKS
-#define PW_TRACE_CONFIG_MAX_SINKS 2
-#endif  // PW_TRACE_CONFIG_MAX_SINKS
 
 PW_EXTERN_C_START
 // The pw_trace_EventCallback is called before the sample is encoded or sent

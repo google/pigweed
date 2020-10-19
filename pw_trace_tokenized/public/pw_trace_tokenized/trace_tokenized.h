@@ -29,68 +29,8 @@
 #endif  // PW_TRACE_GET_TIME_DELTA
 
 #include "pw_tokenizer/tokenize.h"
+#include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/internal/trace_tokenized_internal.h"
-
-// Configurable options
-
-// Since not all strings are tokenizeable, labels can be passed as arguments.
-// PW_TRACE_CONFIG_ARG_LABEL_SIZE_BYTES configures the maximum number of
-// characters to include, if more are provided the string will be clipped.
-#ifndef PW_TRACE_CONFIG_ARG_LABEL_SIZE_BYTES
-#define PW_TRACE_CONFIG_ARG_LABEL_SIZE_BYTES 20
-#endif  // PW_TRACE_CONFIG_ARG_LABEL_SIZE_BYTES
-
-// PW_TRACE_TIME_TYPE sets the type for trace time.
-#ifndef PW_TRACE_TIME_TYPE
-#define PW_TRACE_TIME_TYPE uint32_t
-#endif  // PW_TRACE_TIME_TYPE
-
-// PW_TRACE_GET_TIME is the macro which is called to get the current time for a
-// trace event. It's default is to use pw_trace_GetTraceTime() which needs to be
-// provided by the platform.
-#ifndef PW_TRACE_GET_TIME
-#define PW_TRACE_GET_TIME() pw_trace_GetTraceTime()
-extern PW_TRACE_TIME_TYPE pw_trace_GetTraceTime();
-#endif  // PW_TRACE_GET_TIME
-
-// PW_TRACE_GET_TIME_TICKS_PER_SECOND is the macro which is called to determine
-// the unit of the trace time. It's default is to use
-// pw_trace_GetTraceTimeTicksPerSecond() which needs to be provided by the
-// platform.
-#ifndef PW_TRACE_GET_TIME_TICKS_PER_SECOND
-#define PW_TRACE_GET_TIME_TICKS_PER_SECOND() \
-  pw_trace_GetTraceTimeTicksPerSecond()
-extern size_t pw_trace_GetTraceTimeTicksPerSecond();
-#endif  // PW_TRACE_GET_TIME_TICKS_PER_SECOND
-
-// PW_TRACE_GET_TIME_DELTA is te macro which is called to determine
-// the delta between two PW_TRACE_TIME_TYPE variables. It should return a
-// delta of the two times, in the same type.
-// The default implementation just subtracts the two, which is suitable if
-// values either never wrap, or are unsigned and do not wrap multiple times
-// between trace events. If either of these are not the case a different
-// implemention should be used.
-#ifndef PW_TRACE_GET_TIME_DELTA
-#define PW_TRACE_GET_TIME_DELTA(last_time, current_time) \
-  ((current_time) - (last_time))
-#ifdef __cplusplus
-static_assert(
-    std::is_unsigned<PW_TRACE_TIME_TYPE>::value,
-    "Default time delta implementation only works for unsigned time types.");
-#endif  // __cplusplus
-#endif  // PW_TRACE_GET_TIME_DELTA
-
-// PW_TRACE_LOCK is called when a new event is being processed to ensure only
-// one event is sent to the sinks at a time. Is is also called when registering
-// and unregistering callbacks and sinks.
-#ifndef PW_TRACE_LOCK
-#define PW_TRACE_LOCK()
-#endif  // PW_TRACE_LOCK
-
-// PW_TRACE_UNLOCK is called after sending the data to all the sinks.
-#ifndef PW_TRACE_UNLOCK
-#define PW_TRACE_UNLOCK()
-#endif  // PW_TRACE_UNLOCK
 
 #ifdef __cplusplus
 namespace pw {

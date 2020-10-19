@@ -17,31 +17,9 @@
 #pragma once
 
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
+#include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
 #include "pw_varint/varint.h"
-
-// Configurable options
-// The buffer is automatically registered at boot if the buffer size is not 0.
-#ifndef PW_TRACE_BUFFER_SIZE_BYTES
-#define PW_TRACE_BUFFER_SIZE_BYTES 256
-#endif  // PW_TRACE_BUFFER_SIZE_BYTES
-
-// PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES indicates the maximum size any
-// individual encoded trace event could be. This is used internally to buffer up
-// a sample before saving into the buffer.
-#ifndef PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES
-// The below calaculation is provided to help determine a suitable value, using
-// the max data size bytes.
-#ifndef PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES
-#define PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES (32)
-#endif  // PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES
-
-#define PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES                                   \
-  (pw::varint::kMaxVarint64SizeBytes) +     /* worst case delta time varint */ \
-      (sizeof(uint32_t)) +                  /* trace token size */             \
-      (pw::varint::kMaxVarint64SizeBytes) + /* worst case trace id varint */   \
-      PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES
-#endif  // PW_TRACE_BUFFER_MAX_BLOCK_SIZE_BYTES
 
 namespace pw {
 namespace trace {
