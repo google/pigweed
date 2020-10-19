@@ -537,3 +537,73 @@ TEST(TokenizedTrace, Data) {
                     "i");  // TODO(rgoliver): check data
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
+
+// Create some helper macros that generated some test trace data based from a
+// number, and can check that it is correct.
+constexpr std::byte kTestData[] = {
+    std::byte{0}, std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}};
+#define QUEUE_TESTS_ARGS(num)                               \
+  (num), static_cast<pw_trace_EventType>((num) % 10),       \
+      "module_" PW_STRINGIFY(num), (num), (num), kTestData, \
+      (num) % PW_ARRAY_SIZE(kTestData)
+#define QUEUE_CHECK_RESULT(queue_size, result, num)                            \
+  result && ((result->trace_token) == (num)) &&                                \
+      ((result->event_type) == static_cast<pw_trace_EventType>((num) % 10)) && \
+      (strncmp(result->module,                                                 \
+               "module_" PW_STRINGIFY(num),                                    \
+               strlen("module_" PW_STRINGIFY(num))) == 0) &&                   \
+      ((result->trace_id) == (num)) && ((result->flags) == (num)) &&           \
+      (memcmp(const_cast<const pw::trace::internal::TraceQueue<                \
+                  queue_size>::QueueEventBlock*>(result)                       \
+                  ->data_buffer,                                               \
+              kTestData,                                                       \
+              result->data_size) == 0) &&                                      \
+      (result->data_size == (num) % PW_ARRAY_SIZE(kTestData))
+
+TEST(TokenizedTrace, QueueSimple) {
+  constexpr size_t kQueueSize = 5;
+  pw::trace::internal::TraceQueue<kQueueSize> queue;
+  constexpr size_t kTestNum = 1;
+  queue.TryPushBack(QUEUE_TESTS_ARGS(kTestNum));
+  EXPECT_FALSE(queue.IsEmpty());
+  EXPECT_FALSE(queue.IsFull());
+  EXPECT_TRUE(QUEUE_CHECK_RESULT(kQueueSize, queue.PeekFront(), kTestNum));
+  queue.PopFront();
+  EXPECT_TRUE(queue.IsEmpty());
+  EXPECT_TRUE(queue.PeekFront() == nullptr);
+  EXPECT_FALSE(queue.IsFull());
+}
+
+TEST(TokenizedTrace, QueueFull) {
+  constexpr size_t kQueueSize = 5;
+  pw::trace::internal::TraceQueue<kQueueSize> queue;
+  for (size_t i = 0; i < kQueueSize; i++) {
+    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::Status::OK);
+  }
+  EXPECT_FALSE(queue.IsEmpty());
+  EXPECT_TRUE(queue.IsFull());
+  EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(1)),
+            pw::Status::RESOURCE_EXHAUSTED);
+
+  for (size_t i = 0; i < kQueueSize; i++) {
+    EXPECT_TRUE(QUEUE_CHECK_RESULT(kQueueSize, queue.PeekFront(), i));
+    queue.PopFront();
+  }
+  EXPECT_TRUE(queue.IsEmpty());
+  EXPECT_TRUE(queue.PeekFront() == nullptr);
+  EXPECT_FALSE(queue.IsFull());
+}
+
+TEST(TokenizedTrace, Clear) {
+  constexpr size_t kQueueSize = 5;
+  pw::trace::internal::TraceQueue<kQueueSize> queue;
+  for (size_t i = 0; i < kQueueSize; i++) {
+    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::Status::OK);
+  }
+  EXPECT_FALSE(queue.IsEmpty());
+  EXPECT_TRUE(queue.IsFull());
+  queue.Clear();
+  EXPECT_TRUE(queue.IsEmpty());
+  EXPECT_TRUE(queue.PeekFront() == nullptr);
+  EXPECT_FALSE(queue.IsFull());
+}

@@ -146,12 +146,14 @@ pw_source_set("pw_trace_tokenized_core") {
     ":backend_config",
     ":public_include_path",
   ]
-  public_deps = [ "$dir_pw_tokenizer" ]
+  public_deps = [
+    "$dir_pw_status",
+    "$dir_pw_tokenizer",
+  ]
   deps = [
     ":config",
     "$dir_pw_assert",
     "$dir_pw_ring_buffer",
-    "$dir_pw_status",
     "$dir_pw_trace:facade",
     "$dir_pw_varint",
   ]

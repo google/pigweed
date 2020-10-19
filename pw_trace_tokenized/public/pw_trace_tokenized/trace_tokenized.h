@@ -28,6 +28,7 @@
 #endif  // __cplusplus
 #endif  // PW_TRACE_GET_TIME_DELTA
 
+#include "pw_status/status.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_trace_tokenized/config.h"
 #include "pw_trace_tokenized/internal/trace_tokenized_internal.h"
@@ -38,9 +39,88 @@ namespace trace {
 
 using EventType = pw_trace_EventType;
 
+namespace internal {
+
+// Simple ring buffer which is suitable for use in a critical section.
+template <size_t kSize>
+class TraceQueue {
+ public:
+  struct QueueEventBlock {
+    uint32_t trace_token;
+    EventType event_type;
+    const char* module;
+    uint32_t trace_id;
+    uint8_t flags;
+    size_t data_size;
+    std::byte data_buffer[PW_TRACE_BUFFER_MAX_DATA_SIZE_BYTES];
+  };
+
+  pw::Status TryPushBack(uint32_t trace_token,
+                         EventType event_type,
+                         const char* module,
+                         uint32_t trace_id,
+                         uint8_t flags,
+                         const void* data_buffer,
+                         size_t data_size) {
+    if (IsFull()) {
+      return pw::Status::RESOURCE_EXHAUSTED;
+    }
+    event_queue_[head_].trace_token = trace_token;
+    event_queue_[head_].event_type = event_type;
+    event_queue_[head_].module = module;
+    event_queue_[head_].trace_id = trace_id;
+    event_queue_[head_].flags = flags;
+    event_queue_[head_].data_size = data_size;
+    for (size_t i = 0; i < data_size; i++) {
+      event_queue_[head_].data_buffer[i] =
+          reinterpret_cast<const std::byte*>(data_buffer)[i];
+    }
+    head_ = (head_ + 1) % kSize;
+    is_empty_ = false;
+    return pw::Status::OK;
+  }
+
+  const volatile QueueEventBlock* PeekFront() const {
+    if (IsEmpty()) {
+      return nullptr;
+    }
+    return &event_queue_[tail_];
+  }
+
+  void PopFront() {
+    if (!IsEmpty()) {
+      tail_ = (tail_ + 1) % kSize;
+      is_empty_ = (tail_ == head_);
+    }
+  }
+
+  void Clear() {
+    head_ = 0;
+    tail_ = 0;
+    is_empty_ = true;
+  }
+
+  bool IsEmpty() const { return is_empty_; }
+  bool IsFull() const { return !is_empty_ && (head_ == tail_); }
+
+ private:
+  std::array<volatile QueueEventBlock, kSize> event_queue_;
+  volatile size_t head_ = 0;  // Next write
+  volatile size_t tail_ = 0;  // Next read
+  volatile bool is_empty_ =
+      true;  // Used to distinquish if head==tail is empty or full
+};
+
+}  // namespace internal
+
 class TokenizedTraceImpl {
  public:
-  void Enable(bool enable) { enabled_ = enable; }
+  void Enable(bool enable) {
+    if (enable == enabled_ && enable) {
+      event_queue_.Clear();
+    }
+    enabled_ = enable;
+  }
   bool IsEnabled() const { return enabled_; }
 
   void HandleTraceEvent(uint32_t trace_token,
@@ -52,8 +132,13 @@ class TokenizedTraceImpl {
                         size_t data_size);
 
  private:
+  using TraceQueue = internal::TraceQueue<PW_TRACE_QUEUE_SIZE_EVENTS>;
   PW_TRACE_TIME_TYPE last_trace_time_ = 0;
   bool enabled_ = false;
+  TraceQueue event_queue_;
+
+  void HandleNextItemInQueue(
+      const volatile TraceQueue::QueueEventBlock* event_block);
 };
 
 // A singleton object of the TokenizedTraceImpl class which can be used to

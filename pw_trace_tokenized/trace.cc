@@ -40,10 +40,48 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
     return;
   }
 
-  pw_trace_TraceEventReturnFlags ret_flags = 0;
+  // Create trace event
+  PW_TRACE_QUEUE_LOCK();
+  if (!event_queue_
+           .TryPushBack(trace_token,
+                        event_type,
+                        module,
+                        trace_id,
+                        flags,
+                        data_buffer,
+                        data_size)
+           .Ok()) {
+    // Queue full dropping sample
+    // TODO(rgoliver): Allow other strategies, for example: drop oldest, try
+    // empty queue, or block.
+  }
+  PW_TRACE_QUEUE_UNLOCK();
 
-  PW_TRACE_LOCK();
+  // Sample is now in queue (if not dropped), try to empty the queue if not
+  // already being emptied.
+  if (PW_TRACE_TRY_LOCK()) {
+    while (!event_queue_.IsEmpty()) {
+      HandleNextItemInQueue(event_queue_.PeekFront());
+      event_queue_.PopFront();
+    }
+    PW_TRACE_UNLOCK();
+  }
+}
+
+void TokenizedTraceImpl::HandleNextItemInQueue(
+    const volatile TraceQueue::QueueEventBlock* event_block) {
+  // Get next item in queue
+  uint32_t trace_token = event_block->trace_token;
+  EventType event_type = event_block->event_type;
+  const char* module = event_block->module;
+  uint32_t trace_id = event_block->trace_id;
+  uint8_t flags = event_block->flags;
+  const std::byte* data_buffer =
+      const_cast<const std::byte*>(event_block->data_buffer);
+  size_t data_size = event_block->data_size;
+
   // Call any event callback which is registered to receive every event.
+  pw_trace_TraceEventReturnFlags ret_flags = 0;
   ret_flags |=
       Callbacks::Instance().CallEventCallbacks(CallbacksImpl::kCallOnEveryEvent,
                                                trace_token,
@@ -53,11 +91,10 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
                                                flags);
   // Return if disabled.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
-    PW_TRACE_UNLOCK();
     return;
   }
 
-  // Call any event callback which is registered to receive every event.
+  // Call any event callback not already called.
   ret_flags |= Callbacks::Instance().CallEventCallbacks(
       CallbacksImpl::kCallOnlyWhenEnabled,
       trace_token,
@@ -68,7 +105,6 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
   // Return if disabled (from a callback) or if a callback has indicated the
   // sample should be skipped.
   if ((PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT & ret_flags) || !enabled_) {
-    PW_TRACE_UNLOCK();
     return;
   }
 
@@ -108,8 +144,6 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
   if (PW_TRACE_EVENT_RETURN_FLAGS_DISABLE_AFTER_PROCESSING & ret_flags) {
     enabled_ = false;
   }
-
-  PW_TRACE_UNLOCK();
 }
 
 pw_trace_TraceEventReturnFlags CallbacksImpl::CallEventCallbacks(
