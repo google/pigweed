@@ -156,7 +156,7 @@ template("pw_size_report") {
       not_needed("*")
       not_needed(invoker, "*")
 
-      pw_python_script(target_name) {
+      pw_python_action(target_name) {
         metadata = {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
@@ -171,7 +171,7 @@ template("pw_size_report") {
     } else {
       # Create an action which runs the size report script on the provided
       # targets.
-      pw_python_script(target_name) {
+      pw_python_action(target_name) {
         metadata = {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
@@ -319,7 +319,7 @@ template("pw_toolchain_size_report") {
     not_needed(invoker, "*")
 
     _doc_rst_output = "$target_gen_dir/$target_name"
-    pw_python_script(target_name) {
+    pw_python_action(target_name) {
       metadata = {
         pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
       }

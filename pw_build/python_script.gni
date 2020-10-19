@@ -12,23 +12,4 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("//build_overrides/pigweed.gni")
-
-import("$dir_pw_build/python_action.gni")
-
-# Builds a .whl from a Python package.
-template("pw_python_wheels") {
-  pw_python_action(target_name) {
-    forward_variables_from(invoker, [ "deps" ])
-
-    script = "$dir_pw_build/py/pw_build/python_wheels.py"
-
-    args = [
-      "--out_dir",
-      rebase_path("$target_out_dir/python_wheels"),
-    ]
-    args += rebase_path(invoker.inputs)
-
-    stamp = true
-  }
-}
+import("python_action.gni")

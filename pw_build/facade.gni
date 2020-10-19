@@ -90,7 +90,7 @@ template("pw_facade") {
     # error message.
     _main_target_name = target_name
 
-    pw_python_script(_main_target_name + "_NO_BACKEND_SET") {
+    pw_python_action(_main_target_name + "_NO_BACKEND_SET") {
       stamp = true
       script = "$dir_pw_build/py/pw_build/null_backend.py"
       args = [ _main_target_name ]

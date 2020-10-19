@@ -95,7 +95,7 @@ template("pw_python_package") {
   # TODO(pwbug/239): Add support for installing this package and dependencies
   #     with correct dependency ordering in a virtual environment. The code
   #     below is incomplete and untested.
-  pw_python_script("$target_name.install") {
+  pw_python_action("$target_name.install") {
     module = "pip"
     args = [
       "install",
@@ -113,7 +113,7 @@ template("pw_python_package") {
 
   # TODO(pwbug/239): Add support for building groups of wheels. The code below
   #     is incomplete and untested.
-  pw_python_script("$target_name.wheel") {
+  pw_python_action("$target_name.wheel") {
     script = "$dir_pw_build/py/pw_build/python_wheels.py"
 
     args = [
@@ -134,7 +134,7 @@ template("pw_python_package") {
     ]
   }
 
-  pw_python_script_foreach("$target_name.lint.mypy") {
+  pw_python_action_foreach("$target_name.lint.mypy") {
     module = "mypy"
     args = [
       "{{source}}",
@@ -156,7 +156,7 @@ template("pw_python_package") {
     }
   }
 
-  pw_python_script_foreach("$target_name.lint.pylint") {
+  pw_python_action_foreach("$target_name.lint.pylint") {
     module = "pylint"
     args = [
       "{{source_root_relative_dir}}/{{source_file_part}}",
@@ -183,7 +183,7 @@ template("pw_python_package") {
     _test_name = string_replace(test, "/", "_")
     _test_target = "$target_name.tests.$_test_name"
 
-    pw_python_script(_test_target) {
+    pw_python_action(_test_target) {
       script = test
       stamp = true
 

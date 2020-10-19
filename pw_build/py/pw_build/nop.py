@@ -16,7 +16,7 @@
 The purpose of this script is to allow for source file dependencies within GN
 to be attached to targets that do not typically support them, such as groups.
 
-For example, instead of creating a group target, a pw_python_script target to
+For example, instead of creating a group target, a pw_python_action target to
 run this script can be created. The script can be given a list of input files,
 causing GN to rebuild the target and everything that depends on it whenever any
 input file is modified.

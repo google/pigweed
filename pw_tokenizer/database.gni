@@ -88,7 +88,7 @@ template("pw_tokenizer_database") {
     _domain = ""
   }
 
-  pw_python_script(target_name) {
+  pw_python_action(target_name) {
     script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
 
     inputs = _input_databases

@@ -108,7 +108,7 @@ template("pw_exec") {
     _script_args += invoker.args
   }
 
-  pw_python_script(target_name) {
+  pw_python_action(target_name) {
     script = "$dir_pw_build/py/pw_build/exec.py"
     args = _script_args
 

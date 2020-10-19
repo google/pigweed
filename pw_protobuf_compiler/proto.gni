@@ -58,7 +58,7 @@ template("_pw_pwpb_proto_library") {
   }
 
   _gen_target = "${target_name}_gen"
-  pw_python_script(_gen_target) {
+  pw_python_action(_gen_target) {
     forward_variables_from(invoker, _forwarded_vars)
     script = _gen_script_path
     args = [
@@ -121,7 +121,7 @@ template("_pw_nanopb_rpc_proto_library") {
   # Create a target which runs protoc configured with the nanopb_rpc plugin to
   # generate the C++ proto RPC headers.
   _gen_target = "${target_name}_gen"
-  pw_python_script(_gen_target) {
+  pw_python_action(_gen_target) {
     forward_variables_from(invoker, _forwarded_vars)
     script = _gen_script_path
     args = [
@@ -202,7 +202,7 @@ template("_pw_nanopb_proto_library") {
   # Create a target which runs protoc configured with the nanopb plugin to
   # generate the C proto sources.
   _gen_target = "${target_name}_gen"
-  pw_python_script(_gen_target) {
+  pw_python_action(_gen_target) {
     forward_variables_from(invoker, _forwarded_vars)
     script = _gen_script_path
     args = [
@@ -264,7 +264,7 @@ template("_pw_go_proto_library") {
   _proto_gen_dir = "$_proto_gopath/src"
   _rebased_gopath = rebase_path(_proto_gopath)
 
-  pw_python_script(target_name) {
+  pw_python_action(target_name) {
     forward_variables_from(invoker, _forwarded_vars)
     metadata = {
       gopath = [ "GOPATH+=$_rebased_gopath" ]
@@ -439,7 +439,7 @@ template("pw_proto_library") {
 
   # Create stub versions of the proto library for other protobuf generators.
   foreach(_gen, _protobuf_generators - _generators) {
-    pw_python_script("${target_name}_${_gen}") {
+    pw_python_action("${target_name}_${_gen}") {
       forward_variables_from(invoker, _forwarded_vars)
       script = string_join("/",
                            [
@@ -461,7 +461,7 @@ template("pw_proto_library") {
 
   # If the user attempts to use the target directly instead of one of the
   # generator targets, run a script which prints a nice error message.
-  pw_python_script(target_name) {
+  pw_python_action(target_name) {
     script = string_join("/",
                          [
                            dir_pw_protobuf_compiler,

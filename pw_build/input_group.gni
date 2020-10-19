@@ -23,7 +23,7 @@ import("python_action.gni")
 template("pw_input_group") {
   assert(defined(invoker.inputs), "pw_input_group requires some inputs")
 
-  pw_python_script(target_name) {
+  pw_python_action(target_name) {
     ignore_vars = [
       "args",
       "script",

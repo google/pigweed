@@ -50,7 +50,7 @@ template("_pw_disableable_target") {
     # If the target is disabled, create an empty target in its place. Use an
     # action with the original target's sources as inputs to ensure that
     # the source files exist (even if they don't compile).
-    pw_python_script(target_name) {
+    pw_python_action(target_name) {
       script = "$dir_pw_build/py/pw_build/nop.py"
       stamp = true
 
@@ -161,7 +161,7 @@ template("pw_test") {
       }
     }
 
-    pw_python_script(_test_to_run + "_run") {
+    pw_python_action(_test_to_run + "_run") {
       deps = [ ":$_test_target_name" ]
       inputs = [ pw_unit_test_AUTOMATIC_RUNNER ]
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"

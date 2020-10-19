@@ -77,22 +77,22 @@ forward them through to the underlying target.
 
 .. _module-pw_build-python-script:
 
-pw_python_script
+pw_python_action
 ^^^^^^^^^^^^^^^^
-The ``pw_python_script`` template is a convenience wrapper around ``action`` for
+The ``pw_python_action`` template is a convenience wrapper around ``action`` for
 running Python scripts. The main benefit it provides is resolution of GN target
 labels to compiled binary files. This allows Python scripts to be written
 independently of GN, taking only filesystem paths as arguments.
 
 Another convenience provided by the template is to allow running scripts without
 any outputs. Sometimes scripts run in a build do not directly produce output
-files, but GN requires that all actions have an output. ``pw_python_script``
+files, but GN requires that all actions have an output. ``pw_python_action``
 solves this by accepting a boolean ``stamp`` argument which tells it to create a
 dummy output file for the action.
 
 **Arguments**
 
-``pw_python_script`` accepts all of the arguments of a regular ``action``
+``pw_python_action`` accepts all of the arguments of a regular ``action``
 target. Additionally, it has some of its own arguments:
 
 * ``module``: Run the specified Python module instead of a script. Either
@@ -111,7 +111,7 @@ target. Additionally, it has some of its own arguments:
 
 **Expressions**
 
-``pw_python_script`` evaluates expressions in ``args``, the arguments passed to
+``pw_python_action`` evaluates expressions in ``args``, the arguments passed to
 the script. These expressions function similarly to generator expressions in
 CMake. Expressions may be passed as a standalone argument or as part of another
 argument. A single argument may contain multiple expressions.
@@ -199,7 +199,7 @@ The following expressions are supported:
 
   import("$dir_pw_build/python_action.gni")
 
-  pw_python_script("postprocess_main_image") {
+  pw_python_action("postprocess_main_image") {
     script = "py/postprocess_binary.py"
     args = [
       "--database",
