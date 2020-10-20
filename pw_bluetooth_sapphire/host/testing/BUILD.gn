@@ -53,8 +53,8 @@ source_set("fake_controller") {
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/data:testing",
     "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
 
     # TODO(armansito): Pull in just the hci:definitions target.
     "//src/connectivity/bluetooth/core/bt-host/hci",

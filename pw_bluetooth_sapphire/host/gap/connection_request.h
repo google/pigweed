@@ -5,7 +5,12 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_
 
+#include <lib/fit/function.h>
+
+#include <list>
+
 #include "fbl/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
 namespace bt {
 namespace gap {

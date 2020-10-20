@@ -10,7 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt::l2cap::internal {

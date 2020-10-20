@@ -11,7 +11,7 @@
 #include "enhanced_retransmission_mode_engines.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 BT_DECLARE_FAKE_DRIVER();
 

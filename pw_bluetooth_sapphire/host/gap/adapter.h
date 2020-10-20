@@ -17,12 +17,12 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -68,10 +68,10 @@ class Adapter final {
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
   //
-  // Optionally, a data domain may be passed for testing purposes as |data_domain|. If nullopt is
+  // Optionally, a data domain may be passed for testing purposes as |l2cap|. If nullopt is
   // passed, then the Adapter will create and initialize its own data domain.
   explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                   std::optional<fbl::RefPtr<data::Domain>> data_domain);
+                   std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
   ~Adapter();
 
   // Returns a uniquely identifier for this adapter on the current system.
@@ -279,7 +279,7 @@ class Adapter final {
   PeerCache peer_cache_;
 
   // The data domain used by GAP to interact with L2CAP and RFCOMM layers.
-  fbl::RefPtr<data::Domain> data_domain_;
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
 
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.

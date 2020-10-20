@@ -111,7 +111,6 @@ group("stack") {
     "cobalt:base",
     "cobalt:real",
     "common",
-    "data",
     "gap",
     "gatt",
     "hci",
@@ -154,7 +153,6 @@ source_set("driver_tests") {
 
   deps = [
     ":sources",
-    "data:testing",
     "gap:testing",
     "gatt:testing",
     "testing:fake_controller",
@@ -175,7 +173,6 @@ executable("tests") {
     "att:tests",
     "cobalt:tests",
     "common:tests",
-    "data:tests",
     "gap:tests",
     "gatt:tests",
     "hci:tests",
@@ -195,7 +192,7 @@ executable("tests") {
 fuzzers_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
-    "data:data_fuzzer",
+    "l2cap:l2cap_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
     "l2cap:bredr_dynamic_channel_registry_fuzzer",

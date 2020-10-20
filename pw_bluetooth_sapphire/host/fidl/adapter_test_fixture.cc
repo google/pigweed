@@ -13,7 +13,7 @@ using TestingBase = bt::testing::ControllerTest<FakeController>;
 void AdapterTestFixture::SetUp() {
   TestingBase::SetUp();
 
-  data_plane_ = bt::data::testing::FakeDomain::Create();
+  data_plane_ = bt::l2cap::testing::FakeL2cap::Create();
   gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
   adapter_ =
       std::make_unique<bt::gap::Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(), data_plane_);

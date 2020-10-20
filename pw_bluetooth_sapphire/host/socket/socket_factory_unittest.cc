@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt {
 namespace socket {

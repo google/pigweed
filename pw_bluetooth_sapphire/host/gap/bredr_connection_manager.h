@@ -8,7 +8,6 @@
 #include <functional>
 #include <optional>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
@@ -21,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -50,7 +50,7 @@ class PeerCache;
 class BrEdrConnectionManager final {
  public:
   BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
-                         DeviceAddress local_address, fbl::RefPtr<data::Domain> data_domain,
+                         DeviceAddress local_address, fbl::RefPtr<l2cap::L2cap> l2cap,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
 
@@ -232,7 +232,7 @@ class BrEdrConnectionManager final {
 
   const DeviceAddress local_address_;
 
-  fbl::RefPtr<data::Domain> data_domain_;
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
 
   // Interregator for new connections to pass.
   BrEdrInterrogator interrogator_;

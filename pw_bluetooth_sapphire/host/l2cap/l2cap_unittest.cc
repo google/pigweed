@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 #include <lib/async/cpp/task.h>
 #include <lib/inspect/testing/cpp/inspect.h>
@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
@@ -28,10 +28,11 @@
 // TODO(fxbug.dev/61914): Migrate these tests to an l2cap integration test suite.
 
 namespace bt {
-namespace data {
+namespace l2cap {
 namespace {
 
 using namespace inspect::testing;
+using namespace bt::testing;
 
 using bt::testing::MockController;
 using TestingBase = bt::testing::ControllerTest<MockController>;
@@ -49,10 +50,10 @@ constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
-class DATA_DomainTest : public TestingBase {
+class L2CAP_L2capTest : public TestingBase {
  public:
-  DATA_DomainTest() = default;
-  ~DATA_DomainTest() override = default;
+  L2CAP_L2capTest() = default;
+  ~L2CAP_L2capTest() override = default;
 
  protected:
   void SetUp() override {
@@ -60,7 +61,7 @@ class DATA_DomainTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = Domain::Create(transport()->WeakPtr());
+    l2cap_ = L2cap::Create(transport()->WeakPtr());
 
     StartTestDevice();
 
@@ -73,7 +74,7 @@ class DATA_DomainTest : public TestingBase {
 
   void TearDown() override {
     socket_factory_.reset();
-    domain_ = nullptr;
+    l2cap_ = nullptr;
     TestingBase::TearDown();
   }
 
@@ -132,7 +133,7 @@ class DATA_DomainTest : public TestingBase {
     QueueConfigNegotiation(handle, local_params, peer_params, local_cid, remote_cid, kConfigReqId,
                            kPeerConfigReqId);
 
-    domain()->OpenL2capChannel(handle, psm, local_params, std::move(open_cb));
+    l2cap()->OpenL2capChannel(handle, psm, local_params, std::move(open_cb));
   }
 
   struct QueueAclConnectionRetVal {
@@ -155,31 +156,31 @@ class DATA_DomainTest : public TestingBase {
                                              cmd_ids.fixed_channels_supported_id, handle));
 
     acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kACL);
-    domain()->AddACLConnection(
+    l2cap()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
         /*security_upgrade_callback=*/[](auto, auto, auto) {});
     return cmd_ids;
   }
 
-  Domain::LEFixedChannels QueueLEConnection(hci::ConnectionHandle handle,
-                                            hci::Connection::Role role) {
+  L2cap::LEFixedChannels QueueLEConnection(hci::ConnectionHandle handle,
+                                           hci::Connection::Role role) {
     acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kLE);
-    return domain()->AddLEConnection(
+    return l2cap()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
         /*security_callback=*/[](auto, auto, auto) {});
   }
 
-  Domain* domain() const { return domain_.get(); }
+  L2cap* l2cap() const { return l2cap_.get(); }
 
  private:
-  fbl::RefPtr<Domain> domain_;
+  fbl::RefPtr<L2cap> l2cap_;
   l2cap::CommandId next_command_id_;
   std::unique_ptr<socket::SocketFactory<l2cap::Channel>> socket_factory_;
 
-  DISALLOW_COPY_ASSIGN_AND_MOVE(DATA_DomainTest);
+  DISALLOW_COPY_ASSIGN_AND_MOVE(L2CAP_L2capTest);
 };
 
-TEST_F(DATA_DomainTest, InboundL2capSocket) {
+TEST_F(L2CAP_L2capTest, InboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -193,7 +194,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
     chan = std::move(cb_chan);
   };
 
-  domain()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
+  l2cap()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
   RunLoopUntilIdle();
 
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
@@ -269,7 +270,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // Synchronously closes channels & sockets.
-  domain()->RemoveConnection(kLinkHandle);
+  l2cap()->RemoveConnection(kLinkHandle);
   acl_data_channel()->UnregisterLink(kLinkHandle);
   acl_data_channel()->ClearControllerPacketCount(kLinkHandle);
 
@@ -284,7 +285,7 @@ TEST_F(DATA_DomainTest, InboundL2capSocket) {
   RunLoopUntilIdle();
 }
 
-TEST_F(DATA_DomainTest, InboundRfcommSocketFails) {
+TEST_F(L2CAP_L2capTest, InboundRfcommSocketFails) {
   constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
@@ -307,7 +308,7 @@ TEST_F(DATA_DomainTest, InboundRfcommSocketFails) {
   RunLoopUntilIdle();
 }
 
-TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
+TEST_F(L2CAP_L2capTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
   constexpr l2cap::PSM kPSM = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -321,7 +322,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
     chan = std::move(cb_chan);
   };
 
-  domain()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
+  l2cap()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
   RunLoopUntilIdle();
 
   constexpr l2cap::CommandId kConnectionReqId = 1;
@@ -372,7 +373,7 @@ TEST_F(DATA_DomainTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(DATA_DomainTest, OutboundL2capSocket) {
+TEST_F(L2CAP_L2capTest, OutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -422,7 +423,7 @@ TEST_F(DATA_DomainTest, OutboundL2capSocket) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(DATA_DomainTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
+TEST_F(L2CAP_L2capTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
@@ -433,7 +434,7 @@ TEST_F(DATA_DomainTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
     EXPECT_FALSE(chan);
   };
 
-  domain()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(chan_cb));
+  l2cap()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(chan_cb));
 
   RunLoopUntilIdle();
 
@@ -442,7 +443,7 @@ TEST_F(DATA_DomainTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
 
 // Queue dynamic channel packets, then open a new dynamic channel.
 // The signaling channel packets should be sent before the queued dynamic channel packets.
-TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
+TEST_F(L2CAP_L2capTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
   constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
@@ -463,7 +464,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan0 = std::move(cb_chan);
   };
-  domain()->RegisterService(kPSM0, kChannelParameters, chan_cb0);
+  l2cap()->RegisterService(kPSM0, kChannelParameters, chan_cb0);
 
   QueueInboundL2capConnection(kLinkHandle, kPSM0, kLocalId0, kRemoteId0);
 
@@ -472,7 +473,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   ASSERT_TRUE(chan0);
   zx::socket sock0 = MakeSocketForChannel(chan0);
 
-  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
       kLinkHandle, kConnectionCreationPacketCount + kChannelCreationPacketCount));
 
   // Dummy dynamic channel packet
@@ -513,8 +514,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   QueueOutboundL2capConnection(kLinkHandle, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
 
   for (size_t i = 0; i < kChannelCreationPacketCount; i++) {
-    test_device()->SendCommandChannelPacket(
-        testing::NumberOfCompletedPacketsPacket(kLinkHandle, 1));
+    test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kLinkHandle, 1));
     // Wait for next connection creation packet to be queued (eg. configuration request/response).
     RunLoopUntilIdle();
   }
@@ -523,7 +523,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   EXPECT_TRUE(chan1);
 
   // Make room in buffer for queued dynamic channel packet.
-  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kLinkHandle, 1));
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kLinkHandle, 1));
 
   EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
   RunLoopUntilIdle();
@@ -531,7 +531,7 @@ TEST_F(DATA_DomainTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
-TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
+TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -560,7 +560,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   EXPECT_EQ(*chan_params.mode, chan->mode());
 }
 
-TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
+TEST_F(L2CAP_L2capTest, NegotiateChannelParametersOnInboundL2capSocket) {
   constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
@@ -576,7 +576,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
 
   fbl::RefPtr<l2cap::Channel> chan;
   auto chan_cb = [&](auto cb_chan) { chan = std::move(cb_chan); };
-  domain()->RegisterService(kPSM, chan_params, chan_cb);
+  l2cap()->RegisterService(kPSM, chan_params, chan_cb);
 
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
 
@@ -591,7 +591,7 @@ TEST_F(DATA_DomainTest, NegotiateChannelParametersOnInboundL2capSocket) {
                                            NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
 }
 
-TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
+TEST_F(L2CAP_L2capTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
   constexpr uint16_t kIntervalMax = 7;
@@ -612,7 +612,7 @@ TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
                                            param_update_req_id, kLinkHandle, kIntervalMin,
                                            kIntervalMax, kSlaveLatency, kTimeoutMult));
-  domain()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb);
+  l2cap()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb);
   RunLoopUntilIdle();
   EXPECT_FALSE(accepted.has_value());
 
@@ -624,17 +624,17 @@ TEST_F(DATA_DomainTest, RequestConnectionParameterUpdateAndReceiveResponse) {
   accepted.reset();
 }
 
-TEST_F(DATA_DomainTest, InspectHierarchy) {
+TEST_F(L2CAP_L2capTest, InspectHierarchy) {
   inspect::Inspector inspector;
-  domain()->AttachInspect(inspector.GetRoot());
+  l2cap()->AttachInspect(inspector.GetRoot(), L2cap::kInspectNodeName);
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
-  auto domain_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
-                              ChildrenMatch(::testing::IsEmpty()));
-  EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(domain_matcher))));
+  auto l2cap_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
+                             ChildrenMatch(::testing::IsEmpty()));
+  EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
 
-TEST_F(DATA_DomainTest, AddLEConnectionReturnsFixedChannels) {
+TEST_F(L2CAP_L2capTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
   auto channels = QueueLEConnection(kLinkHandle, hci::Connection::Role::kSlave);
   ASSERT_TRUE(channels.att);
@@ -643,9 +643,9 @@ TEST_F(DATA_DomainTest, AddLEConnectionReturnsFixedChannels) {
   EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
-TEST_F(DATA_DomainTest, RequestAclPrioritySendsCommand) {}
+TEST_F(L2CAP_L2capTest, RequestAclPrioritySendsCommand) {}
 
-class AclPriorityTest : public DATA_DomainTest,
+class AclPriorityTest : public L2CAP_L2capTest,
                         public ::testing::WithParamInterface<std::pair<l2cap::AclPriority, bool>> {
 };
 
@@ -658,7 +658,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  const auto kSetAclPriorityCommand = testing::BcmAclPriorityPacket(kLinkHandle, kPriority);
+  const auto kSetAclPriorityCommand = BcmAclPriorityPacket(kLinkHandle, kPriority);
 
   QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
@@ -677,7 +677,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   channel->Activate([](auto) {}, []() {});
 
   if (kPriority != l2cap::AclPriority::kNormal) {
-    auto cmd_complete = testing::CommandCompletePacket(
+    auto cmd_complete = CommandCompletePacket(
         hci::kBcmSetAclPriority,
         kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
     EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityCommand, &cmd_complete);
@@ -694,9 +694,8 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   if (kPriority != l2cap::AclPriority::kNormal && kExpectSuccess) {
     const auto kSetAclPriorityNormalCommand =
-        testing::BcmAclPriorityPacket(kLinkHandle, l2cap::AclPriority::kNormal);
-    auto cmd_complete =
-        testing::CommandCompletePacket(hci::kBcmSetAclPriority, hci::StatusCode::kSuccess);
+        BcmAclPriorityPacket(kLinkHandle, l2cap::AclPriority::kNormal);
+    auto cmd_complete = CommandCompletePacket(hci::kBcmSetAclPriority, hci::StatusCode::kSuccess);
     EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityNormalCommand, &cmd_complete);
   }
 
@@ -714,8 +713,8 @@ const std::array<std::pair<l2cap::AclPriority, bool>, 4> kPriorityParams = {
      {l2cap::AclPriority::kSource, true},
      {l2cap::AclPriority::kSink, true},
      {l2cap::AclPriority::kNormal, true}}};
-INSTANTIATE_TEST_SUITE_P(DATA_DomainTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
+INSTANTIATE_TEST_SUITE_P(L2CAP_L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 }  // namespace
-}  // namespace data
+}  // namespace l2cap
 }  // namespace bt

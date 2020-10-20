@@ -128,23 +128,20 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   return sdp;
 }
 
-Server::Server(fbl::RefPtr<data::Domain> data_domain)
-    : data_domain_(data_domain),
-      next_handle_(kFirstUnreservedHandle),
-      db_state_(0),
-      weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(data_domain_);
+Server::Server(fbl::RefPtr<l2cap::L2cap> l2cap)
+    : l2cap_(l2cap), next_handle_(kFirstUnreservedHandle), db_state_(0), weak_ptr_factory_(this) {
+  ZX_DEBUG_ASSERT(l2cap_);
 
   records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
 
   // Register SDP
   l2cap::ChannelParameters sdp_chan_params;
   sdp_chan_params.mode = l2cap::ChannelMode::kBasic;
-  data_domain_->RegisterService(l2cap::kSDP, sdp_chan_params,
-                                [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
-                                  if (self)
-                                    self->AddConnection(channel);
-                                });
+  l2cap_->RegisterService(l2cap::kSDP, sdp_chan_params,
+                          [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
+                            if (self)
+                              self->AddConnection(channel);
+                          });
 
   // SDP is used by SDP server.
   psm_to_service_.emplace(l2cap::kSDP, std::unordered_set<ServiceHandle>({kSDPHandle}));
@@ -154,7 +151,7 @@ Server::Server(fbl::RefPtr<data::Domain> data_domain)
   UpdateInspectProperties();
 }
 
-Server::~Server() { data_domain_->UnregisterService(l2cap::kSDP); }
+Server::~Server() { l2cap_->UnregisterService(l2cap::kSDP); }
 
 void Server::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_properties_.sdp_server_node = parent.CreateChild(name);
@@ -300,8 +297,8 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
   RegistrationHandle reg_handle = *assigned_handles.begin();
 
   // Multiple ServiceRecords in |records| can request the same PSM. However,
-  // |data_domain_| expects a single target for each PSM to go to. Consequently,
-  // only the first occurrence of a PSM needs to be registered with the |data_domain_|.
+  // |l2cap_| expects a single target for each PSM to go to. Consequently,
+  // only the first occurrence of a PSM needs to be registered with the |l2cap_|.
   std::unordered_set<l2cap::PSM> psms_to_register;
 
   // All PSMs have assigned handles and will be registered.
@@ -315,7 +312,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
 
   for (const auto& psm : psms_to_register) {
     bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
-    data_domain_->RegisterService(
+    l2cap_->RegisterService(
         psm, chan_params,
         [psm = psm, conn_cb = conn_cb.share()](fbl::RefPtr<l2cap::Channel> channel) mutable {
           bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
@@ -366,7 +363,7 @@ bool Server::UnregisterService(RegistrationHandle handle) {
     if (psms_it) {
       for (const auto& psm : psms_it.mapped()) {
         bt_log(DEBUG, "sdp", "removing registration for psm %#.4x", psm);
-        data_domain_->UnregisterService(psm);
+        l2cap_->UnregisterService(psm);
         psm_to_service_.erase(psm);
       }
     }

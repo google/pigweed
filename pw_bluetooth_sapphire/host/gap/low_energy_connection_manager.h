@@ -16,13 +16,13 @@
 
 #include <fbl/macros.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
@@ -109,12 +109,12 @@ class LowEnergyConnectionManager final {
   //                 manager stores and retrieves pairing data and connection
   //                 parameters to/from the cache. It also updates the
   //                 connection and bonding state of a peer via the cache.
-  // |data_domain|: Used to interact with the L2CAP layer.
+  // |l2cap|: Used to interact with the L2CAP layer.
   // |gatt|: Used to interact with the GATT profile layer.
   LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
-                             fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt,
+                             fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
 
@@ -407,7 +407,7 @@ class LowEnergyConnectionManager final {
   // The reference to the data domain, used to interact with the L2CAP layer to
   // manage LE logical links, fixed channels, and LE-specific L2CAP signaling
   // events (e.g. connection parameter update).
-  fbl::RefPtr<data::Domain> data_domain_;
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
 
   // The GATT layer reference, used to add and remove ATT data bearers and
   // service discovery.

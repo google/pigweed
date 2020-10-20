@@ -9,11 +9,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
 namespace bthost {
@@ -330,8 +330,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   bt::l2cap::ChannelParameters expected_params;
   expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
   expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
-  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
-                                            expected_params);
+  l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                      expected_params);
 
   fidlbredr::ChannelParameters fidl_params;
   fidl_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
@@ -361,7 +361,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   EXPECT_TRUE(channel->has_socket());
   EXPECT_FALSE(channel->IsEmpty());
   EXPECT_EQ(channel->channel_mode(), fidl_params.channel_mode());
-  // FakeDomain returns channels with max tx sdu size of kDefaultMTU.
+  // FakeL2cap returns channels with max tx sdu size of kDefaultMTU.
   EXPECT_EQ(channel->max_tx_sdu_size(), bt::l2cap::kDefaultMTU);
   EXPECT_FALSE(channel->has_ext_direction());
 }
@@ -413,13 +413,13 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
       [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
   // Make the l2cap channel creation fail.
-  data_domain()->set_simulate_open_channel_failure(true);
+  l2cap()->set_simulate_open_channel_failure(true);
 
   bt::l2cap::ChannelParameters expected_params;
   expected_params.mode = bt::l2cap::ChannelMode::kEnhancedRetransmission;
   expected_params.max_rx_sdu_size = bt::l2cap::kMinACLMTU;
-  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
-                                            expected_params);
+  l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                      expected_params);
 
   fidlbredr::ChannelParameters fidl_params;
   fidl_params.set_channel_mode(fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
@@ -477,8 +477,8 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
         EXPECT_FALSE(channel.has_ext_direction());
       });
 
-  EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
-                                                        0x41, kTxMtu));
+  EXPECT_TRUE(
+      l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41, kTxMtu));
   RunLoopUntilIdle();
 }
 
@@ -507,11 +507,11 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   pairing_delegate->SetCompletePairingCallback(
       [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
-  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
-                                            bt::l2cap::ChannelParameters());
+  l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                      bt::l2cap::ChannelParameters());
 
   fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
-  data_domain()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
+  l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
   // Expect a non-empty channel result.
   std::optional<fidlbredr::Channel> channel;
@@ -580,7 +580,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
   conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
-  data_domain()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
+  l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
   using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
@@ -599,8 +599,8 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
       .WillOnce([&channel](fuchsia::bluetooth::PeerId peer_id, fidlbredr::Channel cb_channel,
                            ::testing::Unused) { channel = std::move(cb_channel); });
 
-  EXPECT_TRUE(data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40,
-                                                        0x41, kTxMtu));
+  EXPECT_TRUE(
+      l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41, kTxMtu));
   RunLoopUntilIdle();
   ASSERT_TRUE(channel.has_value());
   ASSERT_TRUE(channel->has_ext_direction());
@@ -631,13 +631,13 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectReturnsValidSocket) {
       [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
   bt::l2cap::ChannelParameters expected_params;
-  data_domain()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
-                                            expected_params);
+  l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
+                                      expected_params);
 
   fidlbredr::ChannelParameters fidl_params;
 
   std::optional<fbl::RefPtr<bt::l2cap::testing::FakeChannel>> fake_chan;
-  data_domain()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
+  l2cap()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
 
   // Expect a non-empty channel result.
   std::optional<fidlbredr::Channel> channel;
@@ -691,7 +691,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectionReceiverReturnsValidSocke
       connect_receiver_handle.NewRequest(), dispatcher());
 
   std::optional<fbl::RefPtr<bt::l2cap::testing::FakeChannel>> fake_chan;
-  data_domain()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
+  l2cap()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
 
   fidlbredr::ChannelParameters fidl_chan_params;
 
@@ -712,8 +712,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectionReceiverReturnsValidSocke
                       std::move(connect_receiver_handle), NopAdvertiseCallback);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(
-      data_domain()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41));
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41));
   RunLoopUntilIdle();
 
   ASSERT_TRUE(channel.has_value());

@@ -9,7 +9,7 @@ import("//build/fuzzing/fuzzer.gni")
 source_set("definitions") {
   sources = [
     "frame_headers.h",
-    "l2cap.h",
+    "l2cap_defs.h",
   ]
 
   public_deps = [
@@ -52,6 +52,8 @@ static_library("l2cap") {
     "fcs.h",
     "fragmenter.cc",
     "fragmenter.h",
+    "l2cap.cc",
+    "l2cap.h",
     "le_signaling_channel.cc",
     "le_signaling_channel.h",
     "logical_link.cc",
@@ -73,6 +75,7 @@ static_library("l2cap") {
 
   public_deps = [
     ":definitions",
+    "//sdk/lib/sys/inspect/cpp",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/lib/fxl",
     "//zircon/public/lib/fit",
@@ -90,6 +93,8 @@ source_set("testing") {
     "fake_channel.h",
     "fake_channel_test.cc",
     "fake_channel_test.h",
+    "fake_l2cap.cc",
+    "fake_l2cap.h",
     "fake_signaling_channel.cc",
     "fake_signaling_channel.h",
     "test_packets.cc",
@@ -129,6 +134,7 @@ source_set("tests") {
     "fcs_unittest.cc",
     "fragmenter_unittest.cc",
     "frame_headers_unittest.cc",
+    "l2cap_unittest.cc",
     "le_signaling_channel_unittest.cc",
     "logical_link_unittest.cc",
     "low_energy_command_handler_unittest.cc",
@@ -142,6 +148,7 @@ source_set("tests") {
     ":l2cap",
     ":testing",
     "//garnet/public/lib/gtest",
+    "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
@@ -191,4 +198,15 @@ fuzzer("common_handler_fuzzer") {
     ":l2cap",
     ":testing",
   ]
+}
+
+fuzzer("l2cap_fuzzer") {
+  sources = [ "l2cap_fuzztest.cc" ]
+  deps = [
+    ":l2cap",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+  ]
+
+  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
+  configs += [ "//build/config:Wno-conversion" ]
 }

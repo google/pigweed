@@ -5,8 +5,8 @@
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
@@ -49,7 +49,7 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = data::Domain::Create(transport()->WeakPtr());
+    domain_ = l2cap::L2cap::Create(transport()->WeakPtr());
 
     StartTestDevice();
   };
@@ -141,7 +141,7 @@ class DataFuzzTest : public TestingBase {
 
  private:
   FuzzedDataProvider data_;
-  fbl::RefPtr<data::Domain> domain_;
+  fbl::RefPtr<l2cap::L2cap> domain_;
   bool connection_;
   std::unordered_map<l2cap::ChannelId, fbl::RefPtr<l2cap::Channel>> channels_;
 };

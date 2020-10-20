@@ -7,9 +7,9 @@
 #include "fidl/host_server.h"
 #include "gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 
 using namespace bt;
 

@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"

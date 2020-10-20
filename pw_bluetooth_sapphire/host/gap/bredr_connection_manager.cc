@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt {
@@ -76,12 +76,12 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
 
 BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                                                PeerCache* peer_cache, DeviceAddress local_address,
-                                               fbl::RefPtr<data::Domain> data_domain,
+                                               fbl::RefPtr<l2cap::L2cap> l2cap,
                                                bool use_interlaced_scan)
     : hci_(std::move(hci)),
       cache_(peer_cache),
       local_address_(local_address),
-      data_domain_(data_domain),
+      l2cap_(l2cap),
       interrogator_(cache_, hci_, async_get_default_dispatcher()),
       page_scan_interval_(0),
       page_scan_window_(0),
@@ -91,7 +91,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(cache_);
-  ZX_DEBUG_ASSERT(data_domain_);
+  ZX_DEBUG_ASSERT(l2cap_);
   ZX_DEBUG_ASSERT(dispatcher_);
 
   hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
@@ -383,8 +383,8 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   BrEdrConnection& connection =
       connections_
           .try_emplace(handle, peer_id, std::move(link), std::move(send_auth_request_cb),
-                       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_,
-                       data_domain_, std::move(request))
+                       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_, l2cap_,
+                       std::move(request))
           .first->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
 
@@ -444,27 +444,26 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
   };
 
   // Register with L2CAP to handle services on the ACL signaling channel.
-  data_domain_->AddACLConnection(handle, connection->role(), error_handler,
-                                 std::move(security_callback));
+  l2cap_->AddACLConnection(handle, connection->role(), error_handler, std::move(security_callback));
 
   peer->MutBrEdr().SetConnectionState(ConnectionState::kConnected);
 
   if (discoverer_.search_count()) {
-    data_domain_->OpenL2capChannel(
-        handle, l2cap::kSDP, l2cap::ChannelParameters(),
-        [self, peer_id = peer->identifier()](auto channel) {
-          if (!self)
-            return;
+    l2cap_->OpenL2capChannel(handle, l2cap::kSDP, l2cap::ChannelParameters(),
+                             [self, peer_id = peer->identifier()](auto channel) {
+                               if (!self)
+                                 return;
 
-          if (!channel) {
-            bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer id: %s)",
-                   bt_str(peer_id));
-            return;
-          }
+                               if (!channel) {
+                                 bt_log(ERROR, "gap",
+                                        "failed to create l2cap channel for SDP (peer id: %s)",
+                                        bt_str(peer_id));
+                                 return;
+                               }
 
-          auto client = sdp::Client::Create(std::move(channel));
-          self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
-        });
+                               auto client = sdp::Client::Create(std::move(channel));
+                               self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
+                             });
   }
 
   conn_state.Start();
@@ -579,7 +578,7 @@ void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrE
   ZX_DEBUG_ASSERT_MSG(peer, "Couldn't find peer for handle: %#.4x", handle);
   peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
 
-  data_domain_->RemoveConnection(handle);
+  l2cap_->RemoveConnection(handle);
 
   // |conn| is destroyed when it goes out of scope.
 }

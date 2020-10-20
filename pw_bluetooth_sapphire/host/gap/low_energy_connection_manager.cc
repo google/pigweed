@@ -56,13 +56,13 @@ class LowEnergyConnection final : public sm::Delegate {
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                       async_dispatcher_t* dispatcher,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      fbl::RefPtr<data::Domain> data_domain, fxl::WeakPtr<gatt::GATT> gatt,
+                      fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                       PendingRequestData request)
       : peer_id_(peer_id),
         link_(std::move(link)),
         dispatcher_(dispatcher),
         conn_mgr_(conn_mgr),
-        data_domain_(data_domain),
+        l2cap_(l2cap),
         gatt_(gatt),
         conn_pause_central_expiry_(zx::time(async_now(dispatcher_)) + kLEConnectionPauseCentral),
         request_(std::move(request)),
@@ -71,7 +71,7 @@ class LowEnergyConnection final : public sm::Delegate {
     ZX_DEBUG_ASSERT(link_);
     ZX_DEBUG_ASSERT(dispatcher_);
     ZX_DEBUG_ASSERT(conn_mgr_);
-    ZX_DEBUG_ASSERT(data_domain_);
+    ZX_DEBUG_ASSERT(l2cap_);
     ZX_DEBUG_ASSERT(gatt_);
 
     link_->set_peer_disconnect_callback([conn_mgr](auto conn) {
@@ -93,7 +93,7 @@ class LowEnergyConnection final : public sm::Delegate {
     // Unregister this link from the GATT profile and the L2CAP plane. This
     // invalidates all L2CAP channels that are associated with this link.
     gatt_->RemoveConnection(peer_id());
-    data_domain_->RemoveConnection(link_->handle());
+    l2cap_->RemoveConnection(link_->handle());
 
     // Notify all active references that the link is gone. This will
     // synchronously notify all refs.
@@ -141,7 +141,7 @@ class LowEnergyConnection final : public sm::Delegate {
                                l2cap::LinkErrorCallback link_error_cb,
                                LowEnergyConnectionManager::ConnectionOptions connection_options) {
     auto self = weak_ptr_factory_.GetWeakPtr();
-    auto fixed_channels = data_domain_->AddLEConnection(
+    auto fixed_channels = l2cap_->AddLEConnection(
         link_->handle(), link_->role(), std::move(link_error_cb), std::move(cp_cb),
         [self](auto handle, auto level, auto cb) {
           if (self) {
@@ -335,7 +335,7 @@ class LowEnergyConnection final : public sm::Delegate {
   void OnNewSecurityProperties(const sm::SecurityProperties& sec) override {
     bt_log(DEBUG, "gap-le", "new link security properties: %s", sec.ToString().c_str());
     // Update the data plane with the correct link security level.
-    data_domain_->AssignLinkSecurityProperties(link_->handle(), sec);
+    l2cap_->AssignLinkSecurityProperties(link_->handle(), sec);
   }
 
   // sm::Delegate override:
@@ -409,7 +409,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Reference to the data plane is used to update the L2CAP layer to
   // reflect the correct link security level.
-  fbl::RefPtr<data::Domain> data_domain_;
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
 
   // Reference to the GATT profile layer is used to initiate service discovery
   // and register the link.
@@ -490,20 +490,17 @@ sm::SecurityProperties LowEnergyConnectionRef::security() const {
   return conn_iter->second->security();
 }
 
-LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
-                                                       hci::LocalAddressDelegate* addr_delegate,
-                                                       hci::LowEnergyConnector* connector,
-                                                       PeerCache* peer_cache,
-                                                       fbl::RefPtr<data::Domain> data_domain,
-                                                       fxl::WeakPtr<gatt::GATT> gatt,
-                                                       sm::SecurityManagerFactory sm_creator)
+LowEnergyConnectionManager::LowEnergyConnectionManager(
+    fxl::WeakPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
+    hci::LowEnergyConnector* connector, PeerCache* peer_cache, fbl::RefPtr<l2cap::L2cap> l2cap,
+    fxl::WeakPtr<gatt::GATT> gatt, sm::SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
       security_mode_(LeSecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
-      data_domain_(data_domain),
+      l2cap_(l2cap),
       gatt_(gatt),
       connector_(connector),
       local_address_delegate_(addr_delegate),
@@ -511,7 +508,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(fxl::WeakPtr<hci::Transpo
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(dispatcher_);
   ZX_DEBUG_ASSERT(peer_cache_);
-  ZX_DEBUG_ASSERT(data_domain_);
+  ZX_DEBUG_ASSERT(l2cap_);
   ZX_DEBUG_ASSERT(gatt_);
   ZX_DEBUG_ASSERT(hci_);
   ZX_DEBUG_ASSERT(connector_);
@@ -823,7 +820,7 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   // Initialize connection.
   auto conn_options = request.connection_options();
   auto conn = std::make_unique<internal::LowEnergyConnection>(
-      peer_id, std::move(link), dispatcher_, self, data_domain_, gatt_, std::move(request));
+      peer_id, std::move(link), dispatcher_, self, l2cap_, gatt_, std::move(request));
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
                                 conn_options);
   conn->StartConnectionPausePeripheralTimeout();
@@ -1205,7 +1202,7 @@ void LowEnergyConnectionManager::L2capRequestConnectionParameterUpdate(
   // TODO(fxbug.dev/49717): don't send request until after kLEConnectionParameterTimeout of an
   // l2cap conn parameter update response being received (Core Spec v5.2, Vol 3, Part C,
   // Sec 9.3.9).
-  data_domain_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb));
+  l2cap_->RequestConnectionParameterUpdate(handle, params, std::move(response_cb));
 }
 
 LowEnergyConnectionManager::ConnectionMap::iterator LowEnergyConnectionManager::FindConnection(

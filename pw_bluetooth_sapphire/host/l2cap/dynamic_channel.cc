@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt {
 namespace l2cap {

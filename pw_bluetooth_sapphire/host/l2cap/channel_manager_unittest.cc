@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 
 namespace bt {
@@ -931,7 +931,7 @@ TEST_F(L2CAP_ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
-TEST_F(L2CAP_ChannelManagerTest, ActivateChannelOnDataDomainProcessesCallbacksSynchronously) {
+TEST_F(L2CAP_ChannelManagerTest, ActivateChannelOnDataL2capProcessesCallbacksSynchronously) {
   // LE-U link
   RegisterLE(kTestHandle1, hci::Connection::Role::kMaster);
 

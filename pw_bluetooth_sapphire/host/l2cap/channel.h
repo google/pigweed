@@ -24,7 +24,7 @@
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/tx_engine.h"

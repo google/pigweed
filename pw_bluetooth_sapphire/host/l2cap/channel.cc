@@ -17,7 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {

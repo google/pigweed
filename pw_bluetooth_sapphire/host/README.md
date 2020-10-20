@@ -44,7 +44,7 @@ adapter:
                 connection_state
                 bonded
                 features
-    data_domain:
+    l2cap:
     sdp_server:
         record_0x2:
             record

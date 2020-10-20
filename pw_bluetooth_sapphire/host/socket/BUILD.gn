@@ -31,8 +31,8 @@ source_set("tests") {
   deps = [
     ":socket",
     "//garnet/public/lib/gtest",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/gap",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//third_party/googletest:gtest",
   ]
 }

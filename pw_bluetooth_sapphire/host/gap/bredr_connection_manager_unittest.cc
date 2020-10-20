@@ -6,14 +6,14 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -528,10 +528,10 @@ class BrEdrConnectionManagerTest : public TestingBase {
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
 
     peer_cache_ = std::make_unique<PeerCache>();
-    data_domain_ = data::testing::FakeDomain::Create();
+    l2cap_ = l2cap::testing::FakeL2cap::Create();
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, data_domain_, true);
+        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_, true);
 
     StartTestDevice();
 
@@ -550,7 +550,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     }
     RunLoopUntilIdle();
     test_device()->Stop();
-    data_domain_ = nullptr;
+    l2cap_ = nullptr;
     peer_cache_ = nullptr;
     TestingBase::TearDown();
   }
@@ -566,7 +566,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
   PeerCache* peer_cache() const { return peer_cache_.get(); }
 
-  data::testing::FakeDomain* data_domain() const { return data_domain_.get(); }
+  l2cap::testing::FakeL2cap* l2cap() const { return l2cap_.get(); }
 
   int transaction_count() const { return transaction_count_; }
 
@@ -672,7 +672,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
  private:
   std::unique_ptr<BrEdrConnectionManager> connection_manager_;
   std::unique_ptr<PeerCache> peer_cache_;
-  fbl::RefPtr<data::testing::FakeDomain> data_domain_;
+  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
   int transaction_count_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManagerTest);
@@ -1375,7 +1375,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectOnLinkError) {
   // When we deallocate the connection manager next, we should disconnect.
   QueueDisconnection(kConnectionHandle);
 
-  data_domain()->TriggerLinkError(kConnectionHandle);
+  l2cap()->TriggerLinkError(kConnectionHandle);
 
   RunLoopUntilIdle();
 
@@ -1433,7 +1433,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNot
   fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
         async_get_default_dispatcher());
@@ -1442,8 +1442,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNot
 
   // No searches in this connection.
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1484,7 +1483,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSear
   fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
         async_get_default_dispatcher());
@@ -1492,8 +1491,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSear
   });
 
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1535,7 +1533,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
           const auto kSearchExpectedParams = CreateStaticByteBuffer(
@@ -1559,8 +1557,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ServiceSearch) {
   });
 
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1625,7 +1622,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
   fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
           const auto kSearchExpectedParams = CreateStaticByteBuffer(
@@ -1667,8 +1664,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
                         testing::ReadRemoteSupportedFeaturesPacket(kConnectionHandle),
                         &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -1703,8 +1699,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SearchOnReconnect) {
                         &kConnectionComplete);
   // We don't send any interrogation packets, because there is none to be done.
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -1790,8 +1785,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41, kChannelParams);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -1800,8 +1794,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
 
   connected_chan.reset();
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41, kChannelParams);
 
   // A second connection request should not require another authentication.
   connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
@@ -1874,8 +1867,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capEncryptsForBondedPeerThenRetries
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41, kChannelParams);
 
   RunLoopUntilIdle();
 
@@ -2002,8 +1994,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToCo
 
   test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kAVDTP, 0x40, 0x41, kChannelParams);
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -2070,7 +2061,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
 
   // At this point the peer is bonded and the link is encrypted but interrogation has not completed
   // so host-side L2CAP should still be inactive on this link (though it may be buffering packets).
-  EXPECT_FALSE(data_domain()->IsLinkConnected(kConnectionHandle));
+  EXPECT_FALSE(l2cap()->IsLinkConnected(kConnectionHandle));
 
   bool socket_cb_called = false;
   auto socket_fails_cb = [&socket_cb_called](auto chan_sock) {
@@ -2092,7 +2083,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNo
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  EXPECT_TRUE(data_domain()->IsLinkConnected(kConnectionHandle));
+  EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -2208,7 +2199,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   fbl::RefPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  data_domain()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
+  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
     new_chan->SetSendCallback(
         [&sdp_request_tid](auto packet) {
           const auto kSearchExpectedParams = CreateStaticByteBuffer(
@@ -2232,8 +2223,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, AddServiceSearchAll) {
   });
 
   QueueSuccessfulIncomingConn();
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41,
-                                            kChannelParams);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
 
@@ -2633,16 +2623,16 @@ TEST_F(GAP_BrEdrConnectionManagerTest, SDPChannelCreationFailsGracefully) {
   constexpr l2cap::ChannelId kRemoteCId = 0x41;
 
   // Channel creation should fail.
-  data_domain()->set_channel_callback([](auto new_chan) { ASSERT_FALSE(new_chan); });
+  l2cap()->set_channel_callback([](auto new_chan) { ASSERT_FALSE(new_chan); });
 
   // Since SDP channel creation fails, search_cb should not be called by SDP.
   auto search_cb = [&](auto id, const auto& attributes) { FAIL(); };
   connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
 
   QueueSuccessfulIncomingConn();
-  data_domain()->set_simulate_open_channel_failure(true);
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, kLocalCId, kRemoteCId,
-                                            kChannelParams);
+  l2cap()->set_simulate_open_channel_failure(true);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, kLocalCId, kRemoteCId,
+                                      kChannelParams);
 
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
@@ -2872,7 +2862,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelCreatesChannelWithChannel
   QueueSuccessfulPairing();
   RunLoopUntilIdle();
 
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM, kLocalId, 0x41, params);
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM, kLocalId, 0x41, params);
 
   std::optional<l2cap::ChannelInfo> chan_info;
   size_t sock_cb_count = 0;
@@ -2956,8 +2946,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   constexpr l2cap::ChannelId kLocalId0 = l2cap::kFirstDynamicChannelId;
   constexpr l2cap::ChannelId kRemoteId0 = 0x41;
   const BrEdrSecurityRequirements sec_reqs{.authentication = false, .secure_connections = false};
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId0, kRemoteId0,
-                                            l2cap::ChannelParameters());
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId0, kRemoteId0,
+                                      l2cap::ChannelParameters());
   connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, sec_reqs, l2cap::ChannelParameters(),
                               sock_cb);
 
@@ -2979,8 +2969,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradesLinkKey) {
   constexpr l2cap::ChannelId kLocalId1 = kLocalId0 + 1;
   constexpr l2cap::ChannelId kRemoteId1 = kRemoteId0 + 1;
   const BrEdrSecurityRequirements sec_reqs1{.authentication = true, .secure_connections = false};
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM1, kLocalId1, kRemoteId1,
-                                            l2cap::ChannelParameters());
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM1, kLocalId1, kRemoteId1,
+                                      l2cap::ChannelParameters());
   connmgr()->OpenL2capChannel(peer->identifier(), kPSM1, sec_reqs1, l2cap::ChannelParameters(),
                               sock_cb);
 
@@ -3024,8 +3014,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
   constexpr l2cap::ChannelId kRemoteId = 0x41;
   const BrEdrSecurityRequirements sec_reqs_none{.authentication = false,
                                                 .secure_connections = false};
-  data_domain()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId, kRemoteId,
-                                            l2cap::ChannelParameters());
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, kPSM0, kLocalId, kRemoteId,
+                                      l2cap::ChannelParameters());
   connmgr()->OpenL2capChannel(peer->identifier(), kPSM0, sec_reqs_none, l2cap::ChannelParameters(),
                               sock_cb);
 

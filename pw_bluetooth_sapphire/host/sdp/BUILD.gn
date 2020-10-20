@@ -41,7 +41,6 @@ static_library("sdp") {
 
   public_deps = [
     ":definitions",
-    "//src/connectivity/bluetooth/core/bt-host/data",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/lib/fxl",
   ]
@@ -66,7 +65,6 @@ source_set("tests") {
     ":sdp",
     "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/data:testing",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",

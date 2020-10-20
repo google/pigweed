@@ -8,11 +8,11 @@
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt::gap {
 
@@ -32,7 +32,7 @@ class BrEdrConnection final {
   BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                   fit::closure send_auth_request_cb, fit::closure disconnect_cb,
                   fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
-                  fbl::RefPtr<data::Domain> data_domain, std::optional<Request> request);
+                  fbl::RefPtr<l2cap::L2cap> l2cap, std::optional<Request> request);
 
   ~BrEdrConnection();
 
@@ -46,7 +46,7 @@ class BrEdrConnection final {
   void Start();
 
   // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
-  // the Domain provided. Otherwise, calls |cb| with a nullptr.
+  // the L2cap provided. Otherwise, calls |cb| with a nullptr.
   void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
   const hci::Connection& link() const { return *link_; }
@@ -61,7 +61,7 @@ class BrEdrConnection final {
   std::unique_ptr<hci::Connection> link_;
   PairingState pairing_state_;
   std::optional<Request> request_;
-  fbl::RefPtr<data::Domain> domain_;
+  fbl::RefPtr<l2cap::L2cap> domain_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

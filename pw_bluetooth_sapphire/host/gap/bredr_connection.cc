@@ -9,8 +9,7 @@ namespace bt::gap {
 BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                                  fit::closure send_auth_request_cb, fit::closure disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
-                                 fbl::RefPtr<data::Domain> data_domain,
-                                 std::optional<Request> request)
+                                 fbl::RefPtr<l2cap::L2cap> l2cap, std::optional<Request> request)
     : ready_(false),
       peer_id_(peer_id),
       link_(std::move(link)),
@@ -23,7 +22,7 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
                        }
                      }),
       request_(std::move(request)),
-      domain_(std::move(data_domain)) {
+      domain_(std::move(l2cap)) {
   link_->set_peer_disconnect_callback(
       [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](auto conn) { peer_disconnect_cb(); });
 }

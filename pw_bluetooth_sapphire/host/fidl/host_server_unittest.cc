@@ -19,13 +19,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -157,7 +157,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
     // This is to capture the channel created during the Connection process
     FakeChannel* fake_chan = nullptr;
-    data_domain()->set_channel_callback(
+    l2cap()->set_channel_callback(
         [&fake_chan](fbl::RefPtr<FakeChannel> new_fake_chan) { fake_chan = new_fake_chan.get(); });
 
     auto connect_result = ConnectFakePeer(peer->identifier());

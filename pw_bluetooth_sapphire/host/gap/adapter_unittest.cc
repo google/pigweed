@@ -16,9 +16,9 @@
 #include "low_energy_address_manager.h"
 #include "low_energy_advertising_manager.h"
 #include "low_energy_discovery_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -48,10 +48,10 @@ class AdapterTest : public TestingBase {
 
     transport_closed_called_ = false;
 
-    auto data_domain = data::testing::FakeDomain::Create();
+    auto l2cap = l2cap::testing::FakeL2cap::Create();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(),
-                                         std::optional(std::move(data_domain)));
+                                         std::optional(std::move(l2cap)));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
   }

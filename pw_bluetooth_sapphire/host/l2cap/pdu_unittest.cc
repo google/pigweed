@@ -37,7 +37,7 @@ TEST(L2CAP_PduTest, CanCopyEmptyBody) {
     // ACL data header
     0x01, 0x00, 0x04, 0x00,
 
-    // Basic L2CAP header
+    // Basic l2cap header
     0x00, 0x00, 0xFF, 0xFF
   );
 
@@ -64,7 +64,7 @@ TEST(L2CAP_PduTest, Move) {
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
-    // Basic L2CAP header
+    // Basic l2cap header
     0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'
   );
 
@@ -113,7 +113,7 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
-    // Basic L2CAP header
+    // Basic l2cap header
     0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'
   );
 
@@ -144,7 +144,7 @@ TEST(L2CAP_PduTest, ReleaseFragments) {
                                   // ACL data header
                                   0x01, 0x00, 0x08, 0x00,
 
-                                  // Basic L2CAP header
+                                  // Basic l2cap header
                                   0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'),
                               fragments.begin()->view().data()));
 }
@@ -158,7 +158,7 @@ TEST(L2CAP_PduTest, ReadSingleFragment) {
     // ACL data header
     0x01, 0x00, 0x08, 0x00,
 
-    // Basic L2CAP header
+    // Basic l2cap header
     0x04, 0x00, 0xFF, 0xFF, 'T', 'e', 's', 't'
   );
 
@@ -202,7 +202,7 @@ TEST(L2CAP_PduTest, ReadMultipleFragments) {
     // ACL data header (PBF: initial fragment)
     0x01, 0x00, 0x0A, 0x00,
 
-    // Basic L2CAP header
+    // Basic l2cap header
     0x0F, 0x00, 0xFF, 0xFF, 'T', 'h', 'i', 's', ' ', 'i'
   );
 

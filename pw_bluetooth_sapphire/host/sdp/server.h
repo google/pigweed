@@ -14,8 +14,8 @@
 #include <fbl/function.h>
 #include <fbl/ref_ptr.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/data/domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
@@ -35,7 +35,7 @@ class Server final {
 
   // A new SDP server, which starts with just a ServiceDiscoveryService record.
   // Registers itself with |l2cap| when created.
-  explicit Server(fbl::RefPtr<data::Domain> data_domain);
+  explicit Server(fbl::RefPtr<l2cap::L2cap> l2cap);
   ~Server();
 
   // Attach SDP server inspect node as a child node of |parent|.
@@ -124,7 +124,7 @@ class Server final {
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.
-  fbl::RefPtr<data::Domain> data_domain_;
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
 
   struct InspectProperties {
     // Inspect hierarchy node representing the sdp server.

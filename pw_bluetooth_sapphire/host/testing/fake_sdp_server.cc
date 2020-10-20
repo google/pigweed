@@ -11,7 +11,7 @@
 namespace bt {
 namespace testing {
 
-FakeSdpServer::FakeSdpServer() : server_(sdp::Server(data::testing::FakeDomain::Create())) {}
+FakeSdpServer::FakeSdpServer() : server_(sdp::Server(l2cap::testing::FakeL2cap::Create())) {}
 
 void FakeSdpServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto channel_cb = [this](fxl::WeakPtr<FakeDynamicChannel> channel) {
@@ -28,8 +28,8 @@ void FakeSdpServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
 
 void FakeSdpServer::HandleSdu(fxl::WeakPtr<FakeDynamicChannel> channel, const ByteBuffer& sdu) {
   ZX_ASSERT(channel->opened());
-  auto response = server()->HandleRequest(std::make_unique<DynamicByteBuffer>(sdu),
-                                          l2cap::kDefaultMTU);
+  auto response =
+      server()->HandleRequest(std::make_unique<DynamicByteBuffer>(sdu), l2cap::kDefaultMTU);
   if (response) {
     auto& callback = channel->send_packet_callback();
     return callback(std::move(*response.value()));

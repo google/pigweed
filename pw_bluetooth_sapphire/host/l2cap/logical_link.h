@@ -28,7 +28,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
@@ -225,7 +225,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Supported information response, which indicates which fixed channels the peer supports (Core
   // Spec v5.1, Vol 3, Part A, Sec 4.13). Except for the signaling channels, fixed channels may not
   // be created until this response has been received.
-  // TODO(fxbug.dev/43668): save fixed channels mask and use to verify opened fixed channel ids are supported
+  // TODO(fxbug.dev/43668): save fixed channels mask and use to verify opened fixed channel ids are
+  // supported
   void OnRxFixedChannelsSupportedInfoRsp(const BrEdrCommandHandler::InformationResponse& rsp);
 
   // Start serving Connection Parameter Update Requests on the LE signaling channel.

@@ -17,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/data/fake_domain.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
@@ -30,7 +29,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/test_security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -78,7 +78,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     test_device()->set_settings(settings);
 
     peer_cache_ = std::make_unique<PeerCache>();
-    l2cap_ = data::testing::FakeDomain::Create();
+    l2cap_ = l2cap::testing::FakeL2cap::Create();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
         transport()->WeakPtr(), &addr_delegate_, dispatcher(),
@@ -113,7 +113,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
   PeerCache* peer_cache() const { return peer_cache_.get(); }
   LowEnergyConnectionManager* conn_mgr() const { return conn_mgr_.get(); }
-  data::testing::FakeDomain* fake_l2cap() const { return l2cap_.get(); }
+  l2cap::testing::FakeL2cap* fake_l2cap() const { return l2cap_.get(); }
   gatt::testing::FakeLayer* fake_gatt() { return gatt_.get(); }
 
   // Addresses of currently connected fake peers.
@@ -160,7 +160,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     }
   }
 
-  fbl::RefPtr<data::testing::FakeDomain> l2cap_;
+  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
 
   hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<PeerCache> peer_cache_;

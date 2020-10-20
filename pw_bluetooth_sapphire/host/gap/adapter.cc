@@ -28,7 +28,7 @@ namespace bt {
 namespace gap {
 
 Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                 std::optional<fbl::RefPtr<data::Domain>> data_domain)
+                 std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
@@ -43,8 +43,8 @@ Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt
 
   init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(dispatcher_, hci_);
 
-  if (data_domain.has_value()) {
-    data_domain_ = *data_domain;
+  if (l2cap.has_value()) {
+    l2cap_ = *l2cap;
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -368,23 +368,23 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   }
 
   // Create the data domain, if we haven't been provided one. Doing so here lets us guarantee that
-  // AclDataChannel's lifetime is a superset of Data Domain's lifetime.
+  // AclDataChannel's lifetime is a superset of Data L2cap's lifetime.
   // TODO(fxbug.dev/35228) We currently allow tests to inject their own domain in the adapter
   // constructor, as the adapter_unittests rely on injecting a fake domain to avoid concurrency in
   // the unit tests.  Once we move to a single threaded model, we would like to remove this and have
   // the adapter always be responsible for creating the domain.
-  if (!data_domain_) {
-    // Initialize the data Domain to make L2CAP available for the next initialization step. The
+  if (!l2cap_) {
+    // Initialize the data L2cap to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain
-    auto data_domain = data::Domain::Create(hci_);
-    if (!data_domain) {
-      bt_log(ERROR, "gap", "Failed to initialize Data Domain");
+    auto l2cap = l2cap::L2cap::Create(hci_);
+    if (!l2cap) {
+      bt_log(ERROR, "gap", "Failed to initialize Data L2cap");
       CleanUp();
       callback(false);
       return;
     }
-    data_domain->AttachInspect(adapter_node_);
-    data_domain_ = data_domain;
+    l2cap->AttachInspect(adapter_node_, l2cap::L2cap::kInspectNodeName);
+    l2cap_ = l2cap;
   }
 
   ZX_DEBUG_ASSERT(init_seq_runner_->IsReady());
@@ -493,7 +493,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, data_domain_, gatt_,
+      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
       sm::SecurityManager::Create);
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
@@ -503,7 +503,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     DeviceAddress local_bredr_address(DeviceAddress::Type::kBREDR, state_.controller_address());
 
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        hci_, &peer_cache_, local_bredr_address, data_domain_,
+        hci_, &peer_cache_, local_bredr_address, l2cap_,
         state_.features().HasBit(0, hci::LMPFeature::kInterlacedPageScan));
 
     hci::InquiryMode mode = hci::InquiryMode::kStandard;
@@ -515,7 +515,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
 
-    sdp_server_ = std::make_unique<sdp::Server>(data_domain_);
+    sdp_server_ = std::make_unique<sdp::Server>(l2cap_);
     sdp_server_->AttachInspect(adapter_node_);
   }
 
@@ -639,7 +639,7 @@ void Adapter::CleanUp() {
 
   le_address_manager_ = nullptr;
 
-  data_domain_ = nullptr;
+  l2cap_ = nullptr;
 
   hci_ = nullptr;
 }
