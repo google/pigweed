@@ -156,7 +156,7 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
         _generate_method_lookup_function(output)
 
         output.write_line()
-        output.write_line('template <typename, uint32_t>')
+        output.write_line('template <auto, uint32_t>')
         output.write_line(
             'friend class ::pw::rpc::internal::ServiceMethodTraits;')
 
@@ -190,7 +190,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line(f'#include "{nanopb_header}"\n')
 
     output.write_line('namespace pw::rpc::internal {\n')
-    output.write_line('template <typename, uint32_t>')
+    output.write_line('template <auto, uint32_t>')
     output.write_line('class ServiceMethodTraits;')
     output.write_line('\n}  // namespace pw::rpc::internal\n')
 

@@ -85,8 +85,6 @@ constexpr RawMethod GetRawMethodFor(uint32_t id) {
     return RawMethod::ServerStreaming<invoker>(id);
   }
 
-  // This will never be reached, as a static_assert will fail if none of the
-  // above branches are taken.
   constexpr auto fake_invoker =
       +[](ServerCall&, ConstByteSpan, RawServerWriter&) {};
   return RawMethod::ServerStreaming<fake_invoker>(0);

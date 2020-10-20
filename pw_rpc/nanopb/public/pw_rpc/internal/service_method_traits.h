@@ -26,10 +26,13 @@ T BaseFromMember(U T::*);
 // to a member function of the service implementation to identify the service
 // class, generated service class, and Method object. This class is friended by
 // the generated service classes to give it access to the internal method list.
-template <typename Service, uint32_t method_id>
+template <auto impl_method, uint32_t method_id>
 class ServiceMethodTraits {
  public:
   ServiceMethodTraits() = delete;
+
+  // Type of the service implementation derived class.
+  using Service = typename internal::RpcTraits<decltype(impl_method)>::Service;
 
   // Type of the generic service base class.
   using BaseService =

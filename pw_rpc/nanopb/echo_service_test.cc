@@ -14,19 +14,19 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/echo_service_nanopb.h"
-#include "pw_rpc/test_method_context.h"
+#include "pw_rpc/nanopb_test_method_context.h"
 
 namespace pw::rpc {
 namespace {
 
 TEST(EchoService, Echo_EchoesRequestMessage) {
-  TestMethodContext<&EchoService::Echo> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(EchoService, Echo) context;
   ASSERT_EQ(context.call(_pw_rpc_EchoMessage{"Hello, world"}), Status::Ok());
   EXPECT_STREQ(context.response().msg, "Hello, world");
 }
 
 TEST(EchoService, Echo_EmptyRequest) {
-  TestMethodContext<&EchoService::Echo> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(EchoService, Echo) context;
   ASSERT_EQ(context.call({.msg = {}}), Status::Ok());
   EXPECT_STREQ(context.response().msg, "");
 }

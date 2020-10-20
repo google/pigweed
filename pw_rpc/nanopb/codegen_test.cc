@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/hash.h"
-#include "pw_rpc/test_method_context.h"
+#include "pw_rpc/nanopb_test_method_context.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 
 namespace pw::rpc {
@@ -51,7 +51,7 @@ TEST(NanopbCodegen, CompilesProperly) {
 }
 
 TEST(NanopbCodegen, InvokeUnaryRpc) {
-  TestMethodContext<&test::TestService::TestRpc> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
   EXPECT_EQ(Status::Ok(),
             context.call({.integer = 123, .status_code = Status::Ok()}));
@@ -65,7 +65,7 @@ TEST(NanopbCodegen, InvokeUnaryRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc) {
-  TestMethodContext<&test::TestService::TestStreamRpc> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
 
   context.call({.integer = 0, .status_code = Status::Aborted()});
 
@@ -87,7 +87,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
-  TestMethodContext<&test::TestService::TestStreamRpc, 3> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 
@@ -102,7 +102,7 @@ TEST(NanopbCodegen, InvokeStreamingRpc_ContextKeepsFixedNumberOfResponses) {
 }
 
 TEST(NanopbCodegen, InvokeStreamingRpc_ManualWriting) {
-  TestMethodContext<&test::TestService::TestStreamRpc, 3> context;
+  PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc, 3) context;
 
   ASSERT_EQ(3u, context.responses().max_size());
 

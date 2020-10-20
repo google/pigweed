@@ -22,14 +22,14 @@
 namespace pw::rpc::internal {
 namespace {
 
-static_assert(
-    std::is_same_v<ServiceMethodTraits<EchoService, Hash("Echo")>::BaseService,
-                   generated::EchoService<EchoService>>);
+static_assert(std::is_same_v<ServiceMethodTraits<&EchoService::Echo,
+                                                 Hash("Echo")>::BaseService,
+                             generated::EchoService<EchoService>>);
 
 static_assert(
-    std::is_same_v<
-        decltype(ServiceMethodTraits<EchoService, Hash("Echo")>::method()),
-        const NanopbMethod&>);
+    std::is_same_v<decltype(ServiceMethodTraits<&EchoService::Echo,
+                                                Hash("Echo")>::method()),
+                   const NanopbMethod&>);
 
 }  // namespace
 }  // namespace pw::rpc::internal

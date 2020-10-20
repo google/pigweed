@@ -76,7 +76,7 @@ pw_source_set("service_method_traits") {
 
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/test_method_context.h" ]
+  public = [ "public/pw_rpc/nanopb_test_method_context.h" ]
   public_deps = [
     ":service_method_traits",
     "..:server",
@@ -106,10 +106,8 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":client_call_test",
-
-    # TODO(frolv): Re-enable these when TestMethodContext is updated.
-    # ":codegen_test",
-    # ":echo_service_test",
+    ":codegen_test",
+    ":echo_service_test",
     ":nanopb_method_test",
     ":nanopb_method_union_test",
     ":service_method_traits_test",

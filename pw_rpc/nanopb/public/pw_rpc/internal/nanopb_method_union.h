@@ -104,8 +104,6 @@ constexpr NanopbMethod GetNanopbMethodFor(
         id, request_fields, response_fields);
   }
 
-  // This will never be reached, as a static_assert will fail if none of the
-  // above branches are taken.
   constexpr auto fake_invoker =
       +[](ServerCall&, const int&, ServerWriter<int>&) {};
   return NanopbMethod::ServerStreaming<fake_invoker>(0, nullptr, nullptr);
