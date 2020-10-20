@@ -425,9 +425,14 @@ class Test {
   ::pw::unit_test::internal::Framework::Get().ExpectationResult( \
       expected, actual, __LINE__, success)
 
-#define _PW_TEST_OP(expect_or_assert, lhs, rhs, op) \
-  expect_or_assert(                                 \
-      lhs, rhs, [](const auto& l, const auto& r) { return l op r; }, #op)
+#define _PW_TEST_OP(expect_or_assert, lhs, rhs, op)  \
+  expect_or_assert(                                  \
+      lhs,                                           \
+      rhs,                                           \
+      [](const auto& _pw_lhs, const auto& _pw_rhs) { \
+        return _pw_lhs op _pw_rhs;                   \
+      },                                             \
+      #op)
 
 // Implement boolean expectations in a C++11-compatible way.
 #define _PW_EXPECT_BOOL(expr, value)                             \
@@ -446,18 +451,22 @@ class Test {
     }                                    \
   } while (0)
 
-#define _PW_TEST_STREQ(expect_or_assert, lhs, rhs)                         \
-  expect_or_assert(                                                        \
-      lhs,                                                                 \
-      rhs,                                                                 \
-      [](const auto& l, const auto& r) { return std::strcmp(l, r) == 0; }, \
+#define _PW_TEST_STREQ(expect_or_assert, lhs, rhs)   \
+  expect_or_assert(                                  \
+      lhs,                                           \
+      rhs,                                           \
+      [](const auto& _pw_lhs, const auto& _pw_rhs) { \
+        return std::strcmp(_pw_lhs, _pw_rhs) == 0;   \
+      },                                             \
       "equals")
 
-#define _PW_TEST_STRNE(expect_or_assert, lhs, rhs)                         \
-  expect_or_assert(                                                        \
-      lhs,                                                                 \
-      rhs,                                                                 \
-      [](const auto& l, const auto& r) { return std::strcmp(l, r) != 0; }, \
+#define _PW_TEST_STRNE(expect_or_assert, lhs, rhs)   \
+  expect_or_assert(                                  \
+      lhs,                                           \
+      rhs,                                           \
+      [](const auto& _pw_lhs, const auto& _pw_rhs) { \
+        return std::strcmp(_pw_lhs, _pw_rhs) != 0;   \
+      },                                             \
       "does not equal")
 
 // Alias Test as ::testing::Test for Googletest compatibility.
