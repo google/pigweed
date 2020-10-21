@@ -38,6 +38,8 @@ declare_args() {
   dir_pw_cpu_exception = get_path_info("pw_cpu_exception", "abspath")
   dir_pw_cpu_exception_armv7m =
       get_path_info("pw_cpu_exception_armv7m", "abspath")
+  dir_pw_cpu_exception_cortex_m =
+      get_path_info("pw_cpu_exception_cortex_m", "abspath")
   dir_pw_docgen = get_path_info("pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("pw_doctor", "abspath")
   dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
