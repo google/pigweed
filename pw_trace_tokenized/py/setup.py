@@ -22,5 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='pw_trace backend to tokenize trace events',
     packages=setuptools.find_packages(),
-    test_suite='setup.test_suite',
+    package_data={'pw_trace_tokenized': ['py.typed']},
+    zip_safe=False,
 )

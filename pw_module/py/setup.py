@@ -22,4 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Meta-module for Pigweed',
     packages=setuptools.find_packages(),
+    package_data={'pw_module': ['py.typed']},
+    zip_safe=False,
 )

@@ -22,5 +22,7 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed swiss-army knife',
     packages=setuptools.find_packages(),
+    package_data={'pw_cli': ['py.typed']},
+    zip_safe=False,
     entry_points={'console_scripts': ['pw = pw_cli.__main__:main']},
 )

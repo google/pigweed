@@ -22,4 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Environment check script for Pigweed',
     packages=setuptools.find_packages(),
+    package_data={'pw_doctor': ['py.typed']},
+    zip_safe=False,
 )

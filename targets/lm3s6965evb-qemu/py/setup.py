@@ -23,6 +23,8 @@ setuptools.setup(
     description=
     'Target-specific python scripts for the lm3s6965evb-qemu target',
     packages=setuptools.find_packages(),
+    package_data={'lm3s6965evb_qemu_utils': ['py.typed']},
+    zip_safe=False,
     entry_points={
         'console_scripts': [
             'lm3s6965evb_qemu_unit_test_runner = '

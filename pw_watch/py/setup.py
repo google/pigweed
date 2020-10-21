@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed automatic builder',
     packages=setuptools.find_packages(),
+    package_data={'pw_watch': ['py.typed']},
+    zip_safe=False,
     install_requires=[
         'watchdog',
     ],

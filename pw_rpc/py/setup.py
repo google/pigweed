@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='On-device remote procedure calls',
     packages=setuptools.find_packages(),
+    package_data={'pw_rpc': ['py.typed']},
+    zip_safe=False,
     entry_points={'console_scripts': ['pw_rpc_codegen = pw_rpc.plugin:main']},
     install_requires=[
         'protobuf',

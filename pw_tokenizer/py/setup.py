@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Tools for decoding tokenized strings',
     packages=setuptools.find_packages(),
+    package_data={'pw_tokenizer': ['py.typed']},
+    zip_safe=False,
     test_suite='setup.test_suite',
     extra_requires=['serial'],
 )

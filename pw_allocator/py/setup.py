@@ -22,5 +22,9 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed heap allocator',
     packages=setuptools.find_packages(),
-    install_requires=[],
+    package_data={'pw_allocator': ['py.typed']},
+    zip_safe=False,
+    install_requires=[
+        # 'pw_cli',
+    ],
 )

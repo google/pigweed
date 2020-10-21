@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Target-specific python scripts for the arduino target',
     packages=setuptools.find_packages(),
+    package_data={'pw_arduino_build': ['py.typed']},
+    zip_safe=False,
     entry_points={
         'console_scripts': [
             'arduino_builder = pw_arduino_build.__main__:main',

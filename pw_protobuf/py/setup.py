@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Lightweight streaming protobuf implementation',
     packages=setuptools.find_packages(),
+    package_data={'pw_protobuf': ['py.typed']},
+    zip_safe=False,
     entry_points={
         'console_scripts': ['pw_protobuf_codegen = pw_protobuf.plugin:main']
     },

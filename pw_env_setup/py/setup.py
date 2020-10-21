@@ -27,6 +27,7 @@ setuptools.setup(
     },
     package_data={
         'pw_env_setup': [
+            'py.typed',
             'cargo_setup/packages.txt',
             'cipd_setup/luci.json',
             'cipd_setup/pigweed.json',
@@ -34,4 +35,5 @@ setuptools.setup(
             'virtualenv_setup/requirements.txt',
         ],
     },
+    zip_safe=False,
 )

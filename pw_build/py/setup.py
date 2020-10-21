@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Python scripts that support the GN build',
     packages=setuptools.find_packages(),
+    package_data={'pw_build': ['py.typed']},
+    zip_safe=False,
     install_requires=[
         'wheel',
     ],

@@ -27,4 +27,6 @@ setuptools.setup(
         'yapf==0.30.0',
     ],
     packages=setuptools.find_packages(),
+    package_data={'pw_presubmit': ['py.typed']},
+    zip_safe=False,
 )

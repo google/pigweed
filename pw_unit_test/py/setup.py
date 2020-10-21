@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Unit tests for Pigweed projects',
     packages=setuptools.find_packages(),
+    package_data={'pw_unit_test': ['py.typed']},
+    zip_safe=False,
     install_requires=[
         'pw_cli',
     ],

@@ -22,6 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed protoc wrapper',
     packages=setuptools.find_packages(),
+    package_data={'pw_protobuf_compiler': ['py.typed']},
+    zip_safe=False,
     entry_points={
         'console_scripts':
         ['generate_protos = pw_protobuf_compiler.generate_protos:main']

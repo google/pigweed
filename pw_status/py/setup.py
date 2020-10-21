@@ -22,4 +22,6 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Pigweed Status object',
     packages=setuptools.find_packages(),
+    package_data={'pw_status': ['py.typed']},
+    zip_safe=False,
 )
