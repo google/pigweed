@@ -13,7 +13,7 @@
 # the License.
 """The pw_tokenizer package."""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_tokenizer',

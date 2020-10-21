@@ -13,7 +13,7 @@
 # the License.
 """stm32f429i_disc1_utils"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='stm32f429i_disc1_utils',

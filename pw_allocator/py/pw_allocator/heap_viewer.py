@@ -19,7 +19,7 @@ import math
 import logging
 from typing import Optional
 from dataclasses import dataclass
-import coloredlogs
+import coloredlogs  # type: ignore
 
 
 @dataclass

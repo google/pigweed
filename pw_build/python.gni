@@ -45,10 +45,12 @@ template("pw_python_package") {
          "pw_python_package requires 'setup' to point to a setup.py or " +
              "pyproject.toml and setup.cfg file")
 
+  _python_deps = []
   if (defined(invoker.python_deps)) {
-    _python_deps = invoker.python_deps
-  } else {
-    _python_deps = []
+    foreach(dep, invoker.python_deps) {
+      # Use the fully qualified name so the subtarget can be appended as needed.
+      _python_deps += [ get_label_info(dep, "label_no_toolchain") ]
+    }
   }
 
   if (defined(invoker.sources)) {
@@ -64,6 +66,8 @@ template("pw_python_package") {
   }
 
   _all_sources += _test_sources
+
+  assert(_all_sources != [], "At least one source or test must be provided")
 
   # Get the directory of the setup files. All files must be in the same dir.
   _setup_dirs = get_path_info(invoker.setup, "dir")
@@ -92,9 +96,8 @@ template("pw_python_package") {
 
   _package_target = ":$target_name"
 
-  # TODO(pwbug/239): Add support for installing this package and dependencies
-  #     with correct dependency ordering in a virtual environment. The code
-  #     below is incomplete and untested.
+  # Install this Python package and its dependencies in the current Python
+  # environment.
   pw_python_action("$target_name.install") {
     module = "pip"
     args = [
@@ -104,6 +107,9 @@ template("pw_python_package") {
     ]
 
     stamp = true
+
+    # Parallel pip installations don't work, so serialize pip invocations.
+    pool = "$dir_pw_build:pip_pool"
 
     deps = [ _package_target ]
     foreach(dep, _python_deps) {
@@ -120,7 +126,7 @@ template("pw_python_package") {
       "--out_dir",
       rebase_path(target_out_dir),
     ]
-    args += rebase_path(invoker.sources)
+    args += rebase_path(_all_sources)
 
     deps = [ _package_target ]
     stamp = true
@@ -140,8 +146,8 @@ template("pw_python_package") {
       "--pretty",
       "--show-error-codes",
       "--color-output",
+      rebase_path(_setup_dir),
     ]
-    args += rebase_path(_all_sources)
 
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771
@@ -170,7 +176,7 @@ template("pw_python_package") {
 
     sources = _all_sources
 
-    stamp = "$target_gen_dir/{{source_file_part}}.pylint.pw_pystamp"
+    stamp = "$target_gen_dir/{{source_target_relative}}.pylint.pw_pystamp"
 
     # Run pylint from the source root so that pylint detects rcfiles (.pylintrc)
     # in the source tree.

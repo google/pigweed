@@ -13,7 +13,7 @@
 # the License.
 """pw_hdlc_lite"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_hdlc_lite',

@@ -19,7 +19,9 @@ import sys
 
 # TODO(pwbug/67) switch back to 'from pw_env_setup import virtualenv_setup'.
 # from pw_env_setup import virtualenv_setup
-import install as virtualenv_setup  # pylint: disable=import-error
+# pylint: disable=import-error
+import install as virtualenv_setup  # type: ignore
+# pylint: enable=import-error
 
 
 def _main():

@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from parameterized import parameterized
+from parameterized import parameterized  # type: ignore
 
 import pw_arduino_build.file_operations as file_operations
 

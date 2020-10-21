@@ -117,6 +117,10 @@ config("cpp17") {
 group("empty") {
 }
 
+pool("pip_pool") {
+  depth = 1
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

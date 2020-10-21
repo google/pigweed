@@ -15,7 +15,7 @@
 
 import shlex
 import unittest
-from parameterized import parameterized
+from parameterized import parameterized  # type: ignore
 
 
 class TestShellArgumentSplitting(unittest.TestCase):

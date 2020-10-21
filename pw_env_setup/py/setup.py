@@ -11,9 +11,9 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""env_setup module definition for PyOxidizer."""
+"""pw_env_setup package definition."""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_env_setup',

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -25,10 +26,9 @@ import sys
 import threading
 from typing import List, NamedTuple, Optional, Sequence, Tuple
 
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
-from watchdog.utils import has_attribute
-from watchdog.utils import unicode_paths
+from watchdog.events import FileSystemEventHandler  # type: ignore
+from watchdog.observers import Observer  # type: ignore
+from watchdog.utils import has_attribute, unicode_paths  # type: ignore
 
 import pw_cli.branding
 import pw_cli.color

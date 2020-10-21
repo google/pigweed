@@ -13,7 +13,7 @@
 # the License.
 """pw_watch"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_watch',

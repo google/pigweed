@@ -35,7 +35,8 @@ class CompletedProcess:
     """Information about a process executed in run_async."""
     def __init__(self, process: 'asyncio.subprocess.Process',
                  output: Union[bytes, IO[bytes]]):
-        self.returncode = process.returncode
+        assert process.returncode is not None
+        self.returncode: int = process.returncode
         self.pid = process.pid
         self._output = output
 

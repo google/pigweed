@@ -23,7 +23,7 @@ import sys
 import time
 from typing import List
 
-import serial
+import serial  # type: ignore
 import pw_arduino_build.log
 from pw_arduino_build import teensy_detector
 from pw_arduino_build.file_operations import decode_file_json

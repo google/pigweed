@@ -13,7 +13,7 @@
 # the License.
 """The pw_trace package."""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_trace',

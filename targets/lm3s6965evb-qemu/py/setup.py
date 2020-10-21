@@ -13,7 +13,7 @@
 # the License.
 """lm3s6965evb_qemu_utils"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='lm3s6965evb_qemu_utils',

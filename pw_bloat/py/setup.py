@@ -13,7 +13,7 @@
 # the License.
 """pw_bloat"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_bloat',

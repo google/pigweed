@@ -13,7 +13,7 @@
 # the License.
 """pw_arduino_build"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_arduino_build',

@@ -13,7 +13,7 @@
 # the License.
 """pw_protobuf_compiler"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_protobuf_compiler',

@@ -76,7 +76,7 @@ def read_and_process_data(rpc_client: pw_rpc.Client,
                 output.flush()
             else:
                 _LOG.error('Unhandled frame for address %d: %s', frame.address,
-                           frame.data.decoder(errors='replace'))
+                           frame.data.decode(errors='replace'))
 
 
 _PathOrModule = Union[str, Path, ModuleType]
@@ -123,7 +123,7 @@ class HdlcRpcClient:
                          daemon=True,
                          args=(self.client, device, output)).start()
 
-    def rpcs(self, channel_id: int = None) -> pw_rpc.client.Services:
+    def rpcs(self, channel_id: int = None) -> Any:
         """Returns object for accessing services on the specified channel.
 
         This skips some intermediate layers to make it simpler to invoke RPCs

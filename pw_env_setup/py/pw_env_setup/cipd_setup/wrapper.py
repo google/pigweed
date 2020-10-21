@@ -31,14 +31,14 @@ import sys
 import base64
 
 try:
-    import httplib
+    import httplib  # type: ignore
 except ImportError:
-    import http.client as httplib  # type: ignore
+    import http.client as httplib  # type: ignore[no-redef]
 
 try:
-    import urlparse  # Python 2.
+    import urlparse  # type: ignore
 except ImportError:
-    import urllib.parse as urlparse  # type: ignore
+    import urllib.parse as urlparse  # type: ignore[no-redef]
 
 try:
     SCRIPT_DIR = os.path.dirname(__file__)

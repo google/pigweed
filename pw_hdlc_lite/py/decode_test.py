@@ -250,7 +250,7 @@ def _define_py_test(ctx: Context) -> PyTest:
 
         # Decode byte-by-byte
         decoder = FrameDecoder()
-        decoded_frames = []
+        decoded_frames: List[Frame] = []
         for i in range(len(data)):
             decoded_frames += decoder.process(data[i:i + 1])
 

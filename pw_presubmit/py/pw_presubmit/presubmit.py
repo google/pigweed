@@ -49,8 +49,8 @@ from pathlib import Path
 import re
 import subprocess
 import time
-from typing import Callable, Collection, Dict, Iterable, Iterator, List
-from typing import NamedTuple, Optional, Pattern, Sequence, Set, Tuple
+from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
+                    NamedTuple, Optional, Pattern, Sequence, Set, Tuple, Union)
 
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
@@ -537,7 +537,7 @@ def _make_str_tuple(value: Iterable[str]) -> Tuple[str, ...]:
 
 
 def filter_paths(endswith: Iterable[str] = (''),
-                 exclude: Iterable[str] = (),
+                 exclude: Iterable[Union[Pattern[str], str]] = (),
                  always_run: bool = False) -> Callable[[Callable], _Check]:
     """Decorator for filtering the paths list for a presubmit check function.
 

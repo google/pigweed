@@ -37,8 +37,8 @@ from pathlib import Path
 import sys
 from typing import Collection, Iterable, Iterator, BinaryIO
 
-import IPython
-import serial
+import IPython  # type: ignore
+import serial  # type: ignore
 
 from pw_hdlc_lite.rpc import HdlcRpcClient
 

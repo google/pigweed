@@ -13,7 +13,7 @@
 # the License.
 """pw_unit_test"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_unit_test',

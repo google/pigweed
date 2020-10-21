@@ -13,7 +13,7 @@
 # the License.
 """pw_allocator"""
 
-import setuptools
+import setuptools  # type: ignore
 
 setuptools.setup(
     name='pw_allocator',
