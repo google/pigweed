@@ -21,6 +21,10 @@ declare_args() {
 
   # Expected args for an Arduino build:
   arduino_core_name = "teensy"
+
+  # TODO(tonymd): "teensy/avr" here should match the folders in this dir:
+  # "../third_party/arduino/cores/$arduino_core_name/hardware/*")
+  # For teensy: "teensy/avr", for adafruit-samd: "samd/1.6.2"
   arduino_package_name = "teensy/avr"
   arduino_board = "teensy40"
 

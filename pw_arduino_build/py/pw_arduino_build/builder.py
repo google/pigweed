@@ -23,6 +23,7 @@ import re
 import sys
 import time
 from collections import OrderedDict
+from pathlib import Path
 from typing import List
 
 from pw_arduino_build import file_operations
@@ -186,6 +187,10 @@ class ArduinoBuilder:
                 "\"-L{build.path}\" -L{compiler.path}/arm/arm-none-eabi/lib",
                 1)
             self.platform["recipe.c.combine.pattern"] = new_link_line
+            # Remove the pre-compiled header include
+            self.platform["recipe.cpp.o.pattern"] = self.platform[
+                "recipe.cpp.o.pattern"].replace("\"-I{build.path}/pch\"", "",
+                                                1)
 
         # Adafruit-samd core
         # TODO(tonymd): This build_arch may clash with Arduino-SAMD core
@@ -293,17 +298,17 @@ class ArduinoBuilder:
             # 'teensy/hardware/teensy/avr/cores/teensy{3,4}'. For other cores
             # it's typically just the 'arduino' folder. For example:
             # 'arduino-samd/hardware/samd/1.8.8/cores/arduino'
-            core_path = os.path.join(
-                self.package_path, "cores",
-                self.board[current_board_name].get("build.core",
-                                                   self.sub_core_folders[0]))
-            self.board[current_board_name]["build.core.path"] = core_path
+            core_path = Path(self.package_path) / "cores"
+            core_path /= self.board[current_board_name].get(
+                "build.core", self.sub_core_folders[0])
+            self.board[current_board_name][
+                "build.core.path"] = core_path.as_posix()
 
             self.board[current_board_name]["build.arch"] = self.build_arch
 
             for name, var in self.board[current_board_name].items():
                 self.board[current_board_name][name] = var.replace(
-                    "{build.core.path}", core_path)
+                    "{build.core.path}", core_path.as_posix())
 
     def load_board_definitions(self):
         """Loads Arduino boards.txt and platform.txt files into dictionaries.

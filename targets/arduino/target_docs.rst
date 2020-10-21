@@ -18,15 +18,15 @@ Currently only Teensy 4.x and 3.x boards are supported.
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
 | Core                                                             | Board Name                                                        | Compiling | Flashing | Test Runner |
 +==================================================================+===================================================================+===========+==========+=============+
-| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 4.1 <https://www.pjrc.com/store/teensy41.html>`_          | ✓         | ✓        |             |
+| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 4.1 <https://www.pjrc.com/store/teensy41.html>`_          | ✓         | ✓        | ✓           |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
-| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 4.0 <https://www.pjrc.com/store/teensy40.html>`_          | ✓         | ✓        |             |
+| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 4.0 <https://www.pjrc.com/store/teensy40.html>`_          | ✓         | ✓        | ✓           |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
-| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.6 <https://www.pjrc.com/store/teensy36.html>`_          | ✓         | ✓        |             |
+| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.6 <https://www.pjrc.com/store/teensy36.html>`_          | ✓         | ✓        | ✓           |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
-| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.5 <https://www.pjrc.com/store/teensy35.html>`_          | ✓         | ✓        |             |
+| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.5 <https://www.pjrc.com/store/teensy35.html>`_          | ✓         | ✓        | ✓           |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
-| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.2 <https://www.pjrc.com/store/teensy32.html>`_          | ✓         | ✓        |             |
+| `teensy <https://www.pjrc.com/teensy/td_download.html>`_         | `Teensy 3.2 <https://www.pjrc.com/store/teensy32.html>`_          | ✓         | ✓        | ✓           |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
 | `arduino-samd <https://github.com/arduino/ArduinoCore-samd>`_    | `Arduino Zero <https://store.arduino.cc/usa/arduino-zero>`_       |           |          |             |
 +------------------------------------------------------------------+-------------------------------------------------------------------+-----------+----------+-------------+
@@ -55,9 +55,9 @@ recommended to install them to into ``third_party/arduino/cores/``.
 .. code:: sh
 
   # Setup pigweed environment.
-  $ source activate.sh
+  source activate.sh
   # Install an arduino core
-  $ arduino_builder install-core --prefix ./third_party/arduino/cores/ --core-name teensy
+  arduino_builder install-core --prefix ./third_party/arduino/cores/ --core-name teensy
 
 Building
 ========
@@ -66,54 +66,83 @@ target. You can set Arduino build options using ``gn args out`` or by running:
 
 .. code:: sh
 
-  $ gn gen out --args='dir_pw_third_party_arduino="//third_party/arduino"
-                       arduino_package_path="third_party/arduino/cores/teensy"
-                       arduino_package_name="teensy/avr"
-                       arduino_board="teensy40"
-                       arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]'
+  gn gen out --args='dir_pw_third_party_arduino="//third_party/arduino"
+                     arduino_core_name="teensy"
+                     arduino_board="teensy40"
+                     arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]'
+
+On a Windows machine it's easier to run:
+
+.. code:: sh
+
+  gn args out
+
+That will open a text file where you can paste the args in:
+
+.. code:: text
+
+  dir_pw_third_party_arduino="//third_party/arduino"
+  arduino_core_name="teensy"
+  arduino_board="teensy40"
+  arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]
+
+Save the file and close the text editor.
 
 Then build with:
 
 .. code:: sh
 
-  $ ninja -C out arduino
+  ninja -C out arduino
 
 To see supported boards and Arduino menu options for a given core:
 
 .. code:: sh
 
-  $ arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
-                    --arduino-package-name teensy/avr \
-                    list-boards
-  # Board Name  Description
-  # teensy41    Teensy 4.1
-  # teensy40    Teensy 4.0
-  # teensy36    Teensy 3.6
-  # teensy35    Teensy 3.5
-  # teensy31    Teensy 3.2 / 3.1
+  arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
+                  --arduino-package-name teensy/avr \
+                  list-boards
 
-  $ arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
-                    --arduino-package-name teensy/avr \
-                    list-menu-options --board teensy40
-  # All Options
-  # ----------------------------------------------------------------
-  # menu.usb.serial             Serial
-  # menu.usb.serial2            Dual Serial
-  # menu.usb.serial3            Triple Serial
-  # menu.usb.keyboard           Keyboard
-  # menu.usb.touch              Keyboard + Touch Screen
-  # menu.usb.hidtouch           Keyboard + Mouse + Touch Screen
-  # menu.usb.hid                Keyboard + Mouse + Joystick
-  # menu.usb.serialhid          Serial + Keyboard + Mouse + Joystick
-  # menu.usb.midi               MIDI
-  # ...
-  #
-  # Default Options
-  # --------------------------------------
-  # menu.usb.serial             Serial
-  # menu.speed.600              600 MHz
-  # menu.opt.o2std              Faster
-  # menu.keys.en-us             US English
+.. code:: text
+
+  Board Name  Description
+  teensy41    Teensy 4.1
+  teensy40    Teensy 4.0
+  teensy36    Teensy 3.6
+  teensy35    Teensy 3.5
+  teensy31    Teensy 3.2 / 3.1
+
+You may wish to set different arduino build options in
+``arduino_menu_options``. Run this to see what's available for your core:
+
+.. code:: sh
+
+  arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
+                  --arduino-package-name teensy/avr \
+                  list-menu-options --board teensy40
+
+That will show all menu options that can be added to ``gn args out``.
+
+.. code:: text
+
+  All Options
+  ----------------------------------------------------------------
+  menu.usb.serial             Serial
+  menu.usb.serial2            Dual Serial
+  menu.usb.serial3            Triple Serial
+  menu.usb.keyboard           Keyboard
+  menu.usb.touch              Keyboard + Touch Screen
+  menu.usb.hidtouch           Keyboard + Mouse + Touch Screen
+  menu.usb.hid                Keyboard + Mouse + Joystick
+  menu.usb.serialhid          Serial + Keyboard + Mouse + Joystick
+  menu.usb.midi               MIDI
+  ...
+
+  Default Options
+  --------------------------------------
+  menu.usb.serial             Serial
+  menu.speed.600              600 MHz
+  menu.opt.o2std              Faster
+  menu.keys.en-us             US English
 
 Testing
 =======
@@ -134,7 +163,6 @@ a sample bash script to run all tests on a Linux machine.
   gn gen out --export-compile-commands \
       --args='dir_pw_third_party_arduino="//third_party/arduino"
               arduino_core_name="teensy"
-              arduino_package_name="teensy/avr"
               arduino_board="teensy40"
               arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]' && \
     ninja -C out arduino
@@ -155,8 +183,8 @@ the correct Arduino core, compiler path, and Arduino board used.
 
 .. code:: sh
 
-  $ arduino_test_server --verbose \
-        --config-file ./out/arduino_debug/gen/arduino_builder_config.json
+  arduino_test_server --verbose \
+      --config-file ./out/arduino_debug/gen/arduino_builder_config.json
 
 .. TODO(tonymd): Flesh out this section similar to the stm32f429i target docs.
 

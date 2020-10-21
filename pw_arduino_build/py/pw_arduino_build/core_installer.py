@@ -16,13 +16,15 @@
 
 import argparse
 import logging
+import operator
 import os
 import platform
-import stat
-import sys
 import shutil
+import stat
 import subprocess
-from typing import Dict
+import sys
+import time
+from typing import Dict, List
 
 import pw_arduino_build.file_operations as file_operations
 
@@ -183,6 +185,13 @@ def supported_cores():
     return _ARDUINO_CORE_ARTIFACTS.keys()
 
 
+def get_windows_process_names() -> List[str]:
+    result = subprocess.run("wmic process get description",
+                            capture_output=True)
+    output = result.stdout.decode().splitlines()
+    return [line.strip() for line in output if line]
+
+
 def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
     """Download and install Teensyduino artifacts for Windows."""
     teensy_artifacts = _ARDUINO_CORE_ARTIFACTS["teensy"][platform.system()]
@@ -208,16 +217,43 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
     original_working_dir = os.getcwd()
     os.chdir(install_prefix)
 
-    _LOG.info("Installing Teensyduino to: %s", teensy_core_dir)
-
     install_command = [teensyduino_installer, "--dir=teensy"]
     _LOG.info("  Running: %s", " ".join(install_command))
-    _LOG.info("  Please click yes on the Windows 'User Account Control' "
+    _LOG.info("    Please click yes on the Windows 'User Account Control' "
               "dialog.")
-    _LOG.info("  You should see: 'Verified publisher: PRJC.COM LLC'")
+    _LOG.info("    You should see: 'Verified publisher: PRJC.COM LLC'")
 
-    install_command = [teensyduino_installer, "--dir=teensy"]
-    subprocess.run(install_command)
+    def wait_for_process(process_name,
+                         timeout=30,
+                         result_operator=operator.truth):
+        start_time = time.time()
+        while result_operator(process_name in get_windows_process_names()):
+            time.sleep(1)
+            if time.time() > start_time + timeout:
+                _LOG.error(
+                    "Error: Installation Failed.\n"
+                    "Please click yes on the Windows 'User Account Control' "
+                    "dialog.")
+                sys.exit(1)
+
+    # Run Teensyduino installer with admin rights (non-blocking)
+    # User Account Control (UAC) will prompt the user for consent
+    import ctypes  # pylint: disable=import-outside-toplevel
+    ctypes.windll.shell32.ShellExecuteW(
+        None,  # parent window handle
+        "runas",  # operation
+        teensyduino_installer,  # file to run
+        subprocess.list2cmdline(install_command),  # command parameters
+        install_prefix,  # working directory
+        1)  # Display mode (SW_SHOWNORMAL: Activates and displays a window)
+
+    # Wait for teensyduino_installer to start running
+    wait_for_process("TeensyduinoInstall.exe", result_operator=operator.not_)
+
+    _LOG.info("Waiting for TeensyduinoInstall.exe to finish.")
+    # Wait till teensyduino_installer is finished
+    wait_for_process("TeensyduinoInstall.exe", timeout=360)
+
     if not os.path.exists(os.path.join(teensy_core_dir, "hardware", "teensy")):
         _LOG.error(
             "Error: Installation Failed.\n"
@@ -226,7 +262,7 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
             "%s", teensy_core_dir)
         sys.exit(1)
     else:
-        _LOG.info("  Install complete!")
+        _LOG.info("Install complete!")
 
     file_operations.remove_empty_directories(install_dir)
     os.chdir(original_working_dir)
