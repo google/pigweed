@@ -109,7 +109,7 @@ TEST_F(GAP_ScoConnectionManagerTest, OpenConnectionSuccess) {
   fbl::RefPtr<ScoConnection> conn;
   auto conn_cb = [&conn](fbl::RefPtr<ScoConnection> cb_conn) { conn = std::move(cb_conn); };
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn);
@@ -134,7 +134,7 @@ TEST_F(GAP_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureStatusEvent)
     EXPECT_FALSE(cb_conn);
   };
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
   EXPECT_EQ(conn_cb_count, 1u);
@@ -157,7 +157,7 @@ TEST_F(GAP_ScoConnectionManagerTest, OpenConnectionAndReceiveFailureCompleteEven
     EXPECT_FALSE(cb_conn);
   };
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
   EXPECT_EQ(conn_cb_count, 1u);
@@ -179,7 +179,7 @@ TEST_F(GAP_ScoConnectionManagerTest, IgnoreWrongAddressInConnectionComplete) {
   fbl::RefPtr<ScoConnection> conn;
   auto conn_cb = [&conn](fbl::RefPtr<ScoConnection> cb_conn) { conn = std::move(cb_conn); };
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
@@ -214,7 +214,7 @@ TEST_F(GAP_ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   fbl::RefPtr<ScoConnection> conn;
   auto conn_cb = [&conn](fbl::RefPtr<ScoConnection> cb_conn) { conn = std::move(cb_conn); };
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(conn);
@@ -226,9 +226,10 @@ TEST_F(GAP_ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   EXPECT_TRUE(conn);
 }
 
-TEST_F(GAP_ScoConnectionManagerTest, QueueTwoRequests) {
+TEST_F(GAP_ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
   const hci::ConnectionHandle handle_0 = kScoConnectionHandle;
   const hci::ConnectionHandle handle_1 = handle_0 + 1;
+  const hci::ConnectionHandle handle_2 = handle_1 + 1;
 
   auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
                                                           hci::StatusCode::kSuccess);
@@ -239,15 +240,23 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueTwoRequests) {
 
   fbl::RefPtr<ScoConnection> conn_0;
   auto conn_cb_0 = [&conn_0](fbl::RefPtr<ScoConnection> cb_conn) { conn_0 = std::move(cb_conn); };
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
-  fbl::RefPtr<ScoConnection> conn_1;
-  auto conn_cb_1 = [&conn_1](fbl::RefPtr<ScoConnection> cb_conn) { conn_1 = std::move(cb_conn); };
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+  size_t cb_count_1 = 0;
+  auto conn_cb_1 = [&cb_count_1](fbl::RefPtr<ScoConnection> cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    cb_count_1++;
+  };
+  auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  fbl::RefPtr<ScoConnection> conn_2;
+  auto conn_cb_2 = [&conn_2](fbl::RefPtr<ScoConnection> cb_conn) { conn_2 = std::move(cb_conn); };
+  auto req_handle_2 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_2));
 
   RunLoopUntilIdle();
   EXPECT_FALSE(conn_0);
-  EXPECT_FALSE(conn_1);
+  EXPECT_EQ(cb_count_1, 1u);
+  EXPECT_FALSE(conn_2);
 
   EXPECT_CMD_PACKET_OUT(
       test_device(),
@@ -258,14 +267,14 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueTwoRequests) {
       handle_0, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
   test_device()->SendCommandChannelPacket(conn_complete_packet_0);
   RunLoopUntilIdle();
-  EXPECT_TRUE(conn_0);
-  EXPECT_FALSE(conn_1);
+  ASSERT_TRUE(conn_0);
+  EXPECT_FALSE(conn_2);
 
-  auto conn_complete_packet_1 = testing::SynchronousConnectionCompletePacket(
-      handle_1, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
-  test_device()->SendCommandChannelPacket(conn_complete_packet_1);
+  auto conn_complete_packet_2 = testing::SynchronousConnectionCompletePacket(
+      handle_2, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
+  test_device()->SendCommandChannelPacket(conn_complete_packet_2);
   RunLoopUntilIdle();
-  EXPECT_TRUE(conn_1);
+  ASSERT_TRUE(conn_2);
 
   // Send status and complete events so second disconnect command isn't queued in CommandChannel.
   auto disconn_status_packet_0 =
@@ -274,8 +283,8 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueTwoRequests) {
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_0),
                         &disconn_status_packet_0, &disconn_complete_0);
   conn_0->Deactivate();
-  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_1));
-  conn_1->Deactivate();
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_2));
+  conn_2->Deactivate();
   RunLoopUntilIdle();
 }
 
@@ -292,7 +301,7 @@ TEST_F(GAP_ScoConnectionManagerTest, HandleReuse) {
   fbl::RefPtr<ScoConnection> conn;
   auto conn_cb = [&conn](fbl::RefPtr<ScoConnection> cb_conn) { conn = std::move(cb_conn); };
 
-  manager()->OpenConnection(kConnectionParams, conn_cb);
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, conn_cb);
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn);
@@ -311,7 +320,7 @@ TEST_F(GAP_ScoConnectionManagerTest, HandleReuse) {
       testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
       &setup_status_packet, &conn_complete_packet);
 
-  manager()->OpenConnection(kConnectionParams, conn_cb);
+  auto req_handle_1 = manager()->OpenConnection(kConnectionParams, conn_cb);
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn);
@@ -326,7 +335,7 @@ TEST_F(GAP_ScoConnectionManagerTest, AcceptConnectionSuccess) {
     EXPECT_TRUE(cb_conn);
     conn = std::move(cb_conn);
   };
-  manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
 
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
   test_device()->SendCommandChannelPacket(conn_req_packet);
@@ -356,7 +365,7 @@ TEST_F(GAP_ScoConnectionManagerTest, AcceptConnectionStatusFailure) {
     EXPECT_FALSE(cb_conn);
     conn_cb_count++;
   };
-  manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
   EXPECT_EQ(conn_cb_count, 0u);
 
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
@@ -379,7 +388,7 @@ TEST_F(GAP_ScoConnectionManagerTest, AcceptConnectionAndReceiveCompleteEventWith
     EXPECT_FALSE(cb_conn);
     conn_cb_count++;
   };
-  manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
 
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
   test_device()->SendCommandChannelPacket(conn_req_packet);
@@ -412,7 +421,7 @@ TEST_F(GAP_ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPe
       testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
       &setup_status_packet);
 
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
 
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
   test_device()->SendCommandChannelPacket(conn_req_packet);
@@ -425,6 +434,9 @@ TEST_F(GAP_ScoConnectionManagerTest, RejectInboundRequestWhileInitiatorRequestPe
                         &reject_status_packet);
   RunLoopUntilIdle();
   EXPECT_EQ(conn_cb_count, 0u);
+  // Destroy manager so that callback gets called before callback reference is invalid.
+  DestroyManager();
+  EXPECT_EQ(conn_cb_count, 1u);
 }
 
 TEST_F(GAP_ScoConnectionManagerTest, RejectInboundRequestWhenNoRequestsPending) {
@@ -459,14 +471,14 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirs
     EXPECT_FALSE(cb_conn);
     conn_cb_count++;
   };
-  manager()->AcceptConnection(kConnectionParams, conn_cb);
+  auto req_handle_0 = manager()->AcceptConnection(kConnectionParams, conn_cb);
 
   auto second_conn_params = kConnectionParams;
   second_conn_params.transmit_bandwidth = 99;
 
   fbl::RefPtr<ScoConnection> conn;
-  manager()->AcceptConnection(second_conn_params,
-                              [&conn](auto cb_conn) { conn = std::move(cb_conn); });
+  auto req_handle_1 = manager()->AcceptConnection(
+      second_conn_params, [&conn](auto cb_conn) { conn = std::move(cb_conn); });
 
   EXPECT_EQ(conn_cb_count, 1u);
 
@@ -498,7 +510,7 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestRe
     EXPECT_FALSE(cb_conn);
     conn_cb_count++;
   };
-  manager()->AcceptConnection(kConnectionParams, conn_cb);
+  auto req_handle_0 = manager()->AcceptConnection(kConnectionParams, conn_cb);
 
   auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
   test_device()->SendCommandChannelPacket(conn_req_packet);
@@ -508,8 +520,8 @@ TEST_F(GAP_ScoConnectionManagerTest, QueueSecondAcceptRequestAfterFirstRequestRe
   RunLoopUntilIdle();
 
   fbl::RefPtr<ScoConnection> conn;
-  manager()->AcceptConnection(kConnectionParams,
-                              [&conn](auto cb_conn) { conn = std::move(cb_conn); });
+  auto req_handle_1 = manager()->AcceptConnection(
+      kConnectionParams, [&conn](auto cb_conn) { conn = std::move(cb_conn); });
 
   // First request should not be cancelled because a request event was received.
   EXPECT_EQ(conn_cb_count, 0u);
@@ -555,20 +567,140 @@ TEST_F(GAP_ScoConnectionManagerTest, RequestsCancelledOnManagerDestruction) {
     EXPECT_FALSE(cb_conn);
     conn_0_cb_count++;
   };
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
 
   size_t conn_1_cb_count = 0;
   auto conn_cb_1 = [&conn_1_cb_count](auto cb_conn) {
     EXPECT_FALSE(cb_conn);
     conn_1_cb_count++;
   };
-  manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+  auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
 
   RunLoopUntilIdle();
 
   DestroyManager();
   EXPECT_EQ(conn_0_cb_count, 1u);
   EXPECT_EQ(conn_1_cb_count, 1u);
+}
+
+TEST_F(GAP_ScoConnectionManagerTest, AcceptConnectionExplicitlyCancelledByClient) {
+  size_t cb_count = 0;
+  auto conn_cb = [&cb_count](fbl::RefPtr<ScoConnection> cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    cb_count++;
+  };
+  auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb));
+
+  req_handle.Cancel();
+  EXPECT_EQ(cb_count, 1u);
+
+  auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
+  test_device()->SendCommandChannelPacket(conn_req_packet);
+
+  auto reject_status_packet = testing::CommandStatusPacket(hci::kRejectSynchronousConnectionRequest,
+                                                           hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::RejectSynchronousConnectionRequest(
+                            kPeerAddress, hci::StatusCode::kConnectionRejectedBadBdAddr),
+                        &reject_status_packet);
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 1u);
+}
+
+TEST_F(GAP_ScoConnectionManagerTest, AcceptConnectionCancelledByClientDestroyingHandle) {
+  size_t cb_count = 0;
+  auto conn_cb = [&cb_count](fbl::RefPtr<ScoConnection> cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    cb_count++;
+  };
+
+  // req_handle destroyed at end of scope
+  { auto req_handle = manager()->AcceptConnection(kConnectionParams, std::move(conn_cb)); }
+  EXPECT_EQ(cb_count, 1u);
+
+  auto conn_req_packet = testing::ConnectionRequestPacket(kPeerAddress, hci::LinkType::kSCO);
+  test_device()->SendCommandChannelPacket(conn_req_packet);
+
+  auto reject_status_packet = testing::CommandStatusPacket(hci::kRejectSynchronousConnectionRequest,
+                                                           hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::RejectSynchronousConnectionRequest(
+                            kPeerAddress, hci::StatusCode::kConnectionRejectedBadBdAddr),
+                        &reject_status_packet);
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 1u);
+}
+
+TEST_F(GAP_ScoConnectionManagerTest, OpenConnectionCantBeCancelledOnceInProgress) {
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
+      kScoConnectionHandle, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet);
+
+  fbl::RefPtr<ScoConnection> conn;
+  auto conn_cb = [&conn](fbl::RefPtr<ScoConnection> cb_conn) { conn = std::move(cb_conn); };
+
+  auto req_handle = manager()->OpenConnection(kConnectionParams, std::move(conn_cb));
+  req_handle.Cancel();
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(conn);
+  test_device()->SendCommandChannelPacket(conn_complete_packet);
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn);
+  EXPECT_EQ(conn->handle(), kScoConnectionHandle);
+
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
+  conn->Close();
+  RunLoopUntilIdle();
+}
+
+TEST_F(GAP_ScoConnectionManagerTest, QueueTwoRequestsAndCancelSecond) {
+  const hci::ConnectionHandle handle_0 = kScoConnectionHandle;
+
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kAclConnectionHandle, kConnectionParams),
+      &setup_status_packet);
+
+  fbl::RefPtr<ScoConnection> conn_0;
+  auto conn_cb_0 = [&conn_0](fbl::RefPtr<ScoConnection> cb_conn) { conn_0 = std::move(cb_conn); };
+  auto req_handle_0 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_0));
+
+  size_t cb_count_1 = 0;
+  auto conn_cb_1 = [&cb_count_1](fbl::RefPtr<ScoConnection> cb_conn) {
+    EXPECT_FALSE(cb_conn);
+    cb_count_1++;
+  };
+  auto req_handle_1 = manager()->OpenConnection(kConnectionParams, std::move(conn_cb_1));
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(conn_0);
+
+  req_handle_1.Cancel();
+  EXPECT_EQ(cb_count_1, 1u);
+
+  auto conn_complete_packet_0 = testing::SynchronousConnectionCompletePacket(
+      handle_0, kPeerAddress, hci::LinkType::kExtendedSCO, hci::StatusCode::kSuccess);
+  test_device()->SendCommandChannelPacket(conn_complete_packet_0);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_0);
+  EXPECT_EQ(cb_count_1, 1u);
+
+  auto disconn_status_packet_0 =
+      testing::CommandStatusPacket(hci::kDisconnect, hci::StatusCode::kSuccess);
+  auto disconn_complete_0 = testing::DisconnectionCompletePacket(handle_0);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(handle_0),
+                        &disconn_status_packet_0, &disconn_complete_0);
+  conn_0->Deactivate();
+  RunLoopUntilIdle();
 }
 
 }  // namespace

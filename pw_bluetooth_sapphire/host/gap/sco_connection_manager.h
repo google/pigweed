@@ -17,6 +17,25 @@ namespace bt::gap {
 // queuing outbound and inbound connection requests and handling events related to SCO connections.
 class ScoConnectionManager final {
  public:
+  // Request handle returned to clients. Cancels request when destroyed.
+  class RequestHandle final {
+   public:
+    explicit RequestHandle(fit::callback<void()> on_cancel) : on_cancel_(std::move(on_cancel)) {}
+    RequestHandle(RequestHandle&&) = default;
+    RequestHandle& operator=(RequestHandle&&) = default;
+    ~RequestHandle() { Cancel(); }
+
+    void Cancel() {
+      if (on_cancel_) {
+        on_cancel_();
+      }
+    }
+
+   private:
+    fit::callback<void()> on_cancel_;
+    DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RequestHandle);
+  };
+
   // |peer_id| corresponds to the peer associated with this BR/EDR connection.
   // |acl_handle| corresponds to the ACL connection associated with these SCO connections.
   // |transport| must outlive this object.
@@ -27,18 +46,43 @@ class ScoConnectionManager final {
 
   // Initiate and outbound connection. A request will be queued if a connection is already in
   // progress. On error, |callback| will be called with nullptr.
-  using ConnectionCallback = fit::function<void(fbl::RefPtr<ScoConnection>)>;
-  void OpenConnection(hci::SynchronousConnectionParameters parameters, ConnectionCallback callback);
+  // Returns a handle that will cancel the request when dropped (if connection establishment has not
+  // started).
+  using ConnectionCallback = fit::callback<void(fbl::RefPtr<ScoConnection>)>;
+  RequestHandle OpenConnection(hci::SynchronousConnectionParameters parameters,
+                               ConnectionCallback callback);
 
   // Accept the next inbound connection request and establish a new SCO connection using
   // |parameters|.
   // On error, |callback| will be called with nullptr.
   // If another Open/Accept request is made before the peer sends a connection request, this request
   // will be cancelled.
-  void AcceptConnection(hci::SynchronousConnectionParameters parameters,
-                        ConnectionCallback callback);
+  // Returns a handle that will cancel the request when dropped (if connection establishment has not
+  // started).
+  RequestHandle AcceptConnection(hci::SynchronousConnectionParameters parameters,
+                                 ConnectionCallback callback);
 
  private:
+  using ScoRequestId = uint64_t;
+
+  class ConnectionRequest final {
+   public:
+    ConnectionRequest(ConnectionRequest&&) = default;
+    ConnectionRequest& operator=(ConnectionRequest&&) = default;
+    ~ConnectionRequest() {
+      if (callback) {
+        bt_log(DEBUG, "sco", "Cancelling SCO connection request (id: %zu)", id);
+        callback(nullptr);
+      }
+    }
+
+    ScoRequestId id;
+    bool initiator;
+    bool received_request;
+    hci::SynchronousConnectionParameters parameters;
+    ConnectionCallback callback;
+  };
+
   hci::CommandChannel::EventHandlerId AddEventHandler(const hci::EventCode& code,
                                                       hci::CommandChannel::EventCallback cb);
 
@@ -47,6 +91,10 @@ class ScoConnectionManager final {
       const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
 
+  ScoConnectionManager::RequestHandle QueueRequest(bool initiator,
+                                                   hci::SynchronousConnectionParameters,
+                                                   ConnectionCallback);
+
   void TryCreateNextConnection();
 
   void CompleteRequest(fbl::RefPtr<ScoConnection> connection);
@@ -54,14 +102,17 @@ class ScoConnectionManager final {
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
 
-  struct ConnectionRequest {
-    bool initiator;
-    bool received_request = false;
-    hci::SynchronousConnectionParameters parameters;
-    ConnectionCallback callback;
-  };
+  // If either the queued or in progress request has the given id and can be cancelled, cancel it.
+  // Called when a RequestHandle is dropped.
+  void CancelRequestWithId(ScoRequestId);
 
-  std::queue<ConnectionRequest> connection_requests_;
+  // The id that should be associated with the next request. Incremented when the current value is
+  // used.
+  ScoRequestId next_req_id_;
+
+  // If a request is made while in_progress_request_ is waiting for a complete event, it gets queued
+  // in queued_request_.
+  std::optional<ConnectionRequest> queued_request_;
 
   std::optional<ConnectionRequest> in_progress_request_;
 

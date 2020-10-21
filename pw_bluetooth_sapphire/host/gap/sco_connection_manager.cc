@@ -37,7 +37,8 @@ hci::SynchronousConnectionParameters ConnectionParametersToLe(
 ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci::ConnectionHandle acl_handle,
                                            DeviceAddress peer_address, DeviceAddress local_address,
                                            fxl::WeakPtr<hci::Transport> transport)
-    : peer_id_(peer_id),
+    : next_req_id_(0u),
+      peer_id_(peer_id),
       local_address_(local_address),
       peer_address_(peer_address),
       acl_handle_(acl_handle),
@@ -63,34 +64,20 @@ ScoConnectionManager::~ScoConnectionManager() {
     conn->Close();
   }
 
-  // Cancel in progress request.
   if (in_progress_request_) {
     bt_log(DEBUG, "gap-sco", "ScoConnectionManager destroyed while request in progress");
-    in_progress_request_->callback(nullptr);
     in_progress_request_.reset();
   }
-
-  // Cancel queued requests.
-  while (!connection_requests_.empty()) {
-    connection_requests_.front().callback(nullptr);
-    connection_requests_.pop();
-  }
 }
 
-void ScoConnectionManager::OpenConnection(hci::SynchronousConnectionParameters params,
-                                          ConnectionCallback callback) {
-  ZX_ASSERT(callback);
-  connection_requests_.push(
-      {.initiator = true, .parameters = params, .callback = std::move(callback)});
-  TryCreateNextConnection();
+ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
+    hci::SynchronousConnectionParameters params, ConnectionCallback callback) {
+  return QueueRequest(/*initiator=*/true, params, std::move(callback));
 }
 
-void ScoConnectionManager::AcceptConnection(hci::SynchronousConnectionParameters params,
-                                            ConnectionCallback callback) {
-  ZX_ASSERT(callback);
-  connection_requests_.push(
-      {.initiator = false, .parameters = params, .callback = std::move(callback)});
-  TryCreateNextConnection();
+ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
+    hci::SynchronousConnectionParameters params, ConnectionCallback callback) {
+  return QueueRequest(/*initiator=*/false, params, std::move(callback));
 }
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
@@ -212,21 +199,37 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
+ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
+    bool initiator, hci::SynchronousConnectionParameters params, ConnectionCallback cb) {
+  ZX_ASSERT(cb);
+  // Cancel the current request.
+  queued_request_.reset();
+
+  auto req_id = next_req_id_++;
+  queued_request_ = {
+      .id = req_id, .initiator = initiator, .parameters = params, .callback = std::move(cb)};
+
+  TryCreateNextConnection();
+
+  return RequestHandle([req_id, self = weak_ptr_factory_.GetWeakPtr()]() {
+    if (self) {
+      self->CancelRequestWithId(req_id);
+    }
+  });
+}
+
 void ScoConnectionManager::TryCreateNextConnection() {
   // Cancel an in-progress responder request that hasn't received a connection request event yet.
-  if (in_progress_request_ && !in_progress_request_->initiator &&
-      !in_progress_request_->received_request) {
-    bt_log(DEBUG, "gap-sco", "Cancelling in progress responder SCO connection due to new request");
-    in_progress_request_->callback(nullptr);
-    in_progress_request_.reset();
+  if (in_progress_request_) {
+    CancelRequestWithId(in_progress_request_->id);
   }
 
-  if (in_progress_request_ || connection_requests_.empty()) {
+  if (in_progress_request_ || !queued_request_) {
     return;
   }
 
-  in_progress_request_ = std::move(connection_requests_.front());
-  connection_requests_.pop();
+  in_progress_request_ = std::move(queued_request_);
+  queued_request_.reset();
 
   if (in_progress_request_->initiator) {
     bt_log(DEBUG, "gap-sco", "Initiating SCO connection (peer: %s)", bt_str(peer_id_));
@@ -268,6 +271,23 @@ void ScoConnectionManager::SendCommandWithStatusCallback(
     };
   }
   transport_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
+}
+
+void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
+  // Cancel queued request if id matches.
+  if (queued_request_ && queued_request_->id == id) {
+    bt_log(TRACE, "gap-sco", "Cancelling queued request (id: %zu)", id);
+    queued_request_.reset();
+    return;
+  }
+
+  // Cancel in progress request if it is a responder request that hasn't received a connection
+  // request yet.
+  if (in_progress_request_ && in_progress_request_->id == id && !in_progress_request_->initiator &&
+      !in_progress_request_->received_request) {
+    bt_log(TRACE, "gap-sco", "Cancelling in progress request (id: %zu)", id);
+    CompleteRequest(nullptr);
+  }
 }
 
 }  // namespace bt::gap
