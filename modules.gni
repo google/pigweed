@@ -51,6 +51,7 @@ declare_args() {
   dir_pw_minimal_cpp_stdlib = get_path_info("pw_minimal_cpp_stdlib", "abspath")
   dir_pw_module = get_path_info("pw_module", "abspath")
   dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")
+  dir_pw_package = get_path_info("pw_package", "abspath")
   dir_pw_polyfill = get_path_info("pw_polyfill", "abspath")
   dir_pw_preprocessor = get_path_info("pw_preprocessor", "abspath")
   dir_pw_presubmit = get_path_info("pw_presubmit", "abspath")
