@@ -19,29 +19,7 @@ import("$dir_pw_build/python.gni")
 pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
-    "pw_tokenizer/__init__.py",
-    "pw_tokenizer/__main__.py",
-    "pw_tokenizer/database.py",
-    "pw_tokenizer/decode.py",
-    "pw_tokenizer/detokenize.py",
-    "pw_tokenizer/elf_reader.py",
-    "pw_tokenizer/encode.py",
-    "pw_tokenizer/serial_detokenizer.py",
-    "pw_tokenizer/tokens.py",
-  ]
-  tests = [
-    "database_test.py",
-    "decode_test.py",
-    "detokenize_test.py",
-    "elf_reader_test.py",
-    "encode_test.py",
-    "tokens_test.py",
-  ]
-  inputs = [
-    "generate_argument_types_macro.py",
-    "generate_hash_macro.py",
-    "generate_hash_test_data.py",
-    "tokenized_string_decoding_test_data.py",
-    "varint_test_data.py",
+    "pw_trace_tokenized/__init__.py",
+    "pw_trace_tokenized/trace_tokenized.py",
   ]
 }

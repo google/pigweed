@@ -16,14 +16,21 @@
 
 import os
 from pathlib import Path
+import platform
 import tempfile
 import unittest
 
 from pw_build.python_runner import ExpressionError, GnPaths, Label, TargetInfo
 from pw_build.python_runner import expand_expressions
 
-TEST_PATHS = GnPaths(Path('/gn_root'), Path('/gn_root/out'),
-                     Path('/gn_root/some/cwd'), '//toolchains/cool:ToolChain')
+ROOT = Path(r'C:\gn_root' if platform.system() == 'Windows' else '/gn_root')
+
+TEST_PATHS = GnPaths(
+    ROOT,
+    ROOT / 'out',
+    ROOT / 'some' / 'cwd',
+    '//toolchains/cool:ToolChain',
+)
 
 
 class LabelTest(unittest.TestCase):
@@ -38,63 +45,63 @@ class LabelTest(unittest.TestCase):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '//')
             self.assertEqual(label.name, '')
-            self.assertEqual(label.dir, Path('/gn_root'))
+            self.assertEqual(label.dir, ROOT)
             self.assertEqual(label.out_dir,
-                             Path('/gn_root/out', toolchain, 'obj'))
+                             ROOT.joinpath('out', toolchain, 'obj'))
             self.assertEqual(label.gen_dir,
-                             Path('/gn_root/out', toolchain, 'gen'))
+                             ROOT.joinpath('out', toolchain, 'gen'))
 
     def test_absolute(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '//foo/bar:baz')
             self.assertEqual(label.name, 'baz')
-            self.assertEqual(label.dir, Path('/gn_root/foo/bar'))
+            self.assertEqual(label.dir, ROOT.joinpath('foo/bar'))
             self.assertEqual(label.out_dir,
-                             Path('/gn_root/out', toolchain, 'obj/foo/bar'))
+                             ROOT.joinpath('out', toolchain, 'obj/foo/bar'))
             self.assertEqual(label.gen_dir,
-                             Path('/gn_root/out', toolchain, 'gen/foo/bar'))
+                             ROOT.joinpath('out', toolchain, 'gen/foo/bar'))
 
     def test_absolute_implicit_target(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '//foo/bar')
             self.assertEqual(label.name, 'bar')
-            self.assertEqual(label.dir, Path('/gn_root/foo/bar'))
+            self.assertEqual(label.dir, ROOT.joinpath('foo/bar'))
             self.assertEqual(label.out_dir,
-                             Path('/gn_root/out', toolchain, 'obj/foo/bar'))
+                             ROOT.joinpath('out', toolchain, 'obj/foo/bar'))
             self.assertEqual(label.gen_dir,
-                             Path('/gn_root/out', toolchain, 'gen/foo/bar'))
+                             ROOT.joinpath('out', toolchain, 'gen/foo/bar'))
 
     def test_relative(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, ':tgt')
             self.assertEqual(label.name, 'tgt')
-            self.assertEqual(label.dir, Path('/gn_root/some/cwd'))
+            self.assertEqual(label.dir, ROOT.joinpath('some/cwd'))
             self.assertEqual(label.out_dir,
-                             Path('/gn_root/out', toolchain, 'obj/some/cwd'))
+                             ROOT.joinpath('out', toolchain, 'obj/some/cwd'))
             self.assertEqual(label.gen_dir,
-                             Path('/gn_root/out', toolchain, 'gen/some/cwd'))
+                             ROOT.joinpath('out', toolchain, 'gen/some/cwd'))
 
     def test_relative_subdir(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, 'tgt')
             self.assertEqual(label.name, 'tgt')
-            self.assertEqual(label.dir, Path('/gn_root/some/cwd/tgt'))
+            self.assertEqual(label.dir, ROOT.joinpath('some/cwd/tgt'))
             self.assertEqual(
                 label.out_dir,
-                Path('/gn_root/out', toolchain, 'obj/some/cwd/tgt'))
+                ROOT.joinpath('out', toolchain, 'obj/some/cwd/tgt'))
             self.assertEqual(
                 label.gen_dir,
-                Path('/gn_root/out', toolchain, 'gen/some/cwd/tgt'))
+                ROOT.joinpath('out', toolchain, 'gen/some/cwd/tgt'))
 
     def test_relative_parent_dir(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '..:tgt')
             self.assertEqual(label.name, 'tgt')
-            self.assertEqual(label.dir, Path('/gn_root/some'))
+            self.assertEqual(label.dir, ROOT.joinpath('some'))
             self.assertEqual(label.out_dir,
-                             Path('/gn_root/out', toolchain, 'obj/some'))
+                             ROOT.joinpath('out', toolchain, 'obj/some'))
             self.assertEqual(label.gen_dir,
-                             Path('/gn_root/out', toolchain, 'gen/some'))
+                             ROOT.joinpath('out', toolchain, 'gen/some'))
 
 
 class ResolvePathTest(unittest.TestCase):

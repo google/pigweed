@@ -12,12 +12,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# gn-format disable
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/input_group.gni")
+import("$dir_pw_build/python.gni")
 
-# TODO(hepler): Replace this with a pw_python_package.
-pw_input_group("py") {
-  inputs = [ "pw_build/generated_tests.py" ]
+pw_python_package("py") {
+  setup = [ "setup.py" ]
+  sources = [
+    "pw_build/__init__.py",
+    "pw_build/exec.py",
+    "pw_build/generate_python_package_gn.py",
+    "pw_build/generated_tests.py",
+    "pw_build/host_tool.py",
+    "pw_build/nop.py",
+    "pw_build/null_backend.py",
+    "pw_build/python_runner.py",
+    "pw_build/python_wheels.py",
+    "pw_build/zip.py",
+    "pw_build/zip_test.py",
+  ]
+  tests = [ "python_runner_test.py" ]
 }

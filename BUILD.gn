@@ -114,7 +114,37 @@ group("docs") {
 }
 
 pw_python_group("python") {
-  python_deps = [ ":python_packages($_default_toolchain_prefix$pw_default_optimization_level)" ]
+  _python_packages = [
+    "$dir_pw_allocator/py",
+    "$dir_pw_arduino_build/py",
+    "$dir_pw_build/py",
+    "$dir_pw_cli/py",
+    "$dir_pw_doctor/py",
+    "$dir_pw_env_setup/py",
+    "$dir_pw_hdlc_lite/py",
+    "$dir_pw_module/py",
+    "$dir_pw_presubmit/py",
+    "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_protobuf/py",
+    "$dir_pw_rpc/py",
+    "$dir_pw_status/py",
+    "$dir_pw_tokenizer/py",
+    "$dir_pw_trace/py",
+    "$dir_pw_trace_tokenized/py",
+    "$dir_pw_unit_test/py",
+    "$dir_pw_watch/py",
+
+    # TODO(pwbug/239): Structure pw_docgen as Python packages.
+    # "$dir_pw_bloat/py",
+    # "$dir_pw_docgen/py",
+  ]
+
+  _toolchain = "$_default_toolchain_prefix$pw_default_optimization_level"
+
+  python_deps = []
+  foreach(dep, _python_packages) {
+    python_deps += [ "$dep($_toolchain)" ]
+  }
 }
 
 # By default, Pigweed will build this target when invoking ninja.
@@ -160,13 +190,6 @@ group("pigweed_default") {
 
 # Prevent the default toolchain from parsing any other BUILD.gn files.
 if (current_toolchain != default_toolchain) {
-  pw_python_group("python_packages") {
-    python_deps = [
-      "$dir_pw_tokenizer/py",
-      # TODO(pwbug/239): Add all Pigweed Python packages
-    ]
-  }
-
   group("apps") {
     # Application images built for all targets.
     deps = [ "$dir_pw_hdlc_lite/rpc_example" ]

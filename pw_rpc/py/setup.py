@@ -27,7 +27,8 @@ setuptools.setup(
     entry_points={'console_scripts': ['pw_rpc_codegen = pw_rpc.plugin:main']},
     install_requires=[
         'protobuf',
-        'pw_protobuf',
+        # 'pw_protobuf_compiler',
+        # 'pw_status',
     ],
     tests_require=['pw_build'],
 )

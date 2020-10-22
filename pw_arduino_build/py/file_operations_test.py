@@ -58,16 +58,16 @@ class TestFileOperations(unittest.TestCase):
             "sources recursive", file_set(), ["**/*.ino", "**/*.h", "**/*.cpp"],
             [
                 "app.ino",
-                "core/pwm/pulse.h",
-                "libraries/b.cpp",
-                "libraries/c.h",
+                os.path.join("core", "pwm", "pulse.h"),
+                os.path.join("libraries", "b.cpp"),
+                os.path.join("libraries", "c.h"),
             ]
         ),
         (
             "directories recursive", file_set(), ["**"],
             [
                 "core",
-                "core/pwm",
+                os.path.join("core", "pwm"),
                 "libraries",
             ]
         ),

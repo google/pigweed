@@ -19,29 +19,25 @@ import("$dir_pw_build/python.gni")
 pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
-    "pw_tokenizer/__init__.py",
-    "pw_tokenizer/__main__.py",
-    "pw_tokenizer/database.py",
-    "pw_tokenizer/decode.py",
-    "pw_tokenizer/detokenize.py",
-    "pw_tokenizer/elf_reader.py",
-    "pw_tokenizer/encode.py",
-    "pw_tokenizer/serial_detokenizer.py",
-    "pw_tokenizer/tokens.py",
+    "pw_rpc/__init__.py",
+    "pw_rpc/callback_client.py",
+    "pw_rpc/client.py",
+    "pw_rpc/codegen_nanopb.py",
+    "pw_rpc/descriptors.py",
+    "pw_rpc/ids.py",
+    "pw_rpc/packet_pb2.py",
+    "pw_rpc/packets.py",
+    "pw_rpc/plugin.py",
   ]
   tests = [
-    "database_test.py",
-    "decode_test.py",
-    "detokenize_test.py",
-    "elf_reader_test.py",
-    "encode_test.py",
-    "tokens_test.py",
+    "callback_client_test.py",
+    "client_test.py",
+    "codegen_test.py",
+    "ids_test.py",
+    "packets_test.py",
   ]
-  inputs = [
-    "generate_argument_types_macro.py",
-    "generate_hash_macro.py",
-    "generate_hash_test_data.py",
-    "tokenized_string_decoding_test_data.py",
-    "varint_test_data.py",
+  python_deps = [
+    "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_status/py",
   ]
 }
