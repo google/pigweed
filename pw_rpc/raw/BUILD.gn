@@ -50,7 +50,7 @@ pw_test_group("tests") {
 pw_test("raw_method_test") {
   deps = [
     ":method_union",
-    "..:test_protos_pwpb",
+    "..:test_protos.pwpb",
     "..:test_utils",
     dir_pw_protobuf,
   ]
@@ -60,7 +60,7 @@ pw_test("raw_method_test") {
 pw_test("raw_method_union_test") {
   deps = [
     ":method_union",
-    "..:test_protos_pwpb",
+    "..:test_protos.pwpb",
     "..:test_utils",
     dir_pw_protobuf,
   ]

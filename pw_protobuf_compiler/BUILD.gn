@@ -35,7 +35,7 @@ pw_test_group("tests") {
 
 if (_compiling_for_nanopb) {
   pw_test("nanopb_test") {
-    deps = [ ":nanopb_test_protos_nanopb" ]
+    deps = [ ":nanopb_test_protos.nanopb" ]
     sources = [ "nanopb_test.cc" ]
   }
 

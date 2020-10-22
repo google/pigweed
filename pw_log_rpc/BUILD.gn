@@ -35,7 +35,7 @@ pw_source_set("log_queue") {
     "$dir_pw_status",
   ]
   sources = [ "log_queue.cc" ]
-  deps = [ ":protos_pwpb" ]
+  deps = [ ":protos.pwpb" ]
 }
 
 pw_proto_library("protos") {
@@ -50,7 +50,7 @@ pw_test("log_queue_test") {
   sources = [ "log_queue_test.cc" ]
   deps = [
     ":log_queue",
-    ":protos_pwpb",
+    ":protos.pwpb",
     dir_pw_protobuf,
   ]
 }

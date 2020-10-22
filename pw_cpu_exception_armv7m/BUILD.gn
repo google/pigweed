@@ -43,7 +43,7 @@ pw_source_set("proto_dump") {
     dir_pw_stream,
   ]
   public = [ "public/pw_cpu_exception_armv7m/proto_dump.h" ]
-  deps = [ ":cpu_state_protos_pwpb" ]
+  deps = [ ":cpu_state_protos.pwpb" ]
   sources = [ "proto_dump.cc" ]
 }
 

@@ -58,7 +58,7 @@ def main() -> int:
     _LOG.error('Depend on one of the following targets instead:')
     _LOG.error('')
     for gen in args.generators:
-        _LOG.error('  //%s:%s_%s', relative_dir, args.target, gen)
+        _LOG.error('  //%s:%s.%s', relative_dir, args.target, gen)
     _LOG.error('')
 
     return 1

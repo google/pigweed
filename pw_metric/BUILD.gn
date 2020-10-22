@@ -63,12 +63,12 @@ if (dir_pw_third_party_nanopb != "") {
   pw_source_set("metric_service_nanopb") {
     public_configs = [ ":default_config" ]
     public_deps = [
-      ":metric_service_proto_nanopb_rpc",
+      ":metric_service_proto.nanopb_rpc",
       ":pw_metric",
     ]
     public = [ "public/pw_metric/metric_service_nanopb.h" ]
     deps = [
-      ":metric_service_proto_nanopb_rpc",
+      ":metric_service_proto.nanopb_rpc",
       "$dir_pw_containers:vector",
       dir_pw_tokenizer,
     ]

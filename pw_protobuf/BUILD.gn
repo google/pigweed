@@ -99,7 +99,7 @@ pw_test("find_test") {
 }
 
 pw_test("codegen_test") {
-  deps = [ ":codegen_test_protos_pwpb" ]
+  deps = [ ":codegen_test_protos.pwpb" ]
   sources = [ "codegen_test.cc" ]
 }
 

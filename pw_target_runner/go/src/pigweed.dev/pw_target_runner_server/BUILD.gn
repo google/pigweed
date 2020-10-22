@@ -19,7 +19,7 @@ import("$dir_pw_build/go.gni")
 pw_go_package("pw_target_runner_server") {
   sources = [ "main.go" ]
   deps = [
-    "$dir_pw_target_runner:exec_server_config_proto_go",
+    "$dir_pw_target_runner:exec_server_config_proto.go",
     "$dir_pw_target_runner/go/src/pigweed.dev/pw_target_runner",
   ]
   external_deps = [ "github.com/golang/protobuf/proto" ]

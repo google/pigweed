@@ -45,13 +45,13 @@ For example, given the definitions:
 
 .. code::
 
-  pw_protobuf_GENERATORS = [ "pwpb", "py" ]
+  pw_protobuf_GENERATORS = [ "pwpb", "go" ]
 
   pw_proto_library("test_protos") {
     sources = [ "test.proto" ]
   }
 
-Two targets are created, named ``test_protos_pwpb`` and ``test_protos_py``,
+Two targets are created, named ``test_protos.pwpb`` and ``test_protos.go``,
 containing the generated code from their respective generators.
 
 **Arguments**
@@ -74,11 +74,11 @@ containing the generated code from their respective generators.
 
   pw_proto_library("my_other_protos") {
     sources = [
-      "baz.proto", # imports foo.proto
+      "baz.proto",  # imports foo.proto
     ]
-    deps = [
-      ":my_protos",
-    ]
+
+    # Proto libraries depend on other proto libraries directly.
+    deps = [ ":my_protos" ]
   }
 
   source_set("my_cc_code") {
@@ -87,7 +87,7 @@ containing the generated code from their respective generators.
       "bar.cc",
       "baz.cc",
     ]
-    deps = [
-      ":my_other_protos_cc",
-    ]
+
+    # When depending on protos in a source_set, specify the generator suffix.
+    deps = [ ":my_other_protos.pwpb" ]
   }

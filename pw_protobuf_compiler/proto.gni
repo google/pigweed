@@ -295,7 +295,7 @@ template("_pw_go_proto_library") {
 # The generators to use are defined in the pw_protobuf_GENERATORS build
 # variable. Each listed generator creates a generated code target called
 #
-#   <target_name>_<generator>
+#   <target_name>.<generator>
 #
 # For example, with the following definitions:
 #
@@ -307,8 +307,8 @@ template("_pw_go_proto_library") {
 #
 # Two build targets will be created for the declared "my_protos" target.
 #
-#   "my_protos_pwpb"  <-- C++ source_set containing generated proto code
-#   "my_protos_py"    <-- Python module containing generated proto code
+#   "my_protos.pwpb"  <-- C++ source_set containing generated proto code
+#   "my_protos.py"    <-- Python module containing generated proto code
 #
 # Args:
 #  sources: List of input .proto files.
@@ -361,20 +361,20 @@ template("pw_proto_library") {
   }
 
   foreach(_gen, _generators) {
-    _lang_target = "${target_name}_${_gen}"
+    _lang_target = "${target_name}.${_gen}"
     _gen_deps = []
 
     if (_gen == "nanopb_rpc") {
       # Generated RPC code depends on the library's core protos.
-      _gen_deps += [ ":${target_name}_nanopb" ]
+      _gen_deps += [ ":${target_name}.nanopb" ]
     }
 
     if (defined(invoker.deps)) {
-      _gen_deps += process_file_template(invoker.deps, "{{source}}_${_gen}")
+      _gen_deps += process_file_template(invoker.deps, "{{source}}.${_gen}")
 
       if (_gen == "nanopb_rpc") {
         # RPC dependencies also depend on their core generated protos.
-        _gen_deps += process_file_template(invoker.deps, "{{source}}_nanopb")
+        _gen_deps += process_file_template(invoker.deps, "{{source}}.nanopb")
       }
     }
 
@@ -427,6 +427,12 @@ template("pw_proto_library") {
                    "generator '$_gen'. Please add support if you require it.",
                  ]))
     }
+
+    # TODO(frolv): Remove this after migrating existing code.
+    _legacy_target = "${target_name}_${_gen}"
+    group(_legacy_target) {
+      public_deps = [ ":$_lang_target" ]
+    }
   }
 
   # All supported pw_protobuf generators.
@@ -439,7 +445,7 @@ template("pw_proto_library") {
 
   # Create stub versions of the proto library for other protobuf generators.
   foreach(_gen, _protobuf_generators - _generators) {
-    pw_python_action("${target_name}_${_gen}") {
+    pw_python_action("${target_name}.${_gen}") {
       forward_variables_from(invoker, _forwarded_vars)
       script = string_join("/",
                            [
@@ -450,7 +456,7 @@ template("pw_proto_library") {
                            ])
       args = [
         "--library",
-        "${target_name}_${_gen}",
+        target_name,
         "--generator",
         _gen,
       ]

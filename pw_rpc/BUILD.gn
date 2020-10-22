@@ -67,7 +67,7 @@ pw_source_set("client") {
 pw_source_set("common") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    ":protos_pwpb",
+    ":protos.pwpb",
     "$dir_pw_containers:intrusive_list",
     dir_pw_assert,
     dir_pw_bytes,
@@ -221,7 +221,7 @@ pw_test("packet_test") {
 
 pw_test("service_test") {
   deps = [
-    ":protos_pwpb",
+    ":protos.pwpb",
     ":server",
     dir_pw_assert,
   ]
@@ -246,7 +246,7 @@ pw_test("base_client_call_test") {
 
 pw_test("server_test") {
   deps = [
-    ":protos_pwpb",
+    ":protos.pwpb",
     ":server",
     ":test_utils",
     dir_pw_assert,
