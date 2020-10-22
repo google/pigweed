@@ -53,12 +53,6 @@ template("pw_facade") {
 
   _facade_name = "$target_name.facade"
 
-  if (defined(invoker.facade_name)) {
-    not_needed([ invoker.facade_name ])
-    print("pw_facade(\"$target_name\") uses the facade_name arg, which is",
-          "deprecated. Access the facade target as $target_name.facade")
-  }
-
   if (get_path_info(get_label_info(":$target_name", "dir"), "name") ==
       get_label_info(":$target_name", "name")) {
     group("facade") {
