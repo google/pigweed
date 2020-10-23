@@ -80,8 +80,8 @@ def _add_programs_arguments(exclusive: argparse.ArgumentParser,
             if values not in all_steps:
                 raise parser.error(
                     f'argument --step: {values} is not the name of a '
-                    'presubmit check\n\n'
-                    f'Valid values for --step:\n{{{",".join(all_steps)}}}')
+                    'presubmit check\n\nValid values for --step:\n'
+                    f'{{{",".join(sorted(all_steps))}}}')
 
             namespace.program.append(all_steps[values])
 
