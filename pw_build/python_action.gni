@@ -187,17 +187,3 @@ template("pw_python_action_foreach") {
     _pw_action_type = "action_foreach"
   }
 }
-
-# Compatibilty aliases for pw_python_action and pw_python_action_foreach. Will
-# be removed once all projects have migrated to the new name.
-template("pw_python_script") {
-  pw_python_action(target_name) {
-    forward_variables_from(invoker, "*")
-  }
-}
-
-template("pw_python_script_foreach") {
-  pw_python_action_foreach(target_name) {
-    forward_variables_from(invoker, "*")
-  }
-}

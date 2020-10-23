@@ -103,7 +103,7 @@ The ``pw_facade`` template declares two targets:
     public = [ "public/pw_foo/foo.h" ]
   }
 
-.. _module-pw_build-python-script:
+.. _module-pw_build-python-action:
 
 pw_python_action
 ^^^^^^^^^^^^^^^^

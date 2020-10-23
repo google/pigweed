@@ -58,7 +58,7 @@ These are run as steps during a build, facilitated by the build system.
 See also
 ^^^^^^^^
 
-* :ref:`module-pw_build-python-script`
+* :ref:`module-pw_build-python-action`
 
 Python packaging
 ----------------
