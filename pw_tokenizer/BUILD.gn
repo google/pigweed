@@ -112,7 +112,6 @@ pw_source_set("base64") {
   public_deps = [
     ":pw_tokenizer",
     dir_pw_base64,
-    dir_pw_containers,
     dir_pw_preprocessor,
     dir_pw_span,
   ]

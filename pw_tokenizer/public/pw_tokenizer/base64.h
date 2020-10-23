@@ -68,7 +68,6 @@ PW_EXTERN_C_END
 #include <string_view>
 
 #include "pw_base64/base64.h"
-#include "pw_containers/vector.h"
 #include "pw_tokenizer/config.h"
 #include "pw_tokenizer/tokenize.h"
 
@@ -105,39 +104,6 @@ inline size_t PrefixedBase64Encode(std::span<const std::byte> binary_message,
 inline size_t PrefixedBase64Encode(std::span<const uint8_t> binary_message,
                                    std::span<char> output_buffer) {
   return PrefixedBase64Encode(std::as_bytes(binary_message), output_buffer);
-}
-
-// Encodes to a pw::Vector, which defaults to fit a message
-// PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES long encoded as prefixed Base64.
-// The returned vector always contains a null-terminated Base64 string. If
-// size() is zero, the binary message did not fit.
-template <size_t buffer_size = kDefaultBase64EncodedBufferSize>
-Vector<char, buffer_size> PrefixedBase64Encode(
-    std::span<const std::byte> binary_message) {
-  static_assert(buffer_size >= Base64EncodedBufferSize(sizeof(Token)),
-                "Buffer must be large enough for at least the uint32_t token");
-
-  Vector<char, buffer_size> output;
-  const size_t encoded_size = Base64EncodedBufferSize(binary_message.size());
-
-  // Make sure the encoded data and a null terminator can fit.
-  if (buffer_size < encoded_size) {
-    output[0] = '\0';
-    return output;
-  }
-
-  output.resize(encoded_size - 1);  // exclude null terminator
-  output[0] = kBase64Prefix;
-  base64::Encode(binary_message, &output[1]);
-  output[encoded_size - 1] = '\0';
-  return output;
-}
-
-// Encode to a pw::Vector from std::span<const uint8_t>.
-template <size_t buffer_size = kDefaultBase64EncodedBufferSize>
-Vector<char, buffer_size> PrefixedBase64Encode(
-    std::span<const uint8_t> binary_message) {
-  return PrefixedBase64Encode(std::as_bytes(binary_message));
 }
 
 // Decodes a prefixed Base64 tokenized message to binary. Returns the size of

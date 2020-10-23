@@ -99,30 +99,6 @@ TEST_F(PrefixedBase64, Encode_NoRoomForNullAfterMessage_OnlyNullTerminates) {
   EXPECT_EQ(kUnset, base64_[1]);
 }
 
-TEST_F(PrefixedBase64, EncodeToVector_EmptyInput_WritesPrefix) {
-  auto buffer = PrefixedBase64Encode(std::span<byte>());
-  ASSERT_EQ(1u, buffer.size());
-  EXPECT_EQ('$', buffer[0]);
-  EXPECT_EQ('\0', buffer[1]);
-}
-
-TEST_F(PrefixedBase64, EncodeToVector_Successful) {
-  auto buffer = PrefixedBase64Encode(kTestData[5].binary);
-  ASSERT_EQ(buffer.size(), kTestData[5].base64.size());
-  EXPECT_EQ(
-      0, std::memcmp(buffer.data(), kTestData[5].base64.data(), buffer.size()));
-  EXPECT_EQ('\0', buffer[buffer.size()]);
-}
-
-TEST_F(PrefixedBase64, EncodeToVector_VectorTooSmall_OnlyNullTerminates) {
-  constexpr byte big[Base64EncodedBufferSize(
-      PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES + 1)] = {};
-
-  auto buffer = PrefixedBase64Encode(big);
-  ASSERT_EQ(0u, buffer.size());
-  EXPECT_EQ('\0', buffer[0]);
-}
-
 TEST_F(PrefixedBase64, Base64EncodedBufferSize_Empty_RoomForPrefixAndNull) {
   EXPECT_EQ(2u, Base64EncodedBufferSize(0));
 }
