@@ -300,10 +300,10 @@ class LowEnergyConnection final : public sm::Delegate {
     }
 
     bt_log(
-        INFO, "gap-le", "new %s pairing data [%s%s%s%s%sid: %s]",
+        INFO, "gap-le", "new %s pairing data [%s%s%s%s%s%sid: %s]",
         ltk->security().secure_connections() ? "secure connections" : "legacy",
         pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
-        pairing_data.irk ? "irk " : "",
+        pairing_data.irk ? "irk " : "", pairing_data.cross_transport_key ? "ct_key " : "",
         pairing_data.identity_address
             ? fxl::StringPrintf("(identity: %s) ", bt_str(*pairing_data.identity_address)).c_str()
             : "",

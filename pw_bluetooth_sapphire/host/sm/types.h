@@ -84,7 +84,7 @@ constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys) {
 }
 
 // Returns a bool indicating whether `features` calls for the devices to exchange key information
-// during the Key Distribution/Generation Phase 3. 
+// during the Key Distribution/Generation Phase 3.
 bool HasKeysToDistribute(PairingFeatures features);
 
 // Each enum variant corresponds to an LE security mode 1 level in v5.2 Vol. Part C 10.2.1. Fuchsia
@@ -184,6 +184,8 @@ class LTK final {
   bool operator==(const LTK& other) const {
     return security() == other.security() && key() == other.key();
   }
+
+  bool operator!=(const LTK& other) const { return !(*this == other); }
 
  private:
   SecurityProperties security_;

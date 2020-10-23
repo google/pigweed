@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace gap {
@@ -158,6 +159,10 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
   // Add the peer to the resolving list if it has an IRK.
   if (peer->identity_known() && bond_data.irk) {
     le_resolving_list_.Add(peer->address(), bond_data.irk->value());
+  }
+
+  if (bond_data.cross_transport_key) {
+    peer->StoreBrEdrCrossTransportKey(*bond_data.cross_transport_key);
   }
 
   // Report the bond for persisting only if the identity of the peer is known.

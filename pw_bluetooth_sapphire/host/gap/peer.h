@@ -23,6 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
 namespace bt {
 namespace gap {
@@ -410,6 +411,11 @@ class Peer final {
   // with an identity address.
   void set_identity_known(bool value) { identity_known_ = value; }
 
+  // Stores the BR/EDR cross-transport key generated through LE pairing. This method will not mark
+  // the peer as dual-mode if it is not already dual-mode. It will also not overwrite existing
+  // BR/EDR link keys of stronger security than `ct_key`.
+  void StoreBrEdrCrossTransportKey(sm::LTK ct_key);
+
  private:
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
@@ -466,6 +472,11 @@ class Peer final {
   BoolInspectable<bool> connectable_;
   BoolInspectable<bool> temporary_;
   int8_t rssi_;
+
+  // The spec does not explicitly prohibit LE->BREDR cross-transport key generation for LE-only
+  // peers. This is used to store a CT-generated BR/EDR key for LE-only peers to avoid incorrectly
+  // marking a peer as dual-mode.
+  std::optional<sm::LTK> bredr_cross_transport_key_;
 
   // Data that only applies to the LE transport. This is present if this device
   // is known to support LE.

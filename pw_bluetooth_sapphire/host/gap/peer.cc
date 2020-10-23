@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/manufacturer_names.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/strings/string_printf.h"
@@ -404,6 +405,19 @@ void Peer::SetName(const std::string& name) {
   }
 }
 
+void Peer::StoreBrEdrCrossTransportKey(sm::LTK ct_key) {
+  if (!bredr_data_.has_value()) {
+    // If the peer is LE-only, store the CT key separately until the peer is otherwise marked as
+    // dual-mode.
+    bredr_cross_transport_key_ = ct_key;
+  } else if (!bredr_data_->link_key().has_value() ||
+             ct_key.security().IsAsSecureAs(bredr_data_->link_key()->security())) {
+    // "The devices shall not overwrite that existing key with a key that is weaker in either
+    // strength or MITM protection." (v5.2 Vol. 3 Part C 14.1).
+    bredr_data_->SetBondData(ct_key);
+  }
+}
+
 // Private methods below:
 
 bool Peer::SetRssiInternal(int8_t rssi) {
@@ -453,6 +467,12 @@ void Peer::NotifyListeners(NotifyListenersChange change) {
 
 void Peer::MakeDualMode() {
   technology_.Set(TechnologyType::kDualMode);
+  if (bredr_cross_transport_key_) {
+    ZX_ASSERT(bredr_data_);  // Should only be hit after BR/EDR is already created.
+    bredr_data_->SetBondData(*bredr_cross_transport_key_);
+    bt_log(DEBUG, "gap-bredr", "restored cross-transport-generated br/edr link key");
+    bredr_cross_transport_key_ = std::nullopt;
+  }
   ZX_DEBUG_ASSERT(dual_mode_callback_);
   dual_mode_callback_(*this);
 }

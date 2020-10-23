@@ -18,7 +18,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
@@ -62,6 +64,15 @@ const bt::sm::LTK kLTK;
 const bt::sm::Key kKey{};
 
 const bt::sm::LTK kBrEdrKey;
+const bt::sm::LTK kInsecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/,
+                                                           false /*authenticated*/,
+                                                           false /*secure_connections*/,
+                                                           sm::kMaxEncryptionKeySize),
+                                    hci::LinkKey(UInt128{1}, 2, 3));
+const bt::sm::LTK kSecureBrEdrKey(sm::SecurityProperties(true /*encrypted*/, true /*authenticated*/,
+                                                         true /*secure_connections*/,
+                                                         sm::kMaxEncryptionKeySize),
+                                  hci::LinkKey(UInt128{4}, 5, 6));
 
 const std::vector<bt::UUID> kBrEdrServices = {UUID(uint16_t{0x110a}), UUID(uint16_t{0x110b})};
 
@@ -716,6 +727,71 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvin
   // peer.
   DeviceAddress rpa = sm::util::GenerateRpa(data.irk->value());
   EXPECT_EQ(peer(), cache()->FindByAddress(rpa));
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr) {
+  // There's no preexisting BR/EDR data, the LE peer already exists.
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.cross_transport_key = kSecureBrEdrKey;
+
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+  EXPECT_TRUE(peer()->le()->bonded());
+  // Storing an LE bond with a cross-transport BR/EDR key shouldn't automatically mark the peer as
+  // dual-mode.
+  EXPECT_FALSE(peer()->bredr().has_value());
+
+  // Make the peer dual-mode, and verify that the peer is already bonded over BR/EDR with the
+  // stored cross-transport key.
+  peer()->MutBrEdr();
+  EXPECT_TRUE(peer()->bredr()->bonded());
+  EXPECT_EQ(kSecureBrEdrKey, peer()->bredr()->link_key().value());
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithInsecureXTransportKeyExistingBrEdr) {
+  // The peer is already dual-mode with a secure BR/EDR key.
+  peer()->MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_TRUE(peer()->bredr()->bonded());
+
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.cross_transport_key = kInsecureBrEdrKey;
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+
+  // Verify that the existing BR/EDR key is not overwritten by a key of lesser security
+  sm::LTK current_bredr_key = peer()->bredr()->link_key().value();
+  EXPECT_NE(kInsecureBrEdrKey, current_bredr_key);
+  EXPECT_EQ(kSecureBrEdrKey, current_bredr_key);
+}
+
+TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyExistingBrEdr) {
+  // The peer is already dual-mode with an insecure BR/EDR key.
+  peer()->MutBrEdr().SetBondData(kInsecureBrEdrKey);
+  EXPECT_TRUE(peer()->bredr()->bonded());
+
+  sm::LTK kDifferentInsecureBrEdrKey(kInsecureBrEdrKey.security(), hci::LinkKey(UInt128{8}, 9, 10));
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.cross_transport_key = kDifferentInsecureBrEdrKey;
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+
+  // Verify that the existing BR/EDR key is overwritten by a key of the same security ("if the key
+  // [...] already exists, then the devices shall not overwrite that existing key with a key that
+  // is weaker" v5.2 Vol. 3 Part C 14.1).
+  sm::LTK current_bredr_key = peer()->bredr()->link_key().value();
+  EXPECT_NE(kInsecureBrEdrKey, current_bredr_key);
+  EXPECT_EQ(kDifferentInsecureBrEdrKey, current_bredr_key);
+
+  // Verify that the existing BR/EDR key is also overwritten by a key of greater security.
+  data.cross_transport_key = kSecureBrEdrKey;
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+
+  current_bredr_key = peer()->bredr()->link_key().value();
+  EXPECT_NE(kDifferentInsecureBrEdrKey, current_bredr_key);
+  EXPECT_EQ(kSecureBrEdrKey, current_bredr_key);
 }
 
 TEST_F(GAP_PeerCacheTest_BondingTest, StoreBrEdrBondWithUnknownAddress) {
