@@ -17,8 +17,8 @@
 import logging
 import typing
 
-import coloredlogs
-import serial.tools.list_ports
+import coloredlogs  # type: ignore
+import serial.tools.list_ports  # type: ignore
 
 # Vendor/device ID to search for in USB devices.
 _ST_VENDOR_ID = 0x0483

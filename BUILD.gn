@@ -118,12 +118,15 @@ pw_python_group("python") {
     # Python packages
     "$dir_pw_allocator/py",
     "$dir_pw_arduino_build/py",
+    "$dir_pw_bloat/py",
     "$dir_pw_build/py",
     "$dir_pw_cli/py",
+    "$dir_pw_docgen/py",
     "$dir_pw_doctor/py",
     "$dir_pw_env_setup/py",
     "$dir_pw_hdlc_lite/py",
     "$dir_pw_module/py",
+    "$dir_pw_package/py",
     "$dir_pw_presubmit/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_protobuf/py",
@@ -137,18 +140,22 @@ pw_python_group("python") {
 
     # Standalone scripts
     "$dir_pw_hdlc_lite/rpc_example:example_script",
-
-    # TODO(pwbug/239): Structure pw_docgen as Python packages.
-    # "$dir_pw_bloat/py",
-    # "$dir_pw_docgen/py",
   ]
 
-  _toolchain = "$_default_toolchain_prefix$pw_default_optimization_level"
+  _py_toolchain = "$_default_toolchain_prefix$pw_default_optimization_level"
 
   python_deps = []
   foreach(dep, _python_gn_targets) {
-    python_deps += [ "$dep($_toolchain)" ]
+    python_deps += [ "$dep($_py_toolchain)" ]
   }
+}
+
+# Python packages for supporting specific targets.
+pw_python_group("target_support_packages") {
+  python_deps = [
+    "$dir_pigweed/targets/lm3s6965evb-qemu/py($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_$pw_default_optimization_level)",
+    "$dir_pigweed/targets/stm32f429i-disc1/py($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_default_optimization_level)",
+  ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.
@@ -164,6 +171,8 @@ group("pigweed_default") {
         ":apps",
         ":python.lint",
         ":python.tests",
+        ":target_support_packages.lint",
+        ":target_support_packages.tests",
       ]
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {
         # Without a test runner defined, build the tests but don't run them.

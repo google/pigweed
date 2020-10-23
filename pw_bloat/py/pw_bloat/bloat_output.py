@@ -15,10 +15,10 @@
 
 import abc
 import enum
-from typing import Callable, Collection, Dict, List, Optional, Tuple, Type
-from typing import Union
+from typing import (Callable, Collection, Dict, List, Optional, Tuple, Type,
+                    Union)
 
-from binary_diff import BinaryDiff, FormattedDiff
+from pw_bloat.binary_diff import BinaryDiff, FormattedDiff
 
 
 class Output(abc.ABC):

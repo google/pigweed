@@ -11,18 +11,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""The pw_package package."""
 
-import setuptools  # type: ignore
+import("//build_overrides/pigweed.gni")
 
-setuptools.setup(
-    name='pw_package',
-    version='0.0.1',
-    author='Pigweed Authors',
-    author_email='pigweed-developers@googlegroups.com',
-    description='Tools for installing optional packages',
-    packages=setuptools.find_packages(),
-    package_data={'pw_package': ['py.typed']},
-    zip_safe=False,
-    install_requires=[],
-)
+import("$dir_pw_build/python.gni")
+
+pw_python_package("py") {
+  setup = [ "setup.py" ]
+  sources = [
+    "pw_package/__init__.py",
+    "pw_package/git_repo.py",
+    "pw_package/package_manager.py",
+    "pw_package/packages/__init__.py",
+    "pw_package/packages/nanopb.py",
+    "pw_package/pigweed_packages.py",
+  ]
+}

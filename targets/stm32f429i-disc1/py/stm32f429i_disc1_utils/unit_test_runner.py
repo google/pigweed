@@ -22,8 +22,8 @@ import sys
 import threading
 from typing import List
 
-import coloredlogs
-import serial
+import coloredlogs  # type: ignore
+import serial  # type: ignore
 from stm32f429i_disc1_utils import stm32f429i_detector
 
 # Path used to access non-python resources in this python module.

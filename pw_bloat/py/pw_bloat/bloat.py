@@ -23,8 +23,8 @@ import sys
 
 from typing import List, Iterable, Optional
 
-from binary_diff import BinaryDiff
-import bloat_output
+from pw_bloat.binary_diff import BinaryDiff
+from pw_bloat import bloat_output
 
 import pw_cli.log
 

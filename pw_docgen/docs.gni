@@ -108,7 +108,7 @@ template("pw_doc_gen") {
 
   if (pw_docgen_BUILD_DOCS) {
     pw_python_action(target_name) {
-      script = "$dir_pw_docgen/py/docgen.py"
+      script = "$dir_pw_docgen/py/pw_docgen/docgen.py"
       args = _script_args
       deps = [ ":$_metadata_file_target" ]
       inputs = [ invoker.conf ]
