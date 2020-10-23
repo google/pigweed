@@ -339,8 +339,9 @@ Then use `set +x` to go back to normal.
             outs.write(
                 json.dumps(config, indent=4, separators=(',', ': ')) + '\n')
 
-        with open(os.path.join(self._json_file), 'w') as outs:
-            self._env.json(outs)
+        if self._json_file is not None:
+            with open(self._json_file, 'w') as outs:
+                self._env.json(outs)
 
         return 0
 
