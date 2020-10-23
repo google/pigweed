@@ -14,6 +14,7 @@
 """Stores the environment changes necessary for Pigweed."""
 
 import contextlib
+import json
 import os
 import re
 
@@ -48,6 +49,9 @@ class UnexpectedAction(ValueError):
 class _Action(object):  # pylint: disable=useless-object-inheritance
     def unapply(self, env, orig_env):  # pylint: disable=no-self-use
         del env, orig_env  # Only used in _VariableAction and subclasses.
+
+    def json(self, data):  # pylint: disable=no-self-use
+        del data  # Unused.
 
 
 class _VariableAction(_Action):
@@ -121,6 +125,9 @@ class Set(_VariableAction):
     def apply(self, env):
         env[self.name] = self.value
 
+    def json(self, data):
+        data['set'][self.name] = self.value
+
 
 class Clear(_VariableAction):
     """Remove a variable from the environment."""
@@ -139,6 +146,14 @@ class Clear(_VariableAction):
     def apply(self, env):
         if self.name in env:
             del env[self.name]
+
+    def json(self, data):
+        data['set'][self.name] = None
+
+
+def _initialize_path_like_variable(data, name):
+    default = {'append': [], 'prepend': [], 'remove': []}
+    data['modify'].setdefault(name, default)
 
 
 class Remove(_VariableAction):
@@ -179,6 +194,14 @@ class Remove(_VariableAction):
         env[self.name] = env[self.name].replace(
             '{}{}'.format(self._pathsep, self.value), '')
 
+    def json(self, data):
+        _initialize_path_like_variable(data, self.name)
+        data['modify'][self.name]['remove'].append(self.value)
+        if self.value in data['modify'][self.name]['append']:
+            data['modify'][self.name]['append'].remove(self.value)
+        if self.value in data['modify'][self.name]['prepend']:
+            data['modify'][self.name]['prepend'].remove(self.value)
+
 
 class BadVariableValue(ValueError):
     pass
@@ -216,6 +239,12 @@ class Prepend(_VariableAction):
         super(Prepend, self)._check()
         _append_prepend_check(self)
 
+    def json(self, data):
+        _initialize_path_like_variable(data, self.name)
+        data['modify'][self.name]['prepend'].append(self.value)
+        if self.value in data['modify'][self.name]['remove']:
+            data['modify'][self.name]['remove'].remove(self.value)
+
 
 class Append(_VariableAction):
     """Append a value to a PATH-like variable. (Uncommon, see Prepend.)"""
@@ -243,6 +272,12 @@ class Append(_VariableAction):
     def _check(self):
         super(Append, self)._check()
         _append_prepend_check(self)
+
+    def json(self, data):
+        _initialize_path_like_variable(data, self.name)
+        data['modify'][self.name]['append'].append(self.value)
+        if self.value in data['modify'][self.name]['remove']:
+            data['modify'][self.name]['remove'].remove(self.value)
 
 
 class BadEchoValue(ValueError):
@@ -494,6 +529,18 @@ class Environment(object):
 
         if self._windows:
             outs.write(':{}\n'.format(_SCRIPT_END_LABEL))
+
+    def json(self, outs):
+        data = {
+            'modify': {},
+            'set': {},
+        }
+
+        for action in self._actions:
+            action.json(data)
+
+        json.dump(data, outs, indent=4, separators=(',', ': '))
+        outs.write('\n')
 
     @contextlib.contextmanager
     def __call__(self, export=True):

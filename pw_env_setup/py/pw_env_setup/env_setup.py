@@ -174,7 +174,7 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file,
                  virtualenv_requirements, virtualenv_setup_py_root,
-                 cargo_package_file, enable_cargo, *args, **kwargs):
+                 cargo_package_file, enable_cargo, json_file, *args, **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
         self._env = environment.Environment()
         self._pw_root = pw_root
@@ -197,6 +197,8 @@ class EnvSetup(object):
         self._virtualenv_setup_py_root = []
         self._cargo_package_file = []
         self._enable_cargo = enable_cargo
+
+        self._json_file = json_file
 
         setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
                                   'pw_env_setup')
@@ -336,6 +338,9 @@ Then use `set +x` to go back to normal.
         with open(os.path.join(self._install_dir, 'config.json'), 'w') as outs:
             outs.write(
                 json.dumps(config, indent=4, separators=(',', ': ')) + '\n')
+
+        with open(os.path.join(self._json_file), 'w') as outs:
+            self._env.json(outs)
 
         return 0
 
@@ -508,6 +513,12 @@ def parse(argv=None):
         '--enable-cargo',
         help='Enable cargo installation.',
         action='store_true',
+    )
+
+    parser.add_argument(
+        '--json-file',
+        help='Dump environment variable operations to a JSON file.',
+        default=None,
     )
 
     args = parser.parse_args(argv)
