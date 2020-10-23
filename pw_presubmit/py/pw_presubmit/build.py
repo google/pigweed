@@ -106,7 +106,8 @@ def _search_files_for_paths(build_files: Iterable[Path]) -> Iterable[Path]:
 
 
 def check_builds_for_files(
-        extensions_to_check: Container[str],
+        bazel_extensions_to_check: Container[str],
+        gn_extensions_to_check: Container[str],
         files: Iterable[Path],
         bazel_dirs: Iterable[Path] = (),
         gn_dirs: Iterable[Tuple[Path, Path]] = (),
@@ -115,7 +116,8 @@ def check_builds_for_files(
     """Checks that source files are in the GN and Bazel builds.
 
     Args:
-        extensions_to_check: which file suffixes to look for
+        bazel_extensions_to_check: which file suffixes to look for in Bazel
+        gn_extensions_to_check: which file suffixes to look for in GN
         files: the files that should be checked
         bazel_dirs: directories in which to run bazel query
         gn_dirs: (source_dir, output_dir) tuples with which to run gn desc
@@ -144,13 +146,18 @@ def check_builds_for_files(
 
     missing: Dict[str, List[Path]] = collections.defaultdict(list)
 
-    for path in (p for p in files if p.suffix in extensions_to_check):
-        if bazel_dirs and path.suffix != '.rst' and path not in bazel_builds:
-            # TODO(pwbug/176) Replace this workaround for fuzzers.
-            if 'fuzz' not in str(path):
-                missing['Bazel'].append(path)
-        if (gn_dirs or gn_build_files) and path not in gn_builds:
-            missing['GN'].append(path)
+    if bazel_dirs:
+        for path in (p for p in files
+                     if p.suffix in bazel_extensions_to_check):
+            if path not in bazel_builds:
+                # TODO(pwbug/176) Replace this workaround for fuzzers.
+                if 'fuzz' not in str(path):
+                    missing['Bazel'].append(path)
+
+    if gn_dirs or gn_build_files:
+        for path in (p for p in files if p.suffix in gn_extensions_to_check):
+            if path not in gn_builds:
+                missing['GN'].append(path)
 
     for builder, paths in missing.items():
         _LOG.warning('%s missing from the %s build:\n%s',

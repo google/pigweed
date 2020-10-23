@@ -329,14 +329,16 @@ def copyright_notice(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
-_SOURCES_IN_BUILD = '.rst', *format_code.C_FORMAT.extensions
+_BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
+_GN_SOURCES_IN_BUILD = '.rst', '.py', *_BAZEL_SOURCES_IN_BUILD
 
 
-@filter_paths(endswith=(*_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
+@filter_paths(endswith=(*_GN_SOURCES_IN_BUILD, 'BUILD', '.bzl', '.gn', '.gni'))
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
     missing = build.check_builds_for_files(
-        _SOURCES_IN_BUILD,
+        _BAZEL_SOURCES_IN_BUILD,
+        _GN_SOURCES_IN_BUILD,
         ctx.paths,
         bazel_dirs=[ctx.root],
         gn_build_files=git_repo.list_files(
