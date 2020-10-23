@@ -157,7 +157,8 @@ class _Artifact(NamedTuple):
     variables: Dict[str, str]
 
 
-_GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n]')
+# Matches a non-phony build statement.
+_GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 
 
 def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
@@ -206,7 +207,7 @@ def _search_target_ninja(ninja_file: Path, paths: GnPaths,
 
     with ninja_file.open() as fd:
         for path, variables in _parse_build_artifacts(paths.build, fd):
-            # GN uses .stamp files when there is no build artifact.
+            # Older GN used .stamp files when there is no build artifact.
             if path.suffix == '.stamp':
                 continue
 
@@ -221,7 +222,7 @@ def _search_target_ninja(ninja_file: Path, paths: GnPaths,
 
 def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
                             target: Label) -> Optional[Path]:
-    """Searches the toolchain.ninja file for <target>.stamp.
+    """Searches the toolchain.ninja file for outputs from the provided target.
 
     Files created by an action appear in toolchain.ninja instead of in their own
     <target>.ninja. If the specified target has a single output file in
@@ -230,18 +231,25 @@ def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
 
     _LOG.debug('Searching toolchain Ninja file %s for %s', ninja_file, target)
 
+    # Older versions of GN used a .stamp file to signal completion of a target.
     stamp_dir = target.out_dir.relative_to(paths.build).as_posix()
     stamp_tool = f'{target.toolchain_name()}_stamp'
     stamp_statement = f'build {stamp_dir}/{target.name}.stamp: {stamp_tool} '
 
+    # Newer GN uses a phony Ninja target to signal completion of a target.
+    phony_dir = Path(target.toolchain_name(), 'phony',
+                     target.relative_dir).as_posix()
+    phony_statement = f'build {phony_dir}/{target.name}: phony '
+
     with ninja_file.open() as fd:
         for line in fd:
-            if line.startswith(stamp_statement):
-                output_files = line[len(stamp_statement):].strip().split()
-                if len(output_files) == 1:
-                    return paths.build / output_files[0]
+            for statement in (phony_statement, stamp_statement):
+                if line.startswith(statement):
+                    output_files = line[len(statement):].strip().split()
+                    if len(output_files) == 1:
+                        return paths.build / output_files[0]
 
-                break
+                    break
 
     return None
 

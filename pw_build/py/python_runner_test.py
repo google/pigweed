@@ -131,7 +131,7 @@ target_output_name = this_is_a_test
 build fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o: fake_toolchain_cxx ../fake_module/fake_test.cc
 build fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o: fake_toolchain_cc ../fake_module/fake_test_c.c
 
-build fake_toolchain/obj/fake_module/test/fake_test.elf: fake_tolchain_link fake_tolchain/obj/fake_module/fake_test.fake_test.cc.o fake_tolchain/obj/fake_module/fake_test.fake_test_c.c.o
+build fake_toolchain/obj/fake_module/test/fake_test.elf: fake_toolchain_link fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o
   ldflags = -Og -fdiagnostics-color
   libs =
   frameworks =
@@ -139,7 +139,7 @@ build fake_toolchain/obj/fake_module/test/fake_test.elf: fake_tolchain_link fake
   output_dir = host_clang_debug/obj/fake_module/test
 '''
 
-NINJA_SOURCE_SET = '''\
+_SOURCE_SET_TEMPLATE = '''\
 defines =
 framework_dirs =
 include_dirs = -I../fake_module/public
@@ -151,7 +151,7 @@ target_output_name = this_is_a_test
 build fake_toolchain/obj/fake_module/fake_source_set.file_a.cc.o: fake_toolchain_cxx ../fake_module/file_a.cc
 build fake_toolchain/obj/fake_module/fake_source_set.file_b.c.o: fake_toolchain_cc ../fake_module/file_b.c
 
-build fake_toolchain/obj/fake_module/fake_source_set.stamp: fake_tolchain_link fake_tolchain/obj/fake_module/fake_source_set.file_a.cc.o fake_tolchain/obj/fake_module/fake_source_set.file_b.c.o
+build {path} fake_toolchain/obj/fake_module/fake_source_set.file_a.cc.o fake_toolchain/obj/fake_module/fake_source_set.file_b.c.o
   ldflags = -Og -fdiagnostics-color -Wno-error=deprecated
   libs =
   frameworks =
@@ -159,14 +159,23 @@ build fake_toolchain/obj/fake_module/fake_source_set.stamp: fake_tolchain_link f
   output_dir = host_clang_debug/obj/fake_module
 '''
 
+# GN originally used empty .stamp files to mark the completion of a group of
+# dependencies. GN switched to using 'phony' Ninja targets instead, which don't
+# require creating a new file.
+_PHONY_BUILD_PATH = 'fake_toolchain/phony/fake_module/fake_source_set: phony'
+_STAMP_BUILD_PATH = 'fake_toolchain/obj/fake_module/fake_source_set.stamp:'
 
-def _create_ninja_files():
+NINJA_SOURCE_SET = _SOURCE_SET_TEMPLATE.format(path=_PHONY_BUILD_PATH)
+NINJA_SOURCE_SET_STAMP = _SOURCE_SET_TEMPLATE.format(path=_STAMP_BUILD_PATH)
+
+
+def _create_ninja_files(source_set: str) -> tuple:
     tempdir = tempfile.TemporaryDirectory(prefix='pw_build_test_')
 
     module = Path(tempdir.name, 'out', 'fake_toolchain', 'obj', 'fake_module')
     os.makedirs(module)
     module.joinpath('fake_test.ninja').write_text(NINJA_EXECUTABLE)
-    module.joinpath('fake_source_set.ninja').write_text(NINJA_SOURCE_SET)
+    module.joinpath('fake_source_set.ninja').write_text(source_set)
     module.joinpath('fake_no_objects.ninja').write_text('\n')
 
     outdir = Path(tempdir.name, 'out', 'fake_toolchain', 'obj', 'fake_module')
@@ -182,7 +191,8 @@ def _create_ninja_files():
 class TargetTest(unittest.TestCase):
     """Tests querying GN target information."""
     def setUp(self):
-        self._tempdir, self._outdir, self._paths = _create_ninja_files()
+        self._tempdir, self._outdir, self._paths = _create_ninja_files(
+            NINJA_SOURCE_SET)
 
     def tearDown(self):
         self._tempdir.cleanup()
@@ -227,10 +237,18 @@ class TargetTest(unittest.TestCase):
         self.assertIsNone(target.artifact)
 
 
+class StampTargetTest(TargetTest):
+    """Test with old-style .stamp files instead of phony Ninja targets."""
+    def setUp(self):
+        self._tempdir, self._outdir, self._paths = _create_ninja_files(
+            NINJA_SOURCE_SET_STAMP)
+
+
 class ExpandExpressionsTest(unittest.TestCase):
     """Tests expansion of expressions like <TARGET_FILE(//foo)>."""
     def setUp(self):
-        self._tempdir, self._outdir, self._paths = _create_ninja_files()
+        self._tempdir, self._outdir, self._paths = _create_ninja_files(
+            NINJA_SOURCE_SET)
 
     def tearDown(self):
         self._tempdir.cleanup()
@@ -363,6 +381,13 @@ class ExpandExpressionsTest(unittest.TestCase):
     def test_target_objects_non_existent_target(self):
         with self.assertRaisesRegex(ExpressionError, 'generated'):
             expand_expressions(self._paths, '<TARGET_OBJECTS(//not_real)>')
+
+
+class StampExpandExpressionsTest(TargetTest):
+    """Test with old-style .stamp files instead of phony Ninja targets."""
+    def setUp(self):
+        self._tempdir, self._outdir, self._paths = _create_ninja_files(
+            NINJA_SOURCE_SET_STAMP)
 
 
 if __name__ == '__main__':
