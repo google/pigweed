@@ -18,7 +18,7 @@ import argparse
 import os
 from pathlib import Path
 
-import serial
+import serial  # type: ignore
 
 from pw_hdlc_lite.rpc import HdlcRpcClient
 

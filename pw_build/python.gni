@@ -41,9 +41,54 @@ import("$dir_pw_build/python_action.gni")
 #   inputs: Other files to track, such as package_data.
 #
 template("pw_python_package") {
-  assert(defined(invoker.setup) && invoker.setup != [],
-         "pw_python_package requires 'setup' to point to a setup.py or " +
-             "pyproject.toml and setup.cfg file")
+  if (defined(invoker.sources)) {
+    _all_py_files = invoker.sources
+  } else {
+    _all_py_files = []
+  }
+
+  if (defined(invoker.tests)) {
+    _test_sources = invoker.tests
+  } else {
+    _test_sources = []
+  }
+
+  _all_py_files += _test_sources
+
+  assert(_all_py_files != [], "At least one source or test must be provided")
+
+  # pw_python_script uses pw_python_package, but with a limited set of features.
+  # _pw_standalone signals that this target is actually a pw_python_script.
+  _is_package = !(defined(invoker._pw_standalone) && invoker._pw_standalone)
+
+  if (_is_package) {
+    assert(defined(invoker.setup) && invoker.setup != [],
+           "pw_python_package requires 'setup' to point to a setup.py file " +
+               "or pyproject.toml and setup.cfg files")
+
+    _all_py_files += invoker.setup
+
+    # Get the directories of the setup files. All files must be in the same dir.
+    _setup_dirs = get_path_info(invoker.setup, "dir")
+    _setup_dir = _setup_dirs[0]
+
+    foreach(dir, _setup_dirs) {
+      assert(dir == _setup_dir,
+             "All files in 'setup' must be in the same directory")
+    }
+
+    # If sources are provided, make sure there is an __init__.py file.
+    if (defined(invoker.sources)) {
+      _found_init_py_in_sources = false
+      foreach(source, invoker.sources) {
+        if (get_path_info(source, "file") == "__init__.py") {
+          _found_init_py_in_sources = true
+        }
+      }
+      assert(_found_init_py_in_sources,
+             "Python packages must have at least one __init__.py file")
+    }
+  }
 
   _python_deps = []
   if (defined(invoker.python_deps)) {
@@ -53,36 +98,11 @@ template("pw_python_package") {
     }
   }
 
-  if (defined(invoker.sources)) {
-    _all_sources = invoker.sources
-  } else {
-    _all_sources = []
-  }
-
-  if (defined(invoker.tests)) {
-    _test_sources = invoker.tests
-  } else {
-    _test_sources = []
-  }
-
-  _all_sources += _test_sources
-
-  assert(_all_sources != [], "At least one source or test must be provided")
-
-  # Get the directory of the setup files. All files must be in the same dir.
-  _setup_dirs = get_path_info(invoker.setup, "dir")
-  _setup_dir = _setup_dirs[0]
-
-  foreach(dir, _setup_dirs) {
-    assert(dir == _setup_dir,
-           "All files in 'setup' must be in the same directory")
-  }
-
   # Declare the main Python package group. This represents the Python files, but
   # does not take any actions. GN targets can depend on the package name to run
   # when any files in the package change.
   pw_input_group(target_name) {
-    inputs = _all_sources + invoker.setup
+    inputs = _all_py_files
     if (defined(invoker.inputs)) {
       inputs += invoker.inputs
     }
@@ -96,40 +116,56 @@ template("pw_python_package") {
 
   _package_target = ":$target_name"
 
-  # Install this Python package and its dependencies in the current Python
-  # environment.
-  pw_python_action("$target_name.install") {
-    module = "pip"
-    args = [
-      "install",
-      "--editable",
-      rebase_path(_setup_dir),
-    ]
+  if (_is_package) {
+    # Install this Python package and its dependencies in the current Python
+    # environment.
+    pw_python_action("$target_name.install") {
+      module = "pip"
+      args = [
+        "install",
+        "--editable",
+        rebase_path(_setup_dir),
+      ]
 
-    stamp = true
+      stamp = true
 
-    # Parallel pip installations don't work, so serialize pip invocations.
-    pool = "$dir_pw_build:pip_pool"
+      # Parallel pip installations don't work, so serialize pip invocations.
+      pool = "$dir_pw_build:pip_pool"
 
-    deps = [ _package_target ]
-    foreach(dep, _python_deps) {
-      deps += [ "$dep.install" ]
+      deps = [ _package_target ]
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.install" ]
+      }
     }
-  }
 
-  # TODO(pwbug/239): Add support for building groups of wheels. The code below
-  #     is incomplete and untested.
-  pw_python_action("$target_name.wheel") {
-    script = "$dir_pw_build/py/pw_build/python_wheels.py"
+    # TODO(pwbug/239): Add support for building groups of wheels. The code below
+    #     is incomplete and untested.
+    pw_python_action("$target_name.wheel") {
+      script = "$dir_pw_build/py/pw_build/python_wheels.py"
 
-    args = [
-      "--out_dir",
-      rebase_path(target_out_dir),
-    ]
-    args += rebase_path(_all_sources)
+      args = [
+        "--out_dir",
+        rebase_path(target_out_dir),
+      ]
+      args += rebase_path(_all_py_files)
 
-    deps = [ _package_target ]
-    stamp = true
+      deps = [ _package_target ]
+      stamp = true
+    }
+  } else {
+    # If this is not a package, install or build wheels for its deps only.
+    group("$target_name.install") {
+      deps = []
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.install" ]
+      }
+    }
+    group("$target_name.wheel") {
+      deps = []
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.wheel" ]
+      }
+    }
   }
 
   # Define the static analysis targets for this package.
@@ -146,8 +182,12 @@ template("pw_python_package") {
       "--pretty",
       "--show-error-codes",
       "--color-output",
-      rebase_path(_setup_dir),
     ]
+    if (_is_package) {
+      args += [ rebase_path(_setup_dir) ]
+    } else {
+      args += rebase_path(_all_py_files)
+    }
 
     # Use this environment variable to force mypy to colorize output.
     # See https://github.com/python/mypy/issues/7771
@@ -174,7 +214,7 @@ template("pw_python_package") {
       args += [ "--disable=unexpected-line-ending-format" ]
     }
 
-    sources = _all_sources
+    sources = _all_py_files
 
     stamp = "$target_gen_dir/{{source_target_relative}}.pylint.pw_pystamp"
 
@@ -247,5 +287,29 @@ template("pw_python_group") {
         deps += [ "$_target.$subtarget($_toolchain)" ]
       }
     }
+  }
+}
+
+# Declares Python scripts or tests that are not part of a Python package.
+# Similar to pw_python_package, but only supports a subset of its features.
+#
+# pw_python_script accepts the same arguments as pw_python_package, except
+# `setup` cannot be provided.
+#
+# pw_python_script provides the same subtargets as pw_python_package, but
+# $target_name.install and $target_name.wheel only affect the python_deps of
+# this GN target, not the target itself.
+template("pw_python_script") {
+  _supported_variables = [
+    "sources",
+    "tests",
+    "python_deps",
+    "other_deps",
+    "inputs",
+  ]
+
+  pw_python_package(target_name) {
+    _pw_standalone = true
+    forward_variables_from(invoker, _supported_variables)
   }
 }
