@@ -1,8 +1,8 @@
 [
   {
-    "path": "gn/gn/${os}-${arch=amd64}",
+    "path": "gn/gn/${os}-${arch=amd64,arm64}",
     "tags": [
-      "git_revision:de5a8348b2eef6833146542d8b376e1e79bfeb8b"
+      "git_revision:c808630cea75d153382df3b29e0ddbc2798e1b4a"
     ]
   },
   {
