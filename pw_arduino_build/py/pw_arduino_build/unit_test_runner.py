@@ -17,13 +17,16 @@
 import argparse
 import logging
 import os
+import platform
 import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import List
 
 import serial  # type: ignore
+import serial.tools.list_ports  # type: ignore
 import pw_arduino_build.log
 from pw_arduino_build import teensy_detector
 from pw_arduino_build.file_operations import decode_file_json
@@ -159,12 +162,8 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
 
 
 def wait_for_port(port):
-    """Wait for the path to the port to be available."""
-    # Wait for the port to exist
-    while not os.path.exists(port):
-        time.sleep(1)
-    # Wait for the port to be accessible
-    while not os.access(port, os.R_OK):
+    """Wait for the serial port to be available."""
+    while port not in [sp.device for sp in serial.tools.list_ports.comports()]:
         time.sleep(1)
 
 
@@ -236,6 +235,19 @@ def run_device_test(binary, port, baud, test_timeout, upload_tool,
         upload_tool = boards[0].arduino_upload_tool_name
         if port is None:
             port = boards[0].dev_name
+
+    # TODO(tonymd): Remove this when teensy_ports is working in teensy_detector
+    if platform.system() == "Windows":
+        # Delete the incorrect serial port.
+        index_of_port = [
+            i for i, l in enumerate(test_runner_args)
+            if l.startswith('serial.port=')
+        ]
+        if index_of_port:
+            # Delete the '--set-variable' arg
+            del test_runner_args[index_of_port[0] - 1]
+            # Delete the 'serial.port=*' arg
+            del test_runner_args[index_of_port[0] - 1]
 
     _LOG.debug('Launching test binary %s', binary)
     try:
@@ -309,12 +321,12 @@ def main():
     ]
 
     # .elf file location args.
-    build_path = os.path.dirname(args.binary)
+    binary = Path(os.path.expandvars(args.binary)).absolute()
+    build_path = binary.parent.as_posix()
     arduino_builder_args += ["--build-path", build_path]
-    build_project_name = os.path.basename(args.binary)
+    build_project_name = binary.name
     # Remove '.elf' extension.
-    match_result = re.match(r'(.*?)\.elf$', os.path.basename(args.binary),
-                            re.IGNORECASE)
+    match_result = re.match(r'(.*?)\.elf$', binary.name, re.IGNORECASE)
     if match_result:
         build_project_name = match_result[1]
         arduino_builder_args += ["--build-project-name", build_project_name]
@@ -324,7 +336,7 @@ def main():
         for var in args.set_variable:
             arduino_builder_args += ["--set-variable", var]
 
-    if run_device_test(args.binary,
+    if run_device_test(binary.as_posix(),
                        args.port,
                        args.baud,
                        args.test_timeout,

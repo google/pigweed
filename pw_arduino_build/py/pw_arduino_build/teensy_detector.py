@@ -15,16 +15,20 @@
 """Detects attached Teensy boards connected via usb."""
 
 import logging
-import os
 import re
 import subprocess
 import typing
 
+from pathlib import Path
 from typing import List
 
 import pw_arduino_build.log
 
 _LOG = logging.getLogger('teensy_detector')
+
+
+class UnknownArduinoCore(Exception):
+    """Exception raised when a given core can not be found."""
 
 
 def log_subprocess_output(level, output):
@@ -54,19 +58,34 @@ class BoardInfo(typing.NamedTuple):
 def detect_boards(arduino_package_path=False) -> list:
     """Detect attached boards, returning a list of Board objects."""
 
-    if not arduino_package_path:
-        arduino_package_path = os.path.join("third_party", "arduino", "cores",
-                                            "teensy")
+    teensy_core = Path()
+    if arduino_package_path:
+        teensy_core = Path(arduino_package_path)
+    else:
+        teensy_core = Path("third_party/arduino/cores/teensy")
+        if not teensy_core.exists():
+            teensy_core = Path(
+                "third_party/pigweed/third_party/arduino/cores/teensy")
+
+    if not teensy_core.exists():
+        raise UnknownArduinoCore
 
     teensy_device_line_regex = re.compile(
         r"^(?P<address>[^ ]+) (?P<dev_name>[^ ]+) "
         r"\((?P<label>[^)]+)\) ?(?P<rest>.*)$")
 
     boards = []
-    detect_command = [
-        os.path.join(os.getcwd(), arduino_package_path, "hardware", "tools",
-                     "teensy_ports"), "-L"
-    ]
+    detect_command = [(teensy_core / "hardware" / "tools" /
+                       "teensy_ports").absolute().as_posix(), "-L"]
+
+    # TODO(tonymd): teensy_ports -L on windows does not return the right port
+    # string Example:
+    #
+    #   $ teensy_ports -L
+    #   Port_#0001.Hub_#0003 COM3 (Teensy 3.6) Serial
+    #
+    # So we get "-port=Port_#0001.Hub_#0003"
+    # But it should be "-port=usb:0/140000/0/1"
 
     process = subprocess.run(detect_command,
                              stdout=subprocess.PIPE,

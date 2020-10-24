@@ -665,8 +665,10 @@ class ArduinoBuilder:
             line = line.replace("\"-portprotocol={serial.port.protocol}\"", "",
                                 1)
 
-        if serial_port:
-            line = line.replace("{serial.port}", serial_port, 1)
+            if serial_port == "UNKNOWN" or not serial_port:
+                line = line.replace('"-port={serial.port}"', "", 1)
+            else:
+                line = line.replace("{serial.port}", serial_port, 1)
 
         return line
 

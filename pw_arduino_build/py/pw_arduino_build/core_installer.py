@@ -305,8 +305,7 @@ def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
         expected_sha256sum=teensyduino_artifact["sha256"],
         cache_directory=cache_dir)
 
-    extracted_files = file_operations.extract_archive(arduino_tarfile,
-                                                      install_dir, cache_dir)
+    file_operations.extract_archive(arduino_tarfile, install_dir, cache_dir)
     os.chmod(teensyduino_installer,
              os.stat(teensyduino_installer).st_mode | stat.S_IEXEC)
 
@@ -315,11 +314,6 @@ def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
     # "teensy" here should match args.core_name
     install_command = [teensyduino_installer, "--dir=teensy"]
     subprocess.run(install_command)
-
-    # Remove original arduino IDE files
-    for efile in extracted_files:
-        if efile.is_file():
-            efile.unlink()
 
     file_operations.remove_empty_directories(install_dir)
     os.chdir(original_working_dir)

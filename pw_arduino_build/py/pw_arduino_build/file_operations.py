@@ -112,8 +112,14 @@ def download_to_cache(url: str,
 
 
 def extract_zipfile(archive_file: str, dest_dir: str):
+    """Extract a zipfile preseving permissions."""
+    destination_path = Path(dest_dir)
     with zipfile.ZipFile(archive_file) as archive:
-        archive.extractall(path=dest_dir)
+        for info in archive.infolist():
+            archive.extract(info.filename, path=dest_dir)
+            permissions = info.external_attr >> 16
+            out_path = destination_path / info.filename
+            out_path.chmod(permissions)
 
 
 def extract_tarfile(archive_file: str, dest_dir: str):
