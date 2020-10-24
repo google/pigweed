@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_MANAGER_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_MANAGER_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_MANAGER_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_MANAGER_H_
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/sco_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt::gap {
+namespace bt::sco {
 
 // ScoConnectionManager handles SCO connections for a single BR/EDR connection. This includes
 // queuing outbound and inbound connection requests and handling events related to SCO connections.
@@ -137,6 +137,6 @@ class ScoConnectionManager final {
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManager);
 };
-}  // namespace bt::gap
+}  // namespace bt::sco
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_MANAGER_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_MANAGER_H_

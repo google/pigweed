@@ -12,10 +12,10 @@
 
 #include <gtest/gtest.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/gap/sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection.h"
 
 namespace bt {
 namespace socket {
@@ -56,7 +56,7 @@ class DATA_SocketFactoryTest : public ::testing::Test {
 
 TEST_F(DATA_SocketFactoryTest, TemplatesCompile) {
   socket::SocketFactory<l2cap::Channel> l2cap_factory;
-  socket::SocketFactory<gap::ScoConnection> sco_factory;
+  socket::SocketFactory<sco::ScoConnection> sco_factory;
 }
 
 TEST_F(DATA_SocketFactoryTest, CanCreateSocket) {

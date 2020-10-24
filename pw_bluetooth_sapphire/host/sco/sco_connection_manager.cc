@@ -6,7 +6,7 @@
 
 #include "lib/async/default.h"
 
-namespace bt::gap {
+namespace bt::sco {
 namespace {
 
 hci::SynchronousConnectionParameters ConnectionParametersToLe(
@@ -290,4 +290,4 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   }
 }
 
-}  // namespace bt::gap
+}  // namespace bt::sco

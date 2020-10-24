@@ -1,0 +1,36 @@
+# Copyright 2020 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+static_library("sco") {
+  sources = [
+    "sco_connection.cc",
+    "sco_connection.h",
+    "sco_connection_manager.cc",
+    "sco_connection_manager.h",
+  ]
+
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//zircon/public/lib/fit",
+  ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "sco_connection_manager_unittest.cc",
+    "sco_connection_unittest.cc",
+  ]
+
+  deps = [
+    ":sco",
+    "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/hci:testing",
+    "//src/connectivity/bluetooth/core/bt-host/socket",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gtest",
+  ]
+}

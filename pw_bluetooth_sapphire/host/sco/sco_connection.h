@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_
 
 #include <lib/fit/function.h>
 
@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
-namespace bt::gap {
+namespace bt::sco {
 
 // ScoConnection is a wrapper around an owned SCO hci::Connection. It provides a
 // high-level interface to the underlying connection. This class implements the required ChannelT
@@ -89,6 +89,6 @@ class ScoConnection final : public fbl::RefCounted<ScoConnection> {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);
 };
 
-}  // namespace bt::gap
+}  // namespace bt::sco
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_SCO_CONNECTION_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_H_

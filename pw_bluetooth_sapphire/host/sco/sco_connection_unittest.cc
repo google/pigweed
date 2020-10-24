@@ -12,16 +12,16 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt::gap {
+namespace bt::sco {
 namespace {
 
 hci::ConnectionHandle kConnectionHandle = 1u;
 
 using TestingBase = ::gtest::TestLoopFixture;
-class GAP_ScoConnectionTest : public TestingBase {
+class SCO_ScoConnectionTest : public TestingBase {
  public:
-  GAP_ScoConnectionTest() = default;
-  ~GAP_ScoConnectionTest() override = default;
+  SCO_ScoConnectionTest() = default;
+  ~SCO_ScoConnectionTest() override = default;
 
  protected:
   void SetUp() override {
@@ -52,11 +52,11 @@ class GAP_ScoConnectionTest : public TestingBase {
   fxl::WeakPtr<hci::Connection> hci_conn_;
 };
 
-TEST_F(GAP_ScoConnectionTest, Send) { EXPECT_FALSE(sco_conn()->Send(nullptr)); }
+TEST_F(SCO_ScoConnectionTest, Send) { EXPECT_FALSE(sco_conn()->Send(nullptr)); }
 
-TEST_F(GAP_ScoConnectionTest, MaxTxSduSize) { EXPECT_EQ(sco_conn()->max_tx_sdu_size(), 0u); }
+TEST_F(SCO_ScoConnectionTest, MaxTxSduSize) { EXPECT_EQ(sco_conn()->max_tx_sdu_size(), 0u); }
 
-TEST_F(GAP_ScoConnectionTest, ActivateAndDeactivate) {
+TEST_F(SCO_ScoConnectionTest, ActivateAndDeactivate) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
@@ -75,7 +75,7 @@ TEST_F(GAP_ScoConnectionTest, ActivateAndDeactivate) {
   EXPECT_EQ(deactivated_count(), 1u);
 }
 
-TEST_F(GAP_ScoConnectionTest, ActivateAndClose) {
+TEST_F(SCO_ScoConnectionTest, ActivateAndClose) {
   size_t close_count = 0;
   auto closed_cb = [&] { close_count++; };
 
@@ -94,9 +94,9 @@ TEST_F(GAP_ScoConnectionTest, ActivateAndClose) {
   EXPECT_EQ(deactivated_count(), 0u);
 }
 
-TEST_F(GAP_ScoConnectionTest, UniqueId) { EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle); }
+TEST_F(SCO_ScoConnectionTest, UniqueId) { EXPECT_EQ(sco_conn()->unique_id(), kConnectionHandle); }
 
-TEST_F(GAP_ScoConnectionTest, CloseWithoutActivating) {
+TEST_F(SCO_ScoConnectionTest, CloseWithoutActivating) {
   EXPECT_TRUE(hci_conn());
   sco_conn()->Close();
   EXPECT_EQ(deactivated_count(), 0u);
@@ -104,4 +104,4 @@ TEST_F(GAP_ScoConnectionTest, CloseWithoutActivating) {
 }
 
 }  // namespace
-}  // namespace bt::gap
+}  // namespace bt::sco

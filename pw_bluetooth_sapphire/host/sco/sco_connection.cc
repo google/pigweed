@@ -4,7 +4,7 @@
 
 #include "sco_connection.h"
 
-namespace bt::gap {
+namespace bt::sco {
 
 ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
                              fit::closure deactivated_cb)
@@ -78,4 +78,4 @@ void ScoConnection::CleanUp() {
   connection_ = nullptr;
 }
 
-}  // namespace bt::gap
+}  // namespace bt::sco

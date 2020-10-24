@@ -50,10 +50,6 @@ static_library("gap") {
     "peer.h",
     "peer_cache.cc",
     "peer_cache.h",
-    "sco_connection.cc",
-    "sco_connection.h",
-    "sco_connection_manager.cc",
-    "sco_connection_manager.h",
     "types.cc",
     "types.h",
   ]
@@ -65,6 +61,7 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/gatt",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
+    "//src/connectivity/bluetooth/core/bt-host/sco",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/fxl",
@@ -119,8 +116,6 @@ source_set("tests") {
     "pairing_state_unittest.cc",
     "peer_cache_unittest.cc",
     "peer_unittest.cc",
-    "sco_connection_manager_unittest.cc",
-    "sco_connection_unittest.cc",
     "types_unittest.cc",
   ]
 
