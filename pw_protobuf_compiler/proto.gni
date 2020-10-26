@@ -24,9 +24,10 @@ declare_args() {
   # pw_proto_library template to determine which build targets to create.
   #
   # Supported generators:
-  #   "pwpb", "nanopb", "nanopb_rpc", "go"
+  #   "pwpb", "nanopb", "nanopb_rpc", "raw_rpc", "go"
   pw_protobuf_GENERATORS = [
     "pwpb",
+    "raw_rpc",
     "go",
   ]
 }
@@ -254,6 +255,72 @@ template("_pw_nanopb_proto_library") {
   }
 }
 
+# Generates raw RPC code for proto files, creating a source_set of the generated
+# files. This is internal and should not be used outside of this file. Use
+# pw_proto_library instead.
+#
+# Args:
+#  protos: List of input .proto files.
+#
+template("_pw_raw_rpc_proto_library") {
+  _proto_gen_dir = "$root_gen_dir/protos"
+  _module_path = get_path_info(".", "abspath")
+  _relative_proto_paths = rebase_path(invoker.protos, _module_path)
+
+  _outputs = []
+  foreach(_proto, _relative_proto_paths) {
+    _output_h = string_replace(_proto, ".proto", ".raw_rpc.pb.h")
+    _outputs += [ "$_proto_gen_dir/$_output_h" ]
+  }
+
+  # Create a target which runs protoc configured with the nanopb_rpc plugin to
+  # generate the C++ proto RPC headers.
+  _gen_target = "${target_name}_gen"
+  pw_python_action(_gen_target) {
+    forward_variables_from(invoker, _forwarded_vars)
+    script = _gen_script_path
+    args = [
+             "--language",
+             "raw_rpc",
+             "--module-path",
+             rebase_path(_module_path),
+             "--include-file",
+             rebase_path(invoker.include_file),
+             "--out-dir",
+             rebase_path(_proto_gen_dir),
+           ] + rebase_path(invoker.protos)
+    inputs = invoker.protos
+    outputs = _outputs
+
+    deps = invoker.deps
+    if (defined(invoker.protoc_deps)) {
+      deps += invoker.protoc_deps
+    }
+  }
+
+  # For C++ proto files, the generated proto directory is added as an include
+  # path for the code.
+  _include_root = rebase_path(get_path_info(".", "abspath"), "//")
+  _include_config_target = "${target_name}_includes"
+  config(_include_config_target) {
+    include_dirs = [
+      "$_proto_gen_dir",
+      "$_proto_gen_dir/$_include_root",
+    ]
+  }
+
+  # Create a library with the generated source files.
+  pw_source_set(target_name) {
+    public_configs = [ ":$_include_config_target" ]
+    deps = [ ":$_gen_target" ]
+    public_deps = [
+                    "$dir_pw_rpc:server",
+                    "$dir_pw_rpc/raw:method_union",
+                  ] + invoker.gen_deps
+    public = get_target_outputs(":$_gen_target")
+  }
+}
+
 # Generates Go code for proto files, listing the proto output directory in the
 # metadata variable GOPATH. Internal use only.
 #
@@ -385,10 +452,7 @@ template("pw_proto_library") {
         deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
-
-        # List the pw_protobuf plugin's files as a dependency to recompile
-        # generated code if they are modified.
-        protoc_deps = [ "$dir_pw_protobuf:codegen_protoc_plugin" ]
+        protoc_deps = [ "$dir_pw_protobuf/py" ]
       }
     } else if (_gen == "nanopb_rpc") {
       _pw_nanopb_rpc_proto_library(_lang_target) {
@@ -397,10 +461,7 @@ template("pw_proto_library") {
         deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
-
-        # List the pw_protobuf plugin's files as a dependency to recompile
-        # generated code if they are modified.
-        protoc_deps = [ "$dir_pw_rpc:nanopb_protoc_plugin" ]
+        protoc_deps = [ "$dir_pw_rpc/py" ]
       }
     } else if (_gen == "nanopb") {
       _pw_nanopb_proto_library(_lang_target) {
@@ -409,6 +470,15 @@ template("pw_proto_library") {
         deps = _deps
         include_file = _include_metadata_file
         gen_deps = _gen_deps
+      }
+    } else if (_gen == "raw_rpc") {
+      _pw_raw_rpc_proto_library(_lang_target) {
+        forward_variables_from(invoker, _forwarded_vars)
+        protos = invoker.sources
+        deps = _deps
+        include_file = _include_metadata_file
+        gen_deps = _gen_deps
+        protoc_deps = [ "$dir_pw_rpc/py" ]
       }
     } else if (_gen == "go") {
       _pw_go_proto_library(_lang_target) {
@@ -440,6 +510,7 @@ template("pw_proto_library") {
     "pwpb",
     "nanopb",
     "nanopb_rpc",
+    "raw_rpc",
     "go",
   ]
 

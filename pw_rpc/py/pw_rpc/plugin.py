@@ -11,19 +11,24 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""pw_rpc compiler plugin.
+"""pw_rpc protoc plugin entrypoint to generate code for RPC services."""
 
-protoc plugin which generates C++ code for pw_rpc services using nanopb.
-"""
-
+import enum
 import sys
 
 import google.protobuf.compiler.plugin_pb2 as plugin_pb2
 
 import pw_rpc.codegen_nanopb as codegen_nanopb
+import pw_rpc.codegen_raw as codegen_raw
 
 
-def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
+class Codegen(enum.Enum):
+    RAW = 0
+    NANOPB = 1
+
+
+def process_proto_request(codegen: Codegen,
+                          req: plugin_pb2.CodeGeneratorRequest,
                           res: plugin_pb2.CodeGeneratorResponse) -> None:
     """Handles a protoc CodeGeneratorRequest message.
 
@@ -35,14 +40,20 @@ def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
       res: A CodeGeneratorResponse to populate with the plugin's output.
     """
     for proto_file in req.proto_file:
-        output_files = codegen_nanopb.process_proto_file(proto_file)
+        if codegen is Codegen.RAW:
+            output_files = codegen_raw.process_proto_file(proto_file)
+        elif codegen is Codegen.NANOPB:
+            output_files = codegen_nanopb.process_proto_file(proto_file)
+        else:
+            raise NotImplementedError(f'Unknown codegen type {codegen}')
+
         for output_file in output_files:
             fd = res.file.add()
             fd.name = output_file.name()
             fd.content = output_file.content()
 
 
-def main() -> int:
+def main(codegen: Codegen) -> int:
     """Protobuf compiler plugin entrypoint.
 
     Reads a CodeGeneratorRequest proto from stdin and writes a
@@ -51,10 +62,6 @@ def main() -> int:
     data = sys.stdin.buffer.read()
     request = plugin_pb2.CodeGeneratorRequest.FromString(data)
     response = plugin_pb2.CodeGeneratorResponse()
-    process_proto_request(request, response)
+    process_proto_request(codegen, request, response)
     sys.stdout.buffer.write(response.SerializeToString())
     return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())

@@ -47,6 +47,17 @@ pw_cc_library(
 )
 
 pw_cc_test(
+    name = "codegen_test",
+    srcs = [
+        "codegen_test.cc",
+    ],
+    deps = [
+        ":method_union",
+        "//pw_protobuf",
+    ],
+)
+
+pw_cc_test(
     name = "raw_method_test",
     srcs = [
         "raw_method_test.cc",

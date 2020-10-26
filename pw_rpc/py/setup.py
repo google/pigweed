@@ -24,7 +24,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'pw_rpc': ['py.typed']},
     zip_safe=False,
-    entry_points={'console_scripts': ['pw_rpc_codegen = pw_rpc.plugin:main']},
+    entry_points={
+        'console_scripts': [
+            'pw_rpc_codegen_nanopb = pw_rpc.plugin_nanopb:main',
+            'pw_rpc_codegen_raw = pw_rpc.plugin_raw:main'
+        ]
+    },
     install_requires=[
         'protobuf',
         # 'pw_protobuf_compiler',

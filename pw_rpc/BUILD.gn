@@ -114,16 +114,6 @@ pw_proto_library("echo_service_proto") {
   inputs = [ "pw_rpc_protos/echo.options" ]
 }
 
-# Source files for pw_protobuf's protoc plugin.
-pw_input_group("nanopb_protoc_plugin") {
-  inputs = [
-    "py/pw_rpc/codegen_nanopb.py",
-    "py/pw_rpc/plugin.py",
-    "py/pw_rpc/ids.py",
-  ]
-  deps = [ "$dir_pw_protobuf:codegen_protoc_lib" ]
-}
-
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [

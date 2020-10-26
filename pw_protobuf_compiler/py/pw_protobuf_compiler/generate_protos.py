@@ -79,7 +79,15 @@ def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
 
 def protoc_nanopb_rpc_args(args: argparse.Namespace) -> List[str]:
     return [
-        '--plugin', f'protoc-gen-custom={shutil.which("pw_rpc_codegen")}',
+        '--plugin',
+        f'protoc-gen-custom={shutil.which("pw_rpc_codegen_nanopb")}',
+        '--custom_out', args.out_dir
+    ]
+
+
+def protoc_raw_rpc_args(args: argparse.Namespace) -> List[str]:
+    return [
+        '--plugin', f'protoc-gen-custom={shutil.which("pw_rpc_codegen_raw")}',
         '--custom_out', args.out_dir
     ]
 
@@ -91,6 +99,7 @@ DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,
     'nanopb_rpc': protoc_nanopb_rpc_args,
+    'raw_rpc': protoc_raw_rpc_args,
 }
 
 

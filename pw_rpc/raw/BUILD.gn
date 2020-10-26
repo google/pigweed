@@ -42,9 +42,19 @@ pw_source_set("method_union") {
 
 pw_test_group("tests") {
   tests = [
+    ":codegen_test",
     ":raw_method_test",
     ":raw_method_union_test",
   ]
+}
+
+pw_test("codegen_test") {
+  deps = [
+    "..:test_protos.pwpb",
+    "..:test_protos.raw_rpc",
+    dir_pw_protobuf,
+  ]
+  sources = [ "codegen_test.cc" ]
 }
 
 pw_test("raw_method_test") {

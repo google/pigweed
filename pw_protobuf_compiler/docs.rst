@@ -24,9 +24,10 @@ Protobuf code generation is currently supported for the following generators:
 |             |                | ``dir_pw_third_party_nanopb`` must be set to  |
 |             |                | point to a local nanopb installation.         |
 +-------------+----------------+-----------------------------------------------+
-| Nanopb RPC  | ``nanopb_rpc`` | Compiles pw_rpc service code for a nanopb     |
-|             |                | server. Requires the nanopb generator to be   |
-|             |                | configured as well.                           |
+| Nanopb RPC  | ``nanopb_rpc`` | Compiles pw_rpc service and client code for   |
+|             |                | nanopb. Requires a nanopb installation.       |
++-------------+----------------+-----------------------------------------------+
+| Raw RPC     | ``raw_rpc``    | Compiles raw binary pw_rpc service code.      |
 +-------------+----------------+-----------------------------------------------+
 
 The build variable ``pw_protobuf_GENERATORS`` tells the module the generators
