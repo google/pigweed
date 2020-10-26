@@ -45,16 +45,18 @@ class ScoConnectionManager final {
   ~ScoConnectionManager();
 
   // Initiate and outbound connection. A request will be queued if a connection is already in
-  // progress. On error, |callback| will be called with nullptr.
-  // Returns a handle that will cancel the request when dropped (if connection establishment has not
-  // started).
-  using ConnectionCallback = fit::callback<void(fbl::RefPtr<ScoConnection>)>;
+  // progress. On error, |callback| will be called with an error result. The error will be
+  // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
+  // failed. Returns a handle that will cancel the request when dropped (if connection establishment
+  // has not started).
+  using ConnectionResult = fit::result<fbl::RefPtr<ScoConnection>, HostError>;
+  using ConnectionCallback = fit::callback<void(ConnectionResult)>;
   RequestHandle OpenConnection(hci::SynchronousConnectionParameters parameters,
                                ConnectionCallback callback);
 
   // Accept the next inbound connection request and establish a new SCO connection using
   // |parameters|.
-  // On error, |callback| will be called with nullptr.
+  // On error, |callback| will be called with an error result.
   // If another Open/Accept request is made before the peer sends a connection request, this request
   // will be cancelled.
   // Returns a handle that will cancel the request when dropped (if connection establishment has not
@@ -72,7 +74,7 @@ class ScoConnectionManager final {
     ~ConnectionRequest() {
       if (callback) {
         bt_log(DEBUG, "sco", "Cancelling SCO connection request (id: %zu)", id);
-        callback(nullptr);
+        callback(fit::error(HostError::kCanceled));
       }
     }
 
@@ -97,7 +99,7 @@ class ScoConnectionManager final {
 
   void TryCreateNextConnection();
 
-  void CompleteRequest(fbl::RefPtr<ScoConnection> connection);
+  void CompleteRequest(ConnectionResult);
 
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);

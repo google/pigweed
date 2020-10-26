@@ -111,7 +111,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   if (bt_is_error(status, INFO, "gap-sco", "SCO connection failed to be established (peer: %s)",
                   bt_str(peer_id_))) {
     if (in_progress_request_) {
-      CompleteRequest(nullptr);
+      CompleteRequest(fit::error(HostError::kFailed));
     }
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
@@ -141,7 +141,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   ZX_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",
                 connection_handle, bt_str(peer_id_));
 
-  CompleteRequest(std::move(conn));
+  CompleteRequest(fit::ok(std::move(conn)));
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
@@ -186,13 +186,14 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
       accept->mutable_payload<hci::EnhancedAcceptSynchronousConnectionRequestCommandParams>();
   accept_params->bd_addr = params.bd_addr;
   accept_params->connection_parameters = ConnectionParametersToLe(in_progress_request_->parameters);
-  SendCommandWithStatusCallback(std::move(accept),
-                                [self = weak_ptr_factory_.GetWeakPtr()](hci::Status status) {
-                                  if (!self || status.is_success()) {
-                                    return;
-                                  }
-                                  self->CompleteRequest(nullptr);
-                                });
+  SendCommandWithStatusCallback(
+      std::move(accept), [self = weak_ptr_factory_.GetWeakPtr()](hci::Status status) {
+        if (!self || status.is_success()) {
+          return;
+        }
+        bt_is_error(status, DEBUG, "sco", "SCO accept connection command failed");
+        self->CompleteRequest(fit::error(HostError::kFailed));
+      });
 
   in_progress_request_->received_request = true;
 
@@ -245,19 +246,20 @@ void ScoConnectionManager::TryCreateNextConnection() {
       if (!self || status.is_success()) {
         return;
       }
-      self->CompleteRequest(nullptr);
+      bt_is_error(status, DEBUG, "sco", "SCO setup connection command failed");
+      self->CompleteRequest(fit::error(HostError::kFailed));
     };
 
     SendCommandWithStatusCallback(std::move(packet), std::move(status_cb));
   }
 }
 
-void ScoConnectionManager::CompleteRequest(fbl::RefPtr<ScoConnection> connection) {
+void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
   ZX_ASSERT(in_progress_request_);
   bt_log(INFO, "gap-sco",
          "Completing SCO connection request (initiator: %d, success: %d, peer: %s)",
-         in_progress_request_->initiator, static_cast<bool>(connection), bt_str(peer_id_));
-  in_progress_request_->callback(std::move(connection));
+         in_progress_request_->initiator, result.is_ok(), bt_str(peer_id_));
+  in_progress_request_->callback(std::move(result));
   in_progress_request_.reset();
   TryCreateNextConnection();
 }
@@ -286,7 +288,7 @@ void ScoConnectionManager::CancelRequestWithId(ScoRequestId id) {
   if (in_progress_request_ && in_progress_request_->id == id && !in_progress_request_->initiator &&
       !in_progress_request_->received_request) {
     bt_log(TRACE, "gap-sco", "Cancelling in progress request (id: %zu)", id);
-    CompleteRequest(nullptr);
+    CompleteRequest(fit::error(HostError::kCanceled));
   }
 }
 
