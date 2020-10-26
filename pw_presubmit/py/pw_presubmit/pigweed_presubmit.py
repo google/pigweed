@@ -33,7 +33,6 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import build, cli, environment, format_code, git_repo
-from pw_presubmit import python_checks as legacy_python_checks
 from pw_presubmit import call, filter_paths, plural, PresubmitContext
 from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
@@ -446,8 +445,7 @@ BROKEN = (
     # failing.
     oss_fuzz_build,
     bazel_test,
-    # TODO(hepler): Remove these redundant checks.
-    *legacy_python_checks.all_checks())
+)
 
 QUICK = (
     commit_message_format,
