@@ -122,7 +122,7 @@ def gn_docs_build(ctx: PresubmitContext):
 
 
 def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir, pw_build_HOST_TOOLS='true')
+    build.gn_gen(ctx.root, ctx.output_dir, pw_build_HOST_TOOLS=True)
     build.ninja(ctx.output_dir)
 
 
@@ -130,8 +130,8 @@ def gn_host_tools(ctx: PresubmitContext):
 def oss_fuzz_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root,
                  ctx.output_dir,
-                 pw_toolchain_OSS_FUZZ_ENABLED='true',
-                 pw_toolchain_SANITIZER='"address"')
+                 pw_toolchain_OSS_FUZZ_ENABLED=True,
+                 pw_toolchain_SANITIZER="address")
     build.ninja(ctx.output_dir, "host_clang")
 
 

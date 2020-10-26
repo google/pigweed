@@ -40,8 +40,26 @@ def install_package(root: Path, name: str) -> None:
 
 
 def gn_args(**kwargs) -> str:
-    """Builds a string to use for the --args argument to gn gen."""
-    return '--args=' + ' '.join(f'{arg}={val}' for arg, val in kwargs.items())
+    """Builds a string to use for the --args argument to gn gen.
+
+    Currently supports bool, int, and str values. In the case of str values,
+    quotation marks will be added automatically, unless the string already
+    contains one or more double quotation marks, or starts with a { or [
+    character, in which case it will be passed through as-is.
+    """
+    transformed_args = []
+    for arg, val in kwargs.items():
+        if isinstance(val, bool):
+            transformed_args.append(f'{arg}={str(val).lower()}')
+            continue
+        if (isinstance(val, str) and '"' not in val and not val.startswith("{")
+                and not val.startswith("[")):
+            transformed_args.append(f'{arg}="{val}"')
+            continue
+        # Fall-back case handles integers as well as strings that already
+        # contain double quotation marks, or look like scopes or lists.
+        transformed_args.append(f'{arg}={val}')
+    return '--args=' + ' '.join(transformed_args)
 
 
 def gn_gen(gn_source_dir: Path,
