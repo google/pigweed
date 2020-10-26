@@ -33,7 +33,7 @@ except ImportError:
     import pw_presubmit
 
 from pw_presubmit import build, cli, environment, format_code, git_repo
-from pw_presubmit import python_checks
+from pw_presubmit import python_checks as legacy_python_checks
 from pw_presubmit import call, filter_paths, plural, PresubmitContext
 from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
@@ -53,7 +53,8 @@ def init_virtualenv(ctx: PresubmitContext):
 
 
 # Trigger builds if files with these extensions change.
-_BUILD_EXTENSIONS = ('.rst', '.gn', '.gni', *format_code.C_FORMAT.extensions)
+_BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
+                     *format_code.C_FORMAT.extensions)
 
 
 def _at_all_optimization_levels(target):
@@ -73,7 +74,7 @@ def gn_clang_build(ctx: PresubmitContext):
 def gn_quick_build_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, 'host_clang_size_optimized',
-                'stm32f429i_size_optimized')
+                'stm32f429i_size_optimized', 'python.tests', 'python.lint')
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
@@ -119,6 +120,18 @@ def oss_fuzz_build(ctx: PresubmitContext):
                  pw_toolchain_OSS_FUZZ_ENABLED='true',
                  pw_toolchain_SANITIZER='"address"')
     build.ninja(ctx.output_dir, "host_clang")
+
+
+@filter_paths(endswith='.py')
+def python_checks(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(
+        ctx.output_dir,
+        ':python.lint',
+        ':python.tests',
+        ':target_support_packages.lint',
+        ':target_support_packages.tests',
+    )
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
@@ -433,7 +446,8 @@ BROKEN = (
     # failing.
     oss_fuzz_build,
     bazel_test,
-)
+    # TODO(hepler): Remove these redundant checks.
+    *legacy_python_checks.all_checks())
 
 QUICK = (
     commit_message_format,
@@ -444,7 +458,6 @@ QUICK = (
     pw_presubmit.pragma_once,
     gn_quick_build_check,
     source_is_in_build_files,
-    python_checks.all_checks(),
 )
 
 FULL = (
@@ -466,7 +479,7 @@ FULL = (
     # two extra flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
     cmake_tests if sys.platform != 'darwin' else (),
     source_is_in_build_files,
-    python_checks.all_checks(),
+    python_checks,
     build_env_setup,
 )
 
