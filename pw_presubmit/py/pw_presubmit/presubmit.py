@@ -177,6 +177,7 @@ class PresubmitContext:
     repos: Tuple[Path, ...]
     output_dir: Path
     paths: Tuple[Path, ...]
+    package_root: Path
 
     def relative_paths(self, start: Optional[Path] = None) -> Tuple[Path, ...]:
         return tuple(
@@ -203,13 +204,15 @@ class _Filter(NamedTuple):
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
     def __init__(self, root: Path, repos: Sequence[Path],
-                 output_directory: Path, paths: Sequence[Path]):
+                 output_directory: Path, paths: Sequence[Path],
+                 package_root: Path):
         self._root = root.resolve()
         self._repos = tuple(repos)
         self._output_directory = output_directory.resolve()
         self._paths = tuple(paths)
         self._relative_paths = tuple(
             tools.relative_paths(self._paths, self._root))
+        self._package_root = package_root.resolve()
 
     def run(self, program: Program, keep_going: bool = False) -> bool:
         """Executes a series of presubmit checks on the paths."""
@@ -317,6 +320,7 @@ class Presubmit:
                 repos=self._repos,
                 output_dir=output_directory,
                 paths=paths,
+                package_root=self._package_root,
             )
 
         finally:
@@ -381,6 +385,7 @@ def run(program: Sequence[Callable],
         paths: Sequence[str] = (),
         exclude: Sequence[Pattern] = (),
         output_directory: Optional[Path] = None,
+        package_root: Path = None,
         keep_going: bool = False) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -403,6 +408,7 @@ def run(program: Sequence[Callable],
         paths: optional list of Git pathspecs to run the checks against
         exclude: regular expressions for Posix-style paths to exclude
         output_directory: where to place output files
+        package_root: where to place package files
         keep_going: whether to continue running checks if an error occurs
 
     Returns:
@@ -430,7 +436,16 @@ def run(program: Sequence[Callable],
     if output_directory is None:
         output_directory = root / '.presubmit'
 
-    presubmit = Presubmit(root, repos, output_directory, files)
+    if package_root is None:
+        package_root = output_directory / 'packages'
+
+    presubmit = Presubmit(
+        root=root,
+        repos=repos,
+        output_directory=output_directory,
+        paths=files,
+        package_root=package_root,
+    )
 
     if not isinstance(program, Program):
         program = Program('', program)

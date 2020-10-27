@@ -97,6 +97,21 @@ def gn_arm_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_nanopb_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'nanopb')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
+                                                         'nanopb'),
+                 pw_protobuf_GENERATORS='["nanopb", "nanopb_rpc", "pwpb"]')
+    build.ninja(
+        ctx.output_dir,
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels('host_clang'),
+    )
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu'))
@@ -445,6 +460,7 @@ BROKEN = (
     # failing.
     oss_fuzz_build,
     bazel_test,
+    gn_nanopb_build,
 )
 
 QUICK = (

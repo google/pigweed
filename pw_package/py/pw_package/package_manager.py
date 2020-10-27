@@ -14,11 +14,12 @@
 """Install and remove optional packages."""
 
 import argparse
+import dataclasses
 import logging
 import os
 import pathlib
 import shutil
-from typing import List
+from typing import Dict, List, Tuple
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class Package:
         """
 
 
-_PACKAGES = {}
+_PACKAGES: Dict[str, Package] = {}
 
 
 def register(package_class: type) -> None:
@@ -67,58 +68,93 @@ def register(package_class: type) -> None:
     _PACKAGES[obj.name] = obj
 
 
+@dataclasses.dataclass
+class Packages:
+    all: Tuple[str, ...]
+    installed: Tuple[str, ...]
+    available: Tuple[str, ...]
+
+
 class PackageManager:
     """Install and remove optional packages."""
-    def __init__(self):
-        self._pkg_root: pathlib.Path = None
+    def __init__(self, root: pathlib.Path):
+        self._pkg_root = root
+        os.makedirs(root, exist_ok=True)
 
-    def install(self, package: str, force=False):
+    def install(self, package: str, force: bool = False) -> None:
         pkg = _PACKAGES[package]
         if force:
             self.remove(package)
-        _LOG.info('Installing %s...', pkg.name)
         pkg.install(self._pkg_root / pkg.name)
-        _LOG.info('Installing %s...done.', pkg.name)
-        return 0
 
-    def remove(self, package: str):  # pylint: disable=no-self-use
+    def remove(self, package: str) -> None:
         pkg = _PACKAGES[package]
-        _LOG.info('Removing %s...', pkg.name)
         pkg.remove(self._pkg_root / pkg.name)
-        _LOG.info('Removing %s...done.', pkg.name)
-        return 0
 
-    def status(self, package: str):  # pylint: disable=no-self-use
+    def status(self, package: str) -> bool:
         pkg = _PACKAGES[package]
         path = self._pkg_root / pkg.name
-        if os.path.isdir(path) and pkg.status(path):
-            _LOG.info('%s is installed.', pkg.name)
-            return 0
+        return os.path.isdir(path) and pkg.status(path)
 
-        _LOG.info('%s is not installed.', pkg.name)
-        return -1
-
-    def list(self):  # pylint: disable=no-self-use
-        _LOG.info('Installed packages:')
+    def list(self) -> Packages:
+        installed = []
         available = []
         for package in sorted(_PACKAGES.keys()):
             pkg = _PACKAGES[package]
             if pkg.status(self._pkg_root / pkg.name):
-                _LOG.info('  %s', pkg.name)
+                installed.append(pkg.name)
             else:
                 available.append(pkg.name)
+
+        return Packages(
+            all=tuple(_PACKAGES.keys()),
+            installed=tuple(installed),
+            available=tuple(available),
+        )
+
+
+class PackageManagerCLI:
+    """Command-line interface to PackageManager."""
+    def __init__(self):
+        self._mgr: PackageManager = None
+
+    def install(self, package: str, force: bool = False) -> int:
+        _LOG.info('Installing %s...', package)
+        self._mgr.install(package, force)
+        _LOG.info('Installing %s...done.', package)
+        return 0
+
+    def remove(self, package: str) -> int:
+        _LOG.info('Removing %s...', package)
+        self._mgr.remove(package)
+        _LOG.info('Removing %s...done.', package)
+        return 0
+
+    def status(self, package: str) -> int:
+        if self._mgr.status(package):
+            _LOG.info('%s is installed.', package)
+            return 0
+
+        _LOG.info('%s is not installed.', package)
+        return -1
+
+    def list(self) -> int:
+        packages = self._mgr.list()
+
+        _LOG.info('Installed packages:')
+        for package in packages.installed:
+            _LOG.info('  %s', package)
         _LOG.info('')
 
         _LOG.info('Available packages:')
-        for pkg_name in available:
-            _LOG.info('  %s', pkg_name)
+        for package in packages.available:
+            _LOG.info('  %s', package)
         _LOG.info('')
 
         return 0
 
-    def run(self, command: str, pkg_root: pathlib.Path, **kwargs):
-        os.makedirs(pkg_root, exist_ok=True)
-        self._pkg_root = pkg_root
+    def run(self, command: str, pkg_root: pathlib.Path, **kwargs) -> int:
+        self._mgr = PackageManager(pkg_root)
         return getattr(self, command)(**kwargs)
 
 
@@ -144,4 +180,4 @@ def parse_args(argv: List[str] = None) -> argparse.Namespace:
 
 
 def run(**kwargs):
-    return PackageManager().run(**kwargs)
+    return PackageManagerCLI().run(**kwargs)

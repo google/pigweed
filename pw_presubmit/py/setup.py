@@ -25,6 +25,7 @@ setuptools.setup(
         'mypy==0.782',
         'pylint==2.5.3',
         'yapf==0.30.0',
+        'pw_package',
     ],
     packages=setuptools.find_packages(),
     package_data={'pw_presubmit': ['py.typed']},

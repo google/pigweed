@@ -20,9 +20,23 @@ from pathlib import Path
 import re
 from typing import Container, Dict, Iterable, List, Mapping, Set, Tuple
 
+from pw_package import package_manager
 from pw_presubmit import call, log_run, plural, PresubmitFailure, tools
 
 _LOG = logging.getLogger(__name__)
+
+
+def install_package(root: Path, name: str) -> None:
+    """Install package with given name in given path."""
+    mgr = package_manager.PackageManager(root)
+
+    if not mgr.list():
+        raise PresubmitFailure(
+            'no packages configured, please import your pw_package '
+            'configuration module')
+
+    if not mgr.status(name):
+        mgr.install(name)
 
 
 def gn_args(**kwargs) -> str:
