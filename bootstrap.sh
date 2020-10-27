@@ -71,6 +71,7 @@ export PW_ROOT
 
 . "$PW_ROOT/pw_env_setup/util.sh"
 
+pw_deactivate
 pw_eval_sourced "$_pw_sourced"
 pw_check_root "$PW_ROOT"
 _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"

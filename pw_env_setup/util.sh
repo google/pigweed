@@ -146,6 +146,21 @@ _pw_hello() {
   fi
 }
 
+pw_deactivate() {
+  # Assume PW_ROOT has already been set and we need to preserve its value.
+  _NEW_PW_ROOT="$PW_ROOT"
+
+  # Find deactivate script and run it.
+  _PW_DEACTIVATE_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/deactivate.sh"
+  if [ -f "$_PW_DEACTIVATE_SH" ]; then
+    . "$_PW_DEACTIVATE_SH"
+  fi
+
+  # Restore PW_ROOT.
+  PW_ROOT="$_NEW_PW_ROOT"
+  export PW_ROOT
+}
+
 # The next three functions use the following variables.
 # * PW_BANNER_FUNC: function to print banner
 # * PW_BOOTSTRAP_PYTHON: specific Python interpreter to use for bootstrap
@@ -216,6 +231,8 @@ pw_cleanup() {
   unset _PW_NAME
   unset _PW_PYTHON
   unset _PW_SETUP_SH
+  unset _PW_DEACTIVATE_SH
+  unset _NEW_PW_ROOT
 
   unset _pw_abspath
   unset pw_none
