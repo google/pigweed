@@ -237,18 +237,4 @@ pw_cleanup() {
   unset pw_activate
   unset pw_finalize
   unset _pw_cleanup
-
-  # TODO(pwbug/274) Remove after some transition time. These are no longer
-  # used but may be set by users or downstream projects, or just in currently
-  # active shells.
-  unset _PW_OLD_CIPD_PACKAGE_FILES
-  unset _PW_OLD_VIRTUALENV_REQUIREMENTS
-  unset _PW_OLD_VIRTUALENV_SETUP_PY_ROOTS
-  unset _PW_OLD_CARGO_PACKAGE_FILES
-  unset PW_CIPD_PACKAGE_FILES
-  unset PW_VIRTUALENV_REQUIREMENTS
-  unset PW_VIRTUALENV_SETUP_PY_ROOTS
-  unset PW_CARGO_PACKAGE_FILES
-  unset PW_CARGO_SETUP
-  unset PW_VIRTUALENV_REQUIREMENTS_APPEND_DEFAULT
 }
