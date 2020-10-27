@@ -546,18 +546,15 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
     group_decl_handle_ = grp->start_handle();
 
     auto* attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 2
-    attr->set_write_handler(
-        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    SetAttributeWriteHandler(attr);
     test_handle1_ = attr->handle();
 
     attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 3
-    attr->set_write_handler(
-        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    SetAttributeWriteHandler(attr);
     test_handle2_ = attr->handle();
 
     attr = grp->AddAttribute(kTestType2, kAllowed, kAllowed);  // handle: 4
-    attr->set_write_handler(
-        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+    SetAttributeWriteHandler(attr);
     test_handle3_ = attr->handle();
 
     grp->set_active(true);
@@ -579,6 +576,11 @@ class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
   Handle test_handle1() const { return test_handle1_; }
   Handle test_handle2() const { return test_handle2_; }
   Handle test_handle3() const { return test_handle3_; }
+
+  void SetAttributeWriteHandler(Attribute* attribute) {
+    attribute->set_write_handler(
+        fit::bind_member(this, &ATT_DatabaseExecuteWriteQueueTest::WriteHandler));
+  }
 
   const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
 
@@ -665,6 +667,7 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
   auto* attr =
       grp->AddAttribute(kTestType2, att::AccessRequirements(),
                         att::AccessRequirements(true, false, false));  // write requires encryption
+  SetAttributeWriteHandler(attr);
   grp->set_active(true);
 
   PrepareWriteQueue wq;
@@ -675,9 +678,13 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, SecurityChecks) {
   EXPECT_EQ(ErrorCode::kInsufficientAuthentication, ecode());
   EXPECT_EQ(attr->handle(), handle_in_error());
 
+  wq = PrepareWriteQueue();
+  wq.push(QueuedWrite(attr->handle(), 0, kTestValue1));
+
   // Request should succeed with an encrypted link.
   ExecuteWriteQueue(kPeerId, std::move(wq),
                     sm::SecurityProperties(sm::SecurityLevel::kEncrypted, 16, false));
+  ResolveNextPendingWrite(ErrorCode::kNoError);
   EXPECT_EQ(2, callback_count());
   EXPECT_EQ(ErrorCode::kNoError, ecode());
 }
