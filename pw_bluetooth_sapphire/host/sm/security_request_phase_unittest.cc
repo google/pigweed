@@ -75,7 +75,7 @@ using SMP_SecurityRequestPhaseDeathTest = SMP_SecurityRequestPhaseTest;
 TEST_F(SMP_SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kEncrypted,
                                                  .bondable = BondableMode::Bondable});
-  StaticByteBuffer kExpectedReq = {kSecurityRequest, AuthReq::kBondingFlag};
+  StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kBondingFlag);
   async::PostTask(dispatcher(), [this] { security_request_phase()->Start(); });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kEncrypted, security_request_phase()->pending_security_request());
@@ -84,7 +84,7 @@ TEST_F(SMP_SecurityRequestPhaseTest, MakeEncryptedBondableSecurityRequest) {
 TEST_F(SMP_SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest) {
   NewSecurityRequestPhase(SecurityRequestOptions{.requested_level = SecurityLevel::kAuthenticated,
                                                  .bondable = BondableMode::NonBondable});
-  StaticByteBuffer kExpectedReq = {kSecurityRequest, AuthReq::kMITM};
+  StaticByteBuffer kExpectedReq(kSecurityRequest, AuthReq::kMITM);
   async::PostTask(dispatcher(), [this] { security_request_phase()->Start(); });
   ASSERT_TRUE(Expect(kExpectedReq));
   EXPECT_EQ(SecurityLevel::kAuthenticated, security_request_phase()->pending_security_request());
@@ -93,8 +93,8 @@ TEST_F(SMP_SecurityRequestPhaseTest, MakeAuthenticatedNonBondableSecurityRequest
 TEST_F(SMP_SecurityRequestPhaseTest, MakeSecureAuthenticatedBondableSecurityRequest) {
   NewSecurityRequestPhase(
       SecurityRequestOptions{.requested_level = SecurityLevel::kSecureAuthenticated});
-  StaticByteBuffer kExpectedReq = {kSecurityRequest,
-                                   AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC};
+  StaticByteBuffer kExpectedReq(kSecurityRequest,
+                                AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC);
   async::PostTask(dispatcher(), [this] {
     security_request_phase()->Start();
     ;

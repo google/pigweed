@@ -22,7 +22,7 @@ size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) 
   return write_size;
 }
 
-const BufferView ByteBuffer::view(size_t pos, size_t size) const {
+BufferView ByteBuffer::view(size_t pos, size_t size) const {
   ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
@@ -65,7 +65,7 @@ MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
   return MutableBufferView(mutable_data() + pos, std::min(size, this->size() - pos));
 }
 
-DynamicByteBuffer::DynamicByteBuffer() : buffer_size_(0u) {}
+DynamicByteBuffer::DynamicByteBuffer() = default;
 
 DynamicByteBuffer::DynamicByteBuffer(size_t buffer_size) : buffer_size_(buffer_size) {
   if (buffer_size == 0)
@@ -134,7 +134,7 @@ BufferView::BufferView(const void* bytes, size_t size)
   ZX_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
-BufferView::BufferView() : size_(0u), bytes_(nullptr) {}
+BufferView::BufferView() = default;
 
 const uint8_t* BufferView::data() const { return bytes_; }
 
@@ -156,7 +156,7 @@ MutableBufferView::MutableBufferView(void* bytes, size_t size)
   ZX_ASSERT_MSG(!size_ || bytes_, "|bytes_| cannot be nullptr if |size_| > 0");
 }
 
-MutableBufferView::MutableBufferView() : size_(0u), bytes_(nullptr) {}
+MutableBufferView::MutableBufferView() = default;
 
 const uint8_t* MutableBufferView::data() const { return bytes_; }
 

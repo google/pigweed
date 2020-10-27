@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -62,8 +63,7 @@ class ByteBuffer {
   // A BufferView is only valid as long as the buffer that it points to is
   // valid. Care should be taken to ensure that a BufferView does not outlive
   // its backing buffer.
-  const BufferView view(size_t pos = 0,
-                        size_t size = std::numeric_limits<std::size_t>::max()) const;
+  BufferView view(size_t pos = 0, size_t size = std::numeric_limits<std::size_t>::max()) const;
 
   // Copies |size| bytes of this buffer into |out_buffer| starting at offset
   // |pos| and returns the number of bytes that were copied. |out_buffer| must
@@ -208,7 +208,7 @@ class StaticByteBuffer : public MutableByteBuffer {
   // The class's |BufferSize| template parameter, if explicitly provided, will be checked against
   // the number of initialization elements provided.
   template <typename... T>
-  StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
+  explicit StaticByteBuffer(T... bytes) : buffer_{{static_cast<uint8_t>(bytes)...}} {
     static_assert(BufferSize, "|BufferSize| must be non-zero");
     static_assert(BufferSize == sizeof...(T), "|BufferSize| must match initializer list count");
   }
@@ -261,7 +261,7 @@ class DynamicByteBuffer : public MutableByteBuffer {
 
   // Copies the contents of |buffer|.
   explicit DynamicByteBuffer(const ByteBuffer& buffer);
-  explicit DynamicByteBuffer(const DynamicByteBuffer& buffer);
+  DynamicByteBuffer(const DynamicByteBuffer& buffer);
 
   // Takes ownership of |buffer| and avoids allocating a new buffer. Since this
   // constructor performs a simple assignment, the caller must make sure that
@@ -287,7 +287,7 @@ class DynamicByteBuffer : public MutableByteBuffer {
 
  private:
   // Pointer to the underlying buffer, which is owned and managed by us.
-  size_t buffer_size_;
+  size_t buffer_size_ = 0u;
   std::unique_ptr<uint8_t[]> buffer_;
 };
 
@@ -319,8 +319,8 @@ class BufferView final : public ByteBuffer {
   const_iterator cend() const override;
 
  private:
-  size_t size_;
-  const uint8_t* bytes_;
+  size_t size_ = 0u;
+  const uint8_t* bytes_ = nullptr;
 };
 
 // A ByteBuffer that does not own the memory that it points to but rather
@@ -351,8 +351,8 @@ class MutableBufferView final : public MutableByteBuffer {
   void Fill(uint8_t value) override;
 
  private:
-  size_t size_;
-  uint8_t* bytes_;
+  size_t size_ = 0u;
+  uint8_t* bytes_ = nullptr;
 };
 
 }  // namespace bt

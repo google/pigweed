@@ -43,7 +43,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacke
 
   size_t sdu_offset = 0;
   while (sdu_offset + sizeof(CommandHeader) <= sdu->size()) {
-    auto& header_data = sdu->view(sdu_offset, sizeof(CommandHeader));
+    const auto header_data = sdu->view(sdu_offset, sizeof(CommandHeader));
     SignalingPacket packet(&header_data);
 
     uint16_t expected_payload_length = le16toh(packet.header().length);
@@ -55,7 +55,7 @@ void BrEdrSignalingChannel::DecodeRxUnit(ByteBufferPtr sdu, const SignalingPacke
       return;
     }
 
-    auto& packet_data = sdu->view(sdu_offset, sizeof(CommandHeader) + expected_payload_length);
+    const auto packet_data = sdu->view(sdu_offset, sizeof(CommandHeader) + expected_payload_length);
     cb(SignalingPacket(&packet_data, expected_payload_length));
 
     sdu_offset += packet_data.size();

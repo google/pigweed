@@ -23,10 +23,11 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   EXPECT_TRUE(ContainersEqual(kExpected, buffer));
 
   // Moving will result in a copy.
-  StaticByteBuffer<kBufferSize> buffer_copy = std::move(buffer);
-  EXPECT_EQ(kBufferSize, buffer.size());
+  StaticByteBuffer<kBufferSize> buffer_copy =
+      std::move(buffer);                  // NOLINT(performance-move-const-arg)
+  EXPECT_EQ(kBufferSize, buffer.size());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(kBufferSize, buffer_copy.size());
-  EXPECT_TRUE(ContainersEqual(kExpected, buffer));
+  EXPECT_TRUE(ContainersEqual(kExpected, buffer));  // NOLINT(bugprone-use-after-move)
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_copy));
 
   // Copying should also copy.
@@ -67,9 +68,9 @@ TEST(ByteBufferTest, DynamicByteBuffer) {
 
   // Moving will invalidate the source buffer.
   DynamicByteBuffer buffer_moved = std::move(buffer);
-  EXPECT_EQ(0u, buffer.size());
+  EXPECT_EQ(0u, buffer.size());  // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(kBufferSize, buffer_moved.size());
-  EXPECT_EQ(nullptr, buffer.data());
+  EXPECT_EQ(nullptr, buffer.data());  // NOLINT(bugprone-use-after-move)
   EXPECT_TRUE(ContainersEqual(kExpected, buffer_moved));
 }
 
@@ -87,7 +88,7 @@ TEST(ByteBufferTest, DynamicByteBufferZeroSize) {
 
 TEST(ByteBufferTest, DynamicByteBufferConstructFromBuffer) {
   constexpr size_t kBufferSize = 3;
-  StaticByteBuffer<kBufferSize> buffer({1, 2, 3});
+  StaticByteBuffer<kBufferSize> buffer(1, 2, 3);
 
   DynamicByteBuffer dyn_buffer(buffer);
   EXPECT_EQ(kBufferSize, dyn_buffer.size());
