@@ -15,8 +15,7 @@
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Production implementation of the Connection class against a HCI transport.
 class ConnectionImpl final : public Connection {
@@ -577,5 +576,4 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

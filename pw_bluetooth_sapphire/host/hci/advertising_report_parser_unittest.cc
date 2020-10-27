@@ -10,9 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 
-namespace bt {
-namespace hci {
-namespace test {
+namespace bt::hci::test {
 namespace {
 
 TEST(HCI_AdvertisingReportParserTest, EmptyReport) {
@@ -287,6 +285,4 @@ TEST(HCI_AdvertisingReportParserTest, ReportCountGreaterThanPayloadSize) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::test

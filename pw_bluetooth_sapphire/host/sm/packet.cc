@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 PacketReader::PacketReader(const ByteBuffer* buffer)
     : PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}
@@ -44,5 +43,4 @@ PacketWriter::PacketWriter(Code code, MutableByteBuffer* buffer)
   mutable_header()->code = code;
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

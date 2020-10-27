@@ -9,9 +9,7 @@
 #include "fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 TEST(L2CAP_ChannelTest, UniqueId) {
   // Same channel and handle on the local side produces the same unique id
@@ -36,6 +34,4 @@ TEST(L2CAP_ChannelTest, UniqueId) {
   ASSERT_EQ(chan->unique_id(), chan_stillsame->unique_id());
 }
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing

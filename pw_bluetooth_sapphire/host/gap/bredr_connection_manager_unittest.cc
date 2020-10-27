@@ -21,8 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using bt::hci::AuthRequirements;
@@ -3087,5 +3086,4 @@ TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
 #undef COMMAND_STATUS_RSP
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

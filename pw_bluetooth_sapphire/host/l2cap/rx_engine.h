@@ -8,9 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // The interface between a Channel, and the module implementing the
 // mode-specific receive logic. The primary purpose of an RxEngine is to
@@ -34,8 +32,6 @@ class RxEngine {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_RX_ENGINE_H_

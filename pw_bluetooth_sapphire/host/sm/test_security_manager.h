@@ -22,9 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
-namespace testing {
+namespace bt::sm::testing {
 
 // TestSecurityManager implements the public interface of the SM library. The intended use is in
 // unit tests of code directly dependent on SM (currently, GAP). The implementation is currently
@@ -88,8 +86,6 @@ class TestSecurityManagerFactory {
   std::unordered_map<hci::ConnectionHandle, fxl::WeakPtr<testing::TestSecurityManager>> test_sms_;
 };
 
-}  // namespace testing
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TEST_SECURITY_MANAGER_H_

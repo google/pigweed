@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class Transport;
 
@@ -236,7 +235,6 @@ class LowEnergyScanner : public LocalAddressClient {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyScanner);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_SCANNER_H_

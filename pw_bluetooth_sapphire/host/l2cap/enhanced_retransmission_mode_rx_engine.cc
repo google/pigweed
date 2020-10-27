@@ -6,9 +6,7 @@
 
 #include <type_traits>
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 namespace {
 
@@ -240,6 +238,4 @@ void Engine::AdvanceSeqNum() {
   }
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

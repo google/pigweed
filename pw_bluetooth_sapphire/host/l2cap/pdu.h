@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 // Represents a L2CAP PDU. Each PDU contains a complete L2CAP frame that can be
 // transmitted over a L2CAP channel. PDUs are the building blocks for SDUs
@@ -120,7 +119,6 @@ class PDU final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PDU);
 };
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_PDU_H_

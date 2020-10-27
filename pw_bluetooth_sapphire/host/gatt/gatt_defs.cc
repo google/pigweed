@@ -4,8 +4,7 @@
 
 #include "gatt_defs.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 ServiceData::ServiceData(ServiceKind kind, att::Handle start, att::Handle end, const UUID& type)
     : kind(kind), range_start(start), range_end(end), type(type) {}
@@ -22,5 +21,4 @@ CharacteristicData::CharacteristicData(Properties props,
 
 DescriptorData::DescriptorData(att::Handle handle, const UUID& type) : handle(handle), type(type) {}
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

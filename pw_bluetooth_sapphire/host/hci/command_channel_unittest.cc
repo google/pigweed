@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 using bt::LowerBits;
@@ -1799,5 +1798,4 @@ TEST_F(
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

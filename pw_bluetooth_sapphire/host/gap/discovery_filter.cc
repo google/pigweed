@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data, size_t uuid_size) {
@@ -183,5 +182,4 @@ void DiscoveryFilter::Reset() {
   rssi_.reset();
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

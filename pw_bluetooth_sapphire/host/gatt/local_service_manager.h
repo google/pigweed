@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 // Called to read the value of a dynamic characteristic or characteristic
 // descriptor.
@@ -116,7 +115,6 @@ class LocalServiceManager final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
 };
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_LOCAL_SERVICE_MANAGER_H_

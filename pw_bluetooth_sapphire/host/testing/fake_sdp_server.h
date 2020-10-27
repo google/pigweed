@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // Emulate Sdp Server capability leveraging the production SDP server to
 // generate response packets as necessary.
@@ -44,7 +43,6 @@ class FakeSdpServer {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSdpServer);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_SDP_SERVER_H_

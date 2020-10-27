@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // Represents a singe write operation queued for atomic submission by an ATT
 // protocol write method
@@ -43,7 +42,6 @@ class QueuedWrite {
 // Write requests.
 using PrepareWriteQueue = std::queue<QueuedWrite>;
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_

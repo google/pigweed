@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 FakeGattServer::FakeGattServer(FakePeer* dev) : dev_(dev) { ZX_DEBUG_ASSERT(dev_); }
 
@@ -102,5 +101,4 @@ void FakeGattServer::SendErrorRsp(hci::ConnectionHandle conn, att::OpCode opcode
   Send(conn, buffer);
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

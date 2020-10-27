@@ -15,9 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace sm {
-namespace util {
+namespace bt::sm::util {
 // NOTE:
 // All cryptographic utility functions use little-endian input/output unless explicitly noted.
 
@@ -195,8 +193,6 @@ std::optional<UInt128> H7(const UInt128& salt, const UInt128& w);
 std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
                                            CrossTransportKeyAlgo hash_function);
 
-}  // namespace util
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm::util
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_UTIL_H_

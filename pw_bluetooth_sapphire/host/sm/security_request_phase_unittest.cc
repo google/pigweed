@@ -22,8 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 struct SecurityRequestOptions {
   SecurityLevel requested_level = SecurityLevel::kEncrypted;
@@ -162,5 +161,4 @@ TEST_F(SMP_SecurityRequestPhaseTest, DropsInvalidPacket) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

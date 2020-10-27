@@ -35,8 +35,7 @@
 
 using bt::sm::BondableMode;
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 namespace {
 
@@ -1233,5 +1232,4 @@ void PendingRequestData::NotifyCallbacks(hci::Status status, const RefFunc& func
 
 }  // namespace internal
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

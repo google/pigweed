@@ -12,8 +12,7 @@
 #include "src/lib/fxl/strings/string_printf.h"
 #include "src/lib/uuid/uuid.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 namespace {
 
@@ -263,5 +262,4 @@ std::string ServiceRecord::ToString() const {
   return str;
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

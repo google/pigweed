@@ -13,9 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-
-namespace gap {
+namespace bt::gap {
 
 std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
   switch (state) {
@@ -477,5 +475,4 @@ void Peer::MakeDualMode() {
   dual_mode_callback_(*this);
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

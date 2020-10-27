@@ -7,8 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 constexpr uint64_t kInvalidContState = 0xFFFFFFFF;
 
@@ -389,7 +388,6 @@ class ServiceSearchAttributeResponse : public Response {
   MutableByteBufferPtr continuation_state_;
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_PDU_H_

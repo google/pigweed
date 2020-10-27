@@ -13,8 +13,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Abstract class representing one of the four in-progress phases of pairing described in Vol. 3
 // Part H 2.1.
@@ -114,7 +113,6 @@ class PairingPhase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_PHASE_H_

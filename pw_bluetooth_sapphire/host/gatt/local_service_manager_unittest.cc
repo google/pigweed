@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 constexpr PeerId kTestPeerId(1);
@@ -1135,5 +1134,4 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
 }
 
 }  // namespace
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

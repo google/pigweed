@@ -7,8 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 constexpr OpCode kTestRequest = kFindInformationRequest;
@@ -1312,5 +1311,4 @@ TEST_F(ATT_BearerTest_Security, NoSecurityUpgradeIfChannelAlreadyEncryptedWithMi
 }
 
 }  // namespace
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 // ByteBuffer::Copy does not allow copying to a smaller destination for safety. This clamps the copy
@@ -162,5 +161,4 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
   return pdu;
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

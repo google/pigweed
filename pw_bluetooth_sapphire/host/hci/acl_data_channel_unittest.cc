@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
@@ -1055,5 +1054,4 @@ TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

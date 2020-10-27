@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 namespace {
 
@@ -560,5 +559,4 @@ void BrEdrDiscoveryManager::InvalidateDiscoverySessions() {
   discovering_.clear();
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

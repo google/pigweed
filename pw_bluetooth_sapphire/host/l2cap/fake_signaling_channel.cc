@@ -8,10 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
-namespace testing {
+namespace bt::l2cap::internal::testing {
 namespace {
 
 // These classes bind the response that the request handlers are expected to
@@ -205,7 +202,4 @@ void FakeSignalingChannel::ReceiveExpectInternal(CommandCode req_code,
   EXPECT_TRUE(static_cast<Expecter*>(fake_responder)->called());
 }
 
-}  // namespace testing
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal::testing

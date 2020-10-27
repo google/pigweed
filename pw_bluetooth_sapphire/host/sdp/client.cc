@@ -8,8 +8,7 @@
 
 #include <optional>
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 namespace {
 
@@ -259,5 +258,4 @@ std::unique_ptr<Client> Client::Create(fbl::RefPtr<l2cap::Channel> channel) {
   return std::make_unique<Impl>(std::move(channel));
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

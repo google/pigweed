@@ -22,8 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/files/unique_fd.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // A DeviceWrapper abstracts over a Bluetooth HCI device object and its fidl
 // interface.
@@ -124,7 +123,6 @@ class DummyDeviceWrapper : public DeviceWrapper {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DummyDeviceWrapper);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_

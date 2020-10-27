@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Delegate interface for pairing and bonding events.
 class Delegate {
@@ -54,6 +53,5 @@ class Delegate {
   virtual void OnNewSecurityProperties(const SecurityProperties& sec) = 0;
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_DELEGATE_H_

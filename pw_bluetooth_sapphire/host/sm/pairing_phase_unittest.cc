@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 using Listener = PairingPhase::Listener;
 using PairingChannelHandler = PairingChannel::Handler;
@@ -158,5 +157,4 @@ TEST_F(SMP_PairingPhaseTest, PairingTimeoutDisconnectsLinkAndFails) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

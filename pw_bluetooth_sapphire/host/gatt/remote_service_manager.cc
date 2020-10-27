@@ -7,10 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 
-namespace bt {
-
-namespace gatt {
-namespace internal {
+namespace bt::gatt::internal {
 
 RemoteServiceManager::ServiceListRequest::ServiceListRequest(ServiceListCallback callback,
                                                              const std::vector<UUID>& uuids)
@@ -230,6 +227,4 @@ void RemoteServiceManager::OnNotification(bool, att::Handle value_handle, const 
   }
 }
 
-}  // namespace internal
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::internal

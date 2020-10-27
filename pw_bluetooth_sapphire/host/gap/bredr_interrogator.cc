@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 BrEdrInterrogator::BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
                                      async_dispatcher_t* dispatcher)
@@ -208,5 +207,4 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
                                         hci::kReadRemoteExtendedFeaturesCompleteEventCode);
 }  // namespace gap
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

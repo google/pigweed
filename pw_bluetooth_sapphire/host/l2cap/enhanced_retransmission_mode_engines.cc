@@ -4,9 +4,7 @@
 
 #include "enhanced_retransmission_mode_engines.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // This factory function ensures that their states are properly linked and allows for unit tests of
 // their linked behaviors without adding dependencies between the classes nor tie their lifetimes
@@ -42,6 +40,4 @@ MakeLinkedEnhancedRetransmissionModeEngines(
   return {std::move(rx_engine), std::move(tx_engine)};
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

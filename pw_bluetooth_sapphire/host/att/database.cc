@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/permissions.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 bool StartLessThan(const AttributeGrouping& grp, const Handle handle) {
@@ -286,5 +285,4 @@ void Database::ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
   }
 }
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

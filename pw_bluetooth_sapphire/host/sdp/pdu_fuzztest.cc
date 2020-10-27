@@ -10,8 +10,7 @@
 // Prevent "undefined symbol: __zircon_driver_rec__" error.
 BT_DECLARE_FAKE_DRIVER();
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 void fuzz(const uint8_t* data, size_t size) {
   FuzzedDataProvider fuzzed_data(data, size);
@@ -40,8 +39,7 @@ void fuzz(const uint8_t* data, size_t size) {
   }
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bt::sdp::fuzz(data, size);

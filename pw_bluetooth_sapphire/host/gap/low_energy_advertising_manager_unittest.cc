@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 constexpr size_t kDefaultMaxAds = 1;
@@ -518,5 +517,4 @@ TEST_F(GAP_LowEnergyAdvertisingManagerTest, MovingInstanceTransfersOwnershipOfAd
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

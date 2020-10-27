@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 using testing::FakeController;
@@ -677,5 +676,4 @@ TEST_F(HCI_LegacyLowEnergyScannerTest, StopScanWhileWaitingForLocalAddress) {
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

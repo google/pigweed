@@ -6,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 const AccessRequirements kDisallowed;
@@ -105,5 +104,4 @@ TEST(ATT_PermissionsTest, LinkAuthenticated) {
 }
 
 }  // namespace
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

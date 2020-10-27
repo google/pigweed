@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 namespace {
 
 using TestingBase = ::gtest::TestLoopFixture;
@@ -383,5 +382,4 @@ TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
 }
 
 }  // namespace
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

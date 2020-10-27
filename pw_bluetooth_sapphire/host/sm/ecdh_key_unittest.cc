@@ -11,8 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 TEST(SMP_EcdhKeyTest, ParseSerializedKey) {
@@ -152,5 +151,4 @@ TEST(SMP_EcdhKeyTest, PublicKeyXAndYComparisonDifferentKeys) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

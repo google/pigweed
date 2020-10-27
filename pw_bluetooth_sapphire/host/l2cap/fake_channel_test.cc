@@ -7,9 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 void FakeChannelTest::SetUp() {}
 
@@ -51,6 +49,4 @@ bool FakeChannelTest::ExpectAfterMaybeReceiving(std::optional<BufferView> packet
   return success;
 }
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing

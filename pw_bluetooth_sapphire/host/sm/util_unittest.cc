@@ -18,10 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 
-namespace bt {
-
-namespace sm {
-namespace util {
+namespace bt::sm::util {
 namespace {
 
 TEST(SMP_UtilTest, ConvertSmIoCapabilityToHci) {
@@ -594,6 +591,4 @@ TEST(SMP_UtilTest, LtkToLinkKeyUsingH6) {
   EXPECT_EQ(kExpectedLinkKeyBytes, *out_link_key);
 }
 }  // namespace
-}  // namespace util
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm::util

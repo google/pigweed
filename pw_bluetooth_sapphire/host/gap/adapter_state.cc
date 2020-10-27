@@ -4,12 +4,10 @@
 
 #include "adapter_state.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 AdapterState::AdapterState() : vendor_features_(0u) {
   std::memset(supported_commands_, 0, sizeof(supported_commands_));
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

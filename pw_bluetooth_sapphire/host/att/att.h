@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // v5.0, Vol 3, Part G, 5.1.2
 constexpr uint16_t kLEMinMTU = 23;
@@ -343,7 +342,6 @@ constexpr OpCode kIndication = 0x1D;
 constexpr OpCode kConfirmation = 0x1E;
 using IndicationParams = NotificationParams;
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_

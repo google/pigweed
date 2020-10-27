@@ -26,8 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 using ConfirmCallback = FakeListener::ConfirmCallback;
 using PasskeyResponseCallback = FakeListener::PasskeyResponseCallback;
@@ -729,5 +728,4 @@ TEST_F(SMP_Phase2SecureConnectionsTest, ResponderReceiveDhKeyCheckWhileWaitingFo
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

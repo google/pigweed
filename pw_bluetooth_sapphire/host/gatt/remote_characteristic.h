@@ -19,8 +19,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 class Client;
 
@@ -171,7 +170,6 @@ class RemoteCharacteristic final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteCharacteristic);
 };
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_CHARACTERISTIC_H_

@@ -25,8 +25,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class DeviceWrapper;
 
@@ -123,7 +122,6 @@ class Transport final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_

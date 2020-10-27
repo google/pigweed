@@ -20,8 +20,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace cobalt {
+namespace bt::cobalt {
 
 // CobaltLogger allows events to be sent to the Fuchsia cobalt service. A CobaltLogger that is not
 // bound to an open cobalt::Logger channel simply ignores all logged events.
@@ -52,7 +51,6 @@ class CobaltLogger final : public Logger {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CobaltLogger);
 };
 
-}  // namespace cobalt
-}  // namespace bt
+}  // namespace bt::cobalt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COBALT_COBALT_LOGGER_H_

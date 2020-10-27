@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 // Responsible for Phase 1 of SMP pairing, the feature exchange. Takes in the current SM settings
 // and notifies a constructor-provided callback with the negotiated features upon completion.
 //
@@ -124,7 +123,6 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PHASE_1_H_

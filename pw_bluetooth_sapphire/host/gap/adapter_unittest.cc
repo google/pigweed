@@ -23,8 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
@@ -901,5 +900,4 @@ TEST_F(GAP_AdapterTest, VendorFeatures) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

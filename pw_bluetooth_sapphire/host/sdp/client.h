@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 // The SDP client connects to the SDP server on a remote device and can perform
 // search requests and returns results.  It is expected to be short-lived.
@@ -47,7 +46,6 @@ class Client {
                                        async_dispatcher_t* cb_dispatcher) = 0;
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_CLIENT_H_

@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 constexpr ConnectionHandle kTestHandle = 0x0001;
@@ -985,5 +984,4 @@ INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
                          ::testing::Values(Connection::LinkType::kACL, Connection::LinkType::kLE));
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

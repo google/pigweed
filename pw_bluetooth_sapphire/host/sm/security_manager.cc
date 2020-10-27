@@ -32,9 +32,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "util.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 namespace {
 
@@ -821,5 +819,4 @@ std::unique_ptr<SecurityManager> SecurityManager::Create(fxl::WeakPtr<hci::Conne
 SecurityManager::SecurityManager(BondableMode bondable_mode, gap::LeSecurityMode security_mode)
     : bondable_mode_(bondable_mode), security_mode_(security_mode) {}
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

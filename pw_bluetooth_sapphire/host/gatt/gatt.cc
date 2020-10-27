@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/generic_attribute_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 GATT::GATT() : weak_ptr_factory_(this) {}
 
@@ -214,5 +213,4 @@ class Impl final : public GATT {
 // static
 std::unique_ptr<GATT> GATT::Create() { return std::make_unique<Impl>(); }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

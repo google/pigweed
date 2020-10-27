@@ -31,8 +31,7 @@ namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
 
-namespace bthost {
-namespace fidl_helpers {
+namespace bthost::fidl_helpers {
 namespace {
 
 fbt::AddressType AddressTypeToFidl(bt::DeviceAddress::Type type) {
@@ -908,8 +907,7 @@ bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
   return requirements;
 }
 
-}  // namespace fidl_helpers
-}  // namespace bthost
+}  // namespace bthost::fidl_helpers
 
 // static
 std::vector<uint8_t> fidl::TypeConverter<std::vector<uint8_t>, bt::ByteBuffer>::Convert(

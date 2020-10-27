@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 // Implements GATT client-role procedures. A client operates over a single ATT
 // data bearer. Client objects are solely used to map GATT procedures to ATT
@@ -202,7 +201,6 @@ class Client {
   virtual void SetNotificationHandler(NotificationCallback handler) = 0;
 };
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_CLIENT_H_

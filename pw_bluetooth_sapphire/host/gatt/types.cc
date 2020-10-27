@@ -4,8 +4,7 @@
 
 #include "types.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 Service::Service(bool primary, const UUID& type) : primary_(primary), type_(type) {}
 
@@ -29,5 +28,4 @@ Descriptor::Descriptor(IdType id, const UUID& type, const att::AccessRequirement
       read_permissions_(read_permissions),
       write_permissions_(write_permissions) {}
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

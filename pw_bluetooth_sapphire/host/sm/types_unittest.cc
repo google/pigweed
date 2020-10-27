@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 TEST(SMP_TypesTest, LinkKeyTypeToSecurityProperties) {
@@ -217,5 +216,4 @@ TEST(SMP_TypesTest, SecurityPropertiesComparisonWorks) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

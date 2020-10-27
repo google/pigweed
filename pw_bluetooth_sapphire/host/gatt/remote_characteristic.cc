@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 namespace {
 
@@ -345,5 +344,4 @@ void RemoteCharacteristic::HandleNotification(const ByteBuffer& value) {
   }
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

@@ -8,9 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
                            Role role)
@@ -47,5 +45,4 @@ void PairingPhase::HandleChannelClosed() {
 
   OnFailure(Status(HostError::kLinkDisconnected));
 }
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

@@ -12,9 +12,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // The definitions within this namespace don't directly map to full frame
 // formats. Rather, they provide access to mode-specific headers beyond the
@@ -172,8 +170,6 @@ struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
   SimpleReceiverReadyFrame() : SimpleSupervisoryFrame(SupervisoryFunction::ReceiverReady) {}
 } __PACKED;
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_

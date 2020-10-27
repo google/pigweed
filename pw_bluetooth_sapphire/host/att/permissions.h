@@ -8,13 +8,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 ErrorCode CheckReadPermissions(const AccessRequirements&, const sm::SecurityProperties&);
 ErrorCode CheckWritePermissions(const AccessRequirements&, const sm::SecurityProperties&);
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_PERMISSIONS_H_

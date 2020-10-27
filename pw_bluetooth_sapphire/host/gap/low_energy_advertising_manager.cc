@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 namespace {
 
@@ -185,5 +184,4 @@ bool LowEnergyAdvertisingManager::StopAdvertising(AdvertisementId advertisement_
   return true;
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

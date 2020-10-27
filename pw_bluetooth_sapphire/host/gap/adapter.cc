@@ -24,8 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
                  std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap)
@@ -686,5 +685,4 @@ bool Adapter::IsLeRandomAddressChangeAllowed() {
          hci_le_connector_->AllowsRandomAddressChange();
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

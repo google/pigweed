@@ -12,8 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 // A ServiceRecord represents a service record in a SDP database.
 // The service has a number of attributes identified by defined IDs and each
@@ -117,7 +116,6 @@ class ServiceRecord {
   SecurityLevel security_level_;
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_RECORD_H_

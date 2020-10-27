@@ -26,8 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 class FakePeer;
 
@@ -506,7 +505,6 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_CONTROLLER_H_

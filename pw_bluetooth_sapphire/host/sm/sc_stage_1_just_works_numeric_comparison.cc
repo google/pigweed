@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
     fxl::WeakPtr<PairingPhase::Listener> listener, Role role, UInt256 local_pub_key_x,
@@ -168,5 +167,4 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

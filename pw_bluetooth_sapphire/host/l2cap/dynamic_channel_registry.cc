@@ -10,9 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 DynamicChannelRegistry::~DynamicChannelRegistry() {
   // Clean up connected channels.
@@ -183,6 +181,4 @@ void DynamicChannelRegistry::RemoveChannel(DynamicChannel* channel) {
   channels_.erase(iter);
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

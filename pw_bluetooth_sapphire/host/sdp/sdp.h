@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 class Status;
 
@@ -301,7 +300,6 @@ constexpr AttributeId kSDP_ServiceDatabaseState = 0x0201;
 // https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
 constexpr AttributeId kA2DP_SupportedFeatures = 0x0311;
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_

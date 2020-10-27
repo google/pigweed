@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 struct ExpectationMetadata {
   ExpectationMetadata(const char* file, int line, const char* expectation)
@@ -173,7 +172,6 @@ class MockController : public ControllerTestDoubleBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_MOCK_CONTROLLER_H_

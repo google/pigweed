@@ -15,9 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 // Provides a common GTest harness base class for protocols tests that operate
 // over a L2CAP channel. This harness provides:
@@ -83,8 +81,6 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
 };
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_TEST_H_

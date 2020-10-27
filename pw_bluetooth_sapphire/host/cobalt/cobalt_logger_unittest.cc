@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt {
-namespace cobalt {
+namespace bt::cobalt {
 namespace {
 
 class COBALT_CobaltLoggerTest : public ::gtest::TestLoopFixture {
@@ -232,5 +231,4 @@ TEST_F(COBALT_CobaltLoggerTest, CloseServer) {
 }
 
 }  // namespace
-}  // namespace cobalt
-}  // namespace bt
+}  // namespace bt::cobalt

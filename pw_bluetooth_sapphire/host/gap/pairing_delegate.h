@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // An object that implements PairingDelegate is responsible for fulfilling user
 // authentication challenges during pairing.
@@ -60,7 +59,6 @@ class PairingDelegate {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingDelegate);
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_DELEGATE_H_

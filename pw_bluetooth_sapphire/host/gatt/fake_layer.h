@@ -8,9 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 
-namespace bt {
-namespace gatt {
-namespace testing {
+namespace bt::gatt::testing {
 
 // This is a fake version of the root GATT object that can be injected in unit
 // tests.
@@ -67,8 +65,6 @@ class FakeLayer final : public GATT {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };
 
-}  // namespace testing
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_H_

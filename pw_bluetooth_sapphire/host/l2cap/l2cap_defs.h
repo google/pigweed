@@ -17,8 +17,7 @@
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 // See Core Spec v5.0, Volume 3, Part A, Sec 8.6.2.1. Note that we assume there is no flush timeout
 // on the underlying logical link.
@@ -500,7 +499,6 @@ struct LEFlowControlCreditParams {
   uint16_t credits;
 } __PACKED;
 
-}  // namespace l2cap
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_L2CAP_DEFS_H_

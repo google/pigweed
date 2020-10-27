@@ -18,10 +18,7 @@
 #define EXPECT_OUTBOUND_REQ(fake_sig, req_code, req_payload, ...) \
   (fake_sig).AddOutbound(__FILE__, __LINE__, req_code, req_payload, {__VA_ARGS__})
 
-namespace bt {
-namespace l2cap {
-namespace internal {
-namespace testing {
+namespace bt::l2cap::internal::testing {
 
 // Can be injected into internal L2CAP tests to drive fake interactions over the
 // signaling channels with remote peers (in both directions). Expectations for
@@ -110,9 +107,6 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   std::unordered_map<CommandCode, RequestDelegate> request_handlers_;
 };
 
-}  // namespace testing
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_SIGNALING_CHANNEL_H_

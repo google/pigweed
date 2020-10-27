@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 namespace {
 const size_t kMaxPasskeyBitLocation = 19;
@@ -231,5 +230,4 @@ void ScStage1Passkey::FinishBitExchange() {
                               .responder_rand = responder_rand}));
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // Defines the read or write access permissions for an attribute.
 class AccessRequirements final {
@@ -240,7 +239,6 @@ class AttributeGrouping final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttributeGrouping);
 };
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATTRIBUTE_H_

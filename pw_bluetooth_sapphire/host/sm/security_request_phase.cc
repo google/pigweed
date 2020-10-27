@@ -14,9 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 SecurityRequestPhase::SecurityRequestPhase(fxl::WeakPtr<PairingChannel> chan,
                                            fxl::WeakPtr<Listener> listener,
@@ -72,5 +70,4 @@ void SecurityRequestPhase::OnRxBFrame(ByteBufferPtr sdu) {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

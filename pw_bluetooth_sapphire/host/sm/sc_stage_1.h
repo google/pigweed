@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Pure abstract interface to be implemented by classes that execute Authentication Stage 1 of
 // Phase 2 of SMP Secure Connections. The owning class will use the abstract OnPairingConfirm and
@@ -60,7 +59,6 @@ class ScStage1 {
   virtual ~ScStage1() = default;
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_H_

@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // Stores Bluetooth Low Energy settings and state information.
 class LowEnergyState final {
@@ -43,7 +42,6 @@ class LowEnergyState final {
   uint64_t supported_states_;
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_STATE_H_

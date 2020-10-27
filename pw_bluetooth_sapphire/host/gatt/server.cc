@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 Server::Server(PeerId peer_id, fxl::RefPtr<att::Database> database, fxl::RefPtr<att::Bearer> bearer)
     : peer_id_(peer_id), db_(database), att_(bearer), weak_ptr_factory_(this) {
@@ -805,5 +804,4 @@ void Server::OnExecuteWriteRequest(att::Bearer::TransactionId tid,
                          std::move(result_cb));
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

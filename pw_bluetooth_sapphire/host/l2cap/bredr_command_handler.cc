@@ -14,9 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 bool BrEdrCommandHandler::ConnectionResponse::Decode(const ByteBuffer& payload_buf) {
   auto& conn_rsp_payload = payload_buf.As<PayloadT>();
@@ -295,6 +293,4 @@ void BrEdrCommandHandler::ServeInformationRequest(InformationRequestCallback cb)
   sig()->ServeRequest(kInformationRequest, std::move(on_info_req));
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

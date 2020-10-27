@@ -6,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 void AddFailure(const char* func_name, PeerId peer_id) {
@@ -78,5 +77,4 @@ void FakePairingDelegate::RequestPasskey(PeerId peer_id, PasskeyResponseCallback
   request_passkey_count_++;
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

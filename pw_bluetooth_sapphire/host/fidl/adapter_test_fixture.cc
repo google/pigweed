@@ -4,8 +4,7 @@
 
 #include "adapter_test_fixture.h"
 
-namespace bthost {
-namespace testing {
+namespace bthost::testing {
 
 using bt::testing::FakeController;
 using TestingBase = bt::testing::ControllerTest<FakeController>;
@@ -42,5 +41,4 @@ void AdapterTestFixture::TearDown() {
   TestingBase::TearDown();
 }
 
-}  // namespace testing
-}  // namespace bthost
+}  // namespace bthost::testing

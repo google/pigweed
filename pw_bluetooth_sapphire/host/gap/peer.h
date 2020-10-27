@@ -25,8 +25,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 class PeerCache;
 
@@ -489,7 +488,6 @@ class Peer final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_H_

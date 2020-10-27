@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 using att::Status;
 using att::StatusCallback;
@@ -789,5 +788,4 @@ void RemoteService::HandleNotification(att::Handle value_handle, const ByteBuffe
   }
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

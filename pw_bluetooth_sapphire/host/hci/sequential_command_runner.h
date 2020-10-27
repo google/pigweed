@@ -15,8 +15,7 @@
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class Transport;
 
@@ -153,7 +152,6 @@ class SequentialCommandRunner final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SequentialCommandRunner);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SEQUENTIAL_COMMAND_RUNNER_H_

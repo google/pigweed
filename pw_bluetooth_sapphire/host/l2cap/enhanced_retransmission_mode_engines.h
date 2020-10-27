@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_tx_engine.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // Construct a pair of EnhancedRetransmissionMode{Rx,Tx}Engines that are synchronized to each other
 // and share a |send_frame_callback|. They must be run on the same thread and can be deleted in any
@@ -28,8 +26,6 @@ MakeLinkedEnhancedRetransmissionModeEngines(
     EnhancedRetransmissionModeTxEngine::SendFrameCallback send_frame_callback,
     EnhancedRetransmissionModeTxEngine::ConnectionFailureCallback connection_failure_callback);
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_ENHANCED_RETRANSMISSION_MODE_ENGINES_H_

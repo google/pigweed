@@ -7,8 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 constexpr UUID kTestUuid1((uint16_t)0xDEAD);
@@ -3253,5 +3252,4 @@ TEST_F(GATT_ClientTest, Indication) {
 }
 
 }  // namespace
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

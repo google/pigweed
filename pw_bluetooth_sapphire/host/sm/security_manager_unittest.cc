@@ -24,9 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "util.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 namespace {
 
 const DeviceAddress kLocalAddr(DeviceAddress::Type::kLEPublic,
@@ -3415,5 +3413,4 @@ TEST_F(SMP_ResponderPairingTest, SecureConnectionsWorks) {
   ASSERT_TRUE(fake_link()->ltk());
 }
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

@@ -18,8 +18,7 @@
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class LocalAddressDelegate;
 
@@ -121,7 +120,6 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_SCANNER_H_

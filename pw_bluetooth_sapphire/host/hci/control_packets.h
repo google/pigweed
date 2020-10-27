@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 using CommandPacket = Packet<CommandHeader>;
 using EventPacket = Packet<EventHeader>;
@@ -119,8 +118,7 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
   Packet<EventHeader>() = default;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 // Convenience macros to check and log any non-Success status of an event.
 // Evaluate to true if the event status is not success.

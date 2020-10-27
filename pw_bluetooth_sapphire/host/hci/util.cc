@@ -8,9 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-
-namespace hci {
+namespace bt::hci {
 
 std::string HCIVersionToString(HCIVersion version) {
   switch (version) {
@@ -202,5 +200,4 @@ LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
   return result;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

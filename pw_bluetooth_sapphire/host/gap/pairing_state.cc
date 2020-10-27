@@ -8,8 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 using hci::AuthRequirements;
 using hci::IOCapability;
@@ -713,5 +712,4 @@ AuthRequirements GetResponderAuthRequirements(IOCapability local_cap, IOCapabili
   return AuthRequirements::kGeneralBonding;
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

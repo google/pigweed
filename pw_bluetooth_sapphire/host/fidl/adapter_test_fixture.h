@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
-namespace bthost {
-namespace testing {
+namespace bthost::testing {
 
 // This test fixture provides an instance of the Bluetooth stack with mock data plane (L2CAP) and
 // GATT test doubles. The fixture is backed by a FakeController and an event loop which can be used
@@ -41,7 +40,6 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
   DISALLOW_COPY_ASSIGN_AND_MOVE(AdapterTestFixture);
 };
 
-}  // namespace testing
-}  // namespace bthost
+}  // namespace bthost::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_ADAPTER_TEST_FIXTURE_H_

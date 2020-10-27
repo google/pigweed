@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "third_party/boringssl/src/include/openssl/base.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Class exposing operations on ECDH keys needed for Secure Connections pairing. The only valid
 // operation on a moved-from EcdhKey is to reassign it to an existing key.
@@ -70,7 +69,6 @@ class LocalEcdhKey : public EcdhKey {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalEcdhKey);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_ECDH_KEY_H_

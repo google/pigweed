@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class Transport;
 
@@ -87,8 +86,6 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
 
-}  // namespace hci
-
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_ADVERTISER_H_

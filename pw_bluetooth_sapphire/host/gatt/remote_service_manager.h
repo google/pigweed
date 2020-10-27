@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 class Client;
 
@@ -113,7 +112,6 @@ class RemoteServiceManager final {
 };
 
 }  // namespace internal
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_MANAGER_H_

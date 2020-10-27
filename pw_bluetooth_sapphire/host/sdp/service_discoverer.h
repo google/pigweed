@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 // The Service Discoverer keeps track of which services are of interest to
 // the host, and searches for those services on a remote device when directed
@@ -102,7 +101,6 @@ class ServiceDiscoverer final {
   fxl::ThreadChecker thread_checker_;
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_

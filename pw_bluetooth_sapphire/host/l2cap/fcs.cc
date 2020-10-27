@@ -3,8 +3,7 @@
 
 #include "fcs.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 // Subtrahend for each iteration of the linear feedback shift register (LFSR) representing the
@@ -64,5 +63,4 @@ FrameCheckSequence ComputeFcs(BufferView view, FrameCheckSequence initial_value)
   return FrameCheckSequence{remainder};
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

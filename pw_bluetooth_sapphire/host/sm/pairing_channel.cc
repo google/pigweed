@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
     : chan_(std::move(chan)), weak_ptr_factory_(this) {
@@ -71,5 +70,4 @@ void PairingChannel::OnChannelClosed() {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

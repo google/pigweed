@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 template <typename... T>
@@ -282,5 +281,4 @@ TEST(L2CAP_PduTest, ReadMultipleFragments) {
 }
 
 }  // namespace
-}  // namespace l2cap
 }  // namespace bt

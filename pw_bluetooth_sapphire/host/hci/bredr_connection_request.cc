@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 std::unique_ptr<CommandPacket> CreateConnectionPacket(
     DeviceAddress address, std::optional<PageScanRepetitionMode> page_scan_repetition_mode,
@@ -120,5 +119,4 @@ bool BrEdrConnectionRequest::Cancel() {
 
 BrEdrConnectionRequest::~BrEdrConnectionRequest() { Cancel(); }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

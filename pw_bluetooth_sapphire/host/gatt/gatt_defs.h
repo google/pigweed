@@ -9,8 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 // 16-bit Attribute Types defined by the GATT profile (Vol 3, Part G, 3.4).
 namespace types {
@@ -178,8 +177,7 @@ struct CharacteristicDeclarationAttributeValue {
   att::AttributeType<Format> value_uuid;
 } __PACKED;
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 // Specialization of std::hash for std::unordered_set, std::unordered_map, etc.
 namespace std {

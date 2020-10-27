@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Delegate interface for obtaining the host-maintained local address and
 // identity information for the system.
@@ -56,7 +55,6 @@ class LocalAddressClient {
   virtual bool AllowsRandomAddressChange() const = 0;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOCAL_ADDRESS_DELEGATE_H_

@@ -11,9 +11,7 @@
 // for certain commands. These are informational and for testing purposes only;
 // each higher-layer library defines its own defaults.
 
-namespace bt {
-namespace hci {
-namespace defaults {
+namespace bt::hci::defaults {
 
 // 50 ms
 constexpr uint16_t kLEConnectionIntervalMin = 0x0028;
@@ -30,8 +28,6 @@ constexpr uint16_t kLEScanWindow = 0x0030;
 // 420 ms
 constexpr uint16_t kLESupervisionTimeout = 0x002A;
 
-}  // namespace defaults
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::defaults
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEFAULTS_H_

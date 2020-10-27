@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Packet template specialization for ACL data packets. This cannot be directly
 // instantiated. Represents a HCI ACL data packet.
@@ -67,7 +66,6 @@ class Packet<ACLDataHeader> : public PacketBase<ACLDataHeader, ACLDataPacket> {
 #endif
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_PACKET_H_

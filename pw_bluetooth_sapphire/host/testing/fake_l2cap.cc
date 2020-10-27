@@ -7,8 +7,7 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 FakeL2cap::FakeL2cap(SendFrameCallback send_frame_callback,
                      UnexpectedPduCallback unexpected_pdu_callback,
@@ -179,5 +178,4 @@ void FakeL2cap::HandlePdu(hci::ConnectionHandle conn, const ByteBuffer& pdu) {
   return unexpected_pdu_callback_(conn, pdu);
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

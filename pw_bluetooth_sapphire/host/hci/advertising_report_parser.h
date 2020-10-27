@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Convenience class for extracting the contents of a HCI LE Advertising Report
 // Event.
@@ -57,7 +56,6 @@ class AdvertisingReportParser final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisingReportParser);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ADVERTISING_REPORT_PARSER_H_

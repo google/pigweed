@@ -4,9 +4,7 @@
 
 #include "fake_connection.h"
 
-namespace bt {
-namespace hci {
-namespace testing {
+namespace bt::hci::testing {
 
 FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
@@ -32,6 +30,4 @@ bool FakeConnection::StartEncryption() {
   return true;
 }
 
-}  // namespace testing
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::testing

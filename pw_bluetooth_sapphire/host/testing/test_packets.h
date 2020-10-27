@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // This module contains functionality to create arbitrary HCI packets defining
 // common behaviors with respect to expected devices and connections.
@@ -89,7 +88,6 @@ DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
 
 DynamicByteBuffer BcmAclPriorityPacket(hci::ConnectionHandle conn, l2cap::AclPriority priority);
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_PACKETS_H_

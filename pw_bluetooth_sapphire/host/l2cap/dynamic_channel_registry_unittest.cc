@@ -9,9 +9,7 @@
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 constexpr int kNumChannelsAllowed = 256;
@@ -435,6 +433,4 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel_registry.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 DynamicChannel::DynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
                                ChannelId remote_cid)
@@ -41,6 +39,4 @@ bool DynamicChannel::SetRemoteChannelId(ChannelId remote_cid) {
 
 void DynamicChannel::OnDisconnected() { registry_->OnChannelDisconnected(this); }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

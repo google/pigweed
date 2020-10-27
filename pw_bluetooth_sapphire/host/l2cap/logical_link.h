@@ -33,9 +33,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 class ChannelImpl;
 class LESignalingChannel;
@@ -310,8 +308,6 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_LOGICAL_LINK_H_

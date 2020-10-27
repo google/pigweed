@@ -15,9 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-
-namespace testing {
+namespace bt::testing {
 namespace {
 
 template <typename NUM_TYPE, typename ENUM_TYPE>
@@ -1734,5 +1732,4 @@ void FakeController::ClearDataCallback() {
   data_callback_ = nullptr;
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

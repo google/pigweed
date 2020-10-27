@@ -9,8 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 // A Channel wrapper that automatically deactivates a channel when it gets
 // deleted.
@@ -46,7 +45,6 @@ class ScopedChannel final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScopedChannel);
 };
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SCOPED_CHANNEL_H_

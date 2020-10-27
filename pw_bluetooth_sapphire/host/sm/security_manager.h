@@ -29,8 +29,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // SecurityManager provides a per-peer interface to Security Manager Protocol functionality in v5.2
 // Vol. 3 Part H. The peer device must be a LE or BR/EDR/LE device. SecurityManager is an abstract
@@ -131,7 +130,6 @@ class SecurityManager {
 
 using SecurityManagerFactory = std::function<decltype(sm::SecurityManager::Create)>;
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SECURITY_MANAGER_H_

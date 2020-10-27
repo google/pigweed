@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // This class unpacks signaling packets (generally received over a FakeL2cap
 // link). Each FakePeer should own its own FakeSignalingServer.
@@ -142,7 +141,6 @@ class FakeSignalingServer final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeSignalingServer);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_SIGNALING_SERVER_H_

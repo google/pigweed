@@ -8,8 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // Adapts PairingDelegate to generic callbacks that can perform any desired test
 // checking. If an PairingDelegate call is made that does not have a
@@ -60,7 +59,6 @@ class FakePairingDelegate final : public PairingDelegate {
   fxl::WeakPtrFactory<FakePairingDelegate> weak_ptr_factory_;
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_PAIRING_DELEGATE_H_

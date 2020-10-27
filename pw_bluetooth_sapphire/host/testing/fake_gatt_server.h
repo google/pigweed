@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 class FakePeer;
 
@@ -41,7 +40,6 @@ class FakeGattServer final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeGattServer);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_GATT_SERVER_H_

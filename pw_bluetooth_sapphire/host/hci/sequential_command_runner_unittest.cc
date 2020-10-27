@@ -9,8 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 constexpr OpCode kTestOpCode = 0xFFFF;
@@ -438,5 +437,4 @@ TEST_F(HCI_SequentialCommandRunnerTest, ParallelCommands) {
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 // ScStage1Passkey encapsulates Stage 1 of LE Secure Connections Pairing Phase 2, which takes care
 // of authentication using the Passkey Entry method as in V5.0 Vol. 3 Part H 2.3.5.6.3.
 //
@@ -71,7 +70,6 @@ class ScStage1Passkey final : public ScStage1 {
   Stage1CompleteCallback on_complete_;
   fxl::WeakPtrFactory<ScStage1Passkey> weak_ptr_factory_;
 };
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_PASSKEY_H_

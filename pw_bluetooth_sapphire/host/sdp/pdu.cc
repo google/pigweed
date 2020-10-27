@@ -13,9 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-namespace bt {
-
-namespace sdp {
+namespace bt::sdp {
 
 namespace {
 
@@ -1060,5 +1058,4 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   return buf;
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

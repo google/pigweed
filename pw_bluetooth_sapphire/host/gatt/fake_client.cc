@@ -8,9 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 
-namespace bt {
-namespace gatt {
-namespace testing {
+namespace bt::gatt::testing {
 
 using att::StatusCallback;
 
@@ -169,6 +167,4 @@ void FakeClient::SetNotificationHandler(NotificationCallback callback) {
   notification_callback_ = std::move(callback);
 }
 
-}  // namespace testing
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::testing

@@ -10,8 +10,7 @@
 
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // All LE connection parameters in this file are given in terms of a
 // "multiplier" that to controller uses to calculate actual duration values.
@@ -92,7 +91,6 @@ class LEPreferredConnectionParameters final {
   uint16_t supervision_timeout_;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_PARAMETERS_H_

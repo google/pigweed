@@ -17,8 +17,7 @@
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 namespace {
 
@@ -701,5 +700,4 @@ zx_status_t CommandChannel::ReadEventPacketFromChannel(const zx::channel& channe
   return ZX_OK;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

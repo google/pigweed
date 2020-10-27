@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 using MtuOption = ChannelConfiguration::MtuOption;
@@ -362,6 +360,4 @@ TEST_F(L2CAP_ChannelConfigurationTest, ConfigToString) {
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

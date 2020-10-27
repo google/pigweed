@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 ChannelConfiguration::RetransmissionAndFlowControlOption WriteRfcOutboundTimeouts(
@@ -1076,6 +1074,4 @@ void BrEdrDynamicChannel::SetEnhancedRetransmissionSupport(bool supported) {
   }
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

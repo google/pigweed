@@ -12,9 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-
-namespace sdp {
+namespace bt::sdp {
 
 namespace {
 
@@ -638,5 +636,4 @@ std::string DataElement::ToString() const {
 
   return "(unknown)";
 }
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

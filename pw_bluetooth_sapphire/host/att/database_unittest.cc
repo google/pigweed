@@ -10,8 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 constexpr Handle kTestRangeStart = 1;
@@ -839,5 +838,4 @@ TEST_F(ATT_DatabaseExecuteWriteQueueTest, MultipleQueuedWritesSucceed) {
 }
 
 }  // namespace
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

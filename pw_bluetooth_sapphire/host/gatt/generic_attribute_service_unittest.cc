@@ -10,8 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
@@ -153,5 +152,4 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
 }
 
 }  // namespace
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

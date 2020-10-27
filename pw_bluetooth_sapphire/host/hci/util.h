@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Helper functions to convert HCI data types to library objects.
 
@@ -37,7 +36,6 @@ DeviceAddress::Type AddressTypeFromHCI(LEPeerAddressType type);
 // Convert our stack LE address type to HCI type. |type| cannot be kBREDR.
 LEAddressType AddressTypeToHCI(DeviceAddress::Type type);
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_UTIL_H_

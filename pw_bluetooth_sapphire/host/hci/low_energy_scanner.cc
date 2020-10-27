@@ -9,8 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // Default implementations do nothing.
 
@@ -31,5 +30,4 @@ LowEnergyScanner::LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher
   hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(dispatcher_, transport_);
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

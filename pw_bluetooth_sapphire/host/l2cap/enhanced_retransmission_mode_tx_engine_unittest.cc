@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 constexpr ChannelId kTestChannelId = 0x0001;
@@ -1973,6 +1971,4 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

@@ -11,8 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 Transaction::Transaction(const ByteBuffer& expected, const std::vector<const ByteBuffer*>& replies,
                          ExpectationMetadata meta)
@@ -198,5 +197,4 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
   }
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

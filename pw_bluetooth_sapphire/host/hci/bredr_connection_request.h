@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // The request can be in three possible states:
 enum class RequestState : uint8_t {
@@ -101,6 +100,5 @@ class BrEdrConnectionRequest final {
   fxl::WeakPtrFactory<BrEdrConnectionRequest> weak_ptr_factory_;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_BREDR_CONNECTION_REQUEST_H_

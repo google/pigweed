@@ -24,8 +24,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace socket {
+namespace bt::socket {
 
 // SocketChannelRelay relays data between a zx::socket and a Channel. This class
 // should not be used directly. Instead, see SocketFactory.
@@ -585,7 +584,6 @@ trace_flow_id_t SocketChannelRelay<ChannelT>::GetTraceId(uint32_t id) {
          id;
 }
 
-}  // namespace socket
-}  // namespace bt
+}  // namespace bt::socket
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SOCKET_SOCKET_CHANNEL_RELAY_H_

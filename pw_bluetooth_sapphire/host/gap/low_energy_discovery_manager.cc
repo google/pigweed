@@ -11,8 +11,7 @@
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
@@ -366,5 +365,4 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   ZX_DEBUG_ASSERT(sessions_.empty());
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

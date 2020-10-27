@@ -12,9 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 SignalingChannel::SignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role)
     : is_open_(true),
@@ -317,6 +315,4 @@ void SignalingChannel::RetransmitPendingCommand(PendingCommand& pending_command)
   Send(std::make_unique<DynamicByteBuffer>(*pending_command.command_packet));
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

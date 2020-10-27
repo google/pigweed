@@ -49,9 +49,7 @@
 // If the header type provided to PacketTraits would correspond to an explicit
 // specialization of the Packet template, then the specialization MUST provide a
 // default constructor that is visible to all of its subclasses.
-namespace bt {
-namespace hci {
-namespace slab_allocators {
+namespace bt::hci::slab_allocators {
 
 // Slab sizes for control (command/event) and ACL data packets used by the slab
 // allocators. These are used by the CommandPacket, EventPacket, and
@@ -131,8 +129,6 @@ class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
 
 }  // namespace internal
 
-}  // namespace slab_allocators
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::slab_allocators
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_

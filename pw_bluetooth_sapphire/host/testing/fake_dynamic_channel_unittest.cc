@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 namespace {
 
 hci::ConnectionHandle kConnectionHandle = 0x01;
@@ -376,5 +375,4 @@ TEST(TESTING_FakeDynamicChannelTest, FailWhenOutOfIds) {
 };
 
 }  // namespace
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

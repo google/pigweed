@@ -4,8 +4,7 @@
 
 #include "attribute.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 AccessRequirements::AccessRequirements() : value_(0u), min_enc_key_size_(0u) {}
 
@@ -95,5 +94,4 @@ Attribute* AttributeGrouping::AddAttribute(const UUID& type, const AccessRequire
   return &attributes_[handle - start_handle_];
 }
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

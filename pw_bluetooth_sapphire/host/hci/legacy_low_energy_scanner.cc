@@ -16,9 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-
-namespace hci {
+namespace bt::hci {
 namespace {
 
 std::string ScanStateToString(LowEnergyScanner::State state) {
@@ -368,5 +366,4 @@ void LegacyLowEnergyScanner::OnScanResponseTimeout(const DeviceAddress& address)
   pending_results_.erase(iter);
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/cobalt/logger.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace cobalt {
+namespace bt::cobalt {
 namespace {
 
 // Convert from the native Event type defined in bt::cobalt to the FIDL generated CobaltEvent type.
@@ -108,5 +107,4 @@ void CobaltLogger::LogCobaltEvents(std::vector<Event> events) {
   });
 }
 
-}  // namespace cobalt
-}  // namespace bt
+}  // namespace bt::cobalt

@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Represents Phase 3 of SM pairing. In this phase, the keys the devices agreed to distribute
 // during Phase 1 are exchanged. Phase 3 must take place on an already-encrypted link.
@@ -134,7 +133,6 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PHASE_3_H_

@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // This class unpacks data units received from ACL-U and LE-U logical links
 // into L2CAP SDUs and then routes them to indvidually-registered handler
@@ -188,7 +187,6 @@ class FakeL2cap final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_L2CAP_H_

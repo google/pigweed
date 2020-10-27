@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 const std::unordered_map<Code, size_t> kCodeToPayloadSize{
     {kSecurityRequest, sizeof(AuthReqField)},
@@ -290,7 +289,6 @@ using OnPhase2KeyGeneratedCallback = fit::function<void(const UInt128&)>;
 // Used to notify classes of peer Pairing Requests.
 using PairingRequestCallback = fit::function<void(PairingRequestParams)>;
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_TYPES_H_

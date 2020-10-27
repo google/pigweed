@@ -16,8 +16,7 @@
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 DataBufferInfo::DataBufferInfo(size_t max_data_length, size_t max_num_packets)
     : max_data_length_(max_data_length), max_num_packets_(max_num_packets) {}
@@ -561,5 +560,4 @@ CommandChannel::EventCallbackResult ACLDataChannel::DataBufferOverflowCallback(
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

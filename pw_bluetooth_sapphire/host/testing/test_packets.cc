@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 namespace {
 
@@ -404,5 +403,4 @@ DynamicByteBuffer BcmAclPriorityPacket(hci::ConnectionHandle conn, l2cap::AclPri
       ));
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

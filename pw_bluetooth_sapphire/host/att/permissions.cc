@@ -4,8 +4,7 @@
 
 #include "permissions.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 ErrorCode CheckSecurity(const AccessRequirements& reqs, const sm::SecurityProperties& security) {
@@ -49,5 +48,4 @@ ErrorCode CheckWritePermissions(const AccessRequirements& reqs,
   return CheckSecurity(reqs, security);
 }
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

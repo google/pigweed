@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
                                SendAclCallback send_acl_cb,
@@ -273,5 +272,4 @@ hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id
   }
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

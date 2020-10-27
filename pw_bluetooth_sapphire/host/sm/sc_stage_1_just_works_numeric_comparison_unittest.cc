@@ -20,8 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 struct ScStage1Args {
@@ -371,5 +370,4 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingFor
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

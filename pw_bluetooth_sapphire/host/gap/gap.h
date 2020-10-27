@@ -13,8 +13,7 @@
 // This file contains constants and numbers that are part of the Generic Access
 // Profile specification.
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // Bluetooth technologies that a device can support.
 enum class TechnologyType {
@@ -136,7 +135,6 @@ constexpr zx::duration kPrivateAddressTimeout = zx::min(15);
 // 1.5 seconds or more.
 constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GAP_H_

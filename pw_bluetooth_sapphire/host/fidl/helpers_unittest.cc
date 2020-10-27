@@ -30,8 +30,7 @@ namespace fuchsia::bluetooth {
 bool operator==(const Uuid& a, const Uuid& b) { return fidl::Equals(a, b); }
 }  // namespace fuchsia::bluetooth
 
-namespace bthost {
-namespace fidl_helpers {
+namespace bthost::fidl_helpers {
 namespace {
 
 // Constants as BT stack types
@@ -810,5 +809,4 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
 }
 
 }  // namespace
-}  // namespace fidl_helpers
-}  // namespace bthost
+}  // namespace bthost::fidl_helpers

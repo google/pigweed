@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, IOCapability io_capability,
@@ -314,5 +313,4 @@ void Phase1::OnRxBFrame(ByteBufferPtr sdu) {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

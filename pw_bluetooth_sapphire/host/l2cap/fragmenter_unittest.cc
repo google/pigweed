@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
@@ -396,5 +395,4 @@ TEST(L2CAP_FragmenterTest, FragmentsFrameCheckSequence) {
 }
 
 }  // namespace
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

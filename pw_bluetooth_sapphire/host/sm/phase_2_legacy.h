@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Phase2Legacy encapsulates Phase 2 of LE Legacy Pairing, which takes care of authentication and
 // shared encryption key generation using the Legacy Protocol (see V5.1 Vol. 3 Part H Section
@@ -103,7 +102,6 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2Legacy);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PHASE_2_LEGACY_H_

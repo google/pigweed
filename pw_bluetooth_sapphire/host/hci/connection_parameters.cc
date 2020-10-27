@@ -4,8 +4,7 @@
 
 #include "connection_parameters.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 namespace {
 
@@ -50,5 +49,4 @@ bool LEPreferredConnectionParameters::operator==(
          max_latency_ == other.max_latency_ && supervision_timeout_ == other.supervision_timeout_;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // static
 constexpr Bearer::HandlerId Bearer::kInvalidHandlerId;
@@ -751,5 +750,4 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   }
 }
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

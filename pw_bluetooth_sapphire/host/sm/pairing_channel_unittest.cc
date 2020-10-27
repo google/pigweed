@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 class FakeChannelHandler : public PairingChannel::Handler {
@@ -161,5 +160,4 @@ TEST_F(SMP_PairingChannelTest, ChangeHandlerNewHandlerReceivesData) {
   ASSERT_EQ(handler.channel_closed_count(), 0);
 }
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_l2cap.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 class TESTING_FakeSignalingServerTest : public gtest::TestLoopFixture {
  public:
@@ -115,5 +114,4 @@ TEST_F(TESTING_FakeSignalingServerTest, RejectInvalidInformationRequest) {
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

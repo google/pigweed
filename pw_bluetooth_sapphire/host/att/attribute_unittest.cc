@@ -8,8 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 namespace {
 
 constexpr PeerId kTestPeerId(1);
@@ -219,5 +218,4 @@ TEST(ATT_AttributeTest, WriteAsync) {
 }
 
 }  // namespace
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

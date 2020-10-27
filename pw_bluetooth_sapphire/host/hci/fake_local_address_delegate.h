@@ -8,8 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class FakeLocalAddressDelegate : public LocalAddressDelegate {
  public:
@@ -30,7 +29,6 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
   DeviceAddress local_address_ = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_LOCAL_ADDRESS_DELEGATE_H_

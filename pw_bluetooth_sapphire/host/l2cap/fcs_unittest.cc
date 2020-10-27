@@ -5,8 +5,7 @@
 
 #include <gtest/gtest.h>
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 constexpr const char kTestData[] = u8"🍜🥯🍕🥖🍞🍩";  // Carb-heavy dataset
@@ -48,5 +47,4 @@ TEST(L2CAP_FcsTest, FcsOfSlicesSameAsFcsOfWhole) {
 }
 
 }  // namespace
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

@@ -16,9 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 template <typename OptionT, typename PayloadT>
 DynamicByteBuffer EncodeOption(PayloadT payload) {
@@ -301,6 +299,4 @@ void ChannelConfiguration::OnReadUnknownOption(UnknownOption option) {
   }
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

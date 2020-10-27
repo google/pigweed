@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 namespace {
 
 using SDP_DataElementTest = ::testing::Test;
@@ -280,5 +279,4 @@ TEST_F(SDP_DataElementTest, ToString) {
 }
 
 }  // namespace
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

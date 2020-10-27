@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
-namespace bt {
-namespace socket {
+namespace bt::socket {
 namespace {
 
 // We'll test the template just for L2CAP channels.
@@ -660,5 +659,4 @@ TEST_F(SOCKET_SocketChannelRelayTxTest, NewSocketDataAfterChannelClosureIsNotSen
 }
 
 }  // namespace
-}  // namespace socket
-}  // namespace bt
+}  // namespace bt::socket

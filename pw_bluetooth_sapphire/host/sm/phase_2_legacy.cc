@@ -20,9 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 namespace {
 // We do not support OOB pairing & Legacy pairing does not permit Numeric Comparison.
 bool IsSupportedLegacyMethod(PairingMethod method) {
@@ -342,5 +340,4 @@ void Phase2Legacy::OnRxBFrame(ByteBufferPtr sdu) {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

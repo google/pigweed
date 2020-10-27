@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Utilities for processing SMP packets.
 // TODO(fxbug.dev/48978): Merge PacketReader & ValidPacketReader types into one type for validating
@@ -43,7 +42,6 @@ class PacketWriter : public MutablePacketView<Header> {
   PacketWriter(Code code, MutableByteBuffer* buffer);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PACKET_H_

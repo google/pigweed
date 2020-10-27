@@ -13,9 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace bt {
-namespace gatt {
-namespace internal {
+namespace bt::gatt::internal {
 namespace {
 
 constexpr UUID kTestServiceUuid1((uint16_t)0xbeef);
@@ -2967,6 +2965,4 @@ TEST_F(GATT_RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::internal

@@ -8,8 +8,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 bool IsEncryptedKey(hci::LinkKeyType lk_type) {
@@ -150,5 +149,4 @@ LTK::LTK(const SecurityProperties& security, const hci::LinkKey& key)
 Key::Key(const SecurityProperties& security, const UInt128& value)
     : security_(security), value_(value) {}
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

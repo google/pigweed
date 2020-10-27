@@ -12,9 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 using Engine = EnhancedRetransmissionModeTxEngine;
 
@@ -394,6 +392,4 @@ fit::result<> Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq
   return fit::ok();
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

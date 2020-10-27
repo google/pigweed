@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 // Callback type invoked to notify when GATT services get discovered.
 class RemoteService;
@@ -335,7 +334,6 @@ class RemoteService final : public fbl::RefCounted<RemoteService> {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
 };
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_H_

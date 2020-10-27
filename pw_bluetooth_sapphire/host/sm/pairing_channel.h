@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // Wrapper for an L2CAP channel which manages pairing. Exists so that the channel callbacks can be
 // changed at runtime, which is done by changing the PairingChannel::Handler pointer.
@@ -79,7 +78,6 @@ class PairingChannel {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingChannel);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PAIRING_CHANNEL_H_

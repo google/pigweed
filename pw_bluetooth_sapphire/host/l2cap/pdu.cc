@@ -7,8 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 PDU::PDU() : fragment_count_(0u) {}
 
@@ -101,5 +100,4 @@ void PDU::AppendFragment(hci::ACLDataPacketPtr fragment) {
   fragment_count_++;
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 using std::unique_ptr;
 using ConnectionState = Peer::ConnectionState;
@@ -1054,5 +1053,4 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
   hci_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

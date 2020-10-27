@@ -8,9 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 bool BasicModeTxEngine::QueueSdu(ByteBufferPtr sdu) {
   ZX_ASSERT(sdu);
@@ -22,6 +20,4 @@ bool BasicModeTxEngine::QueueSdu(ByteBufferPtr sdu) {
   return true;
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

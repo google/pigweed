@@ -15,8 +15,7 @@
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // Manages individual FakeDynamicChannel instances as created by
 // FakeSignalingServer. There are two potential states that an indiviudal
@@ -131,7 +130,6 @@ class FakeDynamicChannel {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDynamicChannel);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_DYNAMIC_CHANNEL_H_

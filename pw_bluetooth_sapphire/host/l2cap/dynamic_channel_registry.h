@@ -15,9 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // Base class for registries of dynamic L2CAP channels. It serves both as the
 // factory and owner of dynamic channels created on a logical link, including
@@ -145,8 +143,6 @@ class DynamicChannelRegistry {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_REGISTRY_H_

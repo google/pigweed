@@ -22,8 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 // The SDP server object owns the Service Database and all Service Records.
 // Only one server is expected to exist per host.
@@ -175,7 +174,6 @@ class Server final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_

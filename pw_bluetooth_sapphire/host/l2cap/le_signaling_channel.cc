@@ -8,9 +8,7 @@
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 LESignalingChannel::LESignalingChannel(fbl::RefPtr<Channel> chan, hci::Connection::Role role)
     : SignalingChannel(std::move(chan), role) {
@@ -51,6 +49,4 @@ bool LESignalingChannel::IsSupportedResponse(CommandCode code) const {
   return false;
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

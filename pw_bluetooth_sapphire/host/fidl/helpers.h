@@ -29,16 +29,13 @@
 
 // Helpers for implementing the Bluetooth FIDL interfaces.
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 class DiscoveryFilter;
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
-namespace bthost {
-namespace fidl_helpers {
+namespace bthost::fidl_helpers {
 
 // TODO(fxbug.dev/898): Temporary logic for converting between the stack identifier
 // type (integer) and FIDL identifier type (string). Remove these once all FIDL
@@ -156,8 +153,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
 bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
     const fuchsia::bluetooth::bredr::ChannelParameters& fidl);
 
-}  // namespace fidl_helpers
-}  // namespace bthost
+}  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
 template <>

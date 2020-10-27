@@ -8,8 +8,7 @@
 #include "hci.h"
 #include "transport.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 SequentialCommandRunner::SequentialCommandRunner(async_dispatcher_t* dispatcher,
                                                  fxl::WeakPtr<Transport> transport)
@@ -130,5 +129,4 @@ void SequentialCommandRunner::NotifyStatusAndReset(Status status) {
   status_cb(status);
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

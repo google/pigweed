@@ -4,11 +4,9 @@
 
 #include "write_queue.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 QueuedWrite::QueuedWrite(Handle handle, uint16_t offset, const ByteBuffer& value)
     : handle_(handle), offset_(offset), value_(value) {}
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

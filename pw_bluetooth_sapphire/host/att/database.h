@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // This class provides a simple attribute database abstraction. Attributes can
 // be populated directly and queried to fulfill ATT protocol requests.
@@ -174,7 +173,6 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
 };
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_

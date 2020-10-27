@@ -21,8 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 struct Phase1Args {
@@ -1483,5 +1482,4 @@ TEST_F(SMP_Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

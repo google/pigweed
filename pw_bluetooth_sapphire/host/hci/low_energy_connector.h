@@ -24,8 +24,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class LocalAddressDelegate;
 class Transport;
@@ -165,7 +164,6 @@ class LowEnergyConnector : public LocalAddressClient {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnector);
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_CONNECTOR_H_

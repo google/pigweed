@@ -12,8 +12,7 @@
 #include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // A |ConnectionRequest| represents a request for the GAP to connect to a given
 // |DeviceAddress| by one or more clients. The Appropriate (BrEdr|LowEnergy) mgr
@@ -57,7 +56,6 @@ class ConnectionRequest final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ConnectionRequest);
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_

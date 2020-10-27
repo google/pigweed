@@ -8,8 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 TEST(GAP_FakePairingDelegateTest, io_capability) {
@@ -103,5 +102,4 @@ TEST(GAP_FakePairingDelegateTest, ExpectCallNotCalled) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

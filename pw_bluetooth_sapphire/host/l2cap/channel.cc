@@ -20,8 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
                  hci::ConnectionHandle link_handle, ChannelInfo info)
@@ -277,5 +276,4 @@ void ChannelImpl::CleanUp() {
 }
 
 }  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

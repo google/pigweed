@@ -20,8 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // Represents the local user interaction that will occur, as inferred from Core
 // Spec v5.0 Vol 3, Part C, Sec 5.2.2.6 (Table 5.7). This is not directly
@@ -451,7 +450,6 @@ hci::AuthRequirements GetInitiatorAuthRequirements(hci::IOCapability local_cap);
 hci::AuthRequirements GetResponderAuthRequirements(hci::IOCapability local_cap,
                                                    hci::IOCapability remote_cap);
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PAIRING_STATE_H_

@@ -24,8 +24,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using namespace inspect::testing;
@@ -1496,5 +1495,4 @@ TEST_F(GAP_PeerCacheExpirationTest, SetNameUpdatesExpiration) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

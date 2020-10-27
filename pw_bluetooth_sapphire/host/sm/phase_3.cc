@@ -21,9 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
                PairingFeatures features, SecurityProperties le_sec,
@@ -384,5 +382,4 @@ bool Phase3::ShouldSendIdentity() const {
   return (features_.local_key_distribution & KeyDistGen::kIdKey);
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

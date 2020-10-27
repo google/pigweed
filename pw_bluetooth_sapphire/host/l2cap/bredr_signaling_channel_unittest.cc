@@ -7,9 +7,7 @@
 #include "fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 constexpr hci::ConnectionHandle kTestHandle = 0x0001;
@@ -231,6 +229,4 @@ TEST_F(L2CAP_BrEdrSignalingChannelTest, SendAndReceiveEcho) {
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

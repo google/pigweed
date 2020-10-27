@@ -6,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 TEST(HCI_UtilTest, DeviceAddressFromAdvReportParsesAddress) {
@@ -40,5 +39,4 @@ TEST(HCI_UtilTest, DeviceAddressFromAdvReportParsesAddress) {
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

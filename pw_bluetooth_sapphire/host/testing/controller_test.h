@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 class ControllerTestDoubleBase;
 
@@ -164,7 +163,6 @@ class ControllerTest : public ::gtest::TestLoopFixture {
                 "TestBase must be used with a derivative of ControllerTestDoubleBase");
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_H_

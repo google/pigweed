@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 class Channel;
 
@@ -268,7 +267,6 @@ class SignalingChannel : public SignalingChannelInterface {
 };
 
 }  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_

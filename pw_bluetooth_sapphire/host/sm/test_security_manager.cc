@@ -12,9 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
-namespace testing {
+namespace bt::sm::testing {
 
 TestSecurityManager::TestSecurityManager(
     fxl::WeakPtr<hci::Connection> link, fbl::RefPtr<l2cap::Channel> smp, IOCapability io_capability,
@@ -59,6 +57,4 @@ fxl::WeakPtr<TestSecurityManager> TestSecurityManagerFactory::GetTestSm(
   return iter->second;
 }
 
-}  // namespace testing
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm::testing

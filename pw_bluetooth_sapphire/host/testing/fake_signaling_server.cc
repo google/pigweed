@@ -8,8 +8,7 @@
 
 #include "fake_l2cap.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 void FakeSignalingServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto cb = [&](auto conn, auto& sdu) { return HandleSdu(conn, sdu); };
@@ -43,7 +42,7 @@ void FakeSignalingServer::HandleSdu(hci::ConnectionHandle conn, const ByteBuffer
       ProcessDisconnectionRequest(conn, packet_id, payload);
       break;
     default:
-      bt_log(ERROR, "hci-emulator", "Does not support request code: %#.4hx", packet_code);
+      bt_log(ERROR, "hci-emulator", "Does not support request code: %#.4hhx", packet_code);
       break;
   }
 }
@@ -273,5 +272,4 @@ void FakeSignalingServer::SendDisconnectionResponse(hci::ConnectionHandle conn, 
   SendCFrame(conn, l2cap::kDisconnectionResponse, id, payload_buffer);
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

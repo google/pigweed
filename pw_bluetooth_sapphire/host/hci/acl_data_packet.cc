@@ -9,8 +9,7 @@
 
 #include "slab_allocators.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace slab_allocators {
 
 // Slab-allocator traits for ACL data packets.
@@ -127,8 +126,7 @@ void ACLDataPacket::WriteHeader(ConnectionHandle connection_handle,
   mutable_view()->mutable_header()->data_total_length = htole16(view().payload_size());
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeACLTraits,
                                       bt::hci::slab_allocators::kMaxNumSlabs, true);

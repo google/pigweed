@@ -10,8 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 hci::ConnectionHandle kConnectionHandle = 0x01;
 
@@ -166,5 +165,4 @@ TEST_F(TESTING_FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   EXPECT_TRUE(ContainersEqual(response_payload, *received_packet));
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

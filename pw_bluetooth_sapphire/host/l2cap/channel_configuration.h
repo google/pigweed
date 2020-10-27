@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // The ChannelConfiguration class is used for decoding and encoding channel configuration options
 // (Core spec v5.1, Vol 3, Part A, Section 5) that are in the payloads of Configuration Requests
@@ -288,8 +286,6 @@ class ChannelConfiguration final {
   std::vector<UnknownOption> unknown_options_;
 };  // ChannelConfiguration
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_CONFIGURATION_H_

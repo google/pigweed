@@ -15,9 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // Implements factories for BR/EDR dynamic channels and dispatches incoming
 // signaling channel requests to the corresponding channels by local ID.
@@ -310,8 +308,6 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_DYNAMIC_CHANNEL_H_

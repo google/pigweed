@@ -6,8 +6,7 @@
 
 #include <lib/async/default.h>
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
 
@@ -87,5 +86,4 @@ void ServiceDiscoverer::FinishPeerSearch(PeerId peer_id, SearchId search_id) {
   }
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

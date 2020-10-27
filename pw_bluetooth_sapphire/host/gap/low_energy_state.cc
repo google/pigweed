@@ -4,10 +4,8 @@
 
 #include "low_energy_state.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 LowEnergyState::LowEnergyState() : supported_features_(0u), supported_states_(0u) {}
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

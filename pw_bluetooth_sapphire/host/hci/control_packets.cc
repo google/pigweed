@@ -8,8 +8,7 @@
 
 #include "slab_allocators.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace slab_allocators {
 
 // Slab-allocator traits for command packets.
@@ -169,8 +168,7 @@ void EventPacket::InitializeFromBuffer() {
   mutable_view()->Resize(view().header().parameter_total_size);
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 DECLARE_STATIC_SLAB_ALLOCATOR_STORAGE(bt::hci::slab_allocators::LargeCommandTraits,
                                       bt::hci::slab_allocators::kMaxNumSlabs, true);

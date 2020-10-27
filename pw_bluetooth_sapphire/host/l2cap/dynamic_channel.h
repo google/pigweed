@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 struct ChannelParameters;
 
@@ -132,7 +131,6 @@ class DynamicChannel {
 using DynamicChannelPtr = std::unique_ptr<DynamicChannel>;
 
 }  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_DYNAMIC_CHANNEL_H_

@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 namespace {
 
@@ -414,5 +413,4 @@ std::optional<PeerId> PeerCache::FindIdByAddress(const DeviceAddress& address) c
   return {iter->second};
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

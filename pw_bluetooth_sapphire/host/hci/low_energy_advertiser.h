@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 class AdvertisingIntervalRange final {
  public:
@@ -128,7 +127,6 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                     const LEConnectionParameters& conn_params) = 0;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_ADVERTISER_H_

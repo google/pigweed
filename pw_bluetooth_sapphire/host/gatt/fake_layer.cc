@@ -6,9 +6,7 @@
 
 #include <lib/async/default.h>
 
-namespace bt {
-namespace gatt {
-namespace testing {
+namespace bt::gatt::testing {
 
 FakeLayer::TestPeer::TestPeer() : fake_client(async_get_default_dispatcher()) {}
 
@@ -101,6 +99,4 @@ void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
   discover_services_cb_ = std::move(cb);
 }
 
-}  // namespace testing
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::testing

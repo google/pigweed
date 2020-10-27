@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_address,
                                                    StatusCallback status_callback)
@@ -267,5 +266,4 @@ void LowEnergyConnector::OnCreateConnectionTimeout() {
   CancelInternal(true);
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

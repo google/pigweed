@@ -18,8 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 using TestingBase = ::gtest::TestLoopFixture;
@@ -2758,5 +2757,4 @@ TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored)
 }
 
 }  // namespace
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

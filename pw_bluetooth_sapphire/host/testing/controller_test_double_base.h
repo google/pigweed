@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 // Abstract base for implementing a fake HCI controller endpoint. This can
 // directly send ACL data and event packets on request and forward outgoing ACL
@@ -96,7 +95,6 @@ class ControllerTestDoubleBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_

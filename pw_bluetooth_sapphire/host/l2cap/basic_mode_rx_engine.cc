@@ -6,9 +6,7 @@
 
 #include <zircon/assert.h>
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
   ZX_ASSERT(pdu.is_valid());
@@ -17,6 +15,4 @@ ByteBufferPtr BasicModeRxEngine::ProcessPdu(PDU pdu) {
   return sdu;
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

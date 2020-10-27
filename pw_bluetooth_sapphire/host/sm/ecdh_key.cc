@@ -20,9 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 std::optional<EcdhKey> EcdhKey::ParseFromPublicKey(sm::PairingPublicKeyParams pub_key) {
   auto new_key = EcdhKey();
@@ -146,5 +144,4 @@ void LocalEcdhKey::SetPrivateKeyForTesting(const UInt256& private_key) {
   BN_free(&pkey);
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

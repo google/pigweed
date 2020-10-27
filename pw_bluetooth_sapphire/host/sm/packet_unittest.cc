@@ -8,8 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 TEST(SMP_PacketTest, ParseValidPacket) {
@@ -71,5 +70,4 @@ TEST(SMP_PacketTest, PayloadSizeDoesNotMatchHeaderGivesError) {
 }
 
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

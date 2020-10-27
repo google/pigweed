@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using hci::AuthRequirements;
@@ -1799,5 +1798,4 @@ TEST_F(GAP_PairingStateTest,
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 void NopReadHandler(IdType, IdType, uint16_t, const ReadResponder&) {}
@@ -109,5 +108,4 @@ void GenericAttributeService::OnServiceChanged(IdType service_id, att::Handle st
   }
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

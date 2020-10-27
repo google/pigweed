@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using testing::CommandTransaction;
@@ -366,5 +365,4 @@ TEST_F(GAP_LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

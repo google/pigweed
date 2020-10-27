@@ -9,9 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
                          hci::Connection::LinkType link_type, ChannelInfo info)
@@ -134,6 +132,4 @@ void FakeChannel::RequestAclPriority(AclPriority priority, fit::callback<void(fi
   cb(fit::ok());
 }
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing

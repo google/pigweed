@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 
 // TODO(armansito): Rename this file to "local_types.h" and add the Local*
 // prefix to the types here.
@@ -125,7 +124,6 @@ class Descriptor final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Descriptor);
 };
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_TYPES_H_

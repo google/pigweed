@@ -13,9 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-
-namespace testing {
+namespace bt::testing {
 namespace {
 
 void WriteRandomRSSI(int8_t* out_mem) {
@@ -233,5 +231,4 @@ void FakePeer::SendPacket(hci::ConnectionHandle conn, l2cap::ChannelId cid,
   ctrl()->SendL2CAPBFrame(conn, cid, packet);
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

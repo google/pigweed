@@ -16,8 +16,7 @@
 
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace cobalt {
+namespace bt::cobalt {
 
 // Used to log that an event has occurred a given number of times. Using this
 // struct with LogCobaltEvent() is equivalent to invoking LogEventCount().
@@ -73,7 +72,6 @@ class Logger : public fbl::RefCounted<Logger> {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Logger);
 };
 
-}  // namespace cobalt
-}  // namespace bt
+}  // namespace bt::cobalt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COBALT_LOGGER_H_

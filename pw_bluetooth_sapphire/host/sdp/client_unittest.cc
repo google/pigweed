@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 namespace {
 
 using TestingBase = bt::l2cap::testing::FakeChannelTest;
@@ -605,5 +604,4 @@ TEST_F(SDP_ClientTest, Timeout) {
 }
 
 }  // namespace
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

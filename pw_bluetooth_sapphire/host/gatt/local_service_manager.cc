@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gatt {
+namespace bt::gatt {
 namespace {
 
 // Adds characteristic definition attributes to |grouping| for |chrc|. Returns
@@ -551,5 +550,4 @@ void LocalServiceManager::DisconnectClient(PeerId peer_id) {
   }
 }
 
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt

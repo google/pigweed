@@ -4,8 +4,7 @@
 
 #include "fake_dynamic_channel.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 FakeDynamicChannel::FakeDynamicChannel(hci::ConnectionHandle conn, l2cap::PSM psm,
                                        l2cap::ChannelId local_cid, l2cap::ChannelId remote_cid)
@@ -18,5 +17,4 @@ FakeDynamicChannel::FakeDynamicChannel(hci::ConnectionHandle conn, l2cap::PSM ps
       remote_cid_(remote_cid),
       weak_ptr_factory_(this) {}
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

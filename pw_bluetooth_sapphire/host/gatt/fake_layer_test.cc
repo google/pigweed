@@ -4,15 +4,11 @@
 
 #include "fake_layer_test.h"
 
-namespace bt {
-namespace gatt {
-namespace testing {
+namespace bt::gatt::testing {
 
 FakeLayerTest::FakeLayerTest()
     : gatt_(std::make_unique<FakeLayer>()), weak_gatt_(gatt_->AsWeakPtr()) {}
 
 void FakeLayerTest::TearDown() { RunLoopUntilIdle(); }
 
-}  // namespace testing
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::testing

@@ -12,8 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // ================= FidlDeviceWrapper =================
 
@@ -138,5 +137,4 @@ fit::result<DynamicByteBuffer> DummyDeviceWrapper::EncodeVendorCommand(bt_vendor
   return fit::error();
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

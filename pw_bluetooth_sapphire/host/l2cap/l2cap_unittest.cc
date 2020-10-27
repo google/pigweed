@@ -27,8 +27,7 @@
 // object. These exercise a production data plane against raw HCI endpoints.
 // TODO(fxbug.dev/61914): Migrate these tests to an l2cap integration test suite.
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 using namespace inspect::testing;
@@ -716,5 +715,4 @@ const std::array<std::pair<l2cap::AclPriority, bool>, 4> kPriorityParams = {
 INSTANTIATE_TEST_SUITE_P(L2CAP_L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 }  // namespace
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

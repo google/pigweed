@@ -10,9 +10,7 @@
 // Prevent "undefined symbol: __zircon_driver_rec__" error.
 BT_DECLARE_FAKE_DRIVER();
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
@@ -23,9 +21,7 @@ void fuzz(const uint8_t* data, size_t size) {
   (void)_result;
 }
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bt::l2cap::internal::fuzz(data, size);

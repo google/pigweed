@@ -13,8 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // This class provides functions to obtain an identity address by resolving a
 // given RPA. Resolution is performed using identity information stored in the
@@ -45,7 +44,6 @@ class IdentityResolvingList final {
   DISALLOW_COPY_ASSIGN_AND_MOVE(IdentityResolvingList);
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_IDENTITY_RESOLVING_LIST_H_

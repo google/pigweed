@@ -7,8 +7,7 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
   ZX_DEBUG_ASSERT(callback);
@@ -20,5 +19,4 @@ void FakeLocalAddressDelegate::EnsureLocalAddress(AddressCallback callback) {
                   [callback = std::move(callback), addr = local_address_] { callback(addr); });
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

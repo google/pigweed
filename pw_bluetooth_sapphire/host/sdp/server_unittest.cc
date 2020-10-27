@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 using RegistrationHandle = Server::RegistrationHandle;
 
@@ -1270,5 +1269,4 @@ TEST_F(SDP_ServerTest, HandleRequestWithoutChannel) {
 #undef UINT32_AS_LE_BYTES
 
 }  // namespace
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

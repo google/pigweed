@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 // See v5.0, Vol 3, Part B, Sec 3.1.
 // Each Data element has a header and a data field.
@@ -157,7 +156,6 @@ class DataElement {
   std::vector<DataElement> aggregate_;
 };
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_DATA_ELEMENT_H_

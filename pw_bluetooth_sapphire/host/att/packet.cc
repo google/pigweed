@@ -4,8 +4,7 @@
 
 #include "packet.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 PacketReader::PacketReader(const ByteBuffer* buffer)
     : PacketView<Header>(buffer, buffer->size() - sizeof(Header)) {}
@@ -15,5 +14,4 @@ PacketWriter::PacketWriter(OpCode opcode, MutableByteBuffer* buffer)
   mutable_header()->opcode = opcode;
 }
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att

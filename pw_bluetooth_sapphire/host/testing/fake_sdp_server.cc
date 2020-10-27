@@ -8,8 +8,7 @@
 
 #include "fake_l2cap.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 FakeSdpServer::FakeSdpServer() : server_(sdp::Server(l2cap::testing::FakeL2cap::Create())) {}
 
@@ -36,5 +35,4 @@ void FakeSdpServer::HandleSdu(fxl::WeakPtr<FakeDynamicChannel> channel, const By
   }
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

@@ -9,8 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 const DeviceAddress kAddress1(DeviceAddress::Type::kLERandom, {6, 5, 4, 3, 2, 1});
@@ -77,5 +76,4 @@ TEST(GAP_IdentityResolvingListTest, OverwriteIrk) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

@@ -39,8 +39,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 namespace {
 
 using bt::sm::BondableMode;
@@ -2446,5 +2445,4 @@ TEST_F(GAP_LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
 }
 
 }  // namespace
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

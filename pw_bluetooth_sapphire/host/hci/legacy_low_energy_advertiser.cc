@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 namespace {
 
@@ -361,5 +360,4 @@ void LegacyLowEnergyAdvertiser::OnIncomingConnection(ConnectionHandle handle, Co
   callback(std::move(link));
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

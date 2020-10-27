@@ -8,8 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 namespace {
 
 const BasicHeader& GetBasicHeader(const hci::ACLDataPacket& fragment) {
@@ -145,5 +144,4 @@ void Recombiner::EndTraces() {
 #endif
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

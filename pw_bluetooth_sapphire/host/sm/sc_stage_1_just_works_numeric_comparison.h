@@ -17,8 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 // ScStage1JustWorksNumericComparison encapsulates Stage 1 of LE Secure Connections Pairing Phase
 // 2, which handles authentication using the Just Works or Numeric Comparison methods described in
@@ -65,7 +64,6 @@ class ScStage1JustWorksNumericComparison final : public ScStage1 {
   Stage1CompleteCallback on_complete_;
   fxl::WeakPtrFactory<ScStage1JustWorksNumericComparison> weak_ptr_factory_;
 };
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SC_STAGE_1_JUST_WORKS_NUMERIC_COMPARISON_H_

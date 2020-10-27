@@ -6,8 +6,7 @@
 
 #include <gtest/gtest.h>
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 namespace {
 
 TEST(HCI_StatusTest, ProtocolSuccess) {
@@ -24,5 +23,4 @@ TEST(HCI_StatusTest, ProtocolError) {
 }
 
 }  // namespace
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

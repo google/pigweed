@@ -17,9 +17,7 @@
 using bt::ContainersEqual;
 using bt::StaticByteBuffer;
 
-namespace bt {
-namespace hci {
-namespace test {
+namespace bt::hci::test {
 namespace {
 
 constexpr OpCode kTestOpCode = 0x07FF;
@@ -315,6 +313,4 @@ TEST(HCI_PacketTest, ACLDataPacketFromBuffer) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::test

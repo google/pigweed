@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 ControllerTestDoubleBase::ControllerTestDoubleBase() {}
 
@@ -202,5 +201,4 @@ void ControllerTestDoubleBase::HandleACLPacket(async_dispatcher_t* dispatcher,
   }
 }
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing

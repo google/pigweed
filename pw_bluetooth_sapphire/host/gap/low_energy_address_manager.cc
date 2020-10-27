@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
                                                  StateQueryDelegate delegate,
@@ -154,5 +153,4 @@ void LowEnergyAddressManager::ResolveAddressRequests() {
   }
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

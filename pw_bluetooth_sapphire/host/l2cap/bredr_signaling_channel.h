@@ -9,9 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // Implements packet processing for the BR/EDR signaling channel (CID = 1).
 // Callbacks will be run on the thread where packet reception occurs, which is
@@ -38,8 +36,6 @@ class BrEdrSignalingChannel final : public SignalingChannel {
   bool IsSupportedResponse(CommandCode code) const override;
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_BREDR_SIGNALING_CHANNEL_H_

@@ -20,9 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 constexpr bool IsValidLEFixedChannel(ChannelId id) {
@@ -702,6 +700,4 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
     connection_parameter_update_callback_(params);
   }
 }
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

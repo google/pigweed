@@ -17,9 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 // FakeChannel is a simple pass-through Channel implementation that is intended
 // for L2CAP service level unit tests where data is transmitted over a L2CAP
@@ -106,8 +104,6 @@ class FakeChannel : public Channel {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannel);
 };
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_CHANNEL_H_

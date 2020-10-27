@@ -28,8 +28,7 @@
 // MutableBufferView::mutable_payload(), or CommandPacket::mutable_payload()
 // instead. Take extra care when accessing flexible array members.
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // HCI opcode as used in command packets.
 using OpCode = uint16_t;
@@ -3680,7 +3679,6 @@ struct BcmSetAclPriorityCommandParams {
   BcmAclPriorityDirection direction;
 } __PACKED;
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_

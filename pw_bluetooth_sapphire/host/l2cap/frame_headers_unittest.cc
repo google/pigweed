@@ -10,9 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 namespace {
 
 TEST(L2CAP_FrameHeaders_EnhancedControlFieldTest, IdentifiesInformationFrame) {
@@ -295,6 +293,4 @@ TEST(L2CAP_FrameHeaders_SimpleReceiverReadyFrameTest, IsConstructedProperly) {
 }
 
 }  // namespace
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal

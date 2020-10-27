@@ -12,8 +12,7 @@
 #include "device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 fit::result<std::unique_ptr<Transport>> Transport::Create(
     std::unique_ptr<DeviceWrapper> hci_device) {
@@ -147,5 +146,4 @@ void Transport::OnChannelError() {
   NotifyClosedCallback();
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

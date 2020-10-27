@@ -26,9 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-
-namespace sm {
+namespace bt::sm {
 
 Phase2SecureConnections::Phase2SecureConnections(
     fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
@@ -326,5 +324,4 @@ void Phase2SecureConnections::OnRxBFrame(ByteBufferPtr sdu) {
   }
 }
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

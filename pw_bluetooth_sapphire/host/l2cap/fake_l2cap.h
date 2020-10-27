@@ -9,9 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 
 class FakeChannel;
 
@@ -143,8 +141,6 @@ class FakeL2cap final : public L2cap {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeL2cap);
 };
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FAKE_L2CAP_H_

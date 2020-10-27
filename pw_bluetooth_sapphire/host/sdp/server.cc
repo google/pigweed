@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 
 using RegistrationHandle = Server::RegistrationHandle;
 
@@ -578,5 +577,4 @@ void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(in
   }
 }
 
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

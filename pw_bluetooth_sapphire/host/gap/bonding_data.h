@@ -11,8 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 // A |BondingData| struct can be passed to the peer cache and allows for
 // flexibility in adding new fields to cache.
@@ -25,7 +24,6 @@ struct BondingData {
   std::vector<UUID> bredr_services;
 };
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BONDING_DATA_H_

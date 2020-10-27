@@ -15,8 +15,7 @@ namespace bt {
 
 using l2cap::testing::FakeChannel;
 
-namespace l2cap {
-namespace testing {
+namespace l2cap::testing {
 namespace {
 
 // Use plausible ERTM parameters that do not necessarily match values in production. See Core Spec
@@ -227,6 +226,5 @@ FakeL2cap::LinkData& FakeL2cap::ConnectedLinkData(hci::ConnectionHandle handle) 
   return link_iter->second;
 }
 
-}  // namespace testing
-}  // namespace l2cap
+}  // namespace l2cap::testing
 }  // namespace bt

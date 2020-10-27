@@ -8,9 +8,7 @@
 
 #include "fake_channel.h"
 
-namespace bt {
-namespace l2cap {
-namespace testing {
+namespace bt::l2cap::testing {
 namespace {
 
 void DoNothing() {}
@@ -50,6 +48,4 @@ TEST(L2CAP_ScopedChannelTest, Reset) {
   EXPECT_FALSE(chan2->activated());
 }
 
-}  // namespace testing
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::testing

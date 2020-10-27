@@ -12,8 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-namespace bt {
-namespace sdp {
+namespace bt::sdp {
 namespace {
 
 // The Default MTU in basic mode (Spec v5.1, Vol 3 Part A Section 5.1)
@@ -1231,5 +1230,4 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
 
 
 }  // namespace
-}  // namespace sdp
-}  // namespace bt
+}  // namespace bt::sdp

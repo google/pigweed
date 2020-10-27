@@ -9,8 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 
-namespace bt {
-namespace att {
+namespace bt::att {
 
 // Utilities for processing ATT protocol Packets.
 
@@ -27,7 +26,6 @@ class PacketWriter : public MutablePacketView<Header> {
   PacketWriter(OpCode opcode, MutableByteBuffer* buffer);
 };
 
-}  // namespace att
-}  // namespace bt
+}  // namespace bt::att
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_PACKET_H_

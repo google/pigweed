@@ -19,8 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_sdp_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_signaling_server.h"
 
-namespace bt {
-namespace testing {
+namespace bt::testing {
 
 class FakeController;
 
@@ -203,7 +202,6 @@ class FakePeer {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakePeer);
 };
 
-}  // namespace testing
-}  // namespace bt
+}  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_FAKE_PEER_H_

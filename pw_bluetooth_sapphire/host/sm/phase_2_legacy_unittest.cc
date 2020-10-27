@@ -22,8 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 namespace {
 
 // clang-format off
@@ -762,5 +761,4 @@ TEST_F(SMP_Phase2LegacyTest, ReceiveRandomValueTwiceFails) {
   ASSERT_EQ(1, listener()->pairing_error_count());
 }
 }  // namespace
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm

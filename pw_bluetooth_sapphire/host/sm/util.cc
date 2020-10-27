@@ -23,10 +23,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
-namespace bt {
-
-namespace sm {
-namespace util {
+namespace bt::sm::util {
 namespace {
 
 constexpr size_t kPreqSize = 7;
@@ -530,6 +527,4 @@ std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
   return H6(*intermediate_key, lebr_key_id);
 }
 
-}  // namespace util
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm::util

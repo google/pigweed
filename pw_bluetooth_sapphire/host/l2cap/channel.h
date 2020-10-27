@@ -33,8 +33,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 // Represents a L2CAP channel. Each instance is owned by a service
 // implementation that operates on the corresponding channel. Instances can only
@@ -302,7 +301,6 @@ class ChannelImpl : public Channel {
 };
 
 }  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_H_

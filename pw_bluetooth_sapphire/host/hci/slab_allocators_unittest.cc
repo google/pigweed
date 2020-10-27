@@ -11,9 +11,7 @@
 #include "acl_data_packet.h"
 #include "control_packets.h"
 
-namespace bt {
-namespace hci {
-namespace slab_allocators {
+namespace bt::hci::slab_allocators {
 namespace {
 
 constexpr OpCode kTestOpCode = 0xFFFF;
@@ -113,6 +111,4 @@ TEST(HCI_SlabAllocatorsTest, LargeACLDataPacketFallback) {
 }
 
 }  // namespace
-}  // namespace slab_allocators
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::slab_allocators

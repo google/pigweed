@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 class Impl final : public L2cap {
  public:
@@ -149,5 +148,4 @@ fbl::RefPtr<L2cap> L2cap::Create(fxl::WeakPtr<hci::Transport> hci) {
   return AdoptRef(new Impl(hci));
 }
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap

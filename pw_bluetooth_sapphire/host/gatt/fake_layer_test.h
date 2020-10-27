@@ -12,9 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace gatt {
-namespace testing {
+namespace bt::gatt::testing {
 
 // Provides a common GTest harness base class for clients of the GATT layer and emulation of
 // ATT behavior.
@@ -43,8 +41,6 @@ class FakeLayerTest : public ::gtest::TestLoopFixture {
   DISALLOW_COPY_ASSIGN_AND_MOVE(FakeLayerTest);
 };
 
-}  // namespace testing
-}  // namespace gatt
-}  // namespace bt
+}  // namespace bt::gatt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_FAKE_LAYER_TEST_H_

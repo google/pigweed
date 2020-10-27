@@ -21,8 +21,7 @@
 #include "src/lib/fxl/memory/weak_ptr.h"
 #include "src/lib/fxl/synchronization/thread_checker.h"
 
-namespace bt {
-namespace socket {
+namespace bt::socket {
 
 // A SocketFactory vends zx::socket objects that an IPC peer can use to
 // communicate with l2cap::Channels.
@@ -124,7 +123,6 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fbl::RefPtr<ChannelT> c
   return remote_socket;
 }
 
-}  // namespace socket
-}  // namespace bt
+}  // namespace bt::socket
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SOCKET_SOCKET_FACTORY_H_

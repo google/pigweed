@@ -7,8 +7,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 
-namespace bt {
-namespace gap {
+namespace bt::gap {
 
 void IdentityResolvingList::Add(DeviceAddress identity, const UInt128& irk) {
   registry_[identity] = irk;
@@ -30,5 +29,4 @@ std::optional<DeviceAddress> IdentityResolvingList::Resolve(DeviceAddress rpa) c
   return std::nullopt;
 }
 
-}  // namespace gap
-}  // namespace bt
+}  // namespace bt::gap

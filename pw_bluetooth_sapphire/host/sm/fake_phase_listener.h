@@ -10,8 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 
 class FakeListener : public PairingPhase::Listener {
  public:
@@ -94,7 +93,6 @@ class FakeListener : public PairingPhase::Listener {
   fxl::WeakPtrFactory<FakeListener> weak_ptr_factory_;
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_FAKE_PHASE_LISTENER_H_

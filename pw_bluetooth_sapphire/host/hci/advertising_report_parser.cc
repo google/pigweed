@@ -8,8 +8,7 @@
 
 #include "control_packets.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 AdvertisingReportParser::AdvertisingReportParser(const EventPacket& event)
     : encountered_error_(false) {
@@ -66,5 +65,4 @@ bool AdvertisingReportParser::HasMoreReports() {
   return !!remaining_reports_;
 }
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci

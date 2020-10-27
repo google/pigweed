@@ -21,8 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
-namespace sm {
+namespace bt::sm {
 // Phase2SecureConnections encapsulates Phase 2 of LE Secure Connections Pairing, which takes care
 // of authentication and shared encryption key generation using FIPS approved ECDH key protocols
 // (see V5.1 Vol. 3 Part H Section 2.3.5.6). Each Phase2SecureConnections instance generates a new
@@ -135,7 +134,6 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2SecureConnections);
 };
 
-}  // namespace sm
-}  // namespace bt
+}  // namespace bt::sm
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_PHASE_2_SECURE_CONNECTIONS_H_

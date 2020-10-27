@@ -7,9 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 
-namespace bt {
-namespace hci {
-namespace testing {
+namespace bt::hci::testing {
 
 class FakeConnection final : public Connection {
  public:
@@ -36,8 +34,6 @@ class FakeConnection final : public Connection {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeConnection);
 };
 
-}  // namespace testing
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_FAKE_CONNECTION_H_

@@ -16,8 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 
-namespace bt {
-namespace l2cap {
+namespace bt::l2cap {
 
 // A Recombiner can be used to obtain complete L2CAP frames from received
 // fragments. Incoming ACL data packets can be accumulated in a Recombiner.
@@ -102,7 +101,6 @@ class Recombiner final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Recombiner);
 };
 
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_RECOMBINER_H_

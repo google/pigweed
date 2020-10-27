@@ -11,9 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
-namespace bt {
-namespace l2cap {
-namespace internal {
+namespace bt::l2cap::internal {
 
 // The interface between a Channel, and the module implementing the
 // mode-specific transmit logic. The primary purposes of an TxEngine are a) to
@@ -61,8 +59,6 @@ class TxEngine {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TxEngine);
 };
 
-}  // namespace internal
-}  // namespace l2cap
-}  // namespace bt
+}  // namespace bt::l2cap::internal
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_TX_ENGINE_H_

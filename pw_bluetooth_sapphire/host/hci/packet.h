@@ -14,8 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/linked_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 
-namespace bt {
-namespace hci {
+namespace bt::hci {
 
 // A Packet is a move-only object that can be used to hold sent and received HCI
 // packets. The Packet template is parameterized over the protocol packet header
@@ -125,7 +124,6 @@ class Packet : public PacketBase<HeaderType, Packet<HeaderType>> {
   Packet() = default;
 };
 
-}  // namespace hci
-}  // namespace bt
+}  // namespace bt::hci
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_PACKET_H_
