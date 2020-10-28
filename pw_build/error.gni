@@ -12,25 +12,25 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("//build_overrides/pigweed.gni")
+import("python_action.gni")
 
-import("$dir_pw_build/python.gni")
+# Prints an error message and exits the build unsuccessfully.
+#
+# Args:
+#   message: The message to print.
+#
+template("pw_error") {
+  assert(defined(invoker.message) && invoker.message != "",
+         "pw_error requires an error message")
 
-pw_python_package("py") {
-  setup = [ "setup.py" ]
-  sources = [
-    "pw_build/__init__.py",
-    "pw_build/error.py",
-    "pw_build/exec.py",
-    "pw_build/generate_python_package_gn.py",
-    "pw_build/generated_tests.py",
-    "pw_build/host_tool.py",
-    "pw_build/nop.py",
-    "pw_build/null_backend.py",
-    "pw_build/python_runner.py",
-    "pw_build/python_wheels.py",
-    "pw_build/zip.py",
-    "pw_build/zip_test.py",
-  ]
-  tests = [ "python_runner_test.py" ]
+  pw_python_action(target_name) {
+    script = "$dir_pw_build/py/pw_build/error.py"
+    args = [
+      "--target",
+      get_label_info(target_name, "label_no_toolchain"),
+      "--message",
+      invoker.message,
+    ]
+    stamp = true
+  }
 }
