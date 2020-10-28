@@ -213,7 +213,6 @@ defining a ``default_args`` scope containing the overrides.
 
   # Build arguments set across all Pigweed targets.
   default_args = {
-    pw_protobuf_GENERATORS = [ "nanopb_rpc" ]
     dir_pw_third_party_nanopb = "//third_party/nanopb-0.4.2"
   }
 

@@ -8,23 +8,12 @@ as nanopb message structs.
 
 Usage
 =====
-To enable nanopb code generation, add ``nanopb_rpc`` as a generator to your
-Pigweed target's ``pw_protobuf_GENERATORS`` list. Refer to
-:ref:`module-pw_protobuf_compiler` for additional information.
-
-.. code::
-
-  # my_target/target_toolchains.gni
-
-  defaults = {
-    pw_protobuf_GENERATORS = [
-      "pwpb",
-      "nanopb_rpc",  # Enable RPC codegen
-    ]
-  }
+To enable nanopb code generation, the build argument
+``dir_pw_third_party_nanopb`` must be set to point to a local nanopb
+installation.
 
 Define a ``pw_proto_library`` containing the .proto file defining your service
-(and optionally other related protos), then depend on the ``_nanopb_rpc``
+(and optionally other related protos), then depend on the ``nanopb_rpc``
 version of that library in the code implementing the service.
 
 .. code::
@@ -44,7 +33,7 @@ version of that library in the code implementing the service.
       "chat_service.cc",
       "chat_service.h",
     ]
-    public_deps = [ ":chat_protos_nanopb_rpc" ]
+    public_deps = [ ":chat_protos.nanopb_rpc" ]
   }
 
 A C++ header file is generated for each input .proto file, with the ``.proto``

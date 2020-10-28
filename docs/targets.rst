@@ -98,7 +98,6 @@ targets.
 
       # Extend with custom build arguments for the target.
       pw_log_BACKEND = dir_pw_log_tokenized
-      pw_protobuf_GENERATORS = [ "nanopb" ]
     }
   }
 

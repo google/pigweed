@@ -34,12 +34,6 @@ generate_toolchain("docs") {
   defaults = {
     forward_variables_from(_base_toolchain.defaults, "*")
 
-    _has_nanopb_rpc = pw_protobuf_GENERATORS + [ "nanopb_rpc" ] -
-                      [ "nanopb_rpc" ] != pw_protobuf_GENERATORS
-    if (dir_pw_third_party_nanopb != "" && !_has_nanopb_rpc) {
-      pw_protobuf_GENERATORS += [ "nanopb_rpc" ]
-    }
-
     # This is the docs target.
     pw_docgen_BUILD_DOCS = true
   }

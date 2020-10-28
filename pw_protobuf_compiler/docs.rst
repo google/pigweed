@@ -3,13 +3,11 @@
 --------------------
 pw_protobuf_compiler
 --------------------
-
 The Protobuf compiler module provides build system integration and wrapper
 scripts for generating source code for Protobuf definitions.
 
 Generator support
 =================
-
 Protobuf code generation is currently supported for the following generators:
 
 +-------------+----------------+-----------------------------------------------+
@@ -30,30 +28,29 @@ Protobuf code generation is currently supported for the following generators:
 | Raw RPC     | ``raw_rpc``    | Compiles raw binary pw_rpc service code.      |
 +-------------+----------------+-----------------------------------------------+
 
-The build variable ``pw_protobuf_GENERATORS`` tells the module the generators
-for which it should compile code. It is defined as a list of generator codes.
-
 GN template
 ===========
-
 The ``pw_proto_library`` GN template is provided by the module.
 
-It tells the build system to compile a set of source proto files to a library in
-each chosen generator. A different target is created for each generator, with
-the generator's code appended as a suffix to the template's target name.
+It defines a collection of protobuf files that should be compiled together. The
+template creates a sub-target for each supported generator, named
+``<target_name>.<generator>``. These sub-targets generate their respective
+protobuf code, and expose it to the build system appropriately (e.g. a
+``pw_source_set`` for C/C++).
 
-For example, given the definitions:
+For example, given the following target:
 
-.. code::
-
-  pw_protobuf_GENERATORS = [ "pwpb", "go" ]
+.. code-block::
 
   pw_proto_library("test_protos") {
     sources = [ "test.proto" ]
   }
 
-Two targets are created, named ``test_protos.pwpb`` and ``test_protos.go``,
-containing the generated code from their respective generators.
+``test_protos.pwpb`` compiles code for pw_protobuf, and ``test_protos.nanopb``
+compiles using Nanopb (if it's installed).
+
+Protobuf code is only generated when a generator sub-target is listed as a
+dependency of another GN target.
 
 **Arguments**
 

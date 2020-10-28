@@ -102,8 +102,7 @@ def gn_nanopb_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root,
                  ctx.output_dir,
                  dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
-                                                         'nanopb'),
-                 pw_protobuf_GENERATORS='["nanopb", "nanopb_rpc", "pwpb"]')
+                                                         'nanopb'))
     build.ninja(
         ctx.output_dir,
         *_at_all_optimization_levels('stm32f429i'),
