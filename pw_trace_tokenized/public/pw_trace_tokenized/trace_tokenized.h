@@ -116,7 +116,7 @@ class TraceQueue {
 class TokenizedTraceImpl {
  public:
   void Enable(bool enable) {
-    if (enable == enabled_ && enable) {
+    if (enable != enabled_ && enable) {
       event_queue_.Clear();
     }
     enabled_ = enable;
