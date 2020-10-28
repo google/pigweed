@@ -110,7 +110,13 @@ TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {
       PwTokenizer65599FixedLengthHash(                                         \
           std::string_view(string_literal, sizeof(string_literal) - 1),        \
           sizeof(string_literal) - 1) == Hash(string_literal),                 \
-      "Hash function mismatch!")
+      "Hash function mismatch!");                                              \
+  EXPECT_EQ(PwTokenizer65599FixedLengthHash(                                   \
+                std::string_view(string_literal, sizeof(string_literal) - 1),  \
+                sizeof(string_literal) - 1),                                   \
+            pw_tokenizer_65599FixedLengthHash(string_literal,                  \
+                                              sizeof(string_literal) - 1,      \
+                                              sizeof(string_literal) - 1))
 
 TEST(HashMacro, Empty) { TEST_SUPPORTED_HASHES(""); }
 

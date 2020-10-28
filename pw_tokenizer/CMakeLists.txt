@@ -15,6 +15,7 @@
 pw_add_module_library(pw_tokenizer
   SOURCES
     encode_args.cc
+    hash.cc
     tokenize.cc
   PUBLIC_DEPS
     pw_polyfill.overrides

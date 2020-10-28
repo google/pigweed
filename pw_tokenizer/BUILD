@@ -27,6 +27,7 @@ pw_cc_library(
     name = "pw_tokenizer",
     srcs = [
         "encode_args.cc",
+        "hash.cc",
         "public/pw_tokenizer/config.h",
         "public/pw_tokenizer/internal/argument_types.h",
         "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",

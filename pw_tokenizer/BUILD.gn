@@ -55,6 +55,7 @@ pw_source_set("pw_tokenizer") {
   ]
   sources = [
     "encode_args.cc",
+    "hash.cc",
     "public/pw_tokenizer/internal/argument_types.h",
     "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
     "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",

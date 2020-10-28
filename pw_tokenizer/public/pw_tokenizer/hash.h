@@ -13,8 +13,11 @@
 // the License.
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+
 #include <string_view>
 
 #include "pw_preprocessor/compiler.h"
@@ -100,3 +103,11 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(
 }
 
 }  // namespace pw::tokenizer
+
+#endif  // __cplusplus
+
+// C version of the fixed-length hash. Can be used to calculate hashes
+// equivalent to the hashing macros at runtime in C.
+PW_EXTERN_C uint32_t pw_tokenizer_65599FixedLengthHash(const char* string,
+                                                       size_t string_length,
+                                                       size_t hash_length);
