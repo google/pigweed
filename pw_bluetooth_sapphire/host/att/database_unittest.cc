@@ -16,9 +16,9 @@ namespace {
 constexpr Handle kTestRangeStart = 1;
 constexpr Handle kTestRangeEnd = 10;
 
-constexpr UUID kTestType1((uint16_t)1);
-constexpr UUID kTestType2((uint16_t)2);
-constexpr UUID kTestType3((uint16_t)3);
+constexpr UUID kTestType1(uint16_t{1});
+constexpr UUID kTestType2(uint16_t{2});
+constexpr UUID kTestType3(uint16_t{3});
 
 const AccessRequirements kAllowed(false, false, false);
 const sm::SecurityProperties kNoSecurity(sm::SecurityLevel::kNoSecurity, 16, false);
@@ -417,9 +417,6 @@ class ATT_DatabaseIteratorManyTest : public ::testing::Test {
   DISALLOW_COPY_ASSIGN_AND_MOVE(ATT_DatabaseIteratorManyTest);
 };
 
-// static
-const size_t ATT_DatabaseIteratorManyTest::kActiveAttrCount;
-
 TEST_F(ATT_DatabaseIteratorManyTest, NoFilter) {
   auto iter = db()->GetIterator(kTestRangeStart, kTestRangeEnd);
   EXPECT_FALSE(iter.AtEnd());
@@ -518,7 +515,7 @@ TEST_F(ATT_DatabaseIteratorManyTest, Range) {
 class ATT_DatabaseExecuteWriteQueueTest : public ::testing::Test {
  public:
   ATT_DatabaseExecuteWriteQueueTest() = default;
-  ~ATT_DatabaseExecuteWriteQueueTest() = default;
+  ~ATT_DatabaseExecuteWriteQueueTest() override = default;
 
  protected:
   struct PendingWrite {

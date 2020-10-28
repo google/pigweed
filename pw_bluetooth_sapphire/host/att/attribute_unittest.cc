@@ -13,10 +13,10 @@ namespace {
 
 constexpr PeerId kTestPeerId(1);
 constexpr Handle kTestHandle = 0x0001;
-constexpr UUID kTestType1((uint16_t)0x0001);
-constexpr UUID kTestType2((uint16_t)0x0002);
-constexpr UUID kTestType3((uint16_t)0x0003);
-constexpr UUID kTestType4((uint16_t)0x0004);
+constexpr UUID kTestType1(uint16_t{0x0001});
+constexpr UUID kTestType2(uint16_t{0x0002});
+constexpr UUID kTestType3(uint16_t{0x0003});
+constexpr UUID kTestType4(uint16_t{0x0004});
 
 const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 

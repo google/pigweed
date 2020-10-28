@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_BEARER_H_
 
-#include <fbl/macros.h>
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 #include <zircon/assert.h>
@@ -13,6 +12,8 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/packet.h"
@@ -77,7 +78,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   uint16_t min_mtu() const { return min_mtu_; }
 
   // Returns the current link security properties.
-  const sm::SecurityProperties security() const {
+  sm::SecurityProperties security() const {
     return chan_ ? chan_->security() : sm::SecurityProperties();
   }
 
@@ -245,8 +246,8 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   // Shuts down the link.
   void ShutDownInternal(bool due_to_timeout);
 
-  // Returns false if |pdu| is malformed.
-  bool IsPacketValid(const ByteBuffer& pdu);
+  // Returns false if |packet| is malformed.
+  bool IsPacketValid(const ByteBuffer& packet);
 
   // Tries to initiate the next transaction from the given |queue|.
   void TryStartNextTransaction(TransactionQueue* tq);

@@ -205,7 +205,7 @@ class AttributeGrouping final {
   }
 
   // Value of the group declaration attribute.
-  const BufferView decl_value() const {
+  BufferView decl_value() const {
     ZX_DEBUG_ASSERT(!attributes_.empty());
     ZX_DEBUG_ASSERT(attributes_[0].value());
     return attributes_[0].value()->view();

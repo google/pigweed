@@ -14,8 +14,6 @@
 namespace bt::att {
 
 // static
-constexpr Bearer::HandlerId Bearer::kInvalidHandlerId;
-constexpr Bearer::TransactionId Bearer::kInvalidTransactionId;
 
 namespace {
 
@@ -501,7 +499,7 @@ void Bearer::TryStartNextTransaction(TransactionQueue* tq) {
 
   tq->TrySendNext(
       chan_.get(),
-      [this](async_dispatcher_t*, async::Task*, zx_status_t status) {
+      [this](async_dispatcher_t* /*unused*/, async::Task* /*unused*/, zx_status_t status) {
         if (status == ZX_OK)
           ShutDownInternal(true /* due_to_timeout */);
       },

@@ -58,7 +58,7 @@ bool Attribute::WriteAsync(PeerId peer_id, uint16_t offset, const ByteBuffer& va
   if (!write_reqs_.allowed())
     return false;
 
-  write_handler_(peer_id, handle_, offset, std::move(value), std::move(result_callback));
+  write_handler_(peer_id, handle_, offset, value, std::move(result_callback));
   return true;
 }
 

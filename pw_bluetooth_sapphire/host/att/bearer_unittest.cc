@@ -19,9 +19,9 @@ constexpr OpCode kTestResponse3 = kFindByTypeValueResponse;
 
 constexpr OpCode kTestCommand = kWriteCommand;
 
-void NopCallback(const PacketReader&) {}
-void NopErrorCallback(Status, Handle) {}
-void NopHandler(Bearer::TransactionId, const PacketReader&) {}
+void NopCallback(const PacketReader& /*unused*/) {}
+void NopErrorCallback(Status /*unused*/, Handle /*unused*/) {}
+void NopHandler(Bearer::TransactionId /*unused*/, const PacketReader& /*unused*/) {}
 
 class ATT_BearerTest : public l2cap::testing::FakeChannelTest {
  public:
@@ -504,7 +504,7 @@ TEST_F(ATT_BearerTest, CloseChannelAndDeleteBearerWhileRequestsArePending) {
   constexpr size_t kExpectedCount = 3;
 
   size_t cb_count = 0;
-  auto error_cb = [this, &cb_count](Status, Handle) {
+  auto error_cb = [this, &cb_count](Status /*unused*/, Handle /*unused*/) {
     cb_count++;
 
     // Delete the bearer on the first callback. The remaining callbacks should
@@ -537,12 +537,13 @@ TEST_F(ATT_BearerTest, SendManyRequests) {
   auto chan_cb = [&, this](auto cb_packet) {
     OpCode opcode = (*cb_packet)[0];
 
-    if (opcode == kTestRequest)
+    if (opcode == kTestRequest) {
       fake_chan()->Receive(response1);
-    else if (opcode == kTestRequest2)
+    } else if (opcode == kTestRequest2) {
       fake_chan()->Receive(response2);
-    else if (opcode == kTestRequest3)
+    } else if (opcode == kTestRequest3) {
       fake_chan()->Receive(response3);
+    }
   };
   fake_chan()->SetSendCallback(chan_cb, dispatcher());
 
@@ -1098,11 +1099,11 @@ class ATT_BearerTest_Security : public ATT_BearerTest {
   void SendRequest() {
     bearer()->StartTransaction(
         NewBuffer(kTestRequest),
-        [this](auto&) {
+        [this](auto& /*unused*/) {
           request_success_count_++;
           last_request_status_ = Status();
         },
-        [this](Status status, Handle) {
+        [this](Status status, Handle /*unused*/) {
           request_error_count_++;
           last_request_status_ = status;
         });

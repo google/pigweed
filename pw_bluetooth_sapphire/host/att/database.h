@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_DATABASE_H_
 
-#include <fbl/macros.h>
-
 #include <list>
 #include <memory>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"

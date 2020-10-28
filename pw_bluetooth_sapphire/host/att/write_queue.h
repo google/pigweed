@@ -5,9 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_WRITE_QUEUE_H_
 
-#include <fbl/macros.h>
-
 #include <queue>
+
+#include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
