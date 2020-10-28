@@ -497,12 +497,6 @@ template("pw_proto_library") {
                    "generator '$_gen'. Please add support if you require it.",
                  ]))
     }
-
-    # TODO(frolv): Remove this after migrating existing code.
-    _legacy_target = "${target_name}_${_gen}"
-    group(_legacy_target) {
-      public_deps = [ ":$_lang_target" ]
-    }
   }
 
   # All supported pw_protobuf generators.
