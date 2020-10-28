@@ -18,6 +18,8 @@
 #include <string_view>
 
 #include "pw_preprocessor/compiler.h"
+#include "pw_preprocessor/util.h"
+#include "pw_tokenizer/config.h"
 
 namespace pw::tokenizer {
 
@@ -28,10 +30,10 @@ inline constexpr uint32_t k65599HashConstant = 65599u;
 // Calculates the hash of a string. This function calculates hashes at either
 // runtime or compile time in C++ code.
 //
-// This function only hashes up to a fixed length. Characters beyond that length
-// are ignored. Hashing to a fixed length makes it possible to compute this hash
-// in a preprocessor macro. To eliminate some collisions, the length of the
-// string is hashed as if it were the first character.
+// Unlike the C hashing macro, this hash supports strings of any length. Strings
+// longer than the maximum C hashing macro's length will hash different values
+// in C and C++. If the same very long string is used in C and C++, the string
+// will appear with both tokens in the resulting database.
 //
 // This hash is calculated with the following equation, where s is the string
 // and k is the maximum hash length:
@@ -39,12 +41,13 @@ inline constexpr uint32_t k65599HashConstant = 65599u;
 //    H(s, k) = len(s) + 65599 * s[0] + 65599^2 * s[1] + ... + 65599^k * s[k-1]
 //
 // The hash algorithm is a modified version of the x65599 hash used by the SDBM
-// open source project. This hash has the following differences from x65599:
-//   - Characters are only hashed up to a fixed maximum string length.
+// open source project. The modifications were made to support hashing in C
+// macros. These are the differences from x65599:
+//
 //   - Characters are hashed in reverse order.
 //   - The string length is hashed as the first character in the string.
-constexpr uint32_t PwTokenizer65599FixedLengthHash(std::string_view string,
-                                                   size_t hash_length)
+//
+constexpr uint32_t Hash(std::string_view string)
     PW_NO_SANITIZE("unsigned-integer-overflow") {
   // The length is hashed as if it were the first character.
   uint32_t hash = string.size();
@@ -53,7 +56,7 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(std::string_view string,
   // Hash all of the characters in the string as unsigned ints.
   // The coefficient calculation is done modulo 0x100000000, so the unsigned
   // integer overflows are intentional.
-  for (uint8_t ch : string.substr(0, hash_length)) {
+  for (uint8_t ch : string) {
     hash += coefficient * ch;
     coefficient *= k65599HashConstant;
   }
@@ -63,11 +66,36 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(std::string_view string,
 
 // Take the string as an array to support either literals or character arrays,
 // but not const char*.
-template <size_t length>
-constexpr uint32_t PwTokenizer65599FixedLengthHashArray(
-    const char (&string)[length], size_t hash_length) {
-  static_assert(length > 0);
-  return PwTokenizer65599FixedLengthHash(std::string_view(string, length - 1),
+template <size_t size>
+constexpr uint32_t Hash(const char (&string)[size]) {
+  static_assert(size > 0);
+  return Hash(std::string_view(string, size - 1));
+}
+
+// This hash function is equivalent to the C hashing macros. It hashses a string
+// up to a maximum length.
+constexpr uint32_t PwTokenizer65599FixedLengthHash(
+    std::string_view string,
+    size_t hash_length = PW_TOKENIZER_CFG_C_HASH_LENGTH)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
+  uint32_t hash = string.size();
+  uint32_t coefficient = k65599HashConstant;
+
+  for (uint8_t ch : string.substr(0, hash_length)) {
+    hash += coefficient * ch;
+    coefficient *= k65599HashConstant;
+  }
+
+  return hash;
+}
+
+// Character array version of PwTokenizer65599FixedLengthHash.
+template <size_t size>
+constexpr uint32_t PwTokenizer65599FixedLengthHash(
+    const char (&string)[size],
+    size_t hash_length = PW_TOKENIZER_CFG_C_HASH_LENGTH) {
+  static_assert(size > 0);
+  return PwTokenizer65599FixedLengthHash(std::string_view(string, size - 1),
                                          hash_length);
 }
 

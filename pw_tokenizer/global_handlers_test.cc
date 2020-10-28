@@ -24,22 +24,10 @@
 namespace pw::tokenizer {
 namespace {
 
-// The hash to use for this test. This makes sure the strings are shorter than
-// the configured max length to ensure this test works with any reasonable
-// configuration.
-template <size_t kSize>
-constexpr uint32_t TestHash(const char (&string)[kSize]) {
-  constexpr unsigned kTestHashLength = 48;
-  static_assert(kTestHashLength <= PW_TOKENIZER_CFG_HASH_LENGTH);
-  static_assert(kSize <= kTestHashLength + 1);
-  return PwTokenizer65599FixedLengthHash(std::string_view(string, kSize - 1),
-                                         kTestHashLength);
-}
-
 // Constructs an array with the hashed string followed by the provided bytes.
 template <uint8_t... kData, size_t kSize>
 constexpr auto ExpectedData(const char (&format)[kSize]) {
-  const uint32_t value = TestHash(format);
+  const uint32_t value = Hash(format);
   return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
@@ -234,11 +222,10 @@ extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
   TokenizeToGlobalHandlerWithPayload::SetPayload(payload);
 }
 
-// Hijack the PW_TOKENIZE_STRING_DOMAIN macro to capture the tokenizer domain.
-#undef PW_TOKENIZE_STRING_DOMAIN
-#define PW_TOKENIZE_STRING_DOMAIN(domain, string)                 \
-  /* assigned to a variable */ PW_TOKENIZER_STRING_TOKEN(string); \
-  tokenizer_domain = domain;                                      \
+// Hijack an internal macro to capture the tokenizer domain.
+#undef _PW_TOKENIZER_RECORD_ORIGINAL_STRING
+#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
+  tokenizer_domain = domain;                                        \
   string_literal = string
 
 TEST_F(TokenizeToGlobalHandler, Domain_Default) {

@@ -36,7 +36,7 @@ uint32_t TestHash(const char (&str)[kSize])
   uint32_t coefficient = k65599HashConstant;
 
   size_t length =
-      std::min(static_cast<size_t>(PW_TOKENIZER_CFG_HASH_LENGTH), kSize - 1);
+      std::min(static_cast<size_t>(PW_TOKENIZER_CFG_C_HASH_LENGTH), kSize - 1);
 
   // Hash all of the characters in the string as unsigned ints.
   // The coefficient calculation is done modulo 0x100000000, so the unsigned

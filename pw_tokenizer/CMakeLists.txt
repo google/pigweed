@@ -30,6 +30,7 @@ pw_add_module_library(pw_tokenizer.base64
   PUBLIC_DEPS
     pw_base64
     pw_containers
+    pw_polyfill.overrides
     pw_preprocessor
     pw_span
 )

@@ -12,6 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+// This tests the C hashing macros and C++ hashing functions.
+
+#include "pw_tokenizer/hash.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -20,7 +24,6 @@
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h"
-#include "pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h"
 #include "pw_tokenizer_private/generated_hash_test_cases.h"
 
 namespace pw::tokenizer {
@@ -44,7 +47,6 @@ constexpr bool CheckGeneratedCases() {
 
 static_assert(CheckGeneratedCases(),
               "Hashes in the generated test cases must match");
-
 TEST(Hashing, GeneratedCasesAtRuntime) {
   for (const auto [string, hash_length, python_hash, macro_hash] : kHashTests) {
     const uint32_t calculated_hash =
@@ -56,10 +58,10 @@ TEST(Hashing, GeneratedCasesAtRuntime) {
 
 // Gets the size of the string, excluding the null terminator. A uint32_t is
 // used instead of a size_t since the hash calculation requires a uint32_t.
-template <uint32_t kSizeIncludingNull>
-constexpr uint32_t StringLength(const char (&)[kSizeIncludingNull]) {
-  static_assert(kSizeIncludingNull > 0u);
-  return kSizeIncludingNull - 1;  // subtract the null terminator
+template <uint32_t size_with_null>
+constexpr uint32_t StringLength(const char (&)[size_with_null]) {
+  static_assert(size_with_null > 0u);
+  return size_with_null - 1;  // subtract the null terminator
 }
 
 TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {
@@ -103,7 +105,12 @@ TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {
       PwTokenizer65599FixedLengthHash(                                         \
           std::string_view(string_literal, sizeof(string_literal) - 1),        \
           128) == PW_TOKENIZER_65599_FIXED_LENGTH_128_HASH(string_literal),    \
-      "128-byte hash mismatch!")
+      "128-byte hash mismatch!");                                              \
+  static_assert(                                                               \
+      PwTokenizer65599FixedLengthHash(                                         \
+          std::string_view(string_literal, sizeof(string_literal) - 1),        \
+          sizeof(string_literal) - 1) == Hash(string_literal),                 \
+      "Hash function mismatch!")
 
 TEST(HashMacro, Empty) { TEST_SUPPORTED_HASHES(""); }
 

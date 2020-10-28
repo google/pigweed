@@ -50,7 +50,7 @@ pw_source_set("pw_tokenizer") {
   ]
   deps = [ dir_pw_varint ]
   public = [
-    "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
+    "public/pw_tokenizer/hash.h",
     "public/pw_tokenizer/tokenize.h",
   ]
   sources = [
@@ -243,6 +243,7 @@ _simple_tokenize_test_sources = [
   "$dir_pw_varint/varint.cc",
   "encode_args.cc",
   "public/pw_tokenizer/config.h",
+  "public/pw_tokenizer/hash.h",
   "public/pw_tokenizer/internal/argument_types.h",
   "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
   "public/pw_tokenizer/internal/argument_types_macro_8_byte.h",
@@ -250,7 +251,6 @@ _simple_tokenize_test_sources = [
   "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
   "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
   "public/pw_tokenizer/internal/tokenize_string.h",
-  "public/pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h",
   "public/pw_tokenizer/tokenize.h",
   "public/pw_tokenizer/tokenize_to_global_handler.h",
   "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h",

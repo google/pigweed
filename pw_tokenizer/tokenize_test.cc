@@ -20,29 +20,17 @@
 #include <iterator>
 
 #include "gtest/gtest.h"
-#include "pw_tokenizer/pw_tokenizer_65599_fixed_length_hash.h"
+#include "pw_tokenizer/hash.h"
 #include "pw_tokenizer_private/tokenize_test.h"
 #include "pw_varint/varint.h"
 
 namespace pw::tokenizer {
 namespace {
 
-// The hash to use for this test. This makes sure the strings are shorter than
-// the configured max length to ensure this test works with any reasonable
-// configuration.
-template <size_t kSize>
-constexpr uint32_t TestHash(const char (&string)[kSize]) {
-  constexpr unsigned kTestHashLength = 64;
-  static_assert(kTestHashLength <= PW_TOKENIZER_CFG_HASH_LENGTH);
-  static_assert(kSize <= kTestHashLength + 1);
-  return PwTokenizer65599FixedLengthHash(std::string_view(string, kSize - 1),
-                                         kTestHashLength);
-}
-
 // Constructs an array with the hashed string followed by the provided bytes.
 template <uint8_t... kData, size_t kSize>
 constexpr auto ExpectedData(const char (&format)[kSize]) {
-  const uint32_t value = TestHash(format);
+  const uint32_t value = Hash(format);
   return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
@@ -58,23 +46,23 @@ TEST(TokenizeString, EmptyString_IsZero) {
 
 TEST(TokenizeString, String_MatchesHash) {
   constexpr uint32_t token = PW_TOKENIZE_STRING("[:-)");
-  EXPECT_EQ(TestHash("[:-)"), token);
+  EXPECT_EQ(Hash("[:-)"), token);
 }
 
 constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING(">:-[]");
 
 TEST(TokenizeString, GlobalVariable_MatchesHash) {
-  EXPECT_EQ(TestHash(">:-[]"), kGlobalToken);
+  EXPECT_EQ(Hash(">:-[]"), kGlobalToken);
 }
 
 struct TokenizedWithinClass {
   static constexpr uint32_t kThisToken = PW_TOKENIZE_STRING("???");
 };
 
-static_assert(TestHash("???") == TokenizedWithinClass::kThisToken);
+static_assert(Hash("???") == TokenizedWithinClass::kThisToken);
 
 TEST(TokenizeString, ClassMember_MatchesHash) {
-  EXPECT_EQ(TestHash("???"), TokenizedWithinClass().kThisToken);
+  EXPECT_EQ(Hash("???"), TokenizedWithinClass().kThisToken);
 }
 
 // Use a function with a shorter name to test tokenizing __func__ and
@@ -89,11 +77,11 @@ TEST(TokenizeString, ClassMember_MatchesHash) {
 //
 void TestName() {
   constexpr uint32_t function_hash = PW_TOKENIZE_STRING(__func__);
-  EXPECT_EQ(pw::tokenizer::TestHash(__func__), function_hash);
+  EXPECT_EQ(pw::tokenizer::Hash(__func__), function_hash);
 
   // Check the non-standard __PRETTY_FUNCTION__ name.
   constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
-  EXPECT_EQ(pw::tokenizer::TestHash(__PRETTY_FUNCTION__), pretty_function);
+  EXPECT_EQ(pw::tokenizer::Hash(__PRETTY_FUNCTION__), pretty_function);
 }
 
 TEST(TokenizeString, FunctionName) { TestName(); }
@@ -102,17 +90,32 @@ TEST(TokenizeString, Array) {
   constexpr char array[] = "won-won-won-wonderful";
 
   const uint32_t array_hash = PW_TOKENIZE_STRING(array);
-  EXPECT_EQ(TestHash(array), array_hash);
+  EXPECT_EQ(Hash(array), array_hash);
+}
+
+TEST(TokenizeString, NullInString) {
+  // Use PW_TOKENIZER_STRING_TOKEN to avoid emitting strings with NUL into the
+  // ELF file. The CSV database format does not support NUL.
+  constexpr char nulls[32] = {};
+  static_assert(Hash(nulls) == PW_TOKENIZER_STRING_TOKEN(nulls));
+  static_assert(PW_TOKENIZER_STRING_TOKEN(nulls) != 0u);
+
+  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") == Hash("\0"));
+  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") != Hash(""));
+
+  static_assert(PW_TOKENIZER_STRING_TOKEN("abc\0def") == Hash("abc\0def"));
+
+  static_assert(Hash("abc\0def") != Hash("abc\0def\0"));
 }
 
 // Verify that we can tokenize multiple strings from one source line.
-#define THREE_FOR_ONE(first, second, third)         \
-  [[maybe_unused]] constexpr uint32_t token_1 =     \
-      PW_TOKENIZE_STRING_DOMAIN("ignored", first);  \
-  [[maybe_unused]] constexpr uint32_t token_2 =     \
-      PW_TOKENIZE_STRING_DOMAIN("ignored", second); \
-  [[maybe_unused]] constexpr uint32_t token_3 =     \
-      PW_TOKENIZE_STRING_DOMAIN("ignored", third);
+#define THREE_FOR_ONE(first, second, third)             \
+  [[maybe_unused]] constexpr uint32_t token_1 =         \
+      PW_TOKENIZE_STRING_DOMAIN("TEST_DOMAIN", first);  \
+  [[maybe_unused]] constexpr uint32_t token_2 =         \
+      PW_TOKENIZE_STRING_DOMAIN("TEST_DOMAIN", second); \
+  [[maybe_unused]] constexpr uint32_t token_3 =         \
+      PW_TOKENIZE_STRING_DOMAIN("TEST_DOMAIN", third);
 
 TEST(TokenizeString, MultipleTokenizationsInOneMacroExpansion) {
   // This verifies that we can safely tokenize multiple times in a single macro
@@ -479,11 +482,10 @@ TEST_F(TokenizeToCallback, C_SequentialZigZag) {
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
 
-// Hijack the PW_TOKENIZE_STRING_DOMAIN macro to capture the domain name.
-#undef PW_TOKENIZE_STRING_DOMAIN
-#define PW_TOKENIZE_STRING_DOMAIN(domain, string)                 \
-  /* assigned to a variable */ PW_TOKENIZER_STRING_TOKEN(string); \
-  tokenizer_domain = domain;                                      \
+// Hijack an internal macro to capture the tokenizer domain.
+#undef _PW_TOKENIZER_RECORD_ORIGINAL_STRING
+#define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
+  tokenizer_domain = domain;                                        \
   string_literal = string
 
 TEST_F(TokenizeToBuffer, Domain_Default) {

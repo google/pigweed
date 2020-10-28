@@ -352,39 +352,33 @@ the SDBM project. All hashing is done at compile time.
 
 In C code, strings are hashed with a preprocessor macro. For compatibility with
 macros, the hash must be limited to a fixed maximum number of characters. This
-value is set by ``PW_TOKENIZER_CFG_HASH_LENGTH``.
+value is set by ``PW_TOKENIZER_CFG_C_HASH_LENGTH``. Increasing
+``PW_TOKENIZER_CFG_C_HASH_LENGTH`` increases the compilation time for C due to
+the complexity of the hashing macros.
 
-Increasing ``PW_TOKENIZER_CFG_HASH_LENGTH`` increases the compilation time for C
-due to the complexity of the hashing macros. C++ macros use a constexpr
-function instead of a macro, so the compilation time impact is minimal. Projects
-primarily in C++ may use a large value for ``PW_TOKENIZER_CFG_HASH_LENGTH``
-(perhaps even ``std::numeric_limits<size_t>::max()``).
+C++ macros use a constexpr function instead of a macro. This function works with
+any length of string and has lower compilation time impact than the C macros.
+For consistency, C++ tokenization uses the same hash algorithm, but the
+calculated values will differ between C and C++ for strings longer than
+``PW_TOKENIZER_CFG_C_HASH_LENGTH`` characters.
 
 Tokenization domains
 --------------------
-``pw_tokenizer`` supports having multiple tokenization domains. Strings from
-each tokenization domain are stored in separate sections in the ELF file. This
-allows projects to keep tokens from different sources separate. Potential use
-cases include the following:
+``pw_tokenizer`` supports having multiple tokenization domains. Domains are a
+string label associated with each tokenized string. This allows projects to keep
+tokens from different sources separate. Potential use cases include the
+following:
 
 * Keep large sets of tokenized strings separate to avoid collisions.
 * Create a separate database for a small number of strings that use truncated
   tokens, for example only 10 or 16 bits instead of the full 32 bits.
 
-Strings are tokenized by default into the "default" domain. For many projects,
-a single tokenization domain is sufficient, so no additional configuration is
-required.
-
-To support other multiple domains, add a ``pw_tokenized.<new domain name>``
-linker section, as described in ``pw_tokenizer_linker_sections.ld``. Strings are
-tokenized into a domain by providing the domain name as a string literal to the
-``*_DOMAIN`` versions of the tokenization macros. Domain names must be comprised
-of alphanumeric characters and underscores; spaces and special characters are
-not permitted.
+If no domain is specified, the domain is empty (``""``). For many projects, this
+default domain is sufficient, so no additional configuration is required.
 
 .. code-block:: cpp
 
-  // Tokenizes this string to the "default" domain.
+  // Tokenizes this string to the default ("") domain.
   PW_TOKENIZE_STRING("Hello, world!");
 
   // Tokenizes this string to the "my_custom_domain" domain.
@@ -866,7 +860,7 @@ device performed the tokenization.
 Supporting detokenization of strings tokenized on 64-bit targets would be
 simple. This could be done by adding an option to switch the 32-bit types to
 64-bit. The tokenizer stores the sizes of these types in the
-``.pw_tokenizer_info`` ELF section, so the sizes of these types can be verified
+``.pw_tokenizer.info`` ELF section, so the sizes of these types can be verified
 by checking the ELF file, if necessary.
 
 Tokenization in headers
@@ -906,6 +900,29 @@ prefixed Base64-encoded and sent as ``%s`` instead. See `Base64 format`_.
 Another possibility: encode strings with arguments to a ``uint64_t`` and send
 them as an integer. This would be efficient and simple, but only support a small
 number of arguments.
+
+Legacy tokenized string ELF format
+==================================
+The original version of ``pw_tokenizer`` stored tokenized stored as plain C
+strings in the ELF file instead of structured tokenized string entries. Strings
+in different domains were stored in different linker sections. The Python script
+that parsed the ELF file would re-calculate the tokens.
+
+In the current version of ``pw_tokenizer``, tokenized strings are stored in a
+structured entry containing a token, domain, and length-delimited string. This
+has several advantages over the legacy format:
+
+* The Python script does not have to recalculate the token, so any hash
+  algorithm may be used in the firmware.
+* In C++, the tokenization hash no longer has a length limitation.
+* Strings with null terminators in them are properly handled.
+* Only one linker section is required in the linker script, instead of a
+  separate section for each domain.
+
+To migrate to the new format, all that is required is update the linker sections
+to match those in ``pw_tokenizer_linker_sections.ld``. Replace all
+``pw_tokenized.<DOMAIN>`` sections with one ``pw_tokenizer.entries`` section.
+The Python tooling continues to support the legacy tokenized string ELF format.
 
 Compatibility
 =============
