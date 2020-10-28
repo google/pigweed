@@ -123,7 +123,7 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
       'f', 'u', 'c', 'h', 's', 'i', 'a', '.', 'c', 'l');
 
   AdvertisingData data;
-  UUID eddystone((uint16_t)0xFEAA);
+  UUID eddystone(uint16_t{0xFEAA});
 
   EXPECT_EQ(0u, data.service_data_uuids().size());
 

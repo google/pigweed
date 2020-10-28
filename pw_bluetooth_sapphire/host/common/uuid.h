@@ -23,18 +23,22 @@ class UUID final {
   // an unsupported size.
   static bool FromBytes(const ByteBuffer& bytes, UUID* out_uuid);
 
+  // The default constructor initializes all values to zero.
+  constexpr UUID() = default;
+
   // Constructs a UUID from |bytes|. This is similar to FromBytes, except it asserts if |bytes| has
   // an unsupported size.
   explicit UUID(const ByteBuffer& bytes);
 
-  constexpr explicit UUID(const UInt128& uuid128) : type_(Type::k128Bit), value_(uuid128) {
+  constexpr explicit UUID(const UInt128& uuid128) : value_(uuid128) {
     if (!IsValueCompressable())
       return;
 
-    if (value_[kBaseOffset + 2] == 0 && value_[kBaseOffset + 3] == 0)
+    if (value_[kBaseOffset + 2] == 0 && value_[kBaseOffset + 3] == 0) {
       type_ = Type::k16Bit;
-    else
+    } else {
       type_ = Type::k32Bit;
+    }
   }
 
   constexpr explicit UUID(const uint16_t uuid16)
@@ -43,9 +47,6 @@ class UUID final {
   constexpr explicit UUID(const uint32_t uuid32)
       : type_(uuid32 > std::numeric_limits<uint16_t>::max() ? Type::k32Bit : Type::k16Bit),
         value_(BuildSIGUUID(uuid32)) {}
-
-  // The default constructor initializes all values to zero.
-  constexpr UUID() : type_(Type::k128Bit), value_() {}
 
   // Equality operators.
   bool operator==(const UUID& uuid) const;
@@ -80,7 +81,7 @@ class UUID final {
   // Writes a little-endian representation of this UUID to |buffer|.  Returns
   // the number of bytes used. there must be enough space in |buffer| to store
   // |CompactSize()| bytes.
-  size_t ToBytes(MutableByteBuffer* buffer, bool allow_32bit = true) const;
+  size_t ToBytes(MutableByteBuffer* bytes, bool allow_32bit = true) const;
 
   // Returns the most compact representation of this UUID. If |allow_32bit| is
   // false, then a 32-bit UUIDs will default to 128-bit. The contents will be in
@@ -88,7 +89,7 @@ class UUID final {
   //
   // Unlike ToBytes(), this does not copy. Since the returned view does not own
   // its data, it should not outlive this UUID instance.
-  const BufferView CompactView(bool allow_32bit = true) const;
+  BufferView CompactView(bool allow_32bit = true) const;
 
   // Returns a hash of this UUID.
   std::size_t Hash() const;
@@ -121,25 +122,17 @@ class UUID final {
   static constexpr size_t kBaseOffset = 12;
 
   // Returns a 128-bit SIG UUID from the given 16-bit value.
-  static constexpr const UInt128 BuildSIGUUID(const uint16_t uuid16) {
+  static constexpr UInt128 BuildSIGUUID(const uint16_t uuid16) {
     return BuildSIGUUID(static_cast<uint32_t>(uuid16));
   }
 
   // Returns a 128-bit SIG UUID from the given 32-bit value.
-  static constexpr const UInt128 BuildSIGUUID(const uint32_t uuid32) {
+  static constexpr UInt128 BuildSIGUUID(const uint32_t uuid32) {
     UInt128 result(kBaseUuid);
-
-    // HACK(armansito): std::array (see uint128.h) is more constexpr friendly
-    // after C++17, where its non-const operator[] overload can be called in a
-    // constexpr context. However this is not the case in C++14, so we employ an
-    // ugly hack by const_cast'ing the result of the "const" operator[] which is
-    // constexpr friendly. Don't do this in C++17.
-    const auto& const_result = result;
-    const_cast<uint8_t&>(const_result[kBaseOffset]) = static_cast<uint8_t>(uuid32);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 1]) = static_cast<uint8_t>(uuid32 >> 8);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 2]) = static_cast<uint8_t>(uuid32 >> 16);
-    const_cast<uint8_t&>(const_result[kBaseOffset + 3]) = static_cast<uint8_t>(uuid32 >> 24);
-
+    result[kBaseOffset] = static_cast<uint8_t>(uuid32);
+    result[kBaseOffset + 1] = static_cast<uint8_t>(uuid32 >> 8);
+    result[kBaseOffset + 2] = static_cast<uint8_t>(uuid32 >> 16);
+    result[kBaseOffset + 3] = static_cast<uint8_t>(uuid32 >> 24);
     return result;
   }
 
@@ -167,8 +160,8 @@ class UUID final {
   uint16_t ValueAs16Bit() const;
   uint32_t ValueAs32Bit() const;
 
-  Type type_;
-  UInt128 value_;
+  Type type_ = Type::k128Bit;
+  UInt128 value_ = {};
 };
 
 // Returns true if the given |uuid_string| contains a valid UUID in the

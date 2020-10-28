@@ -31,7 +31,7 @@ std::string TypeToString(DeviceAddress::Type type) {
 DeviceAddressBytes::DeviceAddressBytes() { SetToZero(); }
 
 DeviceAddressBytes::DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes) {
-  bytes_ = std::move(bytes);
+  bytes_ = bytes;
 }
 
 DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {

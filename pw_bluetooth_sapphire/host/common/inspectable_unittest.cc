@@ -35,7 +35,7 @@ class TestProperty {
 };
 
 struct TestValue {
-  TestValue(int val) : value(val) {}
+  explicit TestValue(int val) : value(val) {}
   void set_value(int val) { value = val; }
   int value;
 };

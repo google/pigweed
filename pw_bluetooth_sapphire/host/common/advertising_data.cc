@@ -259,7 +259,7 @@ void AdvertisingData::SetServiceData(const UUID& uuid, const ByteBuffer& data) {
   service_data_[uuid] = std::move(srv_data);
 }
 
-const std::unordered_set<UUID> AdvertisingData::service_data_uuids() const {
+std::unordered_set<UUID> AdvertisingData::service_data_uuids() const {
   std::unordered_set<UUID> uuids;
   for (const auto& it : service_data_) {
     uuids.emplace(it.first);
@@ -267,7 +267,7 @@ const std::unordered_set<UUID> AdvertisingData::service_data_uuids() const {
   return uuids;
 }
 
-const BufferView AdvertisingData::service_data(const UUID& uuid) const {
+BufferView AdvertisingData::service_data(const UUID& uuid) const {
   auto iter = service_data_.find(uuid);
   if (iter == service_data_.end())
     return BufferView();
@@ -280,7 +280,7 @@ void AdvertisingData::SetManufacturerData(const uint16_t company_id, const Buffe
   manufacturer_data_[company_id] = std::move(manuf_data);
 }
 
-const std::unordered_set<uint16_t> AdvertisingData::manufacturer_data_ids() const {
+std::unordered_set<uint16_t> AdvertisingData::manufacturer_data_ids() const {
   std::unordered_set<uint16_t> manuf_ids;
   for (const auto& it : manufacturer_data_) {
     manuf_ids.emplace(it.first);
@@ -288,7 +288,7 @@ const std::unordered_set<uint16_t> AdvertisingData::manufacturer_data_ids() cons
   return manuf_ids;
 }
 
-const BufferView AdvertisingData::manufacturer_data(const uint16_t company_id) const {
+BufferView AdvertisingData::manufacturer_data(const uint16_t company_id) const {
   auto iter = manufacturer_data_.find(company_id);
   if (iter == manufacturer_data_.end())
     return BufferView();

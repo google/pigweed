@@ -64,13 +64,6 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
 
 }  // namespace
 
-// These constexpr static members need to be declared here for linkage as they
-// get used in non-constexpr contexts as well:
-// static
-constexpr UInt128 UUID::kBaseUuid;
-constexpr size_t UUID::kBaseOffset;
-
-// static
 bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   switch (bytes.size()) {
     case k16BitSize:
@@ -155,7 +148,7 @@ size_t UUID::ToBytes(MutableByteBuffer* bytes, bool allow_32bit) const {
   return size;
 }
 
-const BufferView UUID::CompactView(bool allow_32bit) const {
+BufferView UUID::CompactView(bool allow_32bit) const {
   size_t size = CompactSize(allow_32bit);
   size_t offset = (size == k128BitSize) ? 0u : kBaseOffset;
   return BufferView(value_.data() + offset, size);

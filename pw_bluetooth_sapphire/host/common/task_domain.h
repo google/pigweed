@@ -5,9 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_TASK_DOMAIN_H_
 
-#include <fbl/macros.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
@@ -17,6 +14,10 @@
 #include <zircon/assert.h>
 
 #include <string>
+
+#include <fbl/macros.h>
+#include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 namespace bt {
 
@@ -91,7 +92,7 @@ class TaskDomain {
  protected:
   // Initializes this domain by spawning a new thread with a dispatcher.
   // |name| is assigned to the thread.
-  TaskDomain(T* obj, std::string name) {
+  TaskDomain(T* obj, const std::string& name) {
     Init(obj);
 
     loop_ = std::make_unique<async::Loop>(&kAsyncLoopConfigNoAttachToCurrentThread);
@@ -165,7 +166,7 @@ class TaskDomain {
                   "T must support fbl::RefPtr");
     static_assert(std::is_base_of<TaskDomain<T, RefCountedType>, T>::value,
                   "TaskDomain can only be used as a mixin");
-    static_assert(internal::has_clean_up<T>::value, "T must provide a CleanUp() method");
+    static_assert(internal::has_clean_up_v<T>, "T must provide a CleanUp() method");
   }
 
   T* obj_;

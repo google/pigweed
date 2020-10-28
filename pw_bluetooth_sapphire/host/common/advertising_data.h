@@ -106,19 +106,19 @@ class AdvertisingData {
   void SetServiceData(const UUID& uuid, const ByteBuffer& data);
 
   // Get a set of which UUIDs have service data in this advertisement.
-  const std::unordered_set<UUID> service_data_uuids() const;
+  std::unordered_set<UUID> service_data_uuids() const;
 
   // View the currently set service data for |uuid|.
   // This view is not stable; it should be used only ephemerally.
   // Returns an empty BufferView if no service data is set for |uuid|
-  const BufferView service_data(const UUID& uuid) const;
+  BufferView service_data(const UUID& uuid) const;
 
   // Set some Manufacturer specific data for the company identified by
   // |company_id|
-  void SetManufacturerData(const uint16_t company_id, const BufferView& data);
+  void SetManufacturerData(uint16_t company_id, const BufferView& data);
 
   // Get a set of which IDs have manufacturer data in this advertisement.
-  const std::unordered_set<uint16_t> manufacturer_data_ids() const;
+  std::unordered_set<uint16_t> manufacturer_data_ids() const;
 
   // View the currently set manufacturer data for the company |company_id|.
   // Returns an empty BufferView if no manufacturer data is set for
@@ -126,7 +126,7 @@ class AdvertisingData {
   // NOTE: it is valid to send a manufacturer data with no data. Check that one
   // exists using manufacturer_data_ids() first.
   // This view is not stable; it should be used only ephemerally.
-  const BufferView manufacturer_data(const uint16_t company_id) const;
+  BufferView manufacturer_data(uint16_t company_id) const;
 
   // Sets the local TX Power
   // TODO(jamuraa): add documentation about where to get this number from

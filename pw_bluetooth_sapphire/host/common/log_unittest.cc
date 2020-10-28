@@ -4,6 +4,8 @@
 
 #include "log.h"
 
+#include <string_view>
+
 #include <gtest/gtest.h>
 
 namespace bt {
@@ -11,7 +13,7 @@ namespace {
 
 // Check that BaseName strips the directory portion of a string literal path at compile time.
 static_assert(internal::BaseName(nullptr) == nullptr);
-static_assert(internal::BaseName("") == std::string_view());
+static_assert(std::string_view(internal::BaseName("")).empty());
 static_assert(internal::BaseName("main.cc") == std::string_view("main.cc"));
 static_assert(internal::BaseName("/main.cc") == std::string_view("main.cc"));
 static_assert(internal::BaseName("../foo/bar//main.cc") == std::string_view("main.cc"));

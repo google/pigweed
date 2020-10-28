@@ -61,7 +61,7 @@ class PacketView {
  public:
   // The default constructor initializes an empty packet view. This is to enable
   // PacketView to be used by value in structures and stl containers.
-  PacketView() : buffer_(nullptr), size_(0u) {}
+  PacketView() = default;
 
   // Initializes this Packet to operate over |buffer|. |payload_size| is the
   // size of the packet payload not including the packet header. A
@@ -73,8 +73,8 @@ class PacketView {
                   buffer_->size());
   }
 
-  const BufferView data() const { return buffer_->view(0, size_); }
-  const BufferView payload_data() const {
+  BufferView data() const { return buffer_->view(0, size_); }
+  BufferView payload_data() const {
     return buffer_->view(sizeof(HeaderType), size_ - sizeof(HeaderType));
   }
 
@@ -119,8 +119,8 @@ class PacketView {
   const ByteBuffer* buffer() const { return buffer_; }
 
  private:
-  const ByteBuffer* buffer_;  // weak
-  size_t size_;
+  const ByteBuffer* buffer_ = nullptr;  // weak
+  size_t size_ = 0u;
 };
 
 template <typename HeaderType>

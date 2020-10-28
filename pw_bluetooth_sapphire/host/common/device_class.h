@@ -51,7 +51,7 @@ class DeviceClass {
 
   // Initializes the contents from |bytes|, as they are represented from the
   // controller (little-endian)
-  explicit DeviceClass(std::initializer_list<uint8_t> bytes);
+  DeviceClass(std::initializer_list<uint8_t> bytes);
 
   // Initializes the contents from |uint32_t|
   explicit DeviceClass(uint32_t value);
