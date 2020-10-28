@@ -20,7 +20,7 @@ import logging
 import unittest
 
 from pw_tokenizer import tokens
-from pw_tokenizer.tokens import _LOG
+from pw_tokenizer.tokens import default_hash, _LOG
 
 CSV_DATABASE = '''\
 00000000,2019-06-10,""
@@ -192,8 +192,10 @@ class TokenDatabaseTest(unittest.TestCase):
         # Test basic merging into an empty database.
         db.merge(
             tokens.Database([
-                tokens.TokenizedStringEntry(1, 'one', datetime.datetime.min),
-                tokens.TokenizedStringEntry(2, 'two', datetime.datetime.min),
+                tokens.TokenizedStringEntry(
+                    1, 'one', date_removed=datetime.datetime.min),
+                tokens.TokenizedStringEntry(
+                    2, 'two', date_removed=datetime.datetime.min),
             ]))
         self.assertEqual({str(e) for e in db.entries()}, {'one', 'two'})
         self.assertEqual(db.token_to_entries[1][0].date_removed,
@@ -205,7 +207,8 @@ class TokenDatabaseTest(unittest.TestCase):
         db.merge(
             tokens.Database([
                 tokens.TokenizedStringEntry(3, 'three'),
-                tokens.TokenizedStringEntry(4, 'four', datetime.datetime.min),
+                tokens.TokenizedStringEntry(
+                    4, 'four', date_removed=datetime.datetime.min),
             ]))
         self.assertEqual({str(e)
                           for e in db.entries()},
@@ -228,8 +231,10 @@ class TokenDatabaseTest(unittest.TestCase):
         # Merge in repeated entries different removal dates.
         db.merge(
             tokens.Database([
-                tokens.TokenizedStringEntry(4, 'four', datetime.datetime.max),
-                tokens.TokenizedStringEntry(5, 'five', datetime.datetime.max),
+                tokens.TokenizedStringEntry(
+                    4, 'four', date_removed=datetime.datetime.max),
+                tokens.TokenizedStringEntry(
+                    5, 'five', date_removed=datetime.datetime.max),
             ]))
         self.assertEqual(len(db.entries()), 5)
         self.assertEqual({str(e)
@@ -258,28 +263,41 @@ class TokenDatabaseTest(unittest.TestCase):
                           for e in db.entries()},
                          {'one', 'two', 'three', 'four', 'five'})
 
-    def test_merge_multiple(self):
+    def test_merge_multiple_datbases_in_one_call(self):
+        """Tests the merge and merged methods with multiple databases."""
         db = tokens.Database.merged(
-            tokens.Database(
-                [tokens.TokenizedStringEntry(1, 'one',
-                                             datetime.datetime.max)]),
-            tokens.Database(
-                [tokens.TokenizedStringEntry(2, 'two',
-                                             datetime.datetime.min)]),
-            tokens.Database(
-                [tokens.TokenizedStringEntry(1, 'one',
-                                             datetime.datetime.min)]))
+            tokens.Database([
+                tokens.TokenizedStringEntry(1,
+                                            'one',
+                                            date_removed=datetime.datetime.max)
+            ]),
+            tokens.Database([
+                tokens.TokenizedStringEntry(2,
+                                            'two',
+                                            date_removed=datetime.datetime.min)
+            ]),
+            tokens.Database([
+                tokens.TokenizedStringEntry(1,
+                                            'one',
+                                            date_removed=datetime.datetime.min)
+            ]))
         self.assertEqual({str(e) for e in db.entries()}, {'one', 'two'})
 
         db.merge(
             tokens.Database([
-                tokens.TokenizedStringEntry(4, 'four', datetime.datetime.max)
+                tokens.TokenizedStringEntry(4,
+                                            'four',
+                                            date_removed=datetime.datetime.max)
             ]),
-            tokens.Database(
-                [tokens.TokenizedStringEntry(2, 'two',
-                                             datetime.datetime.max)]),
             tokens.Database([
-                tokens.TokenizedStringEntry(3, 'three', datetime.datetime.min)
+                tokens.TokenizedStringEntry(2,
+                                            'two',
+                                            date_removed=datetime.datetime.max)
+            ]),
+            tokens.Database([
+                tokens.TokenizedStringEntry(3,
+                                            'three',
+                                            date_removed=datetime.datetime.min)
             ]))
         self.assertEqual({str(e)
                           for e in db.entries()},
@@ -299,6 +317,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(len(db.token_to_entries), 17)
 
     def test_mark_removals(self):
+        """Tests that date_removed field is set by mark_removals."""
         db = tokens.Database.from_strings(
             ['MILK', 'apples', 'oranges', 'CHEESE', 'pears'])
 
@@ -309,26 +328,28 @@ class TokenDatabaseTest(unittest.TestCase):
         db.mark_removals(['apples', 'oranges', 'pears'], date_1)
 
         self.assertEqual(
-            db.token_to_entries[db.tokenize('MILK')][0].date_removed, date_1)
+            db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
         self.assertEqual(
-            db.token_to_entries[db.tokenize('CHEESE')][0].date_removed, date_1)
+            db.token_to_entries[default_hash('CHEESE')][0].date_removed,
+            date_1)
 
         now = datetime.datetime.now()
         db.mark_removals(['MILK', 'CHEESE', 'pears'])
 
         # New strings are not added or re-added in mark_removed().
         self.assertGreaterEqual(
-            db.token_to_entries[db.tokenize('MILK')][0].date_removed, date_1)
+            db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
         self.assertGreaterEqual(
-            db.token_to_entries[db.tokenize('CHEESE')][0].date_removed, date_1)
+            db.token_to_entries[default_hash('CHEESE')][0].date_removed,
+            date_1)
 
         # These strings were removed.
         self.assertGreaterEqual(
-            db.token_to_entries[db.tokenize('apples')][0].date_removed, now)
+            db.token_to_entries[default_hash('apples')][0].date_removed, now)
         self.assertGreaterEqual(
-            db.token_to_entries[db.tokenize('oranges')][0].date_removed, now)
+            db.token_to_entries[default_hash('oranges')][0].date_removed, now)
         self.assertIsNone(
-            db.token_to_entries[db.tokenize('pears')][0].date_removed)
+            db.token_to_entries[default_hash('pears')][0].date_removed)
 
     def test_add(self):
         db = tokens.Database()
@@ -367,8 +388,6 @@ class TokenDatabaseTest(unittest.TestCase):
 class TestFilter(unittest.TestCase):
     """Tests the filtering functionality."""
     def setUp(self):
-        super().setUp()
-
         self.db = tokens.Database([
             tokens.TokenizedStringEntry(1, 'Luke'),
             tokens.TokenizedStringEntry(2, 'Leia'),

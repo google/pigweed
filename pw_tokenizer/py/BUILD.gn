@@ -42,4 +42,8 @@ pw_python_package("py") {
     "encode_test.py",
     "tokens_test.py",
   ]
+  inputs = [
+    "example_binary_with_tokenized_strings.elf",
+    "example_legacy_binary_with_tokenized_strings.elf",
+  ]
 }

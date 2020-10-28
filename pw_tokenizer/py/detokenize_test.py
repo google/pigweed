@@ -18,6 +18,7 @@ import base64
 import datetime as dt
 import io
 import os
+from pathlib import Path
 import struct
 import tempfile
 import unittest
@@ -82,45 +83,16 @@ EMPTY_ELF = (
     b'\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00'
     b'\x00\x00\x00')
 
-# This is an ELF file with only .pw_tokenized and .pw_tokenizer_info sections.
-# It was created from the ELF file for tokenize_test.cc with the command:
+# This is an ELF file with only the pw_tokenizer sections. It was created
+# from a tokenize_test binary built for the STM32F429i Discovery board. The
+# pw_tokenizer sections were extracted with this command:
 #
-#   arm-none-eabi-objcopy -S --only-section ".pw_tokenize*" <ELF> <OUTPUT>
+#   arm-none-eabi-objcopy -S --only-section ".pw_tokenizer*" <ELF> <OUTPUT>
 #
-# The resulting ELF was converted to a Python binary string using
-# path_to_byte_string function above. The file is also included in the repo as
-# example_binary_with_tokenized_strings.elf.
-ELF_WITH_TOKENIZER_SECTIONS = (
-    b'\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00(\x00\x01'
-    b'\x00\x00\x00!G\x00\x084\x00\x00\x00\xd4\x02\x00\x00\x00\x04\x00\x054\x00'
-    b' \x00\x04\x00(\x00\x04\x00\x03\x00\x01\x00\x00\x00\xb4\x00\x00\x00\x00'
-    b'\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00'
-    b'\x00\x00\x00\x01\x00\x01\x00\x00\x00\xb4\x00\x00\x00\x00\x02\x00\x08\x00'
-    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x01'
-    b'\x00\x01\x00\x00\x00\xb4\x00\x00\x00\x00\x00\x00 \x00\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00'
-    b'\xb4\x00\x00\x00\x18D\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x06\x00\x00\x00\x00\x00\x01\x00Hello %s! %hd %e\x00\x00\x00\x00%u'
-    b'%d%02x%X%hu%hhd%d%ld%lu%lld%llu%c%c%c\x00%u%d%02x%X%hu%hhd%d%ld%lu%lld'
-    b'%llu%c%c%c\x00Won\'t fit : %s%d\x00\x00\x00\x00%llx\x00\x00\x00\x00%ld'
-    b'\x00%d\x00\x00%ld\x00The answer is: %s\x00\x00\x00The answer is: %s\x00'
-    b'\x00\x00The answer is: %s\x00\x00\x00The answer is: %s\x00\x00\x00The '
-    b'answer is: %s\x00\x00\x00The answer is: %s\x00\x00\x00The answer is: %'
-    b's\x00\x00\x00The answer is: %s\x00\x00\x00%u %d\x00\x00\x00The answer:'
-    b' "%s"\x00\x00\x00\x00Jello, world!\x00\x00\x00Jello!\x00\x00Jello?\x00'
-    b'\x00%s there are %x (%.2f) of them%c\x00\x00\x00\x00The answer is: %s\x00'
-    b'\x00\x00\x00\x00\x00\x00[:-)\x00\x00\x00\x00>:-[]\x00\x00\x00%llu\x00\x00'
-    b'\x00\x00The answer was: %s\x00\x00The answer is: %s\x00\x00.shstrtab\x00'
-    b'.pw_tokenized.default\x00.pw_tokenized.TEST_DOMAIN\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x0b\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\xb4\x00\x00\x00\xb9\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04'
-    b'\x00\x00\x00\x00\x00\x00\x00!\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00p\x02\x00\x00&\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x04\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00\x00\x00\x00\x96\x02\x00\x00;\x00\x00\x00\x00\x00\x00\x00'
-    b'\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00')
+ELF_WITH_TOKENIZER_SECTIONS = Path(__file__).parent.joinpath(
+    'example_binary_with_tokenized_strings.elf').read_bytes()
+
+TOKENS_IN_ELF = 22
 
 # 0x2e668cd6 is 'Jello, world!' (which is also used in database_test.py).
 JELLO_WORLD_TOKEN = b'\xd6\x8c\x66\x2e'
@@ -131,8 +103,9 @@ class DetokenizeTest(unittest.TestCase):
     def test_simple(self):
         detok = detokenize.Detokenizer(
             tokens.Database([
-                tokens.TokenizedStringEntry(0xcdab, '%02d %s %c%%',
-                                            dt.datetime.now())
+                tokens.TokenizedStringEntry(0xcdab,
+                                            '%02d %s %c%%',
+                                            date_removed=dt.datetime.now())
             ]))
         self.assertEqual(str(detok.detokenize(b'\xab\xcd\0\0\x02\x03Two\x66')),
                          '01 Two 3%')
@@ -140,7 +113,9 @@ class DetokenizeTest(unittest.TestCase):
     def test_detokenize_extra_data_is_unsuccessful(self):
         detok = detokenize.Detokenizer(
             tokens.Database([
-                tokens.TokenizedStringEntry(1, 'no args', dt.datetime(1, 1, 1))
+                tokens.TokenizedStringEntry(1,
+                                            'no args',
+                                            date_removed=dt.datetime(1, 1, 1))
             ]))
 
         result = detok.detokenize(b'\x01\0\0\0\x04args')
@@ -154,8 +129,11 @@ class DetokenizeTest(unittest.TestCase):
 
     def test_detokenize_missing_data_is_unsuccessful(self):
         detok = detokenize.Detokenizer(
-            tokens.Database(
-                [tokens.TokenizedStringEntry(2, '%s', dt.datetime(1, 1, 1))]))
+            tokens.Database([
+                tokens.TokenizedStringEntry(2,
+                                            '%s',
+                                            date_removed=dt.datetime(1, 1, 1))
+            ]))
 
         result = detok.detokenize(b'\x02\0\0\0')
         string, args, remaining = result.failures[0]
@@ -166,8 +144,11 @@ class DetokenizeTest(unittest.TestCase):
         self.assertEqual('%s', str(result))
 
     def test_detokenize_missing_data_with_errors_is_unsuccessful(self):
-        detok = detokenize.Detokenizer(tokens.Database(
-            [tokens.TokenizedStringEntry(2, '%s', dt.datetime(1, 1, 1))]),
+        detok = detokenize.Detokenizer(tokens.Database([
+            tokens.TokenizedStringEntry(2,
+                                        '%s',
+                                        date_removed=dt.datetime(1, 1, 1))
+        ]),
                                        show_errors=True)
 
         result = detok.detokenize(b'\x02\0\0\0')
@@ -181,8 +162,10 @@ class DetokenizeTest(unittest.TestCase):
     def test_unparsed_data(self):
         detok = detokenize.Detokenizer(
             tokens.Database([
-                tokens.TokenizedStringEntry(1, 'no args',
-                                            dt.datetime(100, 1, 1)),
+                tokens.TokenizedStringEntry(1,
+                                            'no args',
+                                            date_removed=dt.datetime(
+                                                100, 1, 1)),
             ]))
         result = detok.detokenize(b'\x01\0\0\0o_o')
         self.assertFalse(result.ok())
@@ -289,7 +272,7 @@ class DetokenizeTest(unittest.TestCase):
         expected_tokens = frozenset(detok.database.token_to_entries.keys())
 
         csv_database = str(detok.database)
-        self.assertEqual(len(csv_database.splitlines()), 17)
+        self.assertEqual(len(csv_database.splitlines()), TOKENS_IN_ELF)
 
         csv_file = tempfile.NamedTemporaryFile('w', delete=False)
         try:
@@ -327,10 +310,13 @@ class DetokenizeWithCollisions(unittest.TestCase):
 
         # Database with several conflicting tokens.
         self.detok = detokenize.Detokenizer(tokens.Database([
-            tokens.TokenizedStringEntry(token, 'REMOVED', dt.datetime(9, 1, 1)),
+            tokens.TokenizedStringEntry(
+                token, 'REMOVED', date_removed=dt.datetime(9, 1, 1)),
             tokens.TokenizedStringEntry(token, 'newer'),
-            tokens.TokenizedStringEntry(token, 'A: %d', dt.datetime(30, 5, 9)),
-            tokens.TokenizedStringEntry(token, 'B: %c', dt.datetime(30, 5, 10)),
+            tokens.TokenizedStringEntry(
+                token, 'A: %d', date_removed=dt.datetime(30, 5, 9)),
+            tokens.TokenizedStringEntry(
+                token, 'B: %c', date_removed=dt.datetime(30, 5, 10)),
             tokens.TokenizedStringEntry(token, 'C: %s'),
             tokens.TokenizedStringEntry(token, '%d%u'),
             tokens.TokenizedStringEntry(token, '%s%u %d'),
@@ -400,7 +386,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
 
         db = database.load_token_database(
             io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
-        self.assertEqual(len(db), 17)
+        self.assertEqual(len(db), TOKENS_IN_ELF)
 
         the_time = [100]
 

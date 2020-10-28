@@ -304,17 +304,23 @@ class Elf:
 
         return self._elf.read(size)
 
-    def dump_sections(self, name: Union[str, Pattern[str]]) -> Optional[bytes]:
+    def dump_sections(self, name: Union[str,
+                                        Pattern[str]]) -> Dict[str, bytes]:
         """Dumps a binary string containing the sections matching the regex."""
         name_regex = re.compile(name)
 
-        sections = []
+        sections: Dict[str, bytes] = {}
         for section in self.sections:
             if name_regex.match(section.name):
                 self._elf.seek(section.file_offset + section.offset)
-                sections.append(self._elf.read(section.size))
+                sections[section.name] = self._elf.read(section.size)
 
-        return b''.join(sections) if sections else None
+        return sections
+
+    def dump_section_contents(
+            self, name: Union[str, Pattern[str]]) -> Optional[bytes]:
+        sections = self.dump_sections(name)
+        return b''.join(sections.values()) if sections else None
 
     def summary(self) -> str:
         return '\n'.join(
@@ -342,7 +348,7 @@ def _dump_sections(elf: Elf, output, sections: Iterable[Pattern[str]]) -> None:
         return
 
     for section_pattern in sections:
-        output(elf.dump_sections(section_pattern))
+        output(elf.dump_section_contents(section_pattern))
 
 
 def _parse_args() -> argparse.Namespace:

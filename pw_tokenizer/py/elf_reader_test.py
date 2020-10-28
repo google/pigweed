@@ -125,9 +125,9 @@ class ElfReaderTest(unittest.TestCase):
             self.assertEqual(section.size, size)
 
     def test_dump_single_section(self):
-        self.assertEqual(self._elf.dump_sections(r'\.test_section_1'),
+        self.assertEqual(self._elf.dump_section_contents(r'\.test_section_1'),
                          b'You cannot pass\0')
-        self.assertEqual(self._elf.dump_sections(r'\.test_section_2'),
+        self.assertEqual(self._elf.dump_section_contents(r'\.test_section_2'),
                          b'\xef\xbe\xed\xfe')
 
     def test_dump_multiple_sections(self):
@@ -137,7 +137,8 @@ class ElfReaderTest(unittest.TestCase):
         else:
             contents = b'\xef\xbe\xed\xfeYou cannot pass\0'
 
-        self.assertIn(self._elf.dump_sections(r'.test_section_\d'), contents)
+        self.assertIn(self._elf.dump_section_contents(r'.test_section_\d'),
+                      contents)
 
     def test_read_values(self):
         address = self._section('.test_section_1').address
@@ -247,9 +248,9 @@ class ArchiveTest(unittest.TestCase):
 
     def test_elf_reader_dump_single_section(self):
         elf = elf_reader.Elf(self._archive)
-        self.assertEqual(elf.dump_sections(r'\.test_section_1'),
+        self.assertEqual(elf.dump_section_contents(r'\.test_section_1'),
                          b'You cannot pass\0')
-        self.assertEqual(elf.dump_sections(r'\.test_section_2'),
+        self.assertEqual(elf.dump_section_contents(r'\.test_section_2'),
                          b'\xef\xbe\xed\xfe')
 
     def test_elf_reader_read_values(self):

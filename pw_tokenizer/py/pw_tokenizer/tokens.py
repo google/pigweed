@@ -15,6 +15,7 @@
 
 import collections
 import csv
+from dataclasses import dataclass
 from datetime import datetime
 import io
 import logging
@@ -25,10 +26,16 @@ from typing import BinaryIO, Callable, Dict, Iterable, List, NamedTuple
 from typing import Optional, Pattern, Tuple, Union, ValuesView
 
 DATE_FORMAT = '%Y-%m-%d'
+DEFAULT_DOMAIN = ''
 
-# The default hash length to use. This MUST match the default value of
-# PW_TOKENIZER_CFG_HASH_LENGTH in pw_tokenizer/public/pw_tokenizer/config.h.
-DEFAULT_HASH_LENGTH = 128
+# The default hash length to use. This value only applies when hashing strings
+# from a legacy-style ELF with plain strings. New tokenized string entries
+# include the token alongside the string.
+#
+# This MUST match the default value of PW_TOKENIZER_CFG_C_HASH_LENGTH in
+# pw_tokenizer/public/pw_tokenizer/config.h.
+DEFAULT_C_HASH_LENGTH = 128
+
 TOKENIZER_HASH_CONSTANT = 65599
 
 _LOG = logging.getLogger('pw_tokenizer')
@@ -40,7 +47,11 @@ def _value(char: Union[int, str]) -> int:
 
 def pw_tokenizer_65599_fixed_length_hash(string: Union[str, bytes],
                                          hash_length: int) -> int:
-    """Hashes the provided string."""
+    """Hashes the provided string.
+
+    This hash function is only used when adding tokens from legacy-style
+    tokenized strings in an ELF, which do not include the token.
+    """
     hash_value = len(string)
     coefficient = TOKENIZER_HASH_CONSTANT
 
@@ -52,25 +63,26 @@ def pw_tokenizer_65599_fixed_length_hash(string: Union[str, bytes],
 
 
 def default_hash(string: Union[str, bytes]) -> int:
-    return pw_tokenizer_65599_fixed_length_hash(string, DEFAULT_HASH_LENGTH)
+    return pw_tokenizer_65599_fixed_length_hash(string, DEFAULT_C_HASH_LENGTH)
 
 
-_EntryKey = Tuple[int, str]  # Key for uniquely referring to an entry
+class _EntryKey(NamedTuple):
+    """Uniquely refers to an entry."""
+    token: int
+    string: str
 
 
+@dataclass(eq=True, order=False)
 class TokenizedStringEntry:
     """A tokenized string with its metadata."""
-    def __init__(self,
-                 token: int,
-                 string: str,
-                 date_removed: Optional[datetime] = None):
-        self.token = token
-        self.string = string
-        self.date_removed = date_removed
+    token: int
+    string: str
+    domain: str = DEFAULT_DOMAIN
+    date_removed: Optional[datetime] = None
 
     def key(self) -> _EntryKey:
         """The key determines uniqueness for a tokenized string."""
-        return self.token, self.string
+        return _EntryKey(self.token, self.string)
 
     def update_date_removed(self,
                             new_date_removed: Optional[datetime]) -> None:
@@ -98,22 +110,16 @@ class TokenizedStringEntry:
     def __str__(self) -> str:
         return self.string
 
-    def __repr__(self) -> str:
-        return '{}({!r})'.format(type(self).__name__, self.string)
-
 
 class Database:
     """Database of tokenized strings stored as TokenizedStringEntry objects."""
-    def __init__(self,
-                 entries: Iterable[TokenizedStringEntry] = (),
-                 tokenize: Callable[[str], int] = default_hash):
+    def __init__(self, entries: Iterable[TokenizedStringEntry] = ()):
         """Creates a token database."""
         # The database dict stores each unique (token, string) entry.
         self._database: Dict[_EntryKey, TokenizedStringEntry] = {
             entry.key(): entry
             for entry in entries
         }
-        self.tokenize = tokenize
 
         # This is a cache for fast token lookup that is built as needed.
         self._cache: Optional[Dict[int, List[TokenizedStringEntry]]] = None
@@ -122,10 +128,11 @@ class Database:
     def from_strings(
             cls,
             strings: Iterable[str],
+            domain: str = DEFAULT_DOMAIN,
             tokenize: Callable[[str], int] = default_hash) -> 'Database':
         """Creates a Database from an iterable of strings."""
-        return cls((TokenizedStringEntry(tokenize(string), string)
-                    for string in strings), tokenize)
+        return cls((TokenizedStringEntry(tokenize(string), string, domain)
+                    for string in strings))
 
     @classmethod
     def merged(cls, *databases: 'Database') -> 'Database':
@@ -164,7 +171,7 @@ class Database:
         The strings are assumed to represent the complete set of strings for the
         database. Strings currently in the database not present in the provided
         strings are marked with a removal date but remain in the database.
-        Strings in all_strings missing from the database are NOT added; call the
+        Strings in all_strings missing from the database are NOT ; call the
         add function to add these strings.
 
         Args:
@@ -194,20 +201,29 @@ class Database:
 
         return removed
 
-    def add(self, strings: Iterable[str]) -> None:
-        """Adds new strings to the database."""
+    def add(self,
+            entries: Iterable[Union[str, TokenizedStringEntry]],
+            tokenize: Callable[[str], int] = default_hash) -> None:
+        """Adds new entries or strings to the database."""
         self._cache = None
 
         # Add new and update previously removed entries.
-        for string in strings:
-            key = self.tokenize(string), string
+        for new_entry in entries:
+            # Handle legacy plain string entries, which need to be hashed.
+            if isinstance(new_entry, str):
+                key = _EntryKey(tokenize(new_entry), new_entry)
+                domain = DEFAULT_DOMAIN
+            else:
+                key = _EntryKey(new_entry.token, new_entry.string)
+                domain = new_entry.domain
 
             try:
                 entry = self._database[key]
                 if entry.date_removed:
                     entry.date_removed = None
             except KeyError:
-                self._database[key] = TokenizedStringEntry(key[0], string)
+                self._database[key] = TokenizedStringEntry(
+                    key.token, key.string, domain)
 
     def purge(
         self,
@@ -250,11 +266,11 @@ class Database:
     ) -> None:
         """Filters the database using regular expressions (strings or compiled).
 
-    Args:
-      include: iterable of regexes; only entries matching at least one are kept
-      exclude: iterable of regexes; entries matching any of these are removed
-      replace: iterable of (regex, str); replaces matching terms in all entries
-    """
+        Args:
+          include: regexes; only entries matching at least one are kept
+          exclude: regexes; entries matching any of these are removed
+          replace: (regex, str) tuples; replaces matching terms in all entries
+        """
         self._cache = None
 
         to_delete: List[_EntryKey] = []
@@ -300,7 +316,8 @@ def parse_csv(fd) -> Iterable[TokenizedStringEntry]:
             date = (datetime.strptime(date_str, DATE_FORMAT)
                     if date_str.strip() else None)
 
-            yield TokenizedStringEntry(token, string_literal, date)
+            yield TokenizedStringEntry(token, string_literal, DEFAULT_DOMAIN,
+                                       date)
         except (ValueError, UnicodeDecodeError) as err:
             _LOG.error('Failed to parse tokenized string entry %s: %s', line,
                        err)
@@ -373,7 +390,7 @@ def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
     offset = 0
     for token, removed in entries:
         string, offset = read_string(offset)
-        yield TokenizedStringEntry(token, string, removed)
+        yield TokenizedStringEntry(token, string, DEFAULT_DOMAIN, removed)
 
 
 def write_binary(database: Database, fd: BinaryIO) -> None:
@@ -410,9 +427,9 @@ def write_binary(database: Database, fd: BinaryIO) -> None:
 class DatabaseFile(Database):
     """A token database that is associated with a particular file.
 
-  This class adds the write_to_file() method that writes to file from which it
-  was created in the correct format (CSV or binary).
-  """
+    This class adds the write_to_file() method that writes to file from which it
+    was created in the correct format (CSV or binary).
+    """
     def __init__(self, path: Union[Path, str]):
         self.path = Path(path)
 
