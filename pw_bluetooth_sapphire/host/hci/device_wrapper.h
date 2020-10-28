@@ -20,7 +20,6 @@
 #include <fbl/unique_fd.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/lib/files/unique_fd.h"
 
 namespace bt::hci {
 
