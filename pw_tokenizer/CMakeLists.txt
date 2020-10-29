@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 pw_add_module_library(pw_tokenizer
   SOURCES
     encode_args.cc
@@ -53,6 +55,8 @@ pw_add_facade(pw_tokenizer.global_handler
     tokenize_to_global_handler.cc
   PUBLIC_DEPS
     pw_tokenizer
+  DEFAULT_BACKEND
+    pw_build.empty  # Default to an empty backend so the tests can run.
 )
 
 pw_add_facade(pw_tokenizer.global_handler_with_payload
@@ -60,20 +64,9 @@ pw_add_facade(pw_tokenizer.global_handler_with_payload
     tokenize_to_global_handler_with_payload.cc
   PUBLIC_DEPS
     pw_tokenizer
+  DEFAULT_BACKEND
+    pw_build.empty  # Default to an empty backend so the tests can run.
 )
-
-# TODO(hepler): Use an empty backend that makes tests possible, for now.
-add_library(pw_tokenizer.global_handler.backend INTERFACE)
-target_link_libraries(pw_tokenizer.global_handler.backend
-  INTERFACE
-    pw_tokenizer.test_backend)
-
-add_library(pw_tokenizer.global_handler_with_payload.backend INTERFACE)
-target_link_libraries(pw_tokenizer.global_handler_with_payload.backend
-  INTERFACE
-    pw_tokenizer.test_backend)
-
-add_library(pw_tokenizer.test_backend INTERFACE)
 
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.

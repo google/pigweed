@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 pw_auto_add_simple_module(pw_assert_basic
   IMPLEMENTS_FACADE
     pw_assert
@@ -20,9 +22,3 @@ pw_auto_add_simple_module(pw_assert_basic
     pw_string
     pw_sys_io
 )
-
-target_include_directories(pw_assert_basic PUBLIC public_overrides)
-
-# TODO(hepler): Declare pw_assert_basic as the pw_assert backend for now.
-add_library(pw_assert.backend INTERFACE)
-target_link_libraries(pw_assert.backend INTERFACE pw_assert_basic)

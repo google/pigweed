@@ -22,7 +22,7 @@
 #pragma once
 
 // C++11 is required for the features in this header.
-#if __cplusplus >= 201103L
+#if defined(__cplusplus) && __cplusplus >= 201103L
 
 // If consteval is not supported, use constexpr. This does not guarantee
 // compile-time execution, but works equivalently in constant expressions.
@@ -68,4 +68,4 @@ constexpr bool StaticAssertExpression(bool expression, const char*) {
 }  // namespace pw
 
 #endif  // __cpp_static_assert < 201411L
-#endif  // __cplusplus >= 201103L
+#endif  // defined(__cplusplus) && __cplusplus >= 201103L

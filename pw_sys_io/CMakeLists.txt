@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 pw_add_facade(pw_sys_io
   SOURCES
     sys_io.cc

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 pw_add_module_library(pw_unit_test
   SOURCES
     framework.cc

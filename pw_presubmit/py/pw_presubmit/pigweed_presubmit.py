@@ -150,7 +150,12 @@ def python_checks(ctx: PresubmitContext):
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
-    build.cmake(ctx.root, ctx.output_dir, env=build.env_with_clang_vars())
+    toolchain = ctx.root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
+
+    build.cmake(ctx.root,
+                ctx.output_dir,
+                f'-DCMAKE_TOOLCHAIN_FILE={toolchain}',
+                env=build.env_with_clang_vars())
     build.ninja(ctx.output_dir, 'pw_run_tests.modules')
 
 

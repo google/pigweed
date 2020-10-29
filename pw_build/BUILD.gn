@@ -16,6 +16,9 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
 
+# IMPORTANT: The compilation flags in this file must be kept in sync with
+#            the CMake flags pw_build/CMakeLists.txt.
+
 config("colorize_output") {
   cflags = [
     # Colorize output. Ninja's Clang invocation disables color by default.

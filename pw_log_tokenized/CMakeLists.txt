@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 pw_auto_add_simple_module(pw_log_tokenized
   IMPLEMENTS_FACADE
     pw_log
   PUBLIC_DEPS
     pw_tokenizer
 )
-
-target_include_directories(pw_log_tokenized PUBLIC public_overrides)

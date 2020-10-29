@@ -88,9 +88,18 @@ def ninja(directory: Path, *args, **kwargs) -> None:
 
 def cmake(source_dir: Path,
           output_dir: Path,
+          *args: str,
           env: Mapping['str', 'str'] = None) -> None:
     """Runs CMake for Ninja on the given source and output directories."""
-    call('cmake', '-B', output_dir, '-S', source_dir, '-G', 'Ninja', env=env)
+    call('cmake',
+         '-B',
+         output_dir,
+         '-S',
+         source_dir,
+         '-G',
+         'Ninja',
+         *args,
+         env=env)
 
 
 def env_with_clang_vars() -> Mapping[str, str]:

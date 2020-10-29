@@ -14,14 +14,14 @@
 
 project(Pigweed)
 
-cmake_minimum_required(VERSION 3.14)
-
-include(pw_build/pigweed.cmake)
+cmake_minimum_required(VERSION 3.16)
 
 add_subdirectory(pw_assert)
 add_subdirectory(pw_assert_basic)
+add_subdirectory(pw_assert_log)
 add_subdirectory(pw_base64)
 add_subdirectory(pw_blob_store)
+add_subdirectory(pw_build)
 add_subdirectory(pw_bytes)
 add_subdirectory(pw_checksum)
 add_subdirectory(pw_containers)

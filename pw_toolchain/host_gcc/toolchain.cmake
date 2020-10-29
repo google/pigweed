@@ -14,7 +14,9 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_sys_io_stdio
-  IMPLEMENTS_FACADE
-    pw_sys_io
-)
+pw_set_backend(pw_log pw_log_basic)
+pw_set_backend(pw_assert pw_assert_log)
+pw_set_backend(pw_sys_io pw_sys_io_stdio)
+
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_COMPILER g++)
