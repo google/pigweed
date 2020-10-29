@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection_manager.h"
 
 namespace bt::gap {
 
@@ -32,7 +33,8 @@ class BrEdrConnection final {
   BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                   fit::closure send_auth_request_cb, fit::closure disconnect_cb,
                   fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
-                  fbl::RefPtr<l2cap::L2cap> l2cap, std::optional<Request> request);
+                  fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<hci::Transport> transport,
+                  std::optional<Request> request);
 
   ~BrEdrConnection();
 
@@ -49,19 +51,34 @@ class BrEdrConnection final {
   // the L2cap provided. Otherwise, calls |cb| with a nullptr.
   void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
 
+  // Open a SCO connection associated with this BR/EDR connection.
+  // |initiator| indicates whether a connection request should be sent or a connection
+  // request is expected.
+  // |parameters| is the set of SCO connection parameters that the connection should be configured
+  // with.
+  // |callback| will be called with the result of the procedure.
+  //
+  // Returns a handle that will cancel the pending request if destroyed.
+  using ScoConnectionCallback = sco::ScoConnectionManager::ConnectionCallback;
+  using ScoRequestHandle = sco::ScoConnectionManager::RequestHandle;
+  ScoRequestHandle OpenScoConnection(bool initiator,
+                                     hci::SynchronousConnectionParameters parameters,
+                                     ScoConnectionCallback callback);
+
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
   PeerId peer_id() const { return peer_id_; }
-  PairingState& pairing_state() { return pairing_state_; }
+  PairingState& pairing_state() { return *pairing_state_; }
 
  private:
   // True if Start() has been called.
   bool ready_;
   PeerId peer_id_;
   std::unique_ptr<hci::Connection> link_;
-  PairingState pairing_state_;
+  std::unique_ptr<PairingState> pairing_state_;
   std::optional<Request> request_;
   fbl::RefPtr<l2cap::L2cap> domain_;
+  std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

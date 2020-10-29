@@ -22,12 +22,15 @@ DynamicByteBuffer CommandCompletePacket(hci::OpCode opcode, hci::StatusCode);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
+DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address, hci::StatusCode reason);
+
 DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn);
 
 DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
                                           hci::LinkType link_type = hci::LinkType::kACL);
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
-DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn);
+DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn,
+                                           hci::StatusCode status = hci::StatusCode::kSuccess);
 
 DynamicByteBuffer DisconnectPacket(
     hci::ConnectionHandle conn,

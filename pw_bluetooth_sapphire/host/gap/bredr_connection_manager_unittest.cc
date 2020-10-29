@@ -20,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::gap {
 namespace {
@@ -3037,6 +3038,125 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capChannelUpgradeLinkKeyFails) {
 
   QueueDisconnection(kConnectionHandle);
 }
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnectionFails) {
+  sco::ScoConnectionManager::ConnectionResult conn_result;
+  auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
+  auto handle = connmgr()->OpenScoConnection(
+      PeerId(1), true, hci::SynchronousConnectionParameters{}, std::move(conn_cb));
+  EXPECT_FALSE(handle.has_value());
+  ASSERT_TRUE(conn_result.is_error());
+  EXPECT_EQ(conn_result.error(), HostError::kNotFound);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+
+  constexpr hci::SynchronousConnectionParameters kScoConnectionParams = {};
+  constexpr hci::ConnectionHandle kScoConnectionHandle = 0x41;
+  auto setup_status_packet = testing::CommandStatusPacket(hci::kEnhancedSetupSynchronousConnection,
+                                                          hci::StatusCode::kSuccess);
+  auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
+      kScoConnectionHandle, peer->address(), hci::LinkType::kExtendedSCO,
+      hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::EnhancedSetupSynchronousConnectionPacket(kConnectionHandle, kScoConnectionParams),
+      &setup_status_packet, &conn_complete_packet);
+
+  sco::ScoConnectionManager::ConnectionResult conn_result;
+  auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
+
+  auto req_handle = connmgr()->OpenScoConnection(peer->identifier(), /*initiator=*/true,
+                                                 kScoConnectionParams, std::move(conn_cb));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_result.is_ok());
+  EXPECT_EQ(conn_result.value()->handle(), kScoConnectionHandle);
+
+  // Disconnecting from a peer should first disconnect SCO connections, then disconnect the ACL
+  // connection.
+  QueueDisconnection(kScoConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+  connmgr()->Disconnect(peer->identifier());
+  RunLoopUntilIdle();
+}
+
+class ScoLinkTypesTest : public BrEdrConnectionManagerTest,
+                         public ::testing::WithParamInterface<hci::LinkType> {};
+
+TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+
+  constexpr hci::SynchronousConnectionParameters kScoConnectionParams = {};
+  sco::ScoConnectionManager::ConnectionResult conn;
+  auto conn_cb = [&conn](auto cb_conn) {
+    EXPECT_TRUE(cb_conn.is_ok());
+    conn = std::move(cb_conn);
+  };
+  auto req_handle = connmgr()->OpenScoConnection(peer->identifier(), /*initiator=*/false,
+                                                 kScoConnectionParams, std::move(conn_cb));
+
+  auto conn_req_packet =
+      testing::ConnectionRequestPacket(peer->address(), /*link_type=*/GetParam());
+  test_device()->SendCommandChannelPacket(conn_req_packet);
+
+  auto accept_status_packet = testing::CommandStatusPacket(
+      hci::kEnhancedAcceptSynchronousConnectionRequest, hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::EnhancedAcceptSynchronousConnectionRequestPacket(
+                            peer->address(), kScoConnectionParams),
+                        &accept_status_packet);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn.is_pending());
+
+  constexpr hci::ConnectionHandle kScoConnectionHandle = 0x41;
+  test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
+      kScoConnectionHandle, peer->address(), hci::LinkType::kSCO, hci::StatusCode::kSuccess));
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn.is_ok());
+  EXPECT_EQ(conn.value()->handle(), kScoConnectionHandle);
+
+  // Disconnecting from a peer should first disconnect SCO connections, then disconnect the ACL
+  // connection.
+  QueueDisconnection(kScoConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+  connmgr()->Disconnect(peer->identifier());
+  RunLoopUntilIdle();
+}
+
+INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, ScoLinkTypesTest,
+                         ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO));
+
+class UnconnectedLinkTypesTest : public BrEdrConnectionManagerTest,
+                                 public ::testing::WithParamInterface<hci::LinkType> {};
+
+TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedConnectionRequests) {
+  auto status_event =
+      testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
+  auto complete_event = testing::ConnectionCompletePacket(
+      kTestDevAddr, kConnectionHandle, hci::StatusCode::kConnectionRejectedBadBdAddr);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::RejectConnectionRequestPacket(
+                            kTestDevAddr, hci::StatusCode::kConnectionRejectedBadBdAddr),
+                        &status_event, &complete_event);
+  test_device()->SendCommandChannelPacket(
+      testing::ConnectionRequestPacket(kTestDevAddr, /*link_type=*/GetParam()));
+  RunLoopUntilIdle();
+}
+
+INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, UnconnectedLinkTypesTest,
+                         ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO,
+                                           static_cast<hci::LinkType>(0x09)));
 
 // Tests for assertions that enforce invariants.
 class GAP_BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};

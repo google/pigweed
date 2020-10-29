@@ -65,6 +65,16 @@ DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
       ));
 }
 
+DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address, hci::StatusCode reason) {
+  const auto addr = address.value().bytes();
+  return DynamicByteBuffer(CreateStaticByteBuffer(
+      LowerBits(hci::kRejectConnectionRequest), UpperBits(hci::kRejectConnectionRequest),
+      0x07,                                                  // parameter_total_size (7 bytes)
+      addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
+      reason                                                 // reason
+      ));
+}
+
 DynamicByteBuffer AuthenticationRequestedPacket(hci::ConnectionHandle conn) {
   return DynamicByteBuffer(CreateStaticByteBuffer(
       LowerBits(hci::kAuthenticationRequested), UpperBits(hci::kAuthenticationRequested),
@@ -99,12 +109,13 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
       ));
 }
 
-DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn) {
+DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci::ConnectionHandle conn,
+                                           hci::StatusCode status) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(CreateStaticByteBuffer(
       hci::kConnectionCompleteEventCode,
       0x0B,                              // parameter_total_size (11 byte payload)
-      hci::StatusCode::kSuccess,         // status
+      status,                            // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
       addr[0], addr[1], addr[2], addr[3], addr[4], addr[5],  // peer address
       0x01,                                                  // link_type (ACL)

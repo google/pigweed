@@ -247,6 +247,20 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
   return discoverer_.RemoveSearch(id);
 }
 
+std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::OpenScoConnection(
+    PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
+    ScoConnectionCallback callback) {
+  auto conn_pair = FindConnectionById(peer_id);
+  if (!conn_pair) {
+    bt_log(TRACE, "gap-bredr", "Can't open SCO connection to unconnected peer (peer: %s)",
+           bt_str(peer_id));
+    callback(fit::error(HostError::kNotFound));
+    return std::nullopt;
+  };
+
+  return conn_pair->second->OpenScoConnection(initiator, parameters, std::move(callback));
+}
+
 bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
   if (connection_requests_.find(peer_id) != connection_requests_.end()) {
     bt_log(WARN, "gap-bredr", "Can't disconnect peer %s because it's being connected to",
@@ -379,12 +393,12 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   auto disconnect_cb = [this, peer_id] { Disconnect(peer_id); };
   auto on_peer_disconnect_cb =
       std::bind(&BrEdrConnectionManager::OnPeerDisconnect, this, link.get());
-  BrEdrConnection& connection =
-      connections_
-          .try_emplace(handle, peer_id, std::move(link), std::move(send_auth_request_cb),
-                       std::move(disconnect_cb), std::move(on_peer_disconnect_cb), cache_, l2cap_,
-                       std::move(request))
-          .first->second;
+  auto [conn_iter, success] = connections_.try_emplace(
+      handle, peer_id, std::move(link), std::move(send_auth_request_cb), std::move(disconnect_cb),
+      std::move(on_peer_disconnect_cb), cache_, l2cap_, hci_, std::move(request));
+  ZX_ASSERT(success);
+
+  BrEdrConnection& connection = conn_iter->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
 
   // Interrogate this peer to find out its version/capabilities.
@@ -511,9 +525,17 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  // Reject this connection.
-  // TODO(fxbug.dev/58458): Ignore this request as it will be handled by ScoConnectionManager.
-  bt_log(INFO, "gap-bredr", "reject unsupported connection");
+  if (params.link_type == hci::LinkType::kSCO || params.link_type == hci::LinkType::kExtendedSCO) {
+    auto conn_pair = FindConnectionByAddress(params.bd_addr);
+    if (conn_pair) {
+      // The ScoConnectionManager owned by the BrEdrConnection will respond.
+      return hci::CommandChannel::EventCallbackResult::kContinue;
+    }
+    bt_log(WARN, "gap-bredr", "received (e)SCO connection request for peer that is not connected");
+  } else {
+    bt_log(WARN, "gap-bredr", "reject unsupported connection (type: %u)",
+           static_cast<unsigned int>(params.link_type));
+  }
 
   auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,
                                         sizeof(hci::RejectConnectionRequestCommandParams));
