@@ -172,7 +172,7 @@ def result_func(glob_warnings):
 class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
-                 use_pigweed_defaults, cipd_package_file,
+                 use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_setup_py_root,
                  cargo_package_file, enable_cargo, json_file, *args, **kwargs):
         super(EnvSetup, self).__init__(*args, **kwargs)
@@ -185,6 +185,8 @@ class EnvSetup(object):
         self._is_windows = os.name == 'nt'
         self._quiet = quiet
         self._install_dir = install_dir
+        self._virtualenv_root = (virtualenv_root
+                                 or os.path.join(install_dir, 'pigweed-venv'))
 
         if os.path.isfile(shell_file):
             os.unlink(shell_file)
@@ -373,8 +375,6 @@ Then use `set +x` to go back to normal.
     def virtualenv(self):
         """Setup virtualenv."""
 
-        venv_path = os.path.join(self._install_dir, 'python3-env')
-
         requirements, req_glob_warnings = _process_globs(
             self._virtualenv_requirements)
         setup_py_roots, setup_glob_warnings = _process_globs(
@@ -400,7 +400,7 @@ Then use `set +x` to go back to normal.
         if not requirements and not setup_py_roots:
             return result(_Result.Status.SKIPPED)
 
-        if not virtualenv_setup.install(venv_path=venv_path,
+        if not virtualenv_setup.install(venv_path=self._virtualenv_root,
                                         requirements=requirements,
                                         setup_py_roots=setup_py_roots,
                                         python=new_python3,
@@ -505,6 +505,13 @@ def parse(argv=None):
         help='Directory in which to recursively search for setup.py files.',
         default=[],
         action='append',
+    )
+
+    parser.add_argument(
+        '--virtualenv-root',
+        help=('Basename of virtualenv directory. Default: '
+              '<install_dir>/pigweed-venv'),
+        default=None,
     )
 
     parser.add_argument(
