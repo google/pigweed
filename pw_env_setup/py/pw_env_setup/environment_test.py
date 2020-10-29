@@ -33,6 +33,8 @@ import six
 
 from pw_env_setup import environment
 
+# pylint: disable=super-with-arguments
+
 
 class WrittenEnvFailure(Exception):
     pass

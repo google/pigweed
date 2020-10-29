@@ -117,7 +117,7 @@ def _which(executable,
 
 
 class _Result:
-    class Status:  # pylint: disable=too-few-public-methods
+    class Status:
         DONE = 'done'
         SKIPPED = 'skipped'
         FAILED = 'failed'
@@ -174,8 +174,7 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_setup_py_root,
-                 cargo_package_file, enable_cargo, json_file, *args, **kwargs):
-        super(EnvSetup, self).__init__(*args, **kwargs)
+                 cargo_package_file, enable_cargo, json_file):
         self._env = environment.Environment()
         self._pw_root = pw_root
         self._setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',

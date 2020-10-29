@@ -14,8 +14,6 @@
 # the License.
 """Generates macros for encoding tokenizer argument types."""
 
-from __future__ import print_function
-
 import datetime
 import os
 

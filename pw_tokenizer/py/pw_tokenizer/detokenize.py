@@ -31,8 +31,6 @@ This module also provides a command line interface for decoding and detokenizing
 messages from a file or stdin.
 """
 
-from __future__ import division
-
 import argparse
 import base64
 import binascii
@@ -40,6 +38,7 @@ from datetime import datetime
 import io
 import logging
 import os
+from pathlib import Path
 import re
 import string
 import struct
@@ -209,10 +208,9 @@ class Detokenizer:
 class AutoUpdatingDetokenizer:
     """Loads and updates a detokenizer from database paths."""
     class _DatabasePath:
-        """Tracks the modified time of a path."""
+        """Tracks the modified time of a path or file object."""
         def __init__(self, path):
-            self.path = path if isinstance(path,
-                                           (str, os.PathLike)) else path.name
+            self.path = path if isinstance(path, (str, Path)) else path.name
             self._modified_time: Optional[float] = self._last_modified_time()
 
         def updated(self) -> bool:

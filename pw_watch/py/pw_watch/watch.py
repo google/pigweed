@@ -108,7 +108,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = False,
     ):
-        super(PigweedBuildWatcher, self).__init__()
+        super().__init__()
 
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns

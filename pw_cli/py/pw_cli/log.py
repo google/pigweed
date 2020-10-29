@@ -33,8 +33,6 @@ class LogLevel(NamedTuple):
 
 # Shorten all the log levels to 3 characters for column-aligned logs.
 # Color the logs using ANSI codes.
-# pylint: disable=bad-whitespace
-# yapf: disable
 _LOG_LEVELS = (
     LogLevel(logging.CRITICAL, 'bold_red', 'CRT', '☠️ '),
     LogLevel(logging.ERROR,    'red',      'ERR', '❌'),
@@ -42,9 +40,7 @@ _LOG_LEVELS = (
     LogLevel(logging.INFO,     'magenta',  'INF', 'ℹ️ '),
     LogLevel(LOGLEVEL_STDOUT,  'cyan',     'OUT', '💬'),
     LogLevel(logging.DEBUG,    'blue',     'DBG', '👾'),
-)
-# yapf: enable
-# pylint: enable=bad-whitespace
+)  # yapf: disable
 
 _LOG = logging.getLogger(__name__)
 _STDERR_HANDLER = logging.StreamHandler()

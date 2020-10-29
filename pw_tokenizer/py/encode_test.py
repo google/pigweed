@@ -16,8 +16,9 @@
 
 import unittest
 
-from pw_tokenizer.encode import encode_token_and_args
 import varint_test_data
+
+from pw_tokenizer.encode import encode_token_and_args
 
 
 class TestEncodeTokenized(unittest.TestCase):

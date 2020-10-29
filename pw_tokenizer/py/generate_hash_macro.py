@@ -14,8 +14,6 @@
 # the License.
 """Generates a C macro for the PW tokenizer 65599 fixed length hash."""
 
-from __future__ import print_function
-
 import datetime
 import os
 

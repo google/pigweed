@@ -22,8 +22,8 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Presubmit tools and a presubmit script for Pigweed',
     install_requires=[
-        'mypy==0.782',
-        'pylint==2.5.3',
+        'mypy==0.790',
+        'pylint==2.6.0',
         'yapf==0.30.0',
         'pw_package',
     ],

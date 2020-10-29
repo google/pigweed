@@ -79,13 +79,7 @@ template("pw_python_package") {
 
     # If sources are provided, make sure there is an __init__.py file.
     if (defined(invoker.sources)) {
-      _found_init_py_in_sources = false
-      foreach(source, invoker.sources) {
-        if (get_path_info(source, "file") == "__init__.py") {
-          _found_init_py_in_sources = true
-        }
-      }
-      assert(_found_init_py_in_sources,
+      assert(filter_include(invoker.sources, [ "*\b__init__.py" ]) != [],
              "Python packages must have at least one __init__.py file")
     }
   }
@@ -181,7 +175,6 @@ template("pw_python_package") {
     args = [
       "--pretty",
       "--show-error-codes",
-      "--color-output",
     ]
     if (_is_package) {
       args += [ rebase_path(_setup_dir) ]

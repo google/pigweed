@@ -18,6 +18,9 @@ import json
 import os
 import re
 
+# Disable super() warnings since this file must be Python 2 compatible.
+# pylint: disable=super-with-arguments
+
 # goto label written to the end of Windows batch files for exiting a script.
 _SCRIPT_END_LABEL = '_pw_end'
 
@@ -61,7 +64,6 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
 
 
 class _VariableAction(_Action):
-    # pylint: disable=redefined-builtin,too-few-public-methods
     # pylint: disable=keyword-arg-before-vararg
     def __init__(self, name, value, allow_empty_values=False, *args, **kwargs):
         super(_VariableAction, self).__init__(*args, **kwargs)
@@ -74,7 +76,7 @@ class _VariableAction(_Action):
     def _check(self):
         try:
             # In python2, unicode is a distinct type.
-            valid_types = (str, unicode)  # pylint: disable=undefined-variable
+            valid_types = (str, unicode)
         except NameError:
             valid_types = (str, )
 

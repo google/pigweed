@@ -20,7 +20,7 @@ import unittest
 from pathlib import Path
 from parameterized import parameterized  # type: ignore
 
-import pw_arduino_build.file_operations as file_operations
+from pw_arduino_build import file_operations
 
 
 def file_set():
@@ -89,8 +89,7 @@ class TestFileOperations(unittest.TestCase):
     ]) # yapf: disable
     def test_find_files(self, test_case, base_fileset, patterns,
                         expected_results):
-        """Test find_files on source files and directories.
-        """
+        """Test find_files on source files and directories."""
         create_files(self.test_dir, base_fileset)
         result = file_operations.find_files(self.test_dir,
                                             patterns,

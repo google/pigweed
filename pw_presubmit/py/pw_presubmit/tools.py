@@ -13,7 +13,7 @@
 # the License.
 """General purpose tools for running presubmit checks."""
 
-import collections
+import collections.abc
 from collections import Counter, defaultdict
 import logging
 import os
@@ -169,7 +169,7 @@ def flatten(*items) -> Iterator:
 
     for item in items:
         if isinstance(item, collections.abc.Iterable) and not isinstance(
-                item, (str, bytes)):
+                item, (str, bytes, bytearray)):
             yield from flatten(*item)
         else:
             yield item
