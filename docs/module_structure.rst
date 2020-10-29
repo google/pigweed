@@ -197,8 +197,8 @@ configuration.
 
   Compile-time configuration provides flexibility, but also imposes
   restrictions. A module can only have one configuration in a given build.
-  Compile-time configuration also makes testing more difficult. Where
-  appropriate, consider alternatives such as C++ templates or runtime
+  This makes testing modules with compile-time configuration more difficult.
+  Where appropriate, consider alternatives such as C++ templates or runtime
   configuration.
 
 Declaring configuration
@@ -249,6 +249,8 @@ system, the config facade is declared as follows:
     pw_foo_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
   }
 
+  # An example source set for each potential config header location follows.
+
   # Publicly accessible configuration header (most common)
   pw_source_set("config") {
     public = [ "public/pw_foo/config.h" ]
@@ -286,7 +288,7 @@ backend. These options could be set through macro definitions, such as
 ``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``, or in a header file included with the
 ``-include`` option.
 
-This example shows how two ways to configure a module in the GN build system.
+This example shows two ways to configure a module in the GN build system.
 
 .. code-block::
 
@@ -332,18 +334,22 @@ For example, the ``pw_log`` facade is represented by the ``pw_log_BACKEND``
 build variable. Facades typically are bundled with a build system library that
 depends on the backend.
 
-Modules should only use facades when necessary. Since they are fixed at compile
-time, runtime dependency injection is not possible. Where appropriate, modules
-should use other mechanisms, such as virtual interfaces or callbacks, in place
-of facades.
-
 Facades are essential in some circumstances:
 
 * Low-level, platform-specific features (:ref:`module-pw_cpu_exception`).
 * Features that require a macro or non-virtual function interface
-  (:ref:`module-pw_tokenizer`),
+  (:ref:`module-pw_log`, :ref:`module-pw_assert`).
 * Highly leveraged code where a virtual interface or callback is too costly or
-  cumbersome (:ref:`module-pw_log`, :ref:`module-pw_assert`).
+  cumbersome (:ref:`module-pw_tokenizer`).
+
+.. caution::
+
+  Modules should only use facades when necessary. Facades are permanently locked
+  to a particular implementation at compile time. Multpile backends cannot be
+  used in one build, and runtime dependency injection is not possible, which
+  makes testing difficult. Where appropriate, modules should use other
+  mechanisms, such as virtual interfaces, callbacks, or templates, in place of
+  facades.
 
 The GN build system provides the
 :ref:`pw_facade template<module-pw_build-facade>` as a convenient way to declare
@@ -407,7 +413,7 @@ To create a new Pigweed module, follow the below steps.
 
 6. Add folder alias for new module variable in ``/modules.gni``
 
-    - dir_pw_new = "$dir_pigweed/pw_new"
+    - ``dir_pw_new = get_path_info("pw_new", "abspath")``
 
 7. Add new module to main GN build
 
