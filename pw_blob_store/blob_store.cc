@@ -16,6 +16,7 @@
 
 #include <algorithm>
 
+#include "pw_assert/assert.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
 

@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_assert/assert.h"
+#include "pw_assert/light.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/packet.h"
@@ -37,9 +37,7 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
         method_id_(method_id),
         handler_(handler),
         active_(true) {
-    // TODO(pwbug/246): Use PW_ASSERT when that is available.
-    // PW_ASSERT(channel_ != nullptr);
-
+    PW_ASSERT(channel_ != nullptr);
     Register();
   }
 

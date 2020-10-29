@@ -461,7 +461,7 @@ PW_ASSERT API reference
   Unlike the ``PW_CHECK_*()`` suite of macros, ``PW_ASSERT()`` and
   ``PW_DASSERT()`` capture no rich information like line numbers, the file,
   expression arguments, or the stringified expression. Use these macros **only
-  when absolutely necessary**--in headers, constexr contexts, or in rare cases
+  when absolutely necessary**---in headers, constexpr contexts, or in rare cases
   where the call site overhead of a full PW_CHECK must be avoided.
 
   Use ``PW_CHECK_*()`` whenever possible.

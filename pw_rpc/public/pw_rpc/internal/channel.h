@@ -15,6 +15,7 @@
 
 #include <span>
 
+#include "pw_assert/assert.h"
 #include "pw_rpc/channel.h"
 #include "pw_status/status.h"
 

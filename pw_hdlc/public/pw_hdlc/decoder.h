@@ -19,6 +19,7 @@
 #include <cstring>
 #include <functional>  // std::invoke
 
+#include "pw_assert/light.h"
 #include "pw_bytes/span.h"
 #include "pw_checksum/crc32.h"
 #include "pw_result/result.h"
@@ -55,10 +56,7 @@ class Frame {
   // Creates a Frame with the specified data. The data MUST be valid frame data
   // with a verified frame check sequence.
   constexpr Frame(uint64_t address, std::byte control, ConstByteSpan data)
-      : data_(data), address_(address), control_(control) {
-    // TODO(pwbug/246): Use PW_DASSERT when available.
-    // PW_DASSERT(data.size() >= kMinSizeBytes);
-  }
+      : data_(data), address_(address), control_(control) {}
 
   ConstByteSpan data_;
   uint64_t address_;

@@ -166,7 +166,6 @@ class FlashPartition {
     FlashPartition::Address address_;
   };
 
-  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
   FlashPartition(
       FlashMemory* flash,
       uint32_t start_sector_index,
@@ -175,7 +174,6 @@ class FlashPartition {
       PartitionPermission permission = PartitionPermission::kReadAndWrite);
 
   // Creates a FlashPartition that uses the entire flash with its alignment.
-  // TODO(pwbug/246): This can be constexpr when tokenized asserts are fixed.
   FlashPartition(FlashMemory* flash)
       : FlashPartition(
             flash, 0, flash->sector_count(), flash->alignment_bytes()) {}

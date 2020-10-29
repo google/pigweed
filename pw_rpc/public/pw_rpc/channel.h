@@ -17,7 +17,7 @@
 #include <span>
 #include <type_traits>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/light.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
@@ -96,13 +96,11 @@ class Channel {
  protected:
   constexpr Channel(uint32_t id, ChannelOutput* output)
       : id_(id), output_(output), client_(nullptr) {
-    // TODO(pwbug/246): Use PW_ASSERT when that is available.
-    // PW_ASSERT(id != kUnassignedChannelId);
+    PW_ASSERT(id != kUnassignedChannelId);
   }
 
   ChannelOutput& output() const {
-    // TODO(pwbug/246): Use PW_ASSERT when that is available.
-    // PW_ASSERT(output_ != nullptr);
+    PW_ASSERT(output_ != nullptr);
     return *output_;
   }
 
