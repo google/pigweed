@@ -22,6 +22,8 @@ namespace bthost {
 namespace {
 
 namespace fble = fuchsia::bluetooth::le;
+namespace fgatt = fuchsia::bluetooth::gatt;
+
 const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const size_t kLEMaxNumPackets = 10;
 const bt::hci::DataBufferInfo kLEDataBufferInfo(bt::hci::kMaxACLPayloadSize, kLEMaxNumPackets);
@@ -60,6 +62,30 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
   }
 
  protected:
+  // Returns true if the given gatt.Client handle was closed after the event
+  // loop finishes processing. Returns false if the handle was not closed.
+  // Ownership of |handle| remains with the caller when this method returns.
+  bool IsClientHandleClosedAfterLoop(fidl::InterfaceHandle<fgatt::Client>* handle) {
+    ZX_ASSERT(handle);
+
+    fgatt::ClientPtr proxy;
+    proxy.Bind(std::move(*handle));
+
+    bool closed = false;
+    proxy.set_error_handler([&](zx_status_t s) {
+      EXPECT_EQ(ZX_ERR_PEER_CLOSED, s);
+      closed = true;
+    });
+    RunLoopUntilIdle();
+
+    *handle = proxy.Unbind();
+    return closed;
+  }
+
+  // Destroys the FIDL server. The le.Central proxy will be shut down and
+  // subsequent calls to `server()` will return nullptr.
+  void DestroyServer() { server_ = nullptr; }
+
   LowEnergyCentralServer* server() const { return server_.get(); }
   fuchsia::bluetooth::le::Central* central_proxy() const { return proxy_.get(); }
 
@@ -257,6 +283,94 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralUnknownPeer) {
   EXPECT_EQ(status.error->error_code, fuchsia::bluetooth::ErrorCode::NOT_FOUND);
   auto server_conn = server()->FindConnectionForTesting(peer_id);
   EXPECT_FALSE(server_conn.has_value());
+}
+
+TEST_F(FIDL_LowEnergyCentralServerTest, DisconnectPeripheralClosesCorrectGattHandle) {
+  const bt::DeviceAddress kAddr1 = kTestAddr;
+  const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
+  auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
+  auto* const peer2 = adapter()->peer_cache()->NewPeer(kAddr2, /*connectable=*/true);
+
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr1));
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr2));
+
+  // Establish two connections.
+  fidl::InterfaceHandle<fgatt::Client> handle1, handle2;
+  central_proxy()->ConnectPeripheral(peer1->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle1.NewRequest(), [](auto) {});
+  central_proxy()->ConnectPeripheral(peer2->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle2.NewRequest(), [](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer1->identifier()));
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer2->identifier()));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle2));
+
+  // Disconnect peer1. Only its gatt.Client handle should close.
+  central_proxy()->DisconnectPeripheral(peer1->identifier().ToString(), [](auto) {});
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle2));
+
+  // Disconnect peer2. Its handle should close now.
+  central_proxy()->DisconnectPeripheral(peer2->identifier().ToString(), [](auto) {});
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
+}
+
+TEST_F(FIDL_LowEnergyCentralServerTest, PeerDisconnectClosesCorrectHandle) {
+  const bt::DeviceAddress kAddr1 = kTestAddr;
+  const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
+  auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
+  auto* const peer2 = adapter()->peer_cache()->NewPeer(kAddr2, /*connectable=*/true);
+
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr1));
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr2));
+
+  // Establish two connections.
+  fidl::InterfaceHandle<fgatt::Client> handle1, handle2;
+  central_proxy()->ConnectPeripheral(peer1->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle1.NewRequest(), [](auto) {});
+  central_proxy()->ConnectPeripheral(peer2->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle2.NewRequest(), [](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer1->identifier()));
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer2->identifier()));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle2));
+
+  // Disconnect peer1. Only its gatt.Client handle should close.
+  test_device()->Disconnect(kAddr1);
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle2));
+
+  // Disconnect peer2. Its handle should close now.
+  test_device()->Disconnect(kAddr2);
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
+}
+
+TEST_F(FIDL_LowEnergyCentralServerTest, ClosingCentralHandleClosesAssociatedGattClientHandles) {
+  const bt::DeviceAddress kAddr1 = kTestAddr;
+  const bt::DeviceAddress kAddr2(bt::DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
+  auto* const peer1 = adapter()->peer_cache()->NewPeer(kAddr1, /*connectable=*/true);
+  auto* const peer2 = adapter()->peer_cache()->NewPeer(kAddr2, /*connectable=*/true);
+
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr1));
+  test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kAddr2));
+
+  // Establish two connections.
+  fidl::InterfaceHandle<fgatt::Client> handle1, handle2;
+  central_proxy()->ConnectPeripheral(peer1->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle1.NewRequest(), [](auto) {});
+  central_proxy()->ConnectPeripheral(peer2->identifier().ToString(), fble::ConnectionOptions{},
+                                     handle2.NewRequest(), [](auto) {});
+  RunLoopUntilIdle();
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer1->identifier()));
+  ASSERT_TRUE(server()->FindConnectionForTesting(peer2->identifier()));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_FALSE(IsClientHandleClosedAfterLoop(&handle2));
+
+  DestroyServer();
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle1));
+  EXPECT_TRUE(IsClientHandleClosedAfterLoop(&handle2));
 }
 
 }  // namespace

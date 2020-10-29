@@ -95,8 +95,9 @@ void GattClientServer::ConnectToService(uint64_t id,
 
     // Clean up the server if either the peer device or the FIDL client
     // disconnects.
-    auto error_cb = [self, id] {
-      bt_log(DEBUG, "bt-host", "service disconnected");
+    auto error_cb = [self, id, peer_id = self->peer_id_] {
+      bt_log(DEBUG, "bt-host", "service disconnected (svc id: %lu, peer id: %s)", id,
+             bt_str(peer_id));
       if (self) {
         self->connected_services_.erase(id);
       }

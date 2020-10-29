@@ -69,8 +69,12 @@ void GattHost::BindGattServer(fidl::InterfaceRequest<fuchsia::bluetooth::gatt::S
 
 void GattHost::BindGattClient(Token token, bt::gatt::PeerId peer_id,
                               fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request) {
-  if (client_servers_.find(token) != client_servers_.end()) {
-    bt_log(WARN, "bt-host", "duplicate Client FIDL server tokens!");
+  // Either initialize a new entry for |token| or obtain an iterator to the
+  // existing entry. In either case the iterator will be valid.
+  auto inner_iter = client_servers_.try_emplace(token, ClientMap()).first;
+  if (inner_iter->second.find(peer_id) != inner_iter->second.end()) {
+    bt_log(WARN, "bt-host", "only 1 gatt.Client FIDL handle allowed per peer (%s) per token (%lu)!",
+           bt_str(peer_id), token);
 
     // The handle owned by |request| will be closed.
     return;
@@ -78,16 +82,29 @@ void GattHost::BindGattClient(Token token, bt::gatt::PeerId peer_id,
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto server = std::make_unique<GattClientServer>(peer_id, gatt_->AsWeakPtr(), std::move(request));
-  server->set_error_handler([self, token](zx_status_t status) {
+  server->set_error_handler([self, token, peer_id](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT client disconnected");
-      self->client_servers_.erase(token);
+      self->UnbindGattClient(token, {peer_id});
     }
   });
-  client_servers_[token] = std::move(server);
+  inner_iter->second[peer_id] = std::move(server);
 }
 
-void GattHost::UnbindGattClient(Token token) { client_servers_.erase(token); }
+void GattHost::UnbindGattClient(Token token, std::optional<bt::gatt::PeerId> peer_id) {
+  if (!peer_id.has_value()) {
+    client_servers_.erase(token);
+    return;
+  }
+
+  auto iter = client_servers_.find(token);
+  if (iter != client_servers_.end()) {
+    iter->second.erase(*peer_id);
+    if (iter->second.empty()) {
+      client_servers_.erase(iter);
+    }
+  }
+}
 
 void GattHost::SetRemoteServiceWatcher(bt::gatt::GATT::RemoteServiceWatcher callback) {
   std::lock_guard<std::mutex> lock(mtx_);

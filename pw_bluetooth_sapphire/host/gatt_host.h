@@ -55,8 +55,10 @@ class GattHost final {
   void BindGattClient(Token token, bt::gatt::PeerId peer_id,
                       fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
 
-  // Unbinds a previously bound GATT client server associated with |token|.
-  void UnbindGattClient(Token token);
+  // Unbinds a previously bound GATT client server associated with |token| and
+  // |peer_id|. Unbinds all GATT client servers associated with |token| if
+  // |peer_id| is std::nullopt.
+  void UnbindGattClient(Token token, std::optional<bt::gatt::PeerId> peer_id);
 
   // Returns the GATT profile implementation.
   fxl::WeakPtr<bt::gatt::GATT> profile() const { return gatt_->AsWeakPtr(); }
@@ -81,7 +83,8 @@ class GattHost final {
   std::unordered_map<GattServerServer*, std::unique_ptr<GattServerServer>> server_servers_;
 
   // Mapping from tokens GattClient pointers. The ID is provided by the caller.
-  std::unordered_map<Token, std::unique_ptr<GattClientServer>> client_servers_;
+  using ClientMap = std::unordered_map<bt::PeerId, std::unique_ptr<GattClientServer>>;
+  std::unordered_map<Token, ClientMap> client_servers_;
 
   fxl::WeakPtrFactory<GattHost> weak_ptr_factory_;
 

@@ -31,7 +31,7 @@ LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> ad
 }
 
 LowEnergyCentralServer::~LowEnergyCentralServer() {
-  gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this));
+  gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this), std::nullopt);
 }
 
 std::optional<bt::gap::LowEnergyConnectionRef*> LowEnergyCentralServer::FindConnectionForTesting(
@@ -191,7 +191,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
     conn_ref->set_closed_callback([self, token, peer_id] {
       if (self && self->connections_.erase(peer_id) != 0) {
-        self->gatt_host_->UnbindGattClient(token);
+        self->gatt_host_->UnbindGattClient(token, {peer_id});
         self->NotifyPeripheralDisconnected(peer_id);
       }
     });
@@ -246,7 +246,7 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
   if (was_pending) {
     bt_log(DEBUG, "bt-host", "canceling connection request");
   } else {
-    gatt_host_->UnbindGattClient(reinterpret_cast<uintptr_t>(this));
+    gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this), {*peer_id});
     NotifyPeripheralDisconnected(*peer_id);
   }
 
