@@ -47,11 +47,17 @@ class UnexpectedAction(ValueError):
 
 
 class _Action(object):  # pylint: disable=useless-object-inheritance
-    def unapply(self, env, orig_env):  # pylint: disable=no-self-use
-        del env, orig_env  # Only used in _VariableAction and subclasses.
+    def unapply(self, env, orig_env):
+        pass
 
-    def json(self, data):  # pylint: disable=no-self-use
-        del data  # Unused.
+    def json(self, data):
+        pass
+
+    def write_deactivate(self,
+                         outs,
+                         windows=(os.name == 'nt'),
+                         replacements=()):
+        pass
 
 
 class _VariableAction(_Action):
@@ -122,6 +128,17 @@ class Set(_VariableAction):
             outs.write('{name}="{value}"\nexport {name}\n'.format(
                 name=self.name, value=value))
 
+    def write_deactivate(self,
+                         outs,
+                         windows=(os.name == 'nt'),
+                         replacements=()):
+        del replacements  # Unused.
+
+        if windows:
+            outs.write('set {name}=\n'.format(name=self.name))
+        else:
+            outs.write('unset {name}\n'.format(name=self.name))
+
     def apply(self, env):
         env[self.name] = self.value
 
@@ -156,6 +173,16 @@ def _initialize_path_like_variable(data, name):
     data['modify'].setdefault(name, default)
 
 
+def _remove_value_from_path(variable, value, pathsep):
+    return ('{variable}="$(echo "${variable}"'
+            ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
+            ' | sed "s|^{value}{pathsep}||g;"'
+            ' | sed "s|{pathsep}{value}$||g;"'
+            ')"\nexport {variable}\n'.format(variable=variable,
+                                             value=value,
+                                             pathsep=pathsep))
+
+
 class Remove(_VariableAction):
     """Remove a value from a PATH-like variable."""
     def __init__(self, name, value, pathsep, *args, **kwargs):
@@ -178,15 +205,10 @@ class Remove(_VariableAction):
             #              name=self.name, value=value, pathsep=self._pathsep))
 
         else:
-            outs.write('# Remove \n#   {value}\n# from\n#   {name}\n# before '
-                       'adding it back.\n'
-                       '{name}="$(echo "${name}"'
-                       ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
-                       ' | sed "s|^{value}{pathsep}||g;"'
-                       ' | sed "s|{pathsep}{value}$||g;"'
-                       ')"\nexport {name}\n'.format(name=self.name,
-                                                    value=value,
-                                                    pathsep=self._pathsep))
+            outs.write('# Remove \n#   {value}\n# from\n#   {value}\n# before '
+                       'adding it back.\n')
+            outs.write(_remove_value_from_path(self.name, value,
+                                               self._pathsep))
 
     def apply(self, env):
         env[self.name] = env[self.name].replace(
@@ -232,6 +254,18 @@ class Prepend(_VariableAction):
             outs.write('{name}="{value}"\nexport {name}\n'.format(
                 name=self.name, value=value))
 
+    def write_deactivate(self,
+                         outs,
+                         windows=(os.name == 'nt'),
+                         replacements=()):
+        value = self.value
+        for var, replacement in replacements:
+            if var != self.name:
+                value = value.replace(replacement, _var_form(var, windows))
+
+        outs.write(
+            _remove_value_from_path(self.name, value, self._join.pathsep))
+
     def apply(self, env):
         env[self.name] = self._join(self.value, env.get(self.name, ''))
 
@@ -265,6 +299,18 @@ class Append(_VariableAction):
         else:
             outs.write('{name}="{value}"\nexport {name}\n'.format(
                 name=self.name, value=value))
+
+    def write_deactivate(self,
+                         outs,
+                         windows=(os.name == 'nt'),
+                         replacements=()):
+        value = self.value
+        for var, replacement in replacements:
+            if var != self.name:
+                value = value.replace(replacement, _var_form(var, windows))
+
+        outs.write(
+            _remove_value_from_path(self.name, value, self._join.pathsep))
 
     def apply(self, env):
         env[self.name] = self._join(env.get(self.name, ''), self.value)
@@ -315,8 +361,8 @@ class Echo(_Action):
                 outs.write('  echo -n "{}"\n'.format(self.value))
             outs.write('fi\n')
 
-    def apply(self, env):  # pylint: disable=no-self-use
-        del env  # Unused.
+    def apply(self, env):
+        pass
 
 
 class Comment(_Action):
@@ -331,8 +377,8 @@ class Comment(_Action):
         for line in self.value.splitlines():
             outs.write('{} {}\n'.format(comment_char, line))
 
-    def apply(self, env):  # pylint: disable=no-self-use
-        del env  # Unused.
+    def apply(self, env):
+        pass
 
 
 class Command(_Action):
@@ -358,8 +404,8 @@ class Command(_Action):
             # Assume failing command produced relevant output.
             outs.write('if [ "$?" -ne 0 ]; then\n  return 1\nfi\n')
 
-    def apply(self, env):  # pylint: disable=no-self-use
-        del env  # Unused.
+    def apply(self, env):
+        pass
 
 
 class BlankLine(_Action):
@@ -372,8 +418,8 @@ class BlankLine(_Action):
         del replacements, windows  # Unused.
         outs.write('\n')
 
-    def apply(self, env):  # pylint: disable=no-self-use
-        del env  # Unused.
+    def apply(self, env):
+        pass
 
 
 class Hash(_Action):
@@ -396,8 +442,18 @@ if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
 fi
 ''')
 
-    def apply(self, env):  # pylint: disable=no-self-use
-        del env  # Unused.
+    def apply(self, env):
+        pass
+
+
+class Join(object):  # pylint: disable=useless-object-inheritance
+    def __init__(self, pathsep=os.pathsep):
+        self.pathsep = pathsep
+
+    def __call__(self, *args):
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            args = args[0]
+        return self.pathsep.join(args)
 
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
@@ -418,11 +474,7 @@ class Environment(object):
         self._windows = windows
         self._allcaps = allcaps
         self._replacements = []
-
-    def _join(self, *args):
-        if len(args) == 1 and isinstance(args[0], (list, tuple)):
-            args = args[0]
-        return self._pathsep.join(args)
+        self._join = Join(pathsep)
 
     def add_replacement(self, variable, value=None):
         self._replacements.append((variable, value))
@@ -541,6 +593,15 @@ class Environment(object):
 
         json.dump(data, outs, indent=4, separators=(',', ': '))
         outs.write('\n')
+
+    def write_deactivate(self, outs):
+        if self._windows:
+            outs.write('@echo off\n')
+
+        for action in reversed(self._actions):
+            action.write_deactivate(outs,
+                                    windows=self._windows,
+                                    replacements=())
 
     @contextlib.contextmanager
     def __call__(self, export=True):

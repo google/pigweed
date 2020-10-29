@@ -226,9 +226,8 @@ class EnvSetup(object):
         self._virtualenv_setup_py_root.extend(virtualenv_setup_py_root)
         self._cargo_package_file.extend(cargo_package_file)
 
-        # No need to set PW_ROOT or _PW_ACTUAL_ENVIRONMENT_ROOT, that will be
-        # done by bootstrap.sh and bootstrap.bat for both bootstrap and
-        # activate.
+        self._env.set('PW_ROOT', pw_root)
+        self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('PW_ROOT', pw_root)
 
@@ -325,6 +324,12 @@ Then use `set +x` to go back to normal.
 
         with open(self._shell_file, 'w') as outs:
             self._env.write(outs)
+
+        deactivate = os.path.join(
+            self._install_dir,
+            'deactivate{}'.format(os.path.splitext(self._shell_file)[1]))
+        with open(deactivate, 'w') as outs:
+            self._env.write_deactivate(outs)
 
         config = {
             # Skipping sysname and nodename in os.uname(). nodename could change
