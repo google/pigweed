@@ -59,7 +59,7 @@ constexpr hci::SynchronousConnectionParameters kConnectionParams{
     .input_transport_unit_size_bits = 19,
     .output_transport_unit_size_bits = 20,
     .max_latency_ms = 21,
-    .packet_types = 22,
+    .packet_types = 257,
     .retransmission_effort = hci::ScoRetransmissionEffort::kQualityOptimized,
 };
 

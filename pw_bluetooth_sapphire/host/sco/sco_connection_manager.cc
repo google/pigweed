@@ -29,6 +29,7 @@ hci::SynchronousConnectionParameters ConnectionParametersToLe(
   params.output_coding_format.vendor_codec_id =
       htole16(params.output_coding_format.vendor_codec_id);
   params.max_latency_ms = htole16(params.max_latency_ms);
+  params.packet_types = htole16(params.packet_types);
   return params;
 }
 

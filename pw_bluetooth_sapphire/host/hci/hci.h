@@ -580,7 +580,7 @@ struct SynchronousConnectionParameters {
   uint16_t max_latency_ms;
 
   // Bitmask of allowed packet types.
-  uint8_t packet_types;
+  uint16_t packet_types;
 
   ScoRetransmissionEffort retransmission_effort;
 };
