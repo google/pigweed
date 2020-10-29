@@ -511,7 +511,7 @@ struct VendorCodingFormat {
 
   // Shall be ignored if |coding_format| is not kVendorSpecific.
   uint16_t vendor_codec_id;
-};
+} __PACKED;
 
 struct SynchronousConnectionParameters {
   // Transmit bandwidth in octets per second.
@@ -583,7 +583,7 @@ struct SynchronousConnectionParameters {
   uint16_t packet_types;
 
   ScoRetransmissionEffort retransmission_effort;
-};
+} __PACKED;
 
 struct EnhancedSetupSynchronousConnectionCommandParams {
   // The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
