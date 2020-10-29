@@ -14,7 +14,7 @@ flash, and run tests upon save.
 
 .. note::
 
-  ``pw_watch`` currently only works with Pigweed's GN build.
+  ``pw_watch`` currently only works with Pigweed's GN and CMake builds.
 
 Module Usage
 ============

@@ -366,19 +366,29 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
 
 CMake / Ninja
 =============
+Pigweed's `CMake`_ support is provided primarily for projects that have an
+existing CMake build and wish to integrate Pigweed without switching to a new
+build system.
 
-Pigweed's CMake support is provided primarily for projects that have an existing
-CMake build and wish to integrate Pigweed without switching to a new build
-system.
-
-The following command generates Ninja build files in the out/cmake directory.
+The following command generates Ninja build files for a host build in the
+``out/cmake_host`` directory:
 
 .. code-block:: sh
 
-  cmake -B out/cmake -S /path/to/pigweed -G Ninja
+  cmake -B out/cmake_host -S /path/to/pigweed -G Ninja -DCMAKE_TOOLCHAIN_FILE=pw_toolchain/host_clang/toolchain.cmake
 
-Tests can be executed with the ``pw_run_tests_GROUP`` targets. To run the basic
-Pigweed tests, run ``ninja -C out/cmake pw_run_tests_modules``.
+Tests can be executed with the ``pw_run_tests.GROUP`` targets. To run Pigweed
+module tests, execute ``pw_run_tests.modules``:
+
+.. code-block:: sh
+
+  ninja -C out/cmake_host pw_run_tests.modules
+
+:ref:`module-pw_watch` supports CMake, so you can also run
+
+.. code-block:: sh
+
+  pw watch out/cmake_host pw_run_tests.modules
 
 CMake functions
 ---------------
@@ -386,7 +396,9 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
 
 * ``pw_auto_add_simple_module`` -- For modules with only one library,
   automatically declare the library and its tests.
+* ``pw_auto_add_module_tests`` -- Create test targets for all tests in a module.
 * ``pw_add_facade`` -- Declare a module facade.
+* ``pw_set_backend`` -- Set the backend library to use for a facade.
 * ``pw_add_module_library`` -- Add a library that is part of a module.
 * ``pw_add_test`` -- Declare a test target.
 
@@ -395,6 +407,44 @@ functions.
 
 Special libraries that do not fit well with these functions are created with the
 standard CMake functions, such as ``add_library`` and ``target_link_libraries``.
+
+Facades and backends
+--------------------
+The CMake build uses CMake cache variables for configuring
+:ref:`facades<docs-module-structure-facades>` and backends. Cache variables are
+similar to GN's build args set with ``gn args``. Unlike GN, CMake does not
+support multi-toolchain builds, so these variables have a single global value
+per build directory.
+
+The ``pw_add_facade`` function declares a cache variable named
+``<module_name>_BACKEND`` for each facade. Cache variables can be awkward to
+work with, since their values only change when they're assigned, but then
+persist accross CMake invocations. It is recommended set these variables as
+follows:
+
+* Use ``pw_set_backend`` to set backends appropriate for the target in the
+  target's toolchain file. The toolchain file is provided to ``cmake`` with
+  ``-DCMAKE_TOOLCHAIN_FILE=<toolchain file>``.
+* To temporarily override a backend, set it interactively with ``ccmake`` or
+  ``cmake-gui``.
+* To force to a backend to a particular value globally, call ``pw_set_backend``
+  in the top-level ``CMakeLists.txt`` before any other CMake code is executed.
+
+Third party libraries
+---------------------
+The CMake build includes third-party libraries similarly to the GN build. A
+``dir_pw_third_party_<library>`` cache variable is defined for each third-party
+dependency. This variable can have one of three values:
+
+* ``""`` (empty) -- the dependency is not available
+* ``PRESENT`` -- the dependency is available and is already included in the
+  build
+* ``</path/to/the/dependency>`` -- the dependency is available and will be
+  automatically imported from this path using ``add_subdirectory``.
+
+If the variable is empty (``if("${dir_pw_third_party_<library>}" STREQUAL
+"")``), the dependency is not available. Otherwise, it is available and
+libraries declared by it can be referenced.
 
 Use Pigweed from an existing CMake project
 ------------------------------------------
@@ -411,8 +461,6 @@ All module libraries will be available as ``module_name`` or
 If desired, modules can be included individually.
 
 .. code-block:: cmake
-
-  include(path/to/pigweed/pw_build/pigweed.cmake)
 
   add_subdirectory(path/to/pigweed/pw_some_module pw_some_module)
   add_subdirectory(path/to/pigweed/pw_another_module pw_another_module)
