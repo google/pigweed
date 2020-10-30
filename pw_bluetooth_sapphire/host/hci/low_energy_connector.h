@@ -92,6 +92,17 @@ class LowEnergyConnector : public LocalAddressClient {
   // was not posted or was canceled. This is intended for unit tests.
   bool timeout_posted() const { return request_timeout_task_.is_pending(); }
 
+  // Disable central privacy and always use the local identity address as the local address when
+  // initiating connections, by-passing LocalAddressDelegate's current privacy setting. This policy
+  // allows better interoperability with peripherals that cannot resolve the local identity when a
+  // RPA is used during pairing.
+  //
+  // By default the address provided by the LocalAddressDelegate is used.
+  //
+  // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root cause for
+  // authentication failures.
+  void UseLocalIdentityAddress() { use_local_identity_address_ = true; }
+
   // LocalAddressClient override:
   bool AllowsRandomAddressChange() const override {
     return !pending_request_ || !pending_request_->initiating;
@@ -154,6 +165,11 @@ class LowEnergyConnector : public LocalAddressClient {
 
   // Our event handle ID for the LE Connection Complete event.
   CommandChannel::EventHandlerId event_handler_id_;
+
+  // Use the local public address if true.
+  // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root cause for
+  // authentication failures.
+  bool use_local_identity_address_ = false;
 
   fxl::ThreadChecker thread_checker_;
 

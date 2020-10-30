@@ -671,13 +671,18 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Create a new connection. The second attempt should use a random address.
+  // re-enabled.
   conn_ref = nullptr;
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_connect_params()->own_address_type);
+
+  // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
+  // connections. Change this test to expect a random address once RPAs for central connections are
+  // re-enabled.
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Disable privacy. The next connection attempt should use a public address.
   adapter()->le_address_manager()->EnablePrivacy(false);
@@ -740,7 +745,10 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_random_address());
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_connect_params()->own_address_type);
+  // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
+  // connections. Change this test to expect a random address once RPAs for central connections are
+  // re-enabled.
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Advance the time to cause the random address to refresh. The update should
   // be deferred while a connection request is outstanding.
@@ -760,7 +768,10 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le_connection_manager()->Connect(peer->identifier(), std::move(noop_connect_cb));
   RunLoopUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_connect_params()->own_address_type);
+  // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
+  // connections. Change this test to expect a random address once RPAs for central connections are
+  // re-enabled.
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 }
 
 // Tests that existing connections don't prevent an address change.
@@ -784,7 +795,10 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   test_device()->AddPeer(std::move(fake_peer));
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
   RunLoopUntilIdle();
-  EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_connect_params()->own_address_type);
+  // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
+  // connections. Change this test to expect a random address once RPAs for central connections are
+  // re-enabled.
+  EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Expire the private address. The address should refresh without interference
   // from the ongoing connection.

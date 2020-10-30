@@ -68,8 +68,11 @@ bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddres
   local_addr_delegate_->EnsureLocalAddress(
       [this, use_whitelist, peer_address, scan_interval, scan_window, initial_parameters,
        callback = std::move(status_callback), timeout](const auto& address) mutable {
-        CreateConnectionInternal(address, use_whitelist, peer_address, scan_interval, scan_window,
-                                 initial_parameters, std::move(callback), timeout);
+        // Use the identity address if privacy override was enabled.
+        CreateConnectionInternal(
+            use_local_identity_address_ ? local_addr_delegate_->identity_address() : address,
+            use_whitelist, peer_address, scan_interval, scan_window, initial_parameters,
+            std::move(callback), timeout);
       });
 
   return true;

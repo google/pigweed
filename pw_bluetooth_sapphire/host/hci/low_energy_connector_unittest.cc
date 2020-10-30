@@ -476,5 +476,24 @@ TEST_F(HCI_LowEnergyConnectorTest, CancelConnectWhileWaitingForLocalAddress) {
   EXPECT_FALSE(conn);
 }
 
+TEST_F(HCI_LowEnergyConnectorTest, UseLocalIdentityAddress) {
+  // Public identity address and a random current local address.
+  fake_address_delegate()->set_identity_address(kLocalAddress);
+  fake_address_delegate()->set_local_address(kRandomAddress);
+
+  connector()->UseLocalIdentityAddress();
+
+  auto fake_device = std::make_unique<FakePeer>(kTestAddress, true, true);
+  test_device()->AddPeer(std::move(fake_device));
+  connector()->CreateConnection(
+      false, kTestAddress, defaults::kLEScanInterval, defaults::kLEScanWindow, kTestParams,
+      [](auto, auto) {}, kConnectTimeout);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(test_device()->le_connect_params());
+
+  // The public address should have been used.
+  EXPECT_EQ(LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
+}
+
 }  // namespace
 }  // namespace bt::hci

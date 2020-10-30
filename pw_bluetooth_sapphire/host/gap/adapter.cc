@@ -518,6 +518,17 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
     sdp_server_->AttachInspect(adapter_node_);
   }
 
+  // Override the current privacy setting and always use the local stable identity address (i.e. not
+  // a RPA) when initiating connections. This improves interoperability with certain Bluetooth
+  // peripherals that fail to authenticate following a RPA rotation.
+  //
+  // The implication here is that the public address is revealed in LL connection request PDUs. LE
+  // central privacy is still preserved during an active scan, i.e. in LL scan request PDUs.
+  //
+  // TODO(fxbug.dev/63123): Remove this temporary fix once we determine the root cause for
+  // authentication failures.
+  hci_le_connector_->UseLocalIdentityAddress();
+
   // Update properties before callback called so properties can be verified in unit tests.
   UpdateInspectProperties();
 
