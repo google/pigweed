@@ -82,6 +82,11 @@ template("pw_tokenizer_database") {
     _domain = ""
   }
 
+  if (_targets == [] && _optional_targets == []) {
+    # If no targets were specified, the domain will not be used, which is OK.
+    not_needed([ "_domain" ])
+  }
+
   pw_python_action(target_name) {
     script = "$dir_pw_tokenizer/py/pw_tokenizer/database.py"
 
