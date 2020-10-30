@@ -393,7 +393,7 @@ def token_databases_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         'databases',
         metavar='elf_or_token_database',
-        nargs='+',
+        nargs='*',
         action=LoadTokenDatabases,
         help=('ELF or token database files from which to read strings and '
               'tokens. For ELF files, the tokenization domain to read from '

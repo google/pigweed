@@ -76,12 +76,6 @@ template("pw_tokenizer_database") {
     _input_databases = []
   }
 
-  assert(
-      _targets != [] || _optional_targets != [] || _input_databases != [],
-      "No 'targets', 'optional_targets', or 'input_databases' were set for " +
-          "pw_tokenizer_database! At least one target or database must be " +
-          "provided as an input.")
-
   if (defined(invoker.domain)) {
     _domain = "#" + invoker.domain
   } else {
