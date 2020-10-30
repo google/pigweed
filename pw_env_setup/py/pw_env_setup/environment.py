@@ -18,6 +18,15 @@ import json
 import os
 import re
 
+# The order here is important. On Python 2 we want StringIO.StringIO and not
+# io.StringIO. On Python 3 there is no StringIO module so we want io.StringIO.
+# Not using six because six is not a standard package we can expect to have
+# installed in the system Python.
+try:
+    from StringIO import StringIO  # type: ignore
+except ImportError:
+    from io import StringIO
+
 # Disable super() warnings since this file must be Python 2 compatible.
 # pylint: disable=super-with-arguments
 
@@ -424,6 +433,27 @@ class BlankLine(_Action):
         pass
 
 
+class Function(_Action):
+    def __init__(self, name, body, *args, **kwargs):
+        super(Function, self).__init__(*args, **kwargs)
+        self._name = name
+        self._body = body
+
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        del replacements  # Unused.
+        if windows:
+            return
+
+        outs.write("""
+{name}() {{
+{body}
+}}
+        """.strip().format(name=self._name, body=self._body))
+
+    def apply(self, env):
+        pass
+
+
 class Hash(_Action):
     def write(  # pylint: disable=no-self-use
         self,
@@ -477,6 +507,7 @@ class Environment(object):
         self._allcaps = allcaps
         self._replacements = []
         self._join = Join(pathsep)
+        self._finalized = False
 
     def add_replacement(self, variable, value=None):
         self._replacements.append((variable, value))
@@ -496,31 +527,34 @@ class Environment(object):
 
     def set(self, name, value):
         """Set a variable."""
+        assert not self._finalized
         name = self.normalize_key(name)
         self._actions.append(Set(name, value))
         self._blankline()
 
     def clear(self, name):
         """Remove a variable."""
+        assert not self._finalized
         name = self.normalize_key(name)
         self._actions.append(Clear(name))
         self._blankline()
 
     def _remove(self, name, value):
         """Remove a value from a variable."""
-
+        assert not self._finalized
         name = self.normalize_key(name)
         if self.get(name, None):
             self._actions.append(Remove(name, value, self._pathsep))
 
     def remove(self, name, value):
         """Remove a value from a PATH-like variable."""
+        assert not self._finalized
         self._remove(name, value)
         self._blankline()
 
     def append(self, name, value):
         """Add a value to a PATH-like variable. Rarely used, see prepend()."""
-
+        assert not self._finalized
         name = self.normalize_key(name)
         if self.get(name, None):
             self._remove(name, value)
@@ -531,7 +565,7 @@ class Environment(object):
 
     def prepend(self, name, value):
         """Add a value to the beginning of a PATH-like variable."""
-
+        assert not self._finalized
         name = self.normalize_key(name)
         if self.get(name, None):
             self._remove(name, value)
@@ -542,29 +576,45 @@ class Environment(object):
 
     def echo(self, value='', newline=True):
         """Echo a value to the terminal."""
-
+        # echo() deliberately ignores self._finalized.
         self._actions.append(Echo(value, newline))
         if value:
             self._blankline()
 
     def comment(self, comment):
         """Add a comment to the init script."""
+        # comment() deliberately ignores self._finalized.
         self._actions.append(Comment(comment))
         self._blankline()
 
     def command(self, command, exit_on_error=True):
         """Run a command."""
-
+        # command() deliberately ignores self._finalized.
         self._actions.append(Command(command, exit_on_error=exit_on_error))
+        self._blankline()
+
+    def function(self, name, body):
+        """Define a function."""
+        assert not self._finalized
+        self._actions.append(Command(name, body))
         self._blankline()
 
     def _blankline(self):
         self._actions.append(BlankLine())
 
-    def hash(self):
-        """If required by the shell rehash the PATH variable."""
+    def finalize(self):
+        """Run cleanup at the end of environment setup."""
+        assert not self._finalized
+        self._finalized = True
         self._actions.append(Hash())
         self._blankline()
+
+        if not self._windows:
+            buf = StringIO()
+            for action in self._actions:
+                action.write_deactivate(buf, windows=self._windows)
+            self._actions.append(Function('_pw_deactivate', buf.getvalue()))
+            self._blankline()
 
     def write(self, outs):
         """Writes a shell init script to outs."""

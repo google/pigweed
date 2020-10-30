@@ -308,7 +308,7 @@ Then use `set +x` to go back to normal.
         self._log('')
         self._env.echo('')
 
-        self._env.hash()
+        self._env.finalize()
 
         self._env.echo(Color.bold('Sanity checking the environment:'))
         self._env.echo()
