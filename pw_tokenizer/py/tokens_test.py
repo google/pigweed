@@ -17,6 +17,8 @@
 import datetime
 import io
 import logging
+from pathlib import Path
+import tempfile
 import unittest
 
 from pw_tokenizer import tokens
@@ -87,7 +89,7 @@ INVALID_CSV = """\
 """
 
 
-def read_db_from_csv(csv_str):
+def read_db_from_csv(csv_str: str) -> tokens.Database:
     with io.StringIO(csv_str) as csv_db:
         return tokens.Database(tokens.parse_csv(csv_db))
 
@@ -383,6 +385,47 @@ class TokenDatabaseTest(unittest.TestCase):
             db = tokens.Database(tokens.parse_binary(binary_db))
 
         self.assertEqual(str(db), CSV_DATABASE)
+
+
+class TestDatabaseFile(unittest.TestCase):
+    """Tests the DatabaseFile class."""
+    def setUp(self):
+        file = tempfile.NamedTemporaryFile(delete=False)
+        file.close()
+        self._path = Path(file.name)
+
+    def tearDown(self):
+        self._path.unlink()
+
+    def test_update_csv_file(self):
+        self._path.write_text(CSV_DATABASE)
+        db = tokens.DatabaseFile(self._path)
+        self.assertEqual(str(db), CSV_DATABASE)
+
+        db.add([tokens.TokenizedStringEntry(0xffffffff, 'New entry!')])
+
+        db.write_to_file()
+
+        self.assertEqual(self._path.read_text(),
+                         CSV_DATABASE + 'ffffffff,          ,"New entry!"\n')
+
+    def test_csv_file_too_short_raises_exception(self):
+        self._path.write_text('1234')
+
+        with self.assertRaises(tokens.DatabaseFormatError):
+            tokens.DatabaseFile(self._path)
+
+    def test_csv_invalid_format_raises_exception(self):
+        self._path.write_text('MK34567890')
+
+        with self.assertRaises(tokens.DatabaseFormatError):
+            tokens.DatabaseFile(self._path)
+
+    def test_csv_not_utf8(self):
+        self._path.write_bytes(b'\x80' * 20)
+
+        with self.assertRaises(tokens.DatabaseFormatError):
+            tokens.DatabaseFile(self._path)
 
 
 class TestFilter(unittest.TestCase):

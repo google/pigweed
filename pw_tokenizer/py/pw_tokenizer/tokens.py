@@ -345,6 +345,10 @@ class _BinaryFileFormat(NamedTuple):
 BINARY_FORMAT = _BinaryFileFormat()
 
 
+class DatabaseFormatError(Exception):
+    """Failed to parse a token database file."""
+
+
 def file_is_binary_database(fd: BinaryIO) -> bool:
     """True if the file starts with the binary token database magic string."""
     try:
@@ -356,15 +360,37 @@ def file_is_binary_database(fd: BinaryIO) -> bool:
         return False
 
 
+def _check_that_file_is_csv_database(path: Path) -> None:
+    """Raises an error unless the path appears to be a CSV token database."""
+    try:
+        with path.open('rb') as fd:
+            data = fd.read(8)  # Read 8 bytes, which should be the first token.
+
+        if not data:
+            return  # File is empty, which is valid CSV.
+
+        if len(data) != 8:
+            raise DatabaseFormatError(
+                f'Attempted to read {path} as a CSV token database, but the '
+                f'file is too short ({len(data)} B)')
+
+        # Make sure the first 8 chars are a valid hexadecimal number.
+        _ = int(data.decode(), 16)
+    except (IOError, UnicodeDecodeError, ValueError) as err:
+        raise DatabaseFormatError(
+            f'Encountered error while reading {path} as a CSV token database'
+        ) from err
+
+
 def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from a binary token database file."""
     magic, entry_count = BINARY_FORMAT.header.unpack(
         fd.read(BINARY_FORMAT.header.size))
 
     if magic != BINARY_FORMAT.magic:
-        raise ValueError(
-            'Magic number mismatch (found {!r}, expected {!r})'.format(
-                magic, BINARY_FORMAT.magic))
+        raise DatabaseFormatError(
+            f'Binary token database magic number mismatch (found {magic!r}, '
+            f'expected {BINARY_FORMAT.magic!r}) while reading from {fd}')
 
     entries = []
 
@@ -441,6 +467,7 @@ class DatabaseFile(Database):
                 return
 
         # Read the path as a CSV file.
+        _check_that_file_is_csv_database(self.path)
         with self.path.open('r', newline='') as file:
             super().__init__(parse_csv(file))
             self._export = write_csv

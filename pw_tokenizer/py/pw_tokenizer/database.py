@@ -373,13 +373,18 @@ class LoadTokenDatabases(argparse.Action):
                     paths.update(expand_paths_or_globs(value))
 
             for path in paths:
-                try:
-                    databases.append(load_token_database(path))
-                except:
-                    _LOG.exception('Failed to load token database %s', path)
-                    raise
-        except (FileNotFoundError, ValueError) as err:
+                databases.append(load_token_database(path))
+        except tokens.DatabaseFormatError as err:
+            parser.error(
+                f'argument elf_or_token_database: {path} is not a supported '
+                'token database file. Only ELF files or token databases (CSV '
+                f'or binary format) are supported. {err}. ')
+        except FileNotFoundError as err:
             parser.error(f'argument elf_or_token_database: {err}')
+        except:  # pylint: disable=bare-except
+            _LOG.exception('Failed to load token database %s', path)
+            parser.error('argument elf_or_token_database: '
+                         f'Error occurred while loading token database {path}')
 
         setattr(namespace, self.dest, databases)
 
