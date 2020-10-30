@@ -60,7 +60,8 @@ class L2CAP_L2capTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    l2cap_ = L2cap::Create(transport()->WeakPtr());
+    // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
+    l2cap_ = L2cap::Create(transport()->WeakPtr(), /*random_channel_ids=*/false);
 
     StartTestDevice();
 

@@ -7,8 +7,10 @@
 
 #include <lib/fit/function.h>
 
+#include <random>
 #include <unordered_map>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
@@ -57,8 +59,8 @@ class DynamicChannelRegistry {
   void CloseChannel(ChannelId local_cid, fit::closure close_cb);
 
  protected:
-  // |largest_channel_id| is the greatest dynamic channel ID that can be
-  // allocated on this link and must be at least |kFirstDynamicChannelId|.
+  // |max_num_channels| is the number of dynamic channel IDs that can be
+  // allocated on this link, and must be non-zero and less than 65473.
   //
   // |close_cb| will be called upon a remote-initiated closure of an open
   // channel. The registry's internal channel is passed as a parameter, and it
@@ -71,8 +73,11 @@ class DynamicChannelRegistry {
   // For services accepting channels, it shall return a callback to accept the
   // opened channel, which only be called if the channel successfully opens. To
   // deny the channel creation, |service_request_cb| should return a nullptr.
-  DynamicChannelRegistry(ChannelId largest_channel_id_, DynamicChannelCallback close_cb,
-                         ServiceRequestCallback service_request_cb);
+  //
+  // If |random_channel_ids| is true then the channel IDs assigned will be randomized.
+  // Otherwise, they will be assigned starting at the lowest available dynamic channel id.
+  DynamicChannelRegistry(uint16_t max_num_channels, DynamicChannelCallback close_cb,
+                         ServiceRequestCallback service_request_cb, bool random_channel_ids);
 
   // Factory method for a DynamicChannel implementation that represents an
   // outbound channel with an endpoint on this device identified by |local_cid|.
@@ -89,10 +94,13 @@ class DynamicChannelRegistry {
   // identified by |remote_cid| to the local endpoint by |local_cid|.
   DynamicChannel* RequestService(PSM psm, ChannelId local_cid, ChannelId remote_cid);
 
-  // Starting at kFirstDynamicChannelId and ending on |largest_channel_id_|
-  // (inclusive), search for the next dynamic channel ID available on this link.
+  // In the range starting at kFirstDynamicChannelId with |max_num_channels_|, pick a dynamic
+  // channel ID that is available on this link.
   // Returns kInvalidChannelId if all IDs have been exhausted.
-  ChannelId FindAvailableChannelId() const;
+  ChannelId FindAvailableChannelId();
+
+  // Return the number of alive channels on this link.
+  size_t AliveChannelCount() const;
 
   // Returns null if not found. Can be downcast to the derived DynamicChannel
   // created by MakeOutbound.
@@ -127,7 +135,7 @@ class DynamicChannelRegistry {
 
   // Greatest dynamic channel ID that can be assigned on the kind of logical
   // link associated to this registry.
-  const ChannelId largest_channel_id_;
+  const uint16_t max_num_channels_;
 
   // Called only for channels that were already open (see
   // |DynamicChannel::opened|).
@@ -137,6 +145,8 @@ class DynamicChannelRegistry {
   // Maps local CIDs to alive dynamic channels on this logical link.
   using ChannelMap = std::unordered_map<ChannelId, DynamicChannelPtr>;
   ChannelMap channels_;
+
+  std::optional<std::default_random_engine> rng_;
 
   fxl::WeakPtrFactory<DynamicChannelRegistry> weak_ptr_factory_;
 

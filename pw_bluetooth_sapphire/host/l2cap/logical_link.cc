@@ -50,17 +50,15 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 // static
-fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle,
-                                          hci::Connection::LinkType type,
-                                          hci::Connection::Role role, size_t max_acl_payload_size,
-                                          SendPacketsCallback send_packets_cb,
-                                          DropQueuedAclCallback drop_queued_acl_cb,
-                                          QueryServiceCallback query_service_cb,
-                                          RequestAclPriorityCallback acl_priority_cb) {
+fbl::RefPtr<LogicalLink> LogicalLink::New(
+    hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
+    size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
+    DropQueuedAclCallback drop_queued_acl_cb, QueryServiceCallback query_service_cb,
+    RequestAclPriorityCallback acl_priority_cb, bool random_channel_ids) {
   auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, max_acl_payload_size,
                                           std::move(send_packets_cb), std::move(drop_queued_acl_cb),
                                           std::move(query_service_cb), std::move(acl_priority_cb)));
-  ll->Initialize();
+  ll->Initialize(random_channel_ids);
   return ll;
 }
 
@@ -87,7 +85,7 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
   ZX_ASSERT(query_service_cb_);
 }
 
-void LogicalLink::Initialize() {
+void LogicalLink::Initialize(bool randomize_channel_ids) {
   ZX_DEBUG_ASSERT(!signaling_channel_);
   ZX_DEBUG_ASSERT(!dynamic_registry_);
 
@@ -103,7 +101,7 @@ void LogicalLink::Initialize() {
         std::make_unique<BrEdrSignalingChannel>(OpenFixedChannel(kSignalingChannelId), role_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         signaling_channel_.get(), fit::bind_member(this, &LogicalLink::OnChannelDisconnectRequest),
-        fit::bind_member(this, &LogicalLink::OnServiceRequest));
+        fit::bind_member(this, &LogicalLink::OnServiceRequest), randomize_channel_ids);
 
     SendFixedChannelsSupportedInformationRequest();
   }

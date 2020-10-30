@@ -14,7 +14,7 @@ namespace bt::l2cap {
 
 class Impl final : public L2cap {
  public:
-  Impl(fxl::WeakPtr<hci::Transport> hci)
+  Impl(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids)
       : L2cap(), dispatcher_(async_get_default_dispatcher()), hci_(std::move(hci)) {
     ZX_ASSERT(hci_);
     ZX_ASSERT(hci_->acl_data_channel());
@@ -31,7 +31,8 @@ class Impl final : public L2cap {
 
     channel_manager_ = std::make_unique<ChannelManager>(
         acl_buffer_info.max_data_length(), le_buffer_info.max_data_length(),
-        std::move(send_packets), std::move(drop_queued_acl), std::move(acl_priority));
+        std::move(send_packets), std::move(drop_queued_acl), std::move(acl_priority),
+        random_channel_ids);
     hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
     bt_log(DEBUG, "l2cap", "initialized");
@@ -143,9 +144,9 @@ class Impl final : public L2cap {
 };
 
 // static
-fbl::RefPtr<L2cap> L2cap::Create(fxl::WeakPtr<hci::Transport> hci) {
+fbl::RefPtr<L2cap> L2cap::Create(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids) {
   ZX_DEBUG_ASSERT(hci);
-  return AdoptRef(new Impl(hci));
+  return AdoptRef(new Impl(hci, random_channel_ids));
 }
 
 }  // namespace bt::l2cap

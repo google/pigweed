@@ -68,12 +68,15 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // link |type|, per Core Spec v5.0 Vol 2, Part E, Sec 4.1.
   // Both |query_service_cb| and the inbound channel delivery callback that it returns will be
   // executed on this object's creation thread.
+  // If |random_channel_ids| is true, assign dynamic channels randomly instead of
+  // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                                       hci::Connection::Role role, size_t max_payload_size,
                                       SendPacketsCallback send_packets_cb,
                                       DropQueuedAclCallback drop_queued_acl_cb,
                                       QueryServiceCallback query_service_cb,
-                                      RequestAclPriorityCallback acl_priority_cb);
+                                      RequestAclPriorityCallback acl_priority_cb,
+                                      bool random_channel_ids);
 
   // Notifies and closes all open channels on this link. This must be called to
   // cleanly shut down a LogicalLink. WARNING: Failure to do so will cause the
@@ -175,7 +178,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
   // "New()".
-  void Initialize();
+  void Initialize(bool random_channel_ids);
 
   // When a logical link is destroyed it notifies all of its channels to close
   // themselves. Data packets will no longer be routed to the associated

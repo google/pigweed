@@ -375,7 +375,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   if (!l2cap_) {
     // Initialize the data L2cap to make L2CAP available for the next initialization step. The
     // ACLDataChannel must be initialized before creating the data domain
-    auto l2cap = l2cap::L2cap::Create(hci_);
+    auto l2cap = l2cap::L2cap::Create(hci_, /*random_channel_ids=*/true);
     if (!l2cap) {
       bt_log(ERROR, "gap", "Failed to initialize Data L2cap");
       CleanUp();

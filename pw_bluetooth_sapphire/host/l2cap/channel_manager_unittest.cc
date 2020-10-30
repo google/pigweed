@@ -247,9 +247,10 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     auto send_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets);
     auto drop_queued_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::DropQueuedPackets);
     auto acl_priority = fit::bind_member(this, &L2CAP_ChannelManagerTest::RequestAclPriority);
+    // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = std::make_unique<ChannelManager>(
         max_acl_payload_size, max_le_payload_size, std::move(send_packets),
-        std::move(drop_queued_packets), std::move(acl_priority));
+        std::move(drop_queued_packets), std::move(acl_priority), /*random_channel_ids=*/false);
     packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
 
     drop_queued_packets_cb_ = [](hci::ACLPacketPredicate) {};

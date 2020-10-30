@@ -86,7 +86,7 @@ class ChannelManager final {
   // State changes are processed on |l2cap_dispatcher|.
   ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
                  SendAclCallback send_acl_cb, DropQueuedAclCallback filter_acl_cb,
-                 RequestAclPriorityCallback priority_cb);
+                 RequestAclPriorityCallback priority_cb, bool random_channel_ids);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -228,6 +228,9 @@ class ChannelManager final {
   // hosted services.
   using ServiceMap = std::unordered_map<PSM, ServiceInfo>;
   ServiceMap services_;
+
+  // Stored info on whether random channel ids are requested.
+  bool random_channel_ids_;
 
   fxl::ThreadChecker thread_checker_;
   fxl::WeakPtrFactory<ChannelManager> weak_ptr_factory_;

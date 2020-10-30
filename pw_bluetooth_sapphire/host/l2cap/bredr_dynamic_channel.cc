@@ -21,13 +21,17 @@ ChannelConfiguration::RetransmissionAndFlowControlOption WriteRfcOutboundTimeout
   return rfc_option;
 }
 
+constexpr uint16_t kBrEdrDynamicChannelCount =
+    kLastACLDynamicChannelId - kFirstDynamicChannelId + 1;
+
 }  // namespace
 
 BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig,
                                                          DynamicChannelCallback close_cb,
-                                                         ServiceRequestCallback service_request_cb)
-    : DynamicChannelRegistry(kLastACLDynamicChannelId, std::move(close_cb),
-                             std::move(service_request_cb)),
+                                                         ServiceRequestCallback service_request_cb,
+                                                         bool random_channel_ids)
+    : DynamicChannelRegistry(kBrEdrDynamicChannelCount, std::move(close_cb),
+                             std::move(service_request_cb), random_channel_ids),
       state_(0u),
       sig_(sig) {
   ZX_DEBUG_ASSERT(sig_);

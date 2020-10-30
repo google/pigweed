@@ -478,9 +478,11 @@ class L2CAP_BrEdrDynamicChannelTest : public ::gtest::TestLoopFixture {
 
     ext_info_transaction_id_ =
         EXPECT_OUTBOUND_REQ(*sig(), kInformationRequest, kExtendedFeaturesInfoReq.view());
+    // TODO(63074): Make these tests not rely on strict ordering of channel IDs.
     registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         sig(), fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnChannelClose),
-        fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnServiceRequest));
+        fit::bind_member(this, &L2CAP_BrEdrDynamicChannelTest::OnServiceRequest),
+        /*random_channel_ids=*/false);
   }
 
   void TearDown() override {

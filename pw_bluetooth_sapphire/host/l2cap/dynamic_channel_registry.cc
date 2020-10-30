@@ -57,16 +57,21 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure clos
   channel->Disconnect(std::move(disconn_done_cb));
 }
 
-DynamicChannelRegistry::DynamicChannelRegistry(ChannelId largest_channel_id,
+DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
                                                DynamicChannelCallback close_cb,
-                                               ServiceRequestCallback service_request_cb)
-    : largest_channel_id_(largest_channel_id),
+                                               ServiceRequestCallback service_request_cb,
+                                               bool random_channel_ids)
+    : max_num_channels_(max_num_channels),
       close_cb_(std::move(close_cb)),
       service_request_cb_(std::move(service_request_cb)),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(largest_channel_id_ >= kFirstDynamicChannelId);
+  ZX_DEBUG_ASSERT(max_num_channels > 0);
+  ZX_DEBUG_ASSERT(max_num_channels < 65473);
   ZX_DEBUG_ASSERT(close_cb_);
   ZX_DEBUG_ASSERT(service_request_cb_);
+  if (random_channel_ids) {
+    rng_ = std::default_random_engine(Random<uint64_t>());
+  }
 }
 
 DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_cid,
@@ -87,8 +92,14 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
   return iter->second.get();
 }
 
-ChannelId DynamicChannelRegistry::FindAvailableChannelId() const {
-  for (ChannelId id = kFirstDynamicChannelId; id != largest_channel_id_ + 1; id++) {
+ChannelId DynamicChannelRegistry::FindAvailableChannelId() {
+  uint16_t offset = 0;
+  if (rng_.has_value()) {
+    std::uniform_int_distribution<ChannelId> distribution(0, max_num_channels_);
+    offset = distribution(*rng_);
+  }
+  for (uint16_t i = 0; i < max_num_channels_; i++) {
+    ChannelId id = kFirstDynamicChannelId + ((offset + i) % max_num_channels_);
     if (channels_.count(id) == 0) {
       return id;
     }
@@ -96,6 +107,8 @@ ChannelId DynamicChannelRegistry::FindAvailableChannelId() const {
 
   return kInvalidChannelId;
 }
+
+size_t DynamicChannelRegistry::AliveChannelCount() const { return channels_.size(); }
 
 DynamicChannel* DynamicChannelRegistry::FindChannelByLocalId(ChannelId local_cid) const {
   auto iter = channels_.find(local_cid);

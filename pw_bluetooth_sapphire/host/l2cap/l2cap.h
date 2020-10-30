@@ -25,7 +25,7 @@ struct ChannelParameters;
 class L2cap : public fbl::RefCounted<L2cap> {
  public:
   // Constructs an uninitialized data domain that can be used in production.
-  static fbl::RefPtr<L2cap> Create(fxl::WeakPtr<hci::Transport> hci);
+  static fbl::RefPtr<L2cap> Create(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids);
 
   // Attach L2cap's inspect node as a child of |parent| with the given |name|
   static constexpr const char* kInspectNodeName = "l2cap";

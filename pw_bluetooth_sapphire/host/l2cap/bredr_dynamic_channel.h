@@ -24,7 +24,7 @@ namespace bt::l2cap::internal {
 class BrEdrDynamicChannelRegistry final : public DynamicChannelRegistry {
  public:
   BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig, DynamicChannelCallback close_cb,
-                              ServiceRequestCallback service_request_cb);
+                              ServiceRequestCallback service_request_cb, bool random_channel_ids);
   ~BrEdrDynamicChannelRegistry() override = default;
 
   std::optional<ExtendedFeatures> extended_features() { return extended_features_; };

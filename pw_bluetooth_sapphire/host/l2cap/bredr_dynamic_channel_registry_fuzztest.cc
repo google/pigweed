@@ -62,7 +62,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     return std::optional(
         bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo(params, service_chan_cb));
   };
-  bt::l2cap::internal::BrEdrDynamicChannelRegistry registry(&sig_chan, close_cb, service_cb);
+  bt::l2cap::internal::BrEdrDynamicChannelRegistry registry(&sig_chan, close_cb, service_cb,
+                                                            /*random_channel_ids=*/true);
 
   while (provider.remaining_bytes() > 0) {
     // Receive an l2cap packet.

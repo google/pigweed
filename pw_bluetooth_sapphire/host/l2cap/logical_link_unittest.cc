@@ -39,7 +39,8 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
     auto acl_priority_cb = [](auto, auto, auto) {};
     link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, kMaxPayload,
                              std::move(send_packets_cb), std::move(drop_acl_cb),
-                             std::move(query_service_cb), std::move(acl_priority_cb));
+                             std::move(query_service_cb), std::move(acl_priority_cb),
+                             /*random_channel_ids=*/true);
   }
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }
