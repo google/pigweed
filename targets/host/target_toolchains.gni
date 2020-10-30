@@ -41,6 +41,9 @@ _host_common = {
   # Tokenizer trace time.
   pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:host_trace_time"
 
+  # Configure backend for pw_chrono's system_clock facade.
+  pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_stl:system_clock"
+
   # Specify builtin GN variables.
   current_os = host_os
   current_cpu = host_cpu

@@ -60,6 +60,8 @@ group("module_docs") {
     "$dir_pw_build:docs",
     "$dir_pw_bytes:docs",
     "$dir_pw_checksum:docs",
+    "$dir_pw_chrono:docs",
+    "$dir_pw_chrono_stl:docs",
     "$dir_pw_cli:docs",
     "$dir_pw_containers:docs",
     "$dir_pw_cpu_exception:docs",
