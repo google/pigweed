@@ -402,17 +402,4 @@ DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn) 
       ));
 }
 
-DynamicByteBuffer BcmAclPriorityPacket(hci::ConnectionHandle conn, l2cap::AclPriority priority) {
-  constexpr hci::OpCode op_code = hci::VendorOpCode(0x011A);
-  return DynamicByteBuffer(StaticByteBuffer(
-      LowerBits(op_code), UpperBits(op_code),  // Op code
-      0x04,                                    // Size
-
-      LowerBits(conn),
-      UpperBits(conn),                                        // Little-Endian Connection_handle
-      priority == l2cap::AclPriority::kNormal ? 0x00 : 0x01,  // priority
-      priority == l2cap::AclPriority::kSource ? 0x00 : 0x01   // direction
-      ));
-}
-
 }  // namespace bt::testing

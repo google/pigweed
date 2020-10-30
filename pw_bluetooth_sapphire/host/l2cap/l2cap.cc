@@ -104,27 +104,42 @@ class Impl final : public L2cap {
                           fit::callback<void(fit::result<>)> cb) {
     bt_log(TRACE, "l2cap", "sending ACL priority command");
 
-    auto packet = bt::hci::CommandPacket::New(bt::hci::kBcmSetAclPriority,
-                                              sizeof(hci::BcmSetAclPriorityCommandParams));
-    auto params = packet->mutable_payload<hci::BcmSetAclPriorityCommandParams>();
-    params->handle = htole16(handle);
-    params->priority = bt::hci::BcmAclPriority::kHigh;
-    params->direction = bt::hci::BcmAclPriorityDirection::kSink;
-    if (priority == AclPriority::kSource) {
-      params->direction = bt::hci::BcmAclPriorityDirection::kSource;
-    } else if (priority == AclPriority::kNormal) {
-      params->priority = bt::hci::BcmAclPriority::kNormal;
+    bt_vendor_set_acl_priority_params_t priority_params = {
+        .connection_handle = handle,
+        .priority = static_cast<bt_vendor_acl_priority_t>((priority == AclPriority::kNormal)
+                                                              ? BT_VENDOR_ACL_PRIORITY_NORMAL
+                                                              : BT_VENDOR_ACL_PRIORITY_HIGH),
+        .direction = static_cast<bt_vendor_acl_direction_t>((priority == AclPriority::kSource)
+                                                                ? BT_VENDOR_ACL_DIRECTION_SOURCE
+                                                                : BT_VENDOR_ACL_DIRECTION_SINK)};
+    bt_vendor_params_t cmd_params = {.set_acl_priority = priority_params};
+    auto encode_result = hci_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
+    if (encode_result.is_error()) {
+      bt_log(TRACE, "l2cap", "encoding ACL priority command failed");
+      cb(fit::error());
+      return;
     }
+    auto encoded = encode_result.take_value();
+    if (encoded.size() < sizeof(hci::CommandHeader)) {
+      bt_log(TRACE, "l2cap", "encoded ACL priority command too small (size: %zu)", encoded.size());
+      cb(fit::error());
+      return;
+    }
+
+    hci::OpCode op_code = letoh16(encoded.As<hci::CommandHeader>().opcode);
+    auto packet = bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci::CommandHeader));
+    auto packet_view = packet->mutable_view()->mutable_data();
+    encoded.Copy(&packet_view);
 
     hci_->command_channel()->SendCommand(
         std::move(packet),
         [cb = std::move(cb), priority](auto id, const hci::EventPacket& event) mutable {
-          if (hci_is_error(event, WARN, "l2cap", "BCM acl priority failed")) {
+          if (hci_is_error(event, WARN, "l2cap", "acl priority failed")) {
             cb(fit::error());
             return;
           }
 
-          bt_log(DEBUG, "l2cap", "BCM acl priority updated (priority: %#.8x)",
+          bt_log(DEBUG, "l2cap", "acl priority updated (priority: %#.8x)",
                  static_cast<uint32_t>(priority));
           cb(fit::ok());
         });
@@ -141,7 +156,7 @@ class Impl final : public L2cap {
   std::unique_ptr<ChannelManager> channel_manager_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
-};
+};  // namespace bt::l2cap
 
 // static
 fbl::RefPtr<L2cap> L2cap::Create(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids) {

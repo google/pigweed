@@ -643,8 +643,6 @@ TEST_F(L2CAP_L2capTest, AddLEConnectionReturnsFixedChannels) {
   EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
-TEST_F(L2CAP_L2capTest, RequestAclPrioritySendsCommand) {}
-
 class AclPriorityTest : public L2CAP_L2capTest,
                         public ::testing::WithParamInterface<std::pair<l2cap::AclPriority, bool>> {
 };
@@ -653,12 +651,24 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   const auto kPriority = GetParam().first;
   const bool kExpectSuccess = GetParam().second;
 
+  // Arbitrary command payload larger than CommandHeader.
+  const auto op_code = hci::VendorOpCode(0x01);
+  const StaticByteBuffer kEncodedCommand(LowerBits(op_code), UpperBits(op_code),  // op code
+                                         0x04,                                    // parameter size
+                                         0x00, 0x01, 0x02, 0x03);                 // test parameter
+
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
   constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
-  const auto kSetAclPriorityCommand = BcmAclPriorityPacket(kLinkHandle, kPriority);
+  std::optional<bt_vendor_command_t> encode_vendor_command;
+  std::optional<bt_vendor_params_t> encode_vendor_command_params;
+  set_encode_vendor_command_cb([&](auto command, auto params) {
+    encode_vendor_command = command;
+    encode_vendor_command_params = params;
+    return fit::ok(DynamicByteBuffer(kEncodedCommand));
+  });
 
   QueueAclConnection(kLinkHandle);
   RunLoopUntilIdle();
@@ -678,9 +688,8 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   if (kPriority != l2cap::AclPriority::kNormal) {
     auto cmd_complete = CommandCompletePacket(
-        hci::kBcmSetAclPriority,
-        kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
-    EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityCommand, &cmd_complete);
+        op_code, kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
+    EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 
   size_t request_cb_count = 0;
@@ -691,12 +700,28 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
+  if (kPriority == AclPriority::kNormal) {
+    EXPECT_FALSE(encode_vendor_command);
+  } else {
+    ASSERT_TRUE(encode_vendor_command);
+    EXPECT_EQ(encode_vendor_command, BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
+    ASSERT_TRUE(encode_vendor_command_params);
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority, BT_VENDOR_ACL_PRIORITY_HIGH);
+    if (kPriority == AclPriority::kSink) {
+      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
+                BT_VENDOR_ACL_DIRECTION_SINK);
+    } else {
+      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
+                BT_VENDOR_ACL_DIRECTION_SOURCE);
+    }
+  }
+  encode_vendor_command.reset();
+  encode_vendor_command_params.reset();
 
   if (kPriority != l2cap::AclPriority::kNormal && kExpectSuccess) {
-    const auto kSetAclPriorityNormalCommand =
-        BcmAclPriorityPacket(kLinkHandle, l2cap::AclPriority::kNormal);
-    auto cmd_complete = CommandCompletePacket(hci::kBcmSetAclPriority, hci::StatusCode::kSuccess);
-    EXPECT_CMD_PACKET_OUT(test_device(), kSetAclPriorityNormalCommand, &cmd_complete);
+    auto cmd_complete = CommandCompletePacket(op_code, hci::StatusCode::kSuccess);
+    EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
@@ -706,6 +731,18 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   // changed.
   channel->Deactivate();
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  if (kPriority != l2cap::AclPriority::kNormal && kExpectSuccess) {
+    ASSERT_TRUE(encode_vendor_command);
+    EXPECT_EQ(encode_vendor_command, BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
+    ASSERT_TRUE(encode_vendor_command_params);
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority,
+              BT_VENDOR_ACL_PRIORITY_NORMAL);
+  } else {
+    EXPECT_FALSE(encode_vendor_command);
+  }
 }
 
 const std::array<std::pair<l2cap::AclPriority, bool>, 4> kPriorityParams = {
@@ -714,6 +751,84 @@ const std::array<std::pair<l2cap::AclPriority, bool>, 4> kPriorityParams = {
      {l2cap::AclPriority::kSink, true},
      {l2cap::AclPriority::kNormal, true}}};
 INSTANTIATE_TEST_SUITE_P(L2CAP_L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
+
+TEST_F(L2CAP_L2capTest, RequestAclPriorityEncodeFails) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  set_encode_vendor_command_cb([&](auto command, auto params) { return fit::error(); });
+
+  QueueAclConnection(kLinkHandle);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  fbl::RefPtr<l2cap::Channel> channel = nullptr;
+  auto chan_cb = [&](auto chan) { channel = std::move(chan); };
+
+  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  // We should have opened a channel successfully.
+  ASSERT_TRUE(channel);
+  channel->Activate([](auto) {}, []() {});
+
+  size_t request_cb_count = 0;
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+    request_cb_count++;
+    EXPECT_TRUE(result.is_error());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
+  channel->Deactivate();
+}
+
+TEST_F(L2CAP_L2capTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  set_encode_vendor_command_cb([&](auto command, auto params) {
+    return fit::ok(DynamicByteBuffer(StaticByteBuffer(0x00)));
+  });
+
+  QueueAclConnection(kLinkHandle);
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  fbl::RefPtr<l2cap::Channel> channel = nullptr;
+  auto chan_cb = [&](auto chan) { channel = std::move(chan); };
+
+  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  // We should have opened a channel successfully.
+  ASSERT_TRUE(channel);
+  channel->Activate([](auto) {}, []() {});
+
+  size_t request_cb_count = 0;
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+    request_cb_count++;
+    EXPECT_TRUE(result.is_error());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
+  channel->Deactivate();
+}
 
 }  // namespace
 }  // namespace bt::l2cap

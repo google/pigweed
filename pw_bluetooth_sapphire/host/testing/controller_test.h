@@ -117,6 +117,11 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     vendor_features_ = features;
   }
 
+  // Set a callback to be called when the device's EncodeVendorCommand method is called.
+  void set_encode_vendor_command_cb(hci::DummyDeviceWrapper::EncodeCallback cb) {
+    vendor_encode_cb_ = std::move(cb);
+  }
+
  private:
   // Channels to be moved to the tests
   zx::channel cmd1_;
@@ -134,8 +139,14 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     status = zx::channel::create(0, &acl0, &acl1_);
     ZX_DEBUG_ASSERT(ZX_OK == status);
 
-    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(std::move(cmd0), std::move(acl0),
-                                                             vendor_features_);
+    auto vendor_encode_cb = [this](auto cmd, auto params) -> fit::result<DynamicByteBuffer> {
+      if (vendor_encode_cb_) {
+        return vendor_encode_cb_(cmd, params);
+      }
+      return fit::error();
+    };
+    auto hci_dev = std::make_unique<hci::DummyDeviceWrapper>(
+        std::move(cmd0), std::move(acl0), vendor_features_, std::move(vendor_encode_cb));
     test_device_ = std::make_unique<ControllerTestDoubleType>();
 
     return hci_dev;
@@ -157,6 +168,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   hci::ACLPacketHandler data_received_callback_;
 
   bt_vendor_features_t vendor_features_;
+  hci::DummyDeviceWrapper::EncodeCallback vendor_encode_cb_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
   static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,
