@@ -266,6 +266,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_bytes:tests",
       "$dir_pw_checksum:tests",
       "$dir_pw_containers:tests",
+      "$dir_pw_cpu_exception_armv7m:tests",
       "$dir_pw_fuzzer:tests",
       "$dir_pw_hdlc_lite:tests",
       "$dir_pw_hex_dump:tests",
@@ -293,13 +294,6 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
     ]
-
-    import("$dir_pw_cpu_exception/backend.gni")
-
-    # TODO(pwbug/17): Re-think when Pigweed config system is added.
-    if (pw_cpu_exception_ENTRY_BACKEND == dir_pw_cpu_exception_armv7m) {
-      group_deps += [ "$dir_pw_cpu_exception_armv7m:tests" ]
-    }
 
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain) {
