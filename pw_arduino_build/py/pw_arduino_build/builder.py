@@ -941,19 +941,13 @@ class ArduinoBuilder:
 
         return compile_line.strip()
 
-    def get_ld_libs(self):
+    def get_ld_libs(self, name_only=False):
         compile_line = self.get_link_line()
-        _, compile_line = ArduinoBuilder.split_binary_from_arguments(
-            compile_line)
-        # TODO(tonymd): This replacement is teensy specific
-        compile_line = compile_line.replace(
-            "-o \"{build.path}/{build.project_name}.elf\" "
-            "{object_files} \"-L{build.path}\"", "", 1)
-        libs = re.findall(r'(-l[^ ]+ ?)', compile_line)
-        for lib in libs:
-            compile_line = compile_line.replace(lib, "", 1)
-        libs = [lib.strip() for lib in libs]
-
+        libs = re.findall(r'(?P<arg>-l(?P<name>[^ ]+) ?)', compile_line)
+        if name_only:
+            libs = [lib_name.strip() for lib_arg, lib_name in libs]
+        else:
+            libs = [lib_arg.strip() for lib_arg, lib_name in libs]
         return " ".join(libs)
 
     def library_folders(self):

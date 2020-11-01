@@ -79,8 +79,12 @@ def parse_args():
     parser.add_argument('--verbose',
                         '-v',
                         dest='verbose',
-                        action="store_true",
+                        action='store_true',
                         help='Output additional logs as the script runs')
+
+    parser.add_argument('--flash-only',
+                        action='store_true',
+                        help="Don't check for test output after flashing.")
 
     # arduino_builder arguments
     # TODO(tonymd): Get these args from __main__.py or elsewhere.
@@ -212,7 +216,7 @@ def handle_test_results(test_output):
     _LOG.info('Test passed!')
 
 
-def run_device_test(binary, port, baud, test_timeout, upload_tool,
+def run_device_test(binary, flash_only, port, baud, test_timeout, upload_tool,
                     arduino_package_path, test_runner_args) -> bool:
     """Flashes, runs, and checks an on-device test binary.
 
@@ -258,6 +262,8 @@ def run_device_test(binary, port, baud, test_timeout, upload_tool,
         # this serial port.
         flash_device(test_runner_args, upload_tool)
         wait_for_port(port)
+        if flash_only:
+            return True
         result.append(read_serial(port, baud, test_timeout))
         if result:
             handle_test_results(result[0])
@@ -337,6 +343,7 @@ def main():
             arduino_builder_args += ["--set-variable", var]
 
     if run_device_test(binary.as_posix(),
+                       args.flash_only,
                        args.port,
                        args.baud,
                        args.test_timeout,

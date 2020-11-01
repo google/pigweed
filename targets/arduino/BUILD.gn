@@ -49,12 +49,13 @@ if (dir_pw_third_party_arduino != "") {
       cflags = filter_exclude(_cflags, _exclude_flags)
 
       asmflags = exec_script(arduino_builder_script,
-                             arduino_show_command_args + [ "--s-flags" ],
+                             arduino_show_command_args + [ "--s-only-flags" ],
                              "list lines")
 
-      _cflags_cc = exec_script(arduino_builder_script,
-                               arduino_show_command_args + [ "--cpp-flags" ],
-                               "list lines")
+      _cflags_cc =
+          exec_script(arduino_builder_script,
+                      arduino_show_command_args + [ "--cpp-only-flags" ],
+                      "list lines")
       cflags_cc = filter_exclude(_cflags_cc, _exclude_flags)
 
       _ldflags = exec_script(arduino_builder_script,
@@ -75,6 +76,12 @@ if (dir_pw_third_party_arduino != "") {
                            # Remove the Arduino {object_files} variable
                            "{object_files}",
                          ])
+
+      # TODO(tonymd): Determine if libs are needed.
+      #   Teensy4 core recipe uses: '-larm_cortexM7lfsp_math -lm -lstdc++'
+      # libs = exec_script(arduino_builder_script,
+      #     arduino_show_command_args + [ "--ld-lib-names" ],
+      #     "list lines")
     }
 
     pw_source_set("pre_init") {

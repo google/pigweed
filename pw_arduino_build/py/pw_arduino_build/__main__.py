@@ -22,6 +22,7 @@ import pprint
 import shlex
 import subprocess
 import sys
+from collections import OrderedDict
 from typing import List
 
 from pw_arduino_build import core_installer, log
@@ -88,6 +89,15 @@ def show_command_print_flag_string(args, flag_string):
         print("\n".join(flag_string_with_newlines))
     else:
         print(flag_string)
+
+
+def subtract_flags(flag_list_a: List[str],
+                   flag_list_b: List[str]) -> List[str]:
+    """Given two sets of flags return flags in a that are not in b."""
+    flag_counts = OrderedDict()  # type: OrderedDict[str, int]
+    for flag in flag_list_a + flag_list_b:
+        flag_counts[flag] = flag_counts.get(flag, 0) + 1
+    return [flag for flag in flag_list_a if flag_counts.get(flag, 0) == 1]
 
 
 def run_command_lines(args, command_lines: List[str]):
@@ -185,16 +195,30 @@ def show_command(args, builder):
         sflags = builder.get_s_flags()
         show_command_print_flag_string(args, sflags)
 
+    elif args.s_only_flags:
+        s_only_flags = subtract_flags(shlex.split(builder.get_s_flags()),
+                                      shlex.split(builder.get_c_flags()))
+        show_command_print_flag_string(args, " ".join(s_only_flags))
+
     elif args.cpp_flags:
         cppflags = builder.get_cpp_flags()
         show_command_print_flag_string(args, cppflags)
+
+    elif args.cpp_only_flags:
+        cpp_only_flags = subtract_flags(shlex.split(builder.get_cpp_flags()),
+                                        shlex.split(builder.get_c_flags()))
+        show_command_print_flag_string(args, " ".join(cpp_only_flags))
 
     elif args.ld_flags:
         ldflags = builder.get_ld_flags()
         show_command_print_flag_string(args, ldflags)
 
     elif args.ld_libs:
-        print(builder.get_ld_libs())
+        show_command_print_flag_string(args, builder.get_ld_libs())
+
+    elif args.ld_lib_names:
+        show_command_print_flag_string(args,
+                                       builder.get_ld_libs(name_only=True))
 
     elif args.ar_flags:
         ar_flags = builder.get_ar_flags()
@@ -464,10 +488,13 @@ def main():
     output_group.add_argument("--link", action="store_true")
     output_group.add_argument("--c-flags", action="store_true")
     output_group.add_argument("--s-flags", action="store_true")
+    output_group.add_argument("--s-only-flags", action="store_true")
     output_group.add_argument("--cpp-flags", action="store_true")
+    output_group.add_argument("--cpp-only-flags", action="store_true")
     output_group.add_argument("--ld-flags", action="store_true")
     output_group.add_argument("--ar-flags", action="store_true")
     output_group.add_argument("--ld-libs", action="store_true")
+    output_group.add_argument("--ld-lib-names", action="store_true")
     output_group.add_argument("--objcopy", help="objcopy step for SUFFIX")
     output_group.add_argument("--objcopy-flags",
                               help="objcopy flags for SUFFIX")
