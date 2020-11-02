@@ -83,6 +83,15 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "service_method_traits",
+    hdrs = [
+        "public/pw_rpc/internal/service_method_traits.h",
+    ],
+    includes = ["public"],
+    deps = [ ":server"  ],
+)
+
+pw_cc_library(
     name = "internal_test_utils",
     hdrs = [
         "public/pw_rpc/internal/test_method.h",
@@ -112,11 +121,11 @@ filegroup(
         "nanopb/public/pw_rpc/internal/nanopb_common.h",
         "nanopb/public/pw_rpc/internal/nanopb_method.h",
         "nanopb/public/pw_rpc/internal/nanopb_method_union.h",
-        "nanopb/public/pw_rpc/internal/service_method_traits.h",
+        "nanopb/public/pw_rpc/internal/nanopb_service_method_traits.h",
         "nanopb/public/pw_rpc/nanopb_client_call.h",
         "nanopb/public/pw_rpc/nanopb_test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
-        "nanopb/service_method_traits_test.cc",
+        "nanopb/nanopb_service_method_traits_test.cc",
         "nanopb/test.pb.c",
         "nanopb/test.pb.h",
         "nanopb/test_rpc.pb.h",

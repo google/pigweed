@@ -86,6 +86,12 @@ pw_source_set("common") {
   friend = [ "./*" ]
 }
 
+pw_source_set("service_method_traits") {
+  public = [ "public/pw_rpc/internal/service_method_traits.h" ]
+  public_deps = [ ":server" ]
+  visibility = [ "./*" ]
+}
+
 pw_source_set("test_utils") {
   public = [
     "public/pw_rpc/internal/test_method.h",

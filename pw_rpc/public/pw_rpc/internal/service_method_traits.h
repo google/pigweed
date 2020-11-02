@@ -13,37 +13,29 @@
 // the License.
 #pragma once
 
-#include "pw_rpc/internal/nanopb_method.h"
+#include "pw_rpc/internal/method_union.h"
 
 namespace pw::rpc::internal {
 
-// Identifies a base class from a member function it defines. This should be
-// used with decltype to retrieve the base class.
-template <typename T, typename U>
-T BaseFromMember(U T::*);
-
 // Gets information about a service and method at compile-time. Uses a pointer
 // to a member function of the service implementation to identify the service
-// class, generated service class, and Method object. This class is friended by
-// the generated service classes to give it access to the internal method list.
-template <auto impl_method, uint32_t method_id>
+// class, generated service class, and Method object.
+template <auto lookup_function, auto impl_method, uint32_t method_id>
 class ServiceMethodTraits {
  public:
   ServiceMethodTraits() = delete;
 
   // Type of the service implementation derived class.
-  using Service = typename internal::RpcTraits<decltype(impl_method)>::Service;
+  using Service = MethodService<impl_method>;
 
-  // Type of the generic service base class.
-  using BaseService =
-      decltype(BaseFromMember(&Service::_PwRpcInternalGeneratedBase));
+  using MethodImpl = MethodImplementation<impl_method>;
 
   // Reference to the Method object corresponding to this method.
-  static constexpr const NanopbMethod& method() {
-    return *BaseService::NanopbMethodFor(method_id);
+  static constexpr const MethodImpl& method() {
+    return *lookup_function(method_id);
   }
 
-  static_assert(BaseService::NanopbMethodFor(method_id) != nullptr,
+  static_assert(lookup_function(method_id) != nullptr,
                 "The selected function is not an RPC service method");
 };
 

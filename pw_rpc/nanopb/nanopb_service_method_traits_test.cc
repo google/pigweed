@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_rpc/internal/service_method_traits.h"
+#include "pw_rpc/internal/nanopb_service_method_traits.h"
 
 #include <type_traits>
 
@@ -22,13 +22,9 @@
 namespace pw::rpc::internal {
 namespace {
 
-static_assert(std::is_same_v<ServiceMethodTraits<&EchoService::Echo,
-                                                 Hash("Echo")>::BaseService,
-                             generated::EchoService<EchoService>>);
-
 static_assert(
-    std::is_same_v<decltype(ServiceMethodTraits<&EchoService::Echo,
-                                                Hash("Echo")>::method()),
+    std::is_same_v<decltype(NanopbServiceMethodTraits<&EchoService::Echo,
+                                                      Hash("Echo")>::method()),
                    const NanopbMethod&>);
 
 }  // namespace

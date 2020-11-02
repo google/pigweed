@@ -42,11 +42,28 @@ struct MethodTraits {
   // Specializations must set Implementation as an alias for their method
   // implementation class.
   using Implementation = Method;
+
+  // Specializations must set Service as an alias to the implemented service
+  // class.
+  using Service = rpc::Service;
 };
 
 template <auto method>
 using MethodImplementation =
     typename MethodTraits<decltype(method)>::Implementation;
+
+template <auto method>
+using MethodService = typename MethodTraits<decltype(method)>::Service;
+
+// Identifies a base class from a member function it defines. This should be
+// used with decltype to retrieve the base class.
+template <typename T, typename U>
+T BaseFromMember(U T::*);
+
+// The base generated service of an implemented RPC method.
+template <auto method>
+using MethodBaseService = decltype(
+    BaseFromMember(&MethodService<method>::_PwRpcInternalGeneratedBase));
 
 class CoreMethodUnion : public MethodUnion {
  public:

@@ -122,6 +122,9 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
         output.write_line(
             'constexpr void _PwRpcInternalGeneratedBase() const {}')
 
+        output.write_line()
+        _generate_method_lookup_function(output)
+
     service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
 
@@ -142,14 +145,7 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
             for method in service.methods():
                 _generate_method_descriptor(method, output)
 
-        output.write_line('};\n')
-
-        _generate_method_lookup_function(output)
-
-        output.write_line()
-        output.write_line('template <auto, uint32_t>')
-        output.write_line(
-            'friend class ::pw::rpc::internal::ServiceMethodTraits;')
+        output.write_line('};')
 
     output.write_line('};')
 
@@ -256,11 +252,6 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     nanopb_header = _proto_filename_to_nanopb_header(
         file_descriptor_proto.name)
     output.write_line(f'#include "{nanopb_header}"\n')
-
-    output.write_line('namespace pw::rpc::internal {\n')
-    output.write_line('template <auto, uint32_t>')
-    output.write_line('class ServiceMethodTraits;')
-    output.write_line('\n}  // namespace pw::rpc::internal\n')
 
     if package.cpp_namespace():
         file_namespace = package.cpp_namespace()

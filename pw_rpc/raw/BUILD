@@ -46,6 +46,29 @@ pw_cc_library(
     ]
 )
 
+pw_cc_library(
+    name = "service_method_traits",
+    hdrs = [
+        "public/pw_rpc/internal/raw_service_method_traits.h",
+    ],
+    deps = [
+        ":method_union",
+        "//pw_rpc:service_method_traits",
+    ]
+)
+
+pw_cc_library(
+    name = "test_method_context",
+    hdrs = [
+        "public/pw_rpc/raw_test_method_context.h",
+    ],
+    deps = [
+        ":method_union",
+        "//pw_assert",
+        "//pw_containers",
+    ]
+)
+
 pw_cc_test(
     name = "codegen_test",
     srcs = [

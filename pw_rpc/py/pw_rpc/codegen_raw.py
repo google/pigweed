@@ -48,6 +48,27 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
     output.write_line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
 
 
+def _generate_method_lookup_function(output: OutputFile):
+    """Generates a function that gets a Method object from its ID."""
+    raw_method = f'{RPC_NAMESPACE}::internal::RawMethod'
+
+    output.write_line(f'static constexpr const {raw_method}* RawMethodFor(')
+    output.write_line('    uint32_t id) {')
+
+    with output.indent():
+        output.write_line('for (auto& method : kMethods) {')
+        with output.indent():
+            output.write_line('if (method.raw_method().id() == id) {')
+            output.write_line(f'  return &static_cast<const {raw_method}&>(')
+            output.write_line('    method.raw_method());')
+            output.write_line('}')
+        output.write_line('}')
+
+        output.write_line('return nullptr;')
+
+    output.write_line('}')
+
+
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ base class for a raw RPC service."""
@@ -84,6 +105,9 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
         output.write_line(
             'constexpr void _PwRpcInternalGeneratedBase() const {}')
 
+        output.write_line()
+        _generate_method_lookup_function(output)
+
     service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
 
@@ -104,7 +128,7 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
             for method in service.methods():
                 _generate_method_descriptor(method, output)
 
-        output.write_line('};\n')
+        output.write_line('};')
 
     output.write_line('};')
 

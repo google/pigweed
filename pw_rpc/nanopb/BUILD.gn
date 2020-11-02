@@ -67,10 +67,10 @@ pw_source_set("common") {
 
 pw_source_set("service_method_traits") {
   public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/service_method_traits.h" ]
+  public = [ "public/pw_rpc/internal/nanopb_service_method_traits.h" ]
   public_deps = [
-    ":method",
-    "..:server",
+    ":method_union",
+    "..:service_method_traits",
   ]
 }
 
@@ -110,7 +110,7 @@ pw_test_group("tests") {
     ":echo_service_test",
     ":nanopb_method_test",
     ":nanopb_method_union_test",
-    ":service_method_traits_test",
+    ":nanopb_service_method_traits_test",
   ]
 }
 
@@ -171,7 +171,7 @@ pw_test("echo_service_test") {
   enable_if = dir_pw_third_party_nanopb != ""
 }
 
-pw_test("service_method_traits_test") {
+pw_test("nanopb_service_method_traits_test") {
   deps = [
     ":echo_service",
     ":method",
@@ -179,6 +179,6 @@ pw_test("service_method_traits_test") {
     ":test_method_context",
     "..:test_protos.nanopb_rpc",
   ]
-  sources = [ "service_method_traits_test.cc" ]
+  sources = [ "nanopb_service_method_traits_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
