@@ -19,6 +19,7 @@
 #include <cstring>
 
 #include "pw_log/levels.h"
+#include "pw_log_basic_private/config.h"
 #include "pw_string/string_builder.h"
 #include "pw_sys_io/sys_io.h"
 
@@ -36,16 +37,6 @@
 #define BOLD      "\033[1m"
 #define RESET     "\033[0m"
 // clang-format on
-
-#ifndef PW_EMOJI
-#define PW_EMOJI 0
-#endif  // PW_EMOJI
-
-// TODO(pwbug/17): Expose these through the config system.
-#define PW_LOG_SHOW_FILENAME 0
-#define PW_LOG_SHOW_FUNCTION 0
-#define PW_LOG_SHOW_FLAG 0
-#define PW_LOG_SHOW_MODULE 0
 
 namespace pw::log_basic {
 namespace {

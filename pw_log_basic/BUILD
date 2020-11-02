@@ -40,6 +40,7 @@ pw_cc_library(
     name = "pw_log_basic",
     srcs = [
         "log_basic.cc",
+        "pw_log_basic_private/config.h",
     ],
     deps = [
         ":headers",
