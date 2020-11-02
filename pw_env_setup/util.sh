@@ -158,7 +158,9 @@ pw_deactivate() {
 
   # If there's a _pw_deactivate function run it. Redirect output to /dev/null
   # in case _pw_deactivate doesn't exist.
-  _pw_deactivate &> /dev/null
+  if [ -n "$(command -v _pw_deactivate)" ]; then
+    _pw_deactivate &> /dev/null
+  fi
 
   # Restore PW_ROOT.
   PW_ROOT="$_NEW_PW_ROOT"
