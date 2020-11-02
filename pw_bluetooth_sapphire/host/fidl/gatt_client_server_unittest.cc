@@ -12,8 +12,8 @@ namespace {
 namespace fgatt = fuchsia::bluetooth::gatt;
 
 constexpr bt::PeerId kPeerId(1);
-constexpr bt::UUID kHeartRate((uint16_t)0x180D);
-constexpr bt::UUID kHid((uint16_t)0x1812);
+constexpr bt::UUID kHeartRate(uint16_t{0x180D});
+constexpr bt::UUID kHid(uint16_t{0x1812});
 
 class FIDL_GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
  public:

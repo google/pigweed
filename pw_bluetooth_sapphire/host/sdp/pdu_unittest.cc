@@ -705,14 +705,14 @@ TEST_F(SDP_PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
   ServiceAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
-  resp.set_attribute(0x4000, DataElement(uint16_t(0xfeed)));
+  resp.set_attribute(0x4000, DataElement(uint16_t{0xfeed}));
   resp.set_attribute(0x4001, DataElement(protocol::kSDP));
-  resp.set_attribute(0x4002, DataElement(uint32_t(0xc0decade)));
+  resp.set_attribute(0x4002, DataElement(uint32_t{0xc0decade}));
   DataElement str;
   str.Set(std::string(u8"💖"));
   resp.set_attribute(0x4003, std::move(str));
-  resp.set_attribute(0x4005, DataElement(uint32_t(0xC0DEB4BE)));
-  resp.set_attribute(kServiceRecordHandle, DataElement(uint32_t(0)));
+  resp.set_attribute(0x4005, DataElement(uint32_t{0xC0DEB4BE}));
+  resp.set_attribute(kServiceRecordHandle, DataElement(uint32_t{0}));
 
   const uint16_t kTransactionID = 0xfeed;
 
@@ -1088,12 +1088,12 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU) {
   ServiceSearchAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
-  resp.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
+  resp.SetAttribute(0, 0x4000, DataElement(uint16_t{0xfeed}));
   resp.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
-  resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
+  resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t{0}));
 
   // Attributes do not need to be continuous
-  resp.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
+  resp.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t{0x10002000}));
 
   const uint16_t kTransactionID = 0xfeed;
 
@@ -1126,16 +1126,16 @@ TEST_F(SDP_PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
   ServiceSearchAttributeResponse resp;
 
   // Even if set in the wrong order, attributes should be sorted in the PDU.
-  resp.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
+  resp.SetAttribute(0, 0x4000, DataElement(uint16_t{0xfeed}));
   resp.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
-  resp.SetAttribute(0, 0x4002, DataElement(uint32_t(0xc0decade)));
+  resp.SetAttribute(0, 0x4002, DataElement(uint32_t{0xc0decade}));
   DataElement str;
   str.Set(std::string(u8"💖"));
   resp.SetAttribute(0, 0x4003, std::move(str));
-  resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
+  resp.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t{0}));
 
   // Attributes do not need to be continuous
-  resp.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
+  resp.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t{0x10002000}));
 
   const uint16_t kTransactionID = 0xfeed;
 
@@ -1198,7 +1198,7 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
   EXPECT_FALSE(buf);
 
   ServiceAttributeResponse rsp_attr;
-  rsp_attr.set_attribute(1, DataElement(uint32_t(45)));
+  rsp_attr.set_attribute(1, DataElement(uint32_t{45}));
 
   buf = rsp_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
   EXPECT_TRUE(buf);
@@ -1212,10 +1212,10 @@ TEST_F(SDP_PDUTest, ResponseOutOfRangeContinuation) {
 
   ServiceSearchAttributeResponse rsp_search_attr;
 
-  rsp_search_attr.SetAttribute(0, 0x4000, DataElement(uint16_t(0xfeed)));
+  rsp_search_attr.SetAttribute(0, 0x4000, DataElement(uint16_t{0xfeed}));
   rsp_search_attr.SetAttribute(0, 0x4001, DataElement(protocol::kSDP));
-  rsp_search_attr.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t(0)));
-  rsp_search_attr.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t(0x10002000)));
+  rsp_search_attr.SetAttribute(0, kServiceRecordHandle, DataElement(uint32_t{0}));
+  rsp_search_attr.SetAttribute(5, kServiceRecordHandle, DataElement(uint32_t{0x10002000}));
 
   buf = rsp_search_attr.GetPDU(0xFFFF, 0x0110, kDefaultMaxSize, BufferView());
 

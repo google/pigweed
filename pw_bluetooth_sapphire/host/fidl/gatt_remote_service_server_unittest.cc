@@ -22,7 +22,7 @@ constexpr bt::PeerId kPeerId(1);
 
 constexpr bt::att::Handle kServiceStartHandle = 0x0021;
 constexpr bt::att::Handle kServiceEndHandle = 0x002C;
-const bt::UUID kServiceUuid((uint16_t)0x180D);
+const bt::UUID kServiceUuid(uint16_t{0x180D});
 
 class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
  public:
@@ -71,7 +71,7 @@ class FIDL_GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest
 };
 
 TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
-  constexpr bt::UUID kCharUuid((uint16_t)0xfefe);
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr bt::att::Handle kHandle = kServiceStartHandle;
   const auto kValue = bt::StaticByteBuffer(0x00, 0x01, 0x02);
@@ -112,7 +112,7 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeSuccess) {
 }
 
 TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeResultWithError) {
-  constexpr bt::UUID kCharUuid((uint16_t)0xfefe);
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
@@ -140,7 +140,7 @@ TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeResultWithError) {
 }
 
 TEST_F(FIDL_GattRemoteServiceServerTest, ReadByTypeError) {
-  constexpr bt::UUID kCharUuid((uint16_t)0xfefe);
+  constexpr bt::UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(

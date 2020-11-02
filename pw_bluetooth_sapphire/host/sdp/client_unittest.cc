@@ -116,7 +116,7 @@ TEST_F(SDP_ClientTest, ConnectAndQuery) {
                               DataElement(l2cap::kAVDTP));
     // The second element here indicates version 1.3 (specified in A2DP spec)
     rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
-                              DataElement(uint16_t(0x0103)));
+                              DataElement(uint16_t{0x0103}));
     rec.AddProfile(profile::kAudioSink, 1, 3);
     ServiceSearchAttributeResponse rsp;
     rsp.SetAttribute(0, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));
@@ -333,7 +333,7 @@ TEST_F(SDP_ClientTest, ContinuingResponseRequested) {
                             DataElement(l2cap::kAVDTP));
   // The second element here indicates version 1.3 (specified in A2DP spec)
   rec.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
-                            DataElement(uint16_t(0x0103)));
+                            DataElement(uint16_t{0x0103}));
   rec.AddProfile(profile::kAudioSink, 1, 3);
   ServiceSearchAttributeResponse rsp;
   rsp.SetAttribute(0, kServiceClassIdList, DataElement({DataElement(profile::kAudioSink)}));

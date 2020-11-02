@@ -18,7 +18,7 @@ namespace bt::gatt {
 namespace {
 
 constexpr PeerId kTestPeerId(1);
-constexpr UUID kTestType16((uint16_t)0xBEEF);
+constexpr UUID kTestType16(uint16_t{0xBEEF});
 constexpr UUID kTestType128({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 const auto kTestValue1 = CreateStaticByteBuffer('f', 'o', 'o');

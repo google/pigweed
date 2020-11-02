@@ -30,7 +30,7 @@ TEST_F(SDP_DataElementTest, CreateIsNull) {
 TEST_F(SDP_DataElementTest, SetAndGet) {
   DataElement elem;
 
-  elem.Set(uint8_t(5));
+  elem.Set(uint8_t{5});
 
   EXPECT_TRUE(elem.Get<uint8_t>());
   EXPECT_EQ(5u, *elem.Get<uint8_t>());
@@ -73,14 +73,14 @@ TEST_F(SDP_DataElementTest, ReadUUID) {
   DataElement elem;
   EXPECT_EQ(3u, DataElement::Read(&elem, buf));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
-  EXPECT_EQ(UUID(uint16_t(0x0100)), *elem.Get<UUID>());
+  EXPECT_EQ(UUID(uint16_t{0x0100}), *elem.Get<UUID>());
 
   auto buf2 = CreateStaticByteBuffer(0x1A,  // Type (3: UUID) & Size (2: four bytes) = 0b00011 010
                                      0x01, 0x02, 0x03, 0x04);
 
   EXPECT_EQ(5u, DataElement::Read(&elem, buf2));
   EXPECT_EQ(DataElement::Type::kUuid, elem.type());
-  EXPECT_EQ(UUID(uint32_t(0x01020304)), *elem.Get<UUID>());
+  EXPECT_EQ(UUID(uint32_t{0x01020304}), *elem.Get<UUID>());
 
   auto buf3 = CreateStaticByteBuffer(0x1B,  // Type (3: UUID) & Size (3: eight bytes) = 0b00011 011
                                      0x01, 0x02, 0x03, 0x04, 0x01, 0x02, 0x03, 0x04, 0x01, 0x02,
@@ -107,7 +107,7 @@ TEST_F(SDP_DataElementTest, Write) {
 
   // SerialPort from Assigned Numbers
   std::vector<DataElement> service_class_list;
-  service_class_list.emplace_back(DataElement(UUID(uint16_t(0x1101))));
+  service_class_list.emplace_back(DataElement(UUID(uint16_t{0x1101})));
   DataElement service_class_value(std::move(service_class_list));
   attribute_list.emplace_back(DataElement(kServiceClassIdList));
   attribute_list.emplace_back(std::move(service_class_value));
@@ -119,14 +119,14 @@ TEST_F(SDP_DataElementTest, Write) {
   // ( L2CAP, PSM=RFCOMM )
   std::vector<DataElement> protocol_l2cap;
   protocol_l2cap.emplace_back(DataElement(protocol::kL2CAP));
-  protocol_l2cap.emplace_back(DataElement(uint16_t(0x0003)));  // RFCOMM
+  protocol_l2cap.emplace_back(DataElement(uint16_t{0x0003}));  // RFCOMM
 
   protocol_list_value.emplace_back(DataElement(std::move(protocol_l2cap)));
 
   // ( RFCOMM, CHANNEL=1 )
   std::vector<DataElement> protocol_rfcomm;
   protocol_rfcomm.push_back(DataElement(protocol::kRFCOMM));
-  protocol_rfcomm.push_back(DataElement(uint8_t(1)));  // Server Channel = 1
+  protocol_rfcomm.push_back(DataElement(uint8_t{1}));  // Server Channel = 1
 
   protocol_list_value.emplace_back(DataElement(std::move(protocol_rfcomm)));
 
@@ -136,8 +136,8 @@ TEST_F(SDP_DataElementTest, Write) {
   // Bluetooth Profile Descriptor List
   std::vector<DataElement> profile_sequence_list;
   std::vector<DataElement> spp_sequence;
-  spp_sequence.push_back(DataElement(UUID(uint16_t(0x1101))));
-  spp_sequence.push_back(DataElement(uint16_t(0x0102)));
+  spp_sequence.push_back(DataElement(UUID(uint16_t{0x1101})));
+  spp_sequence.push_back(DataElement(uint16_t{0x0102}));
 
   profile_sequence_list.emplace_back(std::move(spp_sequence));
 
@@ -211,8 +211,8 @@ TEST_F(SDP_DataElementTest, ReadSequence) {
 
 TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
   auto buf =
-      CreateStaticByteBuffer(0x35, 0x1C,  // Sequence uint8 28 bytes
-                                          // Sequence 0
+      CreateStaticByteBuffer(0x35, 0x1C,                    // Sequence uint8 28 bytes
+                                                            // Sequence 0
                              0x35, 0x08,                    // Sequence uint8 8 bytes
                              0x09, 0x00, 0x00,              // Element: uint16_t (0)
                              0x0A, 0xFE, 0xED, 0xBE, 0xEF,  // Element: uint32_t (0xFEEDBEEF)
@@ -261,8 +261,8 @@ TEST_F(SDP_DataElementTest, ReadNestedSeqeunce) {
 TEST_F(SDP_DataElementTest, ToString) {
   EXPECT_EQ("Null", DataElement().ToString());
   EXPECT_EQ("Boolean(true)", DataElement(true).ToString());
-  EXPECT_EQ("UnsignedInt:1(27)", DataElement(static_cast<uint8_t>(27)).ToString());
-  EXPECT_EQ("SignedInt:4(-54321)", DataElement(static_cast<int32_t>(-54321)).ToString());
+  EXPECT_EQ("UnsignedInt:1(27)", DataElement(uint8_t{27}).ToString());
+  EXPECT_EQ("SignedInt:4(-54321)", DataElement(int32_t{-54321}).ToString());
   EXPECT_EQ("UUID(00000100-0000-1000-8000-00805f9b34fb)", DataElement(protocol::kL2CAP).ToString());
   EXPECT_EQ("String(fuchsia💖)", DataElement(std::string("fuchsia💖")).ToString());
   std::vector<DataElement> strings;

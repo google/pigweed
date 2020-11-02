@@ -182,9 +182,9 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
         if (pattern.count(profile::kSerialPort)) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
             ServiceSearchAttributeResponse rsp;
-            rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t(1))));
+            rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
             // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t(1)));
+            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
             if (!cb(Status(), rsp.attributes(0))) {
               return;
@@ -195,7 +195,7 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
             ServiceSearchAttributeResponse rsp;
             // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t(1)));
+            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
 
             if (!cb(Status(), rsp.attributes(0))) {
               return;
@@ -235,8 +235,8 @@ TEST_F(SDP_ServiceDiscovererTest, SomeResults) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
             ServiceSearchAttributeResponse rsp;
             // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t(1)));
-            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t(2)));
+            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
             if (!cb(Status(), rsp.attributes(0))) {
               return;
@@ -345,8 +345,8 @@ TEST_F(SDP_ServiceDiscovererTest, UnregisterInProgress) {
           async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
             ServiceSearchAttributeResponse rsp;
             // This would normally be a element list. uint32_t for Testing.
-            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t(1)));
-            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t(2)));
+            rsp.SetAttribute(0, kBluetoothProfileDescriptorList, DataElement(uint32_t{1}));
+            rsp.SetAttribute(1, kProtocolDescriptorList, DataElement(uint32_t{2}));
 
             if (!cb(Status(), rsp.attributes(0))) {
               return;

@@ -229,7 +229,7 @@ bool ServiceRecord::AddInfo(const std::string& language_code, const std::string&
   // to host byte order.
   uint16_t lang_encoded = betoh16(*((uint16_t*)(language_code.data())));
   base_attr_list.emplace_back(DataElement(lang_encoded));
-  base_attr_list.emplace_back(DataElement(uint16_t(106)));  // UTF-8
+  base_attr_list.emplace_back(DataElement(uint16_t{106}));  // UTF-8
   base_attr_list.emplace_back(DataElement(base_attrid));
 
   if (!name.empty()) {

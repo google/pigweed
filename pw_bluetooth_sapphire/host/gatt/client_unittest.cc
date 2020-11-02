@@ -10,8 +10,8 @@
 namespace bt::gatt {
 namespace {
 
-constexpr UUID kTestUuid1((uint16_t)0xDEAD);
-constexpr UUID kTestUuid2((uint16_t)0xBEEF);
+constexpr UUID kTestUuid1(uint16_t{0xDEAD});
+constexpr UUID kTestUuid2(uint16_t{0xBEEF});
 constexpr UUID kTestUuid3({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
 // clang-format off
@@ -1592,9 +1592,9 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery16BitResultsSingleRequest) {
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
   EXPECT_EQ(0x0003, descrs[2].handle);
-  EXPECT_EQ((uint16_t)0xBEEF, descrs[0].type);
-  EXPECT_EQ((uint16_t)0xDEAD, descrs[1].type);
-  EXPECT_EQ((uint16_t)0xFEFE, descrs[2].type);
+  EXPECT_EQ(uint16_t{0xBEEF}, descrs[0].type);
+  EXPECT_EQ(uint16_t{0xDEAD}, descrs[1].type);
+  EXPECT_EQ(uint16_t{0xFEFE}, descrs[2].type);
 }
 
 TEST_F(GATT_ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
@@ -1626,8 +1626,8 @@ TEST_F(GATT_ClientTest, DescriptorDiscovery128BitResultsSingleRequest) {
   ASSERT_EQ(2u, descrs.size());
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
-  EXPECT_EQ((uint16_t)0xBEEF, descrs[0].type);
-  EXPECT_EQ((uint16_t)0xDEAD, descrs[1].type);
+  EXPECT_EQ(uint16_t{0xBEEF}, descrs[0].type);
+  EXPECT_EQ(uint16_t{0xDEAD}, descrs[1].type);
 }
 
 TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
@@ -1679,9 +1679,9 @@ TEST_F(GATT_ClientTest, DescriptorDiscoveryMultipleRequests) {
   EXPECT_EQ(0x0001, descrs[0].handle);
   EXPECT_EQ(0x0002, descrs[1].handle);
   EXPECT_EQ(0x0003, descrs[2].handle);
-  EXPECT_EQ((uint16_t)0xBEEF, descrs[0].type);
-  EXPECT_EQ((uint16_t)0xDEAD, descrs[1].type);
-  EXPECT_EQ((uint16_t)0xFEFE, descrs[2].type);
+  EXPECT_EQ(uint16_t{0xBEEF}, descrs[0].type);
+  EXPECT_EQ(uint16_t{0xDEAD}, descrs[1].type);
+  EXPECT_EQ(uint16_t{0xFEFE}, descrs[2].type);
 }
 
 TEST_F(GATT_ClientTest, DescriptorDiscoveryResultsBeforeRange) {
@@ -2864,7 +2864,7 @@ TEST_F(GATT_ClientTest, ReadRequestError) {
 }
 
 TEST_F(GATT_ClientTest, ReadByTypeRequestSuccess16BitUUID) {
-  const UUID kUuid16((uint16_t)0xBEEF);
+  const UUID kUuid16(uint16_t{0xBEEF});
   constexpr att::Handle kStartHandle = 0x0001;
   constexpr att::Handle kEndHandle = 0xFFFF;
   const auto kExpectedRequest =

@@ -489,8 +489,8 @@ std::optional<uint32_t> G2(const UInt256& initiator_pubkey_x, const UInt256& res
   }
   UInt128 cmac_output = *maybe_cmac;
   // Implements the "mod 32" part of G2 on the little-endian output of AES-CMAC.
-  return (uint32_t)cmac_output[3] << 24 | (uint32_t)cmac_output[2] << 16 |
-         (uint32_t)cmac_output[1] << 8 | (uint32_t)cmac_output[0];
+  return uint32_t{cmac_output[3]} << 24 | uint32_t{cmac_output[2]} << 16 |
+         uint32_t{cmac_output[1]} << 8 | uint32_t{cmac_output[0]};
 }
 
 std::optional<UInt128> H6(const UInt128& w, uint32_t key_id) {

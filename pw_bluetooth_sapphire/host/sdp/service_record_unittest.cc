@@ -37,8 +37,8 @@ TEST_F(SDP_ServiceRecordTest, BasicFunctionality) {
   // This isn't a valid service class ID list:
   //  - ServiceDiscoveryServerServiceClassID
   //  - BrowseGroupDesciptorServiceClassID
-  UUID sdp_id(uint16_t(0x1000));
-  UUID group_id(uint16_t(0x1001));
+  UUID sdp_id(uint16_t{0x1000});
+  UUID group_id(uint16_t{0x1001});
   std::vector<UUID> service_class;
   service_class.push_back(sdp_id);
   service_class.emplace_back(group_id);
@@ -97,23 +97,23 @@ TEST_F(SDP_ServiceRecordTest, FindUUID) {
   ServiceRecord record;
 
   DataElement elem;
-  elem.Set(UUID(uint16_t(0xfeaa)));
+  elem.Set(UUID(uint16_t{0xfeaa}));
   record.SetAttribute(0xb001, std::move(elem));
-  elem.Set(UUID(uint16_t(0xfeed)));
+  elem.Set(UUID(uint16_t{0xfeed}));
   record.SetAttribute(0xb002, std::move(elem));
-  elem.Set(UUID(uint16_t(0xfeec)));
+  elem.Set(UUID(uint16_t{0xfeec}));
   record.SetAttribute(0xb003, std::move(elem));
 
   std::unordered_set<UUID> search_pattern;
-  search_pattern.insert(UUID(uint16_t(0xfeaa)));
+  search_pattern.insert(UUID(uint16_t{0xfeaa}));
 
   EXPECT_TRUE(record.FindUUID(search_pattern));
 
-  search_pattern.insert(UUID(uint16_t(0xfeec)));
+  search_pattern.insert(UUID(uint16_t{0xfeec}));
 
   EXPECT_TRUE(record.FindUUID(search_pattern));
 
-  search_pattern.insert(UUID(uint16_t(0xfeeb)));
+  search_pattern.insert(UUID(uint16_t{0xfeeb}));
 
   EXPECT_FALSE(record.FindUUID(search_pattern));
 }
@@ -124,7 +124,7 @@ TEST_F(SDP_ServiceRecordTest, AddProtocolDescriptor) {
 
   EXPECT_FALSE(record.HasAttribute(kProtocolDescriptorList));
 
-  DataElement psm(uint16_t(0x0001));  // SDP PSM
+  DataElement psm(uint16_t{0x0001});  // SDP PSM
 
   record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                std::move(psm));
@@ -309,12 +309,12 @@ TEST_F(SDP_ServiceRecordTest, IsRegisterable) {
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                               DataElement(uint16_t(25)));
-  record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(27)));
+                               DataElement(uint16_t{25}));
+  record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{27}));
 
   EXPECT_FALSE(record.IsRegisterable());
 
-  UUID browse_uuid = UUID(uint16_t(0xfeaa));
+  UUID browse_uuid = UUID(uint16_t{0xfeaa});
   std::vector<DataElement> browse_list;
   browse_list.emplace_back(DataElement(browse_uuid));
   record.SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));

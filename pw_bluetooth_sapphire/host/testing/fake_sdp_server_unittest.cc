@@ -35,7 +35,7 @@ std::vector<sdp::ServiceRecord> GetSPPServiceRecord() {
   record.AddProtocolDescriptor(sdp::ServiceRecord::kPrimaryProtocolList, sdp::protocol::kL2CAP,
                                sdp::DataElement());
   record.AddProtocolDescriptor(sdp::ServiceRecord::kPrimaryProtocolList, sdp::protocol::kRFCOMM,
-                               sdp::DataElement(uint8_t(0)));
+                               sdp::DataElement(uint8_t{0}));
   record.AddProfile(sdp::profile::kSerialPort, 1, 2);
   record.AddInfo("en", "FAKE", "", "");
   std::vector<sdp::ServiceRecord> records;
@@ -49,10 +49,10 @@ std::vector<sdp::ServiceRecord> GetA2DPServiceRecord() {
   record.AddProtocolDescriptor(sdp::ServiceRecord::kPrimaryProtocolList, sdp::protocol::kL2CAP,
                                sdp::DataElement(l2cap::kAVDTP));
   record.AddProtocolDescriptor(sdp::ServiceRecord::kPrimaryProtocolList, sdp::protocol::kAVDTP,
-                               sdp::DataElement(uint16_t(0x0103)));  // Version
+                               sdp::DataElement(uint16_t{0x0103}));  // Version
   record.AddProfile(sdp::profile::kAdvancedAudioDistribution, 1, 3);
   record.SetAttribute(sdp::kA2DP_SupportedFeatures,
-                      sdp::DataElement(uint16_t(0x0001)));  // Headphones
+                      sdp::DataElement(uint16_t{0x0001}));  // Headphones
   std::vector<sdp::ServiceRecord> records;
   records.emplace_back(std::move(record));
   return records;

@@ -93,10 +93,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnRegister) {
   WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
   EXPECT_EQ(0, callback_count);
 
-  constexpr UUID kTestSvcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kRead;
-  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
   const att::AccessRequirements kReadReqs(true, true, true);
   const att::AccessRequirements kWriteReqs, kUpdateReqs;
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);
@@ -129,10 +129,10 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   // Register the GATT service.
   GenericAttributeService gatt_service(&mgr, std::move(send_indication));
 
-  constexpr UUID kTestSvcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestSvcType(uint32_t{0xdeadbeef});
   constexpr IdType kChrcId = 0;
   constexpr uint8_t kChrcProps = Property::kNotify;
-  constexpr UUID kTestChrcType((uint32_t)0xdeadbeef);
+  constexpr UUID kTestChrcType(uint32_t{0xdeadbeef});
   const att::AccessRequirements kReadReqs, kWriteReqs;
   const att::AccessRequirements kUpdateReqs(true, true, true);
   auto service = std::make_unique<Service>(false /* primary */, kTestSvcType);

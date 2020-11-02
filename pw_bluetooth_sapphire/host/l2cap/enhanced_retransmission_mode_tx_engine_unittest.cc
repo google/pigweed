@@ -1268,7 +1268,7 @@ TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,
   tx_engine.ClearRemoteBusy();
   tx_engine.UpdateAckSeq(1, true);
   RunLoopUntilIdle();
-  EXPECT_EQ((std::vector{uint8_t(1), uint8_t(2)}), pdu_seq_numbers);
+  EXPECT_EQ((std::vector{uint8_t{1}, uint8_t{2}}), pdu_seq_numbers);
 }
 
 TEST_F(L2CAP_EnhancedRetransmissionModeTxEngineTest,

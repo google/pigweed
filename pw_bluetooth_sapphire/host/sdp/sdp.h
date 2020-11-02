@@ -90,15 +90,15 @@ constexpr OpCode kServiceSearchAttributeResponse = 0x07;
 
 namespace protocol {
 
-constexpr UUID kSDP(uint16_t(0x0001));
-constexpr UUID kRFCOMM(uint16_t(0x0003));
-constexpr UUID kATT(uint16_t(0x0007));
-constexpr UUID kOBEX(uint16_t(0x0008));  // IrDA Interop
-constexpr UUID kBNEP(uint16_t(0x000F));
-constexpr UUID kHIDP(uint16_t(0x0011));
-constexpr UUID kAVCTP(uint16_t(0x0017));
-constexpr UUID kAVDTP(uint16_t(0x0019));
-constexpr UUID kL2CAP(uint16_t(0x0100));
+constexpr UUID kSDP(uint16_t{0x0001});
+constexpr UUID kRFCOMM(uint16_t{0x0003});
+constexpr UUID kATT(uint16_t{0x0007});
+constexpr UUID kOBEX(uint16_t{0x0008});  // IrDA Interop
+constexpr UUID kBNEP(uint16_t{0x000F});
+constexpr UUID kHIDP(uint16_t{0x0011});
+constexpr UUID kAVCTP(uint16_t{0x0017});
+constexpr UUID kAVDTP(uint16_t{0x0019});
+constexpr UUID kL2CAP(uint16_t{0x0100});
 
 }  // namespace protocol
 
@@ -109,63 +109,63 @@ constexpr UUID kL2CAP(uint16_t(0x0100));
 namespace profile {
 
 // Service Discovery Profile (SDP)
-constexpr UUID kServiceDiscoveryClass(uint16_t(0x1000));
-constexpr UUID kBrowseGroupClass(uint16_t(0x1001));
+constexpr UUID kServiceDiscoveryClass(uint16_t{0x1000});
+constexpr UUID kBrowseGroupClass(uint16_t{0x1001});
 // Serial Port Profile (SPP)
-constexpr UUID kSerialPort(uint16_t(0x1101));
+constexpr UUID kSerialPort(uint16_t{0x1101});
 // Dial-up Networking Profile (DUN)
-constexpr UUID kDialupNetworking(uint16_t(0x1103));
+constexpr UUID kDialupNetworking(uint16_t{0x1103});
 // Object Push Profile (OPP)
-constexpr UUID kObexObjectPush(uint16_t(0x1105));
+constexpr UUID kObexObjectPush(uint16_t{0x1105});
 // File Transfer Profile (FTP)
-constexpr UUID kObexFileTransfer(uint16_t(0x1106));
+constexpr UUID kObexFileTransfer(uint16_t{0x1106});
 // Headset Profile (HSP)
-constexpr UUID kHeadset(uint16_t(0x1108));
-constexpr UUID kHeadsetAudioGateway(uint16_t(0x1112));
-constexpr UUID kHeadsetHS(uint16_t(0x1131));
+constexpr UUID kHeadset(uint16_t{0x1108});
+constexpr UUID kHeadsetAudioGateway(uint16_t{0x1112});
+constexpr UUID kHeadsetHS(uint16_t{0x1131});
 // Advanced Audio Distribution Profile (A2DP)
-constexpr UUID kAudioSource(uint16_t(0x110A));
-constexpr UUID kAudioSink(uint16_t(0x110B));
-constexpr UUID kAdvancedAudioDistribution(uint16_t(0x110D));
+constexpr UUID kAudioSource(uint16_t{0x110A});
+constexpr UUID kAudioSink(uint16_t{0x110B});
+constexpr UUID kAdvancedAudioDistribution(uint16_t{0x110D});
 // Audio/Video Remote Control Profile (AVRCP)
-constexpr UUID kAVRemoteControlTarget(uint16_t(0x110C));
-constexpr UUID kAVRemoteControl(uint16_t(0x110E));
-constexpr UUID kAVRemoteControlController(uint16_t(0x110F));
+constexpr UUID kAVRemoteControlTarget(uint16_t{0x110C});
+constexpr UUID kAVRemoteControl(uint16_t{0x110E});
+constexpr UUID kAVRemoteControlController(uint16_t{0x110F});
 // Personal Area Networking (PAN)
-constexpr UUID kPANU(uint16_t(0x1115));
-constexpr UUID kNAP(uint16_t(0x1116));
-constexpr UUID kGN(uint16_t(0x1117));
+constexpr UUID kPANU(uint16_t{0x1115});
+constexpr UUID kNAP(uint16_t{0x1116});
+constexpr UUID kGN(uint16_t{0x1117});
 // Basic Printing and Basic Imaging Profiles omitted (unsupported)
 // Hands-Free Profile (HFP)
-constexpr UUID kHandsfree(uint16_t(0x111E));
-constexpr UUID kHandsfreeAudioGateway(uint16_t(0x111F));
+constexpr UUID kHandsfree(uint16_t{0x111E});
+constexpr UUID kHandsfreeAudioGateway(uint16_t{0x111F});
 // Human Interface Device omitted (unsupported)
 // Hardcopy Cable Replacement Profile omitted (unsupported)
 // Sim Access Profile (SAP)
-constexpr UUID kSIM_Access(uint16_t(0x112D));
+constexpr UUID kSIM_Access(uint16_t{0x112D});
 // Phonebook Access Profile (PBAP)
-constexpr UUID kPhonebookPCE(uint16_t(0x112E));
-constexpr UUID kPhonebookPSE(uint16_t(0x112F));
-constexpr UUID kPhonebook(uint16_t(0x1130));
+constexpr UUID kPhonebookPCE(uint16_t{0x112E});
+constexpr UUID kPhonebookPSE(uint16_t{0x112F});
+constexpr UUID kPhonebook(uint16_t{0x1130});
 // Message Access Profile (MAP)
-constexpr UUID kMessageAccessServer(uint16_t(0x1132));
-constexpr UUID kMessageNotificationServer(uint16_t(0x1133));
-constexpr UUID kMessageAccessProfile(uint16_t(0x1134));
+constexpr UUID kMessageAccessServer(uint16_t{0x1132});
+constexpr UUID kMessageNotificationServer(uint16_t{0x1133});
+constexpr UUID kMessageAccessProfile(uint16_t{0x1134});
 // GNSS and 3DSP omitted (unsupported)
 // Multi-Profile Specification (MPS)
-constexpr UUID kMPSProfile(uint16_t(0x113A));
-constexpr UUID kMPSClass(uint16_t(0x113B));
+constexpr UUID kMPSProfile(uint16_t{0x113A});
+constexpr UUID kMPSClass(uint16_t{0x113B});
 // Calendar, Task, and Notes Profile omitted (unsupported)
 // Device ID
-constexpr UUID kPeerIdentification(uint16_t(0x1200));
+constexpr UUID kPeerIdentification(uint16_t{0x1200});
 // Video Distribution Profile (VDP)
-constexpr UUID kVideoSource(uint16_t(0x1303));
-constexpr UUID kVideoSink(uint16_t(0x1304));
-constexpr UUID kVideoDistribution(uint16_t(0x1305));
+constexpr UUID kVideoSource(uint16_t{0x1303});
+constexpr UUID kVideoSink(uint16_t{0x1304});
+constexpr UUID kVideoDistribution(uint16_t{0x1305});
 // Health Device Profile (HDP)
-constexpr UUID kHDP(uint16_t(0x1400));
-constexpr UUID kHDPSource(uint16_t(0x1401));
-constexpr UUID kHDPSink(uint16_t(0x1402));
+constexpr UUID kHDP(uint16_t{0x1400});
+constexpr UUID kHDPSource(uint16_t{0x1401});
+constexpr UUID kHDPSink(uint16_t{0x1402});
 
 }  // namespace profile
 
@@ -221,7 +221,7 @@ constexpr AttributeId kBrowseGroupList = 0x0005;
 using BrowseGroupListValueType = std::vector<DataElement>;
 
 // The UUID used for the root of the browsing hierarchy
-constexpr UUID kPublicBrowseRootUuid(uint16_t(0x1002));
+constexpr UUID kPublicBrowseRootUuid(uint16_t{0x1002});
 
 // Language Base Attribute Id List
 constexpr AttributeId kLanguageBaseAttributeIdList = 0x0006;

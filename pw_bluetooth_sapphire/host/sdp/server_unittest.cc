@@ -68,7 +68,7 @@ class SDP_ServerTest : public TestingBase {
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                  DataElement());
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                 DataElement(uint8_t(0)));
+                                 DataElement(uint8_t{0}));
     record.AddProfile(profile::kSerialPort, 1, 2);
     record.AddInfo("en", "FAKE", "", "");
     std::vector<ServiceRecord> records;
@@ -85,10 +85,9 @@ class SDP_ServerTest : public TestingBase {
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                  DataElement(l2cap::kAVDTP));
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
-                                 DataElement(uint16_t(0x0103)));  // Version
+                                 DataElement(uint16_t{0x0103}));  // Version
     record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
-    record.SetAttribute(kA2DP_SupportedFeatures,
-                        DataElement(uint16_t(0x0001)));  // Headphones
+    record.SetAttribute(kA2DP_SupportedFeatures, DataElement(uint16_t{0x0001}));  // Headphones
     std::vector<ServiceRecord> records;
     records.emplace_back(std::move(record));
     RegistrationHandle handle =
@@ -105,10 +104,9 @@ class SDP_ServerTest : public TestingBase {
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                  DataElement(channel));
     record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVDTP,
-                                 DataElement(uint16_t(0x0103)));  // Version
+                                 DataElement(uint16_t{0x0103}));  // Version
     record.AddProfile(profile::kAdvancedAudioDistribution, 1, 3);
-    record.SetAttribute(kA2DP_SupportedFeatures,
-                        DataElement(uint16_t(0x0001)));  // Headphones
+    record.SetAttribute(kA2DP_SupportedFeatures, DataElement(uint16_t{0x0001}));  // Headphones
     std::vector<ServiceRecord> records;
     records.emplace_back(std::move(record));
     RegistrationHandle handle =
@@ -180,7 +178,7 @@ TEST_F(SDP_ServerTest, RegisterService) {
   EXPECT_FALSE(server()->RegisterService(std::move(records0), kChannelParams, {}));
 
   ServiceRecord record1;
-  record1.SetAttribute(kServiceClassIdList, DataElement(uint16_t(42)));
+  record1.SetAttribute(kServiceClassIdList, DataElement(uint16_t{42}));
   std::vector<ServiceRecord> records1;
   records1.emplace_back(std::move(record1));
   EXPECT_FALSE(server()->RegisterService(std::move(records1), kChannelParams, {}));
@@ -257,8 +255,8 @@ TEST_F(SDP_ServerTest, RegisterServiceWithIncompleteAdditionalProtocol) {
   ServiceRecord psm_additional;
   psm_additional.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_additional.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                       DataElement(uint16_t(500)));
-  psm_additional.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(27)));
+                                       DataElement(uint16_t{500}));
+  psm_additional.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{27}));
   psm_additional.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement());
 
   size_t cb_count = 0;
@@ -302,7 +300,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   ServiceRecord psm_wrong_intsize;
   psm_wrong_intsize.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_wrong_intsize.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                          DataElement(uint8_t(5)));
+                                          DataElement(uint8_t{5}));
 
   std::vector<ServiceRecord> records_wrong_intsize;
   records_wrong_intsize.emplace_back(std::move(psm_wrong_intsize));
@@ -313,7 +311,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                    DataElement());
   psm_rfcomm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                   DataElement(uint16_t(5)));
+                                   DataElement(uint16_t{5}));
 
   std::vector<ServiceRecord> records3;
   records3.emplace_back(std::move(psm_rfcomm));
@@ -325,7 +323,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
                                     DataElement());
   psm_rfcomm2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
-                                    DataElement(uint16_t(7)));
+                                    DataElement(uint16_t{7}));
 
   std::vector<ServiceRecord> records4;
   records4.emplace_back(std::move(psm_rfcomm2));
@@ -334,7 +332,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   ServiceRecord psm_ok;
   psm_ok.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_ok.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                               DataElement(uint16_t(500)));
+                               DataElement(uint16_t{500}));
 
   std::vector<ServiceRecord> records5;
   records5.emplace_back(std::move(psm_ok));
@@ -344,7 +342,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   ServiceRecord psm_same;
   psm_same.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_same.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                 DataElement(uint16_t(500)));
+                                 DataElement(uint16_t{500}));
 
   std::vector<ServiceRecord> records6;
   records6.emplace_back(std::move(psm_same));
@@ -355,7 +353,7 @@ TEST_F(SDP_ServerTest, PSMVerification) {
   ServiceRecord psm_readd;
   psm_readd.SetServiceClassUUIDs({profile::kAVRemoteControl});
   psm_readd.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                  DataElement(uint16_t(500)));
+                                  DataElement(uint16_t{500}));
 
   std::vector<ServiceRecord> records7;
   records7.emplace_back(std::move(psm_readd));
@@ -369,14 +367,14 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSuccess) {
   ServiceRecord record1;
   record1.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record1.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                DataElement(uint16_t(7)));
-  record1.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(8)));
+                                DataElement(uint16_t{7}));
+  record1.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{8}));
 
   ServiceRecord record2;
   record2.SetServiceClassUUIDs({profile::kAudioSink});
   record2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                DataElement(uint16_t(9)));
-  record2.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(10)));
+                                DataElement(uint16_t{9}));
+  record2.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{10}));
 
   std::vector<ServiceRecord> records;
   records.emplace_back(std::move(record1));
@@ -409,13 +407,13 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSamePSM) {
   ServiceRecord target_browse_record;
   target_browse_record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   target_browse_record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                             DataElement(uint16_t(25)));
-  target_browse_record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t(27)));
+                                             DataElement(uint16_t{25}));
+  target_browse_record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{27}));
 
   ServiceRecord controller_record;
   controller_record.SetServiceClassUUIDs({profile::kAVRemoteControlController});
   controller_record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                          DataElement(uint16_t(25)));
+                                          DataElement(uint16_t{25}));
 
   std::vector<ServiceRecord> records;
   records.emplace_back(std::move(target_browse_record));
@@ -447,12 +445,12 @@ TEST_F(SDP_ServerTest, RegisterServiceMultipleRecordsSamePSM) {
   ServiceRecord duplicate_psm;
   duplicate_psm.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
   duplicate_psm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                      DataElement(uint16_t(25)));
+                                      DataElement(uint16_t{25}));
 
   ServiceRecord valid_psm;
   valid_psm.SetServiceClassUUIDs({profile::kAudioSource});
   valid_psm.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                  DataElement(uint16_t(31)));
+                                  DataElement(uint16_t{31}));
 
   std::vector<ServiceRecord> invalid_records;
   invalid_records.emplace_back(std::move(duplicate_psm));
@@ -719,8 +717,8 @@ TEST_F(SDP_ServerTest, ServiceSearchContinuationState) {
 TEST_F(SDP_ServerTest, ServiceAttributeRequest) {
   ServiceRecord record;
   record.SetServiceClassUUIDs({profile::kAVRemoteControl});
-  record.SetAttribute(0xf00d, DataElement(uint32_t(0xfeedbeef)));
-  record.SetAttribute(0xf000, DataElement(uint32_t(0x01234567)));
+  record.SetAttribute(0xf00d, DataElement(uint32_t{0xfeedbeef}));
+  record.SetAttribute(0xf000, DataElement(uint32_t{0x01234567}));
 
   std::vector<ServiceRecord> records;
   records.emplace_back(std::move(record));
@@ -859,9 +857,9 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
   ServiceRecord record1;
   record1.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record1.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                DataElement(uint16_t(500)));
-  record1.SetAttribute(0xf00d, DataElement(uint32_t(0xfeedbeef)));
-  record1.SetAttribute(0xf000, DataElement(uint32_t(0x01234567)));
+                                DataElement(uint16_t{500}));
+  record1.SetAttribute(0xf00d, DataElement(uint32_t{0xfeedbeef}));
+  record1.SetAttribute(0xf000, DataElement(uint32_t{0x01234567}));
 
   std::vector<ServiceRecord> records1;
   records1.emplace_back(std::move(record1));
@@ -873,7 +871,7 @@ TEST_F(SDP_ServerTest, SearchAttributeRequest) {
   ServiceRecord record2;
   record2.SetServiceClassUUIDs({profile::kAVRemoteControl});
   record2.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
-                                DataElement(uint16_t(501)));
+                                DataElement(uint16_t{501}));
 
   std::vector<ServiceRecord> records2;
   records2.emplace_back(std::move(record2));

@@ -16,10 +16,10 @@
 namespace bt::gatt::internal {
 namespace {
 
-constexpr UUID kTestServiceUuid1((uint16_t)0xbeef);
-constexpr UUID kTestServiceUuid2((uint16_t)0xcafe);
-constexpr UUID kTestUuid3((uint16_t)0xfefe);
-constexpr UUID kTestUuid4((uint16_t)0xefef);
+constexpr UUID kTestServiceUuid1(uint16_t{0xbeef});
+constexpr UUID kTestServiceUuid2(uint16_t{0xcafe});
+constexpr UUID kTestUuid3(uint16_t{0xfefe});
+constexpr UUID kTestUuid4(uint16_t{0xefef});
 
 // Buffers for descriptor responses.
 // ExtendedProperty::kReliableWrite enabled.
@@ -1491,7 +1491,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilAttributeN
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr att::Handle kHandle0 = 2;
   const auto kValue0 = StaticByteBuffer(0x00, 0x01, 0x02);
@@ -1547,7 +1547,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeSendsReadRequestsUntilServiceEnd
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
@@ -1581,7 +1581,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   const std::array<att::ErrorCode, 5> errors = {
       att::ErrorCode::kInsufficientAuthorization, att::ErrorCode::kInsufficientAuthentication,
@@ -1622,7 +1622,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   constexpr att::Handle kHandle = kEndHandle;
   const auto kValue = StaticByteBuffer(0x00, 0x01, 0x02);
@@ -1671,7 +1671,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandl
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
@@ -1696,7 +1696,7 @@ TEST_F(GATT_RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithOutOfRangeHa
   auto service = SetUpFakeService(
       ServiceData(ServiceKind::PRIMARY, kStartHandle, kEndHandle, kTestServiceUuid1));
 
-  constexpr UUID kCharUuid((uint16_t)0xfefe);
+  constexpr UUID kCharUuid(uint16_t{0xfefe});
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(

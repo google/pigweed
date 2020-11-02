@@ -15,7 +15,7 @@ namespace bthost {
 namespace {
 
 // bt-gatt-svc devices are published for HID-over-GATT only.
-constexpr bt::UUID kHogUuid(uint16_t(0x1812));
+constexpr bt::UUID kHogUuid(uint16_t{0x1812});
 
 const char* kDeviceName = "bt_host";
 
