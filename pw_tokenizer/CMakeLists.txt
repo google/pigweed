@@ -27,6 +27,19 @@ pw_add_module_library(pw_tokenizer
     pw_varint
 )
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "")
+  target_link_options(pw_tokenizer
+    PUBLIC
+      "-T${CMAKE_CURRENT_SOURCE_DIR}/pw_tokenizer_linker_sections.ld"
+  )
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  target_link_options(pw_tokenizer
+    PUBLIC
+      "-T${CMAKE_CURRENT_SOURCE_DIR}/add_tokenizer_sections_to_default_script.ld"
+      "-L${CMAKE_CURRENT_SOURCE_DIR}"
+  )
+endif()
+
 pw_add_module_library(pw_tokenizer.base64
   SOURCES
     base64.cc

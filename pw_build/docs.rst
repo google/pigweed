@@ -433,6 +433,15 @@ follows:
 * To force to a backend to a particular value globally, call ``pw_set_backend``
   in the top-level ``CMakeLists.txt`` before any other CMake code is executed.
 
+Toolchain setup
+---------------
+In CMake, the toolchain is configured by setting CMake variables, as described
+in the `CMake documentation <https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html>`_.
+These variables are typically set in a toolchain CMake file passed to ``cmake``
+with the ``-D`` option (``-DCMAKE_TOOLCHAIN_FILE=path/to/file.cmake``).
+For Pigweed embedded builds, set ``CMAKE_SYSTEM_NAME`` to the empty string
+(``""``).
+
 Third party libraries
 ---------------------
 The CMake build includes third-party libraries similarly to the GN build. A
@@ -481,7 +490,6 @@ If desired, modules can be included individually.
 
 Bazel
 =====
-
 Bazel is currently very experimental, and only builds for host.
 
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
