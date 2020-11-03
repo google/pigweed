@@ -1070,6 +1070,32 @@ void FakeController::OnReadEncryptionKeySizeCommand(
   RespondWithCommandComplete(hci::kReadEncryptionKeySize, BufferView(&response, sizeof(response)));
 }
 
+void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
+    const hci::EnhancedSetupSynchronousConnectionCommandParams& params) {
+  const hci::ConnectionHandle handle = letoh16(params.connection_handle);
+  FakePeer* peer = FindByConnHandle(handle);
+  if (!peer) {
+    RespondWithCommandStatus(hci::kEnhancedSetupSynchronousConnection,
+                             hci::StatusCode::kUnknownConnectionId);
+    return;
+  }
+
+  RespondWithCommandStatus(hci::kEnhancedSetupSynchronousConnection, hci::StatusCode::kSuccess);
+
+  hci::SynchronousConnectionCompleteEventParams response;
+  response.status = hci::kSuccess;
+  // SCO connection handle must be different from open ACL connections.
+  response.connection_handle = ++next_conn_handle_;
+  response.bd_addr = peer->address().value();
+  response.link_type = hci::LinkType::kExtendedSCO;
+  response.transmission_interval = 1;
+  response.retransmission_window = 2;
+  response.rx_packet_length = 3;
+  response.tx_packet_length = 4;
+  response.air_coding_format = hci::CodingFormat::kMSbc;
+  SendEvent(hci::kSynchronousConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
+}
+
 void FakeController::OnLEReadRemoteFeaturesCommand(
     const hci::LEReadRemoteFeaturesCommandParams& params) {
   if (le_read_remote_features_cb_) {
@@ -1662,6 +1688,12 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
     case hci::kReadEncryptionKeySize: {
       const auto& params = command_packet.payload<hci::ReadEncryptionKeySizeParams>();
       OnReadEncryptionKeySizeCommand(params);
+      break;
+    }
+    case hci::kEnhancedSetupSynchronousConnection: {
+      const auto& params =
+          command_packet.payload<hci::EnhancedSetupSynchronousConnectionCommandParams>();
+      OnEnhancedSetupSynchronousConnectionCommand(params);
       break;
     }
     case hci::kLEReadRemoteFeatures: {

@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/lib/fxl/strings/split_string.h"
 #include "src/lib/fxl/strings/string_number_conversions.h"
@@ -30,6 +31,7 @@ namespace fbt = fuchsia::bluetooth;
 namespace fgatt = fuchsia::bluetooth::gatt;
 namespace fhost = fuchsia::bluetooth::host;
 namespace fsys = fuchsia::bluetooth::sys;
+namespace faudio = fuchsia::hardware::audio;
 
 namespace bthost::fidl_helpers {
 namespace {
@@ -905,6 +907,179 @@ bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
     }
   }
   return requirements;
+}
+
+bt::sco::ParameterSet FidlToScoParameterSet(const fbredr::HfpParameterSet param_set) {
+  switch (param_set) {
+    case fbredr::HfpParameterSet::MSBC_T1:
+      return bt::sco::kParameterSetMsbcT1;
+    case fbredr::HfpParameterSet::MSBC_T2:
+      return bt::sco::kParameterSetMsbcT2;
+    case fbredr::HfpParameterSet::CVSD_S1:
+      return bt::sco::kParameterSetCvsdS1;
+    case fbredr::HfpParameterSet::CVSD_S2:
+      return bt::sco::kParameterSetCvsdS2;
+    case fbredr::HfpParameterSet::CVSD_S3:
+      return bt::sco::kParameterSetCvsdS3;
+    case fbredr::HfpParameterSet::CVSD_S4:
+      return bt::sco::kParameterSetCvsdS4;
+    case fbredr::HfpParameterSet::CVSD_D0:
+      return bt::sco::kParameterSetCvsdD0;
+    case fbredr::HfpParameterSet::CVSD_D1:
+      return bt::sco::kParameterSetCvsdD1;
+  }
+}
+
+bt::hci::VendorCodingFormat FidlToScoCodingFormat(const fbredr::CodingFormat format) {
+  bt::hci::VendorCodingFormat out;
+  // Set to 0 since vendor specific coding formats are not supported.
+  out.company_id = 0;
+  out.vendor_codec_id = 0;
+  switch (format) {
+    case fbredr::CodingFormat::ALAW:
+      out.coding_format = bt::hci::CodingFormat::kALaw;
+      break;
+    case fbredr::CodingFormat::MULAW:
+      out.coding_format = bt::hci::CodingFormat::kMuLaw;
+      break;
+    case fbredr::CodingFormat::CVSD:
+      out.coding_format = bt::hci::CodingFormat::kCvsd;
+      break;
+    case fbredr::CodingFormat::LINEAR_PCM:
+      out.coding_format = bt::hci::CodingFormat::kLinearPcm;
+      break;
+    case fbredr::CodingFormat::MSBC:
+      out.coding_format = bt::hci::CodingFormat::kMSbc;
+      break;
+    case fbredr::CodingFormat::TRANSPARENT:
+      out.coding_format = bt::hci::CodingFormat::kTransparent;
+      break;
+  }
+  return out;
+}
+
+fit::result<bt::hci::PcmDataFormat> FidlToPcmDataFormat(const faudio::SampleFormat& format) {
+  switch (format) {
+    case faudio::SampleFormat::PCM_SIGNED:
+      return fit::ok(bt::hci::PcmDataFormat::k2sComplement);
+    case faudio::SampleFormat::PCM_UNSIGNED:
+      return fit::ok(bt::hci::PcmDataFormat::kUnsigned);
+    default:
+      // Other sample formats are not supported by SCO.
+      return fit::error();
+  }
+}
+
+bt::hci::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
+  switch (path) {
+    case fbredr::DataPath::HOST:
+      return bt::hci::ScoDataPath::kHci;
+    case fbredr::DataPath::OFFLOAD: {
+      // TODO(fxbug.dev/58458): Use path from stack configuration file instead of this hardcoded
+      // value. "6" is the data path usually used in Broadcom controllers.
+      return static_cast<bt::hci::ScoDataPath>(6);
+    }
+    case fbredr::DataPath::TEST:
+      return bt::hci::ScoDataPath::kAudioTestMode;
+  }
+}
+
+fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
+    const fbredr::ScoConnectionParameters& params) {
+  bt::hci::SynchronousConnectionParameters out;
+
+  if (!params.has_parameter_set()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing parameter_set");
+    return fit::error();
+  }
+  auto param_set = FidlToScoParameterSet(params.parameter_set());
+
+  out.transmit_bandwidth = param_set.transmit_receive_bandwidth;
+  out.receive_bandwidth = out.transmit_bandwidth;
+
+  if (!params.has_air_coding_format()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing air_coding_format");
+    return fit::error();
+  }
+  auto air_coding_format = FidlToScoCodingFormat(params.air_coding_format());
+  out.transmit_coding_format = air_coding_format;
+  out.receive_coding_format = out.transmit_coding_format;
+
+  if (!params.has_air_frame_size()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing air_frame_size");
+    return fit::error();
+  }
+  out.transmit_codec_frame_size_bytes = params.air_frame_size();
+  out.receive_codec_frame_size_bytes = out.transmit_codec_frame_size_bytes;
+
+  if (!params.has_io_bandwidth()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing io_bandwidth");
+    return fit::error();
+  }
+  out.input_bandwidth = params.io_bandwidth();
+  out.output_bandwidth = out.input_bandwidth;
+
+  if (!params.has_io_coding_format()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing io_coding_format");
+    return fit::error();
+  }
+  out.input_coding_format = FidlToScoCodingFormat(params.io_coding_format());
+  out.output_coding_format = out.input_coding_format;
+
+  if (!params.has_io_frame_size()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing io_frame_size");
+    return fit::error();
+  }
+  out.input_coded_data_size_bits = params.io_frame_size();
+  out.output_coded_data_size_bits = out.input_coded_data_size_bits;
+
+  if (params.has_io_pcm_data_format() &&
+      out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+    auto io_pcm_format = FidlToPcmDataFormat(params.io_pcm_data_format());
+    if (io_pcm_format.is_error()) {
+      bt_log(DEBUG, "fidl", "Unsupported IO PCM data format in SCO parameters");
+      return fit::error();
+    }
+    out.input_pcm_data_format = io_pcm_format.value();
+    out.output_pcm_data_format = out.input_pcm_data_format;
+
+  } else if (out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+    bt_log(DEBUG, "fidl",
+           "SCO parameters missing io_pcm_data_format (required for linear PCM IO coding format)");
+    return fit::error();
+  } else {
+    out.input_pcm_data_format = bt::hci::PcmDataFormat::kNotApplicable;
+    out.output_pcm_data_format = out.input_pcm_data_format;
+  }
+
+  if (params.has_io_pcm_sample_payload_msb_position() &&
+      out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
+    out.input_pcm_sample_payload_msb_position = params.io_pcm_sample_payload_msb_position();
+    out.output_pcm_sample_payload_msb_position = out.input_pcm_sample_payload_msb_position;
+  } else {
+    out.input_pcm_sample_payload_msb_position = 0u;
+    out.output_pcm_sample_payload_msb_position = out.input_pcm_sample_payload_msb_position;
+  }
+
+  if (!params.has_path()) {
+    bt_log(DEBUG, "fidl", "SCO parameters missing data path");
+    return fit::error();
+  }
+  out.input_data_path = FidlToScoDataPath(params.path());
+  out.output_data_path = out.input_data_path;
+
+  // For HCI Host transport the transport unit size should be "0". For PCM transport the unit size
+  // is vendor specific. A unit size of "0" indicates "not applicable".
+  // TODO(fxbug.dev/58458): Use unit size from stack configuration file instead of hardcoding "not
+  // applicable".
+  out.input_transport_unit_size_bits = 0u;
+  out.output_transport_unit_size_bits = out.input_transport_unit_size_bits;
+
+  out.max_latency_ms = param_set.max_latency_ms;
+  out.packet_types = param_set.packet_types;
+  out.retransmission_effort = param_set.retransmission_effort;
+
+  return fit::ok(out);
 }
 
 }  // namespace bthost::fidl_helpers

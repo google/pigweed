@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -24,6 +25,7 @@ namespace fbt = fuchsia::bluetooth;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace fbg = fuchsia::bluetooth::gatt;
 namespace fbredr = fuchsia::bluetooth::bredr;
+namespace faudio = fuchsia::hardware::audio;
 
 namespace fuchsia::bluetooth {
 // Make UUIDs equality comparable for advanced testing matchers. ADL rules mandate the namespace.
@@ -806,6 +808,89 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
   EXPECT_THAT(data.bredr().services(),
               ::testing::UnorderedElementsAre(UuidToFidl(bt::sdp::profile::kAudioSink),
                                               UuidToFidl(bt::sdp::profile::kAudioSource)));
+}
+
+TEST_F(FIDL_HelpersAdapterTest, FidlToScoParameters) {
+  fbredr::ScoConnectionParameters params;
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_parameter_set(fbredr::HfpParameterSet::MSBC_T2);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_air_coding_format(fbredr::CodingFormat::MSBC);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_air_frame_size(8u);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_io_bandwidth(32000);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_io_coding_format(fbredr::CodingFormat::LINEAR_PCM);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_io_frame_size(16u);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_io_pcm_data_format(faudio::SampleFormat::PCM_SIGNED);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_io_pcm_sample_payload_msb_position(3u);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  params.set_path(fbredr::DataPath::OFFLOAD);
+  ASSERT_TRUE(FidlToScoParameters(params).is_ok());
+
+  bt::hci::SynchronousConnectionParameters out = FidlToScoParameters(params).take_value();
+  EXPECT_EQ(out.transmit_bandwidth, 8000u);
+  EXPECT_EQ(out.receive_bandwidth, 8000u);
+
+  EXPECT_EQ(out.transmit_coding_format.coding_format, bt::hci::CodingFormat::kMSbc);
+  EXPECT_EQ(out.transmit_coding_format.company_id, 0u);
+  EXPECT_EQ(out.transmit_coding_format.vendor_codec_id, 0u);
+
+  EXPECT_EQ(out.receive_coding_format.coding_format, bt::hci::CodingFormat::kMSbc);
+  EXPECT_EQ(out.receive_coding_format.company_id, 0u);
+  EXPECT_EQ(out.receive_coding_format.vendor_codec_id, 0u);
+
+  EXPECT_EQ(out.transmit_codec_frame_size_bytes, 8u);
+  EXPECT_EQ(out.receive_codec_frame_size_bytes, 8u);
+
+  EXPECT_EQ(out.input_bandwidth, 32000u);
+  EXPECT_EQ(out.output_bandwidth, 32000u);
+
+  EXPECT_EQ(out.input_coding_format.coding_format, bt::hci::CodingFormat::kLinearPcm);
+  EXPECT_EQ(out.input_coding_format.company_id, 0u);
+  EXPECT_EQ(out.input_coding_format.vendor_codec_id, 0u);
+
+  EXPECT_EQ(out.output_coding_format.coding_format, bt::hci::CodingFormat::kLinearPcm);
+  EXPECT_EQ(out.output_coding_format.company_id, 0u);
+  EXPECT_EQ(out.output_coding_format.vendor_codec_id, 0u);
+
+  EXPECT_EQ(out.input_coded_data_size_bits, 16u);
+  EXPECT_EQ(out.output_coded_data_size_bits, 16u);
+
+  EXPECT_EQ(out.input_pcm_data_format, bt::hci::PcmDataFormat::k2sComplement);
+  EXPECT_EQ(out.output_pcm_data_format, bt::hci::PcmDataFormat::k2sComplement);
+
+  EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 3u);
+  EXPECT_EQ(out.output_pcm_sample_payload_msb_position, 3u);
+
+  EXPECT_EQ(out.input_data_path, static_cast<bt::hci::ScoDataPath>(6));
+  EXPECT_EQ(out.output_data_path, static_cast<bt::hci::ScoDataPath>(6));
+
+  EXPECT_EQ(out.input_transport_unit_size_bits, 0u);
+  EXPECT_EQ(out.output_transport_unit_size_bits, 0u);
+
+  EXPECT_EQ(out.max_latency_ms, bt::sco::kParameterSetMsbcT2.max_latency_ms);
+  EXPECT_EQ(out.packet_types, bt::sco::kParameterSetMsbcT2.packet_types);
+  EXPECT_EQ(out.retransmission_effort, bt::sco::kParameterSetMsbcT2.retransmission_effort);
+
+  // When the IO coding format is Linear PCM, the PCM data format is required.
+  params.clear_io_pcm_data_format();
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+
+  // PCM_FLOAT is not a supported PCM format.
+  params.set_io_pcm_data_format(faudio::SampleFormat::PCM_FLOAT);
+  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+
+  // PCM format for non-PCM IO coding formats is kNotApplicable and MSB is 0.
+  params.set_io_coding_format(fbredr::CodingFormat::TRANSPARENT);
+  ASSERT_TRUE(FidlToScoParameters(params).is_ok());
+  out = FidlToScoParameters(params).value();
+  EXPECT_EQ(out.input_pcm_data_format, bt::hci::PcmDataFormat::kNotApplicable);
+  EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 0u);
 }
 
 }  // namespace

@@ -408,6 +408,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci::ReadEncryptionKeySizeParams& params);
 
+  // Called when a HCI_Enhanced_Setup_Synchronous_Connection command is received.
+  void OnEnhancedSetupSynchronousConnectionCommand(
+      const hci::EnhancedSetupSynchronousConnectionCommandParams& params);
+
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(const hci::LEReadRemoteFeaturesCommandParams& params);
 

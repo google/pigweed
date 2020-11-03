@@ -4,6 +4,7 @@
 
 static_library("sco") {
   sources = [
+    "sco.h",
     "sco_connection.cc",
     "sco_connection.h",
     "sco_connection_manager.cc",

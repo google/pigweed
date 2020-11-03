@@ -326,12 +326,36 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
 void ProfileServer::ConnectSco(
     ::fuchsia::bluetooth::PeerId peer_id, bool initiator,
-    fuchsia::bluetooth::bredr::ScoConnectionParameters params,
+    fuchsia::bluetooth::bredr::ScoConnectionParameters fidl_params,
     fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ScoConnectionReceiver> receiver) {
-  bt_log(ERROR, "profile_server", "%s not implemented", __func__);
+  auto client = receiver.Bind();
 
-  auto server = receiver.Bind();
-  server->Error(fuchsia::bluetooth::bredr::ScoErrorCode::FAILURE);
+  auto params_result = fidl_helpers::FidlToScoParameters(fidl_params);
+  if (params_result.is_error()) {
+    client->Error(fidlbredr::ScoErrorCode::INVALID_ARGUMENTS);
+    return;
+  }
+  auto params = params_result.value();
+
+  auto request = fbl::MakeRefCounted<ScoRequest>();
+  client.set_error_handler([request](zx_status_t status) { request->request_handle.reset(); });
+  request->receiver = std::move(client);
+
+  auto callback = [self = weak_ptr_factory_.GetWeakPtr(), request](auto result) {
+    // The connection may complete after this server is destroyed.
+    if (!self) {
+      // Prevent leaking connections.
+      if (result.is_ok()) {
+        result.value()->Deactivate();
+      }
+      return;
+    }
+
+    self->OnScoConnectionResult(request, std::move(result));
+  };
+
+  request->request_handle = adapter()->bredr_connection_manager()->OpenScoConnection(
+      bt::PeerId(peer_id.value), initiator, params, std::move(callback));
 }
 
 void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Channel> channel,
@@ -437,6 +461,32 @@ void ProfileServer::OnServiceFound(
 
   search_it->second.results->ServiceFound(fidl_peer_id, std::move(descriptor_list),
                                           std::move(fidl_attrs), []() {});
+}
+
+void ProfileServer::OnScoConnectionResult(fbl::RefPtr<ScoRequest> request,
+                                          bt::sco::ScoConnectionManager::ConnectionResult result) {
+  auto receiver = std::move(request->receiver);
+
+  if (result.is_error()) {
+    if (!receiver.is_bound()) {
+      return;
+    }
+
+    if (result.error() == bt::HostError::kCanceled) {
+      receiver->Error(fuchsia::bluetooth::bredr::ScoErrorCode::CANCELLED);
+      return;
+    }
+    receiver->Error(fuchsia::bluetooth::bredr::ScoErrorCode::FAILURE);
+    return;
+  }
+
+  fidlbredr::ScoConnection connection;
+  connection.set_socket(sco_socket_factory_.MakeSocketForChannel(result.value()));
+
+  if (!receiver.is_bound()) {
+    return;
+  }
+  receiver->Connected(std::move(connection));
 }
 
 void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {

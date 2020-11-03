@@ -30,6 +30,11 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
  private:
   class AudioDirectionExt;
 
+  struct ScoRequest : public fbl::RefCounted<ScoRequest> {
+    std::optional<bt::gap::BrEdrConnectionManager::ScoRequestHandle> request_handle;
+    fuchsia::bluetooth::bredr::ScoConnectionReceiverPtr receiver;
+  };
+
   // fuchsia::bluetooth::bredr::Profile overrides:
   void Advertise(std::vector<fuchsia::bluetooth::bredr::ServiceDefinition> definitions,
                  fuchsia::bluetooth::bredr::ChannelParameters parameters,
@@ -59,6 +64,10 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Callback for services found on connected device
   void OnServiceFound(uint64_t search_id, bt::PeerId peer_id,
                       const std::map<bt::sdp::AttributeId, bt::sdp::DataElement>& attributes);
+
+  // Callback for SCO connections requests.
+  void OnScoConnectionResult(fbl::RefPtr<ScoRequest>,
+                             bt::sco::ScoConnectionManager::ConnectionResult);
 
   // Callback when clients close their audio direction extension.
   void OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status);
@@ -123,6 +132,9 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   // Creates sockets that bridge L2CAP channels to profile processes.
   bt::socket::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;
+
+  // Creates sockets that bridge SCO connections to profile processes.
+  bt::socket::SocketFactory<bt::sco::ScoConnection> sco_socket_factory_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

@@ -153,6 +153,9 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
 bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
     const fuchsia::bluetooth::bredr::ChannelParameters& fidl);
 
+fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
+    const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
+
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
