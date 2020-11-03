@@ -117,14 +117,15 @@ These steps can be adapted as needed.
      the BUILD.gn's ``pw_tokenizer`` target to the build.
   2. Use the tokenization macros in your code. See `Tokenization`_.
   3. Add the contents of ``pw_tokenizer_linker_sections.ld`` to your project's
-     linker script.
+     linker script. In GN and CMake, this step is done automatically.
   4. Compile your code to produce an ELF file.
   5. Run ``database.py create`` on the ELF file to generate a CSV token
      database. See `Managing token databases`_.
   6. Commit the token database to your repository. See notes in `Database
      management`_.
   7. Integrate a ``database.py add`` command to your build to automatically
-     update the committed token database. See `Update a database`_.
+     update the committed token database. In GN, use the
+     ``pw_tokenizer_database`` template to do this. See `Update a database`_.
   8. Integrate ``detokenize.py`` or the C++ detokenization library with your
      tools to decode tokenized logs. See `Detokenization`_.
 
