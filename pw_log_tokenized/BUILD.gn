@@ -19,7 +19,7 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_includes") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
@@ -42,7 +42,7 @@ config("backend_config") {
 #   -> pw_log -> :log_backend --> pw_tokenizer:global_handler_with_payload
 #
 pw_source_set("pw_log_tokenized") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_includes" ]
   public_deps = [
     "$dir_pw_log:facade",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
@@ -57,6 +57,19 @@ pw_source_set("log_backend") {
   public_deps = [ ":pw_log_tokenized" ]
   public = [ "public_overrides/pw_log_backend/log_backend.h" ]
   deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
+}
+
+# This target provides a backend for pw_tokenizer that encodes tokenized logs as
+# Base64, encodes them into HDLC frames, and writes them over sys_io.
+pw_source_set("base64_over_hdlc") {
+  public_configs = [ ":public_includes" ]
+  public = [ "public/pw_log_tokenized/base64_over_hdlc.h" ]
+  sources = [ "base64_over_hdlc.cc" ]
+  deps = [
+    "$dir_pw_hdlc_lite:encoder",
+    "$dir_pw_tokenizer:base64",
+    "$dir_pw_tokenizer:global_handler_with_payload.facade",
+  ]
 }
 
 pw_test_group("tests") {

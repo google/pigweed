@@ -45,6 +45,18 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "base64_over_hdlc",
+    srcs = ["base64_over_hdlc.cc"],
+    hdrs = ["public/pw_log_tokenized/base64_over_hdlc.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_hdlc_lite:encoder",
+        "//pw_tokenizer:base64",
+        "//pw_tokenizer:global_handler_with_payload.facade",
+    ],
+)
+
 pw_cc_test(
     name = "test",
     srcs = [
