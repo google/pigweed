@@ -58,11 +58,20 @@ class ArduinoCoreNotSupported(Exception):
     """Exception raised when a given core does not support unit testing."""
 
 
+def valid_file_name(arg):
+    file_path = Path(os.path.expandvars(arg)).absolute()
+    if not file_path.is_file():
+        raise argparse.ArgumentTypeError(f"'{arg}' does not exist.")
+    return file_path
+
+
 def parse_args():
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('binary', help='The target test binary to run')
+    parser.add_argument('binary',
+                        help='The target test binary to run',
+                        type=valid_file_name)
     parser.add_argument('--port',
                         help='The name of the serial port to connect to when '
                         'running tests')
@@ -327,7 +336,7 @@ def main():
     ]
 
     # .elf file location args.
-    binary = Path(os.path.expandvars(args.binary)).absolute()
+    binary = args.binary
     build_path = binary.parent.as_posix()
     arduino_builder_args += ["--build-path", build_path]
     build_project_name = binary.name

@@ -75,6 +75,8 @@ class ArduinoBuilder:
                  build_path=None,
                  project_path=None,
                  project_source_path=None,
+                 library_path=None,
+                 library_names=None,
                  build_project_name=None,
                  compiler_path_override=False):
         self.arduino_path = arduino_path
@@ -87,6 +89,9 @@ class ArduinoBuilder:
         self.compiler_path_override = compiler_path_override
         self.variant_includes = ""
         self.build_variant_path = False
+        self.library_names = library_names
+        self.library_path = os.path.realpath(
+            os.path.expanduser(os.path.expandvars(library_path)))
 
         self.compiler_path_override_binaries = []
         if self.compiler_path_override:
@@ -958,9 +963,13 @@ class ArduinoBuilder:
         # - Else lib folder as root include -Ilibraries/libname
         #   (exclude source files in the examples folder in this case)
 
-        library_path = os.path.join(self.project_path, "libraries")
+        library_path = self.library_path
+        folder_patterns = ["*"]
+        if self.library_names:
+            folder_patterns = self.library_names
 
-        library_folders = file_operations.find_files(library_path, ["*"],
+        library_folders = file_operations.find_files(library_path,
+                                                     folder_patterns,
                                                      directories_only=True)
         library_source_root_folders = []
         for lib in library_folders:
@@ -972,6 +981,9 @@ class ArduinoBuilder:
                 library_source_root_folders.append(lib_dir)
 
         return library_source_root_folders
+
+    def library_include_dirs(self):
+        return [Path(lib).as_posix() for lib in self.library_folders()]
 
     def library_includes(self):
         include_args = []
@@ -986,12 +998,14 @@ class ArduinoBuilder:
         for lib_dir in library_folders:
             for file_path in file_operations.find_files(lib_dir, [pattern]):
                 if not file_path.startswith("examples"):
-                    sources.append(
-                        os.path.relpath(os.path.join(lib_dir, file_path)))
+                    sources.append((Path(lib_dir) / file_path).as_posix())
         return sources
 
     def library_c_files(self):
         return self.library_files("**/*.c")
+
+    def library_s_files(self):
+        return self.library_files("**/*.S")
 
     def library_cpp_files(self):
         return self.library_files("**/*.cpp")

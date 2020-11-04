@@ -199,3 +199,61 @@ By default Teensyduino uses the `Teensy Loader Application
 
 - Requires a GUI (or X11 on Linux).
 - Can only flash one board at a time.
+
+GN Target Example
+=================
+
+Here is an example `pw_executable` gn rule that includes some Teensyduino
+libraries.
+
+.. code:: text
+
+  import("//build_overrides/pigweed.gni")
+  import("$dir_pw_arduino_build/arduino.gni")
+  import("$dir_pw_build/target_types.gni")
+
+  _library_args = [
+    "--library-path",
+    rebase_path(
+        "$dir_pw_third_party_arduino/cores/teensy/hardware/teensy/avr/libraries"
+    ),
+    "--library-names",
+    "Time",
+    "Wire",
+  ]
+
+  pw_executable("my_app") {
+    # All Library Sources
+    _library_c_files = exec_script(
+            arduino_builder_script,
+            arduino_show_command_args + _library_args + [
+              "--library-c-files"
+            ],
+            "list lines")
+    _library_cpp_files = exec_script(
+            arduino_builder_script,
+            arduino_show_command_args + _library_args + [
+              "--library-cpp-files"
+            ],
+            "list lines")
+
+    sources = [ "main.cc" ] + _library_c_files + _library_cpp_files
+
+    deps = [
+      "$dir_pw_hex_dump",
+      "$dir_pw_log",
+      "$dir_pw_string",
+    ]
+
+    include_dirs = exec_script(arduino_builder_script,
+                               arduino_show_command_args + _library_args +
+                                   [ "--library-include-dirs" ],
+                               "list lines")
+
+    # Required if using Arduino.h and any Arduino API functions
+    if (dir_pw_third_party_arduino != "") {
+      remove_configs = [ "$dir_pw_build:strict_warnings" ]
+      deps += [ "$dir_pw_third_party_arduino:arduino_core_sources" ]
+    }
+  }
+

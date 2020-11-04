@@ -77,10 +77,9 @@ def list_menu_options_command(args, builder):
 
 
 def show_command_print_string_list(args, string_list: List[str]):
-    join_token = " "
-    if args.delimit_with_newlines:
-        join_token = "\n"
-    print(join_token.join(string_list))
+    if string_list:
+        join_token = "\n" if args.delimit_with_newlines else " "
+        print(join_token.join(string_list))
 
 
 def show_command_print_flag_string(args, flag_string):
@@ -241,11 +240,17 @@ def show_command(args, builder):
         for tool_name in tools:
             print(tool_name)
 
+    elif args.library_include_dirs:
+        show_command_print_string_list(args, builder.library_include_dirs())
+
     elif args.library_includes:
         show_command_print_string_list(args, builder.library_includes())
 
     elif args.library_c_files:
         show_command_print_string_list(args, builder.library_c_files())
+
+    elif args.library_s_files:
+        show_command_print_string_list(args, builder.library_s_files())
 
     elif args.library_cpp_files:
         show_command_print_string_list(args, builder.library_cpp_files())
@@ -294,6 +299,9 @@ def add_common_parser_args(parser, serial_port, build_path, build_project_name,
         "--project-source-path",
         default=project_source_path,
         help="Project directory. Default: '{}'".format(project_source_path))
+    parser.add_argument("--library-path",
+                        default="libraries",
+                        help="Path to Arduino Library directory.")
     parser.add_argument(
         "--build-project-name",
         default=build_project_name,
@@ -341,7 +349,7 @@ def get_default_options():
     return defaults
 
 
-def load_config_file(args, default_options):
+def load_config_file(args):
     """Load a config file and merge with command line options.
 
     Command line takes precedence over values loaded from a config file."""
@@ -352,6 +360,8 @@ def load_config_file(args, default_options):
 
     if not args.config_file:
         return
+
+    default_options = get_default_options()
 
     commandline_options = {
         # Global option
@@ -397,11 +407,8 @@ def load_config_file(args, default_options):
             jfile.write(encoded_json)
 
 
-def main():
-    """Main command line function.
-
-    Parses command line args and dispatches to sub `*_command()` functions.
-    """
+def _parse_args() -> argparse.Namespace:
+    """Setup argparse and parse command line args."""
     def log_level(arg: str) -> int:
         try:
             return getattr(logging, arg.upper())
@@ -481,6 +488,7 @@ def main():
     show_parser.add_argument("--delimit-with-newlines",
                              help="Separate flag output with newlines.",
                              action="store_true")
+    show_parser.add_argument("--library-names", nargs="+", type=str)
 
     output_group = show_parser.add_mutually_exclusive_group(required=True)
     output_group.add_argument("--c-compile", action="store_true")
@@ -513,7 +521,9 @@ def main():
     output_group.add_argument("--upload-tools", action="store_true")
     output_group.add_argument("--upload-command")
     output_group.add_argument("--library-includes", action="store_true")
+    output_group.add_argument("--library-include-dirs", action="store_true")
     output_group.add_argument("--library-c-files", action="store_true")
+    output_group.add_argument("--library-s-files", action="store_true")
     output_group.add_argument("--library-cpp-files", action="store_true")
     output_group.add_argument("--core-c-files", action="store_true")
     output_group.add_argument("--core-s-files", action="store_true")
@@ -543,8 +553,16 @@ def main():
 
     run_parser.set_defaults(func=run_command)
 
+    return parser.parse_args()
+
+
+def main():
+    """Main command line function.
+
+    Dispatches command line invocations to sub `*_command()` functions.
+    """
     # Parse command line arguments.
-    args = parser.parse_args()
+    args = _parse_args()
     _LOG.debug(_pretty_format(args))
 
     log.install(args.loglevel)
@@ -557,7 +575,7 @@ def main():
                 args.compiler_path_override)))
         args.compiler_path_override = compiler_path_override
 
-    load_config_file(args, default_options)
+    load_config_file(args)
 
     if args.subcommand == "install-core":
         args.func(args)
@@ -567,7 +585,7 @@ def main():
                                  args.arduino_package_name)
         builder.load_board_definitions()
         args.func(args, builder)
-    else:
+    else:  # args.subcommand in ["run", "show"]
         check_for_missing_args(args)
         builder = ArduinoBuilder(
             args.arduino_package_path,
@@ -576,6 +594,8 @@ def main():
             build_project_name=args.build_project_name,
             project_path=args.project_path,
             project_source_path=args.project_source_path,
+            library_path=getattr(args, 'library_path', None),
+            library_names=getattr(args, 'library_names', None),
             compiler_path_override=args.compiler_path_override)
         builder.load_board_definitions()
         builder.select_board(args.board, args.menu_options)
