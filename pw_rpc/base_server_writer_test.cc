@@ -70,6 +70,9 @@ class FakeServerWriter : public BaseServerWriter {
                 std::min(buffer.size(), response.size()));
     return ReleasePayloadBuffer(buffer.first(response.size()));
   }
+
+  ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }
+  const Channel::OutputBuffer& output_buffer() { return buffer(); }
 };
 
 TEST(ServerWriter, DefaultConstruct_Closed) {
@@ -129,6 +132,19 @@ TEST(ServerWriter, Close) {
   ASSERT_TRUE(writer.open());
   writer.Finish();
   EXPECT_FALSE(writer.open());
+}
+
+TEST(ServerWriter, Close_ReleasesBuffer) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  FakeServerWriter writer(context.get());
+
+  ASSERT_TRUE(writer.open());
+  auto buffer = writer.PayloadBuffer();
+  buffer[0] = std::byte{0};
+  EXPECT_FALSE(writer.output_buffer().empty());
+  writer.Finish();
+  EXPECT_FALSE(writer.open());
+  EXPECT_TRUE(writer.output_buffer().empty());
 }
 
 TEST(ServerWriter, Open_SendsPacketWithPayload) {

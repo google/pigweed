@@ -50,6 +50,12 @@ void BaseServerWriter::Finish(Status status) {
     return;
   }
 
+  // If the ServerWriter implementer or user forgets to release an acquired
+  // buffer before finishing, release it here.
+  if (!response_.empty()) {
+    ReleasePayloadBuffer();
+  }
+
   Close();
 
   // Send a control packet indicating that the stream (and RPC) has terminated.
@@ -66,7 +72,11 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
     return {};
   }
 
-  response_ = call_.channel().AcquireBuffer();
+  // Only allow having one active buffer at a time.
+  if (response_.empty()) {
+    response_ = call_.channel().AcquireBuffer();
+  }
+
   return response_.payload(ResponsePacket());
 }
 
