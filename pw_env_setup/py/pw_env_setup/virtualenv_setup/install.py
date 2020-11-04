@@ -17,9 +17,23 @@ from __future__ import print_function
 
 import glob
 import os
+import re
 import subprocess
 import sys
 import tempfile
+
+
+class GnTarget(object):  # pylint: disable=useless-object-inheritance
+    def __init__(self, val):
+        self.directory, self.target = val.split('#', 1)
+
+    @property
+    def name(self):
+        """A reasonably stable and unique name for each pair."""
+        result = '{}-{}'.format(
+            os.path.basename(os.path.normpath(self.directory)),
+            hash(self.directory + self.target))
+        return re.sub(r'[:/#_]*', '_', result)
 
 
 def git_stdout(*args, **kwargs):
@@ -93,9 +107,11 @@ def _find_files_by_name(roots, name, allow_nesting=False):
 
 
 def install(
+        project_root,
         venv_path,
         full_envsetup=True,
         requirements=(),
+        gn_targets=(),
         python=sys.executable,
         setup_py_roots=(),
         env=None,
@@ -172,9 +188,33 @@ def install(
         pip_install('--log', os.path.join(venv_path, 'pip-packages.log'),
                     *(find_args + package_args))
 
-    if env:
-        env.set('VIRTUAL_ENV', venv_path)
-        env.prepend('PATH', venv_bin)
-        env.clear('PYTHONHOME')
+    def install_packages(gn_target):
+        build = os.path.join(venv_path, gn_target.name)
+
+        gn_log = 'gn-gen-{}.log'.format(gn_target.name)
+        with open(os.path.join(venv_path, gn_log), 'w') as outs:
+            subprocess.check_call(('gn', 'gen', build),
+                                  cwd=os.path.join(project_root,
+                                                   gn_target.directory),
+                                  stdout=outs,
+                                  stderr=outs)
+
+        ninja_log = 'ninja-{}.log'.format(gn_target.name)
+        with open(os.path.join(venv_path, ninja_log), 'w') as outs:
+            ninja_cmd = ['ninja', '-C', build]
+            ninja_cmd.append(gn_target.target)
+            subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
+
+    if gn_targets:
+        if env:
+            env.set('VIRTUAL_ENV', venv_path)
+            env.prepend('PATH', venv_bin)
+            env.clear('PYTHONHOME')
+            with env():
+                for gn_target in gn_targets:
+                    install_packages(gn_target)
+        else:
+            for gn_target in gn_targets:
+                install_packages(gn_target)
 
     return True

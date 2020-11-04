@@ -26,7 +26,7 @@ import("$dir_pw_build/python_action.gni")
 #     - $name.lint.mypy - Runs mypy.
 #     - $name.lint.pylint - Runs pylint.
 #   - $name.tests - Runs all tests for this package.
-#   - $name.install - Installs the package in a venv. (Not implemented.)
+#   - $name.install - Installs the package in a venv.
 #   - $name.wheel - Builds a Python wheel for the package. (Not implemented.)
 #
 # TODO(pwbug/239): Implement installation and wheel building.

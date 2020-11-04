@@ -65,11 +65,23 @@ def init_virtualenv(
         output_directory: Path,
         setup_py_roots: Iterable[Union[Path, str]] = (),
         requirements: Iterable[Union[Path, str]] = (),
+        gn_targets: Iterable[str] = (),
 ) -> None:
     """Sets up a virtualenv, assumes recent Python 3 is already installed."""
     virtualenv_source = pigweed_root.joinpath('pw_env_setup', 'py',
                                               'pw_env_setup',
                                               'virtualenv_setup')
+
+    # Need to set VIRTUAL_ENV before invoking GN because the GN targets install
+    # directly to the current virtual env.
+    os.environ['VIRTUAL_ENV'] = str(output_directory)
+    os.environ['PATH'] = os.pathsep.join((
+        str(output_directory.joinpath('bin')),
+        os.environ['PATH'],
+    ))
+
+    if not gn_targets:
+        gn_targets = (f'{os.environ["PW_ROOT"]}#:python.install', )
 
     # For speed, don't build the venv if it exists. Use --clean to rebuild.
     if not output_directory.joinpath('pyvenv.cfg').is_file():
@@ -79,10 +91,6 @@ def init_virtualenv(
             f'--venv_path={output_directory}',
             f'--requirements={virtualenv_source / "requirements.txt"}',
             *(f'--requirements={x}' for x in requirements),
-            *(f'--setup-py-root={p}' for p in [pigweed_root, *setup_py_roots]),
+            *(f'--setup-py-root={p}' for p in setup_py_roots),
+            *(f'--gn-target={t}' for t in gn_targets),
         )
-
-    os.environ['PATH'] = os.pathsep.join((
-        str(output_directory.joinpath('bin')),
-        os.environ['PATH'],
-    ))

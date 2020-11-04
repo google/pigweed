@@ -69,6 +69,10 @@ fi
 PW_ROOT="$(dirname "$_BOOTSTRAP_PATH")"
 export PW_ROOT
 
+# Please also set PW_PROJECT_ROOT to YOUR_PROJECT_ROOT.
+PW_PROJECT_ROOT="$PW_ROOT"
+export PW_PROJECT_ROOT
+
 . "$PW_ROOT/pw_env_setup/util.sh"
 
 pw_deactivate

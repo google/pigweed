@@ -28,13 +28,13 @@ environment. The tooling is installed into your workspace, and makes no
 changes to your system. This tooling is designed to be reused by any
 project.
 
+.. _CIPD: https://github.com/luci/luci-go/tree/master/cipd
+
 Users interact with  ``pw_env_setup`` with two commands: ``. bootstrap.sh`` and
 ``. activate.sh``. The bootstrap command always pulls down the current versions
 of CIPD packages and sets up the Python virtual environment. The activate
 command reinitializes a previously configured environment, and if none is found,
 runs bootstrap.
-
-.. _CIPD: https://github.com/luci/luci-go/tree/master/cipd
 
 .. note::
   On Windows the scripts used to set up the environment are ``bootstrap.bat``
@@ -77,17 +77,24 @@ assumes `bootstrap.sh` is at the top level of your repository.
   # below for a more flexible way to handle this.
   PROJ_SETUP_SCRIPT_PATH="$(pwd)/bootstrap.sh"
 
-  export PROJ_ROOT="$(_python_abspath "$(dirname "$PROJ_SETUP_SCRIPT_PATH")")"
+  export PW_PROJECT_ROOT="$(_python_abspath "$(dirname "$PROJ_SETUP_SCRIPT_PATH")")"
 
   # You may wish to check if the user is attempting to execute this script
   # instead of sourcing it. See below for an example of how to handle that
   # situation.
 
-  # Source Pigweed's bootstrap script.
-  # Using '.' instead of 'source' for dash compatibility. Since users don't use
-  # dash directly, using 'source' in documentation so users don't get confused
-  # and try to `./bootstrap.sh`.
-  . "$PROJ_ROOT/third_party/pigweed/$(basename "$PROJ_SETUP_SCRIPT_PATH")"
+  # Source Pigweed's bootstrap utility script.
+  # Using '.' instead of 'source' for POSIX compatibility. Since users don't use
+  # dash directly, using 'source' in most documentation so users don't get
+  # confused and try to `./bootstrap.sh`.
+  . "$PW_PROJECT_ROOT/third_party/pigweed/pw_env_setup/util.sh"
+
+  pw_check_root "$PW_ROOT"
+  _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
+  export _PW_ACTUAL_ENVIRONMENT_ROOT
+  SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
+  pw_bootstrap --args...  # See below for details about args.
+  pw_finalize bootstrap "$SETUP_SH"
 
 User-Friendliness
 -----------------
@@ -150,27 +157,18 @@ process. To check for this add the following.
     case ${0##*/} in sh|dash) _pw_sourced=1;; esac
   fi
 
-  if [ "$_pw_sourced" -eq 0 ]; then
-    _S_NAME=$(basename "$PROJ_SETUP_SCRIPT_PATH" .sh)
-    echo "Error: Attempting to $_S_NAME in a subshell"
-    echo "  Since $_S_NAME.sh modifies your shell's environment variables, it"
-    echo "  must be sourced rather than executed. In particular, "
-    echo "  'bash $_S_NAME.sh' will not work since the modified environment "
-    echo "  will get destroyed at the end of the script. Instead, source the "
-    echo "  script's contents in your shell:"
-    echo ""
-    echo "    \$ source $_S_NAME.sh"
-    exit 1
-  fi
+  _pw_eval_sourced "$_pw_sourced"
 
 Downstream Projects Using Different Packages
 ********************************************
 
 Projects depending on Pigweed but using additional or different packages should
-copy Pigweed's ``bootstrap.sh`` and update the call to ``env_setup.py``. Search
-for "downstream" for other places that may require changes, like setting the
-``PW_ROOT`` environment variable. Relevant arguments to ``env_setup.py`` are
-listed here.
+copy the Pigweed `sample project`'s ``bootstrap.sh`` and update the call to
+``pw_bootstrap``. Search for "downstream" for other places that may require
+changes, like setting the ``PW_ROOT`` and ``PW_PROJECT_ROOT`` environment
+variables. Relevant arguments to ``pw_bootstrap`` are listed here.
+
+.. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/master
 
 ``--use-pigweed-defaults``
   Use Pigweed default values in addition to the other switches.
@@ -182,8 +180,13 @@ listed here.
 ``--virtualenv-requierements path/to/requirements.txt``
   Pip requirements file. Compiled with pip-compile.
 
-``--virtualenv-setup-py-root path/to/directory``
-  Directory in which to recursively search for ``setup.py`` files.
+``--virtualenv-gn-target path/to/directory#package-install-target``
+  Target for installing Python packages, and the directory from which it must be
+  run. Example for Pigweed: ``third_party/pigweed#:python.install`` (assuming
+  Pigweed is included in the project at ``third_party/pigweed``). Downstream
+  projects will need to create targets to install their packages and either
+  choose a subset of Pigweed packages or use
+  ``third_party/pigweed#:python.install`` to install all Pigweed packages.
 
 ``--cargo-package-file path/to/packages.txt``
   Rust cargo packages to install. Lines with package name and version separated
@@ -196,12 +199,12 @@ An example of the changed env_setup.py line is below.
 
 .. code-block:: bash
 
-  "$ROOT/third_party/pigweed/pw_env_setup/py/pw_env_setup/env_setup.py" \
+  pw_bootstrap \
     --shell-file "$SETUP_SH" \
     --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" \
     --use-pigweed-defaults \
-    --cipd-package-file "$ROOT/path/to/cipd.json" \
-    --virtualenv-setup-py-root "$ROOT"
+    --cipd-package-file "$PW_PROJECT_ROOT/path/to/cipd.json" \
+    --virtualenv-setup-py-root "$PW_PROJECT_ROOT"
 
 Projects wanting some of the Pigweed environment packages but not all of them
 should not use ``--use-pigweed-defaults`` and must manually add the references
@@ -216,8 +219,8 @@ are identical to using ``--use-pigweed-defaults``.
   "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
   --virtualenv-requirements
   "$PW_ROOT/pw_env_setup/py/pw_env_setup/virtualenv_setup/requirements.txt"
-  --virtualenv-setup-py-root
-  "$PW_ROOT"
+  --virtualenv-gn-target
+  "$PW_ROOT#:python.install"
   --cargo-package-file
   "$PW_ROOT/pw_env_setup/py/pw_env_setup/cargo_setup/packages.txt"
 

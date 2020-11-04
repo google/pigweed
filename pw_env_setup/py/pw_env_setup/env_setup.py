@@ -152,7 +152,7 @@ def _process_globs(globs):
                     'warning: pattern "{}" matched 0 files'.format(pat))
             files.extend(matches)
 
-    if not files:
+    if globs and not files:
         warnings.append('warning: matched 0 total files')
 
     return files, warnings
@@ -174,8 +174,10 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_setup_py_root,
-                 cargo_package_file, enable_cargo, json_file):
+                 virtualenv_gn_target, cargo_package_file, enable_cargo,
+                 json_file, project_root):
         self._env = environment.Environment()
+        self._project_root = project_root
         self._pw_root = pw_root
         self._setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
                                         'pw_env_setup')
@@ -196,6 +198,7 @@ class EnvSetup(object):
         self._cipd_package_file = []
         self._virtualenv_requirements = []
         self._virtualenv_setup_py_root = []
+        self._virtualenv_gn_targets = []
         self._cargo_package_file = []
         self._enable_cargo = enable_cargo
 
@@ -218,15 +221,19 @@ class EnvSetup(object):
             self._virtualenv_requirements.append(
                 os.path.join(setup_root, 'virtualenv_setup',
                              'requirements.txt'))
-            self._virtualenv_setup_py_root.append(pw_root)
+            self._virtualenv_gn_targets.append(
+                virtualenv_setup.GnTarget(
+                    '{}#:python.install'.format(pw_root)))
             self._cargo_package_file.append(
                 os.path.join(setup_root, 'cargo_setup', 'packages.txt'))
 
         self._cipd_package_file.extend(cipd_package_file)
         self._virtualenv_requirements.extend(virtualenv_requirements)
         self._virtualenv_setup_py_root.extend(virtualenv_setup_py_root)
+        self._virtualenv_gn_targets.extend(virtualenv_gn_target)
         self._cargo_package_file.extend(cargo_package_file)
 
+        self._env.set('PW_PROJECT_ROOT', project_root)
         self._env.set('PW_ROOT', pw_root)
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
@@ -396,14 +403,19 @@ Then use `set +x` to go back to normal.
                 shutil.copyfile(new_python3, python3_copy)
             new_python3 = python3_copy
 
-        if not requirements and not setup_py_roots:
+        if (not requirements and not self._virtualenv_setup_py_root
+                and not self._virtualenv_gn_targets):
             return result(_Result.Status.SKIPPED)
 
-        if not virtualenv_setup.install(venv_path=self._virtualenv_root,
-                                        requirements=requirements,
-                                        setup_py_roots=setup_py_roots,
-                                        python=new_python3,
-                                        env=self._env):
+        if not virtualenv_setup.install(
+                project_root=self._project_root,
+                venv_path=self._virtualenv_root,
+                requirements=requirements,
+                gn_targets=self._virtualenv_gn_targets,
+                setup_py_roots=setup_py_roots,
+                python=new_python3,
+                env=self._env,
+        ):
             return result(_Result.Status.FAILED)
 
         return result(_Result.Status.DONE)
@@ -446,10 +458,19 @@ def parse(argv=None):
                     stderr=outs).strip()
         except subprocess.CalledProcessError:
             pw_root = None
+
     parser.add_argument(
         '--pw-root',
         default=pw_root,
         required=not pw_root,
+    )
+
+    project_root = os.environ.get('PW_PROJECT_ROOT', None) or pw_root
+
+    parser.add_argument(
+        '--project-root',
+        default=project_root,
+        required=not project_root,
     )
 
     parser.add_argument(
@@ -507,6 +528,15 @@ def parse(argv=None):
     )
 
     parser.add_argument(
+        '--virtualenv-gn-target',
+        help=('GN targets that build and install Python packages. Format: '
+              "path/to/gn_root#target"),
+        default=[],
+        action='append',
+        type=virtualenv_setup.GnTarget,
+    )
+
+    parser.add_argument(
         '--virtualenv-root',
         help=('Basename of virtualenv directory. Default: '
               '<install_dir>/pigweed-venv'),
@@ -540,6 +570,7 @@ def parse(argv=None):
         'cipd_package_file',
         'virtualenv_requirements',
         'virtualenv_setup_py_root',
+        'virtualenv_gn_target',
         'cargo_package_file',
     )
 

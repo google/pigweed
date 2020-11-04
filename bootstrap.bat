@@ -71,6 +71,10 @@ set "shell_file=%_PW_ACTUAL_ENVIRONMENT_ROOT%\activate.bat"
 
 set "_pw_start_script=%PW_ROOT%\pw_env_setup\py\pw_env_setup\windows_env_start.py"
 
+if "%PW_PROJECT_ROOT%"=="" (
+   set "PW_PROJECT_ROOT=%PW_ROOT%"
+)
+
 :: If PW_SKIP_BOOTSTRAP is set, only run the activation stage instead of the
 :: complete env_setup.
 if "%PW_SKIP_BOOTSTRAP%" == "" (

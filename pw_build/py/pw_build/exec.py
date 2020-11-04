@@ -22,7 +22,11 @@ import subprocess
 import sys
 from typing import Dict, Optional
 
-import pw_cli.log
+# Need to be able to run without pw_cli installed in the virtualenv.
+try:
+    import pw_cli.log
+except ImportError:
+    pass
 
 _LOG = logging.getLogger(__name__)
 
@@ -157,5 +161,7 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    pw_cli.log.install()
+    # If pw_cli is not yet installed in the virtualenv just skip it.
+    if 'pw_cli' in globals():
+        pw_cli.log.install()
     sys.exit(main())
