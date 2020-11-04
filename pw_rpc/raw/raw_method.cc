@@ -21,6 +21,12 @@
 
 namespace pw::rpc {
 
+RawServerWriter::~RawServerWriter() {
+  if (!buffer().empty()) {
+    ReleasePayloadBuffer();
+  }
+}
+
 Status RawServerWriter::Write(ConstByteSpan response) {
   if (buffer().Contains(response)) {
     return ReleasePayloadBuffer(response);
@@ -29,7 +35,7 @@ Status RawServerWriter::Write(ConstByteSpan response) {
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (response.size() > buffer.size()) {
-    ReleasePayloadBuffer({});
+    ReleasePayloadBuffer();
     return Status::OutOfRange();
   }
 

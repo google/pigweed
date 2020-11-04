@@ -299,7 +299,7 @@ Status ServerWriter<T>::Write(const T& response) {
     return ReleasePayloadBuffer(buffer.first(result.size()));
   }
 
-  ReleasePayloadBuffer({});
+  ReleasePayloadBuffer();
   return Status::Internal();
 }
 

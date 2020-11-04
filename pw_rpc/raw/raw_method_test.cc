@@ -174,5 +174,24 @@ TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
   EXPECT_EQ(last_writer.Write(data), Status::OutOfRange());
 }
 
+TEST(RawServerWriter,
+     Destructor_ReleasesAcquiredBufferWithoutSendingAndCloses) {
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService> context(method);
+
+  method.Invoke(context.get(), context.packet({}));
+
+  {
+    RawServerWriter writer = std::move(last_writer);
+    auto buffer = writer.PayloadBuffer();
+    buffer[0] = std::byte{'!'};
+    // Don't release the buffer.
+  }
+
+  auto output = context.output();
+  EXPECT_EQ(output.packet_count(), 1u);
+  EXPECT_EQ(output.sent_packet().type(), PacketType::SERVER_STREAM_END);
+}
+
 }  // namespace
 }  // namespace pw::rpc::internal

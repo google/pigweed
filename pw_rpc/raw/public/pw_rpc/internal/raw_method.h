@@ -24,6 +24,10 @@ namespace pw::rpc {
 class RawServerWriter : public internal::BaseServerWriter {
  public:
   RawServerWriter() = default;
+  RawServerWriter(RawServerWriter&&) = default;
+  RawServerWriter& operator=(RawServerWriter&&) = default;
+
+  ~RawServerWriter();
 
   // Returns a buffer in which a response payload can be built.
   ByteSpan PayloadBuffer() { return AcquirePayloadBuffer(); }

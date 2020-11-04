@@ -78,6 +78,15 @@ Status BaseServerWriter::ReleasePayloadBuffer(
   return call_.channel().Send(response_, ResponsePacket(payload));
 }
 
+Status BaseServerWriter::ReleasePayloadBuffer() {
+  if (!open()) {
+    return Status::FailedPrecondition();
+  }
+
+  call_.channel().Release(response_);
+  return Status::Ok();
+}
+
 void BaseServerWriter::Close() {
   if (!open()) {
     return;

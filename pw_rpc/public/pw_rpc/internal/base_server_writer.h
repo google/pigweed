@@ -70,7 +70,11 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   std::span<std::byte> AcquirePayloadBuffer();
 
+  // Releases the buffer, sending a packet with the specified payload.
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
+
+  // Releases the buffer without sending a packet.
+  Status ReleasePayloadBuffer();
 
  private:
   friend class rpc::Server;

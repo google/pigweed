@@ -56,6 +56,8 @@ class Channel : public rpc::Channel {
              buffer.data() + buffer.size() <= buffer_.data() + buffer_.size();
     }
 
+    bool empty() const { return buffer_.empty(); }
+
    private:
     friend class Channel;
 
@@ -76,6 +78,11 @@ class Channel : public rpc::Channel {
   }
 
   Status Send(OutputBuffer& output, const internal::Packet& packet);
+
+  void Release(OutputBuffer& buffer) {
+    buffer.buffer_ = {};
+    output().SendAndReleaseBuffer(0);
+  }
 };
 
 }  // namespace pw::rpc::internal
