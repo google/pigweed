@@ -33,7 +33,7 @@ class GnTarget(object):  # pylint: disable=useless-object-inheritance
         result = '{}-{}'.format(
             os.path.basename(os.path.normpath(self.directory)),
             hash(self.directory + self.target))
-        return re.sub(r'[:/#_]*', '_', result)
+        return re.sub(r'[:/#_]+', '_', result)
 
 
 def git_stdout(*args, **kwargs):
