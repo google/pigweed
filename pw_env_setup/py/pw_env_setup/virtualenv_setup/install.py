@@ -127,6 +127,16 @@ def install(
         print('=' * 60, file=sys.stderr)
         return False
 
+    # The bin/ directory is called Scripts/ on Windows. Don't ask.
+    venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
+
+    # Delete activation scripts. Typically they're created read-only and venv
+    # will complain when trying to write over them fails.
+    if os.path.isdir(venv_bin):
+        for entry in os.listdir(venv_bin):
+            if entry.lower().startswith('activate'):
+                os.unlink(os.path.join(venv_bin, entry))
+
     pyvenv_cfg = os.path.join(venv_path, 'pyvenv.cfg')
     if full_envsetup or not os.path.exists(pyvenv_cfg):
         # On Mac sometimes the CIPD Python has __PYVENV_LAUNCHER__ set to
@@ -137,11 +147,9 @@ def install(
         if '__PYVENV_LAUNCHER__' in envcopy:
             del envcopy['__PYVENV_LAUNCHER__']
 
-        cmd = (python, '-m', 'venv', '--clear', venv_path)
+        cmd = (python, '-m', 'venv', '--upgrade', venv_path)
         _check_call(cmd, env=envcopy)
 
-    # The bin/ directory is called Scripts/ on Windows. Don't ask.
-    venv_bin = os.path.join(venv_path, 'Scripts' if os.name == 'nt' else 'bin')
     venv_python = os.path.join(venv_bin, 'python')
 
     pw_root = os.environ.get('PW_ROOT')
