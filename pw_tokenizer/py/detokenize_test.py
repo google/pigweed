@@ -492,11 +492,17 @@ class DetokenizeBase64(unittest.TestCase):
 
     TEST_CASES = (
         (b'', b''),
+        (b'nothing here', b'nothing here'),
         (JELLO, b'Jello, world!'),
+        (JELLO + b'a', b'Jello, world!a'),
+        (JELLO + b'abc', b'Jello, world!abc'),
+        (JELLO + b'abc=', b'Jello, world!abc='),
+        (b'$a' + JELLO + b'a', b'$aJello, world!a'),
         (b'Hello ' + JELLO + b'?', b'Hello Jello, world!?'),
         (b'$' + JELLO, b'$Jello, world!'),
         (JELLO + JELLO, b'Jello, world!Jello, world!'),
         (JELLO + b'$' + JELLO, b'Jello, world!$Jello, world!'),
+        (JELLO + b'$a' + JELLO + b'bcd', b'Jello, world!$aJello, world!bcd'),
         (b'$3141', b'$3141'),
         (JELLO + b'$3141', b'Jello, world!$3141'),
         (RECURSION, b'The secret message is "Jello, world!"'),
