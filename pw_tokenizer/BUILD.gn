@@ -234,11 +234,19 @@ pw_test("decode_test") {
     ":decoder",
     "$dir_pw_varint",
   ]
+
+  # TODO(tonymd): This fails on Teensyduino 1.54 beta core. It may be related to
+  # linking in stl functions. Will debug when 1.54 is released.
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "arduino_executable"
 }
 
 pw_test("detokenize_test") {
   sources = [ "detokenize_test.cc" ]
   deps = [ ":decoder" ]
+
+  # TODO(tonymd): This fails on Teensyduino 1.54 beta core. It may be related to
+  # linking in stl functions. Will debug when 1.54 is released.
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "arduino_executable"
 }
 
 pw_test("global_handlers_test") {

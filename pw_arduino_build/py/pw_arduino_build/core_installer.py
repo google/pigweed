@@ -46,9 +46,9 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
                 "sha256": "1b20d0ec850a2a63488009518725f058668bb6cb48c321f82dcf47dc4299b4ad",
             },
             "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linux64",
+                "url": "https://www.pjrc.com/teensy/td_154-beta4/TeensyduinoInstall.linux64",
                 "file_name": "TeensyduinoInstall.linux64",
-                "sha256": "2e6cd99a757bc80593ea3de006de4cc934bcb0a6ec74cad8ec327f0289d40f0b",
+                "sha256": "76c58babb7253b65a33d73d53f3f239c2e2ccf8602c771d69300a67d82723730",
             },
         },
         # TODO(tonymd): Handle 32-bit Linux Install?
@@ -92,9 +92,9 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
         },
         "Darwin": {
             "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/Teensyduino_MacOS_Catalina.zip",
+                "url": "https://www.pjrc.com/teensy/td_154-beta4/Teensyduino_MacOS_Catalina.zip",
                 "file_name": "Teensyduino_MacOS_Catalina.zip",
-                "sha256": "401ef42c6e83e621cdda20191a4ef9b7db8a214bede5a94a9e26b45f79c64fe2",
+                "sha256": "7ca579c12d8f3a8949dbeec812b8dbef13242d575baa707dc7f02bc452c1f4a1",
             },
         },
         "Windows": {
@@ -104,9 +104,9 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
                 "sha256": "78d3e96827b9e9b31b43e516e601c38d670d29f12483e88cbf6d91a0f89ef524",
             },
             "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.exe",
+                "url": "https://www.pjrc.com/teensy/td_154-beta4/TeensyduinoInstall.exe",
                 "file_name": "TeensyduinoInstall.exe",
-                "sha256": "88f58681e5c4772c54e462bc88280320e4276e5b316dcab592fe38d96db990a1",
+                "sha256": "f7bcc2ed45e10a5d7b003bedabcde12fb1b8cf7ef9081e2503cd668569642a90",
             },
         }
     },

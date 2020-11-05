@@ -79,8 +79,8 @@ def verify_file_checksum(file_path,
             f"{downloaded_checksum} {os.path.basename(file_path)}\n"
             f"{expected_checksum} (expected)")
 
-    _LOG.info("  %s:", sum_function.__name__)
-    _LOG.info("  %s %s", downloaded_checksum, os.path.basename(file_path))
+    _LOG.debug("  %s:", sum_function.__name__)
+    _LOG.debug("  %s %s", downloaded_checksum, os.path.basename(file_path))
     return True
 
 
@@ -95,10 +95,12 @@ def download_to_cache(url: str,
 
     if not os.path.exists(downloaded_file):
         _LOG.info("Downloading: %s", url)
+        _LOG.info("Please wait...")
         urllib.request.urlretrieve(url, filename=downloaded_file)
 
     if os.path.exists(downloaded_file):
-        _LOG.info("Downloaded: %s", downloaded_file)
+        _LOG.info("Downloaded: %s",
+                  Path(downloaded_file).relative_to(os.getcwd()))
         if expected_sha256sum:
             verify_file_checksum(downloaded_file,
                                  expected_sha256sum,
@@ -146,7 +148,7 @@ def extract_archive(archive_file: str,
                                     "." + os.path.basename(archive_file))
     os.makedirs(temp_extract_dir, exist_ok=True)
 
-    _LOG.info("Extracting: %s", archive_file)
+    _LOG.info("Extracting: %s", Path(archive_file).relative_to(os.getcwd()))
     if zipfile.is_zipfile(archive_file):
         extract_zipfile(archive_file, temp_extract_dir)
     elif tarfile.is_tarfile(archive_file):
@@ -155,7 +157,7 @@ def extract_archive(archive_file: str,
         _LOG.error("Unknown archive format: %s", archive_file)
         return sys.exit(1)
 
-    _LOG.info("Installing into: %s", dest_dir)
+    _LOG.info("Installing into: %s", Path(dest_dir).relative_to(os.getcwd()))
     path_to_extracted_files = temp_extract_dir
 
     extracted_top_level_files = os.listdir(temp_extract_dir)
