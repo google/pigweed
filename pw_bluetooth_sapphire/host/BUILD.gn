@@ -38,9 +38,6 @@ source_set("fidl_helpers") {
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//src/connectivity/bluetooth/fidl:host",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("sources") {
@@ -100,9 +97,6 @@ source_set("sources") {
     "//zircon/public/lib/zx",
     "//zircon/system/ulib/trace:trace-driver",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 group("stack") {

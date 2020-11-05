@@ -11,6 +11,7 @@
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
+#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -812,6 +813,27 @@ bt::gatt::ReliableMode ReliableModeFromFidl(const fgatt::WriteOptions& write_opt
              : bt::gatt::ReliableMode::kDisabled;
 }
 
+// TODO(fxbug.dev/63438): The 64 bit `fidl_gatt_id` can overflow the 16 bits of a bt:att::Handle
+// that underlies CharacteristicHandles when directly casted. Fix this.
+bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_id) {
+  if (fidl_gatt_id & 0xFFFF) {
+    bt_log(
+        ERROR, "gatt",
+        "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` to 16-bit Characteristic Handle");
+  }
+  return bt::gatt::CharacteristicHandle(static_cast<bt::att::Handle>(fidl_gatt_id));
+}
+
+// TODO(fxbug.dev/63438): The 64 bit `fidl_gatt_id` can overflow the 16 bits of a bt:att::Handle
+// that underlies DescriptorHandles when directly casted. Fix this.
+bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id) {
+  if (fidl_gatt_id & 0xFFFF) {
+    bt_log(ERROR, "gatt",
+           "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` to 16-bit Descriptor Handle");
+  }
+  return bt::gatt::DescriptorHandle(static_cast<bt::att::Handle>(fidl_gatt_id));
+}
+
 fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
     const fuchsia::bluetooth::bredr::ServiceDefinition& definition) {
   bt::sdp::ServiceRecord rec;
@@ -839,7 +861,12 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
   }
 
   if (definition.has_additional_protocol_descriptor_lists()) {
-    size_t protocol_list_id = 1;
+    // It's safe to iterate through this list with a ProtocolListId as ProtocolListId = uint8_t,
+    // and std::numeric_limits<uint8_t>::max() == 255 == the MAX_SEQUENCE_LENGTH vector limit from
+    // fuchsia.bluetooth.bredr/ServiceDefinition.additional_protocol_descriptor_lists.
+    ZX_ASSERT(definition.additional_protocol_descriptor_lists().size() <=
+              std::numeric_limits<bt::sdp::ServiceRecord::ProtocolListId>::max());
+    bt::sdp::ServiceRecord::ProtocolListId protocol_list_id = 1;
     for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {
       if (!AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list)) {
         bt_log(ERROR, "profile_server", "Failed to add additional protocol descriptor list");

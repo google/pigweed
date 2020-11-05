@@ -106,6 +106,16 @@ bt_gatt_status_t AttStatusToDdkStatus(const bt::att::Status& status) {
   return ddk_status;
 }
 
+// TODO(fxbug.dev/63450): The 64 bit `bt_gatt_id_t` can overflow the 16 bits of a bt:att::Handle
+// that underlies CharacteristicHandle when directly casted. Fix this.
+bt::gatt::CharacteristicHandle CharacteristicHandleFromBanjo(bt_gatt_id_t banjo_id) {
+  if (banjo_id & 0xFFFF) {
+    bt_log(ERROR, "bt-host",
+           "bt-gatt-svc: Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` to 16-bit "
+           "Characteristic Handle");
+  }
+  return bt::gatt::CharacteristicHandle(static_cast<bt::att::Handle>(banjo_id));
+}
 }  // namespace
 
 GattRemoteServiceDevice::GattRemoteServiceDevice(zx_device_t* parent, bt::gatt::PeerId peer_id,
@@ -296,7 +306,9 @@ void GattRemoteServiceDevice::BtGattSvcReadCharacteristic(
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadCharacteristic(CharacteristicHandle(id), std::move(read_callback),
+
+  // TODO(fxbug.dev/63450): Fix CharacteristicHandleFromBanjo to not cast a uint64_t into uint16_t.
+  service_->ReadCharacteristic(CharacteristicHandleFromBanjo(id), std::move(read_callback),
                                loop_.dispatcher());
 
   return;
@@ -309,7 +321,9 @@ void GattRemoteServiceDevice::BtGattSvcReadLongCharacteristic(
     bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
     read_cb(cookie, &ddk_status, id, buff.data(), buff.size());
   };
-  service_->ReadLongCharacteristic(CharacteristicHandle(id), offset, max_bytes,
+
+  // TODO(fxbug.dev/63450): Fix CharacteristicHandleFromBanjo to not cast a uint64_t into uint16_t.
+  service_->ReadLongCharacteristic(CharacteristicHandleFromBanjo(id), offset, max_bytes,
                                    std::move(read_callback), loop_.dispatcher());
 
   return;
@@ -320,16 +334,19 @@ void GattRemoteServiceDevice::BtGattSvcWriteCharacteristic(
     bt_gatt_svc_write_characteristic_callback write_cb, void* cookie) {
   auto* buf = static_cast<const uint8_t*>(buff);
   std::vector<uint8_t> data(buf, buf + len);
+  // TODO(fxbug.dev/63450): Fix CharacteristicHandleFromBanjo to not cast a uint64_t into uint16_t.
+  auto handle = CharacteristicHandleFromBanjo(id);
+
   if (write_cb == nullptr) {
-    service_->WriteCharacteristicWithoutResponse(CharacteristicHandle(id), std::move(data));
+    service_->WriteCharacteristicWithoutResponse(handle, std::move(data));
   } else {
     auto status_callback = [cookie, id, write_cb](bt::att::Status status) {
       bt_gatt_status_t ddk_status = AttStatusToDdkStatus(status);
       write_cb(cookie, &ddk_status, id);
     };
 
-    service_->WriteCharacteristic(CharacteristicHandle(id), std::move(data),
-                                  std::move(status_callback), loop_.dispatcher());
+    service_->WriteCharacteristic(handle, std::move(data), std::move(status_callback),
+                                  loop_.dispatcher());
   }
   return;
 }
@@ -348,7 +365,8 @@ void GattRemoteServiceDevice::BtGattSvcEnableNotifications(
     status_cb(cookie, &ddk_status, id);
   };
 
-  service_->EnableNotifications(CharacteristicHandle(id), notif_callback,
+  // TODO(fxbug.dev/63450): Fix CharacteristicHandleFromBanjo to not cast a uint64_t into uint16_t.
+  service_->EnableNotifications(CharacteristicHandleFromBanjo(id), notif_callback,
                                 std::move(status_callback), loop_.dispatcher());
 
   return;

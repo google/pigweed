@@ -33,7 +33,7 @@ namespace {
 fble::PeripheralError FidlErrorFromStatus(bt::hci::Status status) {
   switch (status.error()) {
     case bt::HostError::kNoError:
-      ZX_ASSERT("FidlErrorFromStatus called on success status");
+      ZX_PANIC("FidlErrorFromStatus called on success status");
       break;
     case bt::HostError::kNotSupported:
       return fble::PeripheralError::NOT_SUPPORTED;

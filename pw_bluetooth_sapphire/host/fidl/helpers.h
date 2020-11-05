@@ -145,6 +145,10 @@ fuchsia::bluetooth::le::Peer PeerToFidlLe(const bt::gap::Peer& peer);
 // Functions that convert FIDL GATT types to library objects.
 bt::gatt::ReliableMode ReliableModeFromFidl(
     const fuchsia::bluetooth::gatt::WriteOptions& write_options);
+// TODO(fxbug.dev/63438): The 64 bit `fidl_gatt_id` can overflow the 16 bits of a bt:att::Handle
+// that underlies Characteristic/DescriptorHandles when directly casted. Fix this.
+bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_id);
+bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id);
 
 // Constructs a sdp::ServiceRecord from a FIDL ServiceDefinition |definition|
 fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefinitionToServiceRecord(
