@@ -147,8 +147,10 @@ _pw_hello() {
 }
 
 pw_deactivate() {
-  # Assume PW_ROOT has already been set and we need to preserve its value.
+  # Assume PW_ROOT and PW_PROJECT_ROOT has already been set and we need to
+  # preserve their values.
   _NEW_PW_ROOT="$PW_ROOT"
+  _NEW_PW_PROJECT_ROOT="$PW_PROJECT_ROOT"
 
   # Find deactivate script and run it.
   _PW_DEACTIVATE_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/deactivate.sh"
@@ -162,9 +164,11 @@ pw_deactivate() {
     _pw_deactivate &> /dev/null
   fi
 
-  # Restore PW_ROOT.
+  # Restore.
   PW_ROOT="$_NEW_PW_ROOT"
   export PW_ROOT
+  PW_PROJECT_ROOT="$_NEW_PW_PROJECT_ROOT"
+  export PW_PROJECT_ROOT
 }
 
 # The next three functions use the following variables.
