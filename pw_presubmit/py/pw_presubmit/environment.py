@@ -83,14 +83,12 @@ def init_virtualenv(
     if not gn_targets:
         gn_targets = (f'{os.environ["PW_ROOT"]}#:python.install', )
 
-    # For speed, don't build the venv if it exists. Use --clean to rebuild.
-    if not output_directory.joinpath('pyvenv.cfg').is_file():
-        call(
-            'python3',
-            virtualenv_source,
-            f'--venv_path={output_directory}',
-            f'--requirements={virtualenv_source / "requirements.txt"}',
-            *(f'--requirements={x}' for x in requirements),
-            *(f'--setup-py-root={p}' for p in setup_py_roots),
-            *(f'--gn-target={t}' for t in gn_targets),
-        )
+    call(
+        'python3',
+        virtualenv_source,
+        f'--venv_path={output_directory}',
+        f'--requirements={virtualenv_source / "requirements.txt"}',
+        *(f'--requirements={x}' for x in requirements),
+        *(f'--setup-py-root={p}' for p in setup_py_roots),
+        *(f'--gn-target={t}' for t in gn_targets),
+    )
