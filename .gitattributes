@@ -1,0 +1,2 @@
+# Force batch scripts to use CRLF.
+*.bat text eol=crlf
