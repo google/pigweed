@@ -90,15 +90,21 @@ namespace pw::sys_io {
 // see if a byte is ready yet.
 Status ReadByte(std::byte* dest) {
   while (true) {
-    if (uart0.receive_error) {
-      // Writing anything to this register clears all errors.
-      uart0.receive_error = 0xff;
-    }
-    if (uart0.status_flags & kRxFifoFullMask) {
-      *dest = static_cast<std::byte>(uart0.data_register);
-      break;
+    if (TryReadByte(dest).ok()) {
+      return Status::Ok();
     }
   }
+}
+
+Status TryReadByte(std::byte* dest) {
+  if (uart0.receive_error) {
+    // Writing anything to this register clears all errors.
+    uart0.receive_error = 0xff;
+  }
+  if (!(uart0.status_flags & kRxFifoFullMask)) {
+    return Status::Unavailable();
+  }
+  *dest = static_cast<std::byte>(uart0.data_register);
   return Status::Ok();
 }
 

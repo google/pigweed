@@ -170,11 +170,20 @@ namespace pw::sys_io {
 // see if a byte is ready yet.
 Status ReadByte(std::byte* dest) {
   while (true) {
-    if (usart1.status & kReadDataReady) {
-      *dest = static_cast<std::byte>(usart1.data_register);
-      break;
+    if (TryReadByte(dest).ok()) {
+      return Status::Ok();
     }
   }
+}
+
+// Wait for a byte to read on USART1. This blocks until a byte is read. This is
+// extremely inefficient as it requires the target to burn CPU cycles polling to
+// see if a byte is ready yet.
+Status TryReadByte(std::byte* dest) {
+  if (!(usart1.status & kReadDataReady)) {
+    return Status::Unavailable();
+  }
+  *dest = static_cast<std::byte>(usart1.data_register);
   return Status::Ok();
 }
 

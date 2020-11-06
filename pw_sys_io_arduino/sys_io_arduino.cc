@@ -35,11 +35,17 @@ namespace pw::sys_io {
 
 Status ReadByte(std::byte* dest) {
   while (true) {
-    if (Serial.available()) {
-      *dest = static_cast<std::byte>(Serial.read());
-      break;
+    if (TryReadByte(dest).ok()) {
+      return Status::Ok();
     }
   }
+}
+
+Status TryReadByte(std::byte* dest) {
+  if (!Serial.available()) {
+    return Status::Unavailable();
+  }
+  *dest = static_cast<std::byte>(Serial.read());
   return Status::Ok();
 }
 

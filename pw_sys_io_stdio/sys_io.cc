@@ -31,6 +31,11 @@ Status ReadByte(std::byte* dest) {
   return Status::Ok();
 }
 
+Status TryReadByte(std::byte*) {
+  // TryReadByte() is not (yet) supported on hosts.
+  return Status::Unimplemented();
+}
+
 Status WriteByte(std::byte b) {
   if (std::putchar(static_cast<char>(b)) == EOF) {
     return Status::Internal();
