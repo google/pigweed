@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
+#include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
 
@@ -178,6 +179,9 @@ class ChannelManager final {
                                         hci::LEPreferredConnectionParameters params,
                                         ConnectionParameterUpdateRequestCallback request_cb);
 
+  // Attach ChannelManager's inspect nodes as children of |parent|.
+  void AttachInspect(inspect::Node& parent);
+
   // Returns a pointer to the internal LogicalLink with the corresponding link |handle|, or nullptr
   // if none exists.
   // NOTE: This is intended ONLY for unit tests. Clients should use the other public methods to
@@ -217,6 +221,7 @@ class ChannelManager final {
 
   using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
   LinkMap ll_map_;
+  inspect::Node ll_node_;
 
   // Stores packets received on a connection handle before a link for it has
   // been created.
@@ -226,8 +231,16 @@ class ChannelManager final {
 
   // Store information required to create and forward channels for locally-
   // hosted services.
-  using ServiceMap = std::unordered_map<PSM, ServiceInfo>;
+  struct ServiceData {
+    void AttachInspect(inspect::Node& parent);
+    ServiceInfo info;
+    PSM psm;
+    inspect::Node node;
+    inspect::StringProperty psm_property;
+  };
+  using ServiceMap = std::unordered_map<PSM, ServiceData>;
   ServiceMap services_;
+  inspect::Node services_node_;
 
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;

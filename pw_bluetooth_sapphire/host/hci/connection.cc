@@ -93,22 +93,6 @@ class ConnectionImpl final : public Connection {
 
 namespace {
 
-std::string LinkTypeToString(Connection::LinkType type) {
-  switch (type) {
-    case Connection::LinkType::kACL:
-      return "ACL";
-    case Connection::LinkType::kSCO:
-      return "SCO";
-    case Connection::LinkType::kESCO:
-      return "ESCO";
-    case Connection::LinkType::kLE:
-      return "LE";
-  }
-
-  ZX_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
-  return "(invalid)";
-}
-
 template <
     CommandChannel::EventCallbackResult (ConnectionImpl::*EventHandlerMethod)(const EventPacket&)>
 CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn) {
@@ -123,6 +107,22 @@ CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn
 }  // namespace
 
 // ====== Connection member methods  =====
+
+std::string Connection::LinkTypeToString(Connection::LinkType type) {
+  switch (type) {
+    case Connection::LinkType::kACL:
+      return "ACL";
+    case Connection::LinkType::kSCO:
+      return "SCO";
+    case Connection::LinkType::kESCO:
+      return "ESCO";
+    case Connection::LinkType::kLE:
+      return "LE";
+  }
+
+  ZX_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
+  return "(invalid)";
+}
 
 // static
 std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role role,

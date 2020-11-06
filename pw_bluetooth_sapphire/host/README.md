@@ -26,6 +26,19 @@ adapter:
     le_max_data_length
     lmp_features
     le_features
+    l2cap:
+        logical_links:
+          logical_link_0x0:
+            handle
+            link_type
+            channels:
+              channel_0x0:
+                local_id
+                remote_id
+                psm
+        services:
+          service_0x0:
+            psm
     peer_cache:
         peer_0x0:
             peer_id
@@ -44,7 +57,6 @@ adapter:
                 connection_state
                 bonded
                 features
-    l2cap:
     sdp_server:
         record_0x2:
             record

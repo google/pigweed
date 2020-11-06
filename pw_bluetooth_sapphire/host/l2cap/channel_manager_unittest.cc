@@ -4,6 +4,8 @@
 
 #include "channel_manager.h"
 
+#include <lib/inspect/testing/cpp/inspect.h>
+
 #include <memory>
 #include <type_traits>
 
@@ -22,6 +24,7 @@ namespace bt::l2cap {
 namespace {
 
 using TestingBase = ::gtest::TestLoopFixture;
+using namespace inspect::testing;
 
 constexpr hci::ConnectionHandle kTestHandle1 = 0x0001;
 constexpr hci::ConnectionHandle kTestHandle2 = 0x0002;
@@ -2755,6 +2758,56 @@ TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored)
   // Send response to normal request.
   requests[2].second(fit::ok());
   EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+}
+
+TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {
+  inspect::Inspector inspector;
+  chanmgr()->AttachInspect(inspector.GetRoot());
+
+  chanmgr()->RegisterService(kSDP, kChannelParams, [](auto) {});
+  auto services_matcher =
+      AllOf(NodeMatches(NameMatches("services")),
+            ChildrenMatch(ElementsAre(NodeMatches(AllOf(
+                NameMatches("service_0x0"), PropertyList(ElementsAre(StringIs("psm", "SDP"))))))));
+
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+
+  const auto conn_req_id = NextCommandId();
+  const auto config_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+  fbl::RefPtr<Channel> dynamic_channel;
+  auto channel_cb = [&dynamic_channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+    dynamic_channel = std::move(activated_chan);
+  };
+  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
+  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+
+  auto signaling_chan_matcher =
+      NodeMatches(AllOf(NameMatches("channel_0x2"),
+                        PropertyList(UnorderedElementsAre(StringIs("local_id", "0x0001"),
+                                                          StringIs("remote_id", "0x0001")))));
+  auto dyn_chan_matcher = NodeMatches(AllOf(
+      NameMatches("channel_0x3"),
+      PropertyList(UnorderedElementsAre(StringIs("local_id", "0x0040"),
+                                        StringIs("remote_id", "0x9042"), StringIs("psm", "SDP")))));
+  auto channels_matcher =
+      AllOf(NodeMatches(NameMatches("channels")),
+            ChildrenMatch(UnorderedElementsAre(signaling_chan_matcher, dyn_chan_matcher)));
+  auto link_matcher = AllOf(
+      NodeMatches(NameMatches("logical_links")),
+      ChildrenMatch(ElementsAre(AllOf(
+          NodeMatches(AllOf(NameMatches("logical_link_0x1"),
+                            PropertyList(UnorderedElementsAre(StringIs("handle", "0x0001"),
+                                                              StringIs("link_type", "ACL"))))),
+          ChildrenMatch(ElementsAre(channels_matcher))))));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
+  EXPECT_THAT(hierarchy, ChildrenMatch(UnorderedElementsAre(link_matcher, services_matcher)));
 }
 
 }  // namespace

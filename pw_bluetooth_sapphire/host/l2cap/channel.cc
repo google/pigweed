@@ -37,6 +37,14 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
 
 namespace internal {
 
+namespace {
+
+constexpr const char* kInspectLocalIdPropertyName = "local_id";
+constexpr const char* kInspectRemoteIdPropertyName = "remote_id";
+constexpr const char* kInspectPsmPropertyName = "psm";
+
+}  // namespace
+
 fbl::RefPtr<ChannelImpl> ChannelImpl::CreateFixedChannel(ChannelId id,
                                                          fxl::WeakPtr<internal::LogicalLink> link) {
   // A fixed channel's endpoints have the same local and remote identifiers.
@@ -201,6 +209,18 @@ void ChannelImpl::RequestAclPriority(AclPriority priority,
                               }
                               cb(result);
                             });
+}
+
+void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_.node = parent.CreateChild(name);
+  if (info_.psm) {
+    inspect_.psm =
+        inspect_.node.CreateString(kInspectPsmPropertyName, PsmToString(info_.psm.value()));
+  }
+  inspect_.local_id =
+      inspect_.node.CreateString(kInspectLocalIdPropertyName, fxl::StringPrintf("%#.4x", id()));
+  inspect_.remote_id = inspect_.node.CreateString(kInspectRemoteIdPropertyName,
+                                                  fxl::StringPrintf("%#.4x", remote_id()));
 }
 
 void ChannelImpl::OnClosed() {

@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 #include <zircon/compiler.h>
 
@@ -180,6 +181,9 @@ class Channel : public fbl::RefCounted<Channel> {
   virtual void RequestAclPriority(AclPriority priority,
                                   fit::callback<void(fit::result<>)> callback) = 0;
 
+  // Attach this channel as a child node of |parent| with the given |name|.
+  virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
+
   // The ACL priority that was both requested and accepted by the controller.
   AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
@@ -257,6 +261,7 @@ class ChannelImpl : public Channel {
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(AclPriority priority,
                           fit::callback<void(fit::result<>)> callback) override;
+  void AttachInspect(inspect::Node& parent, std::string name) override;
 
  private:
   friend class fbl::RefPtr<ChannelImpl>;
@@ -294,6 +299,14 @@ class ChannelImpl : public Channel {
   // all implicitly allocate. This is a reminder to fix this elsewhere
   // (especially in the HCI layer).
   std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_;
+
+  struct InspectProperties {
+    inspect::Node node;
+    inspect::StringProperty psm;
+    inspect::StringProperty local_id;
+    inspect::StringProperty remote_id;
+  };
+  InspectProperties inspect_;
 
   fxl::ThreadChecker thread_checker_;
 

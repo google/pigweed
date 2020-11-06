@@ -629,8 +629,10 @@ TEST_F(L2CAP_L2capTest, InspectHierarchy) {
   l2cap()->AttachInspect(inspector.GetRoot(), L2cap::kInspectNodeName);
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   ASSERT_TRUE(hierarchy);
-  auto l2cap_matcher = AllOf(NodeMatches(AllOf(PropertyList(::testing::IsEmpty()))),
-                             ChildrenMatch(::testing::IsEmpty()));
+  auto l2cap_matcher =
+      AllOf(NodeMatches(PropertyList(::testing::IsEmpty())),
+            ChildrenMatch(UnorderedElementsAre(NodeMatches(NameMatches("logical_links")),
+                                               NodeMatches(NameMatches("services")))));
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
 

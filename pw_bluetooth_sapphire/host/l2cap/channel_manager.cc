@@ -13,6 +13,16 @@
 
 namespace bt::l2cap {
 
+namespace {
+
+constexpr const char* kInspectServicesNodeName = "services";
+constexpr const char* kInspectServiceNodePrefix = "service_";
+constexpr const char* kInspectLogicalLinksNodeName = "logical_links";
+constexpr const char* kInspectLogicalLinkNodePrefix = "logical_link_";
+constexpr const char* kInspectPsmPropertyName = "psm";
+
+}  // namespace
+
 ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
                                SendAclCallback send_acl_cb,
                                DropQueuedAclCallback drop_queued_acl_cb,
@@ -145,7 +155,9 @@ bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelC
     return false;
   }
 
-  services_.emplace(psm, ServiceInfo(params, std::move(cb)));
+  ServiceData service{.info = ServiceInfo(params, std::move(cb)), .psm = psm};
+  service.AttachInspect(services_node_);
+  services_.emplace(psm, std::move(service));
   return true;
 }
 
@@ -167,6 +179,22 @@ void ChannelManager::RequestConnectionParameterUpdate(
   }
 
   iter->second->SendConnectionParameterUpdateRequest(params, std::move(request_cb));
+}
+
+void ChannelManager::AttachInspect(inspect::Node& parent) {
+  if (!parent) {
+    return;
+  }
+
+  services_node_ = parent.CreateChild(kInspectServicesNodeName);
+  for (auto& [psm, service] : services_) {
+    service.AttachInspect(services_node_);
+  }
+
+  ll_node_ = parent.CreateChild(kInspectLogicalLinksNodeName);
+  for (auto& [_, ll] : ll_map_) {
+    ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
+  }
 }
 
 fxl::WeakPtr<internal::LogicalLink> ChannelManager::LogicalLinkForTesting(
@@ -231,6 +259,9 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
                                        std::move(send_acl_cb), drop_queued_acl_cb_.share(),
                                        fit::bind_member(this, &ChannelManager::QueryService),
                                        acl_priority_cb_.share(), random_channel_ids_);
+  if (ll_node_) {
+    ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
+  }
 
   // Route all pending packets to the link.
   auto pp_iter = pending_packets_.find(handle);
@@ -257,9 +288,10 @@ std::optional<ChannelManager::ServiceInfo> ChannelManager::QueryService(
     return std::nullopt;
   }
 
-  // |channel_cb| will be called in LogicalLink. Each callback in |services_| already trampolines to
-  // the appropriate dispatcher (passed to RegisterService).
-  return ChannelManager::ServiceInfo(iter->second.channel_params, iter->second.channel_cb.share());
+  // |channel_cb| will be called in LogicalLink. Each callback in |services_| already trampolines
+  // to the appropriate dispatcher (passed to RegisterService).
+  return ChannelManager::ServiceInfo(iter->second.info.channel_params,
+                                     iter->second.info.channel_cb.share());
 }
 
 hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id) {
@@ -272,6 +304,14 @@ hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id
     default:
       return hci::ACLDataChannel::PacketPriority::kLow;
   }
+}
+
+void ChannelManager::ServiceData::AttachInspect(inspect::Node& parent) {
+  if (!parent) {
+    return;
+  }
+  node = parent.CreateChild(parent.UniqueName(kInspectServiceNodePrefix));
+  psm_property = node.CreateString(kInspectPsmPropertyName, PsmToString(psm));
 }
 
 }  // namespace bt::l2cap

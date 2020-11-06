@@ -83,28 +83,31 @@ struct ChannelParameters {
 struct ChannelInfo {
   ChannelInfo() = default;
 
-  static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size) {
-    return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0);
+  static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
+                                   std::optional<PSM> psm = std::nullopt) {
+    return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0, psm);
   }
 
   static ChannelInfo MakeEnhancedRetransmissionMode(uint16_t max_rx_sdu_size,
                                                     uint16_t max_tx_sdu_size,
                                                     uint8_t n_frames_in_tx_window,
                                                     uint8_t max_transmissions,
-                                                    uint16_t max_tx_pdu_payload_size) {
+                                                    uint16_t max_tx_pdu_payload_size,
+                                                    std::optional<PSM> psm = std::nullopt) {
     return ChannelInfo(ChannelMode::kEnhancedRetransmission, max_rx_sdu_size, max_tx_sdu_size,
-                       n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size);
+                       n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size, psm);
   }
 
   ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
               uint8_t n_frames_in_tx_window, uint8_t max_transmissions,
-              uint16_t max_tx_pdu_payload_size)
+              uint16_t max_tx_pdu_payload_size, std::optional<PSM> psm = std::nullopt)
       : mode(mode),
         max_rx_sdu_size(max_rx_sdu_size),
         max_tx_sdu_size(max_tx_sdu_size),
         n_frames_in_tx_window(n_frames_in_tx_window),
         max_transmissions(max_transmissions),
-        max_tx_pdu_payload_size(max_tx_pdu_payload_size) {}
+        max_tx_pdu_payload_size(max_tx_pdu_payload_size),
+        psm(psm) {}
 
   ChannelMode mode;
   uint16_t max_rx_sdu_size;
@@ -115,6 +118,9 @@ struct ChannelInfo {
   uint8_t n_frames_in_tx_window;
   uint8_t max_transmissions;
   uint16_t max_tx_pdu_payload_size;
+
+  // PSM of the service the channel is used for.
+  std::optional<PSM> psm;
 };
 
 // Data stored for services registered by higher layers.

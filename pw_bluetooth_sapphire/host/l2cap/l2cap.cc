@@ -56,6 +56,7 @@ class Impl final : public L2cap {
 
   void AttachInspect(inspect::Node& parent, std::string name) override {
     node_ = parent.CreateChild(name);
+    channel_manager_->AttachInspect(node_);
   }
 
   LEFixedChannels AddLEConnection(hci::ConnectionHandle handle, hci::Connection::Role role,

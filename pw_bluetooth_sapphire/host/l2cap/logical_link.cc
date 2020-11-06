@@ -23,6 +23,11 @@
 namespace bt::l2cap::internal {
 namespace {
 
+const char* kInspectHandlePropertyName = "handle";
+const char* kInspectLinkTypePropertyName = "link_type";
+const char* kInspectChannelsNodeName = "channels";
+const char* kInspectChannelNodePrefix = "channel_";
+
 constexpr bool IsValidLEFixedChannel(ChannelId id) {
   switch (id) {
     case kATTChannelId:
@@ -142,6 +147,11 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   }
 
   channels_[id] = chan;
+
+  if (inspect_properties_.channels_node) {
+    chan->AttachInspect(inspect_properties_.channels_node,
+                        inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
+  }
 
   return chan;
 }
@@ -468,12 +478,18 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
 
   const ChannelId local_cid = dyn_chan->local_cid();
   const ChannelId remote_cid = dyn_chan->remote_cid();
-  bt_log(DEBUG, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID %#.4x)", handle_,
-         local_cid, remote_cid);
+  bt_log(DEBUG, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID: %#.4x, psm: %s)",
+         handle_, local_cid, remote_cid, PsmToString(dyn_chan->psm()).c_str());
 
   auto chan =
       ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), dyn_chan->info());
   channels_[local_cid] = chan;
+
+  if (inspect_properties_.channels_node) {
+    chan->AttachInspect(inspect_properties_.channels_node,
+                        inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
+  }
+
   open_cb(std::move(chan));
 }
 
@@ -561,6 +577,25 @@ void LogicalLink::RequestAclPriority(Channel* channel, AclPriority priority,
   pending_acl_requests_.push(PendingAclRequest{chan_ref, priority, std::move(callback)});
   if (pending_acl_requests_.size() == 1) {
     HandleNextAclPriorityRequest();
+  }
+}
+
+void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
+  if (!parent) {
+    return;
+  }
+
+  auto node = parent.CreateChild(name);
+  inspect_properties_.handle =
+      node.CreateString(kInspectHandlePropertyName, fxl::StringPrintf("%#.4x", handle_));
+  inspect_properties_.link_type =
+      node.CreateString(kInspectLinkTypePropertyName, hci::Connection::LinkTypeToString(type_));
+  inspect_properties_.channels_node = node.CreateChild(kInspectChannelsNodeName);
+  inspect_properties_.node = std::move(node);
+
+  for (auto& [_, chan] : channels_) {
+    chan->AttachInspect(inspect_properties_.channels_node,
+                        inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
   }
 }
 

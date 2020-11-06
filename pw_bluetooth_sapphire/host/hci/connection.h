@@ -64,6 +64,7 @@ class Connection {
     // A LE logical link (LE-U).
     kLE,
   };
+  static std::string LinkTypeToString(Connection::LinkType type);
 
   // Role of the local device in the established connection.
   enum class Role {

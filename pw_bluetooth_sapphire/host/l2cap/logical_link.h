@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
 
@@ -142,6 +143,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Requests are queued and handled sequentially in order to prevent race conditions.
   void RequestAclPriority(Channel* channel, AclPriority priority,
                           fit::callback<void(fit::result<>)> callback);
+
+  // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
 
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
@@ -303,6 +307,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;
+
+  struct InspectProperties {
+    inspect::Node node;
+    inspect::Node channels_node;
+    inspect::StringProperty handle;
+    inspect::StringProperty link_type;
+  };
+  InspectProperties inspect_properties_;
 
   fxl::ThreadChecker thread_checker_;
 
