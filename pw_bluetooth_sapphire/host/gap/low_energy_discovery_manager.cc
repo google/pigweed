@@ -20,7 +20,7 @@ LowEnergyDiscoverySession::LowEnergyDiscoverySession(
 }
 
 LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (active_)
     Stop();
 }
@@ -37,7 +37,7 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
 }
 
 void LowEnergyDiscoverySession::Stop() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(active_);
   if (manager_) {
     manager_->RemoveSession(this);
@@ -69,7 +69,7 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci);
   ZX_DEBUG_ASSERT(dispatcher_);
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(peer_cache_);
   ZX_DEBUG_ASSERT(scanner_);
 
@@ -83,7 +83,7 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
 }
 
 void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
   bt_log(INFO, "gap-le", "start discovery");
 
@@ -156,7 +156,7 @@ std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession
 }
 
 void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(session);
 
   // Only active sessions are allowed to call this method. If there is at least
@@ -173,7 +173,7 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
 
 void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& result,
                                             const ByteBuffer& data) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "gap-le", "peer found: %s", bt_str(result.address));
 
   auto peer = peer_cache_->FindByAddress(result.address);
@@ -201,7 +201,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 }
 
 void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(TRACE, "gap-le", "Received directed advertisement (address: %s, %s)",
          result.address.ToString().c_str(), (result.resolved ? "resolved" : "not resolved"));

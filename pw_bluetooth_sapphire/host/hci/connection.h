@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONNECTION_H_
 
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <zircon/assert.h>
 
 #include <fbl/macros.h>
@@ -17,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 

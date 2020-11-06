@@ -7,6 +7,7 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <lib/fit/thread_checker.h>
 
 #include <memory>
 
@@ -22,7 +23,6 @@
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -171,7 +171,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // authentication failures.
   bool use_local_identity_address_ = false;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

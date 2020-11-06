@@ -8,6 +8,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
@@ -22,7 +23,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::socket {
 
@@ -170,7 +170,7 @@ class SocketChannelRelay final {
   // TODO(fxbug.dev/709): We should set an upper bound on the size of this queue.
   std::deque<ByteBufferPtr> socket_write_queue_;
 
-  const fxl::ThreadChecker thread_checker_;
+  const fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<SocketChannelRelay> weak_ptr_factory_;  // Keep last.
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
@@ -207,7 +207,7 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fbl::RefPtr<
 
 template <typename ChannelT>
 SocketChannelRelay<ChannelT>::~SocketChannelRelay() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (state_ != RelayState::kDeactivated) {
     bt_log(TRACE, "l2cap",
@@ -323,7 +323,7 @@ void SocketChannelRelay<ChannelT>::OnSocketClosed(zx_status_t status) {
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
@@ -361,7 +361,7 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) 
 
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnChannelClosed() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(state_ != RelayState::kActivating);
   ZX_DEBUG_ASSERT(state_ != RelayState::kDeactivated);
 
@@ -528,8 +528,8 @@ void SocketChannelRelay<ChannelT>::BindWait(zx_signals_t trigger, const char* wa
     ZX_DEBUG_ASSERT_MSG(signal, "(%s, channel_id=%u)", wait_name, channel_id);
     ZX_DEBUG_ASSERT_MSG(signal->trigger == expected_wait->trigger(), "(%s, channel_id=%u)",
                         wait_name, channel_id);
-    ZX_DEBUG_ASSERT_MSG(self->thread_checker_.IsCreationThreadCurrent(), "(%s, channel_id=%u)",
-                        wait_name, channel_id);
+    ZX_DEBUG_ASSERT_MSG(self->thread_checker_.is_thread_valid(), "(%s, channel_id=%u)", wait_name,
+                        channel_id);
     ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kActivating, "(%s, channel_id=%u)", wait_name,
                         channel_id);
     ZX_DEBUG_ASSERT_MSG(self->state_ != RelayState::kDeactivated, "(%s, channel_id=%u)", wait_name,

@@ -6,6 +6,8 @@
 
 #include <endian.h>
 
+#include <lib/fit/thread_checker.h>
+
 #include "bredr_connection_manager.h"
 #include "bredr_discovery_manager.h"
 #include "low_energy_address_manager.h"
@@ -219,7 +221,7 @@ class AdapterImpl final : public Adapter {
   // Callback to propagate ownership of an auto-connected LE link.
   AutoConnectCallback auto_conn_cb_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // This must remain the last member to make sure that all weak pointers are
   // invalidating before other members are destroyed.
@@ -262,7 +264,7 @@ AdapterImpl::~AdapterImpl() {
 }
 
 bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(transport_closed_cb);
 
@@ -353,7 +355,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
 }
 
 void AdapterImpl::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "gap", "adapter shutting down");
 
   if (IsInitializing()) {
@@ -423,7 +425,7 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 void AdapterImpl::InitializeStep2(InitializeCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(IsInitializing());
 
   // Low Energy MUST be supported. We don't support BR/EDR-only controllers.
@@ -547,7 +549,7 @@ void AdapterImpl::InitializeStep2(InitializeCallback callback) {
 }
 
 void AdapterImpl::InitializeStep3(InitializeCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(IsInitializing());
 
   if (!state_.bredr_data_buffer_info().IsAvailable() &&
@@ -827,7 +829,7 @@ uint64_t AdapterImpl::BuildLEEventMask() {
 }
 
 void AdapterImpl::CleanUp() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (init_state_ == State::kNotInitialized) {
     bt_log(DEBUG, "gap", "clean up: not initialized");

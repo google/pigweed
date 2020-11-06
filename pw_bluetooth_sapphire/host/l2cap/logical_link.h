@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
@@ -32,7 +33,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::l2cap::internal {
 
@@ -316,7 +316,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   };
   InspectProperties inspect_properties_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
 

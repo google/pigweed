@@ -8,6 +8,7 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 
 #include <memory>
 
@@ -24,7 +25,6 @@
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 namespace hci {
@@ -40,7 +40,8 @@ namespace gap {
 class BrEdrInterrogator final : public Interrogator {
  public:
   // |cache| must live longer than this object.
-  BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
+  BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
+                    async_dispatcher_t* dispatcher);
 
  private:
   // Interrogator Overrides:

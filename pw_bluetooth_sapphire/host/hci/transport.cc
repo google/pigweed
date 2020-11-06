@@ -48,7 +48,7 @@ Transport::Transport(std::unique_ptr<DeviceWrapper> hci_device)
 }
 
 Transport::~Transport() {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(INFO, "hci", "transport shutting down");
 

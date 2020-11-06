@@ -450,14 +450,14 @@ LowEnergyConnectionRef::LowEnergyConnectionRef(PeerId peer_id, hci::ConnectionHa
 }
 
 LowEnergyConnectionRef::~LowEnergyConnectionRef() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (active_) {
     Release();
   }
 }
 
 void LowEnergyConnectionRef::Release() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(active_);
   active_ = false;
   if (manager_) {

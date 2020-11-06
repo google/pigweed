@@ -7,6 +7,7 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <lib/fit/thread_checker.h>
 
 #include <memory>
 #include <unordered_map>
@@ -16,7 +17,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 #include "src/lib/fxl/memory/ref_counted.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -115,7 +115,7 @@ class LegacyLowEnergyScanner : public LowEnergyScanner {
   // received. This is accumulated during a discovery procedure and always
   // cleared at the end of the scan period.
   std::unordered_map<DeviceAddress, std::unique_ptr<PendingScanResult>> pending_results_;
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyScanner);
 };

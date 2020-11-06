@@ -88,7 +88,7 @@ class LowEnergyConnectionRef final {
   hci::ConnectionHandle handle_;
   fxl::WeakPtr<LowEnergyConnectionManager> manager_;
   fit::closure closed_cb_;
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRef);
 };

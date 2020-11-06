@@ -78,7 +78,7 @@ class BrEdrDiscoverySession final {
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
   fit::closure error_callback_;
   PeerFoundCallback peer_found_callback_;
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
 };
@@ -96,7 +96,7 @@ class BrEdrDiscoverableSession final {
   explicit BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager);
 
   fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
 };
@@ -231,7 +231,7 @@ class BrEdrDiscoveryManager final {
   // The current inquiry mode.
   hci::InquiryMode current_inquiry_mode_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<BrEdrDiscoveryManager> weak_ptr_factory_;
 

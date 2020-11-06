@@ -55,7 +55,7 @@ bool LowEnergyConnector::CreateConnection(bool use_whitelist, const DeviceAddres
                                           uint16_t scan_interval, uint16_t scan_window,
                                           const LEPreferredConnectionParameters& initial_parameters,
                                           StatusCallback status_callback, zx::duration timeout) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(status_callback);
   ZX_DEBUG_ASSERT(timeout.get() > 0);
 

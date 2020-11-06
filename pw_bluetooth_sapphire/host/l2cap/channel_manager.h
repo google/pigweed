@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
 #include <zircon/compiler.h>
@@ -24,7 +25,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 
@@ -245,7 +245,7 @@ class ChannelManager final {
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<ChannelManager> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManager);

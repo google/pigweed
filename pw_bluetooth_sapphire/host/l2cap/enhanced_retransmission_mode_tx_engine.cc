@@ -46,12 +46,12 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
       remote_is_busy_(false) {
   ZX_DEBUG_ASSERT(n_frames_in_tx_window_);
   receiver_ready_poll_task_.set_handler([this] {
-    ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_ASSERT(thread_checker_.is_thread_valid());
     SendReceiverReadyPoll();
     StartMonitorTimer();
   });
   monitor_task_.set_handler([this] {
-    ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_ASSERT(thread_checker_.is_thread_valid());
     if (max_transmissions_ == 0 || n_receiver_ready_polls_sent_ < max_transmissions_) {
       SendReceiverReadyPoll();
       StartMonitorTimer();
@@ -62,7 +62,7 @@ Engine::EnhancedRetransmissionModeTxEngine(ChannelId channel_id, uint16_t max_tx
 }
 
 bool Engine::QueueSdu(ByteBufferPtr sdu) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(sdu);
   // TODO(fxbug.dev/1033): Add support for segmentation
   if (sdu->size() > max_tx_sdu_size_) {
@@ -84,7 +84,7 @@ bool Engine::QueueSdu(ByteBufferPtr sdu) {
 }
 
 void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   // TODO(quiche): Reconsider this assertion if we allow reconfiguration of the TX window.
   ZX_DEBUG_ASSERT_MSG(NumUnackedFrames() <= n_frames_in_tx_window_,
                       "(NumUnackedFrames() = %u, n_frames_in_tx_window_ = %u, "
@@ -169,25 +169,25 @@ void Engine::UpdateAckSeq(uint8_t new_seq, bool is_poll_response) {
 }
 
 void Engine::UpdateReqSeq(uint8_t new_seq) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   req_seqnum_ = new_seq;
 }
 
 void Engine::ClearRemoteBusy() {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   // TODO(quiche): Maybe clear backpressure on the Channel (subject to TxWindow contraints).
   remote_is_busy_ = false;
 }
 
 void Engine::SetRemoteBusy() {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   // TODO(fxbug.dev/1367): Signal backpressure to the Channel.
   remote_is_busy_ = true;
   receiver_ready_poll_task_.Cancel();
 }
 
 void Engine::SetSingleRetransmit(bool is_poll_request) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(!single_request_.has_value());
   ZX_ASSERT(!range_request_.has_value());
   // Store SREJ state for UpdateAckSeq to handle.
@@ -195,7 +195,7 @@ void Engine::SetSingleRetransmit(bool is_poll_request) {
 }
 
 void Engine::SetRangeRetransmit(bool is_poll_request) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(!single_request_.has_value());
   ZX_ASSERT(!range_request_.has_value());
   // Store REJ state for UpdateAckSeq to handle.
@@ -203,7 +203,7 @@ void Engine::SetRangeRetransmit(bool is_poll_request) {
 }
 
 void Engine::MaybeSendQueuedData() {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   if (remote_is_busy_ || monitor_task_.is_pending()) {
     return;
   }

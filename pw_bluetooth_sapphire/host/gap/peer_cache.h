@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_PEER_CACHE_H_
 
 #include <lib/async/cpp/task.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 
 #include <unordered_map>
@@ -19,7 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt {
 
@@ -123,13 +123,13 @@ class PeerCache final {
 
   // When set, |callback| will be invoked whenever a peer is added or updated.
   void set_peer_updated_callback(PeerCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     peer_updated_callback_ = std::move(callback);
   }
 
   // When set, |callback| will be invoked whenever a peer is removed.
   void set_peer_removed_callback(PeerIdCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     peer_removed_callback_ = std::move(callback);
   }
 
@@ -137,7 +137,7 @@ class PeerCache final {
   // data of a peer is updated and should be persisted. The caller must ensure
   // that |callback| outlives |this|.
   void set_peer_bonded_callback(PeerCallback callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     peer_bonded_callback_ = std::move(callback);
   }
 
@@ -223,7 +223,7 @@ class PeerCache final {
 
   inspect::Node node_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PeerCache);
 };

@@ -7,6 +7,7 @@
 
 #include <fuchsia/cobalt/cpp/fidl.h>
 #include <lib/async/default.h>
+#include <lib/fit/thread_checker.h>
 
 #include <mutex>
 
@@ -18,7 +19,6 @@
 #include "lib/fidl/cpp/interface_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/cobalt/logger.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::cobalt {
 
@@ -46,7 +46,7 @@ class CobaltLogger final : public Logger {
   ~CobaltLogger() override = default;
   ::fuchsia::cobalt::LoggerPtr logger_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
   async_dispatcher_t* dispatcher_;
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CobaltLogger);
 };

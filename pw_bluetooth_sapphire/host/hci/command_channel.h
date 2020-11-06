@@ -10,6 +10,7 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <lib/fit/result.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/trace/event.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
@@ -28,7 +29,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -52,8 +52,8 @@ class CommandChannel final {
   ~CommandChannel();
 
   // Unregisters event handlers and cleans up.
-  // TODO(fxbug.dev/667): Remove ShutDown and move logic to destructor. Let Transport destroy CommandChannel
-  // to initiate shut down.
+  // TODO(fxbug.dev/667): Remove ShutDown and move logic to destructor. Let Transport destroy
+  // CommandChannel to initiate shut down.
   void ShutDown();
 
   // Used to identify an individual HCI command<->event transaction.
@@ -206,7 +206,7 @@ class CommandChannel final {
   // ZX_ERR_IO means error happens while reading from the channel.
   // ZX_ERR_INVALID_ARGS means the packet is malformed.
   // Otherwise, ZX_OK is returned.
-  static zx_status_t ReadEventPacketFromChannel(const zx::channel &channel,
+  static zx_status_t ReadEventPacketFromChannel(const zx::channel& channel,
                                                 const EventPacketPtr& packet);
 
  private:
@@ -364,7 +364,7 @@ class CommandChannel final {
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // The Transport object that owns this CommandChannel.
   Transport* transport_;  // weak

@@ -7,6 +7,7 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <zircon/assert.h>
 
 #include <map>
@@ -26,7 +27,6 @@
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::att {
 
@@ -85,7 +85,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   // Sets a callback to be invoked invoked when the underlying channel has
   // closed. |callback| should disconnect the underlying logical link.
   void set_closed_callback(fit::closure callback) {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     closed_cb_ = std::move(callback);
   }
 
@@ -315,7 +315,7 @@ class Bearer final : public fxl::RefCountedThreadSafe<Bearer> {
   RemoteTransaction remote_request_;
   RemoteTransaction remote_indication_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);

@@ -10,6 +10,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/result.h>
+#include <lib/fit/thread_checker.h>
 
 #include <atomic>
 #include <memory>
@@ -23,7 +24,6 @@
 #include "src/lib/fxl/memory/ref_counted.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -99,7 +99,7 @@ class Transport final {
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // The Bluetooth HCI device file descriptor.
   std::unique_ptr<DeviceWrapper> hci_device_;

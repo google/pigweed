@@ -87,7 +87,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
     auto connection_failure_cb = [this, link] {
-      ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+      ZX_ASSERT(thread_checker_.is_thread_valid());
 
       if (link) {
         // |link| is expected to ignore this call if it has been closed.

@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <zircon/types.h>
 
 #include <memory>
@@ -17,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/lib/fxl/memory/ref_counted.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bthost {
 
@@ -85,7 +85,7 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   // to be connected at a time.
   std::unique_ptr<HostServer> host_server_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Host);
 };

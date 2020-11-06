@@ -72,7 +72,7 @@ class ConnectionImpl final : public Connection {
       fxl::WeakPtr<ConnectionImpl> self, ConnectionHandle handle, fxl::WeakPtr<Transport> hci,
       const EventPacket& event);
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // IDs for encryption related HCI event handlers.
   CommandChannel::EventHandlerId enc_change_id_;
@@ -300,7 +300,7 @@ void ConnectionImpl::Disconnect(StatusCode reason) {
 }
 
 bool ConnectionImpl::StartEncryption() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (conn_state_ != Connection::State::kConnected) {
     bt_log(DEBUG, "hci", "connection closed; cannot start encryption");
     return false;
@@ -324,7 +324,7 @@ bool ConnectionImpl::StartEncryption() {
 }
 
 bool ConnectionImpl::BrEdrStartEncryption() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   ZX_ASSERT(ltk().has_value() == ltk_type().has_value());
   if (!ltk().has_value()) {
@@ -361,7 +361,7 @@ bool ConnectionImpl::BrEdrStartEncryption() {
 }
 
 bool ConnectionImpl::LEStartEncryption(const LinkKey& ltk) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(!ltk_type().has_value());
 
   // TODO(fxbug.dev/801): Tell the data channel to stop data flow.
@@ -453,7 +453,7 @@ void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_v
 CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
     const EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionChangeEventCode);
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (event.view().payload_size() != sizeof(EncryptionChangeEventParams)) {
     bt_log(WARN, "hci", "malformed encryption change event");
@@ -493,7 +493,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshCompleteEvent(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(event.event_code() == kEncryptionKeyRefreshCompleteEventCode);
 
   if (event.view().payload_size() != sizeof(EncryptionKeyRefreshCompleteEventParams)) {
@@ -527,7 +527,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionKeyRefreshComple
 
 CommandChannel::EventCallbackResult ConnectionImpl::OnLELongTermKeyRequestEvent(
     const EventPacket& event) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(event.event_code() == kLEMetaEventCode);
   ZX_DEBUG_ASSERT(event.params<LEMetaEventParams>().subevent_code ==
                   kLELongTermKeyRequestSubeventCode);

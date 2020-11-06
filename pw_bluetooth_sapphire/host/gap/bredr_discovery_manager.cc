@@ -51,7 +51,7 @@ BrEdrDiscoverySession::BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager>
     : manager_(manager) {}
 
 BrEdrDiscoverySession::~BrEdrDiscoverySession() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   manager_->RemoveDiscoverySession(this);
 }
 
@@ -71,7 +71,7 @@ BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryMa
     : manager_(manager) {}
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   manager_->RemoveDiscoverableSession(this);
 }
 
@@ -112,7 +112,7 @@ BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
 }
 
 void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
   bt_log(DEBUG, "gap-bredr", "RequestDiscovery");
@@ -386,7 +386,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 }
 
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
   bt_log(DEBUG, "gap-bredr", "RequestDiscoverable");

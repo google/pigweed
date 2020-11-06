@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SEQUENTIAL_COMMAND_RUNNER_H_
 
 #include <lib/async/dispatcher.h>
+#include <lib/fit/thread_checker.h>
 
 #include <queue>
 
@@ -13,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -145,7 +145,7 @@ class SequentialCommandRunner final {
   // Number of commands sent to the controller we are waiting to finish.
   size_t running_commands_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   fxl::WeakPtrFactory<SequentialCommandRunner> weak_ptr_factory_;
 

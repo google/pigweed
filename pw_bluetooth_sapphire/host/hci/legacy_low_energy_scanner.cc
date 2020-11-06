@@ -74,7 +74,7 @@ LegacyLowEnergyScanner::~LegacyLowEnergyScanner() {
 }
 
 bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options, ScanStatusCallback callback) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(callback);
   ZX_ASSERT(options.period == kPeriodInfinite || options.period.get() > 0);
   ZX_ASSERT(options.interval <= kLEScanIntervalMax && options.interval >= kLEScanIntervalMin);
@@ -179,7 +179,7 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
 }
 
 bool LegacyLowEnergyScanner::StopScan() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (state() == State::kStopping || state() == State::kIdle) {
     bt_log(DEBUG, "hci-le", "cannot stop scan while in state: %s",

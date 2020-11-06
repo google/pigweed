@@ -50,7 +50,7 @@ ACLDataChannel::~ACLDataChannel() {
 
 void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
                                 const DataBufferInfo& le_buffer_info) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!is_initialized_);
   ZX_DEBUG_ASSERT(bredr_buffer_info.IsAvailable() || le_buffer_info.IsAvailable());
 
@@ -90,7 +90,7 @@ void ACLDataChannel::Initialize(const DataBufferInfo& bredr_buffer_info,
 }
 
 void ACLDataChannel::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (!is_initialized_)
     return;
 

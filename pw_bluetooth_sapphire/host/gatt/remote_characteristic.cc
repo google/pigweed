@@ -79,7 +79,7 @@ RemoteCharacteristic::RemoteCharacteristic(RemoteCharacteristic&& other)
 }
 
 void RemoteCharacteristic::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Make sure that all weak pointers are invalidated on the GATT thread.
   weak_ptr_factory_.InvalidateWeakPtrs();
@@ -106,7 +106,7 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties e
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
                                                att::StatusCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(!shut_down_);
@@ -125,7 +125,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     if (!self)
       return;
 
-    ZX_DEBUG_ASSERT(self->thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(self->thread_checker_.is_thread_valid());
     if (self->discovery_error_)
       return;
 
@@ -163,7 +163,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
       return;
     }
 
-    ZX_DEBUG_ASSERT(self->thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(self->thread_checker_.is_thread_valid());
 
     if (self->discovery_error_) {
       status = att::Status(HostError::kFailed);
@@ -212,7 +212,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
                                                NotifyStatusCallback status_callback,
                                                async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(value_callback);
   ZX_DEBUG_ASSERT(status_callback);
@@ -273,7 +273,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 }
 
 bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);
 
@@ -334,7 +334,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Status status) {
 }
 
 void RemoteCharacteristic::HandleNotification(const ByteBuffer& value) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(client_);
   ZX_DEBUG_ASSERT(!shut_down_);
 

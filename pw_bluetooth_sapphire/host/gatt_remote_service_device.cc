@@ -197,7 +197,7 @@ void GattRemoteServiceDevice::DdkUnbind(ddk::UnbindTxn txn) {
 
 void GattRemoteServiceDevice::StartThread() {
   // NOTE: This method is expected to run on the bt-host thread.
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   TRACE_DURATION_BEGIN("bluetooth", "GattRemoteServiceDevice::StartThread");
 

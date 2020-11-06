@@ -5,7 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVICE_DISCOVERER_H_
 
-#include <fbl/ref_ptr.h>
 #include <lib/async/cpp/task.h>
 #include <lib/fit/function.h>
 
@@ -13,6 +12,8 @@
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/client.h"
@@ -98,7 +99,7 @@ class ServiceDiscoverer final {
   // peer id.
   std::unordered_map<PeerId, DiscoverySession> sessions_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 };
 
 }  // namespace bt::sdp

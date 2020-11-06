@@ -5,6 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_SIGNALING_CHANNEL_H_
 
+#include <lib/fit/thread_checker.h>
+
 #include <memory>
 #include <unordered_map>
 
@@ -16,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::l2cap {
 
@@ -160,7 +161,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   // Returns true if called on this SignalingChannel's creation thread. Mainly
   // intended for debug assertions.
-  bool IsCreationThreadCurrent() const { return thread_checker_.IsCreationThreadCurrent(); }
+  bool is_thread_valid() const { return thread_checker_.is_thread_valid(); }
 
   // Returns the logical link that signaling channel is operating on.
   hci::Connection::Role role() const { return role_; }
@@ -247,7 +248,7 @@ class SignalingChannel : public SignalingChannelInterface {
   void RetransmitPendingCommand(PendingCommand& pending_command);
 
   // Destroy all other members prior to this so they can use this for checking.
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   bool is_open_;
   l2cap::ScopedChannel chan_;

@@ -141,7 +141,7 @@ CommandChannel::~CommandChannel() {
 }
 
 void CommandChannel::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (!is_initialized_)
     return;
 

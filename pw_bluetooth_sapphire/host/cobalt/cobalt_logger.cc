@@ -49,14 +49,14 @@ fbl::RefPtr<CobaltLogger> CobaltLogger::Create() { return AdoptRef(new CobaltLog
 CobaltLogger::CobaltLogger() : logger_(nullptr), dispatcher_(async_get_default_dispatcher()) {}
 
 void CobaltLogger::Bind(::fidl::InterfaceHandle<::fuchsia::cobalt::Logger> logger) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   logger_.Bind(std::move(logger));
   logger_.set_error_handler(
       [](zx_status_t status) { bt_log(TRACE, "bt-host", "CobaltLogger disconnected"); });
 }
 
 void CobaltLogger::ShutDown() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   if (logger_) {
     logger_.Unbind();
   }

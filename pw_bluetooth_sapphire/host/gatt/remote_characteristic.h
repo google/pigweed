@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 
 #include <map>
 #include <queue>
@@ -17,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::gatt {
 
@@ -119,7 +119,7 @@ class RemoteCharacteristic final {
   // Called when a notification is received for this characteristic.
   void HandleNotification(const ByteBuffer& value);
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
   CharacteristicData info_;
   DescriptorMap descriptors_;
   bool discovery_error_;

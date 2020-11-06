@@ -8,6 +8,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/zx/channel.h>
 #include <zircon/compiler.h>
 
@@ -22,7 +23,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::hci {
 
@@ -243,7 +243,7 @@ class ACLDataChannel final {
 
   // Used to assert that certain public functions are only called on the
   // creation thread.
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   // The Transport object that owns this instance.
   Transport* transport_;  // weak;

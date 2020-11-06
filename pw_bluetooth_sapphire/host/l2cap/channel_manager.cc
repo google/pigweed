@@ -40,7 +40,7 @@ ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payloa
 }
 
 ChannelManager::~ChannelManager() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // Explicitly shut down all links to force associated L2CAP channels to
   // release their strong references.
@@ -60,7 +60,7 @@ hci::ACLPacketHandler ChannelManager::MakeInboundDataHandler() {
 void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::Role role,
                                  LinkErrorCallback link_error_cb,
                                  SecurityUpgradeCallback security_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kACL, role, max_acl_payload_size_);
@@ -72,7 +72,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
                                 LEConnectionParameterUpdateCallback conn_param_cb,
                                 LinkErrorCallback link_error_cb,
                                 SecurityUpgradeCallback security_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
 
   auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
@@ -82,7 +82,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
 }
 
 void ChannelManager::Unregister(hci::ConnectionHandle handle) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(DEBUG, "l2cap", "unregister link (handle: %#.4x)", handle);
 
@@ -101,7 +101,7 @@ void ChannelManager::Unregister(hci::ConnectionHandle handle) {
 
 void ChannelManager::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
                                                   sm::SecurityProperties security) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   bt_log(DEBUG, "l2cap", "received new security properties (handle: %#.4x)", handle);
 
@@ -116,7 +116,7 @@ void ChannelManager::AssignLinkSecurityProperties(hci::ConnectionHandle handle,
 
 fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci::ConnectionHandle handle,
                                                       ChannelId channel_id) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
@@ -129,7 +129,7 @@ fbl::RefPtr<Channel> ChannelManager::OpenFixedChannel(hci::ConnectionHandle hand
 
 void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelParameters params,
                                  ChannelCallback cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
@@ -142,7 +142,7 @@ void ChannelManager::OpenChannel(hci::ConnectionHandle handle, PSM psm, ChannelP
 }
 
 bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelCallback cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   // v5.0 Vol 3, Part A, Sec 4.2: PSMs shall be odd and the least significant
   // bit of the most significant byte shall be zero
@@ -162,7 +162,7 @@ bool ChannelManager::RegisterService(PSM psm, ChannelParameters params, ChannelC
 }
 
 void ChannelManager::UnregisterService(PSM psm) {
-  FX_DCHECK(thread_checker_.IsCreationThreadCurrent());
+  FX_DCHECK(thread_checker_.is_thread_valid());
 
   services_.erase(psm);
 }
@@ -170,7 +170,7 @@ void ChannelManager::UnregisterService(PSM psm) {
 void ChannelManager::RequestConnectionParameterUpdate(
     hci::ConnectionHandle handle, hci::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
-  ZX_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_ASSERT(thread_checker_.is_thread_valid());
 
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
@@ -209,7 +209,7 @@ fxl::WeakPtr<internal::LogicalLink> ChannelManager::LogicalLinkForTesting(
 // Called when an ACL data packet is received from the controller. This method
 // is responsible for routing the packet to the corresponding LogicalLink.
 void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   auto handle = packet->connection_handle();
   TRACE_DURATION("bluetooth", "ChannelManager::OnDataReceived", "handle", handle);
@@ -242,7 +242,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
                                                         hci::Connection::LinkType ll_type,
                                                         hci::Connection::Role role,
                                                         size_t max_payload_size) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   TRACE_DURATION("bluetooth", "ChannelManager::RegisterInternal", "handle", handle);
 
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't

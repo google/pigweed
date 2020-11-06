@@ -9,6 +9,7 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <lib/fit/thread_checker.h>
 #include <zircon/types.h>
 
 #include <ddk/driver.h>
@@ -17,7 +18,6 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bthost {
 
@@ -65,7 +65,7 @@ class GattRemoteServiceDevice final
   const bt::gatt::PeerId peer_id_;
   const fbl::RefPtr<bt::gatt::RemoteService> service_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattRemoteServiceDevice);
 };

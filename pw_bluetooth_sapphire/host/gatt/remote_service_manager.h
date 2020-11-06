@@ -41,7 +41,7 @@ class RemoteServiceManager final {
 
   // Adds a handler to be notified when a new service is added.
   void set_service_watcher(RemoteServiceWatcher watcher) {
-    ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+    ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
     svc_watcher_ = std::move(watcher);
   }
 
@@ -105,7 +105,7 @@ class RemoteServiceManager final {
   // Services are sorted by handle.
   ServiceMap services_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);

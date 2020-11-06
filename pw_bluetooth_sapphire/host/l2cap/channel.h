@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 #include <zircon/compiler.h>
@@ -32,7 +33,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/synchronization/thread_checker.h"
 
 namespace bt::l2cap {
 
@@ -308,7 +308,7 @@ class ChannelImpl : public Channel {
   };
   InspectProperties inspect_;
 
-  fxl::ThreadChecker thread_checker_;
+  fit::thread_checker thread_checker_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };

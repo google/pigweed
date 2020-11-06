@@ -13,7 +13,7 @@ ServiceDiscoverer::ServiceDiscoverer() : next_id_(1) {}
 ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(const UUID& uuid,
                                                          std::unordered_set<AttributeId> attributes,
                                                          ResultCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   Search s;
   s.uuid = uuid;
   s.attributes = std::move(attributes);
@@ -26,7 +26,7 @@ ServiceDiscoverer::SearchId ServiceDiscoverer::AddSearch(const UUID& uuid,
 }
 
 bool ServiceDiscoverer::RemoveSearch(SearchId id) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   auto it = sessions_.begin();
   while (it != sessions_.end()) {
     if (it->second.active.erase(id) && it->second.active.empty()) {
@@ -39,7 +39,7 @@ bool ServiceDiscoverer::RemoveSearch(SearchId id) {
 }
 
 bool ServiceDiscoverer::StartServiceDiscovery(PeerId peer_id, std::unique_ptr<Client> client) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   // If discovery is already happening on this peer, then we can't start it
   // again.
   if (sessions_.count(peer_id)) {

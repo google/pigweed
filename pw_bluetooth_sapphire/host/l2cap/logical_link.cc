@@ -118,7 +118,7 @@ LogicalLink::~LogicalLink() {
 }
 
 fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!closed_);
 
   TRACE_DURATION("bluetooth", "LogicalLink::OpenFixedChannel", "handle", handle_, "channel id", id);
@@ -157,7 +157,7 @@ fbl::RefPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
 }
 
 void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!closed_);
 
   // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
@@ -174,7 +174,7 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
 }
 
 void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(packet);
   ZX_DEBUG_ASSERT(!closed_);
 
@@ -235,7 +235,7 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
 
 void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                                   async_dispatcher_t* dispatcher) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(security_callback_);
   ZX_DEBUG_ASSERT(dispatcher);
 
@@ -259,7 +259,7 @@ void LogicalLink::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
 }
 
 void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& security) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on closed link");
@@ -274,7 +274,7 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
 
 void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
                             FrameCheckSequenceOption fcs_option) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Drop out-bound packet on closed link");
@@ -290,20 +290,20 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
 }
 
 void LogicalLink::set_error_callback(fit::closure callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   link_error_cb_ = std::move(callback);
 }
 
 void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   security_callback_ = std::move(callback);
 }
 
 void LogicalLink::set_connection_parameter_update_callback(
     LEConnectionParameterUpdateCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   connection_parameter_update_callback_ = std::move(callback);
 }
 
@@ -319,7 +319,7 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
 }
 
 void LogicalLink::RemoveChannel(Channel* chan, fit::closure close_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
@@ -363,7 +363,7 @@ void LogicalLink::RemoveChannel(Channel* chan, fit::closure close_cb) {
 }
 
 void LogicalLink::SignalError() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore SignalError() on closed link");
@@ -413,7 +413,7 @@ void LogicalLink::SignalError() {
 }
 
 void LogicalLink::Close() {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!closed_);
 
   closed_ = true;
@@ -425,7 +425,7 @@ void LogicalLink::Close() {
 }
 
 std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest(PSM psm) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!closed_);
 
   // Query upper layer for a service handler attached to this PSM.
@@ -442,7 +442,7 @@ std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest
 }
 
 void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(dyn_chan);
   ZX_DEBUG_ASSERT(!closed_);
 
@@ -468,7 +468,7 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
 }
 
 void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb) {
-  ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
+  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(!closed_);
 
   if (!dyn_chan) {
