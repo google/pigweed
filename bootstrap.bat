@@ -50,7 +50,7 @@
 
 :: ~dp0 is the batchism for the directory in which a .bat file resides.
 if "%PW_CHECKOUT_ROOT%"=="" ^
-set "PW_ROOT=%~dp0" &^
+set "PW_ROOT=%~dp0." &^
 goto select_python
 
 :: Since PW_CHECKOUT_ROOT is set, use it.
@@ -108,10 +108,11 @@ if not "%PW_SKIP_BOOTSTRAP%" == "" goto skip_bootstrap
 :: Without the trailing slash in %PW_ROOT%/, batch combines that token with
 :: the --shell-file argument.
 call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
-    --pw-root "%PW_ROOT%/" ^
+    --pw-root "%PW_ROOT%" ^
     --shell-file "%shell_file%" ^
     --install-dir "%_PW_ACTUAL_ENVIRONMENT_ROOT%" ^
-    --use-pigweed-defaults
+    --use-pigweed-defaults ^
+    --project-root "%PW_PROJECT_ROOT%"
 goto activate_shell
 
 :skip_bootstrap

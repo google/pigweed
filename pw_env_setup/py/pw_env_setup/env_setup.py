@@ -73,6 +73,7 @@ from pw_env_setup import cargo_setup
 from pw_env_setup import environment
 from pw_env_setup import spinner
 from pw_env_setup import virtualenv_setup
+from pw_env_setup import windows_env_start
 
 
 # TODO(pwbug/67, pwbug/68) switch to shutil.which().
@@ -251,7 +252,10 @@ class EnvSetup(object):
     def setup(self):
         """Runs each of the env_setup steps."""
 
-        enable_colors()
+        if os.name == 'nt':
+            windows_env_start.print_banner(bootstrap=True, no_shell_file=False)
+        else:
+            enable_colors()
 
         steps = [
             ('CIPD package manager', self.cipd),

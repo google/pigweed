@@ -37,22 +37,14 @@ _PIGWEED_BANNER = u'''
 '''
 
 
-def main():
-    """Script entry point."""
-    if os.name != 'nt':
-        return 1
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--bootstrap', action='store_true')
-    parser.add_argument('--no-shell-file', action='store_true')
-    args = parser.parse_args()
-
+def print_banner(bootstrap, no_shell_file):
+    """Print the Pigweed or project-specific banner"""
     enable_colors()
 
     print(Color.green('\n  WELCOME TO...'))
     print(Color.magenta(_PIGWEED_BANNER))
 
-    if args.bootstrap:
+    if bootstrap:
         print(
             Color.green('\n  BOOTSTRAP! Bootstrap may take a few minutes; '
                         'please be patient'))
@@ -65,7 +57,7 @@ def main():
                 '\n  ACTIVATOR! This sets your console environment variables.\n'
             ))
 
-        if args.no_shell_file:
+        if no_shell_file:
             print(Color.bold_red('Error!\n'))
             print(
                 Color.red('  Your Pigweed environment does not seem to be'
@@ -73,6 +65,21 @@ def main():
             print(Color.red('  Run bootstrap.bat to perform initial setup.'))
 
     return 0
+
+
+def parse():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bootstrap', action='store_true')
+    parser.add_argument('--no-shell-file', action='store_true')
+    return parser.parse_args()
+
+
+def main():
+    """Script entry point."""
+    if os.name != 'nt':
+        return 1
+    return print_banner(**vars(parse()))
 
 
 if __name__ == '__main__':
