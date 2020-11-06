@@ -32,11 +32,11 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
 
   gatt_host_ = std::make_unique<GattHost>();
 
-  gap_ = std::make_unique<gap::Adapter>(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
+  gap_ = gap::Adapter::Create(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
   if (!gap_)
     return false;
 
-  gap_->AttachInspect(root_node);
+  gap_->AttachInspect(root_node, "adapter");
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   // Called when the GAP layer is ready. We initialize the GATT profile after

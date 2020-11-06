@@ -79,6 +79,7 @@ class AdapterState final {
  private:
   // Let Adapter directly write to the private members.
   friend class Adapter;
+  friend class AdapterImpl;
 
   // The member variables in this class consist of controller settings that are
   // shared between LE and BR/EDR controllers. LE and BR/EDR specific state is

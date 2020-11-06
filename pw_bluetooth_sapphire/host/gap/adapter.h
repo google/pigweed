@@ -53,29 +53,24 @@ class AdapterId : public Identifier<uint64_t> {
   AdapterId() = default;
 };
 
-// Represents the host-subsystem state for a Bluetooth controller. All
-// asynchronous callbacks are posted on the Loop on which this Adapter
-// instance is created.
+// Represents the host-subsystem state for a Bluetooth controller.
 //
-// This class is not thread-safe and it is intended to be created, deleted, and
+// This class is not guaranteed to be thread-safe and it is intended to be created, deleted, and
 // accessed on the same event loop. No internal locking is provided.
 //
 // NOTE: We currently only support primary controllers. AMP controllers are not
 // supported.
-class Adapter final {
+class Adapter {
  public:
-  // There must be an async_t dispatcher registered as a default when an Adapter
-  // instance is created. The Adapter instance will use it for all of its
-  // asynchronous tasks.
-  //
-  // Optionally, a data domain may be passed for testing purposes as |l2cap|. If nullopt is
-  // passed, then the Adapter will create and initialize its own data domain.
-  explicit Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                   std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
-  ~Adapter();
+  // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If nullopt is
+  // passed, then the Adapter will create and initialize its own L2cap.
+  static std::unique_ptr<Adapter> Create(fxl::WeakPtr<hci::Transport> hci,
+                                         fxl::WeakPtr<gatt::GATT> gatt,
+                                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
+  virtual ~Adapter() = default;
 
   // Returns a uniquely identifier for this adapter on the current system.
-  AdapterId identifier() const { return identifier_; }
+  virtual AdapterId identifier() const = 0;
 
   // Initializes the host-subsystem state for the HCI device this was created
   // for. This performs the initial HCI transport set up. Returns false if an
@@ -88,230 +83,83 @@ class Adapter final {
   // reason). The implementation is responsible for cleaning up this adapter by
   // calling ShutDown().
   using InitializeCallback = fit::function<void(bool success)>;
-  bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback);
+  virtual bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) = 0;
 
   // Shuts down this Adapter. Invokes |callback| when shut down has completed.
   // TODO(armansito): This needs to do several things to potentially preserve
   // the state of various sub-protocols. For now we keep the interface pretty
   // simple.
-  void ShutDown();
+  virtual void ShutDown() = 0;
 
   // Returns true if the Initialize() sequence has started but not completed yet
   // (i.e. the InitializeCallback that was passed to Initialize() has not yet
   // been called).
-  bool IsInitializing() const { return init_state_ == State::kInitializing; }
+  virtual bool IsInitializing() const = 0;
 
   // Returns true if this Adapter has been fully initialized.
-  bool IsInitialized() const { return init_state_ == State::kInitialized; }
+  virtual bool IsInitialized() const = 0;
 
   // Returns the global adapter setting parameters.
-  const AdapterState& state() const { return state_; }
+  virtual const AdapterState& state() const = 0;
 
   // Returns a weak pointer to this adapter.
-  fxl::WeakPtr<Adapter> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
-  // Returns this Adapter's peer cache.
-  const PeerCache& peer_cache() const { return peer_cache_; }
+  virtual fxl::WeakPtr<Adapter> AsWeakPtr() = 0;
 
   // Returns this Adapter's BR/EDR connection manager.
-  BrEdrConnectionManager* bredr_connection_manager() const {
-    return bredr_connection_manager_.get();
-  }
+  virtual BrEdrConnectionManager* bredr_connection_manager() const = 0;
 
   // Returns this Adapter's BR/EDR discovery manager.
-  BrEdrDiscoveryManager* bredr_discovery_manager() const { return bredr_discovery_manager_.get(); }
+  virtual BrEdrDiscoveryManager* bredr_discovery_manager() const = 0;
 
   // Returns this Adapter's SDP server.
-  sdp::Server* sdp_server() const { return sdp_server_.get(); }
+  virtual sdp::Server* sdp_server() const = 0;
 
   // Returns this Adapter's LE local address manager.
-  LowEnergyAddressManager* le_address_manager() const {
-    ZX_DEBUG_ASSERT(le_address_manager_);
-    return le_address_manager_.get();
-  }
+  virtual LowEnergyAddressManager* le_address_manager() const = 0;
 
   // Returns this Adapter's LE discovery manager.
-  LowEnergyDiscoveryManager* le_discovery_manager() const {
-    ZX_DEBUG_ASSERT(le_discovery_manager_);
-    return le_discovery_manager_.get();
-  }
+  virtual LowEnergyDiscoveryManager* le_discovery_manager() const = 0;
 
   // Returns this Adapter's LE connection manager.
-  LowEnergyConnectionManager* le_connection_manager() const {
-    ZX_DEBUG_ASSERT(le_connection_manager_);
-    return le_connection_manager_.get();
-  }
+  virtual LowEnergyConnectionManager* le_connection_manager() const = 0;
 
   // Returns this Adapter's LE advertising manager.
-  LowEnergyAdvertisingManager* le_advertising_manager() const {
-    ZX_DEBUG_ASSERT(le_advertising_manager_);
-    return le_advertising_manager_.get();
-  }
+  virtual LowEnergyAdvertisingManager* le_advertising_manager() const = 0;
 
   // Returns this Adapter's peer cache.
-  PeerCache* peer_cache() { return &peer_cache_; }
+  virtual PeerCache* peer_cache() = 0;
 
   // Add a previously bonded device to the peer cache and set it up for
   // auto-connect procedures.
-  bool AddBondedPeer(BondingData bonding_data);
+  virtual bool AddBondedPeer(BondingData bonding_data) = 0;
 
   // Assigns a pairing delegate to this adapter. This PairingDelegate and its
   // I/O capabilities will be used for all future pairing procedures. Setting a
   // new PairingDelegate cancels all ongoing pairing procedures.
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
+  virtual void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) = 0;
 
   // Returns true if this adapter is currently in discoverable mode on the LE or BR/EDR transports.
-  bool IsDiscoverable() const;
+  virtual bool IsDiscoverable() const = 0;
 
   // Returns true if any discovery process (LE or BR/EDR) is running on this
   // adapter.
-  bool IsDiscovering() const;
+  virtual bool IsDiscovering() const = 0;
 
   // Sets the Local Name of this adapter, for both BR/EDR discoverability and
   // public LE services.
-  void SetLocalName(std::string name, hci::StatusCallback callback);
+  virtual void SetLocalName(std::string name, hci::StatusCallback callback) = 0;
 
   // Sets the Device Class of this adapter.
-  void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback);
+  virtual void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) = 0;
 
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,
   // Part C, 9.3.3).
   using AutoConnectCallback = fit::function<void(LowEnergyConnectionRefPtr)>;
-  void set_auto_connect_callback(AutoConnectCallback callback) {
-    auto_conn_cb_ = std::move(callback);
-  }
+  virtual void set_auto_connect_callback(AutoConnectCallback callback) = 0;
 
   // Attach Adapter's inspect node as a child node under |parent| with the given |name|.
-  void AttachInspect(inspect::Node& parent, std::string name = "adapter");
-
-  // Returns this adapter's HCI transport.
-  fxl::WeakPtr<hci::Transport> transport() const { return hci_; }
-
- private:
-  // Second step of the initialization sequence. Called by Initialize() when the
-  // first batch of HCI commands have been sent.
-  void InitializeStep2(InitializeCallback callback);
-
-  // Third step of the initialization sequence. Called by InitializeStep2() when
-  // the second batch of HCI commands have been sent.
-  void InitializeStep3(InitializeCallback callback);
-
-  // Fourth step of the initialization sequence. Called by InitializeStep3()
-  // when the third batch of HCI commands have been sent.
-  void InitializeStep4(InitializeCallback callback);
-
-  // Assigns properties to |adapter_node_| using values discovered during other initialization
-  // steps.
-  void UpdateInspectProperties();
-
-  // Builds and returns the HCI event mask based on our supported host side
-  // features and controller capabilities. This is used to mask events that we
-  // do not know how to handle.
-  uint64_t BuildEventMask();
-
-  // Builds and returns the LE event mask based on our supported host side
-  // features and controller capabilities. This is used to mask LE events that
-  // we do not know how to handle.
-  uint64_t BuildLEEventMask();
-
-  // Called by ShutDown() and during Initialize() in case of failure. This
-  // synchronously cleans up the transports and resets initialization state.
-  void CleanUp();
-
-  // Called by Transport after it has been unexpectedly closed.
-  void OnTransportClosed();
-
-  // Called when a directed connectable advertisement is received from a bonded
-  // LE device. This amounts to a connection request from a bonded peripheral
-  // which is handled by routing the request to |le_connection_manager_| to
-  // initiate a Direct Connection Establishment procedure (Vol 3, Part C,
-  // 9.3.8).
-  void OnLeAutoConnectRequest(Peer* peer);
-
-  // Called by |le_address_manager_| to query whether it is currently allowed to
-  // reconfigure the LE random address.
-  bool IsLeRandomAddressChangeAllowed();
-
-  // Must be initialized first so that child nodes can be passed to other constructors.
-  inspect::Node adapter_node_;
-  struct InspectProperties {
-    inspect::StringProperty adapter_id;
-    inspect::StringProperty hci_version;
-    inspect::UintProperty bredr_max_num_packets;
-    inspect::UintProperty bredr_max_data_length;
-    inspect::UintProperty le_max_num_packets;
-    inspect::UintProperty le_max_data_length;
-    inspect::StringProperty lmp_features;
-    inspect::StringProperty le_features;
-  };
-  InspectProperties inspect_properties_;
-
-  // Uniquely identifies this adapter on the current system.
-  AdapterId identifier_;
-
-  async_dispatcher_t* dispatcher_;
-  fxl::WeakPtr<hci::Transport> hci_;
-
-  // Callback invoked to notify clients when the underlying transport is closed.
-  fit::closure transport_closed_cb_;
-
-  // Parameters relevant to the initialization sequence.
-  // TODO(armansito): The Initialize()/ShutDown() pattern has become common
-  // enough in this project that it might be worth considering moving the
-  // init-state-keeping into an abstract base.
-  enum State {
-    kNotInitialized = 0,
-    kInitializing,
-    kInitialized,
-  };
-  std::atomic<State> init_state_;
-  std::unique_ptr<hci::SequentialCommandRunner> init_seq_runner_;
-
-  // Contains the global adapter state.
-  AdapterState state_;
-
-  // The maximum LMP feature page that we will read.
-  size_t max_lmp_feature_page_index_;
-
-  // Provides access to discovered, connected, and/or bonded remote Bluetooth
-  // devices.
-  PeerCache peer_cache_;
-
-  // The data domain used by GAP to interact with L2CAP and RFCOMM layers.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
-
-  // The GATT profile. We use this reference to add and remove data bearers and
-  // for service discovery.
-  fxl::WeakPtr<gatt::GATT> gatt_;
-
-  // Objects that abstract the controller for connection and advertising
-  // procedures.
-  std::unique_ptr<hci::LowEnergyAdvertiser> hci_le_advertiser_;
-  std::unique_ptr<hci::LowEnergyConnector> hci_le_connector_;
-  std::unique_ptr<hci::LowEnergyScanner> hci_le_scanner_;
-
-  // Objects that perform LE procedures.
-  std::unique_ptr<LowEnergyAddressManager> le_address_manager_;
-  std::unique_ptr<LowEnergyDiscoveryManager> le_discovery_manager_;
-  std::unique_ptr<LowEnergyConnectionManager> le_connection_manager_;
-  std::unique_ptr<LowEnergyAdvertisingManager> le_advertising_manager_;
-
-  // Objects that perform BR/EDR procedures.
-  std::unique_ptr<BrEdrConnectionManager> bredr_connection_manager_;
-  std::unique_ptr<BrEdrDiscoveryManager> bredr_discovery_manager_;
-  std::unique_ptr<sdp::Server> sdp_server_;
-
-  // Callback to propagate ownership of an auto-connected LE link.
-  AutoConnectCallback auto_conn_cb_;
-
-  fxl::ThreadChecker thread_checker_;
-
-  // This must remain the last member to make sure that all weak pointers are
-  // invalidating before other members are destroyed.
-  fxl::WeakPtrFactory<Adapter> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Adapter);
+  virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 };
 
 }  // namespace gap

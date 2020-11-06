@@ -26,8 +26,210 @@
 
 namespace bt::gap {
 
-Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
-                 std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap)
+// All asynchronous callbacks are posted on the Loop on which this Adapter
+// instance is created.
+class AdapterImpl final : public Adapter {
+ public:
+  // There must be an async_t dispatcher registered as a default when an AdapterImpl
+  // instance is created. The Adapter instance will use it for all of its
+  // asynchronous tasks.
+  explicit AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
+                       std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
+  ~AdapterImpl();
+
+  AdapterId identifier() const override { return identifier_; }
+
+  bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) override;
+
+  void ShutDown() override;
+
+  bool IsInitializing() const override { return init_state_ == State::kInitializing; }
+
+  bool IsInitialized() const override { return init_state_ == State::kInitialized; }
+
+  const AdapterState& state() const override { return state_; }
+
+  fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+
+  BrEdrConnectionManager* bredr_connection_manager() const override {
+    return bredr_connection_manager_.get();
+  }
+
+  BrEdrDiscoveryManager* bredr_discovery_manager() const override {
+    return bredr_discovery_manager_.get();
+  }
+
+  sdp::Server* sdp_server() const override { return sdp_server_.get(); }
+
+  LowEnergyAddressManager* le_address_manager() const override {
+    ZX_DEBUG_ASSERT(le_address_manager_);
+    return le_address_manager_.get();
+  }
+
+  LowEnergyDiscoveryManager* le_discovery_manager() const override {
+    ZX_DEBUG_ASSERT(le_discovery_manager_);
+    return le_discovery_manager_.get();
+  }
+
+  LowEnergyConnectionManager* le_connection_manager() const override {
+    ZX_DEBUG_ASSERT(le_connection_manager_);
+    return le_connection_manager_.get();
+  }
+
+  LowEnergyAdvertisingManager* le_advertising_manager() const override {
+    ZX_DEBUG_ASSERT(le_advertising_manager_);
+    return le_advertising_manager_.get();
+  }
+
+  PeerCache* peer_cache() override { return &peer_cache_; }
+
+  bool AddBondedPeer(BondingData bonding_data) override;
+
+  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) override;
+
+  bool IsDiscoverable() const override;
+
+  bool IsDiscovering() const override;
+
+  void SetLocalName(std::string name, hci::StatusCallback callback) override;
+
+  void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) override;
+
+  using AutoConnectCallback = fit::function<void(LowEnergyConnectionRefPtr)>;
+  void set_auto_connect_callback(AutoConnectCallback callback) override {
+    auto_conn_cb_ = std::move(callback);
+  }
+
+  void AttachInspect(inspect::Node& parent, std::string name = "adapter") override;
+
+ private:
+  // Second step of the initialization sequence. Called by Initialize() when the
+  // first batch of HCI commands have been sent.
+  void InitializeStep2(InitializeCallback callback);
+
+  // Third step of the initialization sequence. Called by InitializeStep2() when
+  // the second batch of HCI commands have been sent.
+  void InitializeStep3(InitializeCallback callback);
+
+  // Fourth step of the initialization sequence. Called by InitializeStep3()
+  // when the third batch of HCI commands have been sent.
+  void InitializeStep4(InitializeCallback callback);
+
+  // Assigns properties to |adapter_node_| using values discovered during other initialization
+  // steps.
+  void UpdateInspectProperties();
+
+  // Builds and returns the HCI event mask based on our supported host side
+  // features and controller capabilities. This is used to mask events that we
+  // do not know how to handle.
+  uint64_t BuildEventMask();
+
+  // Builds and returns the LE event mask based on our supported host side
+  // features and controller capabilities. This is used to mask LE events that
+  // we do not know how to handle.
+  uint64_t BuildLEEventMask();
+
+  // Called by ShutDown() and during Initialize() in case of failure. This
+  // synchronously cleans up the transports and resets initialization state.
+  void CleanUp();
+
+  // Called by Transport after it has been unexpectedly closed.
+  void OnTransportClosed();
+
+  // Called when a directed connectable advertisement is received from a bonded
+  // LE device. This amounts to a connection request from a bonded peripheral
+  // which is handled by routing the request to |le_connection_manager_| to
+  // initiate a Direct Connection Establishment procedure (Vol 3, Part C,
+  // 9.3.8).
+  void OnLeAutoConnectRequest(Peer* peer);
+
+  // Called by |le_address_manager_| to query whether it is currently allowed to
+  // reconfigure the LE random address.
+  bool IsLeRandomAddressChangeAllowed();
+
+  // Must be initialized first so that child nodes can be passed to other constructors.
+  inspect::Node adapter_node_;
+  struct InspectProperties {
+    inspect::StringProperty adapter_id;
+    inspect::StringProperty hci_version;
+    inspect::UintProperty bredr_max_num_packets;
+    inspect::UintProperty bredr_max_data_length;
+    inspect::UintProperty le_max_num_packets;
+    inspect::UintProperty le_max_data_length;
+    inspect::StringProperty lmp_features;
+    inspect::StringProperty le_features;
+  };
+  InspectProperties inspect_properties_;
+
+  // Uniquely identifies this adapter on the current system.
+  AdapterId identifier_;
+
+  async_dispatcher_t* dispatcher_;
+  fxl::WeakPtr<hci::Transport> hci_;
+
+  // Callback invoked to notify clients when the underlying transport is closed.
+  fit::closure transport_closed_cb_;
+
+  // Parameters relevant to the initialization sequence.
+  // TODO(armansito): The Initialize()/ShutDown() pattern has become common
+  // enough in this project that it might be worth considering moving the
+  // init-state-keeping into an abstract base.
+  enum State {
+    kNotInitialized = 0,
+    kInitializing,
+    kInitialized,
+  };
+  std::atomic<State> init_state_;
+  std::unique_ptr<hci::SequentialCommandRunner> init_seq_runner_;
+
+  // Contains the global adapter state.
+  AdapterState state_;
+
+  // The maximum LMP feature page that we will read.
+  size_t max_lmp_feature_page_index_;
+
+  // Provides access to discovered, connected, and/or bonded remote Bluetooth
+  // devices.
+  PeerCache peer_cache_;
+
+  // The data domain used by GAP to interact with L2CAP and RFCOMM layers.
+  fbl::RefPtr<l2cap::L2cap> l2cap_;
+
+  // The GATT profile. We use this reference to add and remove data bearers and
+  // for service discovery.
+  fxl::WeakPtr<gatt::GATT> gatt_;
+
+  // Objects that abstract the controller for connection and advertising
+  // procedures.
+  std::unique_ptr<hci::LowEnergyAdvertiser> hci_le_advertiser_;
+  std::unique_ptr<hci::LowEnergyConnector> hci_le_connector_;
+  std::unique_ptr<hci::LowEnergyScanner> hci_le_scanner_;
+
+  // Objects that perform LE procedures.
+  std::unique_ptr<LowEnergyAddressManager> le_address_manager_;
+  std::unique_ptr<LowEnergyDiscoveryManager> le_discovery_manager_;
+  std::unique_ptr<LowEnergyConnectionManager> le_connection_manager_;
+  std::unique_ptr<LowEnergyAdvertisingManager> le_advertising_manager_;
+
+  // Objects that perform BR/EDR procedures.
+  std::unique_ptr<BrEdrConnectionManager> bredr_connection_manager_;
+  std::unique_ptr<BrEdrDiscoveryManager> bredr_discovery_manager_;
+  std::unique_ptr<sdp::Server> sdp_server_;
+
+  // Callback to propagate ownership of an auto-connected LE link.
+  AutoConnectCallback auto_conn_cb_;
+
+  fxl::ThreadChecker thread_checker_;
+
+  // This must remain the last member to make sure that all weak pointers are
+  // invalidating before other members are destroyed.
+  fxl::WeakPtrFactory<AdapterImpl> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
+};
+
+AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
+                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
       hci_(std::move(hci)),
@@ -54,12 +256,12 @@ Adapter::Adapter(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt
   });
 }
 
-Adapter::~Adapter() {
+AdapterImpl::~AdapterImpl() {
   if (IsInitialized())
     ShutDown();
 }
 
-bool Adapter::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {
+bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(callback);
   ZX_DEBUG_ASSERT(transport_closed_cb);
@@ -78,7 +280,7 @@ bool Adapter::Initialize(InitializeCallback callback, fit::closure transport_clo
 
   transport_closed_cb_ = std::move(transport_closed_cb);
 
-  state_.vendor_features_ = transport()->GetVendorFeatures();
+  state_.vendor_features_ = hci_->GetVendorFeatures();
 
   // Start by resetting the controller to a clean state and then send
   // informational parameter commands that are not specific to LE or BR/EDR. The
@@ -150,7 +352,7 @@ bool Adapter::Initialize(InitializeCallback callback, fit::closure transport_clo
   return true;
 }
 
-void Adapter::ShutDown() {
+void AdapterImpl::ShutDown() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   bt_log(DEBUG, "gap", "adapter shutting down");
 
@@ -162,26 +364,26 @@ void Adapter::ShutDown() {
   CleanUp();
 }
 
-bool Adapter::AddBondedPeer(BondingData bonding_data) {
+bool AdapterImpl::AddBondedPeer(BondingData bonding_data) {
   return peer_cache()->AddBondedPeer(bonding_data);
 }
 
-void Adapter::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
+void AdapterImpl::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
   le_connection_manager()->SetPairingDelegate(delegate);
   bredr_connection_manager()->SetPairingDelegate(delegate);
 }
 
-bool Adapter::IsDiscoverable() const {
+bool AdapterImpl::IsDiscoverable() const {
   return (le_advertising_manager_ && le_advertising_manager_->advertising()) ||
          (bredr_discovery_manager_ && bredr_discovery_manager_->discoverable());
 }
 
-bool Adapter::IsDiscovering() const {
+bool AdapterImpl::IsDiscovering() const {
   return (le_discovery_manager_ && le_discovery_manager_->discovering()) ||
          (bredr_discovery_manager_ && bredr_discovery_manager_->discovering());
 }
 
-void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
+void AdapterImpl::SetLocalName(std::string name, hci::StatusCallback callback) {
   // TODO(fxbug.dev/40836): set the public LE advertisement name from |name|
   // If BrEdr is not supported, skip the name update.
   if (!bredr_discovery_manager()) {
@@ -201,7 +403,7 @@ void Adapter::SetLocalName(std::string name, hci::StatusCallback callback) {
       });
 }
 
-void Adapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
+void AdapterImpl::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) {
   auto write_dev_class = hci::CommandPacket::New(hci::kWriteClassOfDevice,
                                                  sizeof(hci::WriteClassOfDeviceCommandParams));
   write_dev_class->mutable_payload<hci::WriteClassOfDeviceCommandParams>()->class_of_device =
@@ -213,14 +415,14 @@ void Adapter::SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback
       });
 }
 
-void Adapter::AttachInspect(inspect::Node& parent, std::string name) {
+void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
   adapter_node_ = parent.CreateChild(name);
   UpdateInspectProperties();
 
   peer_cache_.AttachInspect(adapter_node_);
 }
 
-void Adapter::InitializeStep2(InitializeCallback callback) {
+void AdapterImpl::InitializeStep2(InitializeCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(IsInitializing());
 
@@ -344,7 +546,7 @@ void Adapter::InitializeStep2(InitializeCallback callback) {
   });
 }
 
-void Adapter::InitializeStep3(InitializeCallback callback) {
+void AdapterImpl::InitializeStep3(InitializeCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
   ZX_DEBUG_ASSERT(IsInitializing());
 
@@ -458,7 +660,7 @@ void Adapter::InitializeStep3(InitializeCallback callback) {
   });
 }
 
-void Adapter::InitializeStep4(InitializeCallback callback) {
+void AdapterImpl::InitializeStep4(InitializeCallback callback) {
   ZX_DEBUG_ASSERT(IsInitializing());
 
   // Initialize the scan manager based on current feature support.
@@ -476,7 +678,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
 
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
-      adapter_identity, fit::bind_member(this, &Adapter::IsLeRandomAddressChangeAllowed), hci_);
+      adapter_identity, fit::bind_member(this, &AdapterImpl::IsLeRandomAddressChangeAllowed), hci_);
 
   // Initialize the HCI adapters.
   hci_le_advertiser_ = std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
@@ -490,7 +692,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   le_discovery_manager_ =
       std::make_unique<LowEnergyDiscoveryManager>(hci_, hci_le_scanner_.get(), &peer_cache_);
   le_discovery_manager_->set_peer_connectable_callback(
-      fit::bind_member(this, &Adapter::OnLeAutoConnectRequest));
+      fit::bind_member(this, &AdapterImpl::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
       sm::SecurityManager::Create);
@@ -547,7 +749,7 @@ void Adapter::InitializeStep4(InitializeCallback callback) {
   });
 }
 
-void Adapter::UpdateInspectProperties() {
+void AdapterImpl::UpdateInspectProperties() {
   inspect_properties_.adapter_id = adapter_node_.CreateString("adapter_id", identifier_.ToString());
   inspect_properties_.hci_version =
       adapter_node_.CreateString("hci_version", hci::HCIVersionToString(state_.hci_version()));
@@ -569,7 +771,7 @@ void Adapter::UpdateInspectProperties() {
   inspect_properties_.le_features = adapter_node_.CreateString("le_features", le_features);
 }
 
-uint64_t Adapter::BuildEventMask() {
+uint64_t AdapterImpl::BuildEventMask() {
   uint64_t event_mask = 0;
 
 #define ENABLE_EVT(event) event_mask |= static_cast<uint64_t>(hci::EventMask::event)
@@ -608,7 +810,7 @@ uint64_t Adapter::BuildEventMask() {
   return event_mask;
 }
 
-uint64_t Adapter::BuildLEEventMask() {
+uint64_t AdapterImpl::BuildLEEventMask() {
   uint64_t event_mask = 0;
 
 #define ENABLE_EVT(event) event_mask |= static_cast<uint64_t>(hci::LEEventMask::event)
@@ -624,7 +826,7 @@ uint64_t Adapter::BuildLEEventMask() {
   return event_mask;
 }
 
-void Adapter::CleanUp() {
+void AdapterImpl::CleanUp() {
   ZX_DEBUG_ASSERT(thread_checker_.IsCreationThreadCurrent());
 
   if (init_state_ == State::kNotInitialized) {
@@ -654,13 +856,13 @@ void Adapter::CleanUp() {
   hci_ = nullptr;
 }
 
-void Adapter::OnTransportClosed() {
+void AdapterImpl::OnTransportClosed() {
   bt_log(INFO, "gap", "HCI transport was closed");
   if (transport_closed_cb_)
     transport_closed_cb_();
 }
 
-void Adapter::OnLeAutoConnectRequest(Peer* peer) {
+void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
   ZX_DEBUG_ASSERT(le_connection_manager_);
   ZX_DEBUG_ASSERT(peer);
   ZX_DEBUG_ASSERT(peer->le());
@@ -690,10 +892,16 @@ void Adapter::OnLeAutoConnectRequest(Peer* peer) {
   });
 }
 
-bool Adapter::IsLeRandomAddressChangeAllowed() {
+bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
   return hci_le_advertiser_->AllowsRandomAddressChange() &&
          hci_le_scanner_->AllowsRandomAddressChange() &&
          hci_le_connector_->AllowsRandomAddressChange();
+}
+
+std::unique_ptr<Adapter> Adapter::Create(fxl::WeakPtr<hci::Transport> hci,
+                                         fxl::WeakPtr<gatt::GATT> gatt,
+                                         std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap) {
+  return std::make_unique<AdapterImpl>(hci, gatt, l2cap);
 }
 
 }  // namespace bt::gap

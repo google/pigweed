@@ -30,6 +30,7 @@ class LowEnergyState final {
 
  private:
   friend class Adapter;
+  friend class AdapterImpl;
 
   // Storage capacity information about the controller's internal ACL data
   // buffers.

@@ -49,8 +49,8 @@ class AdapterTest : public TestingBase {
 
     auto l2cap = l2cap::testing::FakeL2cap::Create();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
-    adapter_ = std::make_unique<Adapter>(transport()->WeakPtr(), gatt_->AsWeakPtr(),
-                                         std::optional(std::move(l2cap)));
+    adapter_ = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(),
+                               std::optional(std::move(l2cap)));
     test_device()->StartCmdChannel(test_cmd_chan());
     test_device()->StartAclChannel(test_acl_chan());
   }
@@ -853,7 +853,7 @@ TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
 
 TEST_F(GAP_AdapterTest, InspectHierarchy) {
   inspect::Inspector inspector;
-  adapter()->AttachInspect(inspector.GetRoot());
+  adapter()->AttachInspect(inspector.GetRoot(), "adapter");
 
   bool success;
   int init_cb_count = 0;
