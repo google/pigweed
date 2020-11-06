@@ -256,6 +256,9 @@ class AutoUpdatingDetokenizer:
         return self._detokenizer.detokenize(data)
 
 
+_Detokenizer = Union[Detokenizer, AutoUpdatingDetokenizer]
+
+
 class PrefixedMessageDecoder:
     """Parses messages that start with a prefix character from a byte stream."""
     def __init__(self, prefix: Union[str, bytes], chars: Union[str, bytes]):
@@ -324,7 +327,7 @@ class PrefixedMessageDecoder:
 
 
 def _detokenize_prefixed_base64(
-        detokenizer: Detokenizer, prefix: bytes,
+        detokenizer: _Detokenizer, prefix: bytes,
         recursion: int) -> Callable[[Match[bytes]], bytes]:
     """Returns a function that decodes prefixed Base64 with the detokenizer."""
     def decode_and_detokenize(match: Match[bytes]) -> bytes:
@@ -365,7 +368,7 @@ def _base64_message_regex(prefix: bytes) -> Pattern[bytes]:
             br'(?:[A-Za-z0-9+/\-_]{3}=|[A-Za-z0-9+/\-_]{2}==)?'))
 
 
-def detokenize_base64_live(detokenizer: Detokenizer,
+def detokenize_base64_live(detokenizer: _Detokenizer,
                            input_file: BinaryIO,
                            output: BinaryIO,
                            prefix: Union[str, bytes] = BASE64_PREFIX,
@@ -390,7 +393,7 @@ def detokenize_base64_live(detokenizer: Detokenizer,
             output.flush()
 
 
-def detokenize_base64_to_file(detokenizer: Detokenizer,
+def detokenize_base64_to_file(detokenizer: _Detokenizer,
                               data: bytes,
                               output: BinaryIO,
                               prefix: Union[str, bytes] = BASE64_PREFIX,
@@ -402,7 +405,7 @@ def detokenize_base64_to_file(detokenizer: Detokenizer,
             _detokenize_prefixed_base64(detokenizer, prefix, recursion), data))
 
 
-def detokenize_base64(detokenizer: Detokenizer,
+def detokenize_base64(detokenizer: _Detokenizer,
                       data: bytes,
                       prefix: Union[str, bytes] = BASE64_PREFIX,
                       recursion: int = DEFAULT_RECURSION) -> bytes:

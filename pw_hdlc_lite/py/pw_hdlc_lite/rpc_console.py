@@ -40,7 +40,7 @@ from typing import Collection, Iterable, Iterator, BinaryIO
 import IPython  # type: ignore
 import serial  # type: ignore
 
-from pw_hdlc_lite.rpc import HdlcRpcClient
+from pw_hdlc_lite.rpc import HdlcRpcClient, write_to_file
 
 _LOG = logging.getLogger(__name__)
 
@@ -111,7 +111,8 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
                ', '.join(proto_globs))
 
     _start_ipython_terminal(
-        HdlcRpcClient(serial.Serial(device, baudrate), protos, output))
+        HdlcRpcClient(serial.Serial(device, baudrate), protos,
+                      lambda data: write_to_file(data, output)))
     return 0
 
 

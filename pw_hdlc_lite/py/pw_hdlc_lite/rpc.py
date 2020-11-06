@@ -14,7 +14,6 @@
 """Utilities for using HDLC with pw_rpc."""
 
 import logging
-import os
 from pathlib import Path
 import sys
 import threading
@@ -54,8 +53,7 @@ def channel_output(writer: Callable[[bytes], Any],
 
 def read_and_process_data(rpc_client: pw_rpc.Client,
                           device: BinaryIO,
-                          output: BinaryIO,
-                          output_sep: bytes = os.linesep.encode(),
+                          output: Callable[[bytes], Any],
                           rpc_address: int = DEFAULT_ADDRESS) -> NoReturn:
     """Reads HDLC frames from the device and passes them to the RPC client."""
     decoder = FrameDecoder()
@@ -71,9 +69,7 @@ def read_and_process_data(rpc_client: pw_rpc.Client,
                 if not rpc_client.process_packet(frame.data):
                     _LOG.error('Packet not handled by RPC client: %s', frame)
             elif frame.address == STDOUT_ADDRESS:
-                output.write(frame.data)
-                output.write(output_sep)
-                output.flush()
+                output(frame.data)
             else:
                 _LOG.error('Unhandled frame for address %d: %s', frame.address,
                            frame.data.decode(errors='replace'))
@@ -82,12 +78,18 @@ def read_and_process_data(rpc_client: pw_rpc.Client,
 _PathOrModule = Union[str, Path, ModuleType]
 
 
+def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
+    output.write(data)
+    output.write(b'\n')
+    output.flush()
+
+
 class HdlcRpcClient:
     """An RPC client configured to run over HDLC."""
     def __init__(self,
                  device: BinaryIO,
                  proto_paths_or_modules: Iterable[_PathOrModule],
-                 output: BinaryIO = sys.stdout.buffer,
+                 output: Callable[[bytes], Any] = write_to_file,
                  channels: Iterable[pw_rpc.Channel] = None,
                  client_impl: pw_rpc.client.ClientImpl = None):
         """Creates an RPC client configured to communicate using HDLC.
