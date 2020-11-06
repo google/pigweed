@@ -48,7 +48,14 @@ def init_cipd(ctx: PresubmitContext):
 
 
 def init_virtualenv(ctx: PresubmitContext):
-    environment.init_virtualenv(ctx.root, ctx.output_dir)
+    environment.init_virtualenv(
+        ctx.root,
+        ctx.output_dir,
+        gn_targets=(
+            f'{ctx.root}#:python.install',
+            f'{ctx.root}#:target_support_packages.install',
+        ),
+    )
 
 
 # Trigger builds if files with these extensions change.
