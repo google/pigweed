@@ -6,6 +6,8 @@ pw_unit_test
 ``pw_unit_test`` unit testing library with a `Google Test`_-compatible API,
 built on top of embedded-friendly primitives.
 
+.. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md
+
 ``pw_unit_test`` is a portable library which can run on almost any system from
 from bare metal to a full-fledged desktop OS. It does this by offloading the
 responsibility of test reporting and output to the underlying system,
@@ -210,5 +212,29 @@ several sub-targets:
     # ...
   }
 
+RPC service
+===========
+``pw_unit_test`` provides an RPC service which runs unit tests on demand and
+streams the results back to the client. The service is defined in
+``pw_unit_test_proto/unit_test.proto``, and implemented by the GN target
+``$dir_pw_unit_test:rpc_service``.
 
-.. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md
+To set up RPC-based unit tests in your application, instantiate a
+``pw::unit_test::UnitTestService`` and register it with your RPC server.
+
+.. code:: c++
+
+  #include "pw_rpc/server.h"
+  #include "pw_unit_test/unit_test_service.h"
+
+  // Server setup; refer to pw_rpc docs for more information.
+  pw::rpc::Channel channels[] = {
+   pw::rpc::Channel::Create<1>(&my_output),
+  };
+  pw::rpc::Server server(channels);
+
+  pw::unit_test::UnitTestService unit_test_service;
+
+  void RegisterServices() {
+    server.RegisterService(unit_test_services);
+  }
