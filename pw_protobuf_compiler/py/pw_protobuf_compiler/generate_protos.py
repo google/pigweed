@@ -72,8 +72,12 @@ def protoc_go_args(args: argparse.Namespace) -> List[str]:
 def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
     # nanopb needs to know of the include path to parse *.options files
     return [
-        '--plugin', f'protoc-gen-nanopb={args.custom_plugin}',
-        f'--nanopb_out=-I{args.module_path}:{args.out_dir}'
+        '--plugin',
+        f'protoc-gen-nanopb={args.custom_plugin}',
+        # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
+        # like when you merge the two using the `flag,...:out` syntax.
+        f'--nanopb_opt=-I{args.module_path}',
+        f'--nanopb_out={args.out_dir}'
     ]
 
 
@@ -120,10 +124,8 @@ def main() -> int:
 
     process = pw_cli.process.run(
         'protoc',
-        '-I',
-        args.module_path,
-        '-I',
-        args.out_dir,
+        f'-I{args.module_path}',
+        f'-I{args.out_dir}',
         *include_paths,
         *lang_args,
         *args.protos,
