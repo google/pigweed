@@ -267,6 +267,9 @@ class EnvSetup(object):
         if not self._is_windows and self._enable_cargo:
             steps.append(("Rust cargo", self.cargo))
 
+        if self._is_windows:
+            steps.append(("Windows scripts", self.win_scripts))
+
         self._log(
             Color.bold('Downloading and installing packages into local '
                        'source directory:\n'))
@@ -430,6 +433,13 @@ Then use `set +x` to go back to normal.
         # TODO(mohrr) find a way to do stuff like this for all projects.
         host_dir = os.path.join(self._pw_root, 'out', 'host')
         self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
+        return _Result(_Result.Status.DONE)
+
+    def win_scripts(self):
+        # These scripts act as a compatibility layer for windows.
+        env_setup_dir = os.path.join(self._pw_root, 'pw_env_setup')
+        self._env.prepend('PATH', os.path.join(env_setup_dir,
+                                               'windows_scripts'))
         return _Result(_Result.Status.DONE)
 
     def cargo(self):
