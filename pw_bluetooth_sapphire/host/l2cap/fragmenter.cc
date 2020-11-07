@@ -21,7 +21,8 @@ namespace {
 // size to both the source size and the destination size.
 size_t CopyBounded(MutableBufferView destination, const ByteBuffer& source) {
   const size_t size = std::min(destination.size(), source.size());
-  return source.Copy(&destination, 0, size);
+  source.Copy(&destination, 0, size);
+  return size;
 }
 
 }  // namespace

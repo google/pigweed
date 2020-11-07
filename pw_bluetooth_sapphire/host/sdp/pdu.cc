@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 
 #include <endian.h>
+
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -160,8 +161,7 @@ void Request::SetContinuationState(const ByteBuffer& buf) {
     return;
   }
   auto v = cont_state_.mutable_view(sizeof(uint8_t));
-  size_t copied = buf.Copy(&v);
-  ZX_DEBUG_ASSERT(copied == buf.size());
+  buf.Copy(&v);
 }
 
 bool Request::ParseContinuationState(const ByteBuffer& buf) {
@@ -325,7 +325,8 @@ Status ServiceSearchResponse::Parse(const ByteBuffer& buf) {
     bt_log(TRACE, "sdp", "Failed to find continuation state");
     return Status(HostError::kPacketMalformed);
   }
-  size_t expected_size = read_size + expected_record_bytes + cont_state_view.size() + sizeof(uint8_t);
+  size_t expected_size =
+      read_size + expected_record_bytes + cont_state_view.size() + sizeof(uint8_t);
   if (expected_size != buf.size()) {
     bt_log(TRACE, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
     return Status(HostError::kPacketMalformed);
@@ -439,8 +440,8 @@ ServiceAttributeRequest::ServiceAttributeRequest(const ByteBuffer& params) {
   size_t read_size = sizeof(uint32_t);
   max_attribute_byte_count_ = betoh16(params.view(read_size).As<uint16_t>());
   if (max_attribute_byte_count_ < kMinMaximumAttributeByteCount) {
-    bt_log(TRACE, "sdp", "max attribute byte count too small (%hu < %zu)", max_attribute_byte_count_,
-           kMinMaximumAttributeByteCount);
+    bt_log(TRACE, "sdp", "max attribute byte count too small (%hu < %zu)",
+           max_attribute_byte_count_, kMinMaximumAttributeByteCount);
     return;
   }
   read_size += sizeof(uint16_t);
@@ -558,7 +559,8 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     continuation_state_->Write(cont_state_view);
   }
 
-  size_t expected_size = read_size + attribute_list_byte_count + cont_state_view.size() + sizeof(uint8_t);
+  size_t expected_size =
+      read_size + attribute_list_byte_count + cont_state_view.size() + sizeof(uint8_t);
   if (buf.size() != expected_size) {
     bt_log(TRACE, "sdp", "Packet should be %zu not %zu", expected_size, buf.size());
     return Status(HostError::kPacketMalformed);
@@ -573,7 +575,8 @@ Status ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     }
     // We currently don't support more than approx 10 packets of the max size.
     if (new_partial_size > kMaxSupportedAttributeListBytes) {
-      bt_log(INFO, "sdp", "ServiceAttributeResponse exceeds supported size (%zu), dropping", new_partial_size);
+      bt_log(INFO, "sdp", "ServiceAttributeResponse exceeds supported size (%zu), dropping",
+             new_partial_size);
       partial_response_ = nullptr;
       return Status(HostError::kNotSupported);
     }

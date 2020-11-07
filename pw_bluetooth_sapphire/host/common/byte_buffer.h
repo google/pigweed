@@ -65,11 +65,13 @@ class ByteBuffer {
   // its backing buffer.
   BufferView view(size_t pos = 0, size_t size = std::numeric_limits<std::size_t>::max()) const;
 
-  // Copies |size| bytes of this buffer into |out_buffer| starting at offset
-  // |pos| and returns the number of bytes that were copied. |out_buffer| must
-  // be large enough to accommodate the result of this operation.
-  size_t Copy(MutableByteBuffer* out_buffer, size_t pos = 0,
-              size_t size = std::numeric_limits<std::size_t>::max()) const;
+  // Copies all bytes of this buffer into |out_buffer|. |out_buffer| must be large enough to
+  // accommodate the result of this operation.
+  void Copy(MutableByteBuffer* out_buffer) const;
+
+  // Copies |size| bytes of this buffer into |out_buffer| starting at offset |pos|. |out_buffer|
+  // must be large enough to accommodate the result of this operation.
+  void Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const;
 
   // Iterator functions.
   iterator begin() const { return cbegin(); }
@@ -113,6 +115,9 @@ class ByteBuffer {
 
   // Returns a copy of the contents of this buffer in a std::vector.
   std::vector<uint8_t> ToVector() const;
+
+ private:
+  void CopyRaw(void* dst_data, size_t dst_capacity, size_t src_offset, size_t copy_size) const;
 };
 
 using ByteBufferPtr = std::unique_ptr<ByteBuffer>;

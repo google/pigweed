@@ -6,24 +6,18 @@
 
 namespace bt {
 
-size_t ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
+void ByteBuffer::Copy(MutableByteBuffer* out_buffer) const {
   ZX_ASSERT(out_buffer);
-  ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
+  CopyRaw(out_buffer->mutable_data(), out_buffer->size(), 0, size());
+}
 
-  size_t write_size = std::min(size, this->size() - pos);
-  ZX_ASSERT_MSG(write_size <= out_buffer->size(), "|out_buffer| is not large enough for copy!");
-
-  // Data pointers for zero-length buffers are nullptr, over which memcpy has undefined behavior,
-  // even for count = 0. Skip the memcpy invocation in that case.
-  if (write_size == 0) {
-    return 0;
-  }
-  std::memcpy(out_buffer->mutable_data(), data() + pos, write_size);
-  return write_size;
+void ByteBuffer::Copy(MutableByteBuffer* out_buffer, size_t pos, size_t size) const {
+  ZX_ASSERT(out_buffer);
+  CopyRaw(out_buffer->mutable_data(), out_buffer->size(), pos, size);
 }
 
 BufferView ByteBuffer::view(size_t pos, size_t size) const {
-  ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
+  ZX_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
 
@@ -40,18 +34,35 @@ std::vector<uint8_t> ByteBuffer::ToVector() const {
   return vec;
 }
 
-void MutableByteBuffer::Write(const uint8_t* data, size_t size, size_t pos) {
-  if (!size)
-    return;
-
-  ZX_ASSERT(data);
-  ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos: %zu, buffer size: %zu", pos,
+void ByteBuffer::CopyRaw(void* dst_data, size_t dst_capacity, size_t src_offset,
+                         size_t copy_size) const {
+  ZX_ASSERT_MSG(copy_size == 0 || dst_data != nullptr, "%zu byte write to pointer %p", copy_size,
+                dst_data);
+  ZX_ASSERT_MSG(copy_size <= dst_capacity,
+                "destination not large enough (required: %zu, available: %zu)", copy_size,
+                dst_capacity);
+  ZX_ASSERT_MSG(src_offset <= this->size(),
+                "offset exceeds source range (begin: %zu, copy_size: %zu)", src_offset,
                 this->size());
-  ZX_ASSERT_MSG(size <= this->size() - pos,
-                "buffer not large enough! (required: %zu, available: %zu)", size,
-                this->size() - pos);
+  ZX_ASSERT_MSG(std::numeric_limits<size_t>::max() - copy_size >= src_offset,
+                "end of source range overflows size_t (src_offset: %zu, copy_size: %zu)",
+                src_offset, copy_size);
+  ZX_ASSERT_MSG(src_offset + copy_size <= this->size(),
+                "end exceeds source range (end: %zu, copy_size: %zu)", src_offset + copy_size,
+                this->size());
 
-  std::memcpy(mutable_data() + pos, data, size);
+  // Data pointers for zero-length buffers are nullptr, over which memcpy has undefined behavior,
+  // even for count = 0. Skip the memcpy invocation in that case.
+  if (copy_size == 0) {
+    return;
+  }
+  std::memcpy(dst_data, data() + src_offset, copy_size);
+}
+
+void MutableByteBuffer::Write(const uint8_t* data, size_t size, size_t pos) {
+  BufferView from(data, size);
+  MutableBufferView to = mutable_view(pos);
+  from.Copy(&to);
 }
 
 void MutableByteBuffer::FillWithRandomBytes() {
@@ -61,7 +72,7 @@ void MutableByteBuffer::FillWithRandomBytes() {
 }
 
 MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
-  ZX_ASSERT_MSG(pos <= this->size(), "invalid offset (pos = %zu)", pos);
+  ZX_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
   return MutableBufferView(mutable_data() + pos, std::min(size, this->size() - pos));
 }
 

@@ -82,10 +82,9 @@ bool SupplementDataWriter::WriteField(DataType type, const ByteBuffer& data) {
   auto target = buffer_->mutable_view(bytes_written_);
 
   // Copy the data into the view.
-  size_t written = data.Copy(&target);
-  ZX_DEBUG_ASSERT(written == data.size());
+  data.Copy(&target);
 
-  bytes_written_ += written;
+  bytes_written_ += data.size();
 
   return true;
 }

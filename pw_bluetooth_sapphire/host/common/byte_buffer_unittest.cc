@@ -4,6 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
+#include <cstddef>
+
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -168,25 +170,16 @@ TEST(ByteBufferTest, Copy) {
   StaticByteBuffer<10> target_buffer;
 
   // Copying an empty buffer should copy 0 bytes.
-  EXPECT_EQ(0u, empty_buffer.Copy(&target_buffer));
+  empty_buffer.Copy(&target_buffer);
 
   // Copy all of |buffer|. The first |buffer.size()| octets of |target_buffer|
   // should match the contents of |buffer|.
-  size_t expected_write_size = buffer.size();
-  ASSERT_EQ(expected_write_size, buffer.Copy(&target_buffer));
-  EXPECT_TRUE(ContainersEqual(buffer, BufferView(target_buffer, expected_write_size)));
-
-  // Copy all of |buffer| starting at index 1.
-  target_buffer.SetToZeros();
-  expected_write_size = buffer.size() - 1;
-  ASSERT_EQ(expected_write_size, buffer.Copy(&target_buffer, 1));
-  BufferView sub = buffer.view(1);
-  EXPECT_TRUE(ContainersEqual(sub, BufferView(target_buffer, expected_write_size)));
+  buffer.Copy(&target_buffer);
+  EXPECT_TRUE(ContainersEqual(buffer, BufferView(target_buffer, buffer.size())));
 
   // Copy one octet of |buffer| starting at index 2
   target_buffer.SetToZeros();
-  expected_write_size = 1;
-  ASSERT_EQ(expected_write_size, buffer.Copy(&target_buffer, 1, 1));
+  buffer.Copy(&target_buffer, 1, 1);
   EXPECT_EQ(buffer[1], target_buffer[0]);
 
   // Zero the buffer and copy its contents for later comparison.
@@ -195,8 +188,28 @@ TEST(ByteBufferTest, Copy) {
 
   // Copy all remaining octets starting just past the end of |buffer|. This
   // should copy zero bytes and |target_buffer| should remain unchanged.
-  ASSERT_EQ(0u, buffer.Copy(&target_buffer, buffer.size()));
+  buffer.Copy(&target_buffer, buffer.size(), 0);
   EXPECT_TRUE(ContainersEqual(target_buffer_copy, target_buffer));
+
+  // Copied range must remain within buffer limits
+  EXPECT_DEATH_IF_SUPPORTED(buffer.Copy(&target_buffer, buffer.size() + 1, 0),
+                            "offset exceeds source range");
+  EXPECT_DEATH_IF_SUPPORTED(buffer.Copy(&target_buffer, 0, buffer.size() + 1),
+                            "end exceeds source range");
+  EXPECT_DEATH_IF_SUPPORTED(
+      buffer.Copy(&target_buffer, buffer.size() / 2 + 1, buffer.size() / 2 + 1),
+      "end exceeds source range");
+
+  StaticByteBuffer<1> insufficient_target_buffer;
+  EXPECT_DEATH_IF_SUPPORTED(buffer.Copy(&insufficient_target_buffer),
+                            "destination not large enough");
+
+  // Range calculation overflow is fatal rather than silently erroneous
+  MutableBufferView bogus_target_buffer(target_buffer.mutable_data(),
+                                        std::numeric_limits<size_t>::max());
+  EXPECT_DEATH_IF_SUPPORTED(
+      buffer.Copy(&bogus_target_buffer, 1, std::numeric_limits<size_t>::max()),
+      "end of source range overflows size_t");
 }
 
 TEST(ByteBufferTest, View) {
@@ -352,6 +365,12 @@ TEST(ByteBufferTest, MutableByteBufferWrite) {
   // assertion) and have no effect.
   buffer.Write(kData1.data(), 0u, buffer.size());
   EXPECT_EQ("XXXXXXXX", buffer.AsString());
+
+  // Buffer limits are strictly enforced
+  EXPECT_DEATH_IF_SUPPORTED(buffer.Write(kData0.data(), buffer.size() + 1, 0),
+                            "destination not large enough");
+  EXPECT_DEATH_IF_SUPPORTED(buffer.Write(kData0.data(), 0, buffer.size() + 1),
+                            "offset past buffer");
 }
 
 TEST(ByteBufferTest, AsString) {
