@@ -89,9 +89,10 @@ class ArduinoBuilder:
         self.compiler_path_override = compiler_path_override
         self.variant_includes = ""
         self.build_variant_path = False
-        self.library_names = library_names
-        self.library_path = os.path.realpath(
-            os.path.expanduser(os.path.expandvars(library_path)))
+        if library_names and library_path:
+            self.library_names = library_names
+            self.library_path = os.path.realpath(
+                os.path.expanduser(os.path.expandvars(library_path)))
 
         self.compiler_path_override_binaries = []
         if self.compiler_path_override:
@@ -962,6 +963,9 @@ class ArduinoBuilder:
         #   use that as the root include directory -Ilibraries/libname/src
         # - Else lib folder as root include -Ilibraries/libname
         #   (exclude source files in the examples folder in this case)
+
+        if not self.library_names or not self.library_path:
+            return []
 
         library_path = self.library_path
         folder_patterns = ["*"]
