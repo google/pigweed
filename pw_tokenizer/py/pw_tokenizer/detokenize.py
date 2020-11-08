@@ -425,8 +425,27 @@ def detokenize_base64(detokenizer: _Detokenizer,
     return output.getvalue()
 
 
+def _follow_and_detokenize_file(detokenizer: _Detokenizer,
+                                file: BinaryIO,
+                                output: BinaryIO,
+                                prefix: Union[str, bytes],
+                                poll_period_s: float = 0.01) -> None:
+    """Polls a file to detokenize it and any appended data."""
+
+    try:
+        while True:
+            data = file.read()
+            if data:
+                detokenize_base64_to_file(detokenizer, data, output, prefix)
+                output.flush()
+            else:
+                time.sleep(poll_period_s)
+    except KeyboardInterrupt:
+        pass
+
+
 def _handle_base64(databases, input_file: BinaryIO, output: BinaryIO,
-                   prefix: str, show_errors: bool) -> None:
+                   prefix: str, show_errors: bool, follow: bool) -> None:
     """Handles the base64 command line option."""
     # argparse.FileType doesn't correctly handle - for binary files.
     if input_file is sys.stdin:
@@ -438,11 +457,14 @@ def _handle_base64(databases, input_file: BinaryIO, output: BinaryIO,
     detokenizer = Detokenizer(tokens.Database.merged(*databases),
                               show_errors=show_errors)
 
-    # If the input is seekable, process it all at once, which is MUCH faster.
-    if input_file.seekable():
+    if follow:
+        _follow_and_detokenize_file(detokenizer, input_file, output, prefix)
+    elif input_file.seekable():
+        # Process seekable files all at once, which is MUCH faster.
         detokenize_base64_to_file(detokenizer, input_file.read(), output,
                                   prefix)
     else:
+        # For non-seekable inputs (e.g. pipes), read one character at a time.
         detokenize_base64_live(detokenizer, input_file, output, prefix)
 
 
@@ -470,6 +492,12 @@ def _parse_args() -> argparse.Namespace:
         type=argparse.FileType('rb'),
         default=sys.stdin.buffer,
         help='The file from which to read; provide - or omit for stdin.')
+    subparser.add_argument(
+        '-f',
+        '--follow',
+        action='store_true',
+        help=('Detokenize data appended to input_file as it grows; similar to '
+              'tail -f.'))
     subparser.add_argument('-o',
                            '--output',
                            type=argparse.FileType('wb'),

@@ -389,7 +389,7 @@ class LoadTokenDatabases(argparse.Action):
         setattr(namespace, self.dest, databases)
 
 
-def token_databases_parser() -> argparse.ArgumentParser:
+def token_databases_parser(nargs: str = '+') -> argparse.ArgumentParser:
     """Returns an argument parser for reading token databases.
 
     These arguments can be added to another parser using the parents arg.
@@ -398,7 +398,7 @@ def token_databases_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         'databases',
         metavar='elf_or_token_database',
-        nargs='*',
+        nargs=nargs,
         action=LoadTokenDatabases,
         help=('ELF or token database files from which to read strings and '
               'tokens. For ELF files, the tokenization domain to read from '
@@ -428,7 +428,7 @@ def _parse_args():
                            required=True,
                            help='The database file to update.')
 
-    option_tokens = token_databases_parser()
+    option_tokens = token_databases_parser('*')
 
     # Top-level argument parser.
     parser = argparse.ArgumentParser(
