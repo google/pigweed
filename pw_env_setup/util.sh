@@ -16,6 +16,8 @@ _pw_abspath () {
   python -c "import os.path; print(os.path.abspath('$@'))"
 }
 
+# Just in case PATH isn't already exported.
+export PATH
 
 # Note: Colors are unfortunately duplicated in several places; and removing the
 # duplication is not easy. Their locations are:
