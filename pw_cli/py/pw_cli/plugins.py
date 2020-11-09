@@ -116,6 +116,10 @@ def _get(name: str) -> _Plugin:
     raise Error(f'The plugin "{name}" has not been registered')
 
 
+def errors() -> Dict[str, List[Error]]:
+    return _errors
+
+
 def run(name: str, args: List[str]) -> int:
     """Runs a plugin by name. Raises Error if the plugin is not registered."""
     return _get(name).run(args)
@@ -237,7 +241,8 @@ def register(directory: Path):
                     try:
                         name, module, function = line.split()
                         _register(name, module, function, path)
-                    except ValueError:
+                    except ValueError as err:
+                        _errors[line.strip()].append(Error(err))
                         _LOG.error(
                             '%s:%d: Failed to parse plugin entry "%s": '
                             'Expected 3 items (name, module, function), got %d',

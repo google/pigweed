@@ -26,6 +26,8 @@ import sys
 import tempfile
 from typing import Callable, Iterable, List, Set
 
+import pw_cli.plugins
+
 
 def call_stdout(*args, **kwargs):
     kwargs.update(stdout=subprocess.PIPE)
@@ -124,6 +126,12 @@ def register_into(dest):
 
 
 CHECKS: List[Callable] = []
+
+
+@register_into(CHECKS)
+def pw_plugins(ctx: DoctorContext):
+    if pw_cli.plugins.errors():
+        ctx.error('Not all pw plugins loaded successfully')
 
 
 @register_into(CHECKS)
