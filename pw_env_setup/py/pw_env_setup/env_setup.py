@@ -552,7 +552,7 @@ def parse(argv=None):
 
     parser.add_argument(
         '--virtualenv-root',
-        help=('Basename of virtualenv directory. Default: '
+        help=('Root of virtualenv directory. Default: '
               '<install_dir>/pigweed-venv'),
         default=None,
     )
