@@ -13,4 +13,11 @@
 // the License.
 #pragma once
 
-#include "pw_sync_stl/spin_lock_native.h"
+#include <mutex>
+
+namespace pw::sync::backend {
+
+using NativeMutex = std::timed_mutex;
+using NativeMutexHandle = std::timed_mutex&;
+
+}  // namespace pw::sync::backend

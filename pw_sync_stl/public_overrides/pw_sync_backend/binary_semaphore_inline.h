@@ -13,4 +13,4 @@
 // the License.
 #pragma once
 
-#include "pw_sync_stl/spin_lock_native.h"
+#include "pw_sync_stl/binary_semaphore_inline.h"

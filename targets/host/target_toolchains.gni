@@ -69,11 +69,22 @@ _win_config = {
   pw_unit_test_AUTOMATIC_RUNNER = get_path_info("run_test.bat", "abspath")
 }
 
+# TODO(amontanez): figure out why std::mutex doesn't work on Windows.
+# These current target configurations do not work on windows.
+_win_incompatible_config = {
+  pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
+  pw_sync_COUNTING_SEMAPHORE_BACKEND =
+      "$dir_pw_sync_stl:counting_semaphore_backend"
+  pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
+}
+
 _os_specific_config = {
   if (host_os == "linux") {
     forward_variables_from(_linux_config, "*")
+    forward_variables_from(_win_incompatible_config, "*")
   } else if (host_os == "mac") {
     forward_variables_from(_mac_config, "*")
+    forward_variables_from(_win_incompatible_config, "*")
   } else if (host_os == "win") {
     forward_variables_from(_win_config, "*")
   }

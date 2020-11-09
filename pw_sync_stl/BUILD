@@ -22,6 +22,90 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "binary_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_stl/binary_semaphore_inline.h",
+        "public/pw_sync_stl/binary_semaphore_native.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "binary_semaphore",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
+    deps = [
+        ":binary_semaphore_headers",
+        "//pw_chrono:system_clock",
+        "//pw_sync:binary_semaphore_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_stl/counting_semaphore_inline.h",
+        "public/pw_sync_stl/counting_semaphore_native.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
+    deps = [
+        ":counting_semaphore_headers",
+        "//pw_chrono:system_clock",
+        "//pw_sync:counting_semaphore_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "mutex_headers",
+    hdrs = [
+        "public/pw_sync_stl/mutex_inline.h",
+        "public/pw_sync_stl/mutex_native.h",
+        "public_overrides/pw_sync_backend/mutex_inline.h",
+        "public_overrides/pw_sync_backend/mutex_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "mutex",
+    deps = [
+        ":mutex_headers",
+        "//pw_chrono:system_clock",
+        "//pw_sync:mutex_facade",
+    ],
+)
+
+pw_cc_library(
     name = "spin_lock_headers",
     hdrs = [
         "public/pw_sync_stl/spin_lock_inline.h",

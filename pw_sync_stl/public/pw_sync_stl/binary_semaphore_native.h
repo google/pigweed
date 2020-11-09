@@ -13,4 +13,20 @@
 // the License.
 #pragma once
 
-#include "pw_sync_stl/spin_lock_native.h"
+#include <condition_variable>
+#include <limits>
+#include <mutex>
+
+namespace pw::sync::backend {
+
+struct NativeBinarySemaphore {
+  std::mutex mutex;
+  std::condition_variable_any condition;
+  ptrdiff_t count;
+};
+using NativeBinarySemaphoreHandle = NativeBinarySemaphore&;
+
+inline constexpr ptrdiff_t kBinarySemaphoreMaxValue =
+    std::numeric_limits<ptrdiff_t>::max();
+
+}  // namespace pw::sync::backend

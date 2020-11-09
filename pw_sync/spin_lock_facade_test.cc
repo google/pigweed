@@ -33,6 +33,8 @@ TEST(SpinLock, LockUnlock) {
   spin_lock.unlock();
 }
 
+// TODO(pwbug/291): Add real concurrency tests once we have pw::thread.
+
 SpinLock static_spin_lock;
 TEST(SpinLock, LockUnlockStatic) {
   static_spin_lock.lock();

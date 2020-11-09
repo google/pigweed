@@ -20,6 +20,15 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
+  # Backend for the pw_sync module's binary semaphore.
+  pw_sync_BINARY_SEMAPHORE_BACKEND = ""
+
+  # Backend for the pw_sync module's counting semaphore.
+  pw_sync_COUNTING_SEMAPHORE_BACKEND = ""
+
+  # Backend for the pw_sync module's mutex.
+  pw_sync_MUTEX_BACKEND = ""
+
   # Backend for the pw_sync module's spin lock.
   pw_sync_SPIN_LOCK_BACKEND = ""
 }
@@ -27,6 +36,39 @@ declare_args() {
 config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
+}
+
+pw_facade("binary_semaphore") {
+  backend = pw_sync_BINARY_SEMAPHORE_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/binary_semaphore.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_preprocessor",
+  ]
+  sources = [ "binary_semaphore.cc" ]
+}
+
+pw_facade("counting_semaphore") {
+  backend = pw_sync_COUNTING_SEMAPHORE_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/counting_semaphore.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_preprocessor",
+  ]
+  sources = [ "counting_semaphore.cc" ]
+}
+
+pw_facade("mutex") {
+  backend = pw_sync_MUTEX_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/mutex.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_preprocessor",
+  ]
+  sources = [ "mutex.cc" ]
 }
 
 pw_facade("spin_lock") {
@@ -37,13 +79,57 @@ pw_facade("spin_lock") {
   sources = [ "spin_lock.cc" ]
 }
 
-pw_test_group("tests") {
-  tests = [ ":spin_lock_facade_test" ]
-}
-
 pw_source_set("yield_core") {
   public = [ "public/pw_sync/yield_core.h" ]
   public_configs = [ ":public_include_path" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":binary_semaphore_facade_test",
+    ":counting_semaphore_facade_test",
+    ":mutex_facade_test",
+    ":spin_lock_facade_test",
+  ]
+}
+
+pw_test("binary_semaphore_facade_test") {
+  enable_if = pw_sync_BINARY_SEMAPHORE_BACKEND != ""
+  sources = [
+    "binary_semaphore_facade_test.cc",
+    "binary_semaphore_facade_test_c.c",
+  ]
+  deps = [
+    ":binary_semaphore",
+    "$dir_pw_preprocessor",
+    pw_sync_BINARY_SEMAPHORE_BACKEND,
+  ]
+}
+
+pw_test("counting_semaphore_facade_test") {
+  enable_if = pw_sync_COUNTING_SEMAPHORE_BACKEND != ""
+  sources = [
+    "counting_semaphore_facade_test.cc",
+    "counting_semaphore_facade_test_c.c",
+  ]
+  deps = [
+    ":counting_semaphore",
+    "$dir_pw_preprocessor",
+    pw_sync_COUNTING_SEMAPHORE_BACKEND,
+  ]
+}
+
+pw_test("mutex_facade_test") {
+  enable_if = pw_sync_MUTEX_BACKEND != ""
+  sources = [
+    "mutex_facade_test.cc",
+    "mutex_facade_test_c.c",
+  ]
+  deps = [
+    ":mutex",
+    "$dir_pw_preprocessor",
+    pw_sync_MUTEX_BACKEND,
+  ]
 }
 
 pw_test("spin_lock_facade_test") {
