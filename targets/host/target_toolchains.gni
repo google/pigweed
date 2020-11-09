@@ -29,6 +29,9 @@ _host_common = {
   # Configure backend for logging facade.
   pw_log_BACKEND = "$dir_pw_log_basic"
 
+  # Configure backends for pw_sync's facades.
+  pw_sync_SPIN_LOCK_BACKEND = "$dir_pw_sync_stl:spin_lock_backend"
+
   # Configure backend for pw_sys_io facade.
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
