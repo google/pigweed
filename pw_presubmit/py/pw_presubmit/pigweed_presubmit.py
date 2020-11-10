@@ -471,6 +471,7 @@ BROKEN = (
     # failing.
     oss_fuzz_build,
     bazel_test,
+    cmake_tests,
     gn_nanopb_build,
 )
 
@@ -478,11 +479,15 @@ QUICK = (
     commit_message_format,
     init_cipd,
     init_virtualenv,
+    source_is_in_build_files,
     copyright_notice,
     format_code.presubmit_checks(),
     pw_presubmit.pragma_once,
     gn_quick_build_check,
-    source_is_in_build_files,
+    # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
+    # the clang issues. The problem is that all clang++ invocations need the
+    # two extra flags: "-nostdc++" and "${clang_prefix}/../lib/libc++.a".
+    cmake_tests if sys.platform != 'darwin' else (),
 )
 
 FULL = (
@@ -499,10 +504,6 @@ FULL = (
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now.
     gn_gcc_build if sys.platform != 'darwin' else (),
-    # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
-    # the clang issues. The problem is that all clang++ invocations need the
-    # two extra flags: "-nostdc++" and "${clang_prefix}../lib/libc++.a".
-    cmake_tests if sys.platform != 'darwin' else (),
     source_is_in_build_files,
     python_checks,
     build_env_setup,

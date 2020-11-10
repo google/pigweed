@@ -131,7 +131,7 @@ def add_arguments(parser: argparse.ArgumentParser,
 
 def run(
         program: Sequence[Callable],
-        output_directory: Path,
+        output_directory: Optional[Path],
         package_root: Path,
         clear: bool,
         root: Path = None,
@@ -160,7 +160,7 @@ def run(
     if not repositories:
         repositories = [root]
 
-    if not output_directory:
+    if output_directory is None:
         output_directory = root / '.presubmit'
 
     if not package_root:
