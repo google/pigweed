@@ -59,20 +59,6 @@ pw_doc_group("docs") {
   ]
 }
 
-# Entrypoint for pw_protobuf's protoc plugin.
-pw_input_group("codegen_protoc_plugin") {
-  inputs = [ "py/pw_protobuf/plugin.py" ]
-  deps = [ ":codegen_protoc_lib" ]
-}
-
-# Source files for pw_protobuf's protoc plugin.
-pw_input_group("codegen_protoc_lib") {
-  inputs = [
-    "py/pw_protobuf/codegen_pwpb.py",
-    "py/pw_protobuf/proto_tree.py",
-  ]
-}
-
 pw_test_group("tests") {
   tests = [
     ":codegen_test",

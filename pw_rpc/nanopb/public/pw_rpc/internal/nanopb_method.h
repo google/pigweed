@@ -136,18 +136,18 @@ class NanopbMethod : public Method {
     //
     // In optimized builds, the compiler inlines the user-defined function into
     // this wrapper, elminating any overhead.
-    return NanopbMethod(id,
-                        UnaryInvoker<AllocateSpaceFor<Request<method>>(),
-                                     AllocateSpaceFor<Response<method>>()>,
-                        {.unary =
-                             [](ServerCall& call, const void* req, void* resp) {
-                               return method(
-                                   call,
-                                   *static_cast<const Request<method>*>(req),
-                                   *static_cast<Response<method>*>(resp));
-                             }},
-                        request,
-                        response);
+    return NanopbMethod(
+        id,
+        UnaryInvoker<AllocateSpaceFor<Request<method>>(),
+                     AllocateSpaceFor<Response<method>>()>,
+        Function{.unary =
+                     [](ServerCall& call, const void* req, void* resp) {
+                       return method(call,
+                                     *static_cast<const Request<method>*>(req),
+                                     *static_cast<Response<method>*>(resp));
+                     }},
+        request,
+        response);
   }
 
   // Creates a NanopbMethod for a server-streaming RPC.
@@ -163,12 +163,15 @@ class NanopbMethod : public Method {
     return NanopbMethod(
         id,
         ServerStreamingInvoker<AllocateSpaceFor<Request<method>>()>,
-        {.server_streaming =
-             [](ServerCall& call, const void* req, BaseServerWriter& writer) {
-               method(call,
-                      *static_cast<const Request<method>*>(req),
-                      static_cast<ServerWriter<Response<method>>&>(writer));
-             }},
+        Function{.server_streaming =
+                     [](ServerCall& call,
+                        const void* req,
+                        BaseServerWriter& writer) {
+                       method(call,
+                              *static_cast<const Request<method>*>(req),
+                              static_cast<ServerWriter<Response<method>>&>(
+                                  writer));
+                     }},
         request,
         response);
   }

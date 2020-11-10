@@ -64,13 +64,32 @@ endfunction(pw_proto_library)
 
 # Internal function that invokes protoc through generate_protos.py.
 function(_pw_generate_protos
-      TARGET LANGUAGE INCLUDE_FILE OUT_DIR SOURCES OUTPUTS DEPS)
+      TARGET LANGUAGE PLUGIN OUTPUT_EXTS INCLUDE_FILE OUT_DIR SOURCES DEPS)
+  # Determine the names of the output files.
+  foreach(extension IN LISTS OUTPUT_EXTS)
+    foreach(source_file IN LISTS SOURCES)
+      get_filename_component(dir "${source_file}" DIRECTORY)
+      get_filename_component(name "${source_file}" NAME_WE)
+      list(APPEND outputs "${OUT_DIR}/${dir}/${name}${extension}")
+    endforeach()
+  endforeach()
+
+  # Export the output files to the caller's scope so it can use them if needed.
+  set(generated_outputs "${outputs}" PARENT_SCOPE)
+
+  if("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+      get_filename_component(dir "${source_file}" DIRECTORY)
+      get_filename_component(name "${source_file}" NAME_WE)
+      set(PLUGIN "${dir}/${name}.bat")
+  endif()
+
   set(script "$ENV{PW_ROOT}/pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py")
   add_custom_command(
     COMMAND
       python
       "${script}"
       --language "${LANGUAGE}"
+      --plugin-path "${PLUGIN}"
       --module-path "${CMAKE_CURRENT_SOURCE_DIR}"
       --include-file "${INCLUDE_FILE}"
       --out-dir "${OUT_DIR}"
@@ -88,22 +107,15 @@ endfunction(_pw_generate_protos)
 
 # Internal function that creates a pwpb proto library.
 function(_pw_pwpb_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
-  # Determine the names of the output files.
-  set(outputs "${SOURCES}")
-  list(TRANSFORM outputs REPLACE "\.proto$" ".pwpb.h")
-  list(TRANSFORM outputs PREPEND "${OUT_DIR}/")
-
-  # Make the source paths absolute since they are passed to a script.
-  list(TRANSFORM SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-
   list(TRANSFORM DEPS APPEND .pwpb)
 
   _pw_generate_protos("${NAME}.generate.pwpb"
-      cc
+      pwpb
+      "$ENV{PW_ROOT}/pw_protobuf/py/pw_protobuf/plugin.py"
+      ".pwpb.h"
       "${INCLUDE_FILE}"
       "${OUT_DIR}"
       "${SOURCES}"
-      "${outputs}"
       "${DEPS}"
   )
 
@@ -116,22 +128,15 @@ endfunction(_pw_pwpb_library)
 
 # Internal function that creates a raw_rpc proto library.
 function(_pw_raw_rpc_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
-  # Determine the names of the output files.
-  set(outputs "${SOURCES}")
-  list(TRANSFORM outputs REPLACE "\.proto$" ".raw_rpc.pb.h")
-  list(TRANSFORM outputs PREPEND "${OUT_DIR}/")
-
-  # Make the source paths absolute since they are passed to a script.
-  list(TRANSFORM SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-
   list(TRANSFORM DEPS APPEND .raw_rpc)
 
   _pw_generate_protos("${NAME}.generate.raw_rpc"
       raw_rpc
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_raw.py"
+      ".raw_rpc.pb.h"
       "${INCLUDE_FILE}"
       "${OUT_DIR}"
       "${SOURCES}"
-      "${outputs}"
       "${DEPS}"
   )
 
@@ -149,42 +154,25 @@ endfunction(_pw_raw_rpc_library)
 
 # Internal function that creates a nanopb proto library.
 function(_pw_nanopb_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
-  # Determine the names of the output files.
-  set(outputs_h "${SOURCES}")
-  list(TRANSFORM outputs_h REPLACE "\.proto$" ".pb.h")
-  list(TRANSFORM outputs_h PREPEND "${OUT_DIR}/")
-
-  set(outputs_c "${SOURCES}")
-  list(TRANSFORM outputs_c REPLACE "\.proto$" ".pb.c")
-  list(TRANSFORM outputs_c PREPEND "${OUT_DIR}/")
-
-  set(outputs ${outputs_c} ${outputs_h})
-
-  # Make the source paths absolute since they are passed to a script.
-  list(TRANSFORM SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-
   list(TRANSFORM DEPS APPEND .nanopb)
 
   set(nanopb_dir "$<TARGET_PROPERTY:$<IF:$<TARGET_EXISTS:protobuf-nanopb-static>,protobuf-nanopb-static,pw_build.empty>,SOURCE_DIR>")
   set(nanopb_plugin
       "$<IF:$<TARGET_EXISTS:protobuf-nanopb-static>,${nanopb_dir}/generator/protoc-gen-nanopb,COULD_NOT_FIND_protobuf-nanopb-static_TARGET_PLEASE_SET_UP_NANOPB>")
-  if(WIN32)
-    set(nanopb_plugin "${nanopb_plugin}.bat")
-  endif()
 
   _pw_generate_protos("${NAME}.generate.nanopb"
       nanopb
+      "${nanopb_plugin}"
+      ".pb.h;.pb.c"
       "${INCLUDE_FILE}"
       "${OUT_DIR}"
       "${SOURCES}"
-      "${outputs}"
       "${DEPS}"
-      --custom-plugin "${nanopb_plugin}"
       --include-paths "${nanopb_dir}/generator/proto"
   )
 
   # Create the library with the generated source files.
-  add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${outputs})
+  add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
   target_include_directories("${NAME}.nanopb" PUBLIC "${OUT_DIR}")
   target_link_libraries("${NAME}.nanopb" PUBLIC pw_third_party.nanopb ${DEPS})
   add_dependencies("${NAME}.nanopb" "${NAME}.generate.nanopb")
@@ -193,21 +181,15 @@ endfunction(_pw_nanopb_library)
 # Internal function that creates a nanopb_rpc library.
 function(_pw_nanopb_rpc_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
   # Determine the names of the output files.
-  set(outputs "${SOURCES}")
-  list(TRANSFORM outputs REPLACE "\.proto$" ".rpc.pb.h")
-  list(TRANSFORM outputs PREPEND "${OUT_DIR}/")
-
-  # Make the source paths absolute since they are passed to a script.
-  list(TRANSFORM SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-
   list(TRANSFORM DEPS APPEND .nanopb_rpc)
 
   _pw_generate_protos("${NAME}.generate.nanopb_rpc"
       nanopb_rpc
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_nanopb.py"
+      ".rpc.pb.h"
       "${INCLUDE_FILE}"
       "${OUT_DIR}"
       "${SOURCES}"
-      "${outputs}"
       "${DEPS}"
   )
 

@@ -16,8 +16,9 @@
 import argparse
 import logging
 import os
-import shutil
+from pathlib import Path
 import sys
+import tempfile
 
 from typing import Callable, Dict, List, Optional
 
@@ -35,8 +36,13 @@ def argument_parser(
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--language', default='cc', help='Output language')
-    parser.add_argument('--custom-plugin', help='Custom protoc plugin')
+    parser.add_argument('--language',
+                        required=True,
+                        choices=DEFAULT_PROTOC_ARGS,
+                        help='Output language')
+    parser.add_argument('--plugin-path',
+                        type=Path,
+                        help='Path to the protoc plugin')
     parser.add_argument('--module-path',
                         required=True,
                         help='Path to the module containing the .proto files')
@@ -60,8 +66,10 @@ def argument_parser(
 
 def protoc_cc_args(args: argparse.Namespace) -> List[str]:
     return [
-        '--plugin', f'protoc-gen-custom={shutil.which("pw_protobuf_codegen")}',
-        '--custom_out', args.out_dir
+        '--plugin',
+        f'protoc-gen-custom={args.plugin_path}',
+        '--custom_out',
+        args.out_dir,
     ]
 
 
@@ -73,33 +81,36 @@ def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
     # nanopb needs to know of the include path to parse *.options files
     return [
         '--plugin',
-        f'protoc-gen-nanopb={args.custom_plugin}',
+        f'protoc-gen-nanopb={args.plugin_path}',
         # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
         # like when you merge the two using the `flag,...:out` syntax.
         f'--nanopb_opt=-I{args.module_path}',
-        f'--nanopb_out={args.out_dir}'
+        f'--nanopb_out={args.out_dir}',
     ]
 
 
 def protoc_nanopb_rpc_args(args: argparse.Namespace) -> List[str]:
     return [
         '--plugin',
-        f'protoc-gen-custom={shutil.which("pw_rpc_codegen_nanopb")}',
-        '--custom_out', args.out_dir
+        f'protoc-gen-custom={args.plugin_path}',
+        '--custom_out',
+        args.out_dir,
     ]
 
 
 def protoc_raw_rpc_args(args: argparse.Namespace) -> List[str]:
     return [
-        '--plugin', f'protoc-gen-custom={shutil.which("pw_rpc_codegen_raw")}',
-        '--custom_out', args.out_dir
+        '--plugin',
+        f'protoc-gen-custom={args.plugin_path}',
+        '--custom_out',
+        args.out_dir,
     ]
 
 
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
-    'cc': protoc_cc_args,
+    'pwpb': protoc_cc_args,
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,
     'nanopb_rpc': protoc_nanopb_rpc_args,
@@ -110,26 +121,45 @@ DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
 def main() -> int:
     """Runs protoc as configured by command-line arguments."""
 
-    args = argument_parser().parse_args()
-    os.makedirs(args.out_dir, exist_ok=True)
+    parser = argument_parser()
+    args = parser.parse_args()
 
-    try:
-        lang_args = DEFAULT_PROTOC_ARGS[args.language](args)
-    except KeyError:
-        _LOG.error('Unsupported language: %s', args.language)
-        return 1
+    if args.plugin_path is None and args.language != 'go':
+        parser.error(
+            f'--plugin-path is required for --language {args.language}')
+
+    os.makedirs(args.out_dir, exist_ok=True)
 
     include_paths = [f'-I{path}' for path in args.include_paths]
     include_paths += [f'-I{line.strip()}' for line in args.include_file]
 
-    process = pw_cli.process.run(
-        'protoc',
-        f'-I{args.module_path}',
-        f'-I{args.out_dir}',
-        *include_paths,
-        *lang_args,
-        *args.protos,
-    )
+    wrapper_script: Optional[Path] = None
+
+    # On Windows, use a .bat version of the plugin if it exists or create a .bat
+    # wrapper to use if none exists.
+    if os.name == 'nt' and args.plugin_path:
+        if args.plugin_path.with_suffix('.bat').exists():
+            args.plugin_path = args.plugin_path.with_suffix('.bat')
+            _LOG.debug('Using Batch plugin %s', args.plugin_path)
+        else:
+            with tempfile.NamedTemporaryFile('w', suffix='.bat',
+                                             delete=False) as file:
+                file.write(f'@echo off\npython {args.plugin_path.resolve()}\n')
+
+            args.plugin_path = wrapper_script = Path(file.name)
+            _LOG.debug('Using generated plugin wrapper %s', args.plugin_path)
+
+    try:
+        process = pw_cli.process.run(
+            'protoc',
+            f'-I{args.module_path}',
+            *include_paths,
+            *DEFAULT_PROTOC_ARGS[args.language](args),
+            *args.protos,
+        )
+    finally:
+        if wrapper_script:
+            wrapper_script.unlink()
 
     if process.returncode != 0:
         print(process.output.decode(), file=sys.stderr)

@@ -422,16 +422,24 @@ per build directory.
 The ``pw_add_facade`` function declares a cache variable named
 ``<module_name>_BACKEND`` for each facade. Cache variables can be awkward to
 work with, since their values only change when they're assigned, but then
-persist accross CMake invocations. It is recommended set these variables as
-follows:
+persist accross CMake invocations. These variables should be set in one of the
+following ways:
 
-* Use ``pw_set_backend`` to set backends appropriate for the target in the
+* Call ``pw_set_backend`` to set backends appropriate for the target in the
   target's toolchain file. The toolchain file is provided to ``cmake`` with
   ``-DCMAKE_TOOLCHAIN_FILE=<toolchain file>``.
-* To temporarily override a backend, set it interactively with ``ccmake`` or
+* Call ``pw_set_backend`` in the top-level ``CMakeLists.txt`` before other
+  CMake code executes.
+* Set the backend variable at the command line with the ``-D`` option.
+
+  .. code-block:: sh
+
+    cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
+        -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
+        -Dpw_log_BACKEND=pw_log_basic
+
+* Temporarily override a backend by setting it interactively with ``ccmake`` or
   ``cmake-gui``.
-* To force to a backend to a particular value globally, call ``pw_set_backend``
-  in the top-level ``CMakeLists.txt`` before any other CMake code is executed.
 
 Toolchain setup
 ---------------
@@ -458,16 +466,25 @@ If the variable is empty (``if("${dir_pw_third_party_<library>}" STREQUAL
 "")``), the dependency is not available. Otherwise, it is available and
 libraries declared by it can be referenced.
 
-The third_party variable may be set with the CMake ``set`` function in the
-toolchain file or a ``CMakeLists.txt`` prior to adding any directories. This
-statement sets the third-party variable for Nanopb to ``PRESENT``:
+Third party variables are set like any other cache global variable in CMake. It
+is recommended to set these in one of the following ways:
 
-.. code-block:: cmake
+* Set with the CMake ``set`` function in the toolchain file or a
+  ``CMakeLists.txt`` before other CMake code executes.
 
-  set(dir_pw_third_party_nanopb PRESENT CACHE STRING "" FORCE)
+  .. code-block:: cmake
 
-Alternately, the variable may be set temporarily with ``ccmake`` or
-``cmake-gui``.
+    set(dir_pw_third_party_nanopb PRESENT CACHE STRING "" FORCE)
+
+* Set the variable at the command line with the ``-D`` option.
+
+  .. code-block:: sh
+
+    cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja \
+        -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake \
+        -Ddir_pw_third_party_nanopb=/path/to/nanopb
+
+* Set the variable interactively with ``ccmake`` or ``cmake-gui``.
 
 Use Pigweed from an existing CMake project
 ------------------------------------------
