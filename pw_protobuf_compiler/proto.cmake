@@ -217,8 +217,8 @@ function(_pw_nanopb_rpc_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
   target_link_libraries("${NAME}.nanopb_rpc"
     INTERFACE
       "${NAME}.nanopb"
+      pw_rpc.nanopb.method_union
       pw_rpc.server
-      pw_rpc.nanopb
       ${DEPS}
   )
   add_dependencies("${NAME}.nanopb_rpc" "${NAME}.generate.nanopb_rpc")

@@ -14,15 +14,53 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_rpc.nanopb
+pw_add_module_library(pw_rpc.nanopb.method
+  SOURCES
+    nanopb_method.cc
   PUBLIC_DEPS
-    pw_rpc.client
-    pw_rpc.common
+    pw_rpc.nanopb.common
+    pw_rpc.server
+  PRIVATE_DEPS
+    pw_log
+)
+
+pw_add_module_library(pw_rpc.nanopb.method_union
+  PUBLIC_DEPS
+    pw_rpc.nanopb.method
     pw_rpc.raw
     pw_rpc.server
   PRIVATE_DEPS
+    pw_log
+)
+
+pw_add_module_library(pw_rpc.nanopb.client
+  SOURCES
+    nanopb_client_call.cc
+  PUBLIC_DEPS
+    pw_rpc.nanopb.common
+    pw_rpc.common
+)
+
+pw_add_module_library(pw_rpc.nanopb.common
+  SOURCES
+    nanopb_common.cc
+  PUBLIC_DEPS
+    pw_bytes
+    pw_rpc.common
     pw_third_party.nanopb
-  TEST_DEPS
+)
+
+pw_add_module_library(pw_rpc.nanopb.echo_service
+  PUBLIC_DEPS
+    pw_rpc.echo_proto.nanopb_rpc
+)
+
+pw_auto_add_module_tests(pw_rpc.nanopb
+  PRIVATE_DEPS
+    pw_rpc.client
+    pw_rpc.raw
+    pw_rpc.server
+    pw_rpc.nanopb.common
     pw_rpc.echo_proto.nanopb_rpc
     pw_rpc.test_protos.nanopb_rpc
     pw_rpc.test_utils

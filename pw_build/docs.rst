@@ -375,7 +375,10 @@ The following command generates Ninja build files for a host build in the
 
 .. code-block:: sh
 
-  cmake -B out/cmake_host -S /path/to/pigweed -G Ninja -DCMAKE_TOOLCHAIN_FILE=pw_toolchain/host_clang/toolchain.cmake
+  cmake -B out/cmake_host -S "$PW_ROOT" -G Ninja -DCMAKE_TOOLCHAIN_FILE=$PW_ROOT/pw_toolchain/host_clang/toolchain.cmake
+
+The ``PW_ROOT`` environment variable must point to the root of the Pigweed
+directory. This variable is set by Pigweed's environment setup.
 
 Tests can be executed with the ``pw_run_tests.GROUP`` targets. To run Pigweed
 module tests, execute ``pw_run_tests.modules``:
@@ -445,6 +448,17 @@ dependency. This variable can have one of three values:
 If the variable is empty (``if("${dir_pw_third_party_<library>}" STREQUAL
 "")``), the dependency is not available. Otherwise, it is available and
 libraries declared by it can be referenced.
+
+The third_party variable may be set with the CMake ``set`` function in the
+toolchain file or a ``CMakeLists.txt`` prior to adding any directories. This
+statement sets the third-party variable for Nanopb to ``PRESENT``:
+
+.. code-block:: cmake
+
+  set(dir_pw_third_party_nanopb PRESENT CACHE STRING "" FORCE)
+
+Alternately, the variable may be set temporarily with ``ccmake`` or
+``cmake-gui``.
 
 Use Pigweed from an existing CMake project
 ------------------------------------------

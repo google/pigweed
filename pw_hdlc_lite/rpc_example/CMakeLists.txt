@@ -12,19 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_hdlc_lite
-  PUBLIC_DEPS
-    pw_bytes
-    pw_result
-    pw_rpc.common
-    pw_status
-    pw_stream
-    pw_sys_io
-  PRIVATE_DEPS
-    pw_checksum
+add_executable(pw_hdlc_lite.rpc_example hdlc_rpc_server.cc main.cc)
+
+target_link_libraries(pw_hdlc_lite.rpc_example
+  PRIVATE
+    pw_hdlc_lite
     pw_log
+    pw_rpc.nanopb.echo_service
+    pw_rpc.server
 )
-
-add_subdirectory(rpc_example)
