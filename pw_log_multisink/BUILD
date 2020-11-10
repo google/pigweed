@@ -23,22 +23,23 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
-    name = "pw_logs",
-    srcs = [ "logs_rpc.cc" ],
+    name = "pw_log_queue",
+    srcs = [ "log_queue.cc" ],
     includes = [ "public" ],
     deps = [
         "//pw_bytes",
+        "//pw_log",
         "//pw_result",
         "//pw_ring_buffer",
         "//pw_status",
     ],
-    hdrs = [ "public/pw_log_rpc/logs_rpc.h" ]
+    hdrs = [ "public/pw_log_multisink/log_queue.h" ]
 )
 
 pw_cc_test(
-    name = "logs_rpc_test",
+    name = "log_queue_test",
     srcs = [
-        "logs_rpc_test.cc",
+        "log_queue_test.cc",
     ],
     deps = [
         "//pw_preprocessor",

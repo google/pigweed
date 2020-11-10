@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -29,24 +28,10 @@ pw_source_set("logs") {
   public = [ "public/pw_log_rpc/logs_rpc.h" ]
   sources = [ "logs_rpc.cc" ]
   public_deps = [
-    ":log_queue",
-    ":protos.pwpb",
-    ":protos.raw_rpc",
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_log:protos.raw_rpc",
+    "$dir_pw_log_multisink:log_queue",
   ]
-}
-
-pw_source_set("log_queue") {
-  public_configs = [ ":default_config" ]
-  public = [ "public/pw_log_rpc/log_queue.h" ]
-  public_deps = [
-    "$dir_pw_bytes",
-    "$dir_pw_log",
-    "$dir_pw_result",
-    "$dir_pw_ring_buffer",
-    "$dir_pw_status",
-  ]
-  sources = [ "log_queue.cc" ]
-  deps = [ ":protos.pwpb" ]
 }
 
 pw_test("logs_rpc_test") {
@@ -57,26 +42,10 @@ pw_test("logs_rpc_test") {
   sources = [ "logs_rpc_test.cc" ]
 }
 
-pw_proto_library("protos") {
-  sources = [ "pw_log_proto/log.proto" ]
-}
-
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-pw_test("log_queue_test") {
-  sources = [ "log_queue_test.cc" ]
-  deps = [
-    ":log_queue",
-    ":protos.pwpb",
-    dir_pw_protobuf,
-  ]
-}
-
 pw_test_group("tests") {
-  tests = [
-    ":log_queue_test",
-    ":logs_rpc_test",
-  ]
+  tests = [ ":logs_rpc_test" ]
 }

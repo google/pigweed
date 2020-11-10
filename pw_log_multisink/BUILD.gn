@@ -14,52 +14,42 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
-
-declare_args() {
-  # Backend for the pw_log module.
-  pw_log_BACKEND = ""
-}
 
 config("default_config") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
-pw_facade("pw_log") {
-  backend = pw_log_BACKEND
+pw_source_set("log_queue") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_log/levels.h",
-    "public/pw_log/log.h",
-    "public/pw_log/options.h",
+  public = [ "public/pw_log_multisink/log_queue.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_result",
+    "$dir_pw_ring_buffer",
+    "$dir_pw_status",
   ]
-}
-
-pw_test_group("tests") {
-  tests = [ ":basic_log_test" ]
-}
-
-pw_test("basic_log_test") {
-  enable_if = pw_log_BACKEND != ""
-  deps = [
-    ":pw_log",
-    dir_pw_preprocessor,
-    pw_log_BACKEND,
-  ]
-
-  sources = [
-    "basic_log_test.cc",
-    "basic_log_test_plain_c.c",
-  ]
-}
-
-pw_proto_library("protos") {
-  sources = [ "pw_log_proto/log.proto" ]
+  sources = [ "log_queue.cc" ]
+  deps = [ "$dir_pw_log:protos.pwpb" ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+pw_test("log_queue_test") {
+  sources = [ "log_queue_test.cc" ]
+  deps = [
+    ":log_queue",
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_protobuf",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":log_queue_test" ]
 }

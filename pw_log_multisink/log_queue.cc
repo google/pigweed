@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_log_rpc/log_queue.h"
+#include "pw_log_multisink/log_queue.h"
 
 #include "pw_log/levels.h"
 #include "pw_log_proto/log.pwpb.h"

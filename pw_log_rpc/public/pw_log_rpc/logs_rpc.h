@@ -15,8 +15,8 @@
 #pragma once
 
 #include "pw_log/log.h"
+#include "pw_log_multisink/log_queue.h"
 #include "pw_log_proto/log.raw_rpc.pb.h"
-#include "pw_log_rpc/log_queue.h"
 
 namespace pw::log_rpc {
 
