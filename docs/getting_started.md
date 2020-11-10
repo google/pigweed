@@ -307,10 +307,13 @@ See the demo below for an example of what this all looks like put together:
 ## Building the Documentation
 
 In addition to the markdown documentation, Pigweed has a collection of
-information-rich RST files that are built by the default invocation of GN. You
-will find the documents at `out/docs/gen/docs/html`.
+information-rich RST files that are used to generate HTML documentation. All the
+docs are hosted at https://pigweed.dev/, and are built as a part of the default
+build invocation. This makes it easier to make changes and see how they turn
+out. Once built, you can find the rendered HTML documentation at
+`out/docs/gen/docs/html`.
 
-You can build the documentation manually by with the command below.
+You can explicitly build just the documentation with the command below.
 
 ```shell
 $ ninja -C out docs
