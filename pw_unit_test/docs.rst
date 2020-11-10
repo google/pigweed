@@ -212,6 +212,23 @@ several sub-targets:
     # ...
   }
 
+pw_facade_test template
+-----------------------
+Pigweed facade test templates allow individual unit tests to build under the
+current device target configuration while overriding specific build arguments.
+This allows these tests to replace a facade's backend for the purpose of testing
+the facade layer.
+
+.. warning::
+   Facade tests are costly because each facade test will trigger a re-build of
+   every dependency of the test. While this sounds excessive, it's the only
+   technically correct way to handle this type of test.
+
+.. warning::
+   Some facade test configurations may not be compatible with your target. Be
+   careful when running a facade test on a system that heavily depends on the
+   facade being tested.
+
 RPC service
 ===========
 ``pw_unit_test`` provides an RPC service which runs unit tests on demand and

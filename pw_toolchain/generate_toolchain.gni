@@ -18,7 +18,7 @@ import("$dir_pw_toolchain/universal_tools.gni")
 
 declare_args() {
   # Scope defining the current toolchain. Contains all of the arguments required
-  # by the generate_toolchain template.
+  # by the generate_toolchain template. This should NOT be manually modified.
   pw_toolchain_SCOPE = {
   }
 
@@ -42,8 +42,14 @@ declare_args() {
 #     all object files when resolving symbols.
 #   link_group: (optional) Boolean indicating if the linker should use
 #     a group to resolve circular dependencies between artifacts.
-#   defaults: (required) A scope setting defaults to apply to GN
-#     targets in this toolchain, as described in pw_vars_default.gni
+#   generate_from: (optional) The full target name of the toolchain that can
+#     trigger this toolchain to be generated. GN only allows one toolchain to
+#     be generated at a given target path, so if multiple toolchains parse the
+#     same generate_toolchain target only one should declare a toolchain. This
+#     is primarily to allow generating sub-toolchains. Defaults to
+#     default_toolchain.
+#   defaults: (required) A scope setting GN build arg values to apply to GN
+#     targets in this toolchain. These take precedence over args.gni settings.
 #
 # The defaults scope should contain values for builtin GN arguments:
 #   current_cpu: The CPU of the toolchain.
@@ -51,14 +57,24 @@ declare_args() {
 #   current_os: The OS of the toolchain. Defaults to "".
 #     Well known values include "win", "mac", "linux", "android", and "ios".
 #
+# TODO(pwbug/333): This should be renamed to pw_generate_toolchain.
 template("generate_toolchain") {
   assert(defined(invoker.defaults), "toolchain is missing 'defaults'")
 
-  # In multi-toolchain builds from the top level, we run into issues where
-  # toolchains defined with this template are re-generated each time. To avoid
-  # collisions, the actual toolchain is only generated for the default (dummy)
-  # toolchain, and an unused target is created otherwise.
-  if (current_toolchain == default_toolchain) {
+  # On the default toolchain invocation, you typically need to generate all
+  # toolchains you encounter. For sub-toolchains, they must be generated from
+  # the context of their parent.
+  if (defined(invoker.generate_from)) {
+    _generate_toolchain =
+        get_label_info(invoker.generate_from, "label_no_toolchain") ==
+        current_toolchain
+  } else {
+    _generate_toolchain = default_toolchain == current_toolchain
+  }
+
+  if (_generate_toolchain) {
+    # TODO(amontanez): This should be renamed to build_args as "defaults" isn't
+    # sufficiently descriptive.
     invoker_toolchain_args = invoker.defaults
 
     # These values should always be set as they influence toolchain
@@ -74,6 +90,9 @@ template("generate_toolchain") {
     toolchain_os = invoker_toolchain_args.current_os
 
     toolchain(target_name) {
+      # Uncomment this line to see which toolchains generate other toolchains.
+      # print("Generating toolchain: ${target_name} by ${current_toolchain}")
+
       assert(defined(invoker.cc), "toolchain is missing 'cc'")
       tool("asm") {
         if (pw_command_launcher != "") {
@@ -329,6 +348,7 @@ template("generate_toolchain") {
         }
         pw_toolchain_SCOPE = {
           forward_variables_from(invoker, "*")
+          name = target_name
         }
         forward_variables_from(invoker_toolchain_args, "*")
       }
