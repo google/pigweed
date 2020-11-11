@@ -232,16 +232,16 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_conn = [self, local = std::move(local), remote = std::move(remote)](
-                     bt::hci::Status status, bt::gap::LowEnergyConnectionRefPtr conn) mutable {
+  auto on_conn = [self, local = std::move(local), remote = std::move(remote)](auto result) mutable {
     if (!self) {
       return;
     }
-    if (!conn) {
+    if (result.is_error()) {
       bt_log(DEBUG, LOG_TAG, "incoming connection rejected");
       return;
     }
 
+    auto conn = result.take_value();
     auto peer_id = conn->peer_identifier();
     auto conn_handle =
         std::make_unique<LowEnergyConnectionServer>(std::move(conn), std::move(local));

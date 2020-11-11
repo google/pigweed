@@ -85,7 +85,7 @@ class LowEnergyConnection final : public sm::Delegate {
       bt_log(TRACE, "gap-le",
              "destroying connection, notifying request callbacks of failure (handle %#.4x)",
              handle());
-      request_->NotifyCallbacks(hci::Status(HostError::kFailed), [] { return nullptr; });
+      request_->NotifyCallbacks(fit::error(HostError::kFailed));
       request_.reset();
     }
 
@@ -103,14 +103,14 @@ class LowEnergyConnection final : public sm::Delegate {
     if (request_.has_value()) {
       request_->AddCallback(std::move(cb));
     } else {
-      cb(hci::Status(), AddRef());
+      cb(fit::ok(AddRef()));
     }
   }
 
   void NotifyRequestCallbacks() {
     if (request_.has_value()) {
       bt_log(TRACE, "gap-le", "notifying connection request callbacks (handle %#.4x)", handle());
-      request_->NotifyCallbacks(hci::Status(), std::bind(&LowEnergyConnection::AddRef, this));
+      request_->NotifyCallbacks(fit::ok(std::bind(&LowEnergyConnection::AddRef, this)));
       request_.reset();
     }
   }
@@ -538,7 +538,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
 
   // Clear |pending_requests_| and notify failure.
   for (auto& iter : pending_requests_) {
-    iter.second.NotifyCallbacks(hci::Status(HostError::kFailed), [] { return nullptr; });
+    iter.second.NotifyCallbacks(fit::error(HostError::kFailed));
   }
   pending_requests_.clear();
 
@@ -550,27 +550,31 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
   connections_.clear();
 }
 
-bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallback callback,
+void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallback callback,
                                          ConnectionOptions connection_options) {
   if (!connector_) {
     bt_log(WARN, "gap-le", "connect called during shutdown!");
-    return false;
+    callback(fit::error(HostError::kFailed));
+    return;
   }
 
   Peer* peer = peer_cache_->FindById(peer_id);
   if (!peer) {
     bt_log(WARN, "gap-le", "peer not found (id: %s)", bt_str(peer_id));
-    return false;
+    callback(fit::error(HostError::kNotFound));
+    return;
   }
 
   if (peer->technology() == TechnologyType::kClassic) {
     bt_log(ERROR, "gap-le", "peer does not support LE: %s", peer->ToString().c_str());
-    return false;
+    callback(fit::error(HostError::kNotFound));
+    return;
   }
 
   if (!peer->connectable()) {
     bt_log(ERROR, "gap-le", "peer not connectable: %s", peer->ToString().c_str());
-    return false;
+    callback(fit::error(HostError::kNotFound));
+    return;
   }
 
   // If we are already waiting to connect to |peer_id| then we store
@@ -581,7 +585,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
     ZX_ASSERT(connections_.find(peer_id) == connections_.end());
     ZX_ASSERT(connector_->request_pending());
     pending_iter->second.AddCallback(std::move(callback));
-    return true;
+    return;
   }
 
   // If there is already an active connection then we add a callback to be called after
@@ -589,7 +593,7 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   auto conn_iter = connections_.find(peer_id);
   if (conn_iter != connections_.end()) {
     conn_iter->second->AddRequestCallback(std::move(callback));
-    return true;
+    return;
   }
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
@@ -597,8 +601,6 @@ bool LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
       internal::PendingRequestData(peer->address(), std::move(callback), connection_options);
 
   TryCreateNextConnection();
-
-  return true;
 }
 
 bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
@@ -798,7 +800,7 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
   if (connections_.find(peer_id) != connections_.end()) {
     bt_log(DEBUG, "gap-le", "multiple links from peer; connection refused");
     // Notify request that duplicate connection could not be initialized.
-    request.NotifyCallbacks(hci::Status(HostError::kFailed), [] { return nullptr; });
+    request.NotifyCallbacks(fit::error(HostError::kFailed));
     return false;
   }
 
@@ -952,7 +954,8 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   }
 
   // The request failed or timed out.
-  bt_log(ERROR, "gap-le", "failed to connect to peer (id: %s)", bt_str(peer_id));
+  bt_log(ERROR, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id),
+         bt_str(status));
   Peer* peer = peer_cache_->FindById(peer_id);
   ZX_ASSERT(peer);
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
@@ -964,7 +967,8 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   // Remove the entry from |pending_requests_| before notifying callbacks.
   auto pending_req_data = std::move(iter->second);
   pending_requests_.erase(iter);
-  pending_req_data.NotifyCallbacks(status, [] { return nullptr; });
+  auto error = status.is_protocol_error() ? HostError::kFailed : status.error();
+  pending_req_data.NotifyCallbacks(fit::error(error));
 
   // Process the next pending attempt.
   ZX_ASSERT(!connector_->request_pending());
@@ -1224,9 +1228,14 @@ PendingRequestData::PendingRequestData(const DeviceAddress& address,
   callbacks_.push_back(std::move(first_callback));
 }
 
-void PendingRequestData::NotifyCallbacks(hci::Status status, const RefFunc& func) {
+void PendingRequestData::NotifyCallbacks(fit::result<RefFunc, HostError> result) {
   for (const auto& callback : callbacks_) {
-    callback(status, func());
+    if (result.is_error()) {
+      callback(fit::error(result.error()));
+      continue;
+    }
+    auto conn_ref = result.value()();
+    callback(fit::ok(std::move(conn_ref)));
   }
 }
 

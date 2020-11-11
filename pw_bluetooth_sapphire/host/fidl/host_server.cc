@@ -514,15 +514,15 @@ void HostServer::Disconnect(fbt::PeerId peer_id, DisconnectCallback callback) {
 
 void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_complete = [self, callback = std::move(callback), peer_id](auto status, auto connection) {
-    if (!status) {
-      ZX_ASSERT(!connection);
+  auto on_complete = [self, callback = std::move(callback), peer_id](auto result) {
+    if (result.is_error()) {
       bt_log(DEBUG, "bt-host", "failed to connect LE transport to peer (id %s)", bt_str(peer_id));
-      callback(fit::error(HostErrorToFidl(status.error())));
+      callback(fit::error(HostErrorToFidl(result.error())));
       return;
     }
 
     // We must be connected and to the right peer
+    auto connection = result.take_value();
     ZX_ASSERT(connection);
     ZX_ASSERT(peer_id == connection->peer_identifier());
 
@@ -531,9 +531,8 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
     if (self)
       self->RegisterLowEnergyConnection(std::move(connection), false);
   };
-  if (!adapter()->le_connection_manager()->Connect(peer_id, std::move(on_complete))) {
-    callback(fit::error(fsys::Error::FAILED));
-  }
+
+  adapter()->le_connection_manager()->Connect(peer_id, std::move(on_complete));
 }
 
 // Initiate an outgoing Br/Edr connection, unless already connected

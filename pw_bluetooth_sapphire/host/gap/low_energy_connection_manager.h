@@ -139,9 +139,9 @@ class LowEnergyConnectionManager final {
     std::optional<UUID> optional_service_uuid_;
   };
 
-  // Allows a caller to claim shared ownership over a connection to the
-  // requested remote LE peer identified by |peer_id|. Returns
-  // false, if |peer_id| is not recognized, otherwise:
+  // Allows a caller to claim shared ownership over a connection to the requested remote LE peer
+  // identified by |peer_id|.
+  //   * If |peer_id| is not recognized, |callback| is called with an error.
   //
   //   * If the requested peer is already connected, |callback| is called with a
   //     LowEnergyConnectionRef after interrogation (if necessary).
@@ -154,14 +154,11 @@ class LowEnergyConnectionManager final {
   //     Part C, Section 9.3. The peer is then interrogated. A LowEnergyConnectionRef is
   //     asynchronously returned to the caller once the connection has been set up.
   //
-  //     The status of the procedure is reported in |callback| in the case of an
-  //     error.
-  //
-  // |callback| is posted on the creation thread's dispatcher.
-  //
-  // TODO(fxbug.dev/61704): Return void and always call callback with result.
-  using ConnectionResultCallback = fit::function<void(hci::Status, LowEnergyConnectionRefPtr)>;
-  bool Connect(PeerId peer_id, ConnectionResultCallback callback,
+  // The status of the procedure is reported in |callback| in the case of an
+  // error.
+  using ConnectionResult = fit::result<LowEnergyConnectionRefPtr, HostError>;
+  using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
+  void Connect(PeerId peer_id, ConnectionResultCallback callback,
                ConnectionOptions connection_options = ConnectionOptions());
 
   PeerCache* peer_cache() { return peer_cache_; }
@@ -477,7 +474,7 @@ class PendingRequestData final {
   // Notifies all elements in |callbacks| with |status| and the result of
   // |func|.
   using RefFunc = fit::function<LowEnergyConnectionRefPtr()>;
-  void NotifyCallbacks(hci::Status status, const RefFunc& func);
+  void NotifyCallbacks(fit::result<RefFunc, HostError> result);
 
   const DeviceAddress& address() const { return address_; }
   ConnectionOptions connection_options() const { return connection_options_; }

@@ -875,17 +875,20 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  le_connection_manager_->Connect(peer->identifier(), [self](auto status, auto conn) {
+  le_connection_manager_->Connect(peer->identifier(), [self](auto result) {
     if (!self) {
       bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
       return;
     }
 
-    if (bt_is_error(status, ERROR, "gap", "failed to auto-connect")) {
+    if (result.is_error()) {
+      bt_log(ERROR, "gap", "failed to auto-connect (error: %s)",
+             HostErrorToString(result.error()).c_str());
       return;
     }
 
-    ZX_DEBUG_ASSERT(conn);
+    auto conn = result.take_value();
+    ZX_ASSERT(conn);
     PeerId id = conn->peer_identifier();
     bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
     if (self->auto_conn_cb_) {

@@ -152,7 +152,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto conn_cb = [self, callback = callback.share(), peer_id = *peer_id,
-                  request = std::move(client_request)](auto status, auto conn_ref) mutable {
+                  request = std::move(client_request)](auto result) mutable {
     if (!self)
       return;
 
@@ -164,16 +164,17 @@ void LowEnergyCentralServer::ConnectPeripheral(
       return;
     }
 
-    if (!status) {
-      ZX_DEBUG_ASSERT(!conn_ref);
+    if (result.is_error()) {
       bt_log(DEBUG, "bt-host", "failed to connect to connect to peer (id %s)", bt_str(peer_id));
       self->connections_.erase(peer_id);
-      callback(fidl_helpers::StatusToFidlDeprecated(status, "failed to connect"));
+      callback(fidl_helpers::StatusToFidlDeprecated(bt::hci::Status(result.error()),
+                                                    "failed to connect"));
       return;
     }
 
-    ZX_DEBUG_ASSERT(conn_ref);
-    ZX_DEBUG_ASSERT(peer_id == conn_ref->peer_identifier());
+    auto conn_ref = result.take_value();
+    ZX_ASSERT(conn_ref);
+    ZX_ASSERT(peer_id == conn_ref->peer_identifier());
 
     if (iter->second) {
       // This can happen if a connect is requested after a previous request was
@@ -214,13 +215,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
   // does not cause conn_cb to treat the connection as cancelled.
   connections_[*peer_id] = nullptr;
 
-  if (!adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb),
-                                                   mgr_connection_options)) {
-    bt_log(TRACE, "bt-host", "cannot connect to unknown peer (id: %s)", identifier.c_str());
-    connections_.erase(*peer_id);
-    callback(fidl_helpers::NewFidlError(ErrorCode::NOT_FOUND, "unknown peer ID"));
-    return;
-  }
+  adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb), mgr_connection_options);
 }
 
 void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,

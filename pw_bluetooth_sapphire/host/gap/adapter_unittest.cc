@@ -653,9 +653,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   test_device()->AddPeer(std::move(fake_peer));
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto connect_cb = [&](auto status, auto c) {
-    ASSERT_TRUE(status);
-    conn_ref = std::move(c);
+  auto connect_cb = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
   };
 
   // A connection request should use the public address by default.
@@ -717,12 +717,12 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le_connection_manager()->set_request_timeout_for_testing(kTestTimeout);
 
   // The connection request should use a public address.
-  hci::Status status;
+  std::optional<HostError> error;
   int connect_cb_calls = 0;
-  auto connect_cb = [&status, &connect_cb_calls](auto s, auto conn_ref) {
-    status = s;
+  auto connect_cb = [&error, &connect_cb_calls](auto result) {
     connect_cb_calls++;
-    ASSERT_FALSE(conn_ref);
+    ASSERT_TRUE(result.is_error());
+    error = result.error();
   };
   adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
   RunLoopUntilIdle();
@@ -737,7 +737,8 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // Let the connection request timeout.
   RunLoopFor(kTestTimeout);
-  EXPECT_EQ(HostError::kTimedOut, status.error());
+  ASSERT_TRUE(error.has_value());
+  EXPECT_EQ(HostError::kTimedOut, error.value()) << "Error: " << HostErrorToString(error.value());
   EXPECT_EQ(1, connect_cb_calls);
 
   // The peer should not have expired.
@@ -764,7 +765,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   ASSERT_EQ(2, connect_cb_calls);
 
   // This will be notified when LowEnergyConnectionManager is destroyed.
-  auto noop_connect_cb = [](auto, auto) {};
+  auto noop_connect_cb = [](auto) {};
   adapter()->le_connection_manager()->Connect(peer->identifier(), std::move(noop_connect_cb));
   RunLoopUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
@@ -784,10 +785,10 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   adapter()->le_address_manager()->EnablePrivacy(true);
 
   LowEnergyConnectionRefPtr conn_ref;
-  auto connect_cb = [&](auto status, auto c) {
-    ASSERT_TRUE(status);
-    ASSERT_TRUE(c);
-    conn_ref = std::move(c);
+  auto connect_cb = [&](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+    ASSERT_TRUE(conn_ref);
   };
 
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);

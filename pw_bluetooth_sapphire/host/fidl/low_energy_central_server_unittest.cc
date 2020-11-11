@@ -237,11 +237,10 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm)
   test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
 
   bt::gap::LowEnergyConnectionRefPtr le_conn;
-  adapter()->le_connection_manager()->Connect(peer->identifier(),
-                                              [&le_conn](auto status, auto cb_conn) {
-                                                ASSERT_TRUE(status);
-                                                le_conn = std::move(cb_conn);
-                                              });
+  adapter()->le_connection_manager()->Connect(peer->identifier(), [&le_conn](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    le_conn = result.take_value();
+  });
   RunLoopUntilIdle();
   ASSERT_TRUE(le_conn);
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
