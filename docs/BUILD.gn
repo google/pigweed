@@ -72,6 +72,8 @@ group("module_docs") {
     "$dir_pw_fuzzer:docs",
     "$dir_pw_hdlc_lite:docs",
     "$dir_pw_hex_dump:docs",
+    "$dir_pw_interrupt:docs",
+    "$dir_pw_interrupt_cortex_m:docs",
     "$dir_pw_kvs:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_basic:docs",
