@@ -445,7 +445,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             os.unlink(file.name)
 
 
-def _next_char(message):
+def _next_char(message: bytes) -> bytes:
     return bytes(b + 1 for b in message)
 
 
@@ -514,7 +514,9 @@ class DetokenizeBase64(unittest.TestCase):
         super().setUp()
         db = database.load_token_database(
             io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
-        db.add([self.RECURSION_STRING, self.RECURSION_STRING_2])
+        db.add(
+            tokens.TokenizedStringEntry(tokens.default_hash(s), s)
+            for s in [self.RECURSION_STRING, self.RECURSION_STRING_2])
         self.detok = detokenize.Detokenizer(db)
 
     def test_detokenize_base64_live(self):

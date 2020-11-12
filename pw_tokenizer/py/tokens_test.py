@@ -19,6 +19,7 @@ import io
 import logging
 from pathlib import Path
 import tempfile
+from typing import Iterator
 import unittest
 
 from pw_tokenizer import tokens
@@ -92,6 +93,11 @@ INVALID_CSV = """\
 def read_db_from_csv(csv_str: str) -> tokens.Database:
     with io.StringIO(csv_str) as csv_db:
         return tokens.Database(tokens.parse_csv(csv_db))
+
+
+def _entries(*strings: str) -> Iterator[tokens.TokenizedStringEntry]:
+    for string in strings:
+        yield tokens.TokenizedStringEntry(default_hash(string), string)
 
 
 class TokenDatabaseTest(unittest.TestCase):
@@ -313,7 +319,7 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(len(db.token_to_entries), 16)
 
         # Add two strings with the same hash.
-        db.add(['o000', '0Q1Q'])
+        db.add(_entries('o000', '0Q1Q'))
 
         self.assertEqual(len(db.entries()), 18)
         self.assertEqual(len(db.token_to_entries), 17)
@@ -327,7 +333,7 @@ class TokenDatabaseTest(unittest.TestCase):
             all(entry.date_removed is None for entry in db.entries()))
         date_1 = datetime.datetime(1, 2, 3)
 
-        db.mark_removals(['apples', 'oranges', 'pears'], date_1)
+        db.mark_removals(_entries('apples', 'oranges', 'pears'), date_1)
 
         self.assertEqual(
             db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
@@ -336,7 +342,7 @@ class TokenDatabaseTest(unittest.TestCase):
             date_1)
 
         now = datetime.datetime.now()
-        db.mark_removals(['MILK', 'CHEESE', 'pears'])
+        db.mark_removals(_entries('MILK', 'CHEESE', 'pears'))
 
         # New strings are not added or re-added in mark_removed().
         self.assertGreaterEqual(
@@ -355,16 +361,16 @@ class TokenDatabaseTest(unittest.TestCase):
 
     def test_add(self):
         db = tokens.Database()
-        db.add(['MILK', 'apples'])
+        db.add(_entries('MILK', 'apples'))
         self.assertEqual({e.string for e in db.entries()}, {'MILK', 'apples'})
 
-        db.add(['oranges', 'CHEESE', 'pears'])
+        db.add(_entries('oranges', 'CHEESE', 'pears'))
         self.assertEqual(len(db.entries()), 5)
 
-        db.add(['MILK', 'apples', 'only this one is new'])
+        db.add(_entries('MILK', 'apples', 'only this one is new'))
         self.assertEqual(len(db.entries()), 6)
 
-        db.add(['MILK'])
+        db.add(_entries('MILK'))
         self.assertEqual({e.string
                           for e in db.entries()}, {
                               'MILK', 'apples', 'oranges', 'CHEESE', 'pears',

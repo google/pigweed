@@ -118,7 +118,7 @@ EXPECTED_REPORT = {
 }
 
 
-def run_cli(*args):
+def run_cli(*args) -> None:
     original_argv = sys.argv
     sys.argv = ['database.py', *(str(a) for a in args)]
     # pylint: disable=protected-access
@@ -133,7 +133,7 @@ def run_cli(*args):
         sys.argv = original_argv
 
 
-def _mock_output():
+def _mock_output() -> io.TextIOWrapper:
     output = io.BytesIO()
     output.name = '<fake stdout>'
     return io.TextIOWrapper(output, write_through=True)
@@ -187,11 +187,15 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self.assertEqual(CSV_DEFAULT_DOMAIN.splitlines(),
                          self._csv.read_text().splitlines())
 
-    def test_add(self):
-        self._csv.write_text(CSV_ALL_DOMAINS)
+    def test_add_does_not_recalculate_tokens(self):
+        db_with_custom_token = '01234567,          ,"hello"'
 
-        run_cli('add', '--database', self._csv, f'{self._elf}#TEST_DOMAIN')
-        self.assertEqual(CSV_ALL_DOMAINS.splitlines(),
+        to_add = self._dir / 'add_this.csv'
+        to_add.write_text(db_with_custom_token + '\n')
+        self._csv.touch()
+
+        run_cli('add', '--database', self._csv, to_add)
+        self.assertEqual(db_with_custom_token.splitlines(),
                          self._csv.read_text().splitlines())
 
     def test_mark_removals(self):

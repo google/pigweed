@@ -163,19 +163,19 @@ class Database:
 
     def mark_removals(
             self,
-            all_strings: Iterable[str],
+            all_entries: Iterable[TokenizedStringEntry],
             removal_date: Optional[datetime] = None
     ) -> List[TokenizedStringEntry]:
-        """Marks strings missing from all_strings as having been removed.
+        """Marks entries missing from all_entries as having been removed.
 
-        The strings are assumed to represent the complete set of strings for the
-        database. Strings currently in the database not present in the provided
-        strings are marked with a removal date but remain in the database.
-        Strings in all_strings missing from the database are NOT ; call the
-        add function to add these strings.
+        The entries are assumed to represent the complete set of entries for the
+        database. Entries currently in the database not present in the provided
+        entries are marked with a removal date but remain in the database.
+        Entries in all_entries missing from the database are NOT added; call the
+        add function to add these.
 
         Args:
-          all_strings: the complete set of strings present in the database
+          all_entries: the complete set of strings present in the database
           removal_date: the datetime for removed entries; today by default
 
         Returns:
@@ -186,13 +186,12 @@ class Database:
         if removal_date is None:
             removal_date = datetime.now()
 
-        all_strings = frozenset(all_strings)  # for faster lookup
+        all_keys = frozenset(entry.key() for entry in all_entries)
 
         removed = []
 
-        # Mark this entry as having been removed from the ELF.
         for entry in self._database.values():
-            if (entry.string not in all_strings
+            if (entry.key() not in all_keys
                     and (entry.date_removed is None
                          or removal_date < entry.date_removed)):
                 # Add a removal date, or update it to the oldest date.
@@ -201,29 +200,19 @@ class Database:
 
         return removed
 
-    def add(self,
-            entries: Iterable[Union[str, TokenizedStringEntry]],
-            tokenize: Callable[[str], int] = default_hash) -> None:
-        """Adds new entries or strings to the database."""
+    def add(self, entries: Iterable[TokenizedStringEntry]) -> None:
+        """Adds new entries and updates date_removed for existing entries."""
         self._cache = None
 
-        # Add new and update previously removed entries.
         for new_entry in entries:
-            # Handle legacy plain string entries, which need to be hashed.
-            if isinstance(new_entry, str):
-                key = _EntryKey(tokenize(new_entry), new_entry)
-                domain = DEFAULT_DOMAIN
-            else:
-                key = _EntryKey(new_entry.token, new_entry.string)
-                domain = new_entry.domain
-
+            # Update an existing entry or create a new one.
             try:
-                entry = self._database[key]
-                if entry.date_removed:
-                    entry.date_removed = None
+                entry = self._database[new_entry.key()]
+                entry.domain = new_entry.domain
+                entry.date_removed = None
             except KeyError:
-                self._database[key] = TokenizedStringEntry(
-                    key.token, key.string, domain)
+                self._database[new_entry.key()] = TokenizedStringEntry(
+                    new_entry.token, new_entry.string, new_entry.domain)
 
     def purge(
         self,

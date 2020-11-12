@@ -285,7 +285,7 @@ def _handle_add(token_database, databases):
     initial = len(token_database)
 
     for source in databases:
-        token_database.add((entry.string for entry in source.entries()))
+        token_database.add(source.entries())
 
     token_database.write_to_file()
 
@@ -295,8 +295,7 @@ def _handle_add(token_database, databases):
 
 def _handle_mark_removals(token_database, databases, date):
     marked_removed = token_database.mark_removals(
-        (entry.string
-         for entry in tokens.Database.merged(*databases).entries()
+        (entry for entry in tokens.Database.merged(*databases).entries()
          if not entry.date_removed), date)
 
     token_database.write_to_file()
