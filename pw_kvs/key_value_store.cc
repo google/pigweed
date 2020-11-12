@@ -102,7 +102,7 @@ Status KeyValueStore::Init() {
       Status recovery_status = FixErrors();
 
       if (recovery_status.ok()) {
-        if (metadata_result == Status::OutOfRange()) {
+        if (metadata_result.IsOutOfRange()) {
           internal_stats_.missing_redundant_entries_recovered =
               pre_fix_redundancy_errors;
           INF("KVS init: Redundancy level successfully updated");
@@ -110,7 +110,7 @@ Status KeyValueStore::Init() {
           WRN("KVS init: Corruption detected and fully repaired");
         }
         initialized_ = InitializationState::kReady;
-      } else if (recovery_status == Status::ResourceExhausted()) {
+      } else if (recovery_status.IsResourceExhausted()) {
         WRN("KVS init: Unable to maintain required free sector");
       } else {
         WRN("KVS init: Corruption detected and unable repair");
@@ -169,7 +169,7 @@ Status KeyValueStore::InitializeMetadata() {
 
       Address next_entry_address;
       Status status = LoadEntry(entry_address, &next_entry_address);
-      if (status == Status::NotFound()) {
+      if (status.IsNotFound()) {
         DBG("Hit un-written data in sector; moving to the next sector");
         break;
       } else if (!status.ok()) {
@@ -437,7 +437,7 @@ Status KeyValueStore::PutBytes(Key key, std::span<const byte> value) {
     return WriteEntryForExistingKey(metadata, EntryState::kValid, key, value);
   }
 
-  if (status == Status::NotFound()) {
+  if (status.IsNotFound()) {
     return WriteEntryForNewKey(key, value);
   }
 
@@ -528,7 +528,7 @@ Status KeyValueStore::FindExisting(Key key, EntryMetadata* metadata) const {
 
   // If the key's hash collides with an existing key or if the key is deleted,
   // treat it as if it is not in the KVS.
-  if (status == Status::AlreadyExists() ||
+  if (status.IsAlreadyExists() ||
       (status.ok() && metadata->state() == EntryState::kDeleted)) {
     return Status::NotFound();
   }
@@ -747,7 +747,7 @@ Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
   bool do_auto_gc = options_.gc_on_write != GargbageCollectOnWrite::kDisabled;
 
   // Do garbage collection as needed, so long as policy allows.
-  while (result == Status::ResourceExhausted() && do_auto_gc) {
+  while (result.IsResourceExhausted() && do_auto_gc) {
     if (options_.gc_on_write == GargbageCollectOnWrite::kOneSector) {
       // If GC config option is kOneSector clear the flag to not do any more
       // GC after this try.
@@ -756,7 +756,7 @@ Status KeyValueStore::GetSectorForWrite(SectorDescriptor** sector,
     // Garbage collect and then try again to find the best sector.
     Status gc_status = GarbageCollect(reserved);
     if (!gc_status.ok()) {
-      if (gc_status == Status::NotFound()) {
+      if (gc_status.IsNotFound()) {
         // Not enough space, and no reclaimable bytes, this KVS is full!
         return Status::ResourceExhausted();
       }
@@ -1093,7 +1093,7 @@ Status KeyValueStore::RepairCorruptSectors() {
     loop_count++;
     // Error of RESOURCE_EXHAUSTED indicates no space found for relocation.
     // Reset back to OK for the next pass.
-    if (repair_status == Status::ResourceExhausted()) {
+    if (repair_status.IsResourceExhausted()) {
       repair_status = OkStatus();
     }
 
@@ -1104,8 +1104,7 @@ Status KeyValueStore::RepairCorruptSectors() {
         Status sector_status = GarbageCollectSector(sector, {});
         if (sector_status.ok()) {
           internal_stats_.corrupt_sectors_recovered += 1;
-        } else if (repair_status.ok() ||
-                   repair_status == Status::ResourceExhausted()) {
+        } else if (repair_status.ok() || repair_status.IsResourceExhausted()) {
           repair_status = sector_status;
         }
       }

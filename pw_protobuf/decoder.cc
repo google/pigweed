@@ -242,7 +242,7 @@ Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
   // Iterate the proto, calling the handler with each field number.
   while (state_ == kDecodeInProgress) {
     if (Status status = decoder_.Next(); !status.ok()) {
-      if (status == Status::OutOfRange()) {
+      if (status.IsOutOfRange()) {
         // Reached the end of the proto.
         break;
       }
@@ -253,7 +253,7 @@ Status CallbackDecoder::Decode(std::span<const std::byte> proto) {
 
     Status status = handler_->ProcessField(*this, decoder_.FieldNumber());
     if (!status.ok()) {
-      state_ = status == Status::Cancelled() ? kDecodeCancelled : kDecodeFailed;
+      state_ = status.IsCancelled() ? kDecodeCancelled : kDecodeFailed;
       return status;
     }
 

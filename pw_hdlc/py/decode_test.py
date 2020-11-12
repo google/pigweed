@@ -165,7 +165,7 @@ def _expected(frames: List[Frame]) -> Iterator[str]:
         if frame.ok():
             yield f'      Frame(kDecodedFrame{i:02}),'
         else:
-            yield f'      Status::DATA_LOSS,  // Frame {i}'
+            yield f'      Status::DataLoss(),  // Frame {i}'
 
 
 _CPP_HEADER = """\
@@ -223,7 +223,7 @@ def _cpp_test(ctx: Context) -> Iterator[str]:
     auto& expected = kExpected[decoded_frames - 1];
 
     if (std::holds_alternative<Status>(expected)) {{
-      EXPECT_EQ(Status::DATA_LOSS, result.status());
+      EXPECT_EQ(Status::DataLoss(), result.status());
     }} else {{
       ASSERT_EQ(OkStatus(), result.status());
 

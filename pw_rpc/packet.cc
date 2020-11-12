@@ -62,7 +62,7 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
     }
   }
 
-  if (status == Status::DataLoss()) {
+  if (status.IsDataLoss()) {
     return status;
   }
 

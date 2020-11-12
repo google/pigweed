@@ -468,9 +468,7 @@ Status BlobStore::Invalidate() {
 
   Status status = kvs_.Delete(MetadataKey());
 
-  return (status == OkStatus() || status == Status::NotFound())
-             ? OkStatus()
-             : Status::Internal();
+  return (status.ok() || status.IsNotFound()) ? OkStatus() : Status::Internal();
 }
 
 Status BlobStore::ValidateChecksum() {

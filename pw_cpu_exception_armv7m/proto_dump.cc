@@ -55,8 +55,8 @@ Status DumpCpuStateProto(protobuf::Encoder& dest,
   // reflected here.
   Status status = state_encoder.WriteR12(cpu_state.base.r12);
   if (!status.ok()) {
-    return status == Status::ResourceExhausted() ? Status::ResourceExhausted()
-                                                 : Status::Unknown();
+    return status.IsResourceExhausted() ? Status::ResourceExhausted()
+                                        : Status::Unknown();
   }
   return OkStatus();
 }

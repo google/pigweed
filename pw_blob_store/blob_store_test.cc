@@ -220,7 +220,7 @@ TEST_F(BlobStoreTest, Discard) {
   EXPECT_EQ(OkStatus(), writer.Write(tmp_buffer));
 
   // The write does an implicit erase so there should be no key for this blob.
-  EXPECT_EQ(Status::NOT_FOUND,
+  EXPECT_EQ(Status::NotFound(),
             kvs::TestKvs().Get(blob_title, tmp_buffer).status());
   EXPECT_EQ(OkStatus(), writer.Close());
 
@@ -230,7 +230,7 @@ TEST_F(BlobStoreTest, Discard) {
   EXPECT_EQ(OkStatus(), writer.Discard());
   EXPECT_EQ(OkStatus(), writer.Close());
 
-  EXPECT_EQ(Status::NOT_FOUND,
+  EXPECT_EQ(Status::NotFound(),
             kvs::TestKvs().Get(blob_title, tmp_buffer).status());
 }
 

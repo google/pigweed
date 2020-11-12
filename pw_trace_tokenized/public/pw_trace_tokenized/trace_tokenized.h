@@ -63,7 +63,7 @@ class TraceQueue {
                          const void* data_buffer,
                          size_t data_size) {
     if (IsFull()) {
-      return pw::Status::RESOURCE_EXHAUSTED;
+      return pw::Status::ResourceExhausted();
     }
     event_queue_[head_].trace_token = trace_token;
     event_queue_[head_].event_type = event_type;

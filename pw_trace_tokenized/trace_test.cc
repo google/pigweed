@@ -583,7 +583,7 @@ TEST(TokenizedTrace, QueueFull) {
   EXPECT_FALSE(queue.IsEmpty());
   EXPECT_TRUE(queue.IsFull());
   EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(1)),
-            pw::Status::RESOURCE_EXHAUSTED);
+            pw::Status::ResourceExhausted());
 
   for (size_t i = 0; i < kQueueSize; i++) {
     EXPECT_TRUE(QUEUE_CHECK_RESULT(kQueueSize, queue.PeekFront(), i));

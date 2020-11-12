@@ -184,7 +184,7 @@ TEST(LogQueue, TooSmallEncodeBuffer) {
 
   std::byte log_buffer[kLogBufferSize];
   LogQueueWithEncodeBuffer<kSmallBuffer> log_queue(log_buffer);
-  EXPECT_EQ(Status::INTERNAL,
+  EXPECT_EQ(Status::Internal(),
             log_queue.PushTokenizedMessage(
                 std::as_bytes(std::span(kTokenizedMessage)),
                 kFlags,
@@ -202,7 +202,7 @@ TEST(LogQueue, TooSmallLogBuffer) {
   std::byte log_buffer[kLogBufferSize];
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue_small(
       std::span(log_buffer, kSmallerThanPreamble));
-  EXPECT_EQ(Status::OUT_OF_RANGE,
+  EXPECT_EQ(Status::OutOfRange(),
             log_queue_small.PushTokenizedMessage(
                 std::as_bytes(std::span(kTokenizedMessage)),
                 kFlags,
@@ -222,7 +222,7 @@ TEST(LogQueue, TooSmallLogBuffer) {
         kTokenizedThread,
         kTimestamp);
   }
-  EXPECT_EQ(Status::RESOURCE_EXHAUSTED,
+  EXPECT_EQ(Status::ResourceExhausted(),
             log_queue_medium.PushTokenizedMessage(
                 std::as_bytes(std::span(kTokenizedMessage)),
                 kFlags,

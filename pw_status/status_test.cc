@@ -49,7 +49,7 @@ TEST(Status, Default) {
 
 TEST(Status, ConstructWithStatusCode) {
   constexpr Status status(PW_STATUS_ABORTED);
-  static_assert(Status::Aborted() == status);
+  static_assert(status.IsAborted());
 }
 
 TEST(Status, AssignFromStatusCode) {

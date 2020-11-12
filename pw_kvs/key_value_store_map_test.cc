@@ -270,7 +270,7 @@ class KvsTester {
       EXPECT_EQ(Status::InvalidArgument(), result);
     } else if (map_.size() == kvs_.max_size()) {
       EXPECT_EQ(Status::ResourceExhausted(), result);
-    } else if (result == Status::ResourceExhausted()) {
+    } else if (result.IsResourceExhausted()) {
       EXPECT_FALSE(map_.empty());
     } else if (result.ok()) {
       map_[key] = value;
@@ -302,7 +302,7 @@ class KvsTester {
       }
 
       deleted_.insert(key);
-    } else if (result == Status::ResourceExhausted()) {
+    } else if (result.IsResourceExhausted()) {
       PW_LOG_WARN("Delete: RESOURCE_EXHAUSTED could not delete key %s",
                   key.c_str());
     } else {
