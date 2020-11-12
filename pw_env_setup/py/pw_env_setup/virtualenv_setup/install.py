@@ -190,18 +190,30 @@ def install(
         build = os.path.join(venv_path, gn_target.name)
 
         gn_log = 'gn-gen-{}.log'.format(gn_target.name)
-        with open(os.path.join(venv_path, gn_log), 'w') as outs:
-            subprocess.check_call(('gn', 'gen', build),
-                                  cwd=os.path.join(project_root,
-                                                   gn_target.directory),
-                                  stdout=outs,
-                                  stderr=outs)
+        gn_log_path = os.path.join(venv_path, gn_log)
+        try:
+            with open(gn_log_path, 'w') as outs:
+                subprocess.check_call(('gn', 'gen', build),
+                                      cwd=os.path.join(project_root,
+                                                       gn_target.directory),
+                                      stdout=outs,
+                                      stderr=outs)
+        except subprocess.CalledProcessError as err:
+            with open(gn_log_path, 'r') as ins:
+                raise subprocess.CalledProcessError(err.returncode, err.cmd,
+                                                    ins.read())
 
         ninja_log = 'ninja-{}.log'.format(gn_target.name)
-        with open(os.path.join(venv_path, ninja_log), 'w') as outs:
-            ninja_cmd = ['ninja', '-C', build]
-            ninja_cmd.append(gn_target.target)
-            subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
+        ninja_log_path = os.path.join(venv_path, ninja_log)
+        try:
+            with open(ninja_log_path, 'w') as outs:
+                ninja_cmd = ['ninja', '-C', build]
+                ninja_cmd.append(gn_target.target)
+                subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
+        except subprocess.CalledProcessError as err:
+            with open(ninja_log_path, 'r') as ins:
+                raise subprocess.CalledProcessError(err.returncode, err.cmd,
+                                                    ins.read())
 
     if gn_targets:
         if env:

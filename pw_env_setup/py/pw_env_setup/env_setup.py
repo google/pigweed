@@ -581,7 +581,12 @@ def parse(argv=None):
 
 
 def main():
-    return EnvSetup(**vars(parse())).setup()
+    try:
+        return EnvSetup(**vars(parse())).setup()
+    except subprocess.CalledProcessError as err:
+        print()
+        print(err.output)
+        raise
 
 
 if __name__ == '__main__':
