@@ -43,7 +43,11 @@ group("default") {
   deps = [
     ":docs",
     ":host",
+    ":python.lint",
+    ":python.tests",
     ":stm32f429i",
+    ":target_support_packages.lint",
+    ":target_support_packages.tests",
   ]
 }
 
@@ -114,7 +118,7 @@ group("docs") {
 }
 
 pw_python_group("python") {
-  _python_gn_targets = [
+  python_deps = [
     # Python packages
     "$dir_pw_allocator/py",
     "$dir_pw_arduino_build/py",
@@ -128,8 +132,8 @@ pw_python_group("python") {
     "$dir_pw_module/py",
     "$dir_pw_package/py",
     "$dir_pw_presubmit/py",
-    "$dir_pw_protobuf_compiler/py",
     "$dir_pw_protobuf/py",
+    "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
     "$dir_pw_tokenizer/py",
@@ -141,20 +145,13 @@ pw_python_group("python") {
     # Standalone scripts
     "$dir_pw_hdlc_lite/rpc_example:example_script",
   ]
-
-  _py_toolchain = "$_default_toolchain_prefix$pw_default_optimization_level"
-
-  python_deps = []
-  foreach(dep, _python_gn_targets) {
-    python_deps += [ "$dep($_py_toolchain)" ]
-  }
 }
 
 # Python packages for supporting specific targets.
 pw_python_group("target_support_packages") {
   python_deps = [
-    "$dir_pigweed/targets/lm3s6965evb-qemu/py($dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_$pw_default_optimization_level)",
-    "$dir_pigweed/targets/stm32f429i-disc1/py($dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_$pw_default_optimization_level)",
+    "$dir_pigweed/targets/lm3s6965evb-qemu/py",
+    "$dir_pigweed/targets/stm32f429i-disc1/py",
   ]
 }
 
@@ -167,13 +164,7 @@ group("pigweed_default") {
     if (pw_docgen_BUILD_DOCS) {
       deps += [ "$dir_pigweed/docs" ]
     } else {
-      deps += [
-        ":apps",
-        ":python.lint",
-        ":python.tests",
-        ":target_support_packages.lint",
-        ":target_support_packages.tests",
-      ]
+      deps += [ ":apps" ]
       if (pw_unit_test_AUTOMATIC_RUNNER == "") {
         # Without a test runner defined, build the tests but don't run them.
         deps += [ ":pw_module_tests" ]
