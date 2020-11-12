@@ -307,9 +307,6 @@ class Status {
   constexpr Status(const Status&) = default;
   constexpr Status& operator=(const Status&) = default;
 
-  // Status implicitly converts to a Status::Code.
-  constexpr operator Code() const { return code_; }
-
   // Returns the Status::Code (pw_Status) for this Status.
   constexpr Code code() const { return code_; }
 
@@ -373,6 +370,20 @@ class Status {
   Code code_;
 };
 
+constexpr bool operator==(const Status& lhs, const Status& rhs) {
+  return lhs.code() == rhs.code();
+}
+
+constexpr bool operator!=(const Status& lhs, const Status& rhs) {
+  return lhs.code() != rhs.code();
+}
+
 }  // namespace pw
+
+// Create a C++ overload of pw_StatusString so that it supports pw::Status in
+// addition to pw_Status.
+inline const char* pw_StatusString(pw::Status status) {
+  return pw_StatusString(status.code());
+}
 
 #endif  // __cplusplus

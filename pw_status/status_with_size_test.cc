@@ -67,7 +67,7 @@ TEST(StatusWithSize, AllStatusValues_ZeroSize) {
   for (int i = 0; i < 32; ++i) {
     StatusWithSize result(static_cast<Status::Code>(i), 0);
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status()));
+    EXPECT_EQ(i, static_cast<int>(result.status().code()));
     EXPECT_EQ(0u, result.size());
   }
 }
@@ -76,7 +76,7 @@ TEST(StatusWithSize, AllStatusValues_SameSize) {
   for (int i = 0; i < 32; ++i) {
     StatusWithSize result(static_cast<Status::Code>(i), i);
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status()));
+    EXPECT_EQ(i, static_cast<int>(result.status().code()));
     EXPECT_EQ(static_cast<size_t>(i), result.size());
   }
 }
@@ -86,7 +86,7 @@ TEST(StatusWithSize, AllStatusValues_MaxSize) {
     StatusWithSize result(static_cast<Status::Code>(i),
                           StatusWithSize::max_size());
     EXPECT_EQ(result.ok(), i == 0);
-    EXPECT_EQ(i, static_cast<int>(result.status()));
+    EXPECT_EQ(i, static_cast<int>(result.status().code()));
     EXPECT_EQ(result.max_size(), result.size());
   }
 }

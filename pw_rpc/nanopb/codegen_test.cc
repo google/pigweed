@@ -56,27 +56,27 @@ TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
   EXPECT_EQ(Status::Ok(),
-            context.call({.integer = 123, .status_code = Status::Ok()}));
+            context.call({.integer = 123, .status_code = Status::Ok().code()}));
 
   EXPECT_EQ(124, context.response().value);
 
-  EXPECT_EQ(
-      Status::InvalidArgument(),
-      context.call({.integer = 999, .status_code = Status::InvalidArgument()}));
+  EXPECT_EQ(Status::InvalidArgument(),
+            context.call({.integer = 999,
+                          .status_code = Status::InvalidArgument().code()}));
   EXPECT_EQ(1000, context.response().value);
 }
 
 TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestStreamRpc) context;
 
-  context.call({.integer = 0, .status_code = Status::Aborted()});
+  context.call({.integer = 0, .status_code = Status::Aborted().code()});
 
   EXPECT_EQ(Status::Aborted(), context.status());
   EXPECT_TRUE(context.done());
   EXPECT_TRUE(context.responses().empty());
   EXPECT_EQ(0u, context.total_responses());
 
-  context.call({.integer = 4, .status_code = Status::Ok()});
+  context.call({.integer = 4, .status_code = Status::Ok().code()});
 
   ASSERT_EQ(4u, context.responses().size());
   ASSERT_EQ(4u, context.total_responses());
@@ -85,7 +85,7 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
     EXPECT_EQ(context.responses()[i].number, i);
   }
 
-  EXPECT_EQ(Status::Ok(), context.status());
+  EXPECT_EQ(Status::Ok().code(), context.status());
 }
 
 TEST(NanopbCodegen,
@@ -94,7 +94,7 @@ TEST(NanopbCodegen,
 
   ASSERT_EQ(3u, context.responses().max_size());
 
-  context.call({.integer = 5, .status_code = Status::NotFound()});
+  context.call({.integer = 5, .status_code = Status::NotFound().code()});
 
   ASSERT_EQ(3u, context.responses().size());
   ASSERT_EQ(5u, context.total_responses());

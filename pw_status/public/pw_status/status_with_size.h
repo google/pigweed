@@ -30,8 +30,8 @@ class StatusWithSizeConstant {
  private:
   friend class ::pw::StatusWithSize;
 
-  explicit constexpr StatusWithSizeConstant(Status::Code value)
-      : value_(static_cast<size_t>(value) << kStatusShift) {}
+  explicit constexpr StatusWithSizeConstant(Status value)
+      : value_(static_cast<size_t>(value.code()) << kStatusShift) {}
 
   const size_t value_;
 };
@@ -163,7 +163,8 @@ class StatusWithSize {
 
   // Creates a StatusWithSize with the provided status and size.
   explicit constexpr StatusWithSize(Status status, size_t size)
-      : StatusWithSize((static_cast<size_t>(status) << kStatusShift) | size) {}
+      : StatusWithSize((static_cast<size_t>(status.code()) << kStatusShift) |
+                       size) {}
 
   // Allow implicit conversions from the StatusWithSize constants.
   constexpr StatusWithSize(Constant constant) : size_(constant.value_) {}

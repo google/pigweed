@@ -397,7 +397,7 @@ T PeekFront(PrefixedEntryRingBuffer& ring) {
     T item;
   } aliased;
   size_t bytes_read = 0;
-  PW_CHECK_INT_EQ(ring.PeekFront(aliased.buffer, &bytes_read), Status::Ok());
+  PW_CHECK_OK(ring.PeekFront(aliased.buffer, &bytes_read));
   PW_CHECK_INT_EQ(bytes_read, sizeof(T));
   return aliased.item;
 }

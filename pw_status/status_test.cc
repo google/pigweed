@@ -202,7 +202,7 @@ extern "C" {
 
 Status::Code PassStatusFromC(Status status);
 
-Status::Code PassStatusFromCpp(Status status) { return status; }
+Status::Code PassStatusFromCpp(Status status) { return status.code(); }
 
 int TestStatusFromC(void);
 

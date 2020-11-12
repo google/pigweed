@@ -80,7 +80,7 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
   rpc_packet.WriteChannelId(channel_id_);
   rpc_packet.WriteServiceId(service_id_);
   rpc_packet.WriteMethodId(method_id_);
-  rpc_packet.WriteStatus(status_);
+  rpc_packet.WriteStatus(status_.code());
 
   return encoder.Encode();
 }

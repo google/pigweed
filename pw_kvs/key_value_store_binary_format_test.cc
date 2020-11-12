@@ -725,7 +725,7 @@ TEST_F(InitializedRedundantMultiMagicKvs, RecoversLossOfSecondSector) {
 
   EXPECT_EQ(false, kvs_.error_detected());
 
-  EXPECT_EQ(false, kvs_.Init());
+  EXPECT_EQ(Status::Ok(), kvs_.Init());
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.in_use_bytes, (192u * kvs_.redundancy()));
   EXPECT_EQ(stats.reclaimable_bytes, 0u);

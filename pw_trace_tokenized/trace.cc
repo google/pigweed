@@ -50,7 +50,7 @@ void TokenizedTraceImpl::HandleTraceEvent(uint32_t trace_token,
                         flags,
                         data_buffer,
                         data_size)
-           .Ok()) {
+           .ok()) {
     // Queue full dropping sample
     // TODO(rgoliver): Allow other strategies, for example: drop oldest, try
     // empty queue, or block.
@@ -318,12 +318,14 @@ pw_Status pw_trace_RegisterSink(pw_trace_SinkStartBlock start_func,
                                 pw_trace_SinkEndBlock end_block_func,
                                 void* user_data,
                                 pw_trace_SinkHandle* handle) {
-  return Callbacks::Instance().RegisterSink(
-      start_func, add_bytes_func, end_block_func, user_data, handle);
+  return Callbacks::Instance()
+      .RegisterSink(
+          start_func, add_bytes_func, end_block_func, user_data, handle)
+      .code();
 }
 
 pw_Status pw_trace_UnregisterSink(pw_trace_EventCallbackHandle handle) {
-  return Callbacks::Instance().UnregisterSink(handle);
+  return Callbacks::Instance().UnregisterSink(handle).code();
 }
 
 pw_Status pw_trace_RegisterEventCallback(
@@ -331,16 +333,18 @@ pw_Status pw_trace_RegisterEventCallback(
     pw_trace_ShouldCallOnEveryEvent called_on_every_event,
     void* user_data,
     pw_trace_EventCallbackHandle* handle) {
-  return Callbacks::Instance().RegisterEventCallback(
-      callback,
-      static_cast<CallbacksImpl::CallOnEveryEvent>(called_on_every_event),
-      user_data,
-      handle);
+  return Callbacks::Instance()
+      .RegisterEventCallback(
+          callback,
+          static_cast<CallbacksImpl::CallOnEveryEvent>(called_on_every_event),
+          user_data,
+          handle)
+      .code();
 }
 
 pw_Status pw_trace_UnregisterEventCallback(
     pw_trace_EventCallbackHandle handle) {
-  return Callbacks::Instance().UnregisterEventCallback(handle);
+  return Callbacks::Instance().UnregisterEventCallback(handle).code();
 }
 
 PW_EXTERN_C_END

@@ -93,7 +93,7 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
   protobuf::NestedEncoder encoder(buffer);
   test::TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(123);
-  test_request.WriteStatusCode(Status::Ok());
+  test_request.WriteStatusCode(Status::Ok().code());
 
   auto sws = context.call(encoder.Encode().value());
   EXPECT_EQ(Status::Ok(), sws.status());
@@ -119,7 +119,7 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
   protobuf::NestedEncoder encoder(buffer);
   test::TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(5);
-  test_request.WriteStatusCode(Status::Unauthenticated());
+  test_request.WriteStatusCode(Status::Unauthenticated().code());
 
   context.call(encoder.Encode().value());
   EXPECT_TRUE(context.done());
