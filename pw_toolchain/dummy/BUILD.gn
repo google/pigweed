@@ -12,16 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_toolchain/universal_tools.gni")
+
 # A dummy toolchain which is set as the default for Pigweed. This is never used;
 # the top-level BUILD.gn enumerates the toolchains for each build.
 toolchain("dummy") {
   tool("stamp") {
-    if (host_os == "win") {
-      command = "cmd /c type nul > \"{{output}}\""
-    } else {
-      command = "touch {{output}}"
-    }
-    description = "stamp {{output}}"
+    forward_variables_from(pw_universal_stamp, "*")
+  }
+
+  tool("copy") {
+    forward_variables_from(pw_universal_copy, "*")
   }
 
   # If the user tries to build a target with the default toolchain, run a script
