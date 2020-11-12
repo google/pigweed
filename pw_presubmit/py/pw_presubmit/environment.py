@@ -63,7 +63,6 @@ def init_cipd(
 def init_virtualenv(
         pigweed_root: Path,
         output_directory: Path,
-        setup_py_roots: Iterable[Union[Path, str]] = (),
         requirements: Iterable[Union[Path, str]] = (),
         gn_targets: Iterable[str] = (),
 ) -> None:
@@ -89,6 +88,5 @@ def init_virtualenv(
         f'--venv_path={output_directory}',
         f'--requirements={virtualenv_source / "requirements.txt"}',
         *(f'--requirements={x}' for x in requirements),
-        *(f'--setup-py-root={p}' for p in setup_py_roots),
         *(f'--gn-target={t}' for t in gn_targets),
     )

@@ -204,7 +204,7 @@ An example of the changed env_setup.py line is below.
     --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" \
     --use-pigweed-defaults \
     --cipd-package-file "$PW_PROJECT_ROOT/path/to/cipd.json" \
-    --virtualenv-setup-py-root "$PW_PROJECT_ROOT"
+    --virtualenv-gn-target "$PW_PROJECT_ROOT#:python.install"
 
 Projects wanting some of the Pigweed environment packages but not all of them
 should not use ``--use-pigweed-defaults`` and must manually add the references

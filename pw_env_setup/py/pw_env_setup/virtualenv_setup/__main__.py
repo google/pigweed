@@ -41,11 +41,6 @@ def _main():
                         default=[],
                         action='append',
                         help='requirements.txt files to install')
-    parser.add_argument('-s',
-                        '--setup-py-roots',
-                        default=[],
-                        action='append',
-                        help='places to search for setup.py files')
     parser.add_argument('--gn-target',
                         dest='gn_targets',
                         default=[],

@@ -174,9 +174,8 @@ class EnvSetup(object):
     """Run environment setup for Pigweed."""
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
-                 virtualenv_requirements, virtualenv_setup_py_root,
-                 virtualenv_gn_target, cargo_package_file, enable_cargo,
-                 json_file, project_root):
+                 virtualenv_requirements, virtualenv_gn_target,
+                 cargo_package_file, enable_cargo, json_file, project_root):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -198,7 +197,6 @@ class EnvSetup(object):
 
         self._cipd_package_file = []
         self._virtualenv_requirements = []
-        self._virtualenv_setup_py_root = []
         self._virtualenv_gn_targets = []
         self._cargo_package_file = []
         self._enable_cargo = enable_cargo
@@ -230,7 +228,6 @@ class EnvSetup(object):
 
         self._cipd_package_file.extend(cipd_package_file)
         self._virtualenv_requirements.extend(virtualenv_requirements)
-        self._virtualenv_setup_py_root.extend(virtualenv_setup_py_root)
         self._virtualenv_gn_targets.extend(virtualenv_gn_target)
         self._cargo_package_file.extend(cargo_package_file)
 
@@ -390,9 +387,7 @@ Then use `set +x` to go back to normal.
 
         requirements, req_glob_warnings = _process_globs(
             self._virtualenv_requirements)
-        setup_py_roots, setup_glob_warnings = _process_globs(
-            self._virtualenv_setup_py_root)
-        result = result_func(req_glob_warnings + setup_glob_warnings)
+        result = result_func(req_glob_warnings)
 
         orig_python3 = _which('python3')
         with self._env():
@@ -410,8 +405,7 @@ Then use `set +x` to go back to normal.
                 shutil.copyfile(new_python3, python3_copy)
             new_python3 = python3_copy
 
-        if (not requirements and not self._virtualenv_setup_py_root
-                and not self._virtualenv_gn_targets):
+        if not requirements and not self._virtualenv_gn_targets:
             return result(_Result.Status.SKIPPED)
 
         if not virtualenv_setup.install(
@@ -419,7 +413,6 @@ Then use `set +x` to go back to normal.
                 venv_path=self._virtualenv_root,
                 requirements=requirements,
                 gn_targets=self._virtualenv_gn_targets,
-                setup_py_roots=setup_py_roots,
                 python=new_python3,
                 env=self._env,
         ):
@@ -535,13 +528,6 @@ def parse(argv=None):
     )
 
     parser.add_argument(
-        '--virtualenv-setup-py-root',
-        help='Directory in which to recursively search for setup.py files.',
-        default=[],
-        action='append',
-    )
-
-    parser.add_argument(
         '--virtualenv-gn-target',
         help=('GN targets that build and install Python packages. Format: '
               "path/to/gn_root#target"),
@@ -583,7 +569,6 @@ def parse(argv=None):
         'use_pigweed_defaults',
         'cipd_package_file',
         'virtualenv_requirements',
-        'virtualenv_setup_py_root',
         'virtualenv_gn_target',
         'cargo_package_file',
     )
