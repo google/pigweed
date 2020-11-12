@@ -49,25 +49,27 @@ _CODES = '|'.join(_REMAP.keys())
 _FUNCTIONS = '|'.join(_REMAP.values())
 
 _STATUS_WITH_SIZE_CTOR = re.compile(
-    fr'\bStatusWithSize\(Status::({_CODES}),\s*')
-_STATUS = re.compile(fr'\b(Status|StatusWithSize)::({_CODES})(?!")\b')
+    fr'\bStatusWithSize\(Status::({_CODES}),\s*'.encode())
+_STATUS = re.compile(fr'\b(Status|StatusWithSize)::({_CODES})(?!")\b'.encode())
 _STATUS_EQUALITY = re.compile(
     fr'Status::(?P<l_func>{_FUNCTIONS})\(\)\s+==\s+(?P<value>[a-zA-Z0-9_.()]+)|'
-    fr'\s+==\s+Status::(?P<r_func>{_FUNCTIONS})\(\)')
+    fr'\s+==\s+(?:pw::)?Status::(?P<r_func>{_FUNCTIONS})\(\)'.encode())
 
 
-def _remap_status_with_size(match) -> str:
-    return f'StatusWithSize::{_REMAP[match.group(1)]}('
+def _remap_status_with_size(match) -> bytes:
+    return f'StatusWithSize::{_REMAP[match.group(1).decode()]}('.encode()
 
 
-def _remap_codes(match) -> str:
-    return f'{match.group(1)}::{_REMAP[match.group(2)]}()'
+def _remap_codes(match) -> bytes:
+    status, code = (g.decode() for g in match.groups())
+    return f'{status}::{_REMAP[code]}()'.encode()
 
 
-def _remap_equality(match) -> str:
-    l_func, status, r_func = match.groups('')
+def _remap_equality(match) -> bytes:
+    l_func, status, r_func = (g.decode() for g in match.groups(b''))
     func = l_func or r_func
-    return f'{status}.ok()' if func == 'Ok' else f'{status}.Is{func}()'
+    return (f'{status}.ok()'
+            if func == 'Ok' else f'{status}.Is{func}()').encode()
 
 
 def _parse_args():
@@ -93,19 +95,19 @@ def update_status(paths: Iterable[Path]) -> None:
 
         for file in git_repo.list_files(pathspecs=('*.h', '*.cc', '*.cpp'),
                                         repo_path=path):
-            orig = file.read_text()
+            orig = file.read_bytes()
 
-            # Replace StatusAWithSize constructor
+            # Replace StatusWithSize constructor
             text = _STATUS_WITH_SIZE_CTOR.sub(_remap_status_with_size, orig)
 
-            # Replace Status and StatusAWithSize
+            # Replace Status and StatusWithSize
             text = _STATUS.sub(_remap_codes, text)
 
             text = _STATUS_EQUALITY.sub(_remap_equality, text)
 
             if orig != text:
                 updated += 1
-                file.write_text(text)
+                file.write_bytes(text)
 
     print('Updated', updated, 'files.')
     print('Manually inspect the changes! This script is not perfect.')
