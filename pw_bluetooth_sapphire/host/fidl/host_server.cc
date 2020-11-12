@@ -749,7 +749,13 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
   ZX_ASSERT(pairing_delegate_);
   pairing_delegate_->OnPairingRequest(
       std::move(peer), fsys::PairingMethod::PASSKEY_ENTRY, 0u,
-      [respond = std::move(respond)](const bool accept, uint32_t entered_passkey) {
+      [respond = std::move(respond)](const bool accept, uint32_t entered_passkey) mutable {
+        if (!respond) {
+          bt_log(WARN, "bt-host",
+                 "The PairingDelegate invoked the Pairing Request callback more than once, which "
+                 "should not happen");
+          return;
+        }
         bt_log(DEBUG, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
                entered_passkey);
         if (!accept) {
@@ -771,7 +777,13 @@ void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> pa
   uint32_t displayed_passkey = passkey ? *passkey : 0u;
   pairing_delegate_->OnPairingRequest(
       std::move(peer), method, displayed_passkey,
-      [confirm = std::move(confirm)](const bool accept, uint32_t entered_passkey) {
+      [confirm = std::move(confirm)](const bool accept, uint32_t entered_passkey) mutable {
+        if (!confirm) {
+          bt_log(WARN, "bt-host",
+                 "The PairingDelegate invoked the Pairing Request callback more than once, which "
+                 "should not happen");
+          return;
+        }
         bt_log(DEBUG, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
                entered_passkey);
         confirm(accept);

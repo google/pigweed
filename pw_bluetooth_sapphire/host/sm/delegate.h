@@ -17,7 +17,7 @@ class Delegate {
  public:
   virtual ~Delegate() = default;
 
-  using ConfirmCallback = fit::function<void(bool confirm)>;
+  using ConfirmCallback = fit::callback<void(bool confirm)>;
   // Asks higher-level protocols outside bt-host to confirm the pairing request from the device.
   virtual void ConfirmPairing(ConfirmCallback confirm) = 0;
 
@@ -28,7 +28,7 @@ class Delegate {
 
   // Ask the user to enter a 6-digit passkey or reject pairing. Reports the result by invoking
   // |respond| with |passkey| - a negative value of |passkey| indicates entry failed.
-  using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
+  using PasskeyResponseCallback = fit::callback<void(int64_t passkey)>;
   virtual void RequestPasskey(PasskeyResponseCallback respond) = 0;
 
   // Called to obtain the local identity information to distribute to the

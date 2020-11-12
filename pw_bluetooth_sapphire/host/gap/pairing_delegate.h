@@ -17,7 +17,7 @@ namespace bt::gap {
 // authentication challenges during pairing.
 class PairingDelegate {
  public:
-  using ConfirmCallback = fit::function<void(bool confirm)>;
+  using ConfirmCallback = fit::callback<void(bool confirm)>;
 
   // Selects the intent of the passkey provided to the underlying pairing
   // provider.
@@ -49,7 +49,7 @@ class PairingDelegate {
   //
   // A valid |passkey| must be a non-negative integer. Pass a negative value to
   // reject pairing.
-  using PasskeyResponseCallback = fit::function<void(int64_t passkey)>;
+  using PasskeyResponseCallback = fit::callback<void(int64_t passkey)>;
   virtual void RequestPasskey(PeerId peer_id, PasskeyResponseCallback respond) = 0;
 
  protected:

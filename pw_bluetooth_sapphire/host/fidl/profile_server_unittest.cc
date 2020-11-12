@@ -100,6 +100,7 @@ class FIDL_ProfileServerTest : public TestingBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest);
 };
 
+// TODO(fxbug.dev/64167): Replace GMock usage with homegrown mocks.
 class MockConnectionReceiver : public fidlbredr::testing::ConnectionReceiver_TestBase {
  public:
   MockConnectionReceiver(fidl::InterfaceRequest<ConnectionReceiver> request,
