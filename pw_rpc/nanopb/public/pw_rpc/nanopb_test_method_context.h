@@ -16,7 +16,7 @@
 #include <tuple>
 #include <utility>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/light.h"
 #include "pw_containers/vector.h"
 #include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
@@ -111,7 +111,7 @@ class MessageOutput final : public ChannelOutput {
  private:
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  Status SendAndReleaseBuffer(size_t size) override;
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override;
 
   const internal::NanopbMethod& method_;
   Vector<Response>& responses_;
@@ -179,7 +179,7 @@ class UnaryContext {
 
   // Gives access to the RPC's response.
   const Response& response() const {
-    PW_CHECK_UINT_GT(ctx_.responses.size(), 0);
+    PW_ASSERT(ctx_.responses.size() > 0u);
     return ctx_.responses.back();
   }
 };
@@ -232,7 +232,7 @@ class ServerStreamingContext {
 
   // The status of the stream. Only valid if done() is true.
   Status status() const {
-    PW_CHECK(done());
+    PW_ASSERT(done());
     return ctx_.output.last_status();
   }
 };
@@ -256,16 +256,17 @@ void MessageOutput<Response>::clear() {
 }
 
 template <typename Response>
-Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
-  PW_CHECK(!stream_ended_);
+Status MessageOutput<Response>::SendAndReleaseBuffer(
+    std::span<const std::byte> buffer) {
+  PW_ASSERT(!stream_ended_);
+  PW_ASSERT(buffer.data() == buffer_.data());
 
-  if (size == 0u) {
+  if (buffer.empty()) {
     return Status::Ok();
   }
 
-  Result<internal::Packet> result =
-      internal::Packet::FromBuffer(std::span(buffer_.data(), size));
-  PW_CHECK(result.ok());
+  Result<internal::Packet> result = internal::Packet::FromBuffer(buffer);
+  PW_ASSERT(result.ok());
 
   last_status_ = result.value().status();
 
@@ -274,7 +275,7 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(size_t size) {
       // If we run out of space, the back message is always the most recent.
       responses_.emplace_back();
       responses_.back() = {};
-      PW_CHECK(
+      PW_ASSERT(
           method_.DecodeResponse(result.value().payload(), &responses_.back()));
       total_responses_ += 1;
       break;

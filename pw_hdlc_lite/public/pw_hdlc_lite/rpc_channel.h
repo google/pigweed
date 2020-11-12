@@ -16,6 +16,7 @@
 #include <array>
 #include <span>
 
+#include "pw_assert/light.h"
 #include "pw_hdlc_lite/encoder.h"
 #include "pw_rpc/channel.h"
 #include "pw_stream/stream.h"
@@ -24,6 +25,9 @@ namespace pw::hdlc_lite {
 
 // Custom HDLC ChannelOutput class to write and read data through serial using
 // the HDLC-Lite protocol.
+//
+// WARNING: This ChannelOutput is not thread-safe.
+// TODO(frolv): Update this to use OS locking primitives.
 class RpcChannelOutput : public rpc::ChannelOutput {
  public:
   // The RpcChannelOutput class does not own the buffer it uses to store the
@@ -40,9 +44,12 @@ class RpcChannelOutput : public rpc::ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  Status SendAndReleaseBuffer(size_t size) override {
-    return hdlc_lite::WriteInformationFrame(
-        address_, buffer_.first(size), writer_);
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
+    PW_DASSERT(buffer.data() == buffer_.data());
+    if (buffer.empty()) {
+      return Status::Ok();
+    }
+    return hdlc_lite::WriteInformationFrame(address_, buffer, writer_);
   }
 
  private:
@@ -52,6 +59,9 @@ class RpcChannelOutput : public rpc::ChannelOutput {
 };
 
 // RpcChannelOutput with its own buffer.
+//
+// WARNING: This ChannelOutput is not thread-safe.
+// TODO(frolv): Update this to use OS locking primitives.
 template <size_t buffer_size>
 class RpcChannelOutputBuffer : public rpc::ChannelOutput {
  public:
@@ -62,9 +72,12 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  Status SendAndReleaseBuffer(size_t size) override {
-    return hdlc_lite::WriteInformationFrame(
-        address_, std::span(buffer_.data(), size), writer_);
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
+    PW_DASSERT(buffer.data() == buffer_.data());
+    if (buffer.empty()) {
+      return Status::Ok();
+    }
+    return hdlc_lite::WriteInformationFrame(address_, buffer, writer_);
   }
 
  private:

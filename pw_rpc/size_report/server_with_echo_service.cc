@@ -29,8 +29,9 @@ class Output : public pw::rpc::ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  pw::Status SendAndReleaseBuffer(size_t size) override {
-    return pw::sys_io::WriteBytes(std::span(buffer_, size)).status();
+  pw::Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
+    PW_DCHECK_PTR_EQ(buffer.data(), buffer_);
+    return pw::sys_io::WriteBytes(buffer).status();
   }
 
  private:

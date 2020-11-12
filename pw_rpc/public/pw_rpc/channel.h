@@ -38,14 +38,22 @@ class ChannelOutput {
 
   constexpr const char* name() const { return name_; }
 
-  // Acquire a buffer into which to write an outgoing RPC packet.
+  // Acquire a buffer into which to write an outgoing RPC packet. The
+  // implementation is expected to handle synchronization if necessary.
   virtual std::span<std::byte> AcquireBuffer() = 0;
 
-  // Sends the contents of the buffer from AcquireBuffer(). Returns OK if the
-  // operation succeeded, on an implementation-defined Status value if there was
-  // an error. The implementation must NOT return FAILED_PRECONDITION or
-  // INTERNAL, which are reserved by pw_rpc.
-  virtual Status SendAndReleaseBuffer(size_t size) = 0;
+  // Sends the contents of a buffer previously obtained from AcquireBuffer().
+  // This may be called with an empty span, in which case the buffer should be
+  // released without sending any data.
+  //
+  // Returns OK if the operation succeeded, or an implementation-defined Status
+  // value if there was an error. The implementation must NOT return
+  // FAILED_PRECONDITION or INTERNAL, which are reserved by pw_rpc.
+  virtual Status SendAndReleaseBuffer(std::span<const std::byte> buffer) = 0;
+
+  void DiscardBuffer(std::span<const std::byte> buffer) {
+    SendAndReleaseBuffer(buffer.first(0));
+  }
 
  private:
   const char* name_;

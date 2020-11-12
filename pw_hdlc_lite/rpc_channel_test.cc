@@ -56,12 +56,14 @@ TEST(RpcChannelOutput, 1BytePayload) {
       memory_writer, channel_output_buffer, kAddress, "RpcChannelOutput");
 
   constexpr byte test_data = byte{'A'};
-  std::memcpy(output.AcquireBuffer().data(), &test_data, sizeof(test_data));
+  auto buffer = output.AcquireBuffer();
+  std::memcpy(buffer.data(), &test_data, sizeof(test_data));
 
   constexpr auto expected = bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
 
-  EXPECT_EQ(Status::Ok(), output.SendAndReleaseBuffer(sizeof(test_data)));
+  EXPECT_EQ(Status::Ok(),
+            output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(
@@ -78,8 +80,8 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
       memory_writer, channel_output_buffer, kAddress, "RpcChannelOutput");
 
   constexpr auto test_data = bytes::Array<0x7D>();
-  std::memcpy(
-      output.AcquireBuffer().data(), test_data.data(), test_data.size());
+  auto buffer = output.AcquireBuffer();
+  std::memcpy(buffer.data(), test_data.data(), test_data.size());
 
   constexpr auto expected = bytes::Concat(kFlag,
                                           kAddress,
@@ -88,7 +90,8 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
                                           byte{0x7d} ^ byte{0x20},
                                           uint32_t{0x89515322},
                                           kFlag);
-  EXPECT_EQ(Status::Ok(), output.SendAndReleaseBuffer(test_data.size()));
+  EXPECT_EQ(Status::Ok(),
+            output.SendAndReleaseBuffer(buffer.first(test_data.size())));
 
   ASSERT_EQ(memory_writer.bytes_written(), 10u);
   EXPECT_EQ(
@@ -104,12 +107,14 @@ TEST(RpcChannelOutputBuffer, 1BytePayload) {
       memory_writer, kAddress, "RpcChannelOutput");
 
   constexpr byte test_data = byte{'A'};
-  std::memcpy(output.AcquireBuffer().data(), &test_data, sizeof(test_data));
+  auto buffer = output.AcquireBuffer();
+  std::memcpy(buffer.data(), &test_data, sizeof(test_data));
 
   constexpr auto expected = bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
 
-  EXPECT_EQ(Status::Ok(), output.SendAndReleaseBuffer(sizeof(test_data)));
+  EXPECT_EQ(Status::Ok(),
+            output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
   EXPECT_EQ(

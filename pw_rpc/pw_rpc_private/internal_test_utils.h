@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <span>
 
+#include "pw_assert/light.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
@@ -39,13 +40,15 @@ class TestOutput : public ChannelOutput {
 
   std::span<std::byte> AcquireBuffer() override { return buffer_; }
 
-  Status SendAndReleaseBuffer(size_t size) override {
-    if (size == 0u) {
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
+    if (buffer.empty()) {
       return Status::Ok();
     }
 
+    PW_ASSERT(buffer.data() == buffer_.data());
+
     packet_count_ += 1;
-    sent_data_ = std::span(buffer_.data(), size);
+    sent_data_ = buffer;
     Result<internal::Packet> result = internal::Packet::FromBuffer(sent_data_);
     EXPECT_EQ(Status::Ok(), result.status());
     sent_packet_ = result.value_or(internal::Packet());

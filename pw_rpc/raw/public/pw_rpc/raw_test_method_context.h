@@ -119,7 +119,7 @@ class MessageOutput final : public ChannelOutput {
  private:
   ByteSpan AcquireBuffer() override { return packet_buffer_; }
 
-  Status SendAndReleaseBuffer(size_t size) override;
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override;
 
   Vector<ByteSpan>& responses_;
   Vector<ResponseBuffer>& buffers_;
@@ -257,15 +257,16 @@ using Context = std::tuple_element_t<
                >>;
 
 template <size_t output_size>
-Status MessageOutput<output_size>::SendAndReleaseBuffer(size_t size) {
+Status MessageOutput<output_size>::SendAndReleaseBuffer(
+    std::span<const std::byte> buffer) {
   PW_ASSERT(!stream_ended_);
+  PW_ASSERT(buffer.data() == packet_buffer_.data());
 
-  if (size == 0u) {
+  if (buffer.empty()) {
     return Status::Ok();
   }
 
-  Result<internal::Packet> result =
-      internal::Packet::FromBuffer(std::span(packet_buffer_.data(), size));
+  Result<internal::Packet> result = internal::Packet::FromBuffer(buffer);
   PW_ASSERT(result.ok());
 
   last_status_ = result.value().status();

@@ -28,7 +28,9 @@ TEST(ChannelOutput, Name) {
    public:
     NameTester(const char* name) : ChannelOutput(name) {}
     std::span<std::byte> AcquireBuffer() override { return {}; }
-    Status SendAndReleaseBuffer(size_t) override { return Status::Ok(); }
+    Status SendAndReleaseBuffer(std::span<const std::byte>) override {
+      return Status::Ok();
+    }
   };
 
   EXPECT_STREQ("hello_world", NameTester("hello_world").name());

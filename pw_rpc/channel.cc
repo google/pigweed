@@ -29,15 +29,16 @@ std::span<byte> Channel::OutputBuffer::payload(const Packet& packet) const {
 
 Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
   Result encoded = packet.Encode(buffer.buffer_);
-  buffer.buffer_ = {};
 
   if (!encoded.ok()) {
     PW_LOG_ERROR("Failed to encode response packet to channel buffer");
-    output().SendAndReleaseBuffer(0);
+    output().DiscardBuffer(buffer.buffer_);
+    buffer.buffer_ = {};
     return Status::Internal();
   }
 
-  return output().SendAndReleaseBuffer(encoded.value().size());
+  buffer.buffer_ = {};
+  return output().SendAndReleaseBuffer(encoded.value());
 }
 
 }  // namespace pw::rpc::internal
