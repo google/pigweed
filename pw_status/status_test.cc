@@ -69,6 +69,29 @@ TEST(Status, NotOk_OkIsFalse) {
   static_assert(!Status(kInvalidCode).ok());
 }
 
+TEST(Status, Code) {
+  // clang-format off
+  static_assert(PW_STATUS_OK == Status().code());
+  static_assert(PW_STATUS_OK == Status::Ok().code());
+  static_assert(PW_STATUS_CANCELLED == Status::Cancelled().code());
+  static_assert(PW_STATUS_UNKNOWN == Status::Unknown().code());
+  static_assert(PW_STATUS_INVALID_ARGUMENT == Status::InvalidArgument().code());
+  static_assert(PW_STATUS_DEADLINE_EXCEEDED == Status::DeadlineExceeded().code());
+  static_assert(PW_STATUS_NOT_FOUND == Status::NotFound().code());
+  static_assert(PW_STATUS_ALREADY_EXISTS == Status::AlreadyExists().code());
+  static_assert(PW_STATUS_PERMISSION_DENIED == Status::PermissionDenied().code());
+  static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::ResourceExhausted().code());
+  static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FailedPrecondition().code());
+  static_assert(PW_STATUS_ABORTED == Status::Aborted().code());
+  static_assert(PW_STATUS_OUT_OF_RANGE == Status::OutOfRange().code());
+  static_assert(PW_STATUS_UNIMPLEMENTED == Status::Unimplemented().code());
+  static_assert(PW_STATUS_INTERNAL == Status::Internal().code());
+  static_assert(PW_STATUS_UNAVAILABLE == Status::Unavailable().code());
+  static_assert(PW_STATUS_DATA_LOSS == Status::DataLoss().code());
+  static_assert(PW_STATUS_UNAUTHENTICATED == Status::Unauthenticated().code());
+  // clang-format on
+}
+
 TEST(Status, EqualCodes) {
   static_assert(PW_STATUS_OK == Status());
   static_assert(PW_STATUS_OK == Status::Ok());

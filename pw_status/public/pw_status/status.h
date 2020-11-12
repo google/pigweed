@@ -310,6 +310,9 @@ class Status {
   // Status implicitly converts to a Status::Code.
   constexpr operator Code() const { return code_; }
 
+  // Returns the Status::Code (pw_Status) for this Status.
+  constexpr Code code() const { return code_; }
+
   // True if the status is Status::Ok().
   [[nodiscard]] constexpr bool ok() const { return code_ == PW_STATUS_OK; }
 
