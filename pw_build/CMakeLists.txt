@@ -21,8 +21,6 @@ target_compile_options(pw_build INTERFACE "-g")
 target_link_libraries(pw_build
   INTERFACE
     pw_build.reduced_size
-    pw_build.strict_warnings
-    pw_build.extra_strict_warnings
     pw_build.cpp17
 )
 target_compile_options(pw_build

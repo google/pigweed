@@ -153,6 +153,8 @@ function(pw_add_module_library NAME)
       pw_build
       ${arg_PUBLIC_DEPS}
     PRIVATE
+      pw_build.strict_warnings
+      pw_build.extra_strict_warnings
       ${arg_PRIVATE_DEPS}
   )
 
