@@ -12,26 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-// Make sure status works if these macros are defined.
-// TODO(pwbug/268): Remove these macros after migrating from these aliases.
-#define OK Uh oh, this macro is defined !
-#define CANCELLED Uh oh, this macro is defined !
-#define UNKNOWN Uh oh, this macro is defined !
-#define INVALID_ARGUMENT Uh oh, this macro is defined !
-#define DEADLINE_EXCEEDED Uh oh, this macro is defined !
-#define NOT_FOUND Uh oh, this macro is defined !
-#define ALREADY_EXISTS Uh oh, this macro is defined !
-#define PERMISSION_DENIED Uh oh, this macro is defined !
-#define UNAUTHENTICATED Uh oh, this macro is defined !
-#define RESOURCE_EXHAUSTED Uh oh, this macro is defined !
-#define FAILED_PRECONDITION Uh oh, this macro is defined !
-#define ABORTED Uh oh, this macro is defined !
-#define OUT_OF_RANGE Uh oh, this macro is defined !
-#define UNIMPLEMENTED Uh oh, this macro is defined !
-#define INTERNAL Uh oh, this macro is defined !
-#define UNAVAILABLE Uh oh, this macro is defined !
-#define DATA_LOSS Uh oh, this macro is defined !
-
 #include "pw_status/status.h"
 
 #include "gtest/gtest.h"
@@ -174,30 +154,6 @@ TEST(Status, Strings) {
 
 TEST(Status, UnknownString) {
   EXPECT_STREQ("INVALID STATUS", Status(kInvalidCode).str());
-}
-
-TEST(Status, DeprecatedAliases) {
-  // TODO(pwbug/268): Remove this test after migrating from these aliases.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  static_assert(PW_STATUS_OK == OkStatus());
-  static_assert(PW_STATUS_CANCELLED == Status::CANCELLED);
-  static_assert(PW_STATUS_UNKNOWN == Status::UNKNOWN);
-  static_assert(PW_STATUS_INVALID_ARGUMENT == Status::INVALID_ARGUMENT);
-  static_assert(PW_STATUS_DEADLINE_EXCEEDED == Status::DEADLINE_EXCEEDED);
-  static_assert(PW_STATUS_NOT_FOUND == Status::NOT_FOUND);
-  static_assert(PW_STATUS_ALREADY_EXISTS == Status::ALREADY_EXISTS);
-  static_assert(PW_STATUS_PERMISSION_DENIED == Status::PERMISSION_DENIED);
-  static_assert(PW_STATUS_RESOURCE_EXHAUSTED == Status::RESOURCE_EXHAUSTED);
-  static_assert(PW_STATUS_FAILED_PRECONDITION == Status::FAILED_PRECONDITION);
-  static_assert(PW_STATUS_ABORTED == Status::ABORTED);
-  static_assert(PW_STATUS_OUT_OF_RANGE == Status::OUT_OF_RANGE);
-  static_assert(PW_STATUS_UNIMPLEMENTED == Status::UNIMPLEMENTED);
-  static_assert(PW_STATUS_INTERNAL == Status::INTERNAL);
-  static_assert(PW_STATUS_UNAVAILABLE == Status::UNAVAILABLE);
-  static_assert(PW_STATUS_DATA_LOSS == Status::DATA_LOSS);
-  static_assert(PW_STATUS_UNAUTHENTICATED == Status::UNAUTHENTICATED);
-#pragma GCC diagnostic pop
 }
 
 // Functions for executing the C pw_Status tests.
