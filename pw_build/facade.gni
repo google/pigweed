@@ -23,33 +23,59 @@ import("$dir_pw_build/target_types.gni")
 # link against. Typically this will be done by pointing a build arg like
 # `pw_[module]_BACKEND` at a backend implementation for that module.
 #
-# To avoid circular dependencies, pw_facade creates two targets:
+# pw_facade creates two targets:
 #
-#   - $target_name: the public-facing pw_source_set
-#   - $target_name.facade: target used by the backend to avoid circular
-#         dependencies
+#   $target_name: The public-facing pw_source_set that provides the API and
+#     implementation (backend). Users of the facade should depend on this.
+#   $target_name.facade: A private source_set that provides ONLY the API. ONLY
+#     backends should depend on this.
 #
-# If the target name matches the directory name (e.g. //foo:foo), a ":facade"
-# alias of the facade target (e.g. //foo:facade) is also provided. This avoids
-# the need to repeat the directory name, for consistency with the main target.
+# The facade's headers are split out into the *.facade target to avoid circular
+# dependencies. Here's a concrete example to illustrate why this is needed:
 #
-# Example facade:
+#   foo_BACKEND = "//foo:foo_backend_bar"
 #
-#   # Creates ":module_name" and ":module_name.facade" GN targets.
-#   pw_facade("module_name") {
-#     backend = dir_module_name_backend
-#     public_deps = [
-#       ":module_api_layer"
-#     ]
+#   pw_facade("foo") {
+#     backend = foo_BACKEND
+#     public = [ "foo.h" ]
+#     sources = [ "foo.cc" ]
 #   }
+#
+#   pw_source_set("foo_backend_bar") {
+#     deps = [ ":foo.facade" ]
+#     sources = [ "bar.cc" ]
+#   }
+#
+# This creates the following dependency graph:
+#
+#   foo.facade  <-.
+#    ^             \
+#    |              \
+#    |               \
+#   foo  ---------->  foo_backend_bar
+#
+# This allows foo_backend_bar to include "foo.h". If you tried to directly
+# depend on `foo` from `foo_backend_bar`, you'd get a dependency cycle error in
+# GN.
 #
 # Accepts the standard pw_source_set args with the following additions:
 #
-#  - backend: the dependency that implements this facade (a GN variable)
+# Args:
+#  backend: (required) The dependency that implements this facade (a GN
+#    variable)
+#  public: (required) The headers exposed by this facade. A facade acts as a
+#    tool to break dependency cycles that come from the backend trying to
+#    include headers from the facade itself. If the facade doesn't expose any
+#    headers, it's basically the same as just depending directly on the build
+#    arg that `backend` is set to.
 #
 template("pw_facade") {
   assert(defined(invoker.backend),
          "pw_facade requires a reference to a backend variable for the facade")
+  assert(defined(invoker.public),
+         "If your facade does not explicitly expose an API that a backend " +
+             "must depend on, you can just directly depend on the build arg " +
+             "that the `backend` template argument would have been set to.")
 
   _facade_name = "$target_name.facade"
 
@@ -65,32 +91,6 @@ template("pw_facade") {
     public_deps = [ ":$_facade_name" ]
   }
 
-  # A facade's headers are split into a separate target to avoid a circular
-  # dependency between the facade and the backend.
-  #
-  # For example, the following targets:
-  #
-  #   foo_backend = "//foo:foo_backend_bar"
-  #
-  #   pw_facade("foo") {
-  #     backend = foo_backend
-  #     public = [ "foo.h" ]
-  #     sources = [ "foo.cc" ]
-  #   }
-  #
-  #   pw_source_set("foo_backend_bar") {
-  #     deps = [ ":facade" ]
-  #     sources = [ "bar.cc" ]
-  #   }
-  #
-  # Create the following dependency graph:
-  #
-  #   facade  <-.
-  #    ^         \
-  #    |          \
-  #    |           \
-  #   foo  ------>  foo_backend_bar
-  #
   _facade_vars = [
     "public_configs",
     "public_deps",
