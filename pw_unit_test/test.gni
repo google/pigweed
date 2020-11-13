@@ -33,7 +33,7 @@ declare_args() {
 }
 
 # Defines a target if enable_if is true. Otherwise, it defines that target as
-# <target_name>_DISABLED and creates an empty <target_name> group. This can be
+# <target_name>.DISABLED and creates an empty <target_name> group. This can be
 # used to conditionally create targets without having to conditionally add them
 # to groups. This results in simpler BUILD.gn files.
 template("_pw_disableable_target") {
@@ -45,7 +45,7 @@ template("_pw_disableable_target") {
   if (invoker.enable_if) {
     _actual_target_name = target_name
   } else {
-    _actual_target_name = target_name + "_DISABLED"
+    _actual_target_name = target_name + ".DISABLED"
 
     # If the target is disabled, create an empty target in its place. Use an
     # action with the original target's sources as inputs to ensure that
@@ -85,17 +85,22 @@ template("_pw_disableable_target") {
   }
 }
 
-# Creates an executable target for a unit test.
+# Creates a library and an executable target for a unit test.
+#
+# <target_name>.lib contains the provided test sources as a library, which can
+# then be linked into a test executable.
+# <target_name> is a standalone executable which contains only the test sources
+# specified in the pw_unit_test_template.
 #
 # If the pw_unit_test_AUTOMATIC_RUNNER variable is set, this template also creates a
-# "${test_name}_run" target which runs the unit test executable after building
+# "${test_name}.run" target which runs the unit test executable after building
 # it.
 #
 # Args:
 #   - enable_if: (optional) Conditionally enables or disables this test. The test
-#         target and *_run target do nothing when the test is disabled. The
+#         target and *.run target do nothing when the test is disabled. The
 #         disabled test can still be built and run with the
-#         <target_name>_DISABLED and <target_name>_DISABLED_run targets.
+#         <target_name>.DISABLED and <target_name>.DISABLED.run targets.
 #         Defaults to true (enable_if).
 #   - All of the regular "executable" target args are accepted.
 template("pw_test") {
@@ -119,6 +124,18 @@ template("pw_test") {
     _test_main = invoker.test_main
   }
 
+  # The unit test code as a source_set.
+  _pw_disableable_target("$target_name.lib") {
+    target_type = "pw_source_set"
+    enable_if = _test_is_enabled
+    forward_variables_from(invoker, "*", [ "metadata" ])
+
+    if (!defined(public_deps)) {
+      public_deps = []
+    }
+    public_deps += [ dir_pw_unit_test ]
+  }
+
   _pw_disableable_target(_test_target_name) {
     target_type = "pw_executable"
     enable_if = _test_is_enabled
@@ -134,11 +151,7 @@ template("pw_test") {
       ]
     }
 
-    forward_variables_from(invoker, "*", [ "metadata" ])
-
-    if (!defined(deps)) {
-      deps = []
-    }
+    deps = [ ":$_test_target_name.lib" ]
     if (_test_main != "") {
       deps += [ _test_main ]
     }
@@ -152,16 +165,16 @@ template("pw_test") {
     if (_test_is_enabled) {
       _test_to_run = _test_target_name
     } else {
-      # Create a run target for the _DISABLED version of the test.
-      _test_to_run = _test_target_name + "_DISABLED"
+      # Create a run target for the .DISABLED version of the test.
+      _test_to_run = _test_target_name + ".DISABLED"
 
       # Create a dummy _run target for the regular version of the test.
-      group(_test_target_name + "_run") {
+      group(_test_target_name + ".run") {
         deps = [ ":$_test_target_name" ]
       }
     }
 
-    pw_python_action(_test_to_run + "_run") {
+    pw_python_action(_test_to_run + ".run") {
       deps = [ ":$_test_target_name" ]
       inputs = [ pw_unit_test_AUTOMATIC_RUNNER ]
       script = "$dir_pw_unit_test/py/pw_unit_test/test_runner.py"
@@ -172,6 +185,15 @@ template("pw_test") {
         "<TARGET_FILE(:$_test_to_run)>",
       ]
       stamp = true
+    }
+
+    # TODO(frolv): Alias for the deprecated _run target. Remove when projects
+    # are migrated.
+    group(_test_to_run + "_run") {
+      public_deps = [ ":$_test_to_run.run" ]
+    }
+  } else {
+    group(_test_target_name + ".run") {
     }
   }
 }
@@ -213,6 +235,15 @@ template("pw_test_group") {
       _deps += invoker.group_deps
     }
 
+    group(_group_target + ".lib") {
+      deps = []
+      foreach(_target, _deps) {
+        _dep_target = get_label_info(_target, "label_no_toolchain")
+        _dep_toolchain = get_label_info(_target, "toolchain")
+        deps += [ "$_dep_target.lib($_dep_toolchain)" ]
+      }
+    }
+
     _metadata_group_target = "${target_name}_pw_test_group_metadata"
     group(_metadata_group_target) {
       metadata = {
@@ -249,27 +280,47 @@ template("pw_test_group") {
       deps = _test_group_deps
     }
 
-    # If automatic test running is enabled, create a *_run group that collects
-    # all of the individual *_run targets and groups.
+    # If automatic test running is enabled, create a *.run group that collects
+    # all of the individual *.run targets and groups.
     if (pw_unit_test_AUTOMATIC_RUNNER != "") {
-      group(_group_target + "_run") {
+      group(_group_target + ".run") {
         deps = [ ":$_group_target" ]
         foreach(_target, _deps) {
-          deps += [ "${_target}_run" ]
+          _dep_target = get_label_info(_target, "label_no_toolchain")
+          _dep_toolchain = get_label_info(_target, "toolchain")
+          deps += [ "$_dep_target.run($_dep_toolchain)" ]
         }
+      }
+
+      # TODO(frolv): Remove this deprecated alias.
+      group(_group_target + "_run") {
+        deps = [ ":$_group_target.run" ]
       }
     }
   } else {  # _group_is_enabled
     # Create empty groups for the tests to avoid pulling in any dependencies.
     group(_group_target) {
     }
+    group(_group_target + ".lib") {
+    }
 
     if (pw_unit_test_AUTOMATIC_RUNNER != "") {
+      group(_group_target + ".run") {
+      }
+
+      # TODO(frolv): Remove this deprecated alias.
       group(_group_target + "_run") {
       }
     }
 
     not_needed("*")
     not_needed(invoker, "*")
+  }
+
+  # All of the tests in this group and its dependencies bundled into a single
+  # test binary.
+  pw_test(_group_target + ".bundle") {
+    deps = [ ":$_group_target.lib" ]
+    enable_if = _group_is_enabled
   }
 }

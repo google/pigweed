@@ -171,7 +171,7 @@ group("pigweed_default") {
       } else {
         # With a test runner, depend on the run targets so they run with the
         # build.
-        deps += [ ":pw_module_tests_run" ]
+        deps += [ ":pw_module_tests.run" ]
       }
     }
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
@@ -196,7 +196,10 @@ group("pigweed_default") {
 if (current_toolchain != default_toolchain) {
   group("apps") {
     # Application images built for all targets.
-    deps = [ "$dir_pw_hdlc_lite/rpc_example" ]
+    deps = [
+      "$dir_pw_hdlc_lite/rpc_example",
+      "$dir_pw_rpc:tests.bundle",
+    ]
 
     # Add target-specific images.
     deps += pw_TARGET_APPLICATIONS

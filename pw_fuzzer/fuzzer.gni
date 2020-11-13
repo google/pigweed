@@ -68,7 +68,7 @@ template("pw_fuzzer") {
 
     # Dummy target to satisfy `pw_test_group`. It is empty as we don't want to
     # automatically run fuzzers.
-    group(target_name + "_run") {
+    group(target_name + ".run") {
     }
   } else {
     # Build a unit test that exercise the fuzz target function.

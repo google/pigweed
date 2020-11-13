@@ -219,7 +219,7 @@ endfunction(pw_set_backend)
 # Declares a unit test. Creates two targets:
 #
 #  * <TEST_NAME> - the test executable
-#  * <TEST_NAME>_run - builds and runs the test
+#  * <TEST_NAME>.run - builds and runs the test
 #
 # Args:
 #
@@ -255,7 +255,7 @@ function(pw_add_test NAME)
     OUTPUT
       "${NAME}.stamp"
   )
-  add_custom_target("${NAME}_run" DEPENDS "${NAME}.stamp")
+  add_custom_target("${NAME}.run" DEPENDS "${NAME}.stamp")
 
   # Always add tests to the "all" group. If no groups are provided, add the
   # test to the "default" group.
@@ -280,6 +280,6 @@ function(pw_add_test_to_groups TEST_NAME)
     endif()
 
     add_dependencies("pw_tests.${group}" "${TEST_NAME}")
-    add_dependencies("pw_run_tests.${group}" "${TEST_NAME}_run")
+    add_dependencies("pw_run_tests.${group}" "${TEST_NAME}.run")
   endforeach()
 endfunction(pw_add_test_to_groups)
