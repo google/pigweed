@@ -149,6 +149,7 @@ TEST_F(GAP_AdapterTest, InitializeNoBREDR) {
   EXPECT_EQ(1, init_cb_count);
   EXPECT_TRUE(adapter()->state().IsLowEnergySupported());
   EXPECT_FALSE(adapter()->state().IsBREDRSupported());
+  EXPECT_FALSE(adapter()->bredr());
   EXPECT_EQ(TechnologyType::kLowEnergy, adapter()->state().type());
   EXPECT_FALSE(transport_closed_called());
 }
@@ -174,6 +175,8 @@ TEST_F(GAP_AdapterTest, InitializeSuccess) {
   EXPECT_EQ(1, init_cb_count);
   EXPECT_TRUE(adapter()->state().IsLowEnergySupported());
   EXPECT_TRUE(adapter()->state().IsBREDRSupported());
+  EXPECT_TRUE(adapter()->le());
+  EXPECT_TRUE(adapter()->bredr());
   EXPECT_EQ(TechnologyType::kDualMode, adapter()->state().type());
   EXPECT_FALSE(transport_closed_called());
 }
@@ -322,7 +325,7 @@ TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
   ASSERT_TRUE(EnsureInitialized());
-  EXPECT_TRUE(adapter()->bredr_discovery_manager());
+  ASSERT_TRUE(adapter()->bredr());
 
   hci::Status result;
   auto name_cb = [&result](const auto& status) { result = status; };
@@ -332,7 +335,7 @@ TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
 
   EXPECT_TRUE(result);
   EXPECT_EQ(kNewName, adapter()->state().local_name());
-  EXPECT_EQ(kNewName, adapter()->bredr_discovery_manager()->local_name());
+  EXPECT_EQ(kNewName, adapter()->bredr()->local_name());
 }
 
 // Tests that writing a long local name results in BrEdr updating it's local name.
@@ -344,7 +347,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
   ASSERT_TRUE(EnsureInitialized());
-  EXPECT_TRUE(adapter()->bredr_discovery_manager());
+  EXPECT_TRUE(adapter()->bredr());
 
   hci::Status result;
   auto name_cb = [&result](const auto& status) { result = status; };
@@ -355,7 +358,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   EXPECT_TRUE(result);
   // Both the adapter & discovery manager local name should be the original (untruncated) name.
   EXPECT_EQ(long_name, adapter()->state().local_name());
-  EXPECT_EQ(long_name, adapter()->bredr_discovery_manager()->local_name());
+  EXPECT_EQ(long_name, adapter()->bredr()->local_name());
 }
 
 // Tests WriteExtendedInquiryResponse failure leads to |local_name_| not updated.
@@ -382,7 +385,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateEIRResponseError) {
   EXPECT_EQ(hci::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
   // The |local_name_| should not be set.
   EXPECT_NE(kNewName, adapter()->state().local_name());
-  EXPECT_NE(kNewName, adapter()->bredr_discovery_manager()->local_name());
+  EXPECT_NE(kNewName, adapter()->bredr()->local_name());
 }
 
 TEST_F(GAP_AdapterTest, DefaultName) {
@@ -415,7 +418,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   test_device()->set_settings(settings);
 
   InitializeAdapter([](bool) {});
-  adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
   fake_peer->enable_directed_advertising(true);
@@ -426,7 +429,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
 
   // Enable background scanning. No auto-connect should take place since the
   // device isn't yet bonded.
-  adapter()->le_discovery_manager()->EnableBackgroundScan(true);
+  adapter()->le()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
@@ -454,7 +457,7 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
   test_device()->set_settings(settings);
 
   InitializeAdapter([](bool) {});
-  adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr, true, false);
   fake_peer->enable_directed_advertising(true);
@@ -465,7 +468,7 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
 
   // Enable background scanning. No auto-connect should take place since the
   // device isn't yet bonded.
-  adapter()->le_discovery_manager()->EnableBackgroundScan(true);
+  adapter()->le()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
@@ -517,30 +520,30 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   };
 
   // Advertising should use the public address by default.
-  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
-                                                        nullptr, AdvertisingInterval::FAST1, false,
-                                                        /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                                    AdvertisingInterval::FAST1, false,
+                                    /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while
   // advertising is in progress.
-  adapter()->le_address_manager()->EnablePrivacy(true);
+  adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_random_address());
 
   // Stop advertising.
-  adapter()->le_advertising_manager()->StopAdvertising(instance.id());
+  adapter()->le()->StopAdvertising(instance.id());
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_advertising_state().enabled);
   EXPECT_FALSE(test_device()->le_random_address());
 
   // Restart advertising. This should configure the LE random address and
   // advertise using it.
-  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
-                                                        nullptr, AdvertisingInterval::FAST1, false,
-                                                        /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                                    AdvertisingInterval::FAST1, false,
+                                    /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
@@ -553,10 +556,10 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
   EXPECT_EQ(last_random_addr, *test_device()->le_random_address());
 
   // Restarting advertising should refresh the controller address.
-  adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
-                                                        nullptr, AdvertisingInterval::FAST1, false,
-                                                        /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->StopAdvertising(instance.id());
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                                    AdvertisingInterval::FAST1, false,
+                                    /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kRandom, test_device()->le_advertising_state().own_address_type);
@@ -565,11 +568,11 @@ TEST_F(GAP_AdapterTest, LocalAddressForLegacyAdvertising) {
 
   // Disable privacy. The next time advertising gets started it should use a
   // public address.
-  adapter()->le_address_manager()->EnablePrivacy(false);
-  adapter()->le_advertising_manager()->StopAdvertising(instance.id());
-  adapter()->le_advertising_manager()->StartAdvertising(AdvertisingData(), AdvertisingData(),
-                                                        nullptr, AdvertisingInterval::FAST1, false,
-                                                        /*include_tx_power_level*/ false, adv_cb);
+  adapter()->le()->EnablePrivacy(false);
+  adapter()->le()->StopAdvertising(instance.id());
+  adapter()->le()->StartAdvertising(AdvertisingData(), AdvertisingData(), nullptr,
+                                    AdvertisingInterval::FAST1, false,
+                                    /*include_tx_power_level*/ false, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_advertising_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_advertising_state().own_address_type);
@@ -587,12 +590,12 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
   // testing.
   constexpr auto kTestDelay = zx::sec(5);
   constexpr auto kTestScanPeriod = kPrivateAddressTimeout + kTestDelay;
-  adapter()->le_discovery_manager()->set_scan_period(kTestScanPeriod);
+  adapter()->le()->set_scan_period_for_testing(kTestScanPeriod);
 
   // Discovery should use the public address by default.
   LowEnergyDiscoverySessionPtr session;
   auto cb = [&](auto s) { session = std::move(s); };
-  adapter()->le_discovery_manager()->StartDiscovery(cb);
+  adapter()->le()->StartDiscovery(cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
@@ -600,7 +603,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
 
   // Enable privacy. The random address should not get configured while a scan
   // is in progress.
-  adapter()->le_address_manager()->EnablePrivacy(true);
+  adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_random_address());
 
@@ -612,7 +615,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
 
   // Restart discovery. This should configure the LE random address and scan
   // using it.
-  adapter()->le_discovery_manager()->StartDiscovery(cb);
+  adapter()->le()->StartDiscovery(cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
@@ -635,7 +638,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
 
   // Disable privacy. The next time scanning gets started it should use a
   // public address.
-  adapter()->le_address_manager()->EnablePrivacy(false);
+  adapter()->le()->EnablePrivacy(false);
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
@@ -659,11 +662,11 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   };
 
   // A connection request should use the public address by default.
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
 
   // Enable privacy. The random address should not get configured while a
   // connection attempt is in progress.
-  adapter()->le_address_manager()->EnablePrivacy(true);
+  adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_random_address());
   ASSERT_TRUE(conn_ref);
@@ -673,7 +676,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   // Create a new connection. The second attempt should use a random address.
   // re-enabled.
   conn_ref = nullptr;
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   ASSERT_TRUE(conn_ref);
@@ -685,9 +688,9 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Disable privacy. The next connection attempt should use a public address.
-  adapter()->le_address_manager()->EnablePrivacy(false);
+  adapter()->le()->EnablePrivacy(false);
   conn_ref = nullptr;
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 }
@@ -714,7 +717,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   // remove some of the unnecessary invariants from this test case.
   static_assert(kTestTimeout > kCacheTimeout, "expected a shorter device cache timeout");
 
-  adapter()->le_connection_manager()->set_request_timeout_for_testing(kTestTimeout);
+  adapter()->le()->set_request_timeout_for_testing(kTestTimeout);
 
   // The connection request should use a public address.
   std::optional<HostError> error;
@@ -724,14 +727,14 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
     ASSERT_TRUE(result.is_error());
     error = result.error();
   };
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 
   // Enable privacy. The random address should not get configured while a
   // connection request is outstanding.
-  adapter()->le_address_manager()->EnablePrivacy(true);
+  adapter()->le()->EnablePrivacy(true);
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_random_address());
 
@@ -743,7 +746,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // The peer should not have expired.
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_random_address());
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
@@ -766,7 +769,8 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // This will be notified when LowEnergyConnectionManager is destroyed.
   auto noop_connect_cb = [](auto) {};
-  adapter()->le_connection_manager()->Connect(peer->identifier(), std::move(noop_connect_cb));
+  adapter()->le()->Connect(peer->identifier(), std::move(noop_connect_cb),
+                           Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
@@ -782,7 +786,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   test_device()->set_settings(settings);
   InitializeAdapter([](bool) {});
 
-  adapter()->le_address_manager()->EnablePrivacy(true);
+  adapter()->le()->EnablePrivacy(true);
 
   LowEnergyConnectionRefPtr conn_ref;
   auto connect_cb = [&](auto result) {
@@ -794,7 +798,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
-  adapter()->le_connection_manager()->Connect(peer->identifier(), connect_cb);
+  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
   RunLoopUntilIdle();
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
@@ -819,7 +823,7 @@ TEST_F(GAP_AdapterTest, IsDiscoverableLowEnergy) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 
   AdvertisementInstance instance;
-  adapter()->le_advertising_manager()->StartAdvertising(
+  adapter()->le()->StartAdvertising(
       AdvertisingData(), AdvertisingData(), nullptr, AdvertisingInterval::FAST1, false,
       /*include_tx_power_level*/ false, [&](AdvertisementInstance i, auto status) {
         ASSERT_TRUE(status);
@@ -842,8 +846,7 @@ TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
   EXPECT_FALSE(adapter()->IsDiscoverable());
 
   std::unique_ptr<BrEdrDiscoverableSession> session;
-  adapter()->bredr_discovery_manager()->RequestDiscoverable(
-      [&](auto, auto s) { session = std::move(s); });
+  adapter()->bredr()->RequestDiscoverable([&](auto, auto s) { session = std::move(s); });
   RunLoopUntilIdle();
   EXPECT_TRUE(adapter()->IsDiscoverable());
 

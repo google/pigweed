@@ -5,7 +5,6 @@
 #include "adapter.h"
 
 #include <endian.h>
-
 #include <lib/fit/thread_checker.h>
 
 #include "bredr_connection_manager.h"
@@ -51,37 +50,161 @@ class AdapterImpl final : public Adapter {
 
   const AdapterState& state() const override { return state_; }
 
-  fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+  class LowEnergyImpl final : public LowEnergy {
+   public:
+    explicit LowEnergyImpl(AdapterImpl* adapter) : adapter_(adapter) {}
 
-  BrEdrConnectionManager* bredr_connection_manager() const override {
-    return bredr_connection_manager_.get();
-  }
+    void Connect(PeerId peer_id, ConnectionResultCallback callback,
+                 ConnectionOptions connection_options) override {
+      adapter_->le_connection_manager_->Connect(peer_id, std::move(callback),
+                                                std::move(connection_options));
+    }
 
-  BrEdrDiscoveryManager* bredr_discovery_manager() const override {
-    return bredr_discovery_manager_.get();
-  }
+    bool Disconnect(PeerId peer_id) override {
+      return adapter_->le_connection_manager_->Disconnect(peer_id);
+    }
 
-  sdp::Server* sdp_server() const override { return sdp_server_.get(); }
+    void RegisterRemoteInitiatedLink(hci::ConnectionPtr link, sm::BondableMode bondable_mode,
+                                     ConnectionResultCallback callback) override {
+      adapter_->le_connection_manager_->RegisterRemoteInitiatedLink(std::move(link), bondable_mode,
+                                                                    std::move(callback));
+    }
 
-  LowEnergyAddressManager* le_address_manager() const override {
-    ZX_DEBUG_ASSERT(le_address_manager_);
-    return le_address_manager_.get();
-  }
+    void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
+              sm::StatusCallback cb) override {
+      adapter_->le_connection_manager_->Pair(peer_id, pairing_level, bondable_mode, std::move(cb));
+    }
 
-  LowEnergyDiscoveryManager* le_discovery_manager() const override {
-    ZX_DEBUG_ASSERT(le_discovery_manager_);
-    return le_discovery_manager_.get();
-  }
+    void SetSecurityMode(LeSecurityMode mode) override {
+      adapter_->le_connection_manager_->SetSecurityMode(mode);
+    }
 
-  LowEnergyConnectionManager* le_connection_manager() const override {
-    ZX_DEBUG_ASSERT(le_connection_manager_);
-    return le_connection_manager_.get();
-  }
+    LeSecurityMode security_mode() const override {
+      return adapter_->le_connection_manager_->security_mode();
+    }
 
-  LowEnergyAdvertisingManager* le_advertising_manager() const override {
-    ZX_DEBUG_ASSERT(le_advertising_manager_);
-    return le_advertising_manager_.get();
-  }
+    void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
+                          ConnectionCallback connect_callback, AdvertisingInterval interval,
+                          bool anonymous, bool include_tx_power_level,
+                          AdvertisingStatusCallback status_callback) override {
+      adapter_->le_advertising_manager_->StartAdvertising(
+          std::move(data), std::move(scan_rsp), std::move(connect_callback), interval, anonymous,
+          include_tx_power_level, std::move(status_callback));
+    }
+
+    void StopAdvertising(AdvertisementId advertisement_id) override {
+      adapter_->le_advertising_manager_->StopAdvertising(advertisement_id);
+    }
+
+    void StartDiscovery(SessionCallback callback) override {
+      adapter_->le_discovery_manager_->StartDiscovery(std::move(callback));
+    }
+
+    void EnableBackgroundScan(bool enable) override {
+      adapter_->le_discovery_manager_->EnableBackgroundScan(enable);
+    }
+
+    void EnablePrivacy(bool enabled) override {
+      adapter_->le_address_manager_->EnablePrivacy(enabled);
+    }
+
+    void set_irk(const std::optional<UInt128>& irk) override {
+      adapter_->le_address_manager_->set_irk(irk);
+    }
+
+    std::optional<UInt128> irk() const override { return adapter_->le_address_manager_->irk(); }
+
+    void set_request_timeout_for_testing(zx::duration value) override {
+      adapter_->le_connection_manager_->set_request_timeout_for_testing(value);
+    }
+
+    void set_scan_period_for_testing(zx::duration period) override {
+      adapter_->le_discovery_manager_->set_scan_period(period);
+    }
+
+   private:
+    AdapterImpl* adapter_;
+  };
+
+  LowEnergy* le() const override { return low_energy_.get(); }
+
+  class BrEdrImpl final : public BrEdr {
+   public:
+    explicit BrEdrImpl(AdapterImpl* adapter) : adapter_(adapter) {}
+
+    bool Connect(PeerId peer_id, ConnectResultCallback callback) override {
+      return adapter_->bredr_connection_manager_->Connect(peer_id, std::move(callback));
+    }
+
+    bool Disconnect(PeerId peer_id) override {
+      return adapter_->bredr_connection_manager_->Disconnect(peer_id);
+    }
+
+    bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+                          BrEdrSecurityRequirements security_requirements,
+                          l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
+      return adapter_->bredr_connection_manager_->OpenL2capChannel(
+          peer_id, psm, security_requirements, params, std::move(cb));
+    }
+
+    PeerId GetPeerId(hci::ConnectionHandle handle) const override {
+      return adapter_->bredr_connection_manager_->GetPeerId(handle);
+    }
+
+    SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
+                              SearchCallback callback) override {
+      return adapter_->bredr_connection_manager_->AddServiceSearch(uuid, std::move(attributes),
+                                                                   std::move(callback));
+    }
+
+    bool RemoveServiceSearch(SearchId id) override {
+      return adapter_->bredr_connection_manager_->RemoveServiceSearch(id);
+    }
+
+    void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
+              hci::StatusCallback callback) override {
+      adapter_->bredr_connection_manager_->Pair(peer_id, security, std::move(callback));
+    }
+
+    void SetConnectable(bool connectable, hci::StatusCallback status_cb) override {
+      adapter_->bredr_connection_manager_->SetConnectable(connectable, std::move(status_cb));
+    }
+
+    void RequestDiscovery(DiscoveryCallback callback) override {
+      adapter_->bredr_discovery_manager_->RequestDiscovery(std::move(callback));
+    }
+
+    void RequestDiscoverable(DiscoverableCallback callback) override {
+      adapter_->bredr_discovery_manager_->RequestDiscoverable(std::move(callback));
+    }
+
+    RegistrationHandle RegisterService(std::vector<sdp::ServiceRecord> records,
+                                       l2cap::ChannelParameters chan_params,
+                                       ServiceConnectCallback conn_cb) override {
+      return adapter_->sdp_server_->RegisterService(std::move(records), chan_params,
+                                                    std::move(conn_cb));
+    }
+
+    bool UnregisterService(RegistrationHandle handle) override {
+      return adapter_->sdp_server_->UnregisterService(handle);
+    }
+
+    std::optional<ScoRequestHandle> OpenScoConnection(
+        PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
+        ScoConnectionCallback callback) override {
+      return adapter_->bredr_connection_manager_->OpenScoConnection(peer_id, initiator, parameters,
+                                                                    std::move(callback));
+    }
+
+    std::string local_name() const override {
+      return adapter_->bredr_discovery_manager_->local_name();
+    }
+
+   private:
+    AdapterImpl* adapter_;
+  };
+
+  BrEdr* bredr() const override { return bredr_.get(); }
 
   PeerCache* peer_cache() override { return &peer_cache_; }
 
@@ -102,7 +225,9 @@ class AdapterImpl final : public Adapter {
     auto_conn_cb_ = std::move(callback);
   }
 
-  void AttachInspect(inspect::Node& parent, std::string name = "adapter") override;
+  void AttachInspect(inspect::Node& parent, std::string name) override;
+
+  fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   // Second step of the initialization sequence. Called by Initialize() when the
@@ -212,11 +337,13 @@ class AdapterImpl final : public Adapter {
   std::unique_ptr<LowEnergyDiscoveryManager> le_discovery_manager_;
   std::unique_ptr<LowEnergyConnectionManager> le_connection_manager_;
   std::unique_ptr<LowEnergyAdvertisingManager> le_advertising_manager_;
+  std::unique_ptr<LowEnergyImpl> low_energy_;
 
   // Objects that perform BR/EDR procedures.
   std::unique_ptr<BrEdrConnectionManager> bredr_connection_manager_;
   std::unique_ptr<BrEdrDiscoveryManager> bredr_discovery_manager_;
   std::unique_ptr<sdp::Server> sdp_server_;
+  std::unique_ptr<BrEdrImpl> bredr_;
 
   // Callback to propagate ownership of an auto-connected LE link.
   AutoConnectCallback auto_conn_cb_;
@@ -371,8 +498,8 @@ bool AdapterImpl::AddBondedPeer(BondingData bonding_data) {
 }
 
 void AdapterImpl::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
-  le_connection_manager()->SetPairingDelegate(delegate);
-  bredr_connection_manager()->SetPairingDelegate(delegate);
+  le_connection_manager_->SetPairingDelegate(delegate);
+  bredr_connection_manager_->SetPairingDelegate(delegate);
 }
 
 bool AdapterImpl::IsDiscoverable() const {
@@ -388,7 +515,7 @@ bool AdapterImpl::IsDiscovering() const {
 void AdapterImpl::SetLocalName(std::string name, hci::StatusCallback callback) {
   // TODO(fxbug.dev/40836): set the public LE advertisement name from |name|
   // If BrEdr is not supported, skip the name update.
-  if (!bredr_discovery_manager()) {
+  if (!bredr_discovery_manager_) {
     callback(hci::Status(bt::HostError::kNotSupported));
     return;
   }
@@ -700,6 +827,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
       sm::SecurityManager::Create);
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
+  low_energy_ = std::make_unique<LowEnergyImpl>(this);
 
   // Initialize the BR/EDR manager objects if the controller supports BR/EDR.
   if (state_.IsBREDRSupported()) {
@@ -720,6 +848,8 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
 
     sdp_server_ = std::make_unique<sdp::Server>(l2cap_);
     sdp_server_->AttachInspect(adapter_node_);
+
+    bredr_ = std::make_unique<BrEdrImpl>(this);
   }
 
   // Override the current privacy setting and always use the local stable identity address (i.e. not
@@ -841,6 +971,8 @@ void AdapterImpl::CleanUp() {
   transport_closed_cb_ = nullptr;
 
   // Destroy objects in reverse order of construction.
+  low_energy_ = nullptr;
+  bredr_ = nullptr;
   sdp_server_ = nullptr;
   bredr_discovery_manager_ = nullptr;
   le_advertising_manager_ = nullptr;

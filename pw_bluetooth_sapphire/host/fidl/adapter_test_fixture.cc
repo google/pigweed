@@ -25,6 +25,8 @@ void AdapterTestFixture::SetUp() {
   adapter_->Initialize([&](bool result) { success = result; }, [] {});
   RunLoopUntilIdle();
   ASSERT_TRUE(success);
+  ASSERT_TRUE(adapter_->le());
+  ASSERT_TRUE(adapter_->bredr());
 }
 
 void AdapterTestFixture::TearDown() {

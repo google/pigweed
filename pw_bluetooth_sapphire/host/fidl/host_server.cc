@@ -137,9 +137,8 @@ void HostServer::WatchState(WatchStateCallback callback) {
 void HostServer::SetLocalData(fsys::HostData host_data) {
   if (host_data.has_irk()) {
     bt_log(DEBUG, "bt-host", "assign IRK");
-    auto addr_mgr = adapter()->le_address_manager();
-    if (addr_mgr) {
-      addr_mgr->set_irk(host_data.irk().value);
+    if (adapter()->le()) {
+      adapter()->le()->set_irk(host_data.irk().value);
     }
   }
 }
@@ -178,12 +177,11 @@ void HostServer::SetDeviceClass(fbt::DeviceClass device_class, SetDeviceClassCal
 }
 
 void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
-  auto le_manager = adapter()->le_discovery_manager();
-  if (!le_manager) {
+  if (!adapter()->le()) {
     callback(fit::error(fsys::Error::FAILED));
     return;
   }
-  le_manager->StartDiscovery(
+  adapter()->le()->StartDiscovery(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto session) {
         // End the new session if this AdapterServer got destroyed in the
         // meantime (e.g. because the client disconnected).
@@ -232,13 +230,12 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
   }
 
   requesting_discovery_ = true;
-  auto bredr_manager = adapter()->bredr_discovery_manager();
-  if (!bredr_manager) {
+  if (!adapter()->bredr()) {
     StartLEDiscovery(std::move(callback));
     return;
   }
   // TODO(jamuraa): start these in parallel instead of sequence
-  bredr_manager->RequestDiscovery(
+  adapter()->bredr()->RequestDiscovery(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
           bt::hci::Status status, auto session) mutable {
         if (!self) {
@@ -287,14 +284,14 @@ void HostServer::StopDiscovery() {
 void HostServer::SetConnectable(bool connectable, SetConnectableCallback callback) {
   bt_log(DEBUG, "bt-host", "SetConnectable(%s)", connectable ? "true" : "false");
 
-  auto bredr_conn_manager = adapter()->bredr_connection_manager();
-  if (!bredr_conn_manager) {
+  auto classic = adapter()->bredr();
+  if (!classic) {
     callback(fit::error(fsys::Error::NOT_SUPPORTED));
     return;
   }
-  bredr_conn_manager->SetConnectable(
-      connectable,
-      [callback = std::move(callback)](const auto& status) { callback(StatusToFidl(status)); });
+  classic->SetConnectable(connectable, [callback = std::move(callback)](const auto& status) {
+    callback(StatusToFidl(status));
+  });
 }
 
 void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
@@ -387,12 +384,11 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
     return;
   }
   requesting_discoverable_ = true;
-  auto bredr_manager = adapter()->bredr_discovery_manager();
-  if (!bredr_manager) {
+  if (!adapter()->bredr()) {
     callback(fit::error(fsys::Error::FAILED));
     return;
   }
-  bredr_manager->RequestDiscoverable(
+  adapter()->bredr()->RequestDiscoverable(
       [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](
           bt::hci::Status status, auto session) {
         if (!self) {
@@ -427,26 +423,23 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
 
 void HostServer::EnableBackgroundScan(bool enabled) {
   bt_log(DEBUG, "bt-host", "%s background scan", (enabled ? "enable" : "disable"));
-  auto le_manager = adapter()->le_discovery_manager();
-  if (le_manager) {
-    le_manager->EnableBackgroundScan(enabled);
+  if (adapter()->le()) {
+    adapter()->le()->EnableBackgroundScan(enabled);
   }
 }
 
 void HostServer::EnablePrivacy(bool enabled) {
   bt_log(DEBUG, "bt-host", "%s LE privacy", (enabled ? "enable" : "disable"));
-  auto addr_mgr = adapter()->le_address_manager();
-  if (addr_mgr) {
-    addr_mgr->EnablePrivacy(enabled);
+  if (adapter()->le()) {
+    adapter()->le()->EnablePrivacy(enabled);
   }
 }
 
 void HostServer::SetLeSecurityMode(fsys::LeSecurityMode mode) {
   bt::gap::LeSecurityMode gap_mode = LeSecurityModeFromFidl(mode);
   bt_log(INFO, "bt-host", "Setting LE Security Mode: %s", LeSecurityModeToString(gap_mode));
-  auto conn_mgr = adapter()->le_connection_manager();
-  if (conn_mgr) {
-    conn_mgr->SetSecurityMode(gap_mode);
+  if (adapter()->le()) {
+    adapter()->le()->SetSecurityMode(gap_mode);
   }
 }
 
@@ -503,8 +496,8 @@ void HostServer::Connect(fbt::PeerId peer_id, ConnectCallback callback) {
 // disconnected succesfully, return success.
 void HostServer::Disconnect(fbt::PeerId peer_id, DisconnectCallback callback) {
   bt::PeerId id{peer_id.value};
-  auto le_disc = adapter()->le_connection_manager()->Disconnect(id);
-  auto bredr_disc = adapter()->bredr_connection_manager()->Disconnect(id);
+  bool le_disc = adapter()->le() ? adapter()->le()->Disconnect(id) : true;
+  bool bredr_disc = adapter()->bredr() ? adapter()->bredr()->Disconnect(id) : true;
   if (le_disc && bredr_disc) {
     callback(fit::ok());
   } else {
@@ -532,7 +525,8 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
       self->RegisterLowEnergyConnection(std::move(connection), false);
   };
 
-  adapter()->le_connection_manager()->Connect(peer_id, std::move(on_complete));
+  adapter()->le()->Connect(peer_id, std::move(on_complete),
+                           bt::gap::Adapter::LowEnergy::ConnectionOptions());
 }
 
 // Initiate an outgoing Br/Edr connection, unless already connected
@@ -554,7 +548,7 @@ void HostServer::ConnectBrEdr(PeerId peer_id, ConnectCallback callback) {
     callback(fit::ok());
   };
 
-  if (!adapter()->bredr_connection_manager()->Connect(peer_id, std::move(on_complete))) {
+  if (!adapter()->bredr()->Connect(peer_id, std::move(on_complete))) {
     callback(fit::error(fsys::Error::FAILED));
   }
 }
@@ -568,8 +562,8 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
     return;
   }
 
-  const bool le_disconnected = adapter()->le_connection_manager()->Disconnect(id);
-  const bool bredr_disconnected = adapter()->bredr_connection_manager()->Disconnect(id);
+  const bool le_disconnected = adapter()->le() ? adapter()->le()->Disconnect(id) : true;
+  const bool bredr_disconnected = adapter()->bredr() ? adapter()->bredr()->Disconnect(id) : true;
   const bool peer_removed = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
 
   if (!le_disconnected || !bredr_disconnected) {
@@ -628,8 +622,8 @@ void HostServer::PairLowEnergy(PeerId peer_id, fsys::PairingOptions options,
       callback(fit::ok());
     }
   };
-  adapter()->le_connection_manager()->Pair(peer_id, *security_level, bondable_mode,
-                                           std::move(on_complete));
+  ZX_ASSERT(adapter()->le());
+  adapter()->le()->Pair(peer_id, *security_level, bondable_mode, std::move(on_complete));
 }
 
 void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
@@ -644,7 +638,8 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
   // TODO(fxbug.dev/57991): Add security parameter to Pair and use that here instead of hardcoding
   // default.
   bt::gap::BrEdrSecurityRequirements security{.authentication = false, .secure_connections = false};
-  adapter()->bredr_connection_manager()->Pair(peer_id, security, std::move(on_complete));
+  ZX_ASSERT(adapter()->bredr());
+  adapter()->bredr()->Pair(peer_id, security, std::move(on_complete));
 }
 
 void HostServer::RequestLowEnergyCentral(
@@ -690,15 +685,11 @@ void HostServer::Close() {
   // Drop all connections that are attached to this HostServer.
   le_connections_.clear();
 
-  // Stop background scan if enabled.
-  auto le_manager = adapter()->le_discovery_manager();
-  if (le_manager) {
-    le_manager->EnableBackgroundScan(false);
-  }
-  auto addr_mgr = adapter()->le_address_manager();
-  if (addr_mgr) {
-    addr_mgr->EnablePrivacy(false);
-    addr_mgr->set_irk(std::nullopt);
+  if (adapter()->le()) {
+    // Stop background scan if enabled.
+    adapter()->le()->EnableBackgroundScan(false);
+    adapter()->le()->EnablePrivacy(false);
+    adapter()->le()->set_irk(std::nullopt);
   }
 
   // Disallow future pairing.

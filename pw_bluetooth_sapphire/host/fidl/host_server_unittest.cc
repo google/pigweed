@@ -828,13 +828,13 @@ TEST_F(FIDL_HostServerTest, SetLeSecurityMode) {
   host_client()->SetLeSecurityMode(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY);
   RunLoopUntilIdle();
   ASSERT_EQ(fidl_helpers::LeSecurityModeFromFidl(fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY),
-            adapter()->le_connection_manager()->security_mode());
+            adapter()->le()->security_mode());
 
   // Set the HostServer back to Mode 1 and verify that the change takes place
   host_client()->SetLeSecurityMode(fsys::LeSecurityMode::MODE_1);
   RunLoopUntilIdle();
   ASSERT_EQ(fidl_helpers::LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1),
-            adapter()->le_connection_manager()->security_mode());
+            adapter()->le()->security_mode());
 }
 
 TEST_F(FIDL_HostServerTest, ConnectLowEnergy) {
@@ -1058,15 +1058,15 @@ TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
 }
 
 TEST_F(FIDL_HostServerTest, SetHostData) {
-  EXPECT_FALSE(adapter()->le_address_manager()->irk());
+  EXPECT_FALSE(adapter()->le()->irk());
 
   fsys::Key irk{{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
   fsys::HostData data;
   data.set_irk(irk);
 
   host_server()->SetLocalData(std::move(data));
-  ASSERT_TRUE(adapter()->le_address_manager()->irk());
-  EXPECT_EQ(irk.value, adapter()->le_address_manager()->irk().value());
+  ASSERT_TRUE(adapter()->le()->irk());
+  EXPECT_EQ(irk.value, adapter()->le()->irk().value());
 }
 
 TEST_F(FIDL_HostServerTest, OnNewBondingData) {

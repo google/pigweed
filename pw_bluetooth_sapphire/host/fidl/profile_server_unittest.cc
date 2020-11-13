@@ -89,10 +89,6 @@ class FIDL_ProfileServerTest : public TestingBase {
 
   bt::gap::PeerCache* peer_cache() const { return adapter()->peer_cache(); }
 
-  bt::gap::BrEdrConnectionManager* conn_mgr() const {
-    return adapter()->bredr_connection_manager();
-  }
-
  private:
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
@@ -292,7 +288,7 @@ class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
       connection_ = std::move(cb_conn_ref);
     };
 
-    EXPECT_TRUE(conn_mgr()->Connect(peer_->identifier(), connect_cb));
+    EXPECT_TRUE(adapter()->bredr()->Connect(peer_->identifier(), connect_cb));
     EXPECT_EQ(bt::gap::Peer::ConnectionState::kInitializing, peer_->bredr()->connection_state());
 
     RunLoopUntilIdle();
@@ -322,7 +318,7 @@ class FIDL_ProfileServerTest_ConnectedPeer : public FIDL_ProfileServerTest {
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   // Approve pairing requests.
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
@@ -372,7 +368,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
        ConnectWithAuthenticationRequiredButLinkKeyNotAuthenticatedFails) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kNoInputNoOutput);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   pairing_delegate->SetCompletePairingCallback(
       [&](bt::PeerId, bt::sm::Status status) { EXPECT_TRUE(status.is_success()); });
 
@@ -407,7 +403,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectEmptyChannelResponse) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   // Approve pairing requests.
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
@@ -454,7 +450,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
 
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
@@ -502,7 +498,7 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
 
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   // Approve pairing requests.
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
@@ -579,7 +575,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
 
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   fbl::RefPtr<bt::l2cap::testing::FakeChannel> fake_channel;
   l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
@@ -625,7 +621,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectReturnsValidSocket) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
   // Approve pairing requests.
   pairing_delegate->SetConfirmPairingCallback(
       [](bt::PeerId, auto confirm_cb) { confirm_cb(true); });
@@ -685,7 +681,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectReturnsValidSocket) {
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   auto pairing_delegate =
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
-  conn_mgr()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
+  adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   using ::testing::StrictMock;
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;

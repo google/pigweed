@@ -91,10 +91,7 @@ LowEnergyPeripheralServer::LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapt
                                                      fidl::InterfaceRequest<Peripheral> request)
     : AdapterServerBase(adapter, this, std::move(request)), weak_ptr_factory_(this) {}
 
-LowEnergyPeripheralServer::~LowEnergyPeripheralServer() {
-  auto* advertising_manager = adapter()->le_advertising_manager();
-  ZX_DEBUG_ASSERT(advertising_manager);
-}
+LowEnergyPeripheralServer::~LowEnergyPeripheralServer() { ZX_ASSERT(adapter()->bredr()); }
 
 void LowEnergyPeripheralServer::StartAdvertising(
     fble::AdvertisingParameters parameters, ::fidl::InterfaceRequest<fble::AdvertisingHandle> token,
@@ -196,7 +193,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
     callback(std::move(result));
   };
 
-  auto* am = adapter()->le_advertising_manager();
+  auto* am = adapter()->le();
   ZX_DEBUG_ASSERT(am);
   am->StartAdvertising(std::move(adv_data), std::move(scan_rsp), std::move(connect_cb), interval,
                        false /* anonymous */, include_tx_power_level, std::move(status_cb));
@@ -266,8 +263,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     self->connections_[peer_id] = std::move(conn_handle);
   };
 
-  adapter()->le_connection_manager()->RegisterRemoteInitiatedLink(std::move(link), bondable_mode,
-                                                                  std::move(on_conn));
+  adapter()->le()->RegisterRemoteInitiatedLink(std::move(link), bondable_mode, std::move(on_conn));
 }
 
 }  // namespace bthost

@@ -80,9 +80,9 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
   }
 
   requesting_scan_ = true;
-  adapter()->le_discovery_manager()->StartDiscovery([self = weak_ptr_factory_.GetWeakPtr(),
-                                                     filter = std::move(filter),
-                                                     callback = std::move(callback)](auto session) {
+  adapter()->le()->StartDiscovery([self = weak_ptr_factory_.GetWeakPtr(),
+                                   filter = std::move(filter),
+                                   callback = std::move(callback)](auto session) {
     if (!self)
       return;
 
@@ -215,7 +215,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
   // does not cause conn_cb to treat the connection as cancelled.
   connections_[*peer_id] = nullptr;
 
-  adapter()->le_connection_manager()->Connect(*peer_id, std::move(conn_cb), mgr_connection_options);
+  adapter()->le()->Connect(*peer_id, std::move(conn_cb), mgr_connection_options);
 }
 
 void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,

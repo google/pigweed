@@ -132,7 +132,7 @@ class BrEdrDiscoveryManager final {
   void UpdateLocalName(std::string name, hci::StatusCallback callback);
 
   // Returns the BR/EDR local name used for EIR.
-  const std::string local_name() const { return local_name_; }
+  std::string local_name() const { return local_name_; }
 
  private:
   friend class BrEdrDiscoverySession;

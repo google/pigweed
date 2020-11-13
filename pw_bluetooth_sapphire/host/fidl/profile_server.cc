@@ -188,14 +188,12 @@ ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
 ProfileServer::~ProfileServer() {
   if (adapter()) {
     // Unregister anything that we have registered.
-    auto sdp = adapter()->sdp_server();
     for (const auto& it : current_advertised_) {
-      sdp->UnregisterService(it.second.registration_handle);
+      adapter()->bredr()->UnregisterService(it.second.registration_handle);
       it.second.disconnection_cb(fit::ok());
     }
-    auto conn_manager = adapter()->bredr_connection_manager();
     for (const auto& it : searches_) {
-      conn_manager->RemoveServiceSearch(it.second.search_id);
+      adapter()->bredr()->RemoveServiceSearch(it.second.search_id);
     }
   }
 }
@@ -220,17 +218,16 @@ void ProfileServer::Advertise(
     registering.emplace_back(std::move(rec.value()));
   }
 
-  ZX_DEBUG_ASSERT(adapter());
-  auto sdp = adapter()->sdp_server();
-  ZX_DEBUG_ASSERT(sdp);
+  ZX_ASSERT(adapter());
+  ZX_ASSERT(adapter()->bredr());
 
   uint64_t next = advertised_total_ + 1;
 
-  auto registration_handle =
-      sdp->RegisterService(std::move(registering), FidlToChannelParameters(parameters),
-                           [this, next](auto channel, const auto& protocol_list) {
-                             OnChannelConnected(next, std::move(channel), std::move(protocol_list));
-                           });
+  auto registration_handle = adapter()->bredr()->RegisterService(
+      std::move(registering), FidlToChannelParameters(parameters),
+      [this, next](auto channel, const auto& protocol_list) {
+        OnChannelConnected(next, std::move(channel), std::move(protocol_list));
+      });
 
   if (!registration_handle) {
     callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
@@ -261,7 +258,7 @@ void ProfileServer::Search(
 
   auto next = searches_total_ + 1;
 
-  auto search_id = adapter()->bredr_connection_manager()->AddServiceSearch(
+  auto search_id = adapter()->bredr()->AddServiceSearch(
       search_uuid, std::move(attributes),
       [this, next](auto id, const auto& attrs) { OnServiceFound(next, id, attrs); });
 
@@ -316,7 +313,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   };
   ZX_DEBUG_ASSERT(adapter());
 
-  bool connecting = adapter()->bredr_connection_manager()->OpenL2capChannel(
+  bool connecting = adapter()->bredr()->OpenL2capChannel(
       id, psm, fidl_helpers::FidlToBrEdrSecurityRequirements(parameters),
       FidlToChannelParameters(parameters), std::move(connected_cb));
   if (!connecting) {
@@ -354,7 +351,7 @@ void ProfileServer::ConnectSco(
     self->OnScoConnectionResult(request, std::move(result));
   };
 
-  request->request_handle = adapter()->bredr_connection_manager()->OpenScoConnection(
+  request->request_handle = adapter()->bredr()->OpenScoConnection(
       bt::PeerId(peer_id.value), initiator, params, std::move(callback));
 }
 
@@ -368,7 +365,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Ch
 
   ZX_DEBUG_ASSERT(adapter());
   auto handle = channel->link_handle();
-  auto id = adapter()->bredr_connection_manager()->GetPeerId(handle);
+  auto id = adapter()->bredr()->GetPeerId(handle);
 
   // The protocol that is connected should be L2CAP, because that is the only thing that
   // we can connect. We can't say anything about what the higher level protocols will be.
@@ -397,7 +394,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
     return;
   }
 
-  adapter()->sdp_server()->UnregisterService(it->second.registration_handle);
+  adapter()->bredr()->UnregisterService(it->second.registration_handle);
   it->second.disconnection_cb(fit::ok());
 
   current_advertised_.erase(it);
@@ -413,7 +410,7 @@ void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) 
     return;
   }
 
-  adapter()->bredr_connection_manager()->RemoveServiceSearch(it->second.search_id);
+  adapter()->bredr()->RemoveServiceSearch(it->second.search_id);
 
   searches_.erase(it);
 }
