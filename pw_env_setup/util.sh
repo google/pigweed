@@ -105,7 +105,11 @@ pw_get_env_root() {
   # PW_ENVIRONMENT_ROOT came from the developer and not from a previous
   # bootstrap possibly from another workspace.
   if [ -z "$PW_ENVIRONMENT_ROOT" ]; then
-    echo "$PW_ROOT/.environment"
+    if [ -n "$PW_PROJECT_ROOT" ]; then
+      echo "$PW_PROJECT_ROOT/.environment"
+    else
+      echo "$PW_ROOT/.environment"
+    fi
   else
     echo "$PW_ENVIRONMENT_ROOT"
   fi
