@@ -300,7 +300,9 @@ def add_common_parser_args(parser, serial_port, build_path, build_project_name,
         default=project_source_path,
         help="Project directory. Default: '{}'".format(project_source_path))
     parser.add_argument("--library-path",
-                        default="libraries",
+                        default=["libraries"],
+                        nargs="+",
+                        type=str,
                         help="Path to Arduino Library directory.")
     parser.add_argument(
         "--build-project-name",

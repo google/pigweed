@@ -89,10 +89,13 @@ class ArduinoBuilder:
         self.compiler_path_override = compiler_path_override
         self.variant_includes = ""
         self.build_variant_path = False
-        if library_names and library_path:
-            self.library_names = library_names
-            self.library_path = os.path.realpath(
-                os.path.expanduser(os.path.expandvars(library_path)))
+        self.library_names = library_names
+        self.library_path = library_path
+        if library_path:
+            self.library_path = [
+                os.path.realpath(os.path.expanduser(
+                    os.path.expandvars(l_path))) for l_path in library_path
+            ]
 
         self.compiler_path_override_binaries = []
         if self.compiler_path_override:
@@ -967,24 +970,25 @@ class ArduinoBuilder:
         if not self.library_names or not self.library_path:
             return []
 
-        library_path = self.library_path
         folder_patterns = ["*"]
         if self.library_names:
             folder_patterns = self.library_names
 
-        library_folders = file_operations.find_files(library_path,
-                                                     folder_patterns,
-                                                     directories_only=True)
-        library_source_root_folders = []
-        for lib in library_folders:
-            lib_dir = os.path.join(library_path, lib)
-            src_dir = os.path.join(lib_dir, "src")
-            if os.path.exists(src_dir) and os.path.isdir(src_dir):
-                library_source_root_folders.append(src_dir)
-            else:
-                library_source_root_folders.append(lib_dir)
+        library_folders = OrderedDict()
+        for library_dir in self.library_path:
+            found_library_names = file_operations.find_files(
+                library_dir, folder_patterns, directories_only=True)
+            _LOG.debug("Found Libraries %s: %s", library_dir,
+                       found_library_names)
+            for lib_name in found_library_names:
+                lib_dir = os.path.join(library_dir, lib_name)
+                src_dir = os.path.join(lib_dir, "src")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    library_folders[lib_name] = src_dir
+                else:
+                    library_folders[lib_name] = lib_dir
 
-        return library_source_root_folders
+        return list(library_folders.values())
 
     def library_include_dirs(self):
         return [Path(lib).as_posix() for lib in self.library_folders()]

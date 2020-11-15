@@ -84,6 +84,15 @@ def verify_file_checksum(file_path,
     return True
 
 
+def relative_or_absolute_path(file_string: str):
+    """Return a Path relative to os.getcwd(), else an absolute path."""
+    file_path = Path(file_string)
+    try:
+        return file_path.relative_to(os.getcwd())
+    except ValueError:
+        return file_path.resolve()
+
+
 def download_to_cache(url: str,
                       expected_md5sum=None,
                       expected_sha256sum=None,
@@ -99,8 +108,7 @@ def download_to_cache(url: str,
         urllib.request.urlretrieve(url, filename=downloaded_file)
 
     if os.path.exists(downloaded_file):
-        _LOG.info("Downloaded: %s",
-                  Path(downloaded_file).relative_to(os.getcwd()))
+        _LOG.info("Downloaded: %s", relative_or_absolute_path(downloaded_file))
         if expected_sha256sum:
             verify_file_checksum(downloaded_file,
                                  expected_sha256sum,
@@ -148,7 +156,7 @@ def extract_archive(archive_file: str,
                                     "." + os.path.basename(archive_file))
     os.makedirs(temp_extract_dir, exist_ok=True)
 
-    _LOG.info("Extracting: %s", Path(archive_file).relative_to(os.getcwd()))
+    _LOG.info("Extracting: %s", relative_or_absolute_path(archive_file))
     if zipfile.is_zipfile(archive_file):
         extract_zipfile(archive_file, temp_extract_dir)
     elif tarfile.is_tarfile(archive_file):
@@ -157,7 +165,7 @@ def extract_archive(archive_file: str,
         _LOG.error("Unknown archive format: %s", archive_file)
         return sys.exit(1)
 
-    _LOG.info("Installing into: %s", Path(dest_dir).relative_to(os.getcwd()))
+    _LOG.info("Installing into: %s", relative_or_absolute_path(dest_dir))
     path_to_extracted_files = temp_extract_dir
 
     extracted_top_level_files = os.listdir(temp_extract_dir)
