@@ -13,15 +13,4 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
-
-namespace pw::sync {
-
-inline SpinLock::SpinLock()
-    : native_type_{.locked = false, .saved_interrupt_mask = 0} {}
-
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
-
-}  // namespace pw::sync
+#include "pw_sync_threadx/binary_semaphore_native.h"

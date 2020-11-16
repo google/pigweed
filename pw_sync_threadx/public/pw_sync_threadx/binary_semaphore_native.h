@@ -13,15 +13,16 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
+#include <limits>
 
-namespace pw::sync {
+#include "tx_api.h"
 
-inline SpinLock::SpinLock()
-    : native_type_{.locked = false, .saved_interrupt_mask = 0} {}
+namespace pw::sync::backend {
 
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
+using NativeBinarySemaphore = TX_SEMAPHORE;
+using NativeBinarySemaphoreHandle = NativeBinarySemaphore&;
 
-}  // namespace pw::sync
+inline constexpr ptrdiff_t kBinarySemaphoreMaxValue =
+    std::numeric_limits<ULONG>::max();
+
+}  // namespace pw::sync::backend

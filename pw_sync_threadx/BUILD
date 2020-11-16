@@ -22,6 +22,102 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "binary_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_threadx/binary_semaphore_inline.h",
+        "public/pw_sync_threadx/binary_semaphore_native.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO: This should depend on ThreadX but our third parties currently
+        # do not have Bazel support.
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "binary_semaphore",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
+    deps = [
+        ":binary_semaphore_headers",
+        "//pw_chrono_threadx:system_clock_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:binary_semaphore_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_threadx/counting_semaphore_inline.h",
+        "public/pw_sync_threadx/counting_semaphore_native.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO: This should depend on ThreadX but our third parties currently
+        # do not have Bazel support.
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
+    deps = [
+        ":counting_semaphore_headers",
+        "//pw_chrono_threadx:system_clock_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:counting_semaphore_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "mutex_headers",
+    hdrs = [
+        "public/pw_sync_threadx/mutex_inline.h",
+        "public/pw_sync_threadx/mutex_native.h",
+        "public_overrides/pw_sync_backend/mutex_inline.h",
+        "public_overrides/pw_sync_backend/mutex_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO: This should depend on ThreadX but our third parties currently
+        # do not have Bazel support.
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "mutex",
+    srcs = [
+        "mutex.cc",
+    ],
+    deps = [
+        ":mutex_headers",
+        "//pw_chrono_threadx:system_clock_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:mutex_facade",
+    ],
+)
+
+pw_cc_library(
     name = "spin_lock_headers",
     hdrs = [
         "public/pw_sync_threadx/spin_lock_inline.h",

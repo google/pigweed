@@ -13,15 +13,14 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
+#include "pw_chrono/system_clock.h"
+#include "pw_chrono_threadx/config.h"
 
-namespace pw::sync {
+namespace pw::chrono::threadx {
 
-inline SpinLock::SpinLock()
-    : native_type_{.locked = false, .saved_interrupt_mask = 0} {}
+// Max timeout to be used by users of the ThreadX's pw::chrono::SystemClock
+// backend provided by this module.
+inline constexpr SystemClock::duration kMaxTimeout =
+    SystemClock::duration(PW_CHRONO_THREADX_CFG_MAX_TIMEOUT);
 
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
-
-}  // namespace pw::sync
+}  // namespace pw::chrono::threadx
