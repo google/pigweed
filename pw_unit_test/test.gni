@@ -28,6 +28,10 @@ declare_args() {
   # unit tests, such as desktops with multiple cores.
   pw_unit_test_AUTOMATIC_RUNNER = ""
 
+  # Additional dependencies required by all unit test targets. (For example, if
+  # using a different test library like Googletest.)
+  pw_unit_test_PUBLIC_DEPS = []
+
   # Implementation of a main function for "pw_test" unit test binaries.
   pw_unit_test_MAIN = "$dir_pw_unit_test:simple_printing_main"
 }
@@ -133,7 +137,7 @@ template("pw_test") {
     if (!defined(public_deps)) {
       public_deps = []
     }
-    public_deps += [ dir_pw_unit_test ]
+    public_deps += pw_unit_test_PUBLIC_DEPS + [ dir_pw_unit_test ]
   }
 
   _pw_disableable_target(_test_target_name) {

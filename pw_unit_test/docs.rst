@@ -136,10 +136,13 @@ The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
 
 pw_test template
 ----------------
+``pw_test`` defines a single unit test suite. It creates several sub-targets.
 
-``pw_test`` defines a single test binary. It wraps ``pw_executable`` and pulls
-in the test framework as well as the test entry point defined by the
-``pw_unit_test_main`` build variable.
+* ``<target_name>``: The test suite within a single binary. The test code is
+  linked against the target set in the build arg ``pw_unit_test_MAIN``.
+* ``<target_name>.run``: If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this
+  target runs the test as part of the build.
+* ``<target_name>.lib``: The test sources without ``pw_unit_test_MAIN``.
 
 **Arguments**
 
@@ -165,10 +168,18 @@ in the test framework as well as the test entry point defined by the
 
 pw_test_group template
 ----------------------
+``pw_test_group`` defines a collection of tests or other test groups. It creates
+several sub-targets:
 
-``pw_test_group`` defines a collection of tests or other test groups. Each
-module should expose a ``pw_test_group`` called ``tests`` with the module's test
-binaries.
+* ``<target_name>``: The test group itself.
+* ``<target_name>.run``: If ``pw_unit_test_AUTOMATIC_RUNNER`` is set, this
+  target runs all of the tests in the group and all of its group dependencies
+  individually.
+* ``<target_name>.lib``: The sources of all of the tests in this group and its
+  dependencies.
+* ``<target_name>.bundle``: All of the tests in the group and its dependencies
+  bundled into a single binary.
+* ``<target_name>.bundle.run``: Automatic runner for the test bundle.
 
 **Arguments**
 
