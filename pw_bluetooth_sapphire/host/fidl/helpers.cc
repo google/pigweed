@@ -816,10 +816,11 @@ bt::gatt::ReliableMode ReliableModeFromFidl(const fgatt::WriteOptions& write_opt
 // TODO(fxbug.dev/63438): The 64 bit `fidl_gatt_id` can overflow the 16 bits of a bt:att::Handle
 // that underlies CharacteristicHandles when directly casted. Fix this.
 bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_id) {
-  if (fidl_gatt_id & 0xFFFF) {
-    bt_log(
-        ERROR, "gatt",
-        "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` to 16-bit Characteristic Handle");
+  if (fidl_gatt_id > std::numeric_limits<bt::att::Handle>::max()) {
+    bt_log(ERROR, "gatt",
+           "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX) to 16-bit "
+           "Characteristic Handle",
+           fidl_gatt_id);
   }
   return bt::gatt::CharacteristicHandle(static_cast<bt::att::Handle>(fidl_gatt_id));
 }
@@ -827,9 +828,11 @@ bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_i
 // TODO(fxbug.dev/63438): The 64 bit `fidl_gatt_id` can overflow the 16 bits of a bt:att::Handle
 // that underlies DescriptorHandles when directly casted. Fix this.
 bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id) {
-  if (fidl_gatt_id & 0xFFFF) {
+  if (fidl_gatt_id > std::numeric_limits<bt::att::Handle>::max()) {
     bt_log(ERROR, "gatt",
-           "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` to 16-bit Descriptor Handle");
+           "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX) to 16-bit Descriptor "
+           "Handle",
+           fidl_gatt_id);
   }
   return bt::gatt::DescriptorHandle(static_cast<bt::att::Handle>(fidl_gatt_id));
 }
