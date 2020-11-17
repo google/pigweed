@@ -226,6 +226,9 @@ def as_packages(items: Iterable[Tuple[str, T]],
     return packages
 
 
+PathOrModule = Union[str, Path, ModuleType]
+
+
 class Library:
     """A collection of protocol buffer modules sorted by package.
 
@@ -245,10 +248,26 @@ class Library:
     for iterating over all modules.
     """
     @classmethod
+    def from_paths(cls, protos: Iterable[PathOrModule]) -> 'Library':
+        """Creates a Library from paths to proto files or proto modules."""
+        paths: List[PathOrStr] = []
+        modules: List[ModuleType] = []
+
+        for proto in protos:
+            if isinstance(proto, (Path, str)):
+                paths.append(proto)
+            else:
+                modules.append(proto)
+
+        modules += compile_and_import(paths)
+        return Library(modules)
+
+    @classmethod
     def from_strings(cls,
                      contents: Iterable[str],
                      includes: Iterable[PathOrStr] = (),
                      output_dir: PathOrStr = None) -> 'Library':
+        """Creates a proto library from protos in the provided strings."""
         return cls(compile_and_import_strings(contents, includes, output_dir))
 
     def __init__(self, modules: Iterable[ModuleType]):

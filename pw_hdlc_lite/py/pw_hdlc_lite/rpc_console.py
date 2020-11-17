@@ -24,6 +24,7 @@ few variables are predefined in the interactive console. These include:
     rpcs   - used to invoke RPCs
     device - the serial device used for communication
     client - the pw_rpc.Client
+    protos - protocol buffer messages indexed by proto package
 
 An example echo RPC command:
 
@@ -35,7 +36,7 @@ import glob
 import logging
 from pathlib import Path
 import sys
-from typing import Collection, Iterable, Iterator, BinaryIO
+from typing import BinaryIO, Collection, Iterable, Iterator
 
 import IPython  # type: ignore
 import serial  # type: ignore
@@ -82,6 +83,7 @@ def _start_ipython_terminal(client: HdlcRpcClient) -> None:
         client=client,
         channel_client=client.client.channel(1),
         rpcs=client.client.channel(1).rpcs,
+        protos=client.protos.packages,
     )
 
     print(__doc__)  # Print the banner
