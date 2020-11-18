@@ -73,7 +73,7 @@ class BlobStoreTest : public ::testing::Test {
     snprintf(name, sizeof(name), "TestBlobBlock");
 
     BlobStoreBuffer<kBufferSize> blob(
-        name, partition_, &checksum, kvs::TestKvs());
+        name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(Status::Ok(), blob.Init());
 
     BlobStore::BlobWriter writer(blob);
@@ -99,7 +99,9 @@ class BlobStoreTest : public ::testing::Test {
     VerifyFlash(flash_.buffer());
 
     char name[16] = "TestBlobBlock";
-    BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
+    constexpr size_t kBufferSize = 16;
+    BlobStoreBuffer<kBufferSize> blob(
+        name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(Status::Ok(), blob.Init());
 
     // Use reader to check for valid data.
@@ -158,12 +160,16 @@ class BlobStoreTest : public ::testing::Test {
 TEST_F(BlobStoreTest, Init_Ok) {
   // TODO: Do init test with flash/kvs explicitly in the different possible
   // entry states.
-  BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
 }
 
 TEST_F(BlobStoreTest, IsOpen) {
-  BlobStoreBuffer<256> blob("Blob_open", partition_, nullptr, kvs::TestKvs());
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      "Blob_open", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
 
   BlobStore::DeferredWriter deferred_writer(blob);
@@ -203,7 +209,9 @@ TEST_F(BlobStoreTest, Discard) {
   // TODO: Do this test with flash/kvs in the different entry state
   // combinations.
 
-  BlobStoreBuffer<256> blob(blob_title, partition_, &checksum, kvs::TestKvs());
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      blob_title, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::OK, blob.Init());
 
   BlobStore::BlobWriter writer(blob);
@@ -227,7 +235,9 @@ TEST_F(BlobStoreTest, Discard) {
 }
 
 TEST_F(BlobStoreTest, MultipleErase) {
-  BlobStoreBuffer<256> blob("Blob_OK", partition_, nullptr, kvs::TestKvs());
+  constexpr size_t kBufferSize = 256;
+  BlobStoreBuffer<kBufferSize> blob(
+      "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
 
   BlobStore::BlobWriter writer(blob);
@@ -248,7 +258,9 @@ TEST_F(BlobStoreTest, OffsetRead) {
   kvs::ChecksumCrc16 checksum;
 
   char name[16] = "TestBlobBlock";
-  BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::Ok(), reader.Open(kOffset));
@@ -272,7 +284,9 @@ TEST_F(BlobStoreTest, InvalidReadOffset) {
   kvs::ChecksumCrc16 checksum;
 
   char name[16] = "TestBlobBlock";
-  BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::InvalidArgument(), reader.Open(kOffset));
@@ -288,7 +302,9 @@ TEST_F(BlobStoreTest, ReadBufferIsLargerThanData) {
   kvs::ChecksumCrc16 checksum;
 
   char name[16] = "TestBlobBlock";
-  BlobStoreBuffer<16> blob(name, partition_, &checksum, kvs::TestKvs());
+  constexpr size_t kBufferSize = 16;
+  BlobStoreBuffer<kBufferSize> blob(
+      name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
   EXPECT_EQ(Status::Ok(), blob.Init());
   BlobStore::BlobReader reader(blob);
   ASSERT_EQ(Status::Ok(), reader.Open());

@@ -29,10 +29,8 @@ Status BlobStore::Init() {
   PW_LOG_INFO("Init BlobStore");
 
   const size_t write_buffer_size_alignment =
-      write_buffer_.size_bytes() % partition_.alignment_bytes();
+      flash_write_size_bytes_ % partition_.alignment_bytes();
   PW_CHECK_UINT_EQ((write_buffer_size_alignment), 0);
-  PW_CHECK_UINT_GE(write_buffer_.size_bytes(), partition_.alignment_bytes());
-  PW_CHECK_UINT_LE(write_buffer_.size_bytes(), partition_.sector_size_bytes());
   PW_CHECK_UINT_GE(write_buffer_.size_bytes(), flash_write_size_bytes_);
   PW_CHECK_UINT_GE(flash_write_size_bytes_, partition_.alignment_bytes());
 

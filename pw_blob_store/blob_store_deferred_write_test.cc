@@ -52,7 +52,6 @@ class DeferredWriteTest : public ::testing::Test {
   // Fill the source buffer with random pattern based on given seed, written to
   // BlobStore in specified chunk size.
   void ChunkWriteTest(size_t chunk_size, size_t flush_interval) {
-    constexpr size_t kBufferSize = 256;
     constexpr size_t kWriteSize = 64;
     kvs::ChecksumCrc16 checksum;
 
@@ -112,8 +111,9 @@ class DeferredWriteTest : public ::testing::Test {
   }
 
   static constexpr size_t kFlashAlignment = 16;
-  static constexpr size_t kSectorSize = 2048;
-  static constexpr size_t kSectorCount = 2;
+  static constexpr size_t kSectorSize = 1024;
+  static constexpr size_t kSectorCount = 4;
+  static constexpr size_t kBufferSize = 2 * kSectorSize;
 
   kvs::FakeFlashMemoryBuffer<kSectorSize, kSectorCount> flash_;
   kvs::FlashPartition partition_;
@@ -157,7 +157,7 @@ TEST_F(DeferredWriteTest, ChunkWrite64) {
 
 TEST_F(DeferredWriteTest, ChunkWrite64FullBufferFill) {
   InitBufferToRandom(0x9);
-  ChunkWriteTest(64, 256);
+  ChunkWriteTest(64, kBufferSize);
 }
 
 TEST_F(DeferredWriteTest, ChunkWrite256) {

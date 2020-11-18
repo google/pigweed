@@ -536,7 +536,7 @@ class BlobStoreBuffer : public BlobStore {
                            kvs::FlashPartition& partition,
                            kvs::ChecksumAlgorithm* checksum_algo,
                            kvs::KeyValueStore& kvs,
-                           size_t flash_write_size_bytes = kBufferSizeBytes)
+                           size_t flash_write_size_bytes)
       : BlobStore(name,
                   partition,
                   checksum_algo,

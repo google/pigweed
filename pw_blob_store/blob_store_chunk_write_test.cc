@@ -59,7 +59,7 @@ class BlobStoreChunkTest : public ::testing::Test {
     snprintf(name, sizeof(name), "Blob%u", static_cast<unsigned>(chunk_size));
 
     BlobStoreBuffer<kBufferSize> blob(
-        name, partition_, &checksum, kvs::TestKvs());
+        name, partition_, &checksum, kvs::TestKvs(), kBufferSize);
     EXPECT_EQ(Status::Ok(), blob.Init());
 
     BlobStore::BlobWriter writer(blob);
