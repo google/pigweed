@@ -64,20 +64,32 @@ void GenericAttributeService::Register() {
       }
       svc_changed_handle_ = config.handle;
     }
-    if (indicate) {
-      subscribed_peers_.insert(peer_id);
-      bt_log(TRACE, "gatt", "service: Service Changed enabled for peer %s", bt_str(peer_id));
+    SetServiceChangedIndicationSubscription(peer_id, indicate);
+    if (persist_service_changed_ccc_callback_) {
+      ServiceChangedCCCPersistedData persisted = {.notify = notify, .indicate = indicate};
+      persist_service_changed_ccc_callback_(peer_id, persisted);
     } else {
-      subscribed_peers_.erase(peer_id);
-      bt_log(TRACE, "gatt", "service: Service Changed disabled for peer %s", bt_str(peer_id));
+      bt_log(WARN, "gatt", "Attempted to persist service changed ccc but no callback found.");
     }
   };
 
   service_id_ = local_service_manager_->RegisterService(std::move(service), NopReadHandler,
                                                         NopWriteHandler, std::move(ccc_callback));
   ZX_DEBUG_ASSERT(service_id_ != kInvalidId);
+
   local_service_manager_->set_service_changed_callback(
       fit::bind_member(this, &GenericAttributeService::OnServiceChanged));
+}
+
+void GenericAttributeService::SetServiceChangedIndicationSubscription(PeerId peer_id,
+                                                                      bool indicate) {
+  if (indicate) {
+    subscribed_peers_.insert(peer_id);
+    bt_log(DEBUG, "gatt", "service: Service Changed enabled for peer %s", bt_str(peer_id));
+  } else {
+    subscribed_peers_.erase(peer_id);
+    bt_log(DEBUG, "gatt", "service: Service Changed disabled for peer %s", bt_str(peer_id));
+  }
 }
 
 void GenericAttributeService::OnServiceChanged(IdType service_id, att::Handle start,

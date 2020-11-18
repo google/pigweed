@@ -12,6 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 
 namespace bt::gatt {
 
@@ -35,6 +36,15 @@ class GenericAttributeService final {
                           SendIndicationCallback send_indication_callback);
   ~GenericAttributeService();
 
+  // This callback is called when a client changes the CCC for the service changed
+  // characteristic to inform the upper layers of the stack to persist this value.
+  void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) {
+    persist_service_changed_ccc_callback_ = std::move(callback);
+  }
+
+  // Set the service changed indication subscription for a given peer.
+  void SetServiceChangedIndicationSubscription(PeerId peer_id, bool indicate);
+
  private:
   void Register();
 
@@ -55,6 +65,9 @@ class GenericAttributeService final {
 
   // Local service ID; hidden because registration is tied to instance lifetime.
   IdType service_id_ = kInvalidId;
+
+  // Callback to inform uper stack layers to persist service changed CCC.
+  PersistServiceChangedCCCCallback persist_service_changed_ccc_callback_;
 };
 
 }  // namespace bt::gatt

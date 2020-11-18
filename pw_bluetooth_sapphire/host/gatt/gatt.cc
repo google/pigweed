@@ -80,6 +80,16 @@ class Impl final : public GATT {
         internal::Connection(peer_id, att_bearer, local_services_->database(),
                              std::bind(&Impl::OnServiceAdded, this, peer_id, std::placeholders::_1),
                              async_get_default_dispatcher());
+
+    if (retrieve_service_changed_ccc_callback_) {
+      auto optional_service_changed_ccc_data = retrieve_service_changed_ccc_callback_(peer_id);
+      if (optional_service_changed_ccc_data && gatt_service_) {
+        gatt_service_->SetServiceChangedIndicationSubscription(
+            peer_id, optional_service_changed_ccc_data->indicate);
+      }
+    } else {
+      bt_log(WARN, "gatt", "Unable to retrieve service changed CCC: callback not set.");
+    }
   }
 
   void RemoveConnection(PeerId peer_id) override {
@@ -124,6 +134,14 @@ class Impl final : public GATT {
 
     iter->second.server()->SendNotification(config.handle, BufferView(value.data(), value.size()),
                                             indicate);
+  }
+
+  void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override {
+    gatt_service_->SetPersistServiceChangedCCCCallback(std::move(callback));
+  }
+
+  void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override {
+    retrieve_service_changed_ccc_callback_ = std::move(callback);
   }
 
   void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override {
@@ -186,6 +204,9 @@ class Impl final : public GATT {
 
   // Contains the state of all GATT profile connections and their services.
   std::unordered_map<PeerId, internal::Connection> connections_;
+
+  // Callback to fetch CCC for Service Changed indications from upper layers.
+  RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_callback_;
 
   // All registered remote service handlers.
   struct RemoteServiceHandler {

@@ -383,6 +383,35 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
       self->OnTransportClosed();
     }
   });
+
+  gatt_->SetPersistServiceChangedCCCCallback(
+      [this](PeerId peer_id, gatt::ServiceChangedCCCPersistedData gatt_data) {
+        Peer* peer = peer_cache_.FindById(peer_id);
+        if (!peer) {
+          bt_log(WARN, "gap", "Unable to find peer %s when storing persisted GATT data.",
+                 bt_str(peer_id));
+        } else if (!peer->le()) {
+          bt_log(WARN, "gap", "Tried to store persisted GATT data for non-LE peer %s.",
+                 bt_str(peer_id));
+        } else {
+          peer->MutLe().set_service_changed_gatt_data(gatt_data);
+        }
+      });
+
+  gatt_->SetRetrieveServiceChangedCCCCallback([this](PeerId peer_id) {
+    Peer* peer = peer_cache_.FindById(peer_id);
+    if (!peer) {
+      bt_log(WARN, "gap", "Unable to find peer %s when retrieving persisted GATT data.",
+             peer_id.ToString().c_str());
+      return std::optional<gatt::ServiceChangedCCCPersistedData>();
+    } else if (!peer->le()) {
+      bt_log(WARN, "gap", "Tried to retrieve persisted GATT data for non-LE peer %s.",
+             peer_id.ToString().c_str());
+      return std::optional<gatt::ServiceChangedCCCPersistedData>();
+    } else {
+      return std::optional(peer->le()->get_service_changed_gatt_data());
+    }
+  });
 }
 
 AdapterImpl::~AdapterImpl() {

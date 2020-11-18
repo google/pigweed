@@ -35,9 +35,11 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
       bond_data_(std::nullopt,
                  [](const std::optional<sm::PairingData>& p) { return p.has_value(); }),
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
-      features_(std::nullopt, [](const std::optional<hci::LESupportedFeatures> f) {
-        return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
-      }) {
+      features_(std::nullopt,
+                [](const std::optional<hci::LESupportedFeatures> f) {
+                  return f ? fxl::StringPrintf("%#.16lx", f->le_features) : "";
+                }),
+      service_changed_gatt_data_({.notify = false, .indicate = false}) {
   ZX_DEBUG_ASSERT(peer_);
 }
 

@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 
 namespace bt::gatt {
 namespace {
@@ -151,5 +152,30 @@ TEST_F(GATT_GenericAttributeServiceTest, IndicateOnUnregister) {
   EXPECT_EQ(1, callback_count);
 }
 
+// Tests that registering the GATT service reads a persisted value for the service changed
+// characteristic's ccc, and that enabling indication on its service changed characteristic writes a
+// persisted value.
+TEST_F(GATT_GenericAttributeServiceTest, PersistIndicate) {
+  int persist_callback_count = 0;
+
+  auto persist_callback = [&persist_callback_count](PeerId peer_id,
+                                                    ServiceChangedCCCPersistedData gatt_data) {
+    EXPECT_EQ(peer_id, kTestPeerId);
+    EXPECT_EQ(gatt_data.indicate, true);
+    persist_callback_count++;
+  };
+
+  auto send_indication = [](PeerId peer_id, att::Handle handle, const ByteBuffer& value) {};
+
+  // Register the GATT service.
+  GenericAttributeService gatt_service(&mgr, std::move(send_indication));
+  gatt_service.SetPersistServiceChangedCCCCallback(std::move(persist_callback));
+  EXPECT_EQ(persist_callback_count, 0);
+
+  // Enable Service Changed indications for the test client.
+  att::ErrorCode ecode;
+  WriteServiceChangedCCC(kTestPeerId, kEnableInd, &ecode);
+  EXPECT_EQ(persist_callback_count, 1);
+}
 }  // namespace
 }  // namespace bt::gatt

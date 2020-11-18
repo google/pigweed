@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
@@ -171,6 +172,16 @@ class Peer final {
 
     void SetFeatures(hci::LESupportedFeatures features) { features_.Set(features); }
 
+    // Get pieces of the GATT database that must be persisted for bonded peers.
+    const gatt::ServiceChangedCCCPersistedData& get_service_changed_gatt_data() const {
+      return service_changed_gatt_data_;
+    }
+
+    // Set pieces of the GATT database that must be persisted for bonded peers.
+    void set_service_changed_gatt_data(const gatt::ServiceChangedCCCPersistedData& gatt_data) {
+      service_changed_gatt_data_ = gatt_data;
+    }
+
     // TODO(armansito): Store most recently seen random address and identity
     // address separately, once PeerCache can index peers by multiple
     // addresses.
@@ -196,8 +207,10 @@ class Peer final {
 
     StringInspectable<std::optional<hci::LESupportedFeatures>> features_;
 
-    // TODO(armansito): Store all keys
     // TODO(armansito): Store GATT service UUIDs.
+
+    // Data persisted from GATT database for bonded peers.
+    gatt::ServiceChangedCCCPersistedData service_changed_gatt_data_;
   };
 
   // Contains Peer data that apply only to the BR/EDR transport.

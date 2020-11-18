@@ -30,6 +30,25 @@ class FakeLayer final : public GATT {
   using DiscoverServicesCallback = fit::function<void(PeerId, std::optional<UUID>)>;
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
+  // Assign a callback to be notified when the persist service changed CCC callback is set.
+  using SetPersistServiceChangedCCCCallbackCallback = fit::function<void()>;
+  void SetSetPersistServiceChangedCCCCallbackCallback(
+      SetPersistServiceChangedCCCCallbackCallback cb);
+
+  // Assign a callback to be notified when the retrieve service changed CCC callback is set.
+  using SetRetrieveServiceChangedCCCCallbackCallback = fit::function<void()>;
+  void SetSetRetrieveServiceChangedCCCCallbackCallback(
+      SetRetrieveServiceChangedCCCCallbackCallback cb);
+
+  // Directly force the fake layer to call the persist service changed CCC callback, to test the
+  // GAP adapter and peer cache.
+  void CallPersistServiceChangedCCCCallback(PeerId peer_id, bool notify, bool indicate);
+
+  // Directly force the fake layer to call the retrieve service changed CCC callback, to test the
+  // GAP adapter and peer cache.
+  std::optional<ServiceChangedCCCPersistedData> CallRetrieveServiceChangedCCCCallback(
+      PeerId peer_id);
+
   // GATT overrides:
   void AddConnection(PeerId peer_id, fbl::RefPtr<l2cap::Channel> att_chan) override;
   void RemoveConnection(PeerId peer_id) override;
@@ -38,6 +57,8 @@ class FakeLayer final : public GATT {
   void UnregisterService(IdType service_id) override;
   void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                         ::std::vector<uint8_t> value, bool indicate) override;
+  void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
+  void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
   void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
@@ -46,9 +67,14 @@ class FakeLayer final : public GATT {
  private:
   // Test callbacks
   DiscoverServicesCallback discover_services_cb_;
+  SetPersistServiceChangedCCCCallbackCallback set_persist_service_changed_ccc_cb_cb_;
+  SetRetrieveServiceChangedCCCCallbackCallback set_retrieve_service_changed_ccc_cb_cb_;
 
   // Emulated callbacks
   RemoteServiceWatcher remote_service_watcher_;
+
+  PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
+  RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
 
   // Emulated GATT peer.
   struct TestPeer {

@@ -53,6 +53,20 @@ void FakeLayer::SendNotification(IdType service_id, IdType chrc_id, PeerId peer_
   // TODO: implement
 }
 
+void FakeLayer::SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) {
+  if (set_persist_service_changed_ccc_cb_cb_) {
+    set_persist_service_changed_ccc_cb_cb_();
+  }
+  persist_service_changed_ccc_cb_ = std::move(callback);
+}
+
+void FakeLayer::SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) {
+  if (set_retrieve_service_changed_ccc_cb_cb_) {
+    set_retrieve_service_changed_ccc_cb_cb_();
+  }
+  retrieve_service_changed_ccc_cb_ = std::move(callback);
+}
+
 void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) {
   if (discover_services_cb_) {
     discover_services_cb_(peer_id, optional_service_uuid);
@@ -97,6 +111,25 @@ void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCall
 
 void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
   discover_services_cb_ = std::move(cb);
+}
+
+void FakeLayer::SetSetPersistServiceChangedCCCCallbackCallback(
+    SetPersistServiceChangedCCCCallbackCallback cb) {
+  set_persist_service_changed_ccc_cb_cb_ = std::move(cb);
+}
+
+void FakeLayer::SetSetRetrieveServiceChangedCCCCallbackCallback(
+    SetRetrieveServiceChangedCCCCallbackCallback cb) {
+  set_retrieve_service_changed_ccc_cb_cb_ = std::move(cb);
+}
+
+void FakeLayer::CallPersistServiceChangedCCCCallback(PeerId peer_id, bool notify, bool indicate) {
+  persist_service_changed_ccc_cb_(peer_id, {.notify = notify, .indicate = indicate});
+}
+
+std::optional<ServiceChangedCCCPersistedData> FakeLayer::CallRetrieveServiceChangedCCCCallback(
+    PeerId peer_id) {
+  return retrieve_service_changed_ccc_cb_(peer_id);
 }
 
 }  // namespace bt::gatt::testing

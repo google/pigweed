@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
@@ -104,6 +105,17 @@ class GATT {
   // empty (fxbug.dev/657).
   virtual void SendNotification(IdType service_id, IdType chrc_id, PeerId peer_id,
                                 ::std::vector<uint8_t> value, bool indicate) = 0;
+
+  // Sets a callback to run when certain local GATT database changes occur.  These changes are to
+  // those database attributes which need to be persisted accross reconnects by bonded peers.  This
+  // is used by the GAP adapter to store these changes in the peer cache.  This should only be
+  // called by the GAP adapter.
+  virtual void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) = 0;
+
+  // Sets a callback to run when a peer connects.  This used to set those database attributes which
+  // need to be persisted accross reconnects by bonded peers by reading them from the peer cache.
+  // This should only be called by the GAP adapter.
+  virtual void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) = 0;
 
   // ===============
   // Remote Services

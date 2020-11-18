@@ -33,6 +33,7 @@ using TestingBase = testing::ControllerTest<FakeController>;
 
 const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
+const DeviceAddress kTestAddrBrEdr(DeviceAddress::Type::kBREDR, {3, 0, 0, 0, 0, 0});
 
 const bt_vendor_features_t kVendorFeatures = BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND;
 
@@ -915,6 +916,88 @@ TEST_F(GAP_AdapterTest, VendorFeatures) {
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
   EXPECT_EQ(adapter()->state().vendor_features(), kVendorFeatures);
+}
+
+// Tests where the constructor must run in the test, rather than Setup.
+
+class AdapterConstructorTest : public TestingBase {
+ public:
+  AdapterConstructorTest() = default;
+  ~AdapterConstructorTest() override = default;
+
+  void SetUp() override {
+    TestingBase::SetUp();
+
+    l2cap_ = l2cap::testing::FakeL2cap::Create();
+    gatt_ = std::make_unique<gatt::testing::FakeLayer>();
+  }
+
+  void TearDown() override {
+    l2cap_ = nullptr;
+    gatt_ = nullptr;
+    TestingBase::TearDown();
+  }
+
+ protected:
+  fbl::RefPtr<l2cap::testing::FakeL2cap> l2cap_;
+  std::unique_ptr<gatt::testing::FakeLayer> gatt_;
+};
+
+using GAP_AdapterConstructorTest = AdapterConstructorTest;
+
+TEST_F(GAP_AdapterConstructorTest, GattCallbacks) {
+  constexpr PeerId kPeerId(1234);
+  constexpr gatt::ServiceChangedCCCPersistedData kPersistedData = {.notify = true,
+                                                                   .indicate = true};
+
+  int set_persist_cb_count = 0;
+  int set_retrieve_cb_count = 0;
+
+  auto set_persist_cb_cb = [&set_persist_cb_count]() { set_persist_cb_count++; };
+
+  auto set_retrieve_cb_cb = [&set_retrieve_cb_count]() { set_retrieve_cb_count++; };
+
+  gatt_->SetSetPersistServiceChangedCCCCallbackCallback(set_persist_cb_cb);
+  gatt_->SetSetRetrieveServiceChangedCCCCallbackCallback(set_retrieve_cb_cb);
+
+  EXPECT_EQ(set_persist_cb_count, 0);
+  EXPECT_EQ(set_retrieve_cb_count, 0);
+
+  auto adapter =
+      Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::optional(std::move(l2cap_)));
+
+  EXPECT_EQ(set_persist_cb_count, 1);
+  EXPECT_EQ(set_retrieve_cb_count, 1);
+
+  // Before the peer exists, adding its gatt info to the peer cache does nothing.
+  gatt_->CallPersistServiceChangedCCCCallback(kPeerId, true, false);
+  auto persisted_data_1 = gatt_->CallRetrieveServiceChangedCCCCallback(kPeerId);
+  EXPECT_EQ(persisted_data_1, std::nullopt);
+
+  // After adding a classic peer, adding its info to the peer cache still does nothing.
+  Peer* classic_peer = adapter->peer_cache()->NewPeer(kTestAddrBrEdr, true /* connectable */);
+  PeerId classic_peer_id = classic_peer->identifier();
+
+  gatt_->CallPersistServiceChangedCCCCallback(classic_peer_id, false, true);
+  auto persisted_data_2 = gatt_->CallRetrieveServiceChangedCCCCallback(classic_peer_id);
+  EXPECT_EQ(persisted_data_2, std::nullopt);
+
+  // After adding an LE peer, adding its info to the peer cache works.
+  Peer* le_peer = adapter->peer_cache()->NewPeer(kTestAddr, true /* connectable */);
+  PeerId le_peer_id = le_peer->identifier();
+
+  gatt_->CallPersistServiceChangedCCCCallback(le_peer_id, true, true);
+  auto persisted_data_3 = gatt_->CallRetrieveServiceChangedCCCCallback(le_peer_id);
+  ASSERT_TRUE(persisted_data_3.has_value());
+  auto persisted_data_3_value = persisted_data_3.value();
+  EXPECT_EQ(persisted_data_3_value, kPersistedData);
+
+  // After the peer is removed, the gatt info is no longer in the peer cache.
+  bool result = adapter->peer_cache()->RemoveDisconnectedPeer(le_peer_id);
+  EXPECT_TRUE(result);
+
+  auto persisted_data_4 = gatt_->CallRetrieveServiceChangedCCCCallback(le_peer_id);
+  EXPECT_EQ(persisted_data_4, std::nullopt);
 }
 
 }  // namespace

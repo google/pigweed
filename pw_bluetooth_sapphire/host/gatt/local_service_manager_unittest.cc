@@ -1119,17 +1119,16 @@ TEST_F(GATT_LocalClientCharacteristicConfigurationTest, DisconnectCleanup) {
   EXPECT_EQ(att::ErrorCode::kNoError, ecode);
   EXPECT_EQ(0x0000, ccc_value);
 
-  // The callback should have been called again to disable notifications.
-  EXPECT_EQ(2, ccc_callback_count);
+  // The callback should not have been called on client disconnect.
+  EXPECT_EQ(1, ccc_callback_count);
   EXPECT_EQ(kTestPeerId, last_peer_id);
-  EXPECT_FALSE(last_notify);
+  EXPECT_TRUE(last_notify);
   EXPECT_FALSE(last_indicate);
 
   mgr.DisconnectClient(kTestPeerId2);
 
-  // The callback should not be called if a device isn't registered for
-  // notifications.
-  EXPECT_EQ(2, ccc_callback_count);
+  // The callback should not be called on client disconnect.
+  EXPECT_EQ(1, ccc_callback_count);
   EXPECT_EQ(kTestPeerId, last_peer_id);
 }
 
