@@ -293,6 +293,10 @@ class NanopbMethod : public Method {
 
 template <typename T>
 Status ServerWriter<T>::Write(const T& response) {
+  if (!open()) {
+    return Status::FailedPrecondition();
+  }
+
   std::span<std::byte> buffer = AcquirePayloadBuffer();
 
   if (auto result =

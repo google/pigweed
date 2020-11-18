@@ -28,6 +28,10 @@ RawServerWriter::~RawServerWriter() {
 }
 
 Status RawServerWriter::Write(ConstByteSpan response) {
+  if (!open()) {
+    return Status::FailedPrecondition();
+  }
+
   if (buffer().Contains(response)) {
     return ReleasePayloadBuffer(response);
   }

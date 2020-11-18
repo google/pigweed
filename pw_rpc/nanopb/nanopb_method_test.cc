@@ -161,6 +161,17 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
                         encoded.value().size()));
 }
 
+TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
+  const NanopbMethod& method =
+      std::get<2>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
+
+  method.Invoke(context.get(), context.packet({}));
+
+  last_writer.Finish();
+  EXPECT_TRUE(last_writer.Write({.value = 100}).IsFailedPrecondition());
+}
+
 TEST(NanopbMethod,
      ServerStreamingRpc_ServerWriterBufferTooSmall_InternalError) {
   const NanopbMethod& method =

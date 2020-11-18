@@ -163,6 +163,17 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
   EXPECT_EQ(packet.status(), Status::Ok());
 }
 
+TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
+  const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
+  ServerContextForTest<FakeService, 16> context(method);
+
+  method.Invoke(context.get(), context.packet({}));
+
+  last_writer.Finish();
+  constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
+  EXPECT_EQ(last_writer.Write(data), Status::FailedPrecondition());
+}
+
 TEST(RawServerWriter, Write_BufferTooSmall_ReturnsOutOfRange) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService, 16> context(method);
