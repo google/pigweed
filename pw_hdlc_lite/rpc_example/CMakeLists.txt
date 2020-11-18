@@ -13,7 +13,10 @@
 # the License.
 
 
-add_executable(pw_hdlc_lite.rpc_example hdlc_rpc_server.cc main.cc)
+add_executable(pw_hdlc_lite.rpc_example EXCLUDE_FROM_ALL
+    hdlc_rpc_server.cc
+    main.cc
+)
 
 target_link_libraries(pw_hdlc_lite.rpc_example
   PRIVATE
