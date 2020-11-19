@@ -6,7 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_DISCOVERY_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
-#include <lib/fit/function.h>
+#include <lib/fit/defer.h>
 #include <lib/fit/thread_checker.h>
 
 #include <memory>
@@ -184,6 +184,13 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   using SessionCallback = fit::function<void(LowEnergyDiscoverySessionPtr)>;
   void StartDiscovery(SessionCallback callback);
 
+  // Pause current and future discovery sessions until the returned PauseToken is destroyed.
+  // If PauseDiscovery is called multiple times, discovery will be paused until all returned
+  // PauseTokens are destroyed.
+  // NOTE: deferred_action::cancel() must not be called, or else discovery will never resume.
+  using PauseToken = fit::deferred_action<fit::callback<void()>>;
+  [[nodiscard]] PauseToken PauseDiscovery();
+
   // Enable or disable the background scan feature. When enabled, the discovery
   // manager will perform a low duty-cycle passive scan when no discovery
   // sessions are active.
@@ -194,6 +201,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // Returns whether there is an active discovery session.
   bool discovering() const { return !sessions_.empty(); }
+
+  // Returns true if discovery is paused.
+  bool paused() const { return paused_count_ != 0; }
 
   // Registers a callback which runs when a connectable advertisement is
   // received from known peer which was previously observed to be connectable during general
@@ -229,11 +239,21 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // Called by hci::LowEnergyScanner
   void OnScanStatus(hci::LowEnergyScanner::ScanStatus status);
 
+  // Handlers for scan status updates.
+  void OnScanFailed();
+  void OnPassiveScanStarted();
+  void OnActiveScanStarted();
+  void OnScanStopped();
+  void OnScanComplete();
+
   // Tells the scanner to start scanning. Aliases are provided for improved
   // readability.
   void StartScan(bool active);
   inline void StartActiveScan() { StartScan(true); }
   inline void StartPassiveScan() { StartScan(false); }
+
+  // Called when discovery is unpaused.
+  void ResumeDiscovery();
 
   // Used by destructor to handle all sessions
   void DeactivateAndNotifySessions();
@@ -274,6 +294,10 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // The value (in ms) that we use for the duration of each scan period.
   zx::duration scan_period_ = kLEGeneralDiscoveryScanMin;
+
+  // Count of the number of outstanding PauseTokens. When |paused_count_| is 0, discovery is
+  // unpaused.
+  int paused_count_ = 0;
 
   // The scanner that performs the HCI procedures. |scanner_| must out-live this
   // discovery manager.

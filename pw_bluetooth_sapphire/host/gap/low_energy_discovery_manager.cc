@@ -5,6 +5,7 @@
 #include "low_energy_discovery_manager.h"
 
 #include <lib/async/default.h>
+#include <lib/fit/function.h>
 #include <zircon/assert.h>
 
 #include "peer.h"
@@ -113,6 +114,10 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
 
   pending_.push(std::move(callback));
 
+  if (paused()) {
+    return;
+  }
+
   // If currently scanning in the background, stop it and wait for
   // OnScanStatus() to initiate the active scan. Otherwise, request an active
   // scan if the scanner is idle.
@@ -124,6 +129,26 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
   }
 }
 
+LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery() {
+  if (!paused()) {
+    bt_log(TRACE, "gap-le", "Pausing discovery");
+    scanner_->StopScan();
+  }
+
+  paused_count_++;
+
+  return PauseToken([this, self = weak_ptr_factory_.GetWeakPtr()]() {
+    if (!self) {
+      return;
+    }
+
+    ZX_ASSERT(paused());
+    paused_count_--;
+    if (paused_count_ == 0) {
+      ResumeDiscovery();
+    }
+  });
+}
 void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
   if (background_scan_enabled_ == enable) {
     bt_log(DEBUG, "gap-le", "background scan already %s", (enable ? "enabled" : "disabled"));
@@ -132,8 +157,8 @@ void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
 
   background_scan_enabled_ = enable;
 
-  // Do nothing if an active scan is in progress.
-  if (!sessions_.empty() || !pending_.empty()) {
+  // Do nothing if an active scan is in progress or scanning is paused.
+  if (!sessions_.empty() || !pending_.empty() || paused()) {
     return;
   }
 
@@ -226,85 +251,112 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
 
 void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus status) {
   switch (status) {
-    case hci::LowEnergyScanner::ScanStatus::kFailed: {
-      bt_log(ERROR, "gap-le", "failed to initiate scan!");
-
-      DeactivateAndNotifySessions();
-
-      // Report failure on all currently pending requests. If any of the
-      // callbacks issue a retry the new requests will get re-queued and
-      // notified of failure in the same loop here.
-      while (!pending_.empty()) {
-        auto callback = std::move(pending_.front());
-        pending_.pop();
-
-        callback(nullptr);
-      }
+    case hci::LowEnergyScanner::ScanStatus::kFailed:
+      OnScanFailed();
       return;
-    }
     case hci::LowEnergyScanner::ScanStatus::kPassive:
-      bt_log(TRACE, "gap-le", "passive scan started");
-
-      // Stop the background scan if active scan was requested or background
-      // scan was disabled while waiting for the scan to start. If an active
-      // scan was requested then the active scan we'll start it once the passive
-      // scan stops.
-      if (!pending_.empty() || !background_scan_enabled_) {
-        scanner_->StopScan();
-      }
+      OnPassiveScanStarted();
       return;
     case hci::LowEnergyScanner::ScanStatus::kActive:
-      bt_log(TRACE, "gap-le", "active scan started");
-
-      // Create and register all sessions before notifying the clients. We do
-      // this so that the reference count is incremented for all new sessions
-      // before the callbacks execute, to prevent a potential case in which a
-      // callback stops its session immediately which could cause the reference
-      // count to drop the zero before all clients receive their session object.
-      if (!pending_.empty()) {
-        size_t count = pending_.size();
-        std::unique_ptr<LowEnergyDiscoverySession> new_sessions[count];
-        std::generate(new_sessions, new_sessions + count, [this] { return AddSession(); });
-        for (size_t i = 0; i < count; i++) {
-          auto callback = std::move(pending_.front());
-          pending_.pop();
-
-          callback(std::move(new_sessions[i]));
-        }
-      }
-      ZX_DEBUG_ASSERT(pending_.empty());
+      OnActiveScanStarted();
       return;
     case hci::LowEnergyScanner::ScanStatus::kStopped:
-      bt_log(DEBUG, "gap-le", "stopped scanning");
-
-      cached_scan_results_.clear();
-
-      // Some clients might have requested to start scanning while we were
-      // waiting for it to stop. Restart active scanning if that is the case.
-      // Otherwise start a background scan, if enabled.
-      if (!pending_.empty()) {
-        bt_log(DEBUG, "gap-le", "initiate active scan");
-        StartActiveScan();
-      } else if (background_scan_enabled_) {
-        bt_log(DEBUG, "gap-le", "initiate background scan");
-        StartPassiveScan();
-      }
+      OnScanStopped();
       return;
     case hci::LowEnergyScanner::ScanStatus::kComplete:
-      bt_log(TRACE, "gap-le", "end of scan period");
-      cached_scan_results_.clear();
-
-      // If |sessions_| is empty this is because sessions were stopped while the
-      // scanner was shutting down after the end of the scan period. Restart the
-      // scan as long as clients are waiting for it.
-      if (!sessions_.empty() || !pending_.empty()) {
-        bt_log(TRACE, "gap-le", "continuing periodic scan");
-        StartActiveScan();
-      } else if (background_scan_enabled_) {
-        bt_log(TRACE, "gap-le", "continuing periodic background scan");
-        StartPassiveScan();
-      }
+      OnScanComplete();
       return;
+  }
+}
+
+void LowEnergyDiscoveryManager::OnScanFailed() {
+  bt_log(ERROR, "gap-le", "failed to initiate scan!");
+
+  DeactivateAndNotifySessions();
+
+  // Report failure on all currently pending requests. If any of the
+  // callbacks issue a retry the new requests will get re-queued and
+  // notified of failure in the same loop here.
+  while (!pending_.empty()) {
+    auto callback = std::move(pending_.front());
+    pending_.pop();
+
+    callback(nullptr);
+  }
+}
+
+void LowEnergyDiscoveryManager::OnPassiveScanStarted() {
+  bt_log(TRACE, "gap-le", "passive scan started");
+
+  // Stop the background scan if active scan was requested or background
+  // scan was disabled while waiting for the scan to start. If an active
+  // scan was requested then the active scan we'll start it once the passive
+  // scan stops.
+  if (!pending_.empty() || !background_scan_enabled_) {
+    scanner_->StopScan();
+  }
+}
+
+void LowEnergyDiscoveryManager::OnActiveScanStarted() {
+  bt_log(TRACE, "gap-le", "active scan started");
+
+  // Create and register all sessions before notifying the clients. We do
+  // this so that the reference count is incremented for all new sessions
+  // before the callbacks execute, to prevent a potential case in which a
+  // callback stops its session immediately which could cause the reference
+  // count to drop the zero before all clients receive their session object.
+  if (!pending_.empty()) {
+    size_t count = pending_.size();
+    std::unique_ptr<LowEnergyDiscoverySession> new_sessions[count];
+    std::generate(new_sessions, new_sessions + count, [this] { return AddSession(); });
+    for (size_t i = 0; i < count; i++) {
+      auto callback = std::move(pending_.front());
+      pending_.pop();
+
+      callback(std::move(new_sessions[i]));
+    }
+  }
+  ZX_ASSERT(pending_.empty());
+}
+
+void LowEnergyDiscoveryManager::OnScanStopped() {
+  bt_log(DEBUG, "gap-le", "stopped scanning");
+
+  cached_scan_results_.clear();
+
+  if (paused()) {
+    return;
+  }
+
+  // Some clients might have requested to start scanning while we were
+  // waiting for it to stop. Restart active scanning if that is the case.
+  // Otherwise start a background scan, if enabled.
+  if (!pending_.empty()) {
+    bt_log(DEBUG, "gap-le", "initiate active scan");
+    StartActiveScan();
+  } else if (background_scan_enabled_) {
+    bt_log(DEBUG, "gap-le", "initiate background scan");
+    StartPassiveScan();
+  }
+}
+
+void LowEnergyDiscoveryManager::OnScanComplete() {
+  bt_log(TRACE, "gap-le", "end of scan period");
+  cached_scan_results_.clear();
+
+  if (paused()) {
+    return;
+  }
+
+  // If |sessions_| is empty this is because sessions were stopped while the
+  // scanner was shutting down after the end of the scan period. Restart the
+  // scan as long as clients are waiting for it.
+  if (!sessions_.empty() || !pending_.empty()) {
+    bt_log(TRACE, "gap-le", "continuing periodic scan");
+    StartActiveScan();
+  } else if (background_scan_enabled_) {
+    bt_log(TRACE, "gap-le", "continuing periodic background scan");
+    StartPassiveScan();
   }
 }
 
@@ -345,6 +397,18 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   // general discovery (by default; |scan_period_| can be modified, e.g. by unit
   // tests).
   scanner_->StartScan(options, std::move(cb));
+}
+
+void LowEnergyDiscoveryManager::ResumeDiscovery() {
+  ZX_ASSERT(!paused());
+
+  if (!sessions_.empty() || !pending_.empty()) {
+    bt_log(TRACE, "gap-le", "resuming periodic scan");
+    StartActiveScan();
+  } else if (background_scan_enabled_) {
+    bt_log(TRACE, "gap-le", "resuming periodic background scan");
+    StartPassiveScan();
+  }
 }
 
 void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {

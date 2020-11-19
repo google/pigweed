@@ -25,6 +25,7 @@ namespace {
 
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
+using PauseToken = LowEnergyDiscoveryManager::PauseToken;
 
 using TestingBase = bt::testing::ControllerTest<FakeController>;
 
@@ -182,12 +183,12 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   std::unique_ptr<LowEnergyDiscoverySession> StartDiscoverySession() {
     std::unique_ptr<LowEnergyDiscoverySession> session;
     discovery_manager()->StartDiscovery([&](auto cb_session) {
-      ZX_DEBUG_ASSERT(cb_session);
+      ZX_ASSERT(cb_session);
       session = std::move(cb_session);
     });
 
     RunLoopUntilIdle();
-    ZX_DEBUG_ASSERT(session);
+    ZX_ASSERT(session);
     return session;
   }
 
@@ -1094,6 +1095,143 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanPeriodRestart) {
   ASSERT_EQ(3u, scan_states().size());
   EXPECT_FALSE(scan_states()[1]);
   EXPECT_TRUE(scan_states()[2]);
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+       PauseActiveDiscoveryTwiceKeepsScanningDisabledUntilBothPauseTokensDestroyed) {
+  auto session = StartDiscoverySession();
+  EXPECT_TRUE(scan_enabled());
+
+  std::optional<PauseToken> pause_0 = discovery_manager()->PauseDiscovery();
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+  EXPECT_TRUE(discovery_manager()->discovering());
+
+  std::optional<PauseToken> pause_1 = discovery_manager()->PauseDiscovery();
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+  EXPECT_TRUE(discovery_manager()->discovering());
+
+  pause_0.reset();
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+  EXPECT_TRUE(discovery_manager()->discovering());
+
+  pause_1.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_enabled());
+  EXPECT_TRUE(discovery_manager()->discovering());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanAfterPausing) {
+  std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+
+  discovery_manager()->EnableBackgroundScan(true);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+
+  pause.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_enabled());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAfterPausing) {
+  std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery([&](auto cb_session) { session = std::move(cb_session); });
+  RunLoopUntilIdle();
+  EXPECT_FALSE(scan_enabled());
+  EXPECT_FALSE(session);
+
+  pause.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_enabled());
+  EXPECT_TRUE(session);
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanComplete) {
+  discovery_manager()->set_scan_period(kTestScanPeriod);
+
+  auto session = StartDiscoverySession();
+  EXPECT_TRUE(scan_enabled());
+
+  // Pause discovery in FakeController scan state callback to ensure it is called just before
+  // kComplete status is received. This will be the 2nd scan state change because it is started
+  // above and then stopped by the scan period ending below.
+  std::optional<PauseToken> pause;
+  set_scan_state_handler(2, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
+
+  RunLoopFor(kTestScanPeriod);
+  EXPECT_TRUE(pause.has_value());
+  EXPECT_EQ(scan_states().size(), 2u);
+  EXPECT_FALSE(scan_enabled());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseDiscoveryJustBeforeScanStopped) {
+  auto session = StartDiscoverySession();
+  EXPECT_TRUE(scan_enabled());
+
+  // Pause discovery in FakeController scan state callback to ensure it is called just before
+  // kStopped status is received. This will be the 2nd scan state change because it is started
+  // above and then stopped by the session being destroyed below.
+  std::optional<PauseToken> pause;
+  set_scan_state_handler(2, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
+
+  session.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(pause.has_value());
+  EXPECT_EQ(scan_states().size(), 2u);
+  EXPECT_FALSE(scan_enabled());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
+  // Pause discovery in FakeController scan state callback to ensure it is called just before
+  // kActive status is received. This will be the first scan state change.
+  std::optional<PauseToken> pause;
+  set_scan_state_handler(1, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
+
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery([&](auto cb_session) { session = std::move(cb_session); });
+
+  // The scan should be canceled.
+  RunLoopUntilIdle();
+  EXPECT_FALSE(session);
+  EXPECT_TRUE(pause.has_value());
+  EXPECT_EQ(scan_states().size(), 2u);
+  EXPECT_FALSE(scan_enabled());
+  EXPECT_FALSE(discovery_manager()->discovering());
+
+  // Resume discovery.
+  pause.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(session);
+  EXPECT_TRUE(scan_enabled());
+  EXPECT_TRUE(discovery_manager()->discovering());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
+  // Pause discovery in FakeController scan state callback to ensure it is called just before
+  // kPassive status is received. This will be the first scan state change.
+  std::optional<PauseToken> pause;
+  set_scan_state_handler(1, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
+
+  discovery_manager()->EnableBackgroundScan(true);
+
+  // The scan should be canceled.
+  RunLoopUntilIdle();
+  EXPECT_TRUE(pause.has_value());
+  EXPECT_EQ(scan_states().size(), 2u);
+  EXPECT_FALSE(scan_enabled());
+
+  // Resume scan.
+  pause.reset();
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_enabled());
 }
 
 }  // namespace
