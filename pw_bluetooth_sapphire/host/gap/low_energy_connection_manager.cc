@@ -954,7 +954,7 @@ void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status sta
   }
 
   // The request failed or timed out.
-  bt_log(ERROR, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id),
+  bt_log(INFO, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id),
          bt_str(status));
   Peer* peer = peer_cache_->FindById(peer_id);
   ZX_ASSERT(peer);

@@ -83,6 +83,10 @@ std::string FormattedLogContexts() {
 
 void LogMessage(const char* file, int line, LogSeverity severity, const char* tag, const char* fmt,
                 ...) {
+  if (!bt::IsLogLevelEnabled(severity)) {
+    return;
+  }
+
   va_list args;
   va_start(args, fmt);
   std::string msg = fxl::StringVPrintf(fmt, args);
@@ -92,8 +96,9 @@ void LogMessage(const char* file, int line, LogSeverity severity, const char* ta
     printf("%s: [%s:%s:%d]%s%s %s\n", LogSeverityToString(severity), tag, file, line,
            FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), msg.data());
   } else {
-    zxlogf_etc(LogSeverityToDdkLog(severity), "[%s:%s:%d]%s%s %s", tag, file, line,
-               FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), msg.data());
+    driver_logf_internal(__zircon_driver_rec__.driver, LogSeverityToDdkLog(severity), file, line,
+                         "[%s]%s%s %s", tag, FormattedLogContexts().c_str(),
+                         FormattedLogScopes().c_str(), msg.data());
   }
 }
 
