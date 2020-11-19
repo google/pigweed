@@ -23,6 +23,7 @@
 #include "pw_log/log.h"
 #include "pw_rpc/echo_service_nanopb.h"
 #include "pw_rpc/server.h"
+#include "rpc_task_loop.h"
 
 namespace hdlc_example {
 namespace {
@@ -48,6 +49,8 @@ pw::rpc::EchoService echo_service;
 
 void RegisterServices() { server.RegisterService(echo_service); }
 
+static void PumpServices(void*){};
+
 }  // namespace
 
 void Start() {
@@ -65,8 +68,8 @@ void Start() {
   std::array<std::byte, kMaxTransmissionUnit> input_buffer;
 
   PW_LOG_INFO("Starting pw_rpc server");
-  pw::hdlc_lite::ReadAndProcessPackets(
-      server, hdlc_channel_output, input_buffer);
+  RpcTaskLoop::RunForever(
+      server, hdlc_channel_output, input_buffer, PumpServices);
 }
 
 }  // namespace hdlc_example
