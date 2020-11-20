@@ -57,6 +57,9 @@ CommandChannel::TransactionData::~TransactionData() {
 
   bt_log(DEBUG, "hci", "sending kUnspecifiedError for unfinished transaction %zu", id_);
   auto event = EventPacket::New(sizeof(CommandStatusEventParams));
+  // Init buffer to prevent stale data in buffer.
+  event->mutable_view()->mutable_data().SetToZeros();
+
   auto* header = event->mutable_view()->mutable_header();
   auto* params = event->mutable_view()->mutable_payload<CommandStatusEventParams>();
 
