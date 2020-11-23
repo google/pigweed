@@ -96,6 +96,7 @@ group("module_docs") {
     "$dir_pw_string:docs",
     "$dir_pw_sync:docs",
     "$dir_pw_sync_stl:docs",
+    "$dir_pw_sync_threadx:docs",
     "$dir_pw_sys_io:docs",
     "$dir_pw_sys_io_arduino:docs",
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
