@@ -55,8 +55,6 @@ template("pw_python_package") {
 
   _all_py_files += _test_sources
 
-  assert(_all_py_files != [], "At least one source or test must be provided")
-
   # pw_python_script uses pw_python_package, but with a limited set of features.
   # _pw_standalone signals that this target is actually a pw_python_script.
   _is_package = !(defined(invoker._pw_standalone) && invoker._pw_standalone)
@@ -78,7 +76,7 @@ template("pw_python_package") {
     }
 
     # If sources are provided, make sure there is an __init__.py file.
-    if (defined(invoker.sources)) {
+    if (defined(invoker.sources) && invoker.sources != []) {
       assert(filter_include(invoker.sources, [ "*\b__init__.py" ]) != [],
              "Python packages must have at least one __init__.py file")
     }
