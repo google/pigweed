@@ -90,6 +90,7 @@ pw_source_set("test_utils") {
   public = [
     "public/pw_rpc/internal/test_method.h",
     "pw_rpc_private/internal_test_utils.h",
+    "pw_rpc_private/method_impl_tester.h",
   ]
   public_configs = [ ":private_includes" ]
   public_deps = [

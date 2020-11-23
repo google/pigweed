@@ -22,12 +22,50 @@
 #include "pw_rpc/service.h"
 #include "pw_rpc_nanopb_private/internal_test_utils.h"
 #include "pw_rpc_private/internal_test_utils.h"
+#include "pw_rpc_private/method_impl_tester.h"
 #include "pw_rpc_test_protos/test.pb.h"
 
 namespace pw::rpc::internal {
 namespace {
 
 using std::byte;
+
+struct FakePb {};
+
+// Create a fake service for use with the MethodImplTester.
+class TestNanopbService final : public Service {
+ public:
+  Status Unary(ServerContext&, const FakePb&, FakePb&) { return Status(); }
+
+  static Status StaticUnary(ServerContext&, const FakePb&, FakePb&) {
+    return Status();
+  }
+
+  void ServerStreaming(ServerContext&, const FakePb&, ServerWriter<FakePb>&) {}
+
+  static void StaticServerStreaming(ServerContext&,
+                                    const FakePb&,
+                                    ServerWriter<FakePb>&) {}
+
+  Status UnaryWrongArg(ServerContext&, FakePb&, FakePb&) { return Status(); }
+
+  static void StaticUnaryVoidReturn(ServerContext&, const FakePb&, FakePb&) {}
+
+  int ServerStreamingBadReturn(ServerContext&,
+                               const FakePb&,
+                               ServerWriter<FakePb>&) {
+    return 5;
+  }
+
+  static void StaticServerStreamingMissingArg(const FakePb&,
+                                              ServerWriter<FakePb>&) {}
+};
+
+TEST(MethodImplTester, NanopbMethod) {
+  constexpr MethodImplTester<NanopbMethod, TestNanopbService, nullptr, nullptr>
+      method_tester;
+  EXPECT_TRUE(method_tester.MethodImplIsValid());
+}
 
 pw_rpc_test_TestRequest last_request;
 ServerWriter<pw_rpc_test_TestResponse> last_writer;

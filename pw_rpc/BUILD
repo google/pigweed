@@ -87,6 +87,7 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/internal/test_method.h",
         "pw_rpc_private/internal_test_utils.h",
+        "pw_rpc_private/method_impl_tester.h",
     ],
     visibility = ["//visibility:private"],
     deps = [

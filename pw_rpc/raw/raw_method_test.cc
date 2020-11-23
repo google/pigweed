@@ -24,10 +24,49 @@
 #include "pw_rpc/server_context.h"
 #include "pw_rpc/service.h"
 #include "pw_rpc_private/internal_test_utils.h"
+#include "pw_rpc_private/method_impl_tester.h"
 #include "pw_rpc_test_protos/test.pwpb.h"
 
 namespace pw::rpc::internal {
 namespace {
+
+// Create a fake service for use with the MethodImplTester.
+class TestRawService final : public Service {
+ public:
+  StatusWithSize Unary(ServerContext&, ConstByteSpan, ByteSpan) {
+    return StatusWithSize(0);
+  }
+
+  static StatusWithSize StaticUnary(ServerContext&, ConstByteSpan, ByteSpan) {
+    return StatusWithSize(0);
+  }
+
+  void ServerStreaming(ServerContext&, ConstByteSpan, RawServerWriter&) {}
+
+  static void StaticServerStreaming(ServerContext&,
+                                    ConstByteSpan,
+                                    RawServerWriter&) {}
+
+  StatusWithSize UnaryWrongArg(ServerContext&, ConstByteSpan, ConstByteSpan) {
+    return StatusWithSize(0);
+  }
+
+  static void StaticUnaryVoidReturn(ServerContext&, ConstByteSpan, ByteSpan) {}
+
+  Status ServerStreamingBadReturn(ServerContext&,
+                                  ConstByteSpan,
+                                  RawServerWriter&) {
+    return Status();
+  }
+
+  static void StaticServerStreamingMissingArg(ConstByteSpan, RawServerWriter&) {
+  }
+};
+
+TEST(MethodImplTester, RawMethod) {
+  constexpr MethodImplTester<RawMethod, TestRawService> method_tester;
+  EXPECT_TRUE(method_tester.MethodImplIsValid());
+}
 
 struct {
   int64_t integer;
