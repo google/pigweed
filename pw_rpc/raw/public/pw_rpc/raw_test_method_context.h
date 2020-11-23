@@ -20,6 +20,7 @@
 #include "pw_containers/vector.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
+#include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/raw_method.h"
 #include "pw_rpc/internal/server.h"
@@ -131,15 +132,6 @@ class MessageOutput final : public ChannelOutput {
   Status last_status_;
 };
 
-template <typename Service, uint32_t method_id>
-constexpr const internal::RawMethod& GetRawMethod() {
-  constexpr const internal::RawMethod* raw_method =
-      GeneratedService<Service>::RawMethodFor(method_id);
-  static_assert(raw_method != nullptr,
-                "The selected function is not an RPC service method");
-  return *raw_method;
-}
-
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
           uint32_t method_id,
@@ -155,7 +147,7 @@ struct InvocationContext {
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
-             GetRawMethod<Service, method_id>()) {}
+             MethodLookup::GetRawMethod<Service, method_id>()) {}
 
   using ResponseBuffer = std::array<std::byte, output_size>;
 

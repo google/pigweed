@@ -98,6 +98,7 @@ pw_test_group("tests") {
     ":client_call_test",
     ":codegen_test",
     ":echo_service_test",
+    ":method_lookup_test",
     ":nanopb_method_test",
     ":nanopb_method_union_test",
   ]
@@ -136,6 +137,18 @@ pw_test("nanopb_method_test") {
     "..:test_utils",
   ]
   sources = [ "nanopb_method_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("method_lookup_test") {
+  deps = [
+    ":method",
+    ":test_method_context",
+    "..:test_protos.nanopb_rpc",
+    "..:test_utils",
+    "../raw:test_method_context",
+  ]
+  sources = [ "method_lookup_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
 

@@ -45,6 +45,7 @@ pw_cc_library(
         "public/pw_rpc/internal/call.h",
         "public/pw_rpc/internal/hash.h",
         "public/pw_rpc/internal/method.h",
+        "public/pw_rpc/internal/method_lookup.h",
         "public/pw_rpc/internal/method_union.h",
         "public/pw_rpc/internal/server.h",
         "server.cc",
@@ -103,6 +104,7 @@ filegroup(
     srcs = [
         "nanopb/codegen_test.cc",
         "nanopb/echo_service_test.cc",
+        "nanopb/method_lookup_test.cc",
         "nanopb/nanopb_client_call.cc",
         "nanopb/nanopb_client_call_test.cc",
         "nanopb/nanopb_common.cc",
@@ -116,9 +118,6 @@ filegroup(
         "nanopb/public/pw_rpc/nanopb_client_call.h",
         "nanopb/public/pw_rpc/nanopb_test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
-        "nanopb/test.pb.c",
-        "nanopb/test.pb.h",
-        "nanopb/test_rpc.pb.h",
     ],
 )
 

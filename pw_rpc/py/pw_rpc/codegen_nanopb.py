@@ -21,6 +21,7 @@ from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
 from pw_protobuf.proto_tree import build_node_tree
 import pw_rpc.ids
+from pw_rpc import codegen
 
 PLUGIN_NAME = 'pw_rpc_codegen'
 PLUGIN_VERSION = '0.1.0'
@@ -59,29 +60,6 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
         output.write_line(f'0x{method_id:08x},  // Hash of "{method.name()}"')
         output.write_line(f'{req_fields},')
         output.write_line(f'{res_fields}),')
-
-
-def _generate_method_lookup_function(output: OutputFile):
-    """Generates a function that gets a Method object from its ID."""
-    nanopb_method = f'{RPC_NAMESPACE}::internal::NanopbMethod'
-
-    output.write_line(
-        f'static constexpr const {nanopb_method}* NanopbMethodFor(')
-    output.write_line('    uint32_t id) {')
-
-    with output.indent():
-        output.write_line('for (auto& method : kMethods) {')
-        with output.indent():
-            output.write_line('if (method.nanopb_method().id() == id) {')
-            output.write_line(
-                f'  return &static_cast<const {nanopb_method}&>(')
-            output.write_line('    method.nanopb_method());')
-            output.write_line('}')
-        output.write_line('}')
-
-        output.write_line('return nullptr;')
-
-    output.write_line('}')
 
 
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
@@ -123,13 +101,11 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
         output.write_line(
             'constexpr void _PwRpcInternalGeneratedBase() const {}')
 
-        output.write_line()
-        _generate_method_lookup_function(output)
-
     service_name_hash = pw_rpc.ids.calculate(service.proto_path())
     output.write_line('\n private:')
 
     with output.indent():
+        output.write_line('friend class ::pw::rpc::internal::MethodLookup;\n')
         output.write_line(f'// Hash of "{service.proto_path()}".')
         output.write_line(
             f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
@@ -146,7 +122,10 @@ def _generate_code_for_service(service: ProtoService, root: ProtoNode,
             for method in service.methods():
                 _generate_method_descriptor(method, output)
 
-        output.write_line('};')
+        output.write_line('};\n')
+
+        # Generate the method lookup table
+        codegen.method_lookup_table(service, output)
 
     output.write_line('};')
 
@@ -242,6 +221,7 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
     output.write_line('#include <type_traits>\n')
+    output.write_line('#include "pw_rpc/internal/method_lookup.h"')
     output.write_line('#include "pw_rpc/internal/nanopb_method_union.h"')
     output.write_line('#include "pw_rpc/nanopb_client_call.h"')
     output.write_line('#include "pw_rpc/server_context.h"')

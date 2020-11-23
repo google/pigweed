@@ -21,6 +21,7 @@
 #include "pw_preprocessor/arguments.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
+#include "pw_rpc/internal/method_lookup.h"
 #include "pw_rpc/internal/nanopb_method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
@@ -121,15 +122,6 @@ class MessageOutput final : public ChannelOutput {
   Status last_status_;
 };
 
-template <typename Service, uint32_t method_id>
-constexpr const internal::NanopbMethod& GetNanopbMethod() {
-  constexpr const internal::NanopbMethod* nanopb_method =
-      GeneratedService<Service>::NanopbMethodFor(method_id);
-  static_assert(nanopb_method != nullptr,
-                "The selected function is not an RPC service method");
-  return *nanopb_method;
-}
-
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
           auto method,
@@ -142,14 +134,16 @@ struct InvocationContext {
 
   template <typename... Args>
   InvocationContext(Args&&... args)
-      : output(GetNanopbMethod<Service, method_id>(), responses, buffer),
+      : output(MethodLookup::GetNanopbMethod<Service, method_id>(),
+               responses,
+               buffer),
         channel(Channel::Create<123>(&output)),
         server(std::span(&channel, 1)),
         service(std::forward<Args>(args)...),
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
-             GetNanopbMethod<Service, method_id>()) {}
+             MethodLookup::GetNanopbMethod<Service, method_id>()) {}
 
   MessageOutput<Response> output;
 
@@ -175,6 +169,8 @@ class UnaryContext {
 
   template <typename... Args>
   UnaryContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
+
+  Service& service() { return ctx_.service; }
 
   // Invokes the RPC with the provided request. Returns the status.
   Status call(const Request& request) {
@@ -209,6 +205,8 @@ class ServerStreamingContext {
 
   template <typename... Args>
   ServerStreamingContext(Args&&... args) : ctx_(std::forward<Args>(args)...) {}
+
+  Service& service() { return ctx_.service; }
 
   // Invokes the RPC with the provided request.
   void call(const Request& request) {

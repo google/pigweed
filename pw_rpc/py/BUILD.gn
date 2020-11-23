@@ -22,6 +22,7 @@ pw_python_package("py") {
     "pw_rpc/__init__.py",
     "pw_rpc/callback_client.py",
     "pw_rpc/client.py",
+    "pw_rpc/codegen.py",
     "pw_rpc/codegen_nanopb.py",
     "pw_rpc/codegen_raw.py",
     "pw_rpc/descriptors.py",
