@@ -604,26 +604,18 @@ The Method class
 ^^^^^^^^^^^^^^^^
 The RPC Server depends on the ``pw::rpc::internal::Method`` class. ``Method``
 serves as the bridge between the ``pw_rpc`` server library and the user-defined
-RPC functions. ``Method`` takes an RPC packet, decodes it using a protobuf
-library (if applicable), and calls the RPC function. Since ``Method`` interacts
-directly with the protobuf library, it must be implemented separately for each
-protobuf library.
+RPC functions. Each supported protobuf implementation extends ``Method`` to
+implement its request and response proto handling. The ``pw_rpc`` server
+calls into the ``Method`` implementation through the base class's ``Invoke``
+function.
 
-``pw::rpc::internal::Method`` is not implemented as a facade with different
-backends. Instead, there is a separate instance of the ``pw_rpc`` server library
-for each ``Method`` implementation. There are a few reasons for this.
+``Method`` implementations store metadata about each method, including a
+function pointer to the user-defined method implementation. They also provide
+``static constexpr`` functions for creating each type of method. ``Method``
+implementations must satisfy the ``MethodImplTester`` test class in
+``pw_rpc_private/method_impl_tester.h``.
 
-* ``Method`` is entirely internal to ``pw_rpc``. Users will never implement a
-  custom backend. Exposing a facade would unnecessarily expose implementation
-  details and make ``pw_rpc`` more difficult to use.
-* There is no common interface between ``pw_rpc`` / ``Method`` implementations.
-  It's not possible to swap between e.g. a Nanopb and a ``pw_protobuf`` RPC
-  server because the interface for the user-implemented RPCs changes completely.
-  This nullifies the primary benefit of facades.
-* The different ``Method`` implementations can be built easily alongside one
-  another in a cross-platform way. This makes testing simpler, since the tests
-  build with any backend configuration. Users can select which ``Method``
-  implementation to use simply by depending on the corresponding server library.
+See ``pw_rpc/internal/method.h`` for more details about ``Method``.
 
 Packet flow
 ^^^^^^^^^^^

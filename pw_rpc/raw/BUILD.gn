@@ -40,20 +40,11 @@ pw_source_set("method_union") {
   public_deps = [ ":method" ]
 }
 
-pw_source_set("service_method_traits") {
-  public_configs = [ ":public" ]
-  public = [ "public/pw_rpc/internal/raw_service_method_traits.h" ]
-  public_deps = [
-    ":method_union",
-    "..:service_method_traits",
-  ]
-}
-
 pw_source_set("test_method_context") {
   public_configs = [ ":public" ]
   public = [ "public/pw_rpc/raw_test_method_context.h" ]
   public_deps = [
-    ":service_method_traits",
+    ":method",
     dir_pw_assert,
     dir_pw_containers,
   ]
@@ -79,8 +70,10 @@ pw_test("codegen_test") {
 
 pw_test("raw_method_test") {
   deps = [
+    ":method",
     ":method_union",
     "..:test_protos.pwpb",
+    "..:test_protos.raw_rpc",
     "..:test_utils",
     dir_pw_protobuf,
   ]

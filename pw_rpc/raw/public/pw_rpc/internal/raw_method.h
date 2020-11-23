@@ -49,25 +49,32 @@ namespace internal {
 class RawMethod : public Method {
  public:
   template <auto method>
-  constexpr static RawMethod Unary(uint32_t id) {
-    return RawMethod(
-        id,
-        UnaryInvoker,
-        {.unary = [](ServerCall& call, ConstByteSpan req, ByteSpan res) {
-          return method(call, req, res);
-        }});
+  static constexpr bool matches() {
+    return std::is_same_v<MethodImplementation<method>, RawMethod>;
   }
 
   template <auto method>
-  constexpr static RawMethod ServerStreaming(uint32_t id) {
-    return RawMethod(id,
-                     ServerStreamingInvoker,
-                     Function{.server_streaming = [](ServerCall& call,
-                                                     ConstByteSpan req,
-                                                     BaseServerWriter& writer) {
-                       method(call, req, static_cast<RawServerWriter&>(writer));
-                     }});
+  static constexpr RawMethod Unary(uint32_t id) {
+    constexpr UnaryFunction wrapper =
+        [](ServerCall& call, ConstByteSpan req, ByteSpan res) {
+          return CallMethodImplFunction<method>(call, req, res);
+        };
+    return RawMethod(id, UnaryInvoker, Function{.unary = wrapper});
   }
+
+  template <auto method>
+  static constexpr RawMethod ServerStreaming(uint32_t id) {
+    constexpr ServerStreamingFunction wrapper =
+        [](ServerCall& call, ConstByteSpan request, BaseServerWriter& writer) {
+          CallMethodImplFunction<method>(
+              call, request, static_cast<RawServerWriter&>(writer));
+        };
+    return RawMethod(
+        id, ServerStreamingInvoker, Function{.server_streaming = wrapper});
+  }
+
+  // Represents an invalid method. Used to reduce error message verbosity.
+  static constexpr RawMethod Invalid() { return {0, InvalidInvoker, {}}; }
 
  private:
   using UnaryFunction = StatusWithSize (*)(ServerCall&,
@@ -103,6 +110,39 @@ class RawMethod : public Method {
 
   // Stores the user-defined RPC in a generic wrapper.
   Function function_;
+};
+
+// MethodTraits specialization for a static raw unary method.
+template <>
+struct MethodTraits<StatusWithSize (*)(
+    ServerContext&, ConstByteSpan, ByteSpan)> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kUnary;
+};
+
+// MethodTraits specialization for a raw unary method.
+template <typename T>
+struct MethodTraits<StatusWithSize (T::*)(
+    ServerContext&, ConstByteSpan, ByteSpan)> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kUnary;
+  using Service = T;
+};
+
+// MethodTraits specialization for a static raw server streaming method.
+template <>
+struct MethodTraits<void (*)(ServerContext&, ConstByteSpan, RawServerWriter&)> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kServerStreaming;
+};
+
+// MethodTraits specialization for a raw server streaming method.
+template <typename T>
+struct MethodTraits<void (T::*)(
+    ServerContext&, ConstByteSpan, RawServerWriter&)> {
+  using Implementation = RawMethod;
+  static constexpr MethodType kType = MethodType::kServerStreaming;
+  using Service = T;
 };
 
 }  // namespace internal

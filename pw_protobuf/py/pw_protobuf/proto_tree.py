@@ -324,10 +324,14 @@ class ProtoMessageField:
 class ProtoServiceMethod:
     """A method defined in a protobuf service."""
     class Type(enum.Enum):
-        UNARY = 0
-        SERVER_STREAMING = 1
-        CLIENT_STREAMING = 2
-        BIDIRECTIONAL_STREAMING = 3
+        UNARY = 'kUnary'
+        SERVER_STREAMING = 'kServerStreaming'
+        CLIENT_STREAMING = 'kClientStreaming'
+        BIDIRECTIONAL_STREAMING = 'kBidirectionalStreaming'
+
+        def cc_enum(self) -> str:
+            """Returns the pw_rpc MethodType C++ enum for this method type."""
+            return '::pw::rpc::internal::MethodType::' + self.value
 
     def __init__(self, name: str, method_type: Type, request_type: ProtoNode,
                  response_type: ProtoNode):

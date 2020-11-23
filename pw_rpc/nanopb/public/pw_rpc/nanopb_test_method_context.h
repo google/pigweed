@@ -22,7 +22,6 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/hash.h"
 #include "pw_rpc/internal/nanopb_method.h"
-#include "pw_rpc/internal/nanopb_service_method_traits.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
 
@@ -71,12 +70,13 @@ namespace pw::rpc {
 //   PW_NANOPB_TEST_METHOD_CONTEXT(MyService, BestMethod, 3, 256) context;
 //   ASSERT_EQ(3u, context.responses().max_size());
 //
-
 #define PW_NANOPB_TEST_METHOD_CONTEXT(service, method, ...)              \
-  ::pw::rpc::NanopbTestMethodContext<&service::method,                   \
+  ::pw::rpc::NanopbTestMethodContext<service,                            \
+                                     &service::method,                   \
                                      ::pw::rpc::internal::Hash(#method), \
                                      ##__VA_ARGS__>
-template <auto method,
+template <typename Service,
+          auto method,
           uint32_t method_id,
           size_t max_responses = 4,
           size_t output_size_bytes = 128>
@@ -121,8 +121,18 @@ class MessageOutput final : public ChannelOutput {
   Status last_status_;
 };
 
+template <typename Service, uint32_t method_id>
+constexpr const internal::NanopbMethod& GetNanopbMethod() {
+  constexpr const internal::NanopbMethod* nanopb_method =
+      GeneratedService<Service>::NanopbMethodFor(method_id);
+  static_assert(nanopb_method != nullptr,
+                "The selected function is not an RPC service method");
+  return *nanopb_method;
+}
+
 // Collects everything needed to invoke a particular RPC.
-template <auto method,
+template <typename Service,
+          auto method,
           uint32_t method_id,
           size_t max_responses,
           size_t output_size>
@@ -132,22 +142,20 @@ struct InvocationContext {
 
   template <typename... Args>
   InvocationContext(Args&&... args)
-      : output(NanopbServiceMethodTraits<method, method_id>::method(),
-               responses,
-               buffer),
+      : output(GetNanopbMethod<Service, method_id>(), responses, buffer),
         channel(Channel::Create<123>(&output)),
         server(std::span(&channel, 1)),
         service(std::forward<Args>(args)...),
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
-             NanopbServiceMethodTraits<method, method_id>::method()) {}
+             GetNanopbMethod<Service, method_id>()) {}
 
   MessageOutput<Response> output;
 
   rpc::Channel channel;
   rpc::Server server;
-  typename NanopbServiceMethodTraits<method, method_id>::Service service;
+  Service service;
   Vector<Response, max_responses> responses;
   std::array<std::byte, output_size> buffer = {};
 
@@ -156,10 +164,10 @@ struct InvocationContext {
 
 // Method invocation context for a unary RPC. Returns the status in call() and
 // provides the response through the response() method.
-template <auto method, uint32_t method_id, size_t output_size>
+template <typename Service, auto method, uint32_t method_id, size_t output_size>
 class UnaryContext {
  private:
-  InvocationContext<method, method_id, 1, output_size> ctx_;
+  InvocationContext<Service, method, method_id, 1, output_size> ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -173,8 +181,8 @@ class UnaryContext {
     ctx_.output.clear();
     ctx_.responses.emplace_back();
     ctx_.responses.back() = {};
-    return (ctx_.service.*method)(
-        ctx_.call.context(), request, ctx_.responses.back());
+    return CallMethodImplFunction<method>(
+        ctx_.call, request, ctx_.responses.back());
   }
 
   // Gives access to the RPC's response.
@@ -185,13 +193,15 @@ class UnaryContext {
 };
 
 // Method invocation context for a server streaming RPC.
-template <auto method,
+template <typename Service,
+          auto method,
           uint32_t method_id,
           size_t max_responses,
           size_t output_size>
 class ServerStreamingContext {
  private:
-  InvocationContext<method, method_id, max_responses, output_size> ctx_;
+  InvocationContext<Service, method, method_id, max_responses, output_size>
+      ctx_;
 
  public:
   using Request = typename decltype(ctx_)::Request;
@@ -204,8 +214,8 @@ class ServerStreamingContext {
   void call(const Request& request) {
     ctx_.output.clear();
     internal::BaseServerWriter server_writer(ctx_.call);
-    return (ctx_.service.*method)(
-        ctx_.call.context(),
+    return CallMethodImplFunction<method>(
+        ctx_.call,
         request,
         static_cast<ServerWriter<Response>&>(server_writer));
   }
@@ -239,11 +249,19 @@ class ServerStreamingContext {
 
 // Alias to select the type of the context object to use based on which type of
 // RPC it is for.
-template <auto method, uint32_t method_id, size_t responses, size_t output_size>
+template <typename Service,
+          auto method,
+          uint32_t method_id,
+          size_t responses,
+          size_t output_size>
 using Context = std::tuple_element_t<
-    static_cast<size_t>(internal::RpcTraits<decltype(method)>::kType),
-    std::tuple<UnaryContext<method, method_id, output_size>,
-               ServerStreamingContext<method, method_id, responses, output_size>
+    static_cast<size_t>(internal::MethodTraits<decltype(method)>::kType),
+    std::tuple<UnaryContext<Service, method, method_id, output_size>,
+               ServerStreamingContext<Service,
+                                      method,
+                                      method_id,
+                                      responses,
+                                      output_size>
                // TODO(hepler): Support client and bidi streaming
                >>;
 
@@ -290,20 +308,27 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(
 
 }  // namespace internal::test::nanopb
 
-template <auto method,
+template <typename Service,
+          auto method,
           uint32_t method_id,
           size_t max_responses,
           size_t output_size_bytes>
 class NanopbTestMethodContext
-    : public internal::test::nanopb::
-          Context<method, method_id, max_responses, output_size_bytes> {
+    : public internal::test::nanopb::Context<Service,
+                                             method,
+                                             method_id,
+                                             max_responses,
+                                             output_size_bytes> {
  public:
   // Forwards constructor arguments to the service class.
   template <typename... ServiceArgs>
   NanopbTestMethodContext(ServiceArgs&&... service_args)
-      : internal::test::nanopb::
-            Context<method, method_id, max_responses, output_size_bytes>(
-                std::forward<ServiceArgs>(service_args)...) {}
+      : internal::test::nanopb::Context<Service,
+                                        method,
+                                        method_id,
+                                        max_responses,
+                                        output_size_bytes>(
+            std::forward<ServiceArgs>(service_args)...) {}
 };
 
 }  // namespace pw::rpc

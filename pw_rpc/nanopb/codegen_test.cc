@@ -31,9 +31,10 @@ class TestService final : public generated::TestService<TestService> {
     return static_cast<Status::Code>(request.status_code);
   }
 
-  void TestStreamRpc(ServerContext&,
-                     const pw_rpc_test_TestRequest& request,
-                     ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
+  static void TestStreamRpc(
+      ServerContext&,
+      const pw_rpc_test_TestRequest& request,
+      ServerWriter<pw_rpc_test_TestStreamResponse>& writer) {
     for (int i = 0; i < request.integer; ++i) {
       writer.Write({.chunk = {}, .number = static_cast<uint32_t>(i)});
     }

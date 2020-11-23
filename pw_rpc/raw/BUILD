@@ -33,7 +33,7 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
         "//pw_rpc:server",
-    ]
+    ],
 )
 
 pw_cc_library(
@@ -43,18 +43,7 @@ pw_cc_library(
     ],
     deps = [
         ":method",
-    ]
-)
-
-pw_cc_library(
-    name = "service_method_traits",
-    hdrs = [
-        "public/pw_rpc/internal/raw_service_method_traits.h",
     ],
-    deps = [
-        ":method_union",
-        "//pw_rpc:service_method_traits",
-    ]
 )
 
 pw_cc_library(
@@ -66,7 +55,7 @@ pw_cc_library(
         ":method_union",
         "//pw_assert",
         "//pw_containers",
-    ]
+    ],
 )
 
 pw_cc_test(

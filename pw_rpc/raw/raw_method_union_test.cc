@@ -34,9 +34,10 @@ class FakeGeneratedService : public Service {
   constexpr FakeGeneratedService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<RawMethodUnion, 3> kMethods = {
-      GetRawMethodFor<&Implementation::DoNothing>(10u),
-      GetRawMethodFor<&Implementation::AddFive>(11u),
-      GetRawMethodFor<&Implementation::StartStream>(12u),
+      GetRawMethodFor<&Implementation::DoNothing, MethodType::kUnary>(10u),
+      GetRawMethodFor<&Implementation::AddFive, MethodType::kUnary>(11u),
+      GetRawMethodFor<&Implementation::StartStream,
+                      MethodType::kServerStreaming>(12u),
   };
 };
 

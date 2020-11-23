@@ -14,8 +14,10 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 #include "pw_rpc/internal/method.h"
+#include "pw_rpc/internal/method_type.h"
 
 namespace pw::rpc::internal {
 
@@ -26,44 +28,6 @@ class MethodUnion {
  public:
   constexpr const Method& method() const;
 };
-
-// Templated false value for use in static_assert(false) statements.
-template <typename...>
-constexpr std::false_type kFalse{};
-
-// Traits struct that determines the type of an RPC service method from its
-// signature. Derived MethodUnions should provide specializations for their
-// method types.
-template <typename Method>
-struct MethodTraits {
-  static_assert(kFalse<Method>,
-                "The selected function is not an RPC service method");
-
-  // Specializations must set Implementation as an alias for their method
-  // implementation class.
-  using Implementation = Method;
-
-  // Specializations must set Service as an alias to the implemented service
-  // class.
-  using Service = rpc::Service;
-};
-
-template <auto method>
-using MethodImplementation =
-    typename MethodTraits<decltype(method)>::Implementation;
-
-template <auto method>
-using MethodService = typename MethodTraits<decltype(method)>::Service;
-
-// Identifies a base class from a member function it defines. This should be
-// used with decltype to retrieve the base class.
-template <typename T, typename U>
-T BaseFromMember(U T::*);
-
-// The base generated service of an implemented RPC method.
-template <auto method>
-using MethodBaseService = decltype(
-    BaseFromMember(&MethodService<method>::_PwRpcInternalGeneratedBase));
 
 class CoreMethodUnion : public MethodUnion {
  public:
@@ -82,6 +46,86 @@ constexpr const Method& MethodUnion::method() const {
   // derivatives, CoreMethodUnion is used to extract a generic Method from the
   // specific implementation.
   return static_cast<const CoreMethodUnion*>(this)->method();
+}
+
+// Templated false value for use in static_assert(false) statements.
+template <typename...>
+constexpr std::false_type kCheckMethodSignature{};
+
+// In static_assert messages, use newlines in GCC since it displays them
+// correctly. Clang displays \n, which is not helpful.
+#ifdef __clang__
+#define _PW_RPC_FORMAT_ERROR_MESSAGE(msg, signature) msg " " signature
+#else
+#define _PW_RPC_FORMAT_ERROR_MESSAGE(msg, signature) \
+  "\n" msg "\n\n    " signature "\n"
+#endif  // __clang__
+
+#define _PW_RPC_FUNCTION_ERROR(type, return_type, args)                   \
+  _PW_RPC_FORMAT_ERROR_MESSAGE(                                           \
+      "This RPC is a " type                                               \
+      " RPC, but its function signature is not correct. The function "    \
+      "signature is determined by the protobuf library in use, but " type \
+      " RPC implementations generally take the form:",                    \
+      return_type " MethodName(ServerContext&, " args ")")
+
+// This function is called if an RPC method implementation's signature is not
+// correct. It triggers a static_assert with an error message tailored to the
+// expected RPC type.
+template <auto method,
+          MethodType expected,
+          typename InvalidImpl = MethodImplementation<method>>
+constexpr auto InvalidMethod(uint32_t) {
+  if constexpr (expected == MethodType::kUnary) {
+    static_assert(
+        kCheckMethodSignature<decltype(method)>,
+        _PW_RPC_FUNCTION_ERROR("unary", "Status", "Request, Response"));
+  } else if constexpr (expected == MethodType::kServerStreaming) {
+    static_assert(
+        kCheckMethodSignature<decltype(method)>,
+        _PW_RPC_FUNCTION_ERROR(
+            "server streaming", "void", "Request, ServerWriter<Response>&"));
+  } else if constexpr (expected == MethodType::kClientStreaming) {
+    static_assert(
+        kCheckMethodSignature<decltype(method)>,
+        _PW_RPC_FUNCTION_ERROR(
+            "client streaming", "Status", "ServerReader<Request>&, Response"));
+  } else if constexpr (expected == MethodType::kBidirectionalStreaming) {
+    static_assert(kCheckMethodSignature<decltype(method)>,
+                  _PW_RPC_FUNCTION_ERROR(
+                      "bidirectional streaming",
+                      "void",
+                      "ServerReader<Request>&, ServerWriter<Response>&"));
+  } else {
+    static_assert(kCheckMethodSignature<decltype(method)>,
+                  "Unsupported MethodType");
+  }
+  return InvalidImpl::Invalid();
+}
+
+#undef _PW_RPC_FORMAT_ERROR_MESSAGE
+#undef _PW_RPC_FUNCTION_ERROR
+
+// This function checks the type of the method and calls the appropriate
+// function to create the method instance.
+template <auto method, typename MethodImpl, MethodType type, typename... Args>
+constexpr auto GetMethodFor(uint32_t id, Args&&... args) {
+  if constexpr (MethodTraits<decltype(method)>::kType != type) {
+    return InvalidMethod<method, type>(id);
+  } else if constexpr (type == MethodType::kUnary) {
+    return MethodImpl::template Unary<method>(id, std::forward<Args>(args)...);
+  } else if constexpr (type == MethodType::kServerStreaming) {
+    return MethodImpl::template ServerStreaming<method>(
+        id, std::forward<Args>(args)...);
+  } else if constexpr (type == MethodType::kClientStreaming) {
+    return MethodImpl::template ClientStreaming<method>(
+        id, std::forward<Args>(args)...);
+  } else if constexpr (type == MethodType::kBidirectionalStreaming) {
+    return MethodImpl::template BidirectionalStreaming<method>(
+        id, std::forward<Args>(args)...);
+  } else {
+    static_assert(kCheckMethodSignature<MethodImpl>, "Invalid MethodType");
+  }
 }
 
 }  // namespace pw::rpc::internal

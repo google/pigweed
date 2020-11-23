@@ -24,9 +24,9 @@ namespace test {
 
 class TestService final : public generated::TestService<TestService> {
  public:
-  StatusWithSize TestRpc(ServerContext&,
-                         ConstByteSpan request,
-                         ByteSpan response) {
+  static StatusWithSize TestRpc(ServerContext&,
+                                ConstByteSpan request,
+                                ByteSpan response) {
     int64_t integer;
     Status status;
     DecodeRequest(request, integer, status);
@@ -57,7 +57,9 @@ class TestService final : public generated::TestService<TestService> {
   }
 
  private:
-  void DecodeRequest(ConstByteSpan request, int64_t& integer, Status& status) {
+  static void DecodeRequest(ConstByteSpan request,
+                            int64_t& integer,
+                            Status& status) {
     protobuf::Decoder decoder(request);
 
     while (decoder.Next().ok()) {

@@ -53,7 +53,9 @@ void DecodeRawTestRequest(ConstByteSpan request) {
   }
 };
 
-StatusWithSize AddFive(ServerCall&, ConstByteSpan request, ByteSpan response) {
+StatusWithSize AddFive(ServerContext&,
+                       ConstByteSpan request,
+                       ByteSpan response) {
   DecodeRawTestRequest(request);
 
   protobuf::NestedEncoder encoder(response);
@@ -65,7 +67,9 @@ StatusWithSize AddFive(ServerCall&, ConstByteSpan request, ByteSpan response) {
   return StatusWithSize::Unauthenticated(payload.size());
 }
 
-void StartStream(ServerCall&, ConstByteSpan request, RawServerWriter& writer) {
+void StartStream(ServerContext&,
+                 ConstByteSpan request,
+                 RawServerWriter& writer) {
   DecodeRawTestRequest(request);
   last_writer = std::move(writer);
 }

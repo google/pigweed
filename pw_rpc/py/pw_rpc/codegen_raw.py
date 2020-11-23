@@ -44,7 +44,8 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
     impl_method = f'&Implementation::{method.name()}'
 
     output.write_line(
-        f'{RPC_NAMESPACE}::internal::GetRawMethodFor<{impl_method}>(')
+        f'{RPC_NAMESPACE}::internal::GetRawMethodFor<{impl_method}, '
+        f'{method.type().cc_enum()}>(')
     output.write_line(f'    0x{method_id:08x}),  // Hash of "{method.name()}"')
 
 

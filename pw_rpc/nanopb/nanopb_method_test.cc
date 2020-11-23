@@ -32,7 +32,7 @@ using std::byte;
 pw_rpc_test_TestRequest last_request;
 ServerWriter<pw_rpc_test_TestResponse> last_writer;
 
-Status AddFive(ServerCall&,
+Status AddFive(ServerContext&,
                const pw_rpc_test_TestRequest& request,
                pw_rpc_test_TestResponse& response) {
   last_request = request;
@@ -40,11 +40,11 @@ Status AddFive(ServerCall&,
   return Status::Unauthenticated();
 }
 
-Status DoNothing(ServerCall&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
+Status DoNothing(ServerContext&, const pw_rpc_test_Empty&, pw_rpc_test_Empty&) {
   return Status::Unknown();
 }
 
-void StartStream(ServerCall&,
+void StartStream(ServerContext&,
                  const pw_rpc_test_TestRequest& request,
                  ServerWriter<pw_rpc_test_TestResponse>& writer) {
   last_request = request;
