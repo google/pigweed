@@ -12,19 +12,40 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Rebuild every time a file is changed."""
+"""Watch files for changes and rebuild.
+
+pw watch runs Ninja in a build directory when source files change. It works with
+any Ninja project (GN or CMake).
+
+Usage examples:
+
+  # Find a build directory and build the default target
+  pw watch
+
+  # Find a build directory and build the stm32f429i target
+  pw watch python.lint stm32f429i
+
+  # Build pw_run_tests.modules in the out/cmake directory
+  pw watch -C out/cmake pw_run_tests.modules
+
+  # Build the default target in out/ and pw_apps in out/cmake
+  pw watch -C out -C out/cmake pw_apps
+
+  # Find a directory and build python.tests, and build pw_apps in out/cmake
+  pw watch python.tests -C out/cmake pw_apps
+"""
 
 import argparse
 from dataclasses import dataclass
-import glob
 import logging
 import os
-import pathlib
+from pathlib import Path
 import shlex
 import subprocess
 import sys
 import threading
-from typing import List, NamedTuple, Optional, Sequence, Tuple
+from typing import (Iterable, List, NamedTuple, NoReturn, Optional, Sequence,
+                    Tuple)
 
 from watchdog.events import FileSystemEventHandler  # type: ignore
 from watchdog.observers import Observer  # type: ignore
@@ -68,8 +89,8 @@ _FAIL_MESSAGE = """
 # TODO(keir): Figure out a better strategy for exiting. The problem with the
 # watcher is that doing a "clean exit" is slow. However, by directly exiting,
 # we remove the possibility of the wrapper script doing anything on exit.
-def _die(*args):
-    _LOG.fatal(*args)
+def _die(*args) -> NoReturn:
+    _LOG.critical(*args)
     sys.exit(1)
 
 
@@ -87,7 +108,7 @@ _EMOJI_CHARSET = WatchCharset('✔️ ', '💥')
 
 @dataclass(frozen=True)
 class BuildCommand:
-    build_dir: pathlib.Path
+    build_dir: Path
     targets: Tuple[str, ...] = ()
 
     def args(self) -> Tuple[str, ...]:
@@ -143,14 +164,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
     def path_matches(self, raw_path):
         """Returns true if path matches according to the watcher patterns"""
-        modified_path = pathlib.Path(raw_path).resolve()
+        modified_path = Path(raw_path).resolve()
 
         # Check for modifications inside the ignore directories, and skip them.
         # Ideally these events would never hit the watcher, but selectively
         # watching directories at the OS level is not trivial due to limitations
         # of the watchdog module.
         for ignore_dir in self.ignore_dirs:
-            resolved_ignore_dir = pathlib.Path(ignore_dir).resolve()
+            resolved_ignore_dir = Path(ignore_dir).resolve()
             try:
                 modified_path.relative_to(resolved_ignore_dir)
                 # If no ValueError is raised by the .relative_to() call, then
@@ -247,7 +268,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Implementation of DebouncedFunction.cancel()
     def cancel(self):
         if self.restart_on_changes:
-            self._current_build.terminate()
+            self._current_build.kill()
             return True
 
         return False
@@ -320,41 +341,48 @@ _WATCH_PATTERNS = (
 )
 
 
-def add_parser_arguments(parser):
+def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
+    """Sets up an argument parser for pw watch."""
     parser.add_argument('--patterns',
                         help=(_WATCH_PATTERN_DELIMITER +
                               '-delimited list of globs to '
                               'watch to trigger recompile'),
                         default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
     parser.add_argument('--ignore_patterns',
+                        dest='ignore_patterns_string',
                         help=(_WATCH_PATTERN_DELIMITER +
                               '-delimited list of globs to '
                               'ignore events from'))
 
     parser.add_argument('--exclude_list',
                         nargs='+',
+                        type=Path,
                         help=('directories to ignore during pw watch'),
                         default=[])
     parser.add_argument('--restart',
                         action='store_true',
                         help='restart an ongoing build if files change')
     parser.add_argument(
-        'build_targets',
+        'default_build_targets',
         nargs='*',
+        metavar='target',
         default=[],
-        help=('A Ninja directory to build, followed by specific targets to '
-              'build. For example, `out host docs` builds the `host` and '
-              '`docs` Ninja targets in the `out` directory. To build '
-              'additional directories, use `--build-directory`.'))
-
+        help=('Automatically locate a build directory and build these '
+              'targets. For example, `host docs` searches for a Ninja '
+              'build directory (starting with out/) and builds the '
+              '`host` and `docs` targets. To specify one or more '
+              'directories, ust the -C / --build_directory option.'))
     parser.add_argument(
-        '--build-directory',
+        '-C',
+        '--build_directory',
+        dest='build_directories',
         nargs='+',
         action='append',
         default=[],
-        metavar=('dir', 'target'),
-        help=('Allows additional build directories to be specified. Uses the '
-              'same syntax as `build_targets`.'))
+        metavar=('directory', 'target'),
+        help=('Specify a build directory and optionally targets to '
+              'build. `pw watch -C out tgt` is equivalent to `ninja '
+              '-C out tgt`'))
 
 
 def _exit(code):
@@ -400,64 +428,55 @@ def _exit_due_to_pigweed_not_installed():
     _exit(1)
 
 
-def is_subdirectory(child, parent):
-    return (pathlib.Path(parent).resolve()
-            in pathlib.Path(pathlib.Path(child).resolve()).parents)
-
-
 # Go over each directory inside of the current directory.
 # If it is not on the path of elements in directories_to_exclude, add
 # (directory, True) to subdirectories_to_watch and later recursively call
 # Observer() on them.
 # Otherwise add (directory, False) to subdirectories_to_watch and later call
 # Observer() with recursion=False.
-def minimal_watch_directories(directory_to_watch, directories_to_exclude):
+def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
     """Determine which subdirectory to watch recursively"""
     try:
-        cur_dir = pathlib.Path(directory_to_watch)
+        to_watch = Path(to_watch)
     except TypeError:
         assert False, "Please watch one directory at a time."
-    subdirectories_to_watch = []
 
-    # Reformat directories_to_exclude.
-    directories_to_exclude = [
-        pathlib.Path(cur_dir, directory_to_exclude)
-        for directory_to_exclude in directories_to_exclude
-        if pathlib.Path(cur_dir, directory_to_exclude).is_dir()
+    # Reformat to_exclude.
+    directories_to_exclude: List[Path] = [
+        to_watch.joinpath(directory_to_exclude)
+        for directory_to_exclude in to_exclude
+        if to_watch.joinpath(directory_to_exclude).is_dir()
     ]
 
-    # Split the relative path of directories_to_exclude (compared to
-    # directory_to_watch), and generate all parent paths needed to be
-    # watched without recursion.
-    exclude_dir_parents = {cur_dir}
+    # Split the relative path of directories_to_exclude (compared to to_watch),
+    # and generate all parent paths needed to be watched without recursion.
+    exclude_dir_parents = {to_watch}
     for directory_to_exclude in directories_to_exclude:
         parts = list(
-            pathlib.Path(directory_to_exclude).relative_to(cur_dir).parts)[:-1]
-        dir_tmp = cur_dir
+            Path(directory_to_exclude).relative_to(to_watch).parts)[:-1]
+        dir_tmp = to_watch
         for part in parts:
-            dir_tmp = pathlib.Path(dir_tmp, part)
+            dir_tmp = Path(dir_tmp, part)
             exclude_dir_parents.add(dir_tmp)
 
     # Go over all layers of directory. Append those that are the parents of
     # directories_to_exclude to the list with recursion==False, and others
     # with recursion==True.
     for directory in exclude_dir_parents:
-        dir_path = pathlib.Path(directory)
-        subdirectories_to_watch.append((dir_path, False))
-        for item in pathlib.Path(directory).iterdir():
+        dir_path = Path(directory)
+        yield dir_path, False
+        for item in Path(directory).iterdir():
             if (item.is_dir() and item not in exclude_dir_parents
                     and item not in directories_to_exclude):
-                subdirectories_to_watch.append((item, True))
-
-    return subdirectories_to_watch
+                yield item, True
 
 
 def gitignore_patterns():
     """Load patterns in pw_root_dir/.gitignore and return as [str]"""
-    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+    pw_root_dir = Path(os.environ['PW_ROOT'])
 
     # Get top level .gitignore entries
-    gitignore_path = pw_root_dir / pathlib.Path('.gitignore')
+    gitignore_path = pw_root_dir / Path('.gitignore')
     if gitignore_path.exists():
         for line in gitignore_path.read_text().splitlines():
             globname = line.strip()
@@ -467,12 +486,12 @@ def gitignore_patterns():
             yield line
 
 
-def get_common_excludes():
+def get_common_excludes() -> List[Path]:
     """Find commonly excluded directories, and return them as a [Path]"""
-    exclude_list = []
+    exclude_list: List[Path] = []
 
     # Preset exclude list for Pigweed's upstream directories.
-    pw_root_dir = pathlib.Path(os.environ['PW_ROOT'])
+    pw_root_dir = Path(os.environ['PW_ROOT'])
     exclude_list.extend([
         pw_root_dir / ignored_directory for ignored_directory in [
             '.environment',  # Bootstrap-created CIPD and Python venv.
@@ -489,9 +508,8 @@ def get_common_excludes():
     # By convention, Pigweed projects use "out" as a build directory, so if
     # watch is invoked outside the Pigweed root, also ignore the local out
     # directory.
-    cur_dir = pathlib.Path.cwd()
-    if cur_dir != pw_root_dir:
-        exclude_list.append(cur_dir / 'out')
+    if Path.cwd() != pw_root_dir:
+        exclude_list.append(Path('out'))
 
     # Check for and warn about legacy directories.
     legacy_directories = [
@@ -513,55 +531,52 @@ def get_common_excludes():
     return exclude_list
 
 
-def watch(build_targets, build_directory, patterns, ignore_patterns,
-          exclude_list, restart: bool):
-    """TODO(keir) docstring"""
+def _find_build_dir(default_build_dir: Path = Path('out')) -> Optional[Path]:
+    """Searches for a build directory, returning the first it finds."""
+    # Give priority to out/, then something under out/.
+    if default_build_dir.joinpath('build.ninja').exists():
+        return default_build_dir
 
+    for path in default_build_dir.glob('**/build.ninja'):
+        return path.parent
+
+    for path in Path.cwd().glob('**/build.ninja'):
+        return path.parent
+
+    return None
+
+
+def watch(default_build_targets: List[str], build_directories: List[str],
+          patterns: str, ignore_patterns_string: str, exclude_list: List[Path],
+          restart: bool):
+    """Watches files and runs Ninja commands when they change."""
     _LOG.info('Starting Pigweed build watcher')
 
     # Get pigweed directory information from environment variable PW_ROOT.
     if os.environ['PW_ROOT'] is None:
         _exit_due_to_pigweed_not_installed()
-    path_of_pigweed = pathlib.Path(os.environ['PW_ROOT'])
-    cur_dir = pathlib.Path.cwd()
-    if (not (is_subdirectory(path_of_pigweed, cur_dir)
-             or path_of_pigweed == cur_dir)):
+    pw_root = Path(os.environ['PW_ROOT']).resolve()
+    if Path.cwd().resolve() not in [pw_root, *pw_root.parents]:
         _exit_due_to_pigweed_not_installed()
 
     # Preset exclude list for pigweed directory.
     exclude_list += get_common_excludes()
 
-    subdirectories_to_watch = minimal_watch_directories(cur_dir, exclude_list)
+    build_commands = [
+        BuildCommand(Path(build_dir[0]), tuple(build_dir[1:]))
+        for build_dir in build_directories
+    ]
 
-    # If no build directory was specified, search the tree for GN build
-    # directories and try to build them all. In the future this may cause
-    # slow startup, but for now this is fast enough.
-    build_commands = []
-    if not build_targets and not build_directory:
-        _LOG.info('Searching for GN build dirs...')
-        gn_args_files = []
-        if os.path.isfile('out/args.gn'):
-            gn_args_files += ['out/args.gn']
-        gn_args_files += glob.glob('out/*/args.gn')
+    # If no build directory was specified, search the tree for a build.ninja.
+    if default_build_targets or not build_directories:
+        build_dir = _find_build_dir()
 
-        for gn_args_file in gn_args_files:
-            gn_build_dir = pathlib.Path(gn_args_file).parent
-            gn_build_dir = gn_build_dir.resolve().relative_to(cur_dir)
-            if gn_build_dir.is_dir():
-                build_commands.append(BuildCommand(gn_build_dir))
-    else:
-        if build_targets:
-            build_directory.append(build_targets)
-        # Reformat the directory of build commands to be relative to the
-        # currently directory.
-        for build_target in build_directory:
-            build_commands.append(
-                BuildCommand(pathlib.Path(build_target[0]),
-                             tuple(build_target[1:])))
+        # Make sure we found something; if not, bail.
+        if build_dir is None:
+            _die("No build dirs found. Did you forget to run 'gn gen out'?")
 
-    # Make sure we found something; if not, bail.
-    if not build_commands:
-        _die("No build dirs found. Did you forget to 'gn gen out'?")
+        build_commands.append(
+            BuildCommand(build_dir, tuple(default_build_targets)))
 
     # Verify that the build output directories exist.
     for i, build_target in enumerate(build_commands, 1):
@@ -576,12 +591,11 @@ def watch(build_targets, build_directory, patterns, ignore_patterns,
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
     # who have deeply nested home directories.
-    path_to_log = str(pathlib.Path().resolve()).replace(
-        str(pathlib.Path.home()), '$HOME')
+    path_to_log = str(Path().resolve()).replace(str(Path.home()), '$HOME')
 
     # Ignore the user-specified patterns.
-    ignore_patterns = (ignore_patterns.split(_WATCH_PATTERN_DELIMITER)
-                       if ignore_patterns else [])
+    ignore_patterns = (ignore_patterns_string.split(_WATCH_PATTERN_DELIMITER)
+                       if ignore_patterns_string else [])
     # Ignore top level pw_root_dir/.gitignore patterns.
     ignore_patterns += gitignore_patterns()
 
@@ -613,11 +627,11 @@ def watch(build_targets, build_directory, patterns, ignore_patterns,
         # directory should be observed recursively or not is determined by the
         # second element in subdirectories_to_watch.
         observers = []
-        for directory, rec in subdirectories_to_watch:
+        for path, rec in minimal_watch_directories(Path.cwd(), exclude_list):
             observer = Observer()
             observer.schedule(
                 event_handler,
-                str(directory),
+                str(path),
                 recursive=rec,
             )
             observer.start()
@@ -644,7 +658,9 @@ def watch(build_targets, build_directory, patterns, ignore_patterns,
 
 def main():
     """Watch files for changes and rebuild."""
-    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     add_parser_arguments(parser)
     watch(**vars(parser.parse_args()))
 

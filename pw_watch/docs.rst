@@ -3,7 +3,6 @@
 --------
 pw_watch
 --------
-
 ``pw_watch`` is similar to file system watchers found in the web development
 space. These watchers trigger a web server reload on source change, increasing
 iteration. In the embedded space, file system watchers are less prevalent but no
@@ -18,33 +17,28 @@ flash, and run tests upon save.
 
 Module Usage
 ============
-
 The simplest way to get started with ``pw_watch`` is to launch it from a shell
-using the Pigweed environment.
-
-
-.. code:: sh
-
-  $ pw watch
-
-By default, ``pw_watch`` will watch for repository changes and then trigger the
-default Ninja build target for ``${PIGWEED_ROOT}/out``. To override this
-behavior, follow ``pw watch`` with the path to the build directory optionally
-followed by the Ninja targets you'd like to build:
+using the Pigweed environment as ``pw watch``. By default, ``pw_watch`` watches
+for repository changes and triggers the default Ninja build target for an
+automatically located build directory (typically ``$PW_ROOT/out``). To override
+this behavior, provide the ``-C`` argument to ``pw watch``.
 
 .. code:: sh
 
-  # Build the default target in the "out" directory.
-  $ pw watch out
+  # Find a build directory and build the default target
+  pw watch
 
-  # Build the "host" target in the "out" directory.
-  $ pw watch out host
+  # Find a build directory and build the stm32f429i target
+  pw watch python.lint stm32f429i
 
-  # Build the "host" and "docs" targets in the "out" directory.
-  $ pw watch out host docs
+  # Build pw_run_tests.modules in the out/cmake directory
+  pw watch -C out/cmake pw_run_tests.modules
 
-  # Build "host" target in "out", and "stm32f429i" target in "build_dir_2".
-  $ pw watch --build-directory out host --build-directory build_dir_2 stm32f429i
+  # Build the default target in out/ and pw_apps in out/cmake
+  pw watch -C out -C out/cmake pw_apps
+
+  # Find a directory and build python.tests, and build pw_apps in out/cmake
+  pw watch python.tests -C out/cmake pw_apps
 
 The ``--patterns`` and ``--ignore_patterns`` arguments can be used to include
 and exclude certain file patterns that will trigger rebuilds.
@@ -55,7 +49,6 @@ system.
 
 Unit Test Integration
 =====================
-
 Thanks to GN's understanding of the full dependency tree, only the tests
 affected by a file change are run when ``pw_watch`` triggers a build. By
 default, host builds using ``pw_watch`` will run unit tests. To run unit tests

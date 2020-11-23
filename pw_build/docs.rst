@@ -391,7 +391,7 @@ module tests, execute ``pw_run_tests.modules``:
 
 .. code-block:: sh
 
-  pw watch out/cmake_host pw_run_tests.modules
+  pw watch -C out/cmake_host pw_run_tests.modules
 
 CMake functions
 ---------------

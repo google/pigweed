@@ -43,7 +43,7 @@ Done. Made 1047 targets from 91 files in 114ms
 (4) Start the watcher. The watcher will invoke Ninja to build all the targets
 
 ```bash
-$ pw watch out default
+$ pw watch
 
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
   ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
@@ -52,7 +52,7 @@ $ pw watch out default
   ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
 
 20200707 17:24:06 INF Starting Pigweed build watcher
-20200707 17:24:06 INF Will build [1/1]: out default
+20200707 17:24:06 INF Will build [1/1]: out
 20200707 17:24:06 INF Attaching filesystem watcher to $HOME/wrk/pigweed/...
 20200707 17:24:06 INF Triggering initial build...
 ...
@@ -241,7 +241,7 @@ build!
 If you want to build JUST for the device, you can kick of watch with:
 
 ```bash
-$ pw watch out stm32f429i
+$ pw watch stm32f429i
 ```
 
 This is equivalent to the following Ninja invocation:
