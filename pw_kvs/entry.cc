@@ -34,7 +34,6 @@ constexpr size_t kWriteBufferSize =
     std::max(kMaxFlashAlignment, 4 * Entry::kMinAlignmentBytes);
 
 using std::byte;
-using std::string_view;
 
 Status Entry::Read(FlashPartition& partition,
                    Address address,
@@ -77,7 +76,7 @@ Status Entry::ReadKey(FlashPartition& partition,
 Entry::Entry(FlashPartition& partition,
              Address address,
              const EntryFormat& format,
-             string_view key,
+             Key key,
              std::span<const byte> value,
              uint16_t value_size_bytes,
              uint32_t transaction_id)
@@ -99,8 +98,7 @@ Entry::Entry(FlashPartition& partition,
   }
 }
 
-StatusWithSize Entry::Write(string_view key,
-                            std::span<const byte> value) const {
+StatusWithSize Entry::Write(Key key, std::span<const byte> value) const {
   FlashPartition::Output flash(partition(), address_);
   return AlignedWrite<kWriteBufferSize>(flash,
                                         alignment_bytes(),
@@ -188,8 +186,7 @@ Status Entry::ValueMatches(std::span<const std::byte> value) const {
   return Status::Ok();
 }
 
-Status Entry::VerifyChecksum(string_view key,
-                             std::span<const byte> value) const {
+Status Entry::VerifyChecksum(Key key, std::span<const byte> value) const {
   if (checksum_algo_ == nullptr) {
     return header_.checksum == 0 ? Status::Ok() : Status::DataLoss();
   }
@@ -261,7 +258,7 @@ void Entry::DebugLog() const {
 }
 
 std::span<const byte> Entry::CalculateChecksum(
-    const string_view key, std::span<const byte> value) const {
+    const Key key, std::span<const byte> value) const {
   checksum_algo_->Reset();
 
   {

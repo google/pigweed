@@ -32,9 +32,8 @@ namespace pw::kvs {
 namespace {
 
 using std::byte;
-using std::string_view;
 
-constexpr bool InvalidKey(std::string_view key) {
+constexpr bool InvalidKey(Key key) {
   return key.empty() || (key.size() > internal::Entry::kMaxKeyLength);
 }
 
@@ -360,7 +359,7 @@ Status KeyValueStore::LoadEntry(Address entry_address,
   // Read the key from flash & validate the entry (which reads the value).
   Entry::KeyBuffer key_buffer;
   PW_TRY_ASSIGN(size_t key_length, entry.ReadKey(key_buffer));
-  const string_view key(key_buffer.data(), key_length);
+  const Key key(key_buffer.data(), key_length);
 
   PW_TRY(entry.VerifyChecksumInFlash());
 
@@ -402,7 +401,7 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
   return Status::NotFound();
 }
 
-StatusWithSize KeyValueStore::Get(string_view key,
+StatusWithSize KeyValueStore::Get(Key key,
                                   std::span<byte> value_buffer,
                                   size_t offset_bytes) const {
   PW_TRY_WITH_SIZE(CheckReadOperation(key));
@@ -413,7 +412,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
   return Get(key, metadata, value_buffer, offset_bytes);
 }
 
-Status KeyValueStore::PutBytes(string_view key, std::span<const byte> value) {
+Status KeyValueStore::PutBytes(Key key, std::span<const byte> value) {
   PW_TRY(CheckWriteOperation(key));
   DBG("Writing key/value; key length=%u, value length=%u",
       unsigned(key.size()),
@@ -445,7 +444,7 @@ Status KeyValueStore::PutBytes(string_view key, std::span<const byte> value) {
   return status;
 }
 
-Status KeyValueStore::Delete(string_view key) {
+Status KeyValueStore::Delete(Key key) {
   PW_TRY(CheckWriteOperation(key));
 
   EntryMetadata metadata;
@@ -486,7 +485,7 @@ KeyValueStore::iterator KeyValueStore::begin() const {
   return iterator(*this, cache_iterator);
 }
 
-StatusWithSize KeyValueStore::ValueSize(string_view key) const {
+StatusWithSize KeyValueStore::ValueSize(Key key) const {
   PW_TRY_WITH_SIZE(CheckReadOperation(key));
 
   EntryMetadata metadata;
@@ -514,8 +513,7 @@ Status KeyValueStore::ReadEntry(const EntryMetadata& metadata,
   return read_result;
 }
 
-Status KeyValueStore::FindEntry(string_view key,
-                                EntryMetadata* found_entry) const {
+Status KeyValueStore::FindEntry(Key key, EntryMetadata* found_entry) const {
   StatusWithSize find_result =
       entry_cache_.Find(partition_, sectors_, formats_, key, found_entry);
 
@@ -525,8 +523,7 @@ Status KeyValueStore::FindEntry(string_view key,
   return find_result.status();
 }
 
-Status KeyValueStore::FindExisting(string_view key,
-                                   EntryMetadata* metadata) const {
+Status KeyValueStore::FindExisting(Key key, EntryMetadata* metadata) const {
   Status status = FindEntry(key, metadata);
 
   // If the key's hash collides with an existing key or if the key is deleted,
@@ -538,7 +535,7 @@ Status KeyValueStore::FindExisting(string_view key,
   return status;
 }
 
-StatusWithSize KeyValueStore::Get(string_view key,
+StatusWithSize KeyValueStore::Get(Key key,
                                   const EntryMetadata& metadata,
                                   std::span<std::byte> value_buffer,
                                   size_t offset_bytes) const {
@@ -560,7 +557,7 @@ StatusWithSize KeyValueStore::Get(string_view key,
   return result;
 }
 
-Status KeyValueStore::FixedSizeGet(std::string_view key,
+Status KeyValueStore::FixedSizeGet(Key key,
                                    void* value,
                                    size_t size_bytes) const {
   PW_TRY(CheckWriteOperation(key));
@@ -571,7 +568,7 @@ Status KeyValueStore::FixedSizeGet(std::string_view key,
   return FixedSizeGet(key, metadata, value, size_bytes);
 }
 
-Status KeyValueStore::FixedSizeGet(std::string_view key,
+Status KeyValueStore::FixedSizeGet(Key key,
                                    const EntryMetadata& metadata,
                                    void* value,
                                    size_t size_bytes) const {
@@ -599,7 +596,7 @@ StatusWithSize KeyValueStore::ValueSize(const EntryMetadata& metadata) const {
   return StatusWithSize(entry.value_size());
 }
 
-Status KeyValueStore::CheckWriteOperation(string_view key) const {
+Status KeyValueStore::CheckWriteOperation(Key key) const {
   if (InvalidKey(key)) {
     return Status::InvalidArgument();
   }
@@ -611,7 +608,7 @@ Status KeyValueStore::CheckWriteOperation(string_view key) const {
   return Status::Ok();
 }
 
-Status KeyValueStore::CheckReadOperation(string_view key) const {
+Status KeyValueStore::CheckReadOperation(Key key) const {
   if (InvalidKey(key)) {
     return Status::InvalidArgument();
   }
@@ -626,7 +623,7 @@ Status KeyValueStore::CheckReadOperation(string_view key) const {
 
 Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
                                                EntryState new_state,
-                                               string_view key,
+                                               Key key,
                                                std::span<const byte> value) {
   // Read the original entry to get the size for sector accounting purposes.
   Entry entry;
@@ -635,7 +632,7 @@ Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
   return WriteEntry(key, value, new_state, &metadata, &entry);
 }
 
-Status KeyValueStore::WriteEntryForNewKey(string_view key,
+Status KeyValueStore::WriteEntryForNewKey(Key key,
                                           std::span<const byte> value) {
   if (entry_cache_.full()) {
     WRN("KVS full: trying to store a new entry, but can't. Have %u entries",
@@ -646,7 +643,7 @@ Status KeyValueStore::WriteEntryForNewKey(string_view key,
   return WriteEntry(key, value, EntryState::kValid);
 }
 
-Status KeyValueStore::WriteEntry(string_view key,
+Status KeyValueStore::WriteEntry(Key key,
                                  std::span<const byte> value,
                                  EntryState new_state,
                                  EntryMetadata* prior_metadata,
@@ -694,7 +691,7 @@ Status KeyValueStore::WriteEntry(string_view key,
 
 KeyValueStore::EntryMetadata KeyValueStore::CreateOrUpdateKeyDescriptor(
     const Entry& entry,
-    string_view key,
+    Key key,
     EntryMetadata* prior_metadata,
     size_t prior_size) {
   // If there is no prior descriptor, create a new one.
@@ -796,7 +793,7 @@ Status KeyValueStore::MarkSectorCorruptIfNotOk(Status status,
 }
 
 Status KeyValueStore::AppendEntry(const Entry& entry,
-                                  string_view key,
+                                  Key key,
                                   std::span<const byte> value) {
   const StatusWithSize result = entry.Write(key, value);
 
@@ -1218,7 +1215,7 @@ Status KeyValueStore::Repair() {
 }
 
 KeyValueStore::Entry KeyValueStore::CreateEntry(Address address,
-                                                string_view key,
+                                                Key key,
                                                 std::span<const byte> value,
                                                 EntryState state) {
   // Always bump the transaction ID when creating a new entry.
