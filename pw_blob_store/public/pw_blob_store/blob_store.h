@@ -93,6 +93,8 @@ class BlobStore {
       return store_.CloseWrite();
     }
 
+    bool IsOpen() { return open_; }
+
     // Erase the blob partition and reset state for a new blob. Explicit calls
     // to Erase are optional, beginning a write will do any needed Erase.
     // Returns:
@@ -225,6 +227,8 @@ class BlobStore {
       return store_.CloseRead();
     }
 
+    bool IsOpen() { return open_; }
+
     // Probable (not guaranteed) minimum number of bytes at this time that can
     // be read. Returns zero if, in the current state, Read would return status
     // other than OK. See stream.h for additional details.
@@ -248,7 +252,6 @@ class BlobStore {
       PW_DASSERT(open_);
       StatusWithSize status = store_.Read(offset_, dest);
       if (status.ok()) {
-        PW_DASSERT(status.size() == dest.size_bytes());
         offset_ += status.size();
       }
       return status;
