@@ -89,6 +89,10 @@ pw_test("codegen_test") {
   sources = [ "codegen_test.cc" ]
 }
 
+pw_proto_library("common_protos") {
+  sources = [ "pw_protobuf_protos/common.proto" ]
+}
+
 pw_proto_library("codegen_test_protos") {
   sources = [
     "pw_protobuf_protos/test_protos/full_test.proto",
@@ -98,6 +102,7 @@ pw_proto_library("codegen_test_protos") {
     "pw_protobuf_protos/test_protos/proto2.proto",
     "pw_protobuf_protos/test_protos/repeated.proto",
   ]
+  deps = [ ":common_protos" ]
 }
 
 pw_fuzzer("encoder_fuzzer") {

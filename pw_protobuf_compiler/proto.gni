@@ -252,7 +252,7 @@ template("pw_proto_library") {
     deps = process_file_template(_deps, "{{source}}._metadata")
 
     data_keys = [ "protoc_includes" ]
-    outputs = [ "$target_gen_dir/${target_name}_includes.txt" ]
+    outputs = [ "$target_gen_dir/${_common.base_target}_includes.txt" ]
 
     # Indicate this library's base directory for its dependents.
     metadata = {

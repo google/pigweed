@@ -11,18 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 syntax = "proto3";
 
-import 'pw_protobuf_protos/test_protos/imported.proto';
-import 'pw_protobuf_protos/common.proto';
+package pw.protobuf;
 
-package pw.protobuf.test;
-
-message Period {
-  imported.Timestamp start = 1;
-  imported.Timestamp end = 2;
-}
-
-message Nothing {
-  pw.protobuf.Empty nothing = 1;
-}
+message Empty {}
