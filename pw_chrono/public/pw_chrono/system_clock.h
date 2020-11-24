@@ -50,6 +50,14 @@ int64_t GetSystemClockTickCount();
 // SystemClock meets the requirements of C++'s TrivialClock and Pigweed's
 // PigweedClock.
 //
+// SystemClock is compatible with C++'s Clock & TrivialClock including:
+//   SystemClock::rep
+//   SystemClock::period
+//   SystemClock::duration
+//   SystemClock::time_point
+//   SystemClock::is_steady
+//   SystemClock::now()
+//
 // Example:
 //
 //   SystemClock::time_point before = SystemClock::now();
@@ -67,7 +75,7 @@ struct SystemClock {
   using period = backend::SystemClockPeriodSecondsRatio;
   using duration = std::chrono::duration<rep, period>;
   using time_point = std::chrono::time_point<SystemClock>;
-  // The epoch m ust be provided by the backend.
+  // The epoch must be provided by the backend.
   static constexpr Epoch epoch = backend::kSystemClockEpoch;
 
   // The time points of this clock cannot decrease, however the time between
@@ -138,7 +146,7 @@ class VirtualSystemClock {
 //   int64_t GetSystemClockTickCount();
 #if __has_include("pw_chrono_backend/system_clock_inline.h")
 #include "pw_chrono_backend/system_clock_inline.h"
-#endif
+#endif  // __has_include("pw_chrono_backend/system_clock_inline.h")
 
 #endif  // __cplusplus
 
