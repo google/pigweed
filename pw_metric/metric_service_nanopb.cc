@@ -91,7 +91,7 @@ class MetricWalker {
 
   void Walk(const IntrusiveList<Metric>& metrics) {
     for (const auto& m : metrics) {
-      ScopedName(m.name(), *this);
+      ScopedName scoped_name(m.name(), *this);
       writer_.Write(m, path_);
     }
   }
@@ -103,7 +103,7 @@ class MetricWalker {
   }
 
   void Walk(const Group& group) {
-    ScopedName(group.name(), *this);
+    ScopedName scoped_name(group.name(), *this);
     Walk(group.children());
     Walk(group.metrics());
   }

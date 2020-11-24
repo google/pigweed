@@ -131,5 +131,77 @@ TEST(MetricService, NestedGroupsWithBatches) {
   // TODO(keir): Properly check all the fields.
 }
 
+bool TokenPathsMatch(uint32_t expected_token_path[5],
+                     const pw_metric_Metric& metric) {
+  // Calculate length of expected token & compare.
+  int expected_length = 0;
+  while (expected_token_path[expected_length]) {
+    expected_length++;
+  }
+  if (expected_length != metric.token_path_count) {
+    return false;
+  }
+
+  // Lengths match; so search the tokens themselves.
+  for (int i = 0; i < expected_length; ++i) {
+    if (expected_token_path[i] != metric.token_path[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+TEST(MetricService, TokenPaths) {
+  // Set up a nested group of metrics that will not fit in a single batch.
+  PW_METRIC_GROUP(root, "/");
+  PW_METRIC(root, a, "a", 1u);
+
+  PW_METRIC_GROUP(inner_1, "inner1");
+  PW_METRIC(inner_1, x, "x", 4u);
+  PW_METRIC(inner_1, z, "z", 6u);
+
+  PW_METRIC_GROUP(inner_2, "inner2");
+  PW_METRIC(inner_2, p, "p", 7u);
+  PW_METRIC(inner_2, u, "s", 12u);
+
+  root.Add(inner_1);
+  root.Add(inner_2);
+
+  // Run the RPC and ensure it completes.
+  MetricMethodContext context(root.metrics(), root.children());
+  context.call({});
+  EXPECT_TRUE(context.done());
+  EXPECT_EQ(Status::Ok(), context.status());
+
+  // The metrics should fit in one batch.
+  EXPECT_EQ(1u, context.responses().size());
+  EXPECT_EQ(5, context.responses()[0].metrics_count);
+
+  // Declare the token paths we expect to find.
+  // Note: This depends on the token variables from the PW_METRIC*() macros.
+  uint32_t expected_token_paths[5][5] = {
+      {a_token, 0u},
+      {inner_1_token, x_token, 0u},
+      {inner_1_token, z_token, 0u},
+      {inner_2_token, p_token, 0u},
+      {inner_2_token, u_token, 0u},
+  };
+
+  // For each expected token, search through all returned metrics to find it.
+  // The search is necessary since there is no guarantee of metric ordering.
+  for (auto& expected_token_path : expected_token_paths) {
+    int found_matches = 0;
+    // Note: There should only be 1 response.
+    for (const auto& response : context.responses()) {
+      for (unsigned m = 0; m < response.metrics_count; ++m) {
+        if (TokenPathsMatch(expected_token_path, response.metrics[m])) {
+          found_matches++;
+        }
+      }
+    }
+    EXPECT_EQ(found_matches, 1);
+  }
+}
+
 }  // namespace
 }  // namespace pw::metric
