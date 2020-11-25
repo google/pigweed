@@ -92,3 +92,10 @@ pw_cc_test(
         "//pw_rpc:internal_test_utils",
     ],
 )
+
+pw_cc_test(
+    name = "stub_generation_test",
+    srcs = ["stub_generation_test.cc"],
+    # TODO(hepler): Figure out proto BUILD integration.
+    # deps = ["..:test_protos.raw_rpc"],
+)

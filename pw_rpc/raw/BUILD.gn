@@ -55,6 +55,7 @@ pw_test_group("tests") {
     ":codegen_test",
     ":raw_method_test",
     ":raw_method_union_test",
+    ":stub_generation_test",
   ]
 }
 
@@ -88,4 +89,9 @@ pw_test("raw_method_union_test") {
     dir_pw_protobuf,
   ]
   sources = [ "raw_method_union_test.cc" ]
+}
+
+pw_test("stub_generation_test") {
+  deps = [ "..:test_protos.raw_rpc" ]
+  sources = [ "stub_generation_test.cc" ]
 }

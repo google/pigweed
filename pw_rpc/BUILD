@@ -119,6 +119,7 @@ filegroup(
         "nanopb/public/pw_rpc/nanopb_client_call.h",
         "nanopb/public/pw_rpc/nanopb_test_method_context.h",
         "nanopb/pw_rpc_nanopb_private/internal_test_utils.h",
+        "nanopb/stub_generation_test.cc",
     ],
 )
 

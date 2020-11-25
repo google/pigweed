@@ -13,24 +13,19 @@
 # the License.
 """This module generates the code for nanopb-based pw_rpc services."""
 
-from datetime import datetime
 import os
-from typing import Iterable, cast
+from typing import Iterable, Iterator
 
 from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoNode, ProtoService, ProtoServiceMethod
 from pw_protobuf.proto_tree import build_node_tree
-import pw_rpc.ids
 from pw_rpc import codegen
-
-PLUGIN_NAME = 'pw_rpc_codegen'
-PLUGIN_VERSION = '0.1.0'
+from pw_rpc.codegen import RPC_NAMESPACE
+import pw_rpc.ids
 
 PROTO_H_EXTENSION = '.pb.h'
 PROTO_CC_EXTENSION = '.pb.cc'
 NANOPB_H_EXTENSION = '.pb.h'
-
-RPC_NAMESPACE = '::pw::rpc'
 
 
 def _proto_filename_to_nanopb_header(proto_file: str) -> str:
@@ -44,11 +39,10 @@ def _proto_filename_to_generated_header(proto_file: str) -> str:
     return f'{filename}.rpc{PROTO_H_EXTENSION}'
 
 
-def _generate_method_descriptor(method: ProtoServiceMethod,
+def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
                                 output: OutputFile) -> None:
     """Generates a nanopb method descriptor for an RPC method."""
 
-    method_id = pw_rpc.ids.calculate(method.name())
     req_fields = f'{method.request_type().nanopb_name()}_fields'
     res_fields = f'{method.response_type().nanopb_name()}_fields'
     impl_method = f'&Implementation::{method.name()}'
@@ -62,74 +56,16 @@ def _generate_method_descriptor(method: ProtoServiceMethod,
         output.write_line(f'{res_fields}),')
 
 
+def _generate_server_writer_alias(output: OutputFile) -> None:
+    output.write_line('template <typename T>')
+    output.write_line('using ServerWriter = ::pw::rpc::ServerWriter<T>;')
+
+
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
                                output: OutputFile) -> None:
     """Generates a C++ derived class for a nanopb RPC service."""
-
-    output.write_line('namespace generated {')
-
-    base_class = f'{RPC_NAMESPACE}::Service'
-    output.write_line('\ntemplate <typename Implementation>')
-    output.write_line(
-        f'class {service.cpp_namespace(root)} : public {base_class} {{')
-    output.write_line(' public:')
-
-    with output.indent():
-        output.write_line(
-            f'using ServerContext = {RPC_NAMESPACE}::ServerContext;')
-        output.write_line('template <typename T>')
-        output.write_line(
-            f'using ServerWriter = {RPC_NAMESPACE}::ServerWriter<T>;')
-        output.write_line()
-
-        output.write_line(f'constexpr {service.name()}()')
-        output.write_line(f'    : {base_class}(kServiceId, kMethods) {{}}')
-
-        output.write_line()
-        output.write_line(
-            f'{service.name()}(const {service.name()}&) = delete;')
-        output.write_line(f'{service.name()}& operator='
-                          f'(const {service.name()}&) = delete;')
-
-        output.write_line()
-        output.write_line(f'static constexpr const char* name() '
-                          f'{{ return "{service.name()}"; }}')
-
-        output.write_line()
-        output.write_line(
-            '// Used by ServiceMethodTraits to identify a base service.')
-        output.write_line(
-            'constexpr void _PwRpcInternalGeneratedBase() const {}')
-
-    service_name_hash = pw_rpc.ids.calculate(service.proto_path())
-    output.write_line('\n private:')
-
-    with output.indent():
-        output.write_line('friend class ::pw::rpc::internal::MethodLookup;\n')
-        output.write_line(f'// Hash of "{service.proto_path()}".')
-        output.write_line(
-            f'static constexpr uint32_t kServiceId = 0x{service_name_hash:08x};'
-        )
-
-        output.write_line()
-
-        # Generate the method table
-        output.write_line('static constexpr std::array<'
-                          f'{RPC_NAMESPACE}::internal::NanopbMethodUnion,'
-                          f' {len(service.methods())}> kMethods = {{')
-
-        with output.indent(4):
-            for method in service.methods():
-                _generate_method_descriptor(method, output)
-
-        output.write_line('};\n')
-
-        # Generate the method lookup table
-        codegen.method_lookup_table(service, output)
-
-    output.write_line('};')
-
-    output.write_line('\n}  // namespace generated\n')
+    codegen.service_class(service, root, output, _generate_server_writer_alias,
+                          'NanopbMethodUnion', _generate_method_descriptor)
 
 
 def _generate_code_for_client_method(method: ProtoServiceMethod,
@@ -206,50 +142,54 @@ def _generate_code_for_client(service: ProtoService, root: ProtoNode,
     output.write_line('\n}  // namespace nanopb\n')
 
 
-def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
-                              output: OutputFile) -> None:
-    """Generates code for a header file corresponding to a .proto file."""
-
-    assert package.type() == ProtoNode.Type.PACKAGE
-
-    output.write_line(f'// {os.path.basename(output.name())} automatically '
-                      f'generated by {PLUGIN_NAME} {PLUGIN_VERSION}')
-    output.write_line(f'// on {datetime.now().isoformat()}')
-    output.write_line('// clang-format off')
-    output.write_line('#pragma once\n')
-    output.write_line('#include <array>')
-    output.write_line('#include <cstddef>')
-    output.write_line('#include <cstdint>')
-    output.write_line('#include <type_traits>\n')
-    output.write_line('#include "pw_rpc/internal/method_lookup.h"')
-    output.write_line('#include "pw_rpc/internal/nanopb_method_union.h"')
-    output.write_line('#include "pw_rpc/nanopb_client_call.h"')
-    output.write_line('#include "pw_rpc/server_context.h"')
-    output.write_line('#include "pw_rpc/service.h"')
+def includes(proto_file, unused_package: ProtoNode) -> Iterator[str]:
+    yield '#include "pw_rpc/internal/nanopb_method_union.h"'
+    yield '#include "pw_rpc/nanopb_client_call.h"'
 
     # Include the corresponding nanopb header file for this proto file, in which
     # the file's messages and enums are generated. All other files imported from
     # the .proto file are #included in there.
-    nanopb_header = _proto_filename_to_nanopb_header(
-        file_descriptor_proto.name)
-    output.write_line(f'#include "{nanopb_header}"\n')
+    nanopb_header = _proto_filename_to_nanopb_header(proto_file.name)
+    yield f'#include "{nanopb_header}"'
 
-    if package.cpp_namespace():
-        file_namespace = package.cpp_namespace()
-        if file_namespace.startswith('::'):
-            file_namespace = file_namespace[2:]
 
-        output.write_line(f'namespace {file_namespace} {{')
+def _generate_code_for_package(proto_file, package: ProtoNode,
+                               output: OutputFile) -> None:
+    """Generates code for a header file corresponding to a .proto file."""
 
-    for node in package:
-        if node.type() == ProtoNode.Type.SERVICE:
-            _generate_code_for_service(cast(ProtoService, node), package,
-                                       output)
-            _generate_code_for_client(cast(ProtoService, node), package,
-                                      output)
+    codegen.package(proto_file, package, output, includes,
+                    _generate_code_for_service, _generate_code_for_client)
 
-    if package.cpp_namespace():
-        output.write_line(f'}}  // namespace {file_namespace}')
+
+def _unary_stub(method: ProtoServiceMethod, output: OutputFile) -> None:
+    output.write_line(f'pw::Status {method.name()}(ServerContext&, '
+                      f'const {method.request_type().nanopb_name()}& request, '
+                      f'{method.response_type().nanopb_name()}& response) {{')
+
+    with output.indent():
+        output.write_line(codegen.STUB_REQUEST_TODO)
+        output.write_line('static_cast<void>(request);')
+        output.write_line(codegen.STUB_RESPONSE_TODO)
+        output.write_line('static_cast<void>(response);')
+        output.write_line('return pw::Status::Unimplemented();')
+
+    output.write_line('}')
+
+
+def _server_streaming_stub(method: ProtoServiceMethod,
+                           output: OutputFile) -> None:
+    output.write_line(
+        f'void {method.name()}(ServerContext&, '
+        f'const {method.request_type().nanopb_name()}& request, '
+        f'ServerWriter<{method.response_type().nanopb_name()}>& writer) {{')
+
+    with output.indent():
+        output.write_line(codegen.STUB_REQUEST_TODO)
+        output.write_line('static_cast<void>(request);')
+        output.write_line(codegen.STUB_WRITER_TODO)
+        output.write_line('static_cast<void>(writer);')
+
+    output.write_line('}')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:
@@ -258,6 +198,10 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
     _, package_root = build_node_tree(proto_file)
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)
-    generate_code_for_package(proto_file, package_root, output_file)
+    _generate_code_for_package(proto_file, package_root, output_file)
+
+    output_file.write_line()
+    codegen.package_stubs(package_root, output_file, _unary_stub,
+                          _server_streaming_stub)
 
     return [output_file]

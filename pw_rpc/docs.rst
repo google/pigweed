@@ -56,20 +56,50 @@ This protocol buffer is declared in a ``BUILD.gn`` file as follows:
     sources = [ "foo_bar/the_service.proto" ]
   }
 
-2. RPC service definition
--------------------------
-``pw_rpc`` generates a C++ base class for each RPC service declared in a .proto
-file. The serivce class is implemented by inheriting from this generated base
-and defining a method for each RPC.
+2. RPC code generation
+----------------------
+``pw_rpc`` generates a C++ header file for each ``.proto`` file. This header is
+generated in the build output directory. Its exact location varies by build
+system and toolchain, but the C++ include path always matches the sources
+declaration in the ``pw_proto_library``. The ``.proto`` extension is replaced
+with an extension corresponding to the protobuf library in use.
 
-A service named ``TheService`` in package ``foo.bar`` will generate the
-following class:
+================== =============== =============== =============
+Protobuf libraries Build subtarget Protobuf header pw_rpc header
+================== =============== =============== =============
+Raw only           .raw_rpc        (none)          .raw_rpc.pb.h
+Nanopb or raw      .nanopb_rpc     .pb.h           .rpc.pb.h
+pw_protobuf or raw .pwpb_rpc       .pwpb.h         .rpc.pwpb.h
+================== =============== =============== =============
+
+For example, the generated RPC header for ``"foo_bar/the_service.proto"`` is
+``"foo_bar/the_service.rpc.pb.h"`` for Nanopb or
+``"foo_bar/the_service.raw_rpc.pb.h"`` for raw RPCs.
+
+The generated header defines a base class for each RPC service declared in the
+``.proto`` file. A service named ``TheService`` in package ``foo.bar`` would
+generate the following base class:
 
 .. cpp:class:: template <typename Implementation> foo::bar::generated::TheService
+
+3. RPC service definition
+-------------------------
+The serivce class is implemented by inheriting from the generated RPC service
+base class and defining a method for each RPC. The methods must match the name
+and function signature for one of the supported protobuf implementations.
+Services may mix and match protobuf implementations within one service.
+
+.. tip::
+
+  The generated code includes RPC service implementation stubs. You can
+  reference or copy and paste these to get started with implementing a service.
+  These stub classes are generated at the bottom of the pw_rpc proto header.
 
 A Nanopb implementation of this service would be as follows:
 
 .. code-block:: cpp
+
+  #include "foo_bar/the_service.rpc.pb.h"
 
   namespace foo::bar {
 
@@ -79,7 +109,7 @@ A Nanopb implementation of this service would be as follows:
                          const foo_bar_Request& request,
                          foo_bar_Response& response) {
       // implementation
-      return pw::Status::OK;
+      return pw::Status::Ok();
     }
 
     void MethodTwo(ServerContext& ctx,
@@ -103,7 +133,7 @@ The Nanopb implementation would be declared in a ``BUILD.gn``:
   pw_source_set("the_service") {
     public_configs = [ ":public" ]
     public = [ "public/foo_bar/service.h" ]
-    public_deps = [ ":the_service_proto_nanopb_rpc" ]
+    public_deps = [ ":the_service_proto.nanopb_rpc" ]
   }
 
 .. attention::
@@ -111,7 +141,7 @@ The Nanopb implementation would be declared in a ``BUILD.gn``:
   pw_rpc's generated classes will support using ``pw_protobuf`` or raw buffers
   (no protobuf library) in the future.
 
-3. Register the service with a server
+4. Register the service with a server
 -------------------------------------
 This example code sets up an RPC server with an :ref:`HDLC<module-pw_hdlc_lite>`
 channel output and the example service.

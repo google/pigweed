@@ -102,6 +102,7 @@ pw_test_group("tests") {
     ":method_lookup_test",
     ":nanopb_method_test",
     ":nanopb_method_union_test",
+    ":stub_generation_test",
   ]
 }
 
@@ -171,5 +172,11 @@ pw_test("echo_service_test") {
     ":test_method_context",
   ]
   sources = [ "echo_service_test.cc" ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_test("stub_generation_test") {
+  deps = [ "..:test_protos.nanopb_rpc" ]
+  sources = [ "stub_generation_test.cc" ]
   enable_if = dir_pw_third_party_nanopb != ""
 }
