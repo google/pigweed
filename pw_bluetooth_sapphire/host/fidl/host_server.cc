@@ -497,7 +497,9 @@ void HostServer::Connect(fbt::PeerId peer_id, ConnectCallback callback) {
 void HostServer::Disconnect(fbt::PeerId peer_id, DisconnectCallback callback) {
   bt::PeerId id{peer_id.value};
   bool le_disc = adapter()->le() ? adapter()->le()->Disconnect(id) : true;
-  bool bredr_disc = adapter()->bredr() ? adapter()->bredr()->Disconnect(id) : true;
+  bool bredr_disc = adapter()->bredr()
+                        ? adapter()->bredr()->Disconnect(id, bt::gap::DisconnectReason::kApiRequest)
+                        : true;
   if (le_disc && bredr_disc) {
     callback(fit::ok());
   } else {
@@ -563,7 +565,10 @@ void HostServer::Forget(fbt::PeerId peer_id, ForgetCallback callback) {
   }
 
   const bool le_disconnected = adapter()->le() ? adapter()->le()->Disconnect(id) : true;
-  const bool bredr_disconnected = adapter()->bredr() ? adapter()->bredr()->Disconnect(id) : true;
+  const bool bredr_disconnected =
+      adapter()->bredr()
+          ? adapter()->bredr()->Disconnect(id, bt::gap::DisconnectReason::kApiRequest)
+          : true;
   const bool peer_removed = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
 
   if (!le_disconnected || !bredr_disconnected) {

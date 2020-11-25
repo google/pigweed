@@ -2098,7 +2098,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectLowEnergyPeer) {
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectUnknownPeerDoesNothing) {
-  EXPECT_TRUE(connmgr()->Disconnect(PeerId(999)));
+  EXPECT_TRUE(connmgr()->Disconnect(PeerId(999), DisconnectReason::kApiRequest));
 
   RunLoopUntilIdle();
 
@@ -2120,7 +2120,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectClosesHciConnection) {
 
   QueueDisconnection(kConnectionHandle);
 
-  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   EXPECT_FALSE(peer->bredr()->connected());
 
   RunLoopUntilIdle();
@@ -2142,12 +2142,12 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
 
   QueueDisconnection(kConnectionHandle);
 
-  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   EXPECT_FALSE(peer->bredr()->connected());
 
   // Try to disconnect again while the first disconnect is in progress (HCI
   // Disconnection Complete not yet received).
-  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
 
   RunLoopUntilIdle();
 
@@ -2155,7 +2155,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectSamePeerIsIdempotent) {
   EXPECT_FALSE(peer->bredr()->connected());
 
   // Try to disconnect once more, now that the link is gone.
-  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnection) {
@@ -2172,7 +2172,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, RemovePeerFromPeerCacheDuringDisconnectio
   QueueDisconnection(kConnectionHandle);
 
   const PeerId id = peer->identifier();
-  EXPECT_TRUE(connmgr()->Disconnect(id));
+  EXPECT_TRUE(connmgr()->Disconnect(id, DisconnectReason::kApiRequest));
   ASSERT_FALSE(peer->bredr()->connected());
 
   // Remove the peer from PeerCache before receiving HCI Disconnection Complete.
@@ -2612,8 +2612,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectPendingConnections) {
   ASSERT_TRUE(IsInitializing(peer_a));
   ASSERT_TRUE(IsInitializing(peer_b));
 
-  EXPECT_FALSE(connmgr()->Disconnect(peer_a->identifier()));
-  EXPECT_FALSE(connmgr()->Disconnect(peer_b->identifier()));
+  EXPECT_FALSE(connmgr()->Disconnect(peer_a->identifier(), DisconnectReason::kApiRequest));
+  EXPECT_FALSE(connmgr()->Disconnect(peer_b->identifier(), DisconnectReason::kApiRequest));
 }
 
 // If SDP channel creation fails, null channel should be caught and
@@ -2698,7 +2698,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
 
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp);
 
-  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier()));
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   RunLoopUntilIdle();
 
   // Packet for |kConnectionHandle2| should not have been sent before Disconnection Complete event.
@@ -3082,7 +3082,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
   // connection.
   QueueDisconnection(kScoConnectionHandle);
   QueueDisconnection(kConnectionHandle);
-  connmgr()->Disconnect(peer->identifier());
+  connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest);
   RunLoopUntilIdle();
 }
 
@@ -3130,7 +3130,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   // connection.
   QueueDisconnection(kScoConnectionHandle);
   QueueDisconnection(kConnectionHandle);
-  connmgr()->Disconnect(peer->identifier());
+  connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest);
   RunLoopUntilIdle();
 }
 

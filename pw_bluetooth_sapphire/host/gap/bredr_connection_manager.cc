@@ -26,6 +26,21 @@ using ConnectionState = Peer::ConnectionState;
 
 namespace {
 
+std::string ReasonAsString(DisconnectReason reason) {
+  switch (reason) {
+    case DisconnectReason::kApiRequest:
+      return "ApiRequest";
+    case DisconnectReason::kInterrogationFailed:
+      return "InterrogationFailed";
+    case DisconnectReason::kPairingFailed:
+      return "PairingFailed";
+    case DisconnectReason::kAclLinkError:
+      return "AclLinkError";
+    default:
+      return "<Unknown Reason>";
+  }
+}
+
 // This procedure can continue to operate independently of the existence of an
 // BrEdrConnectionManager instance, which will begin to disable Page Scan as it shuts down.
 void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
@@ -261,7 +276,15 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
   return conn_pair->second->OpenScoConnection(initiator, parameters, std::move(callback));
 }
 
-bool BrEdrConnectionManager::Disconnect(PeerId peer_id) {
+bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason) {
+  bt_log(INFO, "gap-bredr", "Disconnect Requested (peer %s, reason %hhu - %s)", bt_str(peer_id),
+         reason, ReasonAsString(reason).c_str());
+
+  // TODO(fxbug.dev/65157) - If a disconnect request is received when we have a pending connection,
+  // we should instead abort the connection, by either:
+  //   * removing the request if it has not yet been processed
+  //   * sending a cancel command to the controller and waiting for it to be processed
+  //   * sending a cancel command, and if we already complete, then beginning a disconnect procedure
   if (connection_requests_.find(peer_id) != connection_requests_.end()) {
     bt_log(WARN, "gap-bredr", "Can't disconnect peer %s because it's being connected to",
            bt_str(peer_id));
@@ -390,7 +413,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                   handle);
     });
   };
-  auto disconnect_cb = [this, peer_id] { Disconnect(peer_id); };
+  auto disconnect_cb = [this, peer_id] { Disconnect(peer_id, DisconnectReason::kPairingFailed); };
   auto on_peer_disconnect_cb =
       std::bind(&BrEdrConnectionManager::OnPeerDisconnect, this, link.get());
   auto [conn_iter, success] = connections_.try_emplace(
@@ -410,7 +433,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
     bt_log_scope("peer: %s, handle: %#.4x", bt_str(peer->identifier()), handle);
     if (bt_is_error(status, WARN, "gap-bredr", "interrogation failed, dropping connection")) {
       // If this connection was locally requested, requester(s) are notified by the disconnection.
-      self->Disconnect(peer->identifier());
+      self->Disconnect(peer->identifier(), DisconnectReason::kInterrogationFailed);
       return;
     }
     bt_log(INFO, "gap-bredr", "interrogation complete");
@@ -448,7 +471,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer, hci::Connection
     bt_log(WARN, "gap-bredr", "Link error received, closing connection %#.4x",
            connection->handle());
 
-    self->Disconnect(peer_id);
+    self->Disconnect(peer_id, DisconnectReason::kAclLinkError);
   };
 
   // TODO(fxbug.dev/37650): Implement this callback as a call to InitiatePairing().

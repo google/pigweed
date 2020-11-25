@@ -36,6 +36,17 @@ namespace gap {
 class PairingDelegate;
 class PeerCache;
 
+enum class DisconnectReason : uint8_t {
+  // A FIDL method explicitly requested this disconnect
+  kApiRequest,
+  // The interrogation procedure for this peer failed
+  kInterrogationFailed,
+  // The connection encountered an error during Pairing
+  kPairingFailed,
+  // An error was encountered on the ACL link
+  kAclLinkError,
+};
+
 // Manages all activity related to connections in the BR/EDR section of the
 // controller, including whether the peer can be connected to, incoming
 // connections, and initiating connections.
@@ -138,7 +149,7 @@ class BrEdrConnectionManager final {
 
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
-  bool Disconnect(PeerId peer_id);
+  bool Disconnect(PeerId peer_id, DisconnectReason reason);
 
   // Callback for hci::Connection. Called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);

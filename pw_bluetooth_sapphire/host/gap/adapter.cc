@@ -136,8 +136,8 @@ class AdapterImpl final : public Adapter {
       return adapter_->bredr_connection_manager_->Connect(peer_id, std::move(callback));
     }
 
-    bool Disconnect(PeerId peer_id) override {
-      return adapter_->bredr_connection_manager_->Disconnect(peer_id);
+    bool Disconnect(PeerId peer_id, DisconnectReason reason) override {
+      return adapter_->bredr_connection_manager_->Disconnect(peer_id, reason);
     }
 
     bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,

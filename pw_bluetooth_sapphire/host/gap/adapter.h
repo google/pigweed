@@ -242,7 +242,7 @@ class Adapter {
 
     // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
     // the peer is disconnected, false if the peer can not be disconnected.
-    virtual bool Disconnect(PeerId peer_id) = 0;
+    virtual bool Disconnect(PeerId peer_id, DisconnectReason reason) = 0;
 
     // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
     // |params|. If the current connection doesn't meet |security_requirements|, attempt to upgrade
