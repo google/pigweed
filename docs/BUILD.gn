@@ -85,6 +85,7 @@ group("module_docs") {
     "$dir_pw_interrupt:docs",
     "$dir_pw_interrupt_cortex_m:docs",
     "$dir_pw_kvs:docs",
+    "$dir_pw_libc:docs",
     "$dir_pw_log:docs",
     "$dir_pw_log_basic:docs",
     "$dir_pw_log_multisink:docs",

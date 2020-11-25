@@ -48,6 +48,7 @@ declare_args() {
   dir_pw_interrupt = get_path_info("pw_interrupt", "abspath")
   dir_pw_interrupt_cortex_m = get_path_info("pw_interrupt_cortex_m", "abspath")
   dir_pw_kvs = get_path_info("pw_kvs", "abspath")
+  dir_pw_libc = get_path_info("pw_libc", "abspath")
   dir_pw_log = get_path_info("pw_log", "abspath")
   dir_pw_log_basic = get_path_info("pw_log_basic", "abspath")
   dir_pw_log_multisink = get_path_info("pw_log_multisink", "abspath")
