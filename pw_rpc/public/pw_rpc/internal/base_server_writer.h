@@ -41,7 +41,9 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   BaseServerWriter(const BaseServerWriter&) = delete;
 
-  BaseServerWriter(BaseServerWriter&& other) { *this = std::move(other); }
+  BaseServerWriter(BaseServerWriter&& other) : state_(kClosed) {
+    *this = std::move(other);
+  }
 
   ~BaseServerWriter() { Finish(); }
 
