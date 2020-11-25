@@ -128,8 +128,12 @@ DynamicChannel* DynamicChannelRegistry::FindChannelByRemoteId(ChannelId remote_c
 }
 
 void DynamicChannelRegistry::ForEach(fit::function<void(DynamicChannel*)> f) const {
-  for (auto& [id, channel_ptr] : channels_) {
-    f(channel_ptr.get());
+  for (auto iter = channels_.begin(); iter != channels_.end();) {
+    // f() may remove the channel from the registry, so get next iterator to avoid invalidation.
+    // Only the erased iterator is invalidated.
+    auto next = std::next(iter);
+    f(iter->second.get());
+    iter = next;
   }
 }
 

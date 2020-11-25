@@ -102,6 +102,7 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
   using DynamicChannelRegistry::FindAvailableChannelId;
   using DynamicChannelRegistry::FindChannelByLocalId;
   using DynamicChannelRegistry::FindChannelByRemoteId;
+  using DynamicChannelRegistry::ForEach;
   using DynamicChannelRegistry::RequestService;
 
  private:
@@ -464,6 +465,36 @@ TEST(L2CAP_DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompl
   registry.last_channel()->DoConnect(kRemoteCId + kNumChannelsAllowed - 1);
   registry.last_channel()->DoOpen();
   EXPECT_TRUE(open_result_cb_called);
+}
+
+// Removing a channel from the channel map while iterating the channels in ForEach should not cause
+// a use-after-free of the invalidated pointer.
+TEST(L2CAP_DynamicChannelRegistryTest, CloseChannelInForEachCallback) {
+  bool registry_close_cb_called = false;
+  auto registry_close_cb = [&](const DynamicChannel*) { registry_close_cb_called = true; };
+
+  TestDynamicChannelRegistry registry(std::move(registry_close_cb), RejectAllServices);
+
+  bool open_result_cb_called = false;
+  ChannelId local_cid = kInvalidChannelId;
+  auto open_result_cb = [&](const DynamicChannel* chan) {
+    EXPECT_FALSE(open_result_cb_called);
+    open_result_cb_called = true;
+    EXPECT_TRUE(chan);
+    local_cid = chan->local_cid();
+  };
+
+  registry.OpenOutbound(kPsm, kChannelParams, std::move(open_result_cb));
+  registry.last_channel()->DoConnect(kRemoteCId);
+  registry.last_channel()->DoOpen();
+
+  EXPECT_TRUE(open_result_cb_called);
+  EXPECT_TRUE(registry.FindChannelByLocalId(local_cid));
+
+  // Even if the next iterator is "end", it would still be unsafe to advance the erased iterator.
+  registry.ForEach([&](DynamicChannel* chan) { registry.CloseChannel(chan->local_cid(), [] {}); });
+
+  EXPECT_FALSE(registry.FindChannelByLocalId(local_cid));
 }
 
 }  // namespace
