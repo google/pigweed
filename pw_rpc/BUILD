@@ -68,6 +68,7 @@ pw_cc_library(
         "channel.cc",
         "packet.cc",
         "public/pw_rpc/internal/channel.h",
+        "public/pw_rpc/internal/config.h",
         "public/pw_rpc/internal/method_type.h",
         "public/pw_rpc/internal/packet.h",
     ],

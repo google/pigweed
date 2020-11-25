@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "pw_rpc/internal/base_server_writer.h"
+#include "pw_rpc/internal/config.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/method_type.h"
 #include "pw_rpc/internal/nanopb_common.h"
@@ -222,7 +223,7 @@ class NanopbMethod : public Method {
   // avoid generating unnecessary copies of the invoker functions.
   template <typename T>
   static constexpr size_t AllocateSpaceFor() {
-    return std::max(sizeof(T), size_t(64));
+    return std::max(sizeof(T), cfg::kNanopbStructMinBufferSize);
   }
 
   constexpr NanopbMethod(uint32_t id,
@@ -250,8 +251,10 @@ class NanopbMethod : public Method {
   static void UnaryInvoker(const Method& method,
                            ServerCall& call,
                            const Packet& request) {
+    _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
+    _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<response_size, alignof(std::max_align_t)>
         response_struct{};
 
@@ -266,6 +269,7 @@ class NanopbMethod : public Method {
   static void ServerStreamingInvoker(const Method& method,
                                      ServerCall& call,
                                      const Packet& request) {
+    _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
     std::aligned_storage_t<request_size, alignof(std::max_align_t)>
         request_struct{};
 

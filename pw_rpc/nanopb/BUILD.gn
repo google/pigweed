@@ -30,6 +30,7 @@ pw_source_set("method") {
   sources = [ "nanopb_method.cc" ]
   public_deps = [
     ":common",
+    "..:config",
     "..:server",
   ]
   deps = [ dir_pw_log ]
