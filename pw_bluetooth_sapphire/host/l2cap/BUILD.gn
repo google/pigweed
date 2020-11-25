@@ -109,9 +109,6 @@ source_set("testing") {
     "//src/lib/fxl",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {
@@ -155,9 +152,6 @@ source_set("tests") {
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 fuzzer("basic_mode_rx_engine_fuzzer") {
@@ -206,7 +200,4 @@ fuzzer("l2cap_fuzzer") {
     ":l2cap",
     "//src/connectivity/bluetooth/core/bt-host/testing",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }

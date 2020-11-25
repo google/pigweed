@@ -38,9 +38,6 @@ source_set("real") {
     "//sdk/lib/sys/cpp",
     "//zircon/public/lib/fit",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {

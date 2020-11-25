@@ -133,7 +133,4 @@ source_set("tests") {
     "//third_party/googletest:gtest",
     "//zircon/public/lib/async-cpp",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
