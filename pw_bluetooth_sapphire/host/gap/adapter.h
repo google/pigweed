@@ -198,14 +198,10 @@ class Adapter {
     // Starts a new discovery session and reports the result via |callback|. If a
     // session has been successfully started the caller will receive a new
     // LowEnergyDiscoverySession instance via |callback| which it uniquely owns.
+    // |active| indicates whether active or passive discovery should occur.
     // On failure a nullptr will be returned via |callback|.
     using SessionCallback = LowEnergyDiscoveryManager::SessionCallback;
-    virtual void StartDiscovery(SessionCallback callback) = 0;
-
-    // Enable or disable the background scan feature. When enabled, the discovery
-    // manager will perform a low duty-cycle passive scan when no discovery
-    // sessions are active.
-    virtual void EnableBackgroundScan(bool enable) = 0;
+    virtual void StartDiscovery(bool active, SessionCallback callback) = 0;
 
     // Enable or disable the privacy feature. When enabled, the controller will be
     // configured to use a new random address if it is currently allowed to do so.

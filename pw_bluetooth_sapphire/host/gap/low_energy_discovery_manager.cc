@@ -15,15 +15,16 @@
 namespace bt::gap {
 
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
-    fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
-    : active_(true), manager_(manager) {
-  ZX_DEBUG_ASSERT(manager_);
+    bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
+    : alive_(true), active_(active), manager_(manager) {
+  ZX_ASSERT(manager_);
 }
 
 LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  if (active_)
+  if (alive_) {
     Stop();
+  }
 }
 
 void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
@@ -39,15 +40,15 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
 
 void LowEnergyDiscoverySession::Stop() {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(active_);
+  ZX_DEBUG_ASSERT(alive_);
   if (manager_) {
     manager_->RemoveSession(this);
   }
-  active_ = false;
+  alive_ = false;
 }
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
-  ZX_DEBUG_ASSERT(peer.le());
+  ZX_ASSERT(peer.le());
   if (peer_found_callback_ && filter_.MatchLowEnergyResult(peer.le()->advertising_data(),
                                                            peer.connectable(), peer.rssi())) {
     peer_found_callback_(peer);
@@ -55,9 +56,10 @@ void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
 }
 
 void LowEnergyDiscoverySession::NotifyError() {
-  active_ = false;
-  if (error_callback_)
+  alive_ = false;
+  if (error_callback_) {
     error_callback_();
+  }
 }
 
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
@@ -65,7 +67,6 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport
                                                      PeerCache* peer_cache)
     : dispatcher_(async_get_default_dispatcher()),
       peer_cache_(peer_cache),
-      background_scan_enabled_(false),
       scanner_(scanner),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci);
@@ -83,19 +84,22 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
   DeactivateAndNotifySessions();
 }
 
-void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(callback);
-  bt_log(INFO, "gap-le", "start discovery");
+void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback callback) {
+  ZX_ASSERT(thread_checker_.is_thread_valid());
+  ZX_ASSERT(callback);
+  bt_log(INFO, "gap-le", "start %s discovery", active ? "active" : "passive");
 
   // If a request to start or stop is currently pending then this one will
-  // become pending until the HCI request completes (this does NOT include the
+  // become pending until the HCI request completes. This does NOT include the
   // state in which we are stopping and restarting scan in between scan
-  // periods).
+  // periods, in which case session_ will not be empty.
+  //
+  // If the scan needs to be upgraded to an active scan, it will be handled in OnScanStatus() when
+  // the HCI request completes.
   if (!pending_.empty() ||
       (scanner_->state() == hci::LowEnergyScanner::State::kStopping && sessions_.empty())) {
-    ZX_DEBUG_ASSERT(!scanner_->IsScanning());
-    pending_.push(std::move(callback));
+    ZX_ASSERT(!scanner_->IsScanning());
+    pending_.push_back(DiscoveryRequest{.active = active, .callback = std::move(callback)});
     return;
   }
 
@@ -103,8 +107,15 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
   // includes the state in which we are stopping and restarting scan in between
   // scan periods).
   if (!sessions_.empty()) {
-    // Invoke |callback| asynchronously.
-    auto session = AddSession();
+    if (active) {
+      // If this is the first active session, stop scanning and wait for OnScanStatus() to initiate
+      // active scan.
+      if (!std::any_of(sessions_.begin(), sessions_.end(), [](auto s) { return s->active_; })) {
+        scanner_->StopScan();
+      }
+    }
+
+    auto session = AddSession(active);
     async::PostTask(dispatcher_,
                     [callback = std::move(callback), session = std::move(session)]() mutable {
                       callback(std::move(session));
@@ -112,20 +123,16 @@ void LowEnergyDiscoveryManager::StartDiscovery(SessionCallback callback) {
     return;
   }
 
-  pending_.push(std::move(callback));
+  pending_.push_back({.active = active, .callback = std::move(callback)});
 
   if (paused()) {
     return;
   }
 
-  // If currently scanning in the background, stop it and wait for
-  // OnScanStatus() to initiate the active scan. Otherwise, request an active
-  // scan if the scanner is idle.
-  if (scanner_->IsPassiveScanning()) {
-    ZX_DEBUG_ASSERT(background_scan_enabled_);
-    scanner_->StopScan();
-  } else if (!background_scan_enabled_ && scanner_->IsIdle()) {
-    StartActiveScan();
+  // If the scanner is not idle, it is starting/stopping, and the appropriate scanning will be
+  // initiated in OnScanStatus().
+  if (scanner_->IsIdle()) {
+    StartScan(active);
   }
 }
 
@@ -149,51 +156,46 @@ LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery(
     }
   });
 }
-void LowEnergyDiscoveryManager::EnableBackgroundScan(bool enable) {
-  if (background_scan_enabled_ == enable) {
-    bt_log(DEBUG, "gap-le", "background scan already %s", (enable ? "enabled" : "disabled"));
-    return;
-  }
 
-  background_scan_enabled_ = enable;
-
-  // Do nothing if an active scan is in progress or scanning is paused.
-  if (!sessions_.empty() || !pending_.empty() || paused()) {
-    return;
-  }
-
-  if (enable && scanner_->IsIdle()) {
-    StartPassiveScan();
-  } else if (!enable && scanner_->IsPassiveScanning()) {
-    scanner_->StopScan();
-  }
-  // If neither condition is true, we'll apply a scan policy in OnScanStatus().
+bool LowEnergyDiscoveryManager::discovering() const {
+  return std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active(); });
 }
 
-std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession() {
+std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession(bool active) {
   // Cannot use make_unique here since LowEnergyDiscoverySession has a private
   // constructor.
   std::unique_ptr<LowEnergyDiscoverySession> session(
-      new LowEnergyDiscoverySession(weak_ptr_factory_.GetWeakPtr()));
-  ZX_DEBUG_ASSERT(sessions_.find(session.get()) == sessions_.end());
+      new LowEnergyDiscoverySession(active, weak_ptr_factory_.GetWeakPtr()));
+  ZX_ASSERT(sessions_.find(session.get()) == sessions_.end());
   sessions_.insert(session.get());
   return session;
 }
 
 void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session) {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(session);
+  ZX_ASSERT(thread_checker_.is_thread_valid());
+  ZX_ASSERT(session);
 
   // Only active sessions are allowed to call this method. If there is at least
   // one active session object out there, then we MUST be scanning.
-  ZX_DEBUG_ASSERT(session->active());
+  ZX_ASSERT(session->alive());
 
-  ZX_DEBUG_ASSERT(sessions_.find(session) != sessions_.end());
+  ZX_ASSERT(sessions_.find(session) != sessions_.end());
+
+  bool active = session->active();
+
   sessions_.erase(session);
 
-  // Stop scanning if the session count has dropped to zero.
-  if (sessions_.empty())
+  bool last_active = active && std::none_of(sessions_.begin(), sessions_.end(),
+                                            [](auto& s) { return s->active_; });
+
+  // Stop scanning if the session count has dropped to zero or the scan type needs to be downgraded
+  // to passive.
+  if (sessions_.empty() || last_active) {
+    bt_log(TRACE, "gap-le", "Last %sdiscovery session removed, stopping scan (sessions: %zu)",
+           last_active ? "active " : "", sessions_.size());
     scanner_->StopScan();
+    return;
+  }
 }
 
 void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& result,
@@ -207,8 +209,8 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
     connectable_cb_(peer);
   }
 
-  // Do not process further during a passive scan.
-  if (scanner_->IsPassiveScanning()) {
+  // Don't notify sessions of unknown LE peers during passive scan.
+  if (scanner_->IsPassiveScanning() && (!peer || !peer->le())) {
     return;
   }
 
@@ -278,49 +280,36 @@ void LowEnergyDiscoveryManager::OnScanFailed() {
   // callbacks issue a retry the new requests will get re-queued and
   // notified of failure in the same loop here.
   while (!pending_.empty()) {
-    auto callback = std::move(pending_.front());
-    pending_.pop();
-
-    callback(nullptr);
+    auto request = std::move(pending_.back());
+    pending_.pop_back();
+    request.callback(nullptr);
   }
 }
 
 void LowEnergyDiscoveryManager::OnPassiveScanStarted() {
   bt_log(TRACE, "gap-le", "passive scan started");
 
-  // Stop the background scan if active scan was requested or background
-  // scan was disabled while waiting for the scan to start. If an active
-  // scan was requested then the active scan we'll start it once the passive
-  // scan stops.
-  if (!pending_.empty() || !background_scan_enabled_) {
+  // Stop the passive scan if an active scan was requested while the scan was starting.
+  // The active scan will start in OnScanStatus() once the passive scan stops.
+  if (std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active_; }) ||
+      std::any_of(pending_.begin(), pending_.end(), [](auto& p) { return p.active; })) {
+    bt_log(TRACE, "gap-le", "active scan requested while passive scan was starting");
     scanner_->StopScan();
+    return;
   }
+
+  NotifyPending();
 }
 
 void LowEnergyDiscoveryManager::OnActiveScanStarted() {
   bt_log(TRACE, "gap-le", "active scan started");
 
-  // Create and register all sessions before notifying the clients. We do
-  // this so that the reference count is incremented for all new sessions
-  // before the callbacks execute, to prevent a potential case in which a
-  // callback stops its session immediately which could cause the reference
-  // count to drop the zero before all clients receive their session object.
-  if (!pending_.empty()) {
-    size_t count = pending_.size();
-    std::unique_ptr<LowEnergyDiscoverySession> new_sessions[count];
-    std::generate(new_sessions, new_sessions + count, [this] { return AddSession(); });
-    for (size_t i = 0; i < count; i++) {
-      auto callback = std::move(pending_.front());
-      pending_.pop();
-
-      callback(std::move(new_sessions[i]));
-    }
-  }
-  ZX_ASSERT(pending_.empty());
+  NotifyPending();
 }
 
 void LowEnergyDiscoveryManager::OnScanStopped() {
-  bt_log(DEBUG, "gap-le", "stopped scanning");
+  bt_log(DEBUG, "gap-le", "stopped scanning (paused: %d, pending: %zu, sessions: %zu)", paused(),
+         pending_.size(), sessions_.size());
 
   cached_scan_results_.clear();
 
@@ -328,15 +317,21 @@ void LowEnergyDiscoveryManager::OnScanStopped() {
     return;
   }
 
+  if (!sessions_.empty()) {
+    bt_log(DEBUG, "gap-le", "initiating scanning");
+    bool active =
+        std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active_; });
+    StartScan(active);
+    return;
+  }
+
   // Some clients might have requested to start scanning while we were
-  // waiting for it to stop. Restart active scanning if that is the case.
-  // Otherwise start a background scan, if enabled.
+  // waiting for it to stop. Restart scanning if that is the case.
   if (!pending_.empty()) {
-    bt_log(DEBUG, "gap-le", "initiate active scan");
-    StartActiveScan();
-  } else if (background_scan_enabled_) {
-    bt_log(DEBUG, "gap-le", "initiate background scan");
-    StartPassiveScan();
+    bt_log(DEBUG, "gap-le", "initiating scanning");
+    bool active = std::any_of(pending_.begin(), pending_.end(), [](auto& p) { return p.active; });
+    StartScan(active);
+    return;
   }
 }
 
@@ -351,13 +346,28 @@ void LowEnergyDiscoveryManager::OnScanComplete() {
   // If |sessions_| is empty this is because sessions were stopped while the
   // scanner was shutting down after the end of the scan period. Restart the
   // scan as long as clients are waiting for it.
-  if (!sessions_.empty() || !pending_.empty()) {
-    bt_log(TRACE, "gap-le", "continuing periodic scan");
-    StartActiveScan();
-  } else if (background_scan_enabled_) {
-    bt_log(TRACE, "gap-le", "continuing periodic background scan");
-    StartPassiveScan();
+  ResumeDiscovery();
+}
+
+void LowEnergyDiscoveryManager::NotifyPending() {
+  // Create and register all sessions before notifying the clients. We do
+  // this so that the reference count is incremented for all new sessions
+  // before the callbacks execute, to prevent a potential case in which a
+  // callback stops its session immediately which could cause the reference
+  // count to drop the zero before all clients receive their session object.
+  if (!pending_.empty()) {
+    size_t count = pending_.size();
+    std::vector<std::unique_ptr<LowEnergyDiscoverySession>> new_sessions(count);
+    std::generate(new_sessions.begin(), new_sessions.end(),
+                  [this, i = size_t{0}]() mutable { return AddSession(pending_[i++].active); });
+
+    for (size_t i = count - 1; i < count; i--) {
+      auto cb = std::move(pending_.back().callback);
+      pending_.pop_back();
+      cb(std::move(new_sessions[i]));
+    }
   }
+  ZX_ASSERT(pending_.empty());
 }
 
 void LowEnergyDiscoveryManager::StartScan(bool active) {
@@ -402,12 +412,24 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
 void LowEnergyDiscoveryManager::ResumeDiscovery() {
   ZX_ASSERT(!paused());
 
-  if (!sessions_.empty() || !pending_.empty()) {
-    bt_log(TRACE, "gap-le", "resuming periodic scan");
-    StartActiveScan();
-  } else if (background_scan_enabled_) {
-    bt_log(TRACE, "gap-le", "resuming periodic background scan");
-    StartPassiveScan();
+  if (!scanner_->IsIdle()) {
+    bt_log(TRACE, "gap-le", "attempt to resume discovery when it is not idle");
+    return;
+  }
+
+  if (!sessions_.empty()) {
+    bt_log(TRACE, "gap-le", "resuming scan");
+    bool active =
+        std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active_; });
+    StartScan(active);
+    return;
+  }
+
+  if (!pending_.empty()) {
+    bt_log(TRACE, "gap-le", "starting scan");
+    bool active = std::any_of(pending_.begin(), pending_.end(), [](auto& s) { return s.active; });
+    StartScan(active);
+    return;
   }
 }
 
@@ -418,7 +440,7 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   // additional sessions they will be added to pending_
   auto sessions = std::move(sessions_);
   for (const auto& session : sessions) {
-    if (session->active()) {
+    if (session->alive()) {
       session->NotifyError();
     }
   }
@@ -426,7 +448,7 @@ void LowEnergyDiscoveryManager::DeactivateAndNotifySessions() {
   // Due to the move, sessions_ should be empty before the loop and any
   // callbacks will add sessions to pending_ so it should be empty
   // afterwards as well.
-  ZX_DEBUG_ASSERT(sessions_.empty());
+  ZX_ASSERT(sessions_.empty());
 }
 
 }  // namespace bt::gap

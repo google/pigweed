@@ -180,6 +180,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   std::unique_ptr<bt::gap::LowEnergyDiscoverySession> le_discovery_session_;
   std::unique_ptr<bt::gap::BrEdrDiscoverySession> bredr_discovery_session_;
 
+  bool requesting_background_scan_;
+  std::unique_ptr<bt::gap::LowEnergyDiscoverySession> le_background_scan_;
+
   bool requesting_discoverable_;
   std::unique_ptr<bt::gap::BrEdrDiscoverableSession> bredr_discoverable_session_;
 

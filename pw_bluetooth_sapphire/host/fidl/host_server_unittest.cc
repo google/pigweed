@@ -1143,5 +1143,83 @@ TEST_F(FIDL_HostServerTest, OnNewBondingData) {
   EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data->bredr().link_key()));
 }
 
+TEST_F(FIDL_HostServerTest, EnableBackgroundScan) {
+  host_server()->EnableBackgroundScan(true);
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+
+  host_server()->EnableBackgroundScan(false);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+}
+
+TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
+  host_server()->EnableBackgroundScan(true);
+  host_server()->EnableBackgroundScan(true);
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+
+  host_server()->EnableBackgroundScan(false);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+}
+
+TEST_F(FIDL_HostServerTest, EnableBackgroundScanTwiceSequentially) {
+  host_server()->EnableBackgroundScan(true);
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+
+  host_server()->EnableBackgroundScan(true);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(bt::hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+
+  host_server()->EnableBackgroundScan(false);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+}
+
+TEST_F(FIDL_HostServerTest, CancelEnableBackgroundScan) {
+  host_server()->EnableBackgroundScan(true);
+  host_server()->EnableBackgroundScan(false);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  host_server()->EnableBackgroundScan(true);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+}
+
+TEST_F(FIDL_HostServerTest, DisableBackgroundScan) {
+  host_server()->EnableBackgroundScan(false);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+}
+
+TEST_F(FIDL_HostServerTest, EnableBackgroundScanFailsToStart) {
+  test_device()->SetDefaultCommandStatus(bt::hci::kLESetScanEnable,
+                                         bt::hci::StatusCode::kControllerBusy);
+  host_server()->EnableBackgroundScan(true);
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  RunLoopUntilIdle();
+  EXPECT_FALSE(test_device()->le_scan_state().enabled);
+
+  test_device()->ClearDefaultCommandStatus(bt::hci::kLESetScanEnable);
+  host_server()->EnableBackgroundScan(true);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+}
+
 }  // namespace
 }  // namespace bthost

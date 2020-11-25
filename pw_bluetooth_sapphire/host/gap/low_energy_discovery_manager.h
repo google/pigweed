@@ -78,7 +78,7 @@ class PeerCache;
 //     ...
 //
 //     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session;
-//     discovery_manager.StartDiscovery([&session](auto new_session) {
+//     discovery_manager.StartDiscovery(/*active=*/true, [&session](auto new_session) {
 //       // Take ownership of the session to make sure it isn't terminated when
 //       // this callback returns.
 //       session = std::move(new_session);
@@ -138,15 +138,18 @@ class LowEnergyDiscoverySession final {
   // peers.
   void Stop();
 
-  // Returns true if this session is active. A session is considered inactive
-  // after a call to Stop().
+  // Returns true if this session has not been stopped and has not errored.
+  bool alive() const { return alive_; }
+
+  // Returns true if this is an active discovery session, or false if this is a passive discovery
+  // session.
   bool active() const { return active_; }
 
  private:
   friend class LowEnergyDiscoveryManager;
 
   // Called by LowEnergyDiscoveryManager.
-  explicit LowEnergyDiscoverySession(fxl::WeakPtr<LowEnergyDiscoveryManager> manager);
+  explicit LowEnergyDiscoverySession(bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager);
 
   // Called by LowEnergyDiscoveryManager on newly discovered scan results.
   void NotifyDiscoveryResult(const Peer& peer) const;
@@ -154,6 +157,7 @@ class LowEnergyDiscoverySession final {
   // Marks this session as inactive and notifies the error handler.
   void NotifyError();
 
+  bool alive_;
   bool active_;
   fxl::WeakPtr<LowEnergyDiscoveryManager> manager_;
   fit::closure error_callback_;
@@ -177,12 +181,13 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // Starts a new discovery session and reports the result via |callback|. If a
   // session has been successfully started the caller will receive a new
   // LowEnergyDiscoverySession instance via |callback| which it uniquely owns.
+  // |active| indicates whether active or passive discovery should occur.
   // On failure a nullptr will be returned via |callback|.
   //
   // TODO(armansito): Implement option to disable duplicate filtering. Would
   // this require software filtering for clients that did not request it?
   using SessionCallback = fit::function<void(LowEnergyDiscoverySessionPtr)>;
-  void StartDiscovery(SessionCallback callback);
+  void StartDiscovery(bool active, SessionCallback callback);
 
   // Pause current and future discovery sessions until the returned PauseToken is destroyed.
   // If PauseDiscovery is called multiple times, discovery will be paused until all returned
@@ -191,16 +196,11 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   using PauseToken = fit::deferred_action<fit::callback<void()>>;
   [[nodiscard]] PauseToken PauseDiscovery();
 
-  // Enable or disable the background scan feature. When enabled, the discovery
-  // manager will perform a low duty-cycle passive scan when no discovery
-  // sessions are active.
-  void EnableBackgroundScan(bool enable);
-
   // Sets a new scan period to any future and ongoing discovery procedures.
   void set_scan_period(zx::duration period) { scan_period_ = period; }
 
-  // Returns whether there is an active discovery session.
-  bool discovering() const { return !sessions_.empty(); }
+  // Returns whether there is an active scan in progress.
+  bool discovering() const;
 
   // Returns true if discovery is paused.
   bool paused() const { return paused_count_ != 0; }
@@ -210,9 +210,6 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // discovery. The |peer| argument is guaranteed to be valid until the callback returns.
   // The callback can also assume that LE transport information (i.e. |peer->le()|) will be present
   // and accessible.
-  //
-  // Note: this callback can be triggered during a background scan as well as
-  // general discovery.
   using PeerConnectableCallback = fit::function<void(Peer* peer)>;
   void set_peer_connectable_callback(PeerConnectableCallback callback) {
     connectable_cb_ = std::move(callback);
@@ -226,7 +223,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   const std::unordered_set<PeerId>& cached_scan_results() const { return cached_scan_results_; }
 
   // Creates and stores a new session object and returns it.
-  std::unique_ptr<LowEnergyDiscoverySession> AddSession();
+  std::unique_ptr<LowEnergyDiscoverySession> AddSession(bool active);
 
   // Called by LowEnergyDiscoverySession to stop a session that it was assigned
   // to.
@@ -246,13 +243,18 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   void OnScanStopped();
   void OnScanComplete();
 
+  // Create sessions for all pending requests and pass the sessions to the request callbacks.
+  void NotifyPending();
+
   // Tells the scanner to start scanning. Aliases are provided for improved
   // readability.
   void StartScan(bool active);
   inline void StartActiveScan() { StartScan(true); }
   inline void StartPassiveScan() { StartScan(false); }
 
-  // Called when discovery is unpaused.
+  // If there are any pending requests or valid sessions, start discovery.
+  // Discovery must not be paused.
+  // Called when discovery is unpaused or the scan period ends and needs to be restarted.
   void ResumeDiscovery();
 
   // Used by destructor to handle all sessions
@@ -265,15 +267,16 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // hold a raw pointer as we expect this to out-live us.
   PeerCache* const peer_cache_;
 
-  // True if background scanning is enabled.
-  bool background_scan_enabled_;
-
   // Called when a directed connectable advertisement is received during an
   // active or passive scan.
   PeerConnectableCallback connectable_cb_;
 
   // The list of currently pending calls to start discovery.
-  std::queue<SessionCallback> pending_;
+  struct DiscoveryRequest {
+    bool active;
+    SessionCallback callback;
+  };
+  std::vector<DiscoveryRequest> pending_;
 
   // The list of currently active/known sessions. We store raw (weak) pointers
   // here because, while we don't actually own the session objects they will

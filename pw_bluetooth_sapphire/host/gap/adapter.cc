@@ -96,12 +96,8 @@ class AdapterImpl final : public Adapter {
       adapter_->le_advertising_manager_->StopAdvertising(advertisement_id);
     }
 
-    void StartDiscovery(SessionCallback callback) override {
-      adapter_->le_discovery_manager_->StartDiscovery(std::move(callback));
-    }
-
-    void EnableBackgroundScan(bool enable) override {
-      adapter_->le_discovery_manager_->EnableBackgroundScan(enable);
+    void StartDiscovery(bool active, SessionCallback callback) override {
+      adapter_->le_discovery_manager_->StartDiscovery(active, std::move(callback));
     }
 
     void EnablePrivacy(bool enabled) override {

@@ -80,9 +80,9 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
   }
 
   requesting_scan_ = true;
-  adapter()->le()->StartDiscovery([self = weak_ptr_factory_.GetWeakPtr(),
-                                   filter = std::move(filter),
-                                   callback = std::move(callback)](auto session) {
+  adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_ptr_factory_.GetWeakPtr(),
+                                                    filter = std::move(filter),
+                                                    callback = std::move(callback)](auto session) {
     if (!self)
       return;
 

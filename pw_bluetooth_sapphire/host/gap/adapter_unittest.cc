@@ -430,7 +430,9 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
 
   // Enable background scanning. No auto-connect should take place since the
   // device isn't yet bonded.
-  adapter()->le()->EnableBackgroundScan(true);
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  adapter()->le()->StartDiscovery(/*active=*/false,
+                                  [&session](auto cb_session) { session = std::move(cb_session); });
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
@@ -469,7 +471,9 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
 
   // Enable background scanning. No auto-connect should take place since the
   // device isn't yet bonded.
-  adapter()->le()->EnableBackgroundScan(true);
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  adapter()->le()->StartDiscovery(/*active=*/false,
+                                  [&session](auto cb_session) { session = std::move(cb_session); });
   RunLoopUntilIdle();
   EXPECT_FALSE(conn);
   EXPECT_EQ(0u, adapter()->peer_cache()->count());
@@ -596,7 +600,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
   // Discovery should use the public address by default.
   LowEnergyDiscoverySessionPtr session;
   auto cb = [&](auto s) { session = std::move(s); };
-  adapter()->le()->StartDiscovery(cb);
+  adapter()->le()->StartDiscovery(/*active=*/true, cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
@@ -616,7 +620,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForDiscovery) {
 
   // Restart discovery. This should configure the LE random address and scan
   // using it.
-  adapter()->le()->StartDiscovery(cb);
+  adapter()->le()->StartDiscovery(/*active=*/true, cb);
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);

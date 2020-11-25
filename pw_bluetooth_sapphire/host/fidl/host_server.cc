@@ -93,6 +93,7 @@ HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapt
       pairing_delegate_(nullptr),
       gatt_host_(gatt_host),
       requesting_discovery_(false),
+      requesting_background_scan_(false),
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
       watch_peers_getter_(adapter->peer_cache()),
@@ -181,42 +182,42 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
     callback(fit::error(fsys::Error::FAILED));
     return;
   }
-  adapter()->le()->StartDiscovery(
-      [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto session) {
-        // End the new session if this AdapterServer got destroyed in the
-        // meantime (e.g. because the client disconnected).
-        if (!self) {
-          callback(fit::error(fsys::Error::FAILED));
-          return;
-        }
+  adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_ptr_factory_.GetWeakPtr(),
+                                                    callback = std::move(callback)](auto session) {
+    // End the new session if this AdapterServer got destroyed in the
+    // meantime (e.g. because the client disconnected).
+    if (!self) {
+      callback(fit::error(fsys::Error::FAILED));
+      return;
+    }
 
-        if (!self->requesting_discovery_) {
-          callback(fit::error(fsys::Error::CANCELED));
-          return;
-        }
+    if (!self->requesting_discovery_) {
+      callback(fit::error(fsys::Error::CANCELED));
+      return;
+    }
 
-        if (!session) {
-          bt_log(DEBUG, "bt-host", "failed to start LE discovery session");
-          callback(fit::error(fsys::Error::FAILED));
-          self->bredr_discovery_session_ = nullptr;
-          self->requesting_discovery_ = false;
-          return;
-        }
+    if (!session) {
+      bt_log(DEBUG, "bt-host", "failed to start LE discovery session");
+      callback(fit::error(fsys::Error::FAILED));
+      self->bredr_discovery_session_ = nullptr;
+      self->requesting_discovery_ = false;
+      return;
+    }
 
-        // Set up a general-discovery filter for connectable devices.
-        // NOTE(armansito): This currently has no effect since peer updates
-        // are driven by PeerCache events. |session|'s "result callback" is unused.
-        session->filter()->set_connectable(true);
-        session->filter()->SetGeneralDiscoveryFlags();
+    // Set up a general-discovery filter for connectable devices.
+    // NOTE(armansito): This currently has no effect since peer updates
+    // are driven by PeerCache events. |session|'s "result callback" is unused.
+    session->filter()->set_connectable(true);
+    session->filter()->SetGeneralDiscoveryFlags();
 
-        self->le_discovery_session_ = std::move(session);
-        self->requesting_discovery_ = false;
+    self->le_discovery_session_ = std::move(session);
+    self->requesting_discovery_ = false;
 
-        // Send the adapter state update.
-        self->NotifyInfoChange();
+    // Send the adapter state update.
+    self->NotifyInfoChange();
 
-        callback(fit::ok());
-      });
+    callback(fit::ok());
+  });
 }
 
 void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
@@ -423,9 +424,43 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
 
 void HostServer::EnableBackgroundScan(bool enabled) {
   bt_log(DEBUG, "bt-host", "%s background scan", (enabled ? "enable" : "disable"));
-  if (adapter()->le()) {
-    adapter()->le()->EnableBackgroundScan(enabled);
+  if (!adapter()->le()) {
+    return;
   }
+
+  if (!enabled) {
+    requesting_background_scan_ = false;
+    le_background_scan_ = nullptr;
+    return;
+  }
+
+  // If a scan is already starting or is in progress, there is nothing to do to enable the scan.
+  if (requesting_background_scan_ || le_background_scan_) {
+    return;
+  }
+
+  requesting_background_scan_ = true;
+  adapter()->le()->StartDiscovery(
+      /*active=*/false, [self = weak_ptr_factory_.GetWeakPtr()](auto session) {
+        if (!self) {
+          return;
+        }
+
+        // Background scan may have been disabled while discovery was starting.
+        if (!self->requesting_background_scan_) {
+          return;
+        }
+
+        if (!session) {
+          bt_log(DEBUG, "bt-host", "failed to start LE background scan");
+          self->le_background_scan_ = nullptr;
+          self->requesting_background_scan_ = false;
+          return;
+        }
+
+        self->le_background_scan_ = std::move(session);
+        self->requesting_background_scan_ = false;
+      });
 }
 
 void HostServer::EnablePrivacy(bool enabled) {
@@ -682,8 +717,10 @@ void HostServer::Close() {
   // Cancel pending requests.
   requesting_discovery_ = false;
   requesting_discoverable_ = false;
+  requesting_background_scan_ = false;
 
   le_discovery_session_ = nullptr;
+  le_background_scan_ = nullptr;
   bredr_discovery_session_ = nullptr;
   bredr_discoverable_session_ = nullptr;
 
@@ -692,7 +729,6 @@ void HostServer::Close() {
 
   if (adapter()->le()) {
     // Stop background scan if enabled.
-    adapter()->le()->EnableBackgroundScan(false);
     adapter()->le()->EnablePrivacy(false);
     adapter()->le()->set_irk(std::nullopt);
   }

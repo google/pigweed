@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <fbl/macros.h>
+#include <gmock/gmock.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
@@ -98,7 +99,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
   // Called by FakeController when the scan state changes.
   void OnScanStateChanged(bool enabled) {
-    bt_log(DEBUG, "gap-test", "FakeController scan state: %s", enabled ? "enabled" : "disabled");
+    auto scan_type = test_device()->le_scan_state().scan_type;
+    bt_log(DEBUG, "gap-test", "FakeController scan state: %s %s", enabled ? "enabled" : "disabled",
+           scan_type == hci::LEScanType::kActive ? "active" : "passive");
     scan_enabled_ = enabled;
     scan_states_.push_back(enabled);
 
@@ -180,9 +183,9 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   }
 
   // Creates and returns a discovery session.
-  std::unique_ptr<LowEnergyDiscoverySession> StartDiscoverySession() {
+  std::unique_ptr<LowEnergyDiscoverySession> StartDiscoverySession(bool active = true) {
     std::unique_ptr<LowEnergyDiscoverySession> session;
-    discovery_manager()->StartDiscovery([&](auto cb_session) {
+    discovery_manager()->StartDiscovery(active, [&](auto cb_session) {
       ZX_ASSERT(cb_session);
       session = std::move(cb_session);
     });
@@ -210,7 +213,7 @@ using GAP_LowEnergyDiscoveryManagerTest = LowEnergyDiscoveryManagerTest;
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
@@ -220,10 +223,10 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(session);
-  EXPECT_TRUE(session->active());
+  EXPECT_TRUE(session->alive());
 
   session->Stop();
-  EXPECT_FALSE(session->active());
+  EXPECT_FALSE(session->alive());
 
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -234,7 +237,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   // should immediately terminate the session.
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
@@ -244,7 +247,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopByDeleting) {
   RunLoopUntilIdle();
 
   ASSERT_TRUE(session);
-  EXPECT_TRUE(session->active());
+  EXPECT_TRUE(session->alive());
 
   session = nullptr;
 
@@ -257,14 +260,14 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
   // session is inactive with the error callback called.
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(scan_enabled());
 
   ASSERT_TRUE(session);
-  EXPECT_TRUE(session->active());
+  EXPECT_TRUE(session->alive());
 
   size_t num_errors = 0u;
   session->set_error_callback([&num_errors]() { num_errors++; });
@@ -272,13 +275,13 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Destructor) {
   EXPECT_EQ(0u, num_errors);
   DeleteDiscoveryManager();
   EXPECT_EQ(1u, num_errors);
-  EXPECT_FALSE(session->active());
+  EXPECT_FALSE(session->alive());
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
   // Start discovery but don't acquire ownership of the received session. This
   // should terminate the session when |session| goes out of scope.
-  discovery_manager()->StartDiscovery([](auto session) {});
+  discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) {});
 
   RunLoopUntilIdle();
   ASSERT_EQ(2u, scan_states().size());
@@ -291,7 +294,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
                                           hci::StatusCode::kCommandDisallowed);
 
   // |session| should contain nullptr.
-  discovery_manager()->StartDiscovery([](auto session) { EXPECT_FALSE(session); });
+  discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
 
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -307,7 +310,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
     cb_count++;
   };
 
-  discovery_manager()->StartDiscovery(cb);
+  discovery_manager()->StartDiscovery(/*active=*/true, cb);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
@@ -316,7 +319,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileScanning) {
   // Add the rest of the sessions. These are expected to succeed immediately but
   // the callbacks should be called asynchronously.
   for (size_t i = 1u; i < kExpectedSessionCount; i++) {
-    discovery_manager()->StartDiscovery(cb);
+    discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
   RunLoopUntilIdle();
@@ -351,7 +354,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStart) {
   };
 
   for (size_t i = 0u; i < kExpectedSessionCount; i++) {
-    discovery_manager()->StartDiscovery(cb);
+    discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
   RunLoopUntilIdle();
@@ -378,7 +381,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStartAndStop
   };
 
   for (size_t i = 0u; i < kExpectedSessionCount; i++) {
-    discovery_manager()->StartDiscovery(cb);
+    discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
   RunLoopUntilIdle();
@@ -399,7 +402,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   std::unique_ptr<LowEnergyDiscoverySession> session;
 
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
@@ -412,7 +415,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
   // Request a new session. The discovery manager should restart the scan after
   // the ongoing one stops.
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // Discovery should stop and start again.
   RunLoopUntilIdle();
@@ -435,7 +438,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
   };
 
   for (size_t i = 0u; i < kExpectedSessionCount; i++) {
-    discovery_manager()->StartDiscovery(cb);
+    discovery_manager()->StartDiscovery(/*active=*/true, cb);
   }
 
   RunLoopUntilIdle();
@@ -449,7 +452,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestart) {
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // We should observe the scan state become enabled -> disabled -> enabled.
   RunLoopUntilIdle();
@@ -470,7 +473,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   bool session_error = false;
-  discovery_manager()->StartDiscovery([&](auto cb_session) {
+  discovery_manager()->StartDiscovery(/*active=*/true, [&](auto cb_session) {
     session = std::move(cb_session);
     session->set_error_callback([&session_error] { session_error = true; });
   });
@@ -502,7 +505,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // We should observe 3 scan state transitions (-> enabled -> disabled ->
   // enabled).
@@ -521,12 +524,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
 
   // End the scan period.
   RunLoopFor(kTestScanPeriod);
-
-  ASSERT_EQ(kNumScanStates, scan_states().size());
-  EXPECT_TRUE(scan_states()[0]);
-  EXPECT_FALSE(scan_states()[1]);
-  EXPECT_TRUE(scan_states()[2]);
-  EXPECT_FALSE(scan_states()[3]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true, false));
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
@@ -537,7 +535,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) 
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   discovery_manager()->StartDiscovery(
-      [&session](auto cb_session) { session = std::move(cb_session); });
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
 
   // The controller will fail to restart scanning after scanning stops at the
   // end of the period. The scan state will transition twice (-> enabled ->
@@ -556,10 +554,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) 
 
   // End the scan period.
   RunLoopFor(kTestScanPeriod);
-
-  ASSERT_EQ(kNumScanStates, scan_states().size());
-  EXPECT_TRUE(scan_states()[0]);
-  EXPECT_FALSE(scan_states()[1]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
@@ -571,7 +566,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) 
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
   auto cb = [&session](auto cb_session) { session = std::move(cb_session); };
-  discovery_manager()->StartDiscovery(cb);
+  discovery_manager()->StartDiscovery(/*active=*/true, cb);
 
   // We should observe 3 scan state transitions (-> enabled -> disabled ->
   // enabled).
@@ -584,7 +579,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) 
     // the current session and create a new one and the state should update
     // accordingly.
     session->Stop();
-    discovery_manager()->StartDiscovery(cb);
+    discovery_manager()->StartDiscovery(/*active=*/true, cb);
   });
 
   RunLoopUntilIdle();
@@ -859,49 +854,50 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDual
   EXPECT_EQ(TechnologyType::kDualMode, peer->technology());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScan) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScan) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
-  discovery_manager()->EnableBackgroundScan(true);
+  auto session = StartDiscoverySession(/*active=*/false);
   RunLoopUntilIdle();
-
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
-}
+  EXPECT_FALSE(discovery_manager()->discovering());
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScan) {
-  discovery_manager()->EnableBackgroundScan(true);
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->le_scan_state().enabled);
-
-  discovery_manager()->EnableBackgroundScan(false);
+  session.reset();
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableAndDisableBackgroundScanQuickly) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartAndDisablePassiveScanQuickly) {
   ASSERT_FALSE(test_device()->le_scan_state().enabled);
 
-  discovery_manager()->EnableBackgroundScan(true);
-  discovery_manager()->EnableBackgroundScan(false);
+  // Session will be destroyed in callback, stopping scan.
+  discovery_manager()->StartDiscovery(/*active=*/false,
+                                      [&](auto cb_session) { ZX_ASSERT(cb_session); });
   RunLoopUntilIdle();
 
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(2u, scan_states().size());
 
-  // This should not result in a request to stop scan.
-  discovery_manager()->EnableBackgroundScan(true);
-  discovery_manager()->EnableBackgroundScan(false);
-  discovery_manager()->EnableBackgroundScan(true);
+  // This should not result in a request to stop scan because both pending requests will be
+  // processed at the same time, and second call to StartDiscovery() retains its session.
+  discovery_manager()->StartDiscovery(/*active=*/false,
+                                      [&](auto cb_session) { ZX_ASSERT(cb_session); });
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
+    ZX_ASSERT(cb_session);
+    session = std::move(cb_session);
+  });
   RunLoopUntilIdle();
   EXPECT_EQ(3u, scan_states().size());
 
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanDuringDiscovery) {
-  auto session = StartDiscoverySession();
-  ASSERT_TRUE(session);
+TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+       EnablePassiveScanDuringActiveScanAndDisableActiveScanCausesDowngrade) {
+  auto active_session = StartDiscoverySession();
+  ASSERT_TRUE(active_session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
   ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
 
@@ -909,28 +905,24 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanDuringDiscovery) {
   ASSERT_EQ(1u, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
 
-  // Enabling background scans should not disable the active scan.
-  discovery_manager()->EnableBackgroundScan(true);
+  // Enabling passive scans should not disable the active scan.
+  auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
   ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
-  // Stopping the discovery session should fall back to passive scan.
-  session = nullptr;
+  // Stopping the active session should fall back to passive scan.
+  active_session = nullptr;
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
-
-  // We expect the following state transitions: -> disabled -> enabled
-  ASSERT_EQ(3u, scan_states().size());
-  EXPECT_FALSE(scan_states()[1]);
-  EXPECT_TRUE(scan_states()[2]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScanDuringDiscovery) {
-  auto session = StartDiscoverySession();
-  ASSERT_TRUE(session);
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisablePassiveScanDuringActiveScan) {
+  auto active_session = StartDiscoverySession();
+  ASSERT_TRUE(active_session);
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
   ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
 
@@ -938,32 +930,29 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DisableBackgroundScanDuringDiscovery) 
   ASSERT_EQ(1u, scan_states().size());
   EXPECT_TRUE(scan_states()[0]);
 
-  // Enabling background scans should not disable the active scan.
-  discovery_manager()->EnableBackgroundScan(true);
+  // Enabling passive scans should not disable the active scan.
+  auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
   ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
-  // Disabling the background scan should not disable the active scan.
-  discovery_manager()->EnableBackgroundScan(false);
+  // Disabling the passive scan should not disable the active scan.
+  passive_session.reset();
   RunLoopUntilIdle();
   ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(1u, scan_states().size());
 
-  // Stopping the discovery session should stop scans.
-  session = nullptr;
+  // Stopping the active session should stop scans.
+  active_session = nullptr;
   RunLoopUntilIdle();
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
-
-  // We expect the following state transitions: -> disabled
-  ASSERT_EQ(2u, scan_states().size());
-  EXPECT_FALSE(scan_states()[1]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryDuringBackgroundScan) {
-  discovery_manager()->EnableBackgroundScan(true);
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
+  auto passive_session = StartDiscoverySession(false);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
   ASSERT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
@@ -974,25 +963,27 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryDuringBackgroundScan) {
 
   // Starting discovery should turn off the passive scan and initiate an active
   // scan.
-  auto session = StartDiscoverySession();
-  EXPECT_TRUE(session);
+  auto active_session = StartDiscoverySession();
+  EXPECT_TRUE(active_session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
-
-  // We expect the following state transitions: -> disabled -> enabled
-  ASSERT_EQ(3u, scan_states().size());
-  EXPECT_FALSE(scan_states()[1]);
-  EXPECT_TRUE(scan_states()[2]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileEnablingBackgroundScan) {
-  discovery_manager()->EnableBackgroundScan(true);
-  std::unique_ptr<LowEnergyDiscoverySession> session;
-  discovery_manager()->StartDiscovery([&](auto cb_session) {
-    ZX_DEBUG_ASSERT(cb_session);
-    session = std::move(cb_session);
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanWhileStartingPassiveScan) {
+  std::unique_ptr<LowEnergyDiscoverySession> passive_session;
+  discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
+    ZX_ASSERT(cb_session);
+    passive_session = std::move(cb_session);
   });
-  ASSERT_FALSE(session);
+  ASSERT_FALSE(passive_session);
+
+  std::unique_ptr<LowEnergyDiscoverySession> active_session;
+  discovery_manager()->StartDiscovery(/*active=*/true, [&](auto cb_session) {
+    ZX_ASSERT(cb_session);
+    active_session = std::move(cb_session);
+  });
+  ASSERT_FALSE(active_session);
 
   // Scan should not be enabled yet.
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
@@ -1002,18 +993,15 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryWhileEnablingBackgroundS
   // -> enabled (passive) -> disabled -> enabled (active)
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_scan_state().enabled);
-  ASSERT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
-  ASSERT_EQ(3u, scan_states().size());
-  EXPECT_TRUE(scan_states()[0]);
-  EXPECT_FALSE(scan_states()[1]);
-  EXPECT_TRUE(scan_states()[2]);
+  EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
 // Emulate a number of connectable and non-connectable advertisers in both undirected connectable
 // and directed connectable modes. This test is to ensure that the only peers notified during a
-// passive background scan are from connectable peers that are already in the cache.
+// passive scan are from connectable peers that are already in the cache.
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
-       BackgroundScanOnlyHandlesEventsFromKnownConnectableDevices) {
+       PeerConnectableCallbackOnlyHandlesEventsFromKnownConnectableDevices) {
   // Address 0: undirected connectable; added to cache below
   {
     auto peer = std::make_unique<FakePeer>(kAddress0, /*connectable=*/true, /*scannable=*/true);
@@ -1067,7 +1055,7 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
     count++;
     EXPECT_TRUE(id == address0_id || id == address4_id) << id.ToString();
   });
-  discovery_manager()->EnableBackgroundScan(true);
+  auto session = StartDiscoverySession(/*active=*/false);
   RunLoopUntilIdle();
   EXPECT_EQ(2, count);
 
@@ -1075,26 +1063,21 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_EQ(4u, peer_cache()->count());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, BackgroundScanPeriodRestart) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PassiveScanPeriodRestart) {
   discovery_manager()->set_scan_period(kTestScanPeriod);
-  discovery_manager()->EnableBackgroundScan(true);
+  auto session = StartDiscoverySession(/*active=*/false);
 
   // The scan state should transition to enabled.
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
   ASSERT_EQ(1u, scan_states().size());
-  EXPECT_TRUE(scan_states()[0]);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
 
   // End the scan period by advancing time.
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(hci::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
-
-  // We expect the following state transitions due to the timeout:
-  // -> disabled -> enabled.
-  ASSERT_EQ(3u, scan_states().size());
-  EXPECT_FALSE(scan_states()[1]);
-  EXPECT_TRUE(scan_states()[2]);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest,
@@ -1123,27 +1106,31 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_TRUE(discovery_manager()->discovering());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnableBackgroundScanAfterPausing) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, EnablePassiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
 
-  discovery_manager()->EnableBackgroundScan(true);
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery(/*active=*/false,
+                                      [&](auto cb_session) { session = std::move(cb_session); });
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
+  EXPECT_FALSE(session);
 
   pause.reset();
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
 }
 
-TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartDiscoveryAfterPausing) {
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StartActiveScanAfterPausing) {
   std::optional<PauseToken> pause = discovery_manager()->PauseDiscovery();
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
-  discovery_manager()->StartDiscovery([&](auto cb_session) { session = std::move(cb_session); });
+  discovery_manager()->StartDiscovery(/*active=*/true,
+                                      [&](auto cb_session) { session = std::move(cb_session); });
   RunLoopUntilIdle();
   EXPECT_FALSE(scan_enabled());
   EXPECT_FALSE(session);
@@ -1196,7 +1183,8 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanActive) {
   set_scan_state_handler(1, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
 
   std::unique_ptr<LowEnergyDiscoverySession> session;
-  discovery_manager()->StartDiscovery([&](auto cb_session) { session = std::move(cb_session); });
+  discovery_manager()->StartDiscovery(/*active=*/true,
+                                      [&](auto cb_session) { session = std::move(cb_session); });
 
   // The scan should be canceled.
   RunLoopUntilIdle();
@@ -1220,10 +1208,13 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
   std::optional<PauseToken> pause;
   set_scan_state_handler(1, [this, &pause]() { pause = discovery_manager()->PauseDiscovery(); });
 
-  discovery_manager()->EnableBackgroundScan(true);
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery(/*active=*/false,
+                                      [&](auto cb_session) { session = std::move(cb_session); });
 
   // The scan should be canceled.
   RunLoopUntilIdle();
+  EXPECT_FALSE(session);
   EXPECT_TRUE(pause.has_value());
   EXPECT_EQ(scan_states().size(), 2u);
   EXPECT_FALSE(scan_enabled());
@@ -1232,6 +1223,23 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PauseJustBeforeScanPassive) {
   pause.reset();
   RunLoopUntilIdle();
   EXPECT_TRUE(scan_enabled());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest,
+       StartActiveScanWhilePassiveScanStoppingBetweenScanPeriods) {
+  discovery_manager()->set_scan_period(kTestScanPeriod);
+
+  auto passive_session = StartDiscoverySession(/*active=*/false);
+
+  std::unique_ptr<LowEnergyDiscoverySession> active_session;
+  set_scan_state_handler(2, [this, &active_session]() {
+    discovery_manager()->StartDiscovery(
+        /*active=*/true, [&active_session](auto session) { active_session = std::move(session); });
+  });
+  RunLoopFor(kTestScanPeriod);
+  EXPECT_TRUE(test_device()->le_scan_state().enabled);
+  EXPECT_EQ(hci::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
 }  // namespace
