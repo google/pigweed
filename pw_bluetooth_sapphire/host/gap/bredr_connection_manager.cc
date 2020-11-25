@@ -407,12 +407,13 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
     if (!self) {
       return;
     }
-    if (bt_is_error(status, WARN, "gap-bredr", "interrogate failed, dropping connection")) {
+    bt_log_scope("peer: %s, handle: %#.4x", bt_str(peer->identifier()), handle);
+    if (bt_is_error(status, WARN, "gap-bredr", "interrogation failed, dropping connection")) {
       // If this connection was locally requested, requester(s) are notified by the disconnection.
       self->Disconnect(peer->identifier());
       return;
     }
-    bt_log(TRACE, "gap-bredr", "interrogation complete for %#.4x", handle);
+    bt_log(INFO, "gap-bredr", "interrogation complete");
     self->CompleteConnectionSetup(peer, handle);
   });
 
@@ -555,16 +556,21 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionCom
   auto connection_handle = letoh16(params.connection_handle);
   DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
 
-  bt_log(DEBUG, "gap-bredr", "%s connection complete (status %#.2x, handle: %#.4x)",
-         bt_str(params.bd_addr), params.status, connection_handle);
-
   if (pending_request_ && pending_request_->peer_address() == addr) {
+    bt_log(INFO, "gap-bredr",
+           "outgoing connection complete (peer: %s, address: %s, status %#.2x, handle: %#.4x)",
+           bt_str(pending_request_->peer_id()), bt_str(params.bd_addr), params.status,
+           connection_handle);
     auto status = hci::Status(params.status);
     status = pending_request_->CompleteRequest(status);
 
     if (!status) {
       OnConnectFailure(status, pending_request_->peer_id());
     }
+  } else {
+    bt_log(INFO, "gap-bredr",
+           "incoming connection complete (address: %s, status %#.2x, handle: %#.4x)",
+           bt_str(params.bd_addr), params.status, connection_handle);
   }
 
   if (params.link_type != hci::LinkType::kACL) {
@@ -583,7 +589,7 @@ void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection)
 
   auto it = connections_.find(handle);
   if (it == connections_.end()) {
-    bt_log(TRACE, "gap-bredr", "disconnect from unknown handle %#.4x", handle);
+    bt_log(WARN, "gap-bredr", "disconnect from unknown connection handle %#.4x", handle);
     return;
   }
 
