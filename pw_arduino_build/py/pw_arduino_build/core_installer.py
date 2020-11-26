@@ -153,17 +153,21 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
 
 
 def install_core_command(args: argparse.Namespace):
-    install_prefix = os.path.realpath(
-        os.path.expanduser(os.path.expandvars(args.prefix)))
-    install_dir = os.path.join(install_prefix, args.core_name)
-    cache_dir = os.path.join(install_prefix, ".cache", args.core_name)
+    install_core(args.prefix, args.core_name)
 
-    if args.core_name in supported_cores():
+
+def install_core(prefix, core_name):
+    install_prefix = os.path.realpath(
+        os.path.expanduser(os.path.expandvars(prefix)))
+    install_dir = os.path.join(install_prefix, core_name)
+    cache_dir = os.path.join(install_prefix, ".cache", core_name)
+
+    if core_name in supported_cores():
         shutil.rmtree(install_dir, ignore_errors=True)
         os.makedirs(install_dir, exist_ok=True)
         os.makedirs(cache_dir, exist_ok=True)
 
-    if args.core_name == "teensy":
+    if core_name == "teensy":
         if platform.system() == "Linux":
             install_teensy_core_linux(install_prefix, install_dir, cache_dir)
         elif platform.system() == "Darwin":
@@ -171,16 +175,16 @@ def install_core_command(args: argparse.Namespace):
         elif platform.system() == "Windows":
             install_teensy_core_windows(install_prefix, install_dir, cache_dir)
         apply_teensy_patches(install_dir)
-    elif args.core_name == "adafruit-samd":
+    elif core_name == "adafruit-samd":
         install_adafruit_samd_core(install_prefix, install_dir, cache_dir)
-    elif args.core_name == "stm32duino":
+    elif core_name == "stm32duino":
         install_stm32duino_core(install_prefix, install_dir, cache_dir)
-    elif args.core_name == "arduino-samd":
+    elif core_name == "arduino-samd":
         install_arduino_samd_core(install_prefix, install_dir, cache_dir)
     else:
         raise ArduinoCoreNotSupported(
             "Invalid core '{}'. Supported cores: {}".format(
-                args.core_name, ", ".join(supported_cores())))
+                core_name, ", ".join(supported_cores())))
 
 
 def supported_cores():
@@ -322,9 +326,6 @@ def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
 
 
 def apply_teensy_patches(install_dir):
-    # Remember where we are to construct relative paths for running `git apply`
-    working_directory_path = Path(os.getcwd())
-
     # On Mac the "hardware" directory is a symlink:
     #   ls -l third_party/arduino/cores/teensy/
     #   hardware -> Teensyduino.app/Contents/Java/hardware
@@ -339,9 +340,9 @@ def apply_teensy_patches(install_dir):
 
     # Apply each patch file.
     for diff_path in patch_file_paths:
-        file_operations.git_apply_patch(
-            patch_root_path.relative_to(working_directory_path).as_posix(),
-            diff_path.as_posix())
+        file_operations.git_apply_patch(patch_root_path.as_posix(),
+                                        diff_path.as_posix(),
+                                        unsafe_paths=True)
 
 
 def install_arduino_samd_core(install_prefix: str, install_dir: str,

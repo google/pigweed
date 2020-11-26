@@ -66,8 +66,11 @@ class Package:
 _PACKAGES: Dict[str, Package] = {}
 
 
-def register(package_class: type) -> None:
-    obj = package_class()
+def register(package_class: type, name: str = None) -> None:
+    if name:
+        obj = package_class(name)
+    else:
+        obj = package_class()
     _PACKAGES[obj.name] = obj
 
 
@@ -167,7 +170,7 @@ class PackageManagerCLI:
         return 0
 
     def run(self, command: str, pkg_root: pathlib.Path, **kwargs) -> int:
-        self._mgr = PackageManager(pkg_root)
+        self._mgr = PackageManager(pkg_root.resolve())
         return getattr(self, command)(**kwargs)
 
 

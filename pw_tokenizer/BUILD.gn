@@ -208,7 +208,7 @@ pw_test("argument_types_test") {
   ]
   deps = [ ":pw_tokenizer" ]
 
-  if (dir_pw_third_party_arduino != "") {
+  if (pw_arduino_build_CORE_PATH != "") {
     remove_configs = [ "$dir_pw_build:strict_warnings" ]
   }
 }

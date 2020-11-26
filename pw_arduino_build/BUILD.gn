@@ -24,7 +24,7 @@ declare_args() {
   pw_arduino_build_INIT_BACKEND = ""
 }
 
-if (dir_pw_third_party_arduino != "") {
+if (pw_arduino_build_CORE_PATH != "") {
   pw_facade("arduino_init") {
     backend = pw_arduino_build_INIT_BACKEND
     public = [ "public/pw_arduino_build/init.h" ]
@@ -39,7 +39,7 @@ if (dir_pw_third_party_arduino != "") {
     deps = [
       ":arduino_init",
       "$dir_pw_sys_io",
-      "$dir_pw_third_party_arduino:arduino_core_sources",
+      "$dir_pw_third_party/arduino:arduino_core_sources",
     ]
     sources = [ "arduino_main_wrapper.cc" ]
   }

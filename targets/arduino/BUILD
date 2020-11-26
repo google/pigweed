@@ -31,3 +31,12 @@ pw_cc_library(
         "//pw_sys_io_arduino",
     ],
 )
+
+pw_cc_library(
+    name = "system_rpc_server",
+    srcs = ["system_rpc_server.cc"],
+    deps = [
+        "//pw_rpc/system_server:facade",
+        "//pw_hdlc:pw_rpc",
+    ],
+)

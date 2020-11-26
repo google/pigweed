@@ -104,7 +104,7 @@ _build_pigweed_default_at_all_optimization_levels("stm32f429i") {
   toolchain_prefix = "$dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_"
 }
 
-if (dir_pw_third_party_arduino != "") {
+if (pw_arduino_build_CORE_PATH != "") {
   _build_pigweed_default_at_all_optimization_levels("arduino") {
     toolchain_prefix = "$dir_pigweed/targets/arduino:arduino_"
   }

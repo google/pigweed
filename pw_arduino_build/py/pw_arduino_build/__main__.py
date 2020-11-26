@@ -23,6 +23,7 @@ import shlex
 import subprocess
 import sys
 from collections import OrderedDict
+from pathlib import Path
 from typing import List
 
 from pw_arduino_build import core_installer, log
@@ -418,6 +419,14 @@ def _parse_args() -> argparse.Namespace:
             raise argparse.ArgumentTypeError(
                 f'{arg.upper()} is not a valid log level')
 
+    def existing_directory(input_string: str):
+        """Argparse type that resolves to an absolute path."""
+        input_path = Path(os.path.expandvars(input_string)).absolute()
+        if not input_path.exists():
+            raise argparse.ArgumentTypeError(
+                "'{}' is not a valid directory.".format(str(input_path)))
+        return input_path.as_posix()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-q",
                         "--quiet",
@@ -434,10 +443,12 @@ def _parse_args() -> argparse.Namespace:
 
     # Global command line options
     parser.add_argument("--arduino-package-path",
+                        type=existing_directory,
                         help="Path to the arduino IDE install location.")
     parser.add_argument("--arduino-package-name",
                         help="Name of the Arduino board package to use.")
     parser.add_argument("--compiler-path-override",
+                        type=existing_directory,
                         help="Path to arm-none-eabi-gcc bin folder. "
                         "Default: Arduino core specified gcc")
     parser.add_argument("-c", "--config-file", help="Path to a config file.")

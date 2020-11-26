@@ -223,12 +223,17 @@ def decode_file_json(file_name):
     return json_file_options, file_path
 
 
-def git_apply_patch(root_directory, patch_file, ignore_whitespace=True):
+def git_apply_patch(root_directory,
+                    patch_file,
+                    ignore_whitespace=True,
+                    unsafe_paths=False):
     """Use `git apply` to apply a diff file."""
 
     _LOG.info("Applying Patch: %s", patch_file)
     git_apply_command = ["git", "apply"]
     if ignore_whitespace:
         git_apply_command.append("--ignore-whitespace")
+    if unsafe_paths:
+        git_apply_command.append("--unsafe-paths")
     git_apply_command += ["--directory", root_directory, patch_file]
     subprocess.run(git_apply_command)

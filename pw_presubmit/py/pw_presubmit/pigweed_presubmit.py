@@ -122,6 +122,19 @@ def gn_nanopb_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_teensy_build(ctx: PresubmitContext):
+    build.install_package(ctx.package_root, 'teensy')
+    build.gn_gen(ctx.root,
+                 ctx.output_dir,
+                 pw_arduino_build_CORE_PATH='"{}"'.format(str(
+                     ctx.package_root)),
+                 pw_arduino_build_CORE_NAME='teensy',
+                 pw_arduino_build_PACKAGE_NAME='teensy/avr',
+                 pw_arduino_build_BOARD='teensy40')
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('arduino'))
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_qemu_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
     build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu'))
@@ -531,6 +544,9 @@ FULL = (
     source_is_in_build_files,
     python_checks,
     build_env_setup,
+    # Skip gn_teensy_build if running on Windows. The Teensycore installer is
+    # an exe that requires an admin role.
+    gn_teensy_build if sys.platform in ['linux', 'darwin'] else (),
 )
 
 PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL)

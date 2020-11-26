@@ -17,6 +17,7 @@ import sys
 
 from pw_package import package_manager
 from pw_package.packages import nanopb
+from pw_package.packages import arduino_core  # pylint: disable=unused-import
 
 
 def initialize():

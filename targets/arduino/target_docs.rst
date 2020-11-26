@@ -43,8 +43,7 @@ Setup
 =====
 
 You must first install an Arduino core or let Pigweed know where you have cores
-installed using the ``dir_pw_third_party_arduino`` and ``arduino_package_path``
-build arguments.
+installed using the ``pw_arduino_build_CORE_PATH`` build arg.
 
 Installing Arduino Cores
 ------------------------
@@ -66,10 +65,12 @@ target. You can set Arduino build options using ``gn args out`` or by running:
 
 .. code:: sh
 
-  gn gen out --args='dir_pw_third_party_arduino="//third_party/arduino"
-                     arduino_core_name="teensy"
-                     arduino_board="teensy40"
-                     arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]'
+  gn gen out --args='
+    pw_arduino_build_CORE_PATH="//third_party/arduino/cores"
+    pw_arduino_build_CORE_NAME="teensy"
+    pw_arduino_build_PACKAGE_NAME="teensy/avr"
+    pw_arduino_build_BOARD="teensy40"
+    pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]'
 
 On a Windows machine it's easier to run:
 
@@ -81,10 +82,11 @@ That will open a text file where you can paste the args in:
 
 .. code:: text
 
-  dir_pw_third_party_arduino="//third_party/arduino"
-  arduino_core_name="teensy"
-  arduino_board="teensy40"
-  arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]
+  pw_arduino_build_CORE_PATH = "//third_party/arduino/cores"
+  pw_arduino_build_CORE_NAME = "teensy"
+  pw_arduino_build_PACKAGE_NAME="teensy/avr"
+  pw_arduino_build_BOARD = "teensy40"
+  pw_arduino_build_MENU_OPTIONS = ["menu.usb.serial", "menu.keys.en-us"]
 
 Save the file and close the text editor.
 
@@ -112,7 +114,7 @@ To see supported boards and Arduino menu options for a given core:
   teensy31    Teensy 3.2 / 3.1
 
 You may wish to set different arduino build options in
-``arduino_menu_options``. Run this to see what's available for your core:
+``pw_arduino_build_MENU_OPTIONS``. Run this to see what's available for your core:
 
 .. code:: sh
 
@@ -161,10 +163,11 @@ a sample bash script to run all tests on a Linux machine.
 
   #!/bin/bash
   gn gen out --export-compile-commands \
-      --args='dir_pw_third_party_arduino="//third_party/arduino"
-              arduino_core_name="teensy"
-              arduino_board="teensy40"
-              arduino_menu_options=["menu.usb.serial", "menu.keys.en-us"]' && \
+      --args='pw_arduino_build_CORE_PATH="//third_party/arduino/cores"
+              pw_arduino_build_CORE_NAME="teensy"
+              pw_arduino_build_PACKAGE_NAME="teensy/avr"
+              pw_arduino_build_BOARD="teensy40"
+              pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]' && \
     ninja -C out arduino
 
   for f in $(find out/arduino_debug/obj/ -iname "*.elf"); do
@@ -214,9 +217,7 @@ libraries.
 
   _library_args = [
     "--library-path",
-    rebase_path(
-        "$dir_pw_third_party_arduino/cores/teensy/hardware/teensy/avr/libraries"
-    ),
+    rebase_path(arduino_core_library_path),
     "--library-names",
     "Time",
     "Wire",
@@ -250,10 +251,8 @@ libraries.
                                    [ "--library-include-dirs" ],
                                "list lines")
 
-    # Required if using Arduino.h and any Arduino API functions
-    if (dir_pw_third_party_arduino != "") {
-      remove_configs = [ "$dir_pw_build:strict_warnings" ]
-      deps += [ "$dir_pw_third_party_arduino:arduino_core_sources" ]
-    }
+    # Required for using Arduino.h and any Arduino API functions
+    remove_configs = [ "$dir_pw_build:strict_warnings" ]
+    deps += [ "$dir_pw_third_party/arduino:arduino_core_sources" ]
   }
 
