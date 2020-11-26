@@ -4,6 +4,7 @@
 
 #include "logical_link.h"
 
+#include <lib/fit/bridge.h>
 #include <zircon/assert.h>
 
 #include <functional>
@@ -13,7 +14,7 @@
 #include "channel.h"
 #include "fbl/ref_ptr.h"
 #include "le_signaling_channel.h"
-#include "lib/async/default.h"
+#include "lib/fit/promise.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
@@ -57,10 +58,10 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(
     hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
-    size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
+    fit::executor* executor, size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
     DropQueuedAclCallback drop_queued_acl_cb, QueryServiceCallback query_service_cb,
     RequestAclPriorityCallback acl_priority_cb, bool random_channel_ids) {
-  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, max_acl_payload_size,
+  auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, executor, max_acl_payload_size,
                                           std::move(send_packets_cb), std::move(drop_queued_acl_cb),
                                           std::move(query_service_cb), std::move(acl_priority_cb)));
   ll->Initialize(random_channel_ids);
@@ -68,8 +69,8 @@ fbl::RefPtr<LogicalLink> LogicalLink::New(
 }
 
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-                         hci::Connection::Role role, size_t max_acl_payload_size,
-                         SendPacketsCallback send_packets_cb,
+                         hci::Connection::Role role, fit::executor* executor,
+                         size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
                          DropQueuedAclCallback drop_queued_acl_cb,
                          QueryServiceCallback query_service_cb,
                          RequestAclPriorityCallback acl_priority_cb)
@@ -83,8 +84,10 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
       acl_priority_cb_(std::move(acl_priority_cb)),
       query_service_cb_(std::move(query_service_cb)),
+      executor_(executor),
       weak_ptr_factory_(this) {
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
+  ZX_ASSERT(executor_);
   ZX_ASSERT(send_packets_cb_);
   ZX_ASSERT(drop_queued_acl_cb_);
   ZX_ASSERT(query_service_cb_);
@@ -318,28 +321,25 @@ bool LogicalLink::AllowsFixedChannel(ChannelId id) {
                                                    : IsValidBREDRFixedChannel(id);
 }
 
-void LogicalLink::RemoveChannel(Channel* chan, fit::closure close_cb) {
+fit::promise<> LogicalLink::RemoveChannel(Channel* chan) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(chan);
 
   if (closed_) {
     bt_log(DEBUG, "l2cap", "Ignore RemoveChannel() on closed link");
-    close_cb();
-    return;
+    return fit::make_ok_promise();
   }
 
   const ChannelId id = chan->id();
   auto iter = channels_.find(id);
   if (iter == channels_.end()) {
-    close_cb();
-    return;
+    return fit::make_ok_promise();
   }
 
   // Ignore if the found channel doesn't match the requested one (even though
   // their IDs are the same).
   if (iter->second.get() != chan) {
-    close_cb();
-    return;
+    return fit::make_ok_promise();
   }
 
   pending_pdus_.erase(id);
@@ -356,10 +356,20 @@ void LogicalLink::RemoveChannel(Channel* chan, fit::closure close_cb) {
   // TODO(armansito): Change this if statement into an assert when a registry
   // gets created for LE channels.
   if (dynamic_registry_) {
-    dynamic_registry_->CloseChannel(id, std::move(close_cb));
-  } else {
-    close_cb();
+    // This bridge can and probably should be pushed farther down through DynamicChannelRegistry,
+    // BrEdrCommandHandler, SignalingChannel, and ACLDataChannel all the way up to the underlying
+    // async::Wait.
+    //
+    // Note that completing a bridge seems to always produce a new task for fulfilling dependent
+    // consumer promises, which for fit::executor means posting the consumer onto its dispatcher.
+    fit::bridge<> bridge;
+    dynamic_registry_->CloseChannel(id, bridge.completer.bind());
+
+    // promise_or converts completer abandonment (e.g. destroyed in an early error branch) to a
+    // promise that yields a result.
+    return bridge.consumer.promise_or(fit::ok());
   }
+  return fit::make_ok_promise();
 }
 
 void LogicalLink::SignalError() {
@@ -372,35 +382,12 @@ void LogicalLink::SignalError() {
 
   bt_log(INFO, "l2cap", "Upper layer error on link %#.4x; closing all channels", handle());
 
-  auto signaling_channel_iter = channels_.count(kSignalingChannelId)
-                                    ? channels_.find(kSignalingChannelId)
-                                    : channels_.find(kLESignalingChannelId);
-  ZX_ASSERT(signaling_channel_iter != channels_.end());
-  fbl::RefPtr<ChannelImpl> signaling_channel = signaling_channel_iter->second;
-
-  // The signaling channel is skipped in this count.
-  const size_t num_channels_to_close = channels_.size() - 1;
-  fit::closure error_signaler = [num_channels_to_close = num_channels_to_close, handle = handle(),
-                                 link_error_cb = link_error_cb_.share()]() mutable {
-    if (num_channels_to_close <= 1) {
-      bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer", handle);
-      std::exchange(link_error_cb, nullptr)();
-
-      // Link is expected to be closed by its owner.
-    }
-    num_channels_to_close--;
-  };
-
-  if (num_channels_to_close == 0) {
-    error_signaler();
-    return;
-  }
-
+  std::vector<fit::promise<>> channel_closures;
   for (auto channel_iter = channels_.begin(); channel_iter != channels_.end();) {
-    auto& [_, channel] = *channel_iter++;
+    auto& [id, channel] = *channel_iter++;
 
     // Do not close the signaling channel, as it is used to close the dynamic channels.
-    if (channel == signaling_channel) {
+    if (id == kSignalingChannelId || id == kLESignalingChannelId) {
       continue;
     }
 
@@ -408,8 +395,22 @@ void LogicalLink::SignalError() {
     channel->OnClosed();
 
     // This erases from |channel_| and invalidates any iterator pointing to |channel|.
-    RemoveChannel(channel.get(), error_signaler.share());
+    channel_closures.emplace_back(RemoveChannel(channel.get()));
   }
+
+  fit::promise<> error_signaler =
+      fit::join_promise_vector(std::move(channel_closures))
+          .and_then([this](const std::vector<fit::result<>>& results) {
+            bt_log(TRACE, "l2cap", "Channels on link %#.4x closed; passing error to lower layer",
+                   handle());
+
+            // Invoking this may destroy this LogicalLink.
+            link_error_cb_();
+
+            // Link is expected to be closed by its owner.
+            return fit::ok();
+          });
+  executor_->schedule_task(std::move(error_signaler));
 }
 
 void LogicalLink::Close() {

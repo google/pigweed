@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
 #include "fbl/ref_ptr.h"
+#include "lib/fit/single_threaded_executor.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
@@ -37,7 +38,7 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
     auto drop_acl_cb = [](hci::ACLPacketPredicate) {};
     auto query_service_cb = [](hci::ConnectionHandle, PSM) { return std::nullopt; };
     auto acl_priority_cb = [](auto, auto, auto) {};
-    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, kMaxPayload,
+    link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, &executor_, kMaxPayload,
                              std::move(send_packets_cb), std::move(drop_acl_cb),
                              std::move(query_service_cb), std::move(acl_priority_cb),
                              /*random_channel_ids=*/true);
@@ -47,6 +48,7 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
 
  private:
   fbl::RefPtr<LogicalLink> link_;
+  fit::single_threaded_executor executor_;
 };
 
 using L2CAP_LogicalLinkDeathTest = L2CAP_LogicalLinkTest;

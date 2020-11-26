@@ -152,7 +152,7 @@ void ChannelImpl::Deactivate() {
   CleanUp();
 
   // |link| is expected to ignore this call if it has been closed.
-  link->RemoveChannel(this, [] {});
+  link->RemoveChannel(this);
 }
 
 void ChannelImpl::SignalLinkError() {

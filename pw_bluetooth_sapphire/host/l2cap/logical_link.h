@@ -7,6 +7,7 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
+#include <lib/fit/promise.h>
 #include <lib/fit/thread_checker.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/trace/event.h>
@@ -72,8 +73,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-                                      hci::Connection::Role role, size_t max_payload_size,
-                                      SendPacketsCallback send_packets_cb,
+                                      hci::Connection::Role role, fit::executor* executor,
+                                      size_t max_payload_size, SendPacketsCallback send_packets_cb,
                                       DropQueuedAclCallback drop_queued_acl_cb,
                                       QueryServiceCallback query_service_cb,
                                       RequestAclPriorityCallback acl_priority_cb,
@@ -175,7 +176,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend fbl::RefPtr<LogicalLink>;
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-              hci::Connection::Role role, size_t max_acl_payload_size,
+              hci::Connection::Role role, fit::executor* executor, size_t max_acl_payload_size,
               SendPacketsCallback send_packets_cb, DropQueuedAclCallback drop_queued_acl_cb,
               QueryServiceCallback query_service_cb, RequestAclPriorityCallback acl_priority_cb);
 
@@ -192,11 +193,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // Returns true if |id| is valid and supported by the peer.
   bool AllowsFixedChannel(ChannelId id);
 
-  // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Calls |close_cb|
-  // when channel closure completes, which may be asynchronous for dynamic channels.
-  //
-  // Does nothing if the link is closed, but |close_cb| will still be called.
-  void RemoveChannel(Channel* chan, fit::closure close_cb);
+  // Called by ChannelImpl::Deactivate(). Removes the channel from the given link. Returned promise
+  // yields fit::ok when channel no longer exists.
+  fit::promise<> RemoveChannel(Channel* chan);
 
   // Called by ChannelImpl::SignalLinkError() to disconnect all channels then signal an error to the
   // lower layers (usually GAP, to request a link disconnection). Has no effect if the link is
@@ -315,6 +314,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
     inspect::StringProperty link_type;
   };
   InspectProperties inspect_properties_;
+
+  fit::executor* const executor_;
 
   fit::thread_checker thread_checker_;
 

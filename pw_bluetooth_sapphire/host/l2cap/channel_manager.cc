@@ -4,6 +4,7 @@
 
 #include "channel_manager.h"
 
+#include <lib/async/default.h>
 #include <lib/trace/event.h>
 #include <zircon/assert.h>
 
@@ -33,6 +34,7 @@ ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payloa
       drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
       acl_priority_cb_(std::move(priority_cb)),
       random_channel_ids_(random_channel_ids),
+      executor_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
   ZX_ASSERT(send_acl_cb_);
   ZX_ASSERT(drop_queued_acl_cb_);
@@ -255,7 +257,7 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
                         ChannelManager::ChannelPriority(channel_id));
   };
 
-  auto ll = internal::LogicalLink::New(handle, ll_type, role, max_payload_size,
+  auto ll = internal::LogicalLink::New(handle, ll_type, role, &executor_, max_payload_size,
                                        std::move(send_acl_cb), drop_queued_acl_cb_.share(),
                                        fit::bind_member(this, &ChannelManager::QueryService),
                                        acl_priority_cb_.share(), random_channel_ids_);

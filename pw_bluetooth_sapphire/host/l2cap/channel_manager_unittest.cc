@@ -1135,6 +1135,8 @@ TEST_F(L2CAP_ChannelManagerTest, LEChannelSignalLinkError) {
   auto chan = ActivateNewFixedChannel(kATTChannelId, kTestHandle1);
   chan->SignalLinkError();
 
+  RunLoopUntilIdle();
+
   EXPECT_TRUE(link_error);
 }
 
@@ -1146,6 +1148,8 @@ TEST_F(L2CAP_ChannelManagerTest, ACLChannelSignalLinkError) {
   // Activate a new Security Manager channel to signal the error.
   auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
   chan->SignalLinkError();
+
+  RunLoopUntilIdle();
 
   EXPECT_TRUE(link_error);
 }
@@ -1215,6 +1219,8 @@ TEST_F(L2CAP_ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   const auto disconnection_rsp =
       testing::AclDisconnectionRsp(disconn_req_id, kTestHandle1, kLocalId, kRemoteId);
   ReceiveAclDataPacket(disconnection_rsp);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
 
   EXPECT_TRUE(link_error);
 }

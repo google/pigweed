@@ -17,6 +17,7 @@
 
 #include <fbl/macros.h>
 
+#include "lib/async/cpp/executor.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -244,6 +245,11 @@ class ChannelManager final {
 
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;
+
+  // TODO(fxbug.rev/63851): Find a better home for this. For now, we know that this only holds
+  // promises scheduled by LogicalLinks to destroy themselves, so this living here provides a
+  // minimal guarantee that the executor outlives the LogicalLinks.
+  async::Executor executor_;
 
   fit::thread_checker thread_checker_;
   fxl::WeakPtrFactory<ChannelManager> weak_ptr_factory_;
