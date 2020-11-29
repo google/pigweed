@@ -91,7 +91,7 @@
   {
     "path": "pigweed/host_tools/${os}-${arch=amd64}",
     "tags": [
-      "git_revision:a9e249dad3cb9e29f7484d2a24a6def9337e0773"
+      "git_revision:35ad5553bb0f4ebd79c919d3bc97a04d6962e87e"
     ]
   },
   {
