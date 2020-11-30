@@ -22,5 +22,7 @@ See the documentation for ``pw_chrono`` for further details.
 Build targets
 -------------
 The GN build for ``pw_chrono_stl`` has one target: ``system_clock``.
-The ``system_clock`` target provides the ``pw_chrono_stl/system_clock.h`` header
-and the backend for the ``pw_chrono:system_clock``.
+The ``system_clock`` target provides the
+``pw_chrono_backend/system_clock_config.h`` and
+``pw_chrono_backend/system_clock_inline.h`` headers and the backend for the
+``pw_chrono:system_clock``.
