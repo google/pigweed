@@ -667,7 +667,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
                                                              sm::BondableMode bondable_mode,
                                                              ConnectionResultCallback callback) {
   ZX_DEBUG_ASSERT(link);
-  bt_log(DEBUG, "gap-le", "new remote-initiated link (local addr: %s): %s",
+  bt_log(INFO, "gap-le", "new remote-initiated link (local addr: %s): %s",
          bt_str(link->local_address()), bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
@@ -914,7 +914,7 @@ void LowEnergyConnectionManager::CleanUpConnection(
 void LowEnergyConnectionManager::RegisterLocalInitiatedLink(std::unique_ptr<hci::Connection> link) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
-  bt_log(INFO, "gap-le", "new connection %s", bt_str(*link));
+  bt_log(INFO, "gap-le", "new local-initiated link %s", bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
