@@ -90,9 +90,9 @@ void LogMessage(const char* file, int line, LogSeverity severity, const char* ta
   va_list args;
   va_start(args, fmt);
   if (IsPrintfEnabled()) {
-    std::string msg =
-        fxl::StringPrintf("%s: [%s:%s:%d]%s%s %s\n", LogSeverityToString(severity), tag, file, line,
-                          FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), fmt);
+    std::string msg = fxl::StringPrintf(
+        "%s: [%s:%s:%d]%s%s %s\n", LogSeverityToString(severity), tag, bt::internal::BaseName(file),
+        line, FormattedLogContexts().c_str(), FormattedLogScopes().c_str(), fmt);
     vprintf(msg.c_str(), args);
   } else {
     std::string msg = fxl::StringPrintf("[%s]%s%s %s", tag, FormattedLogContexts().c_str(),

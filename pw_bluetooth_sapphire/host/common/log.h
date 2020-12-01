@@ -161,7 +161,7 @@ LogContext SaveLogContext();
 
 // This macro should be kept as small as possible to reduce binary size.
 #define bt_log(flag, tag, fmt...) \
-  bt::LogMessage(bt::internal::BaseName(__FILE__), __LINE__, bt::LogSeverity::flag, tag, fmt)
+  bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};
 
