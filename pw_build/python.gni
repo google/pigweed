@@ -59,12 +59,19 @@ template("pw_python_package") {
   # _pw_standalone signals that this target is actually a pw_python_script.
   _is_package = !(defined(invoker._pw_standalone) && invoker._pw_standalone)
 
+  # Some build targets generate Python packages, setting _pw_generated to
+  # indicate this.
+  _is_generated_package =
+      defined(invoker._pw_generated) && invoker._pw_generated
+
   if (_is_package) {
     assert(defined(invoker.setup) && invoker.setup != [],
            "pw_python_package requires 'setup' to point to a setup.py file " +
                "or pyproject.toml and setup.cfg files")
 
-    _all_py_files += invoker.setup
+    if (!_is_generated_package) {
+      _all_py_files += invoker.setup
+    }
 
     # Get the directories of the setup files. All files must be in the same dir.
     _setup_dirs = get_path_info(invoker.setup, "dir")
@@ -76,7 +83,8 @@ template("pw_python_package") {
     }
 
     # If sources are provided, make sure there is an __init__.py file.
-    if (defined(invoker.sources) && invoker.sources != []) {
+    if (!_is_generated_package && defined(invoker.sources) &&
+        invoker.sources != []) {
       assert(filter_include(invoker.sources, [ "*\b__init__.py" ]) != [],
              "Python packages must have at least one __init__.py file")
     }
@@ -168,54 +176,65 @@ template("pw_python_package") {
     ]
   }
 
-  pw_python_action("$target_name.lint.mypy") {
-    module = "mypy"
-    args = [
-      "--pretty",
-      "--show-error-codes",
-    ]
-    if (_is_package) {
-      args += [ rebase_path(_setup_dir) ]
-    } else {
-      args += rebase_path(_all_py_files)
+  # For packages that are not generated, create targets to run mypy and pylint.
+  # Linting is not performed on generated packages.
+  if (!_is_generated_package) {
+    pw_python_action("$target_name.lint.mypy") {
+      module = "mypy"
+      args = [
+        "--pretty",
+        "--show-error-codes",
+      ]
+      if (_is_package) {
+        args += [ rebase_path(_setup_dir) ]
+      } else {
+        args += rebase_path(_all_py_files)
+      }
+
+      # Use this environment variable to force mypy to colorize output.
+      # See https://github.com/python/mypy/issues/7771
+      environment = [ "MYPY_FORCE_COLOR=1" ]
+
+      stamp = true
+
+      deps = [ _package_target ]
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.lint.mypy" ]
+      }
     }
 
-    # Use this environment variable to force mypy to colorize output.
-    # See https://github.com/python/mypy/issues/7771
-    environment = [ "MYPY_FORCE_COLOR=1" ]
+    # Create a target to run pylint on each of the Python files in this
+    # package and its dependencies.
+    pw_python_action_foreach("$target_name.lint.pylint") {
+      module = "pylint"
+      args = [
+        "{{source_root_relative_dir}}/{{source_file_part}}",
+        "--jobs=1",
+        "--output-format=colorized",
+      ]
 
-    stamp = true
+      if (host_os == "win") {
+        # Allow CRLF on Windows, in case Git is set to switch line endings.
+        args += [ "--disable=unexpected-line-ending-format" ]
+      }
 
-    deps = [ _package_target ]
-    foreach(dep, _python_deps) {
-      deps += [ "$dep.lint.mypy" ]
+      sources = _all_py_files
+
+      stamp = "$target_gen_dir/{{source_target_relative}}.pylint.pw_pystamp"
+
+      # Run pylint from the source root so that pylint detects rcfiles
+      # (.pylintrc) in the source tree.
+      directory = rebase_path("//")
+
+      deps = [ _package_target ]
+      foreach(dep, _python_deps) {
+        deps += [ "$dep.lint.pylint" ]
+      }
     }
-  }
-
-  pw_python_action_foreach("$target_name.lint.pylint") {
-    module = "pylint"
-    args = [
-      "{{source_root_relative_dir}}/{{source_file_part}}",
-      "--jobs=1",
-      "--output-format=colorized",
-    ]
-
-    if (host_os == "win") {
-      # Allow CRLF on Windows, in case Git is set to switch line endings.
-      args += [ "--disable=unexpected-line-ending-format" ]
+  } else {
+    group("$target_name.lint.mypy") {
     }
-
-    sources = _all_py_files
-
-    stamp = "$target_gen_dir/{{source_target_relative}}.pylint.pw_pystamp"
-
-    # Run pylint from the source root so that pylint detects rcfiles (.pylintrc)
-    # in the source tree.
-    directory = rebase_path("//")
-
-    deps = [ _package_target ]
-    foreach(dep, _python_deps) {
-      deps += [ "$dep.lint.pylint" ]
+    group("$target_name.lint.pylint") {
     }
   }
 

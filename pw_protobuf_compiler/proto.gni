@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/input_group.gni")
+import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
@@ -219,6 +220,69 @@ template("_pw_go_proto_library") {
   }
 }
 
+# Generates Python code for proto files, creating a pw_python_package containing
+# the generated files. This is internal and should not be used outside of this
+# file. Use pw_proto_library instead.
+template("_pw_python_proto_library") {
+  _target = target_name
+  _package_dir = ""
+
+  foreach(_rebased_proto_path, rebase_path(invoker.sources, ".")) {
+    _path_components = []
+    _path_components = string_split(_rebased_proto_path, "/")
+
+    assert(_path_components != [ _rebased_proto_path ] &&
+               _path_components[0] != "..",
+           "Sources in a pw_proto_library must live in subdirectories " +
+               "of where it is defined")
+
+    if (_package_dir == "") {
+      _package_dir = _path_components[0]
+    } else {
+      assert(_path_components[0] == _package_dir,
+             "All .proto sources in a pw_proto_library must live " +
+                 "in the same directory tree")
+    }
+  }
+
+  _pw_invoke_protoc(target_name) {
+    forward_variables_from(invoker, "*", _forwarded_vars)
+    language = "python"
+    output_extensions = [ "_pb2.py" ]
+  }
+
+  _setup_py = "${invoker.gen_dir}/setup.py"
+
+  # Create the setup and init files for the Python package.
+  pw_python_action(target_name + "._package_gen") {
+    script = "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_python_package.py"
+    args = [
+             "--setup",
+             rebase_path(_setup_py),
+             "--package",
+             _package_dir,
+           ] + rebase_path(get_path_info(invoker.sources, "dir"), ".")
+    public_deps = [ ":$_target._gen" ]
+    stamp = true
+  }
+
+  # Create a Python package with the generated source files.
+  pw_python_package(target_name) {
+    forward_variables_from(invoker, _forwarded_vars)
+    setup = [ _setup_py ]
+    sources = get_target_outputs(":$target_name._gen")
+    python_deps = invoker.deps
+    other_deps = [ ":$_target._package_gen" ]
+    _pw_generated = true
+  }
+}
+
+declare_args() {
+  # Temporary build arg to allow projects to update their proto libraries to be
+  # Python-compatible.
+  pw_protobuf_compiler_DISABLE_PYTHON = false
+}
+
 # Generates protobuf code from .proto definitions for various languages.
 # For each supported generator, creates a sub-target named:
 #
@@ -322,6 +386,15 @@ template("pw_proto_library") {
     base_target = _common.base_target
   }
 
+  if (!pw_protobuf_compiler_DISABLE_PYTHON) {
+    _pw_python_proto_library("$target_name.python") {
+      sources = invoker.sources
+      forward_variables_from(_common, "*")
+      deps = process_file_template(_deps, "{{source}}.python")
+      base_target = _common.base_target
+    }
+  }
+
   # All supported pw_protobuf generators.
   _protobuf_generators = [
     "pwpb",
@@ -329,6 +402,7 @@ template("pw_proto_library") {
     "nanopb_rpc",
     "raw_rpc",
     "go",
+    "python",
   ]
 
   # If the user attempts to use the target directly instead of one of the

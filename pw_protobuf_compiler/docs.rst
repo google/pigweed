@@ -15,9 +15,6 @@ Protobuf code generation is currently supported for the following generators:
 +-------------+----------------+-----------------------------------------------+
 | pw_protobuf | ``pwpb``       | Compiles using ``pw_protobuf``.               |
 +-------------+----------------+-----------------------------------------------+
-| Go          | ``go``         | Compiles using the standard Go protobuf       |
-|             |                | plugin with gRPC service support.             |
-+-------------+----------------+-----------------------------------------------+
 | Nanopb      | ``nanopb``     | Compiles using Nanopb. The build argument     |
 |             |                | ``dir_pw_third_party_nanopb`` must be set to  |
 |             |                | point to a local nanopb installation.         |
@@ -26,6 +23,12 @@ Protobuf code generation is currently supported for the following generators:
 |             |                | nanopb. Requires a nanopb installation.       |
 +-------------+----------------+-----------------------------------------------+
 | Raw RPC     | ``raw_rpc``    | Compiles raw binary pw_rpc service code.      |
++-------------+----------------+-----------------------------------------------+
+| Go          | ``go``         | Compiles using the standard Go protobuf       |
+|             |                | plugin with gRPC service support.             |
++-------------+----------------+-----------------------------------------------+
+| Python      | ``python``     | Compiles using the standard Python protobuf   |
+|             |                | plugin, creating a ``pw_python_package``.     |
 +-------------+----------------+-----------------------------------------------+
 
 GN template

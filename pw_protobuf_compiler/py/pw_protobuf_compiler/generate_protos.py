@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -107,6 +107,10 @@ def protoc_raw_rpc_args(args: argparse.Namespace) -> List[str]:
     ]
 
 
+def protoc_python_args(args: argparse.Namespace) -> List[str]:
+    return ['--python_out', args.out_dir]
+
+
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
 DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
@@ -115,7 +119,11 @@ DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
     'nanopb': protoc_nanopb_args,
     'nanopb_rpc': protoc_nanopb_rpc_args,
     'raw_rpc': protoc_raw_rpc_args,
+    'python': protoc_python_args,
 }
+
+# Languages that protoc internally supports.
+BUILTIN_PROTOC_LANGS = ('go', 'python')
 
 
 def main() -> int:
@@ -124,7 +132,7 @@ def main() -> int:
     parser = argument_parser()
     args = parser.parse_args()
 
-    if args.plugin_path is None and args.language != 'go':
+    if args.plugin_path is None and args.language not in BUILTIN_PROTOC_LANGS:
         parser.error(
             f'--plugin-path is required for --language {args.language}')
 
