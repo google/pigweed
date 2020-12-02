@@ -138,7 +138,7 @@ TEST(Encoder, EncodeInvalidArguments) {
 
 TEST(Encoder, Nested) {
   std::byte encode_buffer[128];
-  NestedEncoder<5, 10> encoder(encode_buffer);
+  NestedEncoder<5, 5> encoder(encode_buffer);
 
   // TestProto test_proto;
   // test_proto.magic_number = 42;
@@ -222,7 +222,7 @@ TEST(Encoder, Nested) {
 
 TEST(Encoder, NestedDepthLimit) {
   std::byte encode_buffer[128];
-  NestedEncoder<2, 10> encoder(encode_buffer);
+  NestedEncoder<2, 2> encoder(encode_buffer);
 
   // One level of nesting.
   EXPECT_EQ(encoder.Push(2), Status::Ok());
@@ -239,7 +239,7 @@ TEST(Encoder, NestedDepthLimit) {
 
 TEST(Encoder, NestedBlobLimit) {
   std::byte encode_buffer[128];
-  NestedEncoder<5, 3> encoder(encode_buffer);
+  NestedEncoder<3, 3> encoder(encode_buffer);
 
   // Write first blob.
   EXPECT_EQ(encoder.Push(1), Status::Ok());
@@ -255,10 +255,9 @@ TEST(Encoder, NestedBlobLimit) {
   // End second blob.
   EXPECT_EQ(encoder.Pop(), Status::Ok());
 
-  // Write fourth blob: error!.
-  EXPECT_EQ(encoder.Push(4), Status::ResourceExhausted());
-  // Nothing to pop.
-  EXPECT_EQ(encoder.Pop(), Status::ResourceExhausted());
+  // Write fourth blob: OK
+  EXPECT_EQ(encoder.Push(4), Status::Ok());
+  EXPECT_EQ(encoder.Pop(), Status::Ok());
 }
 
 TEST(Encoder, RepeatedField) {

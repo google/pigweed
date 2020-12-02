@@ -123,15 +123,24 @@ Status Encoder::Pop() {
   SizeType child_size = *blob_stack_[--depth_];
   IncreaseParentSize(child_size + VarintSizeBytes(child_size));
 
+  // Encode the child
+  if (Status status = EncodeFrom(blob_count_ - 1).status(); !status.ok()) {
+    encode_status_ = status;
+    return encode_status_;
+  }
+  blob_count_--;
+
   return Status::Ok();
 }
 
-Result<ConstByteSpan> Encoder::Encode() {
+Result<ConstByteSpan> Encoder::Encode() { return EncodeFrom(0); }
+
+Result<ConstByteSpan> Encoder::EncodeFrom(size_t blob) {
   if (!encode_status_.ok()) {
     return encode_status_;
   }
 
-  if (blob_count_ == 0) {
+  if (blob >= blob_count_) {
     // If there are no nested blobs, the buffer already contains a valid proto.
     return Result<ConstByteSpan>(buffer_.first(EncodedSize()));
   }
@@ -143,7 +152,6 @@ Result<ConstByteSpan> Encoder::Encode() {
 
   // Starting from the first blob, encode each size field as a varint and
   // shift all subsequent data downwards.
-  unsigned int blob = 0;
   size_cursor = blob_locations_[blob];
   std::byte* write_cursor = read_cursor;
 

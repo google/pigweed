@@ -352,6 +352,9 @@ class Encoder {
     return size_bytes;
   }
 
+  // Do the actual (potentially partial) encoding. Also used in Pop().
+  Result<ConstByteSpan> EncodeFrom(size_t blob);
+
   // The buffer into which the proto is encoded.
   ByteSpan buffer_;
   std::byte* cursor_;
@@ -369,7 +372,7 @@ class Encoder {
 };
 
 // A proto encoder with its own blob stack.
-template <size_t kMaxNestedDepth = 1, size_t kMaxBlobs = 1>
+template <size_t kMaxNestedDepth = 1, size_t kMaxBlobs = kMaxNestedDepth>
 class NestedEncoder : public Encoder {
  public:
   NestedEncoder(ByteSpan buffer) : Encoder(buffer, blobs_, stack_) {}
