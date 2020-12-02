@@ -8,12 +8,15 @@
 
 #include <gtest/gtest.h>
 
+#include "lib/async/default.h"
 #include "lib/fit/result.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/fake_phase_listener.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
@@ -30,7 +33,7 @@ struct ScStage1Args {
   PairingMethod method = PairingMethod::kJustWorks;
 };
 
-class SMP_ScStage1JustWorksNumericComparisonTest : public ::gtest::TestLoopFixture {
+class SMP_ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChannelTest {
  public:
   SMP_ScStage1JustWorksNumericComparisonTest() = default;
   ~SMP_ScStage1JustWorksNumericComparisonTest() = default;
@@ -42,8 +45,9 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public ::gtest::TestLoopFixtu
   void NewScStage1JustWorksNumericComparison(ScStage1Args args = ScStage1Args()) {
     args_ = args;
     listener_ = std::make_unique<FakeListener>();
-    stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
-        listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
+    fake_chan_ = CreateFakeChannel(ChannelOptions(l2cap::kLESMPChannelId));
+    sm_chan_ = std::make_unique<PairingChannel>(fake_chan_);
+    fake_chan_->SetSendCallback(
         [this](ByteBufferPtr sent_packet) {
           auto maybe_reader = ValidPacketReader::ParseSdu(sent_packet);
           ASSERT_TRUE(maybe_reader.is_ok())
@@ -52,6 +56,10 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public ::gtest::TestLoopFixtu
           last_packet_ = maybe_reader.value();
           last_packet_internal_ = std::move(sent_packet);
         },
+        async_get_default_dispatcher());
+    stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
+        listener_->as_weak_ptr(), args.role, args.local_pub_key_x, args.peer_pub_key_x, args.method,
+        sm_chan_->GetWeakPtr(),
         [this](fit::result<ScStage1::Output, ErrorCode> out) { last_results_ = out; });
   }
 
@@ -85,6 +93,8 @@ class SMP_ScStage1JustWorksNumericComparisonTest : public ::gtest::TestLoopFixtu
  private:
   ScStage1Args args_;
   std::unique_ptr<FakeListener> listener_;
+  fbl::RefPtr<l2cap::testing::FakeChannel> fake_chan_;
+  std::unique_ptr<PairingChannel> sm_chan_;
   std::unique_ptr<ScStage1JustWorksNumericComparison> stage_1_;
   std::optional<ValidPacketReader> last_packet_ = std::nullopt;
   // To store the last sent SDU so that the last_packet_ PacketReader points at valid data.
@@ -114,6 +124,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorJustWorks) {
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
@@ -142,6 +153,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorNumericComparison) {
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.initiator_rand = last_packet()->payload<PairingRandomValue>();
@@ -200,6 +212,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, InitiatorMismatchedConfirmAnd
 
   stage_1()->Run();
   stage_1()->OnPairingConfirm(vals.confirm);
+  RunLoopUntilIdle();
   vals.random[0] -= 1;
   ASSERT_FALSE(last_results().has_value());
   stage_1()->OnPairingRandom(vals.random);
@@ -216,11 +229,13 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderJustWorks) {
       .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
 
   stage_1()->Run();
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
   UInt128 sent_confirm = last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(kPeerRand);
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
@@ -247,11 +262,13 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
       .initiator_r = {0}, .responder_r = {0}, .initiator_rand = kPeerRand};
 
   stage_1()->Run();
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingConfirm, last_packet()->code());
   UInt128 sent_confirm = last_packet()->payload<PairingConfirmValue>();
 
   stage_1()->OnPairingRandom(kPeerRand);
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_packet().has_value());
   EXPECT_EQ(kPairingRandom, last_packet()->code());
   expected_results.responder_rand = last_packet()->payload<PairingRandomValue>();
@@ -267,6 +284,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, ResponderNumericComparison) {
   EXPECT_EQ(kExpectedCompare, compare);
 
   user_confirm(true);
+  RunLoopUntilIdle();
   ASSERT_TRUE(last_results()->is_ok());
   EXPECT_EQ(expected_results, last_results()->value());
 }
@@ -344,6 +362,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingFor
   DestroyStage1();
   // No results should be reported after Stage 1 is destroyed.
   user_confirm(true);
+  RunLoopUntilIdle();
   EXPECT_FALSE(last_results().has_value());
 }
 
@@ -366,6 +385,7 @@ TEST_F(SMP_ScStage1JustWorksNumericComparisonTest, StageDestroyedWhileWaitingFor
   DestroyStage1();
   // No results should be reported after Stage 1 is destroyed.
   user_confirm(true);
+  RunLoopUntilIdle();
   EXPECT_FALSE(last_results().has_value());
 }
 

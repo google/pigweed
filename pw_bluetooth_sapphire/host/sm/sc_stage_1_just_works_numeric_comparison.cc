@@ -15,7 +15,7 @@ namespace bt::sm {
 
 ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
     fxl::WeakPtr<PairingPhase::Listener> listener, Role role, UInt256 local_pub_key_x,
-    UInt256 peer_pub_key_x, PairingMethod method, fit::function<void(ByteBufferPtr)> send_cb,
+    UInt256 peer_pub_key_x, PairingMethod method, fxl::WeakPtr<PairingChannel> sm_chan,
     Stage1CompleteCallback on_complete)
     : listener_(std::move(listener)),
       role_(role),
@@ -26,7 +26,7 @@ ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
       local_rand_(Random<UInt128>()),
       sent_local_rand_(false),
       peer_rand_(),
-      send_cb_(std::move(send_cb)),
+      sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
   ZX_ASSERT(method == PairingMethod::kJustWorks || method == PairingMethod::kNumericComparison);
@@ -44,10 +44,7 @@ void ScStage1JustWorksNumericComparison::Run() {
       return;
     }
     responder_confirm_ = *maybe_confirm;
-    auto sdu = util::NewPdu(sizeof(PairingConfirmValue));
-    auto writer = PacketWriter(kPairingConfirm, sdu.get());
-    *writer.mutable_payload<PairingConfirmValue>() = *responder_confirm_;
-    send_cb_(std::move(sdu));
+    sm_chan_->SendMessage(kPairingConfirm, *responder_confirm_);
     sent_pairing_confirm_ = true;
   }
 }
@@ -79,10 +76,7 @@ void ScStage1JustWorksNumericComparison::SendPairingRandom() {
   if (role_ == Role::kResponder) {
     ZX_ASSERT(peer_rand_.has_value());
   }
-  auto sdu = util::NewPdu(sizeof(PairingRandomValue));
-  auto writer = PacketWriter(kPairingRandom, sdu.get());
-  *writer.mutable_payload<PairingRandomValue>() = local_rand_;
-  send_cb_(std::move(sdu));
+  sm_chan_->SendMessage(kPairingRandom, local_rand_);
   sent_local_rand_ = true;
   if (role_ == Role::kResponder) {
     CompleteStage1();

@@ -30,7 +30,7 @@ uint8_t GetPasskeyBit(uint32_t passkey, size_t passkey_bit_location) {
 
 ScStage1Passkey::ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, Role role,
                                  UInt256 local_pub_key_x, UInt256 peer_pub_key_x,
-                                 PairingMethod method, fit::function<void(ByteBufferPtr)> send_cb,
+                                 PairingMethod method, fxl::WeakPtr<PairingChannel> sm_chan,
                                  Stage1CompleteCallback on_complete)
     : listener_(std::move(listener)),
       role_(role),
@@ -42,7 +42,7 @@ ScStage1Passkey::ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, 
       peer_confirm_(std::nullopt),
       sent_local_rand_(false),
       peer_rand_(std::nullopt),
-      send_cb_(std::move(send_cb)),
+      sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
       weak_ptr_factory_(this) {
   ZX_ASSERT(method == PairingMethod::kPasskeyEntryDisplay ||
@@ -126,10 +126,7 @@ void ScStage1Passkey::SendPairingConfirm() {
     return;
   }
   local_confirm_ = *maybe_confirm;
-  auto sdu = util::NewPdu(sizeof(PairingConfirmValue));
-  auto writer = PacketWriter(kPairingConfirm, sdu.get());
-  *writer.mutable_payload<PairingConfirmValue>() = local_confirm_;
-  send_cb_(std::move(sdu));
+  sm_chan_->SendMessage(kPairingConfirm, local_confirm_);
   sent_local_confirm_ = true;
 }
 
@@ -161,10 +158,7 @@ void ScStage1Passkey::SendPairingRandom() {
   if (role_ == Role::kResponder) {
     ZX_ASSERT(peer_rand_.has_value());
   }
-  auto sdu = util::NewPdu(sizeof(PairingRandomValue));
-  auto writer = PacketWriter(kPairingRandom, sdu.get());
-  *writer.mutable_payload<PairingRandomValue>() = local_rand_;
-  send_cb_(std::move(sdu));
+  sm_chan_->SendMessage(kPairingRandom, local_rand_);
   sent_local_rand_ = true;
 }
 

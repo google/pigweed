@@ -27,7 +27,7 @@ class ScStage1Passkey final : public ScStage1 {
  public:
   ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, Role role, UInt256 local_pub_key_x,
                   UInt256 peer_pub_key_x, PairingMethod method,
-                  fit::function<void(ByteBufferPtr)> send_cb, Stage1CompleteCallback on_complete);
+                  fxl::WeakPtr<PairingChannel> sm_chan, Stage1CompleteCallback on_complete);
   void Run() override;
   void OnPairingConfirm(PairingConfirmValue confirm) override;
   void OnPairingRandom(PairingRandomValue rand) override;
@@ -65,8 +65,7 @@ class ScStage1Passkey final : public ScStage1 {
   // The presence of |peer_rand_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingRandomValue> peer_rand_;
 
-  // Callback allowing this Stage 1 class to send messages to the L2CAP SM channel
-  fit::function<void(ByteBufferPtr)> send_cb_;
+  fxl::WeakPtr<PairingChannel> sm_chan_;
   Stage1CompleteCallback on_complete_;
   fxl::WeakPtrFactory<ScStage1Passkey> weak_ptr_factory_;
 };

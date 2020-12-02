@@ -50,10 +50,6 @@ class PairingChannel {
     chan_->Send(std::move(pdu));
   }
 
-  // Convenience functions to provide direct access to the underlying l2cap::Channel.
-  l2cap::Channel* get() const { return chan_.get(); }
-  l2cap::Channel* operator->() const { return get(); }
-
   fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   bool SupportsSecureConnections() const {

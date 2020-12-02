@@ -117,11 +117,6 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
 void Phase2SecureConnections::StartAuthenticationStage1() {
   ZX_ASSERT(peer_ecdh_);
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto send_cb = [self](ByteBufferPtr sdu) {
-    if (self) {
-      self->sm_chan()->Send(std::move(sdu));
-    }
-  };
   auto complete_cb = [self](fit::result<ScStage1::Output, ErrorCode> res) {
     if (self) {
       self->OnAuthenticationStage1Complete(res);
@@ -131,12 +126,12 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
     bt_log(TRACE, "sm", "Starting SC Stage 1 Numeric Comparison/Just Works");
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener(), role(), local_ecdh_->GetPublicKeyX(), peer_ecdh_->GetPublicKeyX(),
-        features_.method, std::move(send_cb), std::move(complete_cb));
+        features_.method, sm_chan().GetWeakPtr(), std::move(complete_cb));
   } else if (is_passkey_entry()) {
     bt_log(TRACE, "sm", "Starting SC Stage 1 Passkey Entry");
     stage_1_ = std::make_unique<ScStage1Passkey>(listener(), role(), local_ecdh_->GetPublicKeyX(),
                                                  peer_ecdh_->GetPublicKeyX(), features_.method,
-                                                 std::move(send_cb), std::move(complete_cb));
+                                                 sm_chan().GetWeakPtr(), std::move(complete_cb));
   } else {  // method == kOutOfBand
     // TODO(fxbug.dev/601): OOB would require significant extra plumbing & add security exposure not
     // necessary for current goals. This is not spec-compliant but should allow us to pass PTS.
