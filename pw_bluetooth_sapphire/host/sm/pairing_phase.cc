@@ -35,7 +35,7 @@ void PairingPhase::OnPairingTimeout() {
   ZX_ASSERT(!has_failed());
   // Pairing is no longer allowed. Disconnect the link.
   bt_log(WARN, "sm", "pairing timed out! disconnecting link");
-  (*sm_chan_)->SignalLinkError();
+  sm_chan().SignalLinkError();
 
   OnFailure(Status(HostError::kTimedOut));
 }

@@ -446,7 +446,7 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Status status, bool enabled) {
   if (CurrentLtkInsufficientlySecureForEncryption(ltk_, security_request_phase, security_mode())) {
     bt_log(WARN, "sm", "peer encrypted link with insufficiently secure key, disconnecting");
     delegate_->OnAuthenticationFailure(hci::Status(HostError::kInsufficientSecurity));
-    (*sm_chan_)->SignalLinkError();
+    sm_chan_->SignalLinkError();
     return;
   }
 
@@ -800,7 +800,7 @@ Status SecurityManagerImpl::ValidateExistingLocalLtk() {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.
     delegate_->OnAuthenticationFailure(hci::Status(hci::StatusCode::kPinOrKeyMissing));
-    (*sm_chan_)->SignalLinkError();
+    sm_chan_->SignalLinkError();
   }
   return status;
 }

@@ -16,8 +16,9 @@
 
 namespace bt::sm {
 
-// Wrapper for an L2CAP channel which manages pairing. Exists so that the channel callbacks can be
-// changed at runtime, which is done by changing the PairingChannel::Handler pointer.
+// Bridge class for the SMP L2CAP channel, which implements SM-specific functionality on top of
+// existing L2CAP functionality. Besides this SM-specific functionality, also allows runtime
+// modification of L2CAP event callbacks by changing the PairingChannel::Handler pointer.
 
 class PairingChannel {
  public:
@@ -37,20 +38,7 @@ class PairingChannel {
   // initialization exists because concrete Handlers are expected to depend on PairingChannels.
   void SetChannelHandler(fxl::WeakPtr<Handler> new_handler);
 
-  fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
-  bool SupportsSecureConnections() const {
-    return chan_->max_rx_sdu_size() >= kLeSecureConnectionsMtu &&
-           chan_->max_tx_sdu_size() >= kLeSecureConnectionsMtu;
-  }
-
-  // Convenience functions to provide direct access to the underlying l2cap::Channel.
-  l2cap::Channel* get() const { return chan_.get(); }
-  l2cap::Channel* operator->() const { return get(); }
-
-  ~PairingChannel() = default;
-
-  // Wrapper which abstracts some of the boilerplate around sending a SMP object.
+  // Wrapper which encapsulates some of the boilerplate involved in sending an SMP object.
   template <typename PayloadType>
   void SendMessage(Code message_code, const PayloadType& payload) {
     auto kExpectedSize = kCodeToPayloadSize.find(message_code);
@@ -61,6 +49,21 @@ class PairingChannel {
     *writer.mutable_payload<PayloadType>() = payload;
     chan_->Send(std::move(pdu));
   }
+
+  // Convenience functions to provide direct access to the underlying l2cap::Channel.
+  l2cap::Channel* get() const { return chan_.get(); }
+  l2cap::Channel* operator->() const { return get(); }
+
+  fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
+  bool SupportsSecureConnections() const {
+    return chan_->max_rx_sdu_size() >= kLeSecureConnectionsMtu &&
+           chan_->max_tx_sdu_size() >= kLeSecureConnectionsMtu;
+  }
+
+  void SignalLinkError() { chan_->SignalLinkError(); }
+  hci::Connection::LinkType link_type() const { return chan_->link_type(); }
+  ~PairingChannel() = default;
 
  private:
   // Used to delegate the L2CAP callbacks to the current handler

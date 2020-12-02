@@ -77,7 +77,7 @@ void Phase2SecureConnections::SendLocalPublicKey() {
 
 ErrorCode Phase2SecureConnections::CanReceivePeerPublicKey() const {
   // Only allowed on the LE transport.
-  if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
     bt_log(DEBUG, "sm", "cannot accept peer ecdh key value over BR/EDR");
     return ErrorCode::kCommandNotSupported;
   }
@@ -227,7 +227,7 @@ void Phase2SecureConnections::SendDhKeyCheckE() {
 
 ErrorCode Phase2SecureConnections::CanReceiveDhKeyCheck() const {
   // Only allowed on the LE transport.
-  if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
     bt_log(WARN, "sm", "cannot accept peer ecdh key check over BR/EDR (SC)");
     return ErrorCode::kCommandNotSupported;
   }

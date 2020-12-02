@@ -66,7 +66,7 @@ void Phase3::Start() {
 
 void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   // Only allowed on the LE transport.
-  if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Encryption Information\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
@@ -112,7 +112,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
 
 void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
   // Only allowed on the LE transport.
-  if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Master Identification\" over BR/EDR not supported!");
     Abort(ErrorCode::kCommandNotSupported);
     return;
@@ -246,7 +246,7 @@ bool Phase3::SendEncryptionKey() {
   ZX_ASSERT(!features_.secure_connections);
 
   // Only allowed on the LE transport.
-  if (sm_chan()->link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
     return false;
   }
 
