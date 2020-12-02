@@ -40,6 +40,7 @@ When invoking a method, requests may be provided as a message object or as
 kwargs for the message fields (but not both).
 """
 
+import inspect
 import logging
 import queue
 from typing import Any, Callable, Optional, Tuple
@@ -120,7 +121,7 @@ class _StreamingResponses:
         self._queue = responses
         self.status: Optional[Status] = None
 
-    def get(self, block: bool = True, timeout_s: float = None):
+    def get(self, *, block: bool = True, timeout_s: float = None):
         while True:
             self.status, response = self._queue.get(block, timeout_s)
             if self.status is not None:
@@ -132,22 +133,84 @@ class _StreamingResponses:
         return self.get()
 
 
-class UnaryMethodClient(_MethodClient):
-    def __call__(self, _request=None, **request_fields) -> Tuple[Status, Any]:
+def _method_client_docstring(method: Method) -> str:
+    return f'''\
+Class that invokes the {method.full_name} {method.type.sentence_name()} RPC.
+
+Calling this directly invokes the RPC synchronously. The RPC can be invoked
+asynchronously using the invoke or reinvoke methods.
+'''
+
+
+def _function_docstring(method: Method) -> str:
+    return f'''\
+Invokes the {method.full_name} {method.type.sentence_name()} RPC.
+
+This function accepts either a request protobuf as a single positional argument
+or the request fields as keyword arguments.
+'''
+
+
+def _update_function_signature(method: Method, function: Callable) -> None:
+    """Updates the name, docstring, and parameters to match a method."""
+    function.__name__ = method.full_name
+    function.__doc__ = _function_docstring(method)
+
+    # In order to have good tab completion and help messages, update the
+    # function signature to accept only keyword arguments for the proto message
+    # fields. This doesn't actually change the function signature -- it just
+    # updates how it appears when inspected.
+    sig = inspect.signature(function)
+
+    params = [next(iter(sig.parameters.values()))]  # Get the "self" parameter
+    params += method.request_parameters()
+    function.__signature__ = sig.replace(  # type: ignore[attr-defined]
+        parameters=params)
+
+
+def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
+                        channel: Channel, method: Method) -> _MethodClient:
+    """Creates an object used to call a unary method."""
+    def call(self,
+             _rpc_request_proto=None,
+             **request_fields) -> Tuple[Status, Any]:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
-            _request, **request_fields)
+            _rpc_request_proto, **request_fields)
         return responses.get()
 
+    _update_function_signature(method, call)
 
-class ServerStreamingMethodClient(_MethodClient):
-    def __call__(self, _request=None, **request_fields) -> _StreamingResponses:
+    # The MethodClient class is created dynamically so that the __call__ method
+    # can be configured differently for each method.
+    method_client_type = type(
+        f'{method.name}_UnaryMethodClient', (_MethodClient, ),
+        dict(__call__=call, __doc__=_method_client_docstring(method)))
+    return method_client_type(client_impl, rpcs, channel, method)
+
+
+def server_streaming_method_client(client_impl: 'Impl',
+                                   rpcs: client.PendingRpcs, channel: Channel,
+                                   method: Method):
+    """Creates an object used to call a server streaming method."""
+    def call(self,
+             _rpc_request_proto=None,
+             **request_fields) -> _StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
-            _request, **request_fields)
+            _rpc_request_proto, **request_fields)
         return _StreamingResponses(responses)
+
+    _update_function_signature(method, call)
+
+    # The MethodClient class is created dynamically so that the __call__ method
+    # can be configured differently for each method type.
+    method_client_type = type(
+        f'{method.name}_ServerStreamingMethodClient', (_MethodClient, ),
+        dict(__call__=call, __doc__=_method_client_docstring(method)))
+    return method_client_type(client_impl, rpcs, channel, method)
 
 
 class ClientStreamingMethodClient(_MethodClient):
@@ -173,15 +236,15 @@ class Impl(client.ClientImpl):
         """Returns an object that invokes a method using the given chanel."""
 
         if method.type is Method.Type.UNARY:
-            return UnaryMethodClient(self, rpcs, channel, method)
+            return unary_method_client(self, rpcs, channel, method)
 
         if method.type is Method.Type.SERVER_STREAMING:
-            return ServerStreamingMethodClient(self, rpcs, channel, method)
+            return server_streaming_method_client(self, rpcs, channel, method)
 
         if method.type is Method.Type.CLIENT_STREAMING:
             return ClientStreamingMethodClient(self, rpcs, channel, method)
 
-        if method.type is Method.Type.BIDI_STREAMING:
+        if method.type is Method.Type.BIDIRECTIONAL_STREAMING:
             return BidirectionalStreamingMethodClient(self, rpcs, channel,
                                                       method)
 

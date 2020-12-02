@@ -15,10 +15,12 @@
 
 from dataclasses import dataclass
 import enum
-from typing import Any, Callable, Collection, Dict, Generic, Iterable, Iterator
-from typing import Tuple, TypeVar, Union
+from inspect import Parameter
+from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
+                    Iterator, Tuple, TypeVar, Union)
 
 from google.protobuf import descriptor_pb2
+from google.protobuf.descriptor import FieldDescriptor
 from pw_rpc import ids
 from pw_protobuf_compiler import python_protos
 
@@ -76,6 +78,38 @@ def _streaming_attributes(method) -> Tuple[bool, bool]:
     return method_pb.server_streaming, method_pb.client_streaming
 
 
+_PROTO_FIELD_TYPES = {
+    FieldDescriptor.TYPE_BOOL: bool,
+    FieldDescriptor.TYPE_BYTES: bytes,
+    FieldDescriptor.TYPE_DOUBLE: float,
+    FieldDescriptor.TYPE_ENUM: int,
+    FieldDescriptor.TYPE_FIXED32: int,
+    FieldDescriptor.TYPE_FIXED64: int,
+    FieldDescriptor.TYPE_FLOAT: float,
+    FieldDescriptor.TYPE_INT32: int,
+    FieldDescriptor.TYPE_INT64: int,
+    FieldDescriptor.TYPE_SFIXED32: int,
+    FieldDescriptor.TYPE_SFIXED64: int,
+    FieldDescriptor.TYPE_SINT32: int,
+    FieldDescriptor.TYPE_SINT64: int,
+    FieldDescriptor.TYPE_STRING: str,
+    FieldDescriptor.TYPE_UINT32: int,
+    FieldDescriptor.TYPE_UINT64: int,
+    # These types are not annotated:
+    # FieldDescriptor.TYPE_GROUP = 10
+    # FieldDescriptor.TYPE_MESSAGE = 11
+}
+
+
+def _field_type_annotation(field: FieldDescriptor):
+    """Creates a field type annotation to use in the help message only."""
+    annotation = _PROTO_FIELD_TYPES.get(field.type, Parameter.empty)
+    if field.label == FieldDescriptor.LABEL_REPEATED:
+        return Iterable[annotation]  # type: ignore[valid-type]
+
+    return annotation
+
+
 @dataclass(frozen=True, eq=False)
 class Method:
     """Describes a method in a service."""
@@ -103,7 +137,10 @@ class Method:
         UNARY = 0
         SERVER_STREAMING = 1
         CLIENT_STREAMING = 2
-        BIDI_STREAMING = 3
+        BIDIRECTIONAL_STREAMING = 3
+
+        def sentence_name(self) -> str:
+            return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
 
     @property
     def full_name(self) -> str:
@@ -112,7 +149,7 @@ class Method:
     @property
     def type(self) -> 'Method.Type':
         if self.server_streaming and self.client_streaming:
-            return self.Type.BIDI_STREAMING
+            return self.Type.BIDIRECTIONAL_STREAMING
 
         if self.server_streaming:
             return self.Type.SERVER_STREAMING
@@ -130,10 +167,11 @@ class Method:
         fields (but not both).
         """
         if proto and proto_kwargs:
+            proto_str = repr(proto).strip() or "''"
             raise TypeError(
                 'Requests must be provided either as a message object or a '
                 'series of keyword args, but both were provided '
-                f'({proto!r} and {proto_kwargs!r})')
+                f"({proto_str} and {proto_kwargs!r})")
 
         if proto is None:
             return self.request_type(**proto_kwargs)
@@ -149,6 +187,17 @@ class Method:
                             f'got {bad_type}')
 
         return proto
+
+    def request_parameters(self) -> Iterator[Parameter]:
+        """Yields inspect.Parameters corresponding to the request's fields.
+
+        This can be used to make function signatures match the request proto.
+        """
+        for field in self.request_type.DESCRIPTOR.fields:
+            yield Parameter(field.name,
+                            Parameter.KEYWORD_ONLY,
+                            annotation=_field_type_annotation(field),
+                            default=field.default_value)
 
     def __repr__(self) -> str:
         req = self._method_parameter(self.request_type, self.client_streaming)
