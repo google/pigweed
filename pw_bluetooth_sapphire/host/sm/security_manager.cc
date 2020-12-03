@@ -130,7 +130,7 @@ class SecurityManagerImpl final : public SecurityManager,
   void OnChannelClosed() override;
 
   // Starts the SMP timer. Stops and cancels any in-progress timers.
-  bool StartNewTimer();
+  void StartNewTimer();
   // Stops and resets the SMP Pairing Timer.
   void StopTimer();
   // Called when the pairing timer expires, forcing the pairing process to stop
@@ -217,7 +217,8 @@ SecurityManagerImpl::SecurityManagerImpl(
       delegate_(std::move(delegate)),
       le_link_(std::move(link)),
       io_cap_(io_capability),
-      sm_chan_(std::make_unique<PairingChannel>(smp)),
+      sm_chan_(std::make_unique<PairingChannel>(
+          smp, fit::bind_member(this, &SecurityManagerImpl::StartNewTimer))),
       role_(le_link_->role() == hci::Connection::Role::kMaster ? Role::kInitiator
                                                                : Role::kResponder),
       weak_ptr_factory_(this) {
@@ -738,12 +739,11 @@ void SecurityManagerImpl::OnPairingFailed(Status status) {
   ResetState();
 }
 
-bool SecurityManagerImpl::StartNewTimer() {
+void SecurityManagerImpl::StartNewTimer() {
   if (timeout_task_.is_pending()) {
     ZX_ASSERT(timeout_task_.Cancel() == ZX_OK);
   }
   timeout_task_.PostDelayed(async_get_default_dispatcher(), kPairingTimeout);
-  return true;
 }
 
 void SecurityManagerImpl::StopTimer() {

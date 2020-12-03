@@ -15,8 +15,8 @@
 
 namespace bt::sm {
 
-PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
-    : chan_(std::move(chan)), weak_ptr_factory_(this) {
+PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan, fit::closure timer_resetter)
+    : chan_(std::move(chan)), reset_timer_(std::move(timer_resetter)), weak_ptr_factory_(this) {
   ZX_ASSERT(chan_);
   ZX_ASSERT(async_get_default_dispatcher());
   if (chan_->link_type() == hci::Connection::LinkType::kLE) {
@@ -47,6 +47,9 @@ PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
   ZX_ASSERT(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&
             chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
 }
+
+PairingChannel::PairingChannel(fbl::RefPtr<l2cap::Channel> chan)
+    : PairingChannel(std::move(chan), []() {}) {}
 
 void PairingChannel::SetChannelHandler(fxl::WeakPtr<Handler> new_handler) {
   ZX_ASSERT(new_handler);

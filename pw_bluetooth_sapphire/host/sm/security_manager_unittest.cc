@@ -2635,6 +2635,31 @@ TEST_F(SMP_InitiatorPairingTest, ResetStopsPairingTimer) {
   ASSERT_NE(HostError::kTimedOut, security_status().error());
 }
 
+TEST_F(SMP_InitiatorPairingTest, SendingMessageRestartsTimer) {
+  // SM will send the Pairing Request, which is special-cased to "reset and start" the pairing
+  // timer (v5.2 Vol. 3 Part H 3.4), and thus not under test here.
+  UpgradeSecurity(SecurityLevel::kEncrypted);
+  RunLoopUntilIdle();
+  ASSERT_EQ(1, pairing_request_count());
+  // Run the loop until the pairing timeout has almost expired.
+  RunLoopFor(kPairingTimeout - zx::duration(1));
+  // Receive the not special-cased Pairing Response, which should trigger SM to send the also not
+  // special-cased Pairing Confirm.
+  ReceivePairingFeatures();
+  // Run the loop for 1 more second, which would timeout if the timer had not been reset.
+  RunLoopFor(zx::duration(1));
+  // The timeout should not have triggered, so there should be no notification of pairing failure.
+  ASSERT_EQ(0, pairing_complete_count());
+  ASSERT_EQ(0, security_callback_count());
+  // Verify that the timer is in fact still active; without receiving further messages, the timeout
+  // should trigger.
+  RunLoopFor(kPairingTimeout);
+  ASSERT_EQ(1, pairing_complete_count());
+  ASSERT_EQ(1, security_callback_count());
+  ASSERT_EQ(HostError::kTimedOut, pairing_complete_status().error());
+  ASSERT_EQ(HostError::kTimedOut, security_status().error());
+}
+
 TEST_F(SMP_InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDisconnect) {
   SecurityProperties sec_props(SecurityLevel::kAuthenticated, 16, false);
   const LTK kOriginalLtk(sec_props, hci::LinkKey({1}, 2, 3));

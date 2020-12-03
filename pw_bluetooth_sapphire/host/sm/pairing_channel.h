@@ -30,7 +30,12 @@ class PairingChannel {
     virtual void OnChannelClosed() = 0;
   };
 
-  // Initializes this PairingChannel with the L2CAP SMP fixed channel that this class wraps.
+  // Initializes this PairingChannel with the L2CAP SMP fixed channel that this class wraps and the
+  // specified timer reset method. For use in production code.
+  PairingChannel(fbl::RefPtr<l2cap::Channel> chan, fit::closure timer_resetter);
+
+  // Initializes this PairingChannel with a no-op timer reset method. Only for use in tests of
+  // classes which do not depend on the timer reset behavior.
   explicit PairingChannel(fbl::RefPtr<l2cap::Channel> chan);
 
   // For setting the new handler, expected to be used when switching phases. PairingChannel is not
@@ -48,6 +53,7 @@ class PairingChannel {
     PacketWriter writer(message_code, pdu.get());
     *writer.mutable_payload<PayloadType>() = payload;
     chan_->Send(std::move(pdu));
+    reset_timer_();
   }
 
   fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
@@ -66,9 +72,13 @@ class PairingChannel {
   void OnRxBFrame(ByteBufferPtr ptr);
   void OnChannelClosed();
 
-  // The l2cap Channel this class wraps. Uses a ScopedChannel because a PairingChannel is expected
+  // The L2CAP Channel this class wraps. Uses a ScopedChannel because a PairingChannel is expected
   // to own the lifetime of the underlying L2CAP channel.
   l2cap::ScopedChannel chan_;
+
+  // Per v5.2 Vol. 3 Part H 3.4, "The Security Manager Timer shall be reset when an L2CAP SMP
+  // command is queued for transmission". This closure signals this reset to occur.
+  fit::closure reset_timer_;
 
   // L2CAP channel events are delegated to this handler.
   fxl::WeakPtr<Handler> handler_;

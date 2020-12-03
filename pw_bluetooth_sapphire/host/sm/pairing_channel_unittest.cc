@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "fbl/ref_ptr.h"
+#include "lib/fit/function.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -55,13 +56,20 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
         ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
-    sm_chan_ = std::make_unique<PairingChannel>(CreateFakeChannel(options));
+    sm_chan_ = std::make_unique<PairingChannel>(
+        CreateFakeChannel(options), fit::bind_member(this, &SMP_PairingChannelTest::ResetTimer));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
+  void set_timer_resetter(fit::closure timer_resetter) {
+    timer_resetter_ = std::move(timer_resetter);
+  }
 
  private:
+  void ResetTimer() { timer_resetter_(); }
+
   std::unique_ptr<PairingChannel> sm_chan_;
+  fit::closure timer_resetter_ = []() {};
 };
 
 using SMP_PairingChannelDeathTest = SMP_PairingChannelTest;
@@ -85,8 +93,11 @@ TEST_F(SMP_PairingChannelTest, SendMessageWorks) {
   StaticByteBuffer<util::PacketSize<PairingRandomValue>()> kExpectedPacket;
   PacketWriter w(kPairingRandom, &kExpectedPacket);
   *w.mutable_payload<PairingRandomValue>() = kExpectedPayload;
+  bool timer_reset = false;
+  set_timer_resetter([&]() { timer_reset = true; });
   sm_chan()->SendMessage(kPairingRandom, kExpectedPayload);
   Expect(kExpectedPacket);
+  ASSERT_TRUE(timer_reset);
 }
 
 // This checks that PairingChannel doesn't crash when receiving events without a handler set.
