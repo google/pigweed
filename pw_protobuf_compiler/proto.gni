@@ -277,12 +277,6 @@ template("_pw_python_proto_library") {
   }
 }
 
-declare_args() {
-  # Temporary build arg to allow projects to update their proto libraries to be
-  # Python-compatible.
-  pw_protobuf_compiler_DISABLE_PYTHON = false
-}
-
 # Generates protobuf code from .proto definitions for various languages.
 # For each supported generator, creates a sub-target named:
 #
@@ -386,13 +380,11 @@ template("pw_proto_library") {
     base_target = _common.base_target
   }
 
-  if (!pw_protobuf_compiler_DISABLE_PYTHON) {
-    _pw_python_proto_library("$target_name.python") {
-      sources = invoker.sources
-      forward_variables_from(_common, "*")
-      deps = process_file_template(_deps, "{{source}}.python")
-      base_target = _common.base_target
-    }
+  _pw_python_proto_library("$target_name.python") {
+    sources = invoker.sources
+    forward_variables_from(_common, "*")
+    deps = process_file_template(_deps, "{{source}}.python")
+    base_target = _common.base_target
   }
 
   # All supported pw_protobuf generators.
