@@ -19,9 +19,10 @@ from unittest import mock
 from typing import List, Tuple
 
 from pw_protobuf_compiler import python_protos
+from pw_rpc_protos import packet_pb2
 from pw_status import Status
 
-from pw_rpc import callback_client, client, packet_pb2, packets
+from pw_rpc import callback_client, client, packets
 
 TEST_PROTO_1 = """\
 syntax = "proto3";

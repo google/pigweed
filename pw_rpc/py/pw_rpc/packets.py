@@ -14,8 +14,8 @@
 """Functions for working with pw_rpc packets."""
 
 from google.protobuf import message
+from pw_rpc_protos import packet_pb2
 from pw_status import Status
-from pw_rpc import packet_pb2
 
 DecodeError = message.DecodeError
 Message = message.Message

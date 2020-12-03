@@ -19,10 +19,10 @@ import logging
 from typing import Collection, Dict, Iterable, Iterator, List, NamedTuple
 from typing import Optional
 
+from pw_rpc_protos.packet_pb2 import RpcPacket
 from pw_status import Status
 
 from pw_rpc import descriptors, packets
-from pw_rpc.packet_pb2 import RpcPacket
 from pw_rpc.packets import PacketType
 from pw_rpc.descriptors import Channel, Service, Method
 

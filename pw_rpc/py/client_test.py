@@ -16,11 +16,11 @@
 
 import unittest
 
+from pw_rpc_protos.packet_pb2 import RpcPacket
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
 
 from pw_rpc import callback_client, client, packets
-from pw_rpc.packet_pb2 import RpcPacket
 import pw_rpc.ids
 
 TEST_PROTO_1 = """\
