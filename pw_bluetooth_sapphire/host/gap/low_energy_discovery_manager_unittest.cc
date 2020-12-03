@@ -773,16 +773,24 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPee
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  int count = 0;
-  discovery_manager()->set_peer_connectable_callback([&](auto) { count++; });
+  int connectable_count = 0;
+  discovery_manager()->set_peer_connectable_callback([&](auto) { connectable_count++; });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  // Start discovery. Advertisements from the peer should be ignored since the
-  // peer is not in the cache (directed advertisements do not create new cache entries).
-  auto session = StartDiscoverySession();
+  auto active_session = StartDiscoverySession();
+  int active_count = 0;
+  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+
+  auto passive_session = StartDiscoverySession(/*active=*/false);
+  int passive_count = 0;
+  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+
   RunLoopUntilIdle();
-  ASSERT_TRUE(session);
-  EXPECT_EQ(0, count);
+  ASSERT_TRUE(active_session);
+  ASSERT_TRUE(passive_session);
+  EXPECT_EQ(0, connectable_count);
+  EXPECT_EQ(0, active_count);
+  EXPECT_EQ(0, passive_count);
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonConnectablePeer) {
@@ -793,16 +801,24 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownNonCo
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/false);
   ASSERT_TRUE(peer);
 
-  int count = 0;
-  discovery_manager()->set_peer_connectable_callback([&](auto) { count++; });
+  int connectable_count = 0;
+  discovery_manager()->set_peer_connectable_callback([&](auto) { connectable_count++; });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  // Start discovery. Advertisements from the peer should be ignored since the
-  // peer is known but not connectable.
-  auto session = StartDiscoverySession();
-  RunLoopUntilIdle();
-  ASSERT_TRUE(session);
-  EXPECT_EQ(0, count);
+  auto active_session = StartDiscoverySession();
+  int active_count = 0;
+  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+
+  auto passive_session = StartDiscoverySession(/*active=*/false);
+  int passive_count = 0;
+  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+
+  RunLoopFor(kTestScanPeriod);
+  ASSERT_TRUE(active_session);
+  ASSERT_TRUE(passive_session);
+  EXPECT_EQ(0, connectable_count);
+  EXPECT_EQ(0, active_count);
+  EXPECT_EQ(1, passive_count);
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConnectablePeer) {
@@ -812,21 +828,30 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromKnownConne
   Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  int count = 0;
+  int connectable_count = 0;
   discovery_manager()->set_peer_connectable_callback([&](Peer* callback_peer) {
     ASSERT_TRUE(callback_peer);
     EXPECT_TRUE(callback_peer->le());
     EXPECT_EQ(peer, callback_peer);
-    count++;
+    connectable_count++;
   });
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
-  // Start discovery. The connectable callback should get triggered since the peer is known and
-  // connectable.
-  auto session = StartDiscoverySession();
-  RunLoopUntilIdle();
-  ASSERT_TRUE(session);
-  EXPECT_EQ(1, count);
+  auto active_session = StartDiscoverySession();
+  int active_count = 0;
+  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+
+  auto passive_session = StartDiscoverySession(/*active=*/false);
+  int passive_count = 0;
+  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+
+  RunLoopFor(kTestScanPeriod);
+  ASSERT_TRUE(active_session);
+  ASSERT_TRUE(passive_session);
+  // Connectable callback will be notified at the start of each scan period.
+  EXPECT_EQ(2, connectable_count);
+  EXPECT_EQ(0, active_count);
+  EXPECT_EQ(1, passive_count);
 }
 
 TEST_F(GAP_LowEnergyDiscoveryManagerTest, ScanResultUpgradesKnownBrEdrPeerToDualMode) {

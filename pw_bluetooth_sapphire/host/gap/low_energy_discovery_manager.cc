@@ -249,6 +249,13 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
   if (peer->connectable() && connectable_cb_) {
     connectable_cb_(peer);
   }
+
+  // Only notify passive sessions.
+  for (const auto& session : sessions_) {
+    if (!session->active()) {
+      session->NotifyDiscoveryResult(*peer);
+    }
+  }
 }
 
 void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus status) {

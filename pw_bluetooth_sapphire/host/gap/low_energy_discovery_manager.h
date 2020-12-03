@@ -112,7 +112,7 @@ class LowEnergyDiscoverySession final {
   // this instance.
   ~LowEnergyDiscoverySession();
 
-  // Sets a callback for receiving notifications on newly discovered peers.
+  // Sets a callback for receiving notifications on discovered peers.
   // |data| contains advertising and scan response data (if any) obtained during
   // discovery.
   //
@@ -120,6 +120,10 @@ class LowEnergyDiscoverySession final {
   // the cached results from the most recent scan period. If a filter was
   // assigned earlier, then the callback will only receive results that match
   // the filter.
+  //
+  // Passive discovery sessions will call this callback for both directed and undirected
+  // advertisements from known peers, while active discovery sessions will ignore directed
+  // advertisements (as they are not from new peers).
   using PeerFoundCallback = fit::function<void(const Peer& peer)>;
   void SetResultCallback(PeerFoundCallback callback);
 
