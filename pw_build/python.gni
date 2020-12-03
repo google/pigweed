@@ -39,6 +39,8 @@ import("$dir_pw_build/python_action.gni")
 #   python_deps: Dependencies on other pw_python_packages in the GN build.
 #   other_deps: Dependencies on GN targets that are not pw_python_packages.
 #   inputs: Other files to track, such as package_data.
+#   lint: If true, applies mypy and pylint to the package. If false or
+#       indefined, does not.
 #
 template("pw_python_package") {
   if (defined(invoker.sources)) {
@@ -63,6 +65,14 @@ template("pw_python_package") {
   # indicate this.
   _is_generated_package =
       defined(invoker._pw_generated) && invoker._pw_generated
+
+  # Argument: invoker.lint = [true | false]; default = true.
+  # Default to false for generated packages, but allow overrides.
+  if (defined(invoker.lint)) {
+    _should_lint = invoker.lint
+  } else {
+    _should_lint = !_is_generated_package
+  }
 
   if (_is_package) {
     assert(defined(invoker.setup) && invoker.setup != [],
@@ -178,7 +188,7 @@ template("pw_python_package") {
 
   # For packages that are not generated, create targets to run mypy and pylint.
   # Linting is not performed on generated packages.
-  if (!_is_generated_package) {
+  if (_should_lint) {
     pw_python_action("$target_name.lint.mypy") {
       module = "mypy"
       args = [
