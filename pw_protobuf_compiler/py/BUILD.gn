@@ -27,4 +27,5 @@ pw_python_package("py") {
   ]
   tests = [ "python_protos_test.py" ]
   python_deps = [ "$dir_pw_cli/py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

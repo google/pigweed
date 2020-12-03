@@ -46,4 +46,5 @@ pw_python_package("py") {
     "example_binary_with_tokenized_strings.elf",
     "example_legacy_binary_with_tokenized_strings.elf",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

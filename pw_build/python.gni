@@ -23,13 +23,13 @@ import("$dir_pw_build/python_action.gni")
 #         actions. All subtargets depend on this target.
 #   - $name.lint - Runs static analyis tools on the Python code. This is a group
 #     of two subtargets:
-#     - $name.lint.mypy - Runs mypy.
-#     - $name.lint.pylint - Runs pylint.
+#     - $name.lint.mypy - Runs mypy (if enabled).
+#     - $name.lint.pylint - Runs pylint (if enabled).
 #   - $name.tests - Runs all tests for this package.
 #   - $name.install - Installs the package in a venv.
 #   - $name.wheel - Builds a Python wheel for the package. (Not implemented.)
 #
-# TODO(pwbug/239): Implement installation and wheel building.
+# TODO(pwbug/239): Implement wheel building.
 #
 # Args:
 #   setup: List of setup file paths (setup.py or pyproject.toml & setup.cfg),
@@ -39,9 +39,16 @@ import("$dir_pw_build/python_action.gni")
 #   python_deps: Dependencies on other pw_python_packages in the GN build.
 #   other_deps: Dependencies on GN targets that are not pw_python_packages.
 #   inputs: Other files to track, such as package_data.
-#   lint: If true, applies mypy and pylint to the package. If false or
-#       indefined, does not.
-#
+#   lint: If true (default), applies mypy and pylint to the package. If false,
+#       does not.
+#   pylintrc: Optional path to a pylintrc configuration file to use. If not
+#       provided, Pylint's default rcfile search is used. Pylint is executed
+#       from the package's setup directory, so pylintrc files in that directory
+#       will take precedence over others.
+#   mypy_ini: Optional path to a mypy configuration file to use. If not
+#       provided, mypy's default configuration file search is used. mypy is
+#       executed from the package's setup directory, so mypy.ini files in that
+#       directory will take precedence over others.
 template("pw_python_package") {
   if (defined(invoker.sources)) {
     _all_py_files = invoker.sources
@@ -189,12 +196,27 @@ template("pw_python_package") {
   # For packages that are not generated, create targets to run mypy and pylint.
   # Linting is not performed on generated packages.
   if (_should_lint) {
+    # Run lint tools from the setup or target directory so that the tools detect
+    # config files (e.g. pylintrc or mypy.ini) in that directory. Config files
+    # may be explicitly specified with the pylintrc or mypy_ini arguments.
+    if (defined(_setup_dir)) {
+      _lint_directory = rebase_path(_setup_dir)
+    } else {
+      _lint_directory = rebase_path(".")
+    }
+
     pw_python_action("$target_name.lint.mypy") {
       module = "mypy"
       args = [
         "--pretty",
         "--show-error-codes",
       ]
+
+      if (defined(invoker.mypy_ini)) {
+        args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
+        inputs = [ invoker.mypy_ini ]
+      }
+
       if (_is_package) {
         args += [ rebase_path(_setup_dir) ]
       } else {
@@ -205,6 +227,7 @@ template("pw_python_package") {
       # See https://github.com/python/mypy/issues/7771
       environment = [ "MYPY_FORCE_COLOR=1" ]
 
+      directory = _lint_directory
       stamp = true
 
       deps = [ _package_target ]
@@ -218,10 +241,15 @@ template("pw_python_package") {
     pw_python_action_foreach("$target_name.lint.pylint") {
       module = "pylint"
       args = [
-        "{{source_root_relative_dir}}/{{source_file_part}}",
+        rebase_path(".") + "/{{source_target_relative}}",
         "--jobs=1",
         "--output-format=colorized",
       ]
+
+      if (defined(invoker.pylintrc)) {
+        args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
+        inputs = [ invoker.pylintrc ]
+      }
 
       if (host_os == "win") {
         # Allow CRLF on Windows, in case Git is set to switch line endings.
@@ -230,11 +258,8 @@ template("pw_python_package") {
 
       sources = _all_py_files
 
-      stamp = "$target_gen_dir/{{source_target_relative}}.pylint.pw_pystamp"
-
-      # Run pylint from the source root so that pylint detects rcfiles
-      # (.pylintrc) in the source tree.
-      directory = rebase_path("//")
+      directory = _lint_directory
+      stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
 
       deps = [ _package_target ]
       foreach(dep, _python_deps) {
@@ -242,9 +267,15 @@ template("pw_python_package") {
       }
     }
   } else {
-    group("$target_name.lint.mypy") {
+    pw_input_group("$target_name.lint.mypy") {
+      if (defined(invoker.pylintrc)) {
+        inputs = [ invoker.pylintrc ]
+      }
     }
-    group("$target_name.lint.pylint") {
+    pw_input_group("$target_name.lint.pylint") {
+      if (defined(invoker.mypy_ini)) {
+        inputs = [ invoker.mypy_ini ]
+      }
     }
   }
 
@@ -326,6 +357,7 @@ template("pw_python_script") {
     "python_deps",
     "other_deps",
     "inputs",
+    "pylintrc",
   ]
 
   pw_python_package(target_name) {

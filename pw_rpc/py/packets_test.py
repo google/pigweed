@@ -16,9 +16,10 @@
 
 import unittest
 
+from pw_status import Status
+
 from pw_rpc import packets
 from pw_rpc.packet_pb2 import RpcPacket
-from pw_status import Status
 
 _TEST_REQUEST = RpcPacket(type=packets.PacketType.REQUEST,
                           channel_id=1,

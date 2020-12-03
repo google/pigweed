@@ -22,4 +22,5 @@ pw_python_package("py") {
     "lm3s6965evb_qemu_utils/__init__.py",
     "lm3s6965evb_qemu_utils/unit_test_runner.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

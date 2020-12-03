@@ -21,8 +21,9 @@ from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
 
 from google.protobuf import descriptor_pb2
 from google.protobuf.descriptor import FieldDescriptor
-from pw_rpc import ids
 from pw_protobuf_compiler import python_protos
+
+from pw_rpc import ids
 
 
 @dataclass(frozen=True)

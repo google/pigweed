@@ -20,13 +20,12 @@ import logging
 import os
 import subprocess
 import sys
-
 from typing import List, Iterable, Optional
+
+import pw_cli.log
 
 from pw_bloat.binary_diff import BinaryDiff
 from pw_bloat import bloat_output
-
-import pw_cli.log
 
 _LOG = logging.getLogger(__name__)
 

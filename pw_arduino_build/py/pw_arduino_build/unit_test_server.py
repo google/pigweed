@@ -21,6 +21,7 @@ import tempfile
 from typing import IO, List, Optional
 
 import pw_cli.process
+
 import pw_arduino_build.log
 from pw_arduino_build import teensy_detector
 from pw_arduino_build.file_operations import decode_file_json

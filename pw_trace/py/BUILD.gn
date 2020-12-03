@@ -23,4 +23,5 @@ pw_python_package("py") {
     "pw_trace/trace.py",
   ]
   tests = [ "trace_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

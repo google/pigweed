@@ -34,4 +34,5 @@ pw_python_package("py") {
     "pw_env_setup/virtualenv_setup/install.py",
     "pw_env_setup/windows_env_start.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

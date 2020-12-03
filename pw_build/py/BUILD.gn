@@ -33,4 +33,5 @@ pw_python_package("py") {
     "pw_build/zip_test.py",
   ]
   tests = [ "python_runner_test.py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

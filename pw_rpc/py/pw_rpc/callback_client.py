@@ -45,9 +45,10 @@ import logging
 import queue
 from typing import Any, Callable, Optional, Tuple
 
+from pw_status import Status
+
 from pw_rpc import client
 from pw_rpc.descriptors import Channel, Method, Service
-from pw_status import Status
 
 _LOG = logging.getLogger(__name__)
 

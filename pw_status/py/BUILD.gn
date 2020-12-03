@@ -22,4 +22,5 @@ pw_python_package("py") {
     "pw_status/__init__.py",
     "pw_status/update_style.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

@@ -21,8 +21,6 @@ import("python_action.gni")
 # This is typically used for targets that don't output any artifacts (e.g.
 # metadata-only targets) which list input files relevant to the build.
 template("pw_input_group") {
-  assert(defined(invoker.inputs), "pw_input_group requires some inputs")
-
   pw_python_action(target_name) {
     ignore_vars = [
       "args",

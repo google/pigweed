@@ -39,4 +39,5 @@ pw_python_package("py") {
     "$dir_pw_cli/py",
     "$dir_pw_package/py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

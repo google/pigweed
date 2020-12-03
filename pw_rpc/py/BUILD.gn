@@ -43,4 +43,5 @@ pw_python_package("py") {
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_status/py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

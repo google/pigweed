@@ -26,4 +26,5 @@ pw_python_package("py") {
     "pw_package/packages/nanopb.py",
     "pw_package/pigweed_packages.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

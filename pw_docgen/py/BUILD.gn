@@ -22,4 +22,5 @@ pw_python_package("py") {
     "pw_docgen/__init__.py",
     "pw_docgen/docgen.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

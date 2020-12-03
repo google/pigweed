@@ -23,4 +23,5 @@ pw_python_package("py") {
     "pw_allocator/heap_viewer.py",
   ]
   python_deps = [ "$dir_pw_cli/py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

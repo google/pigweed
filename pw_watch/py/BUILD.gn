@@ -24,4 +24,5 @@ pw_python_package("py") {
     "pw_watch/watch.py",
     "pw_watch/watch_test.py",
   ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

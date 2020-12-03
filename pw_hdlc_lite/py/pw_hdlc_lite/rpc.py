@@ -19,11 +19,12 @@ import threading
 import time
 from typing import Any, BinaryIO, Callable, Dict, Iterable, NoReturn
 
-from pw_hdlc_lite.decode import Frame, FrameDecoder
-from pw_hdlc_lite import encode
+from pw_protobuf_compiler import python_protos
 import pw_rpc
 from pw_rpc import callback_client
-from pw_protobuf_compiler import python_protos
+
+from pw_hdlc_lite.decode import Frame, FrameDecoder
+from pw_hdlc_lite import encode
 
 _LOG = logging.getLogger(__name__)
 
