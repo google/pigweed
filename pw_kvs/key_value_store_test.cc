@@ -47,63 +47,6 @@ using std::byte;
 constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
-// Test the functions in byte_utils.h. Create a byte array with bytes::Concat
-// and bytes::String and check that its contents are correct.
-constexpr std::array<char, 2> kTestArray = {'a', 'b'};
-
-constexpr auto kAsBytesTest = bytes::Concat('a',
-                                            uint16_t(1),
-                                            uint8_t(23),
-                                            kTestArray,
-                                            bytes::String("c"),
-                                            uint64_t(-1));
-
-static_assert(kAsBytesTest.size() == 15);
-static_assert(kAsBytesTest[0] == std::byte{'a'});
-static_assert(kAsBytesTest[1] == std::byte{1});
-static_assert(kAsBytesTest[2] == std::byte{0});
-static_assert(kAsBytesTest[3] == std::byte{23});
-static_assert(kAsBytesTest[4] == std::byte{'a'});
-static_assert(kAsBytesTest[5] == std::byte{'b'});
-static_assert(kAsBytesTest[6] == std::byte{'c'});
-static_assert(kAsBytesTest[7] == std::byte{0xff});
-static_assert(kAsBytesTest[8] == std::byte{0xff});
-static_assert(kAsBytesTest[9] == std::byte{0xff});
-static_assert(kAsBytesTest[10] == std::byte{0xff});
-static_assert(kAsBytesTest[11] == std::byte{0xff});
-static_assert(kAsBytesTest[12] == std::byte{0xff});
-static_assert(kAsBytesTest[13] == std::byte{0xff});
-static_assert(kAsBytesTest[14] == std::byte{0xff});
-
-// Test that the ConvertsToSpan trait correctly idenitifies types that convert
-// to std::span.
-static_assert(!ConvertsToSpan<int>());
-static_assert(!ConvertsToSpan<void>());
-static_assert(!ConvertsToSpan<std::byte>());
-static_assert(!ConvertsToSpan<std::byte*>());
-
-static_assert(ConvertsToSpan<std::array<int, 5>>());
-static_assert(ConvertsToSpan<decltype("Hello!")>());
-
-static_assert(ConvertsToSpan<std::string_view>());
-static_assert(ConvertsToSpan<std::string_view&>());
-static_assert(ConvertsToSpan<std::string_view&&>());
-
-static_assert(ConvertsToSpan<const std::string_view>());
-static_assert(ConvertsToSpan<const std::string_view&>());
-static_assert(ConvertsToSpan<const std::string_view&&>());
-
-static_assert(ConvertsToSpan<bool[1]>());
-static_assert(ConvertsToSpan<char[35]>());
-static_assert(ConvertsToSpan<const int[35]>());
-
-static_assert(ConvertsToSpan<std::span<int>>());
-static_assert(ConvertsToSpan<std::span<byte>>());
-static_assert(ConvertsToSpan<std::span<const int*>>());
-static_assert(ConvertsToSpan<std::span<bool>&&>());
-static_assert(ConvertsToSpan<const std::span<bool>&>());
-static_assert(ConvertsToSpan<std::span<bool>&&>());
-
 // This is a self contained flash unit with both memory and a single partition.
 template <uint32_t sector_size_bytes, uint16_t sector_count>
 struct FlashWithPartitionFake {

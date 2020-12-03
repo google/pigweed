@@ -221,6 +221,7 @@ pw_test_group("tests") {
   tests = [
     ":alignment_test",
     ":checksum_test",
+    ":converts_to_span_test",
     ":entry_test",
     ":entry_cache_test",
     ":flash_partition_small_test",
@@ -251,6 +252,11 @@ pw_test("checksum_test") {
     dir_pw_log,
   ]
   sources = [ "checksum_test.cc" ]
+}
+
+pw_test("converts_to_span_test") {
+  deps = [ ":pw_kvs" ]
+  sources = [ "converts_to_span_test.cc" ]
 }
 
 pw_test("entry_test") {
