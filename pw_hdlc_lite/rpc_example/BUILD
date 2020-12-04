@@ -22,7 +22,6 @@ pw_cc_library(
     srcs = [
         "hdlc_rpc_server.cc",
         "main.cc",
-        "rpc_task_loop.h",
     ],
     hdrs = [
         "public/pw_hdlc_lite/decoder.h",
