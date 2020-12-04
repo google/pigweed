@@ -102,6 +102,45 @@ class ByteBuffer {
     return *reinterpret_cast<const T*>(data());
   }
 
+  // Given a pointer to a member of a class, interpret the underlying buffer as a representation of
+  // the class and return a copy of the member, with bounds checking for reading the representation.
+  // Array elements (including multi-dimensional) will be returned as std::array. The buffer is
+  // allowed to be larger than T. The user is responsible for checking that the first sizeof(T)
+  // bytes represent a valid instance of T.
+  //
+  // Example:
+  //   struct Foo { float bar[3]; int baz; char qux[]; };
+  //   buffer.ReadMember<&Foo::bar>();  // OK, returns std::array<float, 3>
+  //   buffer.ReadMember<&Foo::baz>();  // OK, returns int
+  //   buffer.ReadMember<&Foo::qux>();  // Asserts, use ReadMember<&Foo::qux>(index) instead
+  //
+  // This functions similarly to C-style type punning at address
+  //   |buffer.data() + offsetof(Foo, bar)|
+  template <auto PointerToMember>
+  auto ReadMember() const {
+    using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::ClassType;
+    ZX_ASSERT_MSG(sizeof(ClassT) <= this->size(),
+                  "insufficient buffer (class size: %zu, buffer size: %zu)", sizeof(ClassT),
+                  this->size());
+    using MemberT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::MemberType;
+    if constexpr (std::is_array_v<MemberT>) {
+      static_assert(std::extent_v<MemberT> > 0,
+                    "use indexed overload of ReadMember for flexible array members");
+    }
+    using ReturnType = std::remove_cv_t<bt_lib_cpp_type::ToStdArrayT<MemberT>>;
+
+    // std::array is required to be an aggregate that's list-initialized per ISO/IEC 14882:2017(E)
+    // § 26.3.7.1 [array.overview] ¶ 2, so its layout's initial run is identical to a raw array.
+    static_assert(sizeof(MemberT) <= sizeof(ReturnType));
+    static_assert(std::is_trivially_copyable_v<MemberT>, "unsafe to copy representation");
+    static_assert(std::is_trivially_copyable_v<ReturnType>, "unsafe to copy representation");
+    ReturnType out{};
+    const size_t offset = bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::offset();
+    CopyRaw(/*dst_data=*/std::addressof(out), /*dst_capacity=*/sizeof(out), /*src_offset=*/offset,
+            /*copy_size=*/sizeof(MemberT));
+    return out;
+  }
+
   // Given a pointer to an array (or smart array) member of a class, interpret the underlying buffer
   // as a representation of the class and return a copy of the member's |index - 1|-th element, with
   // bounds checking for the indexing and reading representation bytes. Multi-dimensional arrays

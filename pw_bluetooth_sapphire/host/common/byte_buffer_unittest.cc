@@ -5,7 +5,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 #include <cstddef>
+#include <type_traits>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
@@ -301,6 +303,35 @@ TEST(ByteBufferTest, ByteBufferAsArray) {
   const auto array = buf.As<uint8_t[2]>();
   EXPECT_EQ(191, array[0]);
   EXPECT_EQ(25, array[1]);
+}
+
+TEST(ByteBufferTest, ByteBufferReadMember) {
+  struct [[gnu::packed]] Point {
+    uint8_t x;
+    const uint8_t y;
+    const uint8_t array[2];
+    char multi[2][1];
+    uint8_t flex[];
+  };
+
+  StaticByteBuffer data(0x01, 0x02, 0x03, 0x37, 0x7f, 0x02, 0x45);
+  auto x = data.ReadMember<&Point::x>();
+  static_assert(std::is_same_v<uint8_t, decltype(x)>);
+  EXPECT_EQ(data[offsetof(Point, x)], x);
+
+  // Top-level const qualifier is removed
+  auto y = data.ReadMember<&Point::y>();
+  static_assert(std::is_same_v<uint8_t, decltype(y)>);
+  EXPECT_EQ(data[offsetof(Point, y)], y);
+
+  // Returned array elements are const just like in the original struct
+  auto array = data.ReadMember<&Point::array>();
+  static_assert(std::is_same_v<std::array<const uint8_t, 2>, decltype(array)>);
+  EXPECT_THAT(array, ::testing::ElementsAre(0x03, 0x37));
+
+  auto multi = data.ReadMember<&Point::multi>();
+  static_assert(std::is_same_v<std::array<std::array<char, 1>, 2>, decltype(multi)>);
+  EXPECT_THAT(multi, ::testing::ElementsAre(std::array{char{0x7f}}, std::array{char{0x02}}));
 }
 
 TEST(ByteBufferTest, ByteBufferReadMemberOfFixedArrayType) {
