@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <string>
@@ -18,6 +19,9 @@
 #include <vector>
 
 #include <fbl/macros.h>
+
+#include "src/connectivity/bluetooth/lib/cpp-type/member_pointer_traits.h"
+#include "src/connectivity/bluetooth/lib/cpp-type/to_std_array.h"
 
 namespace bt {
 
@@ -87,7 +91,7 @@ class ByteBuffer {
 
   // Converts the underlying buffer to the given type with bounds checking. The buffer is allowed
   // to be larger than T. The user is responsible for checking that the first sizeof(T) bytes
-  // represents a valid instance of T.
+  // represent a valid instance of T.
   template <typename T>
   const T& As() const {
     // std::is_trivial_v would be a stronger guarantee that the buffer contains a valid T object,
@@ -96,6 +100,62 @@ class ByteBuffer {
     static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
     ZX_ASSERT(size() >= sizeof(T));
     return *reinterpret_cast<const T*>(data());
+  }
+
+  // Given a pointer to an array (or smart array) member of a class, interpret the underlying buffer
+  // as a representation of the class and return a copy of the member's |index - 1|-th element, with
+  // bounds checking for the indexing and reading representation bytes. Multi-dimensional arrays
+  // will return array elements as std::array. The buffer is allowed to be larger than T. The user
+  // is responsible for checking that the first sizeof(T) bytes represent a valid instance of T.
+  //
+  // Example:
+  //   struct Foo { float bar[3]; int baz; char qux[]; };
+  //   buffer.ReadMember<&Foo::bar>(2);  // OK
+  //   buffer.ReadMember<&Foo::qux>(3);  // OK, checked against buffer.size()
+  //   buffer.ReadMember<&Foo::bar>(3);  // Asserts because out-of-bounds on Foo::bar
+  //
+  // This functions similarly to C-style type punning at address
+  //   |buffer.data() + offsetof(Foo, bar) + index * sizeof(bar[0])|
+  // but performs bounds checking and returns a valid type-punned object.
+  template <auto PointerToMember>
+  auto ReadMember(size_t index) const {
+    // From the ReadMember<&Foo::bar>(2) example, ClassT = Foo
+    using ClassT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::ClassType;
+    ZX_ASSERT_MSG(sizeof(ClassT) <= this->size(),
+                  "insufficient buffer (class size: %zu, buffer size: %zu)", sizeof(ClassT),
+                  this->size());
+
+    // From the ReadMember<&Foo::bar>(2) example, MemberT = float[3]
+    using MemberT = typename bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::MemberType;
+    static_assert(std::is_trivially_copyable_v<MemberT>, "unsafe to copy representation");
+
+    // From the ReadMember<&Foo::bar>(2) example, MemberAsStdArrayT = std::array<float, 3>
+    using MemberAsStdArrayT = bt_lib_cpp_type::ToStdArrayT<MemberT>;
+
+    // Check array bounds
+    constexpr size_t kArraySize = std::tuple_size_v<MemberAsStdArrayT>;
+    const size_t base_offset = bt_lib_cpp_type::MemberPointerTraits<PointerToMember>::offset();
+    if constexpr (kArraySize > 0) {
+      // std::array is required to be an aggregate that's list-initialized per ISO/IEC 14882:2017(E)
+      // § 26.3.7.1 [array.overview] ¶ 2, so we can rely on the initial run of its layout, but in
+      // the technically possible but unlikely case that it contains additional bytes, we can't use
+      // its size for array indexing calculations.
+      static_assert(sizeof(MemberAsStdArrayT) == sizeof(MemberT));
+      ZX_ASSERT_MSG(index < kArraySize, "index past array bounds (index: %zu, array size: %zu)",
+                    index, kArraySize);
+    } else {
+      // Allow flexible array members (at the end of structs) that have zero length
+      ZX_ASSERT_MSG(base_offset == sizeof(ClassT), "read from zero-length array");
+    }
+
+    // From the ReadMember<&Foo::bar>(2) example, ElementT = float
+    using ElementT = std::remove_cv_t<typename MemberAsStdArrayT::value_type>;
+    static_assert(std::is_trivially_copyable_v<ElementT>, "unsafe to copy representation");
+    const size_t offset = base_offset + index * sizeof(ElementT);
+    ElementT element{};
+    CopyRaw(/*dst_data=*/std::addressof(element), /*dst_capacity=*/sizeof(ElementT),
+            /*src_offset=*/offset, /*copy_size=*/sizeof(ElementT));
+    return element;
   }
 
   bool operator==(const ByteBuffer& other) const {

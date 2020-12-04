@@ -303,6 +303,89 @@ TEST(ByteBufferTest, ByteBufferAsArray) {
   EXPECT_EQ(25, array[1]);
 }
 
+TEST(ByteBufferTest, ByteBufferReadMemberOfFixedArrayType) {
+  struct [[gnu::packed]] Point {
+    float f;
+    int8_t coordinates[3];
+    char multi[2][1];
+  };
+
+  StaticByteBuffer data(
+      // f
+      0, 0, 0, 0,
+
+      // coordinates[3]
+      0x01, 0x02, 0x03,
+
+      // multi[2][1]
+      0x37, 0x45);
+  ASSERT_LE(sizeof(Point), data.size());
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3), "index past array bounds");
+
+  auto view = data.view(0, 6);
+  ASSERT_GT(sizeof(Point), view.size());
+  EXPECT_DEATH_IF_SUPPORTED(view.ReadMember<&Point::coordinates>(0), "insufficient buffer");
+
+  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+
+  // Elements of a multi-dimensional C array are returned as std::arrays
+  auto inner = data.ReadMember<&Point::multi>(1);
+  EXPECT_EQ(data[offsetof(Point, multi) + 1], inner.at(0));
+}
+
+TEST(ByteBufferTest, ByteBufferReadMemberOfStdArrayType) {
+  struct [[gnu::packed]] Point {
+    float f;
+    std::array<int8_t, 3> coordinates;
+  };
+
+  StaticByteBuffer data(0, 0, 0, 0, 0x01, 0x02, 0x03, 0x37);
+  ASSERT_LE(sizeof(Point), data.size());
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(3), "index past array bounds");
+
+  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+}
+
+TEST(ByteBufferTest, ByteBufferReadMemberOfFlexibleArrayType) {
+  struct [[gnu::packed]] Point {
+    uint16_t dimensions;
+    int8_t coordinates[];
+  };
+
+  StaticByteBuffer data(0, 0, 0x01, 0x02);
+  ASSERT_LE(sizeof(Point), data.size());
+  EXPECT_DEATH_IF_SUPPORTED(data.ReadMember<&Point::coordinates>(2), "end exceeds source range");
+
+  EXPECT_EQ(data[offsetof(Point, coordinates)], data.ReadMember<&Point::coordinates>(0));
+  EXPECT_EQ(data[offsetof(Point, coordinates) + 1], data.ReadMember<&Point::coordinates>(1));
+}
+
+TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
+  struct [[gnu::packed]] Point {
+    int8_t byte;
+    float f[1];
+  } point;
+
+  BufferView view(&point, sizeof(point));
+  static_assert(alignof(decltype(view.ReadMember<&Point::f>(0))) == alignof(float));
+
+  // This branch (that the second field of |point| is unaligned) does get taken in manual testing
+  // but there's no way to guarantee it, so make it run-time conditional.
+  if (reinterpret_cast<uintptr_t>(&point.f) % alignof(float) != 0) {
+    // ByteBuffer::As is essentially a pointer into the buffer contents, which will give us
+    // references that are not aligned to type requirements.
+    const float& through_as = view.As<Point>().f[0];
+    ASSERT_NE(0U, reinterpret_cast<uintptr_t>(&through_as) % alignof(float));
+  }
+
+  // The same cref binds to a temporary new object that ByteBuffer::ReadMember creates, so the
+  // alignment is correct.
+  const float& through_read_member = view.ReadMember<&Point::f>(0);
+  EXPECT_EQ(0U, reinterpret_cast<uintptr_t>(&through_read_member) % alignof(float));
+}
+
 TEST(ByteBufferTest, MutableByteBufferAsMutableFundamental) {
   auto data = CreateStaticByteBuffer(10, 12);
   ++data.AsMutable<uint8_t>();

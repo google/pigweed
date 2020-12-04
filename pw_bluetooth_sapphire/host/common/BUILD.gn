@@ -44,6 +44,7 @@ source_set("common") {
 
   public_deps = [
     "//sdk/lib/sys/inspect/cpp",
+    "//src/connectivity/bluetooth/lib/cpp-type",
     "//src/devices/lib/driver",
     "//src/lib/ddk",
     "//src/lib/fxl",
