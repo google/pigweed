@@ -259,7 +259,8 @@ class Library:
             else:
                 modules.append(proto)
 
-        modules += compile_and_import(paths)
+        if paths:
+            modules += compile_and_import(paths)
         return Library(modules)
 
     @classmethod

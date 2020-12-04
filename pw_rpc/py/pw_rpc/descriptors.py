@@ -19,7 +19,7 @@ from inspect import Parameter
 from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
                     Iterator, Tuple, TypeVar, Union)
 
-from google.protobuf import descriptor_pb2
+from google.protobuf import descriptor_pb2, message_factory
 from google.protobuf.descriptor import FieldDescriptor
 from pw_protobuf_compiler import python_protos
 
@@ -48,13 +48,13 @@ class Service:
         return f'{self.package}.{self.name}'
 
     @classmethod
-    def from_descriptor(cls, module, descriptor):
+    def from_descriptor(cls, descriptor):
         service = cls(descriptor.name, ids.calculate(descriptor.full_name),
                       descriptor.file.package, None)
         object.__setattr__(
             service, 'methods',
             Methods(
-                Method.from_descriptor(module, method_descriptor, service)
+                Method.from_descriptor(method_descriptor, service)
                 for method_descriptor in descriptor.methods))
 
         return service
@@ -124,14 +124,18 @@ class Method:
     response_type: Any
 
     @classmethod
-    def from_descriptor(cls, module, descriptor, service: Service):
+    def from_descriptor(cls, descriptor, service: Service):
+        input_factory = message_factory.MessageFactory(
+            descriptor.input_type.file.pool)
+        output_factory = message_factory.MessageFactory(
+            descriptor.output_type.file.pool)
         return Method(
             service,
             descriptor.name,
             ids.calculate(descriptor.name),
             *_streaming_attributes(descriptor),
-            getattr(module, descriptor.input_type.name),
-            getattr(module, descriptor.output_type.name),
+            input_factory.GetPrototype(descriptor.input_type),
+            output_factory.GetPrototype(descriptor.output_type),
         )
 
     class Type(enum.Enum):

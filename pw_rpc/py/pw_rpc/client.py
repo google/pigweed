@@ -280,7 +280,7 @@ class Client:
                      modules: Iterable):
         return cls(
             impl, channels,
-            (Service.from_descriptor(module, service) for module in modules
+            (Service.from_descriptor(service) for module in modules
              for service in module.DESCRIPTOR.services_by_name.values()))
 
     def __init__(self, impl: ClientImpl, channels: Iterable[Channel],
