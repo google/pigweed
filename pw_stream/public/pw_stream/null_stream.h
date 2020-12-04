@@ -25,15 +25,15 @@ namespace pw::stream {
 
 // Stream writer which quietly drops all of the data, similar to /dev/null.
 class NullWriter final : public Writer {
- public:
-  size_t ConservativeWriteLimit() const override {
-    // In theory this can sink as much as is addressable, however this way it is
-    // compliant with pw::StatusWithSize.
-    return StatusWithSize::max_size();
-  }
-
  private:
-  Status DoWrite(ConstByteSpan data) override { return Status::Ok(); }
+  Status DoWrite(ConstByteSpan) final { return Status::Ok(); }
+};
+
+// Stream reader which never reads any bytes. Always returns OUT_OF_RANGE, which
+// indicates there is no more data to read.
+class NullReader final : public Reader {
+ private:
+  StatusWithSize DoRead(ByteSpan) final { return StatusWithSize::OutOfRange(); }
 };
 
 }  // namespace pw::stream

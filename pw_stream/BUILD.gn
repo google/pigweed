@@ -63,10 +63,18 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":memory_stream_test" ]
+  tests = [
+    ":memory_stream_test",
+    ":stream_test",
+  ]
 }
 
 pw_test("memory_stream_test") {
   sources = [ "memory_stream_test.cc" ]
+  deps = [ ":pw_stream" ]
+}
+
+pw_test("stream_test") {
+  sources = [ "stream_test.cc" ]
   deps = [ ":pw_stream" ]
 }

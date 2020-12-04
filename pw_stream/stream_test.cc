@@ -11,30 +11,27 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#pragma once
-
-#include <array>
-#include <cstddef>
-#include <limits>
-#include <span>
 
 #include "pw_stream/stream.h"
-#include "pw_sys_io/sys_io.h"
+
+#include <limits>
+
+#include "gtest/gtest.h"
+#include "pw_stream/null_stream.h"
 
 namespace pw::stream {
+namespace {
 
-class SysIoWriter : public Writer {
- private:
-  Status DoWrite(std::span<const std::byte> data) override {
-    return pw::sys_io::WriteBytes(data).status();
-  }
-};
+TEST(Stream, DefaultConservativeWriteLimit) {
+  NullWriter stream;
+  EXPECT_EQ(stream.ConservativeWriteLimit(),
+            std::numeric_limits<size_t>::max());
+}
 
-class SysIoReader : public Reader {
- private:
-  StatusWithSize DoRead(ByteSpan dest) override {
-    return pw::sys_io::ReadBytes(dest);
-  }
-};
+TEST(Stream, DefaultConservativeReadLimit) {
+  NullReader stream;
+  EXPECT_EQ(stream.ConservativeReadLimit(), std::numeric_limits<size_t>::max());
+}
 
+}  // namespace
 }  // namespace pw::stream

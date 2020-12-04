@@ -75,7 +75,12 @@ class Writer {
   // other contexts write data this number can go up or down for some Writers.
   // Returns zero if, in the current state, Write() would not return
   // Status::Ok().
-  virtual size_t ConservativeWriteLimit() const = 0;
+  //
+  // Returns std::numeric_limits<size_t>::max() if the implementation has no
+  // limits on write sizes.
+  virtual size_t ConservativeWriteLimit() const {
+    return std::numeric_limits<size_t>::max();
+  }
 
  private:
   virtual Status DoWrite(ConstByteSpan data) = 0;
@@ -128,7 +133,12 @@ class Reader {
   // number can go up or down for some Readers.
   // Returns zero if, in the current state, Read() would not return
   // Status::Ok().
-  virtual size_t ConservativeReadLimit() const = 0;
+  //
+  // Returns std::numeric_limits<size_t>::max() if the implementation imposes no
+  // limits on read sizes.
+  virtual size_t ConservativeReadLimit() const {
+    return std::numeric_limits<size_t>::max();
+  }
 
  private:
   virtual StatusWithSize DoRead(ByteSpan dest) = 0;

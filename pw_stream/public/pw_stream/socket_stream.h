@@ -38,14 +38,6 @@ class SocketStream : public Writer, public Reader {
   // Listen to the port and return after a client is connected
   Status Init(uint16_t port);
 
-  size_t ConservativeWriteLimit() const override {
-    return std::numeric_limits<size_t>::max();
-  }
-
-  size_t ConservativeReadLimit() const override {
-    return std::numeric_limits<size_t>::max();
-  }
-
  private:
   Status DoWrite(std::span<const std::byte> data) override;
 
