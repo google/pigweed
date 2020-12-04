@@ -21,8 +21,8 @@ import subprocess
 import shlex
 import tempfile
 from types import ModuleType
-from typing import Dict, Generic, Iterable, Iterator, List, NamedTuple, Set
-from typing import Tuple, TypeVar, Union
+from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
+                    Tuple, TypeVar, Union)
 
 _LOG = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def _import_module(name: str, path: str) -> ModuleType:
     return module
 
 
-def import_modules(directory: PathOrStr) -> Iterator[ModuleType]:
+def import_modules(directory: PathOrStr) -> Iterator:
     """Imports modules in a directory and yields them."""
     parent = os.path.dirname(directory)
 
@@ -87,7 +87,7 @@ def import_modules(directory: PathOrStr) -> Iterator[ModuleType]:
 
 def compile_and_import(proto_files: Iterable[PathOrStr],
                        includes: Iterable[PathOrStr] = (),
-                       output_dir: PathOrStr = None) -> Iterator[ModuleType]:
+                       output_dir: PathOrStr = None) -> Iterator:
     """Compiles protos and imports their modules; yields the proto modules.
 
     Args:
@@ -111,15 +111,14 @@ def compile_and_import(proto_files: Iterable[PathOrStr],
 
 def compile_and_import_file(proto_file: PathOrStr,
                             includes: Iterable[PathOrStr] = (),
-                            output_dir: PathOrStr = None) -> ModuleType:
+                            output_dir: PathOrStr = None):
     """Compiles and imports the module for a single .proto file."""
     return next(iter(compile_and_import([proto_file], includes, output_dir)))
 
 
-def compile_and_import_strings(
-        contents: Iterable[str],
-        includes: Iterable[PathOrStr] = (),
-        output_dir: PathOrStr = None) -> Iterator[ModuleType]:
+def compile_and_import_strings(contents: Iterable[str],
+                               includes: Iterable[PathOrStr] = (),
+                               output_dir: PathOrStr = None) -> Iterator:
     """Compiles protos in one or more strings."""
 
     if isinstance(contents, str):
@@ -283,7 +282,7 @@ class Library:
             (m.DESCRIPTOR.package, m)  # type: ignore[attr-defined]
             for m in modules)
 
-    def modules(self) -> Iterable[ModuleType]:
+    def modules(self) -> Iterable:
         """Allows iterating over all protobuf modules in this library."""
         for module_list in self.modules_by_package.values():
             yield from module_list
