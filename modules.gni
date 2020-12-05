@@ -42,6 +42,7 @@ declare_args() {
   dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
   dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
   dir_pw_hdlc_lite = get_path_info("pw_hdlc_lite", "abspath")
+  dir_pw_i2c = get_path_info("pw_i2c", "abspath")
   dir_pw_interrupt = get_path_info("pw_interrupt", "abspath")
   dir_pw_interrupt_cortex_m = get_path_info("pw_interrupt_cortex_m", "abspath")
   dir_pw_kvs = get_path_info("pw_kvs", "abspath")

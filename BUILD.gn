@@ -221,6 +221,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_chrono",
       "$dir_pw_cpu_exception",
       "$dir_pw_hdlc_lite",
+      "$dir_pw_i2c",
       "$dir_pw_metric",
       "$dir_pw_polyfill",
       "$dir_pw_preprocessor",
