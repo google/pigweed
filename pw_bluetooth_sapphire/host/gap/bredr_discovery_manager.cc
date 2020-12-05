@@ -24,22 +24,21 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
   bt_log(TRACE, "gap-bredr", "inquiry result received");
 
   size_t result_size = event.view().payload_size() - sizeof(EventParamType);
-  if ((result_size % sizeof(ResultType)) != 0) {
-    bt_log(INFO, "gap-bredr", "ignoring wrong size result (%zu %% %zu != 0)", result_size,
-           sizeof(ResultType));
-    return updated;
-  }
+  ZX_ASSERT_MSG(result_size % sizeof(ResultType) == 0, "wrong size result (%zu %% %zu != 0)",
+                result_size, sizeof(ResultType));
 
-  const auto& result = event.params<EventParamType>();
-  for (int i = 0; i < result.num_responses; i++) {
-    DeviceAddress addr(DeviceAddress::Type::kBREDR, result.responses[i].bd_addr);
+  const auto params_data = event.view().payload_data();
+  const auto num_responses = params_data.ReadMember<&EventParamType::num_responses>();
+  for (int i = 0; i < num_responses; i++) {
+    const auto response = params_data.ReadMember<&EventParamType::responses>(i);
+    DeviceAddress addr(DeviceAddress::Type::kBREDR, response.bd_addr);
     Peer* peer = cache->FindByAddress(addr);
     if (!peer) {
       peer = cache->NewPeer(addr, true);
     }
-    ZX_DEBUG_ASSERT(peer);
+    ZX_ASSERT(peer);
 
-    peer->MutBrEdr().SetInquiryData(result.responses[i]);
+    peer->MutBrEdr().SetInquiryData(response);
     updated.insert(peer);
   }
   return updated;

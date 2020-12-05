@@ -93,6 +93,9 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 
 using GAP_BrEdrDiscoveryManagerTest = BrEdrDiscoveryManagerTest;
 
+// Suffix DeathTest has GoogleTest-specific behavior
+using GAP_BrEdrDiscoveryManagerDeathTest = BrEdrDiscoveryManagerTest;
+
 // clang-format off
 const auto kInquiry = CreateStaticByteBuffer(
   LowerBits(hci::kInquiry), UpperBits(hci::kInquiry),
@@ -153,6 +156,46 @@ const auto kInquiryResult = CreateStaticByteBuffer(
   0x00, // unused / reserved
   0x00, 0x1F, 0x00, // class_of_device[0] (unspecified)
   0x00, 0x00 // clock_offset[0]
+);
+
+const StaticByteBuffer kInquiryResultMissingResponses(
+  hci::kInquiryResultEventCode,
+  0x1D, // parameter_total_size (29 bytes)
+  0x03, // num_responses (only two responses are packed)
+
+  // first response
+  BD_ADDR(0x01), // bd_addr[0]
+  0x00, // page_scan_repetition_mode[0] (R0)
+  0x00, // unused / reserved
+  0x00, // unused / reserved
+  0x00, 0x1F, 0x00, // class_of_device[0] (unspecified)
+  0x00, 0x00, // clock_offset[0]
+
+  // second response
+  BD_ADDR(0x02), // bd_addr[0]
+  0x00, // page_scan_repetition_mode[0] (R0)
+  0x00, // unused / reserved
+  0x00, // unused / reserved
+  0x00, 0x1F, 0x00, // class_of_device[0] (unspecified)
+  0x00, 0x00 // clock_offset[0]
+);
+
+const StaticByteBuffer kInquiryResultIncompleteResponse(
+  hci::kInquiryResultEventCode,
+  0x15, // parameter_total_size (21 bytes)
+  0x02, // num_responses
+
+  // first response
+  BD_ADDR(0x01), // bd_addr[0]
+  0x00, // page_scan_repetition_mode[0] (R0)
+  0x00, // unused / reserved
+  0x00, // unused / reserved
+  0x00, 0x1F, 0x00, // class_of_device[0] (unspecified)
+  0x00, 0x00, // clock_offset[0]
+
+  // second response
+  BD_ADDR(0x02) // bd_addr[0]
+  // truncated
 );
 
 const auto kRSSIInquiryResult = CreateStaticByteBuffer(
@@ -334,6 +377,36 @@ const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci::kWriteScanEnable);
 
 #undef COMMAND_COMPLETE_RSP
 // clang-format on
+
+// Test: malformed inquiry result is fatal
+TEST_F(GAP_BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerIsFatal) {
+  EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp);
+
+  std::unique_ptr<BrEdrDiscoverySession> session;
+
+  discovery_manager()->RequestDiscovery([&session](auto status, auto cb_session) {
+    EXPECT_TRUE(status);
+    session = std::move(cb_session);
+  });
+
+  RunLoopUntilIdle();
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      [this] {
+        test_device()->SendCommandChannelPacket(kInquiryResultMissingResponses);
+        RunLoopUntilIdle();
+      }(),
+      ".*");
+
+  EXPECT_DEATH_IF_SUPPORTED(
+      [this] {
+        test_device()->SendCommandChannelPacket(kInquiryResultIncompleteResponse);
+        RunLoopUntilIdle();
+      }(),
+      ".*");
+
+  test_device()->SendCommandChannelPacket(kInquiryComplete);
+}
 
 // Test: discovering() answers correctly
 
