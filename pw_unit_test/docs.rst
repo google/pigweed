@@ -238,3 +238,19 @@ To set up RPC-based unit tests in your application, instantiate a
   void RegisterServices() {
     server.RegisterService(unit_test_services);
   }
+
+All tests flashed to an attached device can be run via python by calling
+``pw_unit_test.rpc.run_tests()`` with a RPC client services object that has
+the unit testing RPC service enabled. By default, the results will output via
+logging.
+
+.. code:: python
+
+  from pw_hdlc_lite.rpc import HdlcRpcClient
+  from pw_unit_test.rpc import run_tests
+
+  PROTO = Path(os.environ['PW_ROOT'],
+               'pw_unit_test/pw_unit_test_proto/unit_test.proto')
+
+  client = HdlcRpcClient(serial.Serial(device, baud), PROTO)
+  run_tests(client.rpcs())

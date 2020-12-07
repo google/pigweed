@@ -20,8 +20,13 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_unit_test/__init__.py",
+    "pw_unit_test/rpc.py",
     "pw_unit_test/test_runner.py",
   ]
-  python_deps = [ "$dir_pw_cli/py" ]
+  python_deps = [
+    "$dir_pw_cli/py",
+    "$dir_pw_rpc/py",
+    "..:unit_test_proto.python",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
