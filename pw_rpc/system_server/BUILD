@@ -43,3 +43,21 @@ pw_cc_library(
         "//pw_rpc/system_server:sys_io",
     ],
 )
+
+pw_cc_library(
+    name = "socket",
+    srcs = ["socket_rpc_server.cc"],
+    deps = [
+        ":facade",
+        "//pw_hdlc_lite:pw_rpc",
+    ],
+)
+
+pw_cc_library(
+    name = "sys_io",
+    srcs = ["sys_io_rpc_server.cc"],
+    deps = [
+        ":facade",
+        "//pw_hdlc_lite:pw_rpc",
+    ],
+)

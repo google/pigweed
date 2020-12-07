@@ -21,13 +21,13 @@ declare_args() {
   pw_rpc_system_server_BACKEND = ""
 }
 
-config("default_config") {
+config("public_includes") {
   include_dirs = [ "public" ]
 }
 
 pw_facade("system_server") {
   backend = pw_rpc_system_server_BACKEND
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_includes" ]
   public_deps = [
     "$dir_pw_rpc:server",
     "$dir_pw_stream",
@@ -36,9 +36,21 @@ pw_facade("system_server") {
 }
 
 pw_source_set("socket") {
-  public_deps = [ "pw_rpc_system_server_socket" ]
+  deps = [
+    ":facade",
+    "$dir_pw_hdlc_lite:pw_rpc",
+    "$dir_pw_stream:socket_stream",
+    dir_pw_log,
+  ]
+  sources = [ "socket_rpc_server.cc" ]
 }
 
 pw_source_set("sys_io") {
-  public_deps = [ "pw_rpc_system_server_sys_io" ]
+  deps = [
+    ":facade",
+    "$dir_pw_hdlc_lite:pw_rpc",
+    "$dir_pw_stream:sys_io_stream",
+    dir_pw_log,
+  ]
+  sources = [ "sys_io_rpc_server.cc" ]
 }
