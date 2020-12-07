@@ -215,6 +215,12 @@ def install(
                 raise subprocess.CalledProcessError(err.returncode, err.cmd,
                                                     ins.read())
 
+        with open(os.path.join(venv_path, 'pip-list.log'), 'w') as outs:
+            subprocess.check_call(
+                [venv_python, '-m', 'pip', 'list'],
+                stdout=outs,
+            )
+
     if gn_targets:
         if env:
             env.set('VIRTUAL_ENV', venv_path)
