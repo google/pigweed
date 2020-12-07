@@ -31,18 +31,18 @@ using std::byte;
 pw::rpc::EchoService echo_service;
 
 void RegisterServices() {
-  pw::rpc_system_server::Server().RegisterService(echo_service);
+  pw::rpc::system_server::Server().RegisterService(echo_service);
 }
 
 }  // namespace
 
 void Start() {
-  pw::rpc_system_server::Init();
+  pw::rpc::system_server::Init();
   // Set up the server and start processing data.
   RegisterServices();
 
   PW_LOG_INFO("Starting pw_rpc server");
-  pw::rpc_system_server::Start();
+  pw::rpc::system_server::Start();
 }
 
 }  // namespace hdlc_example

@@ -11,27 +11,31 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#include <cstddef>
+
 #include "pw_hdlc_lite/rpc_channel.h"
 #include "pw_hdlc_lite/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_stream/sys_io_stream.h"
 
-namespace pw::rpc_system_server {
+namespace pw::rpc::system_server {
+namespace {
+
 constexpr size_t kMaxTransmissionUnit = 256;
-constexpr uint32_t kMaxHdlcFrameSize = 256;
-inline constexpr uint8_t kDefaultRpcAddress = 'R';
 
 // Used to write HDLC data to pw::sys_io.
-pw::stream::SysIoWriter writer;
-pw::stream::SysIoReader reader;
+stream::SysIoWriter writer;
+stream::SysIoReader reader;
 
 // Set up the output channel for the pw_rpc server to use.
-pw::hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
+hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
     writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC channel");
-pw::rpc::Channel channels[] = {
-    pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
-pw::rpc::Server server(channels);
+Channel channels[] = {pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
+rpc::Server server(channels);
+
+}  // namespace
 
 void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
@@ -42,7 +46,7 @@ void Init() {
   });
 }
 
-pw::rpc::Server& Server() { return server; }
+rpc::Server& Server() { return server; }
 
 Status Start() {
   // Declare a buffer for decoding incoming HDLC frames.
@@ -57,11 +61,11 @@ Status Start() {
     }
     if (auto result = decoder.Process(byte); result.ok()) {
       hdlc_lite::Frame& frame = result.value();
-      if (frame.address() == kDefaultRpcAddress) {
+      if (frame.address() == hdlc_lite::kDefaultRpcAddress) {
         server.ProcessPacket(frame.data(), hdlc_channel_output);
       }
     }
   }
 }
 
-}  // namespace pw::rpc_system_server
+}  // namespace pw::rpc::system_server
