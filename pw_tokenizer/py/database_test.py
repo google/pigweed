@@ -105,14 +105,14 @@ EXPECTED_REPORT = {
             'present_size_bytes': 289,
             'total_entries': 22,
             'total_size_bytes': 289,
-            'collisions': 0
+            'collisions': {}
         },
         'TEST_DOMAIN': {
             'present_entries': 5,
             'present_size_bytes': 57,
             'total_entries': 5,
             'total_size_bytes': 57,
-            'collisions': 0
+            'collisions': {}
         }
     }
 }

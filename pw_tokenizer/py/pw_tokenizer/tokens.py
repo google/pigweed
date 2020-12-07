@@ -22,8 +22,8 @@ import logging
 from pathlib import Path
 import re
 import struct
-from typing import BinaryIO, Callable, Dict, Iterable, List, NamedTuple
-from typing import Optional, Pattern, Tuple, Union, ValuesView
+from typing import (BinaryIO, Callable, Dict, Iterable, Iterator, List,
+                    NamedTuple, Optional, Pattern, Tuple, Union, ValuesView)
 
 DATE_FORMAT = '%Y-%m-%d'
 DEFAULT_DOMAIN = ''
@@ -155,11 +155,11 @@ class Database:
         """Returns iterable over all TokenizedStringEntries in the database."""
         return self._database.values()
 
-    def collisions(self) -> Tuple[Tuple[int, List[TokenizedStringEntry]], ...]:
+    def collisions(self) -> Iterator[Tuple[int, List[TokenizedStringEntry]]]:
         """Returns tuple of (token, entries_list)) for all colliding tokens."""
-        return tuple((token, entries)
-                     for token, entries in self.token_to_entries.items()
-                     if len(entries) > 1)
+        for token, entries in self.token_to_entries.items():
+            if len(entries) > 1:
+                yield token, entries
 
     def mark_removals(
             self,

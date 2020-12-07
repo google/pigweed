@@ -28,8 +28,8 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import (Callable, Dict, Iterable, Iterator, List, Pattern, Set,
-                    TextIO, Tuple, Union)
+from typing import (Any, Callable, Dict, Iterable, Iterator, List, Pattern,
+                    Set, TextIO, Tuple, Union)
 
 try:
     from pw_tokenizer import elf_reader, tokens
@@ -213,22 +213,25 @@ def load_token_database(
                                     for db in databases))
 
 
-def database_summary(db: tokens.Database) -> Dict[str, int]:
+def database_summary(db: tokens.Database) -> Dict[str, Any]:
     """Returns a simple report of properties of the database."""
     present = [entry for entry in db.entries() if not entry.date_removed]
-
-    # Add 1 to each string's size to account for the null terminator.
-    return {
-        'present_entries': len(present),
-        'present_size_bytes': sum(len(entry.string) + 1 for entry in present),
-        'total_entries': len(db.entries()),
-        'total_size_bytes':
-        sum(len(entry.string) + 1 for entry in db.entries()),
-        'collisions': len(db.collisions()),
+    collisions = {
+        token: list(e.string for e in entries)
+        for token, entries in db.collisions()
     }
 
+    # Add 1 to each string's size to account for the null terminator.
+    return dict(
+        present_entries=len(present),
+        present_size_bytes=sum(len(entry.string) + 1 for entry in present),
+        total_entries=len(db.entries()),
+        total_size_bytes=sum(len(entry.string) + 1 for entry in db.entries()),
+        collisions=collisions,
+    )
 
-_DatabaseReport = Dict[str, Dict[str, Dict[str, int]]]
+
+_DatabaseReport = Dict[str, Dict[str, Dict[str, Any]]]
 
 
 def generate_reports(paths: Iterable[Path]) -> _DatabaseReport:
