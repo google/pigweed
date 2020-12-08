@@ -43,11 +43,12 @@ kwargs for the message fields (but not both).
 import inspect
 import logging
 import queue
+import textwrap
 from typing import Any, Callable, Optional, Tuple
 
 from pw_status import Status
 
-from pw_rpc import client
+from pw_rpc import client, descriptors
 from pw_rpc.descriptors import Channel, Method, Service
 
 _LOG = logging.getLogger(__name__)
@@ -94,7 +95,28 @@ class _MethodClient:
         return _AsyncCall(self._rpcs, self._rpc)
 
     def __repr__(self) -> str:
-        return repr(self.method)
+        return self.help()
+
+    def __call__(self):
+        raise NotImplementedError('Implemented by derived classes')
+
+    def help(self) -> str:
+        """Returns a help message about this RPC."""
+        function_call = self.method.request_type.DESCRIPTOR.full_name + '('
+
+        docstring = inspect.getdoc(self.__call__)
+        assert docstring is not None
+
+        annotation = inspect.Signature.from_callable(self).return_annotation
+        if isinstance(annotation, type):
+            annotation = annotation.__name__
+
+        arg_sep = f',\n{" " * len(function_call)}'
+        return (
+            f'{function_call}'
+            f'{arg_sep.join(descriptors.field_help(self.method.request_type))})'
+            f'\n\n{textwrap.indent(docstring, "  ")}\n\n'
+            f'  Returns {annotation}.')
 
 
 class _AsyncCall:
@@ -116,9 +138,10 @@ class _AsyncCall:
         self.cancel()
 
 
-class _StreamingResponses:
+class StreamingResponses:
     """Used to iterate over a queue.SimpleQueue."""
-    def __init__(self, responses: queue.SimpleQueue):
+    def __init__(self, method: Method, responses: queue.SimpleQueue):
+        self.method = method
         self._queue = responses
         self.status: Optional[Status] = None
 
@@ -132,6 +155,9 @@ class _StreamingResponses:
 
     def __iter__(self):
         return self.get()
+
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}({self.method})'
 
 
 def _method_client_docstring(method: Method) -> str:
@@ -147,8 +173,8 @@ def _function_docstring(method: Method) -> str:
     return f'''\
 Invokes the {method.full_name} {method.type.sentence_name()} RPC.
 
-This function accepts either a request protobuf as a single positional argument
-or the request fields as keyword arguments.
+This function accepts either the request protobuf fields as keyword arguments or
+a request protobuf as a positional argument.
 '''
 
 
@@ -197,12 +223,12 @@ def server_streaming_method_client(client_impl: 'Impl',
     """Creates an object used to call a server streaming method."""
     def call(self,
              _rpc_request_proto=None,
-             **request_fields) -> _StreamingResponses:
+             **request_fields) -> StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
             _rpc_request_proto, **request_fields)
-        return _StreamingResponses(responses)
+        return StreamingResponses(method, responses)
 
     _update_function_signature(method, call)
 

@@ -104,11 +104,30 @@ _PROTO_FIELD_TYPES = {
 
 def _field_type_annotation(field: FieldDescriptor):
     """Creates a field type annotation to use in the help message only."""
-    annotation = _PROTO_FIELD_TYPES.get(field.type, Parameter.empty)
+    if field.type == FieldDescriptor.TYPE_MESSAGE:
+        annotation = message_factory.MessageFactory(
+            field.message_type.file.pool).GetPrototype(field.message_type)
+    else:
+        annotation = _PROTO_FIELD_TYPES.get(field.type, Parameter.empty)
+
     if field.label == FieldDescriptor.LABEL_REPEATED:
         return Iterable[annotation]  # type: ignore[valid-type]
 
     return annotation
+
+
+def field_help(proto_message) -> Iterator[str]:
+    """Yields argument strings for proto fields for use in a help message."""
+    for field in proto_message.DESCRIPTOR.fields:
+        if field.type == FieldDescriptor.TYPE_ENUM:
+            value = field.enum_type.values_by_number[field.default_value].name
+            type_name = field.enum_type.full_name
+            value = f'{type_name.rsplit(".", 1)[0]}.{value}'
+        else:
+            type_name = _PROTO_FIELD_TYPES[field.type].__name__
+            value = repr(field.default_value)
+
+        yield f'{field.name}: {type_name} = {value}'
 
 
 @dataclass(frozen=True, eq=False)
