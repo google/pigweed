@@ -149,16 +149,16 @@ class _NestedPackage(Generic[T]):
 
     def _add_package(self, subpackage: str, package: '_NestedPackage') -> None:
         self._packages[subpackage] = package
-        setattr(self, subpackage, package)
 
     def _add_item(self, item) -> None:
-        self._items.append(item)
-        for attr, value in vars(item).items():
-            if not attr.startswith('_'):
-                setattr(self, attr, value)
+        if item not in self._items:  # Don't store the same item multiple times.
+            self._items.append(item)
 
     def __getattr__(self, attr: str):
-        # Fall back to item attributes, which includes private attributes.
+        """Look up subpackages or package members."""
+        if attr in self._packages:
+            return self._packages[attr]
+
         for item in self._items:
             if hasattr(item, attr):
                 return getattr(item, attr)
@@ -166,7 +166,30 @@ class _NestedPackage(Generic[T]):
         raise AttributeError(
             f'Proto package "{self._package}" does not contain "{attr}"')
 
+    def __getitem__(self, subpackage: str) -> '_NestedPackage[T]':
+        """Support accessing nested packages by name."""
+        result = self
+
+        for package in subpackage.split('.'):
+            result = result._packages[package]
+
+        return result
+
+    def __dir__(self) -> List[str]:
+        """List subpackages and members of modules as attributes."""
+        attributes = list(self._packages)
+
+        for item in self._items:
+            for attr, value in vars(item).items():
+                # Exclude private variables and modules from dir().
+                if not attr.startswith('_') and not isinstance(
+                        value, ModuleType):
+                    attributes.append(attr)
+
+        return attributes
+
     def __iter__(self) -> Iterator['_NestedPackage[T]']:
+        """Iterate over nested packages."""
         return iter(self._packages.values())
 
     def __repr__(self) -> str:

@@ -339,6 +339,10 @@ class CallbackClientImplTest(unittest.TestCase):
         self.assertIs(status, Status.OK)
         self.assertIsNone(response)
 
+    def test_rpc_help_contains_method_name(self):
+        rpc = self._client.channel(1).rpcs.pw.test1.PublicService.SomeUnary
+        self.assertIn(rpc.method.full_name, rpc.help())
+
 
 if __name__ == '__main__':
     unittest.main()

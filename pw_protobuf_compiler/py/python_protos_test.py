@@ -154,7 +154,7 @@ class TestProtoLibrary(TestCompileAndImport):
         test2 = self._library.modules_by_package['pw.protobuf_compiler.test2']
         self.assertEqual(len(test2), 2)
 
-    def test_access_modules_by_package_unkonwn(self):
+    def test_access_modules_by_package_unknown(self):
         with self.assertRaises(KeyError):
             _ = self._library.modules_by_package['pw.not_real']
 
@@ -175,6 +175,30 @@ class TestProtoLibrary(TestCompileAndImport):
 
         val = library.packages.proto.library.test.test2.YO
         self.assertEqual(val, 0)
+
+    def test_access_nested_packages_by_name(self):
+        self.assertIs(self._library.packages['pw.protobuf_compiler.test1'],
+                      self._library.packages.pw.protobuf_compiler.test1)
+        self.assertIs(self._library.packages.pw['protobuf_compiler.test1'],
+                      self._library.packages.pw.protobuf_compiler.test1)
+        self.assertIs(self._library.packages.pw.protobuf_compiler['test1'],
+                      self._library.packages.pw.protobuf_compiler.test1)
+
+    def test_access_nested_packages_by_name_unknown_package(self):
+        with self.assertRaises(KeyError):
+            _ = self._library.packages['']
+
+        with self.assertRaises(KeyError):
+            _ = self._library.packages['.']
+
+        with self.assertRaises(KeyError):
+            _ = self._library.packages['protobuf_compiler.test1']
+
+        with self.assertRaises(KeyError):
+            _ = self._library.packages.pw['pw.protobuf_compiler.test1']
+
+        with self.assertRaises(KeyError):
+            _ = self._library.packages.pw.protobuf_compiler['not here']
 
 
 if __name__ == '__main__':

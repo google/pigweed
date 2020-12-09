@@ -102,7 +102,7 @@ class _MethodClient:
 
     def help(self) -> str:
         """Returns a help message about this RPC."""
-        function_call = self.method.request_type.DESCRIPTOR.full_name + '('
+        function_call = self.method.full_name + '('
 
         docstring = inspect.getdoc(self.__call__)
         assert docstring is not None

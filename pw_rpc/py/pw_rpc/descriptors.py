@@ -20,7 +20,7 @@ from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
                     Iterator, Tuple, TypeVar, Union)
 
 from google.protobuf import descriptor_pb2, message_factory
-from google.protobuf.descriptor import FieldDescriptor
+from google.protobuf.descriptor import FieldDescriptor, MethodDescriptor
 from pw_protobuf_compiler import python_protos
 
 from pw_rpc import ids
@@ -38,19 +38,25 @@ class Channel:
 @dataclass(frozen=True, eq=False)
 class Service:
     """Describes an RPC service."""
-    name: str
+    _descriptor: MethodDescriptor
     id: int
-    package: str
     methods: 'Methods'
 
     @property
+    def name(self):
+        return self._descriptor.name
+
+    @property
     def full_name(self):
-        return f'{self.package}.{self.name}'
+        return self._descriptor.full_name
+
+    @property
+    def package(self):
+        return self._descriptor.file.package
 
     @classmethod
     def from_descriptor(cls, descriptor):
-        service = cls(descriptor.name, ids.calculate(descriptor.full_name),
-                      descriptor.file.package, None)
+        service = cls(descriptor, ids.calculate(descriptor.full_name), None)
         object.__setattr__(
             service, 'methods',
             Methods(
@@ -116,7 +122,7 @@ def _field_type_annotation(field: FieldDescriptor):
     return annotation
 
 
-def field_help(proto_message) -> Iterator[str]:
+def field_help(proto_message, *, annotations: bool = False) -> Iterator[str]:
     """Yields argument strings for proto fields for use in a help message."""
     for field in proto_message.DESCRIPTOR.fields:
         if field.type == FieldDescriptor.TYPE_ENUM:
@@ -127,15 +133,18 @@ def field_help(proto_message) -> Iterator[str]:
             type_name = _PROTO_FIELD_TYPES[field.type].__name__
             value = repr(field.default_value)
 
-        yield f'{field.name}: {type_name} = {value}'
+        if annotations:
+            yield f'{field.name}: {type_name} = {value}'
+        else:
+            yield f'{field.name}={value}'
 
 
 @dataclass(frozen=True, eq=False)
 class Method:
     """Describes a method in a service."""
 
+    _descriptor: MethodDescriptor
     service: Service
-    name: str
     id: int
     server_streaming: bool
     client_streaming: bool
@@ -143,14 +152,14 @@ class Method:
     response_type: Any
 
     @classmethod
-    def from_descriptor(cls, descriptor, service: Service):
+    def from_descriptor(cls, descriptor: MethodDescriptor, service: Service):
         input_factory = message_factory.MessageFactory(
             descriptor.input_type.file.pool)
         output_factory = message_factory.MessageFactory(
             descriptor.output_type.file.pool)
         return Method(
+            descriptor,
             service,
-            descriptor.name,
             ids.calculate(descriptor.name),
             *_streaming_attributes(descriptor),
             input_factory.GetPrototype(descriptor.input_type),
@@ -167,8 +176,16 @@ class Method:
             return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
 
     @property
+    def name(self) -> str:
+        return self._descriptor.name
+
+    @property
     def full_name(self) -> str:
-        return f'{self.service.full_name}.{self.name}'
+        return self._descriptor.full_name
+
+    @property
+    def package(self) -> str:
+        return self._descriptor.containing_service.file.package
 
     @property
     def type(self) -> 'Method.Type':
