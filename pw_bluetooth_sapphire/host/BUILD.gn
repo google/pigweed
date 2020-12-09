@@ -177,9 +177,6 @@ executable("tests") {
     "//src/devices/lib/driver",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(fxbug.dev/46537): Fix the leaks and remove this.
-  deps += [ "//build/config/sanitizers:suppress-lsan.DO-NOT-USE-THIS" ]
 }
 
 fuzzers_package("fuzzers") {
