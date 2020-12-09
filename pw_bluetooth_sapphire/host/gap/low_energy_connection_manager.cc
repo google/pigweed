@@ -818,6 +818,7 @@ void LowEnergyConnectionManager::OnScanStart(PeerId peer_id, LowEnergyDiscoveryS
            bt_str(peer.identifier()));
 
     self->scan_timeout_task_.reset();
+    ZX_ASSERT(self->scanning_);
     self->scanning_ = false;
 
     // Stopping the discovery session will unregister this result handler.
@@ -829,6 +830,13 @@ void LowEnergyConnectionManager::OnScanStart(PeerId peer_id, LowEnergyDiscoveryS
     Peer* peer_ptr = self->peer_cache_->FindById(peer_id);
     ZX_ASSERT(peer_ptr);
     self->RequestCreateConnection(peer_ptr);
+  });
+
+  iter->second.discovery_session()->set_error_callback([self, peer_id] {
+    ZX_ASSERT(self->scanning_);
+    bt_log(INFO, "gap-le", "discovery error while scanning for peer (peer: %s)", bt_str(peer_id));
+    self->scanning_ = false;
+    self->OnConnectResult(peer_id, hci::Status(HostError::kFailed), nullptr);
   });
 }
 

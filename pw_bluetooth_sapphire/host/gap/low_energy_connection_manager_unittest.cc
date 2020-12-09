@@ -2319,6 +2319,34 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerStartDiscoveryFailed
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerDiscoveryFailedDuringScan) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  // Don't add peer to FakeController to prevent scan from completing.
+
+  size_t connect_cb_count = 0;
+  auto callback = [&connect_cb_count](auto result) {
+    EXPECT_TRUE(result.is_error());
+    connect_cb_count++;
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+  RunLoopUntilIdle();
+  EXPECT_EQ(connect_cb_count, 0u);
+
+  // Cause discovery to fail when attempting to restart scan after scan period ends.
+  test_device()->SetDefaultCommandStatus(hci::kLESetScanEnable,
+                                         hci::StatusCode::kCommandDisallowed);
+  RunLoopFor(kLEGeneralDiscoveryScanMin);
+  EXPECT_EQ(connect_cb_count, 1u);
+  EXPECT_FALSE(peer->temporary());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
 // Tests for assertions that enforce invariants.
 class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
 
