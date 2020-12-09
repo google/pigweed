@@ -65,4 +65,33 @@ struct is_null_pointer : std::is_same<decltype(nullptr), std::remove_cv_t<T>> {
 
 #endif  // __cpp_lib_is_null_pointer
 
+#ifndef __cpp_lib_bool_constant
+#define __cpp_lib_bool_constant 201505L
+template <bool value>
+using bool_constant = integral_constant<bool, value>;
+#endif  // __cpp_lib_bool_constant
+
+#ifndef __cpp_lib_logical_traits
+#define __cpp_lib_logical_traits 201510L
+template <typename value>
+struct negation : bool_constant<!bool(value::value)> {};
+
+template <typename...>
+struct conjunction : std::true_type {};
+template <typename B1>
+struct conjunction<B1> : B1 {};
+template <typename B1, typename... Bn>
+struct conjunction<B1, Bn...>
+    : std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
+
+template <typename...>
+struct disjunction : std::false_type {};
+template <typename B1>
+struct disjunction<B1> : B1 {};
+template <typename B1, typename... Bn>
+struct disjunction<B1, Bn...>
+    : std::conditional_t<bool(B1::value), B1, disjunction<Bn...>> {};
+
+#endif  // __cpp_lib_logical_traits
+
 _PW_POLYFILL_END_NAMESPACE_STD

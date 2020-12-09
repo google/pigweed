@@ -19,6 +19,7 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 #define __cpp_lib_transformation_trait_aliases 201304L
 #define __cpp_lib_type_trait_variable_templates 201510L
+#define __cpp_lib_logical_traits 201510L
 
 template <decltype(sizeof(0)) kLength,
           decltype(sizeof(0)) kAlignment>  // no default

@@ -158,7 +158,7 @@ class StatusWithSize {
   // Creates a StatusWithSize with Status::Ok() and the provided size.
   // std::enable_if is used to prevent enum types (e.g. Status) from being used.
   // TODO(hepler): Add debug-only assert that size <= max_size().
-  template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+  template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
   explicit constexpr StatusWithSize(T size) : size_(size) {}
 
   // Creates a StatusWithSize with the provided status and size.

@@ -16,7 +16,8 @@
 #include <iterator>
 #include <type_traits>
 
-namespace pw::kvs {
+namespace pw {
+namespace kvs {
 namespace internal {
 
 // This borrows the `make_span` function from Chromium and uses to see if a type
@@ -90,4 +91,5 @@ struct ConvertsToSpan
     : public std::bool_constant<
           internal::ConvertsToSpan<std::remove_reference_t<T>>(0)> {};
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw

@@ -18,7 +18,8 @@
 
 #include "pw_kvs/checksum.h"
 
-namespace pw::kvs {
+namespace pw {
+namespace kvs {
 
 struct EntryFormat;
 
@@ -104,4 +105,5 @@ struct EntryFormat {
   ChecksumAlgorithm* checksum;
 };
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw

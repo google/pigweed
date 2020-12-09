@@ -20,6 +20,7 @@
 #include <span>
 #include <utility>
 
+#include "pw_bytes/span.h"
 #include "pw_kvs/io.h"
 #include "pw_status/status_with_size.h"
 
@@ -71,7 +72,8 @@ class AlignedWriter {
   StatusWithSize Write(std::span<const std::byte> data);
 
   StatusWithSize Write(const void* data, size_t size) {
-    return Write(std::span(static_cast<const std::byte*>(data), size));
+    return Write(
+        std::span<const std::byte>(static_cast<const std::byte*>(data), size));
   }
 
   // Reads size bytes from the input and writes them to the output.
@@ -83,7 +85,7 @@ class AlignedWriter {
   StatusWithSize Flush();
 
  private:
-  static constexpr std::byte kPadByte = std::byte{0};
+  static constexpr std::byte kPadByte = static_cast<std::byte>(0);
 
   StatusWithSize AddBytesToBuffer(size_t bytes_added);
 
@@ -122,7 +124,8 @@ StatusWithSize AlignedWrite(Output& output,
   AlignedWriterBuffer<kBufferSize> buffer(alignment_bytes, output);
 
   for (const std::span<const std::byte>& chunk : data) {
-    if (StatusWithSize result = buffer.Write(chunk); !result.ok()) {
+    StatusWithSize result = buffer.Write(chunk);
+    if (!result.ok()) {
       return result;
     }
   }
@@ -137,7 +140,9 @@ StatusWithSize AlignedWrite(
     size_t alignment_bytes,
     std::initializer_list<std::span<const std::byte>> data) {
   return AlignedWrite<kBufferSize>(
-      output, alignment_bytes, std::span(data.begin(), data.size()));
+      output,
+      alignment_bytes,
+      std::span<const ConstByteSpan>(data.begin(), data.size()));
 }
 
 }  // namespace pw

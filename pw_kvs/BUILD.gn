@@ -61,9 +61,11 @@ pw_source_set("pw_kvs") {
   ]
   public_deps = [
     dir_pw_assert,
+    dir_pw_bytes,
     dir_pw_containers,
     dir_pw_span,
     dir_pw_status,
+    dir_pw_string,
   ]
   deps = [
     ":config",

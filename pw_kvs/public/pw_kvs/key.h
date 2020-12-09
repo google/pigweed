@@ -14,13 +14,17 @@
 #pragma once
 
 #include <cstring>
+#include <limits>
 #include <string>
 
 #if __cplusplus >= 201703L
 #include <string_view>
 #endif  // __cplusplus >= 201703L
 
-namespace pw::kvs {
+#include "pw_string/util.h"
+
+namespace pw {
+namespace kvs {
 
 // Key is a simplified string_view used for KVS. This helps KVS work on
 // platforms without C++17.
@@ -30,7 +34,8 @@ class Key {
   constexpr Key() : str_{nullptr}, length_{0} {}
   constexpr Key(const Key&) = default;
   constexpr Key(const char* str)
-      : str_{str}, length_{std::char_traits<char>::length(str)} {}
+      : str_{str},
+        length_{string::Length(str, std::numeric_limits<size_t>::max())} {}
   constexpr Key(const char* str, size_t len) : str_{str}, length_{len} {}
   Key(const std::string& str) : str_{str.data()}, length_{str.length()} {}
 
@@ -73,4 +78,5 @@ class Key {
   size_t length_;
 };
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw

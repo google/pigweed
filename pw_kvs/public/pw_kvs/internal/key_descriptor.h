@@ -15,7 +15,9 @@
 
 #include <cstdint>
 
-namespace pw::kvs::internal {
+namespace pw {
+namespace kvs {
+namespace internal {
 
 // Whether an entry is present or deleted.
 enum class EntryState : bool { kValid, kDeleted };
@@ -28,4 +30,6 @@ struct KeyDescriptor {
   EntryState state;  // TODO: Pack into transaction ID? or something?
 };
 
-}  // namespace pw::kvs::internal
+}  // namespace internal
+}  // namespace kvs
+}  // namespace pw

@@ -21,7 +21,9 @@
 #include "pw_containers/vector.h"
 #include "pw_kvs/flash_memory.h"
 
-namespace pw::kvs::internal {
+namespace pw {
+namespace kvs {
+namespace internal {
 
 // Tracks the available and used space in each sector used by the KVS.
 class SectorDescriptor {
@@ -225,4 +227,6 @@ class Sectors {
   const SectorDescriptor** const temp_sectors_to_skip_;
 };
 
-}  // namespace pw::kvs::internal
+}  // namespace internal
+}  // namespace kvs
+}  // namespace pw

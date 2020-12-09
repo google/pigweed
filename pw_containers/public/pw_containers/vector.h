@@ -23,6 +23,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_polyfill/language_feature_macros.h"
+
 namespace pw {
 namespace vector_impl {
 
@@ -31,7 +33,7 @@ using IsIterator = std::negation<
     std::is_same<typename std::iterator_traits<I>::value_type, void>>;
 
 // Used as kMaxSize in the generic-size Vector<T> interface.
-inline constexpr size_t kGeneric = size_t(-1);
+PW_INLINE_VARIABLE constexpr size_t kGeneric = size_t(-1);
 
 }  // namespace vector_impl
 
@@ -128,10 +130,15 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   static_assert(kMaxSize <= std::numeric_limits<size_type>::max());
 
   // Provides access to the underlying array as an array of T.
+#ifdef __cpp_lib_launder
   pointer array() { return std::launder(reinterpret_cast<T*>(&array_)); }
   const_pointer array() const {
     return std::launder(reinterpret_cast<const T*>(&array_));
   }
+#else
+  pointer array() { return reinterpret_cast<T*>(&array_); }
+  const_pointer array() const { return reinterpret_cast<const T*>(&array_); }
+#endif  // __cpp_lib_launder
 
   // Vector entries are stored as uninitialized memory blocks aligned correctly
   // for the type. Elements are initialized on demand with placement new.

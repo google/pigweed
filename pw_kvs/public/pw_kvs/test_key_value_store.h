@@ -15,8 +15,10 @@
 
 #include "pw_kvs/key_value_store.h"
 
-namespace pw::kvs {
+namespace pw {
+namespace kvs {
 
 KeyValueStore& TestKvs();
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw

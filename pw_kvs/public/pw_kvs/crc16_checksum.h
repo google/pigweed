@@ -22,7 +22,8 @@ namespace pw::kvs {
 
 class ChecksumCrc16 final : public ChecksumAlgorithm {
  public:
-  ChecksumCrc16() : ChecksumAlgorithm(std::as_bytes(std::span(&crc_, 1))) {}
+  ChecksumCrc16()
+      : ChecksumAlgorithm(std::as_bytes(std::span<uint16_t>(&crc_, 1))) {}
 
   void Reset() override { crc_ = checksum::Crc16Ccitt::kInitialValue; }
 

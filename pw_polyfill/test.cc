@@ -188,6 +188,19 @@ TEST(Utility, IntegerSequence) {
   static_assert(std::make_index_sequence<123>::size() == 123);
 }
 
+TEST(Utility, LogicalTraits) {
+  static_assert(std::conjunction<std::true_type, std::true_type>::value);
+  static_assert(!std::conjunction<std::true_type, std::false_type>::value);
+  static_assert(!std::conjunction<std::false_type, std::false_type>::value);
+
+  static_assert(std::disjunction<std::true_type, std::true_type>::value);
+  static_assert(std::disjunction<std::true_type, std::false_type>::value);
+  static_assert(!std::disjunction<std::false_type, std::false_type>::value);
+
+  static_assert(!std::negation<std::true_type>::value);
+  static_assert(std::negation<std::false_type>::value);
+}
+
 }  // namespace
 }  // namespace polyfill
 }  // namespace pw

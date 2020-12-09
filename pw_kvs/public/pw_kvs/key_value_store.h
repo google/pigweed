@@ -32,7 +32,8 @@
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
 
-namespace pw::kvs {
+namespace pw {
+namespace kvs {
 
 enum class GargbageCollectOnWrite {
   // Disable all automatic garbage collection on write.
@@ -124,7 +125,7 @@ class KeyValueStore {
   // std::as_writable_bytes(std::span(array)), or pass a pointer to the array
   // instead of the array itself.
   template <typename Pointer,
-            typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
+            typename = std::enable_if_t<std::is_pointer<Pointer>::value>>
   Status Get(const Key& key, const Pointer& pointer) const {
     using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
     CheckThatObjectCanBePutOrGet<T>();
@@ -148,14 +149,17 @@ class KeyValueStore {
   //   FAILED_PRECONDITION: the KVS is not initialized
   //      INVALID_ARGUMENT: key is empty or too long or value is too large
   //
-  template <typename T>
+  template <typename T,
+            typename std::enable_if_t<ConvertsToSpan<T>::value>* = nullptr>
   Status Put(const Key& key, const T& value) {
-    if constexpr (ConvertsToSpan<T>::value) {
-      return PutBytes(key, std::as_bytes(std::span(value)));
-    } else {
-      CheckThatObjectCanBePutOrGet<T>();
-      return PutBytes(key, std::as_bytes(std::span(&value, 1)));
-    }
+    return PutBytes(key, std::as_bytes(internal::make_span(value)));
+  }
+
+  template <typename T,
+            typename std::enable_if_t<!ConvertsToSpan<T>::value>* = nullptr>
+  Status Put(const Key& key, const T& value) {
+    CheckThatObjectCanBePutOrGet<T>();
+    return PutBytes(key, std::as_bytes(std::span<const T>(&value, 1)));
   }
 
   // Removes a key-value entry from the KVS.
@@ -225,7 +229,7 @@ class KeyValueStore {
     }
 
     template <typename Pointer,
-              typename = std::enable_if_t<std::is_pointer_v<Pointer>>>
+              typename = std::enable_if_t<std::is_pointer<Pointer>::value>>
     Status Get(const Pointer& pointer) const {
       using T = std::remove_reference_t<std::remove_pointer_t<Pointer>>;
       CheckThatObjectCanBePutOrGet<T>();
@@ -360,7 +364,7 @@ class KeyValueStore {
   template <typename T>
   static constexpr void CheckThatObjectCanBePutOrGet() {
     static_assert(
-        std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>,
+        std::is_trivially_copyable<T>::value && !std::is_pointer<T>::value,
         "Only trivially copyable, non-pointer objects may be Put and Get by "
         "value. Any value may be stored by converting it to a byte std::span "
         "with std::as_bytes(std::span(&value, 1)) or "
@@ -571,7 +575,8 @@ class KeyValueStoreBuffer : public KeyValueStore {
                       const Options& options = {})
       : KeyValueStoreBuffer(
             partition,
-            std::span(reinterpret_cast<const EntryFormat (&)[1]>(format)),
+            std::span<const EntryFormat, kEntryFormats>(
+                reinterpret_cast<const EntryFormat (&)[1]>(format)),
             options) {
     static_assert(kEntryFormats == 1,
                   "kEntryFormats EntryFormats must be specified");
@@ -622,4 +627,5 @@ class KeyValueStoreBuffer : public KeyValueStore {
   std::array<EntryFormat, kEntryFormats> formats_;
 };
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw

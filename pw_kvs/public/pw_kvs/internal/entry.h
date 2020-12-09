@@ -29,7 +29,9 @@
 #include "pw_kvs/internal/key_descriptor.h"
 #include "pw_kvs/key.h"
 
-namespace pw::kvs::internal {
+namespace pw {
+namespace kvs {
+namespace internal {
 
 // Entry represents a key-value entry in a flash partition.
 class Entry {
@@ -198,7 +200,7 @@ class Entry {
   }
 
   std::span<const std::byte> checksum_bytes() const {
-    return std::as_bytes(std::span(&header_.checksum, 1));
+    return std::as_bytes(std::span<const uint32_t>(&header_.checksum, 1));
   }
 
   std::span<const std::byte> CalculateChecksum(
@@ -219,4 +221,6 @@ class Entry {
   EntryHeader header_;
 };
 
-}  // namespace pw::kvs::internal
+}  // namespace internal
+}  // namespace kvs
+}  // namespace pw

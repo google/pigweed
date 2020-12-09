@@ -15,7 +15,8 @@
 
 #include <cstddef>
 
-namespace pw::string {
+namespace pw {
+namespace string {
 
 // Calculates the length of a null-terminated string up to the specified maximum
 // length. If str is nullptr, returns 0.
@@ -35,4 +36,5 @@ constexpr size_t Length(const char* str, size_t max_len) {
   return length;
 }
 
-}  // namespace pw::string
+}  // namespace string
+}  // namespace pw

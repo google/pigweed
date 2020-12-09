@@ -17,7 +17,9 @@
 
 #include "pw_kvs/key.h"
 
-namespace pw::kvs::internal {
+namespace pw {
+namespace kvs {
+namespace internal {
 
 // The hash function used to hash keys.
 constexpr uint32_t Hash(Key string) {
@@ -32,4 +34,6 @@ constexpr uint32_t Hash(Key string) {
   return hash;
 }
 
-}  // namespace pw::kvs::internal
+}  // namespace internal
+}  // namespace kvs
+}  // namespace pw

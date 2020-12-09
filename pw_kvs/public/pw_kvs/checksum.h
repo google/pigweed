@@ -19,7 +19,8 @@
 #include "pw_kvs/alignment.h"
 #include "pw_status/status.h"
 
-namespace pw::kvs {
+namespace pw {
+namespace kvs {
 
 class ChecksumAlgorithm {
  public:
@@ -31,7 +32,8 @@ class ChecksumAlgorithm {
 
   // Updates the checksum from a pointer and size.
   void Update(const void* data, size_t size_bytes) {
-    return Update(std::span(static_cast<const std::byte*>(data), size_bytes));
+    return Update(std::span<const std::byte>(
+        static_cast<const std::byte*>(data), size_bytes));
   }
 
   // Returns the final result of the checksum. Update() can no longer be called
@@ -110,8 +112,12 @@ class AlignedChecksum : public ChecksumAlgorithm {
 
   virtual void FinalizeAligned() = 0;
 
-  OutputToMethod<&AlignedChecksum::UpdateAligned> output_;
+  OutputToMethod<void (AlignedChecksum<kAlignmentBytes, kBufferSize>::*)(
+                     std::span<const std::byte>),
+                 &AlignedChecksum::UpdateAligned>
+      output_;
   AlignedWriterBuffer<kBufferSize> writer_;
 };
 
-}  // namespace pw::kvs
+}  // namespace kvs
+}  // namespace pw
