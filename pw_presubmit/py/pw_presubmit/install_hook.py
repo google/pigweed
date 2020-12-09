@@ -41,6 +41,7 @@ def install_hook(script,
     script = os.path.relpath(script, root)
 
     hook_path = root.joinpath('.git', 'hooks', hook)
+    hook_path.parent.mkdir(exist_ok=True)
 
     command = ' '.join(shlex.quote(arg) for arg in (script, *args))
 
