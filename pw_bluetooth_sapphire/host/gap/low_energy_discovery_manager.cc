@@ -49,8 +49,13 @@ void LowEnergyDiscoverySession::Stop() {
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   ZX_ASSERT(peer.le());
-  if (peer_found_callback_ && filter_.MatchLowEnergyResult(peer.le()->advertising_data(),
-                                                           peer.connectable(), peer.rssi())) {
+
+  if (!alive_ || !peer_found_callback_) {
+    return;
+  }
+
+  if (filter_.MatchLowEnergyResult(peer.le()->advertising_data(), peer.connectable(),
+                                   peer.rssi())) {
     peer_found_callback_(peer);
   }
 }
@@ -166,8 +171,7 @@ std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession
   // constructor.
   std::unique_ptr<LowEnergyDiscoverySession> session(
       new LowEnergyDiscoverySession(active, weak_ptr_factory_.GetWeakPtr()));
-  ZX_ASSERT(sessions_.find(session.get()) == sessions_.end());
-  sessions_.insert(session.get());
+  sessions_.push_back(session.get());
   return session;
 }
 
@@ -179,11 +183,12 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
   // one active session object out there, then we MUST be scanning.
   ZX_ASSERT(session->alive());
 
-  ZX_ASSERT(sessions_.find(session) != sessions_.end());
+  auto iter = std::find(sessions_.begin(), sessions_.end(), session);
+  ZX_ASSERT(iter != sessions_.end());
 
   bool active = session->active();
 
-  sessions_.erase(session);
+  sessions_.erase(iter);
 
   bool last_active = active && std::none_of(sessions_.begin(), sessions_.end(),
                                             [](auto& s) { return s->active_; });
@@ -222,8 +227,13 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
 
   cached_scan_results_.insert(peer->identifier());
 
-  for (const auto& session : sessions_) {
+  for (auto iter = sessions_.begin(); iter != sessions_.end();) {
+    // The session may be erased by the result handler, so we need to get the next iterator before
+    // iter is invalidated.
+    auto next = std::next(iter);
+    auto session = *iter;
     session->NotifyDiscoveryResult(*peer);
+    iter = next;
   }
 }
 
@@ -251,10 +261,15 @@ void LowEnergyDiscoveryManager::OnDirectedAdvertisement(const hci::LowEnergyScan
   }
 
   // Only notify passive sessions.
-  for (const auto& session : sessions_) {
+  for (auto iter = sessions_.begin(); iter != sessions_.end();) {
+    // The session may be erased by the result handler, so we need to get the next iterator before
+    // iter is invalidated.
+    auto next = std::next(iter);
+    auto session = *iter;
     if (!session->active()) {
       session->NotifyDiscoveryResult(*peer);
     }
+    iter = next;
   }
 }
 

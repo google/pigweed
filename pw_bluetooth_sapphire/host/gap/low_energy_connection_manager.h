@@ -17,6 +17,7 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
@@ -115,28 +116,22 @@ class LowEnergyConnectionManager final {
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                             fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
 
   // Options for the |Connect| method.
-  //
-  // |bondable_mode|: the sm::BondableMode to connect with.
-  // |optional_service_uuid|: When present, service discovery performed following
-  //                          the connection is restricted to primary services
-  //                          that match this field. Otherwise, by default all available
-  //                          services are discovered.
-  class ConnectionOptions {
-   public:
-    ConnectionOptions(sm::BondableMode bondable_mode = sm::BondableMode::Bondable,
-                      std::optional<UUID> optional_service_uuid = std::nullopt)
-        : bondable_mode_(bondable_mode), optional_service_uuid_(optional_service_uuid) {}
+  struct ConnectionOptions {
+    // The sm::BondableMode to connect with.
+    sm::BondableMode bondable_mode = sm::BondableMode::Bondable;
 
-    sm::BondableMode bondable_mode() const { return bondable_mode_; }
-    std::optional<UUID> optional_service_uuid() const { return optional_service_uuid_; }
+    // When present, service discovery performed following the connection is restricted to primary
+    // services that match this field. Otherwise, by default all available services are discovered.
+    std::optional<UUID> service_uuid = std::nullopt;
 
-   private:
-    sm::BondableMode bondable_mode_;
-    std::optional<UUID> optional_service_uuid_;
+    // When true, skip scanning before connecting. This should only be true when the connection is
+    // initiated as a result of a directed advertisement.
+    bool auto_connect = false;
   };
 
   // Allows a caller to claim shared ownership over a connection to the requested remote LE peer
@@ -159,7 +154,7 @@ class LowEnergyConnectionManager final {
   using ConnectionResult = fit::result<LowEnergyConnectionRefPtr, HostError>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
-               ConnectionOptions connection_options = ConnectionOptions());
+               ConnectionOptions connection_options);
 
   PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
@@ -248,6 +243,16 @@ class LowEnergyConnectionManager final {
   // Called when |connector_| completes a pending request. Initiates a new
   // connection attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
+
+  // Starts scanning for peer to connect to. When the peer is found, initiates a connection attempt.
+  void StartScanningForPeer(Peer* peer);
+
+  // Called when scanning for the pending peer with id |peer_id| successfully starts.
+  // |session| must not be nullptr.
+  //
+  // Starts a scan timeout and filters scan results for one that matches |peer_id|. When a matching
+  // result is found, initiates a connection attempt.
+  void OnScanStart(PeerId peer_id, LowEnergyDiscoverySessionPtr session);
 
   // Initiates a connection attempt to |peer|.
   void RequestCreateConnection(Peer* peer);
@@ -393,6 +398,9 @@ class LowEnergyConnectionManager final {
   // is configurable to allow unit tests to set a shorter value.
   zx::duration request_timeout_;
 
+  // Task called after a peer scan attempt is times out.
+  std::optional<async::TaskClosure> scan_timeout_task_;
+
   // The dispatcher for all asynchronous tasks.
   async_dispatcher_t* dispatcher_;
 
@@ -412,6 +420,8 @@ class LowEnergyConnectionManager final {
 
   // Local GATT service registry.
   std::unique_ptr<gatt::LocalServiceManager> gatt_registry_;
+
+  fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager_;
 
   // Event handler ID for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventHandlerId conn_update_cmpl_handler_id_;
@@ -443,6 +453,9 @@ class LowEnergyConnectionManager final {
   // Sends HCI commands that request version and feature support information from peer
   // controllers.
   LowEnergyInterrogator interrogator_;
+
+  // True if the connection manager is performing a scan for a peer before connecting.
+  bool scanning_ = false;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
@@ -479,10 +492,17 @@ class PendingRequestData final {
   const DeviceAddress& address() const { return address_; }
   ConnectionOptions connection_options() const { return connection_options_; }
 
+  void set_discovery_session(LowEnergyDiscoverySessionPtr session) {
+    session_ = std::move(session);
+  }
+
+  LowEnergyDiscoverySession* discovery_session() { return session_.get(); }
+
  private:
   DeviceAddress address_;
   std::list<ConnectionResultCallback> callbacks_;
   ConnectionOptions connection_options_;
+  LowEnergyDiscoverySessionPtr session_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
 };

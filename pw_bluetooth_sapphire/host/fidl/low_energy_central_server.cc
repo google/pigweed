@@ -208,8 +208,8 @@ void LowEnergyCentralServer::ConnectPeripheral(
       connection_options.has_service_filter()
           ? std::optional(fidl_helpers::UuidFromFidl(connection_options.service_filter()))
           : std::nullopt;
-  bt::gap::LowEnergyConnectionManager::ConnectionOptions mgr_connection_options(bondable_mode,
-                                                                                service_uuid);
+  bt::gap::LowEnergyConnectionManager::ConnectionOptions mgr_connection_options{
+      .bondable_mode = bondable_mode, .service_uuid = service_uuid};
 
   // An entry for the connection must be created here so that a synchronous call to conn_cb below
   // does not cause conn_cb to treat the connection as cancelled.

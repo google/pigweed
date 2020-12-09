@@ -103,6 +103,9 @@ constexpr zx::duration kLECreateConnectionTimeout = zx::sec(20);
 // Timeout used for the Br/Edr Create Connection command.
 constexpr zx::duration kBrEdrCreateConnectionTimeout = zx::sec(20);
 
+// Timeout used for scanning during LE General CEP. Selected to be longer than the scan period.
+constexpr zx::duration kLEGeneralCepScanTimeout = zx::sec(15);
+
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)
 constexpr zx::duration kLEConnectionParameterTimeout = zx::sec(30);

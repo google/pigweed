@@ -444,6 +444,9 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   adapter()->peer_cache()->AddBondedPeer(
       BondingData{.identifier = kPeerId, .address = kTestAddr, .le_pairing_data = pdata});
   EXPECT_EQ(1u, adapter()->peer_cache()->count());
+
+  // FakeController only sends advertising reports at the start of scan periods, so we need to start
+  // a second period.
   RunLoopFor(kTestScanPeriod);
 
   // The peer should have been auto-connected.
@@ -708,9 +711,12 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   test_device()->set_settings(settings);
   InitializeAdapter([](bool) {});
 
-  // Add a device to the cache but not the fake controller. This will cause the
-  // connection request to hang.
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
+
+  // Cause scanning to succeed and the connection request to hang.
+  auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
+  fake_peer->set_force_pending_connect(true);
+  test_device()->AddPeer(std::move(fake_peer));
 
   constexpr auto kTestDelay = zx::sec(5);
   constexpr auto kTestTimeout = kPrivateAddressTimeout + kTestDelay;

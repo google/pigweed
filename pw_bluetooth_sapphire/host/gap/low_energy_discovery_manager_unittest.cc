@@ -1267,5 +1267,15 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest,
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesNotCrash) {
+  auto session = StartDiscoverySession(/*active=*/false);
+  auto result_cb = [&session](const auto& peer) { session->Stop(); };
+  session->SetResultCallback(std::move(result_cb));
+  RunLoopUntilIdle();
+
+  AddFakePeers();
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace bt::gap

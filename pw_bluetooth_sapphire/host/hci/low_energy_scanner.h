@@ -206,7 +206,7 @@ class LowEnergyScanner : public LocalAddressClient {
   fxl::WeakPtr<Transport> transport() const { return transport_; }
   SequentialCommandRunner* hci_cmd_runner() const { return hci_cmd_runner_.get(); }
   Delegate* delegate() const {
-    ZX_DEBUG_ASSERT(delegate_);
+    ZX_ASSERT(delegate_);
     return delegate_;
   }
 

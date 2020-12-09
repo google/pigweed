@@ -219,6 +219,8 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
     connectable_cb_ = std::move(callback);
   }
 
+  fxl::WeakPtr<LowEnergyDiscoveryManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
   friend class LowEnergyDiscoverySession;
 
@@ -289,7 +291,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   // The number of elements in |sessions_| acts as our scan reference count.
   // When |sessions_| becomes empty scanning is stopped. Similarly, scanning is
   // started on the insertion of the first element.
-  std::unordered_set<LowEnergyDiscoverySession*> sessions_;
+  std::list<LowEnergyDiscoverySession*> sessions_;
 
   // Identifiers for the cached scan results for the current scan period during
   // discovery. The minimum (and default) scan period is 10.24 seconds

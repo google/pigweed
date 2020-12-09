@@ -338,7 +338,12 @@ void LegacyLowEnergyScanner::HandleScanResponse(const LEAdvertisingReportData& r
   pending->set_resolved(resolved);
 
   NotifyPeerFound(pending->result(), pending->data());
-  pending_results_.erase(iter);
+
+  // If scan is stopped in notify callback, iter may be invalidated.
+  iter = pending_results_.find(address);
+  if (iter != pending_results_.end()) {
+    pending_results_.erase(iter);
+  }
 }
 
 void LegacyLowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result,
@@ -361,9 +366,9 @@ void LegacyLowEnergyScanner::OnScanResponseTimeout(const DeviceAddress& address)
     return;
   }
 
-  const auto& pending = iter->second;
-  NotifyPeerFound(pending->result(), pending->data());
+  auto pending = std::move(iter->second);
   pending_results_.erase(iter);
+  NotifyPeerFound(pending->result(), pending->data());
 }
 
 }  // namespace bt::hci

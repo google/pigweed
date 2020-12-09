@@ -849,7 +849,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
       fit::bind_member(this, &AdapterImpl::OnLeAutoConnectRequest));
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
-      sm::SecurityManager::Create);
+      le_discovery_manager_->GetWeakPtr(), sm::SecurityManager::Create);
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
   low_energy_ = std::make_unique<LowEnergyImpl>(this);
@@ -1031,27 +1031,32 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
     return;
   }
 
+  LowEnergyConnectionManager::ConnectionOptions options{.auto_connect = true};
+
   auto self = weak_ptr_factory_.GetWeakPtr();
-  le_connection_manager_->Connect(peer->identifier(), [self](auto result) {
-    if (!self) {
-      bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
-      return;
-    }
+  le_connection_manager_->Connect(
+      peer->identifier(),
+      [self](auto result) {
+        if (!self) {
+          bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
+          return;
+        }
 
-    if (result.is_error()) {
-      bt_log(ERROR, "gap", "failed to auto-connect (error: %s)",
-             HostErrorToString(result.error()).c_str());
-      return;
-    }
+        if (result.is_error()) {
+          bt_log(ERROR, "gap", "failed to auto-connect (error: %s)",
+                 HostErrorToString(result.error()).c_str());
+          return;
+        }
 
-    auto conn = result.take_value();
-    ZX_ASSERT(conn);
-    PeerId id = conn->peer_identifier();
-    bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
-    if (self->auto_conn_cb_) {
-      self->auto_conn_cb_(std::move(conn));
-    }
-  });
+        auto conn = result.take_value();
+        ZX_ASSERT(conn);
+        PeerId id = conn->peer_identifier();
+        bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
+        if (self->auto_conn_cb_) {
+          self->auto_conn_cb_(std::move(conn));
+        }
+      },
+      options);
 }
 
 bool AdapterImpl::IsLeRandomAddressChangeAllowed() {

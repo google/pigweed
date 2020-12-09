@@ -273,7 +273,7 @@ class LowEnergyConnection final : public sm::Delegate {
     LeSecurityMode security_mode = conn_mgr_->security_mode();
     sm_ = conn_mgr_->sm_factory_func()(link_->WeakPtr(), std::move(smp), io_cap,
                                        weak_ptr_factory_.GetWeakPtr(),
-                                       connection_options.bondable_mode(), security_mode);
+                                       connection_options.bondable_mode, security_mode);
 
     // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
     // will start encryption if the local device is the link-layer master.
@@ -283,7 +283,7 @@ class LowEnergyConnection final : public sm::Delegate {
     }
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
-    gatt_->DiscoverServices(peer_id(), connection_options.optional_service_uuid());
+    gatt_->DiscoverServices(peer_id(), connection_options.service_uuid);
   }
 
   // sm::Delegate override:
@@ -492,7 +492,8 @@ sm::SecurityProperties LowEnergyConnectionRef::security() const {
 LowEnergyConnectionManager::LowEnergyConnectionManager(
     fxl::WeakPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
     hci::LowEnergyConnector* connector, PeerCache* peer_cache, fbl::RefPtr<l2cap::L2cap> l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, sm::SecurityManagerFactory sm_creator)
+    fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
+    sm::SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
       security_mode_(LeSecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
@@ -501,6 +502,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(gatt),
+      discovery_manager_(discovery_manager),
       connector_(connector),
       local_address_delegate_(addr_delegate),
       interrogator_(peer_cache, hci_, dispatcher_),
@@ -583,7 +585,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   auto pending_iter = pending_requests_.find(peer_id);
   if (pending_iter != pending_requests_.end()) {
     ZX_ASSERT(connections_.find(peer_id) == connections_.end());
-    ZX_ASSERT(connector_->request_pending());
+    ZX_ASSERT(connector_->request_pending() || scanning_);
     pending_iter->second.AddCallback(std::move(callback));
     return;
   }
@@ -673,7 +675,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
 
-  ConnectionOptions connection_options(bondable_mode);
+  ConnectionOptions connection_options{.bondable_mode = bondable_mode};
   internal::PendingRequestData request(peer->address(), std::move(callback), connection_options);
 
   // TODO(armansito): Use own address when storing the connection (fxbug.dev/653).
@@ -729,14 +731,13 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
     return;
   }
 
-  // TODO(armansito): Perform either the General or Auto Connection
-  // Establishment procedure here (see fxbug.dev/908).
+  if (scanning_) {
+    bt_log(DEBUG, "gap-le", "connection request scan pending");
+    return;
+  }
 
   if (pending_requests_.empty()) {
     bt_log(TRACE, "gap-le", "no pending requests remaining");
-
-    // TODO(armansito): Unpause discovery and disable background scanning if
-    // there aren't any peers to auto-connect to.
     return;
   }
 
@@ -744,21 +745,98 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
     const auto& next_peer_addr = iter.second.address();
     Peer* peer = peer_cache_->FindByAddress(next_peer_addr);
     if (peer) {
-      RequestCreateConnection(peer);
+      if (iter.second.connection_options().auto_connect) {
+        // If this connection is being established in response to a directed advertisement, there is
+        // no need to scan again.
+        bt_log(TRACE, "gap-le", "auto connecting (peer: %s)", bt_str(peer->identifier()));
+        RequestCreateConnection(peer);
+      } else {
+        StartScanningForPeer(peer);
+      }
       break;
     }
 
     bt_log(DEBUG, "gap-le", "deferring connection attempt for peer: %s",
            next_peer_addr.ToString().c_str());
 
-    // TODO(armansito): For now the requests for this peer won't complete
+    // TODO(fxbug.dev/908): For now the requests for this peer won't complete
     // until the next peer discovery. This will no longer be an issue when we
-    // use background scanning (see fxbug.dev/908).
+    // use background scanning.
   }
 }
 
+void LowEnergyConnectionManager::StartScanningForPeer(Peer* peer) {
+  ZX_ASSERT(peer);
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto peer_id = peer->identifier();
+
+  scanning_ = true;
+
+  discovery_manager_->StartDiscovery(/*active=*/false, [self, peer_id](auto session) {
+    if (!self) {
+      return;
+    }
+
+    if (!session) {
+      self->scanning_ = false;
+      self->OnConnectResult(peer_id, hci::Status(HostError::kFailed), nullptr);
+      return;
+    }
+
+    self->OnScanStart(peer_id, std::move(session));
+  });
+}
+
+void LowEnergyConnectionManager::OnScanStart(PeerId peer_id, LowEnergyDiscoverySessionPtr session) {
+  ZX_ASSERT(session);
+
+  bt_log(TRACE, "gap-le", "started scanning for pending connection (peer: %s)", bt_str(peer_id));
+
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  scan_timeout_task_.emplace([self, peer_id] {
+    bt_log(INFO, "gap-le", "scan for pending connection timed out (peer: %s)", bt_str(peer_id));
+    self->OnConnectResult(peer_id, hci::Status(HostError::kTimedOut), nullptr);
+  });
+  // The scan timeout may include time during which scanning is paused.
+  scan_timeout_task_->PostDelayed(self->dispatcher_, kLEGeneralCepScanTimeout);
+
+  session->filter()->set_connectable(true);
+
+  auto iter = self->pending_requests_.find(peer_id);
+  ZX_ASSERT(iter != self->pending_requests_.end());
+  iter->second.set_discovery_session(std::move(session));
+
+  // Set the result callback after adding the session to the request in case it is called
+  // synchronously (e.g. when there is an ongoing active scan and the peer is cached).
+  iter->second.discovery_session()->SetResultCallback([self, peer_id](auto& peer) {
+    if (!self || peer.identifier() != peer_id) {
+      return;
+    }
+
+    bt_log(TRACE, "gap-le", "discovered peer for pending connection (peer: %s)",
+           bt_str(peer.identifier()));
+
+    self->scan_timeout_task_.reset();
+    self->scanning_ = false;
+
+    // Stopping the discovery session will unregister this result handler.
+    auto iter = self->pending_requests_.find(peer_id);
+    ZX_ASSERT(iter != self->pending_requests_.end());
+    ZX_ASSERT(iter->second.discovery_session());
+    iter->second.discovery_session()->Stop();
+
+    Peer* peer_ptr = self->peer_cache_->FindById(peer_id);
+    ZX_ASSERT(peer_ptr);
+    self->RequestCreateConnection(peer_ptr);
+  });
+}
+
 void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
-  ZX_DEBUG_ASSERT(peer);
+  ZX_ASSERT(peer);
+
+  // Pause discovery until connection complete.
+  auto pause = discovery_manager_->PauseDiscovery();
 
   // During the initial connection to a peripheral we use the initial high
   // duty-cycle parameters to ensure that initiating procedures (bonding,
@@ -774,15 +852,18 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
                                                       hci::defaults::kLESupervisionTimeout);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, peer_id = peer->identifier()](hci::Status status, auto link) {
-    if (self)
+  auto status_cb = [self, peer_id = peer->identifier(), pause = std::optional(std::move(pause))](
+                       hci::Status status, auto link) mutable {
+    if (self) {
+      pause.reset();
       self->OnConnectResult(peer_id, status, std::move(link));
+    }
   };
 
-  // We set the scan window and interval to the same value for continuous
-  // scanning.
-  connector_->CreateConnection(false /* use_whitelist */, peer->address(), kLEScanFastInterval,
-                               kLEScanFastInterval, initial_params, status_cb, request_timeout_);
+  // We set the scan window and interval to the same value for continuous scanning.
+  connector_->CreateConnection(/*use_whitelist=*/false, peer->address(), kLEScanFastInterval,
+                               kLEScanFastInterval, initial_params, std::move(status_cb),
+                               self->request_timeout_);
 }
 
 bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
