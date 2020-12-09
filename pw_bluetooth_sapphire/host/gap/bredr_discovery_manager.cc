@@ -23,7 +23,10 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
   std::unordered_set<Peer*> updated;
   bt_log(TRACE, "gap-bredr", "inquiry result received");
 
-  size_t result_size = event.view().payload_size() - sizeof(EventParamType);
+  const size_t event_payload_size = event.view().payload_size();
+  ZX_ASSERT_MSG(event_payload_size >= sizeof(EventParamType), "undersized (%zu) inquiry event",
+                event_payload_size);
+  size_t result_size = event_payload_size - sizeof(EventParamType);
   ZX_ASSERT_MSG(result_size % sizeof(ResultType) == 0, "wrong size result (%zu %% %zu != 0)",
                 result_size, sizeof(ResultType));
 

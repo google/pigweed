@@ -158,6 +158,12 @@ const auto kInquiryResult = CreateStaticByteBuffer(
   0x00, 0x00 // clock_offset[0]
 );
 
+const StaticByteBuffer kInquiryResultIncompleteHeader(
+  hci::kInquiryResultEventCode,
+  0x00 // parameter_total_size (0 bytes)
+  // truncated
+);
+
 const StaticByteBuffer kInquiryResultMissingResponses(
   hci::kInquiryResultEventCode,
   0x1D, // parameter_total_size (29 bytes)
@@ -391,19 +397,15 @@ TEST_F(GAP_BrEdrDiscoveryManagerDeathTest, MalformedInquiryResultFromControllerI
 
   RunLoopUntilIdle();
 
-  EXPECT_DEATH_IF_SUPPORTED(
-      [this] {
-        test_device()->SendCommandChannelPacket(kInquiryResultMissingResponses);
-        RunLoopUntilIdle();
-      }(),
-      ".*");
-
-  EXPECT_DEATH_IF_SUPPORTED(
-      [this] {
-        test_device()->SendCommandChannelPacket(kInquiryResultIncompleteResponse);
-        RunLoopUntilIdle();
-      }(),
-      ".*");
+  for (auto event : {kInquiryResultIncompleteHeader.view(), kInquiryResultMissingResponses.view(),
+                     kInquiryResultIncompleteResponse.view()}) {
+    EXPECT_DEATH_IF_SUPPORTED(
+        [=] {
+          test_device()->SendCommandChannelPacket(event);
+          RunLoopUntilIdle();
+        }(),
+        ".*");
+  }
 
   test_device()->SendCommandChannelPacket(kInquiryComplete);
 }
