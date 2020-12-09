@@ -189,6 +189,19 @@ def install(
     def install_packages(gn_target):
         build = os.path.join(venv_path, gn_target.name)
 
+        env_log = 'env-{}.log'.format(gn_target.name)
+        env_log_path = os.path.join(venv_path, env_log)
+        with open(env_log_path, 'w') as outs:
+            for key, value in sorted(os.environ.items()):
+                if key.upper().endswith('PATH'):
+                    print(key, '=', file=outs)
+                    # pylint: disable=invalid-name
+                    for v in value.split(os.pathsep):
+                        print('   ', v, file=outs)
+                    # pylint: enable=invalid-name
+                else:
+                    print(key, '=', value, file=outs)
+
         gn_log = 'gn-gen-{}.log'.format(gn_target.name)
         gn_log_path = os.path.join(venv_path, gn_log)
         try:
