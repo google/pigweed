@@ -204,23 +204,6 @@ class ClientTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             self._client.method('nothing.Good')
 
-    def test_get_request_with_both_message_and_kwargs(self):
-        method = self._client.services['pw.test2.Alpha'].methods['Unary']
-
-        with self.assertRaisesRegex(TypeError, r'either'):
-            method.get_request(method.request_type(), {'magic_number': 1.0})
-
-    def test_get_request_with_wrong_type(self):
-        method = self._client.services['pw.test2.Alpha'].methods['Unary']
-        with self.assertRaisesRegex(TypeError, r'pw\.test2\.Request'):
-            method.get_request('a str!', {})
-
-    def test_get_request_with_incorrect_message_type(self):
-        msg = self._protos.packages.pw.test1.AnotherMessage()
-        with self.assertRaisesRegex(TypeError, r'pw\.test1\.SomeMessage'):
-            self._client.services['pw.test1.PublicService'].methods[
-                'SomeUnary'].get_request(msg, {})
-
     def test_process_packet_invalid_proto_data(self):
         self.assertIs(self._client.process_packet(b'NOT a packet!'),
                       Status.DATA_LOSS)

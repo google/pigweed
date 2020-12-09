@@ -20,7 +20,9 @@ from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
                     Iterator, Tuple, TypeVar, Union)
 
 from google.protobuf import descriptor_pb2, message_factory
-from google.protobuf.descriptor import FieldDescriptor, MethodDescriptor
+from google.protobuf.descriptor import (FieldDescriptor, MethodDescriptor,
+                                        ServiceDescriptor)
+from google.protobuf.message import Message
 from pw_protobuf_compiler import python_protos
 
 from pw_rpc import ids
@@ -38,7 +40,7 @@ class Channel:
 @dataclass(frozen=True, eq=False)
 class Service:
     """Describes an RPC service."""
-    _descriptor: MethodDescriptor
+    _descriptor: ServiceDescriptor
     id: int
     methods: 'Methods'
 
@@ -55,8 +57,9 @@ class Service:
         return self._descriptor.file.package
 
     @classmethod
-    def from_descriptor(cls, descriptor):
-        service = cls(descriptor, ids.calculate(descriptor.full_name), None)
+    def from_descriptor(cls, descriptor: ServiceDescriptor) -> 'Service':
+        service = cls(descriptor, ids.calculate(descriptor.full_name),
+                      None)  # type: ignore[arg-type]
         object.__setattr__(
             service, 'methods',
             Methods(
@@ -139,6 +142,16 @@ def field_help(proto_message, *, annotations: bool = False) -> Iterator[str]:
             yield f'{field.name}={value}'
 
 
+def _message_is_type(proto, expected_type) -> bool:
+    """Returns true if the protobuf instance is the expected type."""
+    # Getting protobuf classes from google.protobuf.message_factory may create a
+    # new, unique generated proto class. Any generated classes for a particular
+    # proto message share the same MessageDescriptor instance and are
+    # interchangeable, so check the descriptors in addition to the types.
+    return isinstance(proto, expected_type) or (isinstance(
+        proto, Message) and proto.DESCRIPTOR is expected_type.DESCRIPTOR)
+
+
 @dataclass(frozen=True, eq=False)
 class Method:
     """Describes a method in a service."""
@@ -217,7 +230,7 @@ class Method:
         if proto is None:
             return self.request_type(**proto_kwargs)
 
-        if not isinstance(proto, self.request_type):
+        if not _message_is_type(proto, self.request_type):
             try:
                 bad_type = proto.DESCRIPTOR.full_name
             except AttributeError:

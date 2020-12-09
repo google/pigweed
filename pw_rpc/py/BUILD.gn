@@ -36,6 +36,7 @@ pw_python_package("py") {
   tests = [
     "callback_client_test.py",
     "client_test.py",
+    "descriptors_test.py",
     "ids_test.py",
     "packets_test.py",
   ]
