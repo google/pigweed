@@ -191,9 +191,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Collect paths of interest from the event.
         paths: List[str] = []
         if hasattr(event, 'dest_path'):
-            paths.append(event.dest_path)
+            paths.append(os.fsdecode(event.dest_path))
         if event.src_path:
-            paths.append(event.src_path)
+            paths.append(os.fsdecode(event.src_path))
         for path in paths:
             _LOG.debug('File event: %s', path)
 
