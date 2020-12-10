@@ -537,15 +537,21 @@ HostError RemoteService::GetCharacteristic(CharacteristicHandle id,
   ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(out_char);
 
-  if (shut_down_)
+  if (shut_down_) {
+    *out_char = nullptr;
     return HostError::kFailed;
+  }
 
-  if (!HasCharacteristics())
+  if (!HasCharacteristics()) {
+    *out_char = nullptr;
     return HostError::kNotReady;
+  }
 
   auto chr = characteristics_.find(id);
-  if (chr == characteristics_.end())
+  if (chr == characteristics_.end()) {
+    *out_char = nullptr;
     return HostError::kNotFound;
+  }
 
   *out_char = &chr->second;
   return HostError::kNoError;
@@ -555,11 +561,15 @@ HostError RemoteService::GetDescriptor(DescriptorHandle id, const DescriptorData
   ZX_DEBUG_ASSERT(IsOnGattThread());
   ZX_DEBUG_ASSERT(out_desc);
 
-  if (shut_down_)
+  if (shut_down_) {
+    *out_desc = nullptr;
     return HostError::kFailed;
+  }
 
-  if (!HasCharacteristics())
+  if (!HasCharacteristics()) {
+    *out_desc = nullptr;
     return HostError::kNotReady;
+  }
 
   for (auto iter = characteristics_.begin(); iter != characteristics_.end(); ++iter) {
     auto next = iter;
@@ -574,6 +584,7 @@ HostError RemoteService::GetDescriptor(DescriptorHandle id, const DescriptorData
     }
   }
 
+  *out_desc = nullptr;
   return HostError::kNotFound;
 }
 
