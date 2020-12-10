@@ -40,5 +40,6 @@ if (dir_pw_third_party_nanopb == "") {
 
 pw_python_script("example_script") {
   sources = [ "example_script.py" ]
+  python_deps = [ "$dir_pw_hdlc_lite/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

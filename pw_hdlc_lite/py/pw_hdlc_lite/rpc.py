@@ -13,11 +13,12 @@
 # the License.
 """Utilities for using HDLC with pw_rpc."""
 
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import sys
 import threading
 import time
-from typing import Any, BinaryIO, Callable, Dict, Iterable, NoReturn
+from typing import Any, BinaryIO, Callable, Dict, Iterable, NoReturn, Optional
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -47,7 +48,12 @@ def channel_output(writer: Callable[[bytes], Any],
 
         return lambda data: slow_write(encode.information_frame(address, data))
 
-    return lambda data: writer(encode.information_frame(address, data))
+    def write_hdlc(data: bytes):
+        frame = encode.information_frame(address, data)
+        _LOG.debug('Write %2d B: %s', len(frame), frame)
+        writer(frame)
+
+    return write_hdlc
 
 
 def _handle_error(frame: Frame) -> None:
@@ -58,25 +64,43 @@ def _handle_error(frame: Frame) -> None:
 _FrameHandlers = Dict[int, Callable[[Frame], Any]]
 
 
-def read_and_process_data(
-        device: BinaryIO,
-        frame_handlers: _FrameHandlers,
-        error_handler: Callable[[Frame], Any] = _handle_error) -> NoReturn:
-    """Reads HDLC frames from the device and passes them to the RPC client."""
-    decoder = FrameDecoder()
+def read_and_process_data(read: Callable[[], bytes],
+                          frame_handlers: _FrameHandlers,
+                          error_handler: Callable[[Frame],
+                                                  Any] = _handle_error,
+                          handler_threads: Optional[int] = 1) -> NoReturn:
+    """Continuously reads and handles HDLC frames.
 
-    while True:
-        byte = device.read()
-        for frame in decoder.process_valid_frames(byte):
+    Passes frames to an executor that calls frame handler functions in other
+    threads.
+    """
+    def handle_frame(frame: Frame):
+        try:
             if not frame.ok():
                 error_handler(frame)
-                continue
+                return
 
             try:
                 frame_handlers[frame.address](frame)
             except KeyError:
-                _LOG.error('Unhandled frame for address %d: %s', frame.address,
-                           frame)
+                _LOG.warning('Unhandled frame for address %d: %s',
+                             frame.address, frame)
+        except:  # pylint: disable=bare-except
+            _LOG.exception('Exception in HDLC frame handler thread')
+
+    decoder = FrameDecoder()
+
+    # Execute callbacks in a ThreadPoolExecutor to decouple reading the input
+    # stream from handling the data. That way, if a handler function takes a
+    # long time or crashes, this reading thread is not interrupted.
+    with ThreadPoolExecutor(max_workers=handler_threads) as executor:
+        while True:
+            data = read()
+            if data:
+                _LOG.debug('Read %2d B: %s', len(data), data)
+
+                for frame in decoder.process_valid_frames(data):
+                    executor.submit(handle_frame, frame)
 
 
 def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
@@ -88,7 +112,8 @@ def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
 class HdlcRpcClient:
     """An RPC client configured to run over HDLC."""
     def __init__(self,
-                 device: Any,
+                 read: Callable[[], bytes],
+                 write: Callable[[bytes], Any],
                  proto_paths_or_modules: Iterable[python_protos.PathOrModule],
                  output: Callable[[bytes], Any] = write_to_file,
                  channels: Iterable[pw_rpc.Channel] = None,
@@ -96,16 +121,15 @@ class HdlcRpcClient:
         """Creates an RPC client configured to communicate using HDLC.
 
         Args:
-          device: serial.Serial (or any class that implements read and
-          write) for reading/writing data proto_paths_or_modules: paths
-          to .proto files or proto modules output: where to write
-          "stdout" output from the device
+          read: Function that reads bytes; e.g serial_device.read.
+          write: Function that writes bytes; e.g. serial_device.write
+          proto_paths_or_modules: paths to .proto files or proto modules
+          output: where to write "stdout" output from the device
         """
-        self.device = device
         self.protos = python_protos.Library.from_paths(proto_paths_or_modules)
 
         if channels is None:
-            channels = [pw_rpc.Channel(1, channel_output(device.write))]
+            channels = [pw_rpc.Channel(1, channel_output(write))]
 
         if client_impl is None:
             client_impl = callback_client.Impl()
@@ -120,7 +144,7 @@ class HdlcRpcClient:
         # Start background thread that reads and processes RPC packets.
         threading.Thread(target=read_and_process_data,
                          daemon=True,
-                         args=(device, frame_handlers)).start()
+                         args=(read, frame_handlers)).start()
 
     def rpcs(self, channel_id: int = None) -> Any:
         """Returns object for accessing services on the specified channel.
