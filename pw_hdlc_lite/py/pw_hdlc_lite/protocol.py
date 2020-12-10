@@ -29,3 +29,16 @@ def escape(byte: int) -> int:
 
 def frame_check_sequence(data: bytes) -> bytes:
     return zlib.crc32(data).to_bytes(4, 'little')
+
+
+class UFrameControl:
+    def __init__(self, frame_type: int):
+        self._data: bytes = bytes([0x03 | frame_type])
+
+    @property
+    def data(self):
+        return self._data
+
+    @classmethod
+    def unnumbered_information(cls):
+        return UFrameControl(0x00)

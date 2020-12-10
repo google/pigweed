@@ -49,7 +49,11 @@ class Encoder {
 
   // Writes the header for an I-frame. After successfully calling
   // StartInformationFrame, WriteData may be called any number of times.
-  Status StartInformationFrame(uint8_t address);
+  [[maybe_unused]] Status StartInformationFrame(uint8_t address);
+
+  // Writes the header for an U-frame. After successfully calling
+  // StartUnnumberedFrame, WriteData may be called any number of times.
+  Status StartUnnumberedFrame(uint8_t address);
 
   // Writes data for an ongoing frame. Must only be called after a successful
   // StartInformationFrame call, and prior to a FinishFrame() call.
@@ -69,7 +73,19 @@ Status Encoder::StartInformationFrame(uint8_t address) {
     return status;
   }
 
-  const byte address_and_control[] = {std::byte{address}, kUnusedControl};
+  const byte address_and_control[] = {
+      std::byte{address}, kUnusedControl, kUnusedControl};
+  return WriteData(address_and_control);
+}
+
+Status Encoder::StartUnnumberedFrame(uint8_t address) {
+  fcs_.clear();
+  if (Status status = writer_.Write(kFlag); !status.ok()) {
+    return status;
+  }
+
+  const byte address_and_control[] = {
+      std::byte{address}, UFrameControl::UnnumberedInformation().data()};
   return WriteData(address_and_control);
 }
 
@@ -103,12 +119,12 @@ Status Encoder::FinishFrame() {
 
 }  // namespace
 
-Status WriteInformationFrame(uint8_t address,
-                             ConstByteSpan payload,
-                             stream::Writer& writer) {
+Status WriteUIFrame(uint8_t address,
+                    ConstByteSpan payload,
+                    stream::Writer& writer) {
   Encoder encoder(writer);
 
-  if (Status status = encoder.StartInformationFrame(address); !status.ok()) {
+  if (Status status = encoder.StartUnnumberedFrame(address); !status.ok()) {
     return status;
   }
   if (Status status = encoder.WriteData(payload); !status.ok()) {

@@ -49,7 +49,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
     if (buffer.empty()) {
       return Status::Ok();
     }
-    return hdlc_lite::WriteInformationFrame(address_, buffer, writer_);
+    return hdlc_lite::WriteUIFrame(address_, buffer, writer_);
   }
 
  private:
@@ -77,7 +77,7 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
     if (buffer.empty()) {
       return Status::Ok();
     }
-    return hdlc_lite::WriteInformationFrame(address_, buffer, writer_);
+    return hdlc_lite::WriteUIFrame(address_, buffer, writer_);
   }
 
  private:

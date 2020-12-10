@@ -42,8 +42,8 @@ namespace pw::hdlc_lite {
 namespace {
 
 constexpr byte kFlag = byte{0x7E};
-constexpr uint8_t kAddress = 0x7b;  // 123
-constexpr byte kControl = byte{0};
+constexpr uint8_t kAddress = 0x7b;    // 123
+constexpr byte kControl = byte{0x3};  // UI-frame control sequence.
 
 // Size of the in-memory buffer to use for this test.
 constexpr size_t kSinkBufferSize = 15;
@@ -60,7 +60,7 @@ TEST(RpcChannelOutput, 1BytePayload) {
   std::memcpy(buffer.data(), &test_data, sizeof(test_data));
 
   constexpr auto expected = bytes::Concat(
-      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
+      kFlag, kAddress, kControl, 'A', uint32_t{0x8D137C66}, kFlag);
 
   EXPECT_EQ(Status::Ok(),
             output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));
@@ -88,7 +88,7 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
                                           kControl,
                                           byte{0x7d},
                                           byte{0x7d} ^ byte{0x20},
-                                          uint32_t{0x89515322},
+                                          uint32_t{0xA27C00E1},
                                           kFlag);
   EXPECT_EQ(Status::Ok(),
             output.SendAndReleaseBuffer(buffer.first(test_data.size())));
@@ -111,7 +111,7 @@ TEST(RpcChannelOutputBuffer, 1BytePayload) {
   std::memcpy(buffer.data(), &test_data, sizeof(test_data));
 
   constexpr auto expected = bytes::Concat(
-      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag);
+      kFlag, kAddress, kControl, 'A', uint32_t{0x8D137C66}, kFlag);
 
   EXPECT_EQ(Status::Ok(),
             output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));

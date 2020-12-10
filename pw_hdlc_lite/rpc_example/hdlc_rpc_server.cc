@@ -38,6 +38,7 @@ void RegisterServices() {
 
 void Start() {
   pw::rpc::system_server::Init();
+
   // Set up the server and start processing data.
   RegisterServices();
 

@@ -46,10 +46,10 @@ def channel_output(writer: Callable[[bytes], Any],
                 time.sleep(delay_s)
                 writer(bytes([byte]))
 
-        return lambda data: slow_write(encode.information_frame(address, data))
+        return lambda data: slow_write(encode.ui_frame(address, data))
 
     def write_hdlc(data: bytes):
-        frame = encode.information_frame(address, data)
+        frame = encode.ui_frame(address, data)
         _LOG.debug('Write %2d B: %s', len(frame), frame)
         writer(frame)
 

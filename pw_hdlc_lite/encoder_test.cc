@@ -29,15 +29,6 @@ namespace pw::hdlc_lite {
 namespace {
 
 constexpr uint8_t kAddress = 0x7B;  // 123
-constexpr byte kControl = byte{0};
-
-class WriteInfoFrame : public ::testing::Test {
- protected:
-  WriteInfoFrame() : writer_(buffer_) {}
-
-  stream::MemoryWriter writer_;
-  std::array<byte, 32> buffer_;
-};
 
 #define EXPECT_ENCODER_WROTE(...)                                           \
   do {                                                                      \
@@ -49,121 +40,127 @@ class WriteInfoFrame : public ::testing::Test {
         0);                                                                 \
   } while (0)
 
-TEST_F(WriteInfoFrame, EmptyPayload) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, std::span<byte>(), writer_));
-  EXPECT_ENCODER_WROTE(
-      bytes::Concat(kFlag, kAddress, kControl, uint32_t{0x8D12B2C2}, kFlag));
-}
+class WriteUnnumberedFrame : public ::testing::Test {
+ protected:
+  WriteUnnumberedFrame() : writer_(buffer_) {}
 
-TEST_F(WriteInfoFrame, OneBytePayload) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::String("A"), writer_));
+  stream::MemoryWriter writer_;
+  std::array<byte, 32> buffer_;
+};
+
+constexpr byte kUnnumberedControl = byte{0x3};
+
+TEST_F(WriteUnnumberedFrame, EmptyPayload) {
+  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, std::span<byte>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
-      kFlag, kAddress, kControl, 'A', uint32_t{0xA63E2FA5}, kFlag));
+      kFlag, kAddress, kUnnumberedControl, uint32_t{0x141BE378}, kFlag));
 }
 
-TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7d) {
+TEST_F(WriteUnnumberedFrame, OneBytePayload) {
+  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, bytes::String("A"), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(
+      kFlag, kAddress, kUnnumberedControl, 'A', uint32_t{0x8D137C66}, kFlag));
+}
+
+TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7d) {
   ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::Array<0x7d>(), writer_));
+            WriteUIFrame(kAddress, bytes::Array<0x7d>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
-                                     kControl,
+                                     kUnnumberedControl,
                                      kEscape,
                                      byte{0x7d} ^ byte{0x20},
-                                     uint32_t{0x89515322},
+                                     uint32_t{0xA27C00E1},
                                      kFlag));
 }
 
-TEST_F(WriteInfoFrame, OneBytePayload_Escape0x7E) {
+TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7E) {
   ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::Array<0x7e>(), writer_));
+            WriteUIFrame(kAddress, bytes::Array<0x7e>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
-                                     kControl,
+                                     kUnnumberedControl,
                                      kEscape,
                                      byte{0x7e} ^ byte{0x20},
-                                     uint32_t{0x10580298},
+                                     uint32_t{0x3B75515B},
                                      kFlag));
 }
 
-TEST_F(WriteInfoFrame, AddressNeedsEscaping) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(0x7d, bytes::String("A"), writer_));
-  EXPECT_ENCODER_WROTE(bytes::Concat(
-      kFlag, kEscape, byte{0x5d}, kControl, 'A', uint32_t{0xA2B35317}, kFlag));
+TEST_F(WriteUnnumberedFrame, AddressNeedsEscaping) {
+  ASSERT_EQ(Status::Ok(), WriteUIFrame(0x7d, bytes::String("A"), writer_));
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kEscape,
+                                     byte{0x5d},
+                                     kUnnumberedControl,
+                                     'A',
+                                     uint32_t{0x899E00D4},
+                                     kFlag));
 }
 
-TEST_F(WriteInfoFrame, Crc32NeedsEscaping) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::String("abcdefg"), writer_));
+TEST_F(WriteUnnumberedFrame, Crc32NeedsEscaping) {
+  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, bytes::String("a"), writer_));
 
-  // The CRC-32 is 0x38B9FC7E, so the 0x7E must be escaped.
-  constexpr auto expected_crc32 = bytes::Array<0x7d, 0x5e, 0xfc, 0xb9, 0x38>();
+  // The CRC-32 is 0xB67D5CAE, so the 0x7D must be escaped.
+  constexpr auto expected_crc32 = bytes::Array<0xae, 0x5c, 0x7d, 0x5d, 0xb6>();
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
-                                     kControl,
-                                     bytes::String("abcdefg"),
+                                     kUnnumberedControl,
+                                     bytes::String("a"),
                                      expected_crc32,
                                      kFlag));
 }
 
-TEST_F(WriteInfoFrame, MultiplePayloads) {
+TEST_F(WriteUnnumberedFrame, MultiplePayloads) {
   ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::String("ABC"), writer_));
+            WriteUIFrame(kAddress, bytes::String("ABC"), writer_));
   ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(kAddress, bytes::String("DEF"), writer_));
+            WriteUIFrame(kAddress, bytes::String("DEF"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
-                                     kControl,
+                                     kUnnumberedControl,
                                      bytes::String("ABC"),
-                                     uint32_t{0x14E2FC99},
+                                     uint32_t{0x06575377},
                                      kFlag,
                                      kFlag,
                                      kAddress,
-                                     kControl,
+                                     kUnnumberedControl,
                                      bytes::String("DEF"),
-                                     uint32_t{0x2D025C3A},
+                                     uint32_t{0x3FB7F3D4},
                                      kFlag));
 }
 
-TEST_F(WriteInfoFrame, PayloadWithNoEscapes) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(
-                kAddress, bytes::String("123456789012345678901234"), writer_));
-
-  // Fill the memory writer's buffer.
-  ASSERT_EQ(writer_.bytes_written(), buffer_.size());
+TEST_F(WriteUnnumberedFrame, PayloadWithNoEscapes) {
+  ASSERT_EQ(
+      Status::Ok(),
+      WriteUIFrame(kAddress, bytes::String("1995 toyota corolla"), writer_));
 
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
-                                     kControl,
-                                     bytes::String("123456789012345678901234"),
-                                     uint32_t{0x50AA35EC},
+                                     kUnnumberedControl,
+                                     bytes::String("1995 toyota corolla"),
+                                     uint32_t{0x56560172},
                                      kFlag));
 }
 
-TEST_F(WriteInfoFrame, PayloadWithMultipleEscapes) {
-  ASSERT_EQ(Status::Ok(),
-            WriteInformationFrame(
-                kAddress,
-                bytes::Array<0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E>(),
-                writer_));
+TEST_F(WriteUnnumberedFrame, PayloadWithMultipleEscapes) {
+  ASSERT_EQ(
+      Status::Ok(),
+      WriteUIFrame(kAddress,
+                   bytes::Array<0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E>(),
+                   writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag,
       kAddress,
-      kControl,
+      kUnnumberedControl,
       bytes::
           Array<0x7D, 0x5E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x5D, 0x7D, 0x5E>(),
-      uint32_t{0x1B8D505E},
+      uint32_t{0x950257BD},
       kFlag));
 }
 
-TEST_F(WriteInfoFrame, WriterError) {
+TEST_F(WriteUnnumberedFrame, WriterError) {
   constexpr auto data = bytes::Initialized<sizeof(buffer_)>(0x7e);
-
-  EXPECT_EQ(Status::ResourceExhausted(),
-            WriteInformationFrame(kAddress, data, writer_));
+  EXPECT_EQ(Status::ResourceExhausted(), WriteUIFrame(kAddress, data, writer_));
 }
 
 }  // namespace

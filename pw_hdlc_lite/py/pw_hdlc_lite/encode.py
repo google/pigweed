@@ -17,12 +17,13 @@ from pw_hdlc_lite import protocol
 
 _ESCAPE_BYTE = bytes([protocol.ESCAPE])
 _FLAG_BYTE = bytes([protocol.FLAG])
-_CONTROL = 0  # Currently, hard-coded to 0; no sequence numbers are used
 
 
-def information_frame(address: int, data: bytes) -> bytes:
-    """Encodes an HDLC I-frame with a CRC-32 frame check sequence."""
-    frame = bytearray([address, _CONTROL]) + data
+def ui_frame(address: int, data: bytes) -> bytes:
+    """Encodes an HDLC UI-frame with a CRC-32 frame check sequence."""
+    frame = bytearray([
+        address
+    ]) + protocol.UFrameControl.unnumbered_information().data + data
     frame += protocol.frame_check_sequence(frame)
     frame = frame.replace(_ESCAPE_BYTE, b'\x7d\x5d')
     frame = frame.replace(_FLAG_BYTE, b'\x7d\x5e')

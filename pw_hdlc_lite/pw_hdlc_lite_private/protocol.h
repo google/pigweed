@@ -29,4 +29,28 @@ constexpr bool NeedsEscaping(std::byte b) {
   return (b == kFlag || b == kEscape);
 }
 
+// Class that manages the 1-byte control field of an HDLC U-frame.
+class UFrameControl {
+ public:
+  static constexpr UFrameControl UnnumberedInformation() {
+    return UFrameControl(kUnnumberedInformation);
+  }
+
+  constexpr std::byte data() const { return data_; }
+
+ private:
+  // Types of HDLC U-frames and their bit patterns.
+  enum Type : uint8_t {
+    kUnnumberedInformation = 0x00,
+  };
+
+  constexpr UFrameControl(Type type)
+      : data_(kUFramePattern | std::byte{type}) {}
+
+  // U-frames are identified by having the bottom two control bits set.
+  static constexpr std::byte kUFramePattern = std::byte{0x03};
+
+  std::byte data_;
+};
+
 }  // namespace pw::hdlc_lite

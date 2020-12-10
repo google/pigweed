@@ -37,8 +37,7 @@ rpc::Server server(channels);
 
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
-    hdlc_lite::WriteInformationFrame(
-        1, std::as_bytes(std::span(log)), socket_stream);
+    hdlc_lite::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream);
   });
 
   socket_stream.Init(kSocketPort);

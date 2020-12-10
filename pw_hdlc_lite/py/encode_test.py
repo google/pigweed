@@ -27,30 +27,30 @@ def _with_fcs(data: bytes) -> bytes:
     return data + _fcs(data)
 
 
-class TestEncodeInformationFrame(unittest.TestCase):
+class TestEncodeUIFrame(unittest.TestCase):
     """Tests Encoding bytes with different arguments using a custom serial."""
     def test_empty(self):
-        self.assertEqual(encode.information_frame(0, b''),
-                         FLAG + _with_fcs(b'\0\0') + FLAG)
-        self.assertEqual(encode.information_frame(0x1a, b''),
-                         FLAG + _with_fcs(b'\x1a\0') + FLAG)
+        self.assertEqual(encode.ui_frame(0, b''),
+                         FLAG + _with_fcs(b'\0\x03') + FLAG)
+        self.assertEqual(encode.ui_frame(0x1a, b''),
+                         FLAG + _with_fcs(b'\x1a\x03') + FLAG)
 
     def test_1byte(self):
-        self.assertEqual(encode.information_frame(0, b'A'),
-                         FLAG + _with_fcs(b'\0\0A') + FLAG)
+        self.assertEqual(encode.ui_frame(0, b'A'),
+                         FLAG + _with_fcs(b'\0\x03A') + FLAG)
 
     def test_multibyte(self):
-        self.assertEqual(encode.information_frame(0, b'123456789'),
-                         FLAG + _with_fcs(b'\x00\x00123456789') + FLAG)
+        self.assertEqual(encode.ui_frame(0, b'123456789'),
+                         FLAG + _with_fcs(b'\x00\x03123456789') + FLAG)
 
     def test_escape(self):
         self.assertEqual(
-            encode.information_frame(0x7e, b'\x7d'),
-            FLAG + b'\x7d\x5e\x00\x7d\x5d' + _fcs(b'\x7e\x00\x7d') + FLAG)
+            encode.ui_frame(0x7e, b'\x7d'),
+            FLAG + b'\x7d\x5e\x03\x7d\x5d' + _fcs(b'\x7e\x03\x7d') + FLAG)
         self.assertEqual(
-            encode.information_frame(0x7d, b'A\x7e\x7dBC'),
-            FLAG + b'\x7d\x5d\x00A\x7d\x5e\x7d\x5dBC' +
-            _fcs(b'\x7d\x00A\x7e\x7dBC') + FLAG)
+            encode.ui_frame(0x7d, b'A\x7e\x7dBC'),
+            FLAG + b'\x7d\x5d\x03A\x7d\x5e\x7d\x5dBC' +
+            _fcs(b'\x7d\x03A\x7e\x7dBC') + FLAG)
 
 
 if __name__ == '__main__':

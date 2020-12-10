@@ -19,18 +19,18 @@
 
 namespace pw::hdlc_lite {
 
-// Writes an HDLC information frame (I-frame) to the provided writer. The frame
-// contains the following:
+// Writes an HDLC unnumbered information frame (UI-frame) to the provided
+// writer. The frame contains the following:
 //
 //   - HDLC flag byte (0x7e)
 //   - Address
-//   - Control byte (fixed at 0; sequence numbers are not used currently).
+//   - UI-frame control byte
 //   - Data (0 or more bytes)
 //   - Frame check sequence (CRC-32)
 //   - HDLC flag byte (0x7e)
 //
-Status WriteInformationFrame(uint8_t address,
-                             ConstByteSpan data,
-                             stream::Writer& writer);
+Status WriteUIFrame(uint8_t address,
+                    ConstByteSpan payload,
+                    stream::Writer& writer);
 
 }  // namespace pw::hdlc_lite

@@ -38,8 +38,8 @@ Protocol Description
 
 Frames
 ------
-The HDLC implementation in ``pw_hdlc_lite`` supports only HDLC information
-frames. These frames are encoded as follows:
+The HDLC implementation in ``pw_hdlc_lite`` supports only HDLC unnumbered
+information frames. These frames are encoded as follows:
 
 .. code-block:: text
 
@@ -97,13 +97,13 @@ There are two primary functions of the ``pw_hdlc_lite`` module:
 Encoder
 -------
 The Encoder API provides a single function that encodes data as an HDLC
-information frame.
+unnumbered information frame.
 
 C++
 ^^^
 .. cpp:namespace:: pw
 
-.. cpp:function:: Status hdlc_lite::WriteInformationFrame(uint8_t address, ConstByteSpan data, stream::Writer& writer)
+.. cpp:function:: Status hdlc_lite::WriteUIFrame(uint8_t address, ConstByteSpan data, stream::Writer& writer)
 
   Writes a span of data to a :ref:`pw::stream::Writer <module-pw_stream>` and
   returns the status. This implementation uses the :ref:`module-pw_checksum`
@@ -116,9 +116,9 @@ C++
 
   int main() {
     pw::stream::SysIoWriter serial_writer;
-    Status status = WriteInformationFrame(123 /* address */,
-                                          data,
-                                          serial_writer);
+    Status status = WriteUIFrame(123 /* address */,
+                                 data,
+                                 serial_writer);
     if (!status.ok()) {
       PW_LOG_INFO("Writing frame failed! %s", status.str());
     }
@@ -135,7 +135,7 @@ Python
   from pw_hdlc_lite import encode
 
   ser = serial.Serial()
-  ser.write(encode.information_frame(b'your data here!'))
+  ser.write(encode.ui_frame(b'your data here!'))
 
 Decoder
 -------
@@ -222,9 +222,9 @@ HdlcRpcClient
 Roadmap
 =======
 - **Expanded protocol support** - ``pw_hdlc_lite`` currently only supports
-  information frames with a single address byte and control byte. Support for
-  different frame types and extended address or control fields may be added in
-  the future.
+  unnumbered information frames with a single address byte and control byte.
+  Support for different frame types and extended address or control fields may
+  be added in the future.
 
 - **Higher performance** - We plan to improve the overall performance of the
   decoder and encoder implementations by using SIMD/NEON.
