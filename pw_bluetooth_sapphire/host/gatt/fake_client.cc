@@ -46,21 +46,25 @@ void FakeClient::DiscoverServices(ServiceKind kind, ServiceCallback svc_callback
   });
 }
 
-void FakeClient::DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                                        StatusCallback status_callback, UUID uuid) {
-  async::PostTask(dispatcher_, [this, svc_callback = std::move(svc_callback),
-                                status_callback = std::move(status_callback), kind, uuid] {
-    att::Status status = kind == ServiceKind::PRIMARY ? primary_service_discovery_status_
-                                                      : secondary_service_discovery_status_;
-    if (status.is_success()) {
+void FakeClient::DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
+                                           att::StatusCallback status_callback,
+                                           std::vector<UUID> services) {
+  ZX_ASSERT(!services.empty());
+
+  att::Status status = kind == ServiceKind::PRIMARY ? primary_service_discovery_status_
+                                                    : secondary_service_discovery_status_;
+
+  if (status.is_success()) {
+    for (UUID uuid : services) {
       for (const auto& svc : services_) {
         if (svc.kind == kind && svc.type == uuid) {
-          svc_callback(svc);
+          async::PostTask(dispatcher_, [svc, cb = svc_callback.share()] { cb(svc); });
         }
       }
     }
-    status_callback(status);
-  });
+  }
+
+  async::PostTask(dispatcher_, [status, cb = std::move(status_callback)] { cb(status); });
 }
 
 void FakeClient::DiscoverCharacteristics(att::Handle range_start, att::Handle range_end,

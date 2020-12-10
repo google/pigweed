@@ -57,9 +57,9 @@ class Connection final {
   // Initiate MTU exchange followed by primary service discovery. On failure,
   // signals a link error through the ATT channel (which is expected to
   // disconnect the link).
-  // |If optional_service_uud| is set, discovery is only performed for services
-  // with that UUID.
-  void Initialize(std::optional<UUID> optional_service_uud = std::nullopt);
+  // If |service_uuids| is non-empty, discovery is only performed for services with the indicated
+  // UUIDs.
+  void Initialize(std::vector<UUID> service_uuids);
 
  private:
   fxl::RefPtr<att::Bearer> att_;

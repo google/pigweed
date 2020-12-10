@@ -87,6 +87,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/att",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
 }

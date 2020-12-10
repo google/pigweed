@@ -6,6 +6,8 @@
 
 #include <zircon/assert.h>
 
+#include <numeric>
+
 #include "client.h"
 #include "server.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
@@ -28,21 +30,23 @@ Connection::Connection(PeerId peer_id, fxl::RefPtr<att::Bearer> att_bearer,
   remote_service_manager_->set_service_watcher(std::move(svc_watcher));
 }
 
-void Connection::Initialize(std::optional<UUID> optional_service_uuid) {
-  ZX_DEBUG_ASSERT(remote_service_manager_);
-  remote_service_manager_->Initialize(
-      [att = att_, optional_service_uuid](att::Status status) {
-        if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
-          // Signal a link error.
-          att->ShutDown();
-        } else if (optional_service_uuid) {
-          bt_log(DEBUG, "gatt", "primary service discovery complete for services with UUID %s",
-                 optional_service_uuid.value().ToString().c_str());
-        } else {
-          bt_log(DEBUG, "gatt", "primary service discovery complete");
-        }
-      },
-      optional_service_uuid);
+void Connection::Initialize(std::vector<UUID> service_uuids) {
+  ZX_ASSERT(remote_service_manager_);
+
+  auto uuids_count = service_uuids.size();
+  auto status_cb = [att = att_, uuids_count](att::Status status) {
+    if (bt_is_error(status, ERROR, "gatt", "client setup failed")) {
+      // Signal a link error.
+      att->ShutDown();
+    } else if (uuids_count > 0) {
+      bt_log(DEBUG, "gatt", "primary service discovery complete for (%zu) service uuids",
+             uuids_count);
+    } else {
+      bt_log(DEBUG, "gatt", "primary service discovery complete");
+    }
+  };
+
+  remote_service_manager_->Initialize(std::move(status_cb), std::move(service_uuids));
 }
 
 }  // namespace bt::gatt::internal

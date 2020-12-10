@@ -281,9 +281,17 @@ class LowEnergyConnection final : public sm::Delegate {
       bt_log(INFO, "gap-le", "assigning existing LTK");
       sm_->AssignLongTermKey(*ltk);
     }
+
     // Initialize the GATT layer.
     gatt_->AddConnection(peer_id(), std::move(att));
-    gatt_->DiscoverServices(peer_id(), connection_options.service_uuid);
+
+    // TODO(fxbug.dev/60830): Append GAP service if connection_options.optional_service_uuid is
+    // specified so that preferred connection parameters characteristic can be read.
+    std::vector<UUID> service_uuids;
+    if (connection_options.service_uuid) {
+      service_uuids.push_back(*connection_options.service_uuid);
+    }
+    gatt_->DiscoverServices(peer_id(), std::move(service_uuids));
   }
 
   // sm::Delegate override:
@@ -586,6 +594,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   if (pending_iter != pending_requests_.end()) {
     ZX_ASSERT(connections_.find(peer_id) == connections_.end());
     ZX_ASSERT(connector_->request_pending() || scanning_);
+    // TODO(fxbug.dev/65592): Merge connection_options with the options of the pending request.
     pending_iter->second.AddCallback(std::move(callback));
     return;
   }
@@ -594,6 +603,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   // interrogation completes.
   auto conn_iter = connections_.find(peer_id);
   if (conn_iter != connections_.end()) {
+    // TODO(fxbug.dev/65592): Handle connection_options that conflict with the existing connection.
     conn_iter->second->AddRequestCallback(std::move(callback));
     return;
   }
@@ -934,6 +944,9 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
     // kLEConnectionPauseCentral, then the Central device should update the connection parameters
     // to either the Peripheral Preferred Connection Parameters or self-determined values (Core
     // Spec v5.2, Vol 3, Part C, Sec 9.3.12).
+    //
+    // TODO(fxbug.dev/60830): Use the preferred connection parameters from the GAP characteristic.
+    // (Core Spec v5.2, Vol 3, Part C, Sec 12.3)
     connections_[peer_id]->PostCentralPauseTimeoutCallback([this, handle]() {
       UpdateConnectionParams(handle, kDefaultPreferredConnectionParameters);
     });

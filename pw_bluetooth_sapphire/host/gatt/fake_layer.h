@@ -27,7 +27,7 @@ class FakeLayer final : public GATT {
       PeerId peer_id, const ServiceData& info, bool notify = false);
 
   // Assign a callback to be notified when a service discovery has been requested.
-  using DiscoverServicesCallback = fit::function<void(PeerId, std::optional<UUID>)>;
+  using DiscoverServicesCallback = fit::function<void(PeerId, std::vector<UUID>)>;
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
   // Assign a callback to be notified when the persist service changed CCC callback is set.
@@ -59,7 +59,7 @@ class FakeLayer final : public GATT {
                         ::std::vector<uint8_t> value, bool indicate) override;
   void SetPersistServiceChangedCCCCallback(PersistServiceChangedCCCCallback callback) override;
   void SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCallback callback) override;
-  void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override;
+  void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override;
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
   void FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) override;

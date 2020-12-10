@@ -47,8 +47,9 @@ class RemoteServiceManager final {
 
   // Initiates the Exchange MTU procedure followed by primary service
   // discovery. |callback| is called to notify the result of the procedure.
-  // If |uuid| is set, only discover services with that UUID.
-  void Initialize(att::StatusCallback callback, std::optional<UUID> uuid = std::nullopt);
+  // If |services| is empty, discover all services.
+  // If |services| is not empty, only discover services that match the UUIDs in |services|.
+  void Initialize(att::StatusCallback callback, std::vector<UUID> services = {});
 
   // Returns a vector containing discovered services that match any of the given
   // |uuids| via |callback|. All services will be returned if |uuids| is empty.
@@ -84,8 +85,9 @@ class RemoteServiceManager final {
   };
 
   // Helper function to initiate service discovery.
-  void DiscoverServices(ServiceKind kind, std::optional<UUID> uuid, Client::ServiceCallback svc_cb,
-                        att::StatusCallback status_cb);
+  // If |services| is non-empty, only discovers services with the given UUIDs.
+  void DiscoverServices(ServiceKind kind, std::vector<UUID> services,
+                        Client::ServiceCallback svc_cb, att::StatusCallback status_cb);
 
   // Shuts down and cleans up all services.
   void ClearServices();

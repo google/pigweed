@@ -86,8 +86,9 @@ class Client {
   // ATT transactions, it is possible for |status_callback| to be called with an
   // error even if some services have been discovered. It is up to the client
   // to clear any cached state in this case.
-  virtual void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                                      att::StatusCallback status_callback, UUID uuid) = 0;
+  virtual void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
+                                         att::StatusCallback status_callback,
+                                         std::vector<UUID> uuids) = 0;
 
   // Performs the "Discover All Characteristics of a Service" procedure defined
   // in v5.0, Vol 3, Part G, 4.6.1.

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <fbl/macros.h>
+#include <gmock/gmock.h>
 
 #include "fake_client.h"
 #include "lib/gtest/test_loop_fixture.h"
@@ -16,8 +17,11 @@
 namespace bt::gatt::internal {
 namespace {
 
+using namespace ::testing;
+
 constexpr UUID kTestServiceUuid1(uint16_t{0xbeef});
 constexpr UUID kTestServiceUuid2(uint16_t{0xcafe});
+constexpr UUID kTestServiceUuid3(uint16_t{0xface});
 constexpr UUID kTestUuid3(uint16_t{0xfefe});
 constexpr UUID kTestUuid4(uint16_t{0xefef});
 
@@ -216,7 +220,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; }, kTestServiceUuid1);
+  mgr()->Initialize([&status](att::Status val) { status = val; }, {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 
@@ -229,24 +233,26 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   EXPECT_TRUE(services.empty());
 }
 
-TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUID) {
+TEST_F(GATT_RemoteServiceManagerTest, InitializeWithUuids) {
   ServiceData svc1(ServiceKind::PRIMARY, 1, 1, kTestServiceUuid1);
   ServiceData svc2(ServiceKind::PRIMARY, 2, 2, kTestServiceUuid2);
-  std::vector<ServiceData> fake_services{{svc1, svc2}};
+  ServiceData svc3(ServiceKind::PRIMARY, 3, 3, kTestServiceUuid3);
+  std::vector<ServiceData> fake_services{{svc1, svc2, svc3}};
   fake_client()->set_services(std::move(fake_services));
 
   ServiceList services;
   mgr()->set_service_watcher([&services](auto svc) { services.push_back(svc); });
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; }, kTestServiceUuid1);
+  mgr()->Initialize([&status](att::Status val) { status = val; },
+                    {kTestServiceUuid1, kTestServiceUuid3});
 
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status);
-  EXPECT_EQ(1u, services.size());
-  EXPECT_EQ(svc1.range_start, services[0]->handle());
-  EXPECT_EQ(svc1.type, services[0]->uuid());
+  EXPECT_THAT(services,
+              UnorderedElementsAre(Pointee(::testing::Property(&RemoteService::info, Eq(svc1))),
+                                   Pointee(::testing::Property(&RemoteService::info, Eq(svc3)))));
 }
 
 TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDFailure) {
@@ -263,7 +269,7 @@ TEST_F(GATT_RemoteServiceManagerTest, InitializeByUUIDFailure) {
   ASSERT_TRUE(services.empty());
 
   att::Status status(HostError::kFailed);
-  mgr()->Initialize([&status](att::Status val) { status = val; }, kTestServiceUuid1);
+  mgr()->Initialize([&status](att::Status val) { status = val; }, {kTestServiceUuid1});
 
   RunLoopUntilIdle();
 

@@ -111,6 +111,8 @@ class FakeClient final : public Client {
   fxl::WeakPtr<FakeClient> AsFakeWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
+                              att::StatusCallback status_callback, UUID uuid);
   // Client overrides:
   uint16_t mtu() const override;
   void ExchangeMTU(MTUCallback callback) override;
@@ -122,8 +124,9 @@ class FakeClient final : public Client {
   void DiscoverDescriptors(att::Handle range_start, att::Handle range_end,
                            DescriptorCallback desc_callback,
                            att::StatusCallback status_callback) override;
-  void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                              att::StatusCallback status_callback, UUID uuid) override;
+  void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_callback,
+                                 att::StatusCallback status_callback,
+                                 std::vector<UUID> services) override;
   void ReadRequest(att::Handle handle, ReadCallback callback) override;
   void ReadByTypeRequest(const UUID& type, att::Handle start_handle, att::Handle end_handle,
                          ReadByTypeCallback callback) override;

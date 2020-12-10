@@ -144,7 +144,7 @@ class Impl final : public GATT {
     retrieve_service_changed_ccc_callback_ = std::move(callback);
   }
 
-  void DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) override {
+  void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) override {
     bt_log(TRACE, "gatt", "discover services: %s", bt_str(peer_id));
 
     auto iter = connections_.find(peer_id);
@@ -153,7 +153,7 @@ class Impl final : public GATT {
       return;
     }
 
-    iter->second.Initialize(optional_service_uuid);
+    iter->second.Initialize(std::move(service_uuids));
   }
 
   void RegisterRemoteServiceWatcher(RemoteServiceWatcher callback) override {

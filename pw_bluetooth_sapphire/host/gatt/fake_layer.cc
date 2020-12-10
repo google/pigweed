@@ -67,9 +67,9 @@ void FakeLayer::SetRetrieveServiceChangedCCCCallback(RetrieveServiceChangedCCCCa
   retrieve_service_changed_ccc_cb_ = std::move(callback);
 }
 
-void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_service_uuid) {
+void FakeLayer::DiscoverServices(PeerId peer_id, std::vector<UUID> uuids) {
   if (discover_services_cb_) {
-    discover_services_cb_(peer_id, optional_service_uuid);
+    discover_services_cb_(peer_id, uuids);
   }
 
   auto iter = peers_.find(peer_id);
@@ -78,7 +78,9 @@ void FakeLayer::DiscoverServices(PeerId peer_id, std::optional<UUID> optional_se
   }
 
   for (auto& s : iter->second.services) {
-    if (!optional_service_uuid || s->uuid() == *optional_service_uuid) {
+    auto uuid_iter =
+        std::find_if(uuids.begin(), uuids.end(), [&s](auto uuid) { return s->uuid() == uuid; });
+    if (uuids.empty() || uuid_iter != uuids.end()) {
       remote_service_watcher_(peer_id, s);
     }
   }

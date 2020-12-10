@@ -296,8 +296,32 @@ class Impl final : public Client {
     att_->StartTransaction(std::move(pdu), std::move(rsp_cb), std::move(error_cb));
   }
 
+  void DiscoverServicesWithUuids(ServiceKind kind, ServiceCallback svc_cb,
+                                 att::StatusCallback status_cb, std::vector<UUID> uuids) override {
+    ZX_ASSERT(!uuids.empty());
+    UUID uuid = uuids.back();
+    uuids.pop_back();
+
+    auto recursive_status_cb = [this, kind, svc_cb = svc_cb.share(),
+                                status_cb = std::move(status_cb),
+                                remaining_uuids = std::move(uuids)](auto status) mutable {
+      // Base case
+      if (!status || remaining_uuids.empty()) {
+        status_cb(status);
+        return;
+      }
+
+      // Recursively discover with the remaining UUIDs.
+      DiscoverServicesWithUuids(kind, std::move(svc_cb), std::move(status_cb),
+                                std::move(remaining_uuids));
+    };
+
+    // Discover the last uuid in uuids.
+    DiscoverServicesByUuid(kind, std::move(svc_cb), std::move(recursive_status_cb), uuid);
+  }
+
   void DiscoverServicesByUuid(ServiceKind kind, ServiceCallback svc_callback,
-                              StatusCallback status_callback, UUID uuid) override {
+                              StatusCallback status_callback, UUID uuid) {
     DiscoverServicesByUuidInternal(kind, att::kHandleMin, att::kHandleMax, std::move(svc_callback),
                                    std::move(status_callback), uuid);
   }

@@ -126,10 +126,8 @@ class GATT {
 
   // Perform service discovery and initialize remote services for the peer with
   // the given |peer_id|.
-
-  // If optional_service_uuid is set, only discover services with the given UUID.
-  virtual void DiscoverServices(
-      PeerId teer_id, std::optional<UUID> optional_service_uuid = std::optional<UUID>()) = 0;
+  // If |service_uuids| is non-empty, only discover services with the given UUIDs.
+  virtual void DiscoverServices(PeerId peer_id, std::vector<UUID> service_uuids) = 0;
 
   // Register a handler that will be notified when a remote service gets
   // discovered on a connected peer.

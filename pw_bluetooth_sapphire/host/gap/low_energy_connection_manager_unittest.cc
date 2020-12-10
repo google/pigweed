@@ -1316,11 +1316,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUI
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
 
   bool cb_called = false;
-  auto expect_uuid = [&cb_called](PeerId peer_id, std::optional<UUID> uuid) {
-    ASSERT_FALSE(uuid);
+  auto expect_uuids = [&cb_called](PeerId peer_id, auto uuids) {
+    ASSERT_TRUE(uuids.empty());
     cb_called = true;
   };
-  fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
+  fake_gatt()->SetDiscoverServicesCallback(expect_uuids);
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
@@ -1347,9 +1347,9 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUUID) {
   UUID expected_uuid({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
 
   bool cb_called = false;
-  auto expect_uuid = [&cb_called, expected_uuid](PeerId peer_id, std::optional<UUID> uuid) {
-    ASSERT_TRUE(uuid);
-    ASSERT_EQ(uuid.value(), expected_uuid);
+  auto expect_uuid = [&cb_called, expected_uuid](PeerId peer_id, auto uuids) {
+    ASSERT_EQ(uuids.size(), 1u);
+    ASSERT_EQ(uuids[0], expected_uuid);
     cb_called = true;
   };
   fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
