@@ -49,7 +49,6 @@ from typing import (Iterable, List, NamedTuple, NoReturn, Optional, Sequence,
 
 from watchdog.events import FileSystemEventHandler  # type: ignore
 from watchdog.observers import Observer  # type: ignore
-from watchdog.utils import has_attribute, unicode_paths  # type: ignore
 
 import pw_cli.branding
 import pw_cli.color
@@ -92,9 +91,6 @@ _FAIL_MESSAGE = """
 def _die(*args) -> NoReturn:
     _LOG.critical(*args)
     sys.exit(1)
-
-
-# pylint: disable=logging-format-interpolation
 
 
 class WatchCharset(NamedTuple):
@@ -145,7 +141,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         # Track state of a build. These need to be members instead of locals
         # due to the split between dispatch(), run(), and on_complete().
-        self.matching_path = None
+        self.matching_path: Optional[str] = None
         self.builds_succeeded: List[bool] = []
 
         self.wait_for_keypress_thread = threading.Thread(
@@ -162,7 +158,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         except (KeyboardInterrupt, EOFError):
             _exit_due_to_interrupt()
 
-    def path_matches(self, raw_path):
+    def _path_matches(self, raw_path: str) -> bool:
         """Returns true if path matches according to the watcher patterns"""
         modified_path = Path(raw_path).resolve()
 
@@ -185,7 +181,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         return ((not any(modified_path.match(x) for x in self.ignore_patterns))
                 and any(modified_path.match(x) for x in self.patterns))
 
-    def dispatch(self, event):
+    def dispatch(self, event) -> None:
         # There isn't any point in triggering builds on new directory creation.
         # It's the creation or modification of files that indicate something
         # meaningful enough changed for a build.
@@ -193,26 +189,21 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             return
 
         # Collect paths of interest from the event.
-        paths = []
-        if has_attribute(event, 'dest_path'):
-            paths.append(unicode_paths.decode(event.dest_path))
+        paths: List[str] = []
+        if hasattr(event, 'dest_path'):
+            paths.append(event.dest_path)
         if event.src_path:
-            paths.append(unicode_paths.decode(event.src_path))
+            paths.append(event.src_path)
         for path in paths:
             _LOG.debug('File event: %s', path)
 
         # Check for matching paths among the one or two in the event.
-        matching_path = None
         for path in paths:
-            if self.path_matches(path):
-                _LOG.debug('Detected event: %s', path)
-                matching_path = path
-                break
+            if self._path_matches(path):
+                self._handle_matched_event(path)
+                return
 
-        if matching_path:
-            self.handle_matched_event(matching_path)
-
-    def handle_matched_event(self, matching_path):
+    def _handle_matched_event(self, matching_path: str) -> None:
         if self.matching_path is None:
             self.matching_path = matching_path
 
@@ -639,7 +630,7 @@ def watch(default_build_targets: List[str], build_directories: List[str],
 
         event_handler.debouncer.press('Triggering initial build...')
         for observer in observers:
-            while observer.isAlive():
+            while observer.is_alive():
                 observer.join(1)
 
     # Ctrl-C on Unix generates KeyboardInterrupt
