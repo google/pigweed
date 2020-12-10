@@ -17,13 +17,18 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 
 from typing import Callable, Dict, List, Optional
 
-import pw_cli.log
-import pw_cli.process
+# Make sure dependencies are optional, since this script may be run when
+# installing Python package dependencies through GN.
+try:
+    from pw_cli.log import install as setup_logging
+except ImportError:
+    from logging import basicConfig as setup_logging  # type: ignore
 
 _LOG = logging.getLogger(__name__)
 
@@ -158,23 +163,28 @@ def main() -> int:
             _LOG.debug('Using generated plugin wrapper %s', args.plugin_path)
 
     try:
-        process = pw_cli.process.run(
-            'protoc',
-            f'-I{args.module_path}',
-            *include_paths,
-            *DEFAULT_PROTOC_ARGS[args.language](args),
-            *args.protos,
+        process = subprocess.run(
+            [
+                'protoc',
+                f'-I{args.module_path}',
+                *include_paths,
+                *DEFAULT_PROTOC_ARGS[args.language](args),
+                *args.protos,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
     finally:
         if wrapper_script:
             wrapper_script.unlink()
 
     if process.returncode != 0:
-        print(process.output.decode(), file=sys.stderr)
+        sys.stderr.buffer.write(process.stdout)
+        sys.stderr.flush()
 
     return process.returncode
 
 
 if __name__ == '__main__':
-    pw_cli.log.install()
+    setup_logging()
     sys.exit(main())
