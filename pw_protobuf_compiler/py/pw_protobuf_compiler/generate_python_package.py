@@ -18,7 +18,12 @@ from pathlib import Path
 import sys
 from typing import List
 
-import pw_cli.log
+# Make sure dependencies are optional, since this script may be run when
+# installing Python package dependencies through GN.
+try:
+    from pw_cli.log import install as setup_logging
+except ImportError:
+    from logging import basicConfig as setup_logging  # type: ignore
 
 _SETUP_TEMPLATE = """# Generated file. Do not modify.
 import setuptools
@@ -66,5 +71,5 @@ def main(package: str, setup: Path, subpackages: List[Path]) -> int:
 
 
 if __name__ == '__main__':
-    pw_cli.log.install()
+    setup_logging()
     sys.exit(main(**vars(_parse_args())))
