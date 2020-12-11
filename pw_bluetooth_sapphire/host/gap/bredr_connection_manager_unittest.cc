@@ -613,6 +613,37 @@ class BrEdrConnectionManagerTest : public TestingBase {
                           &kReadRemoteExtendedFeaturesRsp, &remote_extended2_complete_packet);
   }
 
+  // Queue all interrogation packets except for the remote extended complete packet 2.
+  void QueueIncompleteInterrogation(DeviceAddress addr, hci::ConnectionHandle conn) const {
+    const DynamicByteBuffer remote_name_complete_packet =
+        testing::RemoteNameRequestCompletePacket(addr);
+    const DynamicByteBuffer remote_version_complete_packet =
+        testing::ReadRemoteVersionInfoCompletePacket(conn);
+    const DynamicByteBuffer remote_supported_complete_packet =
+        testing::ReadRemoteSupportedFeaturesCompletePacket(conn, true);
+    const DynamicByteBuffer remote_extended1_complete_packet =
+        testing::ReadRemoteExtended1CompletePacket(conn);
+
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(addr),
+                          &kRemoteNameRequestRsp, &remote_name_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(conn),
+                          &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteSupportedFeaturesPacket(conn),
+                          &kReadRemoteSupportedFeaturesRsp, &remote_supported_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended1Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp, &remote_extended1_complete_packet);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteExtended2Packet(conn),
+                          &kReadRemoteExtendedFeaturesRsp);
+  }
+
+  // Completes an interrogation started with QueueIncompleteInterrogation.
+  void CompleteInterrogation(hci::ConnectionHandle conn) {
+    const DynamicByteBuffer remote_extended2_complete_packet =
+        testing::ReadRemoteExtended2CompletePacket(conn);
+
+    test_device()->SendCommandChannelPacket(remote_extended2_complete_packet);
+  }
+
   void QueueSuccessfulPairing(
       hci::LinkKeyType key_type = hci::LinkKeyType::kAuthenticatedCombination192) {
     EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus,
@@ -2485,9 +2516,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerAlreadyConnected) {
   EXPECT_TRUE(IsConnected(peer));
   EXPECT_EQ(num_callbacks, 1);
 
-  // Attempt to connect again to the already connected peer
+  // Attempt to connect again to the already connected peer. callback should be called
+  // synchronously.
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
-  RunLoopUntilIdle();
   EXPECT_EQ(num_callbacks, 2);
   EXPECT_TRUE(status);
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
@@ -2527,6 +2558,48 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerTwoInFlight) {
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
 
   // Run the loop which should complete both requests
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(status);
+  EXPECT_EQ(status.ToString(), hci::Status().ToString());
+  EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
+  EXPECT_TRUE(IsConnected(peer));
+  EXPECT_EQ(num_callbacks, 2);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, ConnectInterrogatingPeerOnlyCompletesAfterInterrogation) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  EXPECT_TRUE(peer->temporary());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
+                        &kConnectionComplete);
+  // Prevent interrogation from completing so that we can queue a second request during
+  // interrogation.
+  QueueIncompleteInterrogation(kTestDevAddr, kConnectionHandle);
+  QueueDisconnection(kConnectionHandle);
+
+  // Initialize as error to verify that |callback| assigns success.
+  hci::Status status(HostError::kFailed);
+  int num_callbacks = 0;
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&status, &conn_ref, &num_callbacks](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+    ++num_callbacks;
+  };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_TRUE(IsInitializing(peer));
+  RunLoopUntilIdle();
+
+  // Launch second request, which should not complete immediately.
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  EXPECT_EQ(num_callbacks, 0);
+
+  // Finishing interrogation should complete both requests.
+  CompleteInterrogation(kConnectionHandle);
   RunLoopUntilIdle();
 
   EXPECT_TRUE(status);

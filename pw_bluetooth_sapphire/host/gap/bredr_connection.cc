@@ -53,6 +53,16 @@ void BrEdrConnection::Start() {
   }
 }
 
+void BrEdrConnection::AddRequestCallback(BrEdrConnection::Request::OnComplete cb) {
+  if (ready_) {
+    cb(hci::Status(), this);
+    return;
+  }
+
+  ZX_ASSERT(request_);
+  request_->AddCallback(std::move(cb));
+}
+
 void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params,
                                        l2cap::ChannelCallback cb) {
   if (!ready_) {

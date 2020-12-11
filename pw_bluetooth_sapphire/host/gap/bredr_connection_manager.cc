@@ -875,14 +875,10 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   // Br/Edr peers should always be connectable by definition
   ZX_ASSERT(peer->connectable());
 
-  // Succeed immediately if there is already an active connection.
-  // TODO(fxbug.dev/59744): Don't succeed immediately if interrogation hasn't yet completed.
+  // Succeed immediately or after interrogation if there is already an active connection.
   auto conn = FindConnectionById(peer_id);
   if (conn) {
-    async::PostTask(dispatcher_,
-                    [conn = conn->second, on_result = std::move(on_connection_result)]() mutable {
-                      on_result(hci::Status(), conn);
-                    });
+    conn->second->AddRequestCallback(std::move(on_connection_result));
     return true;
   }
 

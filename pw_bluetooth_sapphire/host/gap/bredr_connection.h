@@ -47,6 +47,10 @@ class BrEdrConnection final {
   // will be signaled with |HostError::kNotSupported| (to indicate interrogation error).
   void Start();
 
+  // Add a request callback that will be called when Start() is called (or immediately if Start()
+  // has already been called).
+  void AddRequestCallback(Request::OnComplete cb);
+
   // If |Start| has been called, opens an L2CAP channel using the preferred parameters |params| on
   // the L2cap provided. Otherwise, calls |cb| with a nullptr.
   void OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters params, l2cap::ChannelCallback cb);
