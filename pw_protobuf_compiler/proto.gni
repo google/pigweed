@@ -254,9 +254,11 @@ template("_pw_python_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars)
     language = "python"
     output_extensions = [ "_pb2.py" ]
+    deps += [ "$dir_pw_protobuf_compiler:protobuf_requirements.install" ]
   }
 
   _setup_py = "${invoker.gen_dir}/setup.py"
+  _generated_files = get_target_outputs(":$target_name._gen")
 
   # Create the setup and init files for the Python package.
   pw_python_action(target_name + "._package_gen") {
@@ -266,7 +268,8 @@ template("_pw_python_proto_library") {
              rebase_path(_setup_py),
              "--package",
              _package_dir,
-           ] + rebase_path(get_path_info(invoker.sources, "dir"), ".")
+           ] + rebase_path(_generated_files, invoker.gen_dir)
+
     public_deps = [ ":$_target._gen" ]
     stamp = true
   }

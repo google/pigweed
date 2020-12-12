@@ -14,7 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/input_group.gni")
+import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -34,5 +34,17 @@ pw_test("nanopb_test") {
 }
 
 pw_proto_library("nanopb_test_protos") {
-  sources = [ "pw_protobuf_compiler_protos/nanopb_test.proto" ]
+  sources = [ "pw_protobuf_compiler_nanopb_protos/nanopb_test.proto" ]
+}
+
+pw_proto_library("test_protos") {
+  sources = [
+    "pw_protobuf_compiler_protos/nested/more_nesting/test.proto",
+    "pw_protobuf_compiler_protos/test.proto",
+  ]
+}
+
+# PyPI Requirements needed to install Python protobuf packages.
+pw_python_requirements("protobuf_requirements") {
+  requirements = [ "mypy-protobuf" ]
 }

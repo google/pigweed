@@ -27,5 +27,6 @@ setuptools.setup(
     install_requires=[
         'pw_cli',
         'pw_rpc',
+        'pw_unit_test_proto',
     ],
 )

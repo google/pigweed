@@ -14,9 +14,10 @@
 """Generates a setup.py and __init__.py for a Python package."""
 
 import argparse
+from collections import defaultdict
 from pathlib import Path
 import sys
-from typing import List
+from typing import Dict, List, Set
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -29,13 +30,16 @@ _SETUP_TEMPLATE = """# Generated file. Do not modify.
 import setuptools
 
 setuptools.setup(
-    name='<PACKAGE_NAME>',
+    name={name!r},
     version='0.0.1',
     author='Pigweed Authors',
     author_email='pigweed-developers@googlegroups.com',
     description='Generated protobuf files',
-    packages=setuptools.find_packages(),
+    packages={packages!r},
+    package_data={package_data!r},
+    include_package_data=True,
     zip_safe=False,
+    install_requires=['protobuf'],
 )
 """
 
@@ -50,23 +54,47 @@ def _parse_args():
                         required=True,
                         type=Path,
                         help='Path to setup.py file')
-    parser.add_argument('subpackages',
+    parser.add_argument('sources',
                         type=Path,
                         nargs='+',
-                        help='Subpackage paths within the package')
-
+                        help='Relative paths to sources in the package')
     return parser.parse_args()
 
 
-def main(package: str, setup: Path, subpackages: List[Path]) -> int:
-    setup.parent.mkdir(exist_ok=True)
+def main(package: str, setup: Path, sources: List[Path]) -> int:
+    """Generates __init__.py and py.typed files and a setup.py."""
+    base = setup.parent.resolve()
+    base.mkdir(exist_ok=True)
 
-    for subpackage in set(subpackages):
-        package_dir = setup.parent / subpackage
-        package_dir.mkdir(exist_ok=True, parents=True)
-        package_dir.joinpath('__init__.py').touch()
+    # Find all directories in the package, including empty ones.
+    subpackages: Set[Path] = set()
+    for source in sources:
+        subpackages.update(base / path for path in source.parents)
+    subpackages.remove(base)
 
-    setup.write_text(_SETUP_TEMPLATE.replace('<PACKAGE_NAME>', package))
+    pkg_data: Dict[str, List[str]] = defaultdict(list)
+
+    # Create __init__.py and py.typed files for each subdirectory.
+    for pkg in subpackages:
+        pkg.mkdir(exist_ok=True, parents=True)
+        pkg.joinpath('__init__.py').touch()
+
+        package_name = '.'.join(pkg.relative_to(base).as_posix().split('/'))
+        pkg.joinpath('py.typed').touch()
+        pkg_data[package_name].append('py.typed')
+
+    # Add the .pyi for each source file.
+    for source in sources:
+        pkg = base / source.parent
+        package_name = '.'.join(pkg.relative_to(base).as_posix().split('/'))
+
+        path = base.joinpath(source).relative_to(pkg).with_suffix('.pyi')
+        pkg_data[package_name].append(str(path))
+
+    setup.write_text(
+        _SETUP_TEMPLATE.format(name=package,
+                               packages=list(pkg_data),
+                               package_data=dict(pkg_data)))
     return 0
 
 

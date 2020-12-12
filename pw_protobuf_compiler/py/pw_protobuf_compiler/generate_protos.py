@@ -113,7 +113,7 @@ def protoc_raw_rpc_args(args: argparse.Namespace) -> List[str]:
 
 
 def protoc_python_args(args: argparse.Namespace) -> List[str]:
-    return ['--python_out', args.out_dir]
+    return ['--python_out', args.out_dir, '--mypy_out', args.out_dir]
 
 
 # Default additional protoc arguments for each supported language.

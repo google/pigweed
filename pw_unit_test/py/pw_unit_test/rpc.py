@@ -18,9 +18,8 @@ from dataclasses import dataclass
 import logging
 from typing import Iterable
 
-from pw_unit_test_proto import unit_test_pb2  # type: ignore
-
 import pw_rpc.client
+from pw_unit_test_proto import unit_test_pb2
 
 _LOG = logging.getLogger(__name__)
 
@@ -66,8 +65,7 @@ class EventHandler(abc.ABC):
         """Called when a new test case is started."""
 
     @abc.abstractmethod
-    def test_case_end(self, test_case: TestCase,
-                      result: unit_test_pb2.TestCaseResult):
+    def test_case_end(self, test_case: TestCase, result: int):
         """Called when a test case completes with its overall result."""
 
     @abc.abstractmethod
@@ -94,8 +92,7 @@ class LoggingEventHandler(EventHandler):
     def test_case_start(self, test_case: TestCase):
         _LOG.info('[ RUN      ] %s', test_case)
 
-    def test_case_end(self, test_case: TestCase,
-                      result: unit_test_pb2.TestCaseResult):
+    def test_case_end(self, test_case: TestCase, result: int):
         if result == unit_test_pb2.TestCaseResult.SUCCESS:
             _LOG.info('[       OK ] %s', test_case)
         else:

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -11,25 +12,21 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Tests compiling and importing Python protos on the fly."""
 
-import("//build_overrides/pigweed.gni")
+import unittest
 
-import("$dir_pw_build/python.gni")
+from pw_protobuf_compiler_protos import test_pb2 as top_level
+from pw_protobuf_compiler_protos.nested.more_nesting import test_pb2
 
-pw_python_package("py") {
-  setup = [ "setup.py" ]
-  sources = [
-    "pw_protobuf_compiler/__init__.py",
-    "pw_protobuf_compiler/generate_protos.py",
-    "pw_protobuf_compiler/generate_python_package.py",
-    "pw_protobuf_compiler/proto_target_invalid.py",
-    "pw_protobuf_compiler/python_protos.py",
-  ]
-  tests = [
-    "compiled_protos_test.py",
-    "python_protos_test.py",
-  ]
-  python_deps = [ "$dir_pw_cli/py" ]
-  python_test_deps = [ "..:test_protos.python" ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-}
+
+class TestCompileAndImport(unittest.TestCase):
+    def test_access_compiled_protobufs(self):
+        self.assertNotEqual(top_level.FOO, top_level.BAR)
+
+        message = test_pb2.Message(field=123)
+        self.assertEqual(message.field, 123)
+
+
+if __name__ == '__main__':
+    unittest.main()
