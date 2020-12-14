@@ -116,13 +116,16 @@ class LoggingEventHandler(EventHandler):
 def run_tests(
     rpcs: pw_rpc.client.Services,
     report_passed_expectations: bool = False,
-    event_handlers: Iterable[EventHandler] = (LoggingEventHandler(), )):
+    event_handlers: Iterable[EventHandler] = (LoggingEventHandler(), )
+) -> bool:
     """Runs unit tests on a device over Pigweed RPC.
 
-    Calls each of the provided event handlers as test events occur.
+    Calls each of the provided event handlers as test events occur, and returns
+    True if all tests pass.
     """
     unit_test_service = rpcs.pw.unit_test.UnitTest  # type: ignore[attr-defined]
 
+    all_tests_passed = False
     for response in unit_test_service.Run(
             report_passed_expectations=report_passed_expectations):
         if response.HasField('test_case_start'):
@@ -137,6 +140,8 @@ def run_tests(
             elif response.HasField('test_run_end'):
                 event_handler.run_all_tests_end(response.test_run_end.passed,
                                                 response.test_run_end.failed)
+                if response.test_run_end.failed == 0:
+                    all_tests_passed = True
             elif response.HasField('test_case_start'):
                 event_handler.test_case_start(current_test_case)
             elif response.HasField('test_case_end'):
@@ -153,3 +158,5 @@ def run_tests(
                     raw_expectation.success,
                 )
                 event_handler.test_case_expect(current_test_case, expectation)
+
+    return all_tests_passed
