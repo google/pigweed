@@ -51,8 +51,24 @@ if (dir_pw_third_party_arduino != "") {
                     arduino_show_command_args + [ "--variant-cpp-files" ],
                     "list lines")
 
+    # Some cores have required built in libraries:
+    # - stm32duino requires SrcWrapper.
+    _library_c_files =
+        exec_script(arduino_builder_script,
+                    arduino_show_command_args + [ "--library-c-files" ],
+                    "list lines")
+    _library_s_files =
+        exec_script(arduino_builder_script,
+                    arduino_show_command_args + [ "--library-s-files" ],
+                    "list lines")
+    _library_cpp_files =
+        exec_script(arduino_builder_script,
+                    arduino_show_command_args + [ "--library-cpp-files" ],
+                    "list lines")
+
     sources = _core_c_files + _core_s_files + _core_cpp_files +
-              _variant_c_files + _variant_s_files + _variant_cpp_files
+              _variant_c_files + _variant_s_files + _variant_cpp_files +
+              _library_c_files + _library_s_files + _library_cpp_files
 
     # Rename main() to ArduinoMain()
     # See //pw_arduino_build/docs.rst for details on this approach.

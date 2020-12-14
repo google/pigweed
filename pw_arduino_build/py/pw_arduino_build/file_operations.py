@@ -21,6 +21,7 @@ import logging
 import os
 import shutil
 import sys
+import subprocess
 import tarfile
 import urllib.request
 import zipfile
@@ -77,7 +78,9 @@ def verify_file_checksum(file_path,
         raise InvalidChecksumError(
             f"Invalid {sum_function.__name__}\n"
             f"{downloaded_checksum} {os.path.basename(file_path)}\n"
-            f"{expected_checksum} (expected)")
+            f"{expected_checksum} (expected)\n\n"
+            "Please delete this file and try again:\n"
+            f"{file_path}")
 
     _LOG.debug("  %s:", sum_function.__name__)
     _LOG.debug("  %s %s", downloaded_checksum, os.path.basename(file_path))
@@ -218,3 +221,14 @@ def decode_file_json(file_name):
         _LOG.warning("Unable to read file '%s'", file_path)
 
     return json_file_options, file_path
+
+
+def git_apply_patch(root_directory, patch_file, ignore_whitespace=True):
+    """Use `git apply` to apply a diff file."""
+
+    _LOG.info("Applying Patch: %s", patch_file)
+    git_apply_command = ["git", "apply"]
+    if ignore_whitespace:
+        git_apply_command.append("--ignore-whitespace")
+    git_apply_command += ["--directory", root_directory, patch_file]
+    subprocess.run(git_apply_command)
