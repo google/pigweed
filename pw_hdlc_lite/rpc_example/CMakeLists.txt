@@ -24,4 +24,5 @@ target_link_libraries(pw_hdlc_lite.rpc_example
     pw_log
     pw_rpc.nanopb.echo_service
     pw_rpc.server
+    pw_rpc.system_server
 )

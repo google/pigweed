@@ -18,12 +18,13 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("pw_stream") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_stream/memory_stream.h",
     "public/pw_stream/null_stream.h",
@@ -40,18 +41,15 @@ pw_source_set("pw_stream") {
 }
 
 pw_source_set("socket_stream") {
-  public_configs = [ ":default_config" ]
-  deps = [
-    "$dir_pw_stream",
-    "$dir_pw_sys_io",
-  ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_stream" ]
   sources = [ "socket_stream.cc" ]
   public = [ "public/pw_stream/socket_stream.h" ]
 }
 
 pw_source_set("sys_io_stream") {
-  public_configs = [ ":default_config" ]
-  deps = [
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
     "$dir_pw_stream",
     "$dir_pw_sys_io",
   ]

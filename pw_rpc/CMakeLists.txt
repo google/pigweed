@@ -20,6 +20,7 @@ if(NOT "${dir_pw_third_party_nanopb}" STREQUAL "")
 endif()
 
 add_subdirectory(raw)
+add_subdirectory(system_server)
 
 pw_add_module_library(pw_rpc.server
   SOURCES

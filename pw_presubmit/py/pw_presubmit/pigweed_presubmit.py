@@ -157,13 +157,15 @@ def python_checks(ctx: PresubmitContext):
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
                         'CMakeLists.txt'))
 def cmake_tests(ctx: PresubmitContext):
-    toolchain = ctx.root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
+    build.install_package(ctx.package_root, 'nanopb')
 
+    toolchain = ctx.root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
     build.cmake(ctx.root,
                 ctx.output_dir,
                 f'-DCMAKE_TOOLCHAIN_FILE={toolchain}',
+                f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
                 env=build.env_with_clang_vars())
-    build.ninja(ctx.output_dir, 'pw_run_tests.modules')
+    build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))

@@ -12,28 +12,32 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-pw_add_module_library(pw_stream
-  SOURCES
-    memory_stream.cc
+pw_add_facade(pw_rpc.system_server
   PUBLIC_DEPS
-    pw_assert
-    pw_bytes
-    pw_result
-    pw_span
-    pw_status
+    pw_rpc.server
+    pw_stream
 )
+target_include_directories(pw_rpc.system_server.facade INTERFACE public)
 
-pw_add_module_library(pw_stream.socket_stream
+pw_add_module_library(pw_rpc.system_server.socket
+  IMPLEMENTS_FACADE
+    pw_rpc.system_server
   SOURCES
-    socket_stream.cc
+    socket_rpc_server.cc
   PRIVATE_DEPS
-    pw_stream
+    pw_hdlc_lite
+    pw_rpc.server
+    pw_stream.socket_stream
 )
 
-pw_add_module_library(pw_stream.sys_io_stream
-  PRIVATE_DEPS
-    pw_stream
-    pw_sys_io
+pw_add_module_library(pw_rpc.system_server.sys_io
+  IMPLEMENTS_FACADE
+    pw_rpc.system_server
+  SOURCES
+    sys_io_rpc_server.cc
+  PUBLIC_DEPS
+    pw_hdlc_lite
+    pw_stream.sys_io_stream
 )
