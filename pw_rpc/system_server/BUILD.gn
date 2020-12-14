@@ -16,13 +16,11 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-declare_args() {
-  # Backend for the pw_rpc_system_server module.
-  pw_rpc_system_server_BACKEND = ""
-}
+import("backend.gni")
 
 config("public_includes") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_facade("system_server") {

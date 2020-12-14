@@ -18,20 +18,7 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-declare_args() {
-  # Backend for the pw_sync module's binary semaphore.
-  pw_sync_BINARY_SEMAPHORE_BACKEND = ""
-
-  # Backend for the pw_sync module's counting semaphore.
-  pw_sync_COUNTING_SEMAPHORE_BACKEND = ""
-
-  # Backend for the pw_sync module's mutex.
-  pw_sync_MUTEX_BACKEND = ""
-
-  # Backend for the pw_sync module's spin lock.
-  pw_sync_SPIN_LOCK_BACKEND = ""
-}
+import("backend.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]

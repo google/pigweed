@@ -66,16 +66,17 @@ def gn_gen(gn_source_dir: Path,
            gn_output_dir: Path,
            *args: str,
            gn_check: bool = True,
+           gn_fail_on_unused: bool = True,
            **gn_arguments) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
     args_option = (gn_args(**gn_arguments), ) if gn_arguments else ()
-    check_option = ['--check'] if gn_check else []
 
     call('gn',
          'gen',
          gn_output_dir,
          '--color=always',
-         *check_option,
+         *(['--check'] if gn_check else []),
+         *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
          *args,
          *args_option,
          cwd=gn_source_dir)

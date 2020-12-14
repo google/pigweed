@@ -477,8 +477,6 @@ BROKEN = (
 
 QUICK = (
     commit_message_format,
-    init_cipd,
-    init_virtualenv,
     source_is_in_build_files,
     copyright_notice,
     format_code.presubmit_checks(),
