@@ -37,6 +37,11 @@ class Expected(NamedTuple):
     data: bytes
     status: FrameStatus = FrameStatus.OK
 
+    @classmethod
+    def error(cls, status: FrameStatus):
+        assert status is not FrameStatus.OK
+        return cls(NO_ADDRESS, b'', b'', status)
+
     def __eq__(self, other) -> bool:
         """Define == so an Expected and a Frame can be compared."""
         return (self.address == other.address and self.control == other.control
@@ -47,8 +52,8 @@ _PARTIAL = fcs(b'\x0ACmsg\x5e')
 _ESCAPED_FLAG_TEST_CASE = (
     b'\x7e\x0ACmsg\x7d\x7e' + _PARTIAL + b'\x7e',
     [
-        Expected(0xA, b'C', b'', FrameStatus.INCOMPLETE),
-        Expected(_PARTIAL[0], _PARTIAL[1:2], b'', FrameStatus.INCOMPLETE),
+        Expected.error(FrameStatus.FRAMING_ERROR),
+        Expected.error(FrameStatus.FRAMING_ERROR),
     ],
 )
 
@@ -95,61 +100,60 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expected]]], ...] = (
       Expected(3, b'\4', b':P')]),
     'Cannot escape flag',
     (b'\x7e\xAA\x7d\x7e\xab\x00Hello' + fcs(b'\xab\0Hello') + b'\x7e', [
-        Expected(0xAA, b'', b'', FrameStatus.INCOMPLETE),
+        Expected.error(FrameStatus.FRAMING_ERROR),
         Expected(0xab, b'\0', b'Hello'),
     ]),
     _ESCAPED_FLAG_TEST_CASE,
     'Frame too short',
-    (b'\x7e1\x7e', [Expected(ord('1'), b'', b'', FrameStatus.INCOMPLETE)]),
-    (b'\x7e12\x7e', [Expected(ord('1'), b'2', b'', FrameStatus.INCOMPLETE)]),
-    (b'\x7e12345\x7e', [Expected(ord('1'), b'2', b'',
-                                 FrameStatus.INCOMPLETE)]),
+    (b'\x7e1\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e12\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e12345\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'Incorrect frame check sequence',
-    (b'\x7e123456\x7e',
-     [Expected(ord('1'), b'2', b'', FrameStatus.FCS_MISMATCH)]),
+    (b'\x7e123456\x7e', [Expected.error(FrameStatus.FCS_MISMATCH)]),
     (b'\x7e\1\2msg\xff\xff\xff\xff\x7e',
-     [Expected(0x1, b'\2', b'msg', FrameStatus.FCS_MISMATCH)]),
+     [Expected.error(FrameStatus.FCS_MISMATCH)]),
     (_encode(0xA, 0xB, b'???')[:-2] + _encode(1, 2, b'def'), [
-        Expected(0xA, b'\x0B', b'??', FrameStatus.FCS_MISMATCH),
+        Expected.error(FrameStatus.FCS_MISMATCH),
         Expected(1, b'\2', b'def'),
     ]),
     'Invalid escape in address',
     (b'\x7e\x7d\x7d\0' + fcs(b'\x5d\0') + b'\x7e',
-     [Expected(0,
-               fcs(b'\x5d\0')[0:1], b'', FrameStatus.INVALID_ESCAPE)]),
+     [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'Invalid escape in control',
     (b'\x7e\0\x7d\x7d' + fcs(b'\0\x5d') + b'\x7e',
-     [Expected(0,
-               fcs(b'\0\x5d')[0:1], b'', FrameStatus.INVALID_ESCAPE)]),
+     [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'Invalid escape in data',
     (b'\x7e\0\1\x7d\x7d' + fcs(b'\0\1\x5d') + b'\x7e',
-     [Expected(0, b'\1', b'', FrameStatus.INVALID_ESCAPE)]),
+     [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'Frame ends with escape',
-    (b'\x7e\x7d\x7e', [Expected(NO_ADDRESS, b'', b'',
-                                FrameStatus.INCOMPLETE)]),
-    (b'\x7e\1\x7d\x7e', [Expected(1, b'', b'', FrameStatus.INCOMPLETE)]),
-    (b'\x7e\1\2abc\x7d\x7e', [Expected(1, b'\2', b'',
-                                       FrameStatus.INCOMPLETE)]),
-    (b'\x7e\1\2abcd\x7d\x7e',
-     [Expected(1, b'\2', b'', FrameStatus.INCOMPLETE)]),
-    (b'\x7e\1\2abcd1234\x7d\x7e',
-     [Expected(1, b'\2', b'abcd', FrameStatus.INCOMPLETE)]),
+    (b'\x7e\x7d\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e\1\x7d\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e\1\2abc\x7d\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e\1\2abcd\x7d\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    (b'\x7e\1\2abcd1234\x7d\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'Inter-frame data is only escapes',
     (b'\x7e\x7d\x7e\x7d\x7e', [
-        Expected(NO_ADDRESS, b'', b'', FrameStatus.INCOMPLETE),
-        Expected(NO_ADDRESS, b'', b'', FrameStatus.INCOMPLETE),
+        Expected.error(FrameStatus.FRAMING_ERROR),
+        Expected.error(FrameStatus.FRAMING_ERROR),
     ]),
     (b'\x7e\x7d\x7d\x7e\x7d\x7d\x7e', [
-        Expected(NO_ADDRESS, b'', b'', FrameStatus.INVALID_ESCAPE),
-        Expected(NO_ADDRESS, b'', b'', FrameStatus.INVALID_ESCAPE),
+        Expected.error(FrameStatus.FRAMING_ERROR),
+        Expected.error(FrameStatus.FRAMING_ERROR),
     ]),
     'Data before first flag',
     (b'\0\1' + fcs(b'\0\1'), []),
     (b'\0\1' + fcs(b'\0\1') + b'\x7e',
-     [Expected(0, b'\1', b'', FrameStatus.INCOMPLETE)]),
+     [Expected.error(FrameStatus.FRAMING_ERROR)]),
     'No frames emitted until flag',
     (_encode(1, 2, b'3')[:-1], []),
     (b'\x7e' + _encode(1, 2, b'3')[1:-1] * 2, []),
+    'Only flag and escape characters can be escaped',
+    (b'\x7e\x7d\0' + _encode(1, 2, b'3'),
+     [Expected.error(FrameStatus.FRAMING_ERROR),
+      Expected(1, b'\2', b'3')]),
+    (b'\x7e1234\x7da' + _encode(1, 2, b'3'),
+     [Expected.error(FrameStatus.FRAMING_ERROR),
+      Expected(1, b'\2', b'3')]),
 )  # yapf: disable
 # Formatting for the above tuple is very slow, so disable yapf.
 

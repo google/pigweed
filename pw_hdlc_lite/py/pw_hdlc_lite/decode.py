@@ -15,25 +15,22 @@
 
 import enum
 import logging
-from typing import Iterator, NamedTuple, Optional, Tuple
+from typing import Iterator, NamedTuple, Optional
 import zlib
 
 from pw_hdlc_lite import protocol
 
 _LOG = logging.getLogger('pw_hdlc_lite')
 
+NO_ADDRESS = -1
+_MIN_FRAME_SIZE = 6  # 1 B address + 1 B control + 4 B CRC-32
+
 
 class FrameStatus(enum.Enum):
     """Indicates that an error occurred."""
     OK = 'OK'
     FCS_MISMATCH = 'frame check sequence failure'
-    INCOMPLETE = 'incomplete frame'
-    INVALID_ESCAPE = 'invalid escape character'
-
-
-_MIN_FRAME_SIZE = 6  # 1 B address + 1 B control + 4 B CRC-32
-
-NO_ADDRESS = -1
+    FRAMING_ERROR = 'invalid flag or escape characters'
 
 
 class Frame(NamedTuple):
@@ -48,17 +45,17 @@ class Frame(NamedTuple):
     @property
     def address(self) -> int:
         """The frame's address field (assumes only one byte for now)."""
-        return self.raw[0] if self.raw else NO_ADDRESS
+        return self.raw[0] if self.ok() else NO_ADDRESS
 
     @property
     def control(self) -> bytes:
         """The control byte (assumes only one byte for now)."""
-        return self.raw[1:2] if len(self.raw) >= 2 else b''
+        return self.raw[1:2] if self.ok() else b''
 
     @property
     def data(self) -> bytes:
         """The information field in the frame."""
-        return self.raw[2:-4] if len(self.raw) >= _MIN_FRAME_SIZE else b''
+        return self.raw[2:-4] if self.ok() else b''
 
     def ok(self) -> bool:
         """True if this represents a valid frame.
@@ -69,101 +66,38 @@ class Frame(NamedTuple):
         """
         return self.status is FrameStatus.OK
 
+    def __repr__(self) -> str:
+        if self.ok():
+            body = (f'address={self.address}, control={self.control!r}, '
+                    f'data={self.data!r}')
+        else:
+            body = str(self.status)
 
-class _BaseFrameState:
-    """Base class for all frame parsing states."""
-    def __init__(self, data: bytearray):
-        self._data = data  # All data seen in the current frame
-        self._escape_next = False
-
-    def handle_flag(self) -> Tuple['_BaseFrameState', Optional[Frame]]:
-        """Handles an HDLC flag character (0x7e).
-
-        The HDLC flag is always interpreted as the start of a new frame.
-
-        Returns:
-            (next state, optional frame or error)
-        """
-        # If there is data or an escape character, the frame is incomplete.
-        if self._escape_next or self._data:
-            return _AddressState(), Frame(bytes(self._data),
-                                          FrameStatus.INCOMPLETE)
-
-        return _AddressState(), None
-
-    def handle_escape(self) -> '_BaseFrameState':
-        """Handles an HDLC escape character (0x7d); returns the next state."""
-        if self._escape_next:
-            # If two escapes occur in a row, the frame is invalid.
-            return _InterframeState(self._data, FrameStatus.INVALID_ESCAPE)
-
-        self._escape_next = True
-        return self
-
-    def handle_byte(self, byte: int) -> '_BaseFrameState':
-        """Handles a byte, which may have been escaped; returns next state."""
-        self._data.append(protocol.escape(byte) if self._escape_next else byte)
-        self._escape_next = False
-        return self
+        return f'{type(self).__name__}({body})'
 
 
-class _InterframeState(_BaseFrameState):
-    """Not currently in a frame; any data is discarded."""
-    def __init__(self, data: bytearray, error: FrameStatus):
-        super().__init__(data)
-        self._error = error
-
-    def handle_flag(self) -> Tuple[_BaseFrameState, Optional[Frame]]:
-        # If this state was entered due to an error, report that error before
-        # starting a new frame.
-        if self._error is not FrameStatus.OK:
-            return _AddressState(), Frame(bytes(self._data), self._error)
-
-        return super().handle_flag()
+class _State(enum.Enum):
+    INTERFRAME = 0
+    FRAME = 1
+    FRAME_ESCAPE = 2
 
 
-class _AddressState(_BaseFrameState):
-    """First field in a frame: the address."""
-    def __init__(self):
-        super().__init__(bytearray())
+def _check_frame(frame_data: bytes) -> FrameStatus:
+    if len(frame_data) < _MIN_FRAME_SIZE:
+        return FrameStatus.FRAMING_ERROR
 
-    def handle_byte(self, byte: int) -> _BaseFrameState:
-        super().handle_byte(byte)
-        # Only handle single-byte addresses for now.
-        return _ControlState(self._data)
+    frame_crc = int.from_bytes(frame_data[-4:], 'little')
+    if zlib.crc32(frame_data[:-4]) != frame_crc:
+        return FrameStatus.FCS_MISMATCH
 
-
-class _ControlState(_BaseFrameState):
-    """Second field in a frame: control."""
-    def handle_byte(self, byte: int) -> _BaseFrameState:
-        super().handle_byte(byte)
-        # Only handle a single control byte for now.
-        return _DataState(self._data)
-
-
-class _DataState(_BaseFrameState):
-    """The information field in a frame."""
-    def handle_flag(self) -> Tuple[_BaseFrameState, Frame]:
-        return _AddressState(), Frame(bytes(self._data), self._check_frame())
-
-    def _check_frame(self) -> FrameStatus:
-        # If the last character was an escape, assume bytes are missing.
-        if self._escape_next or len(self._data) < _MIN_FRAME_SIZE:
-            return FrameStatus.INCOMPLETE
-
-        frame_crc = int.from_bytes(self._data[-4:], 'little')
-        if zlib.crc32(self._data[:-4]) != frame_crc:
-            return FrameStatus.FCS_MISMATCH
-
-        return FrameStatus.OK
+    return FrameStatus.OK
 
 
 class FrameDecoder:
     """Decodes one or more HDLC frames from a stream of data."""
     def __init__(self):
         self._data = bytearray()
-        self._unescape_next_byte_flag = False
-        self._state = _InterframeState(bytearray(), FrameStatus.OK)
+        self._state = _State.INTERFRAME
 
     def process(self, data: bytes) -> Iterator[Frame]:
         """Decodes and yields HDLC frames, including corrupt frames.
@@ -190,13 +124,40 @@ class FrameDecoder:
                 _LOG.debug('Discarded data: %s', frame.data)
 
     def _process_byte(self, byte: int) -> Optional[Frame]:
-        if byte == protocol.FLAG:
-            self._state, frame = self._state.handle_flag()
-            return frame
+        frame: Optional[Frame] = None
 
-        if byte == protocol.ESCAPE:
-            self._state = self._state.handle_escape()
+        if self._state is _State.INTERFRAME:
+            if byte == protocol.FLAG:
+                if self._data:
+                    frame = Frame(bytes(self._data), FrameStatus.FRAMING_ERROR)
+
+                self._state = _State.FRAME
+                self._data.clear()
+            else:
+                self._data.append(byte)
+        elif self._state is _State.FRAME:
+            if byte == protocol.FLAG:
+                if self._data:
+                    frame = Frame(bytes(self._data), _check_frame(self._data))
+
+                self._state = _State.FRAME
+                self._data.clear()
+            elif byte == protocol.ESCAPE:
+                self._state = _State.FRAME_ESCAPE
+            else:
+                self._data.append(byte)
+        elif self._state is _State.FRAME_ESCAPE:
+            if byte == protocol.FLAG:
+                frame = Frame(bytes(self._data), FrameStatus.FRAMING_ERROR)
+                self._state = _State.FRAME
+                self._data.clear()
+            elif byte in (0x5d, 0x5e):  # Valid escape characters
+                self._state = _State.FRAME
+                self._data.append(protocol.escape(byte))
+            else:
+                self._state = _State.INTERFRAME
+                self._data.append(byte)
         else:
-            self._state = self._state.handle_byte(byte)
+            raise AssertionError(f'Invalid decoder state: {self._state}')
 
-        return None
+        return frame
