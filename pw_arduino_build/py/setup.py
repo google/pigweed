@@ -23,8 +23,11 @@ setuptools.setup(
     description='Target-specific python scripts for the arduino target',
     packages=setuptools.find_packages(),
     package_data={
-        'pw_arduino_build':
-        ['py.typed', 'core_patches/teensy/01-teensyduino_1.53-cpp17.diff']
+        'pw_arduino_build': [
+            'core_patches/teensy/01-teensyduino_1.53-cpp17.diff',
+            'core_patches/teensy/02-teensy4_nonstatic_flash_functions.diff'
+            'py.typed',
+        ]
     },
     zip_safe=False,
     entry_points={
