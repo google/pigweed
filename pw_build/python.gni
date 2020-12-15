@@ -138,11 +138,14 @@ template("pw_python_package") {
     # environment.
     pw_python_action("$target_name.install") {
       module = "pip"
-      args = [
-        "install",
-        "--editable",
-        rebase_path(_setup_dir),
-      ]
+      args = [ "install" ]
+
+      # Don't install generated packages with --editable, since the build
+      # directory is ephemeral.
+      if (!_is_generated_package) {
+        args += [ "--editable" ]
+      }
+      args += [ rebase_path(_setup_dir) ]
 
       stamp = true
 
