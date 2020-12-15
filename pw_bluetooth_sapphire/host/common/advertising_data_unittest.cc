@@ -81,15 +81,14 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
       // TX Power
       0x02, 0x0A, 0x8F);
 
-  AdvertisingData data;
+  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.has_value());
 
-  EXPECT_TRUE(AdvertisingData::FromBytes(bytes, &data));
-
-  EXPECT_EQ(3u, data.service_uuids().size());
-  EXPECT_TRUE(data.local_name());
-  EXPECT_EQ("Test💖", *(data.local_name()));
-  EXPECT_TRUE(data.tx_power());
-  EXPECT_EQ(-113, *(data.tx_power()));
+  EXPECT_EQ(3u, data->service_uuids().size());
+  EXPECT_TRUE(data->local_name());
+  EXPECT_EQ("Test💖", *(data->local_name()));
+  EXPECT_TRUE(data->tx_power());
+  EXPECT_EQ(-113, *(data->tx_power()));
 }
 
 TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
@@ -99,14 +98,13 @@ TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
       // Manufacturer Data with no data
       0x03, 0xFF, 0x34, 0x12);
 
-  AdvertisingData data;
+  EXPECT_EQ(0u, AdvertisingData().manufacturer_data_ids().size());
 
-  EXPECT_EQ(0u, data.manufacturer_data_ids().size());
+  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.has_value());
 
-  EXPECT_TRUE(AdvertisingData::FromBytes(bytes, &data));
-
-  EXPECT_EQ(1u, data.manufacturer_data_ids().count(0x1234));
-  EXPECT_EQ(0u, data.manufacturer_data(0x1234).size());
+  EXPECT_EQ(1u, data->manufacturer_data_ids().count(0x1234));
+  EXPECT_EQ(0u, data->manufacturer_data(0x1234).size());
 }
 
 TEST(GAP_AdvertisingDataTest, ServiceData) {
@@ -122,17 +120,17 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
       0x03,  // "https://"
       'f', 'u', 'c', 'h', 's', 'i', 'a', '.', 'c', 'l');
 
-  AdvertisingData data;
+  EXPECT_EQ(0u, AdvertisingData().service_data_uuids().size());
+
+  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.has_value());
+
   UUID eddystone(uint16_t{0xFEAA});
 
-  EXPECT_EQ(0u, data.service_data_uuids().size());
+  EXPECT_EQ(1u, data->service_data_uuids().size());
+  EXPECT_EQ(13u, data->service_data(eddystone).size());
 
-  EXPECT_TRUE(AdvertisingData::FromBytes(bytes, &data));
-
-  EXPECT_EQ(1u, data.service_data_uuids().size());
-  EXPECT_EQ(13u, data.service_data(eddystone).size());
-
-  EXPECT_TRUE(ContainersEqual(bytes.view(8), data.service_data(eddystone)));
+  EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
 }
 
 TEST(GAP_AdvertisingDataTest, Equality) {
@@ -234,10 +232,10 @@ TEST(GAP_AdvertisingDataTest, Uris) {
       // Uri: "flubs:abc"
       0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'a', 'b', 'c');
 
-  AdvertisingData data;
-  EXPECT_TRUE(AdvertisingData::FromBytes(bytes, &data));
+  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.has_value());
 
-  auto uris = data.uris();
+  auto uris = data->uris();
   EXPECT_EQ(2u, uris.size());
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") != uris.end());
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "flubs:abc") != uris.end());

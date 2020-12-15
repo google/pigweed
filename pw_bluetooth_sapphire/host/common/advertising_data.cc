@@ -132,11 +132,11 @@ inline size_t BufferWrite(MutableByteBuffer* buffer, size_t pos, const T& var) {
 
 }  // namespace
 
-bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad) {
-  ZX_DEBUG_ASSERT(out_ad);
+std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data) {
+  AdvertisingData out_ad;
   SupplementDataReader reader(data);
   if (!reader.is_valid()) {
-    return false;
+    return std::nullopt;
   }
 
   DataType type;
@@ -146,20 +146,20 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
           bt_log(WARN, "gap-le", "received malformed Tx Power Level");
-          return false;
+          return std::nullopt;
         }
 
-        out_ad->SetTxPower(static_cast<int8_t>(field[0]));
+        out_ad.SetTxPower(static_cast<int8_t>(field[0]));
         break;
       }
       case DataType::kShortenedLocalName:
         // If a name has been previously set (e.g. because the Complete Local
         // Name was included in the scan response) then break. Otherwise we fall
         // through.
-        if (out_ad->local_name())
+        if (out_ad.local_name())
           break;
       case DataType::kCompleteLocalName: {
-        out_ad->SetLocalName(field.ToString());
+        out_ad.SetLocalName(field.ToString());
         break;
       }
       case DataType::kIncomplete16BitServiceUuids:
@@ -169,21 +169,21 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids: {
         if (!ParseUuids(field, SizeForType(type),
-                        [&](const UUID& uuid) { out_ad->AddServiceUuid(uuid); }))
-          return false;
+                        [&](const UUID& uuid) { out_ad.AddServiceUuid(uuid); }))
+          return std::nullopt;
         break;
       }
       case DataType::kManufacturerSpecificData: {
         if (field.size() < kManufacturerSpecificDataSizeMin) {
           bt_log(WARN, "gap-le", "manufacturer specific data too small");
-          return false;
+          return std::nullopt;
         }
 
         uint16_t id = le16toh(*reinterpret_cast<const uint16_t*>(field.data()));
         const BufferView manuf_data(field.data() + kManufacturerIdSize,
                                     field.size() - kManufacturerIdSize);
 
-        out_ad->SetManufacturerData(id, manuf_data);
+        out_ad.SetManufacturerData(id, manuf_data);
         break;
       }
       case DataType::kServiceData16Bit:
@@ -193,9 +193,9 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
         size_t uuid_size = SizeForType(type);
         const BufferView uuid_bytes(field.data(), uuid_size);
         if (!UUID::FromBytes(uuid_bytes, &uuid))
-          return false;
+          return std::nullopt;
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
-        out_ad->SetServiceData(uuid, service_data);
+        out_ad.SetServiceData(uuid, service_data);
         break;
       }
       case DataType::kAppearance: {
@@ -204,14 +204,14 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
         // or via GATT.
         if (field.size() != kAppearanceSize) {
           bt_log(WARN, "gap-le", "received malformed Appearance");
-          return false;
+          return std::nullopt;
         }
 
-        out_ad->SetAppearance(*reinterpret_cast<const uint16_t*>(field.data()));
+        out_ad.SetAppearance(*reinterpret_cast<const uint16_t*>(field.data()));
         break;
       }
       case DataType::kURI: {
-        out_ad->AddURI(DecodeUri(field.ToString()));
+        out_ad.AddURI(DecodeUri(field.ToString()));
         break;
       }
       case DataType::kFlags: {
@@ -225,7 +225,7 @@ bool AdvertisingData::FromBytes(const ByteBuffer& data, AdvertisingData* out_ad)
     }
   }
 
-  return true;
+  return out_ad;
 }
 
 void AdvertisingData::Copy(AdvertisingData* out) const {

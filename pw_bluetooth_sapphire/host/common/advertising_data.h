@@ -8,6 +8,7 @@
 #include <lib/fit/function.h>
 
 #include <cstddef>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -82,12 +83,9 @@ class AdvertisingData {
   AdvertisingData(AdvertisingData&& other) = default;
   AdvertisingData& operator=(AdvertisingData&& other) = default;
 
-  // Fill the AdvertisingData |out_ad| from the raw Bluetooth field block
-  // |data|. Returns false if |data| is not formatted correctly or on a parsing
-  // error, and true otherwise. |out_ad| is not guaranteed to be in any state
-  // unless we return true. Does not clear |out_ad| so this function can be used
-  // to merge multiple field blocks.
-  static bool FromBytes(const ByteBuffer& data, AdvertisingData* out_ad);
+  // Construct from the raw Bluetooth field block |data|. Returns std::nullopt if |data| is not
+  // formatted correctly or on a parsing error.
+  static std::optional<AdvertisingData> FromBytes(const ByteBuffer& data);
 
   // Copies all of the data in this object to |out|, including making a copy of
   // any data in manufacturing data or service data.

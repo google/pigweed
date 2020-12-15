@@ -417,13 +417,14 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
     output.set_name(*peer.name());
   }
 
-  bt::AdvertisingData adv;
-  if (peer.le() && bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &adv)) {
-    if (adv.appearance()) {
-      output.set_appearance(static_cast<fbt::Appearance>(le16toh(*adv.appearance())));
-    }
-    if (adv.tx_power()) {
-      output.set_tx_power(*adv.tx_power());
+  if (peer.le()) {
+    if (auto adv = bt::AdvertisingData::FromBytes(peer.le()->advertising_data())) {
+      if (adv->appearance()) {
+        output.set_appearance(static_cast<fbt::Appearance>(le16toh(*adv->appearance())));
+      }
+      if (adv->tx_power()) {
+        output.set_tx_power(*adv->tx_power());
+      }
     }
   }
   if (peer.bredr() && peer.bredr()->device_class()) {
@@ -569,11 +570,11 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
 
   // Initialize advertising data only if its non-empty.
   if (le.advertising_data().size() != 0u) {
-    bt::AdvertisingData ad;
-    if (!bt::AdvertisingData::FromBytes(le.advertising_data(), &ad)) {
+    std::optional<bt::AdvertisingData> ad = bt::AdvertisingData::FromBytes(le.advertising_data());
+    if (!ad.has_value()) {
       return nullptr;
     }
-    auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad);
+    auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad.value());
     fidl_device->advertising_data =
         std::make_unique<fble::AdvertisingDataDeprecated>(std::move(data));
   }
@@ -797,9 +798,8 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   if (peer.le()->advertising_data().size() != 0u) {
     // We populate |output|'s AdvertisingData field if we can parse the payload. We leave it blank
     // otherwise.
-    bt::AdvertisingData unpacked;
-    if (bt::AdvertisingData::FromBytes(peer.le()->advertising_data(), &unpacked)) {
-      output.set_advertising_data(fidl_helpers::AdvertisingDataToFidl(unpacked));
+    if (auto unpacked = bt::AdvertisingData::FromBytes(peer.le()->advertising_data())) {
+      output.set_advertising_data(fidl_helpers::AdvertisingDataToFidl(unpacked.value()));
     }
   }
 
