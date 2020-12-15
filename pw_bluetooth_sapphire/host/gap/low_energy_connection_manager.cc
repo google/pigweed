@@ -82,7 +82,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   ~LowEnergyConnection() override {
     if (request_.has_value()) {
-      bt_log(TRACE, "gap-le",
+      bt_log(INFO, "gap-le",
              "destroying connection, notifying request callbacks of failure (handle %#.4x)",
              handle());
       request_->NotifyCallbacks(fit::error(HostError::kFailed));
@@ -965,7 +965,8 @@ bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
 void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id, hci::Status status,
                                                          LowEnergyConnectionRefPtr first_ref) {
   if (!status.is_success()) {
-    bt_log(TRACE, "gap-le", "interrogation failed, releasing ref");
+    bt_log(INFO, "gap-le", "interrogation failed with %s, releasing ref (peer: %s)", bt_str(status),
+           bt_str(peer_id));
     // Releasing first_ref will disconnect and notify request callbacks of failure.
     return;
   }
@@ -1002,12 +1003,12 @@ void LowEnergyConnectionManager::OnInterrogationComplete(PeerId peer_id, hci::St
 
 void LowEnergyConnectionManager::CleanUpConnection(
     std::unique_ptr<internal::LowEnergyConnection> conn) {
-  ZX_DEBUG_ASSERT(conn);
+  ZX_ASSERT(conn);
 
   // Mark the peer peer as no longer connected.
   Peer* peer = peer_cache_->FindById(conn->peer_id());
-  ZX_DEBUG_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
-                      bt_str(conn->peer_id()));
+  ZX_ASSERT_MSG(peer, "A connection was active for an unknown peer! (id: %s)",
+                bt_str(conn->peer_id()));
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
   conn.reset();
