@@ -32,12 +32,16 @@ except ImportError:
         os.path.abspath(__file__))))
     import pw_presubmit
 
+import pw_package.pigweed_packages
+
 from pw_presubmit import build, cli, environment, format_code, git_repo
 from pw_presubmit import call, filter_paths, plural, PresubmitContext
 from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
 
 _LOG = logging.getLogger(__name__)
+
+pw_package.pigweed_packages.initialize()
 
 
 #

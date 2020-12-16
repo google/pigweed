@@ -16,12 +16,15 @@
 import sys
 
 from pw_package import package_manager
-# These modules register themselves so must be imported despite appearing
-# unused.
-from pw_package.packages import nanopb  # pylint: disable=unused-import
+from pw_package.packages import nanopb
+
+
+def initialize():
+    package_manager.register(nanopb.NanoPB)
 
 
 def main(argv=None) -> int:
+    initialize()
     return package_manager.run(**vars(package_manager.parse_args(argv)))
 
 

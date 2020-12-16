@@ -35,6 +35,3 @@ class NanoPB(pw_package.git_repo.GitRepo):
             "Enable by running 'gn args out' and adding this line:",
             f'  dir_pw_third_party_nanopb = "{path}"',
         )
-
-
-pw_package.package_manager.register(NanoPB)
