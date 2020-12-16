@@ -23,6 +23,8 @@ using NativeBinarySemaphore = TX_SEMAPHORE;
 using NativeBinarySemaphoreHandle = NativeBinarySemaphore&;
 
 inline constexpr ptrdiff_t kBinarySemaphoreMaxValue =
-    std::numeric_limits<ULONG>::max();
+    std::numeric_limits<ptrdiff_t>::max() < std::numeric_limits<ULONG>::max()
+        ? std::numeric_limits<ptrdiff_t>::max()
+        : std::numeric_limits<ULONG>::max();
 
 }  // namespace pw::sync::backend

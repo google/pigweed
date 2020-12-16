@@ -23,6 +23,8 @@ using NativeCountingSemaphore = TX_SEMAPHORE;
 using NativeCountingSemaphoreHandle = NativeCountingSemaphore&;
 
 inline constexpr ptrdiff_t kCountingSemaphoreMaxValue =
-    std::numeric_limits<ULONG>::max();
+    std::numeric_limits<ptrdiff_t>::max() < std::numeric_limits<ULONG>::max()
+        ? std::numeric_limits<ptrdiff_t>::max()
+        : std::numeric_limits<ULONG>::max();
 
 }  // namespace pw::sync::backend
