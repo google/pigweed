@@ -25,6 +25,6 @@ setuptools.setup(
     package_data={'pw_allocator': ['py.typed']},
     zip_safe=False,
     install_requires=[
-        # 'pw_cli',
+        'pw_cli',
     ],
 )
