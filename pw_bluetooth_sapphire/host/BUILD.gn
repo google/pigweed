@@ -2,9 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/bind/bind.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
+
+bind_rules("bt_host_bind") {
+  rules = "bt_host.bind"
+  output = "bt_host_bind.h"
+  tests = "tests.json"
+  deps = [ "//src/devices/bind/fuchsia.bluetooth" ]
+}
 
 driver_module("driver") {
   output_name = "bt-host"
@@ -12,11 +20,9 @@ driver_module("driver") {
   sources = [ "driver.cc" ]
 
   deps = [
+    ":bt_host_bind",
     ":sources",
     "//sdk/lib/syslog/cpp:backend_legacy",
-
-    # TODO(fxb/38132): Migrate to the new bind rules and delete the below
-    "//src/lib/ddk:ddk-deprecated-binding-headers",
   ]
 }
 
