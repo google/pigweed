@@ -28,8 +28,8 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
       domain_(std::move(l2cap)),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)) {
-  link_->set_peer_disconnect_callback(
-      [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](auto conn) { peer_disconnect_cb(); });
+  link_->set_peer_disconnect_callback([peer_disconnect_cb = std::move(on_peer_disconnect_cb)](
+                                          auto conn, auto /*reason*/) { peer_disconnect_cb(); });
 }
 
 BrEdrConnection::~BrEdrConnection() {

@@ -149,7 +149,10 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   auto connection = NewConnection();
 
   size_t disconn_cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn) { disconn_cb_count++; };
+  auto disconn_complete_cb = [&](const Connection* cb_conn, auto reason) {
+    disconn_cb_count++;
+    EXPECT_EQ(reason, StatusCode::kConnectionTerminatedByLocalHost);
+  };
   connection->set_peer_disconnect_callback(disconn_complete_cb);
 
   connection->Disconnect(StatusCode::kRemoteUserTerminatedConnection);
@@ -281,7 +284,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   EXPECT_EQ(handle1_packet_count, 0u);
 
   size_t disconn_cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn) {
+  auto disconn_complete_cb = [&](const Connection* cb_conn, auto /*reason*/) {
     ASSERT_TRUE(cb_conn);
     EXPECT_EQ(kHandle0, cb_conn->handle());
     disconn_cb_count++;
@@ -627,7 +630,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 TEST_F(HCI_ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   bool peer_disconnect_callback_received = false;
   auto conn = NewLEConnection();
-  conn->set_peer_disconnect_callback([&](auto* self) {
+  conn->set_peer_disconnect_callback([&](auto* self, auto /*reason*/) {
     EXPECT_EQ(conn.get(), self);
     peer_disconnect_callback_received = true;
   });
@@ -960,7 +963,7 @@ TEST_F(HCI_ConnectionTest, PeerDisconnectCallback) {
   auto conn = NewACLConnection(Connection::Role::kMaster, kHandle);
 
   size_t cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn) {
+  auto disconn_complete_cb = [&](const Connection* cb_conn, auto /*reason*/) {
     ASSERT_TRUE(cb_conn);
     cb_count++;
 

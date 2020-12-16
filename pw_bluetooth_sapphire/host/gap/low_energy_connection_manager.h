@@ -210,7 +210,8 @@ class LowEnergyConnectionManager final {
   void set_request_timeout_for_testing(zx::duration value) { request_timeout_ = value; }
 
   // Callback for hci::Connection, called when the peer disconnects.
-  void OnPeerDisconnect(const hci::Connection* connection);
+  // |reason| is used to control retry logic.
+  void OnPeerDisconnect(const hci::Connection* connection, hci::StatusCode reason);
 
   // Initiates the pairing process. Expected to only be called during higher-level testing.
   //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is called with an error.
@@ -260,16 +261,14 @@ class LowEnergyConnectionManager final {
   // Initializes the connection to the peer with the given identifier and starts interrogation.
   // |request| will be notified when interrogation completes.
   // This method is responsible for setting up all data bearers.
-  // Returns true on success, or false otherwise.
+  // Returns true on success (a LowEnergyConnection was created and interrogation started), or false
+  // otherwise.
   bool InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
                             internal::PendingRequestData request);
 
   // Called upon interrogation completion for a new connection.
   // Notifies connection request callbacks.
-  // Takes ownership of the |first_ref|, the first connection reference, to ensure the connection
-  // exists until callbacks have been notified.
-  void OnInterrogationComplete(PeerId peer_id, hci::Status status,
-                               LowEnergyConnectionRefPtr first_ref);
+  void OnInterrogationComplete(PeerId peer_id, hci::Status status);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command if the connection has
   // not already been disconnected, and notifies any referenced LowEnergyConnectionRefs of the
@@ -373,6 +372,11 @@ class LowEnergyConnectionManager final {
   // Sec 4.20). If they do, UpdateConnectionParams(...) should be used instead.
   void L2capRequestConnectionParameterUpdate(const internal::LowEnergyConnection& conn,
                                              const hci::LEPreferredConnectionParameters& params);
+
+  // Called when the peer disconnects with a "Connection Failed to be Established" error.
+  // Cleans up the existing connection and adds the connection request back to the queue for a
+  // retry.
+  void CleanUpAndRetryConnection(std::unique_ptr<internal::LowEnergyConnection> connection);
 
   // Returns an iterator into |connections_| if a connection is found that
   // matches the given logical link |handle|. Otherwise, returns an iterator
@@ -498,11 +502,16 @@ class PendingRequestData final {
 
   LowEnergyDiscoverySession* discovery_session() { return session_.get(); }
 
+  void add_connection_attempt() { connection_attempts_++; }
+
+  int connection_attempts() const { return connection_attempts_; }
+
  private:
   DeviceAddress address_;
   std::list<ConnectionResultCallback> callbacks_;
   ConnectionOptions connection_options_;
   LowEnergyDiscoverySessionPtr session_;
+  int connection_attempts_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
 };

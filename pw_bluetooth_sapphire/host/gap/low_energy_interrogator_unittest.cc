@@ -139,10 +139,15 @@ TEST_F(GAP_LowEnergyInterrogatorTest, SuccessfulReinterrogation) {
   EXPECT_TRUE(status->is_success());
   status = std::nullopt;
 
+  // Remote version should always be read, even if already known.
+  const auto remote_version_complete_packet =
+      testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
+                        &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
+
   interrogator()->Start(peer->identifier(), kConnectionHandle,
                         [&status](hci::Status cb_status) { status = cb_status; });
 
-  // No commands should be sent on reinterrogation
   RunLoopUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_TRUE(status->is_success());

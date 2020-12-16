@@ -426,8 +426,8 @@ void FakeController::SendLEConnectionUpdateCompleteSubevent(
                   BufferView(&subevent, sizeof(subevent)));
 }
 
-void FakeController::Disconnect(const DeviceAddress& addr) {
-  async::PostTask(dispatcher(), [addr, this] {
+void FakeController::Disconnect(const DeviceAddress& addr, hci::StatusCode reason) {
+  async::PostTask(dispatcher(), [this, addr, reason] {
     FakePeer* peer = FindPeer(addr);
     if (!peer || !peer->connected()) {
       bt_log(WARN, "fake-hci", "no connected peer found with address: %s", addr.ToString().c_str());
@@ -440,16 +440,17 @@ void FakeController::Disconnect(const DeviceAddress& addr) {
 
     for (auto link : links) {
       NotifyConnectionState(addr, link, /*connected=*/false);
-      SendDisconnectionCompleteEvent(link);
+      SendDisconnectionCompleteEvent(link, reason);
     }
   });
 }
 
-void FakeController::SendDisconnectionCompleteEvent(hci::ConnectionHandle handle) {
+void FakeController::SendDisconnectionCompleteEvent(hci::ConnectionHandle handle,
+                                                    hci::StatusCode reason) {
   hci::DisconnectionCompleteEventParams params;
   params.status = hci::StatusCode::kSuccess;
   params.connection_handle = htole16(handle);
-  params.reason = hci::StatusCode::kRemoteUserTerminatedConnection;
+  params.reason = reason;
   SendEvent(hci::kDisconnectionCompleteEventCode, BufferView(&params, sizeof(params)));
 }
 

@@ -23,9 +23,11 @@ void LowEnergyInterrogator::SendCommands(InterrogationRefPtr interrogation) {
 
   ZX_ASSERT(peer->le().has_value());
 
-  if (!peer->version().has_value()) {
-    ReadRemoteVersionInformation(interrogation);
-  }
+  // Always read remote version information as a test of whether the connection was *actually*
+  // successfully established. If the connection failed to be established, the command status of the
+  // Read Remote Version Information command will be "Connection Failed to be Established". See
+  // fxbug.dev/60517 for details.
+  ReadRemoteVersionInformation(interrogation);
 
   if (!peer->le()->features().has_value()) {
     ReadLERemoteFeatures(interrogation);

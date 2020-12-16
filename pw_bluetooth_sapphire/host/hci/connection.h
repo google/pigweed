@@ -177,7 +177,8 @@ class Connection {
 
   // Assigns a callback that will be run when the peer disconnects. The callback will be called in
   // the creation thread.
-  using PeerDisconnectCallback = fit::function<void(const Connection* connection)>;
+  using PeerDisconnectCallback =
+      fit::function<void(const Connection* connection, StatusCode reason)>;
   void set_peer_disconnect_callback(PeerDisconnectCallback callback) {
     peer_disconnect_callback_ = std::move(callback);
   }

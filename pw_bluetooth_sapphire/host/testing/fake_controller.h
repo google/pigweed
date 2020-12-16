@@ -254,10 +254,12 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
 
   // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
-  void Disconnect(const DeviceAddress& addr);
+  void Disconnect(const DeviceAddress& addr,
+                  hci::StatusCode reason = hci::kRemoteUserTerminatedConnection);
 
   // Send HCI Disconnection Complete event for |handle|.
-  void SendDisconnectionCompleteEvent(hci::ConnectionHandle handle);
+  void SendDisconnectionCompleteEvent(
+      hci::ConnectionHandle handle, hci::StatusCode reason = hci::kRemoteUserTerminatedConnection);
 
   // Send HCI encryption change event for |handle| with the given parameters.
   void SendEncryptionChangeEvent(hci::ConnectionHandle handle, hci::StatusCode status,

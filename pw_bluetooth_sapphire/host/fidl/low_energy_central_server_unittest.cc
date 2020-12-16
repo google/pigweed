@@ -221,7 +221,7 @@ TEST_F(FIDL_LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
   };
 
   test_device()->SetDefaultCommandStatus(bt::hci::kReadRemoteVersionInfo,
-                                         bt::hci::StatusCode::kConnectionFailedToBeEstablished);
+                                         bt::hci::StatusCode::kConnectionLimitExceeded);
 
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
   central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),

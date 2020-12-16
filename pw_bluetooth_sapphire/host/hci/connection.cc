@@ -270,7 +270,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnDisconnectionComplete(
 
   // Peer disconnect. Callback may destroy connection.
   if (self->peer_disconnect_callback()) {
-    self->peer_disconnect_callback()(self.get());
+    self->peer_disconnect_callback()(self.get(), params.reason);
   }
 
   return CommandChannel::EventCallbackResult::kRemove;

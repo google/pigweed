@@ -2347,6 +2347,133 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerDiscoveryFailedDurin
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationCompletes) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  auto fake_peer_ptr = fake_peer.get();
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Cause interrogation to stall by not responding with a Read Remote Version complete event.
+  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+
+  int connect_count = 0;
+  auto callback = [&connect_count](auto result) {
+    ASSERT_TRUE(result.is_error());
+    connect_count++;
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  RunLoopUntilIdle();
+
+  ASSERT_FALSE(fake_peer_ptr->logical_links().empty());
+  auto handle = *fake_peer_ptr->logical_links().begin();
+
+  test_device()->Disconnect(peer->address());
+
+  RunLoopUntilIdle();
+
+  // Complete interrogation so that callback gets called.
+  hci::ReadRemoteVersionInfoCompleteEventParams response = {};
+  response.status = hci::kSuccess;
+  response.connection_handle = htole16(handle);
+  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+                           BufferView(&response, sizeof(response)));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, connected_peers().size());
+  EXPECT_EQ(1, connect_count);
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwiceAndFails) {
+  constexpr int kNumRetries = 2;
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  int connect_count = 0;
+  auto callback = [&connect_count](auto result) {
+    ASSERT_TRUE(result.is_error());
+    connect_count++;
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+
+  // Cause interrogation to fail.
+  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
+                                         hci::StatusCode::kConnectionFailedToBeEstablished);
+
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  // Exhaust retries and cause connection to fail.
+  for (int i = 0; i < kNumRetries + 1; i++) {
+    SCOPED_TRACE(i);
+    RunLoopUntilIdle();
+    EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+    EXPECT_EQ(connect_count, 0);
+
+    test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+  }
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(connected_peers().empty());
+  EXPECT_EQ(connect_count, 1);
+  EXPECT_FALSE(peer->temporary());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAndSucceeds) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+    EXPECT_TRUE(conn_ref->active());
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+
+  // Cause interrogation to fail.
+  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
+                                         hci::StatusCode::kConnectionFailedToBeEstablished);
+
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+  EXPECT_FALSE(conn_ref);
+
+  // Allow the next interrogation to succeed.
+  test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+
+  // Disconnect should initiate retry #2.
+  test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, connected_peers().size());
+  EXPECT_EQ(1u, connected_peers().count(kAddress0));
+  ASSERT_TRUE(conn_ref);
+  EXPECT_TRUE(conn_ref->active());
+  EXPECT_FALSE(peer->temporary());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+}
 // Tests for assertions that enforce invariants.
 class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
 
