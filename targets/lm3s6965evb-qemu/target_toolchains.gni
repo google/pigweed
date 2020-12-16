@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 
 _test_runner_script = "py/lm3s6965evb_qemu_utils/unit_test_runner.py"
