@@ -706,19 +706,22 @@ void Bearer::OnRxBFrame(ByteBufferPtr sdu) {
   ZX_DEBUG_ASSERT(is_open());
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
-  uint16_t length = sdu->size();
+  TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", sdu->size());
 
-  TRACE_DURATION("bluetooth", "att::Bearer::OnRxBFrame", "length", length);
-
-  // An ATT PDU should at least contain the opcode.
-  if (length < sizeof(OpCode)) {
-    bt_log(DEBUG, "att", "PDU too short!");
+  if (sdu->size() > mtu_) {
+    bt_log(DEBUG, "att", "PDU exceeds MTU!");
     ShutDown();
     return;
   }
 
-  if (length > mtu_) {
-    bt_log(DEBUG, "att", "PDU exceeds MTU!");
+  // This static cast is safe because we have verified that `sdu->size()` fits in a uint16_t with
+  // the above check and the below static_assert.
+  static_assert(std::is_same_v<uint16_t, decltype(mtu_)>);
+  auto length = static_cast<uint16_t>(sdu->size());
+
+  // An ATT PDU should at least contain the opcode.
+  if (length < sizeof(OpCode)) {
+    bt_log(DEBUG, "att", "PDU too short!");
     ShutDown();
     return;
   }

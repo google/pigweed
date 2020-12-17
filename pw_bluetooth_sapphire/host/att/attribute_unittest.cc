@@ -20,6 +20,12 @@ constexpr UUID kTestType4(uint16_t{0x0004});
 
 const auto kTestValue = CreateStaticByteBuffer('t', 'e', 's', 't');
 
+TEST(ATT_AttributeDeathTest, OverflowingMaxHandleOnAttributeGroupDies) {
+  ASSERT_DEATH_IF_SUPPORTED(
+      { AttributeGrouping A(kTestType1, kHandleMax - 1, size_t{2}, kTestValue); },
+      ".*attr_count.*");
+}
+
 TEST(ATT_AttributeTest, AccessRequirementsDefault) {
   AccessRequirements reqs;
   EXPECT_FALSE(reqs.allowed());

@@ -66,11 +66,15 @@ AttributeGrouping::AttributeGrouping(const UUID& group_type, Handle start_handle
                                      const ByteBuffer& decl_value)
     : start_handle_(start_handle), active_(false) {
   ZX_DEBUG_ASSERT(start_handle_ != kInvalidHandle);
-  ZX_DEBUG_ASSERT(kHandleMax - start_handle > attr_count);
   ZX_DEBUG_ASSERT(decl_value.size());
 
-  end_handle_ = start_handle + attr_count;
-  attributes_.reserve(attr_count + 1);
+  // It is a programmer error to provide an attr_count which overflows a handle - this is why the
+  // below static cast is OK.
+  ZX_ASSERT(kHandleMax - start_handle >= attr_count);
+  auto handle_attr_count = static_cast<Handle>(attr_count);
+
+  end_handle_ = start_handle + handle_attr_count;
+  attributes_.reserve(handle_attr_count + 1);
 
   // TODO(armansito): Allow callers to require at most encryption.
   attributes_.push_back(
@@ -88,7 +92,11 @@ Attribute* AttributeGrouping::AddAttribute(const UUID& type, const AccessRequire
 
   ZX_DEBUG_ASSERT(attributes_[attributes_.size() - 1].handle() < end_handle_);
 
-  Handle handle = start_handle_ + attributes_.size();
+  // Groupings may not exceed kHandleMax attributes, so if we are incomplete per the `complete()`
+  // check, we necessarily have < kHandleMax attributes. Thus it is safe to cast
+  // attributes_.size() into a Handle.
+  ZX_ASSERT(attributes_.size() < kHandleMax - start_handle_);
+  Handle handle = start_handle_ + static_cast<Handle>(attributes_.size());
   attributes_.push_back(Attribute(this, handle, type, read_reqs, write_reqs));
 
   return &attributes_[handle - start_handle_];

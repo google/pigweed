@@ -71,7 +71,9 @@ class Database final : public fxl::RefCountedThreadSafe<Database> {
     bool grp_only_;
     GroupingList::iterator grp_end_;
     GroupingList::iterator grp_iter_;
-    uint8_t attr_offset_;
+    uint16_t attr_offset_;
+    static_assert(std::numeric_limits<decltype(attr_offset_)>::max() >= kHandleMax,
+                  "attr_offset_ must be able to fit kMaxHandle!");
     std::optional<UUID> type_filter_;
   };
 
