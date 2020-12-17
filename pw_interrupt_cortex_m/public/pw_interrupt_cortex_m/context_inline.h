@@ -13,9 +13,9 @@
 // the License.
 #pragma once
 
-namespace pw::interrupt {
-
 #include <cstdint>
+
+namespace pw::interrupt {
 
 #if defined(PW_INTERRUPT_CORTEX_M_ARMV7M) || \
     defined(PW_INTERRUPT_CORTEX_M_ARMV8M)

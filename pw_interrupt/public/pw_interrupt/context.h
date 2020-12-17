@@ -13,8 +13,6 @@
 // the License.
 #pragma once
 
-#include "pw_interrupt_backend/context_backend.h"
-
 namespace pw::interrupt {
 
 // Returns true if currently executing within an interrupt service routine
@@ -22,3 +20,9 @@ namespace pw::interrupt {
 bool InInterruptContext();
 
 }  // namespace pw::interrupt
+
+// The backend can opt to include an inlined implementation of the following:
+//   bool InInterruptContext();
+#if __has_include("pw_interrupt_backend/context_inline.h")
+#include "pw_interrupt_backend/context_inline.h"
+#endif  // __has_include("pw_interrupt_backend/context_inline.h")

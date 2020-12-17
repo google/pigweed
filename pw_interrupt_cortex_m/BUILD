@@ -24,8 +24,8 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "context_armv7m_headers",
     hdrs = [
-        "public/pw_interrupt_cortex_m/context.h",
-        "public_overrides/pw_interrupt_backend/context_backend.h",
+        "public/pw_interrupt_cortex_m/context_inline.h",
+        "public_overrides/pw_interrupt_backend/context_inline.h",
     ],
     copts = [ "-DPW_INTERRUPT_CORTEX_M_ARMV7M=1" ],
     includes = [

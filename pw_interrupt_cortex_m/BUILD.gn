@@ -42,8 +42,8 @@ _context_common = {
     ":backend_config",
   ]
   public = [
-    "public/pw_interrupt_cortex_m/context.h",
-    "public_overrides/pw_interrupt_backend/context_backend.h",
+    "public/pw_interrupt_cortex_m/context_inline.h",
+    "public_overrides/pw_interrupt_backend/context_inline.h",
   ]
 }
 
