@@ -98,6 +98,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
   test_device()->AddPeer(std::move(fake_peer));
 
   EXPECT_FALSE(connector()->request_pending());
+  EXPECT_FALSE(connector()->pending_peer_address());
 
   hci::Status status;
   ConnectionPtr conn;
@@ -114,6 +115,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
                                            kConnectTimeout);
   EXPECT_TRUE(ret);
   EXPECT_TRUE(connector()->request_pending());
+  EXPECT_EQ(connector()->pending_peer_address().value(), kTestAddress);
 
   ret = connector()->CreateConnection(false, kTestAddress, defaults::kLEScanInterval,
                                       defaults::kLEScanWindow, kTestParams, callback,
@@ -123,6 +125,7 @@ TEST_F(HCI_LowEnergyConnectorTest, CreateConnection) {
   RunLoopUntilIdle();
 
   EXPECT_FALSE(connector()->request_pending());
+  EXPECT_FALSE(connector()->pending_peer_address());
   EXPECT_TRUE(callback_called);
   EXPECT_TRUE(status);
   EXPECT_TRUE(in_connections().empty());

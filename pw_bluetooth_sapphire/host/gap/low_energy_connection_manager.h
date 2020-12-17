@@ -159,7 +159,7 @@ class LowEnergyConnectionManager final {
   PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
 
-  // Disconnects any existing LE connection to |peer_id|, invalidating all
+  // Disconnects any existing or pending LE connection to |peer_id|, invalidating all
   // active LowEnergyConnectionRefs. Returns false if the peer can not be
   // disconnected.
   bool Disconnect(PeerId peer_id);
@@ -377,6 +377,10 @@ class LowEnergyConnectionManager final {
   // Cleans up the existing connection and adds the connection request back to the queue for a
   // retry.
   void CleanUpAndRetryConnection(std::unique_ptr<internal::LowEnergyConnection> connection);
+
+  // Cancel the request corresponding to |peer_id|, notify callbacks, and try to create the next
+  // connection.
+  void CancelPendingRequest(PeerId peer_id);
 
   // Returns an iterator into |connections_| if a connection is found that
   // matches the given logical link |handle|. Otherwise, returns an iterator

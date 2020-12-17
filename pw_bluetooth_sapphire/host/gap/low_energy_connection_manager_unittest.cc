@@ -738,18 +738,157 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Destructor) {
   EXPECT_EQ(1u, canceled_peers().count(kAddress1));
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectPendingConnections) {
-  auto* dev0 = peer_cache()->NewPeer(kAddress0, true);
-  auto* dev1 = peer_cache()->NewPeer(kAddress1, true);
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectPendingConnectionWhileAwaitingScanStart) {
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
-  auto callback = [](auto) {};  // no-op
+  int conn_cb_0_count = 0;
+  auto conn_cb_0 = [&](auto result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), HostError::kCanceled);
+    conn_cb_0_count++;
+  };
 
-  conn_mgr()->Connect(dev0->identifier(), callback, kConnectionOptions);
-  conn_mgr()->Connect(dev1->identifier(), callback, kConnectionOptions);
-  EXPECT_EQ(Peer::ConnectionState::kInitializing, dev0->le()->connection_state());
+  LowEnergyConnectionRefPtr conn_ref;
+  auto conn_cb_1 = [&](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
 
-  EXPECT_FALSE(conn_mgr()->Disconnect(dev0->identifier()));
-  EXPECT_FALSE(conn_mgr()->Disconnect(dev1->identifier()));
+  conn_mgr()->Connect(peer_0->identifier(), conn_cb_0, kConnectionOptions);
+  conn_mgr()->Connect(peer_1->identifier(), conn_cb_1, kConnectionOptions);
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
+
+  // Do NOT wait for scanning to start asynchronously before calling Disconnect synchronously.
+  // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_cb_0_count, 1);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->peer_identifier(), peer_1->identifier());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer_1->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectPendingConnectionDuringScan) {
+  // Don't add FakePeer for peer_0 in order to stall during scanning.
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
+
+  int conn_cb_0_count = 0;
+  auto conn_cb_0 = [&](auto result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), HostError::kCanceled);
+    conn_cb_0_count++;
+  };
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto conn_cb_1 = [&](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer_0->identifier(), conn_cb_0, kConnectionOptions);
+  conn_mgr()->Connect(peer_1->identifier(), conn_cb_1, kConnectionOptions);
+
+  // Wait for scanning to start & OnScanStart callback to be called.
+  RunLoopUntilIdle();
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
+
+  // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_cb_0_count, 1);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->peer_identifier(), peer_1->identifier());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer_1->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, LocalDisconnectWhileConnectorPending) {
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  fake_peer_0->set_force_pending_connect(true);
+  test_device()->AddPeer(std::move(fake_peer_0));
+
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
+
+  int conn_cb_0_count = 0;
+  auto conn_cb_0 = [&](auto result) {
+    EXPECT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), HostError::kCanceled);
+    conn_cb_0_count++;
+  };
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto conn_cb_1 = [&](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer_0->identifier(), conn_cb_0, kConnectionOptions);
+  conn_mgr()->Connect(peer_1->identifier(), conn_cb_1, kConnectionOptions);
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
+
+  // Wait for peer_0 scanning to complete and kLECreateConnection command to be sent.
+  RunLoopUntilIdle();
+
+  // After peer_0's connection request is cancelled, peer_1's connection request should succeed.
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_cb_0_count, 1);
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->peer_identifier(), peer_1->identifier());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer_1->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       DisconnectQueuedPendingConnectionAndThenPendingConnectionWithPendingConnector) {
+  auto peer_0 = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  fake_peer_0->set_force_pending_connect(true);
+  test_device()->AddPeer(std::move(fake_peer_0));
+
+  auto peer_1 = peer_cache()->NewPeer(kAddress1, true);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
+
+  int conn_cb_0_count = 0;
+  auto conn_cb_0 = [&](auto result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), HostError::kCanceled);
+    conn_cb_0_count++;
+  };
+
+  int conn_cb_1_count = 0;
+  auto conn_cb_1 = [&](auto result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), HostError::kCanceled);
+    conn_cb_1_count++;
+  };
+
+  conn_mgr()->Connect(peer_0->identifier(), conn_cb_0, kConnectionOptions);
+  conn_mgr()->Connect(peer_1->identifier(), conn_cb_1, kConnectionOptions);
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_1->le()->connection_state());
+
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer_1->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_cb_0_count, 0);
+  EXPECT_EQ(conn_cb_1_count, 1);
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_1->le()->connection_state());
+
+  EXPECT_TRUE(conn_mgr()->Disconnect(peer_0->identifier()));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_cb_0_count, 1);
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectUnknownPeer) {
@@ -2375,6 +2514,50 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComp
   auto handle = *fake_peer_ptr->logical_links().begin();
 
   test_device()->Disconnect(peer->address());
+
+  RunLoopUntilIdle();
+
+  // Complete interrogation so that callback gets called.
+  hci::ReadRemoteVersionInfoCompleteEventParams response = {};
+  response.status = hci::kSuccess;
+  response.connection_handle = htole16(handle);
+  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+                           BufferView(&response, sizeof(response)));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, connected_peers().size());
+  EXPECT_EQ(1, connect_count);
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationCompletes) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  auto fake_peer_ptr = fake_peer.get();
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Cause interrogation to stall by not responding with a Read Remote Version complete event.
+  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+
+  int connect_count = 0;
+  auto callback = [&connect_count](auto result) {
+    ASSERT_TRUE(result.is_error());
+    connect_count++;
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  RunLoopUntilIdle();
+
+  ASSERT_FALSE(fake_peer_ptr->logical_links().empty());
+  auto handle = *fake_peer_ptr->logical_links().begin();
+
+  conn_mgr()->Disconnect(peer->identifier());
 
   RunLoopUntilIdle();
 

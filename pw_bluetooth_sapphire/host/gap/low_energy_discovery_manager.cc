@@ -179,8 +179,8 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
   ZX_ASSERT(thread_checker_.is_thread_valid());
   ZX_ASSERT(session);
 
-  // Only active sessions are allowed to call this method. If there is at least
-  // one active session object out there, then we MUST be scanning.
+  // Only alive sessions are allowed to call this method. If there is at least
+  // one alive session object out there, then we MUST be scanning.
   ZX_ASSERT(session->alive());
 
   auto iter = std::find(sessions_.begin(), sessions_.end(), session);

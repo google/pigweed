@@ -88,6 +88,11 @@ class LowEnergyConnector : public LocalAddressClient {
   // Returns true if a connection request is currently pending.
   bool request_pending() const { return pending_request_.has_value(); }
 
+  // Returns the peer address of a connection request if a connection request is currently pending.
+  std::optional<DeviceAddress> pending_peer_address() const {
+    return pending_request_ ? std::optional(pending_request_->peer_address) : std::nullopt;
+  }
+
   // Returns true if a connection timeout has been posted. Returns false if it
   // was not posted or was canceled. This is intended for unit tests.
   bool timeout_posted() const { return request_timeout_task_.is_pending(); }
