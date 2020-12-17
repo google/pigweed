@@ -71,6 +71,11 @@ def gn_gen(gn_source_dir: Path,
     """Runs gn gen in the specified directory with optional GN args."""
     args_option = (gn_args(**gn_arguments), ) if gn_arguments else ()
 
+    # Delete args.gn to ensure this is a clean build.
+    args_gn = gn_output_dir / 'args.gn'
+    if args_gn.is_file():
+        args_gn.unlink()
+
     call('gn',
          'gen',
          gn_output_dir,
