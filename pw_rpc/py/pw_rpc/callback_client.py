@@ -44,10 +44,11 @@ import inspect
 import logging
 import queue
 import textwrap
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, NamedTuple, Optional
 
 from pw_status import Status
 
+from pw_protobuf_compiler.python_protos import proto_repr
 from pw_rpc import client, descriptors
 from pw_rpc.descriptors import Channel, Method, Service
 
@@ -195,16 +196,24 @@ def _update_function_signature(method: Method, function: Callable) -> None:
         parameters=params)
 
 
+class UnaryResponse(NamedTuple):
+    """Result of invoking a unary RPC: status and response."""
+    status: Status
+    response: Any
+
+    def __repr__(self) -> str:
+        return f'({self.status}, {proto_repr(self.response)})'
+
+
 def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
                         channel: Channel, method: Method) -> _MethodClient:
     """Creates an object used to call a unary method."""
-    def call(self,
-             _rpc_request_proto=None,
-             **request_fields) -> Tuple[Status, Any]:
+    def call(self, _rpc_request_proto=None, **request_fields) -> UnaryResponse:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(
-            lambda _, status, payload: responses.put((status, payload)),
-            _rpc_request_proto, **request_fields)
+            lambda _, status, payload: responses.put(
+                UnaryResponse(status, payload)), _rpc_request_proto,
+            **request_fields)
         return responses.get()
 
     _update_function_signature(method, call)

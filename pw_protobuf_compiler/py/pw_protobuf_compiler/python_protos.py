@@ -309,3 +309,22 @@ class Library:
         """Allows iterating over all protobuf modules in this library."""
         for module_list in self.modules_by_package.values():
             yield from module_list
+
+
+def proto_repr(message) -> str:
+    """Creates a repr-like string for a protobuf."""
+    fields = []
+
+    for field in message.DESCRIPTOR.fields:
+        value = getattr(message, field.name)
+
+        # Include fields if has_<field>() is true or the value is non-default.
+        if hasattr(message, 'has_' + field.name):
+            if not getattr(message, 'has_' + field.name)():
+                continue
+        elif value == field.default_value:
+            continue
+
+        fields.append(f'{field.name}={value!r}')
+
+    return f'{message.DESCRIPTOR.full_name}({", ".join(fields)})'
