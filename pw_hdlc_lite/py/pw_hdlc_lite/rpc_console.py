@@ -42,7 +42,7 @@ import socket
 import IPython  # type: ignore
 import serial  # type: ignore
 
-from pw_hdlc_lite.rpc import HdlcRpcClient, write_to_file
+from pw_hdlc_lite.rpc import HdlcRpcClient, default_channels, write_to_file
 
 _LOG = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ def console(device: str, baudrate: int, proto_globs: Collection[str],
             return 1
 
     _start_ipython_terminal(
-        HdlcRpcClient(read, write, protos,
+        HdlcRpcClient(read, protos, default_channels(write),
                       lambda data: write_to_file(data, output)))
     return 0
 

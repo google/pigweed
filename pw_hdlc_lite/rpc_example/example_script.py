@@ -20,7 +20,7 @@ from pathlib import Path
 
 import serial  # type: ignore
 
-from pw_hdlc_lite.rpc import HdlcRpcClient
+from pw_hdlc_lite.rpc import HdlcRpcClient, default_channels
 
 # Point the script to the .proto file with our RPC services.
 PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/pw_rpc_protos/echo.proto')
@@ -29,7 +29,8 @@ PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/pw_rpc_protos/echo.proto')
 def script(device: str, baud: int) -> None:
     # Set up a pw_rpc client that uses HDLC.
     ser = serial.Serial(device, baud, timeout=0.01)
-    client = HdlcRpcClient(lambda: ser.read(4096), ser.write, [PROTO])
+    client = HdlcRpcClient(lambda: ser.read(4096), [PROTO],
+                           default_channels(ser.write))
 
     # Make a shortcut to the EchoService.
     echo_service = client.rpcs().pw.rpc.EchoService

@@ -18,7 +18,8 @@ import logging
 import sys
 import threading
 import time
-from typing import Any, BinaryIO, Callable, Dict, Iterable, NoReturn, Optional
+from typing import (Any, BinaryIO, Callable, Dict, Iterable, List, NoReturn,
+                    Optional, Union)
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
@@ -61,11 +62,11 @@ def _handle_error(frame: Frame) -> None:
     _LOG.debug('%s', frame.data)
 
 
-_FrameHandlers = Dict[int, Callable[[Frame], Any]]
+FrameHandlers = Dict[int, Callable[[Frame], Any]]
 
 
 def read_and_process_data(read: Callable[[], bytes],
-                          frame_handlers: _FrameHandlers,
+                          frame_handlers: FrameHandlers,
                           error_handler: Callable[[Frame],
                                                   Any] = _handle_error,
                           handler_threads: Optional[int] = 1) -> NoReturn:
@@ -104,39 +105,42 @@ def read_and_process_data(read: Callable[[], bytes],
 
 
 def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
-    output.write(data)
-    output.write(b'\n')
+    output.write(data + b'\n')
     output.flush()
+
+
+def default_channels(write: Callable[[bytes], Any]) -> List[pw_rpc.Channel]:
+    return [pw_rpc.Channel(1, channel_output(write))]
 
 
 class HdlcRpcClient:
     """An RPC client configured to run over HDLC."""
     def __init__(self,
                  read: Callable[[], bytes],
-                 write: Callable[[bytes], Any],
-                 proto_paths_or_modules: Iterable[python_protos.PathOrModule],
+                 paths_or_modules: Union[Iterable[python_protos.PathOrModule],
+                                         python_protos.Library],
+                 channels: Iterable[pw_rpc.Channel],
                  output: Callable[[bytes], Any] = write_to_file,
-                 channels: Iterable[pw_rpc.Channel] = None,
                  client_impl: pw_rpc.client.ClientImpl = None):
         """Creates an RPC client configured to communicate using HDLC.
 
         Args:
           read: Function that reads bytes; e.g serial_device.read.
-          write: Function that writes bytes; e.g. serial_device.write
-          proto_paths_or_modules: paths to .proto files or proto modules
+          paths_or_modules: paths to .proto files or proto modules
+          channel: RPC channels to use for output
           output: where to write "stdout" output from the device
         """
-        self.protos = python_protos.Library.from_paths(proto_paths_or_modules)
-
-        if channels is None:
-            channels = [pw_rpc.Channel(1, channel_output(write))]
+        if isinstance(paths_or_modules, python_protos.Library):
+            self.protos = paths_or_modules
+        else:
+            self.protos = python_protos.Library.from_paths(paths_or_modules)
 
         if client_impl is None:
             client_impl = callback_client.Impl()
 
         self.client = pw_rpc.Client.from_modules(client_impl, channels,
                                                  self.protos.modules())
-        frame_handlers: _FrameHandlers = {
+        frame_handlers: FrameHandlers = {
             DEFAULT_ADDRESS: self._handle_rpc_packet,
             STDOUT_ADDRESS: lambda frame: output(frame.data),
         }
