@@ -30,6 +30,10 @@ import("$dir_pw_build/target_types.gni")
 #   $target_name.facade: A private source_set that provides ONLY the API. ONLY
 #     backends should depend on this.
 #
+# If the target name matches the directory name (e.g. //foo:foo), a ":facade"
+# alias of the facade target (e.g. //foo:facade) is also provided. This avoids
+# the need to repeat the directory name, for consistency with the main target.
+#
 # The facade's headers are split out into the *.facade target to avoid circular
 # dependencies. Here's a concrete example to illustrate why this is needed:
 #
@@ -84,11 +88,6 @@ template("pw_facade") {
     group("facade") {
       public_deps = [ ":$_facade_name" ]
     }
-  }
-
-  # For backwards compatibility, provide a _facade version of the name.
-  group(target_name + "_facade") {
-    public_deps = [ ":$_facade_name" ]
   }
 
   _facade_vars = [
