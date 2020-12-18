@@ -31,6 +31,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
+namespace fuchsia::bluetooth {
+// Make PeerIds equality comparable for advanced testing matchers. ADL rules mandate the namespace.
+bool operator==(const PeerId& a, const PeerId& b) { return fidl::Equals(a, b); }
+}  // namespace fuchsia::bluetooth
+
 namespace bthost {
 namespace {
 
@@ -767,14 +772,39 @@ TEST_F(FIDL_HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
       adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ResetHostServer();
 
-  // By default the peer cache contains no entries when HostServer is first constructed. The first
-  // call to WatchPeers should hang.
+  // The first call to WatchPeers immediately resolves with the contents of the peer cache.
   bool replied = false;
   host_server()->WatchPeers([&](auto updated, auto removed) {
     EXPECT_EQ(1u, updated.size());
     EXPECT_TRUE(removed.empty());
     replied = true;
   });
+  EXPECT_TRUE(replied);
+}
+
+TEST_F(FIDL_HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
+  using namespace ::testing;
+  bt::gap::Peer* const peer = adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+  bt::AdvertisingData adv_data;
+
+  // TODO(fxbug.dev/66358): fuchsia.bluetooth.Appearance can not store this value.
+  adv_data.SetAppearance(0xFFFFu);
+  bt::DynamicByteBuffer write_buf(adv_data.CalculateBlockSize(/*include_flags=*/true));
+  ASSERT_TRUE(adv_data.WriteBlock(&write_buf, bt::AdvFlag::kLEGeneralDiscoverableMode));
+  peer->MutLe().SetAdvertisingData(/*rssi=*/0, write_buf);
+
+  ResetHostServer();
+
+  bool replied = false;
+  host_client()->WatchPeers([&](auto updated, [[maybe_unused]] auto removed) {
+    // Client should still receive updates to this peer.
+    replied = true;
+    const fbt::PeerId id = {peer->identifier().value()};
+    ASSERT_THAT(updated, Contains(Property(&fsys::Peer::id, id)));
+    EXPECT_FALSE(updated.front().has_appearance());
+  });
+  RunLoopUntilIdle();
   EXPECT_TRUE(replied);
 }
 

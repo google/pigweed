@@ -207,7 +207,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
           return std::nullopt;
         }
 
-        out_ad.SetAppearance(*reinterpret_cast<const uint16_t*>(field.data()));
+        out_ad.SetAppearance(le16toh(field.As<uint16_t>()));
         break;
       }
       case DataType::kURI: {

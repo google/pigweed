@@ -344,6 +344,20 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   EXPECT_THAT(output.uris(), ::testing::ElementsAre(uri));
 }
 
+TEST(FIDL_HelpersTest, AdvertisingDataToFidlOmitsNonEnumeratedAppearance) {
+  // There is an "unknown" appearance, which is why this isn't named that.
+  const uint16_t kNonEnumeratedAppearance = 0xFFFFu;
+  bt::AdvertisingData input;
+  input.SetAppearance(kNonEnumeratedAppearance);
+
+  EXPECT_FALSE(AdvertisingDataToFidl(input).has_appearance());
+
+  const uint16_t kKnownAppearance = 832u;  // HEART_RATE_SENSOR
+  input.SetAppearance(kKnownAppearance);
+
+  EXPECT_TRUE(AdvertisingDataToFidl(input).has_appearance());
+}
+
 TEST(FIDL_HelpersTest, LeSecurityModeFromFidl) {
   EXPECT_EQ(bt::gap::LeSecurityMode::Mode1, LeSecurityModeFromFidl(fsys::LeSecurityMode::MODE_1));
   EXPECT_EQ(bt::gap::LeSecurityMode::SecureConnectionsOnly,

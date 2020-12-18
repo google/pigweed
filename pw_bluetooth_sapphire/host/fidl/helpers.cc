@@ -210,6 +210,132 @@ bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,
   }
   return true;
 }
+
+// Returns true if the appearance value (in host byte order) is included in
+// fuchsia.bluetooth.Appearance, which is a subset of Bluetooth Assigned Numbers, "Appearance
+// Values" (https://www.bluetooth.com/specifications/assigned-numbers/).
+//
+// TODO(fxbug.dev/66358): Remove this compatibility check with the strict Appearance enum.
+[[nodiscard]] bool IsAppearanceValid(uint16_t appearance_raw) {
+  switch (appearance_raw) {
+    case 0u:  // UNKNOWN
+      [[fallthrough]];
+    case 64u:  // PHONE
+      [[fallthrough]];
+    case 128u:  // COMPUTER
+      [[fallthrough]];
+    case 192u:  // WATCH
+      [[fallthrough]];
+    case 193u:  // WATCH_SPORTS
+      [[fallthrough]];
+    case 256u:  // CLOCK
+      [[fallthrough]];
+    case 320u:  // DISPLAY
+      [[fallthrough]];
+    case 384u:  // REMOTE_CONTROL
+      [[fallthrough]];
+    case 448u:  // EYE_GLASSES
+      [[fallthrough]];
+    case 512u:  // TAG
+      [[fallthrough]];
+    case 576u:  // KEYRING
+      [[fallthrough]];
+    case 640u:  // MEDIA_PLAYER
+      [[fallthrough]];
+    case 704u:  // BARCODE_SCANNER
+      [[fallthrough]];
+    case 768u:  // THERMOMETER
+      [[fallthrough]];
+    case 769u:  // THERMOMETER_EAR
+      [[fallthrough]];
+    case 832u:  // HEART_RATE_SENSOR
+      [[fallthrough]];
+    case 833u:  // HEART_RATE_SENSOR_BELT
+      [[fallthrough]];
+    case 896u:  // BLOOD_PRESSURE
+      [[fallthrough]];
+    case 897u:  // BLOOD_PRESSURE_ARM
+      [[fallthrough]];
+    case 898u:  // BLOOD_PRESSURE_WRIST
+      [[fallthrough]];
+    case 960u:  // HID
+      [[fallthrough]];
+    case 961u:  // HID_KEYBOARD
+      [[fallthrough]];
+    case 962u:  // HID_MOUSE
+      [[fallthrough]];
+    case 963u:  // HID_JOYSTICK
+      [[fallthrough]];
+    case 964u:  // HID_GAMEPAD
+      [[fallthrough]];
+    case 965u:  // HID_DIGITIZER_TABLET
+      [[fallthrough]];
+    case 966u:  // HID_CARD_READER
+      [[fallthrough]];
+    case 967u:  // HID_DIGITAL_PEN
+      [[fallthrough]];
+    case 968u:  // HID_BARCODE_SCANNER
+      [[fallthrough]];
+    case 1024u:  // GLUCOSE_METER
+      [[fallthrough]];
+    case 1088u:  // RUNNING_WALKING_SENSOR
+      [[fallthrough]];
+    case 1089u:  // RUNNING_WALKING_SENSOR_IN_SHOE
+      [[fallthrough]];
+    case 1090u:  // RUNNING_WALKING_SENSOR_ON_SHOE
+      [[fallthrough]];
+    case 1091u:  // RUNNING_WALKING_SENSOR_ON_HIP
+      [[fallthrough]];
+    case 1152u:  // CYCLING
+      [[fallthrough]];
+    case 1153u:  // CYCLING_COMPUTER
+      [[fallthrough]];
+    case 1154u:  // CYCLING_SPEED_SENSOR
+      [[fallthrough]];
+    case 1155u:  // CYCLING_CADENCE_SENSOR
+      [[fallthrough]];
+    case 1156u:  // CYCLING_POWER_SENSOR
+      [[fallthrough]];
+    case 1157u:  // CYCLING_SPEED_AND_CADENCE_SENSOR
+      [[fallthrough]];
+    case 3136u:  // PULSE_OXIMETER
+      [[fallthrough]];
+    case 3137u:  // PULSE_OXIMETER_FINGERTIP
+      [[fallthrough]];
+    case 3138u:  // PULSE_OXIMETER_WRIST
+      [[fallthrough]];
+    case 3200u:  // WEIGHT_SCALE
+      [[fallthrough]];
+    case 3264u:  // PERSONAL_MOBILITY
+      [[fallthrough]];
+    case 3265u:  // PERSONAL_MOBILITY_WHEELCHAIR
+      [[fallthrough]];
+    case 3266u:  // PERSONAL_MOBILITY_SCOOTER
+      [[fallthrough]];
+    case 3328u:  // GLUCOSE_MONITOR
+      [[fallthrough]];
+    case 5184u:  // SPORTS_ACTIVITY
+      [[fallthrough]];
+    case 5185u:  // SPORTS_ACTIVITY_LOCATION_DISPLAY
+      [[fallthrough]];
+    case 5186u:  // SPORTS_ACTIVITY_LOCATION_AND_NAV_DISPLAY
+      [[fallthrough]];
+    case 5187u:  // SPORTS_ACTIVITY_LOCATION_POD
+      [[fallthrough]];
+    case 5188u:  // SPORTS_ACTIVITY_LOCATION_AND_NAV_POD
+      return true;
+    default:
+      return false;
+  }
+}
+
+[[nodiscard]] std::optional<fbt::Appearance> AppearanceToFidl(uint16_t appearance_raw) {
+  if (IsAppearanceValid(appearance_raw)) {
+    return static_cast<fbt::Appearance>(appearance_raw);
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 std::optional<bt::PeerId> PeerIdFromString(const std::string& id) {
@@ -419,11 +545,16 @@ fsys::Peer PeerToFidl(const bt::gap::Peer& peer) {
 
   if (peer.le()) {
     if (auto adv = bt::AdvertisingData::FromBytes(peer.le()->advertising_data())) {
-      if (adv->appearance()) {
-        output.set_appearance(static_cast<fbt::Appearance>(le16toh(*adv->appearance())));
+      if (adv->appearance().has_value()) {
+        if (auto appearance = AppearanceToFidl(adv->appearance().value())) {
+          output.set_appearance(appearance.value());
+        } else {
+          bt_log(DEBUG, "fidl", "omitting unencodeable appearance %#.4x of peer %s",
+                 adv->appearance().value(), bt_str(peer.identifier()));
+        }
       }
       if (adv->tx_power()) {
-        output.set_tx_power(*adv->tx_power());
+        output.set_tx_power(adv->tx_power().value());
       }
     }
   }
@@ -697,7 +828,15 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
     output.set_name(*input.local_name());
   }
   if (input.appearance()) {
-    output.set_appearance(static_cast<fbt::Appearance>(*input.appearance()));
+    // TODO(fxbug.dev/66358): Remove this to allow for passing arbitrary appearance values to
+    // clients in a way that's forward-compatible with future BLE revisions.
+    const uint16_t appearance_raw = input.appearance().value();
+    if (auto appearance = AppearanceToFidl(appearance_raw)) {
+      output.set_appearance(appearance.value());
+    } else {
+      bt_log(DEBUG, "fidl", "omitting unencodeable appearance %#.4x of peer %s", appearance_raw,
+             input.local_name().value_or("").c_str());
+    }
   }
   if (input.tx_power()) {
     output.set_tx_power_level(*input.tx_power());
