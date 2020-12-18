@@ -308,7 +308,13 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
   }
 
   for (auto& bond : bonds) {
-    if (!bond.has_identifier() || !bond.has_address() || !(bond.has_le() || bond.has_bredr())) {
+    // This method is only accessible by bt-gap, so we can be confident no clients will use the
+    // deprecated `le` sys/LeData or `bredr` sys/BredrData fields.
+    ZX_ASSERT_MSG(!bond.has_le(), "Cannot restore bond with deprecated LeData field");
+    ZX_ASSERT_MSG(!bond.has_bredr(), "Cannot restore bond with deprecated BredrData field");
+
+    if (!bond.has_identifier() || !bond.has_address() ||
+        !(bond.has_le_bond() || bond.has_bredr_bond())) {
       bt_log(ERROR, "bt-host", "BondingData mandatory fields missing!");
       errors.push_back(std::move(bond));
       continue;
@@ -327,12 +333,12 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
       bd.name = {bond.name()};
     }
 
-    if (bond.has_le()) {
-      bd.le_pairing_data = fidl_helpers::LePairingDataFromFidl(bond.le());
+    if (bond.has_le_bond()) {
+      bd.le_pairing_data = fidl_helpers::LePairingDataFromFidl(bond.le_bond());
     }
-    if (bond.has_bredr()) {
-      bd.bredr_link_key = fidl_helpers::BredrKeyFromFidl(bond.bredr());
-      bd.bredr_services = fidl_helpers::BredrServicesFromFidl(bond.bredr());
+    if (bond.has_bredr_bond()) {
+      bd.bredr_link_key = fidl_helpers::BredrKeyFromFidl(bond.bredr_bond());
+      bd.bredr_services = fidl_helpers::BredrServicesFromFidl(bond.bredr_bond());
     }
 
     // TODO(fxbug.dev/59645): Convert bond.bredr.services to BondingData::bredr_services

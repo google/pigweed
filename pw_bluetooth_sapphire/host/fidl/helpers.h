@@ -110,9 +110,9 @@ fuchsia::bluetooth::sys::Peer PeerToFidl(const bt::gap::Peer& peer);
 // Functions to convert bonding data structures from FIDL.
 std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
     const fuchsia::bluetooth::sys::BondingData& data);
-bt::sm::PairingData LePairingDataFromFidl(const fuchsia::bluetooth::sys::LeData& data);
-std::optional<bt::sm::LTK> BredrKeyFromFidl(const fuchsia::bluetooth::sys::BredrData& data);
-std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrData& data);
+bt::sm::PairingData LePairingDataFromFidl(const fuchsia::bluetooth::sys::LeBondData& data);
+std::optional<bt::sm::LTK> BredrKeyFromFidl(const fuchsia::bluetooth::sys::BredrBondData& data);
+std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrBondData& data);
 
 // Function to construct a bonding data structure for a peer.
 fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapter& adapter,

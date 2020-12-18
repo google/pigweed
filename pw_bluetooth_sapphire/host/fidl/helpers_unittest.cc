@@ -642,7 +642,7 @@ TEST(FIDL_HelpersTest, FidlToBrEdrSecurityRequirements) {
 TEST(FIDL_HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrFidl);
-  bond.set_bredr(fsys::BredrData());
+  bond.set_bredr_bond(fsys::BredrBondData());
 
   EXPECT_EQ(std::nullopt, AddressFromFidlBondingData(bond));
 }
@@ -650,7 +650,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataRandomAddressRejectedIfBredr) {
 TEST(FIDL_HelpersTest, AddressFromFidlBondingDataBredr) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
-  bond.set_bredr(fsys::BredrData());
+  bond.set_bredr_bond(fsys::BredrBondData());
 
   auto addr = AddressFromFidlBondingData(bond);
   ASSERT_TRUE(addr);
@@ -660,8 +660,8 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataBredr) {
 TEST(FIDL_HelpersTest, AddressFromFidlBondingDataDualMode) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
-  bond.set_bredr(fsys::BredrData());
-  bond.set_le(fsys::LeData());
+  bond.set_bredr_bond(fsys::BredrBondData());
+  bond.set_le_bond(fsys::LeBondData());
 
   auto addr = AddressFromFidlBondingData(bond);
   ASSERT_TRUE(addr);
@@ -671,7 +671,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataDualMode) {
 TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLePublic) {
   fsys::BondingData bond;
   bond.set_address(kPublicAddrFidl);
-  bond.set_le(fsys::LeData());
+  bond.set_le_bond(fsys::LeBondData());
 
   auto addr = AddressFromFidlBondingData(bond);
   ASSERT_TRUE(addr);
@@ -681,7 +681,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLePublic) {
 TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
   fsys::BondingData bond;
   bond.set_address(kRandomAddrFidl);
-  bond.set_le(fsys::LeData());
+  bond.set_le_bond(fsys::LeBondData());
 
   auto addr = AddressFromFidlBondingData(bond);
   ASSERT_TRUE(addr);
@@ -689,7 +689,7 @@ TEST(FIDL_HelpersTest, AddressFromFidlBondingDataLeRandom) {
 }
 
 TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
-  bt::sm::PairingData result = LePairingDataFromFidl(fsys::LeData());
+  bt::sm::PairingData result = LePairingDataFromFidl(fsys::LeBondData());
   EXPECT_FALSE(result.identity_address);
   EXPECT_FALSE(result.local_ltk);
   EXPECT_FALSE(result.peer_ltk);
@@ -698,7 +698,7 @@ TEST(FIDL_HelpersTest, LePairingDataFromFidlEmpty) {
 }
 
 TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
-  fsys::LeData le;
+  fsys::LeBondData le;
   le.set_local_ltk(kTestLtkFidl);
   le.set_peer_ltk(kTestLtkFidl);
   le.set_irk(kTestKeyFidl);
@@ -717,14 +717,16 @@ TEST(FIDL_HelpersTest, LePairingDataFromFidl) {
   EXPECT_EQ(kTestKey, *result.csrk);
 }
 
-TEST(FIDL_HelpersTest, BredrKeyFromFidlEmpty) { EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrData())); }
+TEST(FIDL_HelpersTest, BredrKeyFromFidlEmpty) {
+  EXPECT_FALSE(BredrKeyFromFidl(fsys::BredrBondData()));
+}
 
 TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
   const bt::sm::SecurityProperties kTestSecurity(bt::sm::SecurityLevel::kSecureAuthenticated, 16,
                                                  true);
   const bt::sm::LTK kTestLtk(kTestSecurity, bt::hci::LinkKey(kTestKeyValue, 0, 0));
 
-  fsys::BredrData bredr;
+  fsys::BredrBondData bredr;
   bredr.set_link_key(kTestKeyFidl);
   std::optional<bt::sm::LTK> result = BredrKeyFromFidl(bredr);
   ASSERT_TRUE(result);
@@ -732,11 +734,11 @@ TEST(FIDL_HelpersTest, BredrKeyFromFidl) {
 }
 
 TEST(FIDL_HelpersTest, BredrServicesFromFidlEmpty) {
-  EXPECT_TRUE(BredrServicesFromFidl(fsys::BredrData()).empty());
+  EXPECT_TRUE(BredrServicesFromFidl(fsys::BredrBondData()).empty());
 }
 
 TEST(FIDL_HelpersTest, BredrServicesFromFidl) {
-  fsys::BredrData bredr;
+  fsys::BredrBondData bredr;
   bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSink));
   bredr.mutable_services()->push_back(UuidToFidl(bt::sdp::profile::kAudioSource));
   auto bredr_services = BredrServicesFromFidl(bredr);
@@ -773,8 +775,8 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_NoTransportData) {
   ASSERT_TRUE(data.has_local_address());
   ASSERT_TRUE(data.has_address());
   EXPECT_FALSE(data.has_name());
-  EXPECT_FALSE(data.has_le());
-  EXPECT_FALSE(data.has_bredr());
+  EXPECT_FALSE(data.has_le_bond());
+  EXPECT_FALSE(data.has_bredr_bond());
 
   EXPECT_EQ(peer->identifier().value(), data.identifier().value);
   EXPECT_TRUE(fidl::Equals((fbt::Address{fbt::AddressType::PUBLIC, std::array<uint8_t, 6>{0}}),
@@ -791,8 +793,8 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BothTransportsPresentButNo
   ASSERT_TRUE(data.has_identifier());
   ASSERT_TRUE(data.has_local_address());
   ASSERT_TRUE(data.has_address());
-  EXPECT_FALSE(data.has_le());
-  EXPECT_FALSE(data.has_bredr());
+  EXPECT_FALSE(data.has_le_bond());
+  EXPECT_FALSE(data.has_bredr_bond());
 
   EXPECT_EQ(peer->identifier().value(), data.identifier().value);
   EXPECT_TRUE(fidl::Equals((fbt::Address{fbt::AddressType::PUBLIC, std::array<uint8_t, 6>{0}}),
@@ -805,7 +807,7 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrServicesDiscoveredNot
   peer->MutBrEdr().AddService(bt::UUID(uint16_t{0x1234}));
 
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
-  EXPECT_FALSE(data.has_bredr());
+  EXPECT_FALSE(data.has_bredr_bond());
 }
 
 TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
@@ -813,12 +815,12 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_EmptyLeData) {
   peer->MutLe().SetBondData(bt::sm::PairingData());
 
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
-  EXPECT_FALSE(data.has_bredr());
-  ASSERT_TRUE(data.has_le());
-  EXPECT_FALSE(data.le().has_local_ltk());
-  EXPECT_FALSE(data.le().has_peer_ltk());
-  EXPECT_FALSE(data.le().has_irk());
-  EXPECT_FALSE(data.le().has_csrk());
+  EXPECT_FALSE(data.has_bredr_bond());
+  ASSERT_TRUE(data.has_le_bond());
+  EXPECT_FALSE(data.le_bond().has_local_ltk());
+  EXPECT_FALSE(data.le_bond().has_peer_ltk());
+  EXPECT_FALSE(data.le_bond().has_irk());
+  EXPECT_FALSE(data.le_bond().has_csrk());
 }
 
 TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_LeData) {
@@ -831,17 +833,17 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_LeData) {
   });
 
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
-  EXPECT_FALSE(data.has_bredr());
-  ASSERT_TRUE(data.has_le());
-  ASSERT_TRUE(data.le().has_local_ltk());
-  ASSERT_TRUE(data.le().has_peer_ltk());
-  ASSERT_TRUE(data.le().has_irk());
-  ASSERT_TRUE(data.le().has_csrk());
+  EXPECT_FALSE(data.has_bredr_bond());
+  ASSERT_TRUE(data.has_le_bond());
+  ASSERT_TRUE(data.le_bond().has_local_ltk());
+  ASSERT_TRUE(data.le_bond().has_peer_ltk());
+  ASSERT_TRUE(data.le_bond().has_irk());
+  ASSERT_TRUE(data.le_bond().has_csrk());
 
-  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data.le().local_ltk()));
-  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data.le().peer_ltk()));
-  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.le().irk()));
-  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.le().csrk()));
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data.le_bond().local_ltk()));
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data.le_bond().peer_ltk()));
+  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.le_bond().irk()));
+  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.le_bond().csrk()));
 }
 
 TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
@@ -849,10 +851,10 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
   peer->MutBrEdr().SetBondData(kTestLtk);
 
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
-  EXPECT_FALSE(data.has_le());
-  ASSERT_TRUE(data.has_bredr());
-  ASSERT_TRUE(data.bredr().has_link_key());
-  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.bredr().link_key()));
+  EXPECT_FALSE(data.has_le_bond());
+  ASSERT_TRUE(data.has_bredr_bond());
+  ASSERT_TRUE(data.bredr_bond().has_link_key());
+  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data.bredr_bond().link_key()));
 }
 
 TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
@@ -862,10 +864,10 @@ TEST_F(FIDL_HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
   peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSource);
 
   fsys::BondingData data = PeerToFidlBondingData(*adapter(), *peer);
-  ASSERT_TRUE(data.has_bredr());
-  ASSERT_TRUE(data.bredr().has_services());
+  ASSERT_TRUE(data.has_bredr_bond());
+  ASSERT_TRUE(data.bredr_bond().has_services());
 
-  EXPECT_THAT(data.bredr().services(),
+  EXPECT_THAT(data.bredr_bond().services(),
               ::testing::UnorderedElementsAre(UuidToFidl(bt::sdp::profile::kAudioSink),
                                               UuidToFidl(bt::sdp::profile::kAudioSource)));
 }

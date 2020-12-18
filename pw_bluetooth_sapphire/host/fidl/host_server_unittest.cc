@@ -303,8 +303,25 @@ fsys::BondingData MakeTestBond(bt::PeerId id, fbt::Address address) {
   fsys::BondingData bond;
   bond.set_identifier(fbt::PeerId{id.value()});
   bond.set_address(address);
-  bond.set_le(fsys::LeData());
+  bond.set_le_bond(fsys::LeBondData());
   return bond;
+}
+
+using FIDL_HostServerDeathTest = FIDL_HostServerTest;
+TEST_F(FIDL_HostServerDeathTest, RestoreDeprecatedTransportSpecificBondingDataDies) {
+  fsys::BondingData deprecated_le = MakeTestBond(kTestId, kTestFidlAddrPublic);
+  deprecated_le.clear_le_bond();
+  deprecated_le.set_le(fsys::LeData{});
+  ASSERT_DEATH_IF_SUPPORTED(
+      { host_server()->RestoreBonds(MakeClonedVector(deprecated_le), [](auto /*ignore*/) {}); },
+      ".*deprecated LeData.*");
+
+  fsys::BondingData deprecated_bredr{};
+  deprecated_bredr.clear_le_bond();
+  deprecated_bredr.set_bredr(fsys::BredrData{});
+  ASSERT_DEATH_IF_SUPPORTED(
+      { host_server()->RestoreBonds(MakeClonedVector(deprecated_bredr), [](auto /*ignore*/) {}); },
+      ".*deprecated BredrData");
 }
 
 TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
@@ -909,8 +926,8 @@ TEST_F(FIDL_HostServerTest, RestoreBondsErrorDataMissing) {
 
   // Transport data missing.
   bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
-  bond.clear_le();
-  bond.clear_bredr();
+  bond.clear_le_bond();
+  bond.clear_bredr_bond();
   TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
 
   // Transport data missing keys.
@@ -921,37 +938,11 @@ TEST_F(FIDL_HostServerTest, RestoreBondsErrorDataMissing) {
 TEST_F(FIDL_HostServerTest, RestoreBondsInvalidAddress) {
   // LE Random address on dual-mode or BR/EDR-only bond should not be supported.
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
-  bond.set_bredr(fsys::BredrData());
+  bond.set_bredr_bond(fsys::BredrBondData());
   TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
 
   // BR/EDR only
-  bond.clear_le();
-  TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
-}
-
-TEST_F(FIDL_HostServerTest, RestoreBondsDeprecatedLeLtkFieldNotSupported) {
-  fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrRandom);
-  fsys::LeData le;
-  le.set_ltk(
-      fsys::Ltk{.key =
-                    fsys::PeerKey{
-                        .security =
-                            fsys::SecurityProperties{
-                                .authenticated = true,
-                                .secure_connections = true,
-                                .encryption_key_size = 16,
-                            },
-                        .data =
-                            fsys::Key{
-                                .value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
-                            },
-                    },
-                .ediv = 0,
-                .rand = 0});
-  bond.set_le(std::move(le));
-
-  // This should fail as the LTK is missing. This is because the `ltk` field at this
-  // layer is no longer supported.
+  bond.clear_le_bond();
   TestRestoreBonds(MakeClonedVector(bond), MakeClonedVector(bond));
 }
 
@@ -973,10 +964,10 @@ TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {
                     },
                 .ediv = 0,
                 .rand = 0};
-  fsys::LeData le;
+  fsys::LeBondData le;
   le.set_peer_ltk(ltk);
   le.set_local_ltk(ltk);
-  bond.set_le(std::move(le));
+  bond.set_le_bond(std::move(le));
 
   // This should succeed.
   TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
@@ -990,9 +981,9 @@ TEST_F(FIDL_HostServerTest, RestoreBondsLeOnlySuccess) {
 
 TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
   fsys::BondingData bond = MakeTestBond(kTestId, kTestFidlAddrPublic);
-  bond.clear_le();
+  bond.clear_le_bond();
 
-  fsys::BredrData bredr;
+  fsys::BredrBondData bredr;
   bredr.set_link_key(fsys::PeerKey{
       .security =
           fsys::SecurityProperties{
@@ -1007,7 +998,7 @@ TEST_F(FIDL_HostServerTest, RestoreBondsBredrOnlySuccess) {
   });
   constexpr bt::UUID kServiceId = bt::sdp::profile::kAudioSink;
   bredr.set_services({fidl_helpers::UuidToFidl(kServiceId)});
-  bond.set_bredr(std::move(bredr));
+  bond.set_bredr_bond(std::move(bredr));
 
   // This should succeed.
   TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
@@ -1035,16 +1026,16 @@ TEST_F(FIDL_HostServerTest, RestoreBondsDualModeSuccess) {
           },
   };
   auto ltk = fsys::Ltk{.key = key, .ediv = 0, .rand = 0};
-  fsys::LeData le;
+  fsys::LeBondData le;
   le.set_peer_ltk(ltk);
   le.set_local_ltk(ltk);
-  bond.set_le(std::move(le));
+  bond.set_le_bond(std::move(le));
 
-  fsys::BredrData bredr;
+  fsys::BredrBondData bredr;
   bredr.set_link_key(key);
   constexpr bt::UUID kServiceId = bt::sdp::profile::kAudioSink;
   bredr.set_services({fidl_helpers::UuidToFidl(kServiceId)});
-  bond.set_bredr(std::move(bredr));
+  bond.set_bredr_bond(std::move(bredr));
 
   // This should succeed.
   TestRestoreBonds(MakeClonedVector(bond), {} /* no errors expected */);
@@ -1106,14 +1097,14 @@ TEST_F(FIDL_HostServerTest, OnNewBondingData) {
   EXPECT_TRUE(fidl::Equals(kTestFidlAddrPublic, data->address()));
   EXPECT_EQ(kTestName, data->name());
 
-  ASSERT_TRUE(data->has_le());
-  EXPECT_FALSE(data->has_bredr());
+  ASSERT_TRUE(data->has_le_bond());
+  EXPECT_FALSE(data->has_bredr_bond());
 
-  ASSERT_TRUE(data->le().has_peer_ltk());
-  EXPECT_FALSE(data->le().has_local_ltk());
-  EXPECT_FALSE(data->le().has_irk());
-  EXPECT_FALSE(data->le().has_csrk());
-  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le().peer_ltk()));
+  ASSERT_TRUE(data->le_bond().has_peer_ltk());
+  EXPECT_FALSE(data->le_bond().has_local_ltk());
+  EXPECT_FALSE(data->le_bond().has_irk());
+  EXPECT_FALSE(data->le_bond().has_csrk());
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le_bond().peer_ltk()));
 
   // Add BR/EDR data.
   data.reset();
@@ -1131,16 +1122,16 @@ TEST_F(FIDL_HostServerTest, OnNewBondingData) {
   EXPECT_TRUE(fidl::Equals(kTestFidlAddrPublic, data->address()));
   EXPECT_EQ(kTestName, data->name());
 
-  ASSERT_TRUE(data->has_le());
-  ASSERT_TRUE(data->le().has_peer_ltk());
-  EXPECT_FALSE(data->le().has_local_ltk());
-  EXPECT_FALSE(data->le().has_irk());
-  EXPECT_FALSE(data->le().has_csrk());
-  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le().peer_ltk()));
+  ASSERT_TRUE(data->has_le_bond());
+  ASSERT_TRUE(data->le_bond().has_peer_ltk());
+  EXPECT_FALSE(data->le_bond().has_local_ltk());
+  EXPECT_FALSE(data->le_bond().has_irk());
+  EXPECT_FALSE(data->le_bond().has_csrk());
+  EXPECT_TRUE(fidl::Equals(kTestLtkFidl, data->le_bond().peer_ltk()));
 
-  ASSERT_TRUE(data->has_bredr());
-  ASSERT_TRUE(data->bredr().has_link_key());
-  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data->bredr().link_key()));
+  ASSERT_TRUE(data->has_bredr_bond());
+  ASSERT_TRUE(data->bredr_bond().has_link_key());
+  EXPECT_TRUE(fidl::Equals(kTestKeyFidl, data->bredr_bond().link_key()));
 }
 
 TEST_F(FIDL_HostServerTest, EnableBackgroundScan) {

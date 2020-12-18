@@ -449,7 +449,7 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
     const fuchsia::bluetooth::sys::BondingData& bond) {
   bt::DeviceAddressBytes bytes(bond.address().bytes);
   bt::DeviceAddress::Type type;
-  if (bond.has_bredr()) {
+  if (bond.has_bredr_bond()) {
     // A random identity address can only be present in a LE-only bond.
     if (bond.address().type == fbt::AddressType::RANDOM) {
       bt_log(ERROR, "bt-host", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
@@ -469,7 +469,7 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
   return {bt::DeviceAddress(type, bytes)};
 }
 
-bt::sm::PairingData LePairingDataFromFidl(const fsys::LeData& data) {
+bt::sm::PairingData LePairingDataFromFidl(const fsys::LeBondData& data) {
   bt::sm::PairingData result;
 
   if (data.has_peer_ltk()) {
@@ -487,7 +487,7 @@ bt::sm::PairingData LePairingDataFromFidl(const fsys::LeData& data) {
   return result;
 }
 
-std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrData& data) {
+std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrBondData& data) {
   if (!data.has_link_key()) {
     return std::nullopt;
   }
@@ -495,7 +495,7 @@ std::optional<bt::sm::LTK> BredrKeyFromFidl(const fsys::BredrData& data) {
   return bt::sm::LTK(key.security(), bt::hci::LinkKey(key.value(), 0, 0));
 }
 
-std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrData& data) {
+std::vector<bt::UUID> BredrServicesFromFidl(const fuchsia::bluetooth::sys::BredrBondData& data) {
   std::vector<bt::UUID> services_out;
   if (data.has_services()) {
     std::transform(data.services().begin(), data.services().end(), std::back_inserter(services_out),
@@ -519,8 +519,8 @@ fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapte
 
   // LE
   if (peer.le() && peer.le()->bond_data()) {
-    fsys::LeData out_le;
-    const auto& bond = *peer.le()->bond_data();
+    fsys::LeBondData out_le;
+    const bt::sm::PairingData& bond = *peer.le()->bond_data();
 
     // TODO(armansito): Store the peer's preferred connection parameters.
     // TODO(fxbug.dev/59645): Store GATT and AD service UUIDs.
@@ -538,12 +538,12 @@ fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapte
       out_le.set_csrk(PeerKeyToFidl(*bond.csrk));
     }
 
-    out.set_le(std::move(out_le));
+    out.set_le_bond(std::move(out_le));
   }
 
   // BR/EDR
   if (peer.bredr() && peer.bredr()->link_key()) {
-    fsys::BredrData out_bredr;
+    fsys::BredrBondData out_bredr;
 
     // TODO(fxbug.dev/1262): Populate with history of role switches.
 
@@ -551,7 +551,7 @@ fuchsia::bluetooth::sys::BondingData PeerToFidlBondingData(const bt::gap::Adapte
     std::transform(services.begin(), services.end(),
                    std::back_inserter(*out_bredr.mutable_services()), UuidToFidl);
     out_bredr.set_link_key(LtkToFidlPeerKey(*peer.bredr()->link_key()));
-    out.set_bredr(std::move(out_bredr));
+    out.set_bredr_bond(std::move(out_bredr));
   }
 
   return out;
