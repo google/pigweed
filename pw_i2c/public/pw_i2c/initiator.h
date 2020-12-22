@@ -38,14 +38,19 @@ class Initiator {
  public:
   virtual ~Initiator() = default;
 
-  // Write bytes then immediately read bytes as an atomic I2C transaction.
+  // Write bytes and then read bytes as either one atomic or two independent I2C
+  // transaction. If the I2C bus is a multi-initiator bus then the implementer
+  // MUST ensure it is a single atomic I2C transaction.
   // The signal on the bus should appear as follows:
   // 1) Write Only:
   //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES + STOP
   // 2) Read Only:
   //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
-  // 3) Write + Read:
+  // 3A) Write + Read (atomic):
   //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES +
+  //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
+  // 3B) Write + Read (separate):
+  //   START + I2C Address + WRITE(0) + TX_BUFFER_BYTES + STOP
   //   START + I2C Address + READ(1) + RX_BUFFER_BYTES + STOP
   //
   // The timeout defines the minimum duration one may block waiting for both
