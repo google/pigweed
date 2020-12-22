@@ -304,6 +304,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_string:tests",
       "$dir_pw_sync:tests",
       "$dir_pw_thread:tests",
+      "$dir_pw_thread_stl:tests",
       "$dir_pw_tokenizer:tests",
       "$dir_pw_trace:tests",
       "$dir_pw_trace_tokenized:tests",

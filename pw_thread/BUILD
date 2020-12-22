@@ -25,6 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
 PW_THREAD_ID_BACKEND = "//pw_thread_stl:id"
 PW_THREAD_SLEEP_BACKEND = "//pw_thread_stl:sleep"
+PW_THREAD_THREAD_BACKEND = "//pw_thread_stl:thread"
 PW_THREAD_YIELD_BACKEND = "//pw_thread_stl:yield"
 
 pw_cc_library(
@@ -85,6 +86,33 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "thread_facade",
+    hdrs = [
+        "public/pw_thread/thread.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":id_facade",
+        PW_THREAD_THREAD_BACKEND + "_headers",
+    ],
+)
+
+pw_cc_library(
+    name = "thread",
+    deps = [
+        ":thread_facade",
+        PW_THREAD_THREAD_BACKEND + "_headers",
+    ],
+)
+
+pw_cc_library(
+    name = "thread_backend",
+    deps = [
+       PW_THREAD_THREAD_BACKEND,
+    ],
+)
+
+pw_cc_library(
     name = "yield_facade",
     hdrs = [
         "public/pw_thread/yield.h",
@@ -111,6 +139,32 @@ pw_cc_library(
     name = "yield_backend",
     deps = [
        PW_THREAD_YIELD_BACKEND,
+    ],
+)
+
+pw_cc_library(
+    name = "test_threads_header",
+    hdrs = [
+        "public/pw_thread/test_threads.h",
+    ],
+    deps = [
+        ":thread",
+    ],
+)
+
+# To instantiate this as a pw_cc_test, depend on this pw_cc_library and the
+# pw_cc_library which implements the backend for test_threads_header. See
+# //pw_thread:thread_backend_test as an example.
+pw_cc_library(
+    name = "thread_facade_test",
+    srcs = [
+        "thread_facade_test.cc",
+    ],
+    deps = [
+        ":thread",
+        ":id",
+        ":test_threads_header",
+        "//pw_unit_test",
     ],
 )
 

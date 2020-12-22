@@ -17,6 +17,8 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -41,6 +43,24 @@ pw_source_set("id") {
     "public_overrides/pw_thread_backend/id_native.h",
   ]
   deps = [ "$dir_pw_thread:id.facade" ]
+}
+
+# This target provides the backend for pw::thread::Thread with joining
+# joining capability.
+pw_source_set("thread") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_thread_stl/options.h",
+    "public/pw_thread_stl/thread_inline.h",
+    "public/pw_thread_stl/thread_native.h",
+    "public_overrides/pw_thread_backend/thread_inline.h",
+    "public_overrides/pw_thread_backend/thread_native.h",
+  ]
+  allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
+  deps = [ "$dir_pw_thread:thread.facade" ]
 }
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
@@ -77,6 +97,24 @@ pw_source_set("yield") {
     "public_overrides/pw_thread_backend/yield_inline.h",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":thread_backend_test" ]
+}
+
+pw_source_set("test_threads") {
+  public_deps = [ "$dir_pw_thread:test_threads" ]
+  sources = [ "test_threads.cc" ]
+  deps = [ "$dir_pw_thread:thread" ]
+}
+
+pw_test("thread_backend_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  deps = [
+    ":test_threads",
+    "$dir_pw_thread:thread_facade_test",
+  ]
 }
 
 pw_doc_group("docs") {

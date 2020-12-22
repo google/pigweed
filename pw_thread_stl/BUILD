@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -65,6 +66,48 @@ pw_cc_library(
         "//pw_chrono:system_clock",
         "//pw_thread:sleep_facade",
     ],
+)
+
+pw_cc_library(
+    name = "thread_headers",
+    hdrs = [
+        "public/pw_thread_stl/options.h",
+        "public/pw_thread_stl/thread_inline.h",
+        "public/pw_thread_stl/thread_native.h",
+        "public_overrides/pw_thread_backend/thread_inline.h",
+        "public_overrides/pw_thread_backend/thread_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+)
+
+pw_cc_library(
+    name = "thread",
+    deps = [
+        ":thread_headers",
+        "//pw_thread:thread_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "test_threads",
+    deps = [
+        "//pw_thread:thread_facade",
+        "//pw_thread:test_threads_header",
+    ],
+    srcs = [
+        "test_threads.cc",
+    ]
+)
+
+pw_cc_test(
+    name = "thread_backend_test",
+    deps = [
+        "//pw_thread:thread_facade_test",
+        ":test_threads",
+    ]
 )
 
 pw_cc_library(

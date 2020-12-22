@@ -90,6 +90,7 @@ _win_incompatible_config = {
   pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
+  pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
 }
 
 _os_specific_config = {
