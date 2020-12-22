@@ -20,6 +20,7 @@ import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
 
@@ -79,10 +80,16 @@ _win_config = {
 # TODO(amontanez): figure out why std::mutex doesn't work on Windows.
 # These current target configurations do not work on windows.
 _win_incompatible_config = {
+  # Configure backends for pw_sync's facades.
   pw_sync_BINARY_SEMAPHORE_BACKEND = "$dir_pw_sync_stl:binary_semaphore_backend"
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_stl:counting_semaphore_backend"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
+
+  # Configure backends for pw_thread's facades.
+  pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
+  pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
+  pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
 }
 
 _os_specific_config = {

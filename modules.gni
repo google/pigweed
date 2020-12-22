@@ -90,6 +90,8 @@ declare_args() {
   dir_pw_sys_io_arduino = get_path_info("pw_sys_io_arduino", "abspath")
   dir_pw_sys_io_stdio = get_path_info("pw_sys_io_stdio", "abspath")
   dir_pw_target_runner = get_path_info("pw_target_runner", "abspath")
+  dir_pw_thread = get_path_info("pw_thread", "abspath")
+  dir_pw_thread_stl = get_path_info("pw_thread_stl", "abspath")
   dir_pw_third_party = get_path_info("third_party", "abspath")
   dir_pw_tokenizer = get_path_info("pw_tokenizer", "abspath")
   dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
