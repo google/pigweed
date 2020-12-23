@@ -281,6 +281,9 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.pb\.h$',
     r'\.pb\.c$',
     r'\_pb2.pyi?$',
+    # Diff/Patch files
+    r'\.diff$',
+    r'\.patch$',
 )
 
 
