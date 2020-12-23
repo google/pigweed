@@ -84,6 +84,7 @@ declare_args() {
   dir_pw_stm32cube_build = get_path_info("pw_stm32cube_build", "abspath")
   dir_pw_stream = get_path_info("pw_stream", "abspath")
   dir_pw_string = get_path_info("pw_string", "abspath")
+  dir_pw_symbolizer = get_path_info("pw_symbolizer", "abspath")
   dir_pw_sync = get_path_info("pw_sync", "abspath")
   dir_pw_sync_embos = get_path_info("pw_sync_embos", "abspath")
   dir_pw_sync_freertos = get_path_info("pw_sync_freertos", "abspath")

@@ -122,6 +122,7 @@ group("module_docs") {
     "$dir_pw_stm32cube_build:docs",
     "$dir_pw_stream:docs",
     "$dir_pw_string:docs",
+    "$dir_pw_symbolizer:docs",
     "$dir_pw_sync:docs",
     "$dir_pw_sync_baremetal:docs",
     "$dir_pw_sync_embos:docs",
