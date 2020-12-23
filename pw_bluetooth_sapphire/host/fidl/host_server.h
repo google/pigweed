@@ -146,7 +146,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   void PairBrEdr(bt::PeerId id, PairCallback callback);
   // Called when a connection is established to a peer, either when initiated
   // by a user via a client of Host.fidl, or automatically by the GAP adapter
-  void RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref, bool auto_connect);
+  void RegisterLowEnergyConnection(std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref,
+                                   bool auto_connect);
 
   // Called when |server| receives a channel connection error.
   void OnConnectionError(Server* server);
@@ -198,7 +199,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // auto-connected by the system.
   // TODO(armansito): Consider storing auto-connected references separately from
   // directly connected references.
-  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr> le_connections_;
+  std::unordered_map<bt::PeerId, std::unique_ptr<bt::gap::LowEnergyConnectionHandle>>
+      le_connections_;
 
   // Used to drive the WatchState() method.
   bt_lib_fidl::HangingGetter<fuchsia::bluetooth::sys::HostInfo> info_getter_;

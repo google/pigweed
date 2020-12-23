@@ -97,8 +97,8 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyCentralServerTest);
 };
 
-// Tests that connecting to a peripheral with ConnectionOptions.bondable_mode unset results in a
-// bondable connection ref being stored in LowEnergyConnectionManager
+// Tests that connecting to a peripheral with LowEnergyConnectionOptions.bondable_mode unset results
+// in a bondable connection ref being stored in LowEnergyConnectionManager
 TEST_F(FIDL_LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
@@ -128,8 +128,8 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectDefaultResultsBondableConnectionR
   ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
-// Tests that setting ConnectionOptions.bondable_mode to true and connecting to a peer in bondable
-// mode results in a bondable connection ref being stored in LowEnergyConnectionManager
+// Tests that setting LowEnergyConnectionOptions.bondable_mode to true and connecting to a peer in
+// bondable mode results in a bondable connection ref being stored in LowEnergyConnectionManager
 TEST_F(FIDL_LowEnergyCentralServerTest, ConnectBondableResultsBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
@@ -160,8 +160,8 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectBondableResultsBondableConnection
   ASSERT_EQ(conn_ref.value()->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
-// Tests that setting ConnectionOptions.bondable_mode to false and connecting to a peer results in
-// a non-bondable connection ref being stored in LowEnergyConnectionManager.
+// Tests that setting LowEnergyConnectionOptions.bondable_mode to false and connecting to a peer
+// results in a non-bondable connection ref being stored in LowEnergyConnectionManager.
 TEST_F(FIDL_LowEnergyCentralServerTest, ConnectNonBondableResultsNonBondableConnectionRef) {
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   ASSERT_TRUE(peer);
@@ -236,14 +236,14 @@ TEST_F(FIDL_LowEnergyCentralServerTest, ConnectPeripheralAlreadyConnectedInLecm)
   auto* const peer = adapter()->peer_cache()->NewPeer(kTestAddr, /*connectable=*/true);
   test_device()->AddPeer(std::make_unique<bt::testing::FakePeer>(kTestAddr));
 
-  bt::gap::LowEnergyConnectionRefPtr le_conn;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> le_conn;
   adapter()->le()->Connect(
       peer->identifier(),
       [&le_conn](auto result) {
         ASSERT_TRUE(result.is_ok());
         le_conn = result.take_value();
       },
-      bt::gap::Adapter::LowEnergy::ConnectionOptions());
+      bt::gap::LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(le_conn);
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());

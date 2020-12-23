@@ -6,8 +6,8 @@
 
 namespace bthost {
 
-LowEnergyConnectionServer::LowEnergyConnectionServer(bt::gap::LowEnergyConnectionRefPtr connection,
-                                                     zx::channel handle)
+LowEnergyConnectionServer::LowEnergyConnectionServer(
+    std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection, zx::channel handle)
     : ServerBase(this, std::move(handle)), conn_(std::move(connection)) {
   ZX_DEBUG_ASSERT(conn_);
 

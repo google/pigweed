@@ -55,7 +55,7 @@ class AdapterImpl final : public Adapter {
     explicit LowEnergyImpl(AdapterImpl* adapter) : adapter_(adapter) {}
 
     void Connect(PeerId peer_id, ConnectionResultCallback callback,
-                 ConnectionOptions connection_options) override {
+                 LowEnergyConnectionOptions connection_options) override {
       adapter_->le_connection_manager_->Connect(peer_id, std::move(callback),
                                                 std::move(connection_options));
     }
@@ -216,7 +216,6 @@ class AdapterImpl final : public Adapter {
 
   void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) override;
 
-  using AutoConnectCallback = fit::function<void(LowEnergyConnectionRefPtr)>;
   void set_auto_connect_callback(AutoConnectCallback callback) override {
     auto_conn_cb_ = std::move(callback);
   }
@@ -1031,7 +1030,7 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
     return;
   }
 
-  LowEnergyConnectionManager::ConnectionOptions options{.auto_connect = true};
+  LowEnergyConnectionOptions options{.auto_connect = true};
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   le_connection_manager_->Connect(

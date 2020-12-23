@@ -114,21 +114,20 @@ class Adapter {
     // requested remote LE peer identified by |peer_id|.
     //
     //   * If the requested peer is already connected, |callback| is called with a
-    //     LowEnergyConnectionRef.
+    //     LowEnergyConnectionHandle.
     //
     //   * If the requested peer is NOT connected, then this method initiates a
-    //     connection to the requested peer. A LowEnergyConnectionRef is
+    //     connection to the requested peer. A LowEnergyConnectionHandle is
     //     asynchronously returned to the caller once the connection has been set up.
     //
     //     The status of the procedure is reported in |callback| in the case of an
     //     error.
     using ConnectionResultCallback = gap::LowEnergyConnectionManager::ConnectionResultCallback;
-    using ConnectionOptions = gap::LowEnergyConnectionManager::ConnectionOptions;
     virtual void Connect(PeerId peer_id, ConnectionResultCallback callback,
-                         ConnectionOptions connection_options) = 0;
+                         LowEnergyConnectionOptions connection_options) = 0;
 
     // Disconnects any existing LE connection to |peer_id|, invalidating all
-    // active LowEnergyConnectionRefs. Returns false if the peer can not be
+    // active LowEnergyConnectionHandles. Returns false if the peer can not be
     // disconnected.
     virtual bool Disconnect(PeerId peer_id) = 0;
 
@@ -366,7 +365,8 @@ class Adapter {
   // Assign a callback to be notified when a connection is automatically
   // established to a bonded LE peer in the directed connectable mode (Vol 3,
   // Part C, 9.3.3).
-  using AutoConnectCallback = fit::function<void(LowEnergyConnectionRefPtr)>;
+  using AutoConnectCallback =
+      fit::function<void(std::unique_ptr<bt::gap::LowEnergyConnectionHandle>)>;
   virtual void set_auto_connect_callback(AutoConnectCallback callback) = 0;
 
   // Attach Adapter's inspect node as a child node under |parent| with the given |name|.

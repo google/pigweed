@@ -33,12 +33,12 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
                         ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
                         StartAdvertisingCallback callback) override;
 
-  // Returns the connection reference associated with the given |id|, or nullptr if the peer with
+  // Returns the connection handle associated with the given |id|, or nullptr if the peer with
   // |id| is no longer connected. Should only be used for testing.
-  const bt::gap::LowEnergyConnectionRef* FindConnectionForTesting(bt::PeerId id) const;
+  const bt::gap::LowEnergyConnectionHandle* FindConnectionForTesting(bt::PeerId id) const;
 
  private:
-  using ConnectionRefPtr = bt::gap::LowEnergyConnectionRefPtr;
+  using ConnectionRefPtr = std::unique_ptr<bt::gap::LowEnergyConnectionHandle>;
 
   class AdvertisementInstance final {
    public:

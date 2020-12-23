@@ -425,7 +425,7 @@ TEST_F(GAP_AdapterTest, LeAutoConnect) {
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  LowEnergyConnectionRefPtr conn;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn;
   adapter()->set_auto_connect_callback([&](auto conn_ref) { conn = std::move(conn_ref); });
 
   // Enable background scanning. No auto-connect should take place since the
@@ -469,7 +469,7 @@ TEST_F(GAP_AdapterTest, LeSkipAutoConnectBehavior) {
   fake_peer->enable_directed_advertising(true);
   test_device()->AddPeer(std::move(fake_peer));
 
-  LowEnergyConnectionRefPtr conn;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn;
   adapter()->set_auto_connect_callback([&](auto conn_ref) { conn = std::move(conn_ref); });
 
   // Enable background scanning. No auto-connect should take place since the
@@ -663,14 +663,14 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
 
-  LowEnergyConnectionRefPtr conn_ref;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
   auto connect_cb = [&conn_ref](auto result) {
     ASSERT_TRUE(result.is_ok());
     conn_ref = result.take_value();
   };
 
   // A connection request should use the public address by default.
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
 
   // Enable privacy. The random address should not get configured while a
   // connection attempt is in progress.
@@ -684,7 +684,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   // Create a new connection. The second attempt should use a random address.
   // re-enabled.
   conn_ref = nullptr;
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_random_address());
   ASSERT_TRUE(conn_ref);
@@ -698,7 +698,7 @@ TEST_F(GAP_AdapterTest, LocalAddressForConnections) {
   // Disable privacy. The next connection attempt should use a public address.
   adapter()->le()->EnablePrivacy(false);
   conn_ref = nullptr;
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
 }
@@ -738,7 +738,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
     ASSERT_TRUE(result.is_error());
     error = result.error();
   };
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
   EXPECT_EQ(hci::LEOwnAddressType::kPublic, test_device()->le_connect_params()->own_address_type);
@@ -757,7 +757,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
 
   // The peer should not have expired.
   ASSERT_EQ(peer, adapter()->peer_cache()->FindByAddress(kTestAddr));
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_random_address());
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
@@ -781,7 +781,7 @@ TEST_F(GAP_AdapterTest, LocalAddressDuringHangingConnect) {
   // This will be notified when LowEnergyConnectionManager is destroyed.
   auto noop_connect_cb = [](auto) {};
   adapter()->le()->Connect(peer->identifier(), std::move(noop_connect_cb),
-                           Adapter::LowEnergy::ConnectionOptions());
+                           LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   EXPECT_NE(last_random_addr, *test_device()->le_random_address());
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
@@ -799,7 +799,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
 
   adapter()->le()->EnablePrivacy(true);
 
-  LowEnergyConnectionRefPtr conn_ref;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref;
   auto connect_cb = [&](auto result) {
     ASSERT_TRUE(result.is_ok());
     conn_ref = result.take_value();
@@ -809,7 +809,7 @@ TEST_F(GAP_AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   auto* peer = adapter()->peer_cache()->NewPeer(kTestAddr, true);
   auto fake_peer = std::make_unique<FakePeer>(kTestAddr);
   test_device()->AddPeer(std::move(fake_peer));
-  adapter()->le()->Connect(peer->identifier(), connect_cb, Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are

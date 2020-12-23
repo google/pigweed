@@ -13,6 +13,7 @@
 #include <optional>
 #include <vector>
 
+#include "low_energy_connection.h"
 #include "pairing_delegate.h"
 #include "peer.h"
 #include "peer_cache.h"
@@ -49,526 +50,6 @@ static const hci::LEPreferredConnectionParameters kDefaultPreferredConnectionPar
 constexpr int kMaxConnectionAttempts = 3;
 
 }  // namespace
-
-namespace internal {
-
-// Represents the state of an active connection. Each instance is owned
-// and managed by a LowEnergyConnectionManager and is kept alive as long as
-// there is at least one LowEnergyConnectionRef that references it.
-class LowEnergyConnection final : public sm::Delegate {
- public:
-  LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
-                      async_dispatcher_t* dispatcher,
-                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                      fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      PendingRequestData request)
-      : peer_id_(peer_id),
-        link_(std::move(link)),
-        dispatcher_(dispatcher),
-        conn_mgr_(conn_mgr),
-        l2cap_(l2cap),
-        gatt_(gatt),
-        conn_pause_central_expiry_(zx::time(async_now(dispatcher_)) + kLEConnectionPauseCentral),
-        request_(std::move(request)),
-        weak_ptr_factory_(this) {
-    ZX_DEBUG_ASSERT(peer_id_.IsValid());
-    ZX_DEBUG_ASSERT(link_);
-    ZX_DEBUG_ASSERT(dispatcher_);
-    ZX_DEBUG_ASSERT(conn_mgr_);
-    ZX_DEBUG_ASSERT(l2cap_);
-    ZX_DEBUG_ASSERT(gatt_);
-
-    link_->set_peer_disconnect_callback([conn_mgr](auto conn, auto reason) {
-      if (conn_mgr) {
-        conn_mgr->OnPeerDisconnect(conn, reason);
-      }
-    });
-  }
-
-  ~LowEnergyConnection() override {
-    if (request_.has_value()) {
-      bt_log(INFO, "gap-le",
-             "destroying connection, notifying request callbacks of failure (handle %#.4x)",
-             handle());
-      request_->NotifyCallbacks(fit::error(HostError::kFailed));
-      request_.reset();
-    }
-
-    // Unregister this link from the GATT profile and the L2CAP plane. This
-    // invalidates all L2CAP channels that are associated with this link.
-    gatt_->RemoveConnection(peer_id());
-    l2cap_->RemoveConnection(link_->handle());
-
-    // Notify all active references that the link is gone. This will
-    // synchronously notify all refs.
-    CloseRefs();
-  }
-
-  void AddRequestCallback(LowEnergyConnectionManager::ConnectionResultCallback cb) {
-    if (request_.has_value()) {
-      request_->AddCallback(std::move(cb));
-    } else {
-      cb(fit::ok(AddRef()));
-    }
-  }
-
-  void NotifyRequestCallbacks() {
-    if (request_.has_value()) {
-      bt_log(TRACE, "gap-le", "notifying connection request callbacks (handle %#.4x)", handle());
-      request_->NotifyCallbacks(fit::ok(std::bind(&LowEnergyConnection::AddRef, this)));
-      request_.reset();
-    }
-  }
-
-  LowEnergyConnectionRefPtr AddRef() {
-    LowEnergyConnectionRefPtr conn_ref(new LowEnergyConnectionRef(peer_id_, handle(), conn_mgr_));
-    ZX_ASSERT(conn_ref);
-
-    refs_.insert(conn_ref.get());
-
-    bt_log(DEBUG, "gap-le", "added ref (handle %#.4x, count: %lu)", handle(), ref_count());
-
-    return conn_ref;
-  }
-
-  void DropRef(LowEnergyConnectionRef* ref) {
-    ZX_DEBUG_ASSERT(ref);
-
-    __UNUSED size_t res = refs_.erase(ref);
-    ZX_DEBUG_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
-    bt_log(DEBUG, "gap-le", "dropped ref (handle: %#.4x, count: %lu)", handle(), ref_count());
-  }
-
-  // Registers this connection with L2CAP and initializes the fixed channel
-  // protocols.
-  void InitializeFixedChannels(l2cap::LEConnectionParameterUpdateCallback cp_cb,
-                               l2cap::LinkErrorCallback link_error_cb,
-                               LowEnergyConnectionManager::ConnectionOptions connection_options) {
-    auto self = weak_ptr_factory_.GetWeakPtr();
-    auto fixed_channels = l2cap_->AddLEConnection(
-        link_->handle(), link_->role(), std::move(link_error_cb), std::move(cp_cb),
-        [self](auto handle, auto level, auto cb) {
-          if (self) {
-            bt_log(DEBUG, "gap-le", "received security upgrade request on L2CAP channel");
-            ZX_DEBUG_ASSERT(self->link_->handle() == handle);
-            self->OnSecurityRequest(level, std::move(cb));
-          }
-        });
-
-    OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
-                               connection_options);
-  }
-
-  // Used to respond to protocol/service requests for increased security.
-  void OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb) {
-    ZX_ASSERT(sm_);
-    sm_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
-      bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", bt_str(status), bt_str(sp));
-      cb(status);
-    });
-  }
-
-  // Handles a pairing request (i.e. security upgrade) received from "higher levels", likely
-  // initiated from GAP. This will only be used by pairing requests that are initiated
-  // in the context of testing. May only be called on an already-established connection.
-  void UpgradeSecurity(sm::SecurityLevel level, sm::BondableMode bondable_mode,
-                       sm::StatusCallback cb) {
-    ZX_ASSERT(sm_);
-    sm_->set_bondable_mode(bondable_mode);
-    OnSecurityRequest(level, std::move(cb));
-  }
-
-  // Cancels any on-going pairing procedures and sets up SMP to use the provided
-  // new I/O capabilities for future pairing procedures.
-  void ResetSecurityManager(sm::IOCapability ioc) { sm_->Reset(ioc); }
-
-  // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
-  // timeout has already finished.
-  void on_peripheral_pause_timeout(fit::callback<void(LowEnergyConnection*)> callback) {
-    // Check if timeout already completed.
-    if (conn_pause_peripheral_timeout_.has_value() &&
-        !conn_pause_peripheral_timeout_->is_pending()) {
-      callback(this);
-      return;
-    }
-    conn_pause_peripheral_callback_ = std::move(callback);
-  }
-
-  // Should be called as soon as connection is established.
-  // Calls |conn_pause_peripheral_callback_| after kLEConnectionPausePeripheral.
-  void StartConnectionPausePeripheralTimeout() {
-    ZX_ASSERT(!conn_pause_peripheral_timeout_.has_value());
-    conn_pause_peripheral_timeout_.emplace([self = weak_ptr_factory_.GetWeakPtr()]() {
-      if (!self) {
-        return;
-      }
-
-      if (self->conn_pause_peripheral_callback_) {
-        self->conn_pause_peripheral_callback_(self.get());
-      }
-    });
-    conn_pause_peripheral_timeout_->PostDelayed(dispatcher_, kLEConnectionPausePeripheral);
-  }
-
-  // Posts |callback| to be called kLEConnectionPauseCentral after this connection was established.
-  void PostCentralPauseTimeoutCallback(fit::callback<void()> callback) {
-    async::PostTaskForTime(
-        dispatcher_,
-        [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback)]() mutable {
-          if (self) {
-            cb();
-          }
-        },
-        conn_pause_central_expiry_);
-  }
-
-  void set_security_mode(LeSecurityMode mode) {
-    ZX_ASSERT(sm_);
-    sm_->set_security_mode(mode);
-  }
-
-  size_t ref_count() const { return refs_.size(); }
-
-  PeerId peer_id() const { return peer_id_; }
-  hci::ConnectionHandle handle() const { return link_->handle(); }
-  hci::Connection* link() const { return link_.get(); }
-  BondableMode bondable_mode() const {
-    ZX_ASSERT(sm_);
-    return sm_->bondable_mode();
-  }
-
-  sm::SecurityProperties security() const {
-    ZX_ASSERT(sm_);
-    return sm_->security();
-  }
-
-  const std::optional<PendingRequestData>& request() { return request_; }
-
-  // Take the request back from the connection for retrying the connection after a
-  // kConnectionFailedToBeEstablished error.
-  std::optional<PendingRequestData> take_request() {
-    std::optional<PendingRequestData> returned_request;
-    request_.swap(returned_request);
-    return returned_request;
-  }
-
-  fxl::WeakPtr<LowEnergyConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
- private:
-  // Called by the L2CAP layer once the link has been registered and the fixed
-  // channels have been opened.
-  void OnL2capFixedChannelsOpened(
-      fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
-      LowEnergyConnectionManager::ConnectionOptions connection_options) {
-    if (!att || !smp) {
-      bt_log(DEBUG, "gap-le", "link was closed before opening fixed channels");
-      return;
-    }
-
-    bt_log(DEBUG, "gap-le", "ATT and SMP fixed channels open");
-
-    // Obtain existing pairing data, if any.
-    std::optional<sm::LTK> ltk;
-    auto* peer = conn_mgr_->peer_cache()->FindById(peer_id());
-    ZX_DEBUG_ASSERT_MSG(peer, "connected peer must be present in cache!");
-
-    if (peer->le() && peer->le()->bond_data()) {
-      // Legacy pairing allows both devices to generate and exchange LTKs. "The master device must
-      // have the [...] (LTK, EDIV, and Rand) distributed by the slave device in LE legacy [...] to
-      // setup an encrypted session" (V5.0 Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
-      // and local_ltk will be equal, so this check is unnecessary but correct.
-      ltk = (link()->role() == hci::Connection::Role::kMaster) ? peer->le()->bond_data()->peer_ltk
-                                                               : peer->le()->bond_data()->local_ltk;
-    }
-
-    // Obtain the local I/O capabilities from the delegate. Default to
-    // NoInputNoOutput if no delegate is available.
-    auto io_cap = sm::IOCapability::kNoInputNoOutput;
-    if (conn_mgr_->pairing_delegate()) {
-      io_cap = conn_mgr_->pairing_delegate()->io_capability();
-    }
-    LeSecurityMode security_mode = conn_mgr_->security_mode();
-    sm_ = conn_mgr_->sm_factory_func()(link_->WeakPtr(), std::move(smp), io_cap,
-                                       weak_ptr_factory_.GetWeakPtr(),
-                                       connection_options.bondable_mode, security_mode);
-
-    // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
-    // will start encryption if the local device is the link-layer master.
-    if (ltk) {
-      bt_log(INFO, "gap-le", "assigning existing LTK");
-      sm_->AssignLongTermKey(*ltk);
-    }
-
-    InitializeGatt(std::move(att), connection_options.service_uuid);
-  }
-
-  // Registers the peer with GATT and initiates service discovery. If |service_uuid| is specified,
-  // only discover the indicated service and the GAP service.
-  void InitializeGatt(fbl::RefPtr<l2cap::Channel> att, std::optional<UUID> service_uuid) {
-    gatt_->AddConnection(peer_id(), std::move(att));
-
-    std::vector<UUID> service_uuids;
-    if (service_uuid) {
-      // TODO(fxbug.dev/65592): De-duplicate services.
-      service_uuids = {*service_uuid, kGenericAccessService};
-    }
-    gatt_->DiscoverServices(peer_id(), std::move(service_uuids));
-
-    auto self = weak_ptr_factory_.GetWeakPtr();
-    gatt_->ListServices(peer_id(), {kGenericAccessService}, [self](auto status, auto services) {
-      if (self) {
-        self->OnGattServicesResult(status, std::move(services));
-      }
-    });
-  }
-
-  // Called when service discovery completes. |services| will only include services with the GAP
-  // UUID (there should only be one, but this is not guaranteed).
-  void OnGattServicesResult(att::Status status, gatt::ServiceList services) {
-    if (bt_is_error(status, INFO, "gap-le", "error discovering GAP service (peer: %s)",
-                    bt_str(peer_id()))) {
-      return;
-    }
-
-    if (services.empty()) {
-      // The GAP service is mandatory for both central and peripheral, so this is unexpected.
-      bt_log(INFO, "gap-le", "GAP service not found (peer: %s)", bt_str(peer_id()));
-      return;
-    }
-
-    auto* peer = conn_mgr_->peer_cache()->FindById(peer_id());
-    ZX_ASSERT_MSG(peer, "connected peer must be present in cache!");
-
-    gap_service_client_.emplace(peer_id(), services.front());
-
-    // TODO(fxbug.dev/65914): Read name and appearance characteristics.
-    auto self = weak_ptr_factory_.GetWeakPtr();
-    if (!peer->le()->preferred_connection_parameters().has_value()) {
-      gap_service_client_->ReadPeripheralPreferredConnectionParameters([self](auto result) {
-        if (!self) {
-          return;
-        }
-
-        if (result.is_error()) {
-          bt_log(INFO, "gap-le",
-                 "error reading peripheral preferred connection parameters (status:  %s, peer: %s)",
-                 bt_str(result.error()), bt_str(self->peer_id()));
-          return;
-        }
-        auto params = result.value();
-
-        auto* peer = self->conn_mgr_->peer_cache()->FindById(self->peer_id());
-        ZX_ASSERT_MSG(peer, "connected peer must be present in cache!");
-        peer->MutLe().SetPreferredConnectionParameters(params);
-      });
-    }
-  }
-
-  // sm::Delegate override:
-  void OnNewPairingData(const sm::PairingData& pairing_data) override {
-    const std::optional<sm::LTK> ltk =
-        pairing_data.peer_ltk ? pairing_data.peer_ltk : pairing_data.local_ltk;
-    // Consider the pairing temporary if no link key was received. This
-    // means we'll remain encrypted with the STK without creating a bond and
-    // reinitiate pairing when we reconnect in the future.
-    if (!ltk.has_value()) {
-      bt_log(INFO, "gap-le", "temporarily paired with peer (id: %s)", bt_str(peer_id()));
-      return;
-    }
-
-    bt_log(
-        INFO, "gap-le", "new %s pairing data [%s%s%s%s%s%sid: %s]",
-        ltk->security().secure_connections() ? "secure connections" : "legacy",
-        pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
-        pairing_data.irk ? "irk " : "", pairing_data.cross_transport_key ? "ct_key " : "",
-        pairing_data.identity_address
-            ? fxl::StringPrintf("(identity: %s) ", bt_str(*pairing_data.identity_address)).c_str()
-            : "",
-        pairing_data.csrk ? "csrk " : "", bt_str(peer_id()));
-
-    if (!conn_mgr_->peer_cache()->StoreLowEnergyBond(peer_id_, pairing_data)) {
-      bt_log(ERROR, "gap-le", "failed to cache bonding data (id: %s)", bt_str(peer_id()));
-    }
-  }
-
-  // sm::Delegate override:
-  void OnPairingComplete(sm::Status status) override {
-    bt_log(DEBUG, "gap-le", "pairing complete: %s", status.ToString().c_str());
-
-    auto delegate = conn_mgr_->pairing_delegate();
-    if (delegate) {
-      delegate->CompletePairing(peer_id_, status);
-    }
-  }
-
-  // sm::Delegate override:
-  void OnAuthenticationFailure(hci::Status status) override {
-    // TODO(armansito): Clear bonding data from the remote peer cache as any
-    // stored link key is not valid.
-    bt_log(ERROR, "gap-le", "link layer authentication failed: %s", status.ToString().c_str());
-  }
-
-  // sm::Delegate override:
-  void OnNewSecurityProperties(const sm::SecurityProperties& sec) override {
-    bt_log(DEBUG, "gap-le", "new link security properties: %s", sec.ToString().c_str());
-    // Update the data plane with the correct link security level.
-    l2cap_->AssignLinkSecurityProperties(link_->handle(), sec);
-  }
-
-  // sm::Delegate override:
-  std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override {
-    if (!conn_mgr_->local_address_delegate()->irk()) {
-      bt_log(TRACE, "gap-le", "no local identity information to exchange");
-      return std::nullopt;
-    }
-
-    bt_log(DEBUG, "gap-le", "will distribute local identity information");
-    sm::IdentityInfo id_info;
-    id_info.irk = *conn_mgr_->local_address_delegate()->irk();
-    id_info.address = conn_mgr_->local_address_delegate()->identity_address();
-
-    return id_info;
-  }
-
-  // sm::Delegate override:
-  void ConfirmPairing(ConfirmCallback confirm) override {
-    bt_log(DEBUG, "gap-le", "pairing delegate request for pairing confirmation w/ no passkey");
-
-    auto* delegate = conn_mgr_->pairing_delegate();
-    if (!delegate) {
-      bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
-      confirm(false);
-    } else {
-      delegate->ConfirmPairing(peer_id(), std::move(confirm));
-    }
-  }
-
-  // sm::Delegate override:
-  void DisplayPasskey(uint32_t passkey, sm::Delegate::DisplayMethod method,
-                      ConfirmCallback confirm) override {
-    bt_log(TRACE, "gap-le", "pairing delegate request for %s",
-           sm::util::DisplayMethodToString(method).c_str());
-
-    auto* delegate = conn_mgr_->pairing_delegate();
-    if (!delegate) {
-      bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
-      confirm(false);
-    } else {
-      delegate->DisplayPasskey(peer_id(), passkey, method, std::move(confirm));
-    }
-  }
-
-  // sm::Delegate override:
-  void RequestPasskey(PasskeyResponseCallback respond) override {
-    bt_log(TRACE, "gap-le", "pairing delegate request for passkey entry");
-
-    auto* delegate = conn_mgr_->pairing_delegate();
-    if (!delegate) {
-      bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
-      respond(-1);
-    } else {
-      delegate->RequestPasskey(peer_id(), std::move(respond));
-    }
-  }
-
-  void CloseRefs() {
-    for (auto* ref : refs_) {
-      ref->MarkClosed();
-    }
-
-    refs_.clear();
-  }
-
-  PeerId peer_id_;
-  std::unique_ptr<hci::Connection> link_;
-  async_dispatcher_t* dispatcher_;
-  fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
-
-  // Reference to the data plane is used to update the L2CAP layer to
-  // reflect the correct link security level.
-  fbl::RefPtr<l2cap::L2cap> l2cap_;
-
-  // Reference to the GATT profile layer is used to initiate service discovery
-  // and register the link.
-  fxl::WeakPtr<gatt::GATT> gatt_;
-
-  // SMP pairing manager.
-  std::unique_ptr<sm::SecurityManager> sm_;
-
-  // Called after kLEConnectionPausePeripheral.
-  std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;
-
-  // Called by |conn_pause_peripheral_timeout_|.
-  fit::callback<void(LowEnergyConnection*)> conn_pause_peripheral_callback_;
-
-  // Set to the time when connection parameters should be sent as LE central.
-  const zx::time conn_pause_central_expiry_;
-
-  // Request callbacks that will be notified by |NotifyRequestCallbacks()| when interrogation
-  // completes or by the dtor.
-  std::optional<PendingRequestData> request_;
-
-  // LowEnergyConnectionManager is responsible for making sure that these
-  // pointers are always valid.
-  std::unordered_set<LowEnergyConnectionRef*> refs_;
-
-  // Null until service discovery completes.
-  std::optional<GenericAccessClient> gap_service_client_;
-
-  fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnection);
-};
-
-}  // namespace internal
-
-LowEnergyConnectionRef::LowEnergyConnectionRef(PeerId peer_id, hci::ConnectionHandle handle,
-                                               fxl::WeakPtr<LowEnergyConnectionManager> manager)
-    : active_(true), peer_id_(peer_id), handle_(handle), manager_(manager) {
-  ZX_DEBUG_ASSERT(peer_id_.IsValid());
-  ZX_DEBUG_ASSERT(manager_);
-  ZX_DEBUG_ASSERT(handle_);
-}
-
-LowEnergyConnectionRef::~LowEnergyConnectionRef() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  if (active_) {
-    Release();
-  }
-}
-
-void LowEnergyConnectionRef::Release() {
-  ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  ZX_DEBUG_ASSERT(active_);
-  active_ = false;
-  if (manager_) {
-    manager_->ReleaseReference(this);
-  }
-}
-
-void LowEnergyConnectionRef::MarkClosed() {
-  active_ = false;
-  if (closed_cb_) {
-    // Move the callback out of |closed_cb_| to prevent it from deleting itself
-    // by deleting |this|.
-    auto f = std::move(closed_cb_);
-    f();
-  }
-}
-
-BondableMode LowEnergyConnectionRef::bondable_mode() const {
-  ZX_DEBUG_ASSERT(manager_);
-  auto conn_iter = manager_->connections_.find(peer_id_);
-  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
-  return conn_iter->second->bondable_mode();
-}
-
-sm::SecurityProperties LowEnergyConnectionRef::security() const {
-  ZX_DEBUG_ASSERT(manager_);
-  auto conn_iter = manager_->connections_.find(peer_id_);
-  ZX_DEBUG_ASSERT(conn_iter != manager_->connections_.end());
-  return conn_iter->second->security();
-}
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
     fxl::WeakPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
@@ -634,7 +115,7 @@ LowEnergyConnectionManager::~LowEnergyConnectionManager() {
 }
 
 void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallback callback,
-                                         ConnectionOptions connection_options) {
+                                         LowEnergyConnectionOptions connection_options) {
   if (!connector_) {
     bt_log(WARN, "gap-le", "connect called during shutdown!");
     callback(fit::error(HostError::kFailed));
@@ -682,8 +163,8 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   }
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
-  pending_requests_[peer_id] =
-      internal::PendingRequestData(peer->address(), std::move(callback), connection_options);
+  pending_requests_[peer_id] = internal::LowEnergyConnectionRequest(
+      peer->address(), std::move(callback), connection_options);
 
   TryCreateNextConnection();
 }
@@ -761,8 +242,9 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
 
-  ConnectionOptions connection_options{.bondable_mode = bondable_mode};
-  internal::PendingRequestData request(peer->address(), std::move(callback), connection_options);
+  LowEnergyConnectionOptions connection_options{.bondable_mode = bondable_mode};
+  internal::LowEnergyConnectionRequest request(peer->address(), std::move(callback),
+                                               connection_options);
 
   // TODO(armansito): Use own address when storing the connection (fxbug.dev/653).
   // Currently this will refuse the connection and disconnect the link if |peer|
@@ -792,7 +274,7 @@ void LowEnergyConnectionManager::SetDisconnectCallbackForTesting(DisconnectCallb
   test_disconn_cb_ = std::move(callback);
 }
 
-void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionRef* conn_ref) {
+void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* conn_ref) {
   ZX_DEBUG_ASSERT(conn_ref);
 
   auto iter = connections_.find(conn_ref->peer_identifier());
@@ -968,9 +450,9 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
                                self->request_timeout_);
 }
 
-bool LowEnergyConnectionManager::InitializeConnection(PeerId peer_id,
-                                                      std::unique_ptr<hci::Connection> link,
-                                                      internal::PendingRequestData request) {
+bool LowEnergyConnectionManager::InitializeConnection(
+    PeerId peer_id, std::unique_ptr<hci::Connection> link,
+    internal::LowEnergyConnectionRequest request) {
   ZX_DEBUG_ASSERT(link);
   ZX_DEBUG_ASSERT(link->ll_type() == hci::Connection::LinkType::kLE);
 
@@ -1476,27 +958,5 @@ void LowEnergyConnectionManager::CancelPendingRequest(PeerId peer_id) {
     OnConnectResult(peer_id, hci::Status(HostError::kCanceled), nullptr);
   }
 }
-
-namespace internal {
-
-PendingRequestData::PendingRequestData(const DeviceAddress& address,
-                                       ConnectionResultCallback first_callback,
-                                       ConnectionOptions connection_options)
-    : address_(address), connection_options_(connection_options), connection_attempts_(0) {
-  callbacks_.push_back(std::move(first_callback));
-}
-
-void PendingRequestData::NotifyCallbacks(fit::result<RefFunc, HostError> result) {
-  for (const auto& callback : callbacks_) {
-    if (result.is_error()) {
-      callback(fit::error(result.error()));
-      continue;
-    }
-    auto conn_ref = result.value()();
-    callback(fit::ok(std::move(conn_ref)));
-  }
-}
-
-}  // namespace internal
 
 }  // namespace bt::gap

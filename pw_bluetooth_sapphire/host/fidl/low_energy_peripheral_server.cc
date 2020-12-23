@@ -133,7 +133,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
   auto self = weak_ptr_factory_.GetWeakPtr();
   bt::gap::LowEnergyAdvertisingManager::ConnectionCallback connect_cb;
   // TODO(armansito): The conversion from hci::Connection to
-  // gap::LowEnergyConnectionRef should be performed by a gap library object
+  // gap::LowEnergyConnectionHandle should be performed by a gap library object
   // and not in this layer (see fxbug.dev/648).
 
   // Per the API contract of `AdvertisingParameters` FIDL, if `connection_options` is present or
@@ -199,7 +199,7 @@ void LowEnergyPeripheralServer::StartAdvertising(
                        false /* anonymous */, include_tx_power_level, std::move(status_cb));
 }
 
-const bt::gap::LowEnergyConnectionRef* LowEnergyPeripheralServer::FindConnectionForTesting(
+const bt::gap::LowEnergyConnectionHandle* LowEnergyPeripheralServer::FindConnectionForTesting(
     bt::PeerId id) const {
   auto connections_iter = connections_.find(id);
   if (connections_iter != connections_.end()) {

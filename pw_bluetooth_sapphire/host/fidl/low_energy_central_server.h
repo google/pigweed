@@ -30,7 +30,8 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
 
   // Returns the connection pointer in the connections_ map, if it exists. The pointer will be
   // nullptr if a request is pending. Should only be used for testing.
-  std::optional<bt::gap::LowEnergyConnectionRef*> FindConnectionForTesting(bt::PeerId identifier);
+  std::optional<bt::gap::LowEnergyConnectionHandle*> FindConnectionForTesting(
+      bt::PeerId identifier);
 
  private:
   // fuchsia::bluetooth::le::Central overrides:
@@ -69,7 +70,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   //   a. nullptr, if a connect request to this device is currently pending.
   //   b. a valid reference if this Central is holding a connection reference to
   //   this device.
-  std::unordered_map<bt::PeerId, bt::gap::LowEnergyConnectionRefPtr> connections_;
+  std::unordered_map<bt::PeerId, std::unique_ptr<bt::gap::LowEnergyConnectionHandle>> connections_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

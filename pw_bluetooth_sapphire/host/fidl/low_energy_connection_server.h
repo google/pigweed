@@ -10,14 +10,15 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_handle.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
 class LowEnergyConnectionServer : public ServerBase<fuchsia::bluetooth::le::Connection> {
  public:
-  LowEnergyConnectionServer(bt::gap::LowEnergyConnectionRefPtr connection, zx::channel handle);
+  LowEnergyConnectionServer(std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection,
+                            zx::channel handle);
 
   // Assign a callback that signals the invalidation of this connection instance. This can be called
   // in response to the client closing its end of the FIDL channel or when the LL connection is
@@ -26,12 +27,12 @@ class LowEnergyConnectionServer : public ServerBase<fuchsia::bluetooth::le::Conn
   void set_closed_handler(fit::closure callback) { closed_handler_ = std::move(callback); }
 
   // Return a reference to the underlying connection ref. Expected to only be used for testing.
-  const bt::gap::LowEnergyConnectionRef* conn() const { return conn_.get(); }
+  const bt::gap::LowEnergyConnectionHandle* conn() const { return conn_.get(); }
 
  private:
   void OnClosed();
 
-  bt::gap::LowEnergyConnectionRefPtr conn_;
+  std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_;
   fit::closure closed_handler_;
 
   DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyConnectionServer);

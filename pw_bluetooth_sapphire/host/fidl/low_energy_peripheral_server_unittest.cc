@@ -177,11 +177,11 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseConnectableParameterTrueConn
   ASSERT_TRUE(conn.is_valid());
 
   auto connected_id = bt::PeerId(peer.id().value);
-  const bt::gap::LowEnergyConnectionRef* conn_ref =
+  const bt::gap::LowEnergyConnectionHandle* conn_handle =
       server()->FindConnectionForTesting(connected_id);
 
-  ASSERT_TRUE(conn_ref);
-  ASSERT_EQ(conn_ref->bondable_mode(), bt::sm::BondableMode::Bondable);
+  ASSERT_TRUE(conn_handle);
+  ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
 TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseEmptyConnectionOptionsConnectsBondable) {
@@ -216,11 +216,11 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseEmptyConnectionOptionsConnec
   ASSERT_TRUE(conn.is_valid());
 
   auto connected_id = bt::PeerId(peer.id().value);
-  const bt::gap::LowEnergyConnectionRef* conn_ref =
+  const bt::gap::LowEnergyConnectionHandle* conn_handle =
       server()->FindConnectionForTesting(connected_id);
 
-  ASSERT_TRUE(conn_ref);
-  ASSERT_EQ(conn_ref->bondable_mode(), bt::sm::BondableMode::Bondable);
+  ASSERT_TRUE(conn_handle);
+  ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
 TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseBondableConnectsBondable) {
@@ -257,11 +257,11 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseBondableConnectsBondable) {
   ASSERT_TRUE(conn.is_valid());
 
   auto connected_id = bt::PeerId(peer.id().value);
-  const bt::gap::LowEnergyConnectionRef* conn_ref =
+  const bt::gap::LowEnergyConnectionHandle* conn_handle =
       server()->FindConnectionForTesting(connected_id);
 
-  ASSERT_TRUE(conn_ref);
-  ASSERT_EQ(conn_ref->bondable_mode(), bt::sm::BondableMode::Bondable);
+  ASSERT_TRUE(conn_handle);
+  ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::Bondable);
 }
 
 TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNonBondableConnectsNonBondable) {
@@ -297,11 +297,11 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNonBondableConnectsNonBondab
   ASSERT_TRUE(conn.is_valid());
 
   auto connected_id = bt::PeerId(peer.id().value);
-  const bt::gap::LowEnergyConnectionRef* conn_ref =
+  const bt::gap::LowEnergyConnectionHandle* conn_handle =
       server()->FindConnectionForTesting(connected_id);
 
-  ASSERT_TRUE(conn_ref);
-  ASSERT_EQ(conn_ref->bondable_mode(), bt::sm::BondableMode::NonBondable);
+  ASSERT_TRUE(conn_handle);
+  ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::NonBondable);
 }
 }  // namespace
 }  // namespace bthost

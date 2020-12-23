@@ -16,6 +16,7 @@
 
 #include <fbl/macros.h>
 
+#include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
@@ -40,7 +41,6 @@ namespace gap {
 
 namespace internal {
 class LowEnergyConnection;
-class PendingRequestData;
 }  // namespace internal
 
 // TODO(armansito): Document the usage pattern.
@@ -49,52 +49,6 @@ class LowEnergyConnectionManager;
 class PairingDelegate;
 class Peer;
 class PeerCache;
-
-class LowEnergyConnectionRef final {
- public:
-  // Destroying this object releases its reference to the underlying connection.
-  ~LowEnergyConnectionRef();
-
-  // Releases this object's reference to the underlying connection.
-  void Release();
-
-  // Returns true if the underlying connection is still active.
-  bool active() const { return active_; }
-
-  // Sets a callback to be called when the underlying connection is closed.
-  void set_closed_callback(fit::closure callback) { closed_cb_ = std::move(callback); }
-
-  // Returns the operational bondable mode of the underlying connection. See spec V5.1 Vol 3 Part
-  // C Section 9.4 for more details.
-  sm::BondableMode bondable_mode() const;
-
-  sm::SecurityProperties security() const;
-
-  PeerId peer_identifier() const { return peer_id_; }
-  hci::ConnectionHandle handle() const { return handle_; }
-
- private:
-  friend class LowEnergyConnectionManager;
-  friend class internal::LowEnergyConnection;
-
-  LowEnergyConnectionRef(PeerId peer_id, hci::ConnectionHandle handle,
-                         fxl::WeakPtr<LowEnergyConnectionManager> manager);
-
-  // Called by LowEnergyConnectionManager when the underlying connection is
-  // closed. Notifies |closed_cb_|.
-  void MarkClosed();
-
-  bool active_;
-  PeerId peer_id_;
-  hci::ConnectionHandle handle_;
-  fxl::WeakPtr<LowEnergyConnectionManager> manager_;
-  fit::closure closed_cb_;
-  fit::thread_checker thread_checker_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRef);
-};
-
-using LowEnergyConnectionRefPtr = std::unique_ptr<LowEnergyConnectionRef>;
 
 // LowEnergyConnectionManager is responsible for connecting and initializing new connections,
 // interrogating connections, intiating pairing, and disconnecting connections.
@@ -121,46 +75,34 @@ class LowEnergyConnectionManager final {
   ~LowEnergyConnectionManager();
 
   // Options for the |Connect| method.
-  struct ConnectionOptions {
-    // The sm::BondableMode to connect with.
-    sm::BondableMode bondable_mode = sm::BondableMode::Bondable;
-
-    // When present, service discovery performed following the connection is restricted to primary
-    // services that match this field. Otherwise, by default all available services are discovered.
-    std::optional<UUID> service_uuid = std::nullopt;
-
-    // When true, skip scanning before connecting. This should only be true when the connection is
-    // initiated as a result of a directed advertisement.
-    bool auto_connect = false;
-  };
 
   // Allows a caller to claim shared ownership over a connection to the requested remote LE peer
   // identified by |peer_id|.
   //   * If |peer_id| is not recognized, |callback| is called with an error.
   //
   //   * If the requested peer is already connected, |callback| is called with a
-  //     LowEnergyConnectionRef after interrogation (if necessary).
+  //     LowEnergyConnectionHandle after interrogation (if necessary).
   //     This is done for both local and remote initiated connections (i.e. the local adapter
   //     can either be in the LE central or peripheral roles).
   //
   //   * If the requested peer is NOT connected, then this method initiates a
   //     connection to the requested peer using one of the GAP central role
   //     connection establishment procedures described in Core Spec v5.0, Vol 3,
-  //     Part C, Section 9.3. The peer is then interrogated. A LowEnergyConnectionRef is
+  //     Part C, Section 9.3. The peer is then interrogated. A LowEnergyConnectionHandle is
   //     asynchronously returned to the caller once the connection has been set up.
   //
   // The status of the procedure is reported in |callback| in the case of an
   // error.
-  using ConnectionResult = fit::result<LowEnergyConnectionRefPtr, HostError>;
+  using ConnectionResult = fit::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
   void Connect(PeerId peer_id, ConnectionResultCallback callback,
-               ConnectionOptions connection_options);
+               LowEnergyConnectionOptions connection_options);
 
   PeerCache* peer_cache() { return peer_cache_; }
   hci::LocalAddressDelegate* local_address_delegate() const { return local_address_delegate_; }
 
   // Disconnects any existing or pending LE connection to |peer_id|, invalidating all
-  // active LowEnergyConnectionRefs. Returns false if the peer can not be
+  // active LowEnergyConnectionHandles. Returns false if the peer can not be
   // disconnected.
   bool Disconnect(PeerId peer_id);
 
@@ -200,7 +142,7 @@ class LowEnergyConnectionManager final {
   // |callback| is run on the creation thread.
   //
   // NOTE: This is intended ONLY for unit tests. Clients should watch for
-  // disconnection events using LowEnergyConnectionRef::set_closed_callback()
+  // disconnection events using LowEnergyConnectionHandle::set_closed_callback()
   // instead. DO NOT use outside of tests.
   using DisconnectCallback = fit::function<void(hci::ConnectionHandle)>;
   void SetDisconnectCallbackForTesting(DisconnectCallback callback);
@@ -233,13 +175,13 @@ class LowEnergyConnectionManager final {
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
 
  private:
-  friend class LowEnergyConnectionRef;
+  friend class LowEnergyConnectionHandle;
 
   // Mapping from peer identifiers to open LE connections.
   using ConnectionMap = std::unordered_map<PeerId, std::unique_ptr<internal::LowEnergyConnection>>;
 
-  // Called by LowEnergyConnectionRef::Release().
-  void ReleaseReference(LowEnergyConnectionRef* conn_ref);
+  // Called by LowEnergyConnectionHandle::Release().
+  void ReleaseReference(LowEnergyConnectionHandle* conn_ref);
 
   // Called when |connector_| completes a pending request. Initiates a new
   // connection attempt for the next peer in the pending list, if any.
@@ -264,14 +206,14 @@ class LowEnergyConnectionManager final {
   // Returns true on success (a LowEnergyConnection was created and interrogation started), or false
   // otherwise.
   bool InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
-                            internal::PendingRequestData request);
+                            internal::LowEnergyConnectionRequest request);
 
   // Called upon interrogation completion for a new connection.
   // Notifies connection request callbacks.
   void OnInterrogationComplete(PeerId peer_id, hci::Status status);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command if the connection has
-  // not already been disconnected, and notifies any referenced LowEnergyConnectionRefs of the
+  // not already been disconnected, and notifies any referenced LowEnergyConnectionHandles of the
   // disconnection. Marks the corresponding PeerCache entry as disconnected and cleans up all data
   // bearers.
   //
@@ -445,7 +387,7 @@ class LowEnergyConnectionManager final {
   DisconnectCallback test_disconn_cb_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<PeerId, internal::PendingRequestData> pending_requests_;
+  std::unordered_map<PeerId, internal::LowEnergyConnectionRequest> pending_requests_;
 
   // Mapping from peer identifiers to currently open LE connections.
   ConnectionMap connections_;
@@ -472,55 +414,6 @@ class LowEnergyConnectionManager final {
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
 };
 
-namespace internal {
-
-// PendingRequestData is used to model queued outbound connection and interrogation requests in both
-// LowEnergyConnectionManager and LowEnergyConnection. Duplicate connection request callbacks are
-// added with |AddCallback|, and |NotifyCallbacks| is called when the request is completed.
-class PendingRequestData final {
- public:
-  using ConnectionResultCallback = LowEnergyConnectionManager::ConnectionResultCallback;
-  using ConnectionOptions = LowEnergyConnectionManager::ConnectionOptions;
-
-  PendingRequestData(const DeviceAddress& address, ConnectionResultCallback first_callback,
-                     ConnectionOptions connection_options);
-  PendingRequestData() = default;
-  ~PendingRequestData() = default;
-
-  PendingRequestData(PendingRequestData&&) = default;
-  PendingRequestData& operator=(PendingRequestData&&) = default;
-
-  void AddCallback(ConnectionResultCallback cb) { callbacks_.push_back(std::move(cb)); }
-
-  // Notifies all elements in |callbacks| with |status| and the result of
-  // |func|.
-  using RefFunc = fit::function<LowEnergyConnectionRefPtr()>;
-  void NotifyCallbacks(fit::result<RefFunc, HostError> result);
-
-  const DeviceAddress& address() const { return address_; }
-  ConnectionOptions connection_options() const { return connection_options_; }
-
-  void set_discovery_session(LowEnergyDiscoverySessionPtr session) {
-    session_ = std::move(session);
-  }
-
-  LowEnergyDiscoverySession* discovery_session() { return session_.get(); }
-
-  void add_connection_attempt() { connection_attempts_++; }
-
-  int connection_attempts() const { return connection_attempts_; }
-
- private:
-  DeviceAddress address_;
-  std::list<ConnectionResultCallback> callbacks_;
-  ConnectionOptions connection_options_;
-  LowEnergyDiscoverySessionPtr session_;
-  int connection_attempts_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PendingRequestData);
-};
-
-}  // namespace internal
 }  // namespace gap
 }  // namespace bt
 

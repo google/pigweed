@@ -356,8 +356,8 @@ void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
   binding()->events().OnNewBondingData(fidl_helpers::PeerToFidlBondingData(*adapter(), peer));
 }
 
-void HostServer::RegisterLowEnergyConnection(bt::gap::LowEnergyConnectionRefPtr conn_ref,
-                                             bool auto_connect) {
+void HostServer::RegisterLowEnergyConnection(
+    std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref, bool auto_connect) {
   ZX_DEBUG_ASSERT(conn_ref);
 
   bt::PeerId id = conn_ref->peer_identifier();
@@ -568,8 +568,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
       self->RegisterLowEnergyConnection(std::move(connection), false);
   };
 
-  adapter()->le()->Connect(peer_id, std::move(on_complete),
-                           bt::gap::Adapter::LowEnergy::ConnectionOptions());
+  adapter()->le()->Connect(peer_id, std::move(on_complete), bt::gap::LowEnergyConnectionOptions());
 }
 
 // Initiate an outgoing Br/Edr connection, unless already connected
