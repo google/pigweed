@@ -30,6 +30,9 @@ class FakeLayer final : public GATT {
   using DiscoverServicesCallback = fit::function<void(PeerId, std::vector<UUID>)>;
   void SetDiscoverServicesCallback(DiscoverServicesCallback cb);
 
+  // Assign the status that will be returned by the ListServices callback.
+  void set_list_services_status(att::Status);
+
   // Assign a callback to be notified when the persist service changed CCC callback is set.
   using SetPersistServiceChangedCCCCallbackCallback = fit::function<void()>;
   void SetSetPersistServiceChangedCCCCallbackCallback(
@@ -75,6 +78,8 @@ class FakeLayer final : public GATT {
 
   PersistServiceChangedCCCCallback persist_service_changed_ccc_cb_;
   RetrieveServiceChangedCCCCallback retrieve_service_changed_ccc_cb_;
+
+  att::Status list_services_status_;
 
   // Emulated GATT peer.
   struct TestPeer {

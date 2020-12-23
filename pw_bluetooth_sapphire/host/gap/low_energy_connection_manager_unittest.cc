@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <fbl/macros.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
@@ -1480,15 +1481,15 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUI
   ASSERT_TRUE(cb_called);
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUUID) {
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
 
-  UUID expected_uuid({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+  UUID kConnectUuid({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+  std::array<UUID, 2> expected_uuids = {kConnectUuid, kGenericAccessService};
 
   bool cb_called = false;
-  auto expect_uuid = [&cb_called, expected_uuid](PeerId peer_id, auto uuids) {
-    ASSERT_EQ(uuids.size(), 1u);
-    ASSERT_EQ(uuids[0], expected_uuid);
+  auto expect_uuid = [&cb_called, expected_uuids](PeerId peer_id, auto uuids) {
+    EXPECT_THAT(uuids, ::testing::UnorderedElementsAreArray(expected_uuids));
     cb_called = true;
   };
   fake_gatt()->SetDiscoverServicesCallback(expect_uuid);
@@ -1504,13 +1505,179 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUUID) {
     EXPECT_TRUE(conn_ref->active());
   };
 
-  LowEnergyConnectionManager::ConnectionOptions connection_options{
-      .service_uuid = std::optional(expected_uuid)};
+  LowEnergyConnectionManager::ConnectionOptions connection_options{.service_uuid =
+                                                                       std::optional(kConnectUuid)};
   conn_mgr()->Connect(peer->identifier(), callback, connection_options);
 
   RunLoopUntilIdle();
 
   ASSERT_TRUE(cb_called);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       ReadPeripheralPreferredConnectionParametersCharacteristic) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Set up GAP service
+  gatt::ServiceData service_data(gatt::ServiceKind::PRIMARY, /*start=*/0x0001, /*end=*/0x0009,
+                                 kGenericAccessService);
+  auto [remote_svc, service_client] = fake_gatt()->AddPeerService(peer->identifier(), service_data);
+
+  // Set up preferred connection parameters characteristic.
+  att::Handle char_handle = 0x0002;
+  att::Handle char_value_handle = 0x0003;
+  gatt::CharacteristicData char_data(gatt::kRead, /*ext_props=*/std::nullopt, char_handle,
+                                     char_value_handle,
+                                     kPeripheralPreferredConnectionParametersCharacteristic);
+  service_client->set_characteristics({char_data});
+  StaticByteBuffer char_value(0x01, 0x00,   // min interval
+                              0x02, 0x00,   // max interval
+                              0x03, 0x00,   // max latency
+                              0x04, 0x00);  // supervision timeout
+  service_client->set_read_request_callback(
+      [char_value_handle, char_value](att::Handle handle, auto read_cb) {
+        if (handle == char_value_handle) {
+          read_cb(att::Status(), char_value);
+        }
+      });
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer->identifier(), callback,
+                      LowEnergyConnectionManager::ConnectionOptions());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_ref);
+  ASSERT_TRUE(peer->le()->preferred_connection_parameters());
+  auto params = peer->le()->preferred_connection_parameters().value();
+  EXPECT_EQ(params.min_interval(), 1u);
+  EXPECT_EQ(params.max_interval(), 2u);
+  EXPECT_EQ(params.max_latency(), 3u);
+  EXPECT_EQ(params.supervision_timeout(), 4u);
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       ReadPeripheralPreferredConnectionParametersCharacteristicInvalidValueSize) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Set up GAP service
+  gatt::ServiceData service_data(gatt::ServiceKind::PRIMARY, /*start=*/0x0001, /*end=*/0x0003,
+                                 kGenericAccessService);
+  auto [remote_svc, service_client] = fake_gatt()->AddPeerService(peer->identifier(), service_data);
+
+  // Set up preferred connection parameters characteristic.
+  att::Handle char_handle = 0x0002;
+  att::Handle char_value_handle = 0x0003;
+  gatt::CharacteristicData char_data(gatt::kRead, /*ext_props=*/std::nullopt, char_handle,
+                                     char_value_handle,
+                                     kPeripheralPreferredConnectionParametersCharacteristic);
+  service_client->set_characteristics({char_data});
+  StaticByteBuffer invalid_char_value(0x01);  // too small
+  service_client->set_read_request_callback(
+      [char_value_handle, invalid_char_value](auto handle, auto read_cb) {
+        if (handle == char_value_handle) {
+          read_cb(att::Status(), invalid_char_value);
+        }
+      });
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer->identifier(), callback,
+                      LowEnergyConnectionManager::ConnectionOptions());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_ref);
+  EXPECT_FALSE(peer->le()->preferred_connection_parameters());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, GapServiceCharacteristicDiscoveryError) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Set up GAP service
+  gatt::ServiceData service_data(gatt::ServiceKind::PRIMARY, /*start=*/0x0001, /*end=*/0x0003,
+                                 kGenericAccessService);
+  auto [remote_svc, service_client] = fake_gatt()->AddPeerService(peer->identifier(), service_data);
+
+  // Set up preferred connection parameters characteristic.
+  att::Handle char_handle = 0x0002;
+  att::Handle char_value_handle = 0x0003;
+  gatt::CharacteristicData char_data(gatt::kRead, /*ext_props=*/std::nullopt, char_handle,
+                                     char_value_handle,
+                                     kPeripheralPreferredConnectionParametersCharacteristic);
+  service_client->set_characteristic_discovery_status(
+      att::Status(att::ErrorCode::kReadNotPermitted));
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer->identifier(), callback,
+                      LowEnergyConnectionManager::ConnectionOptions());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_ref);
+  EXPECT_FALSE(peer->le()->preferred_connection_parameters());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, GapServiceListServicesError) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  fake_gatt()->set_list_services_status(att::Status(HostError::kFailed));
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer->identifier(), callback,
+                      LowEnergyConnectionManager::ConnectionOptions());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_ref);
+  EXPECT_FALSE(peer->le()->preferred_connection_parameters());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, PeerGapServiceMissingConnectionParameterCharacteristic) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Set up GAP service
+  gatt::ServiceData service_data(gatt::ServiceKind::PRIMARY, /*start=*/0x0001, /*end=*/0x0003,
+                                 kGenericAccessService);
+  auto [remote_svc, service_client] = fake_gatt()->AddPeerService(peer->identifier(), service_data);
+
+  LowEnergyConnectionRefPtr conn_ref;
+  auto callback = [&conn_ref](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_ref = result.take_value();
+  };
+
+  conn_mgr()->Connect(peer->identifier(), callback,
+                      LowEnergyConnectionManager::ConnectionOptions());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(conn_ref);
+  EXPECT_FALSE(peer->le()->preferred_connection_parameters());
 }
 
 // Listener receives remote initiated connection ref.

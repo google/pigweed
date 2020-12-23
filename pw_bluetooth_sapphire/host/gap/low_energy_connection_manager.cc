@@ -18,6 +18,7 @@
 #include "peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
@@ -298,16 +299,69 @@ class LowEnergyConnection final : public sm::Delegate {
       sm_->AssignLongTermKey(*ltk);
     }
 
-    // Initialize the GATT layer.
+    InitializeGatt(std::move(att), connection_options.service_uuid);
+  }
+
+  // Registers the peer with GATT and initiates service discovery. If |service_uuid| is specified,
+  // only discover the indicated service and the GAP service.
+  void InitializeGatt(fbl::RefPtr<l2cap::Channel> att, std::optional<UUID> service_uuid) {
     gatt_->AddConnection(peer_id(), std::move(att));
 
-    // TODO(fxbug.dev/60830): Append GAP service if connection_options.optional_service_uuid is
-    // specified so that preferred connection parameters characteristic can be read.
     std::vector<UUID> service_uuids;
-    if (connection_options.service_uuid) {
-      service_uuids.push_back(*connection_options.service_uuid);
+    if (service_uuid) {
+      // TODO(fxbug.dev/65592): De-duplicate services.
+      service_uuids = {*service_uuid, kGenericAccessService};
     }
     gatt_->DiscoverServices(peer_id(), std::move(service_uuids));
+
+    auto self = weak_ptr_factory_.GetWeakPtr();
+    gatt_->ListServices(peer_id(), {kGenericAccessService}, [self](auto status, auto services) {
+      if (self) {
+        self->OnGattServicesResult(status, std::move(services));
+      }
+    });
+  }
+
+  // Called when service discovery completes. |services| will only include services with the GAP
+  // UUID (there should only be one, but this is not guaranteed).
+  void OnGattServicesResult(att::Status status, gatt::ServiceList services) {
+    if (bt_is_error(status, INFO, "gap-le", "error discovering GAP service (peer: %s)",
+                    bt_str(peer_id()))) {
+      return;
+    }
+
+    if (services.empty()) {
+      // The GAP service is mandatory for both central and peripheral, so this is unexpected.
+      bt_log(INFO, "gap-le", "GAP service not found (peer: %s)", bt_str(peer_id()));
+      return;
+    }
+
+    auto* peer = conn_mgr_->peer_cache()->FindById(peer_id());
+    ZX_ASSERT_MSG(peer, "connected peer must be present in cache!");
+
+    gap_service_client_.emplace(peer_id(), services.front());
+
+    // TODO(fxbug.dev/65914): Read name and appearance characteristics.
+    auto self = weak_ptr_factory_.GetWeakPtr();
+    if (!peer->le()->preferred_connection_parameters().has_value()) {
+      gap_service_client_->ReadPeripheralPreferredConnectionParameters([self](auto result) {
+        if (!self) {
+          return;
+        }
+
+        if (result.is_error()) {
+          bt_log(INFO, "gap-le",
+                 "error reading peripheral preferred connection parameters (status:  %s, peer: %s)",
+                 bt_str(result.error()), bt_str(self->peer_id()));
+          return;
+        }
+        auto params = result.value();
+
+        auto* peer = self->conn_mgr_->peer_cache()->FindById(self->peer_id());
+        ZX_ASSERT_MSG(peer, "connected peer must be present in cache!");
+        peer->MutLe().SetPreferredConnectionParameters(params);
+      });
+    }
   }
 
   // sm::Delegate override:
@@ -457,6 +511,9 @@ class LowEnergyConnection final : public sm::Delegate {
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
   std::unordered_set<LowEnergyConnectionRef*> refs_;
+
+  // Null until service discovery completes.
+  std::optional<GenericAccessClient> gap_service_client_;
 
   fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
 

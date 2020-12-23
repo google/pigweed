@@ -27,6 +27,8 @@ static_library("gap") {
     "connection_request.h",
     "discovery_filter.cc",
     "discovery_filter.h",
+    "generic_access_client.cc",
+    "generic_access_client.h",
     "identity_resolving_list.cc",
     "identity_resolving_list.h",
     "interrogator.cc",

@@ -9,6 +9,7 @@
 
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 
 // This file contains constants and numbers that are part of the Generic Access
 // Profile specification.
@@ -137,6 +138,20 @@ constexpr zx::duration kPrivateAddressTimeout = zx::min(15);
 // events from the same peer is <=10ms. However in practice it's possible to see gaps as high as
 // 1.5 seconds or more.
 constexpr zx::duration kLEScanResponseTimeout = zx::sec(2);
+
+// GATT types used in the GAP service.
+constexpr UUID kGenericAccessService(uint16_t{0x1800});
+constexpr UUID kPeripheralPreferredConnectionParametersCharacteristic(uint16_t{0x2A04});
+
+// The Peripheral Preferred Connection Parameters Characteristic is optionally included in the GAP
+// service of a peripheral (Core Spec v5.2, Vol 3, Part C, Sec 9.12.3).
+// See hci::LEConnectionParameters for a description of these fields.
+struct PeripheralPreferredConnectionParametersCharacteristicValue {
+  uint16_t min_interval;
+  uint16_t max_interval;
+  uint16_t max_latency;
+  uint16_t supervision_timeout;
+} __PACKED;
 
 }  // namespace bt::gap
 

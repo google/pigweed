@@ -104,7 +104,7 @@ void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
     }
   }
 
-  callback(att::Status(), std::move(services));
+  callback(list_services_status_, std::move(services));
 }
 
 void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCallback callback) {
@@ -114,6 +114,8 @@ void FakeLayer::FindService(PeerId peer_id, IdType service_id, RemoteServiceCall
 void FakeLayer::SetDiscoverServicesCallback(DiscoverServicesCallback cb) {
   discover_services_cb_ = std::move(cb);
 }
+
+void FakeLayer::set_list_services_status(att::Status status) { list_services_status_ = status; }
 
 void FakeLayer::SetSetPersistServiceChangedCCCCallbackCallback(
     SetPersistServiceChangedCCCCallbackCallback cb) {
