@@ -1277,5 +1277,37 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, StopSessionInsideOfResultCallbackDoesN
   RunLoopUntilIdle();
 }
 
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnectable) {
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/false));
+
+  std::unique_ptr<LowEnergyDiscoverySession> session;
+  discovery_manager()->StartDiscovery(
+      /*active=*/true, [&session](auto cb_session) { session = std::move(cb_session); });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(scan_enabled());
+  auto peer = peer_cache()->FindByAddress(kAddress0);
+  ASSERT_TRUE(peer);
+  EXPECT_FALSE(peer->connectable());
+
+  // Make peer connectable.
+  test_device()->RemovePeer(kAddress0);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/true));
+
+  RunLoopUntilIdle();
+  peer = peer_cache()->FindByAddress(kAddress0);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->connectable());
+
+  // Ensure peer stays connectable after non-connectable advertisement.
+  test_device()->RemovePeer(kAddress0);
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0, /*connectable=*/false));
+
+  RunLoopUntilIdle();
+  peer = peer_cache()->FindByAddress(kAddress0);
+  ASSERT_TRUE(peer);
+  EXPECT_TRUE(peer->connectable());
+}
+
 }  // namespace
 }  // namespace bt::gap

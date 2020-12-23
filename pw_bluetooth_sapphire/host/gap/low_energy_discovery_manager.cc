@@ -206,7 +206,8 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
 void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& result,
                                             const ByteBuffer& data) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
-  bt_log(DEBUG, "gap-le", "peer found: %s", bt_str(result.address));
+  bt_log(DEBUG, "gap-le", "peer found (address: %s, connectable: %d)", bt_str(result.address),
+         result.connectable);
 
   auto peer = peer_cache_->FindByAddress(result.address);
   if (peer && peer->connectable() && peer->le() && connectable_cb_) {
@@ -222,7 +223,14 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
     peer = peer_cache_->NewPeer(result.address, result.connectable);
+  } else if (!peer->connectable() && result.connectable) {
+    bt_log(DEBUG, "gap-le",
+           "received connectable advertisement from previously non-connectable peer (address: %s, "
+           "peer: %s)",
+           bt_str(result.address), bt_str(peer->identifier()));
+    peer->set_connectable(true);
   }
+
   peer->MutLe().SetAdvertisingData(result.rssi, data);
 
   cached_scan_results_.insert(peer->identifier());

@@ -428,6 +428,10 @@ class Peer final {
   // BR/EDR link keys of stronger security than `ct_key`.
   void StoreBrEdrCrossTransportKey(sm::LTK ct_key);
 
+  // Update the connectable status of this peer. This is useful if the peer sends both
+  // non-connectable and connectable advertisements (e.g. when it is a beacon).
+  void set_connectable(bool connectable) { connectable_.Set(connectable); }
+
  private:
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
