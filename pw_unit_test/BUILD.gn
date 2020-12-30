@@ -106,8 +106,7 @@ pw_source_set("rpc_main") {
   public_deps = [ ":pw_unit_test" ]
   deps = [
     ":rpc_service",
-    "$dir_pw_hdlc_lite:pw_rpc",
-    "$dir_pw_rpc:server",
+    "$dir_pw_rpc/system_server",
     dir_pw_log,
   ]
   sources = [ "rpc_main.cc" ]

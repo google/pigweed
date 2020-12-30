@@ -34,3 +34,12 @@ pw_cc_library(
         "//pw_sys_io_baremetal_stm32f429",
     ],
 )
+
+pw_cc_library(
+    name = "system_rpc_server",
+    srcs = ["system_rpc_server.cc"],
+    deps = [
+        "//pw_rpc/system_server:facade",
+        "//pw_hdlc_lite:pw_rpc",
+    ],
+)

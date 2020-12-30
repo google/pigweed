@@ -30,6 +30,12 @@ Example:
 
   $ ./out/host_[compiler]_debug/obj/pw_status/status_test
 
+RPC server
+==========
+The host target implements a system RPC server that runs over a local socket,
+defaulting to port 33000. To communicate with a process running the host RPC
+server, use ``pw rpc -s localhost:33000 <protos>``.
+
 Configuration
 =============
 The host target exposes a few options that may be used to change the host build

@@ -38,26 +38,5 @@ pw_cc_library(
         ":facade",
         "//pw_span",
         "//pw_status",
-        # For now, hard-code to depend on stdio until bazel build is updated
-        # to support multiple target configurations.
-        "//pw_rpc/system_server:sys_io",
-    ],
-)
-
-pw_cc_library(
-    name = "socket",
-    srcs = ["socket_rpc_server.cc"],
-    deps = [
-        ":facade",
-        "//pw_hdlc_lite:pw_rpc",
-    ],
-)
-
-pw_cc_library(
-    name = "sys_io",
-    srcs = ["sys_io_rpc_server.cc"],
-    deps = [
-        ":facade",
-        "//pw_hdlc_lite:pw_rpc",
     ],
 )

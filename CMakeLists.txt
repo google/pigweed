@@ -50,6 +50,8 @@ add_subdirectory(pw_trace EXCLUDE_FROM_ALL)
 add_subdirectory(pw_unit_test EXCLUDE_FROM_ALL)
 add_subdirectory(pw_varint EXCLUDE_FROM_ALL)
 
+add_subdirectory(targets/host EXCLUDE_FROM_ALL)
+
 add_subdirectory(third_party/nanopb EXCLUDE_FROM_ALL)
 
 add_custom_target(pw_apps)

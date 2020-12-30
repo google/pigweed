@@ -98,6 +98,11 @@ Whenever you run ``ninja -C out stm32f429i``, affected tests will be built and
 run on the attached device(s). Alternatively, you may use ``pw watch`` to set up
 Pigweed to build/test whenever it sees changes to source files.
 
+RPC server
+==========
+The stm32f429i target implements a system RPC server that over a simple UART
+driver. To communicate with a device running the RPC server, run
+``pw rpc -d <device> -b 115200 <protos>``.
 
 Debugging
 =========

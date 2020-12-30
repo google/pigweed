@@ -40,7 +40,7 @@ _host_common = {
   pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
 
   # Configure backend for pw_rpc_system_server.
-  pw_rpc_system_server_BACKEND = "$dir_pw_rpc/system_server:socket"
+  pw_rpc_system_server_BACKEND = "$dir_pigweed/targets/host:system_rpc_server"
 
   # Configure backend for trace facade.
   pw_trace_BACKEND = "$dir_pw_trace_tokenized"

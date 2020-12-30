@@ -66,12 +66,18 @@ pw_source_set("encoder") {
   friend = [ ":*" ]
 }
 
+pw_source_set("rpc_channel_output") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_hdlc_lite/rpc_channel.h" ]
+  public_deps = [
+    ":pw_hdlc_lite",
+    "$dir_pw_rpc:server",
+  ]
+}
+
 pw_source_set("pw_rpc") {
   public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_hdlc_lite/rpc_channel.h",
-    "public/pw_hdlc_lite/rpc_packets.h",
-  ]
+  public = [ "public/pw_hdlc_lite/rpc_packets.h" ]
   sources = [ "rpc_packets.cc" ]
   public_deps = [
     ":pw_hdlc_lite",
@@ -116,7 +122,7 @@ pw_test("decoder_test") {
 pw_test("rpc_channel_test") {
   deps = [
     ":pw_hdlc_lite",
-    ":pw_rpc",
+    ":rpc_channel_output",
   ]
   sources = [ "rpc_channel_test.cc" ]
 }

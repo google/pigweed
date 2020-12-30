@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_set_backend(pw_log pw_log_basic)
 pw_set_backend(pw_assert pw_assert_log)
-pw_set_backend(pw_rpc.system_server pw_rpc.system_server.socket)
+pw_set_backend(pw_rpc.system_server targets.host.system_rpc_server)
 pw_set_backend(pw_sys_io pw_sys_io_stdio)
 
 set(CMAKE_C_COMPILER gcc)

@@ -12,10 +12,21 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
-
-pw_add_facade(pw_rpc.system_server
-  PUBLIC_DEPS
-    pw_rpc.server
-    pw_stream
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
 )
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "system_rpc_server",
+    srcs = ["system_rpc_server.cc"],
+    deps = [
+        "//pw_rpc/system_server:facade",
+        "//pw_hdlc_lite:pw_rpc",
+    ],
+)
+
