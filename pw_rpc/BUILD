@@ -85,6 +85,16 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "synchronized_channel_output",
+    hdrs = ["public/pw_rpc/synchronized_channel_output.h"],
+    includes = ["public"],
+    deps = [
+        ":common",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_library(
     name = "internal_test_utils",
     hdrs = [
         "public/pw_rpc/internal/test_method.h",

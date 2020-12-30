@@ -26,8 +26,8 @@ namespace pw::hdlc_lite {
 // Custom HDLC ChannelOutput class to write and read data through serial using
 // the HDLC-Lite protocol.
 //
-// WARNING: This ChannelOutput is not thread-safe.
-// TODO(frolv): Update this to use OS locking primitives.
+// WARNING: This ChannelOutput is not thread-safe. If thread-safety is required,
+// wrap this in a pw::rpc::SynchronizedChannelOutput.
 class RpcChannelOutput : public rpc::ChannelOutput {
  public:
   // The RpcChannelOutput class does not own the buffer it uses to store the
@@ -60,8 +60,8 @@ class RpcChannelOutput : public rpc::ChannelOutput {
 
 // RpcChannelOutput with its own buffer.
 //
-// WARNING: This ChannelOutput is not thread-safe.
-// TODO(frolv): Update this to use OS locking primitives.
+// WARNING: This ChannelOutput is not thread-safe. If thread-safety is required,
+// wrap this in a pw::rpc::SynchronizedChannelOutput.
 template <size_t buffer_size>
 class RpcChannelOutputBuffer : public rpc::ChannelOutput {
  public:

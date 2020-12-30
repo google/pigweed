@@ -46,12 +46,19 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "rpc_channel_output",
+    hdrs = ["public/pw_hdlc_lite/rpc_channel.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_hdlc_lite",
+        "//pw_rpc:server",
+    ],
+)
+
+pw_cc_library(
     name = "pw_rpc",
     srcs = ["rpc_packets.cc"],
-    hdrs = [
-        "public/pw_hdlc_lite/rpc_channel.h",
-        "public/pw_hdlc_lite/rpc_packets.h",
-    ],
+    hdrs = ["public/pw_hdlc_lite/rpc_packets.h"],
     includes = ["public"],
     deps = [
         ":pw_hdlc_lite",

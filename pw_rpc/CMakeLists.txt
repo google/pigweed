@@ -58,6 +58,12 @@ pw_add_module_library(pw_rpc.common
     pw_log
 )
 
+pw_add_module_library(pw_rpc.synchronized_channel_output
+  PUBLIC_DEPS
+    pw_rpc.common
+    pw_sync.mutex
+)
+
 add_library(pw_rpc.test_utils INTERFACE)
 target_include_directories(pw_rpc.test_utils INTERFACE .)
 
