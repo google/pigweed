@@ -24,4 +24,9 @@ declare_args() {
 
   # Backend for the pw_sync module's spin lock.
   pw_sync_SPIN_LOCK_BACKEND = ""
+
+  # Whether the GN asserts should be silenced in ensuring that a compatible
+  # backend for pw_chrono_SYSTEM_CLOCK_BACKEND is chosen.
+  # Set to true to disable the asserts.
+  pw_sync_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK = false
 }
