@@ -13,42 +13,26 @@
 // the License.
 #pragma once
 
+#include "pw_assert_basic/handler.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
-// This is needed for testing the basic crash handler.
-// TODO(pwbug/17): Replace when Pigweed config system is added.
-#define PW_ASSERT_BASIC_DISABLE_NORETURN 0
-#if PW_ASSERT_BASIC_DISABLE_NORETURN
-#define PW_ASSERT_NORETURN
-#else
-#define PW_ASSERT_NORETURN PW_NO_RETURN
-#endif
-
-PW_EXTERN_C_START
-
-// Crash, including a message with the listed attributes.
-void pw_Crash(const char* file_name,
-              int line_number,
-              const char* function_name,
-              const char* message,
-              ...) PW_PRINTF_FORMAT(4, 5) PW_ASSERT_NORETURN;
-
-PW_EXTERN_C_END
+// Die with a message with many attributes included. This is the crash macro
+// frontend that funnels everything into the C handler provided by the user,
+// pw_assert_basic_HandleFailure().
+#define PW_HANDLE_CRASH(...)     \
+  pw_assert_basic_HandleFailure( \
+      __FILE__, __LINE__, __func__ PW_COMMA_ARGS(__VA_ARGS__))
 
 // Die with a message with many attributes included. This is the crash macro
-// frontend that funnels everything into the C handler above, pw_Crash().
-#define PW_HANDLE_CRASH(...) \
-  pw_Crash(__FILE__, __LINE__, __func__ PW_COMMA_ARGS(__VA_ARGS__))
-
-// Die with a message with many attributes included. This is the crash macro
-// frontend that funnels everything into the C handler above, pw_Crash().
-#define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...) \
-  pw_Crash(__FILE__,                                             \
-           __LINE__,                                             \
-           __func__,                                             \
-           "Check failed: " condition_string                     \
-           ". " message PW_COMMA_ARGS(__VA_ARGS__))
+// frontend that funnels everything into the C handler provided by the user,
+// pw_assert_basic_HandleFailure().
+#define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...)  \
+  pw_assert_basic_HandleFailure(__FILE__,                         \
+                                __LINE__,                         \
+                                __func__,                         \
+                                "Check failed: " condition_string \
+                                ". " message PW_COMMA_ARGS(__VA_ARGS__))
 
 // Sample assert failure message produced by the below implementation:
 //
@@ -65,7 +49,8 @@ PW_EXTERN_C_END
                                                 arg_b_val,         \
                                                 type_fmt,          \
                                                 message, ...)      \
-  pw_Crash(__FILE__,                                               \
+  pw_assert_basic_HandleFailure(                                   \
+           __FILE__,                                               \
            __LINE__,                                               \
            __func__,                                               \
            "Check failed: "                                        \

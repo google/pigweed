@@ -14,8 +14,10 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("backend.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
@@ -25,25 +27,41 @@ config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
 
+pw_facade("handler") {
+  backend = pw_assert_basic_HANDLER_BACKEND
+  public_configs = [ ":default_config" ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+  public = [ "public/pw_assert_basic/handler.h" ]
+}
+
 pw_source_set("pw_assert_basic") {
   public_configs = [
     ":backend_config",
     ":default_config",
   ]
-  deps = [ ":core" ]
-  public = [ "public_overrides/pw_assert_backend/assert_backend.h" ]
+  deps = [
+    "$dir_pw_assert:facade",
+    "$dir_pw_preprocessor",
+    pw_assert_basic_HANDLER_BACKEND,
+  ]
+  public = [
+    "public/pw_assert_basic/assert_basic.h",
+    "public/pw_assert_basic/handler.h",
+    "public_overrides/pw_assert_backend/assert_backend.h",
+  ]
+  sources = [ "assert_basic.cc" ]
 }
 
-pw_source_set("core") {
-  public_configs = [ ":default_config" ]
+# A basic handler backend using sysio.
+pw_source_set("basic_handler") {
   deps = [
+    ":handler.facade",
     "$dir_pw_assert:facade",
     "$dir_pw_preprocessor",
     "$dir_pw_string",
     "$dir_pw_sys_io",
   ]
-  public = [ "public/pw_assert_basic/assert_basic.h" ]
-  sources = [ "assert_basic.cc" ]
+  sources = [ "basic_handler.cc" ]
 }
 
 pw_doc_group("docs") {
