@@ -47,23 +47,42 @@ class Mutex {
   Mutex& operator=(Mutex&&) = delete;
 
   // Locks the mutex, blocking indefinitely. Failures are fatal.
+  //
+  // PRECONDITION:
+  //   The lock isn't already held by this thread. Recursive locking is
+  //   undefined behavior.
   void lock();
 
   // Attempts to lock the mutex in a non-blocking manner.
   // Returns true if the mutex was successfully acquired.
+  //
+  // PRECONDITION:
+  //   The lock isn't already held by this thread. Recursive locking is
+  //   undefined behavior.
   bool try_lock();
 
   // Attempts to lock the mutex where, if needed, blocking for at least the
   // specified duration.
   // Returns true if the mutex was successfully acquired.
+  //
+  // PRECONDITION:
+  //   The lock isn't already held by this thread. Recursive locking is
+  //   undefined behavior.
   bool try_lock_for(chrono::SystemClock::duration for_at_least);
 
   // Attempts to lock the mutex where, if needed, blocking until at least the
   // specified time_point.
   // Returns true if the mutex was successfully acquired.
+  //
+  // PRECONDITION:
+  //   The lock isn't already held by this thread. Recursive locking is
+  //   undefined behavior.
   bool try_lock_until(chrono::SystemClock::time_point until_at_least);
 
   // Unlocks the mutex. Failures are fatal.
+  //
+  // PRECONDITION:
+  //   The lock is held by this thread.
   void unlock();
 
   native_handle_type native_handle();
