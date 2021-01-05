@@ -44,6 +44,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_allowed_suffix('_CIPD_INSTALL_DIR')
 
     parser.add_var('PW_DOCTOR_SKIP_CIPD_CHECKS')
+    parser.add_var('PW_ACTIVATE_SKIP_CHECKS',
+                   type=envparse.strict_bool,
+                   default=False)
 
     # TODO(pwbug/274) Remove after some transition time. These are no longer
     # used but may be set by users or downstream projects, or just in currently

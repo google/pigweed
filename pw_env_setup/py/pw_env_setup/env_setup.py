@@ -324,10 +324,7 @@ Then use `set +x` to go back to normal.
         self._env.echo(Color.bold('Sanity checking the environment:'))
         self._env.echo()
 
-        log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
-        doctor = ['pw', '--no-banner', '--loglevel', log_level, 'doctor']
-
-        self._env.command(doctor)
+        self._env.doctor()
         self._env.echo()
 
         self._env.echo(

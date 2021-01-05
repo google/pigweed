@@ -419,6 +419,34 @@ class Command(_Action):
         pass
 
 
+class Doctor(Command):
+    def __init__(self, *args, **kwargs):
+        log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
+        super(Doctor, self).__init__(
+            command=['pw', '--no-banner', '--loglevel', log_level, 'doctor'],
+            *args,
+            **kwargs)
+
+    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
+        super_call = lambda: super(Doctor, self).write(
+            outs, windows=windows, replacements=replacements)
+
+        if windows:
+            outs.write('if "%PW_ACTIVATE_SKIP_CHECKS%"=="" (\n')
+            super_call()
+            outs.write(') else (\n')
+            outs.write('echo Skipping environment check because '
+                       'PW_ACTIVATE_SKIP_CHECKS is set\n')
+            outs.write(')\n')
+        else:
+            outs.write('if [ -z "$PW_ACTIVATE_SKIP_CHECKS" ]; then\n')
+            super_call()
+            outs.write('else\n')
+            outs.write('echo Skipping environment check because '
+                       'PW_ACTIVATE_SKIP_CHECKS is set\n')
+            outs.write('fi\n')
+
+
 class BlankLine(_Action):
     """Write a blank line to the init script."""
     def write(  # pylint: disable=no-self-use
@@ -592,6 +620,10 @@ class Environment(object):
         # command() deliberately ignores self._finalized.
         self._actions.append(Command(command, exit_on_error=exit_on_error))
         self._blankline()
+
+    def doctor(self):
+        """Run 'pw doctor'."""
+        self._actions.append(Doctor())
 
     def function(self, name, body):
         """Define a function."""

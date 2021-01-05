@@ -224,6 +224,13 @@ are identical to using ``--use-pigweed-defaults``.
   --cargo-package-file
   "$PW_ROOT/pw_env_setup/py/pw_env_setup/cargo_setup/packages.txt"
 
+Automated Tools
+***************
+Automated tools should set ``PW_ACTIVATE_SKIP_CHECKS=1`` before running
+``activate.sh`` or ``activate.bat``. This will skip the checks on the
+environment and should complete almost instantaneously. Users should not set
+this variable.
+
 Implementation
 **************
 
