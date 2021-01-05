@@ -13,6 +13,21 @@
 # the License.
 include_guard(GLOBAL)
 
+# Wrapper around cmake_parse_arguments that fails with an error if any arguments
+# remained unparsed.
+macro(_pw_parse_argv_strict function start_arg options one multi)
+  cmake_parse_arguments(PARSE_ARGV
+      "${start_arg}" arg "${options}" "${one}" "${multi}"
+  )
+  if(NOT "${arg_UNPARSED_ARGUMENTS}" STREQUAL "")
+    set(_all_args ${options} ${one} ${multi})
+    message(FATAL_ERROR
+        "Unexpected arguments to ${function}: ${arg_UNPARSED_ARGUMENTS}\n"
+        "Valid arguments: ${_all_args}"
+    )
+  endif()
+endmacro()
+
 # Automatically creates a library and test targets for the files in a module.
 # This function is only suitable for simple modules that meet the following
 # requirements:
@@ -44,8 +59,11 @@ include_guard(GLOBAL)
 #   PRIVATE_DEPS - private target_link_libraries arguments
 #
 function(pw_auto_add_simple_module MODULE)
-  set(multi PUBLIC_DEPS PRIVATE_DEPS TEST_DEPS)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "IMPLEMENTS_FACADE" "${multi}")
+  _pw_parse_argv_strict(pw_auto_add_simple_module 1
+      ""
+      "IMPLEMENTS_FACADE"
+      "PUBLIC_DEPS;PRIVATE_DEPS;TEST_DEPS"
+  )
 
   file(GLOB all_sources *.cc *.c)
 
@@ -98,7 +116,11 @@ endfunction(pw_auto_add_simple_module)
 #  GROUPS - groups in addition to MODULE to which to add these tests
 #
 function(pw_auto_add_module_tests MODULE)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "PRIVATE_DEPS;GROUPS")
+  _pw_parse_argv_strict(pw_auto_add_module_tests 1
+      ""
+      ""
+      "PRIVATE_DEPS;GROUPS"
+  )
 
   file(GLOB cc_tests *_test.cc)
 
@@ -122,22 +144,10 @@ function(pw_auto_add_module_tests MODULE)
   endforeach()
 endfunction(pw_auto_add_module_tests)
 
-# Wrapper around cmake_parse_arguments that fails with an error if any arguments
-# remained unparsed.
-macro(_pw_parse_argv_strict function start_arg options one multi)
-  cmake_parse_arguments(PARSE_ARGV
-      "${start_arg}" arg "${options}" "${one}" "${multi}"
-  )
-
-  if(NOT "${${prefix}_UNPARSED_ARGUMENTS}" STREQUAL "")
-    message(FATAL_ERROR
-        "Unexpected arguments to ${function}: ${${prefix}_UNPARSED_ARGUMENTS}"
-    )
-  endif()
+# Sets the provided variable to the common library arguments.
+macro(_pw_library_args variable)
+  set("${variable}" SOURCES HEADERS PUBLIC_DEPS PRIVATE_DEPS ${ARGN})
 endmacro()
-
-# Common arguments for libraries.
-set(_common_args SOURCES HEADERS PUBLIC_DEPS PRIVATE_DEPS)
 
 # Creates a library in a module. The library has access to the public/ include
 # directory.
@@ -151,7 +161,7 @@ set(_common_args SOURCES HEADERS PUBLIC_DEPS PRIVATE_DEPS)
 #   IMPLEMENTS_FACADES - which facades this library implements
 #
 function(pw_add_module_library NAME)
-  set(list_args ${_common_args} IMPLEMENTS_FACADES)
+  _pw_library_args(list_args IMPLEMENTS_FACADES)
   _pw_parse_argv_strict(pw_add_module_library 1 "" "" "${list_args}")
 
   # Check that the library's name is prefixed by the module name.
@@ -202,7 +212,8 @@ endfunction(pw_add_module_library)
 #  DEFAULT_BACKEND - which backend to use by default
 #
 function(pw_add_facade NAME)
-  _pw_parse_argv_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${_common_args}")
+  _pw_library_args(list_args)
+  _pw_parse_argv_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${list_args}")
 
   # If no backend is set, a script that displays an error message is used
   # instead. If the facade is used in the build, it fails with this error.
@@ -260,7 +271,7 @@ endfunction(pw_set_backend)
 #       added to the 'default' and 'all' groups
 #
 function(pw_add_test NAME)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;GROUPS")
+  _pw_parse_argv_strict(pw_add_test 1 "" "" "SOURCES;DEPS;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
   target_link_libraries("${NAME}"
