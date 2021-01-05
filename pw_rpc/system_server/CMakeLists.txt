@@ -19,10 +19,9 @@ pw_add_facade(pw_rpc.system_server
     pw_rpc.server
     pw_stream
 )
-target_include_directories(pw_rpc.system_server.facade INTERFACE public)
 
 pw_add_module_library(pw_rpc.system_server.socket
-  IMPLEMENTS_FACADE
+  IMPLEMENTS_FACADES
     pw_rpc.system_server
   SOURCES
     socket_rpc_server.cc
@@ -33,7 +32,7 @@ pw_add_module_library(pw_rpc.system_server.socket
 )
 
 pw_add_module_library(pw_rpc.system_server.sys_io
-  IMPLEMENTS_FACADE
+  IMPLEMENTS_FACADES
     pw_rpc.system_server
   SOURCES
     sys_io_rpc_server.cc

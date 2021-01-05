@@ -58,15 +58,15 @@ function(pw_auto_add_simple_module MODULE)
 
   if(arg_IMPLEMENTS_FACADE)
     set(groups backends)
-    set(facade_dep "${arg_IMPLEMENTS_FACADE}.facade")
   else()
     set(groups modules "${MODULE}")
   endif()
 
   pw_add_module_library("${MODULE}"
+    IMPLEMENTS_FACADES
+      ${arg_IMPLEMENTS_FACADE}
     PUBLIC_DEPS
       ${arg_PUBLIC_DEPS}
-      ${facade_dep}
     PRIVATE_DEPS
       ${arg_PRIVATE_DEPS}
     SOURCES
@@ -122,6 +122,20 @@ function(pw_auto_add_module_tests MODULE)
   endforeach()
 endfunction(pw_auto_add_module_tests)
 
+# Wrapper around cmake_parse_arguments that fails with an error if any arguments
+# remained unparsed.
+macro(_pw_parse_argv_strict function start_arg prefix options one multi)
+  cmake_parse_arguments(PARSE_ARGV
+      "${start_arg}" "${prefix}" "${options}" "${one}" "${multi}"
+  )
+
+  if(NOT "${${prefix}_UNPARSED_ARGUMENTS}" STREQUAL "")
+    message(FATAL_ERROR
+        "Unexpected arguments to ${function}: ${${prefix}_UNPARSED_ARGUMENTS}"
+    )
+  endif()
+endmacro()
+
 # Creates a library in a module. The library has access to the public/ include
 # directory.
 #
@@ -131,10 +145,11 @@ endfunction(pw_auto_add_module_tests)
 #   HEADERS - header files for this library
 #   PUBLIC_DEPS - public target_link_libraries arguments
 #   PRIVATE_DEPS - private target_link_libraries arguments
+#   IMPLEMENTS_FACADES - which facades this library implements
 #
 function(pw_add_module_library NAME)
-  set(list_args SOURCES HEADERS PUBLIC_DEPS PRIVATE_DEPS)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "${list_args}")
+  set(list_args SOURCES HEADERS PUBLIC_DEPS PRIVATE_DEPS IMPLEMENTS_FACADES)
+  _pw_parse_argv_strict(pw_add_module_library 1 arg "" "" "${list_args}")
 
   # Check that the library's name is prefixed by the module name.
   get_filename_component(module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
@@ -157,6 +172,13 @@ function(pw_add_module_library NAME)
       pw_build.extra_strict_warnings
       ${arg_PRIVATE_DEPS}
   )
+
+  if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
+    target_include_directories("${NAME}" PUBLIC public_overrides)
+    set(facades ${arg_IMPLEMENTS_FACADES})
+    list(TRANSFORM facades APPEND ".facade")
+    target_link_libraries("${NAME}" PUBLIC ${facades})
+  endif()
 
   # Libraries require at least one source file.
   if(NOT arg_SOURCES)
