@@ -14,11 +14,14 @@
 """Functions for building code during presubmit checks."""
 
 import collections
+import itertools
+import json
 import logging
 import os
 from pathlib import Path
 import re
-from typing import Container, Dict, Iterable, List, Mapping, Set, Tuple
+from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
+                    Tuple, Union)
 
 from pw_package import package_manager
 from pw_presubmit import call, log_run, plural, PresubmitFailure, tools
@@ -150,6 +153,38 @@ def _search_files_for_paths(build_files: Iterable[Path]) -> Iterable[Path]:
             path = directory / string.group(1)
             if path.is_file():
                 yield path
+
+
+def _read_compile_commands(compile_commands: Path) -> dict:
+    with compile_commands.open('rb') as fd:
+        return json.load(fd)
+
+
+def compiled_files(compile_commands: Path) -> Iterable[Path]:
+    for command in _read_compile_commands(compile_commands):
+        file = Path(command['file'])
+        if file.is_absolute():
+            yield file
+        else:
+            yield file.joinpath(command['directory']).resolve()
+
+
+def check_compile_commands_for_files(
+        compile_commands: Union[Path, Iterable[Path]],
+        files: Iterable[Path],
+        extensions: Collection[str] = ('.c', '.cc', '.cpp'),
+) -> List[Path]:
+    """Checks for paths in one or more compile_commands.json files.
+
+    Only checks C and C++ source files by default.
+    """
+    if isinstance(compile_commands, Path):
+        compile_commands = [compile_commands]
+
+    compiled = frozenset(
+        itertools.chain.from_iterable(
+            compiled_files(cmds) for cmds in compile_commands))
+    return [f for f in files if f not in compiled and f.suffix in extensions]
 
 
 def check_builds_for_files(

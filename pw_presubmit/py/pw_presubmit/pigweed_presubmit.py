@@ -158,17 +158,22 @@ def python_checks(ctx: PresubmitContext):
     )
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
-                        'CMakeLists.txt'))
-def cmake_tests(ctx: PresubmitContext):
+def _run_cmake(ctx: PresubmitContext) -> None:
     build.install_package(ctx.package_root, 'nanopb')
 
     toolchain = ctx.root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
     build.cmake(ctx.root,
                 ctx.output_dir,
                 f'-DCMAKE_TOOLCHAIN_FILE={toolchain}',
+                '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
                 f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
                 env=build.env_with_clang_vars())
+
+
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
+                        'CMakeLists.txt'))
+def cmake_tests(ctx: PresubmitContext):
+    _run_cmake(ctx)
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
@@ -395,6 +400,18 @@ def source_is_in_build_files(ctx: PresubmitContext):
         _LOG.warning(
             'All source files must appear in BUILD and BUILD.gn files')
         raise PresubmitFailure
+
+    _run_cmake(ctx)
+    cmake_missing = build.check_compile_commands_for_files(
+        ctx.output_dir / 'compile_commands.json',
+        (f for f in ctx.paths if f.suffix in ('.c', '.cc')))
+    if cmake_missing:
+        _LOG.warning('The CMake build is missing %d files', len(cmake_missing))
+        _LOG.warning('Files missing from CMake:\n%s',
+                     '\n'.join(str(f) for f in cmake_missing))
+        # TODO(hepler): Many files are missing from the CMake build. Make this
+        #     check an error when the missing files are fixed.
+        # raise PresubmitFailure
 
 
 def build_env_setup(ctx: PresubmitContext):
