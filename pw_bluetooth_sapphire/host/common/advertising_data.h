@@ -79,9 +79,10 @@ class AdvertisingData {
   AdvertisingData() = default;
   ~AdvertisingData() = default;
 
-  // Move constructor and assignment operator
-  AdvertisingData(AdvertisingData&& other) = default;
-  AdvertisingData& operator=(AdvertisingData&& other) = default;
+  // When these move operations return, `other` is specified to be an empty AdvertisingData - i.e.
+  // `other`'s state is as if `other = AdvertisingData()` was performed.
+  AdvertisingData(AdvertisingData&& other) noexcept;
+  AdvertisingData& operator=(AdvertisingData&& other) noexcept;
 
   // Construct from the raw Bluetooth field block |data|. Returns std::nullopt if |data| is not
   // formatted correctly or on a parsing error.

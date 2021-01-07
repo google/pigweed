@@ -14,6 +14,7 @@ namespace {
 
 constexpr uint16_t kGattUuid = 0x1801;
 constexpr uint16_t kEddystoneUuid = 0xFEAA;
+constexpr uint16_t kHeartRateServiceUuid = 0x180D;
 
 constexpr uint16_t kId1As16 = 0x0212;
 constexpr uint16_t kId2As16 = 0x1122;
@@ -206,23 +207,42 @@ TEST(GAP_AdvertisingDataTest, Move) {
   StaticByteBuffer<kRandomDataSize> rand_data;
   rand_data.FillWithRandomBytes();
 
+  UUID heart_rate_uuid(kHeartRateServiceUuid);
+  int8_t tx_power = 18;          // arbitrary TX power
+  uint16_t appearance = 0x4567;  // arbitrary appearance value
   AdvertisingData source;
+  source.SetLocalName("test");
+  source.SetTxPower(tx_power);
+  source.SetAppearance(appearance);
   source.AddURI("http://fuchsia.cl");
   source.AddURI("https://ru.st");
   source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
+  source.SetServiceData(heart_rate_uuid, rand_data.view());
 
-  AdvertisingData dest = std::move(source);
+  auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
+    SCOPED_TRACE(type);
+    // Dest should have the data we set.
+    EXPECT_EQ("test", dest.local_name().value());
+    EXPECT_EQ(tx_power, dest.tx_power().value());
+    EXPECT_EQ(appearance, dest.appearance().value());
+    EXPECT_EQ(std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}), dest.uris());
+    EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
+    EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
+    EXPECT_TRUE(ContainersEqual(rand_data, dest.service_data(heart_rate_uuid)));
+  };
+
+  AdvertisingData move_constructed(std::move(source));
 
   // source should be empty.
   EXPECT_EQ(AdvertisingData(), source);
+  verify_advertising_data(move_constructed, "move_constructed");
 
-  // Dest should have the data we set.
-  EXPECT_EQ(std::unordered_set<std::string>({"http://fuchsia.cl", "https://ru.st"}), dest.uris());
-  EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
-
-  EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
+  AdvertisingData move_assigned{};
+  move_assigned = std::move(move_constructed);
+  EXPECT_EQ(AdvertisingData(), move_constructed);
+  verify_advertising_data(move_assigned, "move_assigned");
 }
 
 TEST(GAP_AdvertisingDataTest, Uris) {
