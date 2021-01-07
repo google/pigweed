@@ -41,6 +41,17 @@ namespace bt::gap {
 
 namespace {
 
+// During the initial connection to a peripheral we use the initial high
+// duty-cycle parameters to ensure that initiating procedures (bonding,
+// encryption setup, service discovery) are completed quickly. Once these
+// procedures are complete, we will change the connection interval to the
+// peripheral's preferred connection parameters (see v5.0, Vol 3, Part C,
+// Section 9.3.12).
+static const hci::LEPreferredConnectionParameters kInitialConnectionParameters(
+    kLEInitialConnIntervalMin, kLEInitialConnIntervalMax, /*max_latency=*/0,
+    hci::defaults::kLESupervisionTimeout);
+
+// Connection parameters to use when the peer's preferred connection parameters are not known.
 static const hci::LEPreferredConnectionParameters kDefaultPreferredConnectionParameters(
     hci::defaults::kLEConnectionIntervalMin, hci::defaults::kLEConnectionIntervalMax,
     /*max_latency=*/0, hci::defaults::kLESupervisionTimeout);
@@ -420,34 +431,23 @@ void LowEnergyConnectionManager::RequestCreateConnection(Peer* peer) {
   ZX_ASSERT(peer);
 
   // Pause discovery until connection complete.
-  auto pause = discovery_manager_->PauseDiscovery();
-
-  // During the initial connection to a peripheral we use the initial high
-  // duty-cycle parameters to ensure that initiating procedures (bonding,
-  // encryption setup, service discovery) are completed quickly. Once these
-  // procedures are complete, we will change the connection interval to the
-  // peripheral's preferred connection parameters (see v5.0, Vol 3, Part C,
-  // Section 9.3.12).
-
-  // TODO(armansito): Initiate the connection using the cached preferred
-  // connection parameters if we are bonded.
-  hci::LEPreferredConnectionParameters initial_params(kLEInitialConnIntervalMin,
-                                                      kLEInitialConnIntervalMax, 0,
-                                                      hci::defaults::kLESupervisionTimeout);
+  auto pause_token = discovery_manager_->PauseDiscovery();
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto status_cb = [self, peer_id = peer->identifier(), pause = std::optional(std::move(pause))](
-                       hci::Status status, auto link) mutable {
+  auto status_cb = [self, peer_id = peer->identifier(),
+                    pause = std::optional(std::move(pause_token))](hci::Status status,
+                                                                   auto link) mutable {
     if (self) {
       pause.reset();
       self->OnConnectResult(peer_id, status, std::move(link));
     }
   };
 
-  // We set the scan window and interval to the same value for continuous scanning.
+  // We set the scan window and interval to the same value for continuous
+  // scanning.
   connector_->CreateConnection(/*use_whitelist=*/false, peer->address(), kLEScanFastInterval,
-                               kLEScanFastInterval, initial_params, std::move(status_cb),
-                               self->request_timeout_);
+                               kLEScanFastInterval, kInitialConnectionParameters,
+                               std::move(status_cb), request_timeout_);
 }
 
 bool LowEnergyConnectionManager::InitializeConnection(
@@ -509,11 +509,17 @@ bool LowEnergyConnectionManager::InitializeConnection(
     // kLEConnectionPauseCentral, then the Central device should update the connection parameters
     // to either the Peripheral Preferred Connection Parameters or self-determined values (Core
     // Spec v5.2, Vol 3, Part C, Sec 9.3.12).
-    //
-    // TODO(fxbug.dev/60830): Use the preferred connection parameters from the GAP characteristic.
-    // (Core Spec v5.2, Vol 3, Part C, Sec 12.3)
-    connections_[peer_id]->PostCentralPauseTimeoutCallback([this, handle]() {
-      UpdateConnectionParams(handle, kDefaultPreferredConnectionParameters);
+    connections_[peer_id]->PostCentralPauseTimeoutCallback([this, handle, peer_id]() {
+      auto peer = peer_cache_->FindById(peer_id);
+      ZX_ASSERT(peer);
+
+      // If the GAP service preferred connection parameters characteristic has not been read by now,
+      // just use the default parameters.
+      // TODO(fxbug.dev/66031): Wait for preferred connections to be read.
+      auto conn_params = peer->le()->preferred_connection_parameters().value_or(
+          kDefaultPreferredConnectionParameters);
+
+      UpdateConnectionParams(handle, conn_params);
     });
   }
 

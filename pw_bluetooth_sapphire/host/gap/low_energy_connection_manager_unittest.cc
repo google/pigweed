@@ -930,11 +930,17 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Disconnect) {
 
   EXPECT_TRUE(conn_mgr()->Disconnect(peer->identifier()));
 
+  bool peer_removed = peer_cache()->RemoveDisconnectedPeer(peer->identifier());
+  EXPECT_TRUE(peer_removed);
+
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, closed_count);
   EXPECT_TRUE(connected_peers().empty());
   EXPECT_TRUE(canceled_peers().empty());
+
+  // The central pause timeout handler should not run.
+  RunLoopFor(kLEConnectionPauseCentral);
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, IntentionalDisconnectDisablesAutoConnectBehavior) {
@@ -1514,7 +1520,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest,
-       ReadPeripheralPreferredConnectionParametersCharacteristic) {
+       ReadPeripheralPreferredConnectionParametersCharacteristicAndUpdateConnectionParameters) {
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
@@ -1558,6 +1564,16 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   EXPECT_EQ(params.max_interval(), 2u);
   EXPECT_EQ(params.max_latency(), 3u);
   EXPECT_EQ(params.supervision_timeout(), 4u);
+
+  std::optional<hci::LEConnectionParameters> conn_params;
+  test_device()->set_le_connection_parameters_callback(
+      [&](auto address, auto parameters) { conn_params = parameters; });
+
+  RunLoopFor(kLEConnectionPauseCentral);
+  ASSERT_TRUE(conn_params.has_value());
+  EXPECT_EQ(conn_params->interval(), 1u);  // FakeController will use min interval
+  EXPECT_EQ(conn_params->latency(), 3u);
+  EXPECT_EQ(conn_params->supervision_timeout(), 4u);
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest,
@@ -2229,7 +2245,8 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation
   EXPECT_EQ(1u, hci_update_conn_param_count);
 }
 
-TEST_F(GAP_LowEnergyConnectionManagerTest, CentralUpdatesConnectionParametersAfterInitialization) {
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       CentralUpdatesConnectionParametersToDefaultsAfterInitialization) {
   // Set up a connection.
   auto* peer = peer_cache()->NewPeer(kAddress0, true);
   ASSERT_TRUE(peer->le());
