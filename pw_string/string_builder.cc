@@ -24,8 +24,8 @@ namespace pw {
 void StringBuilder::clear() {
   size_ = 0;
   NullTerminate();
-  status_ = Status::Ok();
-  last_status_ = Status::Ok();
+  status_ = OkStatus();
+  last_status_ = OkStatus();
 }
 
 StringBuilder& StringBuilder::append(size_t count, char ch) {
@@ -70,7 +70,7 @@ size_t StringBuilder::ResizeAndTerminate(size_t chars_to_append) {
   if (buffer_.empty() || chars_to_append != copied) {
     SetErrorStatus(Status::ResourceExhausted());
   } else {
-    last_status_ = Status::Ok();
+    last_status_ = OkStatus();
   }
   return copied;
 }
@@ -79,7 +79,7 @@ void StringBuilder::resize(size_t new_size) {
   if (new_size <= size_) {
     size_ = new_size;
     NullTerminate();
-    last_status_ = Status::Ok();
+    last_status_ = OkStatus();
   } else {
     SetErrorStatus(Status::OutOfRange());
   }

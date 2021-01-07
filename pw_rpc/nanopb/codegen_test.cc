@@ -56,8 +56,8 @@ TEST(NanopbCodegen, CompilesProperly) {
 TEST(NanopbCodegen, Server_InvokeUnaryRpc) {
   PW_NANOPB_TEST_METHOD_CONTEXT(test::TestService, TestRpc) context;
 
-  EXPECT_EQ(Status::Ok(),
-            context.call({.integer = 123, .status_code = Status::Ok().code()}));
+  EXPECT_EQ(OkStatus(),
+            context.call({.integer = 123, .status_code = OkStatus().code()}));
 
   EXPECT_EQ(124, context.response().value);
 
@@ -77,7 +77,7 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
   EXPECT_TRUE(context.responses().empty());
   EXPECT_EQ(0u, context.total_responses());
 
-  context.call({.integer = 4, .status_code = Status::Ok().code()});
+  context.call({.integer = 4, .status_code = OkStatus().code()});
 
   ASSERT_EQ(4u, context.responses().size());
   ASSERT_EQ(4u, context.total_responses());
@@ -86,7 +86,7 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc) {
     EXPECT_EQ(context.responses()[i].number, i);
   }
 
-  EXPECT_EQ(Status::Ok().code(), context.status());
+  EXPECT_EQ(OkStatus().code(), context.status());
 }
 
 TEST(NanopbCodegen,
@@ -152,9 +152,9 @@ TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   EXPECT_EQ(sent_proto.integer, 123);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(Status::Ok(), response);
+  context.SendResponse(OkStatus(), response);
   ASSERT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_status(), Status::Ok());
+  EXPECT_EQ(handler.last_status(), OkStatus());
   EXPECT_EQ(handler.last_response().value, 42);
 }
 
@@ -177,7 +177,7 @@ TEST(NanopbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
 
   PW_ENCODE_PB(
       pw_rpc_test_TestStreamResponse, response, .chunk = {}, .number = 11u);
-  context.SendResponse(Status::Ok(), response);
+  context.SendResponse(OkStatus(), response);
   ASSERT_EQ(handler.responses_received(), 1u);
   EXPECT_EQ(handler.last_response().number, 11u);
 

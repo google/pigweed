@@ -48,7 +48,7 @@ Status SocketStream::Init(uint16_t port) {
   if (conn_fd_ < 0) {
     return Status::Internal();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status SocketStream::DoWrite(std::span<const std::byte> data) {
@@ -57,7 +57,7 @@ Status SocketStream::DoWrite(std::span<const std::byte> data) {
   if (bytes_sent < 0 || static_cast<uint64_t>(bytes_sent) != data.size()) {
     return Status::Internal();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize SocketStream::DoRead(ByteSpan dest) {
@@ -65,7 +65,7 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
   if (bytes_rcvd < 0) {
     return StatusWithSize::Internal();
   }
-  return StatusWithSize::Ok(bytes_rcvd);
+  return StatusWithSize(bytes_rcvd);
 }
 
 };  // namespace pw::stream

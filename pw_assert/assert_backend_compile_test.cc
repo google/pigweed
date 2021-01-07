@@ -216,10 +216,10 @@ TEST(Check, CheckOkMacrosCompile) {
   CHECK_OK(status, "msg: %d", 5);
 
   // Status from a literal.
-  PW_CHECK_OK(pw::Status::Ok());
+  PW_CHECK_OK(pw::OkStatus());
 
   // Status from a function.
-  PW_CHECK_OK(MakeStatus(pw::Status::Ok()));
+  PW_CHECK_OK(MakeStatus(pw::OkStatus()));
 
   // Status from C enums.
   PW_CHECK_OK(PW_STATUS_OK);

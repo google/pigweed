@@ -78,7 +78,7 @@ pw::Status DumpTraceBufferToLog() {
     PW_LOG_INFO("[TRACE] data: %s", line_builder.c_str());
   }
   PW_LOG_INFO("[TRACE] end");
-  return pw::Status::Ok();
+  return pw::OkStatus();
 }
 
 }  // namespace trace

@@ -39,14 +39,14 @@ size_t ByteBuilder::ResizeForAppend(size_t bytes_to_append) {
   }
 
   size_ += bytes_to_append;
-  status_ = Status::Ok();
+  status_ = OkStatus();
   return bytes_to_append;
 }
 
 void ByteBuilder::resize(size_t new_size) {
   if (new_size <= size_) {
     size_ = new_size;
-    status_ = Status::Ok();
+    status_ = OkStatus();
   } else {
     status_ = Status::OutOfRange();
   }

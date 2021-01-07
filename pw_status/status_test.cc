@@ -178,7 +178,7 @@ TEST(Status, UnknownString) {
 
 TEST(Status, DeprecatedAliases) {
   // TODO(pwbug/268): Remove this test after migrating from these aliases.
-  static_assert(PW_STATUS_OK == Status::OK);
+  static_assert(PW_STATUS_OK == OkStatus());
   static_assert(PW_STATUS_CANCELLED == Status::CANCELLED);
   static_assert(PW_STATUS_UNKNOWN == Status::UNKNOWN);
   static_assert(PW_STATUS_INVALID_ARGUMENT == Status::INVALID_ARGUMENT);

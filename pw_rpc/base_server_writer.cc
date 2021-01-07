@@ -94,7 +94,7 @@ Status BaseServerWriter::ReleasePayloadBuffer() {
   }
 
   call_.channel().Release(response_);
-  return Status::Ok();
+  return OkStatus();
 }
 
 void BaseServerWriter::Close() {

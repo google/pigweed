@@ -22,7 +22,7 @@ namespace {
 TEST(Result, CreateOk) {
   Result<const char*> res("hello");
   EXPECT_TRUE(res.ok());
-  EXPECT_EQ(res.status(), Status::Ok());
+  EXPECT_EQ(res.status(), OkStatus());
   EXPECT_EQ(res.value(), "hello");
 }
 

@@ -47,7 +47,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
   Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
     PW_DASSERT(buffer.data() == buffer_.data());
     if (buffer.empty()) {
-      return Status::Ok();
+      return OkStatus();
     }
     return hdlc_lite::WriteUIFrame(address_, buffer, writer_);
   }
@@ -75,7 +75,7 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
   Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
     PW_DASSERT(buffer.data() == buffer_.data());
     if (buffer.empty()) {
-      return Status::Ok();
+      return OkStatus();
     }
     return hdlc_lite::WriteUIFrame(address_, buffer, writer_);
   }

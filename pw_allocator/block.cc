@@ -46,7 +46,7 @@ Status Block::Init(const std::span<std::byte> region, Block** block) {
 #if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   (*block)->PoisonBlock();
 #endif  // PW_ALLOCATOR_POISON_ENABLE
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Block::Split(size_t head_block_inner_size, Block** new_block) {
@@ -118,7 +118,7 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
   (*new_block)->PoisonBlock();
 #endif  // PW_ALLOCATOR_POISON_ENABLE
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Block::MergeNext() {
@@ -142,7 +142,7 @@ Status Block::MergeNext() {
     Next()->prev = this;
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Block::MergePrev() {

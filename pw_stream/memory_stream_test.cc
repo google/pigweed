@@ -38,7 +38,7 @@ TEST(MemoryWriter, BytesWritten) {
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
   Status status =
       memory_writer.Write(&kExpectedStruct, sizeof(kExpectedStruct));
-  EXPECT_EQ(status, Status::Ok());
+  EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(memory_writer.bytes_written(), sizeof(kExpectedStruct));
 }  // namespace
 
@@ -68,7 +68,7 @@ TEST(MemoryWriter, MultipleWrites) {
     for (size_t i = 0; i < sizeof(buffer); ++i) {
       buffer[i] = std::byte(counter++);
     }
-    EXPECT_EQ(memory_writer.Write(std::span(buffer)), Status::Ok());
+    EXPECT_EQ(memory_writer.Write(std::span(buffer)), OkStatus());
   }
 
   EXPECT_GT(memory_writer.ConservativeWriteLimit(), 0u);
@@ -99,7 +99,7 @@ TEST(MemoryWriter, FullWriter) {
     size_t bytes_to_write =
         std::min(sizeof(buffer), memory_writer.ConservativeWriteLimit());
     EXPECT_EQ(memory_writer.Write(std::span(buffer, bytes_to_write)),
-              Status::Ok());
+              OkStatus());
   }
 
   EXPECT_EQ(memory_writer.ConservativeWriteLimit(), 0u);
@@ -116,7 +116,7 @@ TEST(MemoryWriter, EmptyData) {
   std::byte buffer[5] = {};
 
   MemoryWriter memory_writer(memory_buffer);
-  EXPECT_EQ(memory_writer.Write(buffer, 0), Status::Ok());
+  EXPECT_EQ(memory_writer.Write(buffer, 0), OkStatus());
   EXPECT_EQ(memory_writer.bytes_written(), 0u);
 }
 
@@ -171,7 +171,7 @@ TEST(MemoryReader, SingleFullRead) {
   // Read exactly the available bytes.
   EXPECT_EQ(memory_reader.ConservativeReadLimit(), dest.size());
   Result<ByteSpan> result = memory_reader.Read(dest);
-  EXPECT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size_bytes(), dest.size());
 
   ASSERT_EQ(source.size(), result.value().size_bytes());
@@ -197,7 +197,7 @@ TEST(MemoryReader, EmptySpanRead) {
 
   // Read exactly the available bytes.
   Result<ByteSpan> result = memory_reader.Read(dest);
-  EXPECT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size_bytes(), 0u);
   EXPECT_EQ(result.value().data(), dest.data());
 
@@ -220,7 +220,7 @@ TEST(MemoryReader, SinglePartialRead) {
   // Try and read double the bytes available. Use the pointer/size version of
   // the API.
   Result<ByteSpan> result = memory_reader.Read(dest.data(), dest.size());
-  EXPECT_EQ(result.status(), Status::Ok());
+  EXPECT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size_bytes(), source.size());
 
   ASSERT_EQ(source.size(), result.value().size_bytes());
@@ -255,7 +255,7 @@ TEST(MemoryReader, MultipleReads) {
 
     // Try and read a chunk of bytes.
     Result<ByteSpan> result = memory_reader.Read(dest);
-    EXPECT_EQ(result.status(), Status::Ok());
+    EXPECT_EQ(result.status(), OkStatus());
     EXPECT_EQ(result.value().size_bytes(), dest.size());
     EXPECT_EQ(memory_reader.ConservativeReadLimit(),
               read_limit - result.value().size_bytes());

@@ -35,7 +35,7 @@ class WearTest : public ::testing::Test {
       : flash_(internal::Entry::kMinAlignmentBytes),
         partition_(&flash_, 0, flash_.sector_count()),
         kvs_(&partition_, format) {
-    EXPECT_EQ(Status::Ok(), kvs_.Init());
+    EXPECT_EQ(OkStatus(), kvs_.Init());
   }
 
   static constexpr size_t kSectors = 16;
@@ -92,7 +92,7 @@ TEST_F(WearTest, TwoPassFillWithLargeAndLarger) {
     test_data[0]++;
 
     EXPECT_EQ(
-        Status::Ok(),
+        OkStatus(),
         kvs_.Put("key",
                  std::as_bytes(std::span(test_data, sizeof(test_data) - 70))));
   }
@@ -105,7 +105,7 @@ TEST_F(WearTest, TwoPassFillWithLargeAndLarger) {
     test_data[0]++;
 
     printf("Add entry %zu\n", i);
-    EXPECT_EQ(Status::Ok(), kvs_.Put("big_key", test_data));
+    EXPECT_EQ(OkStatus(), kvs_.Put("big_key", test_data));
   }
 
   EXPECT_EQ(2u, kvs_.size());

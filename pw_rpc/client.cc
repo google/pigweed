@@ -79,7 +79,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
       return Status::Unimplemented();
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Client::RegisterCall(BaseClientCall& call) {
@@ -95,7 +95,7 @@ Status Client::RegisterCall(BaseClientCall& call) {
   }
 
   calls_.push_front(call);
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::rpc

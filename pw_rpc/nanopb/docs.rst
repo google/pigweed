@@ -114,7 +114,7 @@ closed or goes out of scope. The writer has a simple API to return responses:
   Writes a single response message to the stream. The returned status indicates
   whether the write was successful.
 
-.. cpp:function:: void ServerWriter::Finish(Status status = Status::OK)
+.. cpp:function:: void ServerWriter::Finish(Status status = OkStatus())
 
   Closes the stream and sends back the RPC's overall status to the client.
 

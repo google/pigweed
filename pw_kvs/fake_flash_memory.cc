@@ -31,23 +31,23 @@ Status FlashError::Check(std::span<FlashError> errors,
     }
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status FlashError::Check(FlashMemory::Address start_address, size_t size) {
   // Check if the event overlaps with this address range.
   if (begin_ != kAnyAddress &&
       (start_address >= end_ || (start_address + size) <= begin_)) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   if (delay_ > 0u) {
     delay_ -= 1;
-    return Status::Ok();
+    return OkStatus();
   }
 
   if (remaining_ == 0u) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   if (remaining_ != kAlways) {
@@ -76,7 +76,7 @@ Status FakeFlashMemory::Erase(Address address, size_t num_sectors) {
 
   std::memset(
       &buffer_[address], int(kErasedValue), sector_size_bytes() * num_sectors);
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize FakeFlashMemory::Read(Address address,

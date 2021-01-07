@@ -125,7 +125,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
     for (byte b : std::span(buffer, read_size)) {
       if (b != erased_byte) {
         // Detected memory chunk is not entirely erased
-        return Status::Ok();
+        return OkStatus();
       }
     }
 
@@ -133,7 +133,7 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
     length -= read_size;
   }
   *is_erased = true;
-  return Status::Ok();
+  return OkStatus();
 }
 
 bool FlashPartition::AppearsErased(std::span<const byte> data) const {
@@ -154,7 +154,7 @@ Status FlashPartition::CheckBounds(Address address, size_t length) const {
         unsigned(length));
     return Status::OutOfRange();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::kvs

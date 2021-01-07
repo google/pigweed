@@ -86,7 +86,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       internal::Channel temp_channel(packet.channel_id(), &interface);
       temp_channel.Send(
           Packet::ServerError(packet, Status::ResourceExhausted()));
-      return Status::Ok();  // OK since the packet was handled
+      return OkStatus();  // OK since the packet was handled
     }
   }
 
@@ -94,7 +94,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
 
   if (method == nullptr) {
     channel->Send(Packet::ServerError(packet, Status::NotFound()));
-    return Status::Ok();
+    return OkStatus();
   }
 
   switch (packet.type()) {
@@ -118,7 +118,7 @@ Status Server::ProcessPacket(std::span<const byte> data,
       PW_LOG_WARN("Unable to handle packet of type %u",
                   unsigned(packet.type()));
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 std::tuple<Service*, const internal::Method*> Server::FindMethod(

@@ -20,7 +20,7 @@ Status FindDecodeHandler::ProcessField(CallbackDecoder& decoder,
                                        uint32_t field_number) {
   if (field_number != field_number_) {
     // Continue to the next field.
-    return Status::Ok();
+    return OkStatus();
   }
 
   found_ = true;

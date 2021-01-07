@@ -82,7 +82,7 @@ class BasicServer : public ::testing::Test {
       std::span<const byte> payload = kDefaultPayload) {
     auto result = Packet(type, channel_id, service_id, method_id, payload)
                       .Encode(request_buffer_);
-    EXPECT_EQ(Status::Ok(), result.status());
+    EXPECT_EQ(OkStatus(), result.status());
     return result.value_or(ConstByteSpan());
   }
 
@@ -96,7 +96,7 @@ class BasicServer : public ::testing::Test {
 };
 
 TEST_F(BasicServer, ProcessPacket_ValidMethod_InvokesMethod) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, 1, 42, 100), output_));
 
@@ -151,7 +151,7 @@ TEST_F(BasicServer, ProcessPacket_NoMethod_SendsDataLoss) {
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, 1, 42, 101), output_));
 
@@ -160,7 +160,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_NothingIsInvoked) {
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsError) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::REQUEST, 1, 42, 27),
                                   output_));
 
@@ -173,7 +173,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidMethod_SendsError) {
 }
 
 TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(EncodeRequest(PacketType::REQUEST, 1, 43, 27),
                                   output_));
 
@@ -187,7 +187,7 @@ TEST_F(BasicServer, ProcessPacket_InvalidService_SendsError) {
 
 TEST_F(BasicServer, ProcessPacket_UnassignedChannel_AssignsToAvailableSlot) {
   TestOutput<128> unassigned_output;
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, /*channel_id=*/99, 42, 100),
                 unassigned_output));
@@ -198,7 +198,7 @@ TEST_F(BasicServer,
        ProcessPacket_UnassignedChannel_SendsResourceExhaustedIfCannotAssign) {
   channels_[2] = Channel::Create<3>(&output_);  // Occupy only available channel
 
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::REQUEST, /*channel_id=*/99, 42, 27),
                 output_));
@@ -212,7 +212,7 @@ TEST_F(BasicServer,
 
 TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsError) {
   // Set up a fake ServerWriter representing an ongoing RPC.
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
                 output_));
@@ -241,7 +241,7 @@ class MethodPending : public BasicServer {
 };
 
 TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
                 output_));
@@ -250,7 +250,7 @@ TEST_F(MethodPending, ProcessPacket_Cancel_ClosesServerWriter) {
 }
 
 TEST_F(MethodPending, ProcessPacket_Cancel_SendsStreamEndPacket) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 100),
                 output_));
@@ -266,7 +266,7 @@ TEST_F(MethodPending, ProcessPacket_Cancel_SendsStreamEndPacket) {
 
 TEST_F(MethodPending,
        ProcessPacket_ClientError_ClosesServerWriterWithoutStreamEnd) {
-  EXPECT_EQ(Status::OK,
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CLIENT_ERROR, 1, 42, 100), output_));
 
@@ -275,7 +275,7 @@ TEST_F(MethodPending,
 }
 
 TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 2, 42, 100),
                 output_));
@@ -286,7 +286,7 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectChannel) {
 }
 
 TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 43, 100),
                 output_));
@@ -299,7 +299,7 @@ TEST_F(MethodPending, ProcessPacket_Cancel_IncorrectService) {
 }
 
 TEST_F(MethodPending, ProcessPacket_CancelIncorrectMethod) {
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             server_.ProcessPacket(
                 EncodeRequest(PacketType::CANCEL_SERVER_STREAM, 1, 42, 101),
                 output_));

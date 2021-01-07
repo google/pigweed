@@ -95,10 +95,10 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
   protobuf::NestedEncoder encoder(buffer);
   test::TestRequest::Encoder test_request(&encoder);
   test_request.WriteInteger(123);
-  test_request.WriteStatusCode(Status::Ok().code());
+  test_request.WriteStatusCode(OkStatus().code());
 
   auto sws = context.call(encoder.Encode().value());
-  EXPECT_EQ(Status::Ok(), sws.status());
+  EXPECT_EQ(OkStatus(), sws.status());
 
   protobuf::Decoder decoder(context.response());
 

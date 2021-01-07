@@ -101,7 +101,7 @@ TEST(ToString, ScopedEnum) {
 
   auto result = ToString(MyEnum::kLuckyNumber, buffer);
   EXPECT_EQ(1u, result.size());
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_STREQ("8", buffer);
 }
 

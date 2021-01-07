@@ -83,7 +83,7 @@ TEST_F(EmptyEntryCache, EntryMetadata_Reset) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry) {
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
@@ -98,7 +98,7 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry) {
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_NewEntry_Full) {
   for (uint32_t i = 0; i < kMaxEntries; ++i) {
     ASSERT_EQ(  // Fill up the cache
-        Status::Ok(),
+        OkStatus(),
         entries_.AddNewOrUpdateExisting({i, i, EntryState::kValid}, i, 1));
   }
   ASSERT_EQ(kMaxEntries, entries_.total_entries());
@@ -113,7 +113,7 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_UpdatedEntry) {
   KeyDescriptor kd = kDescriptor;
   kd.transaction_id += 3;
 
-  ASSERT_EQ(Status::Ok(), entries_.AddNewOrUpdateExisting(kd, 3210, 2000));
+  ASSERT_EQ(OkStatus(), entries_.AddNewOrUpdateExisting(kd, 3210, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
 
@@ -125,15 +125,15 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_UpdatedEntry) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntry) {
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 2000));
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 3000, 2000));
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 7000, 2000));
 
   // Duplicates beyond the redundancy are ignored.
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 9000, 2000));
 
   EXPECT_EQ(1u, entries_.present_entries());
@@ -150,7 +150,7 @@ TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntry) {
 }
 
 TEST_F(EmptyEntryCache, AddNewOrUpdateExisting_AddDuplicateEntryInSameSector) {
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1000, 1000));
   EXPECT_EQ(Status::DataLoss(),
             entries_.AddNewOrUpdateExisting(kDescriptor, 1950, 1000));
@@ -320,7 +320,7 @@ TEST_F(InitializedEntryCache, Find_PresentEntry) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash(kTheKey), metadata.hash());
   EXPECT_EQ(EntryState::kValid, metadata.state());
@@ -337,7 +337,7 @@ TEST_F(InitializedEntryCache, Find_PresentEntryWithSingleReadError) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, kTheKey, &metadata);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(1u, result.size());
   EXPECT_EQ(Hash(kTheKey), metadata.hash());
   EXPECT_EQ(EntryState::kValid, metadata.state());
@@ -364,7 +364,7 @@ TEST_F(InitializedEntryCache, Find_DeletedEntry) {
   StatusWithSize result =
       entries_.Find(partition_, sectors_, format_, "delorted", &metadata);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(0u, result.size());
   EXPECT_EQ(Hash("delorted"), metadata.hash());
   EXPECT_EQ(EntryState::kDeleted, metadata.state());

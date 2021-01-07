@@ -51,20 +51,19 @@ class WriteUnnumberedFrame : public ::testing::Test {
 constexpr byte kUnnumberedControl = byte{0x3};
 
 TEST_F(WriteUnnumberedFrame, EmptyPayload) {
-  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, std::span<byte>(), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, std::span<byte>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag, kAddress, kUnnumberedControl, uint32_t{0x141BE378}, kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload) {
-  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, bytes::String("A"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("A"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag, kAddress, kUnnumberedControl, 'A', uint32_t{0x8D137C66}, kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7d) {
-  ASSERT_EQ(Status::Ok(),
-            WriteUIFrame(kAddress, bytes::Array<0x7d>(), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::Array<0x7d>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
                                      kUnnumberedControl,
@@ -75,8 +74,7 @@ TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7d) {
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7E) {
-  ASSERT_EQ(Status::Ok(),
-            WriteUIFrame(kAddress, bytes::Array<0x7e>(), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::Array<0x7e>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
                                      kUnnumberedControl,
@@ -87,7 +85,7 @@ TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7E) {
 }
 
 TEST_F(WriteUnnumberedFrame, AddressNeedsEscaping) {
-  ASSERT_EQ(Status::Ok(), WriteUIFrame(0x7d, bytes::String("A"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(0x7d, bytes::String("A"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kEscape,
                                      byte{0x5d},
@@ -98,7 +96,7 @@ TEST_F(WriteUnnumberedFrame, AddressNeedsEscaping) {
 }
 
 TEST_F(WriteUnnumberedFrame, Crc32NeedsEscaping) {
-  ASSERT_EQ(Status::Ok(), WriteUIFrame(kAddress, bytes::String("a"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("a"), writer_));
 
   // The CRC-32 is 0xB67D5CAE, so the 0x7D must be escaped.
   constexpr auto expected_crc32 = bytes::Array<0xae, 0x5c, 0x7d, 0x5d, 0xb6>();
@@ -111,10 +109,8 @@ TEST_F(WriteUnnumberedFrame, Crc32NeedsEscaping) {
 }
 
 TEST_F(WriteUnnumberedFrame, MultiplePayloads) {
-  ASSERT_EQ(Status::Ok(),
-            WriteUIFrame(kAddress, bytes::String("ABC"), writer_));
-  ASSERT_EQ(Status::Ok(),
-            WriteUIFrame(kAddress, bytes::String("DEF"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("ABC"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("DEF"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kAddress,
                                      kUnnumberedControl,
@@ -131,7 +127,7 @@ TEST_F(WriteUnnumberedFrame, MultiplePayloads) {
 
 TEST_F(WriteUnnumberedFrame, PayloadWithNoEscapes) {
   ASSERT_EQ(
-      Status::Ok(),
+      OkStatus(),
       WriteUIFrame(kAddress, bytes::String("1995 toyota corolla"), writer_));
 
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
@@ -144,7 +140,7 @@ TEST_F(WriteUnnumberedFrame, PayloadWithNoEscapes) {
 
 TEST_F(WriteUnnumberedFrame, PayloadWithMultipleEscapes) {
   ASSERT_EQ(
-      Status::Ok(),
+      OkStatus(),
       WriteUIFrame(kAddress,
                    bytes::Array<0x7E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x7E>(),
                    writer_));

@@ -578,7 +578,7 @@ TEST(TokenizedTrace, QueueFull) {
   constexpr size_t kQueueSize = 5;
   pw::trace::internal::TraceQueue<kQueueSize> queue;
   for (size_t i = 0; i < kQueueSize; i++) {
-    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::Status::OK);
+    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::OkStatus());
   }
   EXPECT_FALSE(queue.IsEmpty());
   EXPECT_TRUE(queue.IsFull());
@@ -598,7 +598,7 @@ TEST(TokenizedTrace, Clear) {
   constexpr size_t kQueueSize = 5;
   pw::trace::internal::TraceQueue<kQueueSize> queue;
   for (size_t i = 0; i < kQueueSize; i++) {
-    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::Status::OK);
+    EXPECT_EQ(queue.TryPushBack(QUEUE_TESTS_ARGS(i)), pw::OkStatus());
   }
   EXPECT_FALSE(queue.IsEmpty());
   EXPECT_TRUE(queue.IsFull());

@@ -100,7 +100,9 @@ class StatusWithSize {
 
   // Functions that create a StatusWithSize with the specified status code. For
   // codes other than OK, the size defaults to 0.
-  static constexpr StatusWithSize Ok(size_t size) {
+  [[deprecated(
+      "Use the StatusWithSize constructor")]] static constexpr StatusWithSize
+  Ok(size_t size) {
     return StatusWithSize(size);
   }
   static constexpr StatusWithSize Cancelled(size_t size = 0) {
@@ -152,10 +154,10 @@ class StatusWithSize {
     return StatusWithSize(Status::DataLoss(), size);
   }
 
-  // Creates a StatusWithSize with Status::Ok() and a size of 0.
+  // Creates a StatusWithSize with OkStatus() and a size of 0.
   explicit constexpr StatusWithSize() : size_(0) {}
 
-  // Creates a StatusWithSize with Status::Ok() and the provided size.
+  // Creates a StatusWithSize with status OK and the provided size.
   // std::enable_if is used to prevent enum types (e.g. Status) from being used.
   // TODO(hepler): Add debug-only assert that size <= max_size().
   template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
@@ -178,7 +180,7 @@ class StatusWithSize {
   // The maximum valid value for size.
   static constexpr size_t max_size() { return kSizeMask; }
 
-  // True if status() == Status::Ok().
+  // True if status() == OkStatus().
   constexpr bool ok() const { return (size_ & kStatusMask) == 0u; }
 
   constexpr Status status() const {

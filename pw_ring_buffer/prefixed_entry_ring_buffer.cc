@@ -40,7 +40,7 @@ Status PrefixedEntryRingBuffer::SetBuffer(std::span<byte> buffer) {
   buffer_bytes_ = buffer.size_bytes();
 
   Clear();
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
@@ -80,7 +80,7 @@ Status PrefixedEntryRingBuffer::InternalPushBack(std::span<const byte> data,
   RawWrite(std::span(varint_buf, varint_bytes));
   RawWrite(data);
   entry_count_++;
-  return Status::Ok();
+  return OkStatus();
 }
 
 auto GetOutput(std::span<byte> data_out, size_t* write_index) {
@@ -90,7 +90,7 @@ auto GetOutput(std::span<byte> data_out, size_t* write_index) {
     memcpy(data_out.data() + *write_index, src.data(), copy_size);
     *write_index += copy_size;
 
-    return (copy_size == src.size_bytes()) ? Status::Ok()
+    return (copy_size == src.size_bytes()) ? OkStatus()
                                            : Status::ResourceExhausted();
   };
 }
@@ -161,7 +161,7 @@ Status PrefixedEntryRingBuffer::PopFront() {
   size_t entry_bytes = info.preamble_bytes + info.data_bytes;
   read_idx_ = IncrementIndex(read_idx_, entry_bytes);
   entry_count_--;
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status PrefixedEntryRingBuffer::Dering() {
@@ -170,7 +170,7 @@ Status PrefixedEntryRingBuffer::Dering() {
   }
   // Check if by luck we're already deringed.
   if (read_idx_ == 0) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   auto buffer_span = std::span(buffer_, buffer_bytes_);
@@ -184,7 +184,7 @@ Status PrefixedEntryRingBuffer::Dering() {
   }
   write_idx_ -= read_idx_;
   read_idx_ = 0;
-  return Status::Ok();
+  return OkStatus();
 }
 
 size_t PrefixedEntryRingBuffer::FrontEntryDataSizeBytes() {

@@ -41,7 +41,7 @@ StatusWithSize NanopbMethodSerde::Encode(NanopbMessageDescriptor fields,
     return StatusWithSize::Internal();
   }
 
-  return StatusWithSize::Ok(output.bytes_written);
+  return StatusWithSize(output.bytes_written);
 }
 
 bool NanopbMethodSerde::Decode(NanopbMessageDescriptor fields,

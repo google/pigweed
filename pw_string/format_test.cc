@@ -26,7 +26,7 @@ TEST(Format, ValidFormatString_Succeeds) {
   char buffer[32];
   auto result = Format(buffer, "-_-");
 
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(3u, result.size());
   EXPECT_STREQ("-_-", buffer);
 }
@@ -35,7 +35,7 @@ TEST(Format, ValidFormatStringAndArguments_Succeeds) {
   char buffer[32];
   auto result = Format(buffer, "%d4%s", 123, "5");
 
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(5u, result.size());
   EXPECT_STREQ("12345", buffer);
 }
@@ -81,7 +81,7 @@ TEST(Format, CallFormatWithVaList_CallsCorrectFormatOverload) {
   char buffer[8];
   auto result = CallFormatWithVaList(buffer, "Yo%s", "?!");
 
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(4u, result.size());
   EXPECT_STREQ("Yo?!", buffer);
 }

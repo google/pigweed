@@ -225,7 +225,7 @@ def _cpp_test(ctx: Context) -> Iterator[str]:
     if (std::holds_alternative<Status>(expected)) {{
       EXPECT_EQ(Status::DATA_LOSS, result.status());
     }} else {{
-      ASSERT_EQ(Status::OK, result.status());
+      ASSERT_EQ(OkStatus(), result.status());
 
       const Frame& decoded_frame = result.value();
       const Frame& expected_frame = std::get<Frame>(expected);

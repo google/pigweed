@@ -100,7 +100,7 @@ class SmallBuffer : public ::testing::Test {
 TEST_F(HexDump, DumpAddr_ZeroSizeT) {
   constexpr const char* expected = EXPECTED_SIGNIFICANT_BYTES("00000000");
   size_t zero = 0;
-  EXPECT_EQ(DumpAddr(dest_, zero), Status::Ok());
+  EXPECT_EQ(DumpAddr(dest_, zero), OkStatus());
   EXPECT_STREQ(expected, dest_.data());
 }
 

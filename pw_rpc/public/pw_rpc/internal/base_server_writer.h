@@ -59,7 +59,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   uint32_t method_id() const;
 
   // Closes the ServerWriter, if it is open.
-  void Finish(Status status = Status::Ok());
+  void Finish(Status status = OkStatus());
 
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}

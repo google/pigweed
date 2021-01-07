@@ -49,7 +49,7 @@ TEST(Client, ProcessPacket_InvokesARegisteredClientCall) {
 
   TestClientCall call(
       &context.channel(), context.kServiceId, context.kMethodId);
-  EXPECT_EQ(context.SendResponse(Status::Ok(), {}), Status::Ok());
+  EXPECT_EQ(context.SendResponse(OkStatus(), {}), OkStatus());
 
   EXPECT_TRUE(call.invoked());
 }
@@ -57,7 +57,7 @@ TEST(Client, ProcessPacket_InvokesARegisteredClientCall) {
 TEST(Client, ProcessPacket_SendsClientErrorOnUnregisteredCall) {
   ClientContextForTest context;
 
-  EXPECT_EQ(context.SendResponse(Status::OK, {}), Status::NotFound());
+  EXPECT_EQ(context.SendResponse(OkStatus(), {}), Status::NotFound());
 
   ASSERT_EQ(context.output().packet_count(), 1u);
   const Packet& packet = context.output().sent_packet();

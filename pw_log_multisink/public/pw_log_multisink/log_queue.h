@@ -58,7 +58,7 @@ class LogQueue {
   LogQueue(ByteSpan log_buffer,
            ByteSpan encode_buffer,
            size_t max_log_entry_size = kLogEntryMaxSize)
-      : pop_status_for_test_(Status::Ok()),
+      : pop_status_for_test_(OkStatus()),
         max_log_entry_size_(max_log_entry_size),
         encode_buffer_(encode_buffer),
         ring_buffer_(true) {

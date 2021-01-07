@@ -69,7 +69,7 @@ struct FlashWithPartitionFake {
     std::vector<std::byte> out_vec(memory.size_bytes());
     Status status =
         memory.Read(0, std::span<std::byte>(out_vec.data(), out_vec.size()));
-    if (status != Status::Ok()) {
+    if (status != OkStatus()) {
       fclose(out_file);
       return status;
     }
@@ -83,14 +83,14 @@ struct FlashWithPartitionFake {
       status = Status::DataLoss();
     } else {
       PW_LOG_INFO("Dumped to %s", filename);
-      status = Status::Ok();
+      status = OkStatus();
     }
 
     fclose(out_file);
     return status;
   }
 #else
-  Status Dump(const char*) { return Status::Ok(); }
+  Status Dump(const char*) { return OkStatus(); }
 #endif  // DUMP_KVS_STATE_TO_FILE
 };
 
@@ -156,8 +156,8 @@ TEST(InitCheck, TooManySectors) {
   EXPECT_EQ(kvs.Init(), Status::FailedPrecondition());
 }
 
-#define ASSERT_OK(expr) ASSERT_EQ(Status::Ok(), expr)
-#define EXPECT_OK(expr) EXPECT_EQ(Status::Ok(), expr)
+#define ASSERT_OK(expr) ASSERT_EQ(OkStatus(), expr)
+#define EXPECT_OK(expr) EXPECT_EQ(OkStatus(), expr)
 
 TEST(InMemoryKvs, WriteOneKeyMultipleTimes) {
   // Create and erase the fake flash. It will persist across reloads.
@@ -301,7 +301,7 @@ TEST(InMemoryKvs, Basic) {
 
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_EQ(Status::Ok(), flash.partition.Erase());
+  ASSERT_EQ(OkStatus(), flash.partition.Erase());
 
   // Create and initialize the KVS.
   // For KVS magic value always use a random 32 bit integer rather than a
@@ -336,7 +336,7 @@ TEST(InMemoryKvs, Basic) {
 TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_EQ(Status::Ok(), flash.partition.Erase());
+  ASSERT_EQ(OkStatus(), flash.partition.Erase());
 
   // Create and initialize the KVS.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
@@ -344,8 +344,8 @@ TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
   ASSERT_OK(kvs.Init());
 
   const uint8_t kValue = 0xDA;
-  ASSERT_EQ(Status::Ok(), kvs.Put(keys[0], kValue));
-  ASSERT_EQ(Status::Ok(), kvs.Delete(keys[0]));
+  ASSERT_EQ(OkStatus(), kvs.Put(keys[0], kValue));
+  ASSERT_EQ(OkStatus(), kvs.Delete(keys[0]));
 
   // Compare before / after checksums to verify that nothing was written.
   const uint16_t crc = checksum::Crc16Ccitt::Calculate(flash.memory.buffer());
@@ -358,8 +358,8 @@ TEST(InMemoryKvs, CallingEraseTwice_NothingWrittenToFlash) {
 class LargeEmptyInitializedKvs : public ::testing::Test {
  protected:
   LargeEmptyInitializedKvs() : kvs_(&large_test_partition, default_format) {
-    ASSERT_EQ(Status::Ok(), large_test_partition.Erase());
-    ASSERT_EQ(Status::Ok(), kvs_.Init());
+    ASSERT_EQ(OkStatus(), large_test_partition.Erase());
+    ASSERT_EQ(OkStatus(), kvs_.Init());
   }
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
@@ -369,14 +369,14 @@ TEST_F(LargeEmptyInitializedKvs, Basic) {
   const uint8_t kValue1 = 0xDA;
   const uint8_t kValue2 = 0x12;
   uint8_t value;
-  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[0], kValue1));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
   EXPECT_EQ(kvs_.size(), 1u);
-  ASSERT_EQ(Status::Ok(), kvs_.Delete(keys[0]));
+  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[0]));
   EXPECT_EQ(kvs_.Get(keys[0], &value), Status::NotFound());
-  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[1], kValue1));
-  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[2], kValue2));
-  ASSERT_EQ(Status::Ok(), kvs_.Delete(keys[1]));
-  EXPECT_EQ(Status::Ok(), kvs_.Get(keys[2], &value));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[1], kValue1));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[2], kValue2));
+  ASSERT_EQ(OkStatus(), kvs_.Delete(keys[1]));
+  EXPECT_EQ(OkStatus(), kvs_.Get(keys[2], &value));
   EXPECT_EQ(kValue2, value);
   ASSERT_EQ(kvs_.Get(keys[1], &value), Status::NotFound());
   EXPECT_EQ(kvs_.size(), 1u);
@@ -388,8 +388,8 @@ TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
 
   // Write a key and write again with a different value, resulting in a stale
   // entry from the first write.
-  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[0], kValue1));
-  ASSERT_EQ(Status::Ok(), kvs_.Put(keys[0], kValue2));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue1));
+  ASSERT_EQ(OkStatus(), kvs_.Put(keys[0], kValue2));
   EXPECT_EQ(kvs_.size(), 1u);
 
   KeyValueStore::StorageStats stats = kvs_.GetStorageStats();
@@ -398,14 +398,14 @@ TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
 
   // Do regular FullMaintenance, which should not touch the sector with valid
   // data.
-  EXPECT_EQ(Status::Ok(), kvs_.FullMaintenance());
+  EXPECT_EQ(OkStatus(), kvs_.FullMaintenance());
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.sector_erase_count, 0u);
   EXPECT_GT(stats.reclaimable_bytes, 0u);
 
   // Do aggressive FullMaintenance, which should GC the sector with valid data,
   // resulting in no reclaimable bytes and an erased sector.
-  EXPECT_EQ(Status::Ok(), kvs_.HeavyMaintenance());
+  EXPECT_EQ(OkStatus(), kvs_.HeavyMaintenance());
   stats = kvs_.GetStorageStats();
   EXPECT_EQ(stats.sector_erase_count, 1u);
   EXPECT_EQ(stats.reclaimable_bytes, 0u);
@@ -414,7 +414,7 @@ TEST_F(LargeEmptyInitializedKvs, FullMaintenance) {
 TEST(InMemoryKvs, Put_MaxValueSize) {
   // Create and erase the fake flash.
   Flash flash;
-  ASSERT_EQ(Status::Ok(), flash.partition.Erase());
+  ASSERT_EQ(OkStatus(), flash.partition.Erase());
 
   // Create and initialize the KVS.
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs(&flash.partition,
@@ -434,7 +434,7 @@ TEST(InMemoryKvs, Put_MaxValueSize) {
   ASSERT_GT(sizeof(large_test_flash), max_value_size + 2 * sizeof(EntryHeader));
   auto big_data = std::as_bytes(std::span(&large_test_flash, 1));
 
-  EXPECT_EQ(Status::Ok(), kvs.Put("K", big_data.subspan(0, max_value_size)));
+  EXPECT_EQ(OkStatus(), kvs.Put("K", big_data.subspan(0, max_value_size)));
 
   // Larger than maximum is rejected.
   EXPECT_EQ(Status::InvalidArgument(),

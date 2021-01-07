@@ -122,7 +122,7 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_TRUE(packet.payload().empty());
-  EXPECT_EQ(packet.status(), Status::Ok());
+  EXPECT_EQ(packet.status(), OkStatus());
 }
 
 TEST(ServerWriter, Close) {
@@ -152,11 +152,11 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
   FakeServerWriter writer(context.get());
 
   constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
-  ASSERT_EQ(Status::Ok(), writer.Write(data));
+  ASSERT_EQ(OkStatus(), writer.Write(data));
 
   byte encoded[64];
   auto result = context.packet(data).Encode(encoded);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
 
   EXPECT_EQ(result.value().size(), context.output().sent_data().size());
   EXPECT_EQ(

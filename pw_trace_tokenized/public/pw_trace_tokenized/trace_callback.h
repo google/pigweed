@@ -89,7 +89,7 @@ pw_Status pw_trace_UnregisterEventCallback(pw_trace_EventCallbackHandle handle);
 // start, allowing buffers to allocate the required amount at the start when
 // necessary.
 //
-// If Status::Ok() is not returned from Start, the events bytes will be skipped.
+// If OkStatus() is not returned from Start, the events bytes will be skipped.
 //
 // NOTE: Called while tracing is locked (which might be a critical section
 // depending on application), so quick/simple operations only. One trace event

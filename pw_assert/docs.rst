@@ -149,10 +149,9 @@ invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
     tokenizing assert backend. For example, if ``x`` and ``b`` are integers,
     use instead ``PW_CHECK_INT_LT(x, b)``.
 
-    Additionally, use ``PW_CHECK_OK(status)`` when checking for a
-    ``Status::OK``, since it enables showing a human-readable status string
-    rather than an integer (e.g. ``status == RESOURCE_EXHAUSTED`` instead of
-    ``status == 5``.
+    Additionally, use ``PW_CHECK_OK(status)`` when checking for an OK status,
+    since it enables showing a human-readable status string rather than an
+    integer (e.g. ``status == RESOURCE_EXHAUSTED`` instead of ``status == 5``.
 
     +------------------------------------+-------------------------------------+
     | **Do NOT do this**                 | **Do this instead**                 |
@@ -164,7 +163,7 @@ invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
     | ``PW_CHECK(Temp() <= 10.0)``       | ``PW_CHECK_FLOAT_EXACT_LE(``        |
     |                                    | ``    Temp(), 10.0)``               |
     +------------------------------------+-------------------------------------+
-    | ``PW_CHECK(Foo() == Status::OK)``  | ``PW_CHECK_OK(Foo())``              |
+    | ``PW_CHECK(Foo() == OkStatus())``  | ``PW_CHECK_OK(Foo())``              |
     +------------------------------------+-------------------------------------+
 
 .. cpp:function:: PW_CHECK_NOTNULL(ptr)
@@ -367,7 +366,7 @@ invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
 .. cpp:function:: PW_DCHECK_OK(status)
 .. cpp:function:: PW_DCHECK_OK(status, format, ...)
 
-  Assert that ``status`` evaluates to ``pw::Status::OK`` (in C++) or
+  Assert that ``status`` evaluates to ``pw::OkStatus()`` (in C++) or
   ``PW_STATUS_OK`` (in C). Optionally include a message with arguments to
   report.
 
@@ -388,7 +387,7 @@ invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
 
   .. note::
 
-    Using ``PW_CHECK_OK(status)`` instead of ``PW_CHECK(status == Status::OK)``
+    Using ``PW_CHECK_OK(status)`` instead of ``PW_CHECK(status == OkStatus())``
     enables displaying an error message with a string version of the error
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.

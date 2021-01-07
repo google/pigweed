@@ -52,7 +52,7 @@ TEST(Decoder, Clear) {
       bytes::String("~1234\xa3\xe0\xe3\x9b~"),
       [&status](const Result<Frame>& result) { status = result.status(); });
 
-  EXPECT_EQ(Status::Ok(), status);
+  EXPECT_EQ(OkStatus(), status);
 }
 
 TEST(Decoder, ExactFit) {
@@ -62,7 +62,7 @@ TEST(Decoder, ExactFit) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
   auto result = decoder.Process(kFlag);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   ASSERT_EQ(result.value().data().size(), 2u);
   ASSERT_EQ(result.value().data()[0], byte{'3'});
   ASSERT_EQ(result.value().data()[1], byte{'4'});
@@ -76,7 +76,7 @@ TEST(Decoder, MinimumSizedBuffer) {
   }
 
   auto result = decoder.Process(kFlag);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(result.value().data().size(), 0u);
 }
 
@@ -121,7 +121,7 @@ TEST(Decoder, TooLargeForBuffer_DecodesNextFrame) {
   for (byte b : bytes::String("1234\xa3\xe0\xe3\x9b")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
-  EXPECT_EQ(Status::Ok(), decoder.Process(kFlag).status());
+  EXPECT_EQ(OkStatus(), decoder.Process(kFlag).status());
 }
 
 }  // namespace

@@ -45,7 +45,7 @@ class LogsService : public ::testing::Test {
     constexpr char kTokenizedMessage[] = "message";
     for (size_t i = 0; i < log_count; i++) {
       EXPECT_EQ(
-          Status::Ok(),
+          OkStatus(),
           log_queue_.PushTokenizedMessage(
               std::as_bytes(std::span(kTokenizedMessage)), 0, 0, 0, 0, 0));
     }
@@ -72,7 +72,7 @@ TEST_F(LogsService, Get) {
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::Ok(), context.status());
+  EXPECT_EQ(OkStatus(), context.status());
 
   // Although |kLogEntryCount| messages were in the queue, they are batched
   // before being written to the client, so there is only one response.
@@ -94,7 +94,7 @@ TEST_F(LogsService, GetMultiple) {
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::Ok(), context.status());
+  EXPECT_EQ(OkStatus(), context.status());
   EXPECT_EQ(kFlushCount, context.total_responses());
 }
 
@@ -108,7 +108,7 @@ TEST_F(LogsService, NoEntriesOnEmptyQueue) {
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::Ok(), context.status());
+  EXPECT_EQ(OkStatus(), context.status());
   EXPECT_EQ(0U, context.total_responses());
 }
 
@@ -124,7 +124,7 @@ TEST_F(LogsService, QueueError) {
   GetLogs(context).Finish();
 
   EXPECT_TRUE(context.done());
-  EXPECT_EQ(Status::Ok(), context.status());
+  EXPECT_EQ(OkStatus(), context.status());
   EXPECT_EQ(0U, context.total_responses());
 }
 

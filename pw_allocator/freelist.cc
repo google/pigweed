@@ -36,7 +36,7 @@ Status FreeList::AddChunk(std::span<std::byte> chunk) {
   aliased.node->next = chunks_[chunk_ptr];
   chunks_[chunk_ptr] = aliased.node;
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 std::span<std::byte> FreeList::FindChunk(size_t size) const {
@@ -92,7 +92,7 @@ Status FreeList::RemoveChunk(std::span<std::byte> chunk) {
   if (aliased.data == chunk.data()) {
     chunks_[chunk_ptr] = aliased.node->next;
 
-    return Status::Ok();
+    return OkStatus();
   }
 
   // No? Walk the nodes.
@@ -103,7 +103,7 @@ Status FreeList::RemoveChunk(std::span<std::byte> chunk) {
     if (aliased_next.data == chunk.data()) {
       // Found it, remove this node out of the chain
       aliased.node->next = aliased_next.node->next;
-      return Status::Ok();
+      return OkStatus();
     }
 
     aliased.node = aliased.node->next;

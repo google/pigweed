@@ -248,7 +248,7 @@ class Status {
 
   // Functions that create a Status with the specified code.
   // clang-format off
-  [[nodiscard]] static constexpr Status Ok() {
+  [[deprecated("Use pw::StatusOk()"), nodiscard]] static constexpr Status Ok() {
     return PW_STATUS_OK;
   }
   [[nodiscard]] static constexpr Status Cancelled() {

@@ -27,7 +27,7 @@ Status ChecksumAlgorithm::Verify(std::span<const byte> checksum) const {
   if (std::memcmp(state_.data(), checksum.data(), size_bytes()) != 0) {
     return Status::DataLoss();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::kvs

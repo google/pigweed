@@ -87,10 +87,10 @@ TEST(NanopbClientCall, Unary_InvokesCallbackOnValidResponse) {
       context.channel(), {.integer = 123, .status_code = 0}, handler);
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, response, .value = 42);
-  context.SendResponse(Status::Ok(), response);
+  context.SendResponse(OkStatus(), response);
 
   ASSERT_EQ(handler.responses_received(), 1u);
-  EXPECT_EQ(handler.last_status(), Status::Ok());
+  EXPECT_EQ(handler.last_status(), OkStatus());
   EXPECT_EQ(handler.last_response().value, 42);
 }
 
@@ -103,7 +103,7 @@ TEST(NanopbClientCall, Unary_InvokesErrorCallbackOnInvalidResponse) {
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
-  context.SendResponse(Status::Ok(), bad_payload);
+  context.SendResponse(OkStatus(), bad_payload);
 
   EXPECT_EQ(handler.responses_received(), 0u);
   EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
@@ -168,19 +168,19 @@ TEST(NanopbClientCall, ServerStreaming_InvokesCallbackOnValidResponse) {
       context.channel(), {.integer = 71, .status_code = 0}, handler);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendResponse(Status::Ok(), r1);
+  context.SendResponse(OkStatus(), r1);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 1u);
   EXPECT_EQ(handler.last_response().number, 11u);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendResponse(Status::Ok(), r2);
+  context.SendResponse(OkStatus(), r2);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 2u);
   EXPECT_EQ(handler.last_response().number, 22u);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
-  context.SendResponse(Status::Ok(), r3);
+  context.SendResponse(OkStatus(), r3);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 3u);
   EXPECT_EQ(handler.last_response().number, 33u);
@@ -195,11 +195,11 @@ TEST(NanopbClientCall, ServerStreaming_ClosesOnFinish) {
       context.channel(), {.integer = 71, .status_code = 0}, handler);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendResponse(Status::Ok(), r1);
+  context.SendResponse(OkStatus(), r1);
   EXPECT_TRUE(handler.active());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendResponse(Status::Ok(), r2);
+  context.SendResponse(OkStatus(), r2);
   EXPECT_TRUE(handler.active());
 
   // Close the stream.
@@ -207,7 +207,7 @@ TEST(NanopbClientCall, ServerStreaming_ClosesOnFinish) {
                      Status::NotFound());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r3, .chunk = {}, .number = 33u);
-  context.SendResponse(Status::Ok(), r3);
+  context.SendResponse(OkStatus(), r3);
   EXPECT_FALSE(handler.active());
 
   EXPECT_EQ(handler.responses_received(), 2u);
@@ -222,19 +222,19 @@ TEST(NanopbClientCall, ServerStreaming_InvokesErrorCallbackOnInvalidResponses) {
       context.channel(), {.integer = 71, .status_code = 0}, handler);
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r1, .chunk = {}, .number = 11u);
-  context.SendResponse(Status::Ok(), r1);
+  context.SendResponse(OkStatus(), r1);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 1u);
   EXPECT_EQ(handler.last_response().number, 11u);
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
-  context.SendResponse(Status::Ok(), bad_payload);
+  context.SendResponse(OkStatus(), bad_payload);
   EXPECT_EQ(handler.responses_received(), 1u);
   EXPECT_EQ(handler.rpc_error(), Status::DataLoss());
 
   PW_ENCODE_PB(pw_rpc_test_TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  context.SendResponse(Status::Ok(), r2);
+  context.SendResponse(OkStatus(), r2);
   EXPECT_TRUE(handler.active());
   EXPECT_EQ(handler.responses_received(), 2u);
   EXPECT_EQ(handler.last_response().number, 22u);

@@ -109,7 +109,7 @@ A Nanopb implementation of this service would be as follows:
                          const foo_bar_Request& request,
                          foo_bar_Response& response) {
       // implementation
-      return pw::Status::Ok();
+      return pw::OkStatus();
     }
 
     void MethodTwo(ServerContext& ctx,

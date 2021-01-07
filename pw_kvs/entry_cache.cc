@@ -107,7 +107,7 @@ StatusWithSize EntryCache::Find(FlashPartition& partition,
       } else if (key == read_key) {
         PW_LOG_DEBUG("Found match for key hash 0x%08" PRIx32, hash);
         *metadata = EntryMetadata(descriptors_[i], addresses(i));
-        return StatusWithSize::Ok(error_val);
+        return StatusWithSize(error_val);
       } else {
         PW_LOG_WARN("Found key hash collision for 0x%08" PRIx32, hash);
         return StatusWithSize::AlreadyExists(error_val);
@@ -142,14 +142,14 @@ Status EntryCache::AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
       return Status::ResourceExhausted();
     }
     AddNew(descriptor, address);
-    return Status::Ok();
+    return OkStatus();
   }
 
   // Existing entry is old; replace the existing entry with the new one.
   if (descriptor.transaction_id > descriptors_[index].transaction_id) {
     descriptors_[index] = descriptor;
     ResetAddresses(index, address);
-    return Status::Ok();
+    return OkStatus();
   }
 
   // If the entries have a duplicate transaction ID, add the new (redundant)
@@ -177,7 +177,7 @@ Status EntryCache::AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
   } else {
     PW_LOG_DEBUG("Found stale entry when appending; ignoring");
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 size_t EntryCache::present_entries() const {

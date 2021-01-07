@@ -116,7 +116,7 @@ constexpr internal::EntryFormats kFormats(kFormatWithChecksum);
 class ValidEntryInFlash : public ::testing::Test {
  protected:
   ValidEntryInFlash() : flash_(kEntry1), partition_(&flash_) {
-    EXPECT_EQ(Status::Ok(), Entry::Read(partition_, 0, kFormats, &entry_));
+    EXPECT_EQ(OkStatus(), Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
   FakeFlashMemoryBuffer<1024, 4> flash_;
@@ -125,8 +125,8 @@ class ValidEntryInFlash : public ::testing::Test {
 };
 
 TEST_F(ValidEntryInFlash, PassesChecksumVerification) {
-  EXPECT_EQ(Status::Ok(), entry_.VerifyChecksumInFlash());
-  EXPECT_EQ(Status::Ok(), entry_.VerifyChecksum("key45", kValue1));
+  EXPECT_EQ(OkStatus(), entry_.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), entry_.VerifyChecksum("key45", kValue1));
 }
 
 TEST_F(ValidEntryInFlash, HeaderContents) {
@@ -141,7 +141,7 @@ TEST_F(ValidEntryInFlash, ReadKey) {
   Entry::KeyBuffer key = {};
   auto result = entry_.ReadKey(key);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(result.size(), entry_.key_length());
   EXPECT_STREQ(key.data(), "key45");
 }
@@ -150,7 +150,7 @@ TEST_F(ValidEntryInFlash, ReadValue) {
   char value[32] = {};
   auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)));
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(result.size(), entry_.value_size());
   EXPECT_STREQ(value, "VALUE!");
 }
@@ -170,7 +170,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset) {
   char value[3] = {};
   auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 3);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(3u, result.size());
   EXPECT_EQ(value[0], 'U');
   EXPECT_EQ(value[1], 'E');
@@ -190,7 +190,7 @@ TEST_F(ValidEntryInFlash, ReadValue_WithOffset_EmptyRead) {
   char value[16] = {'?'};
   auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)), 6);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(0u, result.size());
   EXPECT_EQ(value[0], '?');
 }
@@ -211,7 +211,7 @@ TEST(ValidEntry, Write) {
       partition, 64, kFormatWithChecksum, "key45", kValue1, kTransactionId1);
 
   auto result = entry.Write("key45", kValue1);
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(32u, result.size());
   EXPECT_EQ(std::memcmp(&flash.buffer()[64], kEntry1.data(), kEntry1.size()),
             0);
@@ -233,7 +233,7 @@ class TombstoneEntryInFlash : public ::testing::Test {
  protected:
   TombstoneEntryInFlash()
       : flash_(bytes::Concat(kHeader2, kKeyAndPadding2)), partition_(&flash_) {
-    EXPECT_EQ(Status::Ok(), Entry::Read(partition_, 0, kFormats, &entry_));
+    EXPECT_EQ(OkStatus(), Entry::Read(partition_, 0, kFormats, &entry_));
   }
 
   FakeFlashMemoryBuffer<1024, 4> flash_;
@@ -242,8 +242,8 @@ class TombstoneEntryInFlash : public ::testing::Test {
 };
 
 TEST_F(TombstoneEntryInFlash, PassesChecksumVerification) {
-  EXPECT_EQ(Status::Ok(), entry_.VerifyChecksumInFlash());
-  EXPECT_EQ(Status::Ok(), entry_.VerifyChecksum("K", {}));
+  EXPECT_EQ(OkStatus(), entry_.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), entry_.VerifyChecksum("K", {}));
 }
 
 TEST_F(TombstoneEntryInFlash, HeaderContents) {
@@ -258,7 +258,7 @@ TEST_F(TombstoneEntryInFlash, ReadKey) {
   Entry::KeyBuffer key = {};
   auto result = entry_.ReadKey(key);
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(result.size(), entry_.key_length());
   EXPECT_STREQ(key.data(), "K");
 }
@@ -267,7 +267,7 @@ TEST_F(TombstoneEntryInFlash, ReadValue) {
   char value[32] = {};
   auto result = entry_.ReadValue(std::as_writable_bytes(std::span(value)));
 
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(0u, result.size());
 }
 
@@ -280,7 +280,7 @@ TEST(TombstoneEntry, Write) {
       Entry::Tombstone(partition, 16, kFormatWithChecksum, "K", 0x03020100);
 
   auto result = entry.Write("K", {});
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(32u, result.size());
   EXPECT_EQ(std::memcmp(&flash.buffer()[16],
                         bytes::Concat(kHeader2, kKeyAndPadding2).data(),
@@ -296,15 +296,15 @@ TEST(Entry, Checksum_NoChecksumRequiresZero) {
   const EntryFormat format{kMagicWithChecksum, nullptr};
   const internal::EntryFormats formats(format);
 
-  ASSERT_EQ(Status::Ok(), Entry::Read(partition, 0, formats, &entry));
+  ASSERT_EQ(OkStatus(), Entry::Read(partition, 0, formats, &entry));
 
   EXPECT_EQ(Status::DataLoss(), entry.VerifyChecksumInFlash());
   EXPECT_EQ(Status::DataLoss(), entry.VerifyChecksum({}, {}));
 
   std::memset(&flash.buffer()[4], 0, 4);  // set the checksum field to 0
-  ASSERT_EQ(Status::Ok(), Entry::Read(partition, 0, formats, &entry));
-  EXPECT_EQ(Status::Ok(), entry.VerifyChecksumInFlash());
-  EXPECT_EQ(Status::Ok(), entry.VerifyChecksum({}, {}));
+  ASSERT_EQ(OkStatus(), Entry::Read(partition, 0, formats, &entry));
+  EXPECT_EQ(OkStatus(), entry.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), entry.VerifyChecksum({}, {}));
 }
 
 TEST(Entry, Checksum_ChecksPadding) {
@@ -312,20 +312,20 @@ TEST(Entry, Checksum_ChecksPadding) {
       bytes::Concat(kHeader1, kKey1, kValue1, bytes::String("\0\0\0\0\1")));
   FlashPartition partition(&flash);
   Entry entry;
-  ASSERT_EQ(Status::Ok(), Entry::Read(partition, 0, kFormats, &entry));
+  ASSERT_EQ(OkStatus(), Entry::Read(partition, 0, kFormats, &entry));
 
   // Last byte in padding is a 1; should fail.
   EXPECT_EQ(Status::DataLoss(), entry.VerifyChecksumInFlash());
 
   // The in-memory verification fills in 0s for the padding.
-  EXPECT_EQ(Status::Ok(), entry.VerifyChecksum("key45", kValue1));
+  EXPECT_EQ(OkStatus(), entry.VerifyChecksum("key45", kValue1));
 
   flash.buffer()[kEntry1.size() - 1] = byte{0};
-  EXPECT_EQ(Status::Ok(), entry.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), entry.VerifyChecksumInFlash());
 }
 
 TEST_F(ValidEntryInFlash, Update_SameFormat_TransactionIdIsUpdated) {
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             entry_.Update(kFormatWithChecksum, kTransactionId1 + 3));
 
   EXPECT_EQ(kFormatWithChecksum.magic, entry_.magic());
@@ -336,7 +336,7 @@ TEST_F(ValidEntryInFlash, Update_SameFormat_TransactionIdIsUpdated) {
 
 TEST_F(ValidEntryInFlash,
        Update_DifferentFormat_MagicAndTransactionIdAreUpdated) {
-  ASSERT_EQ(Status::Ok(), entry_.Update(kFormat, kTransactionId1 + 6));
+  ASSERT_EQ(OkStatus(), entry_.Update(kFormat, kTransactionId1 + 6));
 
   EXPECT_EQ(kFormat.magic, entry_.magic());
   EXPECT_EQ(0u, entry_.address());
@@ -359,14 +359,13 @@ constexpr EntryFormat kNoChecksumFormat{.magic = 0x721bad24,
 TEST_F(ValidEntryInFlash, Update_ReadError_NoChecksumIsOkay) {
   flash_.InjectReadError(FlashError::Unconditional(Status::Aborted()));
 
-  EXPECT_EQ(Status::Ok(),
-            entry_.Update(kNoChecksumFormat, kTransactionId1 + 1));
+  EXPECT_EQ(OkStatus(), entry_.Update(kNoChecksumFormat, kTransactionId1 + 1));
 }
 
 TEST_F(ValidEntryInFlash, Copy) {
   auto result = entry_.Copy(123);
 
-  EXPECT_EQ(Status::Ok(), result.status());
+  EXPECT_EQ(OkStatus(), result.status());
   EXPECT_EQ(entry_.size(), result.size());
   EXPECT_EQ(0,
             std::memcmp(
@@ -436,10 +435,10 @@ constexpr auto MakeNewFormatWithSumEntry() {
 
 TEST_F(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSmallerAlignment) {
   // Uses 16-bit alignment, smaller than the original entry's alignment.
-  ASSERT_EQ(Status::Ok(), entry_.Update(kFormatWithSum, kTransactionId1 + 1));
+  ASSERT_EQ(OkStatus(), entry_.Update(kFormatWithSum, kTransactionId1 + 1));
 
   StatusWithSize result = entry_.Copy(kEntry1.size());
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(kEntry1.size(), result.size());
 
   constexpr auto new_data = MakeNewFormatWithSumEntry<16>();
@@ -450,9 +449,9 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSmallerAlignment) {
       std::memcmp(
           &flash_.buffer()[kEntry1.size()], new_data.data(), new_data.size()));
   Entry new_entry;
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             Entry::Read(partition_, 32, kFormatsWithSum, &new_entry));
-  EXPECT_EQ(Status::Ok(), new_entry.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), new_entry.VerifyChecksumInFlash());
   EXPECT_EQ(kFormatWithSum.magic, new_entry.magic());
   EXPECT_EQ(kTransactionId1 + 1, new_entry.transaction_id());
 }
@@ -462,12 +461,12 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
   FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 32);
   Entry entry;
-  ASSERT_EQ(Status::Ok(), Entry::Read(partition, 0, kFormats, &entry));
+  ASSERT_EQ(OkStatus(), Entry::Read(partition, 0, kFormats, &entry));
 
-  ASSERT_EQ(Status::Ok(), entry.Update(kFormatWithSum, kTransactionId1 + 1));
+  ASSERT_EQ(OkStatus(), entry.Update(kFormatWithSum, kTransactionId1 + 1));
 
   StatusWithSize result = entry.Copy(32);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(AlignUp(kEntry1.size(), 32), result.size());
 
   constexpr auto new_data = MakeNewFormatWithSumEntry<32>();
@@ -477,9 +476,9 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatSameAlignment) {
             std::memcmp(&flash.buffer()[32], new_data.data(), new_data.size()));
 
   Entry new_entry;
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             Entry::Read(partition, 32, kFormatsWithSum, &new_entry));
-  EXPECT_EQ(Status::Ok(), new_entry.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), new_entry.VerifyChecksumInFlash());
   EXPECT_EQ(kTransactionId1 + 1, new_entry.transaction_id());
 }
 
@@ -488,12 +487,12 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatLargerAlignment) {
   FakeFlashMemoryBuffer<1024, 4> flash(kEntry1);
   FlashPartition partition(&flash, 0, 4, 64);
   Entry entry;
-  ASSERT_EQ(Status::Ok(), Entry::Read(partition, 0, kFormats, &entry));
+  ASSERT_EQ(OkStatus(), Entry::Read(partition, 0, kFormats, &entry));
 
-  ASSERT_EQ(Status::Ok(), entry.Update(kFormatWithSum, kTransactionId1 + 1));
+  ASSERT_EQ(OkStatus(), entry.Update(kFormatWithSum, kTransactionId1 + 1));
 
   StatusWithSize result = entry.Copy(64);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(AlignUp(kEntry1.size(), 64), result.size());
 
   constexpr auto new_data = MakeNewFormatWithSumEntry<64>();
@@ -503,9 +502,9 @@ TEST(ValidEntryInFlash, UpdateAndCopy_DifferentFormatLargerAlignment) {
             std::memcmp(&flash.buffer()[64], new_data.data(), new_data.size()));
 
   Entry new_entry;
-  ASSERT_EQ(Status::Ok(),
+  ASSERT_EQ(OkStatus(),
             Entry::Read(partition, 64, kFormatsWithSum, &new_entry));
-  EXPECT_EQ(Status::Ok(), new_entry.VerifyChecksumInFlash());
+  EXPECT_EQ(OkStatus(), new_entry.VerifyChecksumInFlash());
   EXPECT_EQ(kTransactionId1 + 1, new_entry.transaction_id());
 }
 
@@ -514,10 +513,10 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
   // readable 4 bytes. See pw_kvs/format.h for more information.
   constexpr EntryFormat no_checksum{.magic = 0x43fae18f, .checksum = nullptr};
 
-  ASSERT_EQ(Status::Ok(), entry_.Update(no_checksum, kTransactionId1 + 1));
+  ASSERT_EQ(OkStatus(), entry_.Update(no_checksum, kTransactionId1 + 1));
 
   auto result = entry_.Copy(kEntry1.size());
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   EXPECT_EQ(kEntry1.size(), result.size());
 
   constexpr auto kNewHeader1 =
@@ -537,23 +536,23 @@ TEST_F(ValidEntryInFlash, UpdateAndCopy_NoChecksum_UpdatesToNewFormat) {
 }
 
 TEST_F(ValidEntryInFlash, UpdateAndCopyMultple_DifferentFormat) {
-  ASSERT_EQ(Status::Ok(), entry_.Update(kFormatWithSum, kTransactionId1 + 6));
+  ASSERT_EQ(OkStatus(), entry_.Update(kFormatWithSum, kTransactionId1 + 6));
 
   FlashPartition::Address new_address = entry_.size();
 
   for (int i = 0; i < 10; i++) {
     StatusWithSize copy_result = entry_.Copy(new_address + (i * entry_.size()));
-    ASSERT_EQ(Status::Ok(), copy_result.status());
+    ASSERT_EQ(OkStatus(), copy_result.status());
     ASSERT_EQ(kEntry1.size(), copy_result.size());
   }
 
   for (int j = 0; j < 10; j++) {
     Entry entry;
     FlashPartition::Address read_address = (new_address + (j * entry_.size()));
-    ASSERT_EQ(Status::Ok(),
+    ASSERT_EQ(OkStatus(),
               Entry::Read(partition_, read_address, kFormatsWithSum, &entry));
 
-    EXPECT_EQ(Status::Ok(), entry.VerifyChecksumInFlash());
+    EXPECT_EQ(OkStatus(), entry.VerifyChecksumInFlash());
     EXPECT_EQ(kFormatWithSum.magic, entry.magic());
     EXPECT_EQ(read_address, entry.address());
     EXPECT_EQ(kTransactionId1 + 6, entry.transaction_id());
@@ -562,12 +561,12 @@ TEST_F(ValidEntryInFlash, UpdateAndCopyMultple_DifferentFormat) {
 }
 
 TEST_F(ValidEntryInFlash, DifferentFormat_UpdatedCopy_FailsWithWrongMagic) {
-  ASSERT_EQ(Status::Ok(), entry_.Update(kFormatWithSum, kTransactionId1 + 6));
+  ASSERT_EQ(OkStatus(), entry_.Update(kFormatWithSum, kTransactionId1 + 6));
 
   FlashPartition::Address new_address = entry_.size();
 
   StatusWithSize copy_result = entry_.Copy(new_address);
-  ASSERT_EQ(Status::Ok(), copy_result.status());
+  ASSERT_EQ(OkStatus(), copy_result.status());
   ASSERT_EQ(kEntry1.size(), copy_result.size());
 
   Entry entry;
@@ -578,8 +577,7 @@ TEST_F(ValidEntryInFlash, DifferentFormat_UpdatedCopy_FailsWithWrongMagic) {
 TEST_F(ValidEntryInFlash, UpdateAndCopy_WriteError) {
   flash_.InjectWriteError(FlashError::Unconditional(Status::Cancelled()));
 
-  ASSERT_EQ(Status::Ok(),
-            entry_.Update(kNoChecksumFormat, kTransactionId1 + 1));
+  ASSERT_EQ(OkStatus(), entry_.Update(kNoChecksumFormat, kTransactionId1 + 1));
 
   auto result = entry_.Copy(kEntry1.size());
   EXPECT_EQ(Status::Cancelled(), result.status());

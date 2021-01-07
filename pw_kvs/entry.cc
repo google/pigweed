@@ -58,7 +58,7 @@ Status Entry::Read(FlashPartition& partition,
   }
 
   *entry = Entry(&partition, address, *format, header);
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Entry::ReadKey(FlashPartition& partition,
@@ -183,12 +183,12 @@ Status Entry::ValueMatches(std::span<const std::byte> value) const {
     value_ptr += read_size;
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Entry::VerifyChecksum(Key key, std::span<const byte> value) const {
   if (checksum_algo_ == nullptr) {
-    return header_.checksum == 0 ? Status::Ok() : Status::DataLoss();
+    return header_.checksum == 0 ? OkStatus() : Status::DataLoss();
   }
   CalculateChecksum(key, value);
   return checksum_algo_->Verify(checksum_bytes());
@@ -218,7 +218,7 @@ Status Entry::VerifyChecksumInFlash() const {
   }
 
   if (checksum_algo_ == nullptr) {
-    return header_.checksum == 0 ? Status::Ok() : Status::DataLoss();
+    return header_.checksum == 0 ? OkStatus() : Status::DataLoss();
   }
 
   // The checksum is calculated as if the header's checksum field were 0.
@@ -279,7 +279,7 @@ Status Entry::CalculateChecksumFromFlash() {
   header_.checksum = 0;
 
   if (checksum_algo_ == nullptr) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   checksum_algo_->Reset();
@@ -305,7 +305,7 @@ Status Entry::CalculateChecksumFromFlash() {
   std::memcpy(&header_.checksum,
               checksum.data(),
               std::min(checksum.size(), sizeof(header_.checksum)));
-  return Status::Ok();
+  return OkStatus();
 }
 
 void Entry::AddPaddingBytesToChecksum() const {

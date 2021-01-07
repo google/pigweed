@@ -42,7 +42,7 @@ class TestOutput : public ChannelOutput {
 
   Status SendAndReleaseBuffer(std::span<const std::byte> buffer) override {
     if (buffer.empty()) {
-      return Status::Ok();
+      return OkStatus();
     }
 
     PW_ASSERT(buffer.data() == buffer_.data());
@@ -50,7 +50,7 @@ class TestOutput : public ChannelOutput {
     packet_count_ += 1;
     sent_data_ = buffer;
     Result<internal::Packet> result = internal::Packet::FromBuffer(sent_data_);
-    EXPECT_EQ(Status::Ok(), result.status());
+    EXPECT_EQ(OkStatus(), result.status());
     sent_packet_ = result.value_or(internal::Packet());
     return send_status_;
   }
@@ -108,7 +108,7 @@ class ServerContextForTest {
                             kServiceId,
                             context_.method().id(),
                             payload,
-                            Status::Ok());
+                            OkStatus());
   }
 
   internal::ServerCall& get() { return context_; }
@@ -146,13 +146,13 @@ class ClientContextForTest {
   // Sends a packet to be processed by the client. Returns the client's
   // ProcessPacket status.
   Status SendPacket(internal::PacketType type,
-                    Status status = Status::Ok(),
+                    Status status = OkStatus(),
                     std::span<const std::byte> payload = {}) {
     internal::Packet packet(
         type, kChannelId, kServiceId, kMethodId, payload, status);
     std::byte buffer[input_buffer_size];
     Result result = packet.Encode(buffer);
-    EXPECT_EQ(result.status(), Status::Ok());
+    EXPECT_EQ(result.status(), OkStatus());
     return client_.ProcessPacket(result.value_or(ConstByteSpan()));
   }
 

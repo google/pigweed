@@ -76,7 +76,7 @@ TEST(Packet, Encode) {
   Packet packet(PacketType::RESPONSE, 1, 42, 100, kPayload);
 
   auto result = packet.Encode(buffer);
-  ASSERT_EQ(Status::Ok(), result.status());
+  ASSERT_EQ(OkStatus(), result.status());
   ASSERT_EQ(kEncoded.size(), result.value().size());
   EXPECT_EQ(std::memcmp(kEncoded.data(), buffer, kEncoded.size()), 0);
 }
@@ -122,7 +122,7 @@ TEST(Packet, EncodeDecode) {
 
   byte buffer[128];
   Result result = packet.Encode(buffer);
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
 
   std::span<byte> packet_data(buffer, result.value().size());
   auto decode_result = Packet::FromBuffer(packet_data);

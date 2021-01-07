@@ -62,7 +62,7 @@ TEST(RpcChannelOutput, 1BytePayload) {
   constexpr auto expected = bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0x8D137C66}, kFlag);
 
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());
@@ -90,7 +90,7 @@ TEST(RpcChannelOutput, EscapingPayloadTest) {
                                           byte{0x7d} ^ byte{0x20},
                                           uint32_t{0xA27C00E1},
                                           kFlag);
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             output.SendAndReleaseBuffer(buffer.first(test_data.size())));
 
   ASSERT_EQ(memory_writer.bytes_written(), 10u);
@@ -113,7 +113,7 @@ TEST(RpcChannelOutputBuffer, 1BytePayload) {
   constexpr auto expected = bytes::Concat(
       kFlag, kAddress, kControl, 'A', uint32_t{0x8D137C66}, kFlag);
 
-  EXPECT_EQ(Status::Ok(),
+  EXPECT_EQ(OkStatus(),
             output.SendAndReleaseBuffer(buffer.first(sizeof(test_data))));
 
   ASSERT_EQ(memory_writer.bytes_written(), expected.size());

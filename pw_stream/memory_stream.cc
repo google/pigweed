@@ -33,7 +33,7 @@ Status MemoryWriter::DoWrite(ConstByteSpan data) {
   std::memcpy(dest_.data() + bytes_written_, data.data(), bytes_to_write);
   bytes_written_ += bytes_to_write;
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize MemoryReader::DoRead(ByteSpan dest) {

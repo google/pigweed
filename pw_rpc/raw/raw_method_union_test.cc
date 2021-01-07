@@ -118,7 +118,7 @@ TEST(RawMethodUnion, InvokesUnary) {
   protobuf::Decoder decoder(response.payload());
   ASSERT_TRUE(decoder.Next().ok());
   int64_t value;
-  EXPECT_EQ(decoder.ReadInt64(&value), Status::Ok());
+  EXPECT_EQ(decoder.ReadInt64(&value), OkStatus());
   EXPECT_EQ(value, 461);
 }
 

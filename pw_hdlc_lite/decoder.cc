@@ -125,7 +125,7 @@ Status Decoder::CheckFrame() const {
     return Status::DataLoss();
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 bool Decoder::VerifyFrameCheckSequence() const {

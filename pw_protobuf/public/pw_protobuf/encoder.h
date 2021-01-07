@@ -42,7 +42,7 @@ class Encoder {
         blob_count_(0),
         blob_stack_(stack),
         depth_(0),
-        encode_status_(Status::Ok()) {}
+        encode_status_(OkStatus()) {}
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   Encoder(const Encoder& other) = delete;
@@ -261,7 +261,7 @@ class Encoder {
   // obtained from Encode().
   void Clear() {
     cursor_ = buffer_.data();
-    encode_status_ = Status::Ok();
+    encode_status_ = OkStatus();
     blob_count_ = 0;
     depth_ = 0;
   }
@@ -278,7 +278,7 @@ class Encoder {
       return result.status();
     }
     *out = result.value();
-    return Status::Ok();
+    return OkStatus();
   }
 
  private:

@@ -192,7 +192,7 @@ class DecodeHandler;
 //           break;
 //       }
 //
-//       return Status::Ok();
+//       return OkStatus();
 //     }
 //
 //     int bar;
@@ -303,7 +303,7 @@ class DecodeHandler {
   // Receives a pointer to the decoder object, allowing the handler to call
   // the appropriate method to extract the field's data.
   //
-  // If the status returned is not Status::Ok(), the decode operation is exited
+  // If the status returned is not OkStatus(), the decode operation is exited
   // with the provided status. Returning Status::Cancelled() allows a convenient
   // way of stopping a decode early (for example, if a desired field is found).
   virtual Status ProcessField(CallbackDecoder& decoder,

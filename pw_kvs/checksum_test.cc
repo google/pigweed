@@ -32,8 +32,7 @@ TEST(Checksum, UpdateAndVerify) {
   ChecksumAlgorithm& algo = crc16_algo;
 
   algo.Update(kString.data(), kString.size());
-  EXPECT_EQ(Status::Ok(),
-            algo.Verify(std::as_bytes(std::span(&kStringCrc, 1))));
+  EXPECT_EQ(OkStatus(), algo.Verify(std::as_bytes(std::span(&kStringCrc, 1))));
 }
 
 TEST(Checksum, Verify_Failure) {
@@ -56,7 +55,7 @@ TEST(Checksum, Verify_LargerState_ComparesToTruncatedData) {
 
   algo.Update(std::as_bytes(std::span(kString)));
 
-  EXPECT_EQ(Status::Ok(), algo.Verify(crc));
+  EXPECT_EQ(OkStatus(), algo.Verify(crc));
 }
 
 TEST(Checksum, Reset) {
@@ -72,20 +71,20 @@ TEST(Checksum, Reset) {
 TEST(IgnoreChecksum, NeverUpdate_VerifyWithoutData) {
   IgnoreChecksum checksum;
 
-  EXPECT_EQ(Status::Ok(), checksum.Verify({}));
+  EXPECT_EQ(OkStatus(), checksum.Verify({}));
 }
 
 TEST(IgnoreChecksum, NeverUpdate_VerifyWithData) {
   IgnoreChecksum checksum;
 
-  EXPECT_EQ(Status::Ok(), checksum.Verify(std::as_bytes(std::span(kString))));
+  EXPECT_EQ(OkStatus(), checksum.Verify(std::as_bytes(std::span(kString))));
 }
 
 TEST(IgnoreChecksum, AfterUpdate_Verify) {
   IgnoreChecksum checksum;
 
   checksum.Update(std::as_bytes(std::span(kString)));
-  EXPECT_EQ(Status::Ok(), checksum.Verify({}));
+  EXPECT_EQ(OkStatus(), checksum.Verify({}));
 }
 
 constexpr size_t kAlignment = 10;
@@ -144,7 +143,7 @@ TEST(AlignedChecksum, MaintainsAlignment) {
   EXPECT_EQ(std::string_view(reinterpret_cast<const char*>(state.data()),
                              state.size()),
             kData);
-  EXPECT_EQ(Status::Ok(), checksum.Verify(kBytes));
+  EXPECT_EQ(OkStatus(), checksum.Verify(kBytes));
 }
 
 }  // namespace

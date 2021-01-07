@@ -171,7 +171,7 @@ namespace pw::sys_io {
 Status ReadByte(std::byte* dest) {
   while (true) {
     if (TryReadByte(dest).ok()) {
-      return Status::Ok();
+      return OkStatus();
     }
   }
 }
@@ -184,7 +184,7 @@ Status TryReadByte(std::byte* dest) {
     return Status::Unavailable();
   }
   *dest = static_cast<std::byte>(usart1.data_register);
-  return Status::Ok();
+  return OkStatus();
 }
 
 // Send a byte over USART1. Since this blocks on every byte, it's rather
@@ -197,7 +197,7 @@ Status WriteByte(std::byte b) {
   while (!(usart1.status & kTxRegisterEmpty)) {
   }
   usart1.data_register = static_cast<uint32_t>(b);
-  return Status::Ok();
+  return OkStatus();
 }
 
 // Writes a string using pw::sys_io, and add newline characters at the end.

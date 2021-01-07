@@ -185,12 +185,12 @@ TEST(NanopbMethod, ServerWriter_SendsResponse) {
 
   method.Invoke(context.get(), context.packet({}));
 
-  EXPECT_EQ(Status::Ok(), last_writer.Write({.value = 100}));
+  EXPECT_EQ(OkStatus(), last_writer.Write({.value = 100}));
 
   PW_ENCODE_PB(pw_rpc_test_TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet(payload).Encode(encoded_response);
-  ASSERT_EQ(Status::Ok(), encoded.status());
+  ASSERT_EQ(OkStatus(), encoded.status());
 
   ASSERT_EQ(encoded.value().size(), context.output().sent_data().size());
   EXPECT_EQ(0,
@@ -225,12 +225,12 @@ TEST(NanopbMethod,
   // Verify that the encoded size of a packet with an empty payload is correct.
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.packet({}).Encode(encoded_response);
-  ASSERT_EQ(Status::Ok(), encoded.status());
+  ASSERT_EQ(OkStatus(), encoded.status());
   ASSERT_EQ(kNoPayloadPacketSize, encoded.value().size());
 
   method.Invoke(context.get(), context.packet({}));
 
-  EXPECT_EQ(Status::Ok(), last_writer.Write({}));  // Barely fits
+  EXPECT_EQ(OkStatus(), last_writer.Write({}));  // Barely fits
   EXPECT_EQ(Status::Internal(), last_writer.Write({.value = 1}));  // Too big
 }
 

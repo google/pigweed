@@ -83,7 +83,7 @@ void SingleEntryWriteReadTest(bool user_data) {
   // out and happen to see a previous value.
   size_t read_size = 500U;
 
-  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::Ok());
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   EXPECT_EQ(ring.EntryCount(), 0u);
   EXPECT_EQ(ring.PopFront(), Status::OutOfRange());
@@ -115,12 +115,12 @@ void SingleEntryWriteReadTest(bool user_data) {
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), 0u);
 
     ASSERT_EQ(ring.PushBack(std::span(single_entry_data, data_size), byte(i)),
-              Status::Ok());
+              OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
     read_size = 500U;
-    ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), Status::Ok());
+    ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), OkStatus());
     ASSERT_EQ(read_size, data_size);
 
     // ASSERT_THAT(std::span(expect_buffer).last(data_size),
@@ -131,10 +131,9 @@ void SingleEntryWriteReadTest(bool user_data) {
               0);
 
     read_size = 500U;
-    ASSERT_EQ(ring.PeekFrontWithPreamble(read_buffer, &read_size),
-              Status::Ok());
+    ASSERT_EQ(ring.PeekFrontWithPreamble(read_buffer, &read_size), OkStatus());
     ASSERT_EQ(read_size, single_entry_total_size);
-    ASSERT_EQ(ring.PopFront(), Status::Ok());
+    ASSERT_EQ(ring.PopFront(), OkStatus());
 
     if (user_data) {
       expect_buffer[0] = byte(i);
@@ -168,7 +167,7 @@ void CountingUpWriteReadTest() {
   PrefixedEntryRingBuffer ring(user_data);
   byte test_buffer[single_entry_test_buffer_size];
 
-  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::Ok());
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
   EXPECT_EQ(ring.EntryCount(), 0u);
 
   constexpr size_t data_size = sizeof(single_entry_data) - (user_data ? 1 : 0);
@@ -182,7 +181,7 @@ void CountingUpWriteReadTest() {
     for (j = 0; j < kSingleEntryCycles; j++) {
       memset(write_buffer, j + seed, sizeof(write_buffer));
 
-      ASSERT_EQ(ring.PushBack(write_buffer), Status::Ok());
+      ASSERT_EQ(ring.PushBack(write_buffer), OkStatus());
 
       size_t expected_count = (j < kCountingUpMaxExpectedEntries)
                                   ? j + 1
@@ -196,11 +195,11 @@ void CountingUpWriteReadTest() {
       byte read_buffer[sizeof(write_buffer)];
       size_t read_size;
       memset(write_buffer, fill_val + j, sizeof(write_buffer));
-      ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), Status::Ok());
+      ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), OkStatus());
 
       ASSERT_EQ(memcmp(write_buffer, read_buffer, data_size), 0);
 
-      ASSERT_EQ(ring.PopFront(), Status::Ok());
+      ASSERT_EQ(ring.PopFront(), OkStatus());
     }
   }
 }
@@ -222,13 +221,13 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
   PrefixedEntryRingBuffer ring(user_data);
   byte test_buffer[single_entry_test_buffer_size];
 
-  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::Ok());
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   auto output = [](std::span<const byte> src) -> Status {
     for (byte b : src) {
       read_buffer.push_back(b);
     }
-    return Status::Ok();
+    return OkStatus();
   };
 
   size_t user_preamble_bytes = (user_data ? 1 : 0);
@@ -244,12 +243,12 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), 0u);
 
     ASSERT_EQ(ring.PushBack(std::span(single_entry_data, data_size), byte(i)),
-              Status::Ok());
+              OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
     read_buffer.clear();
-    ASSERT_EQ(ring.PeekFront(output), Status::Ok());
+    ASSERT_EQ(ring.PeekFront(output), OkStatus());
     ASSERT_EQ(read_buffer.size(), data_size);
 
     ASSERT_EQ(memcmp(std::span(expect_buffer).last(data_size).data(),
@@ -258,9 +257,9 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
               0);
 
     read_buffer.clear();
-    ASSERT_EQ(ring.PeekFrontWithPreamble(output), Status::Ok());
+    ASSERT_EQ(ring.PeekFrontWithPreamble(output), OkStatus());
     ASSERT_EQ(read_buffer.size(), single_entry_total_size);
-    ASSERT_EQ(ring.PopFront(), Status::Ok());
+    ASSERT_EQ(ring.PopFront(), OkStatus());
 
     if (user_data) {
       expect_buffer[0] = byte(i);
@@ -293,7 +292,7 @@ void DeringTest(bool preload) {
   PrefixedEntryRingBuffer ring;
 
   byte test_buffer[kTestBufferSize];
-  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::Ok());
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   // Entry data is entry size - preamble (single byte in this case).
   byte single_entry_buffer[kEntrySizeBytes - 1u];
@@ -336,7 +335,7 @@ void DeringTest(bool preload) {
     EXPECT_EQ(ring.EntryCount(), kTotalEntryCount);
     EXPECT_EQ(expected_result.size(), ring.TotalUsedBytes());
 
-    ASSERT_EQ(ring.Dering(), Status::Ok());
+    ASSERT_EQ(ring.Dering(), OkStatus());
 
     // Check values after doing the dering.
     EXPECT_EQ(ring.EntryCount(), kTotalEntryCount);
@@ -348,11 +347,11 @@ void DeringTest(bool preload) {
       for (byte b : src) {
         actual_result.push_back(b);
       }
-      return Status::Ok();
+      return OkStatus();
     };
     while (ring.EntryCount()) {
-      ASSERT_EQ(ring.PeekFrontWithPreamble(output), Status::Ok());
-      ASSERT_EQ(ring.PopFront(), Status::Ok());
+      ASSERT_EQ(ring.PeekFrontWithPreamble(output), OkStatus());
+      ASSERT_EQ(ring.PopFront(), OkStatus());
     }
 
     // Ensure the actual result out of the ring buffer matches our manually
@@ -405,7 +404,7 @@ T PeekFront(PrefixedEntryRingBuffer& ring) {
 TEST(PrefixedEntryRingBuffer, TryPushBack) {
   PrefixedEntryRingBuffer ring;
   byte test_buffer[kTestBufferSize];
-  EXPECT_EQ(ring.SetBuffer(test_buffer), Status::Ok());
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
   // Fill up the ring buffer with a constant.
   int total_items = 0;
@@ -428,7 +427,7 @@ TEST(PrefixedEntryRingBuffer, TryPushBack) {
 
   // Fill up the ring buffer with a constant.
   for (int i = 0; i < total_items; ++i) {
-    EXPECT_EQ(PushBack<int>(ring, 100), Status::Ok());
+    EXPECT_EQ(PushBack<int>(ring, 100), OkStatus());
   }
   EXPECT_EQ(PeekFront<int>(ring), 100);
 }

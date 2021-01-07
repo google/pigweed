@@ -215,7 +215,7 @@ Status FormattedHexDumper::SetLineBuffer(std::span<char> dest) {
     return Status::InvalidArgument();
   }
   dest_ = dest;
-  return ValidateBufferSize().ok() ? Status::Ok() : Status::ResourceExhausted();
+  return ValidateBufferSize().ok() ? OkStatus() : Status::ResourceExhausted();
 }
 
 Status FormattedHexDumper::BeginDump(ConstByteSpan data) {
@@ -227,8 +227,7 @@ Status FormattedHexDumper::BeginDump(ConstByteSpan data) {
   if (dest_.data() != nullptr && dest_.size_bytes() > 0) {
     dest_[0] = 0;
   }
-  return ValidateBufferSize().ok() ? Status::Ok()
-                                   : Status::FailedPrecondition();
+  return ValidateBufferSize().ok() ? OkStatus() : Status::FailedPrecondition();
 }
 
 Status FormattedHexDumper::ValidateBufferSize() {
@@ -254,7 +253,7 @@ Status FormattedHexDumper::ValidateBufferSize() {
     return Status::ResourceExhausted();
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::dump

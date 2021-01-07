@@ -97,9 +97,9 @@ class FakeFlashMemory : public FlashMemory {
         write_errors_(write_errors) {}
 
   // The fake flash is always enabled.
-  Status Enable() override { return Status::Ok(); }
+  Status Enable() override { return OkStatus(); }
 
-  Status Disable() override { return Status::Ok(); }
+  Status Disable() override { return OkStatus(); }
 
   bool IsEnabled() const override { return true; }
 

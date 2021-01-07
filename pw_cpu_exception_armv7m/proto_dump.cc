@@ -58,7 +58,7 @@ Status DumpCpuStateProto(protobuf::Encoder& dest,
     return status == Status::ResourceExhausted() ? Status::ResourceExhausted()
                                                  : Status::Unknown();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::cpu_exception

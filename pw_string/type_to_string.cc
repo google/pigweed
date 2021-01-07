@@ -190,7 +190,7 @@ StatusWithSize CopyString(const std::string_view& value,
   buffer[copied] = '\0';
 
   return StatusWithSize(
-      copied == value.size() ? Status::Ok() : Status::ResourceExhausted(),
+      copied == value.size() ? OkStatus() : Status::ResourceExhausted(),
       copied);
 }
 

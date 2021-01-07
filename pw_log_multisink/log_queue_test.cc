@@ -87,7 +87,7 @@ TEST(LogQueue, SinglePushPopTokenizedMessage) {
   std::byte log_buffer[kLogBufferSize];
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue(log_buffer);
 
-  EXPECT_EQ(Status::OK,
+  EXPECT_EQ(OkStatus(),
             log_queue.PushTokenizedMessage(
                 std::as_bytes(std::span(kTokenizedMessage)),
                 kFlags,
@@ -118,7 +118,7 @@ TEST(LogQueue, MultiplePushPopTokenizedMessage) {
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue(log_buffer);
 
   for (size_t i = 0; i < kEntryCount; i++) {
-    EXPECT_EQ(Status::OK,
+    EXPECT_EQ(OkStatus(),
               log_queue.PushTokenizedMessage(
                   std::as_bytes(std::span(kTokenizedMessage)),
                   kFlags,
@@ -152,7 +152,7 @@ TEST(LogQueue, PopMultiple) {
   LogQueueWithEncodeBuffer<kEncodeBufferSize> log_queue(log_buffer);
 
   for (size_t i = 0; i < kEntryCount; i++) {
-    EXPECT_EQ(Status::OK,
+    EXPECT_EQ(OkStatus(),
               log_queue.PushTokenizedMessage(
                   std::as_bytes(std::span(kTokenizedMessage)),
                   kFlags,

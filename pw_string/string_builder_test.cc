@@ -102,8 +102,8 @@ TEST(StringBuilder, EmptyBuffer_Resize_WritesNothing) {
 
 TEST(StringBuilder, EmptyBuffer_AppendEmpty_ResourceExhausted) {
   StringBuilder sb(std::span<char>{});
-  EXPECT_EQ(Status::Ok(), sb.last_status());
-  EXPECT_EQ(Status::Ok(), sb.status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.status());
 
   sb << "";
 
@@ -113,8 +113,8 @@ TEST(StringBuilder, EmptyBuffer_AppendEmpty_ResourceExhausted) {
 
 TEST(StringBuilder, Status_StartsOk) {
   StringBuffer<16> sb;
-  EXPECT_EQ(Status::Ok(), sb.status());
-  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
 }
 
 TEST(StringBuilder, Status_StatusAndLastStatusUpdate) {
@@ -129,7 +129,7 @@ TEST(StringBuilder, Status_StatusAndLastStatusUpdate) {
 
   sb << "";
   EXPECT_EQ(Status::OutOfRange(), sb.status());
-  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
 }
 
 TEST(StringBuilder, Status_ClearStatus_SetsStatuesToOk) {
@@ -138,8 +138,8 @@ TEST(StringBuilder, Status_ClearStatus_SetsStatuesToOk) {
   EXPECT_EQ(Status::ResourceExhausted(), sb.last_status());
 
   sb.clear_status();
-  EXPECT_EQ(Status::Ok(), sb.status());
-  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
 }
 
 TEST(StringBuilder, StreamOutput_OutputSelf) {
@@ -153,7 +153,7 @@ TEST(StringBuilder, StreamOutput_OutputSelf) {
 TEST(StringBuilder, PushBack) {
   StringBuffer<12> sb;
   sb.push_back('?');
-  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
   EXPECT_EQ(1u, sb.size());
   EXPECT_STREQ("?", sb.data());
 }
@@ -168,7 +168,7 @@ TEST(StringBuilder, PushBack_Full) {
 TEST(StringBuilder, PopBack) {
   auto sb = MakeString<12>("Welcome!");
   sb.pop_back();
-  EXPECT_EQ(Status::Ok(), sb.last_status());
+  EXPECT_EQ(OkStatus(), sb.last_status());
   EXPECT_EQ(7u, sb.size());
   EXPECT_STREQ("Welcome", sb.data());
 }
@@ -362,7 +362,7 @@ TEST(StringBuilder, SteamOutput_StringView) {
   constexpr std::string_view hello("hello");
 
   buffer << hello;
-  EXPECT_EQ(Status::Ok(), buffer.status());
+  EXPECT_EQ(OkStatus(), buffer.status());
   EXPECT_STREQ("hello", buffer.data());
 }
 
@@ -422,7 +422,7 @@ TEST(StringBuffer, CopyConstructFromSameSize) {
   two << "";
   ASSERT_STREQ("What heck", two.data());
   ASSERT_EQ(Status::ResourceExhausted(), two.status());
-  ASSERT_EQ(Status::Ok(), two.last_status());
+  ASSERT_EQ(OkStatus(), two.last_status());
 }
 
 TEST(StringBuffer, CopyConstructFromSmaller) {

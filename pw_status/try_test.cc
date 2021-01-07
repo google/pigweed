@@ -26,7 +26,7 @@ Status TryStatus(Status status) {
   PW_TRY(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status, Status::Ok());
+  EXPECT_EQ(status, OkStatus());
   return status;
 }
 
@@ -34,12 +34,12 @@ Status TryStatus(StatusWithSize status) {
   PW_TRY(ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status.status(), Status::Ok());
+  EXPECT_EQ(status.status(), OkStatus());
   return status.status();
 }
 
 TEST(Status, Try_Status) {
-  EXPECT_EQ(TryStatus(Status::Ok()), Status::Ok());
+  EXPECT_EQ(TryStatus(OkStatus()), OkStatus());
 
   // Don't need all the status types, just pick a few not-ok ones.
   EXPECT_EQ(TryStatus(Status::Cancelled()), Status::Cancelled());
@@ -49,8 +49,8 @@ TEST(Status, Try_Status) {
 
 TEST(Status, Try_StatusWithSizeOk) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::Ok(), 0);
-    EXPECT_EQ(TryStatus(val), Status::Ok());
+    StatusWithSize val(OkStatus(), 0);
+    EXPECT_EQ(TryStatus(val), OkStatus());
   }
 }
 
@@ -73,7 +73,7 @@ Status TryStatusAssign(size_t& size_val, StatusWithSize status) {
   PW_TRY_ASSIGN(size_val, ReturnStatusWithSize(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status.status(), Status::Ok());
+  EXPECT_EQ(status.status(), OkStatus());
   EXPECT_EQ(size_val, status.size());
   return status.status();
 }
@@ -82,8 +82,8 @@ TEST(Status, TryAssignOk) {
   size_t size_val = 0;
 
   for (size_t i = 1; i < 32; ++i) {
-    StatusWithSize val(Status::Ok(), i);
-    EXPECT_EQ(TryStatusAssign(size_val, val), Status::Ok());
+    StatusWithSize val(OkStatus(), i);
+    EXPECT_EQ(TryStatusAssign(size_val, val), OkStatus());
     EXPECT_EQ(size_val, i);
   }
 }
@@ -110,15 +110,15 @@ StatusWithSize TryStatusWithSize(Status status) {
   PW_TRY_WITH_SIZE(ReturnStatus(status));
 
   // Any status other than OK should have already returned.
-  EXPECT_EQ(status, Status::Ok());
+  EXPECT_EQ(status, OkStatus());
 
   StatusWithSize return_val(status, 0u);
   return return_val;
 }
 
 TEST(Status, TryWithSize_StatusOk) {
-  StatusWithSize result = TryStatusWithSize(Status::Ok());
-  EXPECT_EQ(result.status(), Status::Ok());
+  StatusWithSize result = TryStatusWithSize(OkStatus());
+  EXPECT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.size(), 0u);
 }
 
@@ -130,8 +130,8 @@ TEST(Status, TryWithSize_StatusError) {
 
 TEST(Status, TryWithSize_StatusWithSizeOk) {
   for (size_t i = 0; i < 32; ++i) {
-    StatusWithSize val(Status::Ok(), i);
-    EXPECT_EQ(TryStatusWithSize(val).status(), Status::Ok());
+    StatusWithSize val(OkStatus(), i);
+    EXPECT_EQ(TryStatusWithSize(val).status(), OkStatus());
     EXPECT_EQ(TryStatusWithSize(val).size(), i);
   }
 }

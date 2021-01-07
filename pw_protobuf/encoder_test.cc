@@ -85,16 +85,16 @@ TEST(Encoder, EncodePrimitives) {
   std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
 
-  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::Ok());
-  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), Status::Ok());
+  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), OkStatus());
+  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());
   EXPECT_EQ(encoder.WriteFixed64(kTestProtoCyclesField, 0xdeadbeef8badf00d),
-            Status::Ok());
-  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034), Status::Ok());
+            OkStatus());
+  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034), OkStatus());
   EXPECT_EQ(encoder.WriteString(kTestProtoErrorMessageField, "broken 💩"),
-            Status::Ok());
+            OkStatus());
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),
@@ -106,9 +106,9 @@ TEST(Encoder, EncodeInsufficientSpace) {
   NestedEncoder encoder(encode_buffer);
 
   // 2 bytes.
-  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::Ok());
+  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), OkStatus());
   // 2 bytes.
-  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), Status::Ok());
+  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());
   // 9 bytes; not enough space! The encoder will start writing the field but
   // should rollback when it realizes it doesn't have enough space.
   EXPECT_EQ(encoder.WriteFixed64(kTestProtoCyclesField, 0xdeadbeef8badf00d),
@@ -124,7 +124,7 @@ TEST(Encoder, EncodeInvalidArguments) {
   std::byte encode_buffer[12];
   NestedEncoder encoder(encode_buffer);
 
-  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::Ok());
+  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), OkStatus());
   // Invalid proto field numbers.
   EXPECT_EQ(encoder.WriteUint32(0, 1337), Status::InvalidArgument());
   encoder.Clear();
@@ -142,48 +142,47 @@ TEST(Encoder, Nested) {
 
   // TestProto test_proto;
   // test_proto.magic_number = 42;
-  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), Status::Ok());
+  EXPECT_EQ(encoder.WriteUint32(kTestProtoMagicNumberField, 42), OkStatus());
 
   {
     // NestedProto& nested_proto = test_proto.nested;
-    EXPECT_EQ(encoder.Push(kTestProtoNestedField), Status::Ok());
+    EXPECT_EQ(encoder.Push(kTestProtoNestedField), OkStatus());
     // nested_proto.hello = "world";
-    EXPECT_EQ(encoder.WriteString(kNestedProtoHelloField, "world"),
-              Status::Ok());
+    EXPECT_EQ(encoder.WriteString(kNestedProtoHelloField, "world"), OkStatus());
     // nested_proto.id = 999;
-    EXPECT_EQ(encoder.WriteUint32(kNestedProtoIdField, 999), Status::Ok());
+    EXPECT_EQ(encoder.WriteUint32(kNestedProtoIdField, 999), OkStatus());
 
     {
       // DoubleNestedProto& double_nested_proto = nested_proto.append_pair();
-      EXPECT_EQ(encoder.Push(kNestedProtoPairField), Status::Ok());
+      EXPECT_EQ(encoder.Push(kNestedProtoPairField), OkStatus());
       // double_nested_proto.key = "version";
       EXPECT_EQ(encoder.WriteString(kDoubleNestedProtoKeyField, "version"),
-                Status::Ok());
+                OkStatus());
       // double_nested_proto.value = "2.9.1";
       EXPECT_EQ(encoder.WriteString(kDoubleNestedProtoValueField, "2.9.1"),
-                Status::Ok());
+                OkStatus());
 
-      EXPECT_EQ(encoder.Pop(), Status::Ok());
+      EXPECT_EQ(encoder.Pop(), OkStatus());
     }  // end DoubleNestedProto
 
     {
       // DoubleNestedProto& double_nested_proto = nested_proto.append_pair();
-      EXPECT_EQ(encoder.Push(kNestedProtoPairField), Status::Ok());
+      EXPECT_EQ(encoder.Push(kNestedProtoPairField), OkStatus());
       // double_nested_proto.key = "device";
       EXPECT_EQ(encoder.WriteString(kDoubleNestedProtoKeyField, "device"),
-                Status::Ok());
+                OkStatus());
       // double_nested_proto.value = "left-soc";
       EXPECT_EQ(encoder.WriteString(kDoubleNestedProtoValueField, "left-soc"),
-                Status::Ok());
+                OkStatus());
 
-      EXPECT_EQ(encoder.Pop(), Status::Ok());
+      EXPECT_EQ(encoder.Pop(), OkStatus());
     }  // end DoubleNestedProto
 
-    EXPECT_EQ(encoder.Pop(), Status::Ok());
+    EXPECT_EQ(encoder.Pop(), OkStatus());
   }  // end NestedProto
 
   // test_proto.ziggy = -13;
-  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), Status::Ok());
+  EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());
 
   // clang-format off
   constexpr uint8_t encoded_proto[] = {
@@ -213,7 +212,7 @@ TEST(Encoder, Nested) {
   // clang-format on
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),
@@ -225,9 +224,9 @@ TEST(Encoder, NestedDepthLimit) {
   NestedEncoder<2, 2> encoder(encode_buffer);
 
   // One level of nesting.
-  EXPECT_EQ(encoder.Push(2), Status::Ok());
+  EXPECT_EQ(encoder.Push(2), OkStatus());
   // Two levels of nesting.
-  EXPECT_EQ(encoder.Push(1), Status::Ok());
+  EXPECT_EQ(encoder.Push(1), OkStatus());
   // Three levels of nesting: error!
   EXPECT_EQ(encoder.Push(1), Status::ResourceExhausted());
 
@@ -242,22 +241,22 @@ TEST(Encoder, NestedBlobLimit) {
   NestedEncoder<3, 3> encoder(encode_buffer);
 
   // Write first blob.
-  EXPECT_EQ(encoder.Push(1), Status::Ok());
-  EXPECT_EQ(encoder.Pop(), Status::Ok());
+  EXPECT_EQ(encoder.Push(1), OkStatus());
+  EXPECT_EQ(encoder.Pop(), OkStatus());
 
   // Write second blob.
-  EXPECT_EQ(encoder.Push(2), Status::Ok());
+  EXPECT_EQ(encoder.Push(2), OkStatus());
 
   // Write nested third blob.
-  EXPECT_EQ(encoder.Push(3), Status::Ok());
-  EXPECT_EQ(encoder.Pop(), Status::Ok());
+  EXPECT_EQ(encoder.Push(3), OkStatus());
+  EXPECT_EQ(encoder.Pop(), OkStatus());
 
   // End second blob.
-  EXPECT_EQ(encoder.Pop(), Status::Ok());
+  EXPECT_EQ(encoder.Pop(), OkStatus());
 
   // Write fourth blob: OK
-  EXPECT_EQ(encoder.Push(4), Status::Ok());
-  EXPECT_EQ(encoder.Pop(), Status::Ok());
+  EXPECT_EQ(encoder.Push(4), OkStatus());
+  EXPECT_EQ(encoder.Pop(), OkStatus());
 }
 
 TEST(Encoder, RepeatedField) {
@@ -274,7 +273,7 @@ TEST(Encoder, RepeatedField) {
       0x08, 0x00, 0x08, 0x32, 0x08, 0x64, 0x08, 0x96, 0x01, 0x08, 0xc8, 0x01};
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),
@@ -294,7 +293,7 @@ TEST(Encoder, PackedVarint) {
   //  key   size  v[0]  v[1]  v[2]  v[3]        v[4]
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),
@@ -329,7 +328,7 @@ TEST(Encoder, PackedFixed) {
       0x12, 0x08, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01};
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),
@@ -348,7 +347,7 @@ TEST(Encoder, PackedZigzag) {
       0x0a, 0x09, 0xc7, 0x01, 0x31, 0x01, 0x00, 0x02, 0x32, 0xc8, 0x01};
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(encoded_proto));
   EXPECT_EQ(
       std::memcmp(result.value().data(), encoded_proto, sizeof(encoded_proto)),

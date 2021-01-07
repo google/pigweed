@@ -20,7 +20,7 @@ pw::Status Divide(float a, float b, float* out) {
     return pw::Status::InvalidArgument();
   }
   *out = a / b;
-  return pw::Status::Ok();
+  return pw::OkStatus();
 }
 
 int volatile* unoptimizable;

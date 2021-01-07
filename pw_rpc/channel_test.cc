@@ -29,7 +29,7 @@ TEST(ChannelOutput, Name) {
     NameTester(const char* name) : ChannelOutput(name) {}
     std::span<std::byte> AcquireBuffer() override { return {}; }
     Status SendAndReleaseBuffer(std::span<const std::byte>) override {
-      return Status::Ok();
+      return OkStatus();
     }
   };
 
@@ -74,7 +74,7 @@ TEST(Channel, OutputBuffer_ExactFit) {
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
 
-  EXPECT_EQ(Status::Ok(), channel.Send(output_buffer, kTestPacket));
+  EXPECT_EQ(OkStatus(), channel.Send(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_PayloadDoesNotFit_ReportsError) {
@@ -98,7 +98,7 @@ TEST(Channel, OutputBuffer_ExtraRoom) {
   EXPECT_EQ(payload.size(), output.buffer().size() - kReservedSize);
   EXPECT_EQ(output.buffer().data() + kReservedSize, payload.data());
 
-  EXPECT_EQ(Status::Ok(), channel.Send(output_buffer, kTestPacket));
+  EXPECT_EQ(OkStatus(), channel.Send(output_buffer, kTestPacket));
 }
 
 TEST(Channel, OutputBuffer_ReturnsStatusFromChannelOutputSend) {

@@ -35,7 +35,7 @@ namespace pw::string {
 //
 // The status is
 //
-//   Status::Ok() if the operation succeeded,
+//   OkStatus() if the operation succeeded,
 //   Status::ResourceExhausted() if the buffer was too small to fit the output,
 //   Status::InvalidArgument() if there was a formatting error.
 //

@@ -39,7 +39,7 @@ Status Logs::Flush() {
   // If the response writer was not initialized or has since been closed,
   // ignore the flush operation.
   if (!response_writer_.open()) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   // If previous calls to flush resulted in dropped entries, generate a
@@ -59,7 +59,7 @@ Status Logs::Flush() {
   Result possible_logs = log_queue_.PopMultiple(payload);
   PW_TRY(possible_logs.status());
   if (possible_logs.value().entry_count == 0) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   Status status = response_writer_.Write(possible_logs.value().entries);
@@ -69,7 +69,7 @@ Status Logs::Flush() {
     return status;
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace pw::log_rpc

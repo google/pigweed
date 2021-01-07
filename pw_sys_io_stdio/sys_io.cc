@@ -28,7 +28,7 @@ Status ReadByte(std::byte* dest) {
     return Status::ResourceExhausted();
   }
   *dest = static_cast<std::byte>(value);
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status TryReadByte(std::byte*) {
@@ -40,7 +40,7 @@ Status WriteByte(std::byte b) {
   if (std::putchar(static_cast<char>(b)) == EOF) {
     return Status::Internal();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize WriteLine(const std::string_view& s) {

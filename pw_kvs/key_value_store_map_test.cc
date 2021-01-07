@@ -88,9 +88,9 @@ class KvsTester {
         // For KVS magic value always use a random 32 bit integer rather than a
         // human readable 4 bytes. See pw_kvs/format.h for more information.
         kvs_(&partition_, {.magic = 0xc857e51d, .checksum = nullptr}) {
-    EXPECT_EQ(Status::Ok(), partition_.Erase());
+    EXPECT_EQ(OkStatus(), partition_.Erase());
     Status result = kvs_.Init();
-    EXPECT_EQ(Status::Ok(), result);
+    EXPECT_EQ(OkStatus(), result);
 
     if (!result.ok()) {
       std::abort();
@@ -250,7 +250,7 @@ class KvsTester {
         EXPECT_EQ(map_entry->first, item.key());
 
         char value[kMaxValueLength + 1] = {};
-        EXPECT_EQ(Status::Ok(),
+        EXPECT_EQ(OkStatus(),
                   item.Get(std::as_writable_bytes(std::span(value))).status());
         EXPECT_EQ(map_entry->second, std::string(value));
       }
@@ -315,14 +315,14 @@ class KvsTester {
   void Init() {
     StartOperation("Init");
     Status status = kvs_.Init();
-    EXPECT_EQ(Status::Ok(), status);
+    EXPECT_EQ(OkStatus(), status);
     FinishOperation("Init", status);
   }
 
   void GCFull() {
     StartOperation("GCFull");
     Status status = kvs_.FullMaintenance();
-    EXPECT_EQ(Status::Ok(), status);
+    EXPECT_EQ(OkStatus(), status);
 
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (post_stats.in_use_bytes > ((partition_.size_bytes() * 70) / 100)) {
@@ -338,7 +338,7 @@ class KvsTester {
     Status status = kvs_.PartialMaintenance();
     KeyValueStore::StorageStats post_stats = kvs_.GetStorageStats();
     if (pre_stats.reclaimable_bytes != 0) {
-      EXPECT_EQ(Status::Ok(), status);
+      EXPECT_EQ(OkStatus(), status);
       EXPECT_LT(post_stats.reclaimable_bytes, pre_stats.reclaimable_bytes);
     } else {
       EXPECT_EQ(Status::NotFound(), status);

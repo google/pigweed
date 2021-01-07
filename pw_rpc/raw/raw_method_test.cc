@@ -143,7 +143,7 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
   protobuf::Decoder decoder(response.payload());
   ASSERT_TRUE(decoder.Next().ok());
   int64_t value;
-  EXPECT_EQ(decoder.ReadInt64(&value), Status::Ok());
+  EXPECT_EQ(decoder.ReadInt64(&value), OkStatus());
   EXPECT_EQ(value, 461);
 }
 
@@ -177,7 +177,7 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   std::memcpy(buffer.data(), data.data(), data.size());
 
-  EXPECT_EQ(last_writer.Write(buffer.first(data.size())), Status::Ok());
+  EXPECT_EQ(last_writer.Write(buffer.first(data.size())), OkStatus());
 
   const internal::Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
@@ -185,7 +185,7 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_EQ(std::memcmp(packet.payload().data(), data.data(), data.size()), 0);
-  EXPECT_EQ(packet.status(), Status::Ok());
+  EXPECT_EQ(packet.status(), OkStatus());
 }
 
 TEST(RawServerWriter, Write_SendsExternalBuffer) {
@@ -195,7 +195,7 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
   method.Invoke(context.get(), context.packet({}));
 
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
-  EXPECT_EQ(last_writer.Write(data), Status::Ok());
+  EXPECT_EQ(last_writer.Write(data), OkStatus());
 
   const internal::Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
@@ -203,7 +203,7 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
   EXPECT_EQ(packet.service_id(), context.kServiceId);
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_EQ(std::memcmp(packet.payload().data(), data.data(), data.size()), 0);
-  EXPECT_EQ(packet.status(), Status::Ok());
+  EXPECT_EQ(packet.status(), OkStatus());
 }
 
 TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {

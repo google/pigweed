@@ -134,7 +134,7 @@ Status KeyValueStore::Init() {
     return Status::DataLoss();
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status KeyValueStore::InitializeMetadata() {
@@ -295,7 +295,7 @@ Status KeyValueStore::InitializeMetadata() {
         unsigned(entry_copies_missing));
     return Status::FailedPrecondition();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 KeyValueStore::StorageStats KeyValueStore::GetStorageStats() const {
@@ -394,7 +394,7 @@ Status KeyValueStore::ScanForEntry(const SectorDescriptor& sector,
     if (formats_.KnownMagic(magic)) {
       DBG("Found entry magic at address %u", unsigned(address));
       *next_entry_address = address;
-      return Status::Ok();
+      return OkStatus();
     }
   }
 
@@ -605,7 +605,7 @@ Status KeyValueStore::CheckWriteOperation(Key key) const {
   if (!initialized()) {
     return Status::FailedPrecondition();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status KeyValueStore::CheckReadOperation(Key key) const {
@@ -618,7 +618,7 @@ Status KeyValueStore::CheckReadOperation(Key key) const {
   if (initialized_ == InitializationState::kNotInitialized) {
     return Status::FailedPrecondition();
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status KeyValueStore::WriteEntryForExistingKey(EntryMetadata& metadata,
@@ -659,7 +659,7 @@ Status KeyValueStore::WriteEntry(Key key,
     // keep the existing entry.
     DBG("Write for key 0x%08x with matching value skipped",
         unsigned(prior_metadata->hash()));
-    return Status::Ok();
+    return OkStatus();
   }
 
   // List of addresses for sectors with space for this entry.
@@ -686,7 +686,7 @@ Status KeyValueStore::WriteEntry(Key key,
     PW_TRY(AppendEntry(entry, key, value));
     new_metadata.AddNewAddress(reserved_addresses[i]);
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 KeyValueStore::EntryMetadata KeyValueStore::CreateOrUpdateKeyDescriptor(
@@ -730,7 +730,7 @@ Status KeyValueStore::GetAddressesForWrite(Address* write_addresses,
         unsigned(write_addresses[i]));
   }
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 // Finds a sector to use for writing a new entry to. Does automatic garbage
@@ -813,7 +813,7 @@ Status KeyValueStore::AppendEntry(const Entry& entry,
 
   sector.RemoveWritableBytes(result.size());
   sector.AddValidBytes(result.size());
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize KeyValueStore::CopyEntryToSector(Entry& entry,
@@ -864,7 +864,7 @@ Status KeyValueStore::RelocateEntry(
   sectors_.FromAddress(address).RemoveValidBytes(result_size);
   address = new_address;
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
@@ -976,7 +976,7 @@ Status KeyValueStore::RelocateKeyAddressesInSector(
     }
   }
 
-  return Status::Ok();
+  return OkStatus();
 };
 
 Status KeyValueStore::GarbageCollectSector(
@@ -1008,7 +1008,7 @@ Status KeyValueStore::GarbageCollectSector(
   }
 
   DBG("  Garbage Collect sector %u complete", sectors_.Index(sector_to_gc));
-  return Status::Ok();
+  return OkStatus();
 }
 
 StatusWithSize KeyValueStore::UpdateEntriesToPrimaryFormat() {
@@ -1078,7 +1078,7 @@ Status KeyValueStore::AddRedundantEntries(EntryMetadata& metadata) {
 
     metadata.AddNewAddress(new_address);
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status KeyValueStore::RepairCorruptSectors() {
@@ -1086,7 +1086,7 @@ Status KeyValueStore::RepairCorruptSectors() {
   // sector failed on the first pass, then do a second pass, since a later
   // sector might have cleared up space or otherwise unblocked the earlier
   // failed sector.
-  Status repair_status = Status::Ok();
+  Status repair_status = OkStatus();
 
   size_t loop_count = 0;
   do {
@@ -1094,7 +1094,7 @@ Status KeyValueStore::RepairCorruptSectors() {
     // Error of RESOURCE_EXHAUSTED indicates no space found for relocation.
     // Reset back to OK for the next pass.
     if (repair_status == Status::ResourceExhausted()) {
-      repair_status = Status::Ok();
+      repair_status = OkStatus();
     }
 
     DBG("   Pass %u", unsigned(loop_count));
@@ -1117,7 +1117,7 @@ Status KeyValueStore::RepairCorruptSectors() {
 }
 
 Status KeyValueStore::EnsureFreeSectorExists() {
-  Status repair_status = Status::Ok();
+  Status repair_status = OkStatus();
   bool empty_sector_found = false;
 
   DBG("   Find empty sector");
@@ -1141,11 +1141,11 @@ Status KeyValueStore::EnsureFreeSectorExists() {
 }
 
 Status KeyValueStore::EnsureEntryRedundancy() {
-  Status repair_status = Status::Ok();
+  Status repair_status = OkStatus();
 
   if (redundancy() == 1) {
     DBG("   Redundancy not in use, nothting to check");
-    return Status::Ok();
+    return OkStatus();
   }
 
   DBG("   Write any needed additional duplicate copies of keys to fulfill %u"

@@ -314,14 +314,14 @@
 // PW_CHECK_OK version 1: No message or args
 #define _PW_CHECK_OK_HAS_MSG_0(status_expr_str, status_value_str, ignored_arg) \
   PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(                                     \
-      status_expr_str, status_value_str, "==", "Status::OK", "OK", "%s", "")
+      status_expr_str, status_value_str, "==", "OkStatus()", "OK", "%s", "")
 
 // PW_CHECK_OK version 2: With message (and maybe args)
 #define _PW_CHECK_OK_HAS_MSG_1(status_expr_str, status_value_str, ...) \
   PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(status_expr_str,             \
                                           status_value_str,            \
                                           "==",                        \
-                                          "Status::OK",                \
+                                          "OkStatus()",                \
                                           "OK",                        \
                                           "%s",                        \
                                           __VA_ARGS__)

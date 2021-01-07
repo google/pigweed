@@ -77,7 +77,7 @@ class TraceQueue {
     }
     head_ = (head_ + 1) % kSize;
     is_empty_ = false;
-    return pw::Status::OK;
+    return pw::OkStatus();
   }
 
   const volatile QueueEventBlock* PeekFront() const {

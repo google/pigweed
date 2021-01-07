@@ -43,7 +43,7 @@ Status Encoder::WriteVarint(uint64_t value) {
   }
 
   cursor_ += written;
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Encoder::WriteRawBytes(const std::byte* ptr, size_t size) {
@@ -61,7 +61,7 @@ Status Encoder::WriteRawBytes(const std::byte* ptr, size_t size) {
   std::memmove(cursor_, ptr, size);
 
   cursor_ += size;
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Encoder::Push(uint32_t field_number) {
@@ -105,7 +105,7 @@ Status Encoder::Push(uint32_t field_number) {
   blob_stack_[depth_++] = size_cursor;
 
   cursor_ += sizeof(*size_cursor);
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status Encoder::Pop() {
@@ -130,7 +130,7 @@ Status Encoder::Pop() {
   }
   blob_count_--;
 
-  return Status::Ok();
+  return OkStatus();
 }
 
 Result<ConstByteSpan> Encoder::Encode() { return EncodeFrom(0); }

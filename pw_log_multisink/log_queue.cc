@@ -79,7 +79,7 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
   }
 
   dropped_entries_ = 0;
-  return Status::Ok();
+  return OkStatus();
 }
 
 Result<LogEntries> LogQueue::Pop(LogEntriesBuffer entry_buffer) {

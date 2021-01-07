@@ -21,13 +21,13 @@ namespace {
 
 TEST(EchoService, Echo_EchoesRequestMessage) {
   PW_NANOPB_TEST_METHOD_CONTEXT(EchoService, Echo) context;
-  ASSERT_EQ(context.call(_pw_rpc_EchoMessage{"Hello, world"}), Status::Ok());
+  ASSERT_EQ(context.call(_pw_rpc_EchoMessage{"Hello, world"}), OkStatus());
   EXPECT_STREQ(context.response().msg, "Hello, world");
 }
 
 TEST(EchoService, Echo_EmptyRequest) {
   PW_NANOPB_TEST_METHOD_CONTEXT(EchoService, Echo) context;
-  ASSERT_EQ(context.call({.msg = {}}), Status::Ok());
+  ASSERT_EQ(context.call({.msg = {}}), OkStatus());
   EXPECT_STREQ(context.response().msg, "");
 }
 

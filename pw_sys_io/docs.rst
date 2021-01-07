@@ -10,7 +10,7 @@ of an application.
 
 This facade doesn't dictate any policies on input and output data encoding,
 format, or transmission protocol. It only requires that backends return a
-``Status::OK`` if the operation succeeds. Backends may provide useful error
+``OkStatus()`` if the operation succeeds. Backends may provide useful error
 Status types, but depending on the implementation-specific Status values is
 NOT recommended. Since this facade provides a very vague I/O interface, it
 does NOT provide tests. Backends are expected to provide their own testing to

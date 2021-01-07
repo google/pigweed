@@ -46,7 +46,7 @@ class EmptyInitializedKvs : public ::testing::Test {
   EmptyInitializedKvs()
       : kvs_(&test_partition, {.magic = 0x873a9b50, .checksum = &checksum}) {
     test_partition.Erase(0, test_partition.sector_count());
-    ASSERT_EQ(Status::Ok(), kvs_.Init());
+    ASSERT_EQ(OkStatus(), kvs_.Init());
   }
 
   KeyValueStoreBuffer<kMaxEntries, kMaxUsableSectors> kvs_;
@@ -63,7 +63,7 @@ TEST_F(EmptyInitializedKvs, Put_VaryingKeysAndValues) {
   for (int i = 0; i < kFuzzIterations; ++i) {
     for (unsigned key_size = 1; key_size < sizeof(value); ++key_size) {
       for (unsigned value_size = 0; value_size < sizeof(value); ++value_size) {
-        ASSERT_EQ(Status::Ok(),
+        ASSERT_EQ(OkStatus(),
                   kvs_.Put(std::string_view(value, key_size),
                            std::as_bytes(std::span(value, value_size))));
       }

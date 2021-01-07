@@ -36,7 +36,7 @@ namespace pw::rpc {
 // struct can be accessed via context.response().
 //
 //   PW_NANOPB_TEST_METHOD_CONTEXT(my::CoolService, TheMethod) context;
-//   EXPECT_EQ(Status::Ok(), context.call({.some_arg = 123}));
+//   EXPECT_EQ(OkStatus(), context.call({.some_arg = 123}));
 //   EXPECT_EQ(500, context.response().some_response_value);
 //
 // For a server streaming RPC, context.call(request) invokes the method. As in a
@@ -47,7 +47,7 @@ namespace pw::rpc {
 //   context.call({.some_arg = 123});
 //
 //   EXPECT_TRUE(context.done());  // Check that the RPC completed
-//   EXPECT_EQ(Status::Ok(), context.status());  // Check the status
+//   EXPECT_EQ(OkStatus(), context.status());  // Check the status
 //
 //   EXPECT_EQ(3u, context.responses().size());
 //   EXPECT_EQ(123, context.responses()[0].value); // check individual responses
@@ -278,7 +278,7 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(
   PW_ASSERT(buffer.data() == buffer_.data());
 
   if (buffer.empty()) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   Result<internal::Packet> result = internal::Packet::FromBuffer(buffer);
@@ -301,7 +301,7 @@ Status MessageOutput<Response>::SendAndReleaseBuffer(
     default:
       PW_CRASH("Unhandled PacketType");
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace internal::test::nanopb

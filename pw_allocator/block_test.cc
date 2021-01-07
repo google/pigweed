@@ -30,7 +30,7 @@ TEST(Block, CanCreateSingleBlock) {
   Block* block = nullptr;
   auto status = Block::Init(std::span(bytes, kN), &block);
 
-  ASSERT_EQ(status, Status::Ok());
+  ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(block->OuterSize(), kN);
   EXPECT_EQ(block->InnerSize(),
             kN - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -73,7 +73,7 @@ TEST(Block, CanSplitBlock) {
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
 
-  ASSERT_EQ(status, Status::Ok());
+  ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(block->InnerSize(), kSplitN);
   EXPECT_EQ(block->OuterSize(),
             kSplitN + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -106,7 +106,7 @@ TEST(Block, CanSplitBlockUnaligned) {
   Block* next_block = nullptr;
   auto status = block->Split(kSplitN, &next_block);
 
-  ASSERT_EQ(status, Status::Ok());
+  ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(block->InnerSize(), split_len);
   EXPECT_EQ(block->OuterSize(),
             split_len + sizeof(Block) + 2 * PW_ALLOCATOR_POISON_OFFSET);
@@ -217,7 +217,7 @@ TEST(Block, CanMakeZeroSizeFirstBlock) {
   Block* next_block = nullptr;
   auto status = block->Split(0, &next_block);
 
-  ASSERT_EQ(status, Status::Ok());
+  ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(block->InnerSize(), static_cast<size_t>(0));
 }
 
@@ -234,7 +234,7 @@ TEST(Block, CanMakeZeroSizeSecondBlock) {
       block->InnerSize() - sizeof(Block) - 2 * PW_ALLOCATOR_POISON_OFFSET,
       &next_block);
 
-  ASSERT_EQ(status, Status::Ok());
+  ASSERT_EQ(status, OkStatus());
   EXPECT_EQ(next_block->InnerSize(), static_cast<size_t>(0));
 }
 
@@ -287,7 +287,7 @@ TEST(Block, CanMergeWithNextBlock) {
   Block* block3 = nullptr;
   block->Split(kSplit2, &block3);
 
-  EXPECT_EQ(block3->MergeNext(), Status::Ok());
+  EXPECT_EQ(block3->MergeNext(), OkStatus());
 
   EXPECT_EQ(block->Next(), block3);
   EXPECT_EQ(block3->Prev(), block);

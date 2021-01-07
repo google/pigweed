@@ -26,7 +26,7 @@ namespace pw::stream {
 // Stream writer which quietly drops all of the data, similar to /dev/null.
 class NullWriter final : public Writer {
  private:
-  Status DoWrite(ConstByteSpan) final { return Status::Ok(); }
+  Status DoWrite(ConstByteSpan) final { return OkStatus(); }
 };
 
 // Stream reader which never reads any bytes. Always returns OUT_OF_RANGE, which

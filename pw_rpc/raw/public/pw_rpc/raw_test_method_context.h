@@ -35,7 +35,7 @@ namespace pw::rpc {
 // struct can be accessed via context.response().
 //
 //   PW_RAW_TEST_METHOD_CONTEXT(my::CoolService, TheMethod) context;
-//   EXPECT_EQ(Status::Ok(), context.call(encoded_request).status());
+//   EXPECT_EQ(OkStatus(), context.call(encoded_request).status());
 //   EXPECT_EQ(0,
 //             std::memcmp(encoded_response,
 //                         context.response().data(),
@@ -49,7 +49,7 @@ namespace pw::rpc {
 //   context.call(encoded_response);
 //
 //   EXPECT_TRUE(context.done());  // Check that the RPC completed
-//   EXPECT_EQ(Status::Ok(), context.status());  // Check the status
+//   EXPECT_EQ(OkStatus(), context.status());  // Check the status
 //
 //   EXPECT_EQ(3u, context.responses().size());
 //   ByteSpan& response = context.responses()[0];  // check individual responses
@@ -273,7 +273,7 @@ Status MessageOutput<output_size>::SendAndReleaseBuffer(
   PW_ASSERT(buffer.data() == packet_buffer_.data());
 
   if (buffer.empty()) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   Result<internal::Packet> result = internal::Packet::FromBuffer(buffer);
@@ -299,7 +299,7 @@ Status MessageOutput<output_size>::SendAndReleaseBuffer(
     default:
       PW_CRASH("Unhandled PacketType");
   }
-  return Status::Ok();
+  return OkStatus();
 }
 
 }  // namespace internal::test::raw

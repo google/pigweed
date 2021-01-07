@@ -29,7 +29,7 @@ Status FlashPartitionWithStats::SaveStorageStats(const KeyValueStore& kvs,
                                                  const char* label) {
   // If size is zero saving stats is disabled so do not save any stats.
   if (sector_counters_.size() == 0) {
-    return Status::Ok();
+    return OkStatus();
   }
 
   KeyValueStore::StorageStats stats = kvs.GetStorageStats();
@@ -67,7 +67,7 @@ Status FlashPartitionWithStats::SaveStorageStats(const KeyValueStore& kvs,
 
   std::fprintf(out_file, "\n");
   std::fclose(out_file);
-  return Status::Ok();
+  return OkStatus();
 }
 
 Status FlashPartitionWithStats::Erase(Address address, size_t num_sectors) {

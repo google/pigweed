@@ -38,7 +38,7 @@ PW_NO_INLINE pw::Status Read(size_t offset,
   }
 
   *out = std::span<const std::byte>(std::data(kArray) + offset, size);
-  return pw::Status::Ok();
+  return pw::OkStatus();
 }
 
 }  // namespace

@@ -167,7 +167,7 @@ TEST(Codegen, Codegen) {
   // clang-format on
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -187,7 +187,7 @@ TEST(CodegenRepeated, NonPackedScalar) {
       0x08, 0x00, 0x08, 0x10, 0x08, 0x20, 0x08, 0x30};
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -204,7 +204,7 @@ TEST(CodegenRepeated, PackedScalar) {
 
   constexpr uint8_t expected_proto[] = {0x0a, 0x04, 0x00, 0x10, 0x20, 0x30};
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -225,7 +225,7 @@ TEST(CodegenRepeated, NonScalar) {
       0x1a, 0x03, 't', 'h', 'e', 0x1a, 0x5, 'q',  'u', 'i', 'c', 'k',
       0x1a, 0x5,  'b', 'r', 'o', 'w',  'n', 0x1a, 0x3, 'f', 'o', 'x'};
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -250,7 +250,7 @@ TEST(CodegenRepeated, Message) {
   // clang-format on
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -275,7 +275,7 @@ TEST(Codegen, Proto2) {
       0x08, 0x03, 0x1a, 0x06, 0x0a, 0x04, 0xde, 0xad, 0xbe, 0xef};
 
   Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), Status::Ok());
+  ASSERT_EQ(result.status(), OkStatus());
   EXPECT_EQ(result.value().size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(
                 result.value().data(), expected_proto, sizeof(expected_proto)),
@@ -299,7 +299,7 @@ TEST(Codegen, Import) {
     end.WriteNanoseconds(490367432);
   }
 
-  EXPECT_EQ(encoder.Encode().status(), Status::Ok());
+  EXPECT_EQ(encoder.Encode().status(), OkStatus());
 }
 
 TEST(Codegen, NonPigweedPackage) {
@@ -311,7 +311,7 @@ TEST(Codegen, NonPigweedPackage) {
   packed.WriteRep(std::span<const int64_t>(repeated));
   packed.WritePacked("packed");
 
-  EXPECT_EQ(encoder.Encode().status(), Status::Ok());
+  EXPECT_EQ(encoder.Encode().status(), OkStatus());
 }
 
 }  // namespace
