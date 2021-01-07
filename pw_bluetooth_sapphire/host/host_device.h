@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_DEVICE_H_
 
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
@@ -13,7 +14,6 @@
 
 #include <mutex>
 
-#include <ddk/protocol/bt/vendor.h>
 #include <ddktl/device.h>
 #include <fbl/macros.h>
 

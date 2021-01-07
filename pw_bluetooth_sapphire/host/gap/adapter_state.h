@@ -5,11 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_ADAPTER_STATE_H_
 
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <zircon/assert.h>
 
 #include <cstdint>
-
-#include <ddk/protocol/bt/vendor.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"

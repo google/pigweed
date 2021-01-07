@@ -6,6 +6,8 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_DEVICE_WRAPPER_H_
 
 #include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <fuchsia/hardware/bt/hci/c/banjo.h>
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
 #include <lib/fit/result.h>
 #include <lib/zx/channel.h>
@@ -14,8 +16,6 @@
 
 #include <optional>
 
-#include <ddk/protocol/bt/hci.h>
-#include <ddk/protocol/bt/vendor.h>
 #include <fbl/macros.h>
 #include <fbl/unique_fd.h>
 

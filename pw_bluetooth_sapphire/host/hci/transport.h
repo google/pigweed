@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_TRANSPORT_H_
 
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/wait.h>
@@ -16,7 +17,6 @@
 #include <memory>
 #include <thread>
 
-#include <ddk/protocol/bt/vendor.h>
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"

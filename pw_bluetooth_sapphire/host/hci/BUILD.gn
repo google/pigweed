@@ -62,8 +62,8 @@ static_library("hci") {
 
   public_deps = [
     ":definitions",
-    "//sdk/banjo/ddk.protocol.bt.hci",
-    "//sdk/banjo/ddk.protocol.bt.vendor",
+    "//sdk/banjo/fuchsia.hardware.bt.hci",
+    "//sdk/banjo/fuchsia.hardware.bt.vendor",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c_client",
     "//sdk/lib/fdio",

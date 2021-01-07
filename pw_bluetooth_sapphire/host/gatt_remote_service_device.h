@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GATT_REMOTE_SERVICE_DEVICE_H_
 
+#include <fuchsia/hardware/bt/gattsvc/cpp/banjo.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
@@ -14,7 +15,6 @@
 
 #include <ddk/driver.h>
 #include <ddktl/device.h>
-#include <ddktl/protocol/bt/gattsvc.h>
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"

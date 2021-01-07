@@ -5,14 +5,13 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_H_
 
+#include <fuchsia/hardware/bt/hci/c/banjo.h>
+#include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/fit/function.h>
 #include <lib/fit/thread_checker.h>
 #include <zircon/types.h>
 
 #include <memory>
-
-#include <ddk/protocol/bt/hci.h>
-#include <ddk/protocol/bt/vendor.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
