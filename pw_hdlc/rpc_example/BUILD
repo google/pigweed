@@ -17,16 +17,22 @@ load(
     "pw_cc_library",
 )
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
 pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
+    name = "rpc_example",
+    srcs = [
+        "hdlc_rpc_server.cc",
+        "main.cc",
+    ],
+    hdrs = [
+        "public/pw_hdlc/decoder.h",
+        "public/pw_hdlc/hdlc_channel.h",
+        "public/pw_hdlc/rpc_server_packets.h",
+    ],
     deps = [
-        "//pw_rpc/system_server:facade",
+        "//pw_hdlc",
         "//pw_hdlc:pw_rpc",
+        "//pw_rpc:server",
+        "//pw_log",
     ],
 )
 

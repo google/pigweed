@@ -9,8 +9,7 @@ procedure calls (RPCs) on a device.
 .. admonition:: Try it out!
 
   For a quick intro to ``pw_rpc``, see the
-  :ref:`module-pw_hdlc_lite-rpc-example` in the :ref:`module-pw_hdlc_lite`
-  module.
+  :ref:`module-pw_hdlc-rpc-example` in the :ref:`module-pw_hdlc` module.
 
 .. attention::
 
@@ -143,7 +142,7 @@ The Nanopb implementation would be declared in a ``BUILD.gn``:
 
 4. Register the service with a server
 -------------------------------------
-This example code sets up an RPC server with an :ref:`HDLC<module-pw_hdlc_lite>`
+This example code sets up an RPC server with an :ref:`HDLC<module-pw_hdlc>`
 channel output and the example service.
 
 .. code-block:: cpp
@@ -153,7 +152,7 @@ channel output and the example service.
   // adapt this as necessary.
   pw::stream::SysIoWriter writer;
   pw::rpc::RpcChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
-      writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC output");
+      writer, pw::hdlc::kDefaultRpcAddress, "HDLC output");
 
   pw::rpc::Channel channels[] = {
       pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
@@ -178,7 +177,7 @@ channel output and the example service.
     std::array<std::byte, kMaxTransmissionUnit> input_buffer;
 
     PW_LOG_INFO("Starting pw_rpc server");
-    pw::hdlc_lite::ReadAndProcessPackets(
+    pw::hdlc::ReadAndProcessPackets(
         server, hdlc_channel_output, input_buffer);
   }
 

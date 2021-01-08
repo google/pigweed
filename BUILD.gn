@@ -129,7 +129,7 @@ pw_python_group("python") {
     "$dir_pw_docgen/py",
     "$dir_pw_doctor/py",
     "$dir_pw_env_setup/py",
-    "$dir_pw_hdlc_lite/py",
+    "$dir_pw_hdlc/py",
     "$dir_pw_module/py",
     "$dir_pw_package/py",
     "$dir_pw_presubmit/py",
@@ -144,7 +144,7 @@ pw_python_group("python") {
     "$dir_pw_watch/py",
 
     # Standalone scripts
-    "$dir_pw_hdlc_lite/rpc_example:example_script",
+    "$dir_pw_hdlc/rpc_example:example_script",
   ]
 }
 
@@ -197,7 +197,7 @@ group("pigweed_default") {
 if (current_toolchain != default_toolchain) {
   group("apps") {
     # Application images built for all targets.
-    deps = [ "$dir_pw_hdlc_lite/rpc_example" ]
+    deps = [ "$dir_pw_hdlc/rpc_example" ]
 
     # Add target-specific images.
     deps += pw_TARGET_APPLICATIONS
@@ -221,7 +221,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_checksum",
       "$dir_pw_chrono",
       "$dir_pw_cpu_exception",
-      "$dir_pw_hdlc_lite",
+      "$dir_pw_hdlc",
       "$dir_pw_i2c",
       "$dir_pw_metric",
       "$dir_pw_polyfill",
@@ -264,7 +264,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_containers:tests",
       "$dir_pw_cpu_exception_armv7m:tests",
       "$dir_pw_fuzzer:tests",
-      "$dir_pw_hdlc_lite:tests",
+      "$dir_pw_hdlc:tests",
       "$dir_pw_hex_dump:tests",
       "$dir_pw_log:tests",
       "$dir_pw_log_multisink:tests",

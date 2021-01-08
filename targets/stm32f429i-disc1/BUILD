@@ -40,6 +40,6 @@ pw_cc_library(
     srcs = ["system_rpc_server.cc"],
     deps = [
         "//pw_rpc/system_server:facade",
-        "//pw_hdlc_lite:pw_rpc",
+        "//pw_hdlc:pw_rpc",
     ],
 )

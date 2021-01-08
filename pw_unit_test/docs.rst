@@ -246,7 +246,7 @@ logging.
 
 .. code:: python
 
-  from pw_hdlc_lite.rpc import HdlcRpcClient
+  from pw_hdlc.rpc import HdlcRpcClient
   from pw_unit_test.rpc import run_tests
 
   PROTO = Path(os.environ['PW_ROOT'],

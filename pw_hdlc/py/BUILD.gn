@@ -12,21 +12,27 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
+import("//build_overrides/pigweed.gni")
 
-package(default_visibility = ["//visibility:public"])
+import("$dir_pw_build/python.gni")
 
-licenses(["notice"])  # Apache License 2.0
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_rpc/system_server:facade",
-        "//pw_hdlc:pw_rpc",
-    ],
-)
-
+pw_python_package("py") {
+  setup = [ "setup.py" ]
+  sources = [
+    "pw_hdlc/__init__.py",
+    "pw_hdlc/decode.py",
+    "pw_hdlc/encode.py",
+    "pw_hdlc/protocol.py",
+    "pw_hdlc/rpc.py",
+    "pw_hdlc/rpc_console.py",
+  ]
+  tests = [
+    "decode_test.py",
+    "encode_test.py",
+  ]
+  python_deps = [
+    "$dir_pw_protobuf_compiler/py",
+    "$dir_pw_rpc/py",
+  ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+}

@@ -20,7 +20,7 @@ pw_add_module_library(targets.host.system_rpc_server
   SOURCES
     system_rpc_server.cc
   PRIVATE_DEPS
-    pw_hdlc_lite
+    pw_hdlc
     pw_rpc.server
     pw_rpc.synchronized_channel_output
     pw_stream.socket_stream

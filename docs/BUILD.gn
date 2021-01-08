@@ -70,7 +70,7 @@ group("module_docs") {
     "$dir_pw_doctor:docs",
     "$dir_pw_env_setup:docs",
     "$dir_pw_fuzzer:docs",
-    "$dir_pw_hdlc_lite:docs",
+    "$dir_pw_hdlc:docs",
     "$dir_pw_hex_dump:docs",
     "$dir_pw_interrupt:docs",
     "$dir_pw_interrupt_cortex_m:docs",

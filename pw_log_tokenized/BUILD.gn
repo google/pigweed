@@ -66,7 +66,7 @@ pw_source_set("base64_over_hdlc") {
   public = [ "public/pw_log_tokenized/base64_over_hdlc.h" ]
   sources = [ "base64_over_hdlc.cc" ]
   deps = [
-    "$dir_pw_hdlc_lite:encoder",
+    "$dir_pw_hdlc:encoder",
     "$dir_pw_tokenizer:base64",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
   ]

@@ -11,23 +11,26 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_log/log.h"
-#include "pw_rpc_system_server/rpc_server.h"
-#include "pw_unit_test/unit_test_service.h"
+#include "pw_bytes/span.h"
+#include "pw_status/status.h"
+#include "pw_stream/stream.h"
 
-namespace {
+namespace pw::hdlc {
 
-pw::unit_test::UnitTestService unit_test_service;
+// Writes an HDLC unnumbered information frame (UI-frame) to the provided
+// writer. The frame contains the following:
+//
+//   - HDLC flag byte (0x7e)
+//   - Address
+//   - UI-frame control byte
+//   - Data (0 or more bytes)
+//   - Frame check sequence (CRC-32)
+//   - HDLC flag byte (0x7e)
+//
+Status WriteUIFrame(uint8_t address,
+                    ConstByteSpan payload,
+                    stream::Writer& writer);
 
-}  // namespace
-
-int main() {
-  pw::rpc::system_server::Init();
-  pw::rpc::system_server::Server().RegisterService(unit_test_service);
-
-  PW_LOG_INFO("Starting pw_rpc server");
-  pw::rpc::system_server::Start();
-
-  return 0;
-}
+}  // namespace pw::hdlc

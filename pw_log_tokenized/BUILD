@@ -51,7 +51,7 @@ pw_cc_library(
     hdrs = ["public/pw_log_tokenized/base64_over_hdlc.h"],
     includes = ["public"],
     deps = [
-        "//pw_hdlc_lite:encoder",
+        "//pw_hdlc:encoder",
         "//pw_tokenizer:base64",
         "//pw_tokenizer:global_handler_with_payload.facade",
     ],

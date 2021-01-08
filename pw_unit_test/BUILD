@@ -110,7 +110,7 @@ pw_cc_library(
     deps = [
         ":pw_unit_test",
         ":rpc_service",
-        "//pw_hdlc_lite:pw_rpc",
+        "//pw_hdlc:pw_rpc",
         "//pw_log",
         "//pw_rpc:server",
     ],

@@ -14,8 +14,8 @@
 
 #include <cstddef>
 
-#include "pw_hdlc_lite/rpc_channel.h"
-#include "pw_hdlc_lite/rpc_packets.h"
+#include "pw_hdlc/rpc_channel.h"
+#include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_stream/sys_io_stream.h"
@@ -30,8 +30,8 @@ stream::SysIoWriter writer;
 stream::SysIoReader reader;
 
 // Set up the output channel for the pw_rpc server to use.
-hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
-    writer, pw::hdlc_lite::kDefaultRpcAddress, "HDLC channel");
+hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit> hdlc_channel_output(
+    writer, pw::hdlc::kDefaultRpcAddress, "HDLC channel");
 Channel channels[] = {pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
 rpc::Server server(channels);
 
@@ -41,7 +41,7 @@ void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
   // with pw_rpc communications.
   pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc_lite::WriteUIFrame(1, std::as_bytes(std::span(log)), writer);
+    pw::hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), writer);
   });
 }
 
@@ -50,7 +50,7 @@ rpc::Server& Server() { return server; }
 Status Start() {
   // Declare a buffer for decoding incoming HDLC frames.
   std::array<std::byte, kMaxTransmissionUnit> input_buffer;
-  hdlc_lite::Decoder decoder(input_buffer);
+  hdlc::Decoder decoder(input_buffer);
 
   while (true) {
     std::byte byte;
@@ -59,8 +59,8 @@ Status Start() {
       return ret_val;
     }
     if (auto result = decoder.Process(byte); result.ok()) {
-      hdlc_lite::Frame& frame = result.value();
-      if (frame.address() == hdlc_lite::kDefaultRpcAddress) {
+      hdlc::Frame& frame = result.value();
+      if (frame.address() == hdlc::kDefaultRpcAddress) {
         server.ProcessPacket(frame.data(), hdlc_channel_output);
       }
     }

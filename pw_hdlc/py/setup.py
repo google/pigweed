@@ -11,22 +11,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""pw_hdlc"""
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
+import setuptools  # type: ignore
+
+setuptools.setup(
+    name='pw_hdlc',
+    version='0.0.1',
+    author='Pigweed Authors',
+    author_email='pigweed-developers@googlegroups.com',
+    description='Tools for Encoding/Decoding data using the HDLC protocol',
+    packages=setuptools.find_packages(),
+    package_data={'pw_hdlc': ['py.typed']},
+    zip_safe=False,
+    install_requires=['ipython'],
+    tests_require=['pw_build'],
 )
-
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_rpc/system_server:facade",
-        "//pw_hdlc:pw_rpc",
-    ],
-)
-

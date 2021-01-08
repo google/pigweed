@@ -19,7 +19,7 @@
 
 #include <span>
 
-#include "pw_hdlc_lite/encoder.h"
+#include "pw_hdlc/encoder.h"
 #include "pw_stream/sys_io_stream.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
@@ -43,9 +43,9 @@ extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
   base64_buffer[base64_bytes] = '\0';
 
   // HDLC-encode the Base64 string via a SysIoWriter.
-  hdlc_lite::WriteUIFrame(PW_LOG_TOKENIZED_BASE64_LOG_HDLC_ADDRESS,
-                          std::as_bytes(std::span(base64_buffer, base64_bytes)),
-                          writer);
+  hdlc::WriteUIFrame(PW_LOG_TOKENIZED_BASE64_LOG_HDLC_ADDRESS,
+                     std::as_bytes(std::span(base64_buffer, base64_bytes)),
+                     writer);
 }
 
 }  // namespace pw::log_tokenized

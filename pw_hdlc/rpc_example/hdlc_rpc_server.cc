@@ -12,22 +12,38 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_log/log.h"
-#include "pw_rpc_system_server/rpc_server.h"
-#include "pw_unit_test/unit_test_service.h"
+#include <array>
+#include <span>
+#include <string_view>
 
+#include "pw_hdlc/encoder.h"
+#include "pw_hdlc/rpc_packets.h"
+#include "pw_log/log.h"
+#include "pw_rpc/echo_service_nanopb.h"
+#include "pw_rpc/server.h"
+#include "pw_rpc_system_server/rpc_server.h"
+
+namespace hdlc_example {
 namespace {
 
-pw::unit_test::UnitTestService unit_test_service;
+using std::byte;
+
+pw::rpc::EchoService echo_service;
+
+void RegisterServices() {
+  pw::rpc::system_server::Server().RegisterService(echo_service);
+}
 
 }  // namespace
 
-int main() {
+void Start() {
   pw::rpc::system_server::Init();
-  pw::rpc::system_server::Server().RegisterService(unit_test_service);
+
+  // Set up the server and start processing data.
+  RegisterServices();
 
   PW_LOG_INFO("Starting pw_rpc server");
   pw::rpc::system_server::Start();
-
-  return 0;
 }
+
+}  // namespace hdlc_example

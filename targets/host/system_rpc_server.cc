@@ -15,8 +15,8 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_hdlc_lite/rpc_channel.h"
-#include "pw_hdlc_lite/rpc_packets.h"
+#include "pw_hdlc/rpc_channel.h"
+#include "pw_hdlc/rpc_packets.h"
 #include "pw_log/log.h"
 #include "pw_rpc/synchronized_channel_output.h"
 #include "pw_rpc_system_server/rpc_server.h"
@@ -31,10 +31,10 @@ constexpr uint16_t kSocketPort = 33000;
 stream::SocketStream socket_stream;
 sync::Mutex channel_output_mutex;
 rpc::SynchronizedChannelOutput<
-    hdlc_lite::RpcChannelOutputBuffer<kMaxTransmissionUnit>>
+    hdlc::RpcChannelOutputBuffer<kMaxTransmissionUnit>>
     hdlc_channel_output(channel_output_mutex,
                         socket_stream,
-                        hdlc_lite::kDefaultRpcAddress,
+                        hdlc::kDefaultRpcAddress,
                         "HDLC channel");
 Channel channels[] = {rpc::Channel::Create<1>(&hdlc_channel_output)};
 rpc::Server server(channels);
@@ -43,7 +43,7 @@ rpc::Server server(channels);
 
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
-    hdlc_lite::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream);
+    hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream);
   });
 
   socket_stream.Init(kSocketPort);
@@ -54,7 +54,7 @@ rpc::Server& Server() { return server; }
 Status Start() {
   // Declare a buffer for decoding incoming HDLC frames.
   std::array<std::byte, kMaxTransmissionUnit> input_buffer;
-  hdlc_lite::Decoder decoder(input_buffer);
+  hdlc::Decoder decoder(input_buffer);
 
   while (true) {
     std::array<std::byte, kMaxTransmissionUnit> data;
@@ -62,8 +62,8 @@ Status Start() {
     if (ret_val.ok()) {
       for (std::byte byte : ret_val.value()) {
         if (auto result = decoder.Process(byte); result.ok()) {
-          hdlc_lite::Frame& frame = result.value();
-          if (frame.address() == hdlc_lite::kDefaultRpcAddress) {
+          hdlc::Frame& frame = result.value();
+          if (frame.address() == hdlc::kDefaultRpcAddress) {
             server.ProcessPacket(frame.data(), hdlc_channel_output);
           }
         }

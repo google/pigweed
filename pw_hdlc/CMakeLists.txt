@@ -12,21 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+pw_auto_add_simple_module(pw_hdlc
+  PUBLIC_DEPS
+    pw_bytes
+    pw_result
+    pw_rpc.common
+    pw_status
+    pw_stream
+    pw_sys_io
+  PRIVATE_DEPS
+    pw_checksum
+    pw_log
 )
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_rpc/system_server:facade",
-        "//pw_hdlc:pw_rpc",
-    ],
-)
-
+add_subdirectory(rpc_example)

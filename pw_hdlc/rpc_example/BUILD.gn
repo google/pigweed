@@ -14,28 +14,32 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_toolchain/generate_toolchain.gni")
-import("target_toolchains.gni")
+import("$dir_pw_build/python.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 
-generate_toolchains("host_toolchains") {
-  toolchains = pw_target_toolchain_host_list
-}
-
-pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
-}
-
-if (current_toolchain != default_toolchain) {
-  pw_source_set("system_rpc_server") {
+if (dir_pw_third_party_nanopb == "") {
+  group("rpc_example") {
+  }
+} else {
+  pw_executable("rpc_example") {
+    sources = [
+      "hdlc_rpc_server.cc",
+      "main.cc",
+    ]
     deps = [
-      "$dir_pw_hdlc:pw_rpc",
-      "$dir_pw_hdlc:rpc_channel_output",
-      "$dir_pw_rpc:synchronized_channel_output",
-      "$dir_pw_rpc/system_server:facade",
-      "$dir_pw_stream:socket_stream",
+      "$dir_pw_rpc:server",
+      "$dir_pw_rpc/nanopb:echo_service",
+      "$dir_pw_rpc/system_server",
+      "..:pw_rpc",
+      dir_pw_hdlc,
       dir_pw_log,
     ]
-    sources = [ "system_rpc_server.cc" ]
   }
+}
+
+pw_python_script("example_script") {
+  sources = [ "example_script.py" ]
+  python_deps = [ "$dir_pw_hdlc/py" ]
+  pylintrc = "$dir_pigweed/.pylintrc"
 }

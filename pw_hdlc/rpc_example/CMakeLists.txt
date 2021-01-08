@@ -12,21 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
+
+add_executable(pw_hdlc.rpc_example EXCLUDE_FROM_ALL
+    hdlc_rpc_server.cc
+    main.cc
 )
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])  # Apache License 2.0
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_rpc/system_server:facade",
-        "//pw_hdlc:pw_rpc",
-    ],
+target_link_libraries(pw_hdlc.rpc_example
+  PRIVATE
+    pw_hdlc
+    pw_log
+    pw_rpc.nanopb.echo_service
+    pw_rpc.server
+    pw_rpc.system_server
 )
-
