@@ -32,7 +32,7 @@ typedef enum {
   // success. It is typical to check for this value before proceeding on any
   // given call across an API or RPC boundary. To check this value, use the
   // `Status::ok()` member function rather than inspecting the raw code.
-  PW_STATUS_OK = 0,  // Use Status::Ok() in C++
+  PW_STATUS_OK = 0,  // Use OkStatus() in C++
 
   // Cancelled (gRPC code "CANCELLED") indicates the operation was cancelled,
   // typically by the caller.
@@ -215,14 +215,14 @@ const char* pw_StatusString(pw_Status status);
 namespace pw {
 
 // The Status class is a thin, zero-cost abstraction around the pw_Status enum.
-// It initializes to Status::Ok() by default and adds ok() and str() methods.
+// It initializes to OkStatus() by default and adds ok() and str() methods.
 // Implicit conversions are permitted between pw_Status and pw::Status.
 class Status {
  public:
   using Code = pw_Status;
 
   // All of the pw_Status codes are available in the Status class as, e.g.
-  // pw::Status::Ok() or pw::Status::OutOfRange().
+  // pw::OkStatus() or pw::Status::OutOfRange().
   //
   // These aliases are DEPRECATED -- prefer using the helper functions below.
   // For example, change Status::CANCELLED to Status::Cancelled().
@@ -310,7 +310,7 @@ class Status {
   // Returns the Status::Code (pw_Status) for this Status.
   constexpr Code code() const { return code_; }
 
-  // True if the status is Status::Ok().
+  // True if the status is OK.
   [[nodiscard]] constexpr bool ok() const { return code_ == PW_STATUS_OK; }
 
   // Functions for checking which status this is.
@@ -369,6 +369,11 @@ class Status {
  private:
   Code code_;
 };
+
+// Returns an OK status. Equivalent to Status() or Status(PW_STATUS_OK). This
+// function is used instead of a Status::Ok() function, which would be too
+// similar to Status::ok().
+[[nodiscard]] constexpr Status OkStatus() { return Status(); }
 
 constexpr bool operator==(const Status& lhs, const Status& rhs) {
   return lhs.code() == rhs.code();

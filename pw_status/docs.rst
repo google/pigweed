@@ -20,26 +20,31 @@ These codes are used extensively in Google projects including `Abseil
 ) and `gRPC <https://grpc.io>`_ (`doc/statuscodes.md
 <https://github.com/grpc/grpc/blob/master/doc/statuscodes.md>`_).
 
-A ``Status`` is created with a ``static constexpr`` member function
-corresponding to the code.
+An OK ``Status`` is created by the ``pw::OkStatus`` function or by the default
+``Status`` constructor.  Non-OK ``Status`` is created with a static member
+function that corresponds with the status code.
 
 .. code-block:: cpp
 
   // Ok (gRPC code "OK") does not indicate an error; this value is returned on
   // success. It is typical to check for this value before proceeding on any
   // given call across an API or RPC boundary. To check this value, use the
-  // `Status::ok()` member function rather than inspecting the raw code.
-  Status::Ok()
+  // `status.ok()` member function rather than inspecting the raw code.
+  //
+  // OkStatus() is provided as a free function, rather than a static member
+  // function like the error statuses to avoid conflicts with the ok() member
+  // function. Status::Ok() would be too similar to Status::ok().
+  pw::OkStatus()
 
   // Cancelled (gRPC code "CANCELLED") indicates the operation was cancelled,
   // typically by the caller.
-  Status::Cancelled()
+  pw::Status::Cancelled()
 
   // Unknown (gRPC code "UNKNOWN") indicates an unknown error occurred. In
   // general, more specific errors should be raised, if possible. Errors raised
   // by APIs that do not return enough error information may be converted to
   // this error.
-  Status::Unknown()
+  pw::Status::Unknown()
 
   // InvalidArgument (gRPC code "INVALID_ARGUMENT") indicates the caller
   // specified an invalid argument, such a malformed filename. Note that such
@@ -47,14 +52,14 @@ corresponding to the code.
   // arguments themselves. Errors with validly formed arguments that may cause
   // errors with the state of the receiving system should be denoted with
   // `FailedPrecondition` instead.
-  Status::InvalidArgument()
+  pw::Status::InvalidArgument()
 
   // DeadlineExceeded (gRPC code "DEADLINE_EXCEEDED") indicates a deadline
   // expired before the operation could complete. For operations that may change
   // state within a system, this error may be returned even if the operation has
   // completed successfully. For example, a successful response from a server
   // could have been delayed long enough for the deadline to expire.
-  Status::DeadlineExceeded()
+  pw::Status::DeadlineExceeded()
 
   // NotFound (gRPC code "NOT_FOUND") indicates some requested entity (such as
   // a file or directory) was not found.
@@ -63,11 +68,11 @@ corresponding to the code.
   // users, such as during a gradual feature rollout or undocumented allow list.
   // If, instead, a request should be denied for specific sets of users, such as
   // through user-based access control, use `PermissionDenied` instead.
-  Status::NotFound()
+  pw::Status::NotFound()
 
   // AlreadyExists (gRPC code "ALREADY_EXISTS") indicates the entity that a
   // caller attempted to create (such as file or directory) is already present.
-  Status::AlreadyExists()
+  pw::Status::AlreadyExists()
 
   // PermissionDenied (gRPC code "PERMISSION_DENIED") indicates that the caller
   // does not have permission to execute the specified operation. Note that this
@@ -79,12 +84,12 @@ corresponding to the code.
   // some resource. Instead, use `ResourceExhausted` for those errors.
   // `PermissionDenied` must not be used if the caller cannot be identified.
   // Instead, use `Unauthenticated` for those errors.
-  Status::PermissionDenied()
+  pw::Status::PermissionDenied()
 
   // ResourceExhausted (gRPC code "RESOURCE_EXHAUSTED") indicates some resource
   // has been exhausted, perhaps a per-user quota, or perhaps the entire file
   // system is out of space.
-  Status::ResourceExhausted()
+  pw::Status::ResourceExhausted()
 
   // FailedPrecondition (gRPC code "FAILED_PRECONDITION") indicates that the
   // operation was rejected because the system is not in a state required for
@@ -103,7 +108,7 @@ corresponding to the code.
   //      fails because the directory is non-empty, `FailedPrecondition`
   //      should be returned since the client should not retry unless
   //      the files are deleted from the directory.
-  Status::FailedPrecondition()
+  pw::Status::FailedPrecondition()
 
   // Aborted (gRPC code "ABORTED") indicates the operation was aborted,
   // typically due to a concurrency issue such as a sequencer check failure or a
@@ -111,7 +116,7 @@ corresponding to the code.
   //
   // See the guidelines above for deciding between `FailedPrecondition`,
   // `Aborted`, and `Unavailable`.
-  Status::Aborted()
+  pw::Status::Aborted()
 
   // OutOfRange (gRPC code "OUT_OF_RANGE") indicates the operation was
   // attempted past the valid range, such as seeking or reading past an
@@ -129,17 +134,17 @@ corresponding to the code.
   // error) when it applies so that callers who are iterating through
   // a space can easily look for an `OutOfRange` error to detect when
   // they are done.
-  Status::OutOfRange()
+  pw::Status::OutOfRange()
 
   // Unimplemented (gRPC code "UNIMPLEMENTED") indicates the operation is not
   // implemented or supported in this service. In this case, the operation
   // should not be re-attempted.
-  Status::Unimplemented()
+  pw::Status::Unimplemented()
 
   // Internal (gRPC code "INTERNAL") indicates an internal error has occurred
   // and some invariants expected by the underlying system have not been
   // satisfied. This error code is reserved for serious errors.
-  Status::Internal()
+  pw::Status::Internal()
 
   // Unavailable (gRPC code "UNAVAILABLE") indicates the service is currently
   // unavailable and that this is most likely a transient condition. An error
@@ -148,17 +153,17 @@ corresponding to the code.
   //
   // See the guidelines above for deciding between `FailedPrecondition`,
   // `Aborted`, and `Unavailable`.
-  Status::Unavailable()
+  pw::Status::Unavailable()
 
   // DataLoss (gRPC code "DATA_LOSS") indicates that unrecoverable data loss or
   // corruption has occurred. As this error is serious, proper alerting should
   // be attached to errors such as this.
-  Status::DataLoss()
+  pw::Status::DataLoss()
 
   // Unauthenticated (gRPC code "UNAUTHENTICATED") indicates that the request
   // does not have valid authentication credentials for the operation. Correct
   // the authentication and try again.
-  Status::Unauthenticated()
+  pw::Status::Unauthenticated()
 
 .. attention::
 
@@ -199,7 +204,7 @@ bits).
   .. code-block:: cpp
 
     // An OK StatusWithSize with a size of 123.
-    StatusWithSize::Ok(123)
+    StatusWithSize(123)
 
     // A NOT_FOUND StatusWithSize with a size of 0.
     StatusWithSize::NotFound()

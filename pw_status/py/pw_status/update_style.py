@@ -26,7 +26,6 @@ from typing import Iterable
 from pw_presubmit import git_repo
 
 _REMAP = {
-    'OK': 'Ok',
     'CANCELLED': 'Cancelled',
     'UNKNOWN': 'Unknown',
     'INVALID_ARGUMENT': 'InvalidArgument',
@@ -62,6 +61,9 @@ def _remap_status_with_size(match) -> bytes:
 
 def _remap_codes(match) -> bytes:
     status, code = (g.decode() for g in match.groups())
+    if status == 'OK':
+        return b'OkStatus()'
+
     return f'{status}::{_REMAP[code]}()'.encode()
 
 
