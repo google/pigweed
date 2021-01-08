@@ -175,7 +175,8 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_gn_target,
-                 cargo_package_file, enable_cargo, json_file, project_root):
+                 virtualenv_gn_out_dir, cargo_package_file, enable_cargo,
+                 json_file, project_root):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -229,6 +230,7 @@ class EnvSetup(object):
         self._cipd_package_file.extend(cipd_package_file)
         self._virtualenv_requirements.extend(virtualenv_requirements)
         self._virtualenv_gn_targets.extend(virtualenv_gn_target)
+        self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
         self._cargo_package_file.extend(cargo_package_file)
 
         self._env.set('PW_PROJECT_ROOT', project_root)
@@ -410,6 +412,7 @@ Then use `set +x` to go back to normal.
                 venv_path=self._virtualenv_root,
                 requirements=requirements,
                 gn_targets=self._virtualenv_gn_targets,
+                gn_out_dir=self._virtualenv_gn_out_dir,
                 python=new_python3,
                 env=self._env,
         ):
@@ -527,11 +530,17 @@ def parse(argv=None):
     parser.add_argument(
         '--virtualenv-gn-target',
         help=('GN targets that build and install Python packages. Format: '
-              "path/to/gn_root#target"),
+              'path/to/gn_root#target'),
         default=[],
         action='append',
         type=virtualenv_setup.GnTarget,
     )
+
+    parser.add_argument(
+        '--virtualenv-gn-out-dir',
+        help=('Output directory to use when building and installing Python '
+              'packages with GN; defaults to a unique path in the environment '
+              'directory.'))
 
     parser.add_argument(
         '--virtualenv-root',

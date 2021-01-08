@@ -121,6 +121,7 @@ def install(
         full_envsetup=True,
         requirements=(),
         gn_targets=(),
+        gn_out_dir=None,
         python=sys.executable,
         env=None,
 ):
@@ -187,7 +188,10 @@ def install(
                     *requirement_args)
 
     def install_packages(gn_target):
-        build = os.path.join(venv_path, gn_target.name)
+        if gn_out_dir is None:
+            build_dir = os.path.join(venv_path, gn_target.name)
+        else:
+            build_dir = gn_out_dir
 
         env_log = 'env-{}.log'.format(gn_target.name)
         env_log_path = os.path.join(venv_path, env_log)
@@ -206,7 +210,7 @@ def install(
         gn_log_path = os.path.join(venv_path, gn_log)
         try:
             with open(gn_log_path, 'w') as outs:
-                subprocess.check_call(('gn', 'gen', build),
+                subprocess.check_call(('gn', 'gen', build_dir),
                                       cwd=os.path.join(project_root,
                                                        gn_target.directory),
                                       stdout=outs,
@@ -220,7 +224,7 @@ def install(
         ninja_log_path = os.path.join(venv_path, ninja_log)
         try:
             with open(ninja_log_path, 'w') as outs:
-                ninja_cmd = ['ninja', '-C', build]
+                ninja_cmd = ['ninja', '-C', build_dir]
                 ninja_cmd.append(gn_target.target)
                 subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
         except subprocess.CalledProcessError as err:
