@@ -43,6 +43,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
 
     parser.add_allowed_suffix('_CIPD_INSTALL_DIR')
 
+    parser.add_var('PW_ENVSETUP_DISABLE_SPINNER',
+                   type=envparse.strict_bool,
+                   default=False)
     parser.add_var('PW_DOCTOR_SKIP_CIPD_CHECKS')
     parser.add_var('PW_ACTIVATE_SKIP_CHECKS',
                    type=envparse.strict_bool,
