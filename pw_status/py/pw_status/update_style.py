@@ -25,7 +25,11 @@ from typing import Iterable
 
 from pw_presubmit import git_repo
 
+# Files in which to run replacements.
+_PATHSPECS = '*.h', '*.c', '*.cc', '*.cpp', '*.inc', '*.cxx', '*.hh', '*.py'
+
 _REMAP = {
+    # Exclude OK since it maps to OkStatus() instead of Status::Ok().
     'CANCELLED': 'Cancelled',
     'UNKNOWN': 'Unknown',
     'INVALID_ARGUMENT': 'InvalidArgument',
@@ -47,6 +51,7 @@ _REMAP = {
 _CODES = '|'.join(_REMAP.keys())
 _FUNCTIONS = '|'.join(_REMAP.values())
 
+_STATUS_OK = re.compile(br'\bStatus::(?:OK\b|Ok\(\))')
 _STATUS_WITH_SIZE_CTOR = re.compile(
     fr'\bStatusWithSize\(Status::({_CODES}),\s*'.encode())
 _STATUS = re.compile(fr'\b(Status|StatusWithSize)::({_CODES})(?!")\b'.encode())
@@ -56,14 +61,14 @@ _STATUS_EQUALITY = re.compile(
 
 
 def _remap_status_with_size(match) -> bytes:
+    if match.group(1) == b'OK':
+        return b'StatusWithSize('
+
     return f'StatusWithSize::{_REMAP[match.group(1).decode()]}('.encode()
 
 
 def _remap_codes(match) -> bytes:
     status, code = (g.decode() for g in match.groups())
-    if status == 'OK':
-        return b'OkStatus()'
-
     return f'{status}::{_REMAP[code]}()'.encode()
 
 
@@ -86,6 +91,7 @@ def _parse_args():
 
 
 def update_status(paths: Iterable[Path]) -> None:
+    """Updates the Status style for a set of paths."""
     if not paths:
         paths = [Path.cwd()]
 
@@ -95,12 +101,23 @@ def update_status(paths: Iterable[Path]) -> None:
 
         updated = 0
 
-        for file in git_repo.list_files(pathspecs=('*.h', '*.cc', '*.cpp'),
-                                        repo_path=path):
+        for file in git_repo.list_files(pathspecs=_PATHSPECS, repo_path=path):
             orig = file.read_bytes()
 
+            # Replace Status::OK and Status::Ok() with OkStatus().
+            text = _STATUS_OK.sub(b'OkStatus()', orig)
+
+            # Replace StatusWithSize::Ok with the constructor.
+            text = text.replace(b'StatusWithSize::Ok(', b'StatusWithSize(')
+
+            # Add `using pw::OkStatus` if `using pw::Status` is present.
+            text = text.replace(b'using pw::Status;',
+                                b'using pw::Status; using pw::OkStatus;')
+            text = text.replace(b'using ::pw::Status;',
+                                b'using ::pw::Status; using ::pw::OkStatus;')
+
             # Replace StatusWithSize constructor
-            text = _STATUS_WITH_SIZE_CTOR.sub(_remap_status_with_size, orig)
+            text = _STATUS_WITH_SIZE_CTOR.sub(_remap_status_with_size, text)
 
             # Replace Status and StatusWithSize
             text = _STATUS.sub(_remap_codes, text)
@@ -112,7 +129,8 @@ def update_status(paths: Iterable[Path]) -> None:
                 file.write_bytes(text)
 
     print('Updated', updated, 'files.')
-    print('Manually inspect the changes! This script is not perfect.')
+    print('Run pw format and manually inspect the changes!',
+          'This script is not perfect.')
 
 
 def main():
