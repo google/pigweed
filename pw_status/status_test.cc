@@ -178,6 +178,8 @@ TEST(Status, UnknownString) {
 
 TEST(Status, DeprecatedAliases) {
   // TODO(pwbug/268): Remove this test after migrating from these aliases.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   static_assert(PW_STATUS_OK == OkStatus());
   static_assert(PW_STATUS_CANCELLED == Status::CANCELLED);
   static_assert(PW_STATUS_UNKNOWN == Status::UNKNOWN);
@@ -195,6 +197,7 @@ TEST(Status, DeprecatedAliases) {
   static_assert(PW_STATUS_UNAVAILABLE == Status::UNAVAILABLE);
   static_assert(PW_STATUS_DATA_LOSS == Status::DATA_LOSS);
   static_assert(PW_STATUS_UNAUTHENTICATED == Status::UNAUTHENTICATED);
+#pragma GCC diagnostic pop
 }
 
 // Functions for executing the C pw_Status tests.

@@ -228,23 +228,25 @@ class Status {
   // For example, change Status::CANCELLED to Status::Cancelled().
   //
   // TODO(pwbug/268): Migrate to the helper functions and remove these aliases.
-  static constexpr Code OK = PW_STATUS_OK;
-  static constexpr Code CANCELLED = PW_STATUS_CANCELLED;
-  static constexpr Code UNKNOWN = PW_STATUS_UNKNOWN;
-  static constexpr Code INVALID_ARGUMENT = PW_STATUS_INVALID_ARGUMENT;
-  static constexpr Code DEADLINE_EXCEEDED = PW_STATUS_DEADLINE_EXCEEDED;
-  static constexpr Code NOT_FOUND = PW_STATUS_NOT_FOUND;
-  static constexpr Code ALREADY_EXISTS = PW_STATUS_ALREADY_EXISTS;
-  static constexpr Code PERMISSION_DENIED = PW_STATUS_PERMISSION_DENIED;
-  static constexpr Code UNAUTHENTICATED = PW_STATUS_UNAUTHENTICATED;
-  static constexpr Code RESOURCE_EXHAUSTED = PW_STATUS_RESOURCE_EXHAUSTED;
-  static constexpr Code FAILED_PRECONDITION = PW_STATUS_FAILED_PRECONDITION;
-  static constexpr Code ABORTED = PW_STATUS_ABORTED;
-  static constexpr Code OUT_OF_RANGE = PW_STATUS_OUT_OF_RANGE;
-  static constexpr Code UNIMPLEMENTED = PW_STATUS_UNIMPLEMENTED;
-  static constexpr Code INTERNAL = PW_STATUS_INTERNAL;
-  static constexpr Code UNAVAILABLE = PW_STATUS_UNAVAILABLE;
-  static constexpr Code DATA_LOSS = PW_STATUS_DATA_LOSS;
+  // clang-format off
+  [[deprecated("Use pw::OkStatus()")]] static constexpr Code OK = PW_STATUS_OK;
+  [[deprecated("Use pw::Status::Cancelled()")]] static constexpr Code CANCELLED = PW_STATUS_CANCELLED;
+  [[deprecated("Use pw::Status::Unknown()")]] static constexpr Code UNKNOWN = PW_STATUS_UNKNOWN;
+  [[deprecated("Use pw::Status::InvalidArgument()")]] static constexpr Code INVALID_ARGUMENT = PW_STATUS_INVALID_ARGUMENT;
+  [[deprecated("Use pw::Status::DeadlineExceeded()")]] static constexpr Code DEADLINE_EXCEEDED = PW_STATUS_DEADLINE_EXCEEDED;
+  [[deprecated("Use pw::Status::NotFound()")]] static constexpr Code NOT_FOUND = PW_STATUS_NOT_FOUND;
+  [[deprecated("Use pw::Status::AlreadyExists()")]] static constexpr Code ALREADY_EXISTS = PW_STATUS_ALREADY_EXISTS;
+  [[deprecated("Use pw::Status::PermissionDenied()")]] static constexpr Code PERMISSION_DENIED = PW_STATUS_PERMISSION_DENIED;
+  [[deprecated("Use pw::Status::Unauthenticated()")]] static constexpr Code UNAUTHENTICATED = PW_STATUS_UNAUTHENTICATED;
+  [[deprecated("Use pw::Status::ResourceExhausted()")]] static constexpr Code RESOURCE_EXHAUSTED = PW_STATUS_RESOURCE_EXHAUSTED;
+  [[deprecated("Use pw::Status::FailedPrecondition()")]] static constexpr Code FAILED_PRECONDITION = PW_STATUS_FAILED_PRECONDITION;
+  [[deprecated("Use pw::Status::Aborted()")]] static constexpr Code ABORTED = PW_STATUS_ABORTED;
+  [[deprecated("Use pw::Status::OutOfRange()")]] static constexpr Code OUT_OF_RANGE = PW_STATUS_OUT_OF_RANGE;
+  [[deprecated("Use pw::Status::Unimplemented()")]] static constexpr Code UNIMPLEMENTED = PW_STATUS_UNIMPLEMENTED;
+  [[deprecated("Use pw::Status::Internal()")]] static constexpr Code INTERNAL = PW_STATUS_INTERNAL;
+  [[deprecated("Use pw::Status::Unavailable()")]] static constexpr Code UNAVAILABLE = PW_STATUS_UNAVAILABLE;
+  [[deprecated("Use pw::Status::DataLoss()")]] static constexpr Code DATA_LOSS = PW_STATUS_DATA_LOSS;
+  // clang-format on
 
   // Functions that create a Status with the specified code.
   // clang-format off

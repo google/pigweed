@@ -81,22 +81,24 @@ class StatusWithSize {
   // example, change StatusWithSize::NotFound() to StatusWithSize::NotFound().
   //
   // TODO(pwbug/268): Migrate to the functions and remove these constants.
-  static constexpr Constant CANCELLED{Status::Cancelled()};
-  static constexpr Constant UNKNOWN{Status::Unknown()};
-  static constexpr Constant INVALID_ARGUMENT{Status::InvalidArgument()};
-  static constexpr Constant DEADLINE_EXCEEDED{Status::DeadlineExceeded()};
-  static constexpr Constant NOT_FOUND{Status::NotFound()};
-  static constexpr Constant ALREADY_EXISTS{Status::AlreadyExists()};
-  static constexpr Constant PERMISSION_DENIED{Status::PermissionDenied()};
-  static constexpr Constant RESOURCE_EXHAUSTED{Status::ResourceExhausted()};
-  static constexpr Constant FAILED_PRECONDITION{Status::FailedPrecondition()};
-  static constexpr Constant ABORTED{Status::Aborted()};
-  static constexpr Constant OUT_OF_RANGE{Status::OutOfRange()};
-  static constexpr Constant UNIMPLEMENTED{Status::Unimplemented()};
-  static constexpr Constant INTERNAL{Status::Internal()};
-  static constexpr Constant UNAVAILABLE{Status::Unavailable()};
-  static constexpr Constant DATA_LOSS{Status::DataLoss()};
-  static constexpr Constant UNAUTHENTICATED{Status::Unauthenticated()};
+  // clang-format off
+  [[deprecated("Use pw::StatusWithSize::Cancelled()")]] static constexpr Constant CANCELLED{Status::Cancelled()};
+  [[deprecated("Use pw::StatusWithSize::Unknown()")]] static constexpr Constant UNKNOWN{Status::Unknown()};
+  [[deprecated("Use pw::StatusWithSize::InvalidArgument()")]] static constexpr Constant INVALID_ARGUMENT{Status::InvalidArgument()};
+  [[deprecated("Use pw::StatusWithSize::DeadlineExceeded()")]] static constexpr Constant DEADLINE_EXCEEDED{Status::DeadlineExceeded()};
+  [[deprecated("Use pw::StatusWithSize::NotFound()")]] static constexpr Constant NOT_FOUND{Status::NotFound()};
+  [[deprecated("Use pw::StatusWithSize::AlreadyExists()")]] static constexpr Constant ALREADY_EXISTS{Status::AlreadyExists()};
+  [[deprecated("Use pw::StatusWithSize::PermissionDenied()")]] static constexpr Constant PERMISSION_DENIED{Status::PermissionDenied()};
+  [[deprecated("Use pw::StatusWithSize::ResourceExhausted()")]] static constexpr Constant RESOURCE_EXHAUSTED{Status::ResourceExhausted()};
+  [[deprecated("Use pw::StatusWithSize::FailedPrecondition()")]] static constexpr Constant FAILED_PRECONDITION{Status::FailedPrecondition()};
+  [[deprecated("Use pw::StatusWithSize::Aborted()")]] static constexpr Constant ABORTED{Status::Aborted()};
+  [[deprecated("Use pw::StatusWithSize::OutOfRange()")]] static constexpr Constant OUT_OF_RANGE{Status::OutOfRange()};
+  [[deprecated("Use pw::StatusWithSize::Unimplemented()")]] static constexpr Constant UNIMPLEMENTED{Status::Unimplemented()};
+  [[deprecated("Use pw::StatusWithSize::Internal()")]] static constexpr Constant INTERNAL{Status::Internal()};
+  [[deprecated("Use pw::StatusWithSize::Unavailable()")]] static constexpr Constant UNAVAILABLE{Status::Unavailable()};
+  [[deprecated("Use pw::StatusWithSize::DataLoss()")]] static constexpr Constant DATA_LOSS{Status::DataLoss()};
+  [[deprecated("Use pw::StatusWithSize::Unauthenticated()")]] static constexpr Constant UNAUTHENTICATED{Status::Unauthenticated()};
+  // clang-format on
 
   // Functions that create a StatusWithSize with the specified status code. For
   // codes other than OK, the size defaults to 0.
