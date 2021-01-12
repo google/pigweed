@@ -262,31 +262,42 @@ additional requirements.
     will be fixed eventually.
 
 **C code**
-  * Public names used by C code must be prefixed with ``pw_``.
+In general, C symbols should be prefixed with the module name. If the symbol is
+not associated with a module, use just ``pw`` as the module name. Facade
+backends may chose to prefix symbols with the facade's name to help reduce the
+length of the prefix.
+
+  * Public names used by C code must be prefixed with the module name (e.g.
+    ``pw_tokenizer_*``).
   * If private code must be exposed in a header, private names used by C code
-    must be prefixed with ``_pw_``.
+    must be prefixed with an underscore followed by the module name (e.g.
+    ``_pw_assert_*``).
   * Avoid writing C source (.c) files in Pigweed. Prefer to write C++ code with
     C linkage using ``extern "C"``. Within C source, private C functions and
-    variables must be named with the ``_pw_`` prefix and should be declared
-    ``static`` whenever possible; for example, ``_pw__MyPrivateFunction``.
+    variables must be named with the ``_pw_my_module_*`` prefix and should be
+    declared ``static`` whenever possible; for example,
+    ``_pw_my_module_MyPrivateFunction``.
   * The C prefix rules apply to
 
-    * C functions (``int pw_FunctionName(void);``),
-    * variables used by C code (``int pw_variable_name;``),
-    * constant variables used by C code (``int pw_kConstantName;``), and
-    * structs used by C code (``typedef struct {} pw_StructName;``).
+    * C functions (``int pw_foo_FunctionName(void);``),
+    * variables used by C code (``int pw_foo_variable_name;``),
+    * constant variables used by C code (``int pw_foo_kConstantName;``),
+    * structs used by C code (``typedef struct {} pw_foo_StructName;``), and
+    * all of the above for ``extern "C"`` names in C++ code.
 
     The prefix does not apply to struct members, which use normal Google style.
 
 **Preprocessor macros**
-  * Public Pigweed macros must be prefixed with ``PW_``.
-  * Private Pigweed macros must be prefixed with ``_PW_``.
+  * Public Pigweed macros must be prefixed with the module name (e.g.
+    ``PW_MY_MODULE_*``).
+  * Private Pigweed macros must be prefixed with an underscore followed by the
+    module name (e.g. ``_PW_MY_MODULE_*``).
 
 **Example**
 
 .. code-block:: cpp
 
-  namespace pw {
+  namespace pw::my_module {
   namespace nested_namespace {
 
   // C++ names (types, variables, functions) must be in the pw namespace.
@@ -303,37 +314,37 @@ additional requirements.
   extern "C" {
 
   // Public Pigweed code used from C must be prefixed with pw_.
-  extern const int pw_kGlobalConstant;
+  extern const int pw_my_module_kGlobalConstant;
 
-  extern int pw_global_variable;
+  extern int pw_my_module_global_variable;
 
-  void pw_Function(void);
+  void pw_my_module_Function(void);
 
   typedef struct {
     int member_variable;
-  } pw_Struct;
+  } pw_my_module_Struct;
 
   // Private Pigweed code used from C must be prefixed with _pw_.
-  extern const int _pw_kPrivateGlobalConstant;
+  extern const int _pw_my_module_kPrivateGlobalConstant;
 
-  extern int _pw_private_global_variable;
+  extern int _pw_my_module_private_global_variable;
 
-  void _pw_PrivateFunction(void);
+  void _pw_my_module_PrivateFunction(void);
 
   typedef struct {
     int member_variable;
-  } _pw_PrivateStruct;
+  } _pw_my_module_PrivateStruct;
 
   }  // extern "C"
 
   // Public macros must be prefixed with PW_.
-  #define PW_PUBLIC_MACRO(arg) arg
+  #define PW_MY_MODULE_PUBLIC_MACRO(arg) arg
 
   // Private macros must be prefixed with _PW_.
-  #define _PW_PRIVATE_MACRO(arg) arg
+  #define _PW_MY_MODULE_PRIVATE_MACRO(arg) arg
 
   }  // namespace nested_namespace
-  }  // namespace pw
+  }  // namespace pw::my_module
 
 Namespace scope formatting
 ==========================
