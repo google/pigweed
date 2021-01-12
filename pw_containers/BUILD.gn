@@ -24,9 +24,15 @@ config("default_config") {
 
 group("pw_containers") {
   public_deps = [
+    ":flat_map",
     ":intrusive_list",
     ":vector",
   ]
+}
+
+pw_source_set("flat_map") {
+  public_configs = [ ":default_config" ]
+  public = [ "public/pw_containers/flat_map.h" ]
 }
 
 pw_source_set("vector") {
@@ -40,28 +46,34 @@ pw_source_set("intrusive_list") {
     "public/pw_containers/internal/intrusive_list_impl.h",
     "public/pw_containers/intrusive_list.h",
   ]
-  deps = [ dir_pw_assert ]
   sources = [ "intrusive_list.cc" ]
+  deps = [ dir_pw_assert ]
 }
 
 pw_test_group("tests") {
   tests = [
-    ":vector_test",
+    ":flat_map_test",
     ":intrusive_list_test",
+    ":vector_test",
   ]
 }
 
+pw_test("flat_map_test") {
+  sources = [ "flat_map_test.cc" ]
+  deps = [ ":flat_map" ]
+}
+
 pw_test("vector_test") {
-  deps = [ ":vector" ]
   sources = [ "vector_test.cc" ]
+  deps = [ ":vector" ]
 }
 
 pw_test("intrusive_list_test") {
+  sources = [ "intrusive_list_test.cc" ]
   deps = [
     ":intrusive_list",
     "$dir_pw_preprocessor",
   ]
-  sources = [ "intrusive_list_test.cc" ]
 }
 
 pw_doc_group("docs") {

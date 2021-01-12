@@ -25,6 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_containers",
     deps = [
+        ":flat_map",
         ":vector",
         ":intrusive_list",
     ],
@@ -49,6 +50,25 @@ pw_cc_library(
         "public/pw_containers/vector.h",
     ],
     includes = ["public"],
+)
+
+pw_cc_library(
+    name = "flat_map",
+    hdrs = [
+        "public/pw_containers/flat_map.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "flat_map_test",
+    srcs = [
+        "flat_map_test.cc",
+    ],
+    deps = [
+        ":pw_containers",
+        "//pw_unit_test",
+    ],
 )
 
 pw_cc_test(
