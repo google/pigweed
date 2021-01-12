@@ -20,6 +20,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
@@ -1240,6 +1241,70 @@ TEST_F(FIDL_HostServerTest, EnableBackgroundScanFailsToStart) {
   host_server()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
+}
+
+class FIDL_HostServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+ public:
+  FIDL_HostServerTest_FakeAdapter() = default;
+  ~FIDL_HostServerTest_FakeAdapter() override = default;
+
+  void SetUp() override {
+    FakeAdapterTestFixture::SetUp();
+    auto gatt = std::make_unique<bt::gatt::testing::FakeLayer>();
+    gatt_ = gatt.get();
+    gatt_host_ = std::make_unique<GattHost>(std::move(gatt));
+    fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
+    host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
+                                                adapter()->AsWeakPtr(), gatt_host_->AsWeakPtr());
+    host_.Bind(std::move(host_handle));
+  }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+    host_ = nullptr;
+    host_server_ = nullptr;
+    gatt_ = nullptr;
+    FakeAdapterTestFixture::TearDown();
+  }
+
+ protected:
+  HostServer* host_server() const { return host_server_.get(); }
+
+  fuchsia::bluetooth::host::Host* host_client() const { return host_.get(); }
+
+  fuchsia::bluetooth::host::HostPtr& host_client_ptr() { return host_; }
+
+ private:
+  std::unique_ptr<HostServer> host_server_;
+  fuchsia::bluetooth::host::HostPtr host_;
+  bt::gatt::testing::FakeLayer* gatt_;
+  std::unique_ptr<GattHost> gatt_host_;
+
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest_FakeAdapter);
+};
+
+TEST_F(FIDL_HostServerTest_FakeAdapter, SetLocalNameNotifiesWatchState) {
+  std::vector<fsys::HostInfo> info;
+  // Consume initial state value.
+  host_client()->WatchState([&](auto value) { info.push_back(std::move(value)); });
+  RunLoopUntilIdle();
+  EXPECT_EQ(info.size(), 1u);
+  // Second watch state will hang until state is updated.
+  host_client()->WatchState([&](auto value) { info.push_back(std::move(value)); });
+  RunLoopUntilIdle();
+  EXPECT_EQ(info.size(), 1u);
+
+  int cb_count = 0;
+  host_client()->SetLocalName("test", [&](auto result) {
+    EXPECT_TRUE(result.is_response());
+    cb_count++;
+  });
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 1);
+  EXPECT_EQ(adapter()->local_name(), "test");
+  ASSERT_EQ(info.size(), 2u);
+  ASSERT_TRUE(info.back().has_local_name());
+  EXPECT_EQ(info.back().local_name(), "test");
 }
 
 }  // namespace

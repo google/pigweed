@@ -328,9 +328,6 @@ class Adapter {
     virtual std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id, bool initiator, hci::SynchronousConnectionParameters parameters,
         ScoConnectionCallback callback) = 0;
-
-    // Returns the BR/EDR local name used for Extended Inquiry Response (EIR).
-    virtual std::string local_name() const = 0;
   };
 
   //  Returns nullptr if the controller does not support classic.
@@ -358,6 +355,8 @@ class Adapter {
   // Sets the Local Name of this adapter, for both BR/EDR discoverability and
   // public LE services.
   virtual void SetLocalName(std::string name, hci::StatusCallback callback) = 0;
+
+  virtual std::string local_name() const = 0;
 
   // Sets the Device Class of this adapter.
   virtual void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) = 0;

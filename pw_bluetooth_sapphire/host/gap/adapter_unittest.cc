@@ -336,7 +336,7 @@ TEST_F(GAP_AdapterTest, SetLocalNameCallsBrEdrUpdateLocalName) {
 
   EXPECT_TRUE(result);
   EXPECT_EQ(kNewName, adapter()->state().local_name());
-  EXPECT_EQ(kNewName, adapter()->bredr()->local_name());
+  EXPECT_EQ(kNewName, adapter()->local_name());
 }
 
 // Tests that writing a long local name results in BrEdr updating it's local name.
@@ -359,7 +359,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateLocalNameLargerThanMax) {
   EXPECT_TRUE(result);
   // Both the adapter & discovery manager local name should be the original (untruncated) name.
   EXPECT_EQ(long_name, adapter()->state().local_name());
-  EXPECT_EQ(long_name, adapter()->bredr()->local_name());
+  EXPECT_EQ(long_name, adapter()->local_name());
 }
 
 // Tests WriteExtendedInquiryResponse failure leads to |local_name_| not updated.
@@ -386,7 +386,7 @@ TEST_F(GAP_AdapterTest, BrEdrUpdateEIRResponseError) {
   EXPECT_EQ(hci::StatusCode::kConnectionTerminatedByLocalHost, result.protocol_error());
   // The |local_name_| should not be set.
   EXPECT_NE(kNewName, adapter()->state().local_name());
-  EXPECT_NE(kNewName, adapter()->bredr()->local_name());
+  EXPECT_NE(kNewName, adapter()->local_name());
 }
 
 TEST_F(GAP_AdapterTest, DefaultName) {

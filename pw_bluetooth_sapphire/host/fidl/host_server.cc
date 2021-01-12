@@ -148,21 +148,16 @@ void HostServer::WatchPeers(WatchPeersCallback callback) {
   watch_peers_getter_.Watch(std::move(callback));
 }
 
-// TODO(fxbug.dev/35008): Add a unit test for this method.
 void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback callback) {
   ZX_DEBUG_ASSERT(!local_name.empty());
-  // Make a copy of |local_name| to move separately into the lambda.
-  std::string name_copy(local_name);
-  adapter()->SetLocalName(std::move(local_name),
-                          [self = weak_ptr_factory_.GetWeakPtr(), local_name = std::move(name_copy),
-                           callback = std::move(callback)](auto status) {
-                            // Send adapter state update on success and if the connection is still
-                            // open.
-                            if (status && self) {
-                              self->NotifyInfoChange();
-                            }
-                            callback(StatusToFidl(status));
-                          });
+  adapter()->SetLocalName(std::move(local_name), [self = weak_ptr_factory_.GetWeakPtr(),
+                                                  callback = std::move(callback)](auto status) {
+    // Send adapter state update on success and if the connection is still open.
+    if (status && self) {
+      self->NotifyInfoChange();
+    }
+    callback(StatusToFidl(status));
+  });
 }
 
 // TODO(fxbug.dev/35008): Add a unit test for this method.

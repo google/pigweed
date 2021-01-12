@@ -92,6 +92,9 @@ source_set("testing") {
   testonly = true
 
   sources = [
+    "fake_adapter.cc",
+    "fake_adapter.h",
+    "fake_adapter_test_fixture.h",
     "fake_pairing_delegate.cc",
     "fake_pairing_delegate.h",
   ]

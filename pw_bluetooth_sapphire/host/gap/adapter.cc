@@ -192,10 +192,6 @@ class AdapterImpl final : public Adapter {
                                                                     std::move(callback));
     }
 
-    std::string local_name() const override {
-      return adapter_->bredr_discovery_manager_->local_name();
-    }
-
    private:
     AdapterImpl* adapter_;
   };
@@ -213,6 +209,8 @@ class AdapterImpl final : public Adapter {
   bool IsDiscovering() const override;
 
   void SetLocalName(std::string name, hci::StatusCallback callback) override;
+
+  std::string local_name() const override { return bredr_discovery_manager_->local_name(); }
 
   void SetDeviceClass(DeviceClass dev_class, hci::StatusCallback callback) override;
 
