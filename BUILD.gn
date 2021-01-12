@@ -280,6 +280,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_random:tests",
       "$dir_pw_result:tests",
       "$dir_pw_ring_buffer:tests",
+      "$dir_pw_router:tests",
       "$dir_pw_rpc:tests",
       "$dir_pw_span:tests",
       "$dir_pw_status:tests",

@@ -93,6 +93,7 @@ group("module_docs") {
     "$dir_pw_random:docs",
     "$dir_pw_result:docs",
     "$dir_pw_ring_buffer:docs",
+    "$dir_pw_router:docs",
     "$dir_pw_rpc:docs",
     "$dir_pw_span:docs",
     "$dir_pw_status:docs",

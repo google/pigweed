@@ -1,0 +1,63 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+    "pw_cc_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # Apache License 2.0
+
+pw_cc_library(
+    name = "static_router",
+    hdrs = ["public/pw_router/static_router.h"],
+    srcs = ["static_router.cc"],
+    deps = [
+        ":egress",
+        ":packet_parser",
+        "//pw_log",
+        "//pw_metric",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_library(
+    name = "egress",
+    hdrs = ["public/pw_router/egress.h"],
+    deps = ["//pw_bytes"],
+)
+
+pw_cc_library(
+    name = "packet_parser",
+    hdrs = ["public/pw_router/packet_parser.h"],
+    deps = ["//pw_bytes"],
+)
+
+pw_cc_library(
+    name = "egress_function",
+    hdrs = ["public/pw_router/egress_function.h"],
+    deps = [":egress"],
+)
+
+pw_cc_test(
+    name = "static_router_test",
+    srcs = ["static_router_test.cc"],
+    deps = [
+        ":egress_function",
+        ":static_router",
+    ],
+)
