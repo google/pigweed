@@ -198,7 +198,7 @@ class TextDumpTest(unittest.TestCase):
         """Validate CPU state dump with CFSR bits set is formatted correctly."""
         cpu_state_proto = cpu_state_pb2.ArmV7mCpuState()
         cpu_state_proto.cfsr = (
-            cortex_m_constants.PW_CORTEX_M_CFSR_PRECISEERR_MASK
+            cortex_m_constants.PW_CORTEX_M_CFSR_PRECISERR_MASK
             | cortex_m_constants.PW_CORTEX_M_CFSR_BFARVALID_MASK)
         cpu_state_proto.pc = 0xd2603058
         cpu_state_proto.bfar = 0xdeadbeef
@@ -210,7 +210,7 @@ class TextDumpTest(unittest.TestCase):
             'Exception caused by a bus fault at 0xdeadbeef.',
             '',
             'Active Crash Fault Status Register (CFSR) fields:',
-            'PRECISEERR  Precise bus fault.',
+            'PRECISERR   Precise bus fault.',
             'BFARVALID   BFAR is valid.',
             '',
             'All registers:',
