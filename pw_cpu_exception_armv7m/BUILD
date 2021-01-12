@@ -24,6 +24,7 @@ filegroup(
         "proto_dump.cc",
         "public/pw_cpu_exception_armv7m/cpu_state.h",
         "public/pw_cpu_exception_armv7m/proto_dump.h",
+        "pw_cpu_exception_armv7m_private/cortex_m_constants.h",
     ],
 )
 

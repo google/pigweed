@@ -19,38 +19,11 @@
 
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception_armv7m/cpu_state.h"
+#include "pw_cpu_exception_armv7m_private/cortex_m_constants.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace pw::cpu_exception {
 namespace {
-
-// CMSIS/Cortex-M/ARMv7 related constants.
-// These values are from the ARMv7-M Architecture Reference Manual DDI 0403E.b.
-// https://static.docs.arm.com/ddi0403/e/DDI0403E_B_armv7m_arm.pdf
-
-// Masks for individual bits of CFSR. (ARMv7-M Section B3.2.15)
-constexpr uint32_t kMemFaultStart = 0x1u;
-constexpr uint32_t kMStkErrMask = kMemFaultStart << 4;
-constexpr uint32_t kBusFaultStart = 0x1u << 8;
-constexpr uint32_t kStkErrMask = kBusFaultStart << 4;
-
-// Bit masks for an exception return value. (ARMv7-M Section B1.5.8)
-constexpr uint32_t kExcReturnStackMask = (0x1u << 2);
-constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
-
-// Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-volatile uint32_t& arm_v7m_cfsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
-volatile uint32_t& arm_v7m_mmfar =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED34u);
-volatile uint32_t& arm_v7m_bfar =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED38u);
-volatile uint32_t& arm_v7m_icsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED04u);
-volatile uint32_t& arm_v7m_hfsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
-volatile uint32_t& arm_v7m_shcsr =
-    *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
 
 // If the CPU fails to capture some registers, the captured struct members will
 // be populated with this value. The only registers that this value should be
@@ -80,8 +53,8 @@ bool FpuStateWasPushed(const pw_CpuExceptionState& cpu_state) {
 // on exception entry).
 void CloneBaseRegistersFromPsp(pw_CpuExceptionState* cpu_state) {
   // If CPU succeeded in pushing context to PSP, copy it to the MSP.
-  if (!(cpu_state->extended.cfsr & kStkErrMask) &&
-      !(cpu_state->extended.cfsr & kMStkErrMask)) {
+  if (!(cpu_state->extended.cfsr & kCfsrStkerrMask) &&
+      !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     // TODO(amontanez): {r0-r3,r12} are captured in pw_CpuExceptionEntry(),
     //                  so this only really needs to copy pc, lr, and psr. Could
     //                  (possibly) improve speed, but would add marginally more
@@ -109,8 +82,8 @@ void RestoreBaseRegistersToPsp(pw_CpuExceptionState* cpu_state) {
   // contents of cpu_state to the CPU-pushed register frame so the CPU can
   // continue. Otherwise, don't attempt as we'll likely end up in an escalated
   // hard fault.
-  if (!(cpu_state->extended.cfsr & kStkErrMask) &&
-      !(cpu_state->extended.cfsr & kMStkErrMask)) {
+  if (!(cpu_state->extended.cfsr & kCfsrStkerrMask) &&
+      !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     std::memcpy(reinterpret_cast<void*>(cpu_state->extended.psp),
                 &cpu_state->base,
                 sizeof(ArmV7mFaultRegisters));
@@ -139,8 +112,8 @@ uint32_t CalculatePspDelta(const pw_CpuExceptionState& cpu_state) {
   // If CPU context was not pushed to program stack (because program stack
   // wasn't in use, or an error occurred when pushing context), the PSP doesn't
   // need to be shifted.
-  if (!PspWasActive(cpu_state) || (cpu_state.extended.cfsr & kStkErrMask) ||
-      (cpu_state.extended.cfsr & kMStkErrMask)) {
+  if (!PspWasActive(cpu_state) || (cpu_state.extended.cfsr & kCfsrStkerrMask) ||
+      (cpu_state.extended.cfsr & kCfsrMstkerrMask)) {
     return 0;
   }
 

@@ -22,6 +22,7 @@ import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("support") {
@@ -33,7 +34,10 @@ pw_source_set("support") {
   ]
   deps = [ dir_pw_log ]
   public = [ "public/pw_cpu_exception_armv7m/cpu_state.h" ]
-  sources = [ "cpu_state.cc" ]
+  sources = [
+    "cpu_state.cc",
+    "pw_cpu_exception_armv7m_private/cortex_m_constants.h",
+  ]
 }
 
 pw_source_set("proto_dump") {
@@ -61,7 +65,10 @@ pw_source_set("pw_cpu_exception_armv7m") {
     "$dir_pw_cpu_exception:handler",
     "$dir_pw_preprocessor",
   ]
-  sources = [ "entry.cc" ]
+  sources = [
+    "entry.cc",
+    "pw_cpu_exception_armv7m_private/cortex_m_constants.h",
+  ]
 }
 
 pw_test_group("tests") {
