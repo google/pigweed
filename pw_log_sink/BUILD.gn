@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -23,37 +23,46 @@ config("default_config") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("log_queue") {
-  public_configs = [ ":default_config" ]
-  public = [
-    "public/pw_log_multisink/log_queue.h",
-    "public/pw_log_multisink/sink.h",
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
+}
+
+pw_source_set("pw_log_sink") {
+  public_configs = [
+    ":backend_config",
+    ":default_config",
   ]
+  public = [
+    "public/pw_log_sink/log_sink.h",
+    "public_overrides/pw_log_backend/log_backend.h",
+  ]
+  sources = [ "log_sink.cc" ]
   public_deps = [
     "$dir_pw_bytes",
-    "$dir_pw_containers",
-    "$dir_pw_log",
-    "$dir_pw_result",
-    "$dir_pw_ring_buffer",
+    "$dir_pw_log:facade",
+    "$dir_pw_log_multisink:log_queue",
+    "$dir_pw_preprocessor",
     "$dir_pw_status",
   ]
-  sources = [ "log_queue.cc" ]
-  deps = [ "$dir_pw_log:protos.pwpb" ]
+  deps = [
+    "$dir_pw_log:protos.pwpb",
+    "$dir_pw_string",
+    "$dir_pw_sync:spin_lock",
+  ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-pw_test("log_queue_test") {
-  sources = [ "log_queue_test.cc" ]
+pw_test("pw_log_sink_test") {
+  sources = [ "log_sink_test.cc" ]
   deps = [
-    ":log_queue",
+    ":pw_log_sink",
     "$dir_pw_log:protos.pwpb",
-    "$dir_pw_protobuf",
   ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":log_queue_test" ]
+  tests = [ ":pw_log_sink_test" ]
 }

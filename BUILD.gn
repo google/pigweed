@@ -270,6 +270,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_log_multisink:tests",
       "$dir_pw_log_null:tests",
       "$dir_pw_log_rpc:tests",
+      "$dir_pw_log_sink:tests",
       "$dir_pw_log_tokenized:tests",
       "$dir_pw_malloc_freelist:tests",
       "$dir_pw_metric:tests",

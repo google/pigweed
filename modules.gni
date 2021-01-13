@@ -54,6 +54,7 @@ declare_args() {
   dir_pw_log_multisink = get_path_info("pw_log_multisink", "abspath")
   dir_pw_log_null = get_path_info("pw_log_null", "abspath")
   dir_pw_log_rpc = get_path_info("pw_log_rpc", "abspath")
+  dir_pw_log_sink = get_path_info("pw_log_sink", "abspath")
   dir_pw_log_tokenized = get_path_info("pw_log_tokenized", "abspath")
   dir_pw_malloc = get_path_info("pw_malloc", "abspath")
   dir_pw_malloc_freelist = get_path_info("pw_malloc_freelist", "abspath")
