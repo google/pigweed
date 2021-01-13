@@ -41,11 +41,6 @@ runs bootstrap.
   and ``activate.bat``. For simplicity they will be referred to with the ``.sh``
   endings unless the distinction is relevant.
 
-By default packages will be installed in a ``.environment`` folder within the
-checkout root, and CIPD will cache files in ``$HOME/.cipd-cache-dir``. These
-paths can be overridden by setting ``PW_ENVIRONMENT_ROOT`` and
-``CIPD_CACHE_DIR``, respectively.
-
 .. warning::
   At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
   suggest relying on it just yet. However, we are interested in experience
@@ -224,12 +219,32 @@ are identical to using ``--use-pigweed-defaults``.
   --cargo-package-file
   "$PW_ROOT/pw_env_setup/py/pw_env_setup/cargo_setup/packages.txt"
 
-Automated Tools
-***************
-Automated tools should set ``PW_ACTIVATE_SKIP_CHECKS=1`` before running
-``activate.sh`` or ``activate.bat``. This will skip the checks on the
-environment and should complete almost instantaneously. Users should not set
-this variable.
+Environment Variables
+*********************
+The following environment variables affect env setup behavior. Most users will
+never need to set these.
+
+``CIPD_CACHE_DIR``
+  Location of CIPD cache dir. Defaults to ``$HOME/.cipd-cache-dir``.
+
+``PW_ACTIVATE_SKIP_CHECKS``
+  If set, skip running ``pw doctor`` at end of bootstrap/activate. Intended to
+  be used by automated tools but not interactively.
+
+``PW_BOOTSTRAP_PYTHON``
+  Python executable to be used, for example "python2" or "python3". Defaults to
+  "python".
+
+``PW_ENVIRONMENT_ROOT``
+  Location to which packages are installed. Defaults to ``.environment`` folder
+  within the checkout root.
+
+``PW_ENVSETUP_DISABLE_SPINNER``
+  Disable the spinner during env setup. Intended to be used when the output is
+  being redirected to a log.
+
+``PW_ENVSETUP_QUIET``
+  Disables all non-error output.
 
 Implementation
 **************
