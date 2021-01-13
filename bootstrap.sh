@@ -89,7 +89,7 @@ SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
 if [ "$(basename "$_BOOTSTRAP_PATH")" = "bootstrap.sh" ] || \
   [ ! -f "$SETUP_SH" ] || \
   [ ! -s "$SETUP_SH" ]; then
-  pw_bootstrap --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" --use-pigweed-defaults --json-file "$_PW_ACTUAL_ENVIRONMENT_ROOT/actions.json" --virtualenv-gn-target "$PW_ROOT#:target_support_packages.install"
+  pw_bootstrap --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" --use-pigweed-defaults --json-file "$_PW_ACTUAL_ENVIRONMENT_ROOT/actions.json" --virtualenv-gn-out-dir "$PW_ROOT/out" --virtualenv-gn-target "$PW_ROOT#:target_support_packages.install"
   pw_finalize bootstrap "$SETUP_SH"
 else
   pw_activate

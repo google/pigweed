@@ -43,6 +43,7 @@ group("default") {
   deps = [
     ":docs",
     ":host",
+    ":python.install",
     ":python.lint",
     ":python.tests",
     ":stm32f429i",
