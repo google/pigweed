@@ -26,6 +26,7 @@ pw_cc_library(
     srcs = [
         "decoder.cc",
         "encoder.cc",
+        "public/pw_hdlc/internal/encoder.h",
         "pw_hdlc_private/protocol.h",
         "rpc_packets.cc",
     ],

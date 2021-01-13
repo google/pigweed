@@ -53,16 +53,17 @@ pw_source_set("encoder") {
   public = [ "public/pw_hdlc/encoder.h" ]
   sources = [
     "encoder.cc",
+    "public/pw_hdlc/internal/encoder.h",
     "pw_hdlc_private/protocol.h",
   ]
   public_deps = [
     "$dir_pw_stream:sys_io_stream",
     dir_pw_bytes,
+    dir_pw_checksum,
     dir_pw_status,
     dir_pw_stream,
     dir_pw_sys_io,
   ]
-  deps = [ dir_pw_checksum ]
   friend = [ ":*" ]
 }
 

@@ -21,13 +21,13 @@
 #include <span>
 
 #include "pw_bytes/endian.h"
-#include "pw_checksum/crc32.h"
+#include "pw_hdlc/internal/encoder.h"
 #include "pw_hdlc_private/protocol.h"
 
 using std::byte;
 
 namespace pw::hdlc {
-namespace {
+namespace internal {
 
 // Indicates this an information packet with sequence numbers set to 0.
 constexpr byte kUnusedControl = byte{0};
@@ -41,31 +41,6 @@ Status EscapeAndWrite(const byte b, stream::Writer& writer) {
   }
   return writer.Write(b);
 }
-
-// Encodes and writes HDLC frames.
-class Encoder {
- public:
-  constexpr Encoder(stream::Writer& output) : writer_(output) {}
-
-  // Writes the header for an I-frame. After successfully calling
-  // StartInformationFrame, WriteData may be called any number of times.
-  [[maybe_unused]] Status StartInformationFrame(uint8_t address);
-
-  // Writes the header for an U-frame. After successfully calling
-  // StartUnnumberedFrame, WriteData may be called any number of times.
-  Status StartUnnumberedFrame(uint8_t address);
-
-  // Writes data for an ongoing frame. Must only be called after a successful
-  // StartInformationFrame call, and prior to a FinishFrame() call.
-  Status WriteData(ConstByteSpan data);
-
-  // Finishes a frame. Writes the frame check sequence and a terminating flag.
-  Status FinishFrame();
-
- private:
-  stream::Writer& writer_;
-  checksum::Crc32 fcs_;
-};
 
 Status Encoder::StartInformationFrame(uint8_t address) {
   fcs_.clear();
@@ -117,12 +92,27 @@ Status Encoder::FinishFrame() {
   return writer_.Write(kFlag);
 }
 
-}  // namespace
+size_t Encoder::MaxEncodedSize(uint8_t address, ConstByteSpan payload) {
+  constexpr size_t kFcsMaxSize = 8;  // Worst case FCS: 0x7e7e7e7e.
+  size_t encoded_address_size = NeedsEscaping(std::byte{address}) ? 2 : 1;
+  size_t encoded_payload_size =
+      payload.size() +
+      std::count_if(payload.begin(), payload.end(), NeedsEscaping);
+
+  return encoded_address_size + encoded_payload_size + kFcsMaxSize;
+}
+
+}  // namespace internal
 
 Status WriteUIFrame(uint8_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer) {
-  Encoder encoder(writer);
+  if (internal::Encoder::MaxEncodedSize(address, payload) >
+      writer.ConservativeWriteLimit()) {
+    return Status::ResourceExhausted();
+  }
+
+  internal::Encoder encoder(writer);
 
   if (Status status = encoder.StartUnnumberedFrame(address); !status.ok()) {
     return status;
