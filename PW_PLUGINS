@@ -12,8 +12,7 @@
 
 # Pigweed's presubmit check script
 heap-viewer pw_allocator.heap_viewer main
-rpc pw_hdlc.rpc_console main
 package pw_package.pigweed_packages main
 presubmit pw_presubmit.pigweed_presubmit main
 requires pw_cli.requires main
-rpc pw_hdlc_lite.rpc_console main
+rpc pw_hdlc.rpc_console main
