@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//src/sys/build/components.gni")
+
 static_library("sco") {
   sources = [
     "sco.h",
@@ -34,4 +36,19 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+}
+
+executable("tests_executable") {
+  testonly = true
+
+  output_name = "bt-host-sco-unittests"
+
+  deps = [
+    ":tests",
+    "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main",
+  ]
+}
+
+fuchsia_unittest_component("sco-tests") {
+  deps = [ ":tests_executable" ]
 }

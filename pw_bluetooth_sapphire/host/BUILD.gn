@@ -6,6 +6,7 @@ import("//build/bind/bind.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
+import("//src/sys/build/components.gni")
 
 bind_rules("bt_host_bind") {
   rules = "bt_host.bind"
@@ -183,6 +184,10 @@ executable("tests") {
     "//src/devices/lib/driver",
     "//third_party/googletest:gtest",
   ]
+}
+
+fuchsia_unittest_package("bt-host-tests") {
+  deps = [ "sco:sco-tests" ]
 }
 
 fuzzers_package("fuzzers") {
