@@ -37,9 +37,9 @@
     ]
   },
   {
-    "path": "infra/tools/protoc/${os}-${arch=amd64}",
+    "path": "infra/3pp/tools/protoc/${os}-${arch}",
     "tags": [
-      "protobuf_version:v3.8.0"
+      "version:3.14.0"
     ]
   },
   {
