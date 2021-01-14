@@ -307,6 +307,15 @@ template("pw_python_package") {
   }
 }
 
+_python_subtargets = [
+  "tests",
+  "lint",
+  "lint.mypy",
+  "lint.pylint",
+  "install",
+  "wheel",
+]
+
 # Declares a group of Python packages or other Python groups. pw_python_groups
 # expose the same set of subtargets as pw_python_package (e.g.
 # "$group_name.lint" and "$group_name.tests"), but these apply to all packages
@@ -322,16 +331,7 @@ template("pw_python_group") {
     deps = _python_deps
   }
 
-  _subtargets = [
-    "tests",
-    "lint",
-    "lint.mypy",
-    "lint.pylint",
-    "install",
-    "wheel",
-  ]
-
-  foreach(subtarget, _subtargets) {
+  foreach(subtarget, _python_subtargets) {
     group("$target_name.$subtarget") {
       deps = []
       foreach(dep, _python_deps) {
@@ -366,5 +366,59 @@ template("pw_python_script") {
   pw_python_package(target_name) {
     _pw_standalone = true
     forward_variables_from(invoker, _supported_variables)
+  }
+}
+
+# Represents a list of Python requirements, as in a requirements.txt.
+#
+# Args:
+#  files: One or more requirements.txt files.
+#  requirements: A list of requirements.txt-style requirements.
+template("pw_python_requirements") {
+  assert(defined(invoker.files) || defined(invoker.requirements),
+         "pw_python_requirements requires a list of requirements.txt files " +
+             "in the 'files' arg or requirements in 'requirements'")
+
+  _requirements_files = []
+
+  if (defined(invoker.files)) {
+    _requirements_files += invoker.files
+  }
+
+  if (defined(invoker.requirements)) {
+    _requirements_file = "$target_gen_dir/$target_name.requirements.txt"
+    write_file(_requirements_file, invoker.requirements)
+    _requirements_files += [ _requirements_file ]
+  }
+
+  # The default target represents the requirements themselves.
+  pw_input_group(target_name) {
+    inputs = _requirements_files
+  }
+
+  # Use the same subtargets as pw_python_package so these targets can be listed
+  # as python_deps of pw_python_packages.
+  pw_python_action("$target_name.install") {
+    inputs = _requirements_files
+
+    module = "pip"
+    args = [ "install" ]
+
+    foreach(_requirements_file, inputs) {
+      args += [
+        "--requirement",
+        rebase_path(_requirements_file),
+      ]
+    }
+
+    pool = "$dir_pw_build:pip_pool"
+    stamp = true
+  }
+
+  # Create stubs for the unused subtargets so that pw_python_requirements can be
+  # used as python_deps.
+  foreach(subtarget, _python_subtargets - [ "install" ]) {
+    group("$target_name.$subtarget") {
+    }
   }
 }

@@ -24,4 +24,15 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'pw_docgen': ['py.typed']},
     zip_safe=False,
+    install_requires=[
+        'sphinx>=2, <3',  # Restrict version for compatibility with m2r plugin
+        'sphinx-rtd-theme',
+        # Markdown to REST for documentation.
+        'm2r',
+        # Diagram generation modules.
+        'sphinxcontrib-actdiag',
+        'sphinxcontrib-blockdiag',
+        'sphinxcontrib-nwdiag',
+        'sphinxcontrib-seqdiag',
+    ],
 )

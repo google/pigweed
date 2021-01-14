@@ -218,9 +218,6 @@ class EnvSetup(object):
                 os.path.join(setup_root, 'cipd_setup', 'pigweed.json'))
             self._cipd_package_file.append(
                 os.path.join(setup_root, 'cipd_setup', 'luci.json'))
-            self._virtualenv_requirements.append(
-                os.path.join(setup_root, 'virtualenv_setup',
-                             'requirements.txt'))
             self._virtualenv_gn_targets.append(
                 virtualenv_setup.GnTarget(
                     '{}#:python.install'.format(pw_root)))
