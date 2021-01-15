@@ -209,6 +209,8 @@ class CommandChannel final {
   static zx_status_t ReadEventPacketFromChannel(const zx::channel& channel,
                                                 const EventPacketPtr& packet);
 
+  fxl::WeakPtr<CommandChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
   CommandChannel(Transport* transport, zx::channel hci_command_channel);
 
@@ -405,6 +407,8 @@ class CommandChannel final {
   // Mapping from LE Meta Event Subevent code to the event handlers that were
   // registered to handle that event code.
   std::unordered_multimap<EventCode, EventHandlerId> subevent_code_handlers_;
+
+  fxl::WeakPtrFactory<CommandChannel> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
 };

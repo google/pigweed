@@ -123,7 +123,8 @@ CommandChannel::CommandChannel(Transport* transport, zx::channel hci_command_cha
       channel_(std::move(hci_command_channel)),
       channel_wait_(this, channel_.get(), ZX_CHANNEL_READABLE),
       is_initialized_(false),
-      allowed_command_packets_(1u) {
+      allowed_command_packets_(1u),
+      weak_ptr_factory_(this) {
   ZX_ASSERT(transport_);
   ZX_ASSERT(channel_.is_valid());
 
