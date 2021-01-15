@@ -26,17 +26,21 @@ import("$dir_pw_unit_test/test.gni")
 #   https://llvm.org/docs/LibFuzzer.html
 #
 template("pw_fuzzer") {
-  # This currently is ONLY supported on Linux using clang (debug).
-  # TODO(pwbug/179): Add Darwin, Windows here after testing.
-  fuzzing_platforms = [ "linux" ]
-  fuzzing_toolchains =
-      [ get_path_info("$dir_pw_toolchain:host_clang_og", "abspath") ]
+  # This currently is ONLY supported on Linux and Mac using clang (debug).
+  # TODO(pwbug/179): Add Windows here after testing.
+  fuzzing_platforms = [
+    "linux",
+    "mac",
+  ]
+  fuzzing_toolchains = [ "//targets/host:host_clang_debug" ]
 
   # This is how GN says 'elem in list':
   can_fuzz = fuzzing_platforms + [ host_os ] - [ host_os ] != fuzzing_platforms
+
   can_fuzz = fuzzing_toolchains + [ current_toolchain ] -
              [ current_toolchain ] != fuzzing_toolchains && can_fuzz
-  if (can_fuzz && pw_sanitizer != "") {
+
+  if (can_fuzz && pw_toolchain_SANITIZER != "") {
     # Build the actual fuzzer using the fuzzing config.
     pw_executable(target_name) {
       forward_variables_from(invoker, "*", [ "visibility" ])
@@ -46,9 +50,9 @@ template("pw_fuzzer") {
       }
       configs += [
         "$dir_pw_fuzzer:default_config",
-        "$dir_pw_fuzzer:sanitize_${pw_sanitizer}",
+        "$dir_pw_fuzzer:sanitize_${pw_toolchain_SANITIZER}",
       ]
-      if (oss_fuzz_enabled) {
+      if (pw_toolchain_OSS_FUZZ_ENABLED) {
         configs += [ "$dir_pw_fuzzer:oss_fuzz" ]
       } else {
         configs += [ "$dir_pw_fuzzer:fuzzing" ]

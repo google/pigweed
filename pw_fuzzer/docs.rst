@@ -93,7 +93,7 @@ To build a fuzzer, do the following:
 
 .. code:: sh
 
-  $ gn gen out/host --args='pw_target_toolchain="//pw_toolchain:host_clang_og" pw_sanitizer="address"'
+  $ gn gen out --args='pw_toolchain_SANITIZER="address"'
 
 3. Build normally, e.g. using ``pw watch``.
 
@@ -113,7 +113,12 @@ saves failing inputs to ``artifacts/``, treats any input that takes longer than
 
 .. code::
 
-  $ ASAN_OPTIONS=detect_odr_violation=0 ./out/host/obj/pw_fuzzer/toy_fuzzer -artifact_prefix=artifacts/ -timeout=10 corpus
+  $ mkdir -p corpus
+  $ ASAN_OPTIONS=detect_odr_violation=0 \
+      out/host_clang_debug/obj/pw_fuzzer/bin/toy_fuzzer \
+      -artifact_prefix=artifacts/ \
+      -timeout=10 \
+      corpus
   INFO: Seed: 305325345
   INFO: Loaded 1 modules   (46 inline 8-bit counters): 46 [0x38dfc0, 0x38dfee),
   INFO: Loaded 1 PC tables (46 PCs): 46 [0x23aaf0,0x23add0),

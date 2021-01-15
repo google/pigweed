@@ -41,13 +41,12 @@ set -x
 rm -rf $OUT_DIR
 
 mkdir -p $OUT_DIR
-echo 'pw_target_toolchain="//pw_toolchain:host_clang_og"' > $OUT_DIR/args.gn
-echo 'pw_sanitizer="address"' >> $OUT_DIR/args.gn
+echo 'pw_toolchain_SANITIZER="address"' >> $OUT_DIR/args.gn
 gn gen $OUT_DIR
-ninja -C $OUT_DIR pw_module_fuzzers
+ninja -C $OUT_DIR
 
 set +x
 confirm "The toy_fuzzer was built successfully!" \
         "This script is about to start fuzzing."
 set -x
-$OUT_DIR/obj/pw_fuzzer/toy_fuzzer
+$OUT_DIR/host_clang_debug/obj/pw_fuzzer/bin/toy_fuzzer
