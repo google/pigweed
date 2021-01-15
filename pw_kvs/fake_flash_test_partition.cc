@@ -36,7 +36,8 @@ constexpr size_t kFlashTestSectors = PW_FLASH_TEST_SECTORS;
 constexpr size_t kFlashTestSectorSize = PW_FLASH_TEST_SECTOR_SIZE;
 constexpr size_t kFlashTestAlignment = PW_FLASH_TEST_ALIGNMENT;
 
-// Use 6 x 4k sectors, 16 byte alignment.
+// Use PW_FLASH_TEST_SECTORS x PW_FLASH_TEST_SECTOR_SIZE sectors,
+// PW_FLASH_TEST_ALIGNMENT byte alignment.
 FakeFlashMemoryBuffer<kFlashTestSectorSize, kFlashTestSectors> test_flash(
     kFlashTestAlignment);
 FlashPartition test_partition(&test_flash);
