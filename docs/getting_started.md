@@ -89,6 +89,13 @@ installation of prerequisites beyond basics like `git` and `build-essential`.
 Make sure gcc is set to gcc-8.
 
 **macOS**<br/>
+To start using Pigweed on MacOS, you'll need to install XCode. Download it
+via the App Store, then install the relevant tools from the command line.
+
+```bash
+xcode-select --install
+```
+
 On macOS you may get SSL certificate errors with the system Python
 installation. Run `sudo pip install certifi` to fix this. If you get SSL
 errors with the Python from [Homebrew](https://brew.sh) try running the
