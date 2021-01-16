@@ -25,6 +25,7 @@ setuptools.setup(
     package_data={'pw_watch': ['py.typed']},
     zip_safe=False,
     install_requires=[
+        'pw_cli',
         'watchdog',
     ],
 )

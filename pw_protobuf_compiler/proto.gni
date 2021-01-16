@@ -41,6 +41,11 @@ template("_pw_invoke_protoc") {
     script =
         "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
 
+    python_deps = [ "$dir_pw_protobuf_compiler/py" ]
+    if (defined(invoker.python_deps)) {
+      python_deps += invoker.python_deps
+    }
+
     deps = [
              ":${invoker.base_target}._metadata",
              ":${invoker.base_target}._inputs",
@@ -96,7 +101,7 @@ template("_pw_pwpb_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars)
     language = "pwpb"
     plugin = "$dir_pw_protobuf/py/pw_protobuf/plugin.py"
-    deps += [ "$dir_pw_protobuf/py" ]
+    python_deps = [ "$dir_pw_protobuf/py" ]
     output_extensions = [ ".pwpb.h" ]
   }
 
@@ -121,7 +126,7 @@ template("_pw_nanopb_rpc_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars)
     language = "nanopb_rpc"
     plugin = "$dir_pw_rpc/py/pw_rpc/plugin_nanopb.py"
-    deps += [ "$dir_pw_rpc/py" ]
+    python_deps = [ "$dir_pw_rpc/py" ]
     include_paths = [ "$dir_pw_third_party_nanopb/generator/proto" ]
     output_extensions = [ ".rpc.pb.h" ]
   }
@@ -179,7 +184,7 @@ template("_pw_raw_rpc_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars)
     language = "raw_rpc"
     plugin = "$dir_pw_rpc/py/pw_rpc/plugin_raw.py"
-    deps += [ "$dir_pw_rpc/py" ]
+    python_deps = [ "$dir_pw_rpc/py" ]
     output_extensions = [ ".raw_rpc.pb.h" ]
   }
 

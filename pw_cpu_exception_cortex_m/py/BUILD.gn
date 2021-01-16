@@ -24,5 +24,9 @@ pw_python_package("py") {
     "pw_cpu_exception_cortex_m/exception_analyzer.py",
   ]
   tests = [ "exception_analyzer_test.py" ]
+  python_deps = [
+    "$dir_pw_cli/py",
+    "$dir_pw_protobuf_compiler/py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

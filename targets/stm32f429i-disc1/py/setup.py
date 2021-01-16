@@ -37,5 +37,9 @@ setuptools.setup(
             '    stm32f429i_disc1_utils.unit_test_client:main',
         ]
     },
-    install_requires=['pyserial', 'coloredlogs'],
+    install_requires=[
+        'pyserial',
+        'coloredlogs',
+        'pw_cli',
+    ],
 )

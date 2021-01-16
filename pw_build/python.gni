@@ -17,6 +17,16 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/python_action.gni")
 
+# Python packages provide the following targets as $target_name.$subtarget.
+_python_subtargets = [
+  "tests",
+  "lint",
+  "lint.mypy",
+  "lint.pylint",
+  "install",
+  "wheel",
+]
+
 # Defines a Python package. GN Python packages contain several GN targets:
 #
 #   - $name - Provides the Python files in the build, but does not take any
@@ -28,6 +38,9 @@ import("$dir_pw_build/python_action.gni")
 #   - $name.tests - Runs all tests for this package.
 #   - $name.install - Installs the package in a venv.
 #   - $name.wheel - Builds a Python wheel for the package. (Not implemented.)
+#
+# All Python packages are instantiated with the default toolchain, regardless of
+# the current toolchain.
 #
 # TODO(pwbug/239): Implement wheel building.
 #
@@ -115,10 +128,28 @@ template("pw_python_package") {
     }
   }
 
+  _internal_target = "$target_name._internal"
+
+  # Create groups with the public target names ($target_name, $target_name.lint,
+  # $target_name.install, etc.). These are actually wrappers around internal
+  # Python actions instantiated with the default toolchain. This ensures there
+  # is only a single copy of each Python action in the build.
+  #
+  # The $target_name.tests group is created separately below.
+  foreach(subtarget, _python_subtargets - [ "tests" ]) {
+    group("$target_name.$subtarget") {
+      deps = [ ":$_internal_target.$subtarget($default_toolchain)" ]
+    }
+  }
+
+  group("$target_name") {
+    deps = [ ":$_internal_target($default_toolchain)" ]
+  }
+
   # Declare the main Python package group. This represents the Python files, but
   # does not take any actions. GN targets can depend on the package name to run
   # when any files in the package change.
-  pw_input_group(target_name) {
+  pw_input_group("$_internal_target") {
     inputs = _all_py_files
     if (defined(invoker.inputs)) {
       inputs += invoker.inputs
@@ -131,12 +162,10 @@ template("pw_python_package") {
     }
   }
 
-  _package_target = ":$target_name"
-
   if (_is_package) {
     # Install this Python package and its dependencies in the current Python
     # environment.
-    pw_python_action("$target_name.install") {
+    pw_python_action("$_internal_target.install") {
       module = "pip"
       args = [ "install" ]
 
@@ -152,7 +181,7 @@ template("pw_python_package") {
       # Parallel pip installations don't work, so serialize pip invocations.
       pool = "$dir_pw_build:pip_pool"
 
-      deps = [ _package_target ]
+      deps = [ ":$_internal_target" ]
       foreach(dep, _python_deps) {
         deps += [ "$dep.install" ]
       }
@@ -160,7 +189,7 @@ template("pw_python_package") {
 
     # TODO(pwbug/239): Add support for building groups of wheels. The code below
     #     is incomplete and untested.
-    pw_python_action("$target_name.wheel") {
+    pw_python_action("$_internal_target.wheel") {
       script = "$dir_pw_build/py/pw_build/python_wheels.py"
 
       args = [
@@ -169,18 +198,18 @@ template("pw_python_package") {
       ]
       args += rebase_path(_all_py_files)
 
-      deps = [ _package_target ]
+      deps = [ ":$_internal_target.install" ]
       stamp = true
     }
   } else {
     # If this is not a package, install or build wheels for its deps only.
-    group("$target_name.install") {
+    group("$_internal_target.install") {
       deps = []
       foreach(dep, _python_deps) {
         deps += [ "$dep.install" ]
       }
     }
-    group("$target_name.wheel") {
+    group("$_internal_target.wheel") {
       deps = []
       foreach(dep, _python_deps) {
         deps += [ "$dep.wheel" ]
@@ -189,10 +218,10 @@ template("pw_python_package") {
   }
 
   # Define the static analysis targets for this package.
-  group("$target_name.lint") {
+  group("$_internal_target.lint") {
     deps = [
-      "$_package_target.lint.mypy",
-      "$_package_target.lint.pylint",
+      ":$_internal_target.lint.mypy",
+      ":$_internal_target.lint.pylint",
     ]
   }
 
@@ -208,7 +237,7 @@ template("pw_python_package") {
       _lint_directory = rebase_path(".")
     }
 
-    pw_python_action("$target_name.lint.mypy") {
+    pw_python_action("$_internal_target.lint.mypy") {
       module = "mypy"
       args = [
         "--pretty",
@@ -233,7 +262,7 @@ template("pw_python_package") {
       directory = _lint_directory
       stamp = true
 
-      deps = [ _package_target ]
+      deps = [ ":$_internal_target.install" ]
       foreach(dep, _python_deps) {
         deps += [ "$dep.lint.mypy" ]
       }
@@ -241,7 +270,7 @@ template("pw_python_package") {
 
     # Create a target to run pylint on each of the Python files in this
     # package and its dependencies.
-    pw_python_action_foreach("$target_name.lint.pylint") {
+    pw_python_action_foreach("$_internal_target.lint.pylint") {
       module = "pylint"
       args = [
         rebase_path(".") + "/{{source_target_relative}}",
@@ -264,18 +293,18 @@ template("pw_python_package") {
       directory = _lint_directory
       stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
 
-      deps = [ _package_target ]
+      deps = [ ":$_internal_target.install" ]
       foreach(dep, _python_deps) {
         deps += [ "$dep.lint.pylint" ]
       }
     }
   } else {
-    pw_input_group("$target_name.lint.mypy") {
+    pw_input_group("$_internal_target.lint.mypy") {
       if (defined(invoker.pylintrc)) {
         inputs = [ invoker.pylintrc ]
       }
     }
-    pw_input_group("$target_name.lint.pylint") {
+    pw_input_group("$_internal_target.lint.pylint") {
       if (defined(invoker.mypy_ini)) {
         inputs = [ invoker.mypy_ini ]
       }
@@ -287,34 +316,31 @@ template("pw_python_package") {
 
   foreach(test, _test_sources) {
     _test_name = string_replace(test, "/", "_")
-    _test_target = "$target_name.tests.$_test_name"
+    _internal_test_target = "$_internal_target.tests.$_test_name"
 
-    pw_python_action(_test_target) {
+    pw_python_action(_internal_test_target) {
       script = test
       stamp = true
 
-      deps = [ _package_target ]
+      deps = [ ":$_internal_target.install" ]
       foreach(dep, _python_deps) {
         deps += [ "$dep.tests" ]
       }
     }
 
-    _test_targets += [ ":$_test_target" ]
+    # Create a public version of each test target, so tests can be executed as
+    # //path/to:package.tests.foo.py.
+    group("$target_name.tests.$_test_name") {
+      deps = [ ":$_internal_test_target" ]
+    }
+
+    _test_targets += [ ":$target_name.tests.$_test_name" ]
   }
 
   group("$target_name.tests") {
     deps = _test_targets
   }
 }
-
-_python_subtargets = [
-  "tests",
-  "lint",
-  "lint.mypy",
-  "lint.pylint",
-  "install",
-  "wheel",
-]
 
 # Declares a group of Python packages or other Python groups. pw_python_groups
 # expose the same set of subtargets as pw_python_package (e.g.

@@ -50,6 +50,8 @@ import("//build_overrides/pigweed.gni")
 #                     <TARGET_OBJECTS(//some/label:here)> - expands to the
 #                         object files produced by the provided GN target
 #
+#   python_deps     Dependencies on pw_python_package or related Python targets.
+#
 template("pw_python_action") {
   _script_args = [
     # GN root directory relative to the build directory (in which the runner
@@ -142,10 +144,23 @@ template("pw_python_action") {
     _action_type = "action"
   }
 
+  if (defined(invoker.deps)) {
+    _deps = invoker.deps
+  } else {
+    _deps = []
+  }
+
+  if (defined(invoker.python_deps)) {
+    foreach(dep, invoker.python_deps) {
+      _deps += [ get_label_info(dep, "label_no_toolchain") + ".install" ]
+    }
+  }
+
   target(_action_type, target_name) {
     _ignore_vars = [
       "script",
       "args",
+      "deps",
       "inputs",
       "outputs",
     ]
@@ -155,6 +170,7 @@ template("pw_python_action") {
     args = _script_args
     inputs = _inputs
     outputs = _outputs
+    deps = _deps
   }
 }
 

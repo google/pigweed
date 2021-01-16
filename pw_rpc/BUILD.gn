@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
@@ -210,11 +211,14 @@ pw_test("channel_test") {
   sources = [ "channel_test.cc" ]
 }
 
-action("generate_ids_test") {
+pw_python_action("generate_ids_test") {
   outputs = [ "$target_gen_dir/generated_ids_test.cc" ]
   script = "py/ids_test.py"
   args = [ "--generate-cc-test" ] + rebase_path(outputs)
-  deps = [ "$dir_pw_build/py" ]
+  python_deps = [
+    "$dir_pw_build/py",
+    "py",
+  ]
 }
 
 pw_test("ids_test") {

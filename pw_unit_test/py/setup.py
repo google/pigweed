@@ -26,5 +26,6 @@ setuptools.setup(
     zip_safe=False,
     install_requires=[
         'pw_cli',
+        'pw_rpc',
     ],
 )

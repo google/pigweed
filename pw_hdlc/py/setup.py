@@ -24,6 +24,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'pw_hdlc': ['py.typed']},
     zip_safe=False,
-    install_requires=['ipython'],
+    install_requires=[
+        'ipython',
+        'pw_protobuf_compiler',
+        'pw_rpc',
+    ],
     tests_require=['pw_build'],
 )

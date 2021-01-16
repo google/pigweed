@@ -26,4 +26,5 @@ pw_python_package("py") {
     "stm32f429i_disc1_utils/unit_test_server.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  python_deps = [ "$dir_pw_cli/py" ]
 }

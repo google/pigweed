@@ -25,6 +25,7 @@ setuptools.setup(
         'mypy==0.790',
         'pylint==2.6.0',
         'yapf==0.30.0',
+        'pw_cli',
         'pw_package',
     ],
     packages=setuptools.find_packages(),

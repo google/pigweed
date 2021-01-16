@@ -24,5 +24,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'pw_cpu_exception_cortex_m': ['py.typed']},
     zip_safe=False,
-    install_requires=['protobuf'],
+    install_requires=[
+        'protobuf',
+        'pw_cli',
+        'pw_protobuf_compiler',
+    ],
 )

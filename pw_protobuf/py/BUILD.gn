@@ -25,5 +25,9 @@ pw_python_package("py") {
     "pw_protobuf/plugin.py",
     "pw_protobuf/proto_tree.py",
   ]
+  python_deps = [
+    "$dir_pw_cli/py",
+    "$dir_pw_protobuf_compiler/py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

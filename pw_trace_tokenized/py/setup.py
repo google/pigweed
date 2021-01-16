@@ -24,4 +24,5 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'pw_trace_tokenized': ['py.typed']},
     zip_safe=False,
+    install_requires=['pw_tokenizer'],
 )

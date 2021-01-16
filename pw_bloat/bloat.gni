@@ -161,6 +161,7 @@ template("pw_size_report") {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
         script = "$dir_pw_bloat/py/pw_bloat/no_bloaty.py"
+        python_deps = [ "$dir_pw_bloat/py" ]
         args = [ rebase_path(_doc_rst_output) ]
         outputs = [ _doc_rst_output ]
       }
@@ -176,6 +177,7 @@ template("pw_size_report") {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
         script = "$dir_pw_bloat/py/pw_bloat/bloat.py"
+        python_deps = [ "$dir_pw_bloat/py" ]
         inputs = _bloaty_configs
         outputs = [
           "$target_gen_dir/${target_name}.txt",
@@ -321,6 +323,7 @@ template("pw_toolchain_size_report") {
         pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
       }
       script = "$dir_pw_bloat/py/pw_bloat/no_toolchains.py"
+      python_deps = [ "$dir_pw_bloat/py" ]
       args = [ rebase_path(_doc_rst_output) ]
       outputs = [ _doc_rst_output ]
     }

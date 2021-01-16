@@ -26,5 +26,7 @@ setuptools.setup(
     zip_safe=False,
     install_requires=[
         'wheel',
+        'pw_cli',
+        'pw_presubmit',
     ],
 )
