@@ -92,6 +92,27 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
   EXPECT_EQ(-113, *(data->tx_power()));
 }
 
+TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
+  AdvertisingData expected_ad;
+  uint8_t lower_byte = 0x12, upper_byte = 0x22;
+  uint16_t uuid_value = (upper_byte << 8) + lower_byte;
+  // The only field present in the expected AD is one complete 16-bit UUID.
+  expected_ad.AddServiceUuid(UUID(uuid_value));
+
+  auto bytes = StaticByteBuffer{
+      // Complete 16-bit UUIDs
+      0x03, 0x03, lower_byte, upper_byte,
+      // 0x40, the second octet, is not a recognized DataType (see common/supplement_data.h).
+      0x05, 0x40, 0x34, 0x12, 0x34, 0x12};
+  std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+  ASSERT_TRUE(data.has_value());
+
+  // The second field of `bytes` was valid (in that its length byte matched its length), but its
+  // Data Type was unknown, so it should be ignored (i.e. the only field in the `data` should be the
+  // single 16-bit UUID, matching expected AD).
+  EXPECT_EQ(expected_ad, *data);
+}
+
 TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
   auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs

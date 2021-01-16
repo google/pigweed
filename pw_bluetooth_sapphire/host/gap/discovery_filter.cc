@@ -9,13 +9,14 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
 
 namespace bt::gap {
 namespace {
 
-bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data, size_t uuid_size) {
+bool MatchUuids(const std::vector<UUID>& uuids, const BufferView& data, UUIDElemSize uuid_size) {
   if (data.size() % uuid_size) {
     bt_log(WARN, "gap", "malformed service UUIDs list");
     return false;
@@ -137,19 +138,19 @@ bool DiscoveryFilter::MatchLowEnergyResult(const ByteBuffer& advertising_data, b
       case DataType::kIncomplete16BitServiceUuids:
       case DataType::kComplete16BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok = MatchUuids(service_uuids_, data, k16BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, UUIDElemSize::k16Bit);
         }
         break;
       case DataType::kIncomplete32BitServiceUuids:
       case DataType::kComplete32BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok = MatchUuids(service_uuids_, data, k32BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, UUIDElemSize::k32Bit);
         }
         break;
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids:
         if (!service_uuids_ok) {
-          service_uuids_ok = MatchUuids(service_uuids_, data, k128BitUuidElemSize);
+          service_uuids_ok = MatchUuids(service_uuids_, data, UUIDElemSize::k128Bit);
         }
         break;
       default:

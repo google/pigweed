@@ -13,6 +13,9 @@
 
 namespace bt {
 
+// Use raw, non-class enum to explicitly enable usage of enum values as numeric sizes.
+enum UUIDElemSize : uint8_t { k16Bit = 2, k32Bit = 4, k128Bit = 16 };
+
 // Represents a 128-bit Bluetooth UUID. This class allows UUID values to be
 // constructed in the official Bluetooth 16-bit, 32-bit, and 128-bit formats and
 // to be compared against any other Bluetooth UUID.
@@ -76,7 +79,7 @@ class UUID final {
   // Returns the number of bytes required to store this UUID. Returns 16 (i.e.
   // 128 bits) if |allow_32bit| is false and the compact size is 4 bytes (i.e.
   // 32 bits).
-  size_t CompactSize(bool allow_32bit = true) const;
+  UUIDElemSize CompactSize(bool allow_32bit = true) const;
 
   // Writes a little-endian representation of this UUID to |buffer|.  Returns
   // the number of bytes used. there must be enough space in |buffer| to store

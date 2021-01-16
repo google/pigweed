@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "src/lib/fxl/strings/utf_codecs.h"
 
@@ -20,10 +21,8 @@ namespace {
 
 using UuidFunction = fit::function<void(const UUID&)>;
 
-bool ParseUuids(const BufferView& data, size_t uuid_size, UuidFunction func) {
+bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
   ZX_DEBUG_ASSERT(func);
-  ZX_DEBUG_ASSERT((uuid_size == k16BitUuidElemSize) || (uuid_size == k32BitUuidElemSize) ||
-                  (uuid_size == k128BitUuidElemSize));
 
   if (data.size() % uuid_size) {
     bt_log(WARN, "gap-le", "malformed service UUIDs list");
@@ -43,25 +42,26 @@ bool ParseUuids(const BufferView& data, size_t uuid_size, UuidFunction func) {
   return true;
 }
 
-size_t SizeForType(DataType type) {
+UUIDElemSize SizeForType(DataType type) {
   switch (type) {
     case DataType::kIncomplete16BitServiceUuids:
     case DataType::kComplete16BitServiceUuids:
     case DataType::kServiceData16Bit:
-      return k16BitUuidElemSize;
+      return UUIDElemSize::k16Bit;
     case DataType::kIncomplete32BitServiceUuids:
     case DataType::kComplete32BitServiceUuids:
     case DataType::kServiceData32Bit:
-      return k32BitUuidElemSize;
+      return UUIDElemSize::k32Bit;
     case DataType::kIncomplete128BitServiceUuids:
     case DataType::kComplete128BitServiceUuids:
     case DataType::kServiceData128Bit:
-      return k128BitUuidElemSize;
+      return UUIDElemSize::k128Bit;
     default:
       break;
   };
 
-  return 0;
+  ZX_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
+  return UUIDElemSize::k16Bit;
 }
 
 // clang-format off
@@ -439,16 +439,16 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   }
 
   for (const auto& service_data_pair : service_data_) {
-    size_t uuid_size = service_data_pair.first.CompactSize();
+    UUIDElemSize uuid_size = service_data_pair.first.CompactSize();
     (*buffer)[pos++] = 1 + uuid_size + service_data_pair.second.size();
     switch (uuid_size) {
-      case 2:
+      case UUIDElemSize::k16Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData16Bit);
         break;
-      case 4:
+      case UUIDElemSize::k32Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData32Bit);
         break;
-      case 16:
+      case UUIDElemSize::k128Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData128Bit);
         break;
     };
@@ -466,7 +466,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     pos += s.size();
   }
 
-  std::unordered_map<size_t, std::unordered_set<UUID>> uuid_sets;
+  std::unordered_map<UUIDElemSize, std::unordered_set<UUID>> uuid_sets;
   for (const auto& uuid : service_uuids_) {
     uuid_sets[uuid.CompactSize()].insert(uuid);
   }
@@ -474,13 +474,13 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   for (const auto& pair : uuid_sets) {
     (*buffer)[pos++] = 1 + pair.first * pair.second.size();
     switch (pair.first) {
-      case 2:
+      case UUIDElemSize::k16Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete16BitServiceUuids);
         break;
-      case 4:
+      case UUIDElemSize::k32Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete32BitServiceUuids);
         break;
-      case 16:
+      case UUIDElemSize::k128Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete128BitServiceUuids);
         break;
     };

@@ -29,11 +29,6 @@ constexpr char kScanUuidFormatString[] =
     "-"
     "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8 "%2" SCNx8;
 
-// Size in bytes of the three valid lengths of UUIDs
-constexpr size_t k16BitSize = 2;
-constexpr size_t k32BitSize = 4;
-constexpr size_t k128BitSize = 16;
-
 // Parses the contents of a |uuid_string| and returns the result in |out_bytes|.
 // Returns false if |uuid_string| does not represent a valid UUID.
 // TODO(armansito): After having used UUID in camel-case words all over the
@@ -66,13 +61,13 @@ bool ParseUuidString(const std::string& uuid_string, UInt128* out_bytes) {
 
 bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   switch (bytes.size()) {
-    case k16BitSize:
+    case UUIDElemSize::k16Bit:
       *out_uuid = UUID(le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
       return true;
-    case k32BitSize:
+    case UUIDElemSize::k32Bit:
       *out_uuid = UUID(le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
       return true;
-    case k128BitSize:
+    case UUIDElemSize::k128Bit:
       *out_uuid = UUID(*reinterpret_cast<const UInt128*>(bytes.data()));
       return true;
   }
@@ -107,11 +102,11 @@ bool UUID::operator==(const UInt128& uuid128) const { return value_ == uuid128; 
 
 bool UUID::CompareBytes(const ByteBuffer& bytes) const {
   switch (bytes.size()) {
-    case k16BitSize:
+    case UUIDElemSize::k16Bit:
       return (*this == le16toh(*reinterpret_cast<const uint16_t*>(bytes.data())));
-    case k32BitSize:
+    case UUIDElemSize::k32Bit:
       return (*this == le32toh(*reinterpret_cast<const uint32_t*>(bytes.data())));
-    case k128BitSize:
+    case UUIDElemSize::k128Bit:
       return (*this == *reinterpret_cast<const UInt128*>(bytes.data()));
   }
 
@@ -125,32 +120,31 @@ std::string UUID::ToString() const {
                            value_[3], value_[2], value_[1], value_[0]);
 }
 
-size_t UUID::CompactSize(bool allow_32bit) const {
+UUIDElemSize UUID::CompactSize(bool allow_32bit) const {
   switch (type_) {
     case Type::k16Bit:
-      return k16BitSize;
+      return UUIDElemSize::k16Bit;
     case Type::k32Bit:
       if (allow_32bit)
-        return k32BitSize;
+        return UUIDElemSize::k32Bit;
 
       // Fall through if 32-bit UUIDs are not allowed.
     case Type::k128Bit:
-      return k128BitSize;
+      return UUIDElemSize::k128Bit;
   };
-
-  return 0;
+  ZX_PANIC("uuid type of %du is invalid", static_cast<uint8_t>(type_));
 }
 
 size_t UUID::ToBytes(MutableByteBuffer* bytes, bool allow_32bit) const {
   size_t size = CompactSize(allow_32bit);
-  size_t offset = (size == k128BitSize) ? 0u : kBaseOffset;
+  size_t offset = (size == UUIDElemSize::k128Bit) ? 0u : kBaseOffset;
   bytes->Write(value_.data() + offset, size);
   return size;
 }
 
 BufferView UUID::CompactView(bool allow_32bit) const {
   size_t size = CompactSize(allow_32bit);
-  size_t offset = (size == k128BitSize) ? 0u : kBaseOffset;
+  size_t offset = (size == UUIDElemSize::k128Bit) ? 0u : kBaseOffset;
   return BufferView(value_.data() + offset, size);
 }
 

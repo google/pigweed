@@ -57,10 +57,6 @@ constexpr size_t kTxPowerLevelSize = 1;
 constexpr size_t kFlagsSizeMin = 1;
 constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
 
-constexpr size_t k16BitUuidElemSize = 2;
-constexpr size_t k32BitUuidElemSize = 4;
-constexpr size_t k128BitUuidElemSize = 16;
-
 // A helper to build Adversiting Data, Scan Response Data, or Extended Inquiry
 // Response Data fields.
 // TODO(jamuraa): Add functionality for ACAD and OOB
