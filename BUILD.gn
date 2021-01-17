@@ -185,6 +185,12 @@ if (current_toolchain != default_toolchain) {
 
     # Add target-specific images.
     deps += pw_TARGET_APPLICATIONS
+
+    # Add the pw_tool target to be built on host.
+    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+        pw_toolchain_SCOPE.is_host_toolchain) {
+      deps += [ "$dir_pw_tool" ]
+    }
   }
 
   group("host_tools") {
@@ -218,6 +224,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_sync",
       "$dir_pw_sys_io",
       "$dir_pw_thread",
+      "$dir_pw_tool",
       "$dir_pw_trace",
       "$dir_pw_unit_test",
       "$dir_pw_varint",
