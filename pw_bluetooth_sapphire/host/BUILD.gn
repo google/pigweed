@@ -204,5 +204,6 @@ fuzzers_package("fuzzers") {
     "sm:valid_packet_reader_fuzzer",
     "hci:read_acl_data_packet_fuzzer",
     "hci:read_command_event_packet_fuzzer",
+    "common:advertising_data_fuzzer",
   ]
 }

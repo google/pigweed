@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/fuzzing/fuzzer.gni")
+
 source_set("common") {
   sources = [
     "advertising_data.cc",
@@ -94,4 +96,9 @@ source_set("tests") {
     "//sdk/lib/inspect/testing/cpp",
     "//third_party/googletest:gtest",
   ]
+}
+
+fuzzer("advertising_data_fuzzer") {
+  sources = [ "advertising_data_fuzztest.cc" ]
+  deps = [ ":common" ]
 }
