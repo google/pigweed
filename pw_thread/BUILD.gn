@@ -99,8 +99,10 @@ if (pw_thread_THREAD_BACKEND != "") {
     sources = [ "thread_facade_test.cc" ]
     deps = [
       ":id",
+      ":sleep",
       ":test_threads",
       ":thread",
+      "$dir_pw_sync:binary_semaphore",
       dir_pw_unit_test,
     ]
   }

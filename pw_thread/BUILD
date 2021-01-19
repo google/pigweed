@@ -164,6 +164,8 @@ pw_cc_library(
         ":thread",
         ":id",
         ":test_threads_header",
+        "//pw_chrono:system_clock",
+        "//pw_sync:binary_semaphore",
         "//pw_unit_test",
     ],
 )

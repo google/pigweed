@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_thread/test_threads.h"
+
 #include "pw_thread_stl/options.h"
 
 namespace pw::thread::test {
@@ -28,5 +30,11 @@ const Options& TestOptionsThread1() {
   static constexpr stl::Options thread_1_options;
   return thread_1_options;
 }
+
+// Thanks to the dynamic allocation, there's no need to wait here as there's
+// no re-use of contexts. In addition we have a very large heap so we expect
+// the risk to be minimal to non-existent for heap exhaustion to occur if this
+// test is run back to back.
+void WaitUntilDetachedThreadsCleanedUp() {}
 
 }  // namespace pw::thread::test

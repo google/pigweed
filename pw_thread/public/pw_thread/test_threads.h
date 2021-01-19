@@ -21,4 +21,16 @@ namespace pw::thread::test {
 const Options& TestOptionsThread0();
 const Options& TestOptionsThread1();
 
+// Unfortunately the thread facade test's job is also to test detached threads
+// which may be backed by static contexts or dynamic context heap allocations.
+// In literally every other case you would use join for this, however that is
+// not an option here as detached thread functionality is being tested.
+// For this reason a backend specific cleanup API is provided which shall block
+// until all the test threads above have finished executions and are ready for
+// potential re-use and/or freed any dynamic allocations.
+//
+// Precondition: The threads must have started to execute before calling this
+// if cleanup is expected.
+void WaitUntilDetachedThreadsCleanedUp();
+
 }  // namespace pw::thread::test

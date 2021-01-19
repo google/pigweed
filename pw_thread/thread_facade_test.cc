@@ -12,15 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <atomic>
-
 #include "gtest/gtest.h"
+#include "pw_sync/binary_semaphore.h"
 #include "pw_thread/id.h"
 #include "pw_thread/test_threads.h"
 #include "pw_thread/thread.h"
 
 using pw::thread::test::TestOptionsThread0;
 using pw::thread::test::TestOptionsThread1;
+using pw::thread::test::WaitUntilDetachedThreadsCleanedUp;
 
 namespace pw::thread {
 namespace {
@@ -30,53 +30,37 @@ TEST(Thread, DefaultIds) {
   EXPECT_EQ(not_executing_thread.get_id(), Id());
 }
 
-static void SetBoolTrue(void* arg) {
-  *reinterpret_cast<std::atomic<bool>*>(arg) = true;
+static void ReleaseBinarySemaphore(void* arg) {
+  static_cast<sync::BinarySemaphore*>(arg)->release();
 }
-
-// TODO(ewout): this currently doesn't work on backends with dynamic context
-// allocation disabled. Perhaps we could require the backend to provide
-// thread options for the facade unit tests to use?
 
 #if PW_THREAD_JOINING_ENABLED
 TEST(Thread, Join) {
   Thread thread;
   EXPECT_FALSE(thread.joinable());
-  std::atomic<bool> thread_ran = false;
-  thread = Thread(TestOptionsThread0(), SetBoolTrue, &thread_ran);
+  sync::BinarySemaphore thread_ran_sem;
+  thread =
+      Thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran_sem);
   EXPECT_TRUE(thread.joinable());
   thread.join();
   EXPECT_EQ(thread.get_id(), Id());
-  EXPECT_TRUE(thread_ran);
+  EXPECT_TRUE(thread_ran_sem.try_acquire());
 }
 #endif  // PW_THREAD_JOINING_ENABLED
 
 TEST(Thread, Detach) {
   Thread thread;
-  std::atomic<bool> thread_ran = false;
-  thread = Thread(TestOptionsThread0(), SetBoolTrue, &thread_ran);
+  sync::BinarySemaphore thread_ran_sem;
+  thread =
+      Thread(TestOptionsThread0(), ReleaseBinarySemaphore, &thread_ran_sem);
   EXPECT_NE(thread.get_id(), Id());
-#if PW_THREAD_JOINING_ENABLED
   EXPECT_TRUE(thread.joinable());
-#endif  // PW_THREAD_JOINING_ENABLED
   thread.detach();
   EXPECT_EQ(thread.get_id(), Id());
-#if PW_THREAD_JOINING_ENABLED
   EXPECT_FALSE(thread.joinable());
-#endif  // PW_THREAD_JOINING_ENABLED
-  // We could use a synchronization primitive here to wait until the thread
-  // finishes running to check that thread_ran is true, but that's covered by
-  // pw_sync instead. Instead we use an idiotic busy loop.
-  // - Assume our clock is < 6Ghz
-  // - Assume we can check the clock in a single cycle
-  // - Wait for up to 1/10th of a second @ 6Ghz, this may be a long period on a
-  //   slower (i.e. real) machine.
-  constexpr uint64_t kMaxIterations = 6'000'000'000 / 10;
-  for (uint64_t i = 0; i < kMaxIterations; ++i) {
-    if (thread_ran)
-      break;
-  }
-  EXPECT_TRUE(thread_ran);
+  thread_ran_sem.acquire();
+
+  WaitUntilDetachedThreadsCleanedUp();
 }
 
 TEST(Thread, SwapWithoutExecution) {
@@ -91,8 +75,10 @@ TEST(Thread, SwapWithOneExecuting) {
   Thread thread_0;
   EXPECT_EQ(thread_0.get_id(), Id());
 
-  static std::atomic<bool> thread_ran = false;
-  Thread thread_1(TestOptionsThread1(), SetBoolTrue, &thread_ran);
+  sync::BinarySemaphore thread_ran_sem;
+  Thread thread_1(
+      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_ran_sem);
+
   EXPECT_NE(thread_1.get_id(), Id());
 
   thread_0.swap(thread_1);
@@ -101,13 +87,18 @@ TEST(Thread, SwapWithOneExecuting) {
 
   thread_0.detach();
   EXPECT_EQ(thread_0.get_id(), Id());
+
+  thread_ran_sem.acquire();
+  WaitUntilDetachedThreadsCleanedUp();
 }
 
 TEST(Thread, SwapWithTwoExecuting) {
-  static std::atomic<bool> thread_a_ran = false;
-  Thread thread_0(TestOptionsThread0(), SetBoolTrue, &thread_a_ran);
-  static std::atomic<bool> thread_b_ran = false;
-  Thread thread_1(TestOptionsThread1(), SetBoolTrue, &thread_b_ran);
+  sync::BinarySemaphore thread_a_ran_sem;
+  Thread thread_0(
+      TestOptionsThread0(), ReleaseBinarySemaphore, &thread_a_ran_sem);
+  sync::BinarySemaphore thread_b_ran_sem;
+  Thread thread_1(
+      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_b_ran_sem);
   const Id thread_a_id = thread_0.get_id();
   EXPECT_NE(thread_a_id, Id());
   const Id thread_b_id = thread_1.get_id();
@@ -122,14 +113,19 @@ TEST(Thread, SwapWithTwoExecuting) {
   EXPECT_EQ(thread_0.get_id(), Id());
   thread_1.detach();
   EXPECT_EQ(thread_1.get_id(), Id());
+
+  thread_a_ran_sem.acquire();
+  thread_b_ran_sem.acquire();
+  WaitUntilDetachedThreadsCleanedUp();
 }
 
 TEST(Thread, MoveOperator) {
   Thread thread_0;
   EXPECT_EQ(thread_0.get_id(), Id());
 
-  std::atomic<bool> thread_ran = false;
-  Thread thread_1(TestOptionsThread1(), SetBoolTrue, &thread_ran);
+  sync::BinarySemaphore thread_ran_sem;
+  Thread thread_1(
+      TestOptionsThread1(), ReleaseBinarySemaphore, &thread_ran_sem);
   EXPECT_NE(thread_1.get_id(), Id());
 
   thread_0 = std::move(thread_1);
@@ -138,6 +134,9 @@ TEST(Thread, MoveOperator) {
 
   thread_0.detach();
   EXPECT_EQ(thread_0.get_id(), Id());
+
+  thread_ran_sem.acquire();
+  WaitUntilDetachedThreadsCleanedUp();
 }
 
 }  // namespace

@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -41,8 +42,8 @@ pw_cc_library(
         ":id_headers",
         "//pw_thread:id_facade",
     ],
-		# TODO: This should depend on FreeRTOS but our third parties currently
-		# do not have Bazel support.
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
 )
 
 pw_cc_library(
@@ -62,18 +63,100 @@ pw_cc_library(
 
 pw_cc_library(
     name = "sleep",
-		srcs = [
-		    "sleep.cc",
-		],
+    srcs = [
+        "sleep.cc",
+    ],
     deps = [
         ":sleep_headers",
-				"//pw_chrono_freertos:system_clock_headers",
+        "//pw_chrono_freertos:system_clock_headers",
         "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_thread:sleep_facade",
     ],
-		# TODO: This should depend on FreeRTOS but our third parties currently
-		# do not have Bazel support.
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
+)
+
+# This target provides the FreeRTOS specific headers needs for thread creation.
+pw_cc_library(
+    name = "thread_headers",
+    hdrs = [
+        "public/pw_thread_freertos/context.h",
+        "public/pw_thread_freertos/options.h",
+        "public/pw_thread_freertos/config.h",
+        "public/pw_thread_freertos/thread_inline.h",
+        "public/pw_thread_freertos/thread_native.h",
+        "public_overrides/pw_thread_backend/thread_inline.h",
+        "public_overrides/pw_thread_backend/thread_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_assert",
+        ":id",
+        "//pw_thread:thread_headers",
+        "//pw_sync:binary_semaphore",
+    ],
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "thread",
+    srcs = [
+        "thread.cc",
+    ],
+    deps = [
+        "//pw_assert",
+        ":id",
+        ":thread_headers",
+    ],
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "dynamic_test_threads",
+    deps = [
+        "//pw_thread:thread_facade",
+        "//pw_thread:test_threads_header",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+    srcs = [
+        "dynamic_test_threads.cc",
+    ]
+)
+
+pw_cc_test(
+    name = "dynamic_thread_backend_test",
+    deps = [
+        "//pw_thread:thread_facade_test",
+        ":dynamic_test_threads",
+    ]
+)
+
+pw_cc_library(
+    name = "static_test_threads",
+    deps = [
+        "//pw_thread:thread_facade",
+        "//pw_thread:test_threads_header",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+    srcs = [
+        "static_test_threads.cc",
+    ]
+)
+
+pw_cc_test(
+    name = "static_thread_backend_test",
+    deps = [
+        "//pw_thread:thread_facade_test",
+        ":static_test_threads",
+    ]
 )
 
 pw_cc_library(
@@ -86,8 +169,8 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-		# TODO: This should depend on FreeRTOS but our third parties currently
-		# do not have Bazel support.
+    # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
+    # currently do not have Bazel support.
 )
 
 pw_cc_library(
@@ -97,3 +180,4 @@ pw_cc_library(
         "//pw_thread:yield_facade",
     ],
 )
+
