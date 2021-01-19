@@ -116,7 +116,7 @@ class BrEdrConnectionManager final {
   // SearchId which can be used to remove the search later. Identical searches will perform the same
   // search for each search added. Results of added service searches will be added to each Peer's
   // BrEdrData.
-  // TODO(fxbug.dev/1378): Make identifcal searches just search once
+  // TODO(fxbug.dev/1378): Make identical searches just search once
   using SearchCallback = sdp::ServiceDiscoverer::ResultCallback;
   using SearchId = sdp::ServiceDiscoverer::SearchId;
   SearchId AddServiceSearch(const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,

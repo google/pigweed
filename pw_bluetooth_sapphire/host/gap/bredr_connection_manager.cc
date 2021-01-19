@@ -395,6 +395,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                          local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
+  bt_log(INFO, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
 
   // We should never have more than one link to a given peer
   ZX_DEBUG_ASSERT(!FindConnectionById(peer_id));
@@ -528,16 +529,16 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
     const hci::EventPacket& event) {
   ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionRequestEventCode);
   const auto& params = event.params<hci::ConnectionRequestEventParams>();
-  std::string link_type_str = params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
+  const char* link_type_str = params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
 
-  bt_log(DEBUG, "gap-bredr", "%s conn request from %s (%s)", link_type_str.c_str(),
-         params.bd_addr.ToString().c_str(), params.class_of_device.ToString().c_str());
+  bt_log(INFO, "gap-bredr", "incoming %s connection request from %s (%s)", link_type_str,
+         bt_str(params.bd_addr), bt_str(params.class_of_device));
 
   if (params.link_type == hci::LinkType::kACL) {
     // Accept the connection, performing a role switch. We receive a
     // Connection Complete event when the connection is complete, and finish
     // the link then.
-    bt_log(INFO, "gap-bredr", "accept incoming connection");
+    bt_log(INFO, "gap-bredr", "accepting incoming connection from %s", bt_str(params.bd_addr));
 
     auto accept = hci::CommandPacket::New(hci::kAcceptConnectionRequest,
                                           sizeof(hci::AcceptConnectionRequestCommandParams));
@@ -601,7 +602,8 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionCom
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (!hci_is_error(event, WARN, "gap-bredr", "connection error")) {
+  if (!hci_is_error(event, WARN, "gap-bredr", "connection error: (address: %s, handle: %#.4x)",
+                    bt_str(params.bd_addr), connection_handle)) {
     InitializeConnection(addr, connection_handle);
   }
   return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -951,7 +953,8 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 
 void BrEdrConnectionManager::OnConnectFailure(hci::Status status, PeerId peer_id) {
   // The request failed or timed out.
-  bt_log(ERROR, "gap-bredr", "failed to connect to peer (id: %s)", bt_str(peer_id));
+  bt_log(ERROR, "gap-bredr", "Outgoing Connection Request failed for peer (id: %s, status: %s)",
+         bt_str(peer_id), bt_str(status));
   Peer* peer = cache_->FindById(peer_id);
   // The peer may no longer be in the cache by the time this function is called
   if (peer) {
