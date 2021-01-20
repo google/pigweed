@@ -577,10 +577,7 @@ Assets within each field must be listed in alphabetical order
 
   source_set("pw_sample_module") {
     public_configs = [ ":default_config" ]
-    public_deps = [
-      dir_pw_span,
-      dir_pw_status,
-    ]
+    public_deps = [ dir_pw_status ]
     public = [ "public/pw_sample_module/sample_module.h" ]
     sources = [
       "public/pw_sample_module/internal/sample_module.h",

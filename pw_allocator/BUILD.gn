@@ -46,7 +46,6 @@ pw_source_set("block") {
   public = [ "public/pw_allocator/block.h" ]
   public_deps = [
     "$dir_pw_assert",
-    "$dir_pw_span",
     "$dir_pw_status",
   ]
   sources = [ "block.cc" ]
@@ -58,7 +57,6 @@ pw_source_set("freelist") {
   public = [ "public/pw_allocator/freelist.h" ]
   public_deps = [
     "$dir_pw_containers:vector",
-    "$dir_pw_span",
     "$dir_pw_status",
   ]
   sources = [ "freelist.cc" ]
@@ -71,7 +69,6 @@ pw_source_set("freelist_heap") {
   public_deps = [
     ":block",
     ":freelist",
-    "$dir_pw_span",
   ]
   deps = [
     "$dir_pw_assert",

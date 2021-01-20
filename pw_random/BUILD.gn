@@ -30,7 +30,6 @@ pw_source_set("pw_random") {
   ]
   public_deps = [
     dir_pw_bytes,
-    dir_pw_span,
     dir_pw_status,
   ]
 }

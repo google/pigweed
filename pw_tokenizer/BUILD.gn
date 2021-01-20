@@ -73,7 +73,6 @@ pw_source_set("pw_tokenizer") {
   public_deps = [
     ":config",
     dir_pw_preprocessor,
-    dir_pw_span,
   ]
   deps = [ dir_pw_varint ]
   public = [
@@ -141,13 +140,11 @@ pw_source_set("base64") {
     ":pw_tokenizer",
     dir_pw_base64,
     dir_pw_preprocessor,
-    dir_pw_span,
   ]
 }
 
 pw_source_set("decoder") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ dir_pw_span ]
   deps = [ dir_pw_varint ]
   public = [
     "public/pw_tokenizer/detokenize.h",
@@ -200,10 +197,7 @@ pw_test_group("tests") {
     ":token_database_test",
     ":tokenize_test",
   ]
-  group_deps = [
-    "$dir_pw_preprocessor:tests",
-    "$dir_pw_span:tests",
-  ]
+  group_deps = [ "$dir_pw_preprocessor:tests" ]
 }
 
 pw_test("argument_types_test") {
@@ -344,7 +338,6 @@ pw_fuzzer("token_database_fuzzer") {
     ":decoder",
     "$dir_pw_fuzzer",
     "$dir_pw_preprocessor",
-    "$dir_pw_span",
   ]
 }
 

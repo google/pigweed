@@ -39,7 +39,6 @@ pw_source_set("pw_string") {
   ]
   public_deps = [
     "$dir_pw_preprocessor",
-    "$dir_pw_span",
     "$dir_pw_status",
   ]
 }
@@ -54,7 +53,6 @@ pw_test_group("tests") {
   ]
   group_deps = [
     "$dir_pw_preprocessor:tests",
-    "$dir_pw_span:tests",
     "$dir_pw_status:tests",
   ]
 }

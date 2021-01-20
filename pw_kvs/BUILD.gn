@@ -63,7 +63,6 @@ pw_source_set("pw_kvs") {
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_containers,
-    dir_pw_span,
     dir_pw_status,
     dir_pw_string,
   ]
@@ -106,7 +105,6 @@ pw_source_set("fake_flash") {
   public_deps = [
     dir_pw_containers,
     dir_pw_kvs,
-    dir_pw_span,
     dir_pw_status,
   ]
   deps = [

@@ -61,10 +61,7 @@ pw_facade("entry") {
 pw_facade("handler") {
   backend = pw_cpu_exception_HANDLER_BACKEND
   public_configs = [ ":default_config" ]
-  public_deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_span",
-  ]
+  public_deps = [ "$dir_pw_preprocessor" ]
   sources = [ "start_exception_handler.cc" ]
   public = [ "public/pw_cpu_exception/handler.h" ]
 }
@@ -76,7 +73,6 @@ pw_facade("handler") {
 pw_facade("support") {
   backend = pw_cpu_exception_SUPPORT_BACKEND
   public_configs = [ ":default_config" ]
-  public_deps = [ "$dir_pw_span" ]
   public = [ "public/pw_cpu_exception/support.h" ]
 }
 

@@ -57,7 +57,6 @@ pw_executable("pointer_read") {
     dir_pw_bytes,
     dir_pw_log,
     dir_pw_preprocessor,
-    dir_pw_span,
   ]
 }
 
@@ -68,6 +67,5 @@ pw_executable("result_read") {
     dir_pw_bytes,
     dir_pw_log,
     dir_pw_preprocessor,
-    dir_pw_span,
   ]
 }

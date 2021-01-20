@@ -44,7 +44,6 @@ pw_cc_library(
         "//dir_pw_boot_armv7m",
         "//dir_pw_malloc:facade",
         "//dir_pw_preprocessor",
-        "//dir_pw_span",
     ],
 )
 

@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -48,7 +48,10 @@ config("overrides_config") {
 pw_source_set("overrides") {
   public_configs = [ ":overrides_config" ]
   remove_public_deps = [ "*" ]
-  public_deps = [ ":standard_library" ]
+  public_deps = [
+    ":standard_library",
+    "$dir_pw_span",
+  ]
   inputs = [
     "public_overrides/array",
     "public_overrides/assert.h",
@@ -90,6 +93,7 @@ pw_test_group("tests") {
     ":cpp11_test",
     ":cpp14_test",
   ]
+  group_deps = [ "$dir_pw_span:tests" ]
 }
 
 pw_test("default_cpp_test") {
