@@ -67,6 +67,20 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "packet_parser",
+    srcs = ["wire_packet_parser.cc"],
+    hdrs = ["public/pw_hdlc/wire_packet_parser.h"],
+    includes = ["public"],
+    deps = [
+        ":pw_hdlc",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_router:packet_parser",
+    ],
+)
+
 cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
@@ -85,6 +99,15 @@ cc_test(
         "//pw_result",
         "//pw_stream",
         "//pw_unit_test",
+    ],
+)
+
+cc_test(
+    name = "wire_packet_parser_test",
+    srcs = ["wire_packet_parser_test.cc"],
+    deps = [
+        ":packet_parser",
+        "//pw_bytes",
     ],
 )
 

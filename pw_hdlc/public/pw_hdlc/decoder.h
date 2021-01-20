@@ -20,6 +20,7 @@
 #include <functional>  // std::invoke
 
 #include "pw_bytes/span.h"
+#include "pw_checksum/crc32.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
@@ -74,7 +75,11 @@ class Frame {
 class Decoder {
  public:
   constexpr Decoder(ByteSpan buffer)
-      : buffer_(buffer), current_frame_size_(0), state_(State::kInterFrame) {}
+      : buffer_(buffer),
+        last_read_bytes_({}),
+        last_read_bytes_index_(0),
+        current_frame_size_(0),
+        state_(State::kInterFrame) {}
 
   Decoder(const Decoder&) = delete;
   Decoder& operator=(const Decoder&) = delete;
@@ -109,9 +114,9 @@ class Decoder {
   size_t max_size() const { return buffer_.size(); }
 
   // Clears and resets the decoder.
-  void clear() {
-    current_frame_size_ = 0;
+  void Clear() {
     state_ = State::kInterFrame;
+    Reset();
   };
 
  private:
@@ -122,6 +127,12 @@ class Decoder {
     kFrameEscape,
   };
 
+  void Reset() {
+    current_frame_size_ = 0;
+    last_read_bytes_index_ = 0;
+    fcs_.clear();
+  }
+
   void AppendByte(std::byte new_byte);
 
   Status CheckFrame() const;
@@ -129,6 +140,16 @@ class Decoder {
   bool VerifyFrameCheckSequence() const;
 
   const ByteSpan buffer_;
+
+  // Ring buffer of the last four bytes read into the current frame, to allow
+  // calculating the frame's CRC incrementally. As data is evicted from this
+  // buffer, it is added to the running CRC. Once a frame is complete, the
+  // buffer contains the frame's FCS.
+  std::array<std::byte, sizeof(uint32_t)> last_read_bytes_;
+  size_t last_read_bytes_index_;
+
+  // Incremental checksum of the current frame.
+  checksum::Crc32 fcs_;
 
   size_t current_frame_size_;
 

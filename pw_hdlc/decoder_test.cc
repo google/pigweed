@@ -45,7 +45,7 @@ TEST(Decoder, Clear) {
   decoder.Process(bytes::String("~1234abcd"),
                   [](const Result<Frame>&) { FAIL(); });
 
-  decoder.clear();
+  decoder.Clear();
   Status status = Status::Unknown();
 
   decoder.Process(
@@ -83,12 +83,12 @@ TEST(Decoder, MinimumSizedBuffer) {
 TEST(Decoder, TooLargeForBuffer_ReportsResourceExhausted) {
   DecoderBuffer<8> decoder;
 
-  for (byte b : bytes::String("~123456789")) {
+  for (byte b : bytes::String("~12345\x1c\x3a\xf5\xcb")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
   EXPECT_EQ(Status::ResourceExhausted(), decoder.Process(kFlag).status());
 
-  for (byte b : bytes::String("~123456789012345678901234567890")) {
+  for (byte b : bytes::String("~12345678901234567890\xf2\x19\x63\x90")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
   EXPECT_EQ(Status::ResourceExhausted(), decoder.Process(kFlag).status());
@@ -99,7 +99,7 @@ TEST(Decoder, TooLargeForBuffer_StaysWithinBufferBoundaries) {
 
   Decoder decoder(std::span(buffer.data(), 8));
 
-  for (byte b : bytes::String("~1234567890123456789012345678901234567890")) {
+  for (byte b : bytes::String("~12345678901234567890\xf2\x19\x63\x90")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
 
@@ -113,7 +113,7 @@ TEST(Decoder, TooLargeForBuffer_StaysWithinBufferBoundaries) {
 TEST(Decoder, TooLargeForBuffer_DecodesNextFrame) {
   DecoderBuffer<8> decoder;
 
-  for (byte b : bytes::String("~123456789012345678901234567890")) {
+  for (byte b : bytes::String("~12345678901234567890\xf2\x19\x63\x90")) {
     EXPECT_EQ(Status::Unavailable(), decoder.Process(b).status());
   }
   EXPECT_EQ(Status::ResourceExhausted(), decoder.Process(kFlag).status());

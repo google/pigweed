@@ -16,18 +16,12 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/endian.h"
-#include "pw_checksum/crc32.h"
 #include "pw_hdlc_private/protocol.h"
 #include "pw_log/log.h"
 
 using std::byte;
 
 namespace pw::hdlc {
-namespace {
-
-constexpr byte kUnescapeConstant = byte{0x20};
-
-}  // namespace
 
 Result<Frame> Decoder::Process(const byte new_byte) {
   switch (state_) {
@@ -37,7 +31,7 @@ Result<Frame> Decoder::Process(const byte new_byte) {
 
         // Report an error if non-flag bytes were read between frames.
         if (current_frame_size_ != 0u) {
-          current_frame_size_ = 0;
+          Reset();
           return Status::DataLoss();
         }
       } else {
@@ -50,9 +44,8 @@ Result<Frame> Decoder::Process(const byte new_byte) {
       if (new_byte == kFlag) {
         const Status status = CheckFrame();
 
-        state_ = State::kFrame;
         const size_t completed_frame_size = current_frame_size_;
-        current_frame_size_ = 0;
+        Reset();
 
         if (status.ok()) {
           return Frame(buffer_.first(completed_frame_size));
@@ -71,7 +64,7 @@ Result<Frame> Decoder::Process(const byte new_byte) {
       // The flag character cannot be escaped; return an error.
       if (new_byte == kFlag) {
         state_ = State::kFrame;
-        current_frame_size_ = 0;
+        Reset();
         return Status::DataLoss();
       }
 
@@ -84,7 +77,7 @@ Result<Frame> Decoder::Process(const byte new_byte) {
         current_frame_size_ += 1;
       } else {
         state_ = State::kFrame;
-        AppendByte(new_byte ^ kUnescapeConstant);
+        AppendByte(Escape(new_byte));
       }
       return Status::Unavailable();
     }
@@ -96,6 +89,15 @@ void Decoder::AppendByte(byte new_byte) {
   if (current_frame_size_ < max_size()) {
     buffer_[current_frame_size_] = new_byte;
   }
+
+  if (current_frame_size_ >= last_read_bytes_.size()) {
+    // A byte will be ejected. Add it to the running checksum.
+    fcs_.Update(last_read_bytes_[last_read_bytes_index_]);
+  }
+
+  last_read_bytes_[last_read_bytes_index_] = new_byte;
+  last_read_bytes_index_ =
+      (last_read_bytes_index_ + 1) % last_read_bytes_.size();
 
   // Always increase size: if it is larger than the buffer, overflow occurred.
   current_frame_size_ += 1;
@@ -113,6 +115,11 @@ Status Decoder::CheckFrame() const {
     return Status::DataLoss();
   }
 
+  if (!VerifyFrameCheckSequence()) {
+    PW_LOG_ERROR("Frame check sequence verification failed");
+    return Status::DataLoss();
+  }
+
   if (current_frame_size_ > max_size()) {
     PW_LOG_ERROR("Frame size [%lu] exceeds the maximum buffer size [%lu]",
                  static_cast<unsigned long>(current_frame_size_),
@@ -120,19 +127,22 @@ Status Decoder::CheckFrame() const {
     return Status::ResourceExhausted();
   }
 
-  if (!VerifyFrameCheckSequence()) {
-    PW_LOG_ERROR("Frame check sequence verification failed");
-    return Status::DataLoss();
-  }
-
   return OkStatus();
 }
 
 bool Decoder::VerifyFrameCheckSequence() const {
-  uint32_t fcs = bytes::ReadInOrder<uint32_t>(
-      std::endian::little, buffer_.data() + current_frame_size_ - sizeof(fcs));
-  return fcs == checksum::Crc32::Calculate(
-                    buffer_.first(current_frame_size_ - sizeof(fcs)));
+  // De-ring the last four bytes read, which at this point contain the FCS.
+  std::array<std::byte, sizeof(uint32_t)> fcs_buffer;
+  size_t index = last_read_bytes_index_;
+
+  for (size_t i = 0; i < fcs_buffer.size(); ++i) {
+    fcs_buffer[i] = last_read_bytes_[index];
+    index = (index + 1) % last_read_bytes_.size();
+  }
+
+  uint32_t actual_fcs =
+      bytes::ReadInOrder<uint32_t>(std::endian::little, fcs_buffer);
+  return actual_fcs == fcs_.value();
 }
 
 }  // namespace pw::hdlc
