@@ -18,19 +18,34 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("default_config") {
-  include_dirs = [
-    "public",
-    "public_overrides",
-  ]
+config("public_config") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
+config("overrides_config") {
+  include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+# This source set provides the <span> header, which is accessed only through
+# pw_polyfill.
+pw_source_set("polyfill") {
+  remove_public_deps = [ "*" ]
+  public_configs = [ ":overrides_config" ]
+  public_deps = [ ":pw_span" ]
+  public = [ "public_overrides/span" ]
+  visibility = [ "$dir_pw_polyfill:*" ]
+}
+
+# This source set provides the internal span.h header included by <span>. This
+# source set is only used by pw_polyfill, so its visibility is restricted.
 pw_source_set("pw_span") {
   remove_public_deps = [ "*" ]
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_config" ]
   public_deps = [ "$dir_pw_polyfill" ]
-  public = [ "public_overrides/span" ]
   sources = [ "public/pw_span/internal/span.h" ]
+  visibility = [ ":*" ]
 }
 
 pw_test_group("tests") {

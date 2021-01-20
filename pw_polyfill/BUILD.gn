@@ -50,7 +50,7 @@ pw_source_set("overrides") {
   remove_public_deps = [ "*" ]
   public_deps = [
     ":standard_library",
-    "$dir_pw_span",
+    "$dir_pw_span:polyfill",
   ]
   inputs = [
     "public_overrides/array",
