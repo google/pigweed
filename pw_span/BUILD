@@ -26,7 +26,10 @@ pw_cc_library(
     name = "pw_span",
     srcs = ["public/pw_span/internal/span.h"],
     hdrs = ["public_overrides/span"],
-    includes = ["public"],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
     deps = ["//pw_polyfill"],
 )
 
