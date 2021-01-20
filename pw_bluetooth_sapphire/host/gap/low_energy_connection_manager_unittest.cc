@@ -5,6 +5,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 
 #include <lib/fit/function.h>
+#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <cstddef>
@@ -44,6 +45,8 @@
 
 namespace bt::gap {
 namespace {
+
+using namespace inspect::testing;
 
 using bt::sm::BondableMode;
 using bt::testing::FakeController;
@@ -2836,6 +2839,47 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetrie
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
 }
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
+  inspect::Inspector inspector;
+  conn_mgr()->AttachInspect(inspector.GetRoot());
+
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  auto callback = [](auto result) { ASSERT_TRUE(result.is_ok()); };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+
+  auto requests_matcher =
+      AllOf(NodeMatches(NameMatches("pending_requests")),
+            ChildrenMatch(ElementsAre(
+                NodeMatches(AllOf(NameMatches("pending_request_0x0"),
+                                  PropertyList(UnorderedElementsAre(
+                                      StringIs("address", kAddress0.ToString()),
+                                      IntIs("callbacks", 1), IntIs("connection_attempts", 1))))))));
+
+  auto conn_mgr_during_connecting_matcher =
+      AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)),
+            ChildrenMatch(ElementsAre(requests_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_during_connecting_matcher)));
+
+  // Finish connecting.
+  RunLoopUntilIdle();
+
+  auto empty_requests_matcher =
+      AllOf(NodeMatches(NameMatches("pending_requests")), ChildrenMatch(::testing::IsEmpty()));
+
+  auto conn_mgr_after_connecting_matcher = ChildrenMatch(ElementsAre(empty_requests_matcher));
+
+  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_connecting_matcher)));
+}
+
 // Tests for assertions that enforce invariants.
 class GAP_LowEnergyConnectionManagerDeathTest : public LowEnergyConnectionManagerTest {};
 

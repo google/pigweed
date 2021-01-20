@@ -171,6 +171,10 @@ class LowEnergyConnectionManager final {
   // Mode 1 Level 4 will be disconnected.
   void SetSecurityMode(LeSecurityMode mode);
 
+  // Attach manager inspect node as a child node of |parent|.
+  static constexpr const char* kInspectNodeName = "low_energy_connection_manager";
+  void AttachInspect(inspect::Node& parent);
+
   LeSecurityMode security_mode() const { return security_mode_; }
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
 
@@ -406,6 +410,10 @@ class LowEnergyConnectionManager final {
 
   // True if the connection manager is performing a scan for a peer before connecting.
   bool scanning_ = false;
+
+  inspect::Node inspect_node_;
+  // Container node for pending request nodes.
+  inspect::Node inspect_pending_requests_node_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

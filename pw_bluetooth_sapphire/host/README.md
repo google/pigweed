@@ -70,4 +70,10 @@ adapter:
             record
             registered_psms:
                 (none)
+    low_energy_connection_manager:
+        pending_requests:
+            pending_request_0x0:
+                address
+                callbacks
+                connection_attempts
 ```

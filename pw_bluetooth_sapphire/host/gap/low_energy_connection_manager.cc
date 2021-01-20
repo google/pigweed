@@ -60,6 +60,9 @@ static const hci::LEPreferredConnectionParameters kDefaultPreferredConnectionPar
 // error.
 constexpr int kMaxConnectionAttempts = 3;
 
+const char* kInspectRequestsNodeName = "pending_requests";
+const char* kInspectRequestNodeNamePrefix = "pending_request_";
+
 }  // namespace
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
@@ -174,8 +177,12 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
   }
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
-  pending_requests_[peer_id] = internal::LowEnergyConnectionRequest(
-      peer->address(), std::move(callback), connection_options);
+
+  internal::LowEnergyConnectionRequest request(peer->address(), std::move(callback),
+                                               connection_options);
+  request.AttachInspect(inspect_pending_requests_node_,
+                        inspect_pending_requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
+  pending_requests_.emplace(peer_id, std::move(request));
 
   TryCreateNextConnection();
 }
@@ -240,6 +247,16 @@ void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
   }
   for (auto& iter : connections_) {
     iter.second->set_security_mode(mode);
+  }
+}
+
+void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent) {
+  inspect_node_ = parent.CreateChild(kInspectNodeName);
+  inspect_pending_requests_node_ = inspect_node_.CreateChild(kInspectRequestsNodeName);
+  for (auto& request : pending_requests_) {
+    request.second.AttachInspect(
+        inspect_pending_requests_node_,
+        inspect_pending_requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
   }
 }
 

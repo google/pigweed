@@ -844,9 +844,12 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
       std::make_unique<LowEnergyDiscoveryManager>(hci_, hci_le_scanner_.get(), &peer_cache_);
   le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member(this, &AdapterImpl::OnLeAutoConnectRequest));
+
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
       hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_, gatt_,
       le_discovery_manager_->GetWeakPtr(), sm::SecurityManager::Create);
+  le_connection_manager_->AttachInspect(adapter_node_);
+
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
       hci_le_advertiser_.get(), le_address_manager_.get());
   low_energy_ = std::make_unique<LowEnergyImpl>(this);

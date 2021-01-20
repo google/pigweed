@@ -7,9 +7,11 @@
 
 #include <lib/fit/function.h>
 #include <lib/fit/result.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include "low_energy_connection_handle.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -44,20 +46,22 @@ class LowEnergyConnectionRequest final {
 
   LowEnergyConnectionRequest(const DeviceAddress& address, ConnectionResultCallback first_callback,
                              LowEnergyConnectionOptions connection_options);
-  LowEnergyConnectionRequest() = default;
   ~LowEnergyConnectionRequest() = default;
 
   LowEnergyConnectionRequest(LowEnergyConnectionRequest&&) = default;
   LowEnergyConnectionRequest& operator=(LowEnergyConnectionRequest&&) = default;
 
-  void AddCallback(ConnectionResultCallback cb) { callbacks_.push_back(std::move(cb)); }
+  void AddCallback(ConnectionResultCallback cb) { callbacks_.Mutable()->push_back(std::move(cb)); }
 
   // Notifies all elements in |callbacks| with |status| and the result of
   // |func|.
   using RefFunc = fit::function<std::unique_ptr<LowEnergyConnectionHandle>()>;
   void NotifyCallbacks(fit::result<RefFunc, HostError> result);
 
-  const DeviceAddress& address() const { return address_; }
+  // Attach request inspect node as a child node of |parent| with the name |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
+  const DeviceAddress& address() const { return *address_; }
   LowEnergyConnectionOptions connection_options() const { return connection_options_; }
 
   void set_discovery_session(LowEnergyDiscoverySessionPtr session) {
@@ -66,16 +70,17 @@ class LowEnergyConnectionRequest final {
 
   LowEnergyDiscoverySession* discovery_session() { return session_.get(); }
 
-  void add_connection_attempt() { connection_attempts_++; }
+  void add_connection_attempt() { connection_attempts_.Set(*connection_attempts_ + 1); }
 
-  int connection_attempts() const { return connection_attempts_; }
+  int connection_attempts() const { return *connection_attempts_; }
 
  private:
-  DeviceAddress address_;
-  std::list<ConnectionResultCallback> callbacks_;
+  StringInspectable<DeviceAddress> address_;
+  IntInspectable<std::list<ConnectionResultCallback>> callbacks_;
   LowEnergyConnectionOptions connection_options_;
   LowEnergyDiscoverySessionPtr session_;
-  int connection_attempts_;
+  IntInspectable<int> connection_attempts_;
+  inspect::Node inspect_node_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionRequest);
 };
