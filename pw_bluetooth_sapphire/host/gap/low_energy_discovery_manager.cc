@@ -14,6 +14,11 @@
 
 namespace bt::gap {
 
+constexpr uint16_t kLEActiveScanInterval = 80;  // 50ms
+constexpr uint16_t kLEActiveScanWindow = 24;    // 15ms
+constexpr uint16_t kLEPassiveScanInterval = kLEScanSlowInterval1;
+constexpr uint16_t kLEPassiveScanWindow = kLEScanSlowWindow1;
+
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
     : alive_(true), active_(active), manager_(manager) {
@@ -424,11 +429,11 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
 
   // See Vol 3, Part C, 9.3.11 "Connection Establishment Timing Parameters".
   if (active) {
-    options.interval = kLEScanFastInterval;
-    options.window = kLEScanFastWindow;
+    options.interval = kLEActiveScanInterval;
+    options.window = kLEActiveScanWindow;
   } else {
-    options.interval = kLEScanSlowInterval1;
-    options.window = kLEScanSlowWindow1;
+    options.interval = kLEPassiveScanInterval;
+    options.window = kLEPassiveScanWindow;
     // TODO(armansito): Use the controller whitelist to filter advertisements.
   }
 
