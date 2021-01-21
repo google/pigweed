@@ -200,11 +200,13 @@ template("generate_toolchain") {
 
       assert(defined(invoker.ar), "toolchain is missing 'ar'")
       tool("alink") {
+        rspfile = "{{output}}.rsp"
+        rspfile_content = "{{inputs}}"
         if (host_os == "win") {
-          command = "${invoker.ar} rcs {{output}} {{inputs}}"
+          command = "${invoker.ar} rcs {{output}} @\"$rspfile\""
         } else {
           command =
-              "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
+              "rm -f {{output}} && ${invoker.ar} rcs {{output}} @\"$rspfile\""
         }
         description = "ar {{target_output_name}}{{output_extension}}"
         outputs =
@@ -218,11 +220,15 @@ template("generate_toolchain") {
 
       _link_outfile =
           "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      _link_rspfile = _link_outfile + ".rsp"
+
       _link_mapfile = "{{output_dir}}/{{target_output_name}}.map"
-      _link_flags = [
-        invoker.cxx,
-        "{{ldflags}}",
-      ]
+      _link_command = string_join(" ",
+                                  [
+                                    invoker.cxx,
+                                    "@\"$_link_rspfile\"",
+                                  ])
+      _link_flags = [ "{{ldflags}}" ]
 
       if (toolchain_os == "mac" || toolchain_os == "ios") {
         _link_flags += [
@@ -272,10 +278,12 @@ template("generate_toolchain") {
       }
       _link_flags += [ "-o $_link_outfile" ]
 
-      _link_command = string_join(" ", _link_flags)
+      _link_rspfile_content = string_join(" ", _link_flags)
 
       tool("link") {
         command = _link_command
+        rspfile = _link_rspfile
+        rspfile_content = _link_rspfile_content
         description = "ld $_link_outfile"
         outputs = [ _link_outfile ]
         default_output_dir = "{{target_out_dir}}/bin"
@@ -291,6 +299,8 @@ template("generate_toolchain") {
 
       tool("solink") {
         command = _link_command + " -shared"
+        rspfile = _link_rspfile
+        rspfile_content = _link_rspfile_content
         description = "ld -shared $_link_outfile"
         outputs = [ _link_outfile ]
         default_output_dir = "{{target_out_dir}}/lib"
