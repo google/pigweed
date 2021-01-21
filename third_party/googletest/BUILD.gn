@@ -1,0 +1,103 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("googletest.gni")
+
+# This file defines a GN source_set for an external installation of googletest.
+# To use, checkout the googletest source into a directory, then set the build
+# arg dir_pw_third_party_googletest to point to that directory. The googletest
+# library will be available in GN at "$dir_pw_third_party/googletest".
+if (dir_pw_third_party_googletest != "") {
+  config("includes") {
+    include_dirs = [
+      "$dir_pw_third_party_googletest/googletest",
+      "$dir_pw_third_party_googletest/googletest/include",
+      "$dir_pw_third_party_googletest/googlemock",
+      "$dir_pw_third_party_googletest/googlemock/include",
+    ]
+
+    # Fix some compiler warnings.
+    cflags = [ "-Wno-undef" ]
+  }
+
+  pw_source_set("googletest") {
+    public_configs = [ ":includes" ]
+    public = [
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest.h",
+    ]
+    sources = [
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-actions.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-cardinalities.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-function-mocker.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-generated-actions.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-matchers.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-more-actions.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-more-matchers.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-nice-strict.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-spec-builders.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/internal/gmock-internal-utils.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/internal/gmock-port.h",
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/internal/gmock-pp.h",
+      "$dir_pw_third_party_googletest/googlemock/src/gmock-cardinalities.cc",
+      "$dir_pw_third_party_googletest/googlemock/src/gmock-internal-utils.cc",
+      "$dir_pw_third_party_googletest/googlemock/src/gmock-matchers.cc",
+      "$dir_pw_third_party_googletest/googlemock/src/gmock-spec-builders.cc",
+      "$dir_pw_third_party_googletest/googlemock/src/gmock.cc",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-death-test.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-matchers.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-message.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-param-test.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-printers.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-spi.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-test-part.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-typed-test.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest_pred_impl.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/gtest_prod.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-death-test-internal.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-filepath.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-internal.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-param-util.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-port-arch.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-port.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-string.h",
+      "$dir_pw_third_party_googletest/googletest/include/gtest/internal/gtest-type-util.h",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-death-test.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-filepath.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-internal-inl.h",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-matchers.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-port.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-printers.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-test-part.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest-typed-test.cc",
+      "$dir_pw_third_party_googletest/googletest/src/gtest.cc",
+    ]
+  }
+
+  pw_source_set("gtest_main") {
+    public_deps = [ ":googletest" ]
+    sources = [ "$dir_pw_third_party_googletest/googlemock/src/gtest_main.cc" ]
+  }
+
+  pw_source_set("gmock_main") {
+    public_deps = [ ":googletest" ]
+    sources = [ "$dir_pw_third_party_googletest/googlemock/src/gmock_main.cc" ]
+  }
+} else {
+  group("googletest") {
+  }
+}
