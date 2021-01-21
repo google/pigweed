@@ -11,8 +11,10 @@
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
+#include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
@@ -136,7 +138,10 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlEmpty) {
   fble::AdvertisingData input;
   ASSERT_TRUE(input.IsEmpty());
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
+
   EXPECT_TRUE(output.service_uuids().empty());
   EXPECT_TRUE(output.service_data_uuids().empty());
   EXPECT_TRUE(output.manufacturer_data_ids().empty());
@@ -151,7 +156,9 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlName) {
   fble::AdvertisingData input;
   input.set_name(kTestName);
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
   EXPECT_TRUE(output.local_name());
   EXPECT_EQ(kTestName, *output.local_name());
 }
@@ -160,7 +167,10 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlAppearance) {
   fble::AdvertisingData input;
   input.set_appearance(fuchsia::bluetooth::Appearance::HID_DIGITIZER_TABLET);
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
+
   EXPECT_TRUE(output.appearance());
 
   // Value comes from the standard Bluetooth "assigned numbers" document.
@@ -172,7 +182,10 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlTxPower) {
   fble::AdvertisingData input;
   input.set_tx_power_level(kTxPower);
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
+
   EXPECT_TRUE(output.tx_power());
   EXPECT_EQ(kTxPower, *output.tx_power());
 }
@@ -185,7 +198,10 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlUuids) {
   fble::AdvertisingData input;
   input.set_service_uuids({{kUuid1, kUuid2, kUuid3}});
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
+
   EXPECT_EQ(2u, output.service_uuids().size());
   EXPECT_EQ(1u, output.service_uuids().count(bt::UUID(kUuid1.value)));
   EXPECT_EQ(1u, output.service_uuids().count(bt::UUID(kUuid2.value)));
@@ -200,7 +216,9 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlServiceData) {
   fble::AdvertisingData input;
   input.set_service_data({{{kUuid1, kData1}, {kUuid2, kData2}}});
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
   EXPECT_EQ(2u, output.service_data_uuids().size());
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData1), output.service_data(bt::UUID(kUuid1.value))));
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.service_data(bt::UUID(kUuid2.value))));
@@ -215,10 +233,25 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   fble::AdvertisingData input;
   input.set_manufacturer_data({{{kCompanyId1, kData1}, {kCompanyId2, kData2}}});
 
-  auto output = AdvertisingDataFromFidl(input);
+  std::optional<bt::AdvertisingData> maybe_data = AdvertisingDataFromFidl(input);
+  ASSERT_TRUE(maybe_data.has_value());
+  auto output = std::move(*maybe_data);
   EXPECT_EQ(2u, output.manufacturer_data_ids().size());
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData1), output.manufacturer_data(kCompanyId1)));
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.manufacturer_data(kCompanyId2)));
+}
+
+TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
+  fble::AdvertisingData input;
+  // This is the longest encoding scheme known to Fuchsia BT, so this represents the longest string
+  // allowed (and subsequently, too long to be allowed) by both FIDL and internal invariants.
+  std::string uri = "ms-settings-cloudstorage:";
+  uri += std::string(fble::MAX_URI_LENGTH - uri.size() - 1, '.');
+  input.set_uris({uri});
+  EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
+  uri += '.';
+  input.set_uris({uri});
+  EXPECT_FALSE(AdvertisingDataFromFidl(input).has_value());
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
@@ -253,7 +286,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
   input.SetManufacturerData(company_id, manufacturer_bytes.view());
 
   auto uri = "http://fuchsia.cl";
-  input.AddURI(uri);
+  EXPECT_TRUE(input.AddUri(uri));
 
   auto output = AdvertisingDataToFidlDeprecated(input);
 
@@ -316,7 +349,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   input.SetManufacturerData(company_id, manufacturer_bytes.view());
 
   auto uri = "http://fuchsia.cl/461435";
-  input.AddURI(uri);
+  EXPECT_TRUE(input.AddUri(uri));
 
   auto output = AdvertisingDataToFidl(input);
 

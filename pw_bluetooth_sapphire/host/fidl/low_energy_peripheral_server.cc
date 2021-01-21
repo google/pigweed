@@ -112,15 +112,26 @@ void LowEnergyPeripheralServer::StartAdvertising(
   bt::AdvertisingData adv_data, scan_rsp;
   bool include_tx_power_level = false;
   if (parameters.has_data()) {
-    adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
-
+    auto maybe_adv_data = fidl_helpers::AdvertisingDataFromFidl(parameters.data());
+    if (!maybe_adv_data) {
+      result.set_err(fble::PeripheralError::INVALID_PARAMETERS);
+      callback(std::move(result));
+      return;
+    }
+    adv_data = std::move(*maybe_adv_data);
     if (parameters.data().has_tx_power_level()) {
       bt_log(TRACE, LOG_TAG, "Including TX Power level at HCI layer");
       include_tx_power_level = true;
     }
   }
   if (parameters.has_scan_response()) {
-    scan_rsp = fidl_helpers::AdvertisingDataFromFidl(parameters.scan_response());
+    auto maybe_scan_rsp = fidl_helpers::AdvertisingDataFromFidl(parameters.scan_response());
+    if (!maybe_scan_rsp) {
+      result.set_err(fble::PeripheralError::INVALID_PARAMETERS);
+      callback(std::move(result));
+      return;
+    }
+    scan_rsp = std::move(*maybe_scan_rsp);
   }
   bt::gap::AdvertisingInterval interval = fidl_helpers::AdvertisingIntervalFromFidl(
       parameters.has_mode_hint() ? parameters.mode_hint() : fble::AdvertisingModeHint::SLOW);

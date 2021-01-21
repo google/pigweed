@@ -166,6 +166,9 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
   DataType type;
   BufferView field;
   while (reader.GetNextField(&type, &field)) {
+    // While parsing through the advertising data fields, we do not need to validate that per-field
+    // sizes do not overflow a uint8_t because they, by construction, are obtained from a uint8_t.
+    ZX_ASSERT(field.size() <= std::numeric_limits<uint8_t>::max());
     switch (type) {
       case DataType::kTxPowerLevel: {
         if (field.size() != kTxPowerLevelSize) {
@@ -235,7 +238,8 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         break;
       }
       case DataType::kURI: {
-        out_ad.AddURI(DecodeUri(field.ToString()));
+        // Assertion is safe as AddUri only fails when field size > uint8_t, which is impossible.
+        ZX_ASSERT(out_ad.AddUri(DecodeUri(field.ToString())));
         break;
       }
       case DataType::kFlags: {
@@ -269,7 +273,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
     out->SetServiceData(it.first, it.second.view());
   }
   for (const auto& it : uris_) {
-    out->AddURI(it);
+    ZX_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
   }
 }
 
@@ -327,9 +331,18 @@ void AdvertisingData::SetLocalName(const std::string& name) { local_name_ = std:
 
 std::optional<std::string> AdvertisingData::local_name() const { return local_name_; }
 
-void AdvertisingData::AddURI(const std::string& uri) {
-  if (!uri.empty())
-    uris_.insert(uri);
+[[nodiscard]] bool AdvertisingData::AddUri(const std::string& uri) {
+  if (EncodeUri(uri).size() > kMaxEncodedUriLength) {
+    bt_log(WARN, "gap-le", "not inserting uri %s as it exceeds the max URI size for AD",
+           uri.c_str());
+    return false;
+  }
+  if (uri.empty()) {
+    bt_log(WARN, "gap-le", "skipping insertion of empty uri to AD");
+    return true;
+  }
+  uris_.insert(uri);
+  return true;
 }
 
 const std::unordered_set<std::string>& AdvertisingData::uris() const { return uris_; }
@@ -460,7 +473,8 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   for (const auto& uri : uris_) {
     std::string s = EncodeUri(uri);
-    (*buffer)[pos++] = 1 + s.size();
+    ZX_ASSERT(s.size() <= kMaxEncodedUriLength);
+    (*buffer)[pos++] = 1 + static_cast<uint8_t>(s.size());
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kURI);
     buffer->Write(reinterpret_cast<const uint8_t*>(s.c_str()), s.length(), pos);
     pos += s.size();

@@ -29,7 +29,7 @@ TEST(GAP_AdvertisingDataTest, MakeEmpty) {
 
 TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
   AdvertisingData data;
-  data.AddURI("https://abc.xyz");
+  EXPECT_TRUE(data.AddUri("https://abc.xyz"));
 
   auto bytes =
       CreateStaticByteBuffer(0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
@@ -42,7 +42,7 @@ TEST(GAP_AdvertisingDataTest, EncodeKnownURI) {
 
 TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
   AdvertisingData data;
-  data.AddURI("flubs:xyz");
+  EXPECT_TRUE(data.AddUri("flubs:xyz"));
 
   auto bytes =
       CreateStaticByteBuffer(0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'x', 'y', 'z');
@@ -202,8 +202,8 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   rand_data.FillWithRandomBytes();
 
   AdvertisingData source;
-  source.AddURI("http://fuchsia.cl");
-  source.AddURI("https://ru.st");
+  EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
+  EXPECT_TRUE(source.AddUri("https://ru.st"));
   source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
@@ -235,8 +235,8 @@ TEST(GAP_AdvertisingDataTest, Move) {
   source.SetLocalName("test");
   source.SetTxPower(tx_power);
   source.SetAppearance(appearance);
-  source.AddURI("http://fuchsia.cl");
-  source.AddURI("https://ru.st");
+  EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
+  EXPECT_TRUE(source.AddUri("https://ru.st"));
   source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
@@ -299,7 +299,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
   data.AddServiceUuid(service_uuid);
   data.SetServiceData(service_uuid, service_bytes.view());
 
-  data.AddURI("http://fuchsia.cl");
+  EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize());
   EXPECT_TRUE(data.WriteBlock(&write_buf, std::nullopt));
@@ -346,7 +346,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   data.AddServiceUuid(service_uuid);
   data.SetServiceData(service_uuid, service_bytes.view());
 
-  data.AddURI("http://fuchsia.cl");
+  EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true));
   EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
@@ -374,5 +374,14 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
   EXPECT_FALSE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
 }
 
+TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
+  AdvertisingData data;
+  // Use the https URI encoding scheme. This prefix will be compressed to one byte when encoded.
+  std::string uri = "https:";
+  uri += std::string(kMaxEncodedUriLength - 1, '.');
+  EXPECT_TRUE(data.AddUri(uri));
+  uri += '.';
+  EXPECT_FALSE(data.AddUri(uri));
+}
 }  // namespace
 }  // namespace bt

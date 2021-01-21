@@ -782,7 +782,7 @@ bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(fble::AdvertisingModeHi
   return bt::gap::AdvertisingInterval::SLOW;
 }
 
-bt::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& input) {
+std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::AdvertisingData& input) {
   bt::AdvertisingData output;
 
   if (input.has_name()) {
@@ -814,7 +814,9 @@ bt::AdvertisingData AdvertisingDataFromFidl(const fble::AdvertisingData& input) 
   }
   if (input.has_uris()) {
     for (const auto& uri : input.uris()) {
-      output.AddURI(uri);
+      if (!output.AddUri(uri)) {
+        return std::nullopt;
+      }
     }
   }
 

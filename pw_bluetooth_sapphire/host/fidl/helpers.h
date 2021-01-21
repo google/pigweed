@@ -134,7 +134,8 @@ bool PopulateDiscoveryFilter(const fuchsia::bluetooth::le::ScanFilter& fidl_filt
 bt::gap::AdvertisingInterval AdvertisingIntervalFromFidl(
     fuchsia::bluetooth::le::AdvertisingModeHint mode_hint);
 
-bt::AdvertisingData AdvertisingDataFromFidl(const fuchsia::bluetooth::le::AdvertisingData& input);
+std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(
+    const fuchsia::bluetooth::le::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input);
 fuchsia::bluetooth::le::AdvertisingDataDeprecated AdvertisingDataToFidlDeprecated(
     const bt::AdvertisingData& input);

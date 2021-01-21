@@ -57,6 +57,11 @@ constexpr size_t kTxPowerLevelSize = 1;
 constexpr size_t kFlagsSizeMin = 1;
 constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
 
+constexpr uint8_t kMaxUint8 = std::numeric_limits<uint8_t>::max();
+
+// The length of an encoded URI together with its 1-byte type field must not exceed uint8_t limits
+constexpr uint8_t kMaxEncodedUriLength = kMaxUint8 - 1;
+
 // A helper to build Adversiting Data, Scan Response Data, or Extended Inquiry
 // Response Data fields.
 // TODO(jamuraa): Add functionality for ACAD and OOB
@@ -137,8 +142,8 @@ class AdvertisingData {
   std::optional<std::string> local_name() const;
 
   // Adds a URI to the set of URIs advertised.
-  // Does nothing if |uri| is empty.
-  void AddURI(const std::string& uri);
+  // Does nothing if |uri| is empty or, when encoded, exceeds kMaxEncodedUriLength.
+  [[nodiscard]] bool AddUri(const std::string& uri);
 
   // Get the URIs in this advertisement
   const std::unordered_set<std::string>& uris() const;
