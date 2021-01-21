@@ -27,9 +27,7 @@ declare_args() {
 
 # Specifies the tools used by host Clang toolchains.
 _host_clang_toolchain = {
-  # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
-  # ar. This should get updated for linux systems.
-  ar = "ar"
+  ar = "llvm-ar"
 
   if (pw_toolchain_OSS_FUZZ_ENABLED) {
     cc = getenv("CC")
