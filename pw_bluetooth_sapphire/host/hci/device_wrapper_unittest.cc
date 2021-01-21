@@ -29,7 +29,7 @@ TEST(HCI_DdkDeviceWrapperTest, GetVendorFeatures) {
 }
 
 zx_status_t encode_command_error(void* ctx, bt_vendor_command_t command,
-                                 const bt_vendor_params_t* params, void* out_encoded_buffer,
+                                 const bt_vendor_params_t* params, uint8_t* out_encoded_buffer,
                                  size_t encoded_size, size_t* out_encoded_actual) {
   return ZX_ERR_BUFFER_TOO_SMALL;
 }
@@ -44,8 +44,9 @@ TEST(HCI_DdkDeviceWrapperTest, EncodeCommandError) {
 }
 
 zx_status_t encode_command_actual_size_0(void* ctx, bt_vendor_command_t command,
-                                         const bt_vendor_params_t* params, void* out_encoded_buffer,
-                                         size_t encoded_size, size_t* out_encoded_actual) {
+                                         const bt_vendor_params_t* params,
+                                         uint8_t* out_encoded_buffer, size_t encoded_size,
+                                         size_t* out_encoded_actual) {
   *out_encoded_actual = 0;
   return ZX_OK;
 }
@@ -61,7 +62,7 @@ TEST(HCI_DdkDeviceWrapperTest, EncodeCommandActualSizeZero) {
 
 zx_status_t encode_command_actual_size_too_large(void* ctx, bt_vendor_command_t command,
                                                  const bt_vendor_params_t* params,
-                                                 void* out_encoded_buffer, size_t encoded_size,
+                                                 uint8_t* out_encoded_buffer, size_t encoded_size,
                                                  size_t* out_encoded_actual) {
   *out_encoded_actual = BT_VENDOR_MAX_COMMAND_BUFFER_LEN + 1;
   return ZX_OK;
@@ -77,7 +78,7 @@ TEST(HCI_DdkDeviceWrapperTest, EncodeCommandActualSizeTooLarge) {
 }
 
 zx_status_t encode_command_success(void* ctx, bt_vendor_command_t command,
-                                   const bt_vendor_params_t* params, void* out_encoded_buffer,
+                                   const bt_vendor_params_t* params, uint8_t* out_encoded_buffer,
                                    size_t encoded_size, size_t* out_encoded_actual) {
   *out_encoded_actual = 1;
   static_cast<uint8_t*>(out_encoded_buffer)[0] = 1;

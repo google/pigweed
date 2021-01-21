@@ -48,7 +48,7 @@ class GattRemoteServiceDevice final
   void BtGattSvcReadLongCharacteristic(bt_gatt_id_t id, uint16_t offset, size_t max_bytes,
                                        bt_gatt_svc_read_characteristic_callback read_cb,
                                        void* cookie);
-  void BtGattSvcWriteCharacteristic(bt_gatt_id_t id, const void* buff, size_t len,
+  void BtGattSvcWriteCharacteristic(bt_gatt_id_t id, const uint8_t* buff, size_t len,
                                     bt_gatt_svc_write_characteristic_callback write_cb,
                                     void* cookie);
   void BtGattSvcEnableNotifications(bt_gatt_id_t id, const bt_gatt_notification_value_t* value_cb,

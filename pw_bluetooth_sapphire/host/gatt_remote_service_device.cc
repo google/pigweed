@@ -330,7 +330,7 @@ void GattRemoteServiceDevice::BtGattSvcReadLongCharacteristic(
 }
 
 void GattRemoteServiceDevice::BtGattSvcWriteCharacteristic(
-    bt_gatt_id_t id, const void* buff, size_t len,
+    bt_gatt_id_t id, const uint8_t* buff, size_t len,
     bt_gatt_svc_write_characteristic_callback write_cb, void* cookie) {
   auto* buf = static_cast<const uint8_t*>(buff);
   std::vector<uint8_t> data(buf, buf + len);
