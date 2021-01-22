@@ -892,6 +892,8 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
       AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)));
   auto peer_cache_matcher = AllOf(NodeMatches(NameMatches(PeerCache::kInspectNodeName)));
   auto sdp_server_matcher = AllOf(NodeMatches(NameMatches(sdp::Server::kInspectNodeName)));
+  auto le_discovery_manager_matcher =
+      AllOf(NodeMatches(NameMatches("low_energy_discovery_manager")));
   auto adapter_matcher = AllOf(
       NodeMatches(AllOf(
           NameMatches("adapter"),
@@ -912,7 +914,8 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
                   fxl::StringPrintf(
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(peer_cache_matcher, sdp_server_matcher,
-                                         le_connection_manager_matcher)));
+                                         le_connection_manager_matcher,
+                                         le_discovery_manager_matcher)));
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
 
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),

@@ -26,6 +26,12 @@ adapter:
     le_max_data_length
     lmp_features
     le_features
+    low_energy_discovery_manager:
+       state
+       paused
+       failed_count
+       scan_interval_ms
+       scan_window_ms
     l2cap:
         logical_links:
           logical_link_0x0:

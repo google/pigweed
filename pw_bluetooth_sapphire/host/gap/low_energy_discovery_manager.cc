@@ -19,6 +19,12 @@ constexpr uint16_t kLEActiveScanWindow = 24;    // 15ms
 constexpr uint16_t kLEPassiveScanInterval = kLEScanSlowInterval1;
 constexpr uint16_t kLEPassiveScanWindow = kLEScanSlowWindow1;
 
+const char* kInspectPausedCountPropertyName = "paused";
+const char* kInspectStatePropertyName = "state";
+const char* kInspectFailedCountPropertyName = "failed_count";
+const char* kInspectScanIntervalPropertyName = "scan_interval_ms";
+const char* kInspectScanWindowPropertyName = "scan_window_ms";
+
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
     : alive_(true), active_(active), manager_(manager) {
@@ -76,7 +82,9 @@ LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport
                                                      hci::LowEnergyScanner* scanner,
                                                      PeerCache* peer_cache)
     : dispatcher_(async_get_default_dispatcher()),
+      state_(State::kIdle, StateToString),
       peer_cache_(peer_cache),
+      paused_count_(0),
       scanner_(scanner),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(hci);
@@ -121,7 +129,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback call
       // If this is the first active session, stop scanning and wait for OnScanStatus() to initiate
       // active scan.
       if (!std::any_of(sessions_.begin(), sessions_.end(), [](auto s) { return s->active_; })) {
-        scanner_->StopScan();
+        StopScan();
       }
     }
 
@@ -149,10 +157,10 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active, SessionCallback call
 LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery() {
   if (!paused()) {
     bt_log(TRACE, "gap-le", "Pausing discovery");
-    scanner_->StopScan();
+    StopScan();
   }
 
-  paused_count_++;
+  paused_count_.Set(*paused_count_ + 1);
 
   return PauseToken([this, self = weak_ptr_factory_.GetWeakPtr()]() {
     if (!self) {
@@ -160,8 +168,8 @@ LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery(
     }
 
     ZX_ASSERT(paused());
-    paused_count_--;
-    if (paused_count_ == 0) {
+    paused_count_.Set(*paused_count_ - 1);
+    if (*paused_count_ == 0) {
       ResumeDiscovery();
     }
   });
@@ -169,6 +177,30 @@ LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery(
 
 bool LowEnergyDiscoveryManager::discovering() const {
   return std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active(); });
+}
+
+void LowEnergyDiscoveryManager::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_.node = parent.CreateChild(name);
+  paused_count_.AttachInspect(inspect_.node, kInspectPausedCountPropertyName);
+  state_.AttachInspect(inspect_.node, kInspectStatePropertyName);
+  inspect_.failed_count = inspect_.node.CreateUint(kInspectFailedCountPropertyName, 0);
+  inspect_.scan_interval_ms = inspect_.node.CreateDouble(kInspectScanIntervalPropertyName, 0);
+  inspect_.scan_window_ms = inspect_.node.CreateDouble(kInspectScanWindowPropertyName, 0);
+}
+
+std::string LowEnergyDiscoveryManager::StateToString(State state) {
+  switch (state) {
+    case State::kIdle:
+      return "Idle";
+    case State::kStarting:
+      return "Starting";
+    case State::kActive:
+      return "Active";
+    case State::kPassive:
+      return "Passive";
+    case State::kStopping:
+      return "Stopping";
+  }
 }
 
 std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession(bool active) {
@@ -203,7 +235,7 @@ void LowEnergyDiscoveryManager::RemoveSession(LowEnergyDiscoverySession* session
   if (sessions_.empty() || last_active) {
     bt_log(TRACE, "gap-le", "Last %sdiscovery session removed, stopping scan (sessions: %zu)",
            last_active ? "active " : "", sessions_.size());
-    scanner_->StopScan();
+    StopScan();
     return;
   }
 }
@@ -309,6 +341,7 @@ void LowEnergyDiscoveryManager::OnScanStatus(hci::LowEnergyScanner::ScanStatus s
 void LowEnergyDiscoveryManager::OnScanFailed() {
   bt_log(ERROR, "gap-le", "failed to initiate scan!");
 
+  inspect_.failed_count.Add(1);
   DeactivateAndNotifySessions();
 
   // Report failure on all currently pending requests. If any of the
@@ -319,17 +352,21 @@ void LowEnergyDiscoveryManager::OnScanFailed() {
     pending_.pop_back();
     request.callback(nullptr);
   }
+
+  state_.Set(State::kIdle);
 }
 
 void LowEnergyDiscoveryManager::OnPassiveScanStarted() {
   bt_log(TRACE, "gap-le", "passive scan started");
 
+  state_.Set(State::kPassive);
+
   // Stop the passive scan if an active scan was requested while the scan was starting.
-  // The active scan will start in OnScanStatus() once the passive scan stops.
+  // The active scan will start in OnScanStopped() once the passive scan stops.
   if (std::any_of(sessions_.begin(), sessions_.end(), [](auto& s) { return s->active_; }) ||
       std::any_of(pending_.begin(), pending_.end(), [](auto& p) { return p.active; })) {
     bt_log(TRACE, "gap-le", "active scan requested while passive scan was starting");
-    scanner_->StopScan();
+    StopScan();
     return;
   }
 
@@ -338,7 +375,7 @@ void LowEnergyDiscoveryManager::OnPassiveScanStarted() {
 
 void LowEnergyDiscoveryManager::OnActiveScanStarted() {
   bt_log(TRACE, "gap-le", "active scan started");
-
+  state_.Set(State::kActive);
   NotifyPending();
 }
 
@@ -346,6 +383,7 @@ void LowEnergyDiscoveryManager::OnScanStopped() {
   bt_log(DEBUG, "gap-le", "stopped scanning (paused: %d, pending: %zu, sessions: %zu)", paused(),
          pending_.size(), sessions_.size());
 
+  state_.Set(State::kIdle);
   cached_scan_results_.clear();
 
   if (paused()) {
@@ -372,6 +410,8 @@ void LowEnergyDiscoveryManager::OnScanStopped() {
 
 void LowEnergyDiscoveryManager::OnScanComplete() {
   bt_log(TRACE, "gap-le", "end of scan period");
+
+  state_.Set(State::kIdle);
   cached_scan_results_.clear();
 
   if (paused()) {
@@ -441,7 +481,16 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   // to re-process advertisements. We use the minimum required scan period for
   // general discovery (by default; |scan_period_| can be modified, e.g. by unit
   // tests).
+  state_.Set(State::kStarting);
   scanner_->StartScan(options, std::move(cb));
+
+  inspect_.scan_interval_ms.Set(HciScanIntervalToMs(options.interval));
+  inspect_.scan_window_ms.Set(HciScanWindowToMs(options.window));
+}
+
+void LowEnergyDiscoveryManager::StopScan() {
+  state_.Set(State::kStopping);
+  scanner_->StopScan();
 }
 
 void LowEnergyDiscoveryManager::ResumeDiscovery() {

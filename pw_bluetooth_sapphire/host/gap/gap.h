@@ -61,10 +61,15 @@ constexpr zx::duration kLEGeneralDiscoveryScanMin = zx::msec(10240);
 constexpr zx::duration kLEGeneralDiscoveryScanMinCoded = zx::msec(30720);
 constexpr zx::duration kLEScanFastPeriod = zx::msec(30720);
 
-// Recommended scan and advertising parameters that can be passed directly to the HCI commands.
 // The HCI spec defines the time conversion as follows: Time =  N * 0.625 ms,
 // where N is the value of the constant.
-//
+constexpr float kHciScanIntervalToMs = 0.625f;
+constexpr float HciScanIntervalToMs(uint16_t i) {
+  return static_cast<float>(i) * kHciScanIntervalToMs;
+}
+constexpr float HciScanWindowToMs(uint16_t w) { return HciScanIntervalToMs(w); }
+
+// Recommended scan and advertising parameters that can be passed directly to the HCI commands.
 // A constant that contans the word "Coded" is recommended when using the LE
 // Coded PHY. Otherwise the constant is recommended when using the LE 1M PHY.
 

@@ -27,6 +27,8 @@
 
 namespace bt::gap {
 
+const char* kInspectLowEnergyDiscoveryManagerNodeName = "low_energy_discovery_manager";
+
 // All asynchronous callbacks are posted on the Loop on which this Adapter
 // instance is created.
 class AdapterImpl final : public Adapter {
@@ -842,6 +844,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
   // Initialize the LE manager objects
   le_discovery_manager_ =
       std::make_unique<LowEnergyDiscoveryManager>(hci_, hci_le_scanner_.get(), &peer_cache_);
+  le_discovery_manager_->AttachInspect(adapter_node_, kInspectLowEnergyDiscoveryManagerNodeName);
   le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member(this, &AdapterImpl::OnLeAutoConnectRequest));
 

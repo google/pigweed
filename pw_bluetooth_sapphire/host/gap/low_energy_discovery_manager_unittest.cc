@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 
+#include <lib/inspect/testing/cpp/inspect.h>
 #include <zircon/assert.h>
 
 #include <unordered_set>
@@ -12,6 +13,7 @@
 #include <fbl/macros.h>
 #include <gmock/gmock.h>
 
+#include "lib/inspect/cpp/reader.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
@@ -24,6 +26,7 @@
 namespace bt::gap {
 namespace {
 
+using namespace inspect::testing;
 using bt::testing::FakeController;
 using bt::testing::FakePeer;
 using PauseToken = LowEnergyDiscoveryManager::PauseToken;
@@ -39,6 +42,8 @@ const DeviceAddress kAddress4(DeviceAddress::Type::kLEPublic, {4});
 const DeviceAddress kAddress5(DeviceAddress::Type::kLEPublic, {5});
 
 constexpr zx::duration kTestScanPeriod = zx::sec(10);
+
+const char* kInspectNodeName = "low_energy_discovery_manager";
 
 class LowEnergyDiscoveryManagerTest : public TestingBase {
  public:
@@ -62,6 +67,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
                                                              transport()->WeakPtr(), dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(transport()->WeakPtr(),
                                                                      scanner_.get(), &peer_cache_);
+    discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
+
     test_device()->set_scan_state_callback(
         std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged, this, std::placeholders::_1));
     test_device()->StartCmdChannel(test_cmd_chan());
@@ -82,6 +89,17 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
   // Deletes |discovery_manager_|.
   void DeleteDiscoveryManager() { discovery_manager_ = nullptr; }
+
+  inspect::Hierarchy InspectHierarchy() const {
+    return inspect::ReadFromVmo(inspector_.DuplicateVmo()).take_value();
+  }
+
+  std::vector<inspect::PropertyValue> InspectProperties() const {
+    auto hierarchy = InspectHierarchy();
+    auto children = hierarchy.take_children();
+    ZX_ASSERT(children.size() == 1u);
+    return children.front().node_ptr()->take_properties();
+  }
 
   PeerCache* peer_cache() { return &peer_cache_; }
 
@@ -204,6 +222,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
   bool scan_enabled_;
   std::vector<bool> scan_states_;
   std::unordered_map<size_t, fit::closure> scan_state_callbacks_;
+
+  inspect::Inspector inspector_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManagerTest);
 };
@@ -1307,6 +1327,57 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, PeerChangesFromNonConnectableToConnect
   peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
   EXPECT_TRUE(peer->connectable());
+}
+
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, Inspect) {
+  // Ensure node exists before testing properties.
+  ASSERT_THAT(InspectHierarchy(), AllOf(ChildrenMatch(ElementsAre(NodeMatches(
+                                      AllOf(NameMatches(std::string(kInspectNodeName))))))));
+  EXPECT_THAT(InspectProperties(),
+              UnorderedElementsAre(StringIs("state", "Idle"), IntIs("paused", 0),
+                                   UintIs("failed_count", 0u), DoubleIs("scan_interval_ms", 0.0),
+                                   DoubleIs("scan_window_ms", 0.0)));
+
+  std::unique_ptr<LowEnergyDiscoverySession> passive_session;
+  discovery_manager()->StartDiscovery(/*active=*/false, [&](auto cb_session) {
+    ZX_ASSERT(cb_session);
+    passive_session = std::move(cb_session);
+  });
+  EXPECT_THAT(InspectProperties(),
+              ::testing::IsSupersetOf({StringIs("state", "Starting"),
+                                       DoubleIs("scan_interval_ms", ::testing::Gt(0.0)),
+                                       DoubleIs("scan_window_ms", ::testing::Gt(0.0))}));
+
+  RunLoopUntilIdle();
+  EXPECT_THAT(InspectProperties(),
+              ::testing::IsSupersetOf({StringIs("state", "Passive"),
+                                       DoubleIs("scan_interval_ms", ::testing::Gt(0.0)),
+                                       DoubleIs("scan_window_ms", ::testing::Gt(0.0))}));
+
+  {
+    auto pause_token = discovery_manager()->PauseDiscovery();
+    EXPECT_THAT(InspectProperties(),
+                ::testing::IsSupersetOf({StringIs("state", "Stopping"), IntIs("paused", 1)}));
+  }
+
+  auto active_session = StartDiscoverySession();
+  EXPECT_THAT(InspectProperties(),
+              ::testing::IsSupersetOf({StringIs("state", "Active"),
+                                       DoubleIs("scan_interval_ms", ::testing::Gt(0.0)),
+                                       DoubleIs("scan_window_ms", ::testing::Gt(0.0))}));
+
+  passive_session.reset();
+  active_session.reset();
+  EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({StringIs("state", "Stopping")}));
+  RunLoopUntilIdle();
+  EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({StringIs("state", "Idle")}));
+
+  // Cause discovery to fail.
+  test_device()->SetDefaultResponseStatus(hci::kLESetScanEnable,
+                                          hci::StatusCode::kCommandDisallowed);
+  discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
+  RunLoopUntilIdle();
+  EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));
 }
 
 }  // namespace

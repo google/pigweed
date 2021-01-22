@@ -8,6 +8,7 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/defer.h>
 #include <lib/fit/thread_checker.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include <memory>
 #include <queue>
@@ -15,6 +16,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
@@ -207,7 +209,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   bool discovering() const;
 
   // Returns true if discovery is paused.
-  bool paused() const { return paused_count_ != 0; }
+  bool paused() const { return *paused_count_ != 0; }
 
   // Registers a callback which runs when a connectable advertisement is
   // received from known peer which was previously observed to be connectable during general
@@ -219,10 +221,28 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
     connectable_cb_ = std::move(callback);
   }
 
+  void AttachInspect(inspect::Node& parent, std::string name);
+
   fxl::WeakPtr<LowEnergyDiscoveryManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   friend class LowEnergyDiscoverySession;
+
+  enum class State {
+    kIdle,
+    kStarting,
+    kActive,
+    kPassive,
+    kStopping,
+  };
+  static std::string StateToString(State state);
+
+  struct InspectProperties {
+    inspect::Node node;
+    inspect::UintProperty failed_count;
+    inspect::DoubleProperty scan_interval_ms;
+    inspect::DoubleProperty scan_window_ms;
+  };
 
   const PeerCache* peer_cache() const { return peer_cache_; }
 
@@ -258,6 +278,9 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
   inline void StartActiveScan() { StartScan(true); }
   inline void StartPassiveScan() { StartScan(false); }
 
+  // Tells the scanner to stop scanning.
+  void StopScan();
+
   // If there are any pending requests or valid sessions, start discovery.
   // Discovery must not be paused.
   // Called when discovery is unpaused or the scan period ends and needs to be restarted.
@@ -268,6 +291,10 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // The dispatcher that we use for invoking callbacks asynchronously.
   async_dispatcher_t* dispatcher_;
+
+  InspectProperties inspect_;
+
+  StringInspectable<State> state_;
 
   // The peer cache that we use for storing and looking up scan results. We
   // hold a raw pointer as we expect this to out-live us.
@@ -306,7 +333,7 @@ class LowEnergyDiscoveryManager final : public hci::LowEnergyScanner::Delegate {
 
   // Count of the number of outstanding PauseTokens. When |paused_count_| is 0, discovery is
   // unpaused.
-  int paused_count_ = 0;
+  IntInspectable<int> paused_count_;
 
   // The scanner that performs the HCI procedures. |scanner_| must out-live this
   // discovery manager.
