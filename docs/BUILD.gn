@@ -99,6 +99,7 @@ group("module_docs") {
     "$dir_pw_stream:docs",
     "$dir_pw_string:docs",
     "$dir_pw_sync:docs",
+    "$dir_pw_sync_baremetal:docs",
     "$dir_pw_sync_stl:docs",
     "$dir_pw_sync_threadx:docs",
     "$dir_pw_sys_io:docs",

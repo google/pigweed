@@ -77,6 +77,7 @@ declare_args() {
   dir_pw_string = get_path_info("pw_string", "abspath")
   dir_pw_sync = get_path_info("pw_sync", "abspath")
   dir_pw_sync_freertos = get_path_info("pw_sync_freertos", "abspath")
+  dir_pw_sync_baremetal = get_path_info("pw_sync_baremetal", "abspath")
   dir_pw_sync_stl = get_path_info("pw_sync_stl", "abspath")
   dir_pw_sync_threadx = get_path_info("pw_sync_threadx", "abspath")
   dir_pw_sys_io = get_path_info("pw_sys_io", "abspath")
