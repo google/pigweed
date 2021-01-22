@@ -76,6 +76,9 @@ void NanopbMethod::SendResponse(Channel& channel,
     if (channel.Send(response_buffer, response).ok()) {
       return;
     }
+
+    // Re-acquire the buffer to encode an error packet.
+    response_buffer = channel.AcquireBuffer();
   }
 
   PW_LOG_WARN("Failed to encode response packet for channel %u",
