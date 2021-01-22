@@ -99,11 +99,15 @@ def relative_or_absolute_path(file_string: str):
 def download_to_cache(url: str,
                       expected_md5sum=None,
                       expected_sha256sum=None,
-                      cache_directory=".cache") -> str:
+                      cache_directory=".cache",
+                      downloaded_file_name=None) -> str:
 
     cache_dir = os.path.realpath(
         os.path.expanduser(os.path.expandvars(cache_directory)))
-    downloaded_file = os.path.join(cache_dir, url.split("/")[-1])
+    if not downloaded_file_name:
+        # Use the last part of the URL as the file name.
+        downloaded_file_name = url.split("/")[-1]
+    downloaded_file = os.path.join(cache_dir, downloaded_file_name)
 
     if not os.path.exists(downloaded_file):
         _LOG.info("Downloading: %s", url)

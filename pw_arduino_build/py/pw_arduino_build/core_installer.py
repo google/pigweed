@@ -106,7 +106,9 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
             },
             "teensyduino": {
                 "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.exe",
-                "file_name": "TeensyduinoInstall.exe",
+                # The installer should be named 'Teensyduino.exe' instead of
+                # 'TeensyduinoInstall.exe' to trigger a non-admin installation.
+                "file_name": "Teensyduino.exe",
                 "sha256": "88f58681e5c4772c54e462bc88280320e4276e5b316dcab592fe38d96db990a1",
             },
         }
@@ -116,6 +118,7 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
             "core": {
                 "version": "1.6.2",
                 "url": "https://github.com/adafruit/ArduinoCore-samd/archive/1.6.2.tar.gz",
+                "file_name": "adafruit-samd-1.6.2.tar.gz",
                 "sha256": "5875f5bc05904c10e6313f02653f28f2f716db639d3d43f5a1d8a83d15339d64",
             }
         },
@@ -128,7 +131,7 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
             "core": {
                 "version": "1.8.8",
                 "url": "http://downloads.arduino.cc/cores/samd-1.8.8.tar.bz2",
-                "file_name": "samd-1.8.8.tar.bz2",
+                "file_name": "arduino-samd-1.8.8.tar.bz2",
                 "sha256": "7b93eb705cba9125d9ee52eba09b51fb5fe34520ada351508f4253abbc9f27fa",
             }
         },
@@ -141,6 +144,7 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
             "core": {
                 "version": "1.9.0",
                 "url": "https://github.com/stm32duino/Arduino_Core_STM32/archive/1.9.0.tar.gz",
+                "file_name": "stm32duino-1.9.0.tar.gz",
                 "sha256": "4f75ba7a117d90392e8f67c58d31d22393749b9cdd3279bc21e7261ec06c62bf",
             }
         },
@@ -206,13 +210,15 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
     arduino_zipfile = file_operations.download_to_cache(
         url=arduino_artifact["url"],
         expected_sha256sum=arduino_artifact["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=arduino_artifact["file_name"])
 
     teensyduino_artifact = teensy_artifacts["teensyduino"]
     teensyduino_installer = file_operations.download_to_cache(
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=teensyduino_artifact["file_name"])
 
     file_operations.extract_archive(arduino_zipfile, install_dir, cache_dir)
 
@@ -282,7 +288,8 @@ def install_teensy_core_mac(unused_install_prefix, install_dir, cache_dir):
     teensyduino_zip = file_operations.download_to_cache(
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=teensyduino_artifact["file_name"])
 
     extracted_files = file_operations.extract_archive(
         teensyduino_zip,
@@ -303,13 +310,15 @@ def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
     arduino_tarfile = file_operations.download_to_cache(
         url=arduino_artifact["url"],
         expected_sha256sum=arduino_artifact["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=arduino_artifact["file_name"])
 
     teensyduino_artifact = teensy_artifacts["teensyduino"]
     teensyduino_installer = file_operations.download_to_cache(
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=teensyduino_artifact["file_name"])
 
     file_operations.extract_archive(arduino_tarfile, install_dir, cache_dir)
     os.chmod(teensyduino_installer,
@@ -351,7 +360,8 @@ def install_arduino_samd_core(install_prefix: str, install_dir: str,
     core_tarfile = file_operations.download_to_cache(
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=artifacts["file_name"])
 
     package_path = os.path.join(install_dir, "hardware", "samd",
                                 artifacts["version"])
@@ -371,7 +381,8 @@ def install_adafruit_samd_core(install_prefix: str, install_dir: str,
     core_tarfile = file_operations.download_to_cache(
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=artifacts["file_name"])
 
     package_path = os.path.join(install_dir, "hardware", "samd",
                                 artifacts["version"])
@@ -393,7 +404,8 @@ def install_stm32duino_core(install_prefix, install_dir, cache_dir):
     core_tarfile = file_operations.download_to_cache(
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
-        cache_directory=cache_dir)
+        cache_directory=cache_dir,
+        downloaded_file_name=artifacts["file_name"])
 
     package_path = os.path.join(install_dir, "hardware", "stm32",
                                 artifacts["version"])
