@@ -31,5 +31,4 @@ setuptools.setup(
         'protobuf',
         'pw_cli',
     ],
-    tests_require=['pw_protobuf_compiler'],
 )

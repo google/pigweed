@@ -183,7 +183,7 @@ template("pw_size_report") {
           "$target_gen_dir/${target_name}.txt",
           _doc_rst_output,
         ]
-        deps = _all_target_dependencies + [ "$dir_pw_bloat/py" ]
+        deps = _all_target_dependencies
         args = _bloat_script_args + _binary_paths
 
         # Print size reports to stdout when they are generated.

@@ -50,6 +50,7 @@ _python_subtargets = [
 #   sources: Python sources files in the package.
 #   tests: Test files for this Python package.
 #   python_deps: Dependencies on other pw_python_packages in the GN build.
+#   python_test_deps: Test-only pw_python_package dependencies.
 #   other_deps: Dependencies on GN targets that are not pw_python_packages.
 #   inputs: Other files to track, such as package_data.
 #   lint: If true (default), applies mypy and pylint to the package. If false,
@@ -126,6 +127,21 @@ template("pw_python_package") {
       # Use the fully qualified name so the subtarget can be appended as needed.
       _python_deps += [ get_label_info(dep, "label_no_toolchain") ]
     }
+  }
+
+  # All dependencies needed for the package and its tests.
+  _python_test_deps = _python_deps
+  if (defined(invoker.python_test_deps)) {
+    foreach(test_dep, invoker.python_test_deps) {
+      _python_test_deps += [ get_label_info(test_dep, "label_no_toolchain") ]
+    }
+  }
+
+  if (_test_sources == []) {
+    assert(!defined(invoker.python_test_deps),
+           "python_test_deps was provided, but there are no tests in " +
+               get_label_info(":$target_name", "label_no_toolchain"))
+    not_needed(_python_test_deps)
   }
 
   _internal_target = "$target_name._internal"
@@ -225,6 +241,14 @@ template("pw_python_package") {
     ]
   }
 
+  if (_should_lint || _test_sources != []) {
+    # Packages that must be installed to use the package or run its tests.
+    _test_install_deps = []
+    foreach(dep, _python_test_deps) {
+      _test_install_deps += [ "$dep.install" ]
+    }
+  }
+
   # For packages that are not generated, create targets to run mypy and pylint.
   # Linting is not performed on generated packages.
   if (_should_lint) {
@@ -262,8 +286,9 @@ template("pw_python_package") {
       directory = _lint_directory
       stamp = true
 
-      deps = [ ":$_internal_target.install" ]
-      foreach(dep, _python_deps) {
+      deps = _test_install_deps
+
+      foreach(dep, _python_test_deps) {
         deps += [ "$dep.lint.mypy" ]
       }
     }
@@ -293,8 +318,9 @@ template("pw_python_package") {
       directory = _lint_directory
       stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
 
-      deps = [ ":$_internal_target.install" ]
-      foreach(dep, _python_deps) {
+      deps = _test_install_deps
+
+      foreach(dep, _python_test_deps) {
         deps += [ "$dep.lint.pylint" ]
       }
     }
@@ -322,8 +348,9 @@ template("pw_python_package") {
       script = test
       stamp = true
 
-      deps = [ ":$_internal_target.install" ]
-      foreach(dep, _python_deps) {
+      deps = _test_install_deps
+
+      foreach(dep, _python_test_deps) {
         deps += [ "$dep.tests" ]
       }
     }
