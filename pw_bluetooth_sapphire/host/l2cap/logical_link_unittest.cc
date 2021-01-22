@@ -65,5 +65,32 @@ TEST_F(L2CAP_LogicalLinkTest, FixedChannelHasCorrectMtu) {
   EXPECT_EQ(kMaxMTU, fixed_chan->max_tx_sdu_size());
 }
 
+TEST_F(L2CAP_LogicalLinkTest, DropsBroadcastPackets) {
+  link()->Close();
+  NewLogicalLink(Conn::LinkType::kACL);
+  fbl::RefPtr<Channel> connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
+  ASSERT_TRUE(connectionless_chan);
+
+  size_t rx_count = 0;
+  bool activated = connectionless_chan->Activate([&](ByteBufferPtr) { rx_count++; }, []() {});
+  ASSERT_TRUE(activated);
+
+  auto group_frame = CreateStaticByteBuffer(0x0A, 0x00,  // Length (PSM + info = 10)
+                                            0x02, 0x00,  // Connectionless data channel
+                                            0xF0, 0x0F,  // PSM
+                                            'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
+  );
+  auto packet =
+      hci::ACLDataPacket::New(0x0001, hci::ACLPacketBoundaryFlag::kCompletePDU,
+                              hci::ACLBroadcastFlag::kActiveSlaveBroadcast, group_frame.size());
+  ASSERT_TRUE(packet);
+  packet->mutable_view()->mutable_payload_data().Write(group_frame);
+
+  link()->HandleRxPacket(std::move(packet));
+
+  // Should be dropped.
+  EXPECT_EQ(0u, rx_count);
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

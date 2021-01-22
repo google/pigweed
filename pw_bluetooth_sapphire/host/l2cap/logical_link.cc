@@ -183,6 +183,13 @@ void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
 
   TRACE_DURATION("bluetooth", "LogicalLink::HandleRxPacket", "handle", handle_);
 
+  // We do not support the Connectionless data channel, and the active broadcast flag can
+  // only be used on the connectionless channel.  Drop packets that are broadcast.
+  if (packet->broadcast_flag() == hci::ACLBroadcastFlag::kActiveSlaveBroadcast) {
+    bt_log(DEBUG, "l2cap", "Unsupported Broadcast Frame dropped");
+    return;
+  }
+
   auto result = recombiner_.ConsumeFragment(std::move(packet));
   if (result.frames_dropped) {
     bt_log(TRACE, "l2cap", "Frame(s) dropped due to recombination error");
