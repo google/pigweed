@@ -59,6 +59,9 @@ constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
 
 constexpr uint8_t kMaxUint8 = std::numeric_limits<uint8_t>::max();
 
+// The length of the service data field must fit in a uint8_t, so uint8_t::MAX - 1 byte for type.
+constexpr uint8_t kMaxEncodedServiceDataLength = kMaxUint8 - 1;
+
 // The length of an encoded URI together with its 1-byte type field must not exceed uint8_t limits
 constexpr uint8_t kMaxEncodedUriLength = kMaxUint8 - 1;
 
@@ -102,8 +105,9 @@ class AdvertisingData {
   // Get the service UUIDs represented in this advertisement.
   const std::unordered_set<UUID>& service_uuids() const;
 
-  // Set some service data for the service specified by |uuid|.
-  void SetServiceData(const UUID& uuid, const ByteBuffer& data);
+  // Set service data for the service specified by |uuid|. Returns true if the data was set, false
+  // otherwise. Failure occurs if |uuid| + |data| exceed kMaxEncodedServiceDataLength when encoded.
+  [[nodiscard]] bool SetServiceData(const UUID& uuid, const ByteBuffer& data);
 
   // Get a set of which UUIDs have service data in this advertisement.
   std::unordered_set<UUID> service_data_uuids() const;
@@ -181,6 +185,9 @@ class AdvertisingData {
   std::optional<uint16_t> appearance_;
   std::unordered_set<UUID> service_uuids_;
   std::unordered_map<uint16_t, DynamicByteBuffer> manufacturer_data_;
+
+  // For each element in `service_data_`, the compact size of the UUID + the buffer length is always
+  // <= kkMaxEncodedServiceDataLength
   std::unordered_map<UUID, DynamicByteBuffer> service_data_;
 
   std::unordered_set<std::string> uris_;

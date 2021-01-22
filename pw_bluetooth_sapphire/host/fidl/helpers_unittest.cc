@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "adapter_test_fixture.h"
+#include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
 #include "lib/fidl/cpp/comparison.h"
@@ -241,17 +242,32 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.manufacturer_data(kCompanyId2)));
 }
 
+// Each field for this test first attempts to perform the too-long conversion, and then verifies
+// that the bounds are where expected by performing a successful conversion with a field that just
+// fits in the encoded version. This also enables using the same `input` throughout the test.
 TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
   fble::AdvertisingData input;
   // This is the longest encoding scheme known to Fuchsia BT, so this represents the longest string
   // allowed (and subsequently, too long to be allowed) by both FIDL and internal invariants.
   std::string uri = "ms-settings-cloudstorage:";
-  uri += std::string(fble::MAX_URI_LENGTH - uri.size() - 1, '.');
-  input.set_uris({uri});
-  EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
-  uri += '.';
+  uri += std::string(fble::MAX_URI_LENGTH - uri.size(), '.');
   input.set_uris({uri});
   EXPECT_FALSE(AdvertisingDataFromFidl(input).has_value());
+  // This string should fit when it is one character shorter.
+  uri.pop_back();
+  input.set_uris({uri});
+  EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
+
+  // Ensure encoded service data that is too long is rejected.
+  const fbt::Uuid kUuid1{.value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
+  // |kUuid1| = 16 bytes, i.e. 14 bytes longer than the shortest possible encoded UUID (2 bytes).
+  std::vector too_long_data(fble::MAX_SERVICE_DATA_LENGTH - 13, uint8_t{0xAB});
+  input.set_service_data(std::vector({fble::ServiceData{.uuid = kUuid1, .data = too_long_data}}));
+  EXPECT_FALSE(AdvertisingDataFromFidl(input).has_value());
+  // A vector that is 1 byte shorter than too_long_data should convert successfully
+  std::vector data_that_fits(too_long_data.size() - 1, too_long_data[0]);
+  input.set_service_data(std::vector({fble::ServiceData{.uuid = kUuid1, .data = data_that_fits}}));
+  EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
@@ -279,7 +295,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
   const bt::UUID test_uuid = bt::UUID(id);
   auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
   input.AddServiceUuid(test_uuid);
-  input.SetServiceData(test_uuid, service_bytes.view());
+  EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;
   auto manufacturer_bytes = bt::CreateStaticByteBuffer(0x04, 0x03);
@@ -342,7 +358,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   const bt::UUID test_uuid = bt::UUID(id);
   auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
   input.AddServiceUuid(test_uuid);
-  input.SetServiceData(test_uuid, service_bytes.view());
+  EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;
   auto manufacturer_bytes = bt::CreateStaticByteBuffer(0x04, 0x03);

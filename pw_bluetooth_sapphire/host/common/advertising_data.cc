@@ -64,6 +64,10 @@ UUIDElemSize SizeForType(DataType type) {
   return UUIDElemSize::k16Bit;
 }
 
+size_t EncodedServiceDataSize(const UUID& uuid, const BufferView data) {
+  return uuid.CompactSize() + data.size();
+}
+
 // clang-format off
 // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping
 const char* kUriSchemes[] = {"aaa:", "aaas:", "about:", "acap:", "acct:", "cap:", "cid:",
@@ -222,7 +226,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         if (!UUID::FromBytes(uuid_bytes, &uuid))
           return std::nullopt;
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
-        out_ad.SetServiceData(uuid, service_data);
+        ZX_ASSERT(out_ad.SetServiceData(uuid, service_data));
         break;
       }
       case DataType::kAppearance: {
@@ -270,7 +274,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
     out->SetManufacturerData(it.first, it.second.view());
   }
   for (const auto& it : service_data_) {
-    out->SetServiceData(it.first, it.second.view());
+    ZX_ASSERT(out->SetServiceData(it.first, it.second.view()));
   }
   for (const auto& it : uris_) {
     ZX_ASSERT_MSG(out->AddUri(it), "Copying invalid AD with too-long URI");
@@ -281,10 +285,16 @@ void AdvertisingData::AddServiceUuid(const UUID& uuid) { service_uuids_.insert(u
 
 const std::unordered_set<UUID>& AdvertisingData::service_uuids() const { return service_uuids_; }
 
-void AdvertisingData::SetServiceData(const UUID& uuid, const ByteBuffer& data) {
-  DynamicByteBuffer srv_data(data.size());
-  data.Copy(&srv_data);
-  service_data_[uuid] = std::move(srv_data);
+[[nodiscard]] bool AdvertisingData::SetServiceData(const UUID& uuid, const ByteBuffer& data) {
+  size_t encoded_size = EncodedServiceDataSize(uuid, data.view());
+  if (encoded_size > kMaxEncodedServiceDataLength) {
+    bt_log(WARN, "gap-le",
+           "SetServiceData for UUID %s failed: (UUID+data) size %zu > maximum allowed size %du",
+           bt_str(uuid), encoded_size, kMaxEncodedServiceDataLength);
+    return false;
+  }
+  service_data_[uuid] = DynamicByteBuffer(data);
+  return true;
 }
 
 std::unordered_set<UUID> AdvertisingData::service_data_uuids() const {
@@ -452,9 +462,12 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   }
 
   for (const auto& service_data_pair : service_data_) {
-    UUIDElemSize uuid_size = service_data_pair.first.CompactSize();
-    (*buffer)[pos++] = 1 + uuid_size + service_data_pair.second.size();
-    switch (uuid_size) {
+    UUID uuid = service_data_pair.first;
+    size_t encoded_service_data_size =
+        EncodedServiceDataSize(uuid, service_data_pair.second.view());
+    ZX_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
+    (*buffer)[pos++] = 1 + static_cast<uint8_t>(encoded_service_data_size);
+    switch (uuid.CompactSize()) {
       case UUIDElemSize::k16Bit:
         (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData16Bit);
         break;

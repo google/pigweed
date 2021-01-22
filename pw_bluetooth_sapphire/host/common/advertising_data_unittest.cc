@@ -240,7 +240,7 @@ TEST(GAP_AdvertisingDataTest, Move) {
   source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
-  source.SetServiceData(heart_rate_uuid, rand_data.view());
+  EXPECT_TRUE(source.SetServiceData(heart_rate_uuid, rand_data.view()));
 
   auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
     SCOPED_TRACE(type);
@@ -297,7 +297,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
   data.AddServiceUuid(service_uuid);
-  data.SetServiceData(service_uuid, service_bytes.view());
+  EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
 
@@ -344,7 +344,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
   data.AddServiceUuid(service_uuid);
-  data.SetServiceData(service_uuid, service_bytes.view());
+  EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
 
@@ -382,6 +382,18 @@ TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   EXPECT_TRUE(data.AddUri(uri));
   uri += '.';
   EXPECT_FALSE(data.AddUri(uri));
+
+  // Attempt to set slightly too long advertising data.
+  UUID two_byte_uuid{kHeartRateServiceUuid};
+  DynamicByteBuffer long_data(kMaxEncodedServiceDataLength - 1);
+  long_data.Fill(0xAB);
+  EXPECT_FALSE(data.SetServiceData(two_byte_uuid, long_data));
+  // An empty DynamicByteBuffer represents unset service data per the header.
+  EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.service_data(two_byte_uuid)));
+  // Now use a view that is just small enough to fit when encoded
+  BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
+  EXPECT_TRUE(data.SetServiceData(two_byte_uuid, view));
+  EXPECT_TRUE(ContainersEqual(view, data.service_data(two_byte_uuid)));
 }
 }  // namespace
 }  // namespace bt

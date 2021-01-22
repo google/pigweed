@@ -801,9 +801,9 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::Advertisi
   }
   if (input.has_service_data()) {
     for (const auto& entry : input.service_data()) {
-      bt::UUID uuid = UuidFromFidl(entry.uuid);
-      bt::BufferView data(entry.data);
-      output.SetServiceData(uuid, data);
+      if (!output.SetServiceData(UuidFromFidl(entry.uuid), bt::BufferView(entry.data))) {
+        return std::nullopt;
+      }
     }
   }
   if (input.has_manufacturer_data()) {
