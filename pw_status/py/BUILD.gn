@@ -18,9 +18,6 @@ import("$dir_pw_build/python.gni")
 
 pw_python_package("py") {
   setup = [ "setup.py" ]
-  sources = [
-    "pw_status/__init__.py",
-    "pw_status/update_style.py",
-  ]
+  sources = [ "pw_status/__init__.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
