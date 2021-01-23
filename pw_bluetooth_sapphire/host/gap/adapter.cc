@@ -1046,7 +1046,7 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
         }
 
         if (result.is_error()) {
-          bt_log(ERROR, "gap", "failed to auto-connect (error: %s)",
+          bt_log(INFO, "gap", "failed to auto-connect (error: %s)",
                  HostErrorToString(result.error()).c_str());
           return;
         }
