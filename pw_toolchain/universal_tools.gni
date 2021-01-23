@@ -12,17 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-import("//build_overrides/pigweed.gni")
-
 pw_universal_copy = {
   if (host_os == "win") {
-    command = string_join(" ",
-                          [
-                            python_path,
-                            rebase_path("$dir_pw_toolchain/copy_file.py"),
-                            "{{source}}",
-                            "{{output}}",
-                          ])
+    command = "cp -af {{source}} {{output}}"
   } else {
     # Use a hard link if possible as this is faster. Also, Mac doesn't
     # preserve timestamps properly with cp -af.

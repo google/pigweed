@@ -139,7 +139,6 @@ pw_python_group("python") {
     "$dir_pw_rpc/py",
     "$dir_pw_status/py",
     "$dir_pw_tokenizer/py",
-    "$dir_pw_toolchain/py",
     "$dir_pw_trace/py",
     "$dir_pw_trace_tokenized/py",
     "$dir_pw_unit_test/py",
