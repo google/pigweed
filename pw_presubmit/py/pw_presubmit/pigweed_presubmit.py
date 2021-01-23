@@ -482,7 +482,7 @@ def commit_message_format(_: PresubmitContext):
     # might possibly have a URL, path, or metadata in them. Also skip any lines
     # with non-ASCII characters.
     for i, line in enumerate(lines[2:], 3):
-        if ':' in line or '/' in line or not line.isascii():
+        if any(c in line for c in ':/>') or not line.isascii():
             continue
 
         if len(line) > 72:
