@@ -62,9 +62,6 @@ if (dir_pw_third_party_freertos != "") {
     sources = [
       "$dir_pw_third_party_freertos/Source/croutine.c",
       "$dir_pw_third_party_freertos/Source/event_groups.c",
-
-      # Put here to ensure it cannot be included.
-      "$dir_pw_third_party_freertos/Source/include/FreeRTOSConfig_template.h",
       "$dir_pw_third_party_freertos/Source/list.c",
       "$dir_pw_third_party_freertos/Source/queue.c",
       "$dir_pw_third_party_freertos/Source/stream_buffer.c",
