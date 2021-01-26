@@ -48,10 +48,7 @@ template("pw_fuzzer") {
       if (!defined(configs)) {
         configs = []
       }
-      configs += [
-        "$dir_pw_fuzzer:default_config",
-        "$dir_pw_fuzzer:sanitize_${pw_toolchain_SANITIZER}",
-      ]
+      configs += [ "$dir_pw_fuzzer:default_config" ]
       if (pw_toolchain_OSS_FUZZ_ENABLED) {
         configs += [ "$dir_pw_fuzzer:oss_fuzz" ]
       } else {

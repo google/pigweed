@@ -30,29 +30,6 @@ config("fuzzing") {
   ldflags = common_flags
 }
 
-config("sanitize_address") {
-  cflags = [ "-fsanitize=address" ]
-  ldflags = cflags
-}
-
-config("sanitize_memory") {
-  cflags = [ "-fsanitize=memory" ]
-  ldflags = cflags
-}
-
-config("sanitize_undefined") {
-  cflags = [ "-fsanitize=undefined" ]
-  ldflags = cflags
-}
-
-config("sanitize_coverage") {
-  cflags = [
-    "-fprofile-instr-generate",
-    "-fcoverage-mapping",
-  ]
-  ldflags = cflags
-}
-
 # OSS-Fuzz needs to be able to specify its own compilers and add flags.
 config("oss_fuzz") {
   # OSS-Fuzz doesn't always link with -fsanitize=fuzzer, sometimes it uses

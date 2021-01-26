@@ -14,8 +14,6 @@
 
 # TODO(aarongreen): Do some minimal parsing on the environment variables to
 # identify conflicting configs.
-oss_fuzz_added_configs = []
-oss_fuzz_removed_configs = []
 oss_fuzz_extra_cflags_c = string_split(getenv("CFLAGS"))
 oss_fuzz_extra_cflags_cc = string_split(getenv("CXXFLAGS"))
 oss_fuzz_extra_ldflags = string_split(getenv("LDFLAGS"))

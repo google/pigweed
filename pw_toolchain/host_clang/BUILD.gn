@@ -30,6 +30,14 @@ config("sanitize_undefined") {
   ldflags = cflags
 }
 
+config("sanitize_coverage") {
+  cflags = [
+    "-fprofile-instr-generate",
+    "-fcoverage-mapping",
+  ]
+  ldflags = cflags
+}
+
 # Locate XCode's sysroot for Clang.
 config("xcode_sysroot") {
   if (current_os == "mac") {
