@@ -17,7 +17,6 @@
 import logging
 import os
 import shutil
-import stat
 import sys
 
 _LOG = logging.getLogger(__name__)
@@ -34,8 +33,8 @@ def copy_with_metadata(src, dest):
             shutil.copytree(src, dest, symlinks=True)
         else:
             shutil.copy2(src, dest, follow_symlinks=False)
-    except:
-        _LOG.error('Error during copying procedure.')
+    except:  # pylint: disable=bare-except
+        _LOG.exception('Error during copying procedure.')
         return -1
 
     return 0
