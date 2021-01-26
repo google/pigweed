@@ -29,7 +29,9 @@ toolchain("dummy") {
 
   # If the user tries to build a target with the default toolchain, run a script
   # printing out the error.
-  _bad_toolchain_command = "python " + rebase_path("bad_toolchain.py")
+  _bad_toolchain_command =
+      "python " +
+      rebase_path("$dir_pw_toolchain/py/pw_toolchain/bad_toolchain.py")
 
   tool("asm") {
     command = _bad_toolchain_command
