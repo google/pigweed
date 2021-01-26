@@ -14,7 +14,7 @@
 # the License.
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
-from typing import Iterator, List, NamedTuple, Tuple
+from typing import Iterator, List, NamedTuple, Tuple, Union
 import unittest
 
 from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
@@ -48,6 +48,18 @@ class Expected(NamedTuple):
                 and self.data == other.data and self.status is other.status)
 
 
+class ExpectedRaw(NamedTuple):
+    raw_encoded: bytes
+    status: FrameStatus
+
+    def __eq__(self, other) -> bool:
+        """Define == so an ExpectedRaw and a Frame can be compared."""
+        return (self.raw_encoded == other.raw_encoded
+                and self.status is other.status)
+
+
+Expectation = Union[Expected, ExpectedRaw]
+
 _PARTIAL = fcs(b'\x0ACmsg\x5e')
 _ESCAPED_FLAG_TEST_CASE = (
     b'\x7e\x0ACmsg\x7d\x7e' + _PARTIAL + b'\x7e',
@@ -57,7 +69,7 @@ _ESCAPED_FLAG_TEST_CASE = (
     ],
 )
 
-TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expected]]], ...] = (
+TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expectation]]], ...] = (
     'Empty payload',
     (_encode(0, 0, b''), [Expected(0, b'\0', b'')]),
     (_encode(55, 0x99, b''), [Expected(55, b'\x99', b'')]),
@@ -154,6 +166,16 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expected]]], ...] = (
     (b'\x7e1234\x7da' + _encode(1, 2, b'3'),
      [Expected.error(FrameStatus.FRAMING_ERROR),
       Expected(1, b'\2', b'3')]),
+    'Invalid frame records raw data',
+    (b'Hello?~', [ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR)]),
+    (b'~~Hel\x7d\x7dlo~',
+     [ExpectedRaw(b'Hel\x7d\x7dlo', FrameStatus.FRAMING_ERROR)]),
+    (b'Hello?~~~~~', [ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR)]),
+    (b'~~~~Hello?~~~~~', [ExpectedRaw(b'Hello?', FrameStatus.FCS_MISMATCH)]),
+    (b'Hello?~~Goodbye~', [
+        ExpectedRaw(b'Hello?', FrameStatus.FRAMING_ERROR),
+        ExpectedRaw(b'Goodbye', FrameStatus.FCS_MISMATCH),
+    ]),
 )  # yapf: disable
 # Formatting for the above tuple is very slow, so disable yapf.
 
@@ -198,7 +220,8 @@ def _cpp_test(ctx: Context) -> Iterator[str]:
 
     for i, frame in enumerate(frames, 1):
         if frame.status is FrameStatus.OK:
-            frame_bytes = ''.join(rf'\x{byte:02x}' for byte in frame.raw)
+            frame_bytes = ''.join(rf'\x{byte:02x}'
+                                  for byte in frame.raw_decoded)
             yield (f'  static constexpr auto kDecodedFrame{i:02} = '
                    f'bytes::String("{frame_bytes}");')
         else:

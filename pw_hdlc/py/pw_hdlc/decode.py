@@ -13,9 +13,10 @@
 # the License.
 """Decoder class for decoding bytes using HDLC protocol"""
 
+from dataclasses import dataclass
 import enum
 import logging
-from typing import Iterator, NamedTuple, Optional
+from typing import Iterator, Optional
 import zlib
 
 from pw_hdlc import protocol
@@ -33,11 +34,15 @@ class FrameStatus(enum.Enum):
     FRAMING_ERROR = 'invalid flag or escape characters'
 
 
-class Frame(NamedTuple):
+@dataclass(frozen=True)
+class Frame:
     """Represents an HDLC frame."""
 
-    # All bytes in the frame (address, control, information, FCS)
-    raw: bytes
+    # The complete HDLC-encoded frame, excluding HDLC flag characters.
+    raw_encoded: bytes
+
+    # The complete decoded frame (address, control, information, FCS).
+    raw_decoded: bytes
 
     # Whether parsing the frame succeeded.
     status: FrameStatus = FrameStatus.OK
@@ -45,17 +50,17 @@ class Frame(NamedTuple):
     @property
     def address(self) -> int:
         """The frame's address field (assumes only one byte for now)."""
-        return self.raw[0] if self.ok() else NO_ADDRESS
+        return self.raw_decoded[0] if self.ok() else NO_ADDRESS
 
     @property
     def control(self) -> bytes:
         """The control byte (assumes only one byte for now)."""
-        return self.raw[1:2] if self.ok() else b''
+        return self.raw_decoded[1:2] if self.ok() else b''
 
     @property
     def data(self) -> bytes:
         """The information field in the frame."""
-        return self.raw[2:-4] if self.ok() else b''
+        return self.raw_decoded[2:-4] if self.ok() else b''
 
     def ok(self) -> bool:
         """True if this represents a valid frame.
@@ -96,7 +101,8 @@ def _check_frame(frame_data: bytes) -> FrameStatus:
 class FrameDecoder:
     """Decodes one or more HDLC frames from a stream of data."""
     def __init__(self):
-        self._data = bytearray()
+        self._decoded_data = bytearray()
+        self._raw_data = bytearray()
         self._state = _State.INTERFRAME
 
     def process(self, data: bytes) -> Iterator[Frame]:
@@ -120,43 +126,48 @@ class FrameDecoder:
                 yield frame
             else:
                 _LOG.warning('Failed to decode frame: %s; discarded %d bytes',
-                             frame.status.value, len(frame.data))
-                _LOG.debug('Discarded data: %s', frame.data)
+                             frame.status.value, len(frame.raw_encoded))
+                _LOG.debug('Discarded data: %s', frame.raw_encoded)
+
+    def _finish_frame(self, status: FrameStatus) -> Frame:
+        frame = Frame(bytes(self._raw_data), bytes(self._decoded_data), status)
+        self._raw_data.clear()
+        self._decoded_data.clear()
+        return frame
 
     def _process_byte(self, byte: int) -> Optional[Frame]:
         frame: Optional[Frame] = None
 
+        # Record every byte except the flag character.
+        if byte != protocol.FLAG:
+            self._raw_data.append(byte)
+
         if self._state is _State.INTERFRAME:
             if byte == protocol.FLAG:
-                if self._data:
-                    frame = Frame(bytes(self._data), FrameStatus.FRAMING_ERROR)
+                if self._raw_data:
+                    frame = self._finish_frame(FrameStatus.FRAMING_ERROR)
 
                 self._state = _State.FRAME
-                self._data.clear()
-            else:
-                self._data.append(byte)
         elif self._state is _State.FRAME:
             if byte == protocol.FLAG:
-                if self._data:
-                    frame = Frame(bytes(self._data), _check_frame(self._data))
+                if self._raw_data:
+                    frame = self._finish_frame(_check_frame(
+                        self._decoded_data))
 
                 self._state = _State.FRAME
-                self._data.clear()
             elif byte == protocol.ESCAPE:
                 self._state = _State.FRAME_ESCAPE
             else:
-                self._data.append(byte)
+                self._decoded_data.append(byte)
         elif self._state is _State.FRAME_ESCAPE:
             if byte == protocol.FLAG:
-                frame = Frame(bytes(self._data), FrameStatus.FRAMING_ERROR)
+                frame = self._finish_frame(FrameStatus.FRAMING_ERROR)
                 self._state = _State.FRAME
-                self._data.clear()
-            elif byte in (0x5d, 0x5e):  # Valid escape characters
+            elif byte in protocol.VALID_ESCAPED_BYTES:
                 self._state = _State.FRAME
-                self._data.append(protocol.escape(byte))
+                self._decoded_data.append(protocol.escape(byte))
             else:
                 self._state = _State.INTERFRAME
-                self._data.append(byte)
         else:
             raise AssertionError(f'Invalid decoder state: {self._state}')
 

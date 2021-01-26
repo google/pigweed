@@ -21,6 +21,9 @@ FLAG = 0x7E
 # Special character for escaping other special characters in a frame.
 ESCAPE = 0x7D
 
+# Characters allowed after a 0x7d escape character.
+VALID_ESCAPED_BYTES = 0x5D, 0x5E
+
 
 def escape(byte: int) -> int:
     """Escapes or unescapes a byte, which should have been preceeded by 0x7d."""
