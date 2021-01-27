@@ -95,6 +95,3 @@ PW_PACKED(struct) pw_cpu_exception_State {
   // availability of the FPU registers a compile-time configuration when FPU
   // register support is added.
 };
-
-// TODO(pwbug/311): Deprecated naming.
-typedef pw_cpu_exception_State pw_CpuExceptionState;

@@ -42,6 +42,3 @@
 // Note: applications should almost never invoke this directly; if you do, make
 // sure you know what you are doing.
 PW_EXTERN_C PW_NO_PROLOGUE void pw_cpu_exception_Entry(void);
-
-// TODO(pwbug/311) Deprecated naming.
-PW_EXTERN_C PW_NO_PROLOGUE void pw_CpuExceptionEntry(void);

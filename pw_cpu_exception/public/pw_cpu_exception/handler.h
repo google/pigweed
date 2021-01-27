@@ -52,13 +52,4 @@ PW_USED void pw_cpu_exception_DefaultHandler(pw_cpu_exception_State* state);
 // This calls the currently set handler.
 void pw_cpu_exception_HandleException(void* cpu_state);
 
-// TODO(pwbug/311) Deprecated naming.
-typedef pw_cpu_exception_State pw_CpuExceptionState;
-#define pw_CpuExceptionSetHandler(...) pw_cpu_exception_SetHandler(__VA_ARGS__)
-#define pw_CpuExceptionRestoreDefaultHandler(...) \
-  pw_cpu_exception_RestoreDefaultHandler(__VA_ARGS__)
-#define pw_CpuExceptionDefaultHandler(...) \
-  pw_cpu_exception_DefaultHandler(__VA_ARGS__)
-#define pw_HandleCpuException(...) pw_cpu_exception_HandleException(__VA_ARGS__)
-
 PW_EXTERN_C_END

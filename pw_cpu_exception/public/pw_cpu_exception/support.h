@@ -26,9 +26,6 @@
 // backend.
 struct pw_cpu_exception_State;
 
-// TODO(pwbug/311) Deprecated naming.
-typedef pw_cpu_exception_State pw_CpuExceptionState;
-
 namespace pw::cpu_exception {
 
 // Gets raw CPU state as a single contiguous block of data. The particular
