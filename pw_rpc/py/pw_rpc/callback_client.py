@@ -40,11 +40,12 @@ When invoking a method, requests may be provided as a message object or as
 kwargs for the message fields (but not both).
 """
 
+import enum
 import inspect
 import logging
 import queue
 import textwrap
-from typing import Any, Callable, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Union, Optional
 
 from pw_status import Status
 
@@ -54,16 +55,26 @@ from pw_rpc.descriptors import Channel, Method, Service
 
 _LOG = logging.getLogger(__name__)
 
+
+class _UseDefault(enum.Enum):
+    """Marker for args that should use a default value, when None is valid."""
+    VALUE = 0
+
+
+_OptionalTimeout = Union[_UseDefault, float, None]
+
 Callback = Callable[[client.PendingRpc, Optional[Status], Any], Any]
 
 
 class _MethodClient:
     """A method that can be invoked for a particular channel."""
     def __init__(self, client_impl: 'Impl', rpcs: client.PendingRpcs,
-                 channel: Channel, method: Method):
+                 channel: Channel, method: Method,
+                 default_timeout_s: Optional[float]):
         self._impl = client_impl
         self._rpcs = rpcs
         self._rpc = client.PendingRpc(channel, method.service, method)
+        self.default_timeout_s: Optional[float] = default_timeout_s
 
     @property
     def channel(self) -> Channel:
@@ -120,6 +131,14 @@ class _MethodClient:
             f'  Returns {annotation}.')
 
 
+class RpcTimeout(Exception):
+    def __init__(self, rpc: client.PendingRpc, timeout: Optional[float]):
+        super().__init__(
+            f'No response received for {rpc.method} after {timeout} s')
+        self.rpc = rpc
+        self.timeout = timeout
+
+
 class _AsyncCall:
     """Represents an ongoing callback-based call."""
 
@@ -141,21 +160,48 @@ class _AsyncCall:
 
 class StreamingResponses:
     """Used to iterate over a queue.SimpleQueue."""
-    def __init__(self, method: Method, responses: queue.SimpleQueue):
-        self.method = method
+    def __init__(self, method_client: _MethodClient,
+                 responses: queue.SimpleQueue,
+                 default_timeout_s: _OptionalTimeout):
+        self._method_client = method_client
         self._queue = responses
         self.status: Optional[Status] = None
 
-    def get(self, *, block: bool = True, timeout_s: float = None):
-        while True:
-            self.status, response = self._queue.get(block, timeout_s)
-            if self.status is not None:
-                return
+        if default_timeout_s is _UseDefault.VALUE:
+            self.default_timeout_s = self._method_client.default_timeout_s
+        else:
+            self.default_timeout_s = default_timeout_s
 
-            yield response
+    @property
+    def method(self) -> Method:
+        return self._method_client.method
+
+    def responses(self,
+                  *,
+                  block: bool = True,
+                  timeout_s: _OptionalTimeout = _UseDefault.VALUE):
+        """Returns an iterator of stream responses.
+
+        Args:
+          timeout_s: timeout in seconds; None blocks indefinitely
+        """
+        if timeout_s is _UseDefault.VALUE:
+            timeout_s = self.default_timeout_s
+
+        try:
+            while True:
+                self.status, response = self._queue.get(block, timeout_s)
+                if self.status is not None:
+                    return
+
+                yield response
+        except queue.Empty:
+            pass
+
+        raise RpcTimeout(self._method_client._rpc, timeout_s)  # pylint: disable=protected-access
 
     def __iter__(self):
-        return self.get()
+        return self.responses()
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}({self.method})'
@@ -206,15 +252,31 @@ class UnaryResponse(NamedTuple):
 
 
 def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
-                        channel: Channel, method: Method) -> _MethodClient:
+                        channel: Channel, method: Method,
+                        default_timeout: Optional[float]) -> _MethodClient:
     """Creates an object used to call a unary method."""
-    def call(self, _rpc_request_proto=None, **request_fields) -> UnaryResponse:
+    def call(self: _MethodClient,
+             _rpc_request_proto=None,
+             *,
+             pw_rpc_timeout_s=_UseDefault.VALUE,
+             **request_fields) -> UnaryResponse:
         responses: queue.SimpleQueue = queue.SimpleQueue()
-        self.reinvoke(
-            lambda _, status, payload: responses.put(
-                UnaryResponse(status, payload)), _rpc_request_proto,
-            **request_fields)
-        return responses.get()
+
+        def enqueue_response(_, status: Optional[Status], payload: Any):
+            assert isinstance(status, Status)
+            responses.put(UnaryResponse(status, payload))
+
+        self.reinvoke(enqueue_response, _rpc_request_proto, **request_fields)
+
+        if pw_rpc_timeout_s is _UseDefault.VALUE:
+            pw_rpc_timeout_s = self.default_timeout_s
+
+        try:
+            return responses.get(timeout=pw_rpc_timeout_s)
+        except queue.Empty:
+            pass
+
+        raise RpcTimeout(self._rpc, pw_rpc_timeout_s)  # pylint: disable=protected-access
 
     _update_function_signature(method, call)
 
@@ -223,21 +285,25 @@ def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
     method_client_type = type(
         f'{method.name}_UnaryMethodClient', (_MethodClient, ),
         dict(__call__=call, __doc__=_method_client_docstring(method)))
-    return method_client_type(client_impl, rpcs, channel, method)
+    return method_client_type(client_impl, rpcs, channel, method,
+                              default_timeout)
 
 
 def server_streaming_method_client(client_impl: 'Impl',
                                    rpcs: client.PendingRpcs, channel: Channel,
-                                   method: Method):
+                                   method: Method,
+                                   default_timeout: Optional[float]):
     """Creates an object used to call a server streaming method."""
-    def call(self,
+    def call(self: _MethodClient,
              _rpc_request_proto=None,
+             *,
+             pw_rpc_timeout_s=_UseDefault.VALUE,
              **request_fields) -> StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(
             lambda _, status, payload: responses.put((status, payload)),
             _rpc_request_proto, **request_fields)
-        return StreamingResponses(method, responses)
+        return StreamingResponses(self, responses, pw_rpc_timeout_s)
 
     _update_function_signature(method, call)
 
@@ -246,7 +312,8 @@ def server_streaming_method_client(client_impl: 'Impl',
     method_client_type = type(
         f'{method.name}_ServerStreamingMethodClient', (_MethodClient, ),
         dict(__call__=call, __doc__=_method_client_docstring(method)))
-    return method_client_type(client_impl, rpcs, channel, method)
+    return method_client_type(client_impl, rpcs, channel, method,
+                              default_timeout)
 
 
 class ClientStreamingMethodClient(_MethodClient):
@@ -267,22 +334,39 @@ class BidirectionalStreamingMethodClient(_MethodClient):
 
 class Impl(client.ClientImpl):
     """Callback-based client.ClientImpl."""
+    def __init__(self,
+                 default_unary_timeout_s: Optional[float] = 1.0,
+                 default_stream_timeout_s: Optional[float] = 1.0):
+        self._default_unary_timeout_s = default_unary_timeout_s
+        self._default_stream_timeout_s = default_stream_timeout_s
+
+    @property
+    def default_unary_timeout_s(self) -> Optional[float]:
+        return self._default_unary_timeout_s
+
+    @property
+    def default_stream_timeout_s(self) -> Optional[float]:
+        return self._default_stream_timeout_s
+
     def method_client(self, rpcs: client.PendingRpcs, channel: Channel,
                       method: Method) -> _MethodClient:
         """Returns an object that invokes a method using the given chanel."""
 
         if method.type is Method.Type.UNARY:
-            return unary_method_client(self, rpcs, channel, method)
+            return unary_method_client(self, rpcs, channel, method,
+                                       self.default_unary_timeout_s)
 
         if method.type is Method.Type.SERVER_STREAMING:
-            return server_streaming_method_client(self, rpcs, channel, method)
+            return server_streaming_method_client(
+                self, rpcs, channel, method, self.default_stream_timeout_s)
 
         if method.type is Method.Type.CLIENT_STREAMING:
-            return ClientStreamingMethodClient(self, rpcs, channel, method)
+            return ClientStreamingMethodClient(self, rpcs, channel, method,
+                                               self.default_unary_timeout_s)
 
         if method.type is Method.Type.BIDIRECTIONAL_STREAMING:
-            return BidirectionalStreamingMethodClient(self, rpcs, channel,
-                                                      method)
+            return BidirectionalStreamingMethodClient(
+                self, rpcs, channel, method, self.default_stream_timeout_s)
 
         raise AssertionError(f'Unknown method type {method.type}')
 

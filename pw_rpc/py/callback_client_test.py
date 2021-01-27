@@ -65,6 +65,7 @@ class CallbackClientImplTest(unittest.TestCase):
         self._client = client.Client.from_modules(
             callback_client.Impl(), [client.Channel(1, self._handle_request)],
             self._protos.modules())
+        self._service = self._client.channel(1).rpcs.pw.test1.PublicService
 
         self._last_request: packet_pb2.RpcPacket = None
         self._next_packets: List[Tuple[bytes, Status]] = []
@@ -135,14 +136,13 @@ class CallbackClientImplTest(unittest.TestCase):
         return message
 
     def test_invoke_unary_rpc(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
-        method = stub.SomeUnary.method
+        method = self._service.SomeUnary.method
 
         for _ in range(3):
             self._enqueue_response(1, method, Status.ABORTED,
                                    method.response_type(payload='0_o'))
 
-            status, response = stub.SomeUnary(magic_number=6)
+            status, response = self._service.SomeUnary(magic_number=6)
 
             self.assertEqual(
                 6,
@@ -152,18 +152,17 @@ class CallbackClientImplTest(unittest.TestCase):
             self.assertEqual('0_o', response.payload)
 
     def test_invoke_unary_rpc_with_callback(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
-        method = stub.SomeUnary.method
+        method = self._service.SomeUnary.method
 
         for _ in range(3):
             self._enqueue_response(1, method, Status.ABORTED,
                                    method.response_type(payload='0_o'))
 
             callback = mock.Mock()
-            stub.SomeUnary.invoke(callback, magic_number=5)
+            self._service.SomeUnary.invoke(callback, magic_number=5)
 
             callback.assert_called_once_with(
-                _rpc(stub.SomeUnary), Status.ABORTED,
+                _rpc(self._service.SomeUnary), Status.ABORTED,
                 method.response_type(payload='0_o'))
 
             self.assertEqual(
@@ -171,7 +170,7 @@ class CallbackClientImplTest(unittest.TestCase):
                 self._sent_payload(method.request_type).magic_number)
 
     def test_invoke_unary_rpc_callback_errors_suppressed(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService.SomeUnary
+        stub = self._service.SomeUnary
 
         self._enqueue_response(1, stub.method)
         exception_msg = 'YOU BROKE IT O-]-<'
@@ -187,18 +186,17 @@ class CallbackClientImplTest(unittest.TestCase):
         self.assertIs(status, Status.UNKNOWN)
 
     def test_invoke_unary_rpc_with_callback_cancel(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
         callback = mock.Mock()
 
         for _ in range(3):
-            call = stub.SomeUnary.invoke(callback, magic_number=55)
+            call = self._service.SomeUnary.invoke(callback, magic_number=55)
 
             self.assertIsNotNone(self._last_request)
             self._last_request = None
 
             # Try to invoke the RPC again before cancelling, which is an error.
             with self.assertRaises(client.Error):
-                stub.SomeUnary.invoke(callback, magic_number=56)
+                self._service.SomeUnary.invoke(callback, magic_number=56)
 
             self.assertTrue(call.cancel())
             self.assertFalse(call.cancel())  # Already cancelled, returns False
@@ -209,19 +207,17 @@ class CallbackClientImplTest(unittest.TestCase):
         callback.assert_not_called()
 
     def test_reinvoke_unary_rpc(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
         callback = mock.Mock()
 
         # The reinvoke method ignores pending rpcs, so can be called repeatedly.
         for _ in range(3):
             self._last_request = None
-            stub.SomeUnary.reinvoke(callback, magic_number=55)
+            self._service.SomeUnary.reinvoke(callback, magic_number=55)
             self.assertEqual(self._last_request.type,
                              packets.PacketType.REQUEST)
 
     def test_invoke_server_streaming(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
-        method = stub.SomeServerStreaming.method
+        method = self._service.SomeServerStreaming.method
 
         rep1 = method.response_type(payload='!!!')
         rep2 = method.response_type(payload='?')
@@ -231,16 +227,16 @@ class CallbackClientImplTest(unittest.TestCase):
             self._enqueue_response(1, method, response=rep2)
             self._enqueue_stream_end(1, method, Status.ABORTED)
 
-            self.assertEqual([rep1, rep2],
-                             list(stub.SomeServerStreaming(magic_number=4)))
+            self.assertEqual(
+                [rep1, rep2],
+                list(self._service.SomeServerStreaming(magic_number=4)))
 
             self.assertEqual(
                 4,
                 self._sent_payload(method.request_type).magic_number)
 
     def test_invoke_server_streaming_with_callback(self):
-        stub = self._client.channel(1).rpcs.pw.test1.PublicService
-        method = stub.SomeServerStreaming.method
+        method = self._service.SomeServerStreaming.method
 
         rep1 = method.response_type(payload='!!!')
         rep2 = method.response_type(payload='?')
@@ -251,9 +247,9 @@ class CallbackClientImplTest(unittest.TestCase):
             self._enqueue_stream_end(1, method, Status.ABORTED)
 
             callback = mock.Mock()
-            stub.SomeServerStreaming.invoke(callback, magic_number=3)
+            self._service.SomeServerStreaming.invoke(callback, magic_number=3)
 
-            rpc = _rpc(stub.SomeServerStreaming)
+            rpc = _rpc(self._service.SomeServerStreaming)
             callback.assert_has_calls([
                 mock.call(rpc, None, method.response_type(payload='!!!')),
                 mock.call(rpc, None, method.response_type(payload='?')),
@@ -265,8 +261,7 @@ class CallbackClientImplTest(unittest.TestCase):
                 self._sent_payload(method.request_type).magic_number)
 
     def test_invoke_server_streaming_with_callback_cancel(self):
-        stub = self._client.channel(
-            1).rpcs.pw.test1.PublicService.SomeServerStreaming
+        stub = self._service.SomeServerStreaming
 
         resp = stub.method.response_type(payload='!!!')
         self._enqueue_response(1, stub.method, response=resp)
@@ -342,6 +337,46 @@ class CallbackClientImplTest(unittest.TestCase):
     def test_rpc_help_contains_method_name(self):
         rpc = self._client.channel(1).rpcs.pw.test1.PublicService.SomeUnary
         self.assertIn(rpc.method.full_name, rpc.help())
+
+    def test_default_timeouts_set_on_impl(self):
+        impl = callback_client.Impl(None, 1.5)
+
+        self.assertEqual(impl.default_unary_timeout_s, None)
+        self.assertEqual(impl.default_stream_timeout_s, 1.5)
+
+    def test_default_timeouts_set_for_all_rpcs(self):
+        rpc_client = client.Client.from_modules(callback_client.Impl(
+            99, 100), [client.Channel(1, lambda *a, **b: None)],
+                                                self._protos.modules())
+        rpcs = rpc_client.channel(1).rpcs
+
+        self.assertEqual(
+            rpcs.pw.test1.PublicService.SomeUnary.default_timeout_s, 99)
+        self.assertEqual(
+            rpcs.pw.test1.PublicService.SomeServerStreaming.default_timeout_s,
+            100)
+
+    def test_timeout_unary(self):
+        with self.assertRaises(callback_client.RpcTimeout):
+            self._service.SomeUnary(pw_rpc_timeout_s=0.0001)
+
+    def test_timeout_unary_set_default(self):
+        self._service.SomeUnary.default_timeout_s = 0.0001
+
+        with self.assertRaises(callback_client.RpcTimeout):
+            self._service.SomeUnary()
+
+    def test_timeout_server_streaming_iteration(self):
+        responses = self._service.SomeServerStreaming(pw_rpc_timeout_s=0.0001)
+        with self.assertRaises(callback_client.RpcTimeout):
+            for _ in responses:
+                pass
+
+    def test_timeout_server_streaming_responses(self):
+        responses = self._service.SomeServerStreaming()
+        with self.assertRaises(callback_client.RpcTimeout):
+            for _ in responses.responses(timeout_s=0.0001):
+                pass
 
 
 if __name__ == '__main__':
