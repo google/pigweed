@@ -18,21 +18,22 @@
 // platform. By default, this module invokes the following user-defined function
 // after early exception handling completes:
 //
-//   pw_CpuExceptionDefaultHandler(pw_CpuExceptionState* state)
+//   pw_cpu_exception_DefaultHandler(pw_cpu_exception_State* state)
 //
 // If platform-dependent access to the CPU registers is needed, then
 // applications can include the respective backend module directly; for example
 // cpu_exception_armv7m.
 //
 // IMPORTANT: To use this module, you MUST implement
-//            pw_CpuExceptionDefaultHandler() in some part of your application.
+//            pw_cpu_exception_DefaultHandler() in some part of your
+//            application.
 
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
 // Low-level raw exception entry handler.
 //
-// Captures faulting CPU state into a platform-specific pw_CpuExceptionState
+// Captures faulting CPU state into a platform-specific pw_cpu_exception_State
 // object, then calls the user-provided fault handler.
 //
 // This function should be called immediately after a fault; typically by being
@@ -40,4 +41,7 @@
 //
 // Note: applications should almost never invoke this directly; if you do, make
 // sure you know what you are doing.
+PW_EXTERN_C PW_NO_PROLOGUE void pw_cpu_exception_Entry(void);
+
+// TODO(pwbug/311) Deprecated naming.
 PW_EXTERN_C PW_NO_PROLOGUE void pw_CpuExceptionEntry(void);

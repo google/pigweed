@@ -69,7 +69,7 @@ pw_facade("handler") {
 # This library is technically optional. It is recommended to use `support` when
 # doing basic dumps of CPU state. As an alternative, projects may choose to
 # directly depend on the entry backend if they require direct access to
-# pw_CpuExceptionState members.
+# pw_cpu_exception_State members.
 pw_facade("support") {
   backend = pw_cpu_exception_SUPPORT_BACKEND
   public_configs = [ ":default_config" ]

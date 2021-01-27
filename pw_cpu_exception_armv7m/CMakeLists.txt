@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +15,6 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_auto_add_simple_module(pw_cpu_exception_armv7m
-  IMPLEMENTS_FACADE
-    pw_cpu_exception
+  PUBLIC_DEPS
+    pw_cpu_exception_cortex_m
 )

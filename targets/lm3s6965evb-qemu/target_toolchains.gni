@@ -45,7 +45,8 @@ _target_config = {
   # appear the divide-by-zero traps as expected when enabled, which prevents the
   # module from triggering a recoverable exception. Since pw_cpu_exception is
   # not fully set up on this target, disable it for now.
-  # pw_cpu_exception_ENTRY_BACKEND = dir_pw_cpu_exception_armv7m
+  # pw_cpu_exception_ENTRY_BACKEND =
+  #     "$dir_pw_cpu_exception_cortex_m:cpu_exception_armv7m
 
   pw_boot_armv7m_LINK_CONFIG_DEFINES = [
     "PW_BOOT_FLASH_BEGIN=0x00000200",

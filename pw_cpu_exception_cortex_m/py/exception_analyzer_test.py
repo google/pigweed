@@ -23,8 +23,8 @@ from pw_cpu_exception_cortex_m import exception_analyzer, cortex_m_constants
 
 CPU_STATE_PROTO_PATH = os.path.join(
     env.pigweed_environment().PW_ROOT,  #pylint: disable=no-member
-    'pw_cpu_exception_armv7m',
-    'pw_cpu_exception_armv7m_protos',
+    'pw_cpu_exception_cortex_m',
+    'pw_cpu_exception_cortex_m_protos',
     'cpu_state.proto')
 
 cpu_state_pb2 = python_protos.compile_and_import_file(CPU_STATE_PROTO_PATH)

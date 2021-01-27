@@ -20,7 +20,7 @@
 #include "pw_cpu_exception/entry.h"
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception/support.h"
-#include "pw_cpu_exception_armv7m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m/cpu_state.h"
 
 namespace pw::cpu_exception {
 namespace {
@@ -59,17 +59,17 @@ constexpr uint32_t kExcReturnBasicFrameMask = (0x1u << 4);
 constexpr uint32_t kFpuEnableMask = (0xFu << 20);
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-volatile uint32_t& arm_v7m_vtor =
+volatile uint32_t& cortex_m_vtor =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED08u);
-volatile uint32_t& arm_v7m_ccr =
+volatile uint32_t& cortex_m_ccr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED14u);
-volatile uint32_t& arm_v7m_shcsr =
+volatile uint32_t& cortex_m_shcsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
-volatile uint32_t& arm_v7m_cfsr =
+volatile uint32_t& cortex_m_cfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
-volatile uint32_t& arm_v7m_hfsr =
+volatile uint32_t& cortex_m_hfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
-volatile uint32_t& arm_v7m_cpacr =
+volatile uint32_t& cortex_m_cpacr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
 
 // Begin a critical section that must not be interrupted.
@@ -109,14 +109,14 @@ inline void EndCriticalSection(uint32_t previous_state) {
 void EnableFpu() {
 #if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
   // TODO(pwbug/17): Replace when Pigweed config system is added.
-  arm_v7m_cpacr |= kFpuEnableMask;
+  cortex_m_cpacr |= kFpuEnableMask;
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 }
 
 void DisableFpu() {
 #if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
   // TODO(pwbug/17): Replace when Pigweed config system is added.
-  arm_v7m_cpacr &= ~kFpuEnableMask;
+  cortex_m_cpacr &= ~kFpuEnableMask;
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 }
 
@@ -134,10 +134,10 @@ constexpr size_t kMaxFaultDepth = 2;
 // Variable to prevent more than kMaxFaultDepth nested crashes.
 size_t current_fault_depth = 0;
 
-// Faulting pw_CpuExceptionState is copied here so values can be validated after
-// exiting exception handler.
-pw_CpuExceptionState captured_states[kMaxFaultDepth] = {};
-pw_CpuExceptionState& captured_state = captured_states[0];
+// Faulting pw_cpu_exception_State is copied here so values can be validated
+// after exiting exception handler.
+pw_cpu_exception_State captured_states[kMaxFaultDepth] = {};
+pw_cpu_exception_State& captured_state = captured_states[0];
 
 // Flag used to check if the contents of std::span matches the captured state.
 bool span_matches = false;
@@ -150,7 +150,7 @@ bool span_matches = false;
 volatile float float_test_value;
 
 // Magic pattern to help identify if the exception handler's
-// pw_CpuExceptionState pointer was pointing to captured CPU state that was
+// pw_cpu_exception_State pointer was pointing to captured CPU state that was
 // pushed onto the stack when the faulting context uses the VFP. Has to be
 // computed at runtime because it uses values only available at link time.
 const float kFloatTestPattern = 12.345f * 67.89f;
@@ -162,12 +162,12 @@ volatile float fpu_rhs_val = 67.89f;
 #define _PW_TEST_FPU_OPERATION (fpu_lhs_val * fpu_rhs_val)
 
 // Magic pattern to help identify if the exception handler's
-// pw_CpuExceptionState pointer was pointing to captured CPU state that was
+// pw_cpu_exception_State pointer was pointing to captured CPU state that was
 // pushed onto the stack.
 constexpr uint32_t kMagicPattern = 0xDEADBEEF;
 
 // This pattern serves a purpose similar to kMagicPattern, but is used for
-// testing a nested fault to ensure both pw_CpuExceptionState objects are
+// testing a nested fault to ensure both pw_cpu_exception_State objects are
 // correctly captured.
 constexpr uint32_t kNestedMagicPattern = 0x900DF00D;
 
@@ -180,12 +180,12 @@ using InterruptVectorTable = std::aligned_storage_t<512, 512>;
 InterruptVectorTable ram_vector_table;
 
 // Forward declaration of the exception handler.
-void TestingExceptionHandler(pw_CpuExceptionState*);
+void TestingExceptionHandler(pw_cpu_exception_State*);
 
 // Populate the device's registers with testable values, then trigger exception.
 void BeginBaseFaultTest() {
   // Make sure divide by zero causes a fault.
-  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  cortex_m_ccr |= kDivByZeroTrapEnableMask;
   uint32_t magic = kMagicPattern;
   asm volatile(
       " mov r0, %[magic]                                      \n"
@@ -208,7 +208,7 @@ void BeginBaseFaultTest() {
 // Populate the device's registers with testable values, then trigger exception.
 void BeginNestedFaultTest() {
   // Make sure divide by zero causes a fault.
-  arm_v7m_ccr |= kUnalignedTrapEnableMask;
+  cortex_m_ccr |= kUnalignedTrapEnableMask;
   volatile uint32_t magic = kNestedMagicPattern;
   asm volatile(
       " mov r0, %[magic]                                      \n"
@@ -230,7 +230,7 @@ void BeginNestedFaultTest() {
 // the fault handlers correction for psp.
 void BeginBaseFaultUnalignedStackTest() {
   // Make sure divide by zero causes a fault.
-  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  cortex_m_ccr |= kDivByZeroTrapEnableMask;
   uint32_t magic = kMagicPattern;
   asm volatile(
       // Push one register to cause $sp to be no longer 8-byte aligned,
@@ -260,7 +260,7 @@ void BeginBaseFaultUnalignedStackTest() {
 // exception.
 void BeginExtendedFaultTest() {
   // Make sure divide by zero causes a fault.
-  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  cortex_m_ccr |= kDivByZeroTrapEnableMask;
   uint32_t magic = kMagicPattern;
   volatile uint32_t local_msp = 0;
   volatile uint32_t local_psp = 0;
@@ -294,7 +294,7 @@ void BeginExtendedFaultTest() {
 // the fault handlers correction for psp.
 void BeginExtendedFaultUnalignedStackTest() {
   // Make sure divide by zero causes a fault.
-  arm_v7m_ccr |= kDivByZeroTrapEnableMask;
+  cortex_m_ccr |= kDivByZeroTrapEnableMask;
   uint32_t magic = kMagicPattern;
   volatile uint32_t local_msp = 0;
   volatile uint32_t local_psp = 0;
@@ -331,36 +331,36 @@ void BeginExtendedFaultUnalignedStackTest() {
 void InstallVectorTableEntries() {
   uint32_t prev_state = BeginCriticalSection();
   // If vector table is installed already, this is done.
-  if (arm_v7m_vtor == reinterpret_cast<uint32_t>(&ram_vector_table)) {
+  if (cortex_m_vtor == reinterpret_cast<uint32_t>(&ram_vector_table)) {
     EndCriticalSection(prev_state);
     return;
   }
   // Copy table to new location since it's not guaranteed that we can write to
   // the original one.
   std::memcpy(&ram_vector_table,
-              reinterpret_cast<uint32_t*>(arm_v7m_vtor),
+              reinterpret_cast<uint32_t*>(cortex_m_vtor),
               sizeof(ram_vector_table));
 
   // Override exception handling vector table entries.
   uint32_t* exception_entry_addr =
-      reinterpret_cast<uint32_t*>(pw_CpuExceptionEntry);
+      reinterpret_cast<uint32_t*>(pw_cpu_exception_Entry);
   uint32_t** interrupts = reinterpret_cast<uint32_t**>(&ram_vector_table);
   interrupts[kHardFaultIsrNum] = exception_entry_addr;
   interrupts[kMemFaultIsrNum] = exception_entry_addr;
   interrupts[kBusFaultIsrNum] = exception_entry_addr;
   interrupts[kUsageFaultIsrNum] = exception_entry_addr;
 
-  uint32_t old_vector_table = arm_v7m_vtor;
+  uint32_t old_vector_table = cortex_m_vtor;
   // Dismiss unused variable warning for non-debug builds.
   PW_UNUSED(old_vector_table);
 
   // Update Vector Table Offset Register (VTOR) to point to new vector table.
-  arm_v7m_vtor = reinterpret_cast<uint32_t>(&ram_vector_table);
+  cortex_m_vtor = reinterpret_cast<uint32_t>(&ram_vector_table);
   EndCriticalSection(prev_state);
 }
 
 void EnableAllFaultHandlers() {
-  arm_v7m_shcsr |=
+  cortex_m_shcsr |=
       kMemFaultEnableMask | kBusFaultEnableMask | kUsageFaultEnableMask;
 }
 
@@ -370,7 +370,7 @@ void Setup(bool use_fpu) {
   } else {
     DisableFpu();
   }
-  pw_CpuExceptionSetHandler(TestingExceptionHandler);
+  pw_cpu_exception_SetHandler(TestingExceptionHandler);
   EnableAllFaultHandlers();
   InstallVectorTableEntries();
   exceptions_handled = 0;
@@ -417,7 +417,7 @@ TEST(FaultEntry, ExtendedFault) {
   BeginExtendedFaultTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  const CortexMExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -434,7 +434,7 @@ TEST(FaultEntry, ExtendedUnalignedStackFault) {
   BeginExtendedFaultUnalignedStackTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  const CortexMExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -510,7 +510,7 @@ TEST(FaultEntry, FloatFault) {
   Setup(/*use_fpu=*/true);
   BeginExtendedFaultFloatTest();
   ASSERT_EQ(exceptions_handled, 1u);
-  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  const CortexMExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -533,7 +533,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
   BeginExtendedFaultUnalignedStackFloatTest();
   ASSERT_EQ(exceptions_handled, 1u);
   ASSERT_TRUE(span_matches);
-  const ArmV7mExtraRegisters& extended_registers = captured_state.extended;
+  const CortexMExtraRegisters& extended_registers = captured_state.extended;
   // captured_state values must be cast since they're in a packed struct.
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r4), kMagicPattern);
   EXPECT_EQ(static_cast<uint32_t>(extended_registers.r5), 0u);
@@ -553,7 +553,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
 
 #endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
 
-void TestingExceptionHandler(pw_CpuExceptionState* state) {
+void TestingExceptionHandler(pw_cpu_exception_State* state) {
   if (++current_fault_depth > kMaxFaultDepth) {
     volatile bool loop = true;
     while (loop) {
@@ -570,31 +570,31 @@ void TestingExceptionHandler(pw_CpuExceptionState* state) {
 
   // Clear HFSR forced (nested) hard fault mask if set. This will only be
   // set by the nested fault test.
-  EXPECT_EQ(state->extended.hfsr, arm_v7m_hfsr);
-  if (arm_v7m_hfsr & kForcedHardfaultMask) {
-    arm_v7m_hfsr = kForcedHardfaultMask;
+  EXPECT_EQ(state->extended.hfsr, cortex_m_hfsr);
+  if (cortex_m_hfsr & kForcedHardfaultMask) {
+    cortex_m_hfsr = kForcedHardfaultMask;
   }
 
-  if (arm_v7m_cfsr & kUnalignedFaultMask) {
+  if (cortex_m_cfsr & kUnalignedFaultMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
-                sizeof(pw_CpuExceptionState));
+                sizeof(pw_cpu_exception_State));
 
     // Disable unaligned read/write trapping to "handle" exception.
-    arm_v7m_ccr &= ~kUnalignedTrapEnableMask;
-    arm_v7m_cfsr = kUnalignedFaultMask;
+    cortex_m_ccr &= ~kUnalignedTrapEnableMask;
+    cortex_m_cfsr = kUnalignedFaultMask;
     exceptions_handled++;
     return;
-  } else if (arm_v7m_cfsr & kDivByZeroFaultMask) {
+  } else if (cortex_m_cfsr & kDivByZeroFaultMask) {
     // Copy captured state to check later.
     std::memcpy(&captured_states[exceptions_handled],
                 state,
-                sizeof(pw_CpuExceptionState));
+                sizeof(pw_cpu_exception_State));
 
     // Ensure std::span compares to be the same.
     std::span<const uint8_t> state_span = RawFaultingCpuState(*state);
-    EXPECT_EQ(state_span.size(), sizeof(pw_CpuExceptionState));
+    EXPECT_EQ(state_span.size(), sizeof(pw_cpu_exception_State));
     if (std::memcmp(state, state_span.data(), state_span.size()) == 0) {
       span_matches = true;
     } else {
@@ -602,13 +602,13 @@ void TestingExceptionHandler(pw_CpuExceptionState* state) {
     }
 
     // Disable divide-by-zero trapping to "handle" exception.
-    arm_v7m_ccr &= ~kDivByZeroTrapEnableMask;
-    arm_v7m_cfsr = kDivByZeroFaultMask;
+    cortex_m_ccr &= ~kDivByZeroTrapEnableMask;
+    cortex_m_cfsr = kDivByZeroFaultMask;
     exceptions_handled++;
     return;
   }
 
-  EXPECT_EQ(state->extended.shcsr, arm_v7m_shcsr);
+  EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr);
 
   // If an unexpected exception occurred, just enter an infinite loop.
   while (true) {

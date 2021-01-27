@@ -12,14 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_cpu_exception_armv7m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m/cpu_state.h"
 
 #include <cinttypes>
 #include <cstdint>
 #include <span>
 
 #include "pw_cpu_exception/support.h"
-#include "pw_cpu_exception_armv7m_private/cortex_m_constants.h"
+#include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_log/log.h"
 #include "pw_string/string_builder.h"
 
@@ -108,7 +108,7 @@ namespace {
   }
 }
 
-void AnalyzeException(const pw_CpuExceptionState& cpu_state) {
+void AnalyzeException(const pw_cpu_exception_State& cpu_state) {
   // This provides a high-level assessment of the cause of the exception.
   // These conditionals are ordered by priority to ensure the most critical
   // issues are highlighted first. These are not mutually exclusive; a bus fault
@@ -154,17 +154,17 @@ void AnalyzeException(const pw_CpuExceptionState& cpu_state) {
 }  // namespace
 
 std::span<const uint8_t> RawFaultingCpuState(
-    const pw_CpuExceptionState& cpu_state) {
+    const pw_cpu_exception_State& cpu_state) {
   return std::span(reinterpret_cast<const uint8_t*>(&cpu_state),
                    sizeof(cpu_state));
 }
 
 // Using this function adds approximately 100 bytes to binary size.
-void ToString(const pw_CpuExceptionState& cpu_state,
+void ToString(const pw_cpu_exception_State& cpu_state,
               const std::span<char>& dest) {
   StringBuilder builder(dest);
-  const ArmV7mFaultRegisters& base = cpu_state.base;
-  const ArmV7mExtraRegisters& extended = cpu_state.extended;
+  const CortexMExceptionRegisters& base = cpu_state.base;
+  const CortexMExtraRegisters& extended = cpu_state.extended;
 
 #define _PW_FORMAT_REGISTER(state_section, name) \
   builder.Format("%s=0x%08" PRIx32 "\n", #name, state_section.name)
@@ -203,9 +203,9 @@ void ToString(const pw_CpuExceptionState& cpu_state,
 }
 
 // Using this function adds approximately 100 bytes to binary size.
-void LogCpuState(const pw_CpuExceptionState& cpu_state) {
-  const ArmV7mFaultRegisters& base = cpu_state.base;
-  const ArmV7mExtraRegisters& extended = cpu_state.extended;
+void LogCpuState(const pw_cpu_exception_State& cpu_state) {
+  const CortexMExceptionRegisters& base = cpu_state.base;
+  const CortexMExtraRegisters& extended = cpu_state.extended;
 
   AnalyzeException(cpu_state);
 

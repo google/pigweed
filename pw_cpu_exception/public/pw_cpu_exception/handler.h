@@ -18,19 +18,19 @@
 
 PW_EXTERN_C_START
 
-// Forward declaration of pw_CpuExceptionState. Definition provided by cpu
+// Forward declaration of pw_cpu_exception_State. Definition provided by cpu
 // exception entry backend.
-struct pw_CpuExceptionState;
+struct pw_cpu_exception_State;
 
 // By default, the exception entry function will terminate by handing execution
-// over to pw_CpuExceptionDefaultHandler(). This can be used to override the
+// over to pw_cpu_exception_DefaultHandler(). This can be used to override the
 // current handler. This allows runtime insertion of an exception handler which
 // may also be helpful for loading a bootloader exception handler by default
 // that an application overrides.
-void pw_CpuExceptionSetHandler(void (*handler)(pw_CpuExceptionState*));
+void pw_cpu_exception_SetHandler(void (*handler)(pw_cpu_exception_State*));
 
-// Set the exception handler to point to pw_CpuExceptionDefaultHandler().
-void pw_CpuExceptionRestoreDefaultHandler(void);
+// Set the exception handler to point to pw_cpu_exception_DefaultHandler().
+void pw_cpu_exception_RestoreDefaultHandler(void);
 
 // Application-defined recoverable CPU exception handler.
 //
@@ -46,10 +46,19 @@ void pw_CpuExceptionRestoreDefaultHandler(void);
 // attach.
 //
 // See the cpu_exception module documentation for more details.
-PW_USED void pw_CpuExceptionDefaultHandler(pw_CpuExceptionState* state);
+PW_USED void pw_cpu_exception_DefaultHandler(pw_cpu_exception_State* state);
 
 // This is the underlying function the CPU exception entry backend should call.
 // This calls the currently set handler.
-void pw_HandleCpuException(void* cpu_state);
+void pw_cpu_exception_HandleException(void* cpu_state);
+
+// TODO(pwbug/311) Deprecated naming.
+typedef pw_cpu_exception_State pw_CpuExceptionState;
+#define pw_CpuExceptionSetHandler(...) pw_cpu_exception_SetHandler(__VA_ARGS__)
+#define pw_CpuExceptionRestoreDefaultHandler(...) \
+  pw_cpu_exception_RestoreDefaultHandler(__VA_ARGS__)
+#define pw_CpuExceptionDefaultHandler(...) \
+  pw_cpu_exception_DefaultHandler(__VA_ARGS__)
+#define pw_HandleCpuException(...) pw_cpu_exception_HandleException(__VA_ARGS__)
 
 PW_EXTERN_C_END

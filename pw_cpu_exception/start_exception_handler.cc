@@ -16,21 +16,21 @@
 
 namespace pw::cpu_exception {
 
-static void (*exception_handler)(pw_CpuExceptionState*) =
-    &pw_CpuExceptionDefaultHandler;
+static void (*exception_handler)(pw_cpu_exception_State*) =
+    &pw_cpu_exception_DefaultHandler;
 
-extern "C" void pw_CpuExceptionSetHandler(
-    void (*handler)(pw_CpuExceptionState*)) {
+extern "C" void pw_cpu_exception_SetHandler(
+    void (*handler)(pw_cpu_exception_State*)) {
   exception_handler = handler;
 }
 
-// Revert the exception handler to point to pw_CpuExceptionDefaultHandler().
-extern "C" void pw_CpuExceptionRestoreDefaultHandler() {
-  exception_handler = &pw_CpuExceptionDefaultHandler;
+// Revert the exception handler to point to pw_cpu_exception_DefaultHandler().
+extern "C" void pw_cpu_exception_RestoreDefaultHandler() {
+  exception_handler = &pw_cpu_exception_DefaultHandler;
 }
 
-extern "C" void pw_HandleCpuException(void* cpu_state) {
-  exception_handler(reinterpret_cast<pw_CpuExceptionState*>(cpu_state));
+extern "C" void pw_cpu_exception_HandleException(void* cpu_state) {
+  exception_handler(reinterpret_cast<pw_cpu_exception_State*>(cpu_state));
 }
 
 }  // namespace pw::cpu_exception

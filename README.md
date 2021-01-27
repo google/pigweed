@@ -122,7 +122,7 @@ on-device.
 See the "Module Guides" in the documentation for the complete list and
 documentation for each, but is a selection of some others:
 
- - `pw_cpu_exception_armv7m`: Robust low level hardware fault handler for ARM
+ - `pw_cpu_exception_cortex_m`: Robust low level hardware fault handler for ARM
    Cortex-M; the handler even has unit tests written in assembly to verify
    nested-hardware-fault handling!
 

@@ -13,21 +13,4 @@
 // the License.
 #pragma once
 
-#include "pw_cpu_exception_armv7m/cpu_state.h"
-#include "pw_protobuf/encoder.h"
-#include "pw_status/status.h"
-
-namespace pw::cpu_exception {
-
-// Dumps the cpu state struct as a proto (defined in
-// pw_cpu_exception_armv7m_protos/cpu_state.proto). The final proto is up to 144
-// bytes in size, so ensure your encoder is properly sized.
-//
-// Returns:
-//   OK - Entire proto was written to the encoder.
-//   RESOURCE_EXHAUSTED - Insufficient space to encode proto.
-//   UNKNOWN - Some other proto encoding error occurred.
-Status DumpCpuStateProto(protobuf::Encoder& dest,
-                         const pw_CpuExceptionState& cpu_state);
-
-}  // namespace pw::cpu_exception
+#include "pw_cpu_exception_cortex_m/proto_dump.h"

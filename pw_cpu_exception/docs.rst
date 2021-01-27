@@ -12,13 +12,13 @@ otherwise be clobbered by an application's exception handler.
 
 Setup
 =====
-An application using this module **must** connect ``pw_CpuExceptionEntry()`` to
-the platform's CPU exception handler interrupt so ``pw_CpuExceptionEntry()`` is
+An application using this module **must** connect ``pw_cpu_exception_Entry()`` to
+the platform's CPU exception handler interrupt so ``pw_cpu_exception_Entry()`` is
 called immediately upon a CPU exception. For specifics on how this may be done,
 see the backend documentation for your architecture.
 
 Applications must also provide an implementation for
-``pw_CpuExceptionDefaultHandler()``. The behavior of this functions is entirely
+``pw_cpu_exception_DefaultHandler()``. The behavior of this functions is entirely
 up to the application/project, but some examples are provided below:
 
   * Enter an infinite loop so the device can be debugged by JTAG.
@@ -31,24 +31,24 @@ up to the application/project, but some examples are provided below:
 Module Usage
 ============
 Basic usage of this module entails applications supplying a definition for
-``pw_CpuExceptionDefaultHandler()``. ``pw_CpuExceptionDefaultHandler()`` should
+``pw_cpu_exception_DefaultHandler()``. ``pw_cpu_exception_DefaultHandler()`` should
 contain any logic to determine if a exception can be recovered from, as well as
 necessary actions to properly recover. If the device cannot recover from the
 exception, the function should **not** return.
 
-``pw_CpuExceptionDefaultHandler()`` is called indirectly, and may be overridden
-at runtime via ``pw_CpuExceptionSetHandler()``. The handler can also be reset to
-point to ``pw_CpuExceptionDefaultHandler()`` by calling
-``pw_CpuExceptionRestoreDefaultHandler()``.
+``pw_cpu_exception_DefaultHandler()`` is called indirectly, and may be overridden
+at runtime via ``pw_cpu_exception_SetHandler()``. The handler can also be reset to
+point to ``pw_cpu_exception_DefaultHandler()`` by calling
+``pw_cpu_exception_RestoreDefaultHandler()``.
 
 When writing an exception handler, prefer to use the functions provided by this
 interface rather than relying on the backend implementation of
-``pw_CpuExceptionState``. This allows better code portability as it helps
+``pw_cpu_exception_State``. This allows better code portability as it helps
 prevent an application fault handler from being tied to a single backend.
 
 For example; when logging or dumping CPU state, prefer ``ToString()`` or
 ``RawFaultingCpuState()`` over directly accessing members of a
-``pw_CpuExceptionState`` object.
+``pw_cpu_exception_State`` object.
 
 Some exception handling behavior may require architecture-specific CPU state to
 attempt to correct a fault. In this situation, the application's exception
@@ -60,15 +60,15 @@ CPU exception backends do not provide an exception handler, but instead provide
 mechanisms to capture CPU state for use by an application's exception handler,
 and allow recovery from CPU exceptions when possible.
 
-  * A backend should provide a definition for the ``pw_CpuExceptionState``
+  * A backend should provide a definition for the ``pw_cpu_exception_State``
     struct that provides suitable means to access and modify any captured CPU
     state.
   * If an application's exception handler modifies the captured CPU state, the
     state should be treated as though it were the original state of the CPU when
     the exception occurred. The backend may need to manually restore some of the
     modified state to ensure this on exception handler return.
-  * A backend should implement the ``pw_CpuExceptionEntry()`` function that will
-    call ``pw_HandleCpuException()`` after performing any necessary
+  * A backend should implement the ``pw_cpu_exception_Entry()`` function that will
+    call ``pw_cpu_exception_HandleException()`` after performing any necessary
     actions prior to handing control to the application's exception handler
     (e.g. capturing necessary CPU state).
 

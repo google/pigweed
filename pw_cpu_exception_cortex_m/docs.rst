@@ -1,8 +1,8 @@
-.. _module-pw_cpu_exception_armv7m:
+.. _module-pw_cpu_exception_cortex_m:
 
------------------------
-pw_cpu_exception_armv7m
------------------------
+-------------------------
+pw_cpu_exception_cortex_m
+-------------------------
 This backend provides an ARMv7-M implementation for the CPU exception module
 frontend. See the CPU exception frontend module description for more
 information.
@@ -13,13 +13,13 @@ There are a few ways to set up the ARMv7-M exception handler so the
 application's exception handler is properly called during an exception.
 
 **1. Use existing CMSIS functions**
-  Inside of CMSIS fault handler functions, branch to ``pw_CpuExceptionEntry``.
+  Inside of CMSIS fault handler functions, branch to ``pw_cpu_exception_Entry``.
 
   .. code-block:: cpp
 
     __attribute__((naked)) void HardFault_Handler(void) {
     asm volatile(
-        " ldr r0, =pw_CpuExceptionEntry    \n"
+        " ldr r0, =pw_cpu_exception_Entry  \n"
         " bx r0                            \n");
     }
 
@@ -50,11 +50,11 @@ application's exception handler is properly called during an exception.
     __isr_vector_table:
       .word  __stack_start
       .word  Reset_Handler
-      .word  pw_CpuExceptionEntry
-      .word  pw_CpuExceptionEntry
-      .word  pw_CpuExceptionEntry
-      .word  pw_CpuExceptionEntry
-      .word  pw_CpuExceptionEntry
+      .word  pw_cpu_exception_Entry
+      .word  pw_cpu_exception_Entry
+      .word  pw_cpu_exception_Entry
+      .word  pw_cpu_exception_Entry
+      .word  pw_cpu_exception_Entry
 
   Note: ``__isr_vector_table`` and ``__stack_start`` are example names, and may
   vary by platform. See your platform's assembly startup script.
@@ -65,7 +65,7 @@ application's exception handler is properly called during an exception.
   exception_entry_test integration test), but keep in mind that your
   application's exception handler will not be entered if an exception occurs
   before the vector table entries are updated to point to
-  ``pw_CpuExceptionEntry``.
+  ``pw_cpu_exception_Entry``.
 
 Module Usage
 ============
@@ -74,9 +74,9 @@ architecture-specific registers, using the generic exception handler functions
 is preferred.
 
 However, some projects may need to explicitly access architecture-specific
-registers to attempt to recover from a CPU exception. ``pw_CpuExceptionState``
+registers to attempt to recover from a CPU exception. ``pw_cpu_exception_State``
 provides access to the captured CPU state at the time of the fault. When the
-application-provided ``pw_CpuExceptionDefaultHandler()`` function returns, the
+application-provided ``pw_cpu_exception_DefaultHandler()`` function returns, the
 CPU state is restored. This allows the exception handler to modify the captured
 state so that execution can safely continue.
 

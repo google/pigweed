@@ -13,32 +13,36 @@
 // the License.
 
 // This facade provides an API for capturing the contents of a
-// pw_CpuExceptionState struct in a platform-agnostic way. While this facade
+// pw_cpu_exception_State struct in a platform-agnostic way. While this facade
 // does not provide a means to directly access individual members of a
-// pw_CpuExceptionState object, it does allow dumping CPU state without needing
-// to know any specifics about the underlying architecture.
+// pw_cpu_exception_State object, it does allow dumping CPU state without
+// needing to know any specifics about the underlying architecture.
 #pragma once
 
 #include <cstdint>
 #include <span>
 
-// Forward declaration of pw_CpuExceptionState. Definition provided by backend.
-struct pw_CpuExceptionState;
+// Forward declaration of pw_cpu_exception_State. Definition provided by
+// backend.
+struct pw_cpu_exception_State;
+
+// TODO(pwbug/311) Deprecated naming.
+typedef pw_cpu_exception_State pw_CpuExceptionState;
 
 namespace pw::cpu_exception {
 
 // Gets raw CPU state as a single contiguous block of data. The particular
 // contents will depend on the specific backend and platform.
 std::span<const uint8_t> RawFaultingCpuState(
-    const pw_CpuExceptionState& cpu_state);
+    const pw_cpu_exception_State& cpu_state);
 
 // Writes CPU state as a formatted string to a string builder.
 // NEVER depend on the format of this output. This is exclusively FYI human
 // readable output.
-void ToString(const pw_CpuExceptionState& cpu_state,
+void ToString(const pw_cpu_exception_State& cpu_state,
               const std::span<char>& dest);
 
 // Logs captured CPU state using pw_log at PW_LOG_LEVEL_INFO.
-void LogCpuState(const pw_CpuExceptionState& cpu_state);
+void LogCpuState(const pw_cpu_exception_State& cpu_state);
 
 }  // namespace pw::cpu_exception

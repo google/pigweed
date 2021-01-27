@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto2";
 
-package pw.cpu_exception.armv7m;
+package pw.cpu_exception.cortex_m;
 
 message ArmV7mCpuState {
   optional uint32 pc = 1;

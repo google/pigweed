@@ -18,9 +18,13 @@
 #include <cstring>
 
 #include "pw_cpu_exception/handler.h"
-#include "pw_cpu_exception_armv7m/cpu_state.h"
-#include "pw_cpu_exception_armv7m_private/cortex_m_constants.h"
+#include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_preprocessor/compiler.h"
+
+// TODO(pwbug/311): Deprecated naming.
+PW_EXTERN_C PW_NO_PROLOGUE __attribute__((alias("pw_cpu_exception_Entry"))) void
+pw_CpuExceptionEntry(void);
 
 namespace pw::cpu_exception {
 namespace {
@@ -37,13 +41,13 @@ constexpr uint32_t kInvalidRegisterValue = 0xFFFFFFFF;
 
 // Checks exc_return in the captured CPU state to determine which stack pointer
 // was in use prior to entering the exception handler.
-bool PspWasActive(const pw_CpuExceptionState& cpu_state) {
+bool PspWasActive(const pw_cpu_exception_State& cpu_state) {
   return cpu_state.extended.exc_return & kExcReturnStackMask;
 }
 
 // Checks exc_return to determine if FPU state was pushed to the stack in
 // addition to the base CPU context frame.
-bool FpuStateWasPushed(const pw_CpuExceptionState& cpu_state) {
+bool FpuStateWasPushed(const pw_cpu_exception_State& cpu_state) {
   return !(cpu_state.extended.exc_return & kExcReturnBasicFrameMask);
 }
 
@@ -51,17 +55,17 @@ bool FpuStateWasPushed(const pw_CpuExceptionState& cpu_state) {
 //
 // For more information see (See ARMv7-M Section B1.5.11, derived exceptions
 // on exception entry).
-void CloneBaseRegistersFromPsp(pw_CpuExceptionState* cpu_state) {
+void CloneBaseRegistersFromPsp(pw_cpu_exception_State* cpu_state) {
   // If CPU succeeded in pushing context to PSP, copy it to the MSP.
   if (!(cpu_state->extended.cfsr & kCfsrStkerrMask) &&
       !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
-    // TODO(amontanez): {r0-r3,r12} are captured in pw_CpuExceptionEntry(),
+    // TODO(amontanez): {r0-r3,r12} are captured in pw_cpu_exception_Entry(),
     //                  so this only really needs to copy pc, lr, and psr. Could
     //                  (possibly) improve speed, but would add marginally more
     //                  complexity.
     std::memcpy(&cpu_state->base,
                 reinterpret_cast<void*>(cpu_state->extended.psp),
-                sizeof(ArmV7mFaultRegisters));
+                sizeof(CortexMExceptionRegisters));
   } else {
     // If CPU context wasn't pushed to stack on exception entry, we can't
     // recover psr, lr, and pc from exception-time. Make these values clearly
@@ -77,7 +81,7 @@ void CloneBaseRegistersFromPsp(pw_CpuExceptionState* cpu_state) {
 //
 // For more information see (See ARMv7-M Section B1.5.11, derived exceptions
 // on exception entry).
-void RestoreBaseRegistersToPsp(pw_CpuExceptionState* cpu_state) {
+void RestoreBaseRegistersToPsp(pw_cpu_exception_State* cpu_state) {
   // If CPU succeeded in pushing context to PSP on exception entry, restore the
   // contents of cpu_state to the CPU-pushed register frame so the CPU can
   // continue. Otherwise, don't attempt as we'll likely end up in an escalated
@@ -86,15 +90,15 @@ void RestoreBaseRegistersToPsp(pw_CpuExceptionState* cpu_state) {
       !(cpu_state->extended.cfsr & kCfsrMstkerrMask)) {
     std::memcpy(reinterpret_cast<void*>(cpu_state->extended.psp),
                 &cpu_state->base,
-                sizeof(ArmV7mFaultRegisters));
+                sizeof(CortexMExceptionRegisters));
   }
 }
 
 // Determines the size of the CPU-pushed context frame.
-uint32_t CpuContextSize(const pw_CpuExceptionState& cpu_state) {
-  uint32_t cpu_context_size = sizeof(ArmV7mFaultRegisters);
+uint32_t CpuContextSize(const pw_cpu_exception_State& cpu_state) {
+  uint32_t cpu_context_size = sizeof(CortexMExceptionRegisters);
   if (FpuStateWasPushed(cpu_state)) {
-    cpu_context_size += sizeof(ArmV7mFaultRegistersFpu);
+    cpu_context_size += sizeof(CortexMExceptionRegistersFpu);
   }
   if (cpu_state.base.psr & kPsrExtraStackAlignBit) {
     // Account for the extra 4-bytes the processor
@@ -108,7 +112,7 @@ uint32_t CpuContextSize(const pw_CpuExceptionState& cpu_state) {
 // On exception entry, the Program Stack Pointer is patched to reflect the state
 // at exception-time. On exception return, it is restored to the appropriate
 // location. This calculates the delta that is used for these patch operations.
-uint32_t CalculatePspDelta(const pw_CpuExceptionState& cpu_state) {
+uint32_t CalculatePspDelta(const pw_cpu_exception_State& cpu_state) {
   // If CPU context was not pushed to program stack (because program stack
   // wasn't in use, or an error occurred when pushing context), the PSP doesn't
   // need to be shifted.
@@ -123,16 +127,16 @@ uint32_t CalculatePspDelta(const pw_CpuExceptionState& cpu_state) {
 // On exception entry, the Main Stack Pointer is patched to reflect the state
 // at exception-time. On exception return, it is restored to the appropriate
 // location. This calculates the delta that is used for these patch operations.
-uint32_t CalculateMspDelta(const pw_CpuExceptionState& cpu_state) {
+uint32_t CalculateMspDelta(const pw_cpu_exception_State& cpu_state) {
   if (PspWasActive(cpu_state)) {
     // TODO(amontanez): Since FPU state isn't captured at this time, we ignore
     //                  it when patching MSP. To add FPU capture support,
     //                  delete this if block as CpuContextSize() will include
     //                  FPU context size in the calculation.
-    return sizeof(ArmV7mFaultRegisters) + sizeof(ArmV7mExtraRegisters);
+    return sizeof(CortexMExceptionRegisters) + sizeof(CortexMExtraRegisters);
   }
 
-  return CpuContextSize(cpu_state) + sizeof(ArmV7mExtraRegisters);
+  return CpuContextSize(cpu_state) + sizeof(CortexMExtraRegisters);
 }
 
 }  // namespace
@@ -141,17 +145,18 @@ extern "C" {
 
 // Collect remaining CPU state (memory mapped registers), populate memory mapped
 // registers, and call application exception handler.
-PW_USED void pw_PackageAndHandleCpuException(pw_CpuExceptionState* cpu_state) {
+PW_USED void pw_PackageAndHandleCpuException(
+    pw_cpu_exception_State* cpu_state) {
   // Capture memory mapped registers.
-  cpu_state->extended.cfsr = arm_v7m_cfsr;
-  cpu_state->extended.mmfar = arm_v7m_mmfar;
-  cpu_state->extended.bfar = arm_v7m_bfar;
-  cpu_state->extended.icsr = arm_v7m_icsr;
-  cpu_state->extended.hfsr = arm_v7m_hfsr;
-  cpu_state->extended.shcsr = arm_v7m_shcsr;
+  cpu_state->extended.cfsr = cortex_m_cfsr;
+  cpu_state->extended.mmfar = cortex_m_mmfar;
+  cpu_state->extended.bfar = cortex_m_bfar;
+  cpu_state->extended.icsr = cortex_m_icsr;
+  cpu_state->extended.hfsr = cortex_m_hfsr;
+  cpu_state->extended.shcsr = cortex_m_shcsr;
 
   // CPU may have automatically pushed state to the program stack. If it did,
-  // the values can be copied into in the pw_CpuExceptionState struct that is
+  // the values can be copied into in the pw_cpu_exception_State struct that is
   // passed to HandleCpuException(). The cpu_state passed to the handler is
   // ALWAYS stored on the main stack (MSP).
   if (PspWasActive(*cpu_state)) {
@@ -164,7 +169,7 @@ PW_USED void pw_PackageAndHandleCpuException(pw_CpuExceptionState* cpu_state) {
   cpu_state->extended.msp += CalculateMspDelta(*cpu_state);
 
   // Call application-level exception handler.
-  pw_HandleCpuException(cpu_state);
+  pw_cpu_exception_HandleException(cpu_state);
 
   // Restore program stack pointer so exception return can restore state if
   // needed.
@@ -193,8 +198,9 @@ PW_USED void pw_PackageAndHandleCpuException(pw_CpuExceptionState* cpu_state) {
 // Captures faulting CPU state on the main stack (MSP), then calls the exception
 // handlers.
 // This function should be called immediately after an exception.
-void pw_CpuExceptionEntry(void) {
+void pw_cpu_exception_Entry(void) {
   asm volatile(
+      // clang-format off
       // If PSP was in use at the time of exception, it's possible the CPU
       // wasn't able to push CPU state. To be safe, this first captures scratch
       // registers before moving forward.
@@ -205,8 +211,9 @@ void pw_CpuExceptionEntry(void) {
       // for more details)
       // The following block of assembly is equivalent to:
       //   if (lr & (1 << 2)) {
-      //     msp -= sizeof(ArmV7mFaultRegisters);
-      //     ArmV7mFaultRegisters* state = (ArmV7mFaultRegisters*) msp;
+      //     msp -= sizeof(CortexMExceptionRegisters);
+      //     CortexMExceptionRegisters* state =
+      //         (CortexMExceptionRegisters*) msp;
       //     state->r0 = r0;
       //     state->r1 = r1;
       //     state->r2 = r2;
@@ -269,10 +276,9 @@ void pw_CpuExceptionEntry(void) {
 
       // Exit exception.
       " bx lr                                                 \n"
-      // clang-format off
       : /*output=*/
-      : /*input=*/[base_state_size]"i"(sizeof(ArmV7mFaultRegisters)),
-                  [extra_state_size]"i"(sizeof(ArmV7mExtraRegisters))
+      : /*input=*/[base_state_size]"i"(sizeof(CortexMExceptionRegisters)),
+                  [extra_state_size]"i"(sizeof(CortexMExtraRegisters))
       // clang-format on
   );
 }

@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2020 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,15 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-package(default_visibility = ["//visibility:public"])
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-licenses(["notice"])  # Apache License 2.0
-
-filegroup(
-    name = "pw_cpu_exception_armv7m",
-    srcs = [
-        "public/pw_cpu_exception_armv7m/cpu_state.h",
-        "public/pw_cpu_exception_armv7m/proto_dump.h",
-        "pw_cpu_exception_armv7m_private/cortex_m_constants.h",
-    ],
+pw_auto_add_simple_module(pw_cpu_exception_cortex_m
+  IMPLEMENTS_FACADE
+    pw_cpu_exception
 )

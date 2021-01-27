@@ -11,16 +11,16 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_cpu_exception_armv7m/cpu_state.h"
-#include "pw_cpu_exception_armv7m_protos/cpu_state.pwpb.h"
+#include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m_protos/cpu_state.pwpb.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_protobuf/encoder.h"
 
 namespace pw::cpu_exception {
 
 Status DumpCpuStateProto(protobuf::Encoder& dest,
-                         const pw_CpuExceptionState& cpu_state) {
-  armv7m::ArmV7mCpuState::Encoder state_encoder(&dest);
+                         const pw_cpu_exception_State& cpu_state) {
+  cortex_m::ArmV7mCpuState::Encoder state_encoder(&dest);
 
   // Special and mem-mapped registers.
   state_encoder.WritePc(cpu_state.base.pc);

@@ -73,17 +73,18 @@ constexpr uint32_t kExcReturnStackMask = 0x1u << 2;
 constexpr uint32_t kExcReturnBasicFrameMask = 0x1u << 4;
 
 // Memory mapped registers. (ARMv7-M Section B3.2.2, Table B3-4)
-inline volatile uint32_t& arm_v7m_cfsr =
+// TODO(pwbug/316): Only some of these are supported on ARMv6-M.
+inline volatile uint32_t& cortex_m_cfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED28u);
-inline volatile uint32_t& arm_v7m_mmfar =
+inline volatile uint32_t& cortex_m_mmfar =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED34u);
-inline volatile uint32_t& arm_v7m_bfar =
+inline volatile uint32_t& cortex_m_bfar =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED38u);
-inline volatile uint32_t& arm_v7m_icsr =
+inline volatile uint32_t& cortex_m_icsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED04u);
-inline volatile uint32_t& arm_v7m_hfsr =
+inline volatile uint32_t& cortex_m_hfsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED2Cu);
-inline volatile uint32_t& arm_v7m_shcsr =
+inline volatile uint32_t& cortex_m_shcsr =
     *reinterpret_cast<volatile uint32_t*>(0xE000ED24u);
 
 }  // namespace pw::cpu_exception
