@@ -33,7 +33,7 @@ void BinarySemaphore::acquire() {
   native_type_.count = 0;
 }
 
-bool BinarySemaphore::try_acquire() {
+bool BinarySemaphore::try_acquire() noexcept {
   std::lock_guard lock(native_type_.mutex);
   if (native_type_.count != 0) {
     native_type_.count = 0;

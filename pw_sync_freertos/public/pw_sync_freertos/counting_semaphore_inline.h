@@ -48,7 +48,7 @@ inline void CountingSemaphore::acquire() {
 #endif  // INCLUDE_vTaskSuspend
 }
 
-inline bool CountingSemaphore::try_acquire() {
+inline bool CountingSemaphore::try_acquire() noexcept {
   if (interrupt::InInterruptContext()) {
     BaseType_t woke_higher_task = pdFALSE;
     const bool success =

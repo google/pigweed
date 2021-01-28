@@ -59,7 +59,7 @@ inline void BinarySemaphore::acquire() {
 #endif  // INCLUDE_vTaskSuspend
 }
 
-inline bool BinarySemaphore::try_acquire() {
+inline bool BinarySemaphore::try_acquire() noexcept {
   if (interrupt::InInterruptContext()) {
     BaseType_t woke_higher_task = pdFALSE;
     const bool success =

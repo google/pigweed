@@ -99,7 +99,7 @@ struct SystemClock {
   static constexpr bool is_nmi_safe = backend::kSystemClockNmiSafe;
 
   // This is thread and IRQ safe. This must be provided by the backend.
-  static time_point now() {
+  static time_point now() noexcept {
     return time_point(duration(backend::GetSystemClockTickCount()));
   }
 };

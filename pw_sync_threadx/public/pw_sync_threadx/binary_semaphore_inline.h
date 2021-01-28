@@ -50,7 +50,7 @@ inline void BinarySemaphore::acquire() {
   PW_ASSERT(result == TX_SUCCESS);
 }
 
-inline bool BinarySemaphore::try_acquire() {
+inline bool BinarySemaphore::try_acquire() noexcept {
   const UINT result = tx_semaphore_get(&native_type_, TX_NO_WAIT);
   if (result == TX_NO_INSTANCE) {
     return false;

@@ -36,7 +36,7 @@ void CountingSemaphore::acquire() {
   --native_type_.count;
 }
 
-bool CountingSemaphore::try_acquire() {
+bool CountingSemaphore::try_acquire() noexcept {
   std::lock_guard lock(native_type_.mutex);
   if (native_type_.count != 0) {
     --native_type_.count;

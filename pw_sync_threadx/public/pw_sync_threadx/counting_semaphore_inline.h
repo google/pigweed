@@ -51,7 +51,7 @@ inline void CountingSemaphore::acquire() {
   PW_ASSERT(tx_semaphore_get(&native_type_, TX_WAIT_FOREVER) == TX_SUCCESS);
 }
 
-inline bool CountingSemaphore::try_acquire() {
+inline bool CountingSemaphore::try_acquire() noexcept {
   const UINT result = tx_semaphore_get(&native_type_, TX_NO_WAIT);
   if (result == TX_NO_INSTANCE) {
     return false;
