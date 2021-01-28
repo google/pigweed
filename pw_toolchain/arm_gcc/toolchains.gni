@@ -27,6 +27,12 @@ arm_gcc_toolchain_tools = {
 # Common configs shared by all ARM GCC toolchains.
 _arm_gcc = [ "$dir_pw_toolchain/arm_gcc:disable_psabi_warning" ]
 
+_cortex_m0plus = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_m0plus",
+  "$dir_pw_toolchain/arm_gcc:cortex_software_fpu",
+]
+
 # Configs specific to different architectures.
 _cortex_m3 = [
   "$dir_pw_toolchain/arm_gcc:cortex_common",
@@ -60,6 +66,30 @@ _cortex_m7f = [
 
 # Describes ARM GCC toolchains for specific targets.
 pw_toolchain_arm_gcc = {
+  cortex_m0plus_debug = {
+    name = "arm_gcc_cortex_m0plus_debug"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m0plus + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_m0plus_speed_optimized = {
+    name = "arm_gcc_cortex_m0plus_speed_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m0plus + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_m0plus_size_optimized = {
+    name = "arm_gcc_cortex_m0plus_size_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_m0plus + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
   cortex_m3_debug = {
     name = "arm_gcc_cortex_m3_debug"
     forward_variables_from(arm_gcc_toolchain_tools, "*")
@@ -186,6 +216,9 @@ pw_toolchain_arm_gcc = {
 # it trivial to generate all the toolchains in this file via a
 # `generate_toolchains` target.
 pw_toolchain_arm_gcc_list = [
+  pw_toolchain_arm_gcc.cortex_m0plus_debug,
+  pw_toolchain_arm_gcc.cortex_m0plus_speed_optimized,
+  pw_toolchain_arm_gcc.cortex_m0plus_size_optimized,
   pw_toolchain_arm_gcc.cortex_m3_debug,
   pw_toolchain_arm_gcc.cortex_m3_speed_optimized,
   pw_toolchain_arm_gcc.cortex_m3_size_optimized,
