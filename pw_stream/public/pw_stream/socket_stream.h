@@ -34,9 +34,13 @@ static constexpr int kInvalidFd = -1;
 class SocketStream : public Writer, public Reader {
  public:
   explicit SocketStream() {}
+  ~SocketStream();
 
   // Listen to the port and return after a client is connected
   Status Init(uint16_t port);
+
+  // Close the socket stream and release all resources
+  void Close();
 
  private:
   Status DoWrite(std::span<const std::byte> data) override;

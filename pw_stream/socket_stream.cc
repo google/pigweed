@@ -17,6 +17,8 @@ namespace pw::stream {
 
 static constexpr uint32_t kMaxConcurrentUser = 1;
 
+SocketStream::~SocketStream() { Close(); }
+
 // Listen to the port and return after a client is connected
 Status SocketStream::Init(uint16_t port) {
   listen_port_ = port;
@@ -49,6 +51,18 @@ Status SocketStream::Init(uint16_t port) {
     return Status::Internal();
   }
   return OkStatus();
+}
+
+void SocketStream::Close() {
+  if (socket_fd_ != kInvalidFd) {
+    close(socket_fd_);
+    socket_fd_ = kInvalidFd;
+  }
+
+  if (conn_fd_ != kInvalidFd) {
+    close(conn_fd_);
+    conn_fd_ = kInvalidFd;
+  }
 }
 
 Status SocketStream::DoWrite(std::span<const std::byte> data) {
