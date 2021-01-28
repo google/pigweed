@@ -266,6 +266,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_log_tokenized:tests",
       "$dir_pw_malloc_freelist:tests",
       "$dir_pw_metric:tests",
+      "$dir_pw_multisink:tests",
       "$dir_pw_polyfill:tests",
       "$dir_pw_preprocessor:tests",
       "$dir_pw_protobuf:tests",

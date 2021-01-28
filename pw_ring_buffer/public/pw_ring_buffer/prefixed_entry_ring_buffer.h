@@ -57,12 +57,12 @@ class PrefixedEntryRingBufferMulti {
   // loss if they read slower than the writer.
   class Reader : public IntrusiveList<Reader>::Item {
    public:
-    Reader() : buffer(nullptr), read_idx(0), entry_count(0) {}
+    constexpr Reader() : buffer(nullptr), read_idx(0), entry_count(0) {}
 
-    // TODO: Add locking to the internal functions. Who owns the lock? This
-    // class? Does this class need a lock if it's not a multi-reader? (One
-    // doesn't exist today but presumably nothing prevents push + pop operations
-    // from happening on two different threads).
+    // TODO(pwbug/344): Add locking to the internal functions. Who owns the
+    // lock? This class? Does this class need a lock if it's not a multi-reader?
+    // (One doesn't exist today but presumably nothing prevents push + pop
+    // operations from happening on two different threads).
 
     // Read the oldest stored data chunk of data from the ring buffer to
     // the provided destination std::span. The number of bytes read is written
@@ -136,6 +136,8 @@ class PrefixedEntryRingBufferMulti {
     size_t entry_count;
   };
 
+  // TODO(pwbug/340): Consider changing bool to an enum, to explicitly enumerate
+  // what this variable means in clients.
   PrefixedEntryRingBufferMulti(bool user_preamble = false)
       : buffer_(nullptr),
         buffer_bytes_(0),
