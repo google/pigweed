@@ -71,9 +71,6 @@ class PairingPhase {
   // OnFailure.
   void Abort(ErrorCode ecode);
 
-  // Called by the owning class when the SMP pairing timer expires, calls OnFailure.
-  void OnPairingTimeout();
-
   Role role() const { return role_; }
 
  protected:

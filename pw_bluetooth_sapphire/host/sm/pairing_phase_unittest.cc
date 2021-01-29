@@ -97,7 +97,7 @@ using SMP_PairingPhaseDeathTest = SMP_PairingPhaseTest;
 
 TEST_F(SMP_PairingPhaseDeathTest, CallMethodOnFailedPhaseDies) {
   pairing_phase()->Abort(ErrorCode::kUnspecifiedReason);
-  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnPairingTimeout(), ".*failed.*");
+  ASSERT_DEATH_IF_SUPPORTED(pairing_phase()->OnFailure(Status(HostError::kFailed)), ".*failed.*");
 }
 
 TEST_F(SMP_PairingPhaseTest, ChannelClosedNotifiesListener) {
@@ -139,21 +139,6 @@ TEST_F(SMP_PairingPhaseTest, AbortSendsFailureMessageAndNotifiesListener) {
   Status failure_status = listener()->last_error();
   ASSERT_TRUE(failure_status.is_protocol_error());
   ASSERT_EQ(ErrorCode::kDHKeyCheckFailed, failure_status.protocol_error());
-}
-
-TEST_F(SMP_PairingPhaseTest, PairingTimeoutDisconnectsLinkAndFails) {
-  bool link_disconnected = false;
-  fake_chan()->SetLinkErrorCallback([&link_disconnected]() { link_disconnected = true; });
-  ASSERT_EQ(0, listener()->pairing_error_count());
-
-  pairing_phase()->OnPairingTimeout();
-
-  ASSERT_TRUE(link_disconnected);
-
-  // Check the listener PairingFailed callback was made.
-  ASSERT_EQ(1, listener()->pairing_error_count());
-  Status failure_status = listener()->last_error();
-  ASSERT_EQ(HostError::kTimedOut, failure_status.error());
 }
 
 }  // namespace

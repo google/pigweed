@@ -2579,6 +2579,10 @@ TEST_F(SMP_InitiatorPairingTest, PairingTimeoutWorks) {
   UpgradeSecurity(SecurityLevel::kEncrypted);
   RunLoopUntilIdle();
   ASSERT_EQ(1, pairing_request_count());
+  // Expiration of the pairing timeout should trigger the link error callback per v5.2 Vol. 3 Part H
+  // 3.4. Link disconnection will generally cause channel closure, so this simulates that behavior
+  // to validate that SM handles this safely.
+  fake_chan()->SetLinkErrorCallback([chan = fake_chan()]() { chan->Close(); });
   RunLoopFor(kPairingTimeout);
   EXPECT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, security_callback_count());

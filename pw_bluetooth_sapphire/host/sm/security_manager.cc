@@ -737,6 +737,14 @@ void SecurityManagerImpl::OnPairingFailed(Status status) {
     le_link_->set_le_ltk(hci::LinkKey());
   }
   ResetState();
+  // Reset state before potentially disconnecting link to avoid causing pairing phase to fail twice.
+  if (!status && status.error() == HostError::kTimedOut) {
+    // Per v5.2 Vol. 3 Part H 3.4, after a pairing timeout "No further SMP commands shall be sent
+    // over the L2CAP Security Manager Channel. A new Pairing process shall only be performed when a
+    // new physical link has been established."
+    bt_log(WARN, "sm", "pairing timed out! disconnecting link");
+    sm_chan_->SignalLinkError();
+  }
 }
 
 void SecurityManagerImpl::StartNewTimer() {
@@ -760,9 +768,9 @@ void SecurityManagerImpl::OnPairingTimeout() {
       [=](auto& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<std::unique_ptr<Phase1>, T>) {
-          arg->OnPairingTimeout();
+          arg->OnFailure(Status(HostError::kTimedOut));
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
-          arg.OnPairingTimeout();
+          arg.OnFailure(Status(HostError::kTimedOut));
         } else {
           ZX_PANIC("cannot timeout when current_phase_ is std::monostate!");
         }
