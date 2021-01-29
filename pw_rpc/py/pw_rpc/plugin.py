@@ -63,5 +63,11 @@ def main(codegen: Codegen) -> int:
     request = plugin_pb2.CodeGeneratorRequest.FromString(data)
     response = plugin_pb2.CodeGeneratorResponse()
     process_proto_request(codegen, request, response)
+
+    # Declare that this plugin supports optional fields in proto3. No proto
+    # message code is generated, so optional in proto3 is supported trivially.
+    response.supported_features |= (  # type: ignore[attr-defined]
+        response.FEATURE_PROTO3_OPTIONAL)  # type: ignore[attr-defined]
+
     sys.stdout.buffer.write(response.SerializeToString())
     return 0

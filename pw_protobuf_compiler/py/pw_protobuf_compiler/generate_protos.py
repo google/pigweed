@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional, Tuple
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -31,6 +31,8 @@ except ImportError:
     from logging import basicConfig as setup_logging  # type: ignore
 
 _LOG = logging.getLogger(__name__)
+
+_COMMON_FLAGS = ('--experimental_allow_proto3_optional', )
 
 
 def argument_parser(
@@ -69,56 +71,66 @@ def argument_parser(
     return parser
 
 
-def protoc_cc_args(args: argparse.Namespace) -> List[str]:
-    return [
+def protoc_cc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
         args.out_dir,
-    ]
+    )
 
 
-def protoc_go_args(args: argparse.Namespace) -> List[str]:
-    return ['--go_out', f'plugins=grpc:{args.out_dir}']
+def protoc_go_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
+        '--go_out',
+        f'plugins=grpc:{args.out_dir}',
+    )
 
 
-def protoc_nanopb_args(args: argparse.Namespace) -> List[str]:
+def protoc_nanopb_args(args: argparse.Namespace) -> Tuple[str, ...]:
     # nanopb needs to know of the include path to parse *.options files
-    return [
+    return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-nanopb={args.plugin_path}',
         # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
         # like when you merge the two using the `flag,...:out` syntax.
         f'--nanopb_opt=-I{args.module_path}',
         f'--nanopb_out={args.out_dir}',
-    ]
+    )
 
 
-def protoc_nanopb_rpc_args(args: argparse.Namespace) -> List[str]:
-    return [
+def protoc_nanopb_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
         args.out_dir,
-    ]
+    )
 
 
-def protoc_raw_rpc_args(args: argparse.Namespace) -> List[str]:
-    return [
+def protoc_raw_rpc_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
         args.out_dir,
-    ]
+    )
 
 
-def protoc_python_args(args: argparse.Namespace) -> List[str]:
-    return ['--python_out', args.out_dir, '--mypy_out', args.out_dir]
+def protoc_python_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    return _COMMON_FLAGS + (
+        '--python_out',
+        args.out_dir,
+        '--mypy_out',
+        args.out_dir,
+    )
 
+
+_DefaultArgsFunction = Callable[[argparse.Namespace], Tuple[str, ...]]
 
 # Default additional protoc arguments for each supported language.
 # TODO(frolv): Make these overridable with a command-line argument.
-DEFAULT_PROTOC_ARGS: Dict[str, Callable[[argparse.Namespace], List[str]]] = {
+DEFAULT_PROTOC_ARGS: Dict[str, _DefaultArgsFunction] = {
     'pwpb': protoc_cc_args,
     'go': protoc_go_args,
     'nanopb': protoc_nanopb_args,

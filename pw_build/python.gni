@@ -243,7 +243,7 @@ template("pw_python_package") {
 
   if (_should_lint || _test_sources != []) {
     # Packages that must be installed to use the package or run its tests.
-    _test_install_deps = []
+    _test_install_deps = [ ":$_internal_target.install" ]
     foreach(dep, _python_test_deps) {
       _test_install_deps += [ "$dep.install" ]
     }
