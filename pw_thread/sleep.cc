@@ -17,12 +17,12 @@
 using pw::chrono::SystemClock;
 
 extern "C" void pw_this_thread_SleepFor(
-    pw_chrono_SystemClock_TickCount for_at_least) {
-  pw::this_thread::sleep_for(SystemClock::duration(for_at_least));
+    pw_chrono_SystemClock_Duration for_at_least) {
+  pw::this_thread::sleep_for(SystemClock::duration(for_at_least.ticks));
 }
 
 extern "C" void pw_this_thread_SleepUntil(
     pw_chrono_SystemClock_TimePoint until_at_least) {
   pw::this_thread::sleep_until(SystemClock::time_point(
-      SystemClock::duration(until_at_least.ticks_since_epoch)));
+      SystemClock::duration(until_at_least.duration_since_epoch.ticks)));
 }

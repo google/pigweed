@@ -19,6 +19,7 @@
 #include "pw_sync/binary_semaphore.h"
 
 using pw::chrono::SystemClock;
+using namespace std::chrono_literals;
 
 namespace pw::sync {
 namespace {
@@ -32,7 +33,7 @@ void pw_sync_BinarySemaphore_CallAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_CallTryAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_CallTryAcquireFor(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TickCount for_at_least);
+    pw_chrono_SystemClock_Duration for_at_least);
 bool pw_sync_BinarySemaphore_CallTryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
     pw_chrono_SystemClock_TimePoint until_at_least);
@@ -40,14 +41,13 @@ ptrdiff_t pw_sync_BinarySemaphore_CallMax(void);
 
 }  // extern "C"
 
-static constexpr auto kArbitraryDuration = std::chrono::milliseconds(42);
 // We can't control the SystemClock's period configuration, so just in case
 // duration cannot be accurately expressed in integer ticks, round the
-// duration w/ duration_cast.
-static constexpr auto kRoundedArbitraryDuration =
-    std::chrono::duration_cast<SystemClock::duration>(kArbitraryDuration);
-static constexpr pw_chrono_SystemClock_TickCount kRoundedArbitraryDurationInC =
-    kRoundedArbitraryDuration.count();
+// duration w/ ceil.
+constexpr auto kRoundedArbitraryDuration =
+    std::chrono::ceil<SystemClock::duration>(42ms);
+constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
+    PW_SYSTEM_CLOCK_MS(42);
 
 TEST(BinarySemaphore, EmptyInitialState) {
   BinarySemaphore semaphore;
@@ -130,17 +130,17 @@ TEST(BinarySemaphore, TryAcquireForInC) {
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   ASSERT_TRUE(pw_sync_BinarySemaphore_CallTryAcquireFor(
       &semaphore, kRoundedArbitraryDurationInC));
-  pw_chrono_SystemClock_TickCount time_elapsed =
-      pw_chrono_SystemClock_Now().ticks_since_epoch - before.ticks_since_epoch;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDurationInC);
+  pw_chrono_SystemClock_Duration time_elapsed =
+      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
+  EXPECT_LT(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
 
   // Ensure it blocks and fails when empty.
   before = pw_chrono_SystemClock_Now();
   EXPECT_FALSE(pw_sync_BinarySemaphore_CallTryAcquireFor(
       &semaphore, kRoundedArbitraryDurationInC));
   time_elapsed =
-      pw_chrono_SystemClock_Now().ticks_since_epoch - before.ticks_since_epoch;
-  EXPECT_GE(time_elapsed, kRoundedArbitraryDurationInC);
+      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
+  EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
 }
 
 TEST(BinarySemaphore, TryAcquireUntilInC) {
@@ -148,18 +148,20 @@ TEST(BinarySemaphore, TryAcquireUntilInC) {
   pw_sync_BinarySemaphore_CallRelease(&semaphore);
 
   pw_chrono_SystemClock_TimePoint deadline;
-  deadline.ticks_since_epoch = pw_chrono_SystemClock_Now().ticks_since_epoch +
-                               kRoundedArbitraryDurationInC;
+  deadline.duration_since_epoch = {
+      .ticks = pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
+               kRoundedArbitraryDurationInC.ticks,
+  };
   ASSERT_TRUE(
       pw_sync_BinarySemaphore_CallTryAcquireUntil(&semaphore, deadline));
-  EXPECT_LT(pw_chrono_SystemClock_Now().ticks_since_epoch,
-            deadline.ticks_since_epoch);
+  EXPECT_LT(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
+            deadline.duration_since_epoch.ticks);
 
   // Ensure it blocks and fails when empty.
   EXPECT_FALSE(
       pw_sync_BinarySemaphore_CallTryAcquireUntil(&semaphore, deadline));
-  EXPECT_GE(pw_chrono_SystemClock_Now().ticks_since_epoch,
-            deadline.ticks_since_epoch);
+  EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
+            deadline.duration_since_epoch.ticks);
 }
 
 TEST(BinarySemaphore, MaxInC) {

@@ -16,15 +16,16 @@
 
 #include "gtest/gtest.h"
 
+using namespace std::chrono_literals;
+
 namespace pw::chrono {
 namespace {
 
-constexpr auto kArbitraryDuration = std::chrono::hours(42);
 // We can't control the SystemClock's period configuration, so just in case
 // 42 hours cannot be accurately expressed in integer ticks, round the
-// duration w/ duration_cast.
+// duration w/ ceil.
 constexpr auto kRoundedArbitraryDuration =
-    std::chrono::duration_cast<SystemClock::duration>(kArbitraryDuration);
+    std::chrono::ceil<SystemClock::duration>(42h);
 
 TEST(SimulatedSystemClock, InitialTime) {
   SimulatedSystemClock clock;

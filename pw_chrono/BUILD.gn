@@ -32,7 +32,10 @@ pw_source_set("epoch") {
 pw_facade("system_clock") {
   backend = pw_chrono_SYSTEM_CLOCK_BACKEND
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_chrono/system_clock.h" ]
+  public = [
+    "public/pw_chrono/internal/system_clock_macros.h",
+    "public/pw_chrono/system_clock.h",
+  ]
   public_deps = [
     ":epoch",
     "$dir_pw_preprocessor",

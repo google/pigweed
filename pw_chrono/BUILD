@@ -36,6 +36,7 @@ pw_cc_library(
 pw_cc_library(
     name = "system_clock_facade",
     hdrs = [
+        "public/pw_chrono/internal/system_clock_macros.h",
         "public/pw_chrono/system_clock.h",
     ],
     includes = ["public"],

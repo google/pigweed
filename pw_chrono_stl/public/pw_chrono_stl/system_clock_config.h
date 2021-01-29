@@ -13,14 +13,18 @@
 // the License.
 #pragma once
 
-#include <chrono>
+// Ideally we'd use std::chrono::steady_clock::period, however this is not
+// something we can expose to the C API. Instead we assume it has nanosecond
+// compatibility and we rely on implicit conversion to tell us at compile time
+// whether this is incompatible.
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR 1
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR 100'000'0000
+
+#ifdef __cplusplus
 
 #include "pw_chrono/epoch.h"
 
 namespace pw::chrono::backend {
-
-// Provide the native std::chrono::steady_clock period.
-using SystemClockPeriodSecondsRatio = std::chrono::steady_clock::period;
 
 // The std::chrono::steady_clock does not have a defined epoch.
 constexpr inline Epoch kSystemClockEpoch = pw::chrono::Epoch::kUnknown;
@@ -32,3 +36,5 @@ constexpr inline bool kSystemClockNmiSafe = true;
 constexpr inline bool kSystemClockFreeRunning = true;
 
 }  // namespace pw::chrono::backend
+
+#endif  // __cplusplus

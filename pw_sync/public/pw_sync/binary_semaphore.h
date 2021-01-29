@@ -109,7 +109,7 @@ void pw_sync_BinarySemaphore_Acquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_TryAcquire(pw_sync_BinarySemaphore* semaphore);
 bool pw_sync_BinarySemaphore_TryAcquireFor(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TickCount for_at_least);
+    pw_chrono_SystemClock_Duration for_at_least);
 bool pw_sync_BinarySemaphore_TryAcquireUntil(
     pw_sync_BinarySemaphore* semaphore,
     pw_chrono_SystemClock_TimePoint until_at_least);

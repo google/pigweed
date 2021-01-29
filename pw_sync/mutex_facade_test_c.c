@@ -25,8 +25,8 @@ bool pw_sync_Mutex_CallTryLock(pw_sync_Mutex* mutex) {
   return pw_sync_Mutex_TryLock(mutex);
 }
 
-bool pw_sync_Mutex_CallTryLockFor(
-    pw_sync_Mutex* mutex, pw_chrono_SystemClock_TickCount for_at_least) {
+bool pw_sync_Mutex_CallTryLockFor(pw_sync_Mutex* mutex,
+                                  pw_chrono_SystemClock_Duration for_at_least) {
   return pw_sync_Mutex_TryLockFor(mutex, for_at_least);
 }
 

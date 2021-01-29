@@ -17,7 +17,7 @@
 
 #include "pw_thread/sleep.h"
 
-void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_TickCount for_at_least) {
+void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_Duration for_at_least) {
   pw_this_thread_SleepFor(for_at_least);
 }
 

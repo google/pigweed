@@ -34,7 +34,7 @@ bool pw_sync_BinarySemaphore_CallTryAcquire(
 
 bool pw_sync_BinarySemaphore_CallTryAcquireFor(
     pw_sync_BinarySemaphore* semaphore,
-    pw_chrono_SystemClock_TickCount for_at_least) {
+    pw_chrono_SystemClock_Duration for_at_least) {
   return pw_sync_BinarySemaphore_TryAcquireFor(semaphore, for_at_least);
 }
 

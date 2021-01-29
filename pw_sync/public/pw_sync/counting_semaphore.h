@@ -111,7 +111,7 @@ void pw_sync_CountingSemaphore_Acquire(pw_sync_CountingSemaphore* semaphore);
 bool pw_sync_CountingSemaphore_TryAcquire(pw_sync_CountingSemaphore* semaphore);
 bool pw_sync_CountingSemaphore_TryAcquireFor(
     pw_sync_CountingSemaphore* semaphore,
-    pw_chrono_SystemClock_TickCount for_at_least);
+    pw_chrono_SystemClock_Duration for_at_least);
 bool pw_sync_CountingSemaphore_TryAcquireUntil(
     pw_sync_CountingSemaphore* semaphore,
     pw_chrono_SystemClock_TimePoint until_at_least);

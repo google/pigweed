@@ -37,7 +37,7 @@ void sleep_until(chrono::SystemClock::time_point until_at_least);
 
 PW_EXTERN_C_START
 
-void pw_this_thread_SleepFor(pw_chrono_SystemClock_TickCount for_at_least);
+void pw_this_thread_SleepFor(pw_chrono_SystemClock_Duration for_at_least);
 void pw_this_thread_SleepUntil(pw_chrono_SystemClock_TimePoint until_at_least);
 
 PW_EXTERN_C_END

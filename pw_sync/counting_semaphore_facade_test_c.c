@@ -41,7 +41,7 @@ bool pw_sync_CountingSemaphore_CallTryAcquire(
 
 bool pw_sync_CountingSemaphore_CallTryAcquireFor(
     pw_sync_CountingSemaphore* semaphore,
-    pw_chrono_SystemClock_TickCount for_at_least) {
+    pw_chrono_SystemClock_Duration for_at_least) {
   return pw_sync_CountingSemaphore_TryAcquireFor(semaphore, for_at_least);
 }
 

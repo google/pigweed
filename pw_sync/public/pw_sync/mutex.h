@@ -109,7 +109,7 @@ PW_EXTERN_C_START
 void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex);
 bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex);
 bool pw_sync_Mutex_TryLockFor(pw_sync_Mutex* mutex,
-                              pw_chrono_SystemClock_TickCount for_at_least);
+                              pw_chrono_SystemClock_Duration for_at_least);
 bool pw_sync_Mutex_TryLockUntil(pw_sync_Mutex* mutex,
                                 pw_chrono_SystemClock_TimePoint until_at_least);
 void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex);

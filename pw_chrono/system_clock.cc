@@ -32,28 +32,22 @@ VirtualSystemClock& VirtualSystemClock::RealClock() {
 }  // namespace pw::chrono
 
 extern "C" pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_Now() {
-  return {.ticks_since_epoch =
-              pw::chrono::SystemClock::now().time_since_epoch().count()};
+  return {
+      .duration_since_epoch = {
+          .ticks = pw::chrono::SystemClock::now().time_since_epoch().count()}};
 }
 
-extern "C" pw_chrono_SystemClock_TickCount pw_chrono_SystemClock_TimeDelta(
+extern "C" pw_chrono_SystemClock_Duration pw_chrono_SystemClock_TimeElapsed(
     pw_chrono_SystemClock_TimePoint last_time,
     pw_chrono_SystemClock_TimePoint current_time) {
-  return current_time.ticks_since_epoch - last_time.ticks_since_epoch;
-}
-
-extern "C" int32_t pw_chrono_SystemClock_PeriodSeconds_Numerator() {
-  return pw::chrono::SystemClock::period::num;
-}
-
-extern "C" int32_t pw_chrono_SystemClock_PeriodSeconds_Denominator() {
-  return pw::chrono::SystemClock::period::den;
+  return {.ticks = current_time.duration_since_epoch.ticks -
+                   last_time.duration_since_epoch.ticks};
 }
 
 extern "C" pw_chrono_SystemClock_Nanoseconds
-pw_chrono_SystemClock_TickCountToNsTruncate(
-    pw_chrono_SystemClock_TickCount ticks) {
-  return std::chrono::duration_cast<std::chrono::nanoseconds>(
-             pw::chrono::SystemClock::duration(ticks))
+pw_chrono_SystemClock_DurationToNsFloor(
+    pw_chrono_SystemClock_Duration duration) {
+  return std::chrono::floor<std::chrono::nanoseconds>(
+             pw::chrono::SystemClock::duration(duration.ticks))
       .count();
 }

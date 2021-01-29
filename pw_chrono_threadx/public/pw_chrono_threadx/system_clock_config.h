@@ -13,18 +13,20 @@
 // the License.
 #pragma once
 
-#include <ratio>
-
-#include "pw_chrono/epoch.h"
 #include "pw_chrono_threadx/config.h"
-
-namespace pw::chrono::backend {
 
 // ThreadX does not have an API to determine the tick rate/period, instead
 // require the user to specify this through the configuration.
-using SystemClockPeriodSecondsRatio =
-    std::ratio<PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_NUMERATOR,
-               PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR>;
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR \
+  PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_NUMERATOR
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR \
+  PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR
+
+#ifdef __cplusplus
+
+#include "pw_chrono/epoch.h"
+
+namespace pw::chrono::backend {
 
 // The ThreadX clock starts at zero during initialization, approximately the
 // time since boot.
@@ -37,3 +39,5 @@ constexpr inline bool kSystemClockNmiSafe = false;
 constexpr inline bool kSystemClockFreeRunning = false;
 
 }  // namespace pw::chrono::backend
+
+#endif  // __cplusplus

@@ -38,7 +38,7 @@ namespace {
 auto start = system_clock::now();
 uint32_t GetTimeSinceBootMillis() {
   auto delta = system_clock::now() - start;
-  return duration_cast<milliseconds>(delta).count();
+  return floor<milliseconds>(delta).count();
 }
 
 // Creating a very simple runnable with predictable behaviour to help with the

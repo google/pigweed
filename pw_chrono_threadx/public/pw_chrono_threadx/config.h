@@ -31,8 +31,10 @@
 #define PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR 100
 #endif  // PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR
 
-static_assert(PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_NUMERATOR >= 1);
-static_assert(PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR >= 1);
+static_assert(PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_NUMERATOR >= 1,
+              "the numerator must be positive and cannot be fractional");
+static_assert(PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR >= 1,
+              "the denominator must be positive and cannot be fractional");
 
 // Because the SystemClock::now() implementation requires the user to invoke it
 // more than once per overflow period, the max timeout is set to ensure that
@@ -43,4 +45,5 @@ static_assert(PW_CHRONO_THREADX_CFG_CLOCK_PERIOD_SECONDS_DENOMINATOR >= 1);
 #endif  // PW_CHRONO_THREADX_CFG_MAX_TIMEOUT
 
 static_assert((PW_CHRONO_THREADX_CFG_MAX_TIMEOUT > 0) &&
-              (PW_CHRONO_THREADX_CFG_MAX_TIMEOUT <= (TX_WAIT_FOREVER - 1)));
+                  (PW_CHRONO_THREADX_CFG_MAX_TIMEOUT <= (TX_WAIT_FOREVER - 1)),
+              "the timeout must be greater than 0 and less than the sentinel");

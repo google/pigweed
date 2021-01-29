@@ -18,18 +18,20 @@
 
 #include "pw_preprocessor/util.h"
 
-#ifdef __cplusplus
-
-#include <chrono>
-
 // The backend implements this header to provide the following SystemClock
 // parameters, for more detail on the parameters see the SystemClock usage of
 // them below:
-//   std::ratio<> typed pw::chrono::backend::SystemClockPeriodSecondsRatio type
+//   PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR
+//   PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR
 //   constexpr pw::chrono::Epoch pw::chrono::backend::kSystemClockEpoch;
 //   constexpr bool pw::chrono::backend::kSystemClockFreeRunning;
 //   constexpr bool pw::chrono::backend::kSystemClockNmiSafe;
 #include "pw_chrono_backend/system_clock_config.h"
+
+#ifdef __cplusplus
+
+#include <chrono>
+#include <ratio>
 
 namespace pw::chrono {
 namespace backend {
@@ -72,7 +74,8 @@ int64_t GetSystemClockTickCount();
 struct SystemClock {
   using rep = int64_t;
   // The period must be provided by the backend.
-  using period = backend::SystemClockPeriodSecondsRatio;
+  using period = std::ratio<PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR,
+                            PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR>;
   using duration = std::chrono::duration<rep, period>;
   using time_point = std::chrono::time_point<SystemClock>;
   // The epoch must be provided by the backend.
@@ -152,9 +155,36 @@ class VirtualSystemClock {
 
 PW_EXTERN_C_START
 
-typedef int64_t pw_chrono_SystemClock_TickCount;
+// C API Users should not create pw_chrono_SystemClock_Duration's directly,
+// instead it is strongly recommended to use macros which express the duration
+// in time units, instead of non-portable ticks.
+//
+// The following macros round up just like std::chrono::ceil, this is the
+// recommended rounding to maintain the "at least" contract of timeouts and
+// deadlines (note the *_CEIL macros are the same only more explicit):
+//   PW_SYSTEM_CLOCK_MS(milliseconds)
+//   PW_SYSTEM_CLOCK_S(seconds)
+//   PW_SYSTEM_CLOCK_MIN(minutes)
+//   PW_SYSTEM_CLOCK_H(hours)
+//   PW_SYSTEM_CLOCK_MS_CEIL(milliseconds)
+//   PW_SYSTEM_CLOCK_S_CEIL(seconds)
+//   PW_SYSTEM_CLOCK_MIN_CEIL(minutes)
+//   PW_SYSTEM_CLOCK_H_CEIL(hours)
+//
+// The following macros round down like std::chrono::{floor,duration_cast},
+// these are discouraged but sometimes necessary:
+//   PW_SYSTEM_CLOCK_MS_FLOOR(milliseconds)
+//   PW_SYSTEM_CLOCK_S_FLOOR(seconds)
+//   PW_SYSTEM_CLOCK_MIN_FLOOR(minutes)
+//   PW_SYSTEM_CLOCK_H_FLOOR(hours)
+#include "pw_chrono/internal/system_clock_macros.h"
+
 typedef struct {
-  pw_chrono_SystemClock_TickCount ticks_since_epoch;
+  int64_t ticks;
+} pw_chrono_SystemClock_Duration;
+
+typedef struct {
+  pw_chrono_SystemClock_Duration duration_since_epoch;
 } pw_chrono_SystemClock_TimePoint;
 typedef int64_t pw_chrono_SystemClock_Nanoseconds;
 
@@ -162,18 +192,18 @@ typedef int64_t pw_chrono_SystemClock_Nanoseconds;
 pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_Now();
 
 // Returns the change in time between the current_time - last_time.
-pw_chrono_SystemClock_TickCount pw_chrono_SystemClock_TimeDelta(
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_TimeElapsed(
     pw_chrono_SystemClock_TimePoint last_time,
     pw_chrono_SystemClock_TimePoint current_time);
 
 // For lossless time unit conversion, the seconds per tick ratio that is
-// numerator/denominator should be used.
-int32_t pw_chrono_SystemClock_PeriodSeconds_Numerator();
-int32_t pw_chrono_SystemClock_PeriodSeconds_Denominator();
+// numerator/denominator should be used:
+//   PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR
+//   PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR
 
-// Warning, this may be lossy due to the use of std::chrono::duration_cast,
+// Warning, this may be lossy due to the use of std::chrono::floor,
 // rounding towards zero.
-pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_TickCountToNsTruncate(
-    pw_chrono_SystemClock_TickCount ticks);
+pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_DurationToNsFloor(
+    pw_chrono_SystemClock_Duration duration);
 
 PW_EXTERN_C_END

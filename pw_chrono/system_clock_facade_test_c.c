@@ -21,22 +21,13 @@ pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_CallNow() {
   return pw_chrono_SystemClock_Now();
 }
 
-pw_chrono_SystemClock_TickCount pw_chrono_SystemClock_CallTimeDelta(
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_CallTimeElapsed(
     pw_chrono_SystemClock_TimePoint last_time,
     pw_chrono_SystemClock_TimePoint current_time) {
-  return pw_chrono_SystemClock_TimeDelta(last_time, current_time);
+  return pw_chrono_SystemClock_TimeElapsed(last_time, current_time);
 }
 
-int32_t pw_chrono_SystemClock_PeriodSeconds_CallNumerator() {
-  return pw_chrono_SystemClock_PeriodSeconds_Numerator();
-}
-
-int32_t pw_chrono_SystemClock_PeriodSeconds_CallDenominator() {
-  return pw_chrono_SystemClock_PeriodSeconds_Denominator();
-}
-
-pw_chrono_SystemClock_Nanoseconds
-pw_chrono_SystemClock_CallTickCountToNsTruncate(
-    pw_chrono_SystemClock_TickCount ticks) {
-  return pw_chrono_SystemClock_TickCountToNsTruncate(ticks);
+pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_CallDurationToNsFloor(
+    pw_chrono_SystemClock_Duration ticks) {
+  return pw_chrono_SystemClock_DurationToNsFloor(ticks);
 }

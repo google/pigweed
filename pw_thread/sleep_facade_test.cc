@@ -20,6 +20,7 @@
 #include "pw_thread/sleep.h"
 
 using pw::chrono::SystemClock;
+using namespace std::chrono_literals;
 
 namespace pw::this_thread {
 namespace {
@@ -27,20 +28,19 @@ namespace {
 extern "C" {
 
 // Functions defined in sleep_facade_test_c.c which call the API from C.
-void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_TickCount for_at_least);
+void pw_this_thread_CallSleepFor(pw_chrono_SystemClock_Duration for_at_least);
 void pw_this_thread_CallSleepUntil(
     pw_chrono_SystemClock_TimePoint until_at_least);
 
 }  // extern "C"
 
-static constexpr auto kArbitraryDuration = std::chrono::milliseconds(42);
 // We can't control the SystemClock's period configuration, so just in case
 // duration cannot be accurately expressed in integer ticks, round the
-// duration w/ duration_cast.
-static constexpr auto kRoundedArbitraryDuration =
-    std::chrono::duration_cast<SystemClock::duration>(kArbitraryDuration);
-static constexpr pw_chrono_SystemClock_TickCount kRoundedArbitraryDurationInC =
-    kRoundedArbitraryDuration.count();
+// duration w/ ceil.
+constexpr auto kRoundedArbitraryDuration =
+    std::chrono::ceil<SystemClock::duration>(42ms);
+constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
+    PW_SYSTEM_CLOCK_MS(42);
 
 TEST(Sleep, SleepFor) {
   // Ensure we are in a thread context, meaning we are permitted to sleep.
@@ -68,9 +68,9 @@ TEST(Sleep, SleepForInC) {
 
   pw_chrono_SystemClock_TimePoint before = pw_chrono_SystemClock_Now();
   pw_this_thread_SleepFor(kRoundedArbitraryDurationInC);
-  pw_chrono_SystemClock_TickCount time_elapsed =
-      pw_chrono_SystemClock_Now().ticks_since_epoch - before.ticks_since_epoch;
-  EXPECT_GE(time_elapsed, kRoundedArbitraryDurationInC);
+  pw_chrono_SystemClock_Duration time_elapsed =
+      pw_chrono_SystemClock_TimeElapsed(before, pw_chrono_SystemClock_Now());
+  EXPECT_GE(time_elapsed.ticks, kRoundedArbitraryDurationInC.ticks);
 }
 
 TEST(Sleep, SleepUntilInC) {
@@ -78,11 +78,12 @@ TEST(Sleep, SleepUntilInC) {
   ASSERT_NE(get_id(), thread::Id());
 
   pw_chrono_SystemClock_TimePoint deadline;
-  deadline.ticks_since_epoch = pw_chrono_SystemClock_Now().ticks_since_epoch +
-                               kRoundedArbitraryDurationInC;
+  deadline.duration_since_epoch.ticks =
+      pw_chrono_SystemClock_Now().duration_since_epoch.ticks +
+      kRoundedArbitraryDurationInC.ticks;
   pw_this_thread_CallSleepUntil(deadline);
-  EXPECT_GE(pw_chrono_SystemClock_Now().ticks_since_epoch,
-            deadline.ticks_since_epoch);
+  EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
+            deadline.duration_since_epoch.ticks);
 }
 
 }  // namespace

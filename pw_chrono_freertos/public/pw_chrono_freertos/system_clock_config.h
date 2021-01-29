@@ -13,15 +13,17 @@
 // the License.
 #pragma once
 
-#include <ratio>
-
 #include "FreeRTOS.h"
+
+// Use the FreeRTOS config's tick rate.
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR 1
+#define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR configTICK_RATE_HZ
+
+#ifdef __cplusplus
+
 #include "pw_chrono/epoch.h"
 
 namespace pw::chrono::backend {
-
-// Use the FreeRTOS config's tick rate.
-using SystemClockPeriodSecondsRatio = std::ratio<1, configTICK_RATE_HZ>;
 
 // The FreeRTOS clock starts at zero during initialization, approximately the
 // time since boot.
@@ -34,3 +36,5 @@ constexpr inline bool kSystemClockNmiSafe = false;
 constexpr inline bool kSystemClockFreeRunning = false;
 
 }  // namespace pw::chrono::backend
+
+#endif  // __cplusplus

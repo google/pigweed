@@ -18,6 +18,8 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_preprocessor/util.h"
 
+using namespace std::chrono_literals;
+
 namespace pw::chrono {
 namespace {
 
@@ -25,16 +27,12 @@ extern "C" {
 
 // Functions defined in system_clock_facade_test_c.c which call the API from C.
 pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_CallNow();
-pw_chrono_SystemClock_TickCount pw_chrono_SystemClock_CallTimeDelta(
+pw_chrono_SystemClock_Duration pw_chrono_SystemClock_CallTimeElapsed(
     pw_chrono_SystemClock_TimePoint last_time,
     pw_chrono_SystemClock_TimePoint current_time);
 
-int32_t pw_chrono_SystemClock_PeriodSeconds_CallNumerator();
-int32_t pw_chrono_SystemClock_PeriodSeconds_CallDenominator();
-
-pw_chrono_SystemClock_Nanoseconds
-pw_chrono_SystemClock_CallTickCountToNsTruncate(
-    pw_chrono_SystemClock_TickCount ticks);
+pw_chrono_SystemClock_Nanoseconds pw_chrono_SystemClock_CallDurationToNsFloor(
+    pw_chrono_SystemClock_Duration ticks);
 
 }  // extern "C"
 
@@ -81,8 +79,8 @@ TEST(SystemClock, NowInC) {
   // Verify the clock moves forward.
   bool clock_moved_forward = false;
   for (uint64_t i = 0; i < kMaxIterations; ++i) {
-    if (pw_chrono_SystemClock_CallNow().ticks_since_epoch >
-        start_time.ticks_since_epoch) {
+    if (pw_chrono_SystemClock_CallNow().duration_since_epoch.ticks >
+        start_time.duration_since_epoch.ticks) {
       clock_moved_forward = true;
       break;
     }
@@ -90,32 +88,26 @@ TEST(SystemClock, NowInC) {
   EXPECT_TRUE(clock_moved_forward);
 }
 
-TEST(SystemClock, TimeDeltaInC) {
+TEST(SystemClock, TimeElapsedInC) {
   const pw_chrono_SystemClock_TimePoint first = pw_chrono_SystemClock_CallNow();
   const pw_chrono_SystemClock_TimePoint last = pw_chrono_SystemClock_CallNow();
   static_assert(SystemClock::is_monotonic);
-  EXPECT_GE(0, pw_chrono_SystemClock_CallTimeDelta(last, first));
-}
-
-TEST(SystemClock, PeriodRatioInC) {
-  EXPECT_EQ(SystemClock::period::num,
-            pw_chrono_SystemClock_PeriodSeconds_CallNumerator());
-  EXPECT_EQ(SystemClock::period::den,
-            pw_chrono_SystemClock_PeriodSeconds_CallDenominator());
+  EXPECT_GE(0, pw_chrono_SystemClock_CallTimeElapsed(last, first).ticks);
 }
 
 TEST(SystemClock, DurationCastInC) {
-  static constexpr auto kArbitraryPeriod = std::chrono::hours(42);
   // We can't control the SystemClock's period configuration, so just in case
   // 42 hours cannot be accurately expressed in integer ticks, round the
-  // duration w/ duration_cast.
+  // duration w/ floor.
   static constexpr auto kRoundedArbitraryDuration =
-      std::chrono::duration_cast<SystemClock::duration>(kArbitraryPeriod);
-  EXPECT_EQ(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                kRoundedArbitraryDuration)
-                .count(),
-            pw_chrono_SystemClock_CallTickCountToNsTruncate(
-                kRoundedArbitraryDuration.count()));
+      std::chrono::floor<SystemClock::duration>(42h);
+  static constexpr pw_chrono_SystemClock_Duration kRoundedArbitraryDurationInC =
+      PW_SYSTEM_CLOCK_H_FLOOR(42);
+  EXPECT_EQ(
+      std::chrono::floor<std::chrono::nanoseconds>(kRoundedArbitraryDuration)
+          .count(),
+      pw_chrono_SystemClock_CallDurationToNsFloor(
+          kRoundedArbitraryDurationInC));
 }
 
 }  // namespace
