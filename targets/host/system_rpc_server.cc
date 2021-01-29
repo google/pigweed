@@ -46,7 +46,7 @@ void Init() {
     hdlc::WriteUIFrame(1, std::as_bytes(std::span(log)), socket_stream);
   });
 
-  socket_stream.Init(kSocketPort);
+  socket_stream.Serve(kSocketPort);
 }
 
 rpc::Server& Server() { return server; }

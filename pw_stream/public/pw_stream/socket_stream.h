@@ -37,7 +37,11 @@ class SocketStream : public Writer, public Reader {
   ~SocketStream();
 
   // Listen to the port and return after a client is connected
-  Status Init(uint16_t port);
+  Status Serve(uint16_t port);
+
+  // Connect to a local or remote endpoint. Host must be an IPv4 address. If
+  // host is nullptr then the locahost address is used instead.
+  Status Connect(const char* host, uint16_t port);
 
   // Close the socket stream and release all resources
   void Close();

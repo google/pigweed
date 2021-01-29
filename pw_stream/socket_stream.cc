@@ -16,11 +16,12 @@
 namespace pw::stream {
 
 static constexpr uint32_t kMaxConcurrentUser = 1;
+static constexpr char kLocalhostAddress[] = "127.0.0.1";
 
 SocketStream::~SocketStream() { Close(); }
 
 // Listen to the port and return after a client is connected
-Status SocketStream::Init(uint16_t port) {
+Status SocketStream::Serve(uint16_t port) {
   listen_port_ = port;
   socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd_ == kInvalidFd) {
@@ -50,6 +51,30 @@ Status SocketStream::Init(uint16_t port) {
   if (conn_fd_ < 0) {
     return Status::Internal();
   }
+  return OkStatus();
+}
+
+Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
+  conn_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+
+  sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+
+  if (host == nullptr) {
+    host = kLocalhostAddress;
+  }
+
+  if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
+    return Status::Unknown();
+  }
+
+  int result = connect(
+      conn_fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
+  if (result < 0) {
+    return Status::Unknown();
+  }
+
   return OkStatus();
 }
 
