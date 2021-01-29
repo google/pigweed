@@ -42,6 +42,7 @@ declare_args() {
 group("default") {
   deps = [
     ":docs",
+    ":fuzzers",
     ":host",
     ":python.install",
     ":python.lint",
@@ -116,6 +117,14 @@ _build_pigweed_default_at_all_optimization_levels("qemu") {
 
 group("docs") {
   deps = [ ":pigweed_default($dir_pigweed/targets/docs)" ]
+}
+
+# OSS-Fuzz uses this target to build fuzzers alone.
+group("fuzzers") {
+  # Fuzzing is only supported on Linux and MacOS using clang.
+  if (host_os != "win") {
+    deps = [ ":pw_module_tests($dir_pigweed/targets/host:host_clang_fuzz)" ]
+  }
 }
 
 pw_python_group("python") {

@@ -148,6 +148,18 @@ pw_target_toolchain_host = {
     }
   }
 
+  clang_fuzz = {
+    name = "host_clang_fuzz"
+    _toolchain_base = pw_toolchain_host_clang.fuzz
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _target_default_configs
+    }
+  }
+
   gcc_debug = {
     name = "host_gcc_debug"
     _toolchain_base = pw_toolchain_host_gcc.debug
@@ -192,6 +204,7 @@ pw_target_toolchain_host_list = [
   pw_target_toolchain_host.clang_debug,
   pw_target_toolchain_host.clang_speed_optimized,
   pw_target_toolchain_host.clang_size_optimized,
+  pw_target_toolchain_host.clang_fuzz,
   pw_target_toolchain_host.gcc_debug,
   pw_target_toolchain_host.gcc_speed_optimized,
   pw_target_toolchain_host.gcc_size_optimized,

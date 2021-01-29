@@ -17,7 +17,7 @@ import("//build_overrides/pigweed.gni")
 declare_args() {
   # Sets the sanitizer to pass to clang. Valid values are those for "-fsanitize"
   # listed in https://clang.llvm.org/docs/UsersManual.html#id9.
-  pw_toolchain_SANITIZER = ""
+  pw_toolchain_SANITIZERS = []
 
   # Indicates if this build is a part of OSS-Fuzz, which needs to be able to
   # provide its own compiler and flags. This violates the build hermeticisim and
@@ -47,13 +47,6 @@ _defaults = {
     "$dir_pw_toolchain/host_clang:no_system_libcpp",
     "$dir_pw_toolchain/host_clang:xcode_sysroot",
   ]
-  if (pw_toolchain_SANITIZER != "") {
-    default_configs +=
-        [ "$dir_pw_toolchain/host_clang:sanitize_$pw_toolchain_SANITIZER" ]
-  }
-  if (pw_toolchain_OSS_FUZZ_ENABLED) {
-    default_configs += [ "$dir_pw_fuzzer:oss_fuzz_extra" ]
-  }
 }
 
 pw_toolchain_host_clang = {
@@ -83,6 +76,30 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_size" ]
     }
   }
+
+  fuzz = {
+    name = "host_clang_fuzz"
+    forward_variables_from(_host_clang_toolchain, "*")
+    defaults = {
+      forward_variables_from(_defaults, "*")
+
+      # Fuzz faster.
+      default_configs += [ "$dir_pw_build:optimize_speed" ]
+
+      if (pw_toolchain_SANITIZERS == []) {
+        # Default to ASan for fuzzing, which is what we typically care about.
+        pw_toolchain_SANITIZERS = [ "address" ]
+      }
+      foreach(sanitizer, pw_toolchain_SANITIZERS) {
+        default_configs +=
+            [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
+      }
+
+      if (pw_toolchain_OSS_FUZZ_ENABLED) {
+        default_configs += [ "$dir_pw_fuzzer:oss_fuzz_extra" ]
+      }
+    }
+  }
 }
 
 # Describes host clang toolchains.
@@ -90,4 +107,5 @@ pw_toolchain_host_clang_list = [
   pw_toolchain_host_clang.debug,
   pw_toolchain_host_clang.speed_optimized,
   pw_toolchain_host_clang.size_optimized,
+  pw_toolchain_host_clang.fuzz,
 ]

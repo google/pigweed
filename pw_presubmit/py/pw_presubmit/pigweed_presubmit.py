@@ -152,11 +152,8 @@ def gn_host_tools(ctx: PresubmitContext):
 
 @filter_paths(endswith=format_code.C_FORMAT.extensions)
 def oss_fuzz_build(ctx: PresubmitContext):
-    build.gn_gen(ctx.root,
-                 ctx.output_dir,
-                 pw_toolchain_OSS_FUZZ_ENABLED=True,
-                 pw_toolchain_SANITIZER="address")
-    build.ninja(ctx.output_dir, "host_clang")
+    build.gn_gen(ctx.root, ctx.output_dir, pw_toolchain_OSS_FUZZ_ENABLED=True)
+    build.ninja(ctx.output_dir, "fuzzers")
 
 
 @filter_paths(endswith='.py')
