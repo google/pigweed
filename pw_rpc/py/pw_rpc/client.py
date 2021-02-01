@@ -16,8 +16,8 @@
 import abc
 from dataclasses import dataclass
 import logging
-from typing import Collection, Dict, Iterable, Iterator, List, NamedTuple
-from typing import Optional
+from typing import (Any, Collection, Dict, Iterable, Iterator, List,
+                    NamedTuple, Optional)
 
 from google.protobuf.message import DecodeError
 from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
@@ -122,39 +122,73 @@ class ClientImpl(abc.ABC):
     This interface defines the semantics for invoking an RPC on a particular
     client.
     """
+    def __init__(self):
+        self.client: 'Client' = None
+        self.rpcs: PendingRpcs = None
+
     @abc.abstractmethod
-    def method_client(self, rpcs: PendingRpcs, channel: Channel,
-                      method: Method):
+    def method_client(self, channel: Channel, method: Method) -> Any:
         """Returns an object that invokes a method using the given channel."""
 
     @abc.abstractmethod
-    def process_response(self,
-                         rpcs: PendingRpcs,
-                         rpc: PendingRpc,
-                         context,
-                         status: Optional[Status],
-                         payload,
-                         *,
-                         args: tuple = (),
-                         kwargs: dict = None) -> None:
-        """Processes a response from the RPC server.
+    def handle_response(self,
+                        rpc: PendingRpc,
+                        context: Any,
+                        payload: Any,
+                        *,
+                        args: tuple = (),
+                        kwargs: dict = None) -> Any:
+        """Handles a response from the RPC server.
 
         Args:
-          rpcs: The PendingRpcs object used by the client.
           rpc: Information about the pending RPC
           context: Arbitrary context object associated with the pending RPC
-          status: If set, this is the last packet for this RPC. None otherwise.
-          payload: A protobuf message, if present. None otherwise.
+          payload: A protobuf message
+          args, kwargs: Arbitrary arguments passed to the ClientImpl
+        """
+
+    @abc.abstractmethod
+    def handle_completion(self,
+                          rpc: PendingRpc,
+                          context: Any,
+                          status: Status,
+                          *,
+                          args: tuple = (),
+                          kwargs: dict = None) -> Any:
+        """Handles the successful completion of an RPC.
+
+        Args:
+          rpc: Information about the pending RPC
+          context: Arbitrary context object associated with the pending RPC
+          status: Status returned from the RPC
+          args, kwargs: Arbitrary arguments passed to the ClientImpl
+        """
+
+    @abc.abstractmethod
+    def handle_error(self,
+                     rpc: PendingRpc,
+                     context,
+                     status: Status,
+                     *,
+                     args: tuple = (),
+                     kwargs: dict = None):
+        """Handles the abnormal termination of an RPC.
+
+        args:
+          rpc: Information about the pending RPC
+          context: Arbitrary context object associated with the pending RPC
+          status: which error occurred
+          args, kwargs: Arbitrary arguments passed to the ClientImpl
         """
 
 
 class ServiceClient(descriptors.ServiceAccessor):
     """Navigates the methods in a service provided by a ChannelClient."""
-    def __init__(self, rpcs: PendingRpcs, client_impl: ClientImpl,
-                 channel: Channel, service: Service):
+    def __init__(self, client_impl: ClientImpl, channel: Channel,
+                 service: Service):
         super().__init__(
             {
-                method: client_impl.method_client(rpcs, channel, method)
+                method: client_impl.method_client(channel, method)
                 for method in service.methods
             },
             as_attrs='members')
@@ -173,13 +207,11 @@ class ServiceClient(descriptors.ServiceAccessor):
 
 class Services(descriptors.ServiceAccessor[ServiceClient]):
     """Navigates the services provided by a ChannelClient."""
-    def __init__(self, rpcs: PendingRpcs, client_impl, channel: Channel,
+    def __init__(self, client_impl, channel: Channel,
                  services: Collection[Service]):
         super().__init__(
-            {
-                s: ServiceClient(rpcs, client_impl, channel, s)
-                for s in services
-            },
+            {s: ServiceClient(client_impl, channel, s)
+             for s in services},
             as_attrs='packages')
 
         self._channel = channel
@@ -286,15 +318,15 @@ class Client:
     def __init__(self, impl: ClientImpl, channels: Iterable[Channel],
                  services: Iterable[Service]):
         self._impl = impl
+        self._impl.client = self
+        self._impl.rpcs = PendingRpcs()
 
         self.services = descriptors.Services(services)
 
-        self._rpcs = PendingRpcs()
-
         self._channels_by_id = {
-            channel.id: ChannelClient(
-                self, channel,
-                Services(self._rpcs, self._impl, channel, self.services))
+            channel.id:
+            ChannelClient(self, channel,
+                          Services(self._impl, channel, self.services))
             for channel in channels
         }
 
@@ -374,7 +406,7 @@ class Client:
         payload = _decode_payload(rpc, packet)
 
         try:
-            context = self._rpcs.get_pending(rpc, status)
+            context = self._impl.rpcs.get_pending(rpc, status)
         except KeyError:
             channel_client.channel.output(  # type: ignore
                 packets.encode_client_error(packet,
@@ -383,18 +415,28 @@ class Client:
             return Status.OK
 
         if packet.type == PacketType.SERVER_ERROR:
+            assert status is not None and not status.ok()
             _LOG.warning('%s: invocation failed with %s', rpc, status)
-
-            # Do not return yet -- call process_response so the ClientImpl can
-            # do any necessary cleanup.
-
-        self._impl.process_response(self._rpcs,
-                                    rpc,
+            self._impl.handle_error(rpc,
                                     context,
                                     status,
-                                    payload,
                                     args=impl_args,
                                     kwargs=impl_kwargs)
+            return Status.OK
+
+        if payload is not None:
+            self._impl.handle_response(rpc,
+                                       context,
+                                       payload,
+                                       args=impl_args,
+                                       kwargs=impl_kwargs)
+        if status is not None:
+            self._impl.handle_completion(rpc,
+                                         context,
+                                         status,
+                                         args=impl_args,
+                                         kwargs=impl_kwargs)
+
         return Status.OK
 
     def _look_up_service_and_method(
