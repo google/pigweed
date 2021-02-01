@@ -18,6 +18,7 @@ import pathlib
 import shutil
 import subprocess
 from typing import Union
+import urllib.parse
 
 import pw_package.package_manager
 
@@ -50,6 +51,16 @@ class GitRepo(pw_package.package_manager.Package):
             return False
 
         remote = git_stdout('remote', 'get-url', 'origin', repo=path)
+        url = urllib.parse.urlparse(remote)
+        if url.scheme == 'sso' or '.git.corp.google.com' in url.netloc:
+            host = url.netloc.replace(
+                '.git.corp.google.com',
+                '.googlesource.com',
+            )
+            if not host.endswith('.googlesource.com'):
+                host += '.googlesource.com'
+            remote = 'https://{}{}'.format(host, url.path)
+
         commit = git_stdout('rev-parse', 'HEAD', repo=path)
         status = git_stdout('status', '--porcelain=v1', repo=path)
         return remote == self._url and commit == self._commit and not status

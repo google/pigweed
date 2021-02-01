@@ -23,11 +23,13 @@ import pw_package.package_manager
 class NanoPB(pw_package.git_repo.GitRepo):
     """Install and check status of nanopb."""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='nanopb',
-                         url='https://github.com/nanopb/nanopb.git',
-                         commit='9f57cc871d8a025039019c2d2fde217591f4e30d',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='nanopb',
+            url=
+            'https://pigweed.googlesource.com/third_party/github/nanopb/nanopb',
+            commit='2b48a361786dfb1f63d229840217a93aae064667',
+            **kwargs)
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (
