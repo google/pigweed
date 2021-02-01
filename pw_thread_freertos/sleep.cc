@@ -30,7 +30,7 @@ namespace pw::this_thread {
 void sleep_for(chrono::SystemClock::duration for_at_least) {
   PW_DCHECK(get_id() != thread::Id());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
+  // Clamp negative durations to be 0 which maps to yield with vTaskDelay.
   for_at_least = std::max(for_at_least, chrono::SystemClock::duration::zero());
 
   while (for_at_least > kMaxTimeout) {

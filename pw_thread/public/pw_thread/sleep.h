@@ -20,9 +20,25 @@
 
 namespace pw::this_thread {
 
+// Blocks the execution of the current thread for at least the specified
+// duration. This function may block for longer due to scheduling or resource
+// contention delays.
+//
+// A sleep duration of 0 will at minimum yield, meaning it will provide a hint
+// to the implementation to reschedule the execution of threads, allowing other
+// threads to run.
+//
 // This can only be called from a thread, meaning the scheduler is running.
 void sleep_for(chrono::SystemClock::duration for_at_least);
 
+// Blocks the execution of the current thread until at least the specified
+// deadline. This function may block for longer due to scheduling or resource
+// contention delays.
+//
+// A sleep deadline in the past up to the current time will at minimum yield
+// meaning it will provide a hint to the implementation to reschedule the
+// execution of threads, allowing other threads to run.
+//
 // This can only be called from a thread, meaning the scheduler is running.
 void sleep_until(chrono::SystemClock::time_point until_at_least);
 
