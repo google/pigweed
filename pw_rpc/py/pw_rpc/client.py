@@ -19,11 +19,11 @@ import logging
 from typing import Collection, Dict, Iterable, Iterator, List, NamedTuple
 from typing import Optional
 
-from pw_rpc_protos.internal.packet_pb2 import RpcPacket
+from google.protobuf.message import DecodeError
+from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 from pw_status import Status
 
 from pw_rpc import descriptors, packets
-from pw_rpc.packets import PacketType
 from pw_rpc.descriptors import Channel, Service, Method
 
 _LOG = logging.getLogger(__name__)
@@ -207,7 +207,7 @@ def _decode_payload(rpc: PendingRpc, packet):
     if packet.type == PacketType.RESPONSE:
         try:
             return packets.decode_payload(packet, rpc.method.response_type)
-        except packets.DecodeError as err:
+        except DecodeError as err:
             _LOG.warning('Failed to decode %s response for %s: %s',
                          rpc.method.response_type.DESCRIPTOR.full_name,
                          rpc.method.full_name, err)
@@ -340,7 +340,7 @@ class Client:
         """
         try:
             packet = packets.decode(pw_rpc_raw_packet_data)
-        except packets.DecodeError as err:
+        except DecodeError as err:
             _LOG.warning('Failed to decode packet: %s', err)
             _LOG.debug('Raw packet: %r', pw_rpc_raw_packet_data)
             return Status.DATA_LOSS

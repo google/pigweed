@@ -16,7 +16,7 @@
 
 import unittest
 
-from pw_rpc_protos.internal.packet_pb2 import RpcPacket
+from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
 
@@ -211,8 +211,7 @@ class ClientTest(unittest.TestCase):
     def test_process_packet_not_for_client(self):
         self.assertIs(
             self._client.process_packet(
-                RpcPacket(
-                    type=packets.PacketType.REQUEST).SerializeToString()),
+                RpcPacket(type=PacketType.REQUEST).SerializeToString()),
             Status.INVALID_ARGUMENT)
 
     def test_process_packet_unrecognized_channel(self):
@@ -232,7 +231,7 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(
             self._last_packet_sent(),
-            RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+            RpcPacket(type=PacketType.CLIENT_ERROR,
                       channel_id=1,
                       service_id=456,
                       method_id=789,
@@ -249,7 +248,7 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(
             self._last_packet_sent(),
-            RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+            RpcPacket(type=PacketType.CLIENT_ERROR,
                       channel_id=1,
                       service_id=service.id,
                       method_id=789,
@@ -267,7 +266,7 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(
             self._last_packet_sent(),
-            RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+            RpcPacket(type=PacketType.CLIENT_ERROR,
                       channel_id=1,
                       service_id=service.id,
                       method_id=method.id,

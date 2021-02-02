@@ -17,11 +17,6 @@ from google.protobuf import message
 from pw_rpc_protos.internal import packet_pb2
 from pw_status import Status
 
-DecodeError = message.DecodeError
-Message = message.Message
-
-PacketType = packet_pb2.PacketType
-
 
 def decode(data: bytes):
     packet = packet_pb2.RpcPacket()

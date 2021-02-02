@@ -33,6 +33,7 @@ setuptools.setup(
     install_requires=[
         'protobuf',
         'pw_protobuf_compiler',
+        'pw_rpc_protos',
         'pw_status',
     ],
     tests_require=['pw_build'],

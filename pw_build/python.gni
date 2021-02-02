@@ -244,7 +244,7 @@ template("pw_python_package") {
   if (_should_lint || _test_sources != []) {
     # Packages that must be installed to use the package or run its tests.
     _test_install_deps = [ ":$_internal_target.install" ]
-    foreach(dep, _python_test_deps) {
+    foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
       _test_install_deps += [ "$dep.install" ]
     }
   }
@@ -273,11 +273,7 @@ template("pw_python_package") {
         inputs = [ invoker.mypy_ini ]
       }
 
-      if (_is_package) {
-        args += [ rebase_path(_setup_dir) ]
-      } else {
-        args += rebase_path(_all_py_files)
-      }
+      args += rebase_path(_all_py_files)
 
       # Use this environment variable to force mypy to colorize output.
       # See https://github.com/python/mypy/issues/7771

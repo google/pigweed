@@ -17,11 +17,11 @@
 import unittest
 
 from pw_status import Status
-from pw_rpc_protos.internal.packet_pb2 import RpcPacket
+from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 
 from pw_rpc import packets
 
-_TEST_REQUEST = RpcPacket(type=packets.PacketType.REQUEST,
+_TEST_REQUEST = RpcPacket(type=PacketType.REQUEST,
                           channel_id=1,
                           service_id=2,
                           method_id=3,
@@ -38,7 +38,7 @@ class PacketsTest(unittest.TestCase):
         self.assertEqual(_TEST_REQUEST, packet)
 
     def test_encode_response(self):
-        response = RpcPacket(type=packets.PacketType.RESPONSE,
+        response = RpcPacket(type=PacketType.RESPONSE,
                              channel_id=1,
                              service_id=2,
                              method_id=3,
@@ -58,7 +58,7 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=packets.PacketType.CANCEL_SERVER_STREAM,
+            RpcPacket(type=PacketType.CANCEL_SERVER_STREAM,
                       channel_id=9,
                       service_id=8,
                       method_id=7))
@@ -71,7 +71,7 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=packets.PacketType.CLIENT_ERROR,
+            RpcPacket(type=PacketType.CLIENT_ERROR,
                       channel_id=1,
                       service_id=2,
                       method_id=3,
@@ -86,7 +86,7 @@ class PacketsTest(unittest.TestCase):
 
         self.assertFalse(
             packets.for_server(
-                RpcPacket(type=packets.PacketType.RESPONSE,
+                RpcPacket(type=PacketType.RESPONSE,
                           channel_id=1,
                           service_id=2,
                           method_id=3,

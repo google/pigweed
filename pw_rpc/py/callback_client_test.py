@@ -93,7 +93,7 @@ class CallbackClientImplTest(unittest.TestCase):
             payload = response.SerializeToString()
 
         self._next_packets.append(
-            (packet_pb2.RpcPacket(type=packets.PacketType.RESPONSE,
+            (packet_pb2.RpcPacket(type=packet_pb2.PacketType.RESPONSE,
                                   channel_id=channel_id,
                                   service_id=service_id,
                                   method_id=method_id,
@@ -107,7 +107,7 @@ class CallbackClientImplTest(unittest.TestCase):
                             status: Status = Status.OK,
                             process_status=Status.OK):
         self._next_packets.append(
-            (packet_pb2.RpcPacket(type=packets.PacketType.SERVER_STREAM_END,
+            (packet_pb2.RpcPacket(type=packet_pb2.PacketType.SERVER_STREAM_END,
                                   channel_id=channel_id,
                                   service_id=method.service.id,
                                   method_id=method.id,
@@ -215,7 +215,7 @@ class CallbackClientImplTest(unittest.TestCase):
             self._last_request = None
             self._service.SomeUnary.reinvoke(callback, magic_number=55)
             self.assertEqual(self._last_request.type,
-                             packets.PacketType.REQUEST)
+                             packet_pb2.PacketType.REQUEST)
 
     def test_invoke_server_streaming(self):
         method = self._service.SomeServerStreaming.method
@@ -277,7 +277,7 @@ class CallbackClientImplTest(unittest.TestCase):
         call.cancel()
 
         self.assertEqual(self._last_request.type,
-                         packets.PacketType.CANCEL_SERVER_STREAM)
+                         packet_pb2.PacketType.CANCEL_SERVER_STREAM)
 
         # Ensure the RPC can be called after being cancelled.
         self._enqueue_response(1, stub.method, response=resp)
