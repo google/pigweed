@@ -18,6 +18,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 from typing import Sequence, Union
@@ -40,7 +41,15 @@ def install_hook(script,
     root = git_repo_root(repository).resolve()
     script = os.path.relpath(script, root)
 
-    hook_path = root.joinpath('.git', 'hooks', hook)
+    if root.joinpath('.git').is_dir():
+        hook_path = root.joinpath('.git', 'hooks', hook)
+    else:  # This repo is probably a submodule with a .git file instead
+        match = re.match('^gitdir: (.*)$', root.joinpath('.git').read_text())
+        if not match:
+            raise ValueError('Unexpected format for .git file')
+
+        hook_path = root.joinpath(match.group(1), 'hooks', hook).resolve()
+
     hook_path.parent.mkdir(exist_ok=True)
 
     command = ' '.join(shlex.quote(arg) for arg in (script, *args))
