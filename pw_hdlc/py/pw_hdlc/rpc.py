@@ -66,6 +66,7 @@ FrameHandlers = Dict[int, Callable[[Frame], Any]]
 
 
 def read_and_process_data(read: Callable[[], bytes],
+                          on_read_error: Callable[[Exception], Any],
                           frame_handlers: FrameHandlers,
                           error_handler: Callable[[Frame],
                                                   Any] = _handle_error,
@@ -96,7 +97,12 @@ def read_and_process_data(read: Callable[[], bytes],
     # long time or crashes, this reading thread is not interrupted.
     with ThreadPoolExecutor(max_workers=handler_threads) as executor:
         while True:
-            data = read()
+            try:
+                data = read()
+            except Exception as exc:  # pylint: disable=broad-except
+                on_read_error(exc)
+                continue
+
             if data:
                 _LOG.debug('Read %2d B: %s', len(data), data)
 
@@ -148,7 +154,7 @@ class HdlcRpcClient:
         # Start background thread that reads and processes RPC packets.
         threading.Thread(target=read_and_process_data,
                          daemon=True,
-                         args=(read, frame_handlers)).start()
+                         args=(read, lambda: None, frame_handlers)).start()
 
     def rpcs(self, channel_id: int = None) -> Any:
         """Returns object for accessing services on the specified channel.
