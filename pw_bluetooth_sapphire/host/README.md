@@ -82,4 +82,9 @@ adapter:
                 address
                 callbacks
                 connection_attempts
+        connections:
+            connection_0x0:
+                peer_id
+                peer_address
+                ref_count
 ```

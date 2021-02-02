@@ -91,6 +91,12 @@ class Inspectable {
   explicit Inspectable(ValueT initial_value, ConvertFunction convert = &Inspectable::DefaultConvert)
       : value_(std::move(initial_value)), convert_(std::move(convert)) {}
 
+  // Construct with null property and with default value for ValueT.
+  explicit Inspectable(ConvertFunction convert = &Inspectable::DefaultConvert)
+      : Inspectable(ValueT(), std::move(convert)) {
+    static_assert(std::is_default_constructible<ValueT>(), "ValueT is not default constructable");
+  }
+
   Inspectable(Inspectable&&) = default;
   Inspectable& operator=(Inspectable&&) = default;
   virtual ~Inspectable() = default;

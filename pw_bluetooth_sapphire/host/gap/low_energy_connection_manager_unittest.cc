@@ -2850,7 +2850,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
 
-  auto callback = [](auto result) { ASSERT_TRUE(result.is_ok()); };
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto callback = [&conn_handle](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    conn_handle = result.take_value();
+  };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
   auto requests_matcher =
@@ -2861,9 +2865,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
                                       StringIs("address", kAddress0.ToString()),
                                       IntIs("callbacks", 1), IntIs("connection_attempts", 1))))))));
 
+  auto empty_connections_matcher =
+      AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
+
   auto conn_mgr_during_connecting_matcher =
       AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)),
-            ChildrenMatch(ElementsAre(requests_matcher)));
+            ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_during_connecting_matcher)));
@@ -2874,7 +2881,17 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
   auto empty_requests_matcher =
       AllOf(NodeMatches(NameMatches("pending_requests")), ChildrenMatch(::testing::IsEmpty()));
 
-  auto conn_mgr_after_connecting_matcher = ChildrenMatch(ElementsAre(empty_requests_matcher));
+  auto conn_matcher = NodeMatches(
+      AllOf(NameMatches("connection_0x1"),
+            PropertyList(UnorderedElementsAre(StringIs("peer_id", peer->identifier().ToString()),
+                                              StringIs("peer_address", peer->address().ToString()),
+                                              IntIs("ref_count", 1)))));
+
+  auto connections_matcher =
+      AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(ElementsAre(conn_matcher)));
+
+  auto conn_mgr_after_connecting_matcher =
+      ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_connecting_matcher)));

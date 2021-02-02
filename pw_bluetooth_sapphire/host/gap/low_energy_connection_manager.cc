@@ -62,6 +62,8 @@ constexpr int kMaxConnectionAttempts = 3;
 
 const char* kInspectRequestsNodeName = "pending_requests";
 const char* kInspectRequestNodeNamePrefix = "pending_request_";
+const char* kInspectConnectionsNodeName = "connections";
+const char* kInspectConnectionNodePrefix = "connection_";
 
 }  // namespace
 
@@ -253,10 +255,15 @@ void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
 void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent) {
   inspect_node_ = parent.CreateChild(kInspectNodeName);
   inspect_pending_requests_node_ = inspect_node_.CreateChild(kInspectRequestsNodeName);
+  inspect_connections_node_ = inspect_node_.CreateChild(kInspectConnectionsNodeName);
   for (auto& request : pending_requests_) {
     request.second.AttachInspect(
         inspect_pending_requests_node_,
         inspect_pending_requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
+  }
+  for (auto& conn : connections_) {
+    conn.second->AttachInspect(inspect_connections_node_,
+                               inspect_connections_node_.UniqueName(kInspectConnectionNodePrefix));
   }
 }
 
@@ -504,6 +511,8 @@ bool LowEnergyConnectionManager::InitializeConnection(
   auto conn_options = request.connection_options();
   auto conn = std::make_unique<internal::LowEnergyConnection>(
       peer_id, std::move(link), dispatcher_, self, l2cap_, gatt_, std::move(request));
+  conn->AttachInspect(inspect_connections_node_,
+                      inspect_connections_node_.UniqueName(kInspectConnectionNodePrefix));
   conn->InitializeFixedChannels(std::move(conn_param_update_cb), std::move(link_error_cb),
                                 conn_options);
   conn->StartConnectionPausePeripheralTimeout();

@@ -414,6 +414,8 @@ class LowEnergyConnectionManager final {
   inspect::Node inspect_node_;
   // Container node for pending request nodes.
   inspect::Node inspect_pending_requests_node_;
+  // container node for connection nodes.
+  inspect::Node inspect_connections_node_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

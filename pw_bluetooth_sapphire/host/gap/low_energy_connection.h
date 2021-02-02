@@ -6,11 +6,13 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_LOW_ENERGY_CONNECTION_H_
 
 #include <lib/async/dispatcher.h>
+#include <lib/sys/inspect/cpp/component.h>
 
 #include "gap.h"
 #include "low_energy_connection_handle.h"
 #include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -73,6 +75,9 @@ class LowEnergyConnection final : public sm::Delegate {
   // new I/O capabilities for future pairing procedures.
   void ResetSecurityManager(sm::IOCapability ioc);
 
+  // Attach connection as child node of |parent| with specified |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
   // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
   // timeout has already finished.
   void on_peripheral_pause_timeout(fit::callback<void(LowEnergyConnection*)> callback);
@@ -89,7 +94,7 @@ class LowEnergyConnection final : public sm::Delegate {
     sm_->set_security_mode(mode);
   }
 
-  size_t ref_count() const { return refs_.size(); }
+  size_t ref_count() const { return refs_->size(); }
 
   PeerId peer_id() const { return peer_id_; }
   hci::ConnectionHandle handle() const { return link_->handle(); }
@@ -145,6 +150,13 @@ class LowEnergyConnection final : public sm::Delegate {
   async_dispatcher_t* dispatcher_;
   fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
 
+  struct InspectProperties {
+    inspect::StringProperty peer_id;
+    inspect::StringProperty peer_address;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
+
   // Reference to the data plane is used to update the L2CAP layer to
   // reflect the correct link security level.
   fbl::RefPtr<l2cap::L2cap> l2cap_;
@@ -171,7 +183,8 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
-  std::unordered_set<LowEnergyConnectionHandle*> refs_;
+  using ConnectionHandleSet = std::unordered_set<LowEnergyConnectionHandle*>;
+  IntInspectable<ConnectionHandleSet> refs_;
 
   // Null until service discovery completes.
   std::optional<GenericAccessClient> gap_service_client_;

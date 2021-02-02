@@ -12,6 +12,14 @@
 
 namespace bt::gap::internal {
 
+namespace {
+
+constexpr const char* kInspectPeerIdPropertyName = "peer_id";
+constexpr const char* kInspectPeerAddressPropertyName = "peer_address";
+constexpr const char* kInspectRefsPropertyName = "ref_count";
+
+}  // namespace
+
 LowEnergyConnection::LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                                          async_dispatcher_t* dispatcher,
                                          fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
@@ -26,6 +34,7 @@ LowEnergyConnection::LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Co
       gatt_(gatt),
       conn_pause_central_expiry_(zx::time(async_now(dispatcher_)) + kLEConnectionPauseCentral),
       request_(std::move(request)),
+      refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(peer_id_.IsValid());
   ZX_DEBUG_ASSERT(link_);
@@ -82,7 +91,7 @@ std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef(
       new LowEnergyConnectionHandle(peer_id_, handle(), conn_mgr_));
   ZX_ASSERT(conn_ref);
 
-  refs_.insert(conn_ref.get());
+  refs_.Mutable()->insert(conn_ref.get());
 
   bt_log(DEBUG, "gap-le", "added ref (handle %#.4x, count: %lu)", handle(), ref_count());
 
@@ -92,8 +101,8 @@ std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef(
 void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
   ZX_DEBUG_ASSERT(ref);
 
-  __UNUSED size_t res = refs_.erase(ref);
-  ZX_DEBUG_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
+  size_t res = refs_.Mutable()->erase(ref);
+  ZX_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
   bt_log(DEBUG, "gap-le", "dropped ref (handle: %#.4x, count: %lu)", handle(), ref_count());
 }
 
@@ -139,6 +148,15 @@ void LowEnergyConnection::UpgradeSecurity(sm::SecurityLevel level, sm::BondableM
 // Cancels any on-going pairing procedures and sets up SMP to use the provided
 // new I/O capabilities for future pairing procedures.
 void LowEnergyConnection::ResetSecurityManager(sm::IOCapability ioc) { sm_->Reset(ioc); }
+
+void LowEnergyConnection::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
+  inspect_properties_.peer_id =
+      inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
+  inspect_properties_.peer_address = inspect_node_.CreateString(
+      kInspectPeerAddressPropertyName, link_.get() ? link_->peer_address().ToString() : "");
+  refs_.AttachInspect(inspect_node_, kInspectRefsPropertyName);
+}
 
 // Set callback that will be called after the kLEConnectionPausePeripheral timeout, or now if the
 // timeout has already finished.
@@ -290,11 +308,11 @@ void LowEnergyConnection::OnGattServicesResult(att::Status status, gatt::Service
 }
 
 void LowEnergyConnection::CloseRefs() {
-  for (auto* ref : refs_) {
+  for (auto* ref : *refs_.Mutable()) {
     ref->MarkClosed();
   }
 
-  refs_.clear();
+  refs_.Mutable()->clear();
 }
 
 void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) {

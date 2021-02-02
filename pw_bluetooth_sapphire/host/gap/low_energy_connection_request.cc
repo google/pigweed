@@ -10,7 +10,7 @@ LowEnergyConnectionRequest::LowEnergyConnectionRequest(
     const DeviceAddress& address, ConnectionResultCallback first_callback,
     LowEnergyConnectionOptions connection_options)
     : address_(address, MakeToStringInspectConvertFunction()),
-      callbacks_(std::list<ConnectionResultCallback>(), [](const auto& cbs) { return cbs.size(); }),
+      callbacks_(/*convert=*/[](const auto& cbs) { return cbs.size(); }),
       connection_options_(connection_options),
       connection_attempts_(0) {
   callbacks_.Mutable()->push_back(std::move(first_callback));
