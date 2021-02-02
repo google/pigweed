@@ -809,7 +809,9 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::Advertisi
   if (input.has_manufacturer_data()) {
     for (const auto& entry : input.manufacturer_data()) {
       bt::BufferView data(entry.data);
-      output.SetManufacturerData(entry.company_id, data);
+      if (!output.SetManufacturerData(entry.company_id, data)) {
+        return std::nullopt;
+      }
     }
   }
   if (input.has_uris()) {

@@ -171,9 +171,9 @@ TEST(GAP_AdvertisingDataTest, Equality) {
   // Even when the bytes are the same but from different places
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
   auto same = CreateStaticByteBuffer(0x01, 0x02, 0x03, 0x04);
-  two.SetManufacturerData(0x0123, bytes.view());
+  EXPECT_TRUE(two.SetManufacturerData(0x0123, bytes.view()));
   EXPECT_NE(two, one);
-  one.SetManufacturerData(0x0123, same.view());
+  EXPECT_TRUE(one.SetManufacturerData(0x0123, same.view()));
   EXPECT_EQ(two, one);
 
   // When TX Power is different
@@ -204,9 +204,9 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   AdvertisingData source;
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
   EXPECT_TRUE(source.AddUri("https://ru.st"));
-  source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
+  EXPECT_TRUE(source.SetManufacturerData(0x0123, rand_data.view()));
 
   AdvertisingData dest;
   source.Copy(&dest);
@@ -218,7 +218,7 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   EXPECT_FALSE(dest.local_name());
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
-  source.SetManufacturerData(0x0123, bytes.view());
+  EXPECT_TRUE(source.SetManufacturerData(0x0123, bytes.view()));
   EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
 }
 
@@ -237,9 +237,9 @@ TEST(GAP_AdvertisingDataTest, Move) {
   source.SetAppearance(appearance);
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
   EXPECT_TRUE(source.AddUri("https://ru.st"));
-  source.SetManufacturerData(0x0123, rand_data.view());
   source.AddServiceUuid(gatt);
   source.AddServiceUuid(eddy);
+  EXPECT_TRUE(source.SetManufacturerData(0x0123, rand_data.view()));
   EXPECT_TRUE(source.SetServiceData(heart_rate_uuid, rand_data.view()));
 
   auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
@@ -292,7 +292,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
   data.SetLocalName("fuchsia");
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
-  data.SetManufacturerData(0x0123, bytes.view());
+  EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
 
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
@@ -339,7 +339,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   data.SetLocalName("fuchsia");
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
-  data.SetManufacturerData(0x0123, bytes.view());
+  EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
 
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
@@ -376,24 +376,40 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
 
 TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
   AdvertisingData data;
-  // Use the https URI encoding scheme. This prefix will be compressed to one byte when encoded.
-  std::string uri = "https:";
-  uri += std::string(kMaxEncodedUriLength - 1, '.');
-  EXPECT_TRUE(data.AddUri(uri));
-  uri += '.';
-  EXPECT_FALSE(data.AddUri(uri));
-
-  // Attempt to set slightly too long advertising data.
-  UUID two_byte_uuid{kHeartRateServiceUuid};
-  DynamicByteBuffer long_data(kMaxEncodedServiceDataLength - 1);
-  long_data.Fill(0xAB);
-  EXPECT_FALSE(data.SetServiceData(two_byte_uuid, long_data));
-  // An empty DynamicByteBuffer represents unset service data per the header.
-  EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.service_data(two_byte_uuid)));
-  // Now use a view that is just small enough to fit when encoded
-  BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
-  EXPECT_TRUE(data.SetServiceData(two_byte_uuid, view));
-  EXPECT_TRUE(ContainersEqual(view, data.service_data(two_byte_uuid)));
+  {
+    // Use the https URI encoding scheme. This prefix will be compressed to one byte when encoded.
+    std::string uri = "https:";
+    uri += std::string(kMaxEncodedUriLength - 1, '.');
+    EXPECT_TRUE(data.AddUri(uri));
+    uri += '.';
+    EXPECT_FALSE(data.AddUri(uri));
+  }
+  // Attempt to set slightly too long service data.
+  {
+    UUID two_byte_uuid{kHeartRateServiceUuid};
+    DynamicByteBuffer long_data(kMaxEncodedServiceDataLength - 1);
+    long_data.Fill(0xAB);
+    EXPECT_FALSE(data.SetServiceData(two_byte_uuid, long_data));
+    // An empty DynamicByteBuffer represents unset service data per the header.
+    EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.service_data(two_byte_uuid)));
+    // Now use a view that is just small enough to fit when encoded
+    BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
+    EXPECT_TRUE(data.SetServiceData(two_byte_uuid, view));
+    EXPECT_TRUE(ContainersEqual(view, data.service_data(two_byte_uuid)));
+  }
+  // Attempt to set slightly too long manufacturer data.
+  {
+    uint16_t manufacturer_id{0xABBA};
+    DynamicByteBuffer long_data(kMaxManufacturerDataLength + 1);
+    long_data.Fill(0xAB);
+    EXPECT_FALSE(data.SetManufacturerData(manufacturer_id, long_data.view()));
+    // An empty DynamicByteBuffer represents unset service data per the header.
+    EXPECT_TRUE(ContainersEqual(DynamicByteBuffer(), data.manufacturer_data(manufacturer_id)));
+    // Now use a view that is just small enough to fit when encoded
+    BufferView view = long_data.view(/*pos=*/0, /*size=*/long_data.size() - 1);
+    EXPECT_TRUE(data.SetManufacturerData(manufacturer_id, view));
+    EXPECT_TRUE(ContainersEqual(view, data.manufacturer_data(manufacturer_id)));
+  }
 }
 }  // namespace
 }  // namespace bt

@@ -58,6 +58,9 @@ constexpr size_t kFlagsSizeMin = 1;
 constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
 
 constexpr uint8_t kMaxUint8 = std::numeric_limits<uint8_t>::max();
+// The length of the entire manufacturer-specific data field must fit in a uint8_t, so the maximum
+// data length is uint8_t::MAX - 1 byte for type - 2 bytes for manufacturer ID.
+constexpr uint8_t kMaxManufacturerDataLength = kMaxUint8 - 3;
 
 // The length of the service data field must fit in a uint8_t, so uint8_t::MAX - 1 byte for type.
 constexpr uint8_t kMaxEncodedServiceDataLength = kMaxUint8 - 1;
@@ -117,9 +120,9 @@ class AdvertisingData {
   // Returns an empty BufferView if no service data is set for |uuid|
   BufferView service_data(const UUID& uuid) const;
 
-  // Set some Manufacturer specific data for the company identified by
-  // |company_id|
-  void SetManufacturerData(uint16_t company_id, const BufferView& data);
+  // Set Manufacturer specific data for the company identified by |company_id|. Returns false & does
+  // not set the data if |data|.size() exceeds kMaxManufacturerDataLength, otherwise returns true.
+  [[nodiscard]] bool SetManufacturerData(uint16_t company_id, const BufferView& data);
 
   // Get a set of which IDs have manufacturer data in this advertisement.
   std::unordered_set<uint16_t> manufacturer_data_ids() const;
@@ -184,6 +187,8 @@ class AdvertisingData {
   std::optional<int8_t> tx_power_;
   std::optional<uint16_t> appearance_;
   std::unordered_set<UUID> service_uuids_;
+
+  // The length of each manufacturer data buffer is always <= kMaxManufacturerDataLength.
   std::unordered_map<uint16_t, DynamicByteBuffer> manufacturer_data_;
 
   // For each element in `service_data_`, the compact size of the UUID + the buffer length is always

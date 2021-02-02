@@ -214,7 +214,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         const BufferView manuf_data(field.data() + kManufacturerIdSize,
                                     field.size() - kManufacturerIdSize);
 
-        out_ad.SetManufacturerData(id, manuf_data);
+        ZX_ASSERT(out_ad.SetManufacturerData(id, manuf_data));
         break;
       }
       case DataType::kServiceData16Bit:
@@ -271,7 +271,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
     out->AddServiceUuid(it);
   }
   for (const auto& it : manufacturer_data_) {
-    out->SetManufacturerData(it.first, it.second.view());
+    ZX_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
   }
   for (const auto& it : service_data_) {
     ZX_ASSERT(out->SetServiceData(it.first, it.second.view()));
@@ -312,10 +312,19 @@ BufferView AdvertisingData::service_data(const UUID& uuid) const {
   return BufferView(iter->second);
 }
 
-void AdvertisingData::SetManufacturerData(const uint16_t company_id, const BufferView& data) {
-  DynamicByteBuffer manuf_data(data.size());
-  data.Copy(&manuf_data);
-  manufacturer_data_[company_id] = std::move(manuf_data);
+[[nodiscard]] bool AdvertisingData::SetManufacturerData(const uint16_t company_id,
+                                                        const BufferView& data) {
+  size_t field_size = data.size();
+  if (field_size > kMaxManufacturerDataLength) {
+    bt_log(
+        WARN, "gap-le",
+        "SetManufacturerData for company id %#.4x failed: (UUID+data) size %zu > maximum allowed "
+        "size %hhu",
+        company_id, field_size, kMaxManufacturerDataLength);
+    return false;
+  }
+  manufacturer_data_[company_id] = DynamicByteBuffer(data);
+  return true;
 }
 
 std::unordered_set<uint16_t> AdvertisingData::manufacturer_data_ids() const {
@@ -454,7 +463,8 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   for (const auto& manuf_pair : manufacturer_data_) {
     size_t data_size = manuf_pair.second.size();
-    (*buffer)[pos++] = 1 + 2 + data_size;  // 1 for type, 2 for Manuf. Code
+    ZX_ASSERT(data_size <= kMaxManufacturerDataLength);
+    (*buffer)[pos++] = 1 + 2 + static_cast<uint8_t>(data_size);  // 1 for type, 2 for Manuf. Code
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kManufacturerSpecificData);
     pos += BufferWrite(buffer, pos, manuf_pair.first);
     buffer->Write(manuf_pair.second, pos);
