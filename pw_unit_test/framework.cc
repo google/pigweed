@@ -56,7 +56,7 @@ int Framework::RunAllTests() {
   for (const TestInfo* test = tests_; test != nullptr; test = test->next()) {
     if (test->enabled()) {
       test->run();
-    } else {
+    } else if (event_handler_ != nullptr) {
       event_handler_->TestCaseDisabled(test->test_case());
     }
   }
