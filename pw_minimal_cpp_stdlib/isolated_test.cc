@@ -252,7 +252,7 @@ TEST(Limits, Basic) {
 }
 
 TEST(New, PlacementNew) {
-  unsigned char value[4];
+  alignas(sizeof(int)) unsigned char value[sizeof(int)];
   new (value) int(1234);
 
   int int_value;
