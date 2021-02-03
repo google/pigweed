@@ -946,7 +946,7 @@ Status KeyValueStore::PartialMaintenance() {
 Status KeyValueStore::GarbageCollect(
     std::span<const Address> reserved_addresses) {
   DBG("Garbage Collect a single sector");
-  for (Address address : reserved_addresses) {
+  for ([[maybe_unused]] Address address : reserved_addresses) {
     DBG("   Avoid address %u", unsigned(address));
   }
 
@@ -1288,7 +1288,7 @@ void KeyValueStore::LogDebugInfo() const {
   for (size_t sector_id = 0; sector_id < sectors_.size(); ++sector_id) {
     // Read sector data. Yes, this will blow the stack on embedded.
     std::array<byte, 500> raw_sector_data;  // TODO!!!
-    StatusWithSize sws =
+    [[maybe_unused]] StatusWithSize sws =
         partition_.Read(sector_id * sector_size_bytes, raw_sector_data);
     DBG("Read: %u bytes", unsigned(sws.size()));
 
