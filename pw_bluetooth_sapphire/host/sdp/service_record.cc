@@ -186,8 +186,13 @@ void ServiceRecord::AddProfile(const UUID& uuid, uint8_t major, uint8_t minor) {
 
   std::vector<DataElement> profile_desc;
   profile_desc.emplace_back(DataElement(uuid));
-
-  uint16_t profile_version = (major << 8) | minor;
+  // Safety notes:
+  // 1.) `<<` applies integer promotion of `major` to `int` (32 bits) before operating. This makes
+  //     it safe to left shift 8 bits, even though 8 is >= `major`'s original width.
+  // 2.) Casting to 16 bits is safe because `major` and `minor` are both only 8 bits, so it is only
+  //     possible for 16 bits of the resulting value to be populated.
+  uint16_t profile_version =
+      static_cast<uint16_t>((major << std::numeric_limits<uint8_t>::digits) | minor);
   profile_desc.emplace_back(DataElement(profile_version));
 
   seq.emplace_back(DataElement(std::move(profile_desc)));
