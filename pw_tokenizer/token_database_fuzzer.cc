@@ -54,10 +54,8 @@ void IterateOverDatabase(TokenDatabase* const database) {
     // Since we don't "use" the contents of the entry, we exercise
     // the entry by extracting its contents into volatile variables
     // to prevent it from being optimized out during compilation.
-    volatile const char* entry_string = entry.string;
-    volatile uint32_t entry_token = entry.token;
-    PW_UNUSED(entry_string);
-    PW_UNUSED(entry_token);
+    [[maybe_unused]] volatile const char* entry_string = entry.string;
+    [[maybe_unused]] volatile uint32_t entry_token = entry.token;
   }
 }
 
@@ -121,8 +119,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // specified in the API.
   std::span<uint8_t> data_span(buffer, data_size);
   auto token_database = TokenDatabase::Create<std::span<uint8_t>>(data_span);
-  volatile auto match = token_database.Find(random_token);
-  PW_UNUSED(match);
+  [[maybe_unused]] volatile auto match = token_database.Find(random_token);
 
   IterateOverDatabase(&token_database);
 
