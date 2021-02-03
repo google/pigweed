@@ -122,7 +122,7 @@ _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 }
 
 group("docs") {
-  deps = [ ":pigweed_default($dir_pigweed/targets/docs)" ]
+  deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
 }
 
 # OSS-Fuzz uses this target to build fuzzers alone.
@@ -179,38 +179,34 @@ group("pigweed_default") {
 
   # Prevent the default toolchain from parsing any other BUILD.gn files.
   if (current_toolchain != default_toolchain) {
-    if (pw_docgen_BUILD_DOCS) {
-      deps += [ "$dir_pigweed/docs" ]
+    deps = [ ":apps" ]
+    if (pw_unit_test_AUTOMATIC_RUNNER == "") {
+      # Without a test runner defined, build the tests but don't run them.
+      deps += [ ":pw_module_tests" ]
     } else {
-      deps += [ ":apps" ]
-      if (pw_unit_test_AUTOMATIC_RUNNER == "") {
-        # Without a test runner defined, build the tests but don't run them.
-        deps += [ ":pw_module_tests" ]
-      } else {
-        # With a test runner, depend on the run targets so they run with the
-        # build.
-        deps += [ ":pw_module_tests.run" ]
-      }
+      # With a test runner, depend on the run targets so they run with the
+      # build.
+      deps += [ ":pw_module_tests.run" ]
     }
-    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
-        pw_toolchain_SCOPE.is_host_toolchain && pw_build_HOST_TOOLS) {
-      deps += [ ":host_tools" ]
-    }
+  }
+  if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+      pw_toolchain_SCOPE.is_host_toolchain && pw_build_HOST_TOOLS) {
+    deps += [ ":host_tools" ]
+  }
 
-    # Trace examples currently only support running on non-windows host
-    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
-        pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
-      deps += [
-        "$dir_pw_trace:trace_example_basic",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_filter",
-        "$dir_pw_trace_tokenized:trace_tokenized_example_trigger",
-      ]
-    }
+  # Trace examples currently only support running on non-windows host
+  if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+      pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
+    deps += [
+      "$dir_pw_trace:trace_example_basic",
+      "$dir_pw_trace_tokenized:trace_tokenized_example_basic",
+      "$dir_pw_trace_tokenized:trace_tokenized_example_filter",
+      "$dir_pw_trace_tokenized:trace_tokenized_example_trigger",
+    ]
   }
 }
 
-# Prevent the default toolchain from parsing any other BUILD.gn files.
+# The default toolchain is not used for compiling C/C++ code.
 if (current_toolchain != default_toolchain) {
   group("apps") {
     # Application images built for all targets.
