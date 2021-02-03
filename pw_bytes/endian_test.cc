@@ -264,7 +264,7 @@ TEST(ReadInOrder, CArray) {
 
 TEST(ReadInOrder, BoundsChecking_Ok) {
   constexpr auto buffer = Array<1, 2, 3, 4>();
-  uint16_t value;
+  uint16_t value = 0;
   EXPECT_TRUE(ReadInOrder(std::endian::little, buffer, value));
   EXPECT_EQ(0x0201, value);
 }
