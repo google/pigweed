@@ -14,6 +14,7 @@
 
 #include "pw_malloc_freelist/freelist_malloc.h"
 
+#include <memory>
 #include <span>
 
 #include "gtest/gtest.h"
@@ -28,32 +29,38 @@ TEST(FreeListMalloc, ReplacingMalloc) {
   constexpr size_t kCallocSize = 64;
   constexpr size_t zero = 0;
 
-  void* ptr1 = malloc(kAllocSize);
+  auto deleter = [](void* ptr) { free(ptr); };
+
+  std::unique_ptr<void, decltype(deleter)> ptr1(malloc(kAllocSize), deleter);
   const FreeListHeap::HeapStats& freelist_heap_stats =
       pw_freelist_heap->heap_stats();
-  ASSERT_NE(ptr1, nullptr);
+  ASSERT_NE(ptr1.get(), nullptr);
   EXPECT_EQ(freelist_heap_stats.bytes_allocated, kAllocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_allocated, kAllocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_freed, zero);
-  void* ptr2 = realloc(ptr1, kReallocSize);
-  ASSERT_NE(ptr2, nullptr);
+
+  std::unique_ptr<void, decltype(deleter)> ptr2(
+      realloc(ptr1.release(), kReallocSize), deleter);
+  ASSERT_NE(ptr2.get(), nullptr);
   EXPECT_EQ(freelist_heap_stats.bytes_allocated, kReallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_allocated,
             kAllocSize + kReallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_freed, kAllocSize);
-  void* ptr3 = calloc(kCallocNum, kCallocSize);
-  ASSERT_NE(ptr3, nullptr);
+
+  std::unique_ptr<void, decltype(deleter)> ptr3(calloc(kCallocNum, kCallocSize),
+                                                deleter);
+  ASSERT_NE(ptr3.get(), nullptr);
   EXPECT_EQ(freelist_heap_stats.bytes_allocated,
             kReallocSize + kCallocNum * kCallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_allocated,
             kAllocSize + kReallocSize + kCallocNum * kCallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_freed, kAllocSize);
-  free(ptr2);
+  free(ptr2.release());
   EXPECT_EQ(freelist_heap_stats.bytes_allocated, kCallocNum * kCallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_allocated,
             kAllocSize + kReallocSize + kCallocNum * kCallocSize);
   EXPECT_EQ(freelist_heap_stats.cumulative_freed, kAllocSize + kReallocSize);
-  free(ptr3);
+  free(ptr3.release());
   EXPECT_EQ(freelist_heap_stats.bytes_allocated, zero);
   EXPECT_EQ(freelist_heap_stats.cumulative_allocated,
             kAllocSize + kReallocSize + kCallocNum * kCallocSize);
