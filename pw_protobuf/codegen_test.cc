@@ -23,11 +23,11 @@
 // The purpose of the tests in this file is primarily to verify that the
 // generated C++ interface is valid rather than the correctness of the
 // low-level encoder.
-#include "pw_protobuf_protos/test_protos/full_test.pwpb.h"
-#include "pw_protobuf_protos/test_protos/importer.pwpb.h"
-#include "pw_protobuf_protos/test_protos/non_pw_package.pwpb.h"
-#include "pw_protobuf_protos/test_protos/proto2.pwpb.h"
-#include "pw_protobuf_protos/test_protos/repeated.pwpb.h"
+#include "pw_protobuf_test_protos/full_test.pwpb.h"
+#include "pw_protobuf_test_protos/importer.pwpb.h"
+#include "pw_protobuf_test_protos/non_pw_package.pwpb.h"
+#include "pw_protobuf_test_protos/proto2.pwpb.h"
+#include "pw_protobuf_test_protos/repeated.pwpb.h"
 
 namespace pw::protobuf {
 namespace {

@@ -27,5 +27,5 @@ pw_proto_library("target_runner_proto") {
 }
 
 pw_proto_library("exec_server_config_proto") {
-  sources = [ "pw_target_runner_protos/exec_server_config.proto" ]
+  sources = [ "pw_target_runner_server_protos/exec_server_config.proto" ]
 }

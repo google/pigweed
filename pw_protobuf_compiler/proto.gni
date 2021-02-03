@@ -230,25 +230,7 @@ template("_pw_go_proto_library") {
 # file. Use pw_proto_library instead.
 template("_pw_python_proto_library") {
   _target = target_name
-  _package_dir = ""
-
-  foreach(_rebased_proto_path, rebase_path(invoker.sources, ".")) {
-    _path_components = []
-    _path_components = string_split(_rebased_proto_path, "/")
-
-    assert(_path_components != [ _rebased_proto_path ] &&
-               _path_components[0] != "..",
-           "Sources in a pw_proto_library must live in subdirectories " +
-               "of where it is defined")
-
-    if (_package_dir == "") {
-      _package_dir = _path_components[0]
-    } else {
-      assert(_path_components[0] == _package_dir,
-             "All .proto sources in a pw_proto_library must live " +
-                 "in the same directory tree")
-    }
-  }
+  _package_dir = invoker.package_dir
 
   _pw_invoke_protoc(target_name) {
     forward_variables_from(invoker, "*", _forwarded_vars)
@@ -261,7 +243,7 @@ template("_pw_python_proto_library") {
   _generated_files = get_target_outputs(":$target_name._gen")
 
   # Create the setup and init files for the Python package.
-  pw_python_action(target_name + "._package_gen") {
+  action(target_name + "._package_gen") {
     script = "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_python_package.py"
     args = [
              "--setup",
@@ -271,7 +253,7 @@ template("_pw_python_proto_library") {
            ] + rebase_path(_generated_files, invoker.gen_dir)
 
     public_deps = [ ":$_target._gen" ]
-    stamp = true
+    outputs = [ _setup_py ]
   }
 
   # Create a Python package with the generated source files.
@@ -299,9 +281,36 @@ template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
          "pw_proto_library requires .proto source files")
 
+  _package_dir = ""
+
+  foreach(_rebased_proto_path, rebase_path(invoker.sources, ".")) {
+    _path_components = []
+    _path_components = string_split(_rebased_proto_path, "/")
+
+    assert(_path_components != [ _rebased_proto_path ] &&
+               _path_components[0] != "..",
+           "Sources in a pw_proto_library must live in subdirectories " +
+               "of where it is defined")
+
+    if (_package_dir == "") {
+      _package_dir = _path_components[0]
+    } else {
+      assert(_path_components[0] == _package_dir,
+             "All .proto sources in a pw_proto_library must live in the same " +
+                 "directory tree")
+    }
+  }
+
+  # Create a group with the package directory in the name. This prevents
+  # multiple pw_proto_libraries from generating the same setup.py file, which
+  # results in awkward ninja errors that require manually re-running gn gen.
+  group("pw_proto_library.$_package_dir") {
+    visibility = []
+  }
+
   _common = {
     base_target = target_name
-    gen_dir = "$target_gen_dir/protos"
+    gen_dir = "$target_gen_dir/$target_name"
     sources = invoker.sources
   }
 
@@ -393,6 +402,7 @@ template("pw_proto_library") {
     forward_variables_from(_common, "*")
     deps = process_file_template(_deps, "{{source}}.python")
     base_target = _common.base_target
+    package_dir = _package_dir
   }
 
   # All supported pw_protobuf generators.

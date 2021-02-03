@@ -86,7 +86,7 @@ pw_source_set("internal_test_utils") {
 
 pw_source_set("echo_service") {
   public_configs = [ ":public" ]
-  public_deps = [ "..:echo_service_proto.nanopb_rpc" ]
+  public_deps = [ "..:protos.nanopb_rpc" ]
   sources = [ "public/pw_rpc/echo_service_nanopb.h" ]
 }
 

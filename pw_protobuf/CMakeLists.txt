@@ -27,10 +27,10 @@ pw_auto_add_simple_module(pw_protobuf
 
 pw_proto_library(pw_protobuf.codegen_test_protos
   SOURCES
-    pw_protobuf_protos/test_protos/full_test.proto
-    pw_protobuf_protos/test_protos/imported.proto
-    pw_protobuf_protos/test_protos/importer.proto
-    pw_protobuf_protos/test_protos/non_pw_package.proto
-    pw_protobuf_protos/test_protos/proto2.proto
-    pw_protobuf_protos/test_protos/repeated.proto
+    pw_protobuf_test_protos/full_test.proto
+    pw_protobuf_test_protos/imported.proto
+    pw_protobuf_test_protos/importer.proto
+    pw_protobuf_test_protos/non_pw_package.proto
+    pw_protobuf_test_protos/proto2.proto
+    pw_protobuf_test_protos/repeated.proto
 )

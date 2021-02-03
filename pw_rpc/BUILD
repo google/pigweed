@@ -188,7 +188,7 @@ pw_cc_test(
 proto_library(
     name = "packet_proto",
     srcs = [
-        "pw_rpc_protos/packet.proto",
+        "pw_rpc_protos/internal/packet.proto",
     ],
 )
 

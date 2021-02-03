@@ -238,9 +238,9 @@ Packet format
 -------------
 Pigweed RPC packets consist of a type and a set of fields. The packets are
 encoded as protocol buffers. The full packet format is described in
-``pw_rpc/pw_rpc_protos/packet.proto``.
+``pw_rpc/pw_rpc_protos/internal/packet.proto``.
 
-.. literalinclude:: pw_rpc_protos/packet.proto
+.. literalinclude:: pw_rpc_protos/internal/packet.proto
   :language: protobuf
   :lines: 14-
 

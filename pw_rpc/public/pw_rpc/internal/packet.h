@@ -18,7 +18,7 @@
 #include <span>
 
 #include "pw_bytes/span.h"
-#include "pw_rpc_protos/packet.pwpb.h"
+#include "pw_rpc_protos/internal/packet.pwpb.h"
 #include "pw_status/status_with_size.h"
 
 namespace pw::rpc::internal {

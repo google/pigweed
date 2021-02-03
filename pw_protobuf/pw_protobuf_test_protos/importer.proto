@@ -13,7 +13,7 @@
 // the License.
 syntax = "proto3";
 
-import 'pw_protobuf_protos/test_protos/imported.proto';
+import 'pw_protobuf_test_protos/imported.proto';
 import 'pw_protobuf_protos/common.proto';
 
 package pw.protobuf.test;

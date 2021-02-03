@@ -16,7 +16,7 @@
 
 import unittest
 
-from pw_rpc_protos.packet_pb2 import RpcPacket
+from pw_rpc_protos.internal.packet_pb2 import RpcPacket
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
 

@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -132,19 +133,23 @@ config("private_includes") {
 }
 
 pw_proto_library("protos") {
-  sources = [ "pw_rpc_protos/packet.proto" ]
+  sources = [
+    "pw_rpc_protos/echo.proto",
+    "pw_rpc_protos/internal/packet.proto",
+  ]
+  inputs = [ "pw_rpc_protos/echo.options" ]
 }
 
-pw_proto_library("echo_service_proto") {
-  sources = [ "pw_rpc_protos/echo.proto" ]
-  inputs = [ "pw_rpc_protos/echo.options" ]
+# TODO(hepler): Remove this compatibility wrapper.
+pw_python_group("echo_service_proto.python") {
+  python_deps = [ ":protos.python" ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [
     "pw_rpc_protos/echo.proto",
-    "pw_rpc_protos/packet.proto",
+    "pw_rpc_protos/internal/packet.proto",
   ]
   group_deps = [ "nanopb:docs" ]
   report_deps = [ ":server_size" ]
