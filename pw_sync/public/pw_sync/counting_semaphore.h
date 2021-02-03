@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "pw_chrono/system_clock.h"
