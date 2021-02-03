@@ -29,7 +29,10 @@ class TestService final : public generated::TestService<TestService> {
                                 ByteSpan response) {
     int64_t integer;
     Status status;
-    DecodeRequest(request, integer, status);
+
+    if (!DecodeRequest(request, integer, status)) {
+      return StatusWithSize::DataLoss();
+    }
 
     protobuf::NestedEncoder encoder(response);
     TestResponse::Encoder test_response(&encoder);
@@ -43,8 +46,8 @@ class TestService final : public generated::TestService<TestService> {
                      RawServerWriter& writer) {
     int64_t integer;
     Status status;
-    DecodeRequest(request, integer, status);
 
+    ASSERT_TRUE(DecodeRequest(request, integer, status));
     for (int i = 0; i < integer; ++i) {
       ByteSpan buffer = writer.PayloadBuffer();
       protobuf::NestedEncoder encoder(buffer);
@@ -57,24 +60,34 @@ class TestService final : public generated::TestService<TestService> {
   }
 
  private:
-  static void DecodeRequest(ConstByteSpan request,
+  static bool DecodeRequest(ConstByteSpan request,
                             int64_t& integer,
                             Status& status) {
     protobuf::Decoder decoder(request);
+    Status decode_status;
+    bool has_integer = false;
+    bool has_status = false;
 
     while (decoder.Next().ok()) {
       switch (static_cast<TestRequest::Fields>(decoder.FieldNumber())) {
         case TestRequest::Fields::INTEGER:
-          decoder.ReadInt64(&integer);
+          decode_status = decoder.ReadInt64(&integer);
+          EXPECT_EQ(OkStatus(), decode_status);
+          has_integer = decode_status.ok();
           break;
         case TestRequest::Fields::STATUS_CODE: {
           uint32_t status_code;
-          decoder.ReadUint32(&status_code);
+          decode_status = decoder.ReadUint32(&status_code);
+          EXPECT_EQ(OkStatus(), decode_status);
+          has_status = decode_status.ok();
           status = static_cast<Status::Code>(status_code);
           break;
         }
       }
     }
+    EXPECT_TRUE(has_integer);
+    EXPECT_TRUE(has_status);
+    return has_integer && has_status;
   }
 };
 
