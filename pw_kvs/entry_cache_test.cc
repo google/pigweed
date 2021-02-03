@@ -282,10 +282,9 @@ class InitializedEntryCache : public EmptyEntryCache {
 
   void CheckForCorruptSectors(SectorDescriptor* sector1 = nullptr,
                               SectorDescriptor* sector2 = nullptr) {
-    for (auto& sector : sectors_) {
+    for (const auto& sector : sectors_) {
       bool expect_corrupt =
-          (&sector == sector1 || &sector == sector2) ? true : false;
-
+          ((sector1 && &sector == sector1) || (sector2 && &sector == sector2));
       EXPECT_EQ(expect_corrupt, sector.corrupt());
     }
   }
