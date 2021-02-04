@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/fuzzing/fuzzer.gni")
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
@@ -125,6 +126,10 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",
   ]
+}
+
+bt_gtest_package("bt-host-hci-tests") {
+  deps = [ ":tests" ]
 }
 
 fuzzer("read_acl_data_packet_fuzzer") {

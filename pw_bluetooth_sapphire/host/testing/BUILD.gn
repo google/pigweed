@@ -2,15 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+
 source_set("testing") {
   testonly = true
 
   sources = [
     "controller_test.h",
-    "fake_dynamic_channel_unittest.cc",
-    "fake_l2cap_unittest.cc",
-    "fake_sdp_server_unittest.cc",
-    "fake_signaling_server_unittest.cc",
     "mock_controller.cc",
     "mock_controller.h",
     "test_packets.cc",
@@ -24,6 +22,23 @@ source_set("testing") {
     "//garnet/public/lib/gtest",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
   ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "fake_dynamic_channel_unittest.cc",
+    "fake_l2cap_unittest.cc",
+    "fake_sdp_server_unittest.cc",
+    "fake_signaling_server_unittest.cc",
+  ]
+
+  deps = [ ":testing" ]
+}
+
+bt_gtest_package("bt-host-testing-tests") {
+  deps = [ ":tests" ]
 }
 
 # Target that includes Fake HCI emulation support. This should NOT depend on

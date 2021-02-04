@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+
 source_set("socket") {
   sources = [
     "socket_channel_relay.h",
@@ -35,4 +37,8 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//third_party/googletest:gtest",
   ]
+}
+
+bt_gtest_package("bt-host-socket-tests") {
+  deps = [ ":tests" ]
 }

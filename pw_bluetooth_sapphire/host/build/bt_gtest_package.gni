@@ -1,0 +1,83 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//src/sys/build/components.gni")
+
+# Generates a gtest unit test package with a v2 test component from a source_set of GTest tests.
+#
+# Example:
+#
+# ```
+# bt_gtest_package("example-tests") {
+#   deps = [":tests"]
+#   with_death_tests = true
+# }
+# ```
+#
+# Parameters
+#
+#   with_death_tests (optional)
+#     Set true if the unit tests include gtest death tests so that the appropriate
+#     test component capabilities can be included.
+#     Type: bool
+#     Default: false
+#
+#   deps (required)
+template("bt_gtest_package") {
+  assert(
+      defined(invoker.deps),
+      "A `deps` argument was missing when calling bt_gtest_package($target_name)")
+  package_name = target_name
+  if (defined(invoker.package_name)) {
+    package_name = invoker.package_name
+  }
+
+  # Determines whether to include the manifest capabilities needed to run death tests
+  with_death_tests =
+      defined(invoker.with_death_tests) && invoker.with_death_tests
+
+  group("_component_metadata") {
+    metadata = {
+      if (with_death_tests) {
+        # Used by the fuchsia_test_component_manifest() template.
+        test_component_manifest_cml = [
+          {
+            # Add gtest test runner to generated manifest.
+            include = [ "src/sys/test_runners/gtest/default.shard.cml" ]
+            use = [
+              {
+                # Enable gtest death tests to spawn processes.
+                protocol = [ "fuchsia.process.Launcher" ]
+              },
+            ]
+          },
+        ]
+      } else {
+        # Used by the fuchsia_test_component_manifest() template.
+        test_component_manifest_cml = [
+          {
+            # Add gtest test runner to generated manifest.
+            include = [ "src/sys/test_runners/gtest/default.shard.cml" ]
+          },
+        ]
+      }
+    }
+  }
+
+  executable("tests_executable") {
+    testonly = true
+    output_name = package_name
+    deps = invoker.deps
+    deps += [ "//src/connectivity/bluetooth/core/bt-host/testing:gtest_main" ]
+  }
+
+  fuchsia_unittest_package(package_name) {
+    v2 = true
+    deps = [
+      # Metadata needs to be included in deps to be forwarded.
+      ":_component_metadata",
+      ":tests_executable",
+    ]
+  }
+}

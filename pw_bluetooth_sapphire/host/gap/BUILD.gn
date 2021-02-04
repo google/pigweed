@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+
 source_set("definitions") {
   sources = [
     "gap.cc",
@@ -144,4 +146,9 @@ source_set("tests") {
     "//third_party/googletest:gtest",
     "//zircon/public/lib/async-cpp",
   ]
+}
+
+bt_gtest_package("bt-host-gap-tests") {
+  with_death_tests = true
+  deps = [ ":tests" ]
 }
