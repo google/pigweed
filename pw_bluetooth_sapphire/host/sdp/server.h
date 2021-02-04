@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SERVER_H_
 
 #include <lib/fit/function.h>
+#include <lib/stdcompat/optional.h>
 #include <lib/sys/inspect/cpp/component.h>
 #include <lib/zx/socket.h>
 
@@ -78,7 +79,7 @@ class Server final {
   // are compatible.
   // This function will drop the packet if the PDU is too short, and it will
   // handle most errors by returning a valid packet with an ErrorResponse.
-  fit::optional<ByteBufferPtr> HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
+  cpp17::optional<ByteBufferPtr> HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size);
 
  private:
   // Returns the next unused Service Handle, or 0 if none are available.

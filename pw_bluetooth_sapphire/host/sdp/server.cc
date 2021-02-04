@@ -443,13 +443,13 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
 
 void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.erase(handle); }
 
-fit::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
+cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
   uint16_t length = sdu->size();
   if (length < sizeof(Header)) {
     bt_log(DEBUG, "sdp", "PDU too short; dropping");
-    return fit::nullopt;
+    return cpp17::nullopt;
   }
   PacketView<Header> packet(sdu.get());
   TransactionId tid = betoh16(packet.header().tid);

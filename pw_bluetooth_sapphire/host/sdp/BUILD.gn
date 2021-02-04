@@ -38,6 +38,7 @@ static_library("sdp") {
 
   public_deps = [
     ":definitions",
+    "//sdk/lib/stdcompat",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/lib/fxl",
   ]
