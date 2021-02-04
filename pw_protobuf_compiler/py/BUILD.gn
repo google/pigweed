@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 
 pw_python_package("py") {
   setup = [ "setup.py" ]
@@ -32,4 +33,10 @@ pw_python_package("py") {
   python_deps = [ "$dir_pw_cli/py" ]
   python_test_deps = [ "..:test_protos.python" ]
   pylintrc = "$dir_pigweed/.pylintrc"
+
+  # If Nanopb is available, test protos that import nanopb.proto.
+  if (dir_pw_third_party_nanopb != "") {
+    python_test_deps += [ "..:nanopb_test_protos.python" ]
+    tests += [ "compiled_nanopb_protos_test.py" ]
+  }
 }

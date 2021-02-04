@@ -54,8 +54,8 @@ template("_pw_invoke_protoc") {
     args = [
              "--language",
              invoker.language,
-             "--module-path",
-             rebase_path("."),
+             "--include-path",
+             rebase_path(invoker.include_path),
              "--include-file",
              _output[0],
              "--out-dir",
@@ -69,17 +69,11 @@ template("_pw_invoke_protoc") {
       args += [ "--plugin-path=" + rebase_path(invoker.plugin) ]
     }
 
-    if (defined(invoker.include_paths)) {
-      args += [
-        "--include-paths",
-        string_join(";", rebase_path(invoker.include_paths)),
-      ]
-    }
-
     outputs = []
     foreach(extension, invoker.output_extensions) {
       foreach(proto,
-              rebase_path(invoker.sources, get_path_info(".", "abspath"))) {
+              rebase_path(invoker.sources,
+                          get_path_info(invoker.include_path, "abspath"))) {
         _output = string_replace(proto, ".proto", extension)
         outputs += [ "${invoker.gen_dir}/$_output" ]
       }
@@ -127,7 +121,6 @@ template("_pw_nanopb_rpc_proto_library") {
     language = "nanopb_rpc"
     plugin = "$dir_pw_rpc/py/pw_rpc/plugin_nanopb.py"
     python_deps = [ "$dir_pw_rpc/py" ]
-    include_paths = [ "$dir_pw_third_party_nanopb/generator/proto" ]
     output_extensions = [ ".rpc.pb.h" ]
   }
 
@@ -156,7 +149,6 @@ template("_pw_nanopb_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars)
     language = "nanopb"
     plugin = "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb"
-    include_paths = [ "$dir_pw_third_party_nanopb/generator/proto" ]
     output_extensions = [
       ".pb.h",
       ".pb.c",
@@ -230,12 +222,24 @@ template("_pw_go_proto_library") {
 # file. Use pw_proto_library instead.
 template("_pw_python_proto_library") {
   _target = target_name
-  _package_dir = invoker.package_dir
+
+  # For standalone protos (e.g. `import "nanopb.proto"`), nest the proto file in
+  # a directory with the same name for Python packaging purposes.
+  if (invoker.standalone_proto) {
+    _source_name = get_path_info(invoker.sources, "name")
+    _proto_gen_dir = "${invoker.gen_dir}/${_source_name[0]}_pb2"
+  } else {
+    _proto_gen_dir = invoker.gen_dir
+  }
 
   _pw_invoke_protoc(target_name) {
     forward_variables_from(invoker, "*", _forwarded_vars)
+    gen_dir = _proto_gen_dir
     language = "python"
-    output_extensions = [ "_pb2.py" ]
+    output_extensions = [
+      "_pb2.py",
+      "_pb2.pyi",
+    ]
     deps += [ "$dir_pw_protobuf_compiler:protobuf_requirements.install" ]
   }
 
@@ -249,8 +253,12 @@ template("_pw_python_proto_library") {
              "--setup",
              rebase_path(_setup_py),
              "--package",
-             _package_dir,
+             invoker._package_dir,
            ] + rebase_path(_generated_files, invoker.gen_dir)
+
+    if (invoker.standalone_proto) {
+      args += [ "--standalone" ]
+    }
 
     public_deps = [ ":$_target._gen" ]
     outputs = [ _setup_py ]
@@ -276,18 +284,52 @@ template("_pw_python_proto_library") {
 #  sources: List of input .proto files.
 #  deps: List of other pw_proto_library dependencies.
 #  inputs: Other files on which the protos depend (e.g. nanopb .options files).
+#  include_path: Sets the proto include path. The default is ".". It is not
+#      recommended to set this, unless pulling in an externally defined proto.
 #
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
          "pw_proto_library requires .proto source files")
 
+  _common = {
+    base_target = target_name
+    gen_dir = "$target_gen_dir/$target_name"
+    sources = invoker.sources
+
+    if (defined(invoker.include_path)) {
+      include_path = invoker.include_path
+    } else {
+      include_path = "."
+    }
+  }
+
+  _rebased_sources = rebase_path(invoker.sources, _common.include_path)
+
+  # The pw_proto_library GN target requires protos to be nested under the
+  # include directory unless three conditions are met:
+  #
+  #   1. There is only one .proto file.
+  #   2. The file is in a different directory (an externally defined proto).
+  #   3. The include path is the .proto's include directory. Since there are no
+  #      nested directories, the proto cannot be packaged properly in Python.
+  #
+  # When these conditions are met, the proto library is allowed, even though the
+  # proto file is not nested. The Python package for it uses the Python module's
+  # name. This is a special exception to the typical pattern to allow for
+  # working with single, external, standalone protobuf not set up for Python
+  # packaging (such as nanopb.proto).
+  _standalone_proto =
+      _rebased_sources == [ _rebased_sources[0] ] &&
+      _common.include_path != "." &&
+      string_split(_rebased_sources[0], "/") == [ _rebased_sources[0] ]
+
   _package_dir = ""
 
-  foreach(_rebased_proto_path, rebase_path(invoker.sources, ".")) {
+  foreach(_rebased_source, _rebased_sources) {
     _path_components = []
-    _path_components = string_split(_rebased_proto_path, "/")
+    _path_components = string_split(_rebased_source, "/")
 
-    assert(_path_components != [ _rebased_proto_path ] &&
+    assert((_standalone_proto || _path_components != [ _rebased_source ]) &&
                _path_components[0] != "..",
            "Sources in a pw_proto_library must live in subdirectories " +
                "of where it is defined")
@@ -308,12 +350,6 @@ template("pw_proto_library") {
     visibility = []
   }
 
-  _common = {
-    base_target = target_name
-    gen_dir = "$target_gen_dir/$target_name"
-    sources = invoker.sources
-  }
-
   if (defined(invoker.deps)) {
     _deps = invoker.deps
   } else {
@@ -331,7 +367,7 @@ template("pw_proto_library") {
 
     # Indicate this library's base directory for its dependents.
     metadata = {
-      protoc_includes = [ rebase_path(".") ]
+      protoc_includes = [ rebase_path(_common.include_path) ]
     }
   }
 
@@ -368,10 +404,19 @@ template("pw_proto_library") {
       deps = process_file_template(_deps, "{{source}}.nanopb_rpc")
     }
 
-    _pw_nanopb_proto_library("$target_name.nanopb") {
-      forward_variables_from(invoker, _forwarded_vars)
-      forward_variables_from(_common, "*")
-      deps = process_file_template(_deps, "{{source}}.nanopb")
+    # When compiling with the Nanopb plugin, the nanopb.proto file is already
+    # compiled internally, so skip recompiling it here.
+    if (invoker.sources ==
+        [ "$dir_pw_third_party_nanopb/generator/proto/nanopb.proto" ]) {
+      pw_input_group("$target_name.nanopb") {
+        sources = invoker.sources
+      }
+    } else {
+      _pw_nanopb_proto_library("$target_name.nanopb") {
+        forward_variables_from(invoker, _forwarded_vars)
+        forward_variables_from(_common, "*")
+        deps = process_file_template(_deps, "{{source}}.nanopb")
+      }
     }
   } else {
     pw_error("$target_name.nanopb_rpc") {
@@ -395,6 +440,7 @@ template("pw_proto_library") {
     sources = invoker.sources
     deps = process_file_template(_deps, "{{source}}.go")
     base_target = _common.base_target
+    include_path = _common.include_path
   }
 
   _pw_python_proto_library("$target_name.python") {
@@ -402,7 +448,7 @@ template("pw_proto_library") {
     forward_variables_from(_common, "*")
     deps = process_file_template(_deps, "{{source}}.python")
     base_target = _common.base_target
-    package_dir = _package_dir
+    standalone_proto = _standalone_proto
   }
 
   # All supported pw_protobuf generators.

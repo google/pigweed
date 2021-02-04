@@ -46,7 +46,7 @@ For example, given the following target:
 .. code-block::
 
   pw_proto_library("test_protos") {
-    sources = [ "test.proto" ]
+    sources = [ "my_test_protos/test.proto" ]
   }
 
 ``test_protos.pwpb`` compiles code for pw_protobuf, and ``test_protos.nanopb``
@@ -68,15 +68,13 @@ dependency of another GN target.
 
   pw_proto_library("my_protos") {
     sources = [
-      "foo.proto",
-      "bar.proto",
+      "my_protos/foo.proto",
+      "my_protos/bar.proto",
     ]
   }
 
   pw_proto_library("my_other_protos") {
-    sources = [
-      "baz.proto",  # imports foo.proto
-    ]
+    sources = [ "my_other_protos/baz.proto" ]  # imports foo.proto
 
     # Proto libraries depend on other proto libraries directly.
     deps = [ ":my_protos" ]
@@ -92,3 +90,22 @@ dependency of another GN target.
     # When depending on protos in a source_set, specify the generator suffix.
     deps = [ ":my_other_protos.pwpb" ]
   }
+
+Proto file structure
+--------------------
+Protobuf source files must be nested under another directory when they are
+listed in sources. This ensures that they can be packaged properly in Python.
+The first directory is used as the Python package name.
+
+The requirements for proto file structure in the source tree will be relaxed in
+future updates.
+
+Working with externally defined protos
+--------------------------------------
+``pw_proto_library`` targets may be used to build ``.proto`` sources from
+existing projects. In these cases, it may be necessary to supply the
+``include_path`` argument, which specifies the protobuf include path to use for
+``protoc``. If only a single external protobuf is being compiled, the
+requirement that the protobuf be nested under a directory is waived. This
+exception should only be used when absolutely necessary -- for example, to
+support proto files that includes ``import "nanopb.proto"`` in them.

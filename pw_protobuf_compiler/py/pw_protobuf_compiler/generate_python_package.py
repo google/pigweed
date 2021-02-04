@@ -54,15 +54,21 @@ def _parse_args():
                         required=True,
                         type=Path,
                         help='Path to setup.py file')
+    parser.add_argument('--standalone',
+                        action='store_true',
+                        help='The package is a standalone external proto')
     parser.add_argument('sources',
                         type=Path,
                         nargs='+',
-                        help='Relative paths to sources in the package')
+                        help='Relative paths to the .py and .pyi files')
     return parser.parse_args()
 
 
-def main(package: str, setup: Path, sources: List[Path]) -> int:
+def main(package: str, setup: Path, standalone: bool,
+         sources: List[Path]) -> int:
     """Generates __init__.py and py.typed files and a setup.py."""
+    assert not standalone or len(sources) == 2
+
     base = setup.parent.resolve()
     base.mkdir(exist_ok=True)
 
@@ -77,24 +83,27 @@ def main(package: str, setup: Path, sources: List[Path]) -> int:
     # Create __init__.py and py.typed files for each subdirectory.
     for pkg in subpackages:
         pkg.mkdir(exist_ok=True, parents=True)
-        pkg.joinpath('__init__.py').touch()
+        pkg.joinpath('__init__.py').write_text('')
 
-        package_name = '.'.join(pkg.relative_to(base).as_posix().split('/'))
+        package_name = pkg.relative_to(base).as_posix().replace('/', '.')
         pkg.joinpath('py.typed').touch()
         pkg_data[package_name].append('py.typed')
 
-    # Add the .pyi for each source file.
-    for source in sources:
-        pkg = base / source.parent
-        package_name = '.'.join(pkg.relative_to(base).as_posix().split('/'))
+    # Add the Mypy stub (.pyi) for each source file.
+    for mypy_stub in (s for s in sources if s.suffix == '.pyi'):
+        pkg = base / mypy_stub.parent
+        package_name = pkg.relative_to(base).as_posix().replace('/', '.')
+        pkg_data[package_name].append(mypy_stub.name)
 
-        path = base.joinpath(source).relative_to(pkg).with_suffix('.pyi')
-        pkg_data[package_name].append(str(path))
+        if standalone:
+            pkg.joinpath('__init__.py').write_text(
+                f'from {mypy_stub.stem}.{mypy_stub.stem} import *\n')
 
     setup.write_text(
         _SETUP_TEMPLATE.format(name=package,
                                packages=list(pkg_data),
                                package_data=dict(pkg_data)))
+
     return 0
 
 

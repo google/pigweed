@@ -50,13 +50,9 @@ def argument_parser(
     parser.add_argument('--plugin-path',
                         type=Path,
                         help='Path to the protoc plugin')
-    parser.add_argument('--module-path',
+    parser.add_argument('--include-path',
                         required=True,
-                        help='Path to the module containing the .proto files')
-    parser.add_argument('--include-paths',
-                        default=[],
-                        type=lambda arg: arg.split(';'),
-                        help='protoc include paths')
+                        help='Include path for proto compilation')
     parser.add_argument('--include-file',
                         type=argparse.FileType('r'),
                         help='File containing additional protoc include paths')
@@ -94,7 +90,7 @@ def protoc_nanopb_args(args: argparse.Namespace) -> Tuple[str, ...]:
         f'protoc-gen-nanopb={args.plugin_path}',
         # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
         # like when you merge the two using the `flag,...:out` syntax.
-        f'--nanopb_opt=-I{args.module_path}',
+        f'--nanopb_opt=-I{args.include_path}',
         f'--nanopb_out={args.out_dir}',
     )
 
@@ -155,8 +151,7 @@ def main() -> int:
 
     os.makedirs(args.out_dir, exist_ok=True)
 
-    include_paths = [f'-I{path}' for path in args.include_paths]
-    include_paths += [f'-I{line.strip()}' for line in args.include_file]
+    include_paths = [f'-I{line.strip()}' for line in args.include_file]
 
     wrapper_script: Optional[Path] = None
 
@@ -178,7 +173,7 @@ def main() -> int:
         process = subprocess.run(
             [
                 'protoc',
-                f'-I{args.module_path}',
+                f'-I{args.include_path}',
                 *include_paths,
                 *DEFAULT_PROTOC_ARGS[args.language](args),
                 *args.protos,

@@ -90,7 +90,7 @@ function(_pw_generate_protos
       "${script}"
       --language "${LANGUAGE}"
       --plugin-path "${PLUGIN}"
-      --module-path "${CMAKE_CURRENT_SOURCE_DIR}"
+      --include-path "${CMAKE_CURRENT_SOURCE_DIR}"
       --include-file "${INCLUDE_FILE}"
       --out-dir "${OUT_DIR}"
       ${ARGN}
@@ -168,7 +168,6 @@ function(_pw_nanopb_library NAME SOURCES DEPS INCLUDE_FILE OUT_DIR)
       "${OUT_DIR}"
       "${SOURCES}"
       "${DEPS}"
-      --include-paths "${nanopb_dir}/generator/proto"
   )
 
   # Create the library with the generated source files.
