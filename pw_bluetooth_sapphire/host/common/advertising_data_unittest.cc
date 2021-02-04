@@ -4,10 +4,15 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
+#include <limits>
+#include <variant>
+
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt {
 namespace {
@@ -56,19 +61,28 @@ TEST(GAP_AdvertisingDataTest, EncodeUnknownURI) {
 
 TEST(GAP_AdvertisingDataTest, CompressServiceUUIDs) {
   AdvertisingData data;
-  data.AddServiceUuid(UUID(kId1As16));
-  data.AddServiceUuid(UUID(kId2As16));
+  std::unordered_set<UUID> uuids{UUID(kId1As16), UUID(kId2As16)};
+  for (auto& uuid : uuids) {
+    SCOPED_TRACE(bt_str(uuid));
+    EXPECT_TRUE(data.AddServiceUuid(uuid));
+  }
 
-  EXPECT_EQ(1 + 1 + (sizeof(uint16_t) * 2), data.CalculateBlockSize());
+  uint8_t expected_block_size = 1                          // length byte
+                                + 1                        // type byte
+                                + (sizeof(uint16_t) * 2);  // 2 16-bit UUIDs
+  EXPECT_EQ(expected_block_size, data.CalculateBlockSize());
 
-  auto bytes = CreateStaticByteBuffer(0x05, 0x02, 0x12, 0x02, 0x22, 0x11);
+  StaticByteBuffer expected_header{expected_block_size - 1, DataType::kIncomplete16BitServiceUuids};
 
-  size_t block_size = data.CalculateBlockSize();
-  EXPECT_EQ(bytes.size(), block_size);
-  DynamicByteBuffer block(block_size);
+  DynamicByteBuffer block(expected_block_size);
   data.WriteBlock(&block, std::nullopt);
 
-  EXPECT_TRUE(ContainersEqual(bytes, block));
+  EXPECT_TRUE(ContainersEqual(expected_header, block.view(/*pos=*/0, /*size=*/2)));
+  auto to_uuid = [](const ByteBuffer& b, size_t pos) {
+    return UUID(b.view(pos, /*size=*/2).As<uint16_t>());
+  };
+  EXPECT_TRUE(uuids.find(to_uuid(block, 2)) != uuids.end());
+  EXPECT_TRUE(uuids.find(to_uuid(block, 4)) != uuids.end());
 }
 
 TEST(GAP_AdvertisingDataTest, ParseBlock) {
@@ -97,7 +111,7 @@ TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
   uint8_t lower_byte = 0x12, upper_byte = 0x22;
   uint16_t uuid_value = (upper_byte << 8) + lower_byte;
   // The only field present in the expected AD is one complete 16-bit UUID.
-  expected_ad.AddServiceUuid(UUID(uuid_value));
+  EXPECT_TRUE(expected_ad.AddServiceUuid(UUID(uuid_value)));
 
   auto bytes = StaticByteBuffer{
       // Complete 16-bit UUIDs
@@ -163,9 +177,9 @@ TEST(GAP_AdvertisingDataTest, Equality) {
 
   // Service UUIDs
   EXPECT_EQ(two, one);
-  one.AddServiceUuid(gatt);
+  EXPECT_TRUE(one.AddServiceUuid(gatt));
   EXPECT_NE(two, one);
-  two.AddServiceUuid(gatt);
+  EXPECT_TRUE(two.AddServiceUuid(gatt));
   EXPECT_EQ(two, one);
 
   // Even when the bytes are the same but from different places
@@ -186,12 +200,12 @@ TEST(GAP_AdvertisingDataTest, Equality) {
 
   // Even if the fields were added in different orders
   AdvertisingData three, four;
-  three.AddServiceUuid(eddy);
-  three.AddServiceUuid(gatt);
+  EXPECT_TRUE(three.AddServiceUuid(eddy));
+  EXPECT_TRUE(three.AddServiceUuid(gatt));
   EXPECT_NE(three, four);
 
-  four.AddServiceUuid(gatt);
-  four.AddServiceUuid(eddy);
+  EXPECT_TRUE(four.AddServiceUuid(gatt));
+  EXPECT_TRUE(four.AddServiceUuid(eddy));
   EXPECT_EQ(three, four);
 }
 
@@ -204,9 +218,9 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   AdvertisingData source;
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
   EXPECT_TRUE(source.AddUri("https://ru.st"));
-  source.AddServiceUuid(gatt);
-  source.AddServiceUuid(eddy);
   EXPECT_TRUE(source.SetManufacturerData(0x0123, rand_data.view()));
+  EXPECT_TRUE(source.AddServiceUuid(gatt));
+  EXPECT_TRUE(source.AddServiceUuid(eddy));
 
   AdvertisingData dest;
   source.Copy(&dest);
@@ -237,9 +251,9 @@ TEST(GAP_AdvertisingDataTest, Move) {
   source.SetAppearance(appearance);
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
   EXPECT_TRUE(source.AddUri("https://ru.st"));
-  source.AddServiceUuid(gatt);
-  source.AddServiceUuid(eddy);
   EXPECT_TRUE(source.SetManufacturerData(0x0123, rand_data.view()));
+  EXPECT_TRUE(source.AddServiceUuid(gatt));
+  EXPECT_TRUE(source.AddServiceUuid(eddy));
   EXPECT_TRUE(source.SetServiceData(heart_rate_uuid, rand_data.view()));
 
   auto verify_advertising_data = [&](const AdvertisingData& dest, const char* type) {
@@ -296,7 +310,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
 
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
-  data.AddServiceUuid(service_uuid);
+  EXPECT_TRUE(data.AddServiceUuid(service_uuid));
   EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
@@ -343,7 +357,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
 
   auto service_uuid = UUID(kId1As16);
   auto service_bytes = CreateStaticByteBuffer(0x01, 0x02);
-  data.AddServiceUuid(service_uuid);
+  EXPECT_TRUE(data.AddServiceUuid(service_uuid));
   EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
@@ -372,6 +386,31 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true) - 1);
   EXPECT_FALSE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
+}
+
+// Adds `n_(consecutively_increasing)_uuids` to `input` and returns the "next" UUID in the sequence.
+// UUIDs may wrap around - this is OK, as we only care that they are all distinct.
+UUID AddNDistinctUuids(AdvertisingData& input,
+                       std::variant<uint16_t, uint32_t, UInt128> starting_uuid, uint8_t n_uuids) {
+  UUID next;
+  for (uint8_t i = 0; true; ++i) {
+    std::visit(
+        [&](auto arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, UInt128>) {
+            arg[0] += i;
+            next = UUID(arg);
+          } else {
+            next = UUID(static_cast<T>(arg + i));
+          }
+        },
+        starting_uuid);
+    SCOPED_TRACE(fxl::StringPrintf("i: %du UUID: %s", i, bt_str(next)));
+    if (i >= n_uuids) {
+      return next;
+    }
+    EXPECT_TRUE(input.AddServiceUuid(next));
+  }
 }
 
 TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
@@ -410,6 +449,45 @@ TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     EXPECT_TRUE(data.SetManufacturerData(manufacturer_id, view));
     EXPECT_TRUE(ContainersEqual(view, data.manufacturer_data(manufacturer_id)));
   }
+  // Ensure that service UUIDs are truncated when they do not fit.
+  {
+    uint16_t starting_16bit_uuid = 0x0001;
+    UUID should_fail = AddNDistinctUuids(
+        data, std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid}, kMax16BitUuids);
+    EXPECT_FALSE(data.AddServiceUuid(should_fail));
+    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+
+    // This value must not fit in a 16 bit number in order to count as a "32 bit" UUID
+    uint32_t starting_32bit_uuid = std::numeric_limits<uint16_t>::max() + 1;
+    should_fail = AddNDistinctUuids(
+        data, std::variant<uint16_t, uint32_t, UInt128>{starting_32bit_uuid}, kMax32BitUuids);
+    EXPECT_FALSE(data.AddServiceUuid(should_fail));
+    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+
+    UInt128 starting_128bit_uuid = {0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB,
+                                    0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB, 0xAB};
+    should_fail = AddNDistinctUuids(
+        data, std::variant<uint16_t, uint32_t, UInt128>{starting_128bit_uuid}, kMax128BitUuids);
+    EXPECT_FALSE(data.AddServiceUuid(should_fail));
+    EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+  }
+  // Write the data out to ensure no assertions are triggered
+  DynamicByteBuffer block(data.CalculateBlockSize());
+  EXPECT_TRUE(data.WriteBlock(&block, std::nullopt));
+}
+
+// Tests that even when the maximum number of distinct UUIDs for a certain size have been added to
+// an AD, we do not reject additional UUIDs that are duplicates of already-added UUIDs.
+TEST(GAP_AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
+  AdvertisingData data;
+  uint16_t starting_16bit_uuid = 0x0001;
+  UUID should_fail = AddNDistinctUuids(
+      data, std::variant<uint16_t, uint32_t, UInt128>{starting_16bit_uuid}, kMax16BitUuids);
+  // Verify that adding another distinct UUID fails - i.e. we are at the limit.
+  EXPECT_FALSE(data.AddServiceUuid(should_fail));
+  EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+  // Verify that we are notified of success when adding an existing UUID
+  EXPECT_TRUE(data.AddServiceUuid(UUID(starting_16bit_uuid)));
 }
 }  // namespace
 }  // namespace bt

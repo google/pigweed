@@ -796,7 +796,12 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::Advertisi
   }
   if (input.has_service_uuids()) {
     for (const auto& uuid : input.service_uuids()) {
-      output.AddServiceUuid(UuidFromFidl(uuid));
+      bt::UUID bt_uuid = UuidFromFidl(uuid);
+      if (!output.AddServiceUuid(bt_uuid)) {
+        bt_log(WARN, "gap-le",
+               "Received more Service UUIDs than fit in a single AD - truncating UUID %s",
+               bt_str(bt_uuid));
+      }
     }
   }
   if (input.has_service_data()) {
@@ -845,9 +850,11 @@ fble::AdvertisingData AdvertisingDataToFidl(const bt::AdvertisingData& input) {
   if (input.tx_power()) {
     output.set_tx_power_level(*input.tx_power());
   }
-  if (!input.service_uuids().empty()) {
+  std::unordered_set<bt::UUID> service_uuids = input.service_uuids();
+  if (!service_uuids.empty()) {
     std::vector<fbt::Uuid> uuids;
-    for (const auto& uuid : input.service_uuids()) {
+    uuids.reserve(service_uuids.size());
+    for (const auto& uuid : service_uuids) {
       uuids.push_back(fbt::Uuid{uuid.value()});
     }
     output.set_service_uuids(std::move(uuids));

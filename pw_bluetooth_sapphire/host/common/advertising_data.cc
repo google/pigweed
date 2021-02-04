@@ -19,8 +19,12 @@ namespace bt {
 
 namespace {
 
-using UuidFunction = fit::function<void(const UUID&)>;
+// Return true to indicate that the UUID was processed successfully, false to indicate failure.
+using UuidFunction = fit::function<bool(const UUID&)>;
 
+// Parses `data` into `data.size()` / `uuid_size` UUIDs, callling `func` with each parsed UUID.
+// Returns false without further parsing if `uuid_size` does not evenly divide `data.size()` or
+// `func` returns false for any UUID, otherwise returns true.
 bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction func) {
   ZX_DEBUG_ASSERT(func);
 
@@ -33,10 +37,8 @@ bool ParseUuids(const BufferView& data, UUIDElemSize uuid_size, UuidFunction fun
   for (size_t i = 0; i < uuid_count; i++) {
     const BufferView uuid_bytes(data.data() + (i * uuid_size), uuid_size);
     UUID uuid;
-    if (!UUID::FromBytes(uuid_bytes, &uuid))
+    if (!UUID::FromBytes(uuid_bytes, &uuid) || !func(uuid))
       return false;
-
-    func(uuid);
   }
 
   return true;
@@ -62,6 +64,35 @@ UUIDElemSize SizeForType(DataType type) {
 
   ZX_PANIC("called SizeForType with non-UUID DataType %du", static_cast<uint8_t>(type));
   return UUIDElemSize::k16Bit;
+}
+
+DataType ServiceUuidTypeForUuidSize(UUIDElemSize size, bool complete) {
+  switch (size) {
+    case UUIDElemSize::k16Bit:
+      return complete ? DataType::kComplete16BitServiceUuids
+                      : DataType::kIncomplete16BitServiceUuids;
+    case UUIDElemSize::k32Bit:
+      return complete ? DataType::kComplete32BitServiceUuids
+                      : DataType::kIncomplete32BitServiceUuids;
+    case UUIDElemSize::k128Bit:
+      return complete ? DataType::kComplete128BitServiceUuids
+                      : DataType::kIncomplete128BitServiceUuids;
+    default:
+      ZX_PANIC("called ServiceUuidTypeForUuidSize with unknown UUIDElemSize %du", size);
+  }
+}
+
+DataType ServiceDataTypeForUuidSize(UUIDElemSize size) {
+  switch (size) {
+    case UUIDElemSize::k16Bit:
+      return DataType::kServiceData16Bit;
+    case UUIDElemSize::k32Bit:
+      return DataType::kServiceData32Bit;
+    case UUIDElemSize::k128Bit:
+      return DataType::kServiceData128Bit;
+    default:
+      ZX_PANIC("called ServiceDataTypeForUuidSize with unknown UUIDElemSize %du", size);
+  };
 }
 
 size_t EncodedServiceDataSize(const UUID& uuid, const BufferView data) {
@@ -152,7 +183,7 @@ AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
     other.local_name_.reset();
     other.tx_power_.reset();
     other.appearance_.reset();
-    other.service_uuids_.clear();
+    other.service_uuids_ = kEmptyServiceUuidMap;
     other.manufacturer_data_.clear();
     other.service_data_.clear();
     other.uris_.clear();
@@ -200,8 +231,9 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
       case DataType::kIncomplete128BitServiceUuids:
       case DataType::kComplete128BitServiceUuids: {
         if (!ParseUuids(field, SizeForType(type),
-                        [&](const UUID& uuid) { out_ad.AddServiceUuid(uuid); }))
+                        fit::bind_member(&out_ad, &AdvertisingData::AddServiceUuid))) {
           return std::nullopt;
+        }
         break;
       }
       case DataType::kManufacturerSpecificData: {
@@ -267,9 +299,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
     out->SetTxPower(*tx_power_);
   if (appearance_)
     out->SetAppearance(*appearance_);
-  for (const auto& it : service_uuids_) {
-    out->AddServiceUuid(it);
-  }
+  out->service_uuids_ = service_uuids_;
   for (const auto& it : manufacturer_data_) {
     ZX_ASSERT(out->SetManufacturerData(it.first, it.second.view()));
   }
@@ -281,9 +311,20 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   }
 }
 
-void AdvertisingData::AddServiceUuid(const UUID& uuid) { service_uuids_.insert(uuid); }
+[[nodiscard]] bool AdvertisingData::AddServiceUuid(const UUID& uuid) {
+  auto iter = service_uuids_.find(uuid.CompactSize());
+  ZX_ASSERT(iter != service_uuids_.end());
+  BoundedUuids& uuids = iter->second;
+  return uuids.AddUuid(uuid);
+}
 
-const std::unordered_set<UUID>& AdvertisingData::service_uuids() const { return service_uuids_; }
+std::unordered_set<UUID> AdvertisingData::service_uuids() const {
+  std::unordered_set<UUID> out;
+  for (auto& [_elemsize, uuids] : service_uuids_) {
+    out.insert(uuids.set().begin(), uuids.set().end());
+  }
+  return out;
+}
 
 [[nodiscard]] bool AdvertisingData::SetServiceData(const UUID& uuid, const ByteBuffer& data) {
   size_t encoded_size = EncodedServiceDataSize(uuid, data.view());
@@ -393,37 +434,14 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
     len += 2 + EncodeUri(uri).size();
   }
 
-  size_t small_uuids = 0;
-  size_t medium_uuids = 0;
-  size_t big_uuids = 0;
-  for (const auto& uuid : service_uuids_) {
-    switch (uuid.CompactSize()) {
-      case 2: {
-        if (small_uuids == 0)
-          len += 2;
-        small_uuids++;
-        break;
-      }
-      case 4: {
-        if (medium_uuids == 0)
-          len += 2;
-        medium_uuids++;
-        break;
-      }
-      case 16: {
-        if (big_uuids == 0)
-          len += 2;
-        big_uuids++;
-        break;
-      }
-      default: {
-        bt_log(WARN, "gap-le", "unknown UUID size");
-        break;
-      }
+  for (const auto& [uuid_size, bounded_uuids] : service_uuids_) {
+    if (bounded_uuids.set().empty()) {
+      continue;
     }
+    len += 2;  // 1 byte for # of UUIDs and 1 for UUID type
+    len += uuid_size * bounded_uuids.set().size();
   }
 
-  len += (small_uuids * 2) + (medium_uuids * 4) + (big_uuids * 16);
   return len;
 }
 
@@ -477,17 +495,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
         EncodedServiceDataSize(uuid, service_data_pair.second.view());
     ZX_ASSERT(encoded_service_data_size <= kMaxEncodedServiceDataLength);
     (*buffer)[pos++] = 1 + static_cast<uint8_t>(encoded_service_data_size);
-    switch (uuid.CompactSize()) {
-      case UUIDElemSize::k16Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData16Bit);
-        break;
-      case UUIDElemSize::k32Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData32Bit);
-        break;
-      case UUIDElemSize::k128Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kServiceData128Bit);
-        break;
-    };
+    (*buffer)[pos++] = static_cast<uint8_t>(ServiceDataTypeForUuidSize(uuid.CompactSize()));
     auto target = buffer->mutable_view(pos);
     pos += service_data_pair.first.ToBytes(&target);
     buffer->Write(service_data_pair.second, pos);
@@ -503,25 +511,17 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
     pos += s.size();
   }
 
-  std::unordered_map<UUIDElemSize, std::unordered_set<UUID>> uuid_sets;
-  for (const auto& uuid : service_uuids_) {
-    uuid_sets[uuid.CompactSize()].insert(uuid);
-  }
-
-  for (const auto& pair : uuid_sets) {
-    (*buffer)[pos++] = 1 + pair.first * pair.second.size();
-    switch (pair.first) {
-      case UUIDElemSize::k16Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete16BitServiceUuids);
-        break;
-      case UUIDElemSize::k32Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete32BitServiceUuids);
-        break;
-      case UUIDElemSize::k128Bit:
-        (*buffer)[pos++] = static_cast<uint8_t>(DataType::kIncomplete128BitServiceUuids);
-        break;
-    };
-    for (const auto& uuid : pair.second) {
+  for (const auto& [uuid_width, bounded_uuids] : service_uuids_) {
+    if (bounded_uuids.set().empty()) {
+      continue;
+    }
+    ZX_ASSERT(1 + uuid_width * bounded_uuids.set().size() <= std::numeric_limits<uint8_t>::max());
+    (*buffer)[pos++] = 1 + uuid_width * static_cast<uint8_t>(bounded_uuids.set().size());
+    (*buffer)[pos++] =
+        static_cast<uint8_t>(ServiceUuidTypeForUuidSize(uuid_width, /*complete=*/false));
+    for (const auto& uuid : bounded_uuids.set()) {
+      ZX_ASSERT_MSG(uuid.CompactSize() == uuid_width, "UUID: %s - Expected Width: %d", bt_str(uuid),
+                    uuid_width);
       auto target = buffer->mutable_view(pos);
       pos += uuid.ToBytes(&target);
     }
@@ -578,4 +578,19 @@ bool AdvertisingData::operator==(const AdvertisingData& other) const {
 
 bool AdvertisingData::operator!=(const AdvertisingData& other) const { return !(*this == other); }
 
+bool AdvertisingData::BoundedUuids::AddUuid(UUID uuid) {
+  ZX_ASSERT(set_.size() <= bound_);
+  if (set_.size() < bound_) {
+    if (!set_.insert(uuid).second) {
+      bt_log(INFO, "gap-le", "Skipping addition of duplicate UUID %s to AD", bt_str(uuid));
+    }
+    return true;
+  }
+  if (set_.find(uuid) != set_.end()) {
+    bt_log(INFO, "gap-le", "Skipping addition of duplicate UUID %s to AD", bt_str(uuid));
+    return true;
+  }
+  bt_log(WARN, "gap-le", "Failed to add service UUID %s to AD - no space left", bt_str(uuid));
+  return false;
+}
 }  // namespace bt

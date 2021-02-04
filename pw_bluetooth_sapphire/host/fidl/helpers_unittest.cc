@@ -242,6 +242,13 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlManufacturerData) {
   EXPECT_TRUE(ContainersEqual(bt::BufferView(kData2), output.manufacturer_data(kCompanyId2)));
 }
 
+std::string UuidToString(fbt::Uuid uuid) {
+  std::string s;
+  for (uint8_t byte : uuid.value) {
+    s += std::to_string(static_cast<uint16_t>(byte)) + ", ";
+  }
+  return s;
+}
 // Each field for this test first attempts to perform the too-long conversion, and then verifies
 // that the bounds are where expected by performing a successful conversion with a field that just
 // fits in the encoded version. This also enables using the same `input` throughout the test.
@@ -286,6 +293,32 @@ TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
         std::vector({fble::ManufacturerData{.company_id = company_id, .data = data_that_fits}}));
     EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
   }
+  // Ensure input with too many service UUIDs is truncated (NOT rejected).
+  {
+    std::vector<fbt::Uuid> fbt_uuids;
+    fbt::Uuid kBaseUuid{.value = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
+    for (int i = 0; i < bt::kMax128BitUuids; ++i) {
+      fbt::Uuid next_uuid = kBaseUuid;
+      next_uuid.value[0] += i;
+      fbt_uuids.push_back(next_uuid);
+    }
+    input.set_service_uuids(fbt_uuids);
+    auto ad = AdvertisingDataFromFidl(input);
+    EXPECT_TRUE(ad.has_value());
+    std::unordered_set<bt::UUID> converted_uuids = ad->service_uuids();
+    for (auto& fbt_uuid : fbt_uuids) {
+      SCOPED_TRACE(UuidToString(fbt_uuid));
+      EXPECT_TRUE(converted_uuids.find(bt::UUID(fbt_uuid.value)) != converted_uuids.end());
+    }
+    fbt::Uuid excessive_uuid = kBaseUuid;
+    excessive_uuid.value[0] += bt::kMax128BitUuids + 1;
+    fbt_uuids.push_back(excessive_uuid);
+    input.set_service_uuids(fbt_uuids);
+    ad = AdvertisingDataFromFidl(input);
+    EXPECT_TRUE(ad.has_value());
+    converted_uuids = ad->service_uuids();
+    EXPECT_TRUE(converted_uuids.find(bt::UUID(excessive_uuid.value)) == converted_uuids.end());
+  }
 }
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
@@ -312,7 +345,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
   const uint16_t id = 0x5678;
   const bt::UUID test_uuid = bt::UUID(id);
   auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
-  input.AddServiceUuid(test_uuid);
+  EXPECT_TRUE(input.AddServiceUuid(test_uuid));
   EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;
@@ -375,7 +408,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   const uint16_t id = 0x5678;
   const bt::UUID test_uuid = bt::UUID(id);
   auto service_bytes = bt::CreateStaticByteBuffer(0x01, 0x02);
-  input.AddServiceUuid(test_uuid);
+  EXPECT_TRUE(input.AddServiceUuid(test_uuid));
   EXPECT_TRUE(input.SetServiceData(test_uuid, service_bytes.view()));
 
   uint16_t company_id = 0x98;

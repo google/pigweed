@@ -68,6 +68,12 @@ constexpr uint8_t kMaxEncodedServiceDataLength = kMaxUint8 - 1;
 // The length of an encoded URI together with its 1-byte type field must not exceed uint8_t limits
 constexpr uint8_t kMaxEncodedUriLength = kMaxUint8 - 1;
 
+// For each UUID size, 1 (type byte) + # of UUIDs * UUID size = length of that size's encoded UUIDs.
+// This length must fit in a uint8_t, hence there is a per-UUID-size limit on the # of UUIDs.
+constexpr uint8_t kMax16BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k16Bit;
+constexpr uint8_t kMax32BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k32Bit;
+constexpr uint8_t kMax128BitUuids = (kMaxUint8 - 1) / UUIDElemSize::k128Bit;
+
 // A helper to build Adversiting Data, Scan Response Data, or Extended Inquiry
 // Response Data fields.
 // TODO(jamuraa): Add functionality for ACAD and OOB
@@ -101,12 +107,13 @@ class AdvertisingData {
   void Copy(AdvertisingData* out) const;
 
   // Add a UUID to the set of services advertised.
-  // These service UUIDs will automatically be compressed to be represented in
-  // the smallest space possible.
-  void AddServiceUuid(const UUID& uuid);
+  // These service UUIDs will automatically be compressed to be represented in the smallest space
+  // possible. Returns true if the Service UUID was successfully added or already existed in the set
+  // of advertised services, or false if the UUID set was full and `uuid` could not be added.
+  [[nodiscard]] bool AddServiceUuid(const UUID& uuid);
 
   // Get the service UUIDs represented in this advertisement.
-  const std::unordered_set<UUID>& service_uuids() const;
+  std::unordered_set<UUID> service_uuids() const;
 
   // Set service data for the service specified by |uuid|. Returns true if the data was set, false
   // otherwise. Failure occurs if |uuid| + |data| exceed kMaxEncodedServiceDataLength when encoded.
@@ -181,12 +188,42 @@ class AdvertisingData {
   bool operator!=(const AdvertisingData& other) const;
 
  private:
+  // This class enforces that a set of UUIDs does not grow beyond its provided upper bound.
+  class BoundedUuids {
+   public:
+    // `bound` is the maximum number of UUIDs allowed in this set.
+    explicit BoundedUuids(uint8_t bound) : bound_(bound) {}
+
+    // Adds a UUID to the set. Returns false if the UUID couldn't be added to the set due to the
+    // size bound, true otherwise.
+    bool AddUuid(UUID uuid);
+
+    const std::unordered_set<UUID>& set() const { return set_; }
+    bool operator==(const BoundedUuids& other) const {
+      return bound_ == other.bound_ && set_ == other.set_;
+    }
+    bool operator!=(const BoundedUuids& other) const { return !(*this == other); }
+
+   private:
+    std::unordered_set<UUID> set_ = std::unordered_set<UUID>{};
+    uint8_t bound_;
+  };
+
+  // AD stores a map from service UUID size -> BoundedUuids. As the number of allowed UUID sizes is
+  // static, we define this default variable to represent the "empty" state of the UUID set.
+  const std::unordered_map<UUIDElemSize, BoundedUuids> kEmptyServiceUuidMap = {
+      {UUIDElemSize::k16Bit, BoundedUuids(kMax16BitUuids)},
+      {UUIDElemSize::k32Bit, BoundedUuids(kMax32BitUuids)},
+      {UUIDElemSize::k128Bit, BoundedUuids(kMax128BitUuids)}};
   // TODO(armansito): Consider storing the payload in its serialized form and
   // have these point into the structure (see fxbug.dev/907).
   std::optional<std::string> local_name_;
   std::optional<int8_t> tx_power_;
   std::optional<uint16_t> appearance_;
-  std::unordered_set<UUID> service_uuids_;
+
+  // Each service UUID size is associated with a BoundedUuids. The BoundedUuids invariant that
+  // |bound| >= |set|.size() field is maintained by the AD class, not the BoundedUuids struct.
+  std::unordered_map<UUIDElemSize, BoundedUuids> service_uuids_ = kEmptyServiceUuidMap;
 
   // The length of each manufacturer data buffer is always <= kMaxManufacturerDataLength.
   std::unordered_map<uint16_t, DynamicByteBuffer> manufacturer_data_;
