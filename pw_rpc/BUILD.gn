@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -138,11 +138,6 @@ pw_proto_library("protos") {
     "pw_rpc_protos/internal/packet.proto",
   ]
   inputs = [ "pw_rpc_protos/echo.options" ]
-}
-
-# TODO(hepler): Remove this compatibility wrapper.
-pw_python_group("echo_service_proto.python") {
-  python_deps = [ ":protos.python" ]
 }
 
 pw_doc_group("docs") {
