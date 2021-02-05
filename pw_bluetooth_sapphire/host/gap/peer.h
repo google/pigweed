@@ -432,6 +432,8 @@ class Peer final {
   // non-connectable and connectable advertisements (e.g. when it is a beacon).
   void set_connectable(bool connectable) { connectable_.Set(connectable); }
 
+  fxl::WeakPtr<Peer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
   // Assigns a new value for the address of this device. Called by LowEnergyData
   // when a new identity address is assigned.
@@ -501,6 +503,8 @@ class Peer final {
   // Data that only applies to the BR/EDR transport. This is present if this
   // device is known to support BR/EDR.
   std::optional<BrEdrData> bredr_data_;
+
+  fxl::WeakPtrFactory<Peer> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
 };

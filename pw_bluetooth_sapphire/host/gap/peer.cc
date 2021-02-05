@@ -325,7 +325,8 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       lmp_features_(hci::LMPFeatureSet(), MakeToStringInspectConvertFunction()),
       connectable_(connectable),
       temporary_(true),
-      rssi_(hci::kRSSIInvalid) {
+      rssi_(hci::kRSSIInvalid),
+      weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   ZX_DEBUG_ASSERT(update_expiry_callback_);
   ZX_DEBUG_ASSERT(dual_mode_callback_);

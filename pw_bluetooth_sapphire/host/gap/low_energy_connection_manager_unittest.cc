@@ -1396,9 +1396,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectAndDisconnectDualModeDeviceWit
   EXPECT_EQ(0u, connected_peers().size());
 }
 
-// Tests that the master accepts the connection parameters that are sent from
-// a fake slave and eventually applies them to the link.
-TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPLEConnectionParameterUpdate) {
+// Tests that the central accepts the connection parameters that are sent from
+// a fake peripheral and eventually applies them to the link.
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       CentralAppliesL2capConnectionParameterUpdateRequestParams) {
   // Set up a fake peer and a connection over which to process the L2CAP
   // request.
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
@@ -1419,32 +1420,30 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPLEConnectionParameterUpdate) {
       hci::kLEConnectionIntervalMin, hci::kLEConnectionIntervalMax, hci::kLEConnectionLatencyMax,
       hci::kLEConnectionSupervisionTimeoutMax);
 
-  hci::LEConnectionParameters actual;
-  bool fake_peer_cb_called = false;
-  bool conn_params_cb_called = false;
+  std::optional<hci::LEConnectionParameters> actual;
 
-  auto fake_peer_cb = [&actual, &fake_peer_cb_called](const auto& addr, const auto& params) {
-    fake_peer_cb_called = true;
-    actual = params;
-  };
-  test_device()->set_le_connection_parameters_callback(fake_peer_cb);
-
-  auto conn_params_cb = [&conn_params_cb_called, &conn_handle](const auto& peer) {
-    EXPECT_EQ(conn_handle->peer_identifier(), peer.identifier());
-    conn_params_cb_called = true;
-  };
-  conn_mgr()->SetConnectionParametersCallbackForTesting(conn_params_cb);
+  auto conn_params_updated_cb = [&](const auto& addr, const auto& params) { actual = params; };
+  test_device()->set_le_connection_parameters_callback(conn_params_updated_cb);
 
   fake_l2cap()->TriggerLEConnectionParameterUpdate(conn_handle->handle(), preferred);
 
+  // These connection update events for the wrong handle should be ignored.
+  // Send twice: once before the parameter request is processed, and once after the request has been
+  // processed.
+  hci::LEConnectionParameters wrong_handle_conn_params(0, 1, 2);
+  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle() + 1,
+                                                        wrong_handle_conn_params);
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(fake_peer_cb_called);
-  ASSERT_TRUE(conn_params_cb_called);
+  test_device()->SendLEConnectionUpdateCompleteSubevent(conn_handle->handle() + 1,
+                                                        wrong_handle_conn_params);
 
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(actual.has_value());
   ASSERT_TRUE(peer->le());
   EXPECT_EQ(preferred, *peer->le()->preferred_connection_parameters());
-  EXPECT_EQ(actual, *peer->le()->connection_parameters());
+  EXPECT_EQ(actual.value(), *peer->le()->connection_parameters());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
