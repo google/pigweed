@@ -20,6 +20,7 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_trace_tokenized/__init__.py",
+    "pw_trace_tokenized/get_trace.py",
     "pw_trace_tokenized/trace_tokenized.py",
   ]
   python_deps = [ "$dir_pw_tokenizer/py" ]

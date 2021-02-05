@@ -15,7 +15,10 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/module_config.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
+import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -83,6 +86,25 @@ pw_test("trace_tokenized_test") {
 
 config("trace_buffer_size") {
   defines = [ "PW_TRACE_BUFFER_SIZE_BYTES=${pw_trace_tokenized_BUFFER_SIZE}" ]
+}
+
+pw_proto_library("trace_rpc_service_proto") {
+  sources = [ "pw_trace_protos/trace_rpc.proto" ]
+  inputs = [ "pw_trace_protos/trace_rpc.options" ]
+}
+
+pw_source_set("trace_rpc_service") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":trace_rpc_service_proto.nanopb_rpc" ]
+  deps = [
+    ":tokenized_trace_buffer",
+    "$dir_pw_log",
+    "$dir_pw_trace",
+  ]
+  sources = [
+    "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
+    "trace_rpc_service_nanopb.cc",
+  ]
 }
 
 pw_source_set("tokenized_trace_buffer") {
@@ -208,4 +230,22 @@ pw_executable("trace_tokenized_example_filter") {
     "$dir_pw_trace:trace_sample_app",
   ]
   sources = [ "example/filter.cc" ]
+}
+
+if (dir_pw_third_party_nanopb == "") {
+  group("trace_tokenized_example_rpc") {
+  }
+} else {
+  pw_executable("trace_tokenized_example_rpc") {
+    sources = [ "example/rpc.cc" ]
+    deps = [
+      ":trace_rpc_service",
+      "$dir_pw_hdlc",
+      "$dir_pw_log",
+      "$dir_pw_rpc:server",
+      "$dir_pw_rpc/system_server",
+      "$dir_pw_trace",
+      "$dir_pw_trace:trace_sample_app",
+    ]
+  }
 }

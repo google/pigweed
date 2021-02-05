@@ -61,6 +61,24 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "trace_rpc_service",
+    hdrs = [
+        "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
+    ],
+    includes = [
+        "public",
+    ],
+    srcs = [
+        "trace_rpc_service_nanopb.cc",
+    ],
+    deps = [
+        "//pw_log",
+        "//pw_trace",
+        "//pw_trace_tokenized_buffer",
+    ],
+)
+
+pw_cc_library(
     name = "trace_buffer_headers",
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer.h",
@@ -204,4 +222,18 @@ pw_cc_binary(
         "//dir_pw_trace:pw_trace_sample_app",
     ],
     srcs = [ "example/filter.cc" ]
+)
+
+pw_cc_library(
+    name = "trace_tokenized_example_rpc",
+    deps = [
+        ":pw_trace_rpc_service",
+        "//dir_pw_rpc:server",
+        "//dir_pw_rpc:system_server",
+        "//pw_log",
+        "//pw_hdlc",
+        "//dir_pw_trace",
+        "//dir_pw_trace:pw_trace_sample_app",
+    ],
+    srcs = [ "example/rpc.cc" ]
 )

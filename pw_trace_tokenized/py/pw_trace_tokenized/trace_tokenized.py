@@ -107,6 +107,7 @@ def create_trace_event(token_string, timestamp_us, trace_id, data):
 
 
 def parse_trace_event(buffer, db, last_time, ticks_per_second=1000):
+    """Parse a single trace event from bytes"""
     us_per_tick = 1000000 / ticks_per_second
     idx = 0
     # Read token
@@ -116,6 +117,8 @@ def parse_trace_event(buffer, db, last_time, ticks_per_second=1000):
     # Decode token
     if len(db.token_to_entries[token]) == 0:
         _LOG.error("token not found: %08x", token)
+        return None
+
     token_string = str(db.token_to_entries[token][0])
 
     # Read time
@@ -138,29 +141,50 @@ def parse_trace_event(buffer, db, last_time, ticks_per_second=1000):
     return create_trace_event(token_string, timestamp_us, trace_id, data)
 
 
-def get_trace_events_from_file(databases, input_file_name):
+def get_trace_events(databases, raw_trace_data):
     """Handles the decoding traces."""
 
     db = tokens.Database.merged(*databases)
     last_timestamp = 0
     events = []
-    with open(input_file_name, "rb") as input_file:
-        bytes_read = input_file.read()
-        idx = 0
+    idx = 0
 
-        while idx + 1 < len(bytes_read):
-            # Read size
-            size = int(bytes_read[idx])
-            if idx + size > len(bytes_read):
-                _LOG.error("incomplete file")
-                break
+    while idx + 1 < len(raw_trace_data):
+        # Read size
+        size = int(raw_trace_data[idx])
+        if idx + size > len(raw_trace_data):
+            _LOG.error("incomplete file")
+            break
 
-            event = parse_trace_event(bytes_read[idx + 1:idx + 1 + size], db,
-                                      last_timestamp)
+        event = parse_trace_event(raw_trace_data[idx + 1:idx + 1 + size], db,
+                                  last_timestamp)
+        if event:
             last_timestamp = event.timestamp_us
             events.append(event)
-            idx = idx + size + 1
+        idx = idx + size + 1
     return events
+
+
+def get_trace_data_from_file(input_file_name):
+    """Handles the decoding traces."""
+    with open(input_file_name, "rb") as input_file:
+        return input_file.read()
+    return None
+
+
+def save_trace_file(trace_lines, file_name):
+    """Handles generating the trace file."""
+    with open(file_name, 'w') as output_file:
+        output_file.write("[")
+        for line in trace_lines:
+            output_file.write("%s,\n" % line)
+        output_file.write("{}]")
+
+
+def get_trace_events_from_file(databases, input_file_name):
+    """Get trace events from a file."""
+    raw_trace_data = get_trace_data_from_file(input_file_name)
+    return get_trace_events(databases, raw_trace_data)
 
 
 def _parse_args():
@@ -190,10 +214,7 @@ def _parse_args():
 def _main(args):
     events = get_trace_events_from_file(args.databases, args.input_file)
     json_lines = trace.generate_trace_json(events)
-
-    with open(args.output_file, 'w') as output_file:
-        for line in json_lines:
-            output_file.write("%s,\n" % line)
+    save_trace_file(json_lines, args.output_file)
 
 
 if __name__ == '__main__':
