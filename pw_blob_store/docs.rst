@@ -10,7 +10,7 @@ system.
 
 Write and read are only done using the BlobWriter and BlobReader classes.
 
-Once a blob write is closed, reopening followed by a Discard(), Write(), or
+Once a blob write is closed, reopening for write followed by a Discard(), Write(), or
 Erase() will discard the previous blob.
 
 Write blob:
@@ -25,6 +25,13 @@ Read blob:
   2) Read data using BlobReader::Read() or
      BlobReader::GetMemoryMappedBlob().
   3) BlobReader::Close().
+
+Size report
+-----------
+The following size report showcases the memory usage of the blob store.
+
+.. include:: blob_size
+
 
 .. note::
   The documentation for this module is currently incomplete.
