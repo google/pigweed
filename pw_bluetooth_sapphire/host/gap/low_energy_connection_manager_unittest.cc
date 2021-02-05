@@ -1252,6 +1252,77 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
   EXPECT_TRUE(connected_peers().empty());
 }
 
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       RegisterRemoteInitiatedLinkDuringLocalInitiatedLinkConnecting) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  fake_peer->set_force_pending_connect(true);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+  RunLoopUntilIdle();
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  // Create a pending outgoing connection.
+  ConnectionResult result;
+  auto callback = [&result](auto res) { result = std::move(res); };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
+                                          [&](auto result) {
+                                            ASSERT_TRUE(result.is_ok());
+                                            conn_handle = result.take_value();
+                                          });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_handle);
+
+  // Local connector result handler should not crash when it finds that connection to peer already
+  // exists.
+  RunLoopFor(kLECreateConnectionTimeout);
+  // An error should be returned if the connection complete was incorrectly not matched to the
+  // pending connection request (see fxbug.dev/68969).
+  // In the future it may make sense to return success because a link to the peer already exists.
+  ASSERT_TRUE(result.is_error());
+  EXPECT_TRUE(peer->le()->connected());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       RegisterRemoteInitiatedLinkDuringLocalInitiatedConnectionScanning) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  fake_peer->set_advertising_enabled(false);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Create a fake incoming connection.
+  test_device()->ConnectLowEnergy(kAddress0);
+  RunLoopUntilIdle();
+  auto link = MoveLastRemoteInitiated();
+  ASSERT_TRUE(link);
+
+  // Create a pending outgoing connection.
+  ConnectionResult result;
+  auto callback = [&result](auto res) { result = std::move(res); };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable,
+                                          [&](auto result) {
+                                            ASSERT_TRUE(result.is_ok());
+                                            conn_handle = result.take_value();
+                                          });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_handle);
+
+  // Local connector result handler should not crash when it finds that connection to peer already
+  // exists.
+  RunLoopFor(kLEGeneralCepScanTimeout);
+  ASSERT_TRUE(result.is_error());
+  EXPECT_TRUE(peer->le()->connected());
+}
+
 // Listener receives remote initiated connection ref for a known peer with the
 // same BR/EDR address.
 TEST_F(GAP_LowEnergyConnectionManagerTest, IncomingConnectionUpgradesKnownBrEdrPeerToDualMode) {

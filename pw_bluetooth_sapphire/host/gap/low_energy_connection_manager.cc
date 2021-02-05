@@ -669,33 +669,34 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::Connection& link
 
 void LowEnergyConnectionManager::OnConnectResult(PeerId peer_id, hci::Status status,
                                                  hci::ConnectionPtr link) {
-  ZX_ASSERT(connections_.find(peer_id) == connections_.end());
+  auto conn_iter = connections_.find(peer_id);
 
-  if (status) {
+  if (status && conn_iter == connections_.end()) {
     bt_log(TRACE, "gap-le", "connection request successful (peer: %s)", bt_str(peer_id));
     RegisterLocalInitiatedLink(std::move(link));
     return;
   }
-
   // The request failed or timed out.
-  bt_log(INFO, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id),
-         bt_str(status));
-  Peer* peer = peer_cache_->FindById(peer_id);
-  ZX_ASSERT(peer);
-  peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
 
-  // Notify the matching pending callbacks about the failure.
-  auto iter = pending_requests_.find(peer_id);
-  ZX_ASSERT(iter != pending_requests_.end());
+  // Don't update peer state if connection already exists.
+  if (conn_iter == connections_.end()) {
+    bt_log(INFO, "gap-le", "failed to connect to peer (id: %s, status: %s)", bt_str(peer_id),
+           bt_str(status));
+    Peer* peer = peer_cache_->FindById(peer_id);
+    ZX_ASSERT(peer);
+    peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+  }
 
   if (scanning_) {
     bt_log(DEBUG, "gap-le", "canceling scanning (peer: %s)", bt_str(peer_id));
     scanning_ = false;
   }
 
-  // Remove the entry from |pending_requests_| before notifying callbacks.
-  auto pending_req_data = std::move(iter->second);
-  pending_requests_.erase(iter);
+  // Remove the entry from |pending_requests_| before notifying callbacks of failure.
+  auto request_iter = pending_requests_.find(peer_id);
+  ZX_ASSERT(request_iter != pending_requests_.end());
+  auto pending_req_data = std::move(request_iter->second);
+  pending_requests_.erase(request_iter);
   auto error = status.is_protocol_error() ? HostError::kFailed : status.error();
   pending_req_data.NotifyCallbacks(fit::error(error));
 

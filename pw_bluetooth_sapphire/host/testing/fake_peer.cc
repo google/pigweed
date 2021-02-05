@@ -36,6 +36,7 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       connected_(false),
       connectable_(connectable),
       scannable_(scannable),
+      advertising_enabled_(true),
       directed_(false),
       address_resolved_(false),
       connect_status_(hci::StatusCode::kSuccess),

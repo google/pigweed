@@ -35,6 +35,8 @@ class FakePeer {
 
   void SetAdvertisingData(const ByteBuffer& data);
 
+  void set_advertising_enabled(bool enabled) { advertising_enabled_ = enabled; }
+
   // Mark this device for directed advertising. CreateAdvertisingReportEvent
   // will return directed advertisements only.
   void enable_directed_advertising(bool enable) { directed_ = enable; }
@@ -89,6 +91,9 @@ class FakePeer {
   // it is a hint to the corresponding FakeController which decides how the
   // reports should be generated.
   bool should_batch_reports() const { return should_batch_reports_; }
+
+  // Returns true if this device should send advertisements.
+  bool advertising_enabled() const { return advertising_enabled_; }
 
   // Returns true if this device is scannable. We use this to tell
   // FakeController whether or not it should send scan response PDUs.
@@ -170,6 +175,7 @@ class FakePeer {
   bool connected_;
   bool connectable_;
   bool scannable_;
+  bool advertising_enabled_;
   bool directed_;
   bool address_resolved_;
 

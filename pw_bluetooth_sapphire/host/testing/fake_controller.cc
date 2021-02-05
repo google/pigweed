@@ -518,7 +518,7 @@ void FakeController::SendAdvertisingReports() {
 }
 
 void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
-  if (!le_scan_state_.enabled || !peer.supports_le()) {
+  if (!le_scan_state_.enabled || !peer.supports_le() || !peer.advertising_enabled()) {
     return;
   }
   // We want to send scan response packets only during an active scan and if
