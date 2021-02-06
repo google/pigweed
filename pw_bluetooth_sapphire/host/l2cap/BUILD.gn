@@ -81,9 +81,6 @@ static_library("l2cap") {
     "//zircon/public/lib/fit",
     "//zircon/system/ulib/inspect",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("testing") {
