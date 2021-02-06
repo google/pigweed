@@ -44,15 +44,9 @@ Status TryReadByte(std::byte* dest) {
   return OkStatus();
 }
 
-// Send a byte over USART1. Since this blocks on every byte, it's rather
-// inefficient. At the default baud rate of 115200, one byte blocks the CPU for
-// ~87 micro seconds. This means it takes only 10 bytes to block the CPU for
-// 1ms!
+// Send a byte over the default Arduino Serial port.
 Status WriteByte(std::byte b) {
-  // Wait for TX buffer to be empty. When the buffer is empty, we can write
-  // a value to be dumped out of UART.
-  while (Serial.availableForWrite() < 1) {
-  }
+  // Serial.write() will block until data can be written.
   Serial.write((uint8_t)b);
   return OkStatus();
 }
