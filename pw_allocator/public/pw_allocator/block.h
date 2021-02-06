@@ -176,22 +176,22 @@ class Block final {
 
   // Mark this block as in-use
   void MarkUsed() {
-    next = reinterpret_cast<Block*>((NextAsUIntPtr() | kInUseFlag));
+    next_ = reinterpret_cast<Block*>((NextAsUIntPtr() | kInUseFlag));
   }
 
   // Mark this block as free
   void MarkFree() {
-    next = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kInUseFlag));
+    next_ = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kInUseFlag));
   }
 
   // Mark this block as the last one in the chain.
   void MarkLast() {
-    next = reinterpret_cast<Block*>((NextAsUIntPtr() | kLastFlag));
+    next_ = reinterpret_cast<Block*>((NextAsUIntPtr() | kLastFlag));
   }
 
   // Clear the "last" bit from this block.
   void ClearLast() {
-    next = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kLastFlag));
+    next_ = reinterpret_cast<Block*>((NextAsUIntPtr() & ~kLastFlag));
   }
 
   // Fetch the block immediately after this one.
@@ -204,7 +204,7 @@ class Block final {
 
   // Return the block immediately before this one. This will return nullptr
   // if this is the "first" block.
-  Block* Prev() const { return prev; }
+  Block* Prev() const { return prev_; }
 
   // Return true if the block is aligned, the prev/next field matches with the
   // previous and next block, and the poisoned bytes is not damaged. Otherwise,
@@ -238,7 +238,7 @@ class Block final {
 
   // Helper to reduce some of the casting nesting in the block management
   // functions.
-  uintptr_t NextAsUIntPtr() const { return reinterpret_cast<uintptr_t>(next); }
+  uintptr_t NextAsUIntPtr() const { return reinterpret_cast<uintptr_t>(next_); }
 
   void PoisonBlock();
   bool CheckPoisonBytes() const;
@@ -248,8 +248,8 @@ class Block final {
   // block, with templated type for the offset size. There are some interesting
   // tradeoffs here; perhaps a pool of small allocations could use 1-byte
   // next/prev offsets to reduce size further.
-  Block* next;
-  Block* prev;
+  Block* next_;
+  Block* prev_;
 };
 
 }  // namespace pw::allocator

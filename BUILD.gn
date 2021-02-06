@@ -271,6 +271,7 @@ if (current_toolchain != default_toolchain) {
   # Targets for all module unit test groups.
   pw_test_group("pw_module_tests") {
     group_deps = [
+      "$dir_pw_allocator:tests",
       "$dir_pw_assert:tests",
       "$dir_pw_base64:tests",
       "$dir_pw_blob_store:tests",
@@ -311,19 +312,6 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_unit_test:tests",
       "$dir_pw_varint:tests",
     ]
-
-    # TODO(pwbug/315): Fix pw_allocator tests on ARM Clang build.
-    _qemu_toolchains = [
-      "lm3s6965evb_qemu_clang_debug",
-      "lm3s6965evb_qemu_clang_size_optimized",
-      "lm3s6965evb_qemu_clang_speed_optimized",
-    ]
-    _toolchain_is_qemu_clang =
-        _qemu_toolchains + [ get_label_info(current_toolchain, "name") ] -
-        [ get_label_info(current_toolchain, "name") ] != _qemu_toolchains
-    if (!_toolchain_is_qemu_clang) {
-      group_deps += [ "$dir_pw_allocator:tests" ]
-    }
 
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain) {

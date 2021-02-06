@@ -38,10 +38,10 @@ Status Block::Init(const std::span<std::byte> region, Block** block) {
   // with the following storage. Since the space between this block and the
   // next are implicitly part of the raw data, size can be computed by
   // subtracting the pointers.
-  aliased.block->next = reinterpret_cast<Block*>(region.end());
+  aliased.block->next_ = reinterpret_cast<Block*>(region.end());
   aliased.block->MarkLast();
 
-  aliased.block->prev = nullptr;
+  aliased.block->prev_ = nullptr;
   *block = aliased.block;
 #if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   (*block)->PoisonBlock();
@@ -101,17 +101,17 @@ Status Block::Split(size_t head_block_inner_size, Block** new_block) {
   // If we're inserting in the middle, we need to update the current next
   // block to point to what we're inserting
   if (!Last()) {
-    Next()->prev = new_next;
+    Next()->prev_ = new_next;
   }
 
   // Copy next verbatim so the next block also gets the "last"-ness
-  new_next->next = next;
-  new_next->prev = this;
+  new_next->next_ = next_;
+  new_next->prev_ = this;
 
   // Update the current block to point to the new head.
-  next = new_next;
+  next_ = new_next;
 
-  *new_block = next;
+  *new_block = next_;
 
 #if defined(PW_ALLOCATOR_POISON_ENABLE) && PW_ALLOCATOR_POISON_ENABLE
   PoisonBlock();
@@ -135,11 +135,11 @@ Status Block::MergeNext() {
   // Simply enough, this block's next pointer becomes the next block's
   // next pointer. We then need to re-wire the "next next" block's prev
   // pointer to point back to us though.
-  next = Next()->next;
+  next_ = Next()->next_;
 
   // Copying the pointer also copies the "last" status, so this is safe.
   if (!Last()) {
-    Next()->prev = this;
+    Next()->prev_ = this;
   }
 
   return OkStatus();
@@ -148,14 +148,14 @@ Status Block::MergeNext() {
 Status Block::MergePrev() {
   // We can't merge if we have no previous. After that though, merging with
   // the previous block is just MergeNext from the previous block.
-  if (prev == nullptr) {
+  if (prev_ == nullptr) {
     return Status::OutOfRange();
   }
 
   // WARNING: This class instance will still exist, but technically be invalid
   // after this has been invoked. Be careful when doing anything with `this`
   // After doing the below.
-  return prev->MergeNext();
+  return prev_->MergeNext();
 }
 
 // TODO(pwbug/234): Add stack tracing to locate which call to the heap operation
