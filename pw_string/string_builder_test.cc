@@ -523,12 +523,16 @@ TEST(MakeString, StringLiteral_ResizesToFitWholeLiteral) {
 
   [[maybe_unused]] auto normal = MakeString("");
   static_assert(normal.max_size() == decltype(MakeString(1))::max_size());
+  EXPECT_EQ(normal.max_size(), decltype(MakeString(1))::max_size());
 
   [[maybe_unused]] auto resized =
       MakeString("This string is reeeeeeeeeaaaaallly long!!!!!");
   static_assert(resized.max_size() > decltype(MakeString(1))::max_size());
   static_assert(resized.max_size() ==
                 sizeof("This string is reeeeeeeeeaaaaallly long!!!!!") - 1);
+  EXPECT_GT(resized.max_size(), decltype(MakeString(1))::max_size());
+  EXPECT_EQ(resized.max_size(),
+            sizeof("This string is reeeeeeeeeaaaaallly long!!!!!") - 1);
 }
 
 TEST(MakeString, StringLiteral_UsesLongerFixedSize) {
