@@ -24,7 +24,9 @@ namespace pw::allocator {
 FreeListHeap::FreeListHeap(std::span<std::byte> region, FreeList& freelist)
     : freelist_(freelist), heap_stats_() {
   Block* block;
-  Block::Init(region, &block);
+  PW_CHECK_OK(
+      Block::Init(region, &block),
+      "Failed to initialize FreeListHeap region; misaligned or too small");
 
   freelist_.AddChunk(BlockToSpan(block));
 
