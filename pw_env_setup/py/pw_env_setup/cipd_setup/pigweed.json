@@ -97,7 +97,7 @@
   {
     "path": "infra/goma/client/${os}-${arch=amd64}",
     "tags": [
-      "git_revision:9f9893e227e933964882d0905a2c1e65e716dad7"
+      "git_revision:be1b7f4547023e809b636dc9572c976ccb33dcac"
     ]
   },
   {
