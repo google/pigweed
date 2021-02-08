@@ -52,16 +52,13 @@ constexpr uint32_t kTriggerEndTraceRef = PW_TRACE_REF(PW_TRACE_TYPE_ASYNC_END,
 
 }  // namespace
 
-pw_trace_TraceEventReturnFlags TraceEventCallback(void* user_data,
-                                                  uint32_t trace_ref,
-                                                  pw_trace_EventType event_type,
-                                                  const char* module,
-                                                  uint32_t trace_id,
-                                                  uint8_t flags) {
-  PW_UNUSED(user_data);
-  PW_UNUSED(event_type);
-  PW_UNUSED(module);
-  PW_UNUSED(flags);
+pw_trace_TraceEventReturnFlags TraceEventCallback(
+    void* /* user_data */,
+    uint32_t trace_ref,
+    pw_trace_EventType /* event_type */,
+    const char* /* module */,
+    uint32_t trace_id,
+    uint8_t /* flags */) {
   if (trace_ref == kTriggerStartTraceRef && trace_id == kTriggerId) {
     PW_LOG_INFO("Trace capture started!");
     PW_TRACE_SET_ENABLED(true);

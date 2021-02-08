@@ -109,15 +109,15 @@ extern "C" void pw_Log(int level,
 #if PW_LOG_SHOW_FILENAME
   buffer.Format(" %-30s:%4d |", GetFileBasename(file_name), line_number);
 #else
-  PW_UNUSED(file_name);
-  PW_UNUSED(line_number);
+  static_cast<void>(file_name);
+  static_cast<void>(line_number);
 #endif
 
   // Column: Function
 #if PW_LOG_SHOW_FUNCTION
   buffer.Format(" %20s |", function_name);
 #else
-  PW_UNUSED(function_name);
+  static_cast<void>(function_name);
 #endif
 
   // Column: Module
@@ -126,7 +126,7 @@ extern "C" void pw_Log(int level,
   buffer.Format("%3s", module_name);
   buffer << RESET " ";
 #else
-  PW_UNUSED(module_name);
+  static_cast<void>(module_name);
 #endif  // PW_LOG_SHOW_MODULE
 
   // Column: Flag
@@ -138,7 +138,7 @@ extern "C" void pw_Log(int level,
 #endif  // PW_EMOJI
   buffer << " ";
 #else
-  PW_UNUSED(flags);
+  static_cast<void>(flags);
 #endif  // PW_LOG_SHOW_FLAG
 
   // Column: Level

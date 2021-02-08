@@ -81,13 +81,8 @@ TEST(Metric, GroupMacroInFunctionContext) {
   x.Increment(10);
   y.Set(5.0f);
 
-  int num_metrics = 0;
-  for (auto& m : group.metrics()) {
-    PW_UNUSED(m);
-    num_metrics++;
-  }
   group.Dump();
-  EXPECT_EQ(num_metrics, 2);
+  EXPECT_EQ(group.metrics().size(), 2u);
 }
 
 // The below are compile tests to ensure the macros work at global scope.

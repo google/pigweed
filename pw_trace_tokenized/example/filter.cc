@@ -34,17 +34,14 @@
 #include "pw_trace_tokenized/trace_callback.h"
 #include "pw_trace_tokenized/trace_tokenized.h"
 
-pw_trace_TraceEventReturnFlags TraceEventCallback(void* user_data,
-                                                  uint32_t trace_ref,
-                                                  pw_trace_EventType event_type,
-                                                  const char* module,
-                                                  uint32_t trace_id,
-                                                  uint8_t flags) {
+pw_trace_TraceEventReturnFlags TraceEventCallback(
+    void* /* user_data */,
+    uint32_t /* trace_ref */,
+    pw_trace_EventType /* event_type */,
+    const char* module,
+    uint32_t trace_id,
+    uint8_t /* flags */) {
   // Filter out all traces from processing task, which aren't traceId 3
-  PW_UNUSED(user_data);
-  PW_UNUSED(event_type);
-  PW_UNUSED(trace_ref);
-  PW_UNUSED(flags);
   static constexpr uint32_t kFilterId = 3;
   return (strcmp("Processing", module) == 0 && trace_id != kFilterId)
              ? PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT

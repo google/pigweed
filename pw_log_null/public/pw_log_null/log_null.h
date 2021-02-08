@@ -41,10 +41,10 @@ static inline void pw_log_Ignored(int level,
                                   const char* module_name,
                                   const char* message,
                                   ...) {
-  PW_UNUSED(level);
-  PW_UNUSED(flags);
-  PW_UNUSED(module_name);
-  PW_UNUSED(message);
+  (void)level;
+  (void)flags;
+  (void)module_name;
+  (void)message;
 }
 
 PW_EXTERN_C_END

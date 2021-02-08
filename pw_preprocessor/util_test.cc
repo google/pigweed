@@ -40,15 +40,6 @@ TEST(Macros, ArraySize) {
   static_assert(PW_ARRAY_SIZE(objects[1].array) == 7);
 }
 
-TEST(Macros, UnusedVariable) {
-  int this_is_not_used = 12;
-  PW_UNUSED(this_is_not_used);
-
-  volatile void* volatile wow;
-  wow = nullptr;
-  PW_UNUSED(wow);
-}
-
 #define HELLO hello
 #define WORLD WORLD_IMPL()
 #define WORLD_IMPL() WORLD !

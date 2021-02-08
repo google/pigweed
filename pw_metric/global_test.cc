@@ -21,24 +21,13 @@
 namespace pw {
 namespace metric {
 
-// Count elements in an iterable.
-template <typename T>
-int Size(T& container) {
-  int num_elements = 0;
-  for (auto& element : container) {
-    PW_UNUSED(element);
-    num_elements++;
-  }
-  return num_elements;
-}
-
 // Create two global metrics; make sure they show up.
 PW_METRIC_GLOBAL(stat_x, "stat_x", 123u);
 PW_METRIC_GLOBAL(stat_y, "stat_y", 123u);
 
 TEST(Global, Metrics) {
   Metric::Dump(global_metrics);
-  EXPECT_EQ(Size(global_metrics), 2);
+  EXPECT_EQ(global_metrics.size(), 2u);
 }
 
 // Create three global metric groups; make sure they show up.
@@ -57,11 +46,11 @@ PW_METRIC(power_metrics, current_ma, "current_ma", 35.2f);
 
 TEST(Global, Groups) {
   Group::Dump(global_groups);
-  EXPECT_EQ(Size(global_groups), 4);
+  EXPECT_EQ(global_groups.size(), 4u);
 
-  EXPECT_EQ(Size(gyro_metrics.metrics()), 1);
-  EXPECT_EQ(Size(comms_metrics.metrics()), 2);
-  EXPECT_EQ(Size(power_metrics.metrics()), 3);
+  EXPECT_EQ(gyro_metrics.metrics().size(), 1u);
+  EXPECT_EQ(comms_metrics.metrics().size(), 2u);
+  EXPECT_EQ(power_metrics.metrics().size(), 3u);
 }
 
 }  // namespace metric

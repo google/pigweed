@@ -78,7 +78,6 @@ pw_preprocessor/util.h
 General purpose, useful macros.
 
 * ``PW_ARRAY_SIZE(array)`` -- calculates the size of a C array
-* ``PW_UNUSED(value)`` -- silences "unused variable" compiler warnings
 * ``PW_STRINGIFY(...)`` -- expands its arguments as macros and converts them to
   a string literal
 * ``PW_EXTERN_C`` -- declares a name to be ``extern "C"`` in C++; expands to

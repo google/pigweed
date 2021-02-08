@@ -20,8 +20,7 @@
 #include <sanitizer/asan_interface.h>
 #else  // !defined(__clang__)
 
-#define ASAN_POISON_MEMORY_REGION(addr, size) (PW_UNUSED(addr), PW_UNUSED(size))
-#define ASAN_UNPOISON_MEMORY_REGION(addr, size) \
-  (PW_UNUSED(addr), PW_UNUSED(size))
+#define ASAN_POISON_MEMORY_REGION(addr, size) ((void)(addr), (void)(size))
+#define ASAN_UNPOISON_MEMORY_REGION(addr, size) ((void)(addr), (void)(size))
 
 #endif  // defined(__clang__)

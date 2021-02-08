@@ -40,9 +40,7 @@
 
 class FuzzedDataProvider {
  public:
-  FuzzedDataProvider(const uint8_t* data, size_t size) {
-    PW_UNUSED(data);
-    PW_UNUSED(size);
+  FuzzedDataProvider(const uint8_t* /* data */, size_t /* size */) {
     PW_LOG_INFO("Fuzzing is disabled for the current compiler.");
     PW_LOG_INFO("Using trivial stub implementation for FuzzedDataProvider.");
   }
@@ -50,15 +48,13 @@ class FuzzedDataProvider {
   ~FuzzedDataProvider() = default;
 
   template <typename T>
-  std::vector<T> ConsumeBytes(size_t num_bytes) {
-    PW_UNUSED(num_bytes);
+  std::vector<T> ConsumeBytes(size_t /* num_bytes */) {
     return std::vector<T>{};
   }
 
   template <typename T>
-  std::vector<T> ConsumeBytesWithTerminator(size_t num_bytes,
+  std::vector<T> ConsumeBytesWithTerminator(size_t /* num_bytes */,
                                             T terminator = 0) {
-    PW_UNUSED(num_bytes);
     return std::vector<T>{terminator};
   }
 
@@ -67,13 +63,11 @@ class FuzzedDataProvider {
     return std::vector<T>{};
   }
 
-  std::string ConsumeBytesAsString(size_t num_bytes) {
-    PW_UNUSED(num_bytes);
+  std::string ConsumeBytesAsString(size_t /* num_bytes */) {
     return std::string{};
   }
 
-  std::string ConsumeRandomLengthString(size_t max_length) {
-    PW_UNUSED(max_length);
+  std::string ConsumeRandomLengthString(size_t /* max_length */) {
     return std::string{};
   }
 
@@ -87,8 +81,7 @@ class FuzzedDataProvider {
   }
 
   template <typename T>
-  T ConsumeIntegralInRange(T min, T max) {
-    PW_UNUSED(max);
+  T ConsumeIntegralInRange(T min, T /* max */) {
     return T(min);
   }
 
@@ -98,8 +91,7 @@ class FuzzedDataProvider {
   }
 
   template <typename T>
-  T ConsumeFloatingPointInRange(T min, T max) {
-    PW_UNUSED(max);
+  T ConsumeFloatingPointInRange(T min, T /* max */) {
     return T(min);
   }
 
@@ -127,9 +119,7 @@ class FuzzedDataProvider {
     return *list.begin();
   }
 
-  size_t ConsumeData(void* destination, size_t num_bytes) {
-    PW_UNUSED(destination);
-    PW_UNUSED(num_bytes);
+  size_t ConsumeData(void* /* destination */, size_t /* num_bytes */) {
     return 0;
   }
 

@@ -29,7 +29,7 @@ pw::allocator::FreeListHeapBuffer<>* pw_freelist_heap;
 
 #if __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 // Define the global heap variables.
 void pw_MallocInit() {
   // pw_boot_heap_low_addr and pw_boot_heap_high_addr specifies the heap region
@@ -58,25 +58,19 @@ void* __wrap_calloc(size_t num, size_t size) {
   return pw_freelist_heap->Calloc(num, size);
 }
 
-void* __wrap__malloc_r(struct _reent* r, size_t size) {
-  PW_UNUSED(r);
+void* __wrap__malloc_r(struct _reent*, size_t size) {
   return pw_freelist_heap->Allocate(size);
 }
 
-void __wrap__free_r(struct _reent* r, void* ptr) {
-  PW_UNUSED(r);
-  pw_freelist_heap->Free(ptr);
-}
+void __wrap__free_r(struct _reent*, void* ptr) { pw_freelist_heap->Free(ptr); }
 
-void* __wrap__realloc_r(struct _reent* r, void* ptr, size_t size) {
-  PW_UNUSED(r);
+void* __wrap__realloc_r(struct _reent*, void* ptr, size_t size) {
   return pw_freelist_heap->Realloc(ptr, size);
 }
 
-void* __wrap__calloc_r(struct _reent* r, size_t num, size_t size) {
-  PW_UNUSED(r);
+void* __wrap__calloc_r(struct _reent*, size_t num, size_t size) {
   return pw_freelist_heap->Calloc(num, size);
 }
 #if __cplusplus
 }
-#endif
+#endif  // __cplusplus

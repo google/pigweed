@@ -350,10 +350,6 @@ void InstallVectorTableEntries() {
   interrupts[kBusFaultIsrNum] = exception_entry_addr;
   interrupts[kUsageFaultIsrNum] = exception_entry_addr;
 
-  uint32_t old_vector_table = cortex_m_vtor;
-  // Dismiss unused variable warning for non-debug builds.
-  PW_UNUSED(old_vector_table);
-
   // Update Vector Table Offset Register (VTOR) to point to new vector table.
   cortex_m_vtor = reinterpret_cast<uint32_t>(&ram_vector_table);
   EndCriticalSection(prev_state);

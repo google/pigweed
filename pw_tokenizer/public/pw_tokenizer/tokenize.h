@@ -172,7 +172,7 @@ static inline void pw_tokenizer_CheckFormatString(const char* format, ...)
     PW_PRINTF_FORMAT(1, 2);
 
 static inline void pw_tokenizer_CheckFormatString(const char* format, ...) {
-  PW_UNUSED(format);
+  (void)format;
 }
 
 PW_EXTERN_C_END

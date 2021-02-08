@@ -21,14 +21,17 @@
 // clang-format on
 
 #include <deque>
+
 #include "gtest/gtest.h"
 
 namespace {
 
-// Moving these to other lines will require updating the variables
-#define kTraceFunctionLine 32
-#define kTraceFunctionGroupLine 33
-#define kTraceFunctionIdLine 35
+// These are line numbers for the functions below. Moving these functions to
+// other lines will require updating these macros.
+#define TRACE_FUNCTION_LINE 35
+#define TRACE_FUNCTION_GROUP_LINE 36
+#define TRACE_FUNCTION_ID_LINE 38
+
 void TraceFunction() { PW_TRACE_FUNCTION(); }
 void TraceFunctionGroup() { PW_TRACE_FUNCTION("FunctionGroup"); }
 void TraceFunctionTraceId(uint32_t id) {
@@ -86,10 +89,9 @@ class TraceTestInterface {
       pw_trace_EventType event_type,
       const char* module,
       uint32_t trace_id,
-      uint8_t flags) {
+      uint8_t /* flags */) {
     TraceTestInterface* test_interface =
         reinterpret_cast<TraceTestInterface*>(user_data);
-    PW_UNUSED(flags);
     pw_trace_TraceEventReturnFlags ret = 0;
     if (test_interface->action_ != ActionOnEvent::None &&
         (test_interface->event_match_.trace_ref == trace_ref ||
@@ -127,7 +129,7 @@ class TraceTestInterface {
                                 size_t size) {
     TraceTestInterface* test_interface =
         reinterpret_cast<TraceTestInterface*>(user_data);
-    PW_UNUSED(bytes);
+    static_cast<void>(bytes);
     test_interface->sink_bytes_received_ += size;
   }
 
@@ -477,12 +479,14 @@ TEST(TokenizedTrace, Function) {
   TraceFunction();
 
   // Check results
-  EXPECT_TRACE(test_interface,
-               PW_TRACE_TYPE_DURATION_START,
-               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionLine));
-  EXPECT_TRACE(test_interface,
-               PW_TRACE_TYPE_DURATION_END,
-               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionLine));
+  EXPECT_TRACE(
+      test_interface,
+      PW_TRACE_TYPE_DURATION_START,
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_LINE));
+  EXPECT_TRACE(
+      test_interface,
+      PW_TRACE_TYPE_DURATION_END,
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_LINE));
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
 
@@ -495,12 +499,12 @@ TEST(TokenizedTrace, FunctionGroup) {
   EXPECT_TRACE(
       test_interface,
       PW_TRACE_TYPE_DURATION_GROUP_START,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionGroupLine),
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_GROUP_LINE),
       "FunctionGroup");
   EXPECT_TRACE(
       test_interface,
       PW_TRACE_TYPE_DURATION_GROUP_END,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionGroupLine),
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_GROUP_LINE),
       "FunctionGroup");
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
@@ -514,13 +518,13 @@ TEST(TokenizedTrace, FunctionTraceId) {
   EXPECT_TRACE(
       test_interface,
       PW_TRACE_TYPE_ASYNC_START,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionIdLine),
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_ID_LINE),
       "FunctionGroup",
       kTraceId);
   EXPECT_TRACE(
       test_interface,
       PW_TRACE_TYPE_ASYNC_END,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, kTraceFunctionIdLine),
+      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_ID_LINE),
       "FunctionGroup",
       kTraceId);
   EXPECT_TRUE(test_interface.GetEvents().empty());
