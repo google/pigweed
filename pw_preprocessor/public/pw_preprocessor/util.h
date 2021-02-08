@@ -18,12 +18,6 @@
 // Returns the number of elements in a C array.
 #define PW_ARRAY_SIZE(array) (sizeof(array) / sizeof(*array))
 
-// Prevents unused value compiler warnings.
-//
-// This macro is DEPRECATED; do not use it. Instead, use [[maybe_unused]] or
-// cast to void.
-#define PW_UNUSED(value) ((void)sizeof(value))
-
 // Returns a string literal of the arguments after expanding macros.
 #define PW_STRINGIFY(...) _PW_STRINGIFY(__VA_ARGS__)
 #define _PW_STRINGIFY(...) #__VA_ARGS__
