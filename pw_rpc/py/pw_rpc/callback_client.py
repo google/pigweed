@@ -56,12 +56,12 @@ from pw_rpc.descriptors import Channel, Method, Service
 _LOG = logging.getLogger(__name__)
 
 
-class _UseDefault(enum.Enum):
+class UseDefault(enum.Enum):
     """Marker for args that should use a default value, when None is valid."""
     VALUE = 0
 
 
-_OptionalTimeout = Union[_UseDefault, float, None]
+OptionalTimeout = Union[UseDefault, float, None]
 
 Callback = Callable[[client.PendingRpc, Optional[Status], Any], Any]
 
@@ -162,12 +162,12 @@ class StreamingResponses:
     """Used to iterate over a queue.SimpleQueue."""
     def __init__(self, method_client: _MethodClient,
                  responses: queue.SimpleQueue,
-                 default_timeout_s: _OptionalTimeout):
+                 default_timeout_s: OptionalTimeout):
         self._method_client = method_client
         self._queue = responses
         self.status: Optional[Status] = None
 
-        if default_timeout_s is _UseDefault.VALUE:
+        if default_timeout_s is UseDefault.VALUE:
             self.default_timeout_s = self._method_client.default_timeout_s
         else:
             self.default_timeout_s = default_timeout_s
@@ -179,13 +179,13 @@ class StreamingResponses:
     def responses(self,
                   *,
                   block: bool = True,
-                  timeout_s: _OptionalTimeout = _UseDefault.VALUE):
+                  timeout_s: OptionalTimeout = UseDefault.VALUE):
         """Returns an iterator of stream responses.
 
         Args:
           timeout_s: timeout in seconds; None blocks indefinitely
         """
-        if timeout_s is _UseDefault.VALUE:
+        if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
 
         try:
@@ -258,7 +258,7 @@ def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
     def call(self: _MethodClient,
              _rpc_request_proto=None,
              *,
-             pw_rpc_timeout_s=_UseDefault.VALUE,
+             pw_rpc_timeout_s=UseDefault.VALUE,
              **request_fields) -> UnaryResponse:
         responses: queue.SimpleQueue = queue.SimpleQueue()
 
@@ -268,7 +268,7 @@ def unary_method_client(client_impl: 'Impl', rpcs: client.PendingRpcs,
 
         self.reinvoke(enqueue_response, _rpc_request_proto, **request_fields)
 
-        if pw_rpc_timeout_s is _UseDefault.VALUE:
+        if pw_rpc_timeout_s is UseDefault.VALUE:
             pw_rpc_timeout_s = self.default_timeout_s
 
         try:
@@ -297,7 +297,7 @@ def server_streaming_method_client(client_impl: 'Impl',
     def call(self: _MethodClient,
              _rpc_request_proto=None,
              *,
-             pw_rpc_timeout_s=_UseDefault.VALUE,
+             pw_rpc_timeout_s=UseDefault.VALUE,
              **request_fields) -> StreamingResponses:
         responses: queue.SimpleQueue = queue.SimpleQueue()
         self.reinvoke(

@@ -19,6 +19,7 @@ import logging
 from typing import Iterable
 
 import pw_rpc.client
+from pw_rpc.callback_client import OptionalTimeout, UseDefault
 from pw_unit_test_proto import unit_test_pb2
 
 _LOG = logging.getLogger(__name__)
@@ -110,11 +111,11 @@ class LoggingEventHandler(EventHandler):
         log('        Actual: %s', expectation.evaluated_expression)
 
 
-def run_tests(
-    rpcs: pw_rpc.client.Services,
-    report_passed_expectations: bool = False,
-    event_handlers: Iterable[EventHandler] = (LoggingEventHandler(), )
-) -> bool:
+def run_tests(rpcs: pw_rpc.client.Services,
+              report_passed_expectations: bool = False,
+              event_handlers: Iterable[EventHandler] = (
+                  LoggingEventHandler(), ),
+              timeout_s: OptionalTimeout = UseDefault.VALUE) -> bool:
     """Runs unit tests on a device over Pigweed RPC.
 
     Calls each of the provided event handlers as test events occur, and returns
@@ -122,15 +123,27 @@ def run_tests(
     """
     unit_test_service = rpcs.pw.unit_test.UnitTest  # type: ignore[attr-defined]
 
-    all_tests_passed = False
-    for response in unit_test_service.Run(
-            report_passed_expectations=report_passed_expectations):
-        if response.HasField('test_case_start'):
-            raw_test_case = response.test_case_start
-            current_test_case = TestCase(raw_test_case.suite_name,
-                                         raw_test_case.test_name,
-                                         raw_test_case.file_name)
+    test_responses = iter(
+        unit_test_service.Run(
+            report_passed_expectations=report_passed_expectations,
+            timeout_s=timeout_s))
 
+    # Read the first response, which must be a test_case_start message.
+    first_response = next(test_responses)
+    if not first_response.HasField('test_case_start'):
+        raise ValueError(
+            'Expected a "test_case_start" response from pw.unit_test.Run, '
+            'but received a different message type. A response may have been '
+            'dropped.')
+
+    raw_test_case = first_response.test_case_start
+    current_test_case = TestCase(raw_test_case.suite_name,
+                                 raw_test_case.test_name,
+                                 raw_test_case.file_name)
+
+    all_tests_passed = False
+
+    for response in test_responses:
         for event_handler in event_handlers:
             if response.HasField('test_run_start'):
                 event_handler.run_all_tests_start()
