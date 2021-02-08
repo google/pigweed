@@ -126,7 +126,7 @@ def run_tests(rpcs: pw_rpc.client.Services,
     test_responses = iter(
         unit_test_service.Run(
             report_passed_expectations=report_passed_expectations,
-            timeout_s=timeout_s))
+            pw_rpc_timeout_s=timeout_s))
 
     # Read the first response, which must be a test_case_start message.
     first_response = next(test_responses)
