@@ -392,6 +392,13 @@ void PeerCache::RemovePeer(Peer* peer) {
       iter++;
     }
   }
+
+  if (peer->le() && peer->le()->bonded()) {
+    if (auto& address = peer->le()->bond_data()->identity_address) {
+      le_resolving_list_.Remove(*address);
+    }
+  }
+
   peers_.erase(peer_record_it);  // Destroys |peer|.
   if (peer_removed_callback_) {
     peer_removed_callback_(id);

@@ -728,6 +728,27 @@ TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithIrkIsAddedToResolvin
   EXPECT_EQ(peer(), cache()->FindByAddress(rpa));
 }
 
+TEST_F(GAP_PeerCacheTest_BondingTest, RemovingPeerRemovesIrkFromResolvingList) {
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.identity_address = kAddrLePublic;
+  data.irk = sm::Key(sm::SecurityProperties(), Random<UInt128>());
+
+  EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
+
+  // Removing peer should remove IRK from resolving list, allowing a new peer to be created with an
+  // RPA corresponding to the removed IRK. Because the resolving list is empty, FindByAddress should
+  // look up the peer by the RPA address, not the resolved address, and return the new peer.
+  EXPECT_TRUE(cache()->RemoveDisconnectedPeer(peer()->identifier()));
+  DeviceAddress rpa = sm::util::GenerateRpa(data.irk->value());
+  EXPECT_EQ(nullptr, cache()->FindByAddress(rpa));
+  ASSERT_TRUE(NewPeer(rpa, true));
+  EXPECT_EQ(peer(), cache()->FindByAddress(rpa));
+  // Subsequent calls to create a peer with the same RPA should fail.
+  EXPECT_FALSE(NewPeer(rpa, true));
+}
+
 TEST_F(GAP_PeerCacheTest_BondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr) {
   // There's no preexisting BR/EDR data, the LE peer already exists.
   sm::PairingData data;

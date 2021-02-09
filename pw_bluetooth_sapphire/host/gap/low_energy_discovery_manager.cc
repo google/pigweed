@@ -260,6 +260,7 @@ void LowEnergyDiscoveryManager::OnPeerFound(const hci::LowEnergyScanResult& resu
   // Create a new entry if we found the device during general discovery.
   if (!peer) {
     peer = peer_cache_->NewPeer(result.address, result.connectable);
+    ZX_ASSERT(peer);
   } else if (!peer->connectable() && result.connectable) {
     bt_log(DEBUG, "gap-le",
            "received connectable advertisement from previously non-connectable peer (address: %s, "
