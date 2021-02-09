@@ -146,17 +146,30 @@ std::string EncodeUri(const std::string& uri) {
 const char kUndefinedScheme = 0x01;
 
 std::string DecodeUri(const std::string& uri) {
+  if (uri.empty()) {
+    return "";
+  }
   if (uri[0] == kUndefinedScheme) {
     return uri.substr(1);
   }
-  uint32_t cp = 0;
+  uint32_t code_point = 0;
   size_t index = 0;
-  if (!fxl::ReadUnicodeCharacter(uri.c_str(), uri.size(), &index, &cp)) {
-    // Malformed UTF-8
+
+  // NOTE: as we are reading UTF-8 from `uri`, it is possible that `code_point` corresponds to > 1
+  // byte of `uri` (even for valid URI encoding schemes, as U+00(>7F) encodes to 2 bytes).
+  if (!fxl::ReadUnicodeCharacter(uri.c_str(), uri.size(), &index, &code_point)) {
+    bt_log(INFO, "gap-le", "Attempted to decode malformed UTF-8 in AdvertisingData URI");
     return "";
   }
-  ZX_DEBUG_ASSERT(cp >= 2);
-  return kUriSchemes[cp - 2] + uri.substr(index + 1);
+  if (code_point >= kUriSchemesSize + 2) {
+    bt_log(ERROR, "gap-le",
+           "Failed to decode URI - supplied UTF-8 code-point %u must be in the range "
+           "2-kUriSchemesSize + 1 (2-%lu) to correspond to a URI encoding",
+           code_point, kUriSchemesSize + 1);
+    return "";
+  }
+  ZX_ASSERT(code_point >= 2);  // empty string->null byte == U+0000, U+0001 == kUndefinedScheme
+  return kUriSchemes[code_point - 2] + uri.substr(index + 1);
 }
 
 template <typename T>

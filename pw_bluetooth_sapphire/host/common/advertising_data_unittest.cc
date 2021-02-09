@@ -281,19 +281,34 @@ TEST(GAP_AdvertisingDataTest, Move) {
 }
 
 TEST(GAP_AdvertisingDataTest, Uris) {
+  // The encoding scheme is represented by the first UTF-8 code-point in the URI string. Per
+  // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping/,
+  // 0xBA is the highest code point corresponding to an encoding scheme. However, 0xBA > 0x7F, so
+  // representing too-large encoding schemes (i.e. code-points > 0xBA) in UTF-8 requires two bytes.
+  const uint8_t kLargestKnownSchemeByte1 = 0xC2, kLargestKnownSchemeByte2 = 0xBA;
+  // These bytes represent the (valid) UTF-8 code point for the (unknown encoding scheme) U+00BB.
+  const uint8_t kUnknownSchemeByte1 = 0xC2, kUnknownSchemeByte2 = 0xBB;
   auto bytes = CreateStaticByteBuffer(
       // Uri: "https://abc.xyz"
-      0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z',
+      0x0B, DataType::kURI, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z',
+      // Empty URI should be ignored:
+      0x01, DataType::kURI,
       // Uri: "flubs:abc"
-      0x0B, 0x24, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'a', 'b', 'c');
+      0x0B, DataType::kURI, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'a', 'b', 'c',
+      // Uri: "ms-settings-cloudstorage:flub"
+      0x07, DataType::kURI, kLargestKnownSchemeByte1, kLargestKnownSchemeByte2, 'f', 'l', 'u', 'b',
+      // Invalid URI - UTF-8 code point U+00BB doesn't correspond to an encoding scheme.
+      0x07, DataType::kURI, kUnknownSchemeByte1, kUnknownSchemeByte2, 'f', 'l', 'u', 'b');
 
   std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
   ASSERT_TRUE(data.has_value());
 
   auto uris = data->uris();
-  EXPECT_EQ(2u, uris.size());
+  EXPECT_EQ(3u, uris.size());
+
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "https://abc.xyz") != uris.end());
   EXPECT_TRUE(std::find(uris.begin(), uris.end(), "flubs:abc") != uris.end());
+  EXPECT_TRUE(std::find(uris.begin(), uris.end(), "ms-settings-cloudstorage:flub") != uris.end());
 }
 
 // Tests writing a fully populated |AdvertisingData| to
