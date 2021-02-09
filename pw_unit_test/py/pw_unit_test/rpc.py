@@ -128,22 +128,26 @@ def run_tests(rpcs: pw_rpc.client.Services,
             report_passed_expectations=report_passed_expectations,
             pw_rpc_timeout_s=timeout_s))
 
-    # Read the first response, which must be a test_case_start message.
+    # Read the first response, which must be a test_run_start message.
     first_response = next(test_responses)
-    if not first_response.HasField('test_case_start'):
+    if not first_response.HasField('test_run_start'):
         raise ValueError(
-            'Expected a "test_case_start" response from pw.unit_test.Run, '
+            'Expected a "test_run_start" response from pw.unit_test.Run, '
             'but received a different message type. A response may have been '
             'dropped.')
 
-    raw_test_case = first_response.test_case_start
-    current_test_case = TestCase(raw_test_case.suite_name,
-                                 raw_test_case.test_name,
-                                 raw_test_case.file_name)
+    for event_handler in event_handlers:
+        event_handler.run_all_tests_start()
 
     all_tests_passed = False
 
     for response in test_responses:
+        if response.HasField('test_case_start'):
+            raw_test_case = response.test_case_start
+            current_test_case = TestCase(raw_test_case.suite_name,
+                                         raw_test_case.test_name,
+                                         raw_test_case.file_name)
+
         for event_handler in event_handlers:
             if response.HasField('test_run_start'):
                 event_handler.run_all_tests_start()
