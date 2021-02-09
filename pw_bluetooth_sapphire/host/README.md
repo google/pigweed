@@ -2,7 +2,7 @@
 
 ## Test
 
-`$ fx test bt-host-unittests`
+`$ fx test //src/connectivity/bluetooth/core/bt-host`
 
 ## Inspect
 

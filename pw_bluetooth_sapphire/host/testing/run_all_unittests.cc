@@ -16,47 +16,11 @@ BT_DECLARE_FAKE_DRIVER();
 
 using bt::LogSeverity;
 
-namespace {
-
-LogSeverity FxlLogToBtLogLevel(syslog::LogSeverity severity) {
-  switch (severity) {
-    case syslog::LOG_ERROR:
-      return LogSeverity::ERROR;
-    case syslog::LOG_WARNING:
-      return LogSeverity::WARN;
-    case syslog::LOG_INFO:
-      return LogSeverity::INFO;
-    case syslog::LOG_DEBUG:
-      return LogSeverity::DEBUG;
-    case syslog::LOG_TRACE:
-      return LogSeverity::TRACE;
-    default:
-      break;
-  }
-  if (severity < 0) {
-    return LogSeverity::TRACE;
-  }
-  return LogSeverity::ERROR;
-}
-
-}  // namespace
-
 int main(int argc, char** argv) {
-  auto cl = fxl::CommandLineFromArgcArgv(argc, argv);
-  if (!fxl::SetTestSettings(cl)) {
+  if (!fxl::SetTestSettings(argc, argv)) {
     return EXIT_FAILURE;
   }
-
-  syslog::LogSettings log_settings;
-  log_settings.min_log_level = syslog::LOG_ERROR;
-  if (!fxl::ParseLogSettings(cl, &log_settings)) {
-    return EXIT_FAILURE;
-  }
-
-  // Set all library log messages to use printf instead ddk logging.
-  bt::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
 
   testing::InitGoogleTest(&argc, argv);
-
   return RUN_ALL_TESTS();
 }

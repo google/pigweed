@@ -6,6 +6,7 @@ import("//build/bind/bind.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 import("//src/sys/build/components.gni")
 
 bind_rules("bt_host_bind") {
@@ -162,49 +163,13 @@ source_set("driver_tests") {
   ]
 }
 
-executable("tests") {
-  testonly = true
-
-  output_name = "bt-host-unittests"
-
-  deps = [
-    ":driver_tests",
-    "att:tests",
-    "cobalt:tests",
-    "common:tests",
-    "gap:tests",
-    "gatt:tests",
-    "hci:tests",
-    "l2cap:tests",
-    "sco:tests",
-    "sdp:tests",
-    "sm:tests",
-    "socket:tests",
-    "testing:gtest_main",
-    "testing:tests",
-    "//src/devices/lib/driver",
-    "//third_party/googletest:gtest",
-  ]
+bt_gtest_package("bt-host-driver-tests") {
+  deps = [ ":driver_tests" ]
+  with_death_tests = true
 }
 
-group("unittest-packages") {
-  testonly = true
-  deps = [
-    "att:bt-host-att-tests",
-    "cobalt:bt-host-cobalt-tests",
-    "common:bt-host-common-tests",
-    "gap:bt-host-gap-tests",
-    "gatt:bt-host-gatt-tests",
-    "hci:bt-host-hci-tests",
-    "l2cap:bt-host-l2cap-tests",
-    "sco:bt-host-sco-tests",
-    "sdp:bt-host-sdp-tests",
-    "sm:bt-host-sm-tests",
-    "socket:bt-host-socket-tests",
-    "testing:bt-host-testing-tests",
-  ]
-}
-
+# See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
+# for instructions on building the fuzzers package.
 fuzzers_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
@@ -220,5 +185,25 @@ fuzzers_package("fuzzers") {
     "hci:read_acl_data_packet_fuzzer",
     "hci:read_command_event_packet_fuzzer",
     "common:advertising_data_fuzzer",
+  ]
+}
+
+group("tests") {
+  testonly = true
+  deps = [
+    ":bt-host-driver-tests",
+    ":fuzzers",
+    "att:bt-host-att-tests",
+    "cobalt:bt-host-cobalt-tests",
+    "common:bt-host-common-tests",
+    "gap:bt-host-gap-tests",
+    "gatt:bt-host-gatt-tests",
+    "hci:bt-host-hci-tests",
+    "l2cap:bt-host-l2cap-tests",
+    "sco:bt-host-sco-tests",
+    "sdp:bt-host-sdp-tests",
+    "sm:bt-host-sm-tests",
+    "socket:bt-host-socket-tests",
+    "testing:bt-host-testing-tests",
   ]
 }
