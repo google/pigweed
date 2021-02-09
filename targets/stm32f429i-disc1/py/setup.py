@@ -38,7 +38,7 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        'pyserial',
+        'pyserial>=3.5,<4.0',
         'coloredlogs',
         'pw_cli',
     ],
