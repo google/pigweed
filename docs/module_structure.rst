@@ -203,10 +203,10 @@ configuration.
 
 Declaring configuration
 ^^^^^^^^^^^^^^^^^^^^^^^
-Configuration values are declared in a header file with macros. If the macro
-value is not already defined, a default definition is provided. Otherwise,
-nothing is done. Configuration headers may include ``static_assert`` statements
-to validate configuration values.
+Configuration options are declared in a header file as macros. If the macro is
+not already defined, a default definition is provided. Otherwise, nothing is
+done. Configuration headers may include ``static_assert`` statements to validate
+configuration values.
 
 .. code-block:: c++
 
@@ -283,10 +283,11 @@ if desired. The configuration values may also be overridden individually by
 setting backends for the individual module configurations (e.g. in GN,
 ``pw_foo_CONFIG = "//configuration:my_foo_config"``).
 
-Configurations are overridden by setting compilation options in the config
-backend. These options could be set through macro definitions, such as
-``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``, or in a header file included with the
-``-include`` option.
+Configurations options are overridden by setting macros in the config backend.
+These macro definitions can be provided through compilation options, such as
+``-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256``. Configuration macro definitions may
+also be set in a header file. The header file is included using the ``-include``
+compilation option.
 
 This example shows two ways to configure a module in the GN build system.
 
@@ -295,7 +296,7 @@ This example shows two ways to configure a module in the GN build system.
   # In the toolchain, set either pw_build_DEFAULT_MODULE_CONFIG or pw_foo_CONFIG
   pw_build_DEFAULT_MODULE_CONFIG = get_path_info(":define_overrides", "abspath")
 
-  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES using the -D macro.
+  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES using the -D flag.
   pw_source_set("define_overrides") {
     public_configs = [ ":define_options" ]
   }
@@ -304,20 +305,42 @@ This example shows two ways to configure a module in the GN build system.
     defines = [ "-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
   }
 
-  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES with a header file.
+  # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES in a header file.
   pw_source_set("include_overrides") {
-    public_configs = [ ":header_options" ]
+    public_configs = [ ":set_options_in_header_file" ]
 
     # Header file with #define PW_FOO_INPUT_BUFFER_SIZE_BYTES 256
     sources = [ "my_config_overrides.h" ]
   }
 
-  config("header_options") {
+  config("set_options_in_header_file") {
     cflags = [
       "-include",
-      "my_config_overrides.h",
+      rebase_path("my_config_overrides.h"),
     ]
   }
+
+.. admonition:: Why this config pattern is preferred
+
+  Alternate patterns for configuring a module include overriding the module's
+  config header or having that header optionally include a header at a known
+  path (e.g. ``pw_foo/config_overrides.h``). There are a few downsides to these
+  approaches:
+
+  * The module needs its own config header that defines, provides defaults for,
+    and validates the configuration options. Replacing this header with a
+    user-defined header would require defining all options in the user's header,
+    which is cumbersome and brittle, and would bypass validation in the module's
+    header.
+  * Including a config override header at a particular path would prevent
+    multiple modules from sharing the same configuration file. Multiple headers
+    could redirect to the same configuration file, but this would still require
+    creating a separate header and setting the config backend variable for each
+    module.
+  * Optionally including a config override header requires boilerplate code that
+    would have to be duplicated in every configurable module.
+  * An optional config override header file would silently be excluded if the
+    file path were accidentally misspelled.
 
 .. _docs-module-structure-facades:
 
