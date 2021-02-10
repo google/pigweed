@@ -95,9 +95,9 @@
     ]
   },
   {
-    "path": "infra/goma/client/${os}-${arch=amd64}",
+    "path": "infra/rbe/client/${os=linux,windows}-${arch=amd64}",
     "tags": [
-      "git_revision:be1b7f4547023e809b636dc9572c976ccb33dcac"
+      "git_revision:3b3042c16accd40f0d3f7e40002f9ad2099cfe94"
     ]
   },
   {
