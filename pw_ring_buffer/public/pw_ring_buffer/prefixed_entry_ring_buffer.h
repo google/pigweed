@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <span>
 
+#include "pw_containers/intrusive_list.h"
 #include "pw_status/status.h"
 
 namespace pw {
@@ -25,21 +26,114 @@ namespace ring_buffer {
 // produces a buffer entry. Each entry consists of a preamble followed by an
 // arbitrary length data chunk. The preamble is comprised of an optional user
 // preamble byte and an always present varint. The varint encodes the number of
-// bytes in the data chunk.
+// bytes in the data chunk. This is a FIFO queue, with the oldest entries at
+// the 'front' (to be processed by readers) and the newest entries at the 'back'
+// (where the writer pushes to).
 //
-// The ring buffer holds the most recent entries stored in the buffer. Once
-// filled to capacity, incoming entries bump out the oldest entries to make
-// room. Entries are internally wrapped around as needed.
-class PrefixedEntryRingBuffer {
+// The ring buffer supports multiple readers, which can be attached/detached
+// from the buffer. Each reader has its own read pointer and can peek and pop
+// the entry at the head. Entries are not bumped out from the buffer until all
+// readers have moved past that entry, or if the buffer is at capacity and space
+// is needed to push a new entry. When making space, the buffer will push slow
+// readers forward to the new oldest entry. Entries are internally wrapped
+// around as needed.
+class PrefixedEntryRingBufferMulti {
  public:
   typedef Status (*ReadOutput)(std::span<const std::byte>);
 
-  PrefixedEntryRingBuffer(bool user_preamble = false)
+  // A reader that provides a single-reader interface into the multi-reader ring
+  // buffer it has been attached to via AttachReader(). Readers maintain their
+  // read position in the ring buffer as well as the remaining count of entries
+  // from that position. Readers are only able to consume entries that were
+  // pushed after the attach operation.
+  //
+  // Readers can peek and pop entries similar to the single-reader interface.
+  // When popping entries, although the reader moves forward and drops the
+  // entry, the entry is not removed from the ring buffer until all other
+  // attached readers have moved past that entry.
+  //
+  // When the attached ring buffer needs to make space, it may push the reader
+  // index forward. Users of this class should consider the possibility of data
+  // loss if they read slower than the writer.
+  class Reader : public IntrusiveList<Reader>::Item {
+   public:
+    Reader() : buffer(nullptr), read_idx(0), entry_count(0) {}
+
+    // TODO: Add locking to the internal functions. Who owns the lock? This
+    // class? Does this class need a lock if it's not a multi-reader? (One
+    // doesn't exist today but presumably nothing prevents push + pop operations
+    // from happening on two different threads).
+
+    // Read the oldest stored data chunk of data from the ring buffer to
+    // the provided destination std::span. The number of bytes read is written
+    // to bytes_read
+    //
+    // Return values:
+    // OK - Data successfully read from the ring buffer.
+    // FAILED_PRECONDITION - Buffer not initialized.
+    // OUT_OF_RANGE - No entries in ring buffer to read.
+    // RESOURCE_EXHAUSTED - Destination data std::span was smaller number of
+    // bytes than the data size of the data chunk being read.  Available
+    // destination bytes were filled, remaining bytes of the data chunk were
+    // ignored.
+    Status PeekFront(std::span<std::byte> data, size_t* bytes_read) {
+      return buffer->InternalPeekFront(*this, data, bytes_read);
+    }
+
+    Status PeekFront(ReadOutput output) {
+      return buffer->InternalPeekFront(*this, output);
+    }
+
+    // Same as PeekFront but includes the entry's preamble of optional user
+    // value and the varint of the data size.
+    Status PeekFrontWithPreamble(std::span<std::byte> data,
+                                 size_t* bytes_read) {
+      return buffer->InternalPeekFrontWithPreamble(*this, data, bytes_read);
+    }
+
+    Status PeekFrontWithPreamble(ReadOutput output) {
+      return buffer->InternalPeekFrontWithPreamble(*this, output);
+    }
+
+    // Pop and discard the oldest stored data chunk of data from the ring
+    // buffer.
+    //
+    // Return values:
+    // OK - Data successfully read from the ring buffer.
+    // FAILED_PRECONDITION - Buffer not initialized.
+    // OUT_OF_RANGE - No entries in ring buffer to pop.
+    Status PopFront() { return buffer->InternalPopFront(*this); }
+
+    // Get the size in bytes of the next chunk, not including preamble, to be
+    // read.
+    size_t FrontEntryDataSizeBytes() {
+      return buffer->InternalFrontEntryDataSizeBytes(*this);
+    }
+
+    // Get the size in bytes of the next chunk, including preamble and data
+    // chunk, to be read.
+    size_t FrontEntryTotalSizeBytes() {
+      return buffer->InternalFrontEntryTotalSizeBytes(*this);
+    }
+
+    // Get the number of variable-length entries currently in the ring buffer.
+    //
+    // Return value:
+    // Entry count.
+    size_t EntryCount() { return entry_count; }
+
+   protected:
+    friend PrefixedEntryRingBufferMulti;
+
+    PrefixedEntryRingBufferMulti* buffer;
+    size_t read_idx;
+    size_t entry_count;
+  };
+
+  PrefixedEntryRingBufferMulti(bool user_preamble = false)
       : buffer_(nullptr),
         buffer_bytes_(0),
         write_idx_(0),
-        read_idx_(0),
-        entry_count_(0),
         user_preamble_(user_preamble) {}
 
   // Set the raw buffer to be used by the ring buffer.
@@ -48,6 +142,23 @@ class PrefixedEntryRingBuffer {
   // OK - successfully set the raw buffer.
   // INVALID_ARGUMENT - Argument was nullptr, size zero, or too large.
   Status SetBuffer(std::span<std::byte> buffer);
+
+  // Attach reader to the ring buffer. Readers can only be attached to one
+  // ring buffer at a time.
+  //
+  // Return values:
+  // OK - Successfully configured reader for ring buffer.
+  // INVALID_ARGUMENT - Argument was already attached to another ring buffer.
+  Status AttachReader(Reader& reader);
+
+  // Detach reader from the ring buffer. Readers can only be detached if they
+  // were previously attached.
+  //
+  // Return values:
+  // OK - Successfully removed reader for ring buffer.
+  // INVALID_ARGUMENT - Argument was not previously attached to this ring
+  // buffer.
+  Status DetachReader(Reader& reader);
 
   // Removes all data from the ring buffer.
   void Clear();
@@ -88,6 +199,20 @@ class PrefixedEntryRingBuffer {
     return InternalPushBack(data, user_preamble_data, false);
   }
 
+  // Get the size in bytes of all the current entries in the ring buffer,
+  // including preamble and data chunk.
+  size_t TotalUsedBytes() { return buffer_bytes_ - RawAvailableBytes(); }
+
+  // Dering the buffer by reordering entries internally in the buffer by
+  // rotating to have the oldest entry is at the lowest address/index with
+  // newest entry at the highest address.
+  //
+  // Return values:
+  // OK - Buffer data successfully deringed.
+  // FAILED_PRECONDITION - Buffer not initialized, or no readers attached.
+  Status Dering();
+
+ protected:
   // Read the oldest stored data chunk of data from the ring buffer to
   // the provided destination std::span. The number of bytes read is written to
   // bytes_read
@@ -99,15 +224,17 @@ class PrefixedEntryRingBuffer {
   // RESOURCE_EXHAUSTED - Destination data std::span was smaller number of bytes
   // than the data size of the data chunk being read.  Available destination
   // bytes were filled, remaining bytes of the data chunk were ignored.
-  Status PeekFront(std::span<std::byte> data, size_t* bytes_read);
-
-  Status PeekFront(ReadOutput output);
+  Status InternalPeekFront(Reader& reader,
+                           std::span<std::byte> data,
+                           size_t* bytes_read);
+  Status InternalPeekFront(Reader& reader, ReadOutput output);
 
   // Same as Read but includes the entry's preamble of optional user value and
   // the varint of the data size
-  Status PeekFrontWithPreamble(std::span<std::byte> data, size_t* bytes_read);
-
-  Status PeekFrontWithPreamble(ReadOutput output);
+  Status InternalPeekFrontWithPreamble(Reader& reader,
+                                       std::span<std::byte> data,
+                                       size_t* bytes_read);
+  Status InternalPeekFrontWithPreamble(Reader& reader, ReadOutput output);
 
   // Pop and discard the oldest stored data chunk of data from the ring buffer.
   //
@@ -115,34 +242,20 @@ class PrefixedEntryRingBuffer {
   // OK - Data successfully read from the ring buffer.
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - No entries in ring buffer to pop.
-  Status PopFront();
-
-  // Dering the buffer by reordering entries internally in the buffer by
-  // rotating to have the oldest entry is at the lowest address/index with
-  // newest entry at the highest address.
-  //
-  // Return values:
-  // OK - Buffer data successfully deringed.
-  // FAILED_PRECONDITION - Buffer not initialized.
-  Status Dering();
-
-  // Get the number of variable-length entries currently in the ring buffer.
-  //
-  // Return value:
-  // Entry count.
-  size_t EntryCount() { return entry_count_; }
-
-  // Get the size in bytes of all the current entries in the ring buffer,
-  // including preamble and data chunk.
-  size_t TotalUsedBytes() { return buffer_bytes_ - RawAvailableBytes(); }
+  Status InternalPopFront(Reader& reader);
 
   // Get the size in bytes of the next chunk, not including preamble, to be
   // read.
-  size_t FrontEntryDataSizeBytes();
+  size_t InternalFrontEntryDataSizeBytes(Reader& reader);
 
   // Get the size in bytes of the next chunk, including preamble and data
   // chunk, to be read.
-  size_t FrontEntryTotalSizeBytes();
+  size_t InternalFrontEntryTotalSizeBytes(Reader& reader);
+
+  // Internal version of Read used by all the public interface versions. T
+  // should be of type ReadOutput.
+  template <typename T>
+  Status InternalRead(Reader& reader, T read_output, bool get_preamble);
 
  private:
   struct EntryInfo {
@@ -150,20 +263,23 @@ class PrefixedEntryRingBuffer {
     size_t data_bytes;
   };
 
-  // Internal version of Read used by all the public interface versions. T
-  // should be of type ReadOutput.
-  template <typename T>
-  Status InternalRead(T read_output, bool get_preamble);
-
   // Push back implementation, which optionally discards front elements to fit
   // the incoming element.
   Status InternalPushBack(std::span<const std::byte> data,
                           std::byte user_preamble_data,
                           bool pop_front_if_needed);
 
+  // Internal function to pop all of the slowest readers. This function may pop
+  // multiple readers if multiple are slow.
+  void InternalPopFrontAll();
+
+  // Returns the slowest reader in the list. This function requires that at
+  // least one reader is attached.
+  Reader& GetSlowestReader();
+
   // Get info struct with the size of the preamble and data chunk for the next
   // entry to be read.
-  EntryInfo FrontEntryInfo();
+  EntryInfo FrontEntryInfo(Reader& reader);
 
   // Get the raw number of available bytes free in the ring buffer. This is
   // not available bytes for data, since there is a variable size preamble for
@@ -186,9 +302,10 @@ class PrefixedEntryRingBuffer {
   size_t buffer_bytes_;
 
   size_t write_idx_;
-  size_t read_idx_;
-  size_t entry_count_;
   const bool user_preamble_;
+
+  // List of attached readers.
+  IntrusiveList<Reader> readers_;
 
   // Worst case size for the variable-sized preable that is prepended to
   // each entry.
@@ -198,6 +315,15 @@ class PrefixedEntryRingBuffer {
   // not overflow.
   static constexpr size_t kMaxBufferBytes =
       std::numeric_limits<size_t>::max() / 2;
+};
+
+class PrefixedEntryRingBuffer : public PrefixedEntryRingBufferMulti,
+                                public PrefixedEntryRingBufferMulti::Reader {
+ public:
+  PrefixedEntryRingBuffer(bool user_preamble = false)
+      : PrefixedEntryRingBufferMulti(user_preamble) {
+    AttachReader(*this);
+  }
 };
 
 }  // namespace ring_buffer

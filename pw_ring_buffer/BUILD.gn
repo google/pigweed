@@ -30,7 +30,10 @@ pw_source_set("pw_ring_buffer") {
   ]
   sources = [ "prefixed_entry_ring_buffer.cc" ]
   public = [ "public/pw_ring_buffer/prefixed_entry_ring_buffer.h" ]
-  deps = [ "$dir_pw_varint" ]
+  deps = [
+    "$dir_pw_assert:pw_assert",
+    "$dir_pw_varint",
+  ]
 }
 
 pw_test_group("tests") {

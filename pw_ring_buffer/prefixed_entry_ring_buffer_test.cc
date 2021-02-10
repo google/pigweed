@@ -370,7 +370,7 @@ TEST(PrefixedEntryRingBuffer, Dering) { DeringTest(true); }
 TEST(PrefixedEntryRingBuffer, DeringNoPreload) { DeringTest(false); }
 
 template <typename T>
-Status PushBack(PrefixedEntryRingBuffer& ring, T element) {
+Status PushBack(PrefixedEntryRingBufferMulti& ring, T element) {
   union {
     std::array<byte, sizeof(element)> buffer;
     T item;
@@ -380,7 +380,7 @@ Status PushBack(PrefixedEntryRingBuffer& ring, T element) {
 }
 
 template <typename T>
-Status TryPushBack(PrefixedEntryRingBuffer& ring, T element) {
+Status TryPushBack(PrefixedEntryRingBufferMulti& ring, T element) {
   union {
     std::array<byte, sizeof(element)> buffer;
     T item;
@@ -390,13 +390,13 @@ Status TryPushBack(PrefixedEntryRingBuffer& ring, T element) {
 }
 
 template <typename T>
-T PeekFront(PrefixedEntryRingBuffer& ring) {
+T PeekFront(PrefixedEntryRingBufferMulti::Reader& reader) {
   union {
     std::array<byte, sizeof(T)> buffer;
     T item;
   } aliased;
   size_t bytes_read = 0;
-  PW_CHECK_OK(ring.PeekFront(aliased.buffer, &bytes_read));
+  PW_CHECK_OK(reader.PeekFront(aliased.buffer, &bytes_read));
   PW_CHECK_INT_EQ(bytes_read, sizeof(T));
   return aliased.item;
 }
@@ -430,6 +430,160 @@ TEST(PrefixedEntryRingBuffer, TryPushBack) {
     EXPECT_EQ(PushBack<int>(ring, 100), OkStatus());
   }
   EXPECT_EQ(PeekFront<int>(ring), 100);
+}
+
+TEST(PrefixedEntryRingBufferMulti, TryPushBack) {
+  PrefixedEntryRingBufferMulti ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  PrefixedEntryRingBufferMulti::Reader fast_reader;
+  PrefixedEntryRingBufferMulti::Reader slow_reader;
+
+  EXPECT_EQ(ring.AttachReader(fast_reader), OkStatus());
+  EXPECT_EQ(ring.AttachReader(slow_reader), OkStatus());
+
+  // Fill up the ring buffer with an increasing count.
+  int total_items = 0;
+  while (true) {
+    Status status = TryPushBack<int>(ring, total_items);
+    if (status.ok()) {
+      total_items++;
+    } else {
+      EXPECT_EQ(status, Status::ResourceExhausted());
+      break;
+    }
+  }
+
+  // Run fast reader twice as fast as the slow reader.
+  for (int i = 0; i < total_items; ++i) {
+    if (i % 2 == 0) {
+      EXPECT_EQ(PeekFront<int>(slow_reader), i / 2);
+      EXPECT_EQ(slow_reader.PopFront(), OkStatus());
+    }
+    EXPECT_EQ(PeekFront<int>(fast_reader), i);
+    EXPECT_EQ(fast_reader.PopFront(), OkStatus());
+  }
+  EXPECT_EQ(fast_reader.PopFront(), Status::OutOfRange());
+
+  // Fill the buffer again, expect that the fast reader
+  // only sees half the entries as the slow reader.
+  size_t max_items = total_items;
+  while (true) {
+    Status status = TryPushBack<int>(ring, total_items);
+    if (status.ok()) {
+      total_items++;
+    } else {
+      EXPECT_EQ(status, Status::ResourceExhausted());
+      break;
+    }
+  }
+  EXPECT_EQ(slow_reader.EntryCount(), max_items);
+  EXPECT_EQ(fast_reader.EntryCount(), total_items - max_items);
+
+  for (int i = total_items - max_items; i < total_items; ++i) {
+    EXPECT_EQ(PeekFront<int>(slow_reader), i);
+    EXPECT_EQ(slow_reader.PopFront(), OkStatus());
+    if (static_cast<size_t>(i) >= max_items) {
+      EXPECT_EQ(PeekFront<int>(fast_reader), i);
+      EXPECT_EQ(fast_reader.PopFront(), OkStatus());
+    }
+  }
+  EXPECT_EQ(slow_reader.PopFront(), Status::OutOfRange());
+  EXPECT_EQ(fast_reader.PopFront(), Status::OutOfRange());
+}
+
+TEST(PrefixedEntryRingBufferMulti, PushBack) {
+  PrefixedEntryRingBufferMulti ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  PrefixedEntryRingBufferMulti::Reader fast_reader;
+  PrefixedEntryRingBufferMulti::Reader slow_reader;
+
+  EXPECT_EQ(ring.AttachReader(fast_reader), OkStatus());
+  EXPECT_EQ(ring.AttachReader(slow_reader), OkStatus());
+
+  // Fill up the ring buffer with an increasing count.
+  size_t total_items = 0;
+  while (true) {
+    Status status = TryPushBack<uint32_t>(ring, total_items);
+    if (status.ok()) {
+      total_items++;
+    } else {
+      EXPECT_EQ(status, Status::ResourceExhausted());
+      break;
+    }
+  }
+  EXPECT_EQ(slow_reader.EntryCount(), total_items);
+
+  // The following test:
+  //  - Moves the fast reader forward by one entry.
+  //  - Writes a single entry that is guaranteed to be larger than the size of a
+  //    single entry in the buffer (uint64_t entry > uint32_t entry).
+  //  - Checks to see that both readers were moved forward.
+  EXPECT_EQ(fast_reader.PopFront(), OkStatus());
+  EXPECT_EQ(PushBack<uint64_t>(ring, 5u), OkStatus());
+  // The readers have moved past values 0 and 1.
+  EXPECT_EQ(PeekFront<uint32_t>(slow_reader), 2u);
+  EXPECT_EQ(PeekFront<uint32_t>(fast_reader), 2u);
+  // The readers have lost two entries, but gained an entry.
+  EXPECT_EQ(slow_reader.EntryCount(), total_items - 1);
+  EXPECT_EQ(fast_reader.EntryCount(), total_items - 1);
+}
+
+TEST(PrefixedEntryRingBufferMulti, ReaderAddRemove) {
+  PrefixedEntryRingBufferMulti ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  PrefixedEntryRingBufferMulti::Reader reader;
+  PrefixedEntryRingBufferMulti::Reader transient_reader;
+
+  EXPECT_EQ(ring.AttachReader(reader), OkStatus());
+
+  // Fill up the ring buffer with a constant value.
+  int total_items = 0;
+  while (true) {
+    Status status = TryPushBack<int>(ring, 5);
+    if (status.ok()) {
+      total_items++;
+    } else {
+      EXPECT_EQ(status, Status::ResourceExhausted());
+      break;
+    }
+  }
+  EXPECT_EQ(reader.EntryCount(), static_cast<size_t>(total_items));
+
+  // Add new reader after filling the buffer.
+  EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
+  EXPECT_EQ(transient_reader.EntryCount(), 0u);
+
+  // Push a value into the buffer and confirm the transient reader
+  // sees that value, and only that value.
+  EXPECT_EQ(PushBack<int>(ring, 1), OkStatus());
+  EXPECT_EQ(PeekFront<int>(transient_reader), 1);
+  EXPECT_EQ(transient_reader.EntryCount(), 1u);
+
+  // Confirm that detaching and attaching a reader resets its state.
+  EXPECT_EQ(ring.DetachReader(transient_reader), OkStatus());
+  EXPECT_EQ(ring.AttachReader(transient_reader), OkStatus());
+  EXPECT_EQ(transient_reader.EntryCount(), 0u);
+}
+
+TEST(PrefixedEntryRingBufferMulti, SingleBufferPerReader) {
+  PrefixedEntryRingBufferMulti ring_one;
+  PrefixedEntryRingBufferMulti ring_two;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring_one.SetBuffer(test_buffer), OkStatus());
+
+  PrefixedEntryRingBufferMulti::Reader reader;
+  EXPECT_EQ(ring_one.AttachReader(reader), OkStatus());
+  EXPECT_EQ(ring_two.AttachReader(reader), Status::InvalidArgument());
+
+  EXPECT_EQ(ring_one.DetachReader(reader), OkStatus());
+  EXPECT_EQ(ring_two.AttachReader(reader), OkStatus());
+  EXPECT_EQ(ring_one.AttachReader(reader), Status::InvalidArgument());
 }
 
 }  // namespace
