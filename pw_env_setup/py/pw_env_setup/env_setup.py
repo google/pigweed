@@ -320,7 +320,7 @@ Then use `set +x` to go back to normal.
 
         self._env.finalize()
 
-        self._env.echo(Color.bold('Sanity checking the environment:'))
+        self._env.echo(Color.bold('Checking the environment:'))
         self._env.echo()
 
         self._env.doctor()
