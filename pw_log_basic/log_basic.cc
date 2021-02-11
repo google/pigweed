@@ -101,6 +101,10 @@ extern "C" void pw_Log(int level,
   // Accumulate the log message in this buffer, then output it.
   pw::StringBuffer<150> buffer;
 
+  // Column: Timestamp
+  // Note that this macro method defaults to a no-op.
+  PW_LOG_APPEND_TIMESTAMP(buffer);
+
   // Column: Filename
 #if PW_LOG_SHOW_FILENAME
   buffer.Format(" %-30s:%4d |", GetFileBasename(file_name), line_number);

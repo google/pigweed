@@ -18,7 +18,8 @@
 #define PW_EMOJI 0
 #endif  // PW_EMOJI
 
-// With all the following flags enabled, log messages look like this:
+// With all the following flags enabled except for the optional user provided
+// PW_LOG_APPEND_TIMESTAMP, log messages look like this:
 //
 // clang-format off
 //  my_file.cc                    :  42 |                Foo | TST | INF  Hello, world!
@@ -51,3 +52,18 @@
 #ifndef PW_LOG_SHOW_MODULE
 #define PW_LOG_SHOW_MODULE 0
 #endif  // PW_LOG_SHOW_MODULE
+
+// Optional user provided macro to append a prefixing timestamp string.
+// For example this could be implemented as:
+// #define PW_LOG_APPEND_TIMESTAMP(buffer) AppendSecSinceEpoch(buffer)
+//
+// void AppendSecSinceEpoch(pw::StringBuilder& builder) {
+//    const std::chrono::duration<float> float_s_since_epoch =
+//        pw::chrono::SystemClock::now().time_since_epoch();
+//    builder << float_s_since_epoch.count() << " ";
+// }
+#ifndef PW_LOG_APPEND_TIMESTAMP
+#define PW_LOG_APPEND_TIMESTAMP(buffer) \
+  do {                                  \
+  } while (0)
+#endif  // PW_LOG_APPEND_TIMESTAMP
