@@ -47,6 +47,8 @@ static_library("gap") {
     "low_energy_connection_manager.h",
     "low_energy_connection_request.cc",
     "low_energy_connection_request.h",
+    "low_energy_connector.cc",
+    "low_energy_connector.h",
     "low_energy_discovery_manager.cc",
     "low_energy_discovery_manager.h",
     "low_energy_interrogator.cc",

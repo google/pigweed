@@ -364,12 +364,14 @@ void PeerCache::UpdateExpiry(const Peer& peer) {
 }
 
 void PeerCache::MakeDualMode(const Peer& peer) {
-  ZX_DEBUG_ASSERT(address_map_.at(peer.address()) == peer.identifier());
+  ZX_ASSERT(address_map_.at(peer.address()) == peer.identifier());
   const auto address_alias = GetAliasAddress(peer.address());
   auto [iter, inserted] = address_map_.try_emplace(address_alias, peer.identifier());
-  ZX_DEBUG_ASSERT_MSG(inserted || iter->second == peer.identifier(),
-                      "%s can't become dual-mode because %s maps to %s", bt_str(peer.identifier()),
-                      bt_str(address_alias), bt_str(iter->second));
+  ZX_ASSERT_MSG(inserted || iter->second == peer.identifier(),
+                "%s can't become dual-mode because %s maps to %s", bt_str(peer.identifier()),
+                bt_str(address_alias), bt_str(iter->second));
+  bt_log(INFO, "gap", "peer became dual mode (peer: %s, address: %s, alias: %s)",
+         bt_str(peer.identifier()), bt_str(peer.address()), bt_str(address_alias));
 
   // The peer became dual mode in lieu of adding a new peer but is as
   // significant, so notify listeners of the change.

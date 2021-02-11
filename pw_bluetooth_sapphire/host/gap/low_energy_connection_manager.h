@@ -18,8 +18,8 @@
 
 #include "low_energy_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
@@ -74,22 +74,20 @@ class LowEnergyConnectionManager final {
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
 
-  // Options for the |Connect| method.
-
   // Allows a caller to claim shared ownership over a connection to the requested remote LE peer
   // identified by |peer_id|.
   //   * If |peer_id| is not recognized, |callback| is called with an error.
   //
   //   * If the requested peer is already connected, |callback| is called with a
-  //     LowEnergyConnectionHandle after interrogation (if necessary).
+  //     LowEnergyConnectionHandle immediately.
   //     This is done for both local and remote initiated connections (i.e. the local adapter
   //     can either be in the LE central or peripheral roles).
   //
   //   * If the requested peer is NOT connected, then this method initiates a
-  //     connection to the requested peer using one of the GAP central role
-  //     connection establishment procedures described in Core Spec v5.0, Vol 3,
-  //     Part C, Section 9.3. The peer is then interrogated. A LowEnergyConnectionHandle is
-  //     asynchronously returned to the caller once the connection has been set up.
+  //     connection to the requested peer using the internal::LowEnergyConnector. See that class's
+  //     documentation for a more detailed overview of the Connection process. A
+  //     LowEnergyConnectionHandle is asynchronously returned to the caller once the connection has
+  //     been set up.
   //
   // The status of the procedure is reported in |callback| in the case of an
   // error.
@@ -183,34 +181,26 @@ class LowEnergyConnectionManager final {
   // Called by LowEnergyConnectionHandle::Release().
   void ReleaseReference(LowEnergyConnectionHandle* conn_ref);
 
-  // Called when |connector_| completes a pending request. Initiates a new
-  // connection attempt for the next peer in the pending list, if any.
+  // Initiates a new connection attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
 
-  // Starts scanning for peer to connect to. When the peer is found, initiates a connection attempt.
-  void StartScanningForPeer(Peer* peer);
+  // Called by internal::LowEnergyConnector to indicate the result of a local connect request.
+  void OnLocalInitiatedConnectResult(
+      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
 
-  // Called when scanning for the pending peer with id |peer_id| successfully starts.
-  // |session| must not be nullptr.
-  //
-  // Starts a scan timeout and filters scan results for one that matches |peer_id|. When a matching
-  // result is found, initiates a connection attempt.
-  void OnScanStart(PeerId peer_id, LowEnergyDiscoverySessionPtr session);
+  // Called by internal::LowEnergyConnector to indicate the result of a remote connect request.
+  void OnRemoteInitiatedConnectResult(
+      PeerId peer_id,
+      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result);
 
-  // Initiates a connection attempt to |peer|.
-  void RequestCreateConnection(Peer* peer);
+  // Either report an error to clients or initialize the connection and report success to clients.
+  void ProcessConnectResult(
+      fit::result<std::unique_ptr<internal::LowEnergyConnection>, hci::Status> result,
+      internal::LowEnergyConnectionRequest request);
 
-  // Initializes the connection to the peer with the given identifier and starts interrogation.
-  // |request| will be notified when interrogation completes.
-  // This method is responsible for setting up all data bearers.
-  // Returns true on success (a LowEnergyConnection was created and interrogation started), or false
-  // otherwise.
-  bool InitializeConnection(PeerId peer_id, hci::ConnectionPtr link,
+  // Finish setting up connection, adding to |connections_| map, and notifying clients.
+  bool InitializeConnection(std::unique_ptr<internal::LowEnergyConnection> connection,
                             internal::LowEnergyConnectionRequest request);
-
-  // Called upon interrogation completion for a new connection.
-  // Notifies connection request callbacks.
-  void OnInterrogationComplete(PeerId peer_id, hci::Status status);
 
   // Cleans up a connection state. This results in a HCI_Disconnect command if the connection has
   // not already been disconnected, and notifies any referenced LowEnergyConnectionHandles of the
@@ -223,11 +213,6 @@ class LowEnergyConnectionManager final {
   // This is also responsible for unregistering the link from managed subsystems
   // (e.g. L2CAP).
   void CleanUpConnection(std::unique_ptr<internal::LowEnergyConnection> conn);
-
-  // Called by |OnConnectResult()| when a new locally initiated LE connection has been
-  // created. Notifies pending connection request callbacks when connection initialization
-  // completes.
-  void RegisterLocalInitiatedLink(hci::ConnectionPtr link);
 
   // Updates |peer_cache_| with the given |link| and returns the corresponding
   // Peer.
@@ -242,17 +227,10 @@ class LowEnergyConnectionManager final {
   // Called by RegisterRemoteInitiatedLink() and RegisterLocalInitiatedLink().
   Peer* UpdatePeerWithLink(const hci::Connection& link);
 
-  // Called by |connector_| to indicate the result of a connect request.
-  void OnConnectResult(PeerId peer_id, hci::Status status, hci::ConnectionPtr link);
-
   // Called when the peer disconnects with a "Connection Failed to be Established" error.
   // Cleans up the existing connection and adds the connection request back to the queue for a
   // retry.
   void CleanUpAndRetryConnection(std::unique_ptr<internal::LowEnergyConnection> connection);
-
-  // Cancel the request corresponding to |peer_id|, notify callbacks, and try to create the next
-  // connection.
-  void CancelPendingRequest(PeerId peer_id);
 
   // Returns an iterator into |connections_| if a connection is found that
   // matches the given logical link |handle|. Otherwise, returns an iterator
@@ -312,17 +290,23 @@ class LowEnergyConnectionManager final {
   // Mapping from peer identifiers to currently open LE connections.
   ConnectionMap connections_;
 
-  // Performs the Direct Connection Establishment procedure. |connector_| must
+  struct RequestAndConnector {
+    internal::LowEnergyConnectionRequest request;
+    std::unique_ptr<internal::LowEnergyConnector> connector;
+  };
+  // The in-progress locally initiated connection request, if any.
+  std::optional<RequestAndConnector> current_request_;
+
+  // Active connectors for remote connection requests.
+  std::unordered_map<PeerId, RequestAndConnector> remote_connectors_;
+
+  // For passing to internal::LowEnergyConnector. |hci_connector_| must
   // out-live this connection manager.
-  hci::LowEnergyConnector* connector_;  // weak
+  hci::LowEnergyConnector* hci_connector_;  // weak
 
   // Address manager is used to obtain local identity information during pairing
   // procedures. Expected to outlive this instance.
   hci::LocalAddressDelegate* local_address_delegate_;  // weak
-
-  // Sends HCI commands that request version and feature support information from peer
-  // controllers.
-  LowEnergyInterrogator interrogator_;
 
   // True if the connection manager is performing a scan for a peer before connecting.
   bool scanning_ = false;

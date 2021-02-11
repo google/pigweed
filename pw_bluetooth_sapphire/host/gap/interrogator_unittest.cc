@@ -16,6 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::gap {
 
@@ -33,6 +34,10 @@ class TestInterrogator final : public Interrogator {
   void set_send_commands_cb(fit::function<void(InterrogationRefPtr)> cb) {
     send_commands_cb_ = std::move(cb);
   }
+
+  // Make command methods public for testing:
+
+  using Interrogator::ReadRemoteVersionInformation;
 
  private:
   // Interrogator overrides:
@@ -77,6 +82,8 @@ class InterrogatorTest : public TestingBase {
 
   TestInterrogator* interrogator() const { return interrogator_.get(); }
 
+  void DeleteInterrogator() { interrogator_.reset(); }
+
  private:
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<TestInterrogator> interrogator_;
@@ -106,6 +113,38 @@ TEST_F(GAP_InterrogatorTest, DroppingInterrogationRefCompletesInterrogation) {
 
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_success());
+}
+
+TEST_F(GAP_InterrogatorTest,
+       DestroyingInterrogatorBeforeReadRemoteVersionInformationCompleteCallbackCalledDoesNotCrash) {
+  std::optional<InterrogationRefPtr> ref;
+  interrogator()->set_send_commands_cb([this, &ref](InterrogationRefPtr r) {
+    ref = std::move(r);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+    interrogator()->ReadRemoteVersionInformation(*ref);
+  });
+
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+
+  ASSERT_FALSE(ref.has_value());
+
+  std::optional<hci::Status> result;
+  interrogator()->Start(peer->identifier(), kConnectionHandle,
+                        [&](hci::Status status) { result = status; });
+
+  ASSERT_TRUE(ref.has_value());
+  EXPECT_FALSE(result.has_value());
+
+  DeleteInterrogator();
+
+  // The result callback should not be called yet because it is posted.
+  EXPECT_FALSE(result.has_value());
+
+  test_device()->SendCommandChannelPacket(
+      testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle));
+
+  // Process command complete callback.
+  RunLoopUntilIdle();
 }
 
 }  // namespace bt::gap

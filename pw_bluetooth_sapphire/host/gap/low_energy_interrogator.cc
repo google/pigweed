@@ -42,6 +42,10 @@ void LowEnergyInterrogator::ReadLERemoteFeatures(InterrogationRefPtr interrogati
 
   auto cmd_cb = [interrogation, self = weak_ptr_factory_.GetWeakPtr()](
                     auto id, const hci::EventPacket& event) {
+    if (!self) {
+      return;
+    }
+
     if (!interrogation->active()) {
       return;
     }

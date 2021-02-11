@@ -105,6 +105,10 @@ void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogatio
 
   auto cmd_cb = [self = weak_ptr_factory_.GetWeakPtr(), interrogation](
                     auto id, const hci::EventPacket& event) {
+    if (!self) {
+      return;
+    }
+
     if (!interrogation->active()) {
       return;
     }

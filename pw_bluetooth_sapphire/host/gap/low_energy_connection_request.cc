@@ -7,12 +7,12 @@
 namespace bt::gap::internal {
 
 LowEnergyConnectionRequest::LowEnergyConnectionRequest(
-    const DeviceAddress& address, ConnectionResultCallback first_callback,
+    PeerId peer_id, const DeviceAddress& address, ConnectionResultCallback first_callback,
     LowEnergyConnectionOptions connection_options)
-    : address_(address, MakeToStringInspectConvertFunction()),
+    : peer_id_(peer_id),
+      address_(address, MakeToStringInspectConvertFunction()),
       callbacks_(/*convert=*/[](const auto& cbs) { return cbs.size(); }),
-      connection_options_(connection_options),
-      connection_attempts_(0) {
+      connection_options_(connection_options) {
   callbacks_.Mutable()->push_back(std::move(first_callback));
 }
 
@@ -31,7 +31,6 @@ void LowEnergyConnectionRequest::AttachInspect(inspect::Node& parent, std::strin
   inspect_node_ = parent.CreateChild(name);
   address_.AttachInspect(inspect_node_, "address");
   callbacks_.AttachInspect(inspect_node_, "callbacks");
-  connection_attempts_.AttachInspect(inspect_node_, "connection_attempts");
 }
 
 }  // namespace bt::gap::internal

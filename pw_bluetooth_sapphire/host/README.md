@@ -81,7 +81,6 @@ adapter:
             pending_request_0x0:
                 address
                 callbacks
-                connection_attempts
         connections:
             connection_0x0:
                 peer_id

@@ -26,60 +26,46 @@ static const hci::LEPreferredConnectionParameters kDefaultPreferredConnectionPar
 }  // namespace
 
 LowEnergyConnection::LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
-                                         async_dispatcher_t* dispatcher,
+                                         LowEnergyConnectionOptions connection_options,
+                                         PeerDisconnectCallback peer_disconnect_cb,
+                                         ErrorCallback error_cb,
                                          fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                                          fbl::RefPtr<l2cap::L2cap> l2cap,
                                          fxl::WeakPtr<gatt::GATT> gatt,
-                                         fxl::WeakPtr<hci::Transport> transport,
-                                         LowEnergyConnectionRequest request)
+                                         fxl::WeakPtr<hci::Transport> transport)
     : peer_id_(peer_id),
       link_(std::move(link)),
-      dispatcher_(dispatcher),
+      connection_options_(connection_options),
       conn_mgr_(conn_mgr),
       l2cap_(l2cap),
       gatt_(gatt),
       transport_(transport),
-      request_(std::move(request)),
+      peer_disconnect_callback_(std::move(peer_disconnect_cb)),
+      error_callback_(std::move(error_cb)),
       refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
       weak_ptr_factory_(this) {
   ZX_ASSERT(peer_id_.IsValid());
   ZX_ASSERT(link_);
-  ZX_ASSERT(dispatcher_);
   ZX_ASSERT(conn_mgr_);
-  ZX_ASSERT(l2cap_);
   ZX_ASSERT(gatt_);
+  ZX_ASSERT(transport_);
+  ZX_ASSERT(peer_disconnect_callback_);
+  ZX_ASSERT(error_callback_);
 
   auto peer = conn_mgr_->peer_cache()->FindById(peer_id_);
   ZX_ASSERT(peer);
   peer_ = peer->GetWeakPtr();
 
-  link_->set_peer_disconnect_callback([conn_mgr](auto conn, auto reason) {
-    if (conn_mgr) {
-      conn_mgr->OnPeerDisconnect(conn, reason);
-    }
-  });
+  link_->set_peer_disconnect_callback(
+      [this](auto, auto reason) { peer_disconnect_callback_(reason); });
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  conn_update_cmpl_handler_id_ = transport_->command_channel()->AddLEMetaEventHandler(
-      hci::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
-        if (self) {
-          self->OnLEConnectionUpdateComplete(event);
-          return hci::CommandChannel::EventCallbackResult::kContinue;
-        }
-        return hci::CommandChannel::EventCallbackResult::kRemove;
-      });
+  RegisterEventHandlers();
+  InitializeFixedChannels();
+  StartConnectionPauseTimeout();
 }
 
 LowEnergyConnection::~LowEnergyConnection() {
   transport_->command_channel()->RemoveEventHandler(conn_update_cmpl_handler_id_);
-
-  if (request_.has_value()) {
-    bt_log(INFO, "gap-le",
-           "destroying connection, notifying request callbacks of failure (handle %#.4x)",
-           handle());
-    request_->NotifyCallbacks(fit::error(HostError::kFailed));
-    request_.reset();
-  }
 
   // Unregister this link from the GATT profile and the L2CAP plane. This
   // invalidates all L2CAP channels that are associated with this link.
@@ -89,23 +75,6 @@ LowEnergyConnection::~LowEnergyConnection() {
   // Notify all active references that the link is gone. This will
   // synchronously notify all refs.
   CloseRefs();
-}
-
-void LowEnergyConnection::AddRequestCallback(
-    LowEnergyConnectionManager::ConnectionResultCallback cb) {
-  if (request_.has_value()) {
-    request_->AddCallback(std::move(cb));
-  } else {
-    cb(fit::ok(AddRef()));
-  }
-}
-
-void LowEnergyConnection::NotifyRequestCallbacks() {
-  if (request_.has_value()) {
-    bt_log(TRACE, "gap-le", "notifying connection request callbacks (handle %#.4x)", handle());
-    request_->NotifyCallbacks(fit::ok(std::bind(&LowEnergyConnection::AddRef, this)));
-    request_.reset();
-  }
 }
 
 std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef() {
@@ -130,23 +99,35 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
 
 // Registers this connection with L2CAP and initializes the fixed channel
 // protocols.
-void LowEnergyConnection::InitializeFixedChannels(l2cap::LinkErrorCallback link_error_cb,
-                                                  LowEnergyConnectionOptions connection_options) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto update_conn_params_cb =
-      fit::bind_member(this, &LowEnergyConnection::OnNewLEConnectionParams);
-  auto security_upgrade_cb = [this](auto handle, auto level, auto cb) {
+void LowEnergyConnection::InitializeFixedChannels() {
+  auto self = GetWeakPtr();
+  // Ensure error_callback_ is only called once if link_error_cb is called multiple times.
+  auto link_error_cb = [self]() {
+    if (self && self->error_callback_) {
+      self->error_callback_();
+    }
+  };
+  auto update_conn_params_cb = [self](auto params) {
+    if (self) {
+      self->OnNewLEConnectionParams(params);
+    }
+  };
+  auto security_upgrade_cb = [self](auto handle, auto level, auto cb) {
+    if (!self) {
+      return;
+    }
+
     bt_log(DEBUG, "gap-le", "received security upgrade request on L2CAP channel (peer: %s)",
-           bt_str(peer_id_));
-    ZX_ASSERT(this->handle() == handle);
-    OnSecurityRequest(level, std::move(cb));
+           bt_str(self->peer_id_));
+    ZX_ASSERT(self->handle() == handle);
+    self->OnSecurityRequest(level, std::move(cb));
   };
   l2cap::L2cap::LEFixedChannels fixed_channels =
       l2cap_->AddLEConnection(link_->handle(), link_->role(), std::move(link_error_cb),
                               update_conn_params_cb, security_upgrade_cb);
 
   OnL2capFixedChannelsOpened(std::move(fixed_channels.att), std::move(fixed_channels.smp),
-                             connection_options);
+                             connection_options_);
 }
 
 // Used to respond to protocol/service requests for increased security.
@@ -189,6 +170,18 @@ void LowEnergyConnection::StartConnectionPauseTimeout() {
   }
 }
 
+void LowEnergyConnection::RegisterEventHandlers() {
+  auto self = GetWeakPtr();
+  conn_update_cmpl_handler_id_ = transport_->command_channel()->AddLEMetaEventHandler(
+      hci::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
+        if (self) {
+          self->OnLEConnectionUpdateComplete(event);
+          return hci::CommandChannel::EventCallbackResult::kContinue;
+        }
+        return hci::CommandChannel::EventCallbackResult::kRemove;
+      });
+}
+
 // Should be called as soon as connection is established.
 // Calls |conn_pause_peripheral_callback_| after kLEConnectionPausePeripheral.
 void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
@@ -199,13 +192,8 @@ void LowEnergyConnection::StartConnectionPausePeripheralTimeout() {
     // C, Sec 9.3.12).
     RequestConnectionParameterUpdate(kDefaultPreferredConnectionParameters);
   });
-  conn_pause_peripheral_timeout_->PostDelayed(dispatcher_, kLEConnectionPausePeripheral);
-}
-
-std::optional<LowEnergyConnectionRequest> LowEnergyConnection::take_request() {
-  std::optional<LowEnergyConnectionRequest> returned_request;
-  request_.swap(returned_request);
-  return returned_request;
+  conn_pause_peripheral_timeout_->PostDelayed(async_get_default_dispatcher(),
+                                              kLEConnectionPausePeripheral);
 }
 
 void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
@@ -227,7 +215,8 @@ void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
 
     UpdateConnectionParams(conn_params);
   });
-  conn_pause_central_timeout_->PostDelayed(dispatcher_, kLEConnectionPauseCentral);
+  conn_pause_central_timeout_->PostDelayed(async_get_default_dispatcher(),
+                                           kLEConnectionPauseCentral);
 }
 
 void LowEnergyConnection::OnL2capFixedChannelsOpened(

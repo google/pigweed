@@ -135,6 +135,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   LowEnergyConnectionManager* conn_mgr() const { return conn_mgr_.get(); }
   l2cap::testing::FakeL2cap* fake_l2cap() const { return l2cap_.get(); }
   gatt::testing::FakeLayer* fake_gatt() { return gatt_.get(); }
+  LowEnergyDiscoveryManager* discovery_mgr() { return discovery_manager_.get(); }
 
   // Addresses of currently connected fake peers.
   using PeerList = std::unordered_set<DeviceAddress>;
@@ -291,6 +292,25 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerScanTimeout) {
   ASSERT_TRUE(result.is_error());
   EXPECT_EQ(HostError::kTimedOut, result.error());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerAlreadyInScanCache) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  // Ensure peer is in scan cache by doing active discovery.
+  LowEnergyDiscoverySessionPtr session;
+  discovery_mgr()->StartDiscovery(/*active=*/true,
+                                  [&session](auto cb_session) { session = std::move(cb_session); });
+  RunLoopUntilIdle();
+
+  ConnectionResult result;
+  auto callback = [&result](auto res) { result = std::move(res); };
+
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.is_ok());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeerRequestTimeout) {
@@ -721,7 +741,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Destructor) {
   bool error_cb_called = false;
   auto error_cb = [&error_cb_called](auto result) {
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(HostError::kFailed, result.error());
+    EXPECT_EQ(HostError::kCanceled, result.error());
     error_cb_called = true;
   };
 
@@ -893,6 +913,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   RunLoopUntilIdle();
   EXPECT_EQ(conn_cb_0_count, 1);
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_0->le()->connection_state());
+  EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer_1->le()->connection_state());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, DisconnectUnknownPeer) {
@@ -1233,12 +1254,14 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RegisterRemoteInitiatedLink) {
                                             ASSERT_TRUE(result.is_ok());
                                             conn_handle = result.take_value();
                                           });
+  // A Peer should now exist in the cache.
+  auto* peer = peer_cache()->FindByAddress(kAddress0);
+  EXPECT_EQ(peer->le()->connection_state(), Peer::ConnectionState::kInitializing);
+
   RunLoopUntilIdle();
 
   ASSERT_TRUE(conn_handle);
   EXPECT_TRUE(conn_handle->active());
-  // A Peer should now exist in the cache.
-  auto* peer = peer_cache()->FindByAddress(kAddress0);
   ASSERT_TRUE(peer);
   EXPECT_EQ(peer->identifier(), conn_handle->peer_identifier());
   EXPECT_TRUE(peer->connected());
@@ -1991,7 +2014,7 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, RemoteInitiatedLinkInterrogationFailu
   ASSERT_TRUE(peer);
   EXPECT_FALSE(peer->connected());
   EXPECT_FALSE(peer->le()->connected());
-  EXPECT_TRUE(peer->temporary());
+  EXPECT_FALSE(peer->temporary());
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterrogation) {
@@ -2929,11 +2952,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
 
   auto requests_matcher =
       AllOf(NodeMatches(NameMatches("pending_requests")),
-            ChildrenMatch(ElementsAre(
-                NodeMatches(AllOf(NameMatches("pending_request_0x0"),
-                                  PropertyList(UnorderedElementsAre(
-                                      StringIs("address", kAddress0.ToString()),
-                                      IntIs("callbacks", 1), IntIs("connection_attempts", 1))))))));
+            ChildrenMatch(ElementsAre(NodeMatches(
+                AllOf(NameMatches("pending_request_0x0"),
+                      PropertyList(UnorderedElementsAre(StringIs("address", kAddress0.ToString()),
+                                                        IntIs("callbacks", 1))))))));
 
   auto empty_connections_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));

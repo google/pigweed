@@ -27,26 +27,36 @@ class LowEnergyConnectionManager;
 
 namespace internal {
 
-// Represents the state of an active connection. Each instance is owned
-// and managed by a LowEnergyConnectionManager and is kept alive as long as
-// there is at least one LowEnergyConnectionHandle that references it.
+// LowEnergyConnector constructs LowEnergyConnection instances immediately upon successful
+// completion of the link layer connection procedure (to hook up HCI event callbacks). However,
+// LowEnergyConnections aren't exposed to the rest of the stack (including the
+// LowEnergyConnectionManager) until fully interrogated, as completion of the link-layer connection
+// process is insufficient to guarantee a working connection. Thus this class represents the state
+// of an active *AND* (outside of LowEnergyConnector) known-functional connection.
+//
+// Instances are kept alive as long as there is at least one LowEnergyConnectionHandle that
+// references them. Instances are expected to be destroyed immediately after a peer disconnect
+// event is received (as indicated by peer_disconnect_cb).
 class LowEnergyConnection final : public sm::Delegate {
  public:
+  // |peer_id| is the identifier of the peer that this connection is connected to.
+  // |link| is the underlying LE HCI connection that this connection corresponds to.
+  // |peer_disconnect_cb| will be called when the peer disconnects.
+  // |error_cb| will be called when a fatal connection error occurs and the connection should be
+  // closed (e.g. when L2CAP reports an error).
+  // |conn_mgr| is the LowEnergyConnectionManager that owns this connection.
+  // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
+  using PeerDisconnectCallback = fit::callback<void(hci::StatusCode)>;
+  using ErrorCallback = fit::callback<void()>;
   LowEnergyConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
-                      async_dispatcher_t* dispatcher,
+                      LowEnergyConnectionOptions connection_options,
+                      PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                       fbl::RefPtr<l2cap::L2cap> l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      fxl::WeakPtr<hci::Transport> transport, LowEnergyConnectionRequest request);
+                      fxl::WeakPtr<hci::Transport> transport);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
-
-  // Add a request callback that will be called when NotifyRequestCallbacks is called or immediately
-  // if it has already been called.
-  void AddRequestCallback(LowEnergyConnectionRequest::ConnectionResultCallback cb);
-
-  // Call request callbacks with references to this connection.
-  void NotifyRequestCallbacks();
 
   // Create a reference to this connection. When the last reference is dropped, this connection will
   // be disconnected.
@@ -55,11 +65,6 @@ class LowEnergyConnection final : public sm::Delegate {
   // Decrements the ref count. Must be called when a LowEnergyConnectionHandle is
   // released/destroyed.
   void DropRef(LowEnergyConnectionHandle* ref);
-
-  // Registers this connection with L2CAP and initializes the fixed channel
-  // protocols.
-  void InitializeFixedChannels(l2cap::LinkErrorCallback link_error_cb,
-                               LowEnergyConnectionOptions connection_options);
 
   // Used to respond to protocol/service requests for increased security.
   void OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb);
@@ -77,13 +82,21 @@ class LowEnergyConnection final : public sm::Delegate {
   // Attach connection as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  // Start kLEConnectionPauseCentral/Peripheral timeout that will update connection parameters.
-  // Should be called as soon as this GAP connection is established.
-  void StartConnectionPauseTimeout();
-
   void set_security_mode(LeSecurityMode mode) {
     ZX_ASSERT(sm_);
     sm_->set_security_mode(mode);
+  }
+
+  // Sets a callback that will be called when the peer disconnects.
+  void set_peer_disconnect_callback(PeerDisconnectCallback cb) {
+    ZX_ASSERT(cb);
+    peer_disconnect_callback_ = std::move(cb);
+  }
+
+  // Sets a callback that will be called when a fatal connection error occurs.
+  void set_error_callback(ErrorCallback cb) {
+    ZX_ASSERT(cb);
+    error_callback_ = std::move(cb);
   }
 
   size_t ref_count() const { return refs_->size(); }
@@ -101,15 +114,20 @@ class LowEnergyConnection final : public sm::Delegate {
     return sm_->security();
   }
 
-  const std::optional<LowEnergyConnectionRequest>& request() { return request_; }
-
-  // Take the request back from the connection for retrying the connection after a
-  // kConnectionFailedToBeEstablished error.
-  std::optional<LowEnergyConnectionRequest> take_request();
-
   fxl::WeakPtr<LowEnergyConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  // Registers this connection with L2CAP and initializes the fixed channel
+  // protocols.
+  void InitializeFixedChannels();
+
+  // Register handlers for HCI events that correspond to this connection.
+  void RegisterEventHandlers();
+
+  // Start kLEConnectionPauseCentral/Peripheral timeout that will update connection parameters.
+  // Should be called as soon as this GAP connection is established.
+  void StartConnectionPauseTimeout();
+
   // Start kLEConnectionPausePeripheral timeout that will send a connection parameter update
   // request. Should be called as soon as connection is established.
   void StartConnectionPausePeripheralTimeout();
@@ -217,7 +235,7 @@ class LowEnergyConnection final : public sm::Delegate {
   PeerId peer_id_;
   fxl::WeakPtr<Peer> peer_;
   std::unique_ptr<hci::Connection> link_;
-  async_dispatcher_t* dispatcher_;
+  LowEnergyConnectionOptions connection_options_;
   fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
 
   struct InspectProperties {
@@ -240,6 +258,13 @@ class LowEnergyConnection final : public sm::Delegate {
 
   fxl::WeakPtr<hci::Transport> transport_;
 
+  // Called when the peer disconnects.
+  PeerDisconnectCallback peer_disconnect_callback_;
+
+  // Called when a fatal connection error occurs and the connection should be
+  // closed (e.g. when L2CAP reports an error).
+  ErrorCallback error_callback_;
+
   // Event handler ID for the HCI LE Connection Update Complete event.
   hci::CommandChannel::EventHandlerId conn_update_cmpl_handler_id_;
 
@@ -253,10 +278,6 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Called after kLEConnectionPauseCentral.
   std::optional<async::TaskClosure> conn_pause_central_timeout_;
-
-  // Request callbacks that will be notified by |NotifyRequestCallbacks()| when interrogation
-  // completes or by the dtor.
-  std::optional<LowEnergyConnectionRequest> request_;
 
   // LowEnergyConnectionManager is responsible for making sure that these
   // pointers are always valid.
