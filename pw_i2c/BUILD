@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -45,5 +46,16 @@ pw_cc_library(
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "address_test",
+    srcs = [
+        "address_test.cc",
+    ],
+    deps = [
+        ":address",
+        "//pw_unit_test",
     ],
 )

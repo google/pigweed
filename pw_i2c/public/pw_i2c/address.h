@@ -21,7 +21,7 @@ namespace pw::i2c {
 // used by pw::i2c APIs.
 //
 // Example usage:
-//   const Address foo = Address::SevenBit<0x42>();
+//   constexpr Address foo = Address::SevenBit<0x42>();
 //   uint8_t foo_raw_address = foo.GetSevenBit();
 //
 //   const Address bar(0x200);  // 10 bit address.
@@ -36,7 +36,7 @@ class Address {
   // Helper constructor to ensure the address fits in the address space at
   // compile time, skipping the construction time assert.
   template <uint16_t kAddress>
-  constexpr Address TenBit() {
+  static constexpr Address TenBit() {
     static_assert(kAddress <= kMaxTenBitAddress);
     return Address(kAddress, kAlreadyCheckedAddress);
   }
@@ -44,7 +44,7 @@ class Address {
   // Helper constructor to ensure the address fits in the address space at
   // compile time, skipping the construction time assert.
   template <uint8_t kAddress>
-  constexpr Address SevenBit() {
+  static constexpr Address SevenBit() {
     static_assert(kAddress <= kMaxSevenBitAddress);
     return Address(kAddress, kAlreadyCheckedAddress);
   }
