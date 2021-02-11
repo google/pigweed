@@ -65,7 +65,7 @@ That means two key things:
 .. code-block:: cpp
 
   class Square
-     : public pw::containers::IntrusiveList<Square>::Item {
+     : public pw::IntrusiveList<Square>::Item {
    public:
     Square(unsigned int side_length) : side_length(side_length) {}
     unsigned long Area() { return side_length * side_length; }
@@ -74,7 +74,7 @@ That means two key things:
     unsigned int side_length;
   };
 
-  pw::containers::IntrusiveList<Square> squares;
+  pw::IntrusiveList<Square> squares;
 
   Square small(1);
   Square large(4000);

@@ -38,9 +38,9 @@ namespace pw {
 // Usage:
 //
 //   class TestItem
-//      : public containers::IntrusiveList<TestItem>::Item {}
+//      : public IntrusiveList<TestItem>::Item {}
 //
-//   containers::IntrusiveList<TestItem> test_items;
+//   IntrusiveList<TestItem> test_items;
 //
 //   auto item = TestItem();
 //   test_items.push_back(item);
