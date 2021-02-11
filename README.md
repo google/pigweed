@@ -34,10 +34,6 @@ selection that happen to produce visual output. For more information about the
 different Pigweed module offerings, refer to "Module Guides" section in the full
 documentation.
 
-Note: For now the full documentation is not available online; you must build
-it. Building the docs is easy; see the [getting started
-guide](docs/getting_started.md) for how.
-
 ## `pw_watch` - Build, flash, run, & test on save
 
 In the web development space, file system watchers are prevalent. These watchers
@@ -129,12 +125,6 @@ documentation for each, but is a selection of some others:
  - `pw_polyfill`: Similar to JavaScript “polyfill” libraries, this module
    provides selected C++17 standard library components that are compatible with
    C++11 and C++14.
-
- - `pw_minimal_cpp_stdlib`: An entirely incomplete implementation of the C++17
-   standard library, that provides some of the primitives needed by Pigweed
-   itself. Useful for projects that want to use Pigweed, but don’t enable the
-   typical standard C++ libraries like GNU’s libstdc++ or LLVM’s libc++. Don’t
-   use this module unless you know what you are doing.
 
  - `pw_tokenizer`: Replace string literals from log statements with 32-bit
    tokens, to reduce flash use, reduce logging bandwidth, and save formatting
