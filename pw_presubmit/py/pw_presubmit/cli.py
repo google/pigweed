@@ -128,27 +128,38 @@ def add_arguments(parser: argparse.ArgumentParser,
 
         _add_programs_arguments(parser, programs, default)
 
+        # LUCI builders extract the list of steps from the program and run them
+        # individually for a better UX in MILO.
+        parser.add_argument(
+            '--only-list-steps',
+            action='store_true',
+            help=argparse.SUPPRESS,
+        )
+
 
 def run(
-        program: Sequence[Callable],
-        output_directory: Optional[Path],
-        package_root: Path,
-        clear: bool,
-        root: Path = None,
-        repositories: Collection[Path] = (),
-        **other_args,
+    program: Sequence[Callable],
+    output_directory: Optional[Path],
+    package_root: Path,
+    clear: bool,
+    root: Path = None,
+    repositories: Collection[Path] = (),
+    only_list_steps=False,
+    **other_args,
 ) -> int:
     """Processes arguments from add_arguments and runs the presubmit.
 
     Args:
-      root: base path from which to run presubmit checks; defaults to the root
-          of the current directory's repository
-      repositories: roots of Git repositories on which to run presubmit checks;
-          defaults to the root of the current directory's repository
       program: from the --program option
       output_directory: from --output-directory option
       package_root: from --package-root option
       clear: from the --clear option
+      root: base path from which to run presubmit checks; defaults to the root
+          of the current directory's repository
+      repositories: roots of Git repositories on which to run presubmit checks;
+          defaults to the root of the current directory's repository
+      only_list_steps: list the steps that would be executed, one per line,
+          instead of executing them
       **other_args: remaining arguments defined by by add_arguments
 
     Returns:
@@ -175,6 +186,11 @@ def run(
             shutil.rmtree(output_directory)
             _LOG.info('Deleted %s', output_directory)
 
+        return 0
+
+    if only_list_steps:
+        for step in program:
+            print(step.__name__)
         return 0
 
     if presubmit.run(program,
