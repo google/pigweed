@@ -146,9 +146,6 @@ std::string EncodeUri(const std::string& uri) {
 const char kUndefinedScheme = 0x01;
 
 std::string DecodeUri(const std::string& uri) {
-  if (uri.empty()) {
-    return "";
-  }
   if (uri[0] == kUndefinedScheme) {
     return uri.substr(1);
   }
@@ -161,14 +158,16 @@ std::string DecodeUri(const std::string& uri) {
     bt_log(INFO, "gap-le", "Attempted to decode malformed UTF-8 in AdvertisingData URI");
     return "";
   }
-  if (code_point >= kUriSchemesSize + 2) {
+  // `uri` is not a c-string, so URIs that start with '\0' after c_str conversion (i.e. both empty
+  // URIs and URIs with leading null bytes '\0') are caught by the code_point < 2 check. We check
+  // "< 2" instead of "== 0" for redundancy (extra safety!) with the kUndefindScheme check above.
+  if (code_point >= kUriSchemesSize + 2 || code_point < 2) {
     bt_log(ERROR, "gap-le",
-           "Failed to decode URI - supplied UTF-8 code-point %u must be in the range "
-           "2-kUriSchemesSize + 1 (2-%lu) to correspond to a URI encoding",
+           "Failed to decode URI - supplied UTF-8 encoding scheme codepoint %u must be in the "
+           "range 2-kUriSchemesSize + 1 (2-%lu) to correspond to a URI encoding",
            code_point, kUriSchemesSize + 1);
     return "";
   }
-  ZX_ASSERT(code_point >= 2);  // empty string->null byte == U+0000, U+0001 == kUndefinedScheme
   return kUriSchemes[code_point - 2] + uri.substr(index + 1);
 }
 

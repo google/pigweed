@@ -307,8 +307,10 @@ TEST(GAP_AdvertisingDataTest, Uris) {
       0x0B, DataType::kURI, 0x01, 'f', 'l', 'u', 'b', 's', ':', 'a', 'b', 'c',
       // Uri: "ms-settings-cloudstorage:flub"
       0x07, DataType::kURI, kLargestKnownSchemeByte1, kLargestKnownSchemeByte2, 'f', 'l', 'u', 'b',
-      // Invalid URI - UTF-8 code point U+00BB doesn't correspond to an encoding scheme.
-      0x07, DataType::kURI, kUnknownSchemeByte1, kUnknownSchemeByte2, 'f', 'l', 'u', 'b');
+      // Invalid URI should be ignored - UTF-8 U+00BB doesn't correspond to an encoding scheme.
+      0x07, DataType::kURI, kUnknownSchemeByte1, kUnknownSchemeByte2, 'f', 'l', 'u', 'b',
+      // Invalid URI should be ignored - UTF-8 U+0000 doesn't correspond to an encoding scheme.
+      0x03, DataType::kURI, 0x00, 0x00);
 
   std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
   ASSERT_TRUE(data.has_value());
