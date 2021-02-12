@@ -22,7 +22,7 @@ pw_python_package("py") {
     "pw_watch/__init__.py",
     "pw_watch/debounce.py",
     "pw_watch/watch.py",
-    "pw_watch/watch_test.py",
+    "watch_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   python_deps = [ "$dir_pw_cli/py" ]
