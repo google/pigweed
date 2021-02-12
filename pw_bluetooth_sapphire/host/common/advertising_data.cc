@@ -267,9 +267,14 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
       case DataType::kServiceData128Bit: {
         UUID uuid;
         size_t uuid_size = SizeForType(type);
-        const BufferView uuid_bytes(field.data(), uuid_size);
-        if (!UUID::FromBytes(uuid_bytes, &uuid))
+        if (field.size() < uuid_size) {
+          bt_log(WARN, "gap-le", "service data too small for UUID");
           return std::nullopt;
+        }
+        const BufferView uuid_bytes(field.data(), uuid_size);
+        if (!UUID::FromBytes(uuid_bytes, &uuid)) {
+          return std::nullopt;
+        }
         const BufferView service_data(field.data() + uuid_size, field.size() - uuid_size);
         ZX_ASSERT(out_ad.SetServiceData(uuid, service_data));
         break;

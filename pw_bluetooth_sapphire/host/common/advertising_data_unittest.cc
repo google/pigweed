@@ -169,6 +169,16 @@ TEST(GAP_AdvertisingDataTest, ServiceData) {
   EXPECT_TRUE(ContainersEqual(bytes.view(8), data->service_data(eddystone)));
 }
 
+TEST(GAP_AdvertisingDataTest, DecodeServiceDataWithIncompleteUuid) {
+  auto service_data =
+      StaticByteBuffer(0x02,                                               // Length
+                       static_cast<uint8_t>(DataType::kServiceData16Bit),  // Data type
+                       0xAA  // First byte of incomplete UUID
+      );
+
+  EXPECT_FALSE(AdvertisingData::FromBytes(service_data));
+}
+
 TEST(GAP_AdvertisingDataTest, Equality) {
   AdvertisingData one, two;
 
