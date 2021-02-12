@@ -53,7 +53,7 @@ void Phase3::Start() {
   }
 
   if (!LocalKeysSent() && !SendLocalKeys()) {
-    bt_log(DEBUG, "sm", "unable to send local keys");
+    bt_log(WARN, "sm", "unable to send local keys");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -73,21 +73,21 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   }
 
   if (!ShouldReceiveLtk()) {
-    bt_log(ERROR, "sm", "received unexpected LTK");
+    bt_log(WARN, "sm", "received unexpected LTK");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // abort pairing if we received a second LTK from the peer.
   if (peer_ltk_bytes_.has_value() || peer_ltk_.has_value()) {
-    bt_log(ERROR, "sm", "already received LTK! aborting");
+    bt_log(WARN, "sm", "already received LTK! aborting");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // Abort pairing if the LTK is the sample LTK from the core spec
   if (ltk == kSpecSampleLtk) {
-    bt_log(ERROR, "sm", "LTK is sample from spec, not secure! aborting");
+    bt_log(WARN, "sm", "LTK is sample from spec, not secure! aborting");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -98,7 +98,7 @@ void Phase3::OnEncryptionInformation(const EncryptionInformationParams& ltk) {
   ZX_DEBUG_ASSERT(key_size <= ltk.size());
   for (auto i = key_size; i < ltk.size(); i++) {
     if (ltk[i] != 0) {
-      bt_log(ERROR, "sm", "received LTK is larger than max keysize! aborting");
+      bt_log(WARN, "sm", "received LTK is larger than max keysize! aborting");
       Abort(ErrorCode::kInvalidParameters);
       return;
     }
@@ -121,27 +121,27 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
   uint64_t random = le64toh(params.rand);
 
   if (!ShouldReceiveLtk()) {
-    bt_log(ERROR, "sm", "received unexpected ediv/rand");
+    bt_log(WARN, "sm", "received unexpected ediv/rand");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // EDIV and Rand must be sent AFTER the LTK (Vol 3, Part H, 3.6.1).
   if (!peer_ltk_bytes_.has_value()) {
-    bt_log(ERROR, "sm", "received EDIV and Rand before LTK!");
+    bt_log(WARN, "sm", "received EDIV and Rand before LTK!");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   if (obtained_remote_keys_ & KeyDistGen::kEncKey) {
-    bt_log(ERROR, "sm", "already received EDIV and Rand!");
+    bt_log(WARN, "sm", "already received EDIV and Rand!");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // Abort pairing if the Rand is the sample Rand from the core spec
   if (random == kSpecSampleRandom) {
-    bt_log(ERROR, "sm", "random is sample from core spec, not secure! aborting");
+    bt_log(WARN, "sm", "random is sample from core spec, not secure! aborting");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -157,14 +157,14 @@ void Phase3::OnMasterIdentification(const MasterIdentificationParams& params) {
 
 void Phase3::OnIdentityInformation(const IRK& irk) {
   if (!ShouldReceiveIdentity()) {
-    bt_log(ERROR, "sm", "received unexpected IRK");
+    bt_log(WARN, "sm", "received unexpected IRK");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // Abort if we receive an IRK more than once.
   if (irk_.has_value()) {
-    bt_log(ERROR, "sm", "already received IRK! aborting");
+    bt_log(WARN, "sm", "already received IRK! aborting");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -177,20 +177,20 @@ void Phase3::OnIdentityInformation(const IRK& irk) {
 
 void Phase3::OnIdentityAddressInformation(const IdentityAddressInformationParams& params) {
   if (!ShouldReceiveIdentity()) {
-    bt_log(ERROR, "sm", "received unexpected identity address");
+    bt_log(WARN, "sm", "received unexpected identity address");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   // The identity address must be sent after the IRK (Vol 3, Part H, 3.6.1).
   if (!irk_.has_value()) {
-    bt_log(ERROR, "sm", "received identity address before the IRK!");
+    bt_log(WARN, "sm", "received identity address before the IRK!");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
 
   if (obtained_remote_keys_ & KeyDistGen::kIdKey) {
-    bt_log(ERROR, "sm", "already received identity information!");
+    bt_log(WARN, "sm", "already received identity information!");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }
@@ -219,7 +219,7 @@ void Phase3::OnExpectedKeyReceived() {
   }
 
   if (role() == Role::kInitiator && !LocalKeysSent() && !SendLocalKeys()) {
-    bt_log(DEBUG, "sm", "unable to send local keys to peer");
+    bt_log(WARN, "sm", "unable to send local keys to peer");
     Abort(ErrorCode::kUnspecifiedReason);
     return;
   }

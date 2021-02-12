@@ -73,19 +73,21 @@ void ScStage1Passkey::Run() {
                               [responder = std::move(passkey_responder), passkey](bool confirm) {
                                 std::optional<uint32_t> passkey_response = passkey;
                                 if (!confirm) {
-                                  bt_log(TRACE, "sm", "passkey entry display rejected by user");
+                                  bt_log(WARN, "sm", "passkey entry display rejected by user");
                                   passkey_response = std::nullopt;
                                 }
+                                bt_log(INFO, "sm", "SC passkey entry display accepted by user");
                                 responder(passkey_response);
                               });
   } else {  // method_ == kPasskeyEntryInput
     listener_->RequestPasskey([responder = std::move(passkey_responder)](int64_t passkey) {
       std::optional<uint32_t> passkey_response = passkey;
       if (passkey >= 1000000 || passkey < 0) {
-        bt_log(TRACE, "sm", "rejecting passkey entry input: %s",
+        bt_log(WARN, "sm", "rejecting passkey entry input: %s",
                passkey >= 1000000 ? "passkey has > 6 digits" : "user rejected");
         passkey_response = std::nullopt;
       }
+      bt_log(INFO, "sm", "SC passkey entry display (passkey: %ld) accepted by user", passkey);
       responder(passkey_response);
     });
   }

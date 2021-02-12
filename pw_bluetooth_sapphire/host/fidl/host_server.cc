@@ -788,12 +788,11 @@ void HostServer::RequestPasskey(PeerId id, PasskeyResponseCallback respond) {
                  "should not happen");
           return;
         }
-        bt_log(DEBUG, "bt-host", "got peer response: %s, \"%u\"", accept ? "accept" : "reject",
-               entered_passkey);
+        bt_log(INFO, "bt-host", "got PairingDelegate response: %s with passkey code \"%u\"",
+               accept ? "accept" : "reject", entered_passkey);
         if (!accept) {
           respond(-1);
         } else {
-          bt_log(TRACE, "bt-host", "got peer passkey: \"%u\"", entered_passkey);
           respond(entered_passkey);
         }
       });

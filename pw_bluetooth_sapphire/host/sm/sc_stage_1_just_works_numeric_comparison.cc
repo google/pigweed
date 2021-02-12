@@ -146,6 +146,8 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
     listener_->DisplayPasskey(
         comparison_code, Delegate::DisplayMethod::kComparison,
         [self, results](bool passkey_confirmed) {
+          bt_log(INFO, "sm", "PairingDelegate %s SC numeric display pairing",
+                 passkey_confirmed ? "accepted" : "rejected");
           if (self) {
             passkey_confirmed ? self->on_complete_(fit::ok(results))
                               : self->on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
@@ -153,6 +155,8 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
         });
   } else {  // method == kJustWorks
     listener_->ConfirmPairing([self, results](bool user_confirmed) {
+      bt_log(INFO, "sm", "PairingDelegate %s SC just works pairing",
+             user_confirmed ? "accepted" : "rejected");
       if (self) {
         user_confirmed ? self->on_complete_(fit::ok(results))
                        : self->on_complete_(fit::error(ErrorCode::kUnspecifiedReason));

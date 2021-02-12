@@ -123,18 +123,19 @@ void Phase2SecureConnections::StartAuthenticationStage1() {
     }
   };
   if (is_just_works_or_numeric_comparison()) {
-    bt_log(TRACE, "sm", "Starting SC Stage 1 Numeric Comparison/Just Works");
+    bt_log(DEBUG, "sm", "Starting SC Stage 1 Numeric Comparison/Just Works");
     stage_1_ = std::make_unique<ScStage1JustWorksNumericComparison>(
         listener(), role(), local_ecdh_->GetPublicKeyX(), peer_ecdh_->GetPublicKeyX(),
         features_.method, sm_chan().GetWeakPtr(), std::move(complete_cb));
   } else if (is_passkey_entry()) {
-    bt_log(TRACE, "sm", "Starting SC Stage 1 Passkey Entry");
+    bt_log(DEBUG, "sm", "Starting SC Stage 1 Passkey Entry");
     stage_1_ = std::make_unique<ScStage1Passkey>(listener(), role(), local_ecdh_->GetPublicKeyX(),
                                                  peer_ecdh_->GetPublicKeyX(), features_.method,
                                                  sm_chan().GetWeakPtr(), std::move(complete_cb));
   } else {  // method == kOutOfBand
     // TODO(fxbug.dev/601): OOB would require significant extra plumbing & add security exposure not
     // necessary for current goals. This is not spec-compliant but should allow us to pass PTS.
+    bt_log(WARN, "sm", "Received unsupported request for OOB pairing");
     Abort(ErrorCode::kCommandNotSupported);
     return;
   }

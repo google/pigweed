@@ -111,7 +111,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
 
 void Phase2Legacy::HandleTemporaryKey(std::optional<uint32_t> maybe_tk) {
   if (!maybe_tk.has_value()) {
-    bt_log(DEBUG, "sm", "TK listener() responded with error; aborting");
+    bt_log(INFO, "sm", "temporary key listener responded with error; aborting");
     if (features_.method == PairingMethod::kPasskeyEntryInput) {
       Abort(ErrorCode::kPasskeyEntryFailed);
     } else {
@@ -212,7 +212,7 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
   util::C1(tk_.value(), peer_rand_.value(), preq_, pres_, initiator_addr_, responder_addr_,
            &peer_confirm_check);
   if (peer_confirm_check != peer_confirm_) {
-    bt_log(ERROR, "sm", "%sconfirm value does not match!", role() == Role::kInitiator ? "S" : "M");
+    bt_log(WARN, "sm", "%sconfirm value does not match!", role() == Role::kInitiator ? "S" : "M");
     Abort(ErrorCode::kConfirmValueFailed);
     return;
   }
