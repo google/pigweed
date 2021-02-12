@@ -120,12 +120,6 @@ class Peer final {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
 
-    // Updates auto-connect behavior appropriately for an intentional (eg. manual) disconnect.
-    void SetAutoConnectBehaviorForIntentionalDisconnect();
-
-    // Updates auto-connect behavior appropriately for a successful connection.
-    void SetAutoConnectBehaviorForSuccessfulConnection(void);
-
     // Advertising (and optionally scan response) data obtained during
     // discovery.
     const ByteBuffer& advertising_data() const { return adv_data_buffer_; }
@@ -181,6 +175,8 @@ class Peer final {
     void set_service_changed_gatt_data(const gatt::ServiceChangedCCCPersistedData& gatt_data) {
       service_changed_gatt_data_ = gatt_data;
     }
+
+    void set_auto_connect_behavior(AutoConnectBehavior behavior) { auto_conn_behavior_ = behavior; }
 
     // TODO(armansito): Store most recently seen random address and identity
     // address separately, once PeerCache can index peers by multiple

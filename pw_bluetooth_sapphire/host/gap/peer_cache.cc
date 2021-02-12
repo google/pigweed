@@ -203,7 +203,7 @@ bool PeerCache::SetAutoConnectBehaviorForIntentionalDisconnect(PeerId peer_id) {
   bt_log(DEBUG, "gap-le", "updated auto-connect behavior (disconnect) for peer: %s",
          bt_str(peer_id));
 
-  peer->MutLe().SetAutoConnectBehaviorForIntentionalDisconnect();
+  peer->MutLe().set_auto_connect_behavior(Peer::AutoConnectBehavior::kSkipUntilNextConnection);
 
   // TODO(fxbug.dev/37584): When implementing auto-connect behavior tracking for classic bluetooth,
   // consider tracking this policy for the peer as a whole unless we think this policy should be
@@ -224,7 +224,7 @@ bool PeerCache::SetAutoConnectBehaviorForSuccessfulConnection(PeerId peer_id) {
   bt_log(DEBUG, "gap-le", "updated auto-connect behavior (connection) for peer: %s",
          bt_str(peer_id));
 
-  peer->MutLe().SetAutoConnectBehaviorForSuccessfulConnection();
+  peer->MutLe().set_auto_connect_behavior(Peer::AutoConnectBehavior::kAlways);
 
   // TODO(fxbug.dev/37584): Implement auto-connect behavior tracking for classic bluetooth.
 

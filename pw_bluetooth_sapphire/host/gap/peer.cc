@@ -50,14 +50,6 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent, std::string name)
   features_.AttachInspect(node_, LowEnergyData::kInspectFeaturesName);
 }
 
-void Peer::LowEnergyData::SetAutoConnectBehaviorForIntentionalDisconnect(void) {
-  auto_conn_behavior_ = AutoConnectBehavior::kSkipUntilNextConnection;
-}
-
-void Peer::LowEnergyData::SetAutoConnectBehaviorForSuccessfulConnection(void) {
-  auto_conn_behavior_ = AutoConnectBehavior::kAlways;
-}
-
 void Peer::LowEnergyData::SetAdvertisingData(int8_t rssi, const ByteBuffer& adv) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
