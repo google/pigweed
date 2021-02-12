@@ -26,7 +26,7 @@ import argparse
 import os
 import sys
 
-from colors import Color, enable_colors  # type: ignore
+from .colors import Color, enable_colors  # type: ignore
 
 _PIGWEED_BANNER = u'''
  ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
