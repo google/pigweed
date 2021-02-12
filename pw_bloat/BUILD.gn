@@ -32,6 +32,7 @@ pw_source_set("bloat_this_binary") {
 
 pw_source_set("base_main") {
   sources = [ "base_main.cc" ]
+  deps = [ ":bloat_this_binary" ]
 }
 
 # Standard minimal base binary for bloat reports.
