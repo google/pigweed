@@ -18,6 +18,7 @@ pw_auto_add_simple_module(pw_hdlc
   PUBLIC_DEPS
     pw_assert
     pw_bytes
+    pw_checksum
     pw_result
     pw_router.packet_parser
     pw_rpc.common
@@ -25,7 +26,6 @@ pw_auto_add_simple_module(pw_hdlc
     pw_stream
     pw_sys_io
   PRIVATE_DEPS
-    pw_checksum
     pw_log
 )
 
