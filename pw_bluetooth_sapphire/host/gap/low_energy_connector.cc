@@ -23,6 +23,7 @@ static const hci::LEPreferredConnectionParameters kInitialConnectionParameters(
     hci::defaults::kLESupervisionTimeout);
 
 constexpr int kMaxConnectionAttempts = 3;
+constexpr int kRetryExponentialBackoffBase = 2;
 
 }  // namespace
 
@@ -138,6 +139,10 @@ void LowEnergyConnector::Cancel() {
       // The interrogator will call the result callback with a cancelled result.
       interrogator_.Cancel(peer_id_);
       break;
+    case State::kPauseBeforeConnectionRetry:
+      request_create_connection_task_.Cancel();
+      NotifyFailure(hci::Status(HostError::kCanceled));
+      break;
     case State::kAwaitingConnectionFailedToBeEstablishedDisconnect:
       // Waiting for disconnect complete, nothing to do.
     case State::kComplete:
@@ -164,6 +169,8 @@ const char* LowEnergyConnector::StateToString(State state) {
       return "Interrogating";
     case State::kAwaitingConnectionFailedToBeEstablishedDisconnect:
       return "AwaitingConnectionFailedToBeEstablishedDisconnect";
+    case State::kPauseBeforeConnectionRetry:
+      return "PauseBeforeConnectionRetry";
     case State::kComplete:
       return "Complete";
     case State::kFailed:
@@ -242,8 +249,7 @@ void LowEnergyConnector::RequestCreateConnection() {
   // Scanning may be skipped. When the peer disconnects during/after interrogation, a retry may be
   // initiated by calling this method.
   ZX_ASSERT(state_ == State::kIdle || state_ == State::kScanning ||
-            state_ == State::kInterrogating ||
-            state_ == State::kAwaitingConnectionFailedToBeEstablishedDisconnect);
+            state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
   auto pause_token = discovery_manager_->PauseDiscovery();
@@ -356,8 +362,15 @@ bool LowEnergyConnector::MaybeRetryConnection() {
   // Only retry outbound connections.
   if (is_outbound_ && connection_attempt_ < kMaxConnectionAttempts - 1) {
     connection_.reset();
+    state_ = State::kPauseBeforeConnectionRetry;
+
+    // Exponential backoff (2s, 4s, 8s, ...)
+    zx::duration retry_delay = zx::sec(kRetryExponentialBackoffBase << connection_attempt_);
+
     connection_attempt_++;
-    RequestCreateConnection();
+    bt_log(INFO, "gap-le", "Retrying connection in %lds (peer: %s, attempt: %d)",
+           retry_delay.to_secs(), bt_str(peer_id_), connection_attempt_);
+    request_create_connection_task_.PostDelayed(async_get_default_dispatcher(), retry_delay);
     return true;
   }
   return false;

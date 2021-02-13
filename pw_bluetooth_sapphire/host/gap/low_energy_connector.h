@@ -54,6 +54,7 @@ class LowEnergyConnector final {
     kConnecting,
     kInterrogating,
     kAwaitingConnectionFailedToBeEstablishedDisconnect,
+    kPauseBeforeConnectionRetry,
     kComplete,
     kFailed,
   };
@@ -135,6 +136,9 @@ class LowEnergyConnector final {
   // For outbound connections, this is a 0-indexed counter of which connection attempt the connector
   // is on.
   int connection_attempt_;
+
+  async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::RequestCreateConnection>
+      request_create_connection_task_{this};
 
   // Task called after the scan attempt times out.
   std::optional<async::TaskClosure> scan_timeout_task_;
