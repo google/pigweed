@@ -9,6 +9,7 @@
 #include <zircon/assert.h>
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -31,6 +32,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_scanner.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
@@ -130,6 +132,16 @@ class LowEnergyConnectionManagerTest : public TestingBase {
 
   // Deletes |conn_mgr_|.
   void DeleteConnMgr() { conn_mgr_ = nullptr; }
+
+  // Due to the retry logic in LEConnector, this is necessary to emulate an internal::Connection
+  // failure notification specifically with the kConnectionFailedToBeEstablished 0x3e error.
+  void DisconnectPersistentlyThroughRetryLogic(DeviceAddress peer_to_disconnect,
+                                               size_t num_retries) {
+    for (size_t i = 0; i < num_retries; ++i) {
+      test_device()->Disconnect(peer_to_disconnect);
+      RunLoopRepeatedlyFor(zx::duration(1));
+    }
+  }
 
   PeerCache* peer_cache() const { return peer_cache_.get(); }
   LowEnergyConnectionManager* conn_mgr() const { return conn_mgr_.get(); }
@@ -2991,6 +3003,120 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   EXPECT_EQ(0u, connected_peers().size());
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+// Behavior verified in this test:
+// 1. After a successful connection + bond to establish auto-connect for a peer, an auto-connect-
+//    initiated connection attempt to that peer that fails with any of `statuses_that_disable_
+//    autoconnect` disables auto-connect to that peer.
+// 2. After a successful ..., NON-autoconnect-inititated connection attempts (inbound or outbound)
+//    to that peer that fail with any of `statuses_that_disable_autoconnect` do NOT disable auto-
+//    connect to that peer.
+TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisablesAutoConnect) {
+  // If an auto-connect attempt fails with any of these status codes, we disable the auto-connect
+  // behavior until the next successful connection to avoid looping.
+  // clang-format off
+  std::array statuses_that_disable_autoconnect = {
+      hci::StatusCode::kConnectionTimeout,
+      hci::StatusCode::kConnectionRejectedSecurity,
+      hci::StatusCode::kConnectionAcceptTimeoutExceeded,
+      hci::StatusCode::kConnectionTerminatedByLocalHost,
+      hci::StatusCode::kConnectionFailedToBeEstablished
+  };
+  // clang-format on
+  // Validate that looping with a uint8_t is safe, it makes the rest of the code simpler.
+  static_assert(statuses_that_disable_autoconnect.size() < std::numeric_limits<uint8_t>::max());
+  for (uint8_t i = 0; i < static_cast<uint8_t>(statuses_that_disable_autoconnect.size()); ++i) {
+    SCOPED_TRACE(hci::StatusCodeToString(statuses_that_disable_autoconnect[i]));
+    const DeviceAddress kAddressI(DeviceAddress::Type::kLEPublic, {i});
+    auto* peer = peer_cache()->NewPeer(kAddressI, /*connectable=*/true);
+    auto fake_peer = std::make_unique<FakePeer>(kAddressI);
+    test_device()->AddPeer(std::move(fake_peer));
+
+    std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+    auto success_cb = [&conn_handle](auto result) {
+      ASSERT_TRUE(result.is_ok());
+      conn_handle = result.take_value();
+      EXPECT_TRUE(conn_handle->active());
+    };
+
+    conn_mgr()->Connect(peer->identifier(), success_cb, kConnectionOptions);
+    RunLoopUntilIdle();
+    // Peer needs to be bonded to set auto connect
+    peer->MutLe().SetBondData(sm::PairingData{});
+
+    EXPECT_EQ(1u, connected_peers().count(kAddressI));
+    ASSERT_TRUE(conn_handle);
+    EXPECT_EQ(peer->identifier(), conn_handle->peer_identifier());
+    EXPECT_TRUE(peer->le()->should_auto_connect());
+    EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+
+    // Disconnect has to be initiated by the "remote" device - locally initiated disconnects will
+    // unset auto connect behavior.
+    test_device()->Disconnect(peer->address());
+
+    RunLoopUntilIdle();
+
+    EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+    EXPECT_TRUE(peer->le()->should_auto_connect());
+
+    // Causes interrogation to fail, so inbound connections will fail to establish. This complexity
+    // is needed because inbound connections are already HCI-connected when passed to the LECM.
+    test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo,
+                                           statuses_that_disable_autoconnect[i]);
+
+    ConnectionResult result;
+    auto failure_cb = [&result](auto res) { result = std::move(res); };
+    // Create an inbound HCI connection and try to register it with the LECM
+    test_device()->ConnectLowEnergy(kAddressI);
+    RunLoopUntilIdle();
+    auto link = MoveLastRemoteInitiated();
+    ASSERT_TRUE(link);
+    result = ConnectionResult{};
+    conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable, failure_cb);
+    RunLoopUntilIdle();
+    // RegisterRemoteInitiatedLink will cause interrogation to start, and the above SetDefault
+    // CommandStatus will cause interrogation to fail. Special care needs to be taken with the
+    // 0x3e error to ensure connection failure due to the LEConnector retry logic.
+    if (statuses_that_disable_autoconnect[i] == hci::StatusCode::kConnectionFailedToBeEstablished) {
+      DisconnectPersistentlyThroughRetryLogic(kAddressI, 3);
+    }
+    // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
+    ASSERT_EQ(fit::result_state::error, result.state());
+    EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+    EXPECT_TRUE(peer->le()->should_auto_connect());
+    // Allow successful interrogation later in the test
+    test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+
+    // Set this peer to reject all connections with statuses_that_disable_autoconnect[i]
+    FakePeer* peer_ref = test_device()->FindPeer(peer->address());
+    ASSERT_TRUE(peer);
+    peer_ref->set_connect_response(statuses_that_disable_autoconnect[i]);
+
+    // User-initiated connection attempts that fail should not disable the auto-connect flag.
+    const LowEnergyConnectionOptions kNotAutoConnectOptions{.auto_connect = false};
+    conn_mgr()->Connect(peer->identifier(), failure_cb, kNotAutoConnectOptions);
+    RunLoopUntilIdle();
+
+    ASSERT_EQ(fit::result_state::error, result.state());
+    EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+    EXPECT_TRUE(peer->le()->should_auto_connect());
+
+    // Emulate an auto-connection here, as we disable the auto-connect behavior only for
+    // auto-connect-initiated attempts that fail, NOT for user-initiated or remote-initiated
+    // connection attempts that fail.
+    result = ConnectionResult{};
+    const LowEnergyConnectionOptions kAutoConnectOptions{.auto_connect = true};
+    conn_mgr()->Connect(peer->identifier(), failure_cb, kAutoConnectOptions);
+    ASSERT_TRUE(peer->le());
+    EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+    RunLoopUntilIdle();
+
+    ASSERT_EQ(fit::result_state::error, result.state());
+    EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+    EXPECT_FALSE(peer->le()->should_auto_connect());
+  }
 }
 
 TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {

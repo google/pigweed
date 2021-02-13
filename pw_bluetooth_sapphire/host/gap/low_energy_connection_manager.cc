@@ -20,10 +20,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/generic_access_client.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -40,6 +42,23 @@ using bt::sm::BondableMode;
 namespace bt::gap {
 
 namespace {
+
+// If an auto-connect attempt fails with any of the following error codes, we will stop auto-
+// connecting to the peer until the next successful connection. We have only observed this issue
+// with the 0x3e "kConnectionFailedToBeEstablished" error in the field, but have included these
+// other errors based on their descriptions in v5.2 Vol. 1 Part F Section 2.
+bool ShouldStopAlwaysAutoConnecting(hci::StatusCode err) {
+  switch (err) {
+    case hci::StatusCode::kConnectionTimeout:
+    case hci::StatusCode::kConnectionRejectedSecurity:
+    case hci::StatusCode::kConnectionAcceptTimeoutExceeded:
+    case hci::StatusCode::kConnectionTerminatedByLocalHost:
+    case hci::StatusCode::kConnectionFailedToBeEstablished:
+      return true;
+    default:
+      return false;
+  }
+}
 
 // During the initial connection to a peripheral we use the initial high
 // duty-cycle parameters to ensure that initiating procedures (bonding,
@@ -423,16 +442,24 @@ void LowEnergyConnectionManager::ProcessConnectResult(
     internal::LowEnergyConnectionRequest request) {
   PeerId peer_id = request.peer_id();
   if (result.is_error()) {
+    hci::Status err = result.error();
     Peer* peer = peer_cache_->FindById(peer_id);
     // Peer may have been forgotten (causing this error).
     // A separate connection may have been established in the other direction while this connection
     // was connecting, in which case the peer state should not be updated.
     if (peer && connections_.find(peer->identifier()) == connections_.end()) {
       peer->MutLe().SetConnectionState(Peer::ConnectionState::kNotConnected);
+      if (request.connection_options().auto_connect && err.is_protocol_error() &&
+          ShouldStopAlwaysAutoConnecting(err.protocol_error())) {
+        // We may see a peer's connectable advertisements, but fail to establish a connection to the
+        // peer (e.g. due to asymmetrical radio TX power). Unsetting the AutoConnect flag here
+        // prevents a loop of "see peer device, attempt auto-connect, fail to establish connection".
+        peer->MutLe().set_auto_connect_behavior(
+            Peer::AutoConnectBehavior::kSkipUntilNextConnection);
+      }
     }
 
-    HostError host_error =
-        result.error().is_protocol_error() ? HostError::kFailed : result.error().error();
+    HostError host_error = err.is_protocol_error() ? HostError::kFailed : err.error();
     request.NotifyCallbacks(fit::error(host_error));
     return;
   }
