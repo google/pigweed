@@ -27,12 +27,12 @@ pw_python_package("py") {
     "pw_env_setup/colors.py",
     "pw_env_setup/env_setup.py",
     "pw_env_setup/environment.py",
-    "pw_env_setup/environment_test.py",
     "pw_env_setup/spinner.py",
     "pw_env_setup/virtualenv_setup/__init__.py",
     "pw_env_setup/virtualenv_setup/__main__.py",
     "pw_env_setup/virtualenv_setup/install.py",
     "pw_env_setup/windows_env_start.py",
   ]
+  tests = [ "environment_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

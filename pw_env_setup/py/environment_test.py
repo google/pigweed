@@ -362,6 +362,9 @@ class _AppendPrependTestMixin(object):
         if not self.run_shell_tests:
             return
 
+        if self.windows:  # TODO(pwbug/231) Re-enable for Windows.
+            return
+
         self.env.set(self.var_not_set,
                      self.pathsep.join(('path', 'one', 'path', 'two', 'path')))
 
@@ -381,6 +384,9 @@ class _AppendPrependTestMixin(object):
 
     def test_remove_written_space(self):
         if not self.run_shell_tests:
+            return
+
+        if self.windows:  # TODO(pwbug/231) Re-enable for Windows.
             return
 
         self.env.set(self.var_not_set,
