@@ -542,16 +542,92 @@ is a viable alternative.
 The ARM Cortex-M Bazel toolchains are based around gcc-arm-non-eabi and are
 entirely hermetic. You can target Cortex-M, by using the platforms command line
 option. This set of toolchains is supported from hosts; Windows, Mac and Linux.
-The platforms that are currently supported are listed below.
+The platforms that are currently supported are listed below:
 
 .. code-block:: sh
 
-  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m0
-  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m1
-  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m3
-  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m4
-  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m7
+  bazel build //:your_target --platforms=@pigweed//pw_build/platforms:cortex_m0
+  bazel build //:your_target --platforms=@pigweed//pw_build/platforms:cortex_m1
+  bazel build //:your_target --platforms=@pigweed//pw_build/platforms:cortex_m3
+  bazel build //:your_target --platforms=@pigweed//pw_build/platforms:cortex_m4
+  bazel build //:your_target --platforms=@pigweed//pw_build/platforms:cortex_m7
   bazel build //:your_target \
-       --platforms=@bazel_embedded//platforms:cortex_m4_fpu
+    --platforms=@pigweed//pw_build/platforms:cortex_m4_fpu
   bazel build //:your_target \
-       --platforms=@bazel_embedded//platforms:cortex_m7_fpu
+    --platforms=@pigweed//pw_build/platforms:cortex_m7_fpu
+
+
+The above examples are cpu/fpu oriented platforms and can be used where
+applicable for your application. There some more specific platforms for the
+types of boards that are included as examples in Pigweed. It is strongly
+encouraged that you create your own set of platforms specific for your project,
+that implement the constraint_settings in this repository. e.g.
+
+New board constraint_value:
+
+.. code-block:: python
+
+  #your_repo/build_settings/constraints/board/BUILD
+  constraint_value(
+    name = "nucleo_l432kc",
+    constraint_setting = "@pigweed//pw_build/constraints/board",
+  )
+
+New chipset constraint_value:
+
+.. code-block:: python
+
+  # your_repo/build_settings/constraints/chipset/BUILD
+  constraint_value(
+    name = "stm32l432kc",
+    constraint_setting = "@pigweed//pw_build/constraints/chipset",
+  )
+
+New platforms for chipset and board:
+
+.. code-block:: python
+
+  #your_repo/build_settings/platforms/BUILD
+  # Works with all stm32l432kc
+  platforms(
+    name = "stm32l432kc",
+    parents = ["@pigweed//pw_build/platforms:cortex_m4"],
+    constraint_values =
+      ["@your_repo//build_settings/constraints/chipset:stm32l432kc"],
+  )
+
+  # Works with only the nucleo_l432kc
+  platforms(
+    name = "nucleo_l432kc",
+    parents = [":stm32l432kc"],
+    constraint_values =
+      ["@your_repo//build_settings/constraints/board:nucleo_l432kc"],
+  )
+
+In the above example you can build your code with the command line:
+
+.. code-block:: python
+
+  bazel build //:your_target_for_nucleo_l432kc \
+    --platforms=@your_repo//build_settings:nucleo_l432kc
+
+
+You can also specify that a specific target is only compatible with one
+platform:
+
+.. code-block:: python
+
+  cc_library(
+    name = "compatible_with_all_stm32l432kc",
+    srcs = ["tomato_src.c"],
+    target_compatible_with =
+      ["@your_repo//build_settings/constraints/chipset:stm32l432kc"],
+  )
+
+  cc_library(
+    name = "compatible_with_only_nucleo_l432kc",
+    srcs = ["bbq_src.c"],
+    target_compatible_with =
+      ["@your_repo//build_settings/constraints/board:nucleo_l432kc"],
+  )
+

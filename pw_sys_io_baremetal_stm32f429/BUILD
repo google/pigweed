@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -25,9 +25,12 @@ pw_cc_library(
     name = "pw_sys_io_baremetal_stm32f429",
     srcs = ["sys_io_baremetal.cc"],
     hdrs = ["public/pw_sys_io_baremetal_stm32f429/init.h"],
+    target_compatible_with = [
+        "//pw_build/constraints/boards:stm32f429i-disc1",
+    ],
     deps = [
         "//pw_boot_armv7m",
         "//pw_preprocessor",
         "//pw_sys_io",
-    ]
+    ],
 )

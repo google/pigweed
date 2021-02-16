@@ -11,28 +11,13 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-load(
-    "//pw_build:pigweed.bzl",
-    "pw_cc_library",
-)
-
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])  # Apache License 2.0
+constraint_setting(
+    name = "board",
+)
 
-pw_cc_library(
-    name = "pw_boot_armv7m",
-    srcs = [
-        "core_init.c",
-        "public/pw_boot_armv7m/boot.h",
-    ],
-    includes = ["public"],
-    target_compatible_with = select({
-        "@platforms//cpu:armv7e-m": [],
-        "@platforms//cpu:armv7-m": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        "//pw_preprocessor",
-    ],
+constraint_value(
+    name = "stm32f429i-disc1",
+    constraint_setting = ":board",
 )

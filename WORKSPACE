@@ -69,7 +69,6 @@ git_repository(
     name = "bazel_embedded",
     commit = "89c05fa415218abd2e24fa7016cb7903317d606b",
     remote = "https://github.com/silvergasp/bazel-embedded.git",
-    shallow_since = "1614045367 +0800",
 )
 
 # Instantiate Pigweed configuration for embedded toolchain,
@@ -128,3 +127,5 @@ load(
 )
 
 register_clang_toolchain()
+
+register_execution_platforms("//pw_build/platforms:all")
