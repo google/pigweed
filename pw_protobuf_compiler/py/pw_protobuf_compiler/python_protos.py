@@ -308,9 +308,22 @@ class Library:
             for m in modules)
 
     def modules(self) -> Iterable:
-        """Allows iterating over all protobuf modules in this library."""
+        """Iterates over all protobuf modules in this library."""
         for module_list in self.modules_by_package.values():
             yield from module_list
+
+    def messages(self) -> Iterable:
+        """Iterates over all protobuf messages in this library."""
+        for module in self.modules():
+            yield from _nested_messages(
+                module, module.DESCRIPTOR.message_types_by_name)
+
+
+def _nested_messages(scope, message_names: Iterable[str]) -> Iterator:
+    for name in message_names:
+        msg = getattr(scope, name)
+        yield msg
+        yield from _nested_messages(msg, msg.DESCRIPTOR.nested_types_by_name)
 
 
 def _repr_char(char: int) -> str:

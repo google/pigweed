@@ -84,6 +84,18 @@ message Hello {
   repeated int64 value = 1;
   Greeting hi = 2;
 }
+
+message NestingMessage {
+  message NestedMessage {
+    message NestedNestedMessage {
+      int32 nested_nested_field = 1;
+    }
+
+    NestedNestedMessage nested_nested_message = 1;
+  }
+
+  NestedMessage nested_message = 1;
+}
 """
 
 
@@ -200,6 +212,20 @@ class TestProtoLibrary(TestCompileAndImport):
 
         with self.assertRaises(KeyError):
             _ = self._library.packages.pw.protobuf_compiler['not here']
+
+    def test_messages(self):
+        protos = self._library.packages.pw.protobuf_compiler
+        self.assertEqual(
+            set(self._library.messages()), {
+                protos.test1.SomeMessage,
+                protos.test1.AnotherMessage,
+                protos.test2.Request,
+                protos.test2.Response,
+                protos.test2.Hello,
+                protos.test2.NestingMessage,
+                protos.test2.NestingMessage.NestedMessage,
+                protos.test2.NestingMessage.NestedMessage.NestedNestedMessage,
+            })
 
 
 PROTO_FOR_REPR = """\
