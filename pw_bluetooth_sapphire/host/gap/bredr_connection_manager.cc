@@ -214,7 +214,7 @@ void BrEdrConnectionManager::Pair(PeerId peer_id, BrEdrSecurityRequirements secu
   connection->pairing_state().InitiatePairing(security, std::move(pairing_callback));
 }
 
-bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               BrEdrSecurityRequirements security_reqs,
                                               l2cap::ChannelParameters params,
                                               l2cap::ChannelCallback cb) {
@@ -231,6 +231,7 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     auto conn_pair = self->FindConnectionById(peer_id);
     if (!conn_pair) {
       bt_log(TRACE, "gap-bredr", "can't open l2cap %s: connection not found", bt_str(peer_id));
+      cb(nullptr);
       return;
     }
     auto& [handle, connection] = *conn_pair;
@@ -240,7 +241,6 @@ bool BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   };
 
   Pair(peer_id, security_reqs, std::move(pairing_cb));
-  return true;
 }
 
 BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(

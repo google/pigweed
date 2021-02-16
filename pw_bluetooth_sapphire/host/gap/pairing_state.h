@@ -163,7 +163,9 @@ class PairingState final {
   // object will receive its "encryption change" callbacks. Successful pairing
   // is reported through |status_cb| after encryption is enabled. When errors
   // occur, this object will be put in a "failed" state and the owner shall
-  // disconnect the link and destroy its PairingState.
+  // disconnect the link and destroy its PairingState.  When destroyed, status
+  // callbacks for any waiting pairings are called. |status_cb| is not called
+  // on destruction.
   //
   //  |auth_cb| will be called to indicate that the caller should send an Authentication Request for
   //  this peer.

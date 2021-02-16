@@ -138,11 +138,11 @@ class AdapterImpl final : public Adapter {
       return adapter_->bredr_connection_manager_->Disconnect(peer_id, reason);
     }
 
-    bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+    void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                           BrEdrSecurityRequirements security_requirements,
                           l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
-      return adapter_->bredr_connection_manager_->OpenL2capChannel(
-          peer_id, psm, security_requirements, params, std::move(cb));
+      adapter_->bredr_connection_manager_->OpenL2capChannel(peer_id, psm, security_requirements,
+                                                            params, std::move(cb));
     }
 
     PeerId GetPeerId(hci::ConnectionHandle handle) const override {

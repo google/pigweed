@@ -485,6 +485,42 @@ TEST_F(GAP_PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish
   EXPECT_EQ(1, status_handler.call_count());
 }
 
+TEST_F(GAP_PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
+  auto connection = MakeFakeConnection();
+  TestStatusHandler overall_status, request_status;
+  {
+    PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                               overall_status.MakeStatusCallback());
+    NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+    pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+    // Advance state machine as pairing responder.
+    pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+    ASSERT_FALSE(pairing_state.initiator());
+    static_cast<void>(pairing_state.OnIoCapabilityRequest());
+    pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
+
+    // Try to initiate pairing while pairing is in progress.
+    pairing_state.InitiatePairing(kNoSecurityRequirements, request_status.MakeStatusCallback());
+    EXPECT_FALSE(pairing_state.initiator());
+
+    // Keep advancing state machine.
+    pairing_state.OnSimplePairingComplete(hci::StatusCode::kSuccess);
+    pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
+
+    // as pairing_state falls out of scope, we expect additional pairing callbacks to be called
+    ASSERT_EQ(0, overall_status.call_count());
+    ASSERT_EQ(0, request_status.call_count());
+  }
+
+  ASSERT_EQ(0, overall_status.call_count());
+
+  ASSERT_EQ(1, request_status.call_count());
+  ASSERT_TRUE(request_status.handle());
+  EXPECT_EQ(kTestHandle, *request_status.handle());
+  EXPECT_EQ(hci::Status(HostError::kLinkDisconnected), *request_status.status());
+}
+
 TEST_F(GAP_PairingStateTest, PairingStateRejectsPairingInitiationWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;

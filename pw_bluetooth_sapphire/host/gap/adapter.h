@@ -241,12 +241,11 @@ class Adapter {
 
     // Opens a new L2CAP channel to service |psm| on |peer_id| using the preferred parameters
     // |params|. If the current connection doesn't meet |security_requirements|, attempt to upgrade
-    // the link key and report an error via |cb| if the upgrade fails. Returns false if the peer is
-    // not already connected.
+    // the link key and report an error via |cb| if the upgrade fails.
     //
     // |cb| will be called with the channel created to the peer, or nullptr if the channel creation
     // resulted in an error.
-    virtual bool OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
+    virtual void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                   BrEdrSecurityRequirements security_requirements,
                                   l2cap::ChannelParameters params, l2cap::ChannelCallback cb) = 0;
 

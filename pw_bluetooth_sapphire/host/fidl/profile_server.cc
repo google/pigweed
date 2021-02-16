@@ -313,12 +313,9 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   };
   ZX_DEBUG_ASSERT(adapter());
 
-  bool connecting = adapter()->bredr()->OpenL2capChannel(
+  adapter()->bredr()->OpenL2capChannel(
       id, psm, fidl_helpers::FidlToBrEdrSecurityRequirements(parameters),
       FidlToChannelParameters(parameters), std::move(connected_cb));
-  if (!connecting) {
-    callback(fit::error(fuchsia::bluetooth::ErrorCode::NOT_FOUND));
-  }
 }
 
 void ProfileServer::ConnectSco(

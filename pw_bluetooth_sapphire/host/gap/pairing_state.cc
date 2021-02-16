@@ -27,7 +27,18 @@ PairingState::PairingState(PeerId peer_id, hci::Connection* link, PeerCache* pee
   ZX_ASSERT(send_auth_request_callback_);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));
-  cleanup_cb_ = [](PairingState* self) { self->link_->set_encryption_change_callback(nullptr); };
+  cleanup_cb_ = [](PairingState* self) {
+    self->link_->set_encryption_change_callback(nullptr);
+    auto callbacks_to_signal =
+        self->CompletePairingRequests(hci::Status(HostError::kLinkDisconnected));
+
+    bt_log(TRACE, "gap-bredr", "Signaling %zu unresolved pairing listeners for %#.4x",
+           callbacks_to_signal.size(), self->handle());
+
+    for (auto& cb : callbacks_to_signal) {
+      cb();
+    }
+  };
 }
 
 PairingState::~PairingState() {

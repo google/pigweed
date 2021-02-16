@@ -1960,6 +1960,87 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   ASSERT_EQ(count + kDisconnectionTransactions, transaction_count());
 }
 
+TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(kIncomingConnTransactions, transaction_count());
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr()->connected());
+
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  // Approve pairing requests.
+  pairing_delegate.SetDisplayPasskeyCallback(
+      [](PeerId, uint32_t passkey, auto method, auto confirm_cb) {
+        ASSERT_TRUE(confirm_cb);
+        confirm_cb(true);
+      });
+
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Status status) { EXPECT_TRUE(status.is_success()); });
+
+  // Initial connection request
+
+  // Pairing initiation and flow that results in bonding then encryption, but verifying the strength
+  // of the encryption key doesn't complete
+  EXPECT_CMD_PACKET_OUT(test_device(), kAuthenticationRequested, &kAuthenticationRequestedStatus,
+                        &kLinkKeyRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
+  const auto kIoCapabilityResponse =
+      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+  const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
+                                                     AuthRequirements::kMITMGeneralBonding),
+                        &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
+                        &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
+                        &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
+                        &kLinkKeyNotification, &kAuthenticationComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kSetConnectionEncryption, &kSetConnectionEncryptionRsp,
+                        &kEncryptionChangeEvent);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySize, );
+
+  std::optional<fbl::RefPtr<l2cap::Channel>> connected_chan;
+
+  auto chan_cb = [&](auto chan) { connected_chan = std::move(chan); };
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
+                              kChannelParams, chan_cb);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  // We should not have a channel because the L2CAP open callback shouldn't have been called, but
+  // the LTK should be stored since the link key got received.
+  ASSERT_FALSE(connected_chan);
+
+  // The remote device disconnects now, when the pairing has been started, then pairing completes.
+  test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+  test_device()->SendCommandChannelPacket(kReadEncryptionKeySizeRsp);
+  RunLoopUntilIdle();
+
+  // We should get a callback from the OpenL2capChannel
+  ASSERT_TRUE(connected_chan);
+  EXPECT_EQ(nullptr, *connected_chan);
+
+  connected_chan.reset();
+
+  connmgr()->OpenL2capChannel(peer->identifier(), l2cap::kAVDTP, kNoSecurityRequirements,
+                              kChannelParams, chan_cb);
+
+  // The L2CAP should be called right away without a channel.
+  ASSERT_TRUE(connected_chan);
+  EXPECT_EQ(nullptr, *connected_chan);
+
+  connected_chan.reset();
+}
+
 // Test: when pairing is in progress, opening an L2CAP channel waits for the pairing to complete
 // before retrying.
 TEST_F(GAP_BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComplete) {
