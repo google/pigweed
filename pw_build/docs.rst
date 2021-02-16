@@ -514,11 +514,44 @@ If desired, modules can be included individually.
 
 Bazel
 =====
-Bazel is currently very experimental, and only builds for host.
+Bazel is currently very experimental, and only builds for host and ARM Cortex-M
+microcontrollers.
 
 The common configuration for Bazel for all modules is in the ``pigweed.bzl``
 file. The built-in Bazel rules ``cc_binary``, ``cc_library``, and ``cc_test``
 are wrapped with ``pw_cc_binary``, ``pw_cc_library``, and ``pw_cc_test``.
 These wrappers add parameters to calls to the compiler and linker.
 
-The ``BUILD`` file is merely a placeholder and currently does nothing.
+Currently Pigweed is making use of a set of
+[open source](https://github.com/silvergasp/bazel-embedded) toolchains. The host
+builds are only supported on Linux/Mac based systems. Additionally the host
+builds are not entirely hermetic, and will make use of system
+libraries and headers. This is close to the default configuration for Bazel,
+though slightly more hermetic. The host toolchain is based around clang-11 which
+has a system dependency on 'libtinfo.so.5' which is often included as part of
+the libncurses packages. On Debian based systems this can be installed using the
+command below:
+
+.. code-block:: sh
+
+  sudo apt install libncurses5
+
+The host toolchain does not currently support native Windows, though using WSL
+is a viable alternative.
+
+The ARM Cortex-M Bazel toolchains are based around gcc-arm-non-eabi and are
+entirely hermetic. You can target Cortex-M, by using the platforms command line
+option. This set of toolchains is supported from hosts; Windows, Mac and Linux.
+The platforms that are currently supported are listed below.
+
+.. code-block:: sh
+
+  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m0
+  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m1
+  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m3
+  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m4
+  bazel build //:your_target --platforms=@bazel_embedded//platforms:cortex_m7
+  bazel build //:your_target \
+       --platforms=@bazel_embedded//platforms:cortex_m4_fpu
+  bazel build //:your_target \
+       --platforms=@bazel_embedded//platforms:cortex_m7_fpu
