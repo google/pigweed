@@ -13,6 +13,7 @@
 # the License.
 """Tools for compiling and importing Python protos on the fly."""
 
+from collections.abc import Mapping
 import importlib.util
 import logging
 import os
@@ -47,6 +48,7 @@ def compile_protos(
 
     cmd: Tuple[PathOrStr, ...] = (
         'protoc',
+        '--experimental_allow_proto3_optional',
         '--python_out',
         os.path.abspath(output_dir),
         *(f'-I{d}' for d in include_paths),
@@ -311,20 +313,73 @@ class Library:
             yield from module_list
 
 
-def proto_repr(message) -> str:
-    """Creates a repr-like string for a protobuf."""
-    fields = []
+def _repr_char(char: int) -> str:
+    r"""Returns an ASCII char or the \x code for non-printable values."""
+    if ord(' ') <= char <= ord('~'):
+        return r"\'" if chr(char) == "'" else chr(char)
 
+    return f'\\x{char:02X}'
+
+
+def bytes_repr(value: bytes) -> str:
+    """Prints bytes as mixed ASCII only if at least half are printable."""
+    ascii_char_count = sum(ord(' ') <= c <= ord('~') for c in value)
+    if ascii_char_count >= len(value) / 2:
+        contents = ''.join(_repr_char(c) for c in value)
+    else:
+        contents = ''.join(f'\\x{c:02X}' for c in value)
+
+    return f"b'{contents}'"
+
+
+def _field_repr(field, value) -> str:
+    if field.type == field.TYPE_ENUM:
+        try:
+            enum = field.enum_type.values_by_number[value]
+            return f'{field.enum_type.full_name}.{enum.name}'
+        except KeyError:
+            return repr(value)
+
+    if field.type == field.TYPE_MESSAGE:
+        return proto_repr(value)
+
+    if field.type == field.TYPE_BYTES:
+        return bytes_repr(value)
+
+    return repr(value)
+
+
+def _proto_repr(message) -> Iterator[str]:
     for field in message.DESCRIPTOR.fields:
         value = getattr(message, field.name)
 
-        # Include fields if has_<field>() is true or the value is non-default.
-        if hasattr(message, 'has_' + field.name):
-            if not getattr(message, 'has_' + field.name)():
+        # Skip fields that are not present.
+        try:
+            if not message.HasField(field.name):
                 continue
-        elif value == field.default_value:
-            continue
+        except ValueError:
+            # Skip default-valued fields that don't support HasField.
+            if (field.label != field.LABEL_REPEATED
+                    and value == field.default_value):
+                continue
 
-        fields.append(f'{field.name}={value!r}')
+        if field.label == field.LABEL_REPEATED:
+            if not value:
+                continue
 
-    return f'{message.DESCRIPTOR.full_name}({", ".join(fields)})'
+            if isinstance(value, Mapping):
+                key_desc, value_desc = field.message_type.fields
+                values = ', '.join(
+                    f'{_field_repr(key_desc, k)}: {_field_repr(value_desc, v)}'
+                    for k, v in value.items())
+                yield f'{field.name}={{{values}}}'
+            else:
+                values = ', '.join(_field_repr(field, v) for v in value)
+                yield f'{field.name}=[{values}]'
+        else:
+            yield f'{field.name}={_field_repr(field, value)}'
+
+
+def proto_repr(message) -> str:
+    """Creates a repr-like string for a protobuf."""
+    return f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'

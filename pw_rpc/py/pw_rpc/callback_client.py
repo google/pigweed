@@ -66,7 +66,7 @@ class UseDefault(enum.Enum):
 OptionalTimeout = Union[UseDefault, float, None]
 
 ResponseCallback = Callable[[PendingRpc, Any], Any]
-CompletionCallback = Callable[[PendingRpc, Any], Any]
+CompletionCallback = Callable[[PendingRpc, Status], Any]
 ErrorCallback = Callable[[PendingRpc, Status], Any]
 
 

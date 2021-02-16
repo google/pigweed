@@ -19,6 +19,7 @@ import tempfile
 import unittest
 
 from pw_protobuf_compiler import python_protos
+from pw_protobuf_compiler.python_protos import bytes_repr, proto_repr
 
 PROTO_1 = """\
 syntax = "proto3";
@@ -199,6 +200,171 @@ class TestProtoLibrary(TestCompileAndImport):
 
         with self.assertRaises(KeyError):
             _ = self._library.packages.pw.protobuf_compiler['not here']
+
+
+PROTO_FOR_REPR = """\
+syntax = "proto3";
+
+package pw.test3;
+
+enum Enum {
+  ZERO = 0;
+  ONE = 1;
+}
+
+message Nested {
+  repeated int64 value = 1;
+  Enum an_enum = 2;
+}
+
+message Message {
+  Nested message = 1;
+  repeated Nested repeated_message = 2;
+
+  fixed32 regular_int = 3;
+  optional int64 optional_int = 4;
+  repeated int32 repeated_int = 5;
+
+  bytes regular_bytes = 6;
+  optional bytes optional_bytes = 7;
+  repeated bytes repeated_bytes = 8;
+
+  string regular_string = 9;
+  optional string optional_string = 10;
+  repeated string repeated_string = 11;
+
+  Enum regular_enum = 12;
+  optional Enum optional_enum = 13;
+  repeated Enum repeated_enum = 14;
+
+  oneof oneof_test {
+    string oneof_1 = 15;
+    int32 oneof_2 = 16;
+    float oneof_3 = 17;
+  }
+
+  map<string, Nested> mapping = 18;
+}
+"""
+
+
+class TestProtoRepr(unittest.TestCase):
+    """Tests printing protobufs."""
+    def setUp(self):
+        protos = python_protos.Library.from_strings(PROTO_FOR_REPR)
+        self.enum = protos.packages.pw.test3.Enum
+        self.nested = protos.packages.pw.test3.Nested
+        self.message = protos.packages.pw.test3.Message
+
+    def test_empty(self):
+        self.assertEqual('pw.test3.Nested()', proto_repr(self.nested()))
+        self.assertEqual('pw.test3.Message()', proto_repr(self.message()))
+
+    def test_int_fields(self):
+        self.assertEqual(
+            'pw.test3.Message('
+            'regular_int=999, '
+            'optional_int=-1, '
+            'repeated_int=[0, 1, 2])',
+            proto_repr(
+                self.message(repeated_int=[0, 1, 2],
+                             regular_int=999,
+                             optional_int=-1)))
+
+    def test_bytes_fields(self):
+        self.assertEqual(
+            'pw.test3.Message('
+            r"regular_bytes=b'\xFE\xED\xBE\xEF', "
+            r"optional_bytes=b'', "
+            r"repeated_bytes=[b'Hello\'\'\''])",
+            proto_repr(
+                self.message(
+                    regular_bytes=b'\xfe\xed\xbe\xef',
+                    optional_bytes=b'',
+                    repeated_bytes=[b"Hello'''"],
+                )))
+
+    def test_string_fields(self):
+        self.assertEqual(
+            'pw.test3.Message('
+            "regular_string='hi', "
+            "optional_string='', "
+            'repeated_string=["\'"])',
+            proto_repr(
+                self.message(
+                    regular_string='hi',
+                    optional_string='',
+                    repeated_string=[b"'"],
+                )))
+
+    def test_enum_fields(self):
+        self.assertEqual('pw.test3.Nested(an_enum=pw.test3.Enum.ONE)',
+                         proto_repr(self.nested(an_enum=1)))
+        self.assertEqual('pw.test3.Message(optional_enum=pw.test3.Enum.ONE)',
+                         proto_repr(self.message(optional_enum=self.enum.ONE)))
+        self.assertEqual(
+            'pw.test3.Message(repeated_enum='
+            '[pw.test3.Enum.ONE, pw.test3.Enum.ONE, pw.test3.Enum.ZERO])',
+            proto_repr(self.message(repeated_enum=[1, 1, 0])))
+
+    def test_message_fields(self):
+        self.assertEqual(
+            'pw.test3.Message(message=pw.test3.Nested(value=[123]))',
+            proto_repr(self.message(message=self.nested(value=[123]))))
+        self.assertEqual(
+            'pw.test3.Message('
+            'repeated_message=[pw.test3.Nested(value=[123]), '
+            'pw.test3.Nested()])',
+            proto_repr(
+                self.message(
+                    repeated_message=[self.nested(
+                        value=[123]), self.nested()])))
+
+    def test_optional_shown_if_set_to_default(self):
+        self.assertEqual(
+            "pw.test3.Message("
+            "optional_int=0, optional_bytes=b'', optional_string='', "
+            "optional_enum=pw.test3.Enum.ZERO)",
+            proto_repr(
+                self.message(optional_int=0,
+                             optional_bytes=b'',
+                             optional_string='',
+                             optional_enum=0)))
+
+    def test_oneof(self):
+        self.assertEqual(proto_repr(self.message(oneof_1='test')),
+                         "pw.test3.Message(oneof_1='test')")
+        self.assertEqual(proto_repr(self.message(oneof_2=123)),
+                         "pw.test3.Message(oneof_2=123)")
+        self.assertEqual(proto_repr(self.message(oneof_3=123)),
+                         "pw.test3.Message(oneof_3=123.0)")
+
+        msg = self.message(oneof_1='test')
+        msg.oneof_2 = 99
+        self.assertEqual(proto_repr(msg), "pw.test3.Message(oneof_2=99)")
+
+    def test_map(self):
+        msg = self.message()
+        msg.mapping['zero'].MergeFrom(self.nested())
+        msg.mapping['one'].MergeFrom(
+            self.nested(an_enum=self.enum.ONE, value=[1]))
+
+        result = proto_repr(msg)
+        self.assertRegex(result, r'^pw.test3.Message\(mapping={.*}\)$')
+        self.assertIn("'zero': pw.test3.Nested()", result)
+        self.assertIn(
+            "'one': pw.test3.Nested(value=[1], an_enum=pw.test3.Enum.ONE)",
+            result)
+
+    def test_bytes_repr(self):
+        self.assertEqual(bytes_repr(b'\xfe\xed\xbe\xef'),
+                         r"b'\xFE\xED\xBE\xEF'")
+        self.assertEqual(bytes_repr(b'\xfe\xed\xbe\xef123'),
+                         r"b'\xFE\xED\xBE\xEF\x31\x32\x33'")
+        self.assertEqual(bytes_repr(b'\xfe\xed\xbe\xef1234'),
+                         r"b'\xFE\xED\xBE\xEF1234'")
+        self.assertEqual(bytes_repr(b'\xfe\xed\xbe\xef12345'),
+                         r"b'\xFE\xED\xBE\xEF12345'")
 
 
 if __name__ == '__main__':
