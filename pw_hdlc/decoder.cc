@@ -121,9 +121,9 @@ Status Decoder::CheckFrame() const {
   }
 
   if (current_frame_size_ > max_size()) {
-    PW_LOG_ERROR("Frame size [%lu] exceeds the maximum buffer size [%lu]",
-                 static_cast<unsigned long>(current_frame_size_),
-                 static_cast<unsigned long>(max_size()));
+    // Frame does not fit into the provided buffer; indicate this to the caller.
+    // This may not be considered an error if the caller is doing a partial
+    // decode.
     return Status::ResourceExhausted();
   }
 
