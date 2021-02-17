@@ -113,14 +113,14 @@ class Server final {
   bool QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register);
 
   // l2cap::Channel callbacks
-  void OnChannelClosed(const hci::ConnectionHandle& handle);
+  void OnChannelClosed(l2cap::Channel::UniqueId channel_id);
 
   // Updates the property values associated with the |sdp_server_node_|.
   void UpdateInspectProperties();
 
   // Send |bytes| over the channel associated with the connection handle
   // |conn|. Logs an error if channel not found.
-  void Send(hci::ConnectionHandle conn, ByteBufferPtr bytes);
+  void Send(l2cap::Channel::UniqueId channel_id, ByteBufferPtr bytes);
 
   // The data domain that owns the L2CAP layer.  Used to register callbacks for
   // the channels of services registered.
@@ -150,7 +150,8 @@ class Server final {
   };
   InspectProperties inspect_properties_;
 
-  std::unordered_map<hci::ConnectionHandle, l2cap::ScopedChannel> channels_;
+  // Map of channels that are opened to the server.  Keyed by the channels unique id.
+  std::unordered_map<l2cap::Channel::UniqueId, l2cap::ScopedChannel> channels_;
   // The map of ServiceHandles that are associated with ServiceRecords.
   // This is a 1:1 mapping.
   std::unordered_map<ServiceHandle, ServiceRecord> records_;

@@ -129,6 +129,7 @@ constexpr l2cap::ChannelId kSdpChannel = 0x0041;
 
 // Test:
 //  - Accepts channels and holds channel open correctly.
+//  - More than one channel from the same peer can be open at once.
 //  - Packets that are the wrong length are responded to with kInvalidSize
 //  - Answers with the same TransactionID as sent
 TEST_F(SDP_ServerTest, BasicError) {
@@ -161,6 +162,14 @@ TEST_F(SDP_ServerTest, BasicError) {
 
   // Responses aren't valid requests
   EXPECT_TRUE(ReceiveAndExpect(kRspTooBig, kRspInvalidSyntax));
+
+  EXPECT_TRUE(
+      l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel + 1, 0x0bad));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fake_chan());
+  EXPECT_TRUE(fake_chan()->activated());
+
+  EXPECT_TRUE(ReceiveAndExpect(kTooSmall, kRspTooSmall));
 }
 
 // Test:
@@ -1047,6 +1056,15 @@ TEST_F(SDP_ServerTest, ConnectionCallbacks) {
   ASSERT_EQ(2u, channels.size());
   EXPECT_EQ(kTestHandle2, latest_handle);
   EXPECT_NE(channels.front(), channels.back());
+
+  // Connect to the service again, on the first connection.
+  EXPECT_TRUE(
+      l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVDTP, kSdpChannel + 3, 0x0b00));
+  RunLoopUntilIdle();
+
+  // It should get a callback with a channel
+  EXPECT_EQ(3u, channels.size());
+  EXPECT_EQ(kTestHandle1, latest_handle);
 }
 
 // Browse Group gets set correctly

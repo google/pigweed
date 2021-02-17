@@ -129,7 +129,7 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
 
 Server::Server(fbl::RefPtr<l2cap::L2cap> l2cap)
     : l2cap_(l2cap), next_handle_(kFirstUnreservedHandle), db_state_(0), weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(l2cap_);
+  ZX_ASSERT(l2cap_);
 
   records_.emplace(kSDPHandle, Server::MakeServiceDiscoveryService());
 
@@ -158,35 +158,37 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
 }
 
 bool Server::AddConnection(fbl::RefPtr<l2cap::Channel> channel) {
-  bt_log(DEBUG, "sdp", "add connection handle %#.4x", channel->link_handle());
-
+  ZX_ASSERT(channel);
   hci::ConnectionHandle handle = channel->link_handle();
-  auto iter = channels_.find(channel->link_handle());
+  bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
+
+  l2cap::Channel::UniqueId chan_id = channel->unique_id();
+  auto iter = channels_.find(chan_id);
   if (iter != channels_.end()) {
-    bt_log(WARN, "sdp", "handle %#.4x already connected", handle);
+    bt_log(WARN, "sdp", "l2cap channel to %#.4x already connected", handle);
     return false;
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel->Activate(
-      [self, handle, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
+      [self, chan_id, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
         if (self) {
           auto packet = self->HandleRequest(std::move(sdu), max_tx_sdu_size);
           if (packet) {
-            self->Send(handle, std::move(packet.value()));
+            self->Send(chan_id, std::move(packet.value()));
           }
         }
       },
-      [self, handle] {
+      [self, chan_id] {
         if (self) {
-          self->OnChannelClosed(handle);
+          self->OnChannelClosed(chan_id);
         }
       });
   if (!activated) {
     bt_log(WARN, "sdp", "failed to activate channel (handle %#.4x)", handle);
     return false;
   }
-  self->channels_.emplace(handle, std::move(channel));
+  self->channels_.emplace(chan_id, std::move(channel));
   return true;
 }
 
@@ -441,7 +443,7 @@ ServiceSearchAttributeResponse Server::SearchAllServiceAttributes(
   return resp;
 }
 
-void Server::OnChannelClosed(const hci::ConnectionHandle& handle) { channels_.erase(handle); }
+void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) { channels_.erase(channel_id); }
 
 cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
   ZX_DEBUG_ASSERT(sdu);
@@ -524,8 +526,8 @@ cpp17::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t
   }
 }
 
-void Server::Send(hci::ConnectionHandle conn, ByteBufferPtr bytes) {
-  auto it = channels_.find(conn);
+void Server::Send(l2cap::Channel::UniqueId channel_id, ByteBufferPtr bytes) {
+  auto it = channels_.find(channel_id);
   if (it == channels_.end()) {
     bt_log(ERROR, "sdp", "can't find peer to respond to; dropping");
     return;
