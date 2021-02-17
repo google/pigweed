@@ -25,6 +25,7 @@ pw_python_package("py") {
     "pw_rpc/codegen.py",
     "pw_rpc/codegen_nanopb.py",
     "pw_rpc/codegen_raw.py",
+    "pw_rpc/console_tools.py",
     "pw_rpc/descriptors.py",
     "pw_rpc/ids.py",
     "pw_rpc/packets.py",
@@ -35,6 +36,7 @@ pw_python_package("py") {
   tests = [
     "callback_client_test.py",
     "client_test.py",
+    "console_tools_test.py",
     "descriptors_test.py",
     "ids_test.py",
     "packets_test.py",
