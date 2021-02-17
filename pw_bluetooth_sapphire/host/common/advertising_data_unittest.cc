@@ -127,6 +127,32 @@ TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
   EXPECT_EQ(expected_ad, *data);
 }
 
+TEST(GAP_AdvertisingDataTest, ParseBlockNameTooLong) {
+  // A block with a name of exactly kMaxNameLength (==248) bytes should be parsed correctly.
+  {
+    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 1, DataType::kCompleteLocalName};
+    auto bytes = DynamicByteBuffer(kMaxNameLength + 2);
+    bytes.Write(leading_bytes);
+    DynamicByteBuffer name(kMaxNameLength);
+    name.Fill('a');
+    bytes.Write(name, /*pos=*/2);
+    std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+    ASSERT_TRUE(data.has_value());
+    EXPECT_EQ(data->local_name(), std::string(kMaxNameLength, 'a'));
+  }
+  // A block with a name of kMaxNameLength+1 (==249) bytes should be rejected.
+  {
+    auto leading_bytes = StaticByteBuffer<2>{kMaxNameLength + 2, DataType::kCompleteLocalName};
+    auto bytes = DynamicByteBuffer(kMaxNameLength + 3);
+    bytes.Write(leading_bytes);
+    DynamicByteBuffer name(kMaxNameLength + 1);
+    name.Fill('a');
+    bytes.Write(name, /*pos=*/2);
+    std::optional<AdvertisingData> data = AdvertisingData::FromBytes(bytes);
+    ASSERT_FALSE(data.has_value());
+  }
+}
+
 TEST(GAP_AdvertisingDataTest, ManufacturerZeroLength) {
   auto bytes = CreateStaticByteBuffer(
       // Complete 16-bit UUIDs
@@ -238,7 +264,7 @@ TEST(GAP_AdvertisingDataTest, Copy) {
   EXPECT_EQ(source, dest);
 
   // Modifying the source shouldn't mess with the copy
-  source.SetLocalName("fuchsia");
+  EXPECT_TRUE(source.SetLocalName("fuchsia"));
   EXPECT_FALSE(dest.local_name());
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
@@ -256,7 +282,7 @@ TEST(GAP_AdvertisingDataTest, Move) {
   int8_t tx_power = 18;          // arbitrary TX power
   uint16_t appearance = 0x4567;  // arbitrary appearance value
   AdvertisingData source;
-  source.SetLocalName("test");
+  EXPECT_TRUE(source.SetLocalName("test"));
   source.SetTxPower(tx_power);
   source.SetAppearance(appearance);
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
@@ -330,7 +356,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSuccess) {
 
   data.SetTxPower(4);
   data.SetAppearance(0x4567);
-  data.SetLocalName("fuchsia");
+  EXPECT_TRUE(data.SetLocalName("fuchsia"));
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
   EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
@@ -363,7 +389,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockSmallBufError) {
 
   data.SetTxPower(4);
   data.SetAppearance(0x4567);
-  data.SetLocalName("fuchsia");
+  EXPECT_TRUE(data.SetLocalName("fuchsia"));
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize() - 1);
   // The buffer is too small. No write should occur, and should return false.
@@ -377,7 +403,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
 
   data.SetTxPower(4);
   data.SetAppearance(0x4567);
-  data.SetLocalName("fuchsia");
+  EXPECT_TRUE(data.SetLocalName("fuchsia"));
 
   auto bytes = CreateStaticByteBuffer(0x01, 0x02, 0x03);
   EXPECT_TRUE(data.SetManufacturerData(0x0123, bytes.view()));
@@ -408,7 +434,7 @@ TEST(GAP_AdvertisingDataTest, WriteBlockWithFlagsBufError) {
   AdvertisingData data;
 
   data.SetTxPower(6);
-  data.SetLocalName("Fuchsia");
+  EXPECT_TRUE(data.SetLocalName("Fuchsia"));
   data.SetAppearance(0x1234);
 
   DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true) - 1);
@@ -497,6 +523,15 @@ TEST(GAP_AdvertisingDataTest, SetFieldsWithTooLongParameters) {
         data, std::variant<uint16_t, uint32_t, UInt128>{starting_128bit_uuid}, kMax128BitUuids);
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
     EXPECT_TRUE(data.service_uuids().find(should_fail) == data.service_uuids().end());
+  }
+  // Ensures names exceeding kMaxNameLength are rejected.
+  {
+    std::string name_that_fits(kMaxNameLength, 'a');
+    std::string too_long_name(kMaxNameLength + 1, 'b');
+    EXPECT_TRUE(data.SetLocalName(name_that_fits));
+    EXPECT_EQ(name_that_fits, data.local_name());
+    EXPECT_FALSE(data.SetLocalName(too_long_name));
+    EXPECT_EQ(name_that_fits, data.local_name());
   }
   // Write the data out to ensure no assertions are triggered
   DynamicByteBuffer block(data.CalculateBlockSize());

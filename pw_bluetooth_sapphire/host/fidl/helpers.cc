@@ -786,7 +786,9 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::Advertisi
   bt::AdvertisingData output;
 
   if (input.has_name()) {
-    output.SetLocalName(input.name());
+    if (!output.SetLocalName(input.name())) {
+      return std::nullopt;
+    }
   }
   if (input.has_appearance()) {
     output.SetAppearance(static_cast<uint16_t>(input.appearance()));

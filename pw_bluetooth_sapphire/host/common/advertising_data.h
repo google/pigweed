@@ -8,6 +8,7 @@
 #include <lib/fit/function.h>
 
 #include <cstddef>
+#include <limits>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
@@ -58,6 +59,10 @@ constexpr size_t kFlagsSizeMin = 1;
 constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
 
 constexpr uint8_t kMaxUint8 = std::numeric_limits<uint8_t>::max();
+// The maximum length of a friendly name, derived from v5.2, Vol 4, Part E, 7.3.11 and Vol 3, Part
+// C, 12.1
+constexpr uint8_t kMaxNameLength = 248;
+
 // The length of the entire manufacturer-specific data field must fit in a uint8_t, so the maximum
 // data length is uint8_t::MAX - 1 byte for type - 2 bytes for manufacturer ID.
 constexpr uint8_t kMaxManufacturerDataLength = kMaxUint8 - 3;
@@ -149,8 +154,8 @@ class AdvertisingData {
   // Gets the TX power
   std::optional<int8_t> tx_power() const;
 
-  // Sets the local name
-  void SetLocalName(const std::string& name);
+  // Returns false if `name` is not set due to exceeding kMaxLocalName bytes, or true if it is set.
+  [[nodiscard]] bool SetLocalName(const std::string& name);
 
   // Gets the local name
   std::optional<std::string> local_name() const;

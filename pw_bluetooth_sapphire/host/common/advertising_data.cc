@@ -130,7 +130,7 @@ const size_t kUriSchemesSize = std::extent<decltype(kUriSchemes)>::value;
 
 std::string EncodeUri(const std::string& uri) {
   std::string encoded_scheme;
-  for (size_t i = 0; i < kUriSchemesSize; i++) {
+  for (uint32_t i = 0; i < kUriSchemesSize; i++) {
     const char* scheme = kUriSchemes[i];
     size_t scheme_len = strlen(scheme);
     if (std::equal(scheme, scheme + scheme_len, uri.begin())) {
@@ -233,7 +233,13 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         if (out_ad.local_name())
           break;
       case DataType::kCompleteLocalName: {
-        out_ad.SetLocalName(field.ToString());
+        if (!out_ad.SetLocalName(field.ToString())) {
+          bt_log(WARN, "gap-le",
+                 "attempted to decode AD with local name field of length %zu which exceeds BT spec "
+                 "limit of %u",
+                 field.size(), kMaxNameLength);
+          return std::nullopt;
+        }
         break;
       }
       case DataType::kIncomplete16BitServiceUuids:
@@ -311,7 +317,7 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
 
 void AdvertisingData::Copy(AdvertisingData* out) const {
   if (local_name_)
-    out->SetLocalName(*local_name_);
+    ZX_ASSERT(out->SetLocalName(*local_name_));
   if (tx_power_)
     out->SetTxPower(*tx_power_);
   if (appearance_)
@@ -404,7 +410,15 @@ void AdvertisingData::SetTxPower(int8_t dbm) { tx_power_ = dbm; }
 
 std::optional<int8_t> AdvertisingData::tx_power() const { return tx_power_; }
 
-void AdvertisingData::SetLocalName(const std::string& name) { local_name_ = std::string(name); }
+[[nodiscard]] bool AdvertisingData::SetLocalName(const std::string& name) {
+  if (name.size() > kMaxNameLength) {
+    bt_log(WARN, "gap-le", "rejecting name %s which exceeds maximum allowed name length %u",
+           name.c_str(), kMaxNameLength);
+    return false;
+  }
+  local_name_ = name;
+  return true;
+}
 
 std::optional<std::string> AdvertisingData::local_name() const { return local_name_; }
 
@@ -489,10 +503,10 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
   }
 
   if (local_name_) {
-    (*buffer)[pos++] = 1 + local_name_->size();
+    ZX_ASSERT(local_name_->size() <= kMaxNameLength);
+    (*buffer)[pos++] = 1 + static_cast<uint8_t>(local_name_->size());
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
-    buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->c_str()), local_name_->length(),
-                  pos);
+    buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->c_str()), local_name_->size(), pos);
     pos += local_name_->size();
   }
 

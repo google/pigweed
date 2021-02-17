@@ -96,7 +96,7 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
     AdvertisingData result;
 
     auto name = "fuchsia";
-    result.SetLocalName(name);
+    EXPECT_TRUE(result.SetLocalName(name));
 
     auto appearance = 0x1234;
     result.SetAppearance(appearance);
@@ -130,7 +130,7 @@ class HCI_LegacyLowEnergyAdvertiserTest : public TestingBase {
       // Total = 32 bytes.
       name = "fuchsiafuchsiafuchsia123456";
     }
-    result.SetLocalName(name);
+    EXPECT_TRUE(result.SetLocalName(name));
 
     // The maximum advertisement packet is: |kMaxLEAdvertisingDataLength| = 31, and |result| = 32
     // bytes. |result| should be too large to advertise.

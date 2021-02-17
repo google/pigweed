@@ -13,6 +13,8 @@
 
 #include "lib/zx/time.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
+
 // This file contains constants and numbers used in HCI packet payloads.
 
 namespace bt::hci {
@@ -1180,7 +1182,7 @@ constexpr int8_t kTxPowerInvalid = 127;
 
 // The maximum length of a friendly name that can be assigned to a BR/EDR
 // controller, in octets.
-constexpr size_t kMaxNameLength = 248;
+constexpr size_t kMaxNameLength = bt::kMaxNameLength;
 
 // The maximum number of bytes in a HCI Command Packet payload, excluding the
 // header. See Core Spec v5.0 Vol 2, Part E, 5.4.1, paragraph 2.

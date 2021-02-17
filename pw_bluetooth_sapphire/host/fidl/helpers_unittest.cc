@@ -254,6 +254,16 @@ std::string UuidToString(fbt::Uuid uuid) {
 // fits in the encoded version. This also enables using the same `input` throughout the test.
 TEST(FIDL_HelpersTest, AdvertisingDataFromFidlWithFieldsTooLong) {
   fble::AdvertisingData input;
+  // The length of the AD name field must be <= 248 bytes per v5.2, Vol 4, Part E, 7.3.11 and Vol 3,
+  // Part C, 12.1.`
+  {
+    std::string name_that_fits(bt::kMaxNameLength, 'a');
+    std::string too_long_name(bt::kMaxNameLength + 1, 'b');
+    input.set_name(too_long_name);
+    EXPECT_FALSE(AdvertisingDataFromFidl(input).has_value());
+    input.set_name(name_that_fits);
+    EXPECT_TRUE(AdvertisingDataFromFidl(input).has_value());
+  }
   {
     // This is the longest encoding scheme known to Fuchsia BT, so this represents the longest
     // string allowed (and subsequently, too long to be allowed) by both FIDL and internal
@@ -338,7 +348,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecatedEmpty) {
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidlDeprecated) {
   bt::AdvertisingData input;
-  input.SetLocalName("fuchsia");
+  EXPECT_TRUE(input.SetLocalName("fuchsia"));
   input.SetTxPower(4);
   input.SetAppearance(0x1234);
 
@@ -400,7 +410,7 @@ TEST(FIDL_HelpersTest, AdvertisingDataToFidlEmpty) {
 
 TEST(FIDL_HelpersTest, AdvertisingDataToFidl) {
   bt::AdvertisingData input;
-  input.SetLocalName("fuchsia");
+  EXPECT_TRUE(input.SetLocalName("fuchsia"));
   input.SetTxPower(4);
   const uint16_t kAppearance = 193u;  // WATCH_SPORTS
   input.SetAppearance(kAppearance);
