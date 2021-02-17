@@ -40,7 +40,16 @@ template("bt_gtest_package") {
   group("_component_metadata") {
     metadata = {
       if (with_death_tests) {
-        # Used by the fuchsia_test_component_manifest() template.
+        # Used by the fuchsia_test_component_manifest() template in v1.
+        test_component_manifest_cmx = [
+          {
+            sandbox = {
+              services = [ "fuchsia.process.Launcher" ]
+            }
+          },
+        ]
+
+        # Used by the fuchsia_test_component_manifest() template in v2.
         test_component_manifest_cml = [
           {
             # Add gtest test runner to generated manifest.
@@ -54,7 +63,7 @@ template("bt_gtest_package") {
           },
         ]
       } else {
-        # Used by the fuchsia_test_component_manifest() template.
+        # Used by the fuchsia_test_component_manifest() template in v2.
         test_component_manifest_cml = [
           {
             # Add gtest test runner to generated manifest.
@@ -73,7 +82,8 @@ template("bt_gtest_package") {
   }
 
   fuchsia_unittest_package(package_name) {
-    v2 = true
+    # TODO(fxbug.dev/70289): Use v2 unit test components once GTest test runner issues are fixed.
+    v2 = false
     deps = [
       # Metadata needs to be included in deps to be forwarded.
       ":_component_metadata",
