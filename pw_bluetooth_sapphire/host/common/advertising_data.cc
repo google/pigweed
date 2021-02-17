@@ -504,7 +504,7 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer, std::optional<AdvFla
 
   if (local_name_) {
     ZX_ASSERT(local_name_->size() <= kMaxNameLength);
-    (*buffer)[pos++] = 1 + static_cast<uint8_t>(local_name_->size());
+    (*buffer)[pos++] = static_cast<uint8_t>(local_name_->size()) + 1;
     (*buffer)[pos++] = static_cast<uint8_t>(DataType::kCompleteLocalName);
     buffer->Write(reinterpret_cast<const uint8_t*>(local_name_->c_str()), local_name_->size(), pos);
     pos += local_name_->size();
