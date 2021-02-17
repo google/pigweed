@@ -6,6 +6,15 @@ pw_rpc
 The ``pw_rpc`` module provides a system for defining and invoking remote
 procedure calls (RPCs) on a device.
 
+This document discusses the ``pw_rpc`` protocol and its C++ implementation.
+``pw_rpc`` implementations for other languages are described in their own
+documents:
+
+.. toctree::
+  :maxdepth: 1
+
+  py/docs
+
 .. admonition:: Try it out!
 
   For a quick intro to ``pw_rpc``, see the
@@ -54,6 +63,39 @@ This protocol buffer is declared in a ``BUILD.gn`` file as follows:
   pw_proto_library("the_service_proto") {
     sources = [ "foo_bar/the_service.proto" ]
   }
+
+.. admonition:: proto2 or proto3 syntax?
+
+  Always use proto3 syntax rather than proto2 for new protocol buffers. Proto2
+  protobufs can be compiled for ``pw_rpc``, but they are not as well supported
+  as proto3. Specifically, ``pw_rpc`` lacks support for non-zero default values
+  in proto2. When using Nanopb with ``pw_rpc``, proto2 response protobufs with
+  non-zero field defaults should be manually initialized to the default struct.
+
+  In the past, proto3 was sometimes avoided because it lacked support for field
+  presence detection. Fortunately, this has been fixed: proto3 now supports
+  ``optional`` fields, which are equivalent to proto2 ``optional`` fields.
+
+  If you need to distinguish between a default-valued field and a missing field,
+  mark the field as ``optional``. The presence of the field can be detected
+  with a ``HasField(name)`` or ``has_<field>`` member, depending on the library.
+
+  Optional fields have some overhead --- default-valued fields are included in
+  the encoded proto, and, if using Nanopb, the proto structs have a
+  ``has_<field>`` flag for each optional field. Use plain fields if field
+  presence detection is not needed.
+
+  .. code-block:: protobuf
+
+    syntax = "proto3";
+
+    message MyMessage {
+      // Leaving this field unset is equivalent to setting it to 0.
+      int32 number = 1;
+
+      // Setting this field to 0 is different from leaving it unset.
+      optional int32 other_number = 2;
+    }
 
 2. RPC code generation
 ----------------------

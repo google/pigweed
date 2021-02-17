@@ -29,6 +29,7 @@ declare_args() {
 #   inputs: Additional resource files for the docs, such as images.
 #   group_deps: Other pw_doc_group targets on which this group depends.
 #   report_deps: Report card targets on which documentation depends.
+#   other_deps: Dependencies on any other types of targets.
 template("pw_doc_group") {
   assert(defined(invoker.sources), "pw_doc_group requires a list of sources")
 
@@ -44,6 +45,9 @@ template("pw_doc_group") {
   }
   if (defined(invoker.report_deps)) {
     _all_deps += invoker.report_deps
+  }
+  if (defined(invoker.other_deps)) {
+    _all_deps += invoker.other_deps
   }
 
   # Create a group containing the source and input files so that docs are
