@@ -72,6 +72,7 @@ constexpr float HciScanWindowToMs(uint16_t w) { return HciScanIntervalToMs(w); }
 // Recommended scan and advertising parameters that can be passed directly to the HCI commands.
 // A constant that contans the word "Coded" is recommended when using the LE
 // Coded PHY. Otherwise the constant is recommended when using the LE 1M PHY.
+// See Core Spec v5.2, Vol. 3, Part C, Table A for ranges and descriptions.
 
 // For user-initiated scanning
 constexpr uint16_t kLEScanFastInterval = 0x0060;       // 60 ms

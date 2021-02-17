@@ -431,6 +431,10 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
 
+  std::optional<hci::LECreateConnectionCommandParams> connect_params;
+  test_device()->set_le_create_connection_command_callback(
+      [&](auto params) { connect_params = params; });
+
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
     ASSERT_TRUE(result.is_ok());
@@ -453,6 +457,9 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_EQ(peer->identifier(), conn_handle->peer_identifier());
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
+  ASSERT_TRUE(connect_params);
+  EXPECT_EQ(letoh16(connect_params->scan_interval), kLEScanFastInterval);
+  EXPECT_EQ(letoh16(connect_params->scan_window), kLEScanFastWindow);
 }
 
 struct TestObject final : fbl::RefCounted<TestObject> {

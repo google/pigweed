@@ -263,10 +263,9 @@ void LowEnergyConnector::RequestCreateConnection() {
 
   state_ = State::kConnecting;
 
-  // We set the scan window and interval to the same value for continuous
-  // scanning.
+  // TODO(fxbug.dev/70199): Use slow interval & window for auto connections during background scan.
   ZX_ASSERT(hci_connector_->CreateConnection(
-      /*use_whitelist=*/false, peer_address_, kLEScanFastInterval, kLEScanFastInterval,
+      /*use_whitelist=*/false, peer_address_, kLEScanFastInterval, kLEScanFastWindow,
       kInitialConnectionParameters, std::move(status_cb), hci_request_timeout_));
 }
 

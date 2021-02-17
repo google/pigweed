@@ -662,6 +662,9 @@ void FakeController::OnCreateConnectionCommandReceived(
 void FakeController::OnLECreateConnectionCommandReceived(
     const hci::LECreateConnectionCommandParams& params) {
   le_create_connection_command_count_++;
+  if (le_create_connection_cb_) {
+    le_create_connection_cb_(params);
+  }
 
   // Cannot issue this command while a request is already pending.
   if (le_connect_pending_) {
