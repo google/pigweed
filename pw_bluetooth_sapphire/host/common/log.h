@@ -126,12 +126,16 @@ constexpr const char* BaseName(const char* path) {
   return path;
 }
 
+// No-op function used to check consistency between format string and arguments.
+[[gnu::format(printf, 1, 2)]] constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
+
 // LogScope is a helper class that manages the lifetime of a log scope in the global thread-local
 // list of log scopes. LogScope should only be created through the bt_log_scope() macro in order to
 // guarantee that the the correct scope is removed when a LogScope is destroyed.
 class LogScopeGuard final {
  public:
   // Push log scope.
+  // The "format" attribute counts arguments starting at 1, including implicit |this|.
   [[gnu::format(printf, 2, 3)]] explicit LogScopeGuard(const char* fmt, ...);
 
   // Pop log scope.
@@ -159,10 +163,15 @@ LogContext SaveLogContext();
 }  // namespace bt
 
 // This macro should be kept as small as possible to reduce binary size.
-#define bt_log(flag, tag, fmt...) \
-  bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt)
+// TODO(fxbug.dev/1390): Due to limitations, |tag| is processed by printf-style formatters as a
+// format string, so check that |tag| does not specify any additional args.
+#define bt_log(flag, tag, fmt...)                                          \
+  [&] {                                                                    \
+    ::bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
+    ::bt::internal::CheckFormat(tag);                                      \
+  }()
 
-#define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {};
+#define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
 
 // Convenience macro for printf-style formatting of an object with a ToString()
 // method e.g.:
