@@ -83,7 +83,10 @@ def _title(msg, style=_SUMMARY_BOX) -> str:
 
 def _format_time(time_s: float) -> str:
     minutes, seconds = divmod(time_s, 60)
-    return f' {int(minutes)}:{seconds:04.1f}'
+    if minutes < 60:
+        return f' {int(minutes)}:{seconds:04.1f}'
+    hours, minutes = divmod(minutes, 60)
+    return f'{int(hours):d}:{int(minutes):02}:{int(seconds):02}'
 
 
 def _box(style, left, middle, right, box=tools.make_box('><>')) -> str:
