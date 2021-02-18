@@ -162,6 +162,8 @@ def install(
     venv_python = os.path.join(venv_bin, 'python')
 
     pw_root = os.environ.get('PW_ROOT')
+    if not pw_root and env:
+        pw_root = env.PW_ROOT
     if not pw_root:
         pw_root = git_repo_root()
     if not pw_root:
@@ -210,7 +212,13 @@ def install(
         gn_log_path = os.path.join(venv_path, gn_log)
         try:
             with open(gn_log_path, 'w') as outs:
-                subprocess.check_call(('gn', 'gen', build_dir),
+                gn_cmd = (
+                    'gn',
+                    'gen',
+                    build_dir,
+                    '--args=dir_pigweed="{}"'.format(pw_root),
+                )
+                subprocess.check_call(gn_cmd,
                                       cwd=os.path.join(project_root,
                                                        gn_target.directory),
                                       stdout=outs,
