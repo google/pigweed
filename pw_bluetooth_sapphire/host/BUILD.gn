@@ -173,6 +173,10 @@ bt_gtest_package("bt-host-driver-tests") {
 fuzzers_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
+    "common:advertising_data_fuzzer",
+    "gap:peer_cache_fuzzer",
+    "hci:read_acl_data_packet_fuzzer",
+    "hci:read_command_event_packet_fuzzer",
     "l2cap:l2cap_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
@@ -182,9 +186,6 @@ fuzzers_package("fuzzers") {
     "sdp:data_element_fuzzer",
     "sdp:pdu_fuzzer",
     "sm:valid_packet_reader_fuzzer",
-    "hci:read_acl_data_packet_fuzzer",
-    "hci:read_command_event_packet_fuzzer",
-    "common:advertising_data_fuzzer",
   ]
 }
 

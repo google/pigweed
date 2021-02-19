@@ -100,3 +100,9 @@ source_set("gtest_main") {
 
   public_deps = [ "//third_party/googletest:gtest" ]
 }
+
+source_set("fuzzing") {
+  testonly = true
+  sources = [ "peer_fuzzer.h" ]
+  deps = [ "//src/connectivity/bluetooth/core/bt-host/gap" ]
+}

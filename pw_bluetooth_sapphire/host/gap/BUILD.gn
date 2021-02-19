@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/fuzzing/fuzzer.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 source_set("definitions") {
@@ -150,4 +151,12 @@ source_set("tests") {
 bt_gtest_package("bt-host-gap-tests") {
   with_death_tests = true
   deps = [ ":tests" ]
+}
+
+fuzzer("peer_cache_fuzzer") {
+  sources = [ "peer_cache_fuzztest.cc" ]
+  deps = [
+    ":gap",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
+  ]
 }
