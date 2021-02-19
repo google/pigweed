@@ -7,8 +7,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 
-BT_DECLARE_FAKE_DRIVER();
-
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   constexpr bt::hci::ConnectionHandle kTestHandle = 0x0001;
   constexpr bt::l2cap::ChannelId kTestChannelId = 0x0001;

@@ -11,9 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
-// Prevent "undefined symbol: __zircon_driver_rec__" error.
-BT_DECLARE_FAKE_DRIVER();
-
 namespace bt::testing {
 
 // ACL Buffer Info
@@ -147,11 +144,6 @@ class DataFuzzTest : public TestingBase {
 };
 
 }  // namespace bt::testing
-
-extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
-  bt::UsePrintf(bt::LogSeverity::ERROR);
-  return 0;
-}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bt::testing::DataFuzzTest fuzz(data, size);

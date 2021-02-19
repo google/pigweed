@@ -108,5 +108,8 @@ bt_gtest_package("bt-host-sm-tests") {
 
 cpp_fuzzer("valid_packet_reader_fuzzer") {
   sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
-  deps = [ ":definitions" ]
+  deps = [
+    ":definitions",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+  ]
 }

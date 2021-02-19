@@ -134,6 +134,7 @@ fuzzer("read_acl_data_packet_fuzzer") {
   deps = [
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -142,5 +143,6 @@ fuzzer("read_command_event_packet_fuzzer") {
   deps = [
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }

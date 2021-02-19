@@ -12,8 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
-BT_DECLARE_FAKE_DRIVER();
-
 constexpr static bt::hci::ConnectionHandle kTestHandle = 0x0001;
 
 bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provider) {
@@ -28,11 +26,6 @@ bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provid
                                        : bt::l2cap::ChannelMode::kEnhancedRetransmission;
   params.max_rx_sdu_size = provider.ConsumeIntegral<uint16_t>();
   return params;
-}
-
-extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
-  bt::UsePrintf(bt::LogSeverity::ERROR);
-  return 0;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {

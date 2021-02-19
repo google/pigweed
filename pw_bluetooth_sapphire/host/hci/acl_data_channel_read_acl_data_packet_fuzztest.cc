@@ -2,12 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
-
 #include "slab_allocators.h"
-
-// Prevent "undefined symbol: __zircon_driver_rec__" error.
-BT_DECLARE_FAKE_DRIVER();
+#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 
 namespace bt::hci {
 

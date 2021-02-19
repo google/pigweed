@@ -4,11 +4,7 @@
 
 #include <fuzzer/FuzzedDataProvider.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
-
-// Prevent "undefined symbol: __zircon_driver_rec__" error.
-BT_DECLARE_FAKE_DRIVER();
 
 namespace bt::sdp {
 

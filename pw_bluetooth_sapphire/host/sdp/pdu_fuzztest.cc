@@ -7,9 +7,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/status.h"
 
-// Prevent "undefined symbol: __zircon_driver_rec__" error.
-BT_DECLARE_FAKE_DRIVER();
-
 namespace bt::sdp {
 
 void fuzz(const uint8_t* data, size_t size) {
@@ -25,17 +22,17 @@ void fuzz(const uint8_t* data, size_t size) {
   ServiceSearchAttributeResponse service_search_attribute_response;
   switch (type % 4) {
     case 0:
-    status = error_response.Parse(buf);
-    break;
+      status = error_response.Parse(buf);
+      break;
     case 1:
-    status = service_search_response.Parse(buf);
-    break;
+      status = service_search_response.Parse(buf);
+      break;
     case 2:
-    status = service_attribute_response.Parse(buf);
-    break;
+      status = service_attribute_response.Parse(buf);
+      break;
     case 3:
-    status = service_search_attribute_response.Parse(buf);
-    break;
+      status = service_search_attribute_response.Parse(buf);
+      break;
   }
 }
 

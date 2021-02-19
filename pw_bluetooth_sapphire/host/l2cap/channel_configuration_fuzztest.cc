@@ -2,13 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-
-// Prevent "undefined symbol: __zircon_driver_rec__" error.
-BT_DECLARE_FAKE_DRIVER();
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_configuration.h"
 
 namespace bt::l2cap::internal {
 

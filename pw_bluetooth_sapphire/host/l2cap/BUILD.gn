@@ -162,6 +162,7 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -170,6 +171,7 @@ fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -178,6 +180,7 @@ fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -186,6 +189,7 @@ fuzzer("channel_configuration_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -194,6 +198,7 @@ fuzzer("common_handler_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }
 
@@ -202,5 +207,6 @@ fuzzer("l2cap_fuzzer") {
   deps = [
     ":l2cap",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
   ]
 }

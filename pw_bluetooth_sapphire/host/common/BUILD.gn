@@ -103,5 +103,8 @@ bt_gtest_package("bt-host-common-tests") {
 
 fuzzer("advertising_data_fuzzer") {
   sources = [ "advertising_data_fuzztest.cc" ]
-  deps = [ ":common" ]
+  deps = [
+    ":common",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+  ]
 }

@@ -73,10 +73,16 @@ bt_gtest_package("bt-host-sdp-tests") {
 
 fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
-  deps = [ ":definitions" ]
+  deps = [
+    ":definitions",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+  ]
 }
 
 fuzzer("pdu_fuzzer") {
   sources = [ "pdu_fuzztest.cc" ]
-  deps = [ ":sdp" ]
+  deps = [
+    ":sdp",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+  ]
 }

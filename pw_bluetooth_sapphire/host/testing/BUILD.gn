@@ -106,3 +106,9 @@ source_set("fuzzing") {
   sources = [ "peer_fuzzer.h" ]
   deps = [ "//src/connectivity/bluetooth/core/bt-host/gap" ]
 }
+
+source_set("fuzztest_driver") {
+  testonly = true
+  sources = [ "fuzztest_driver.cc" ]
+  deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+}
