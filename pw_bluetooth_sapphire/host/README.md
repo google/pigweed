@@ -81,6 +81,11 @@ adapter:
             pending_request_0x0:
                 address
                 callbacks
+        outbound_connector:
+            peer_id
+            is_outbound
+            connection_attempt
+            state
         connections:
             connection_0x0:
                 peer_id

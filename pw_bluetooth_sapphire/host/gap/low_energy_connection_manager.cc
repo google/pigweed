@@ -74,6 +74,7 @@ const char* kInspectRequestsNodeName = "pending_requests";
 const char* kInspectRequestNodeNamePrefix = "pending_request_";
 const char* kInspectConnectionsNodeName = "connections";
 const char* kInspectConnectionNodePrefix = "connection_";
+const char* kInspectOutboundConnectorNodeName = "outbound_connector";
 
 }  // namespace
 
@@ -282,6 +283,9 @@ void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent) {
     conn.second->AttachInspect(inspect_connections_node_,
                                inspect_connections_node_.UniqueName(kInspectConnectionNodePrefix));
   }
+  if (current_request_) {
+    current_request_->connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
+  }
 }
 
 void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr link,
@@ -387,6 +391,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
               peer_id, request.connection_options(), hci_connector_, request_timeout_, hci_,
               peer_cache_, discovery_manager_, weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_,
               std::move(result_cb));
+      connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
 
       current_request_ = RequestAndConnector{std::move(request), std::move(connector)};
       return;

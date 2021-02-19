@@ -3150,12 +3150,19 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
                       PropertyList(UnorderedElementsAre(StringIs("address", kAddress0.ToString()),
                                                         IntIs("callbacks", 1))))))));
 
+  auto outbound_connector_matcher_attempt_0 = AllOf(NodeMatches(AllOf(
+      NameMatches("outbound_connector"),
+      PropertyList(UnorderedElementsAre(StringIs("peer_id", peer->identifier().ToString()),
+                                        IntIs("connection_attempt", 0), BoolIs("is_outbound", true),
+                                        StringIs("state", "StartingScanning"))))));
+
   auto empty_connections_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
 
   auto conn_mgr_during_connecting_matcher =
       AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)),
-            ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher)));
+            ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher,
+                                               outbound_connector_matcher_attempt_0)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_during_connecting_matcher)));

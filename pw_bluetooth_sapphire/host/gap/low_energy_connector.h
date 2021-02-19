@@ -46,6 +46,9 @@ class LowEnergyConnector final {
   // Cancelling an already completed connector is a no-op.
   void Cancel();
 
+  // Attach connector inspect node as a child node of |parent| with the name |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
  private:
   enum class State {
     kIdle,
@@ -103,7 +106,7 @@ class LowEnergyConnector final {
   void NotifySuccess();
   void NotifyFailure(hci::Status status = hci::Status(HostError::kFailed));
 
-  State state_;
+  StringInspectable<State> state_;
 
   PeerId peer_id_;
   DeviceAddress peer_address_;
@@ -115,7 +118,7 @@ class LowEnergyConnector final {
 
   // True if this connector is connecting an outbound connection, false if it is connecting an
   // inbound connection.
-  bool is_outbound_;
+  const bool is_outbound_;
 
   // Time after which an outbound HCI connection request is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.
@@ -135,7 +138,7 @@ class LowEnergyConnector final {
 
   // For outbound connections, this is a 0-indexed counter of which connection attempt the connector
   // is on.
-  int connection_attempt_;
+  IntInspectable<int> connection_attempt_;
 
   async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::RequestCreateConnection>
       request_create_connection_task_{this};
@@ -155,6 +158,13 @@ class LowEnergyConnector final {
 
   // Only used to construct a LowEnergyConnection.
   fxl::WeakPtr<LowEnergyConnectionManager> le_connection_manager_;
+
+  struct InspectProperties {
+    inspect::StringProperty peer_id;
+    inspect::BoolProperty is_outbound;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
 
   fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_;
 };
