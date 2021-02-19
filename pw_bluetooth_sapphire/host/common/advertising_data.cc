@@ -182,24 +182,14 @@ inline size_t BufferWrite(MutableByteBuffer* buffer, size_t pos, const T& var) {
 AdvertisingData::AdvertisingData(AdvertisingData&& other) noexcept { *this = std::move(other); }
 
 AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
-  if (this != &other) {
-    // Move resources from `other` to `this`
-    local_name_ = std::move(other.local_name_);
-    tx_power_ = other.tx_power_;
-    appearance_ = other.appearance_;
-    service_uuids_ = std::move(other.service_uuids_);
-    manufacturer_data_ = std::move(other.manufacturer_data_);
-    service_data_ = std::move(other.service_data_);
-    uris_ = std::move(other.uris_);
-    // Reset `other`'s state to that of a fresh, empty AdvertisingData
-    other.local_name_.reset();
-    other.tx_power_.reset();
-    other.appearance_.reset();
-    other.service_uuids_ = kEmptyServiceUuidMap;
-    other.manufacturer_data_.clear();
-    other.service_data_.clear();
-    other.uris_.clear();
-  }
+  // Reset `other`'s state to that of a fresh, empty AdvertisingData
+  local_name_ = std::exchange(other.local_name_, {});
+  tx_power_ = std::exchange(other.tx_power_, {});
+  appearance_ = std::exchange(other.appearance_, {});
+  service_uuids_ = std::exchange(other.service_uuids_, kEmptyServiceUuidMap);
+  manufacturer_data_ = std::exchange(other.manufacturer_data_, {});
+  service_data_ = std::exchange(other.service_data_, {});
+  uris_ = std::exchange(other.uris_, {});
   return *this;
 }
 
