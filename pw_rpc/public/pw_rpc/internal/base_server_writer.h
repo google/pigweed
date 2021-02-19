@@ -59,7 +59,7 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
   uint32_t method_id() const;
 
   // Closes the ServerWriter, if it is open.
-  void Finish(Status status = OkStatus());
+  Status Finish(Status status = OkStatus());
 
  protected:
   constexpr BaseServerWriter() : state_{kClosed} {}
@@ -70,9 +70,12 @@ class BaseServerWriter : public IntrusiveList<BaseServerWriter>::Item {
 
   constexpr const Channel::OutputBuffer& buffer() const { return response_; }
 
+  // Acquires a buffer into which to write a payload. The BaseServerWriter MUST
+  // be open when this is called!
   std::span<std::byte> AcquirePayloadBuffer();
 
-  // Releases the buffer, sending a packet with the specified payload.
+  // Releases the buffer, sending a packet with the specified payload. The
+  // BaseServerWriter MUST be open when this is called!
   Status ReleasePayloadBuffer(std::span<const std::byte> payload);
 
   // Releases the buffer without sending a packet.

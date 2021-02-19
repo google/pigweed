@@ -139,7 +139,7 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
   EXPECT_EQ(777, last_request.integer);
   EXPECT_EQ(2u, last_request.status_code);
   EXPECT_TRUE(last_writer.open());
-  last_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_writer.Finish());
 }
 
 }  // namespace

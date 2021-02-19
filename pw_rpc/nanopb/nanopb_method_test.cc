@@ -206,8 +206,24 @@ TEST(NanopbMethod, ServerWriter_WriteWhenClosed_ReturnsFailedPrecondition) {
 
   method.Invoke(context.get(), context.packet({}));
 
-  last_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_writer.Finish());
   EXPECT_TRUE(last_writer.Write({.value = 100}).IsFailedPrecondition());
+}
+
+TEST(NanopbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
+  const NanopbMethod& method =
+      std::get<2>(FakeService::kMethods).nanopb_method();
+  ServerContextForTest<FakeService> context(method);
+
+  method.Invoke(context.get(), context.packet({}));
+  ServerWriter<pw_rpc_test_TestResponse> new_writer = std::move(last_writer);
+
+  EXPECT_EQ(OkStatus(), new_writer.Write({.value = 100}));
+
+  EXPECT_EQ(Status::FailedPrecondition(), last_writer.Write({.value = 100}));
+  EXPECT_EQ(Status::FailedPrecondition(), last_writer.Finish());
+
+  EXPECT_EQ(OkStatus(), new_writer.Finish());
 }
 
 TEST(NanopbMethod,

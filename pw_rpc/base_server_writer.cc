@@ -14,6 +14,7 @@
 
 #include "pw_rpc/internal/base_server_writer.h"
 
+#include "pw_assert/assert.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"
@@ -45,9 +46,9 @@ BaseServerWriter& BaseServerWriter::operator=(BaseServerWriter&& other) {
 
 uint32_t BaseServerWriter::method_id() const { return call_.method().id(); }
 
-void BaseServerWriter::Finish(Status status) {
+Status BaseServerWriter::Finish(Status status) {
   if (!open()) {
-    return;
+    return Status::FailedPrecondition();
   }
 
   // If the ServerWriter implementer or user forgets to release an acquired
@@ -59,18 +60,16 @@ void BaseServerWriter::Finish(Status status) {
   Close();
 
   // Send a control packet indicating that the stream (and RPC) has terminated.
-  call_.channel().Send(Packet(PacketType::SERVER_STREAM_END,
-                              call_.channel().id(),
-                              call_.service().id(),
-                              method().id(),
-                              {},
-                              status));
+  return call_.channel().Send(Packet(PacketType::SERVER_STREAM_END,
+                                     call_.channel().id(),
+                                     call_.service().id(),
+                                     method().id(),
+                                     {},
+                                     status));
 }
 
 std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
-  if (!open()) {
-    return {};
-  }
+  PW_DCHECK(open());
 
   // Only allow having one active buffer at a time.
   if (response_.empty()) {
@@ -82,17 +81,12 @@ std::span<std::byte> BaseServerWriter::AcquirePayloadBuffer() {
 
 Status BaseServerWriter::ReleasePayloadBuffer(
     std::span<const std::byte> payload) {
-  if (!open()) {
-    return Status::FailedPrecondition();
-  }
+  PW_DCHECK(open());
   return call_.channel().Send(response_, ResponsePacket(payload));
 }
 
 Status BaseServerWriter::ReleasePayloadBuffer() {
-  if (!open()) {
-    return Status::FailedPrecondition();
-  }
-
+  PW_DCHECK(open());
   call_.channel().Release(response_);
   return OkStatus();
 }

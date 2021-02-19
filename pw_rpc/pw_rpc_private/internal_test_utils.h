@@ -112,7 +112,7 @@ class ServerContextForTest {
   }
 
   internal::ServerCall& get() { return context_; }
-  const auto& output() const { return output_; }
+  auto& output() { return output_; }
   TestServer& server() { return static_cast<TestServer&>(server_); }
 
  private:

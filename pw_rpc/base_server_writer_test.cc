@@ -104,7 +104,7 @@ TEST(ServerWriter, Finish_RemovesFromServer) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  writer.Finish();
+  EXPECT_EQ(OkStatus(), writer.Finish());
 
   auto& writers = context.server().writers();
   EXPECT_TRUE(writers.empty());
@@ -114,7 +114,7 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  writer.Finish();
+  EXPECT_EQ(OkStatus(), writer.Finish());
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
@@ -125,13 +125,22 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
   EXPECT_EQ(packet.status(), OkStatus());
 }
 
+TEST(ServerWriter, Finish_ReturnsStatusFromChannelSend) {
+  ServerContextForTest<TestService> context(TestService::method.method());
+  FakeServerWriter writer(context.get());
+  context.output().set_send_status(Status::Unauthenticated());
+
+  EXPECT_EQ(Status::Unauthenticated(), writer.Finish());
+}
+
 TEST(ServerWriter, Close) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
   ASSERT_TRUE(writer.open());
-  writer.Finish();
+  EXPECT_EQ(OkStatus(), writer.Finish());
   EXPECT_FALSE(writer.open());
+  EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
 }
 
 TEST(ServerWriter, Close_ReleasesBuffer) {
@@ -142,7 +151,7 @@ TEST(ServerWriter, Close_ReleasesBuffer) {
   auto buffer = writer.PayloadBuffer();
   buffer[0] = std::byte{0};
   EXPECT_FALSE(writer.output_buffer().empty());
-  writer.Finish();
+  EXPECT_EQ(OkStatus(), writer.Finish());
   EXPECT_FALSE(writer.open());
   EXPECT_TRUE(writer.output_buffer().empty());
 }
@@ -165,14 +174,12 @@ TEST(ServerWriter, Open_SendsPacketWithPayload) {
           encoded, context.output().sent_data().data(), result.value().size()));
 }
 
-TEST(ServerWriter, Closed_IgnoresPacket) {
+TEST(ServerWriter, Closed_IgnoresFinish) {
   ServerContextForTest<TestService> context(TestService::method.method());
   FakeServerWriter writer(context.get());
 
-  writer.Finish();
-
-  constexpr byte data[] = {byte{0xf0}, byte{0x0d}};
-  EXPECT_EQ(Status::FailedPrecondition(), writer.Write(data));
+  EXPECT_EQ(OkStatus(), writer.Finish());
+  EXPECT_EQ(Status::FailedPrecondition(), writer.Finish());
 }
 
 }  // namespace

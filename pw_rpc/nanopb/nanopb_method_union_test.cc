@@ -99,7 +99,7 @@ TEST(NanopbMethodUnion, Raw_CallsServerStreamingMethod) {
   method.Invoke(context.get(), context.packet(request));
 
   EXPECT_TRUE(last_raw_writer.open());
-  last_raw_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_raw_writer.Finish());
   EXPECT_EQ(context.output().sent_packet().type(),
             PacketType::SERVER_STREAM_END);
 }
@@ -141,7 +141,7 @@ TEST(NanopbMethodUnion, Nanopb_CallsServerStreamingMethod) {
   EXPECT_EQ(555, last_request.integer);
   EXPECT_TRUE(last_writer.open());
 
-  last_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_writer.Finish());
   EXPECT_EQ(context.output().sent_packet().type(),
             PacketType::SERVER_STREAM_END);
 }

@@ -72,6 +72,7 @@ struct {
   int64_t integer;
   uint32_t status_code;
 } last_request;
+
 RawServerWriter last_writer;
 
 void DecodeRawTestRequest(ConstByteSpan request) {
@@ -163,7 +164,7 @@ TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   EXPECT_EQ(777, last_request.integer);
   EXPECT_EQ(2u, last_request.status_code);
   EXPECT_TRUE(last_writer.open());
-  last_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_writer.Finish());
 }
 
 TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
@@ -208,11 +209,11 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
 
 TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
-  ServerContextForTest<FakeService, 16> context(method);
+  ServerContextForTest<FakeService> context(method);
 
   method.Invoke(context.get(), context.packet({}));
 
-  last_writer.Finish();
+  EXPECT_EQ(OkStatus(), last_writer.Finish());
   constexpr auto data = bytes::Array<0x0d, 0x06, 0xf0, 0x0d>();
   EXPECT_EQ(last_writer.Write(data), Status::FailedPrecondition());
 }
