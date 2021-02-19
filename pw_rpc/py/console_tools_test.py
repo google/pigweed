@@ -17,7 +17,7 @@
 import unittest
 from unittest import mock
 
-from pw_rpc.console_tools import Watchdog
+from pw_rpc.console_tools import CommandHelper, Watchdog
 
 
 class TestWatchdog(unittest.TestCase):
@@ -73,6 +73,25 @@ class TestWatchdog(unittest.TestCase):
 
         self._reset.assert_called_once_with()
         self._expiration.assert_called()
+
+
+class TestCommandHelper(unittest.TestCase):
+    def setUp(self) -> None:
+        self._commands = {'command_a': 'A', 'command_B': 'B'}
+        self._helper = CommandHelper(self._commands, 'The header',
+                                     'The footer')
+
+    def test_help_contents(self):
+        help_contents = self._helper.help()
+
+        self.assertTrue(help_contents.startswith('The header'))
+        self.assertIn('The footer', help_contents)
+
+        for cmd_name in self._commands:
+            self.assertIn(cmd_name, help_contents)
+
+    def test_repr_is_help(self):
+        self.assertEqual(repr(self._helper), self._helper.help())
 
 
 if __name__ == '__main__':
