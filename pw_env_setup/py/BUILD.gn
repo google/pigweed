@@ -20,6 +20,8 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_env_setup/__init__.py",
+    "pw_env_setup/apply_visitor.py",
+    "pw_env_setup/batch_visitor.py",
     "pw_env_setup/cargo_setup/__init__.py",
     "pw_env_setup/cipd_setup/__init__.py",
     "pw_env_setup/cipd_setup/update.py",
@@ -27,12 +29,17 @@ pw_python_package("py") {
     "pw_env_setup/colors.py",
     "pw_env_setup/env_setup.py",
     "pw_env_setup/environment.py",
+    "pw_env_setup/json_visitor.py",
+    "pw_env_setup/shell_visitor.py",
     "pw_env_setup/spinner.py",
     "pw_env_setup/virtualenv_setup/__init__.py",
     "pw_env_setup/virtualenv_setup/__main__.py",
     "pw_env_setup/virtualenv_setup/install.py",
     "pw_env_setup/windows_env_start.py",
   ]
-  tests = [ "environment_test.py" ]
+  tests = [
+    "environment_test.py",
+    "json_visitor_test.py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }

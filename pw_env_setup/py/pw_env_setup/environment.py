@@ -14,7 +14,6 @@
 """Stores the environment changes necessary for Pigweed."""
 
 import contextlib
-import json
 import os
 import re
 
@@ -27,11 +26,13 @@ try:
 except ImportError:
     from io import StringIO
 
+from . import apply_visitor
+from . import batch_visitor
+from . import json_visitor
+from . import shell_visitor
+
 # Disable super() warnings since this file must be Python 2 compatible.
 # pylint: disable=super-with-arguments
-
-# goto label written to the end of Windows batch files for exiting a script.
-_SCRIPT_END_LABEL = '_pw_end'
 
 
 class BadNameType(TypeError):
@@ -58,12 +59,18 @@ class UnexpectedAction(ValueError):
     pass
 
 
+class AcceptNotOverridden(TypeError):
+    pass
+
+
 class _Action(object):  # pylint: disable=useless-object-inheritance
     def unapply(self, env, orig_env):
         pass
 
-    def json(self, data):
-        pass
+    def accept(self, visitor):
+        del visitor
+        raise AcceptNotOverridden('accept() not overridden for {}'.format(
+            self.__class__.__name__))
 
     def write_deactivate(self,
                          outs,
@@ -118,43 +125,10 @@ class _VariableAction(_Action):
             env.pop(self.name, None)
 
 
-def _var_form(variable, windows=(os.name == 'nt')):
-    if windows:
-        return '%{}%'.format(variable)
-    return '${}'.format(variable)
-
-
 class Set(_VariableAction):
     """Set a variable."""
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        value = self.value
-        for var, replacement in replacements:
-            if var != self.name:
-                value = value.replace(replacement, _var_form(var, windows))
-
-        if windows:
-            outs.write('set {name}={value}\n'.format(name=self.name,
-                                                     value=value))
-        else:
-            outs.write('{name}="{value}"\nexport {name}\n'.format(
-                name=self.name, value=value))
-
-    def write_deactivate(self,
-                         outs,
-                         windows=(os.name == 'nt'),
-                         replacements=()):
-        del replacements  # Unused.
-
-        if windows:
-            outs.write('set {name}=\n'.format(name=self.name))
-        else:
-            outs.write('unset {name}\n'.format(name=self.name))
-
-    def apply(self, env):
-        env[self.name] = self.value
-
-    def json(self, data):
-        data['set'][self.name] = self.value
+    def accept(self, visitor):
+        visitor.visit_set(self)
 
 
 class Clear(_VariableAction):
@@ -164,76 +138,14 @@ class Clear(_VariableAction):
         kwargs['allow_empty_values'] = True
         super(Clear, self).__init__(*args, **kwargs)
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        del replacements  # Unused.
-        if windows:
-            outs.write('set {name}=\n'.format(**vars(self)))
-        else:
-            outs.write('unset {name}\n'.format(**vars(self)))
-
-    def apply(self, env):
-        if self.name in env:
-            del env[self.name]
-
-    def json(self, data):
-        data['set'][self.name] = None
-
-
-def _initialize_path_like_variable(data, name):
-    default = {'append': [], 'prepend': [], 'remove': []}
-    data['modify'].setdefault(name, default)
-
-
-def _remove_value_from_path(variable, value, pathsep):
-    return ('{variable}="$(echo "${variable}"'
-            ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
-            ' | sed "s|^{value}{pathsep}||g;"'
-            ' | sed "s|{pathsep}{value}$||g;"'
-            ')"\nexport {variable}\n'.format(variable=variable,
-                                             value=value,
-                                             pathsep=pathsep))
+    def accept(self, visitor):
+        visitor.visit_clear(self)
 
 
 class Remove(_VariableAction):
     """Remove a value from a PATH-like variable."""
-    def __init__(self, name, value, pathsep, *args, **kwargs):
-        super(Remove, self).__init__(name, value, *args, **kwargs)
-        self._pathsep = pathsep
-
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        value = self.value
-        for var, replacement in replacements:
-            if var != self.name:
-                value = value.replace(replacement, _var_form(var, windows))
-
-        if windows:
-            pass
-            # TODO(pwbug/231) This does not seem to be supported when value
-            # contains a %variable%. Disabling for now.
-            # outs.write(':: Remove\n::   {value}\n:: from\n::   {name}\n'
-            #            ':: before adding it back.\n'
-            #            'set {name}=%{name}:{value}{pathsep}=%\n'.format(
-            #              name=self.name, value=value, pathsep=self._pathsep))
-
-        else:
-            outs.write('# Remove \n#   {value}\n# from\n#   {value}\n# before '
-                       'adding it back.\n')
-            outs.write(_remove_value_from_path(self.name, value,
-                                               self._pathsep))
-
-    def apply(self, env):
-        env[self.name] = env[self.name].replace(
-            '{}{}'.format(self.value, self._pathsep), '')
-        env[self.name] = env[self.name].replace(
-            '{}{}'.format(self._pathsep, self.value), '')
-
-    def json(self, data):
-        _initialize_path_like_variable(data, self.name)
-        data['modify'][self.name]['remove'].append(self.value)
-        if self.value in data['modify'][self.name]['append']:
-            data['modify'][self.name]['append'].remove(self.value)
-        if self.value in data['modify'][self.name]['prepend']:
-            data['modify'][self.name]['prepend'].remove(self.value)
+    def accept(self, visitor):
+        visitor.visit_remove(self)
 
 
 class BadVariableValue(ValueError):
@@ -251,44 +163,12 @@ class Prepend(_VariableAction):
         super(Prepend, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        value = self.value
-        for var, replacement in replacements:
-            if var != self.name:
-                value = value.replace(replacement, _var_form(var, windows))
-        value = self._join(value, _var_form(self.name, windows))
-
-        if windows:
-            outs.write('set {name}={value}\n'.format(name=self.name,
-                                                     value=value))
-        else:
-            outs.write('{name}="{value}"\nexport {name}\n'.format(
-                name=self.name, value=value))
-
-    def write_deactivate(self,
-                         outs,
-                         windows=(os.name == 'nt'),
-                         replacements=()):
-        value = self.value
-        for var, replacement in replacements:
-            if var != self.name:
-                value = value.replace(replacement, _var_form(var, windows))
-
-        outs.write(
-            _remove_value_from_path(self.name, value, self._join.pathsep))
-
-    def apply(self, env):
-        env[self.name] = self._join(self.value, env.get(self.name, ''))
-
     def _check(self):
         super(Prepend, self)._check()
         _append_prepend_check(self)
 
-    def json(self, data):
-        _initialize_path_like_variable(data, self.name)
-        data['modify'][self.name]['prepend'].append(self.value)
-        if self.value in data['modify'][self.name]['remove']:
-            data['modify'][self.name]['remove'].remove(self.value)
+    def accept(self, visitor):
+        visitor.visit_prepend(self)
 
 
 class Append(_VariableAction):
@@ -297,44 +177,12 @@ class Append(_VariableAction):
         super(Append, self).__init__(name, value, *args, **kwargs)
         self._join = join
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        value = self.value
-        for var, repl_value in replacements:
-            if var != self.name:
-                value = value.replace(repl_value, _var_form(var, windows))
-        value = self._join(_var_form(self.name, windows), value)
-
-        if windows:
-            outs.write('set {name}={value}\n'.format(name=self.name,
-                                                     value=value))
-        else:
-            outs.write('{name}="{value}"\nexport {name}\n'.format(
-                name=self.name, value=value))
-
-    def write_deactivate(self,
-                         outs,
-                         windows=(os.name == 'nt'),
-                         replacements=()):
-        value = self.value
-        for var, replacement in replacements:
-            if var != self.name:
-                value = value.replace(replacement, _var_form(var, windows))
-
-        outs.write(
-            _remove_value_from_path(self.name, value, self._join.pathsep))
-
-    def apply(self, env):
-        env[self.name] = self._join(env.get(self.name, ''), self.value)
-
     def _check(self):
         super(Append, self)._check()
         _append_prepend_check(self)
 
-    def json(self, data):
-        _initialize_path_like_variable(data, self.name)
-        data['modify'][self.name]['append'].append(self.value)
-        if self.value in data['modify'][self.name]['remove']:
-            data['modify'][self.name]['remove'].remove(self.value)
+    def accept(self, visitor):
+        visitor.visit_append(self)
 
 
 class BadEchoValue(ValueError):
@@ -349,31 +197,10 @@ class Echo(_Action):
             raise BadEchoValue(value)
         super(Echo, self).__init__(*args, **kwargs)
         self.value = value
-        self._newline = newline
+        self.newline = newline
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        del replacements  # Unused.
-        # POSIX shells parse arguments and pass to echo, but Windows seems to
-        # pass the command line as is without parsing, so quoting is wrong.
-        if windows:
-            if self._newline:
-                if not self.value:
-                    outs.write('echo.\n')
-                else:
-                    outs.write('echo {}\n'.format(self.value))
-            else:
-                outs.write('<nul set /p="{}"\n'.format(self.value))
-        else:
-            # TODO(mohrr) use shlex.quote().
-            outs.write('if [ -z "${PW_ENVSETUP_QUIET:-}" ]; then\n')
-            if self._newline:
-                outs.write('  echo "{}"\n'.format(self.value))
-            else:
-                outs.write('  echo -n "{}"\n'.format(self.value))
-            outs.write('fi\n')
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_echo(self)
 
 
 class Comment(_Action):
@@ -382,14 +209,8 @@ class Comment(_Action):
         super(Comment, self).__init__(*args, **kwargs)
         self.value = value
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        del replacements  # Unused.
-        comment_char = '::' if windows else '#'
-        for line in self.value.splitlines():
-            outs.write('{} {}\n'.format(comment_char, line))
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_comment(self)
 
 
 class Command(_Action):
@@ -401,22 +222,8 @@ class Command(_Action):
         self.command = command
         self.exit_on_error = exit_on_error
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        del replacements  # Unused.
-        # TODO(mohrr) use shlex.quote here?
-        outs.write('{}\n'.format(' '.join(self.command)))
-        if not self.exit_on_error:
-            return
-
-        if windows:
-            outs.write(
-                'if %ERRORLEVEL% neq 0 goto {}\n'.format(_SCRIPT_END_LABEL))
-        else:
-            # Assume failing command produced relevant output.
-            outs.write('if [ "$?" -ne 0 ]; then\n  return 1\nfi\n')
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_command(self)
 
 
 class Doctor(Command):
@@ -427,93 +234,34 @@ class Doctor(Command):
             *args,
             **kwargs)
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        super_call = lambda: super(Doctor, self).write(
-            outs, windows=windows, replacements=replacements)
-
-        if windows:
-            outs.write('if "%PW_ACTIVATE_SKIP_CHECKS%"=="" (\n')
-            super_call()
-            outs.write(') else (\n')
-            outs.write('echo Skipping environment check because '
-                       'PW_ACTIVATE_SKIP_CHECKS is set\n')
-            outs.write(')\n')
-        else:
-            outs.write('if [ -z "$PW_ACTIVATE_SKIP_CHECKS" ]; then\n')
-            super_call()
-            outs.write('else\n')
-            outs.write('echo Skipping environment check because '
-                       'PW_ACTIVATE_SKIP_CHECKS is set\n')
-            outs.write('fi\n')
+    def accept(self, visitor):
+        visitor.visit_doctor(self)
 
 
 class BlankLine(_Action):
     """Write a blank line to the init script."""
-    def write(  # pylint: disable=no-self-use
-        self,
-        outs,
-        windows=(os.name == 'nt'),
-        replacements=()):
-        del replacements, windows  # Unused.
-        outs.write('\n')
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_blank_line(self)
 
 
 class Function(_Action):
     def __init__(self, name, body, *args, **kwargs):
         super(Function, self).__init__(*args, **kwargs)
-        self._name = name
-        self._body = body
+        self.name = name
+        self.body = body
 
-    def write(self, outs, windows=(os.name == 'nt'), replacements=()):
-        del replacements  # Unused.
-        if windows:
-            return
-
-        outs.write("""
-{name}() {{
-{body}
-}}
-        """.strip().format(name=self._name, body=self._body))
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_function(self)
 
 
 class Hash(_Action):
-    def write(  # pylint: disable=no-self-use
-        self,
-        outs,
-        windows=(os.name == 'nt'),
-        replacements=()):
-        del replacements  # Unused.
-
-        if windows:
-            return
-
-        outs.write('''
-# This should detect bash and zsh, which have a hash command that must be
-# called to get it to forget past commands. Without forgetting past
-# commands the $PATH changes we made may not be respected.
-if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
-  hash -r\n
-fi
-''')
-
-    def apply(self, env):
-        pass
+    def accept(self, visitor):
+        visitor.visit_hash(self)
 
 
 class Join(object):  # pylint: disable=useless-object-inheritance
     def __init__(self, pathsep=os.pathsep):
         self.pathsep = pathsep
-
-    def __call__(self, *args):
-        if len(args) == 1 and isinstance(args[0], (list, tuple)):
-            args = args[0]
-        return self.pathsep.join(args)
 
 
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
@@ -533,12 +281,12 @@ class Environment(object):
         self._pathsep = pathsep
         self._windows = windows
         self._allcaps = allcaps
-        self._replacements = []
+        self.replacements = []
         self._join = Join(pathsep)
         self._finalized = False
 
     def add_replacement(self, variable, value=None):
-        self._replacements.append((variable, value))
+        self.replacements.append((variable, value))
 
     def normalize_key(self, name):
         if self._allcaps:
@@ -643,49 +391,29 @@ class Environment(object):
 
         if not self._windows:
             buf = StringIO()
-            for action in self._actions:
-                action.write_deactivate(buf, windows=self._windows)
+            self.write_deactivate(buf)
             self._actions.append(Function('_pw_deactivate', buf.getvalue()))
             self._blankline()
 
-    def write(self, outs):
-        """Writes a shell init script to outs."""
-        if self._windows:
-            outs.write('@echo off\n')
-
-        # This is a tuple and not a dictionary because we don't need random
-        # access and order needs to be preserved.
-        replacements = tuple((key, self.get(key) if value is None else value)
-                             for key, value in self._replacements)
-
+    def accept(self, visitor):
         for action in self._actions:
-            action.write(outs,
-                         windows=self._windows,
-                         replacements=replacements)
-
-        if self._windows:
-            outs.write(':{}\n'.format(_SCRIPT_END_LABEL))
+            action.accept(visitor)
 
     def json(self, outs):
-        data = {
-            'modify': {},
-            'set': {},
-        }
+        json_visitor.JSONVisitor().serialize(self, outs)
 
-        for action in self._actions:
-            action.json(data)
-
-        json.dump(data, outs, indent=4, separators=(',', ': '))
-        outs.write('\n')
+    def write(self, outs):
+        if self._windows:
+            visitor = batch_visitor.BatchVisitor(pathsep=self._pathsep)
+        else:
+            visitor = shell_visitor.ShellVisitor(pathsep=self._pathsep)
+        visitor.serialize(self, outs)
 
     def write_deactivate(self, outs):
         if self._windows:
-            outs.write('@echo off\n')
-
-        for action in reversed(self._actions):
-            action.write_deactivate(outs,
-                                    windows=self._windows,
-                                    replacements=())
+            return
+        visitor = shell_visitor.DeactivateShellVisitor(pathsep=self._pathsep)
+        visitor.serialize(self, outs)
 
     @contextlib.contextmanager
     def __call__(self, export=True):
@@ -711,15 +439,20 @@ class Environment(object):
             else:
                 env = os.environ.copy()
 
-            for action in self._actions:
-                action.apply(env)
+            apply = apply_visitor.ApplyVisitor(pathsep=self._pathsep)
+            apply.apply(self, env)
 
             yield env
 
         finally:
             if export:
-                for action in self._actions:
-                    action.unapply(env=os.environ, orig_env=orig_env)
+                for key in set(os.environ):
+                    try:
+                        os.environ[key] = orig_env[key]
+                    except KeyError:
+                        del os.environ[key]
+                for key in set(orig_env) - set(os.environ):
+                    os.environ[key] = orig_env[key]
 
     def get(self, key, default=None):
         """Get the value of a variable within context of this object."""
