@@ -191,8 +191,11 @@ Status PrefixedEntryRingBufferMulti::InternalRead(Reader& reader,
 void PrefixedEntryRingBufferMulti::InternalPopFrontAll() {
   // Forcefully pop all readers. Find the slowest reader, which must have
   // the highest entry count, then pop all readers that have the same count.
+  //
+  // It is expected that InternalPopFrontAll is called only when there is
+  // something to pop from at least one reader. If no readers exist, or all
+  // readers are caught up, this function will assert.
   size_t entry_count = GetSlowestReader().entry_count;
-  // If no readers have any entries left to read, return immediately.
   PW_DASSERT(entry_count != 0);
   // Otherwise, pop the readers that have the largest value.
   for (Reader& reader : readers_) {
@@ -208,7 +211,8 @@ Reader& PrefixedEntryRingBufferMulti::GetSlowestReader() {
   // an existing reader). To determine the slowest reader, we consider three
   // scenarios:
   //
-  // In all below cases, R1 is the slowest reader:
+  // In all below cases, WH is the write-head, and R# are readers, with R1
+  // representing the slowest reader.
   // [[R1 R2 R3 WH]] => Right-hand writer, slowest reader is left-most reader.
   // [[WH R1 R2 R3]] => Left-hand writer, slowest reader is left-most reader.
   // [[R3 WH R1 R2]] => Middle-writer, slowest reader is left-most reader after

@@ -271,10 +271,14 @@ class PrefixedEntryRingBufferMulti {
 
   // Internal function to pop all of the slowest readers. This function may pop
   // multiple readers if multiple are slow.
+  //
+  // Precondition: This function requires that at least one reader is attached
+  // and has at least one entry to pop.
   void InternalPopFrontAll();
 
-  // Returns the slowest reader in the list. This function requires that at
-  // least one reader is attached.
+  // Returns the slowest reader in the list.
+  //
+  // Precondition: This function requires that at least one reader is attached.
   Reader& GetSlowestReader();
 
   // Get info struct with the size of the preamble and data chunk for the next
