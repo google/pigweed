@@ -19,9 +19,9 @@
   },
   {
     "_comment": "TODO(pwbug/93): Package Bazel for Windows.",
-    "path": "pigweed/third_party/bazel/${os=linux,mac}-${arch=amd64}",
+    "path": "fuchsia/third_party/bazel/${os=linux,mac}-${arch=amd64}",
     "tags": [
-      "version:3.2.0"
+      "version:4.0.0"
     ]
   },
   {
