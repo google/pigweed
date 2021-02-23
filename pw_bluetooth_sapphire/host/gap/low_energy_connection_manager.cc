@@ -181,8 +181,7 @@ void LowEnergyConnectionManager::Connect(PeerId peer_id, ConnectionResultCallbac
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
 
-  internal::LowEnergyConnectionRequest request(peer->identifier(), peer->address(),
-                                               std::move(callback), connection_options);
+  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options);
   request.AttachInspect(inspect_pending_requests_node_,
                         inspect_pending_requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
   pending_requests_.emplace(peer_id, std::move(request));
@@ -317,8 +316,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
   }
 
   LowEnergyConnectionOptions connection_options{.bondable_mode = bondable_mode};
-  internal::LowEnergyConnectionRequest request(peer->identifier(), peer->address(),
-                                               std::move(callback), connection_options);
+  internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options);
 
   peer->MutLe().SetConnectionState(Peer::ConnectionState::kInitializing);
 

@@ -79,7 +79,7 @@ adapter:
     low_energy_connection_manager:
         pending_requests:
             pending_request_0x0:
-                address
+                peer_id
                 callbacks
         outbound_connector:
             peer_id

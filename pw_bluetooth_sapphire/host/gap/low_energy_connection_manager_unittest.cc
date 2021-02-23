@@ -3143,12 +3143,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
   };
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
 
-  auto requests_matcher =
-      AllOf(NodeMatches(NameMatches("pending_requests")),
-            ChildrenMatch(ElementsAre(NodeMatches(
-                AllOf(NameMatches("pending_request_0x0"),
-                      PropertyList(UnorderedElementsAre(StringIs("address", kAddress0.ToString()),
-                                                        IntIs("callbacks", 1))))))));
+  auto requests_matcher = AllOf(
+      NodeMatches(NameMatches("pending_requests")),
+      ChildrenMatch(ElementsAre(NodeMatches(AllOf(
+          NameMatches("pending_request_0x0"),
+          PropertyList(UnorderedElementsAre(StringIs("peer_id", peer->identifier().ToString()),
+                                            IntIs("callbacks", 1))))))));
 
   auto outbound_connector_matcher_attempt_0 = AllOf(NodeMatches(AllOf(
       NameMatches("outbound_connector"),

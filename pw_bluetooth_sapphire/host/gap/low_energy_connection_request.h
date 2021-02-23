@@ -44,8 +44,7 @@ class LowEnergyConnectionRequest final {
   using ConnectionResult = fit::result<std::unique_ptr<LowEnergyConnectionHandle>, HostError>;
   using ConnectionResultCallback = fit::function<void(ConnectionResult)>;
 
-  LowEnergyConnectionRequest(PeerId peer_id, const DeviceAddress& address,
-                             ConnectionResultCallback first_callback,
+  LowEnergyConnectionRequest(PeerId peer_id, ConnectionResultCallback first_callback,
                              LowEnergyConnectionOptions connection_options);
   ~LowEnergyConnectionRequest() = default;
 
@@ -62,9 +61,8 @@ class LowEnergyConnectionRequest final {
   // Attach request inspect node as a child node of |parent| with the name |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  PeerId peer_id() const { return peer_id_; }
+  PeerId peer_id() const { return *peer_id_; }
 
-  const DeviceAddress& address() const { return *address_; }
   LowEnergyConnectionOptions connection_options() const { return connection_options_; }
 
   void set_discovery_session(LowEnergyDiscoverySessionPtr session) {
@@ -74,8 +72,7 @@ class LowEnergyConnectionRequest final {
   LowEnergyDiscoverySession* discovery_session() { return session_.get(); }
 
  private:
-  PeerId peer_id_;
-  StringInspectable<DeviceAddress> address_;
+  StringInspectable<PeerId> peer_id_;
   IntInspectable<std::list<ConnectionResultCallback>> callbacks_;
   LowEnergyConnectionOptions connection_options_;
   LowEnergyDiscoverySessionPtr session_;
