@@ -117,6 +117,11 @@ Entry {
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h"
 #define PW_TOKENIZER_STRING_TOKEN PW_TOKENIZER_65599_FIXED_LENGTH_128_HASH
 
+#elif PW_TOKENIZER_CFG_C_HASH_LENGTH == 256
+
+#include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_256_hash_macro.h"
+#define PW_TOKENIZER_STRING_TOKEN PW_TOKENIZER_65599_FIXED_LENGTH_256_HASH
+
 #else  // unsupported hash length
 
 // Only hash lengths for which there is a corresponding macro header
@@ -124,6 +129,9 @@ Entry {
 // be generated with the generate_hash_macro.py function. New macro headers must
 // be added to this file.
 #error "Unsupported value for PW_TOKENIZER_CFG_C_HASH_LENGTH"
+
+// Define a dummy macro to give clearer compilation errors.
+#define PW_TOKENIZER_STRING_TOKEN(unused) 0u
 
 #endif  // PW_TOKENIZER_CFG_C_HASH_LENGTH
 

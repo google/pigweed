@@ -161,7 +161,7 @@ class Database:
             if len(entries) > 1:
                 yield token, entries
 
-    def mark_removals(
+    def mark_removed(
             self,
             all_entries: Iterable[TokenizedStringEntry],
             removal_date: Optional[datetime] = None

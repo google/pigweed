@@ -198,10 +198,10 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self.assertEqual(db_with_custom_token.splitlines(),
                          self._csv.read_text().splitlines())
 
-    def test_mark_removals(self):
+    def test_mark_removed(self):
         self._csv.write_text(CSV_ALL_DOMAINS)
 
-        run_cli('mark_removals', '--database', self._csv, '--date',
+        run_cli('mark_removed', '--database', self._csv, '--date',
                 '1998-09-04', self._elf)
 
         # Add the removal date to the four tokens not in the default domain
@@ -223,7 +223,7 @@ class DatabaseCommandLineTest(unittest.TestCase):
         self._csv.write_text(CSV_ALL_DOMAINS)
 
         # Mark everything not in TEST_DOMAIN as removed.
-        run_cli('mark_removals', '--database', self._csv,
+        run_cli('mark_removed', '--database', self._csv,
                 f'{self._elf}#TEST_DOMAIN')
 
         # Delete all entries except those in TEST_DOMAIN.

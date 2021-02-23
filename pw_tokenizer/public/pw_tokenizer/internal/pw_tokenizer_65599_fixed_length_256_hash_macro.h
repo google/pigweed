@@ -20,14 +20,14 @@
 
 #include <stdint.h>
 
-// 128-character version of the tokenizer hash function.
+// 256-character version of the tokenizer hash function.
 //
 // The argument must be a string literal. It is concatenated with "" to ensure
 // that this is the case.
 //
 // clang-format off
 
-#define PW_TOKENIZER_65599_FIXED_LENGTH_128_HASH(str)                          \
+#define PW_TOKENIZER_65599_FIXED_LENGTH_256_HASH(str)                          \
   (uint32_t)(sizeof(str "") - 1 + /* The argument must be a string literal. */ \
              0x0001003fu * (uint8_t)str[0] +                                   \
              0x007e0f81u * (uint8_t)(  1 < sizeof(str) ? str[  1] : 0) +       \
@@ -156,6 +156,134 @@
              0x3170bf3fu * (uint8_t)(124 < sizeof(str) ? str[124] : 0) +       \
              0xe9fe1081u * (uint8_t)(125 < sizeof(str) ? str[125] : 0) +       \
              0xa6070fbfu * (uint8_t)(126 < sizeof(str) ? str[126] : 0) +       \
-             0xeb7be001u * (uint8_t)(127 < sizeof(str) ? str[127] : 0))
+             0xeb7be001u * (uint8_t)(127 < sizeof(str) ? str[127] : 0) +       \
+             0xd37d203fu * (uint8_t)(128 < sizeof(str) ? str[128] : 0) +       \
+             0x2c09ef81u * (uint8_t)(129 < sizeof(str) ? str[129] : 0) +       \
+             0xc5f2f0bfu * (uint8_t)(130 < sizeof(str) ? str[130] : 0) +       \
+             0xa7883f01u * (uint8_t)(131 < sizeof(str) ? str[131] : 0) +       \
+             0x7988813fu * (uint8_t)(132 < sizeof(str) ? str[132] : 0) +       \
+             0x69d6ce81u * (uint8_t)(133 < sizeof(str) ? str[133] : 0) +       \
+             0xda5dd1bfu * (uint8_t)(134 < sizeof(str) ? str[134] : 0) +       \
+             0x8ed59e01u * (uint8_t)(135 < sizeof(str) ? str[135] : 0) +       \
+             0xc492e23fu * (uint8_t)(136 < sizeof(str) ? str[136] : 0) +       \
+             0x4264ad81u * (uint8_t)(137 < sizeof(str) ? str[137] : 0) +       \
+             0x0447b2bfu * (uint8_t)(138 < sizeof(str) ? str[138] : 0) +       \
+             0xc063fd01u * (uint8_t)(139 < sizeof(str) ? str[139] : 0) +       \
+             0x559c433fu * (uint8_t)(140 < sizeof(str) ? str[140] : 0) +       \
+             0x54b38c81u * (uint8_t)(141 < sizeof(str) ? str[141] : 0) +       \
+             0x64b093bfu * (uint8_t)(142 < sizeof(str) ? str[142] : 0) +       \
+             0x5b335c01u * (uint8_t)(143 < sizeof(str) ? str[143] : 0) +       \
+             0xcda4a43fu * (uint8_t)(144 < sizeof(str) ? str[144] : 0) +       \
+             0x3fc36b81u * (uint8_t)(145 < sizeof(str) ? str[145] : 0) +       \
+             0x1c9874bfu * (uint8_t)(146 < sizeof(str) ? str[146] : 0) +       \
+             0x7e43bb01u * (uint8_t)(147 < sizeof(str) ? str[147] : 0) +       \
+             0xcdac053fu * (uint8_t)(148 < sizeof(str) ? str[148] : 0) +       \
+             0xa2944a81u * (uint8_t)(149 < sizeof(str) ? str[149] : 0) +       \
+             0x4cff55bfu * (uint8_t)(150 < sizeof(str) ? str[150] : 0) +       \
+             0x48951a01u * (uint8_t)(151 < sizeof(str) ? str[151] : 0) +       \
+             0xf6b2663fu * (uint8_t)(152 < sizeof(str) ? str[152] : 0) +       \
+             0x1c262981u * (uint8_t)(153 < sizeof(str) ? str[153] : 0) +       \
+             0x16e536bfu * (uint8_t)(154 < sizeof(str) ? str[154] : 0) +       \
+             0xd9277901u * (uint8_t)(155 < sizeof(str) ? str[155] : 0) +       \
+             0xe9b7c73fu * (uint8_t)(156 < sizeof(str) ? str[156] : 0) +       \
+             0x4b790881u * (uint8_t)(157 < sizeof(str) ? str[157] : 0) +       \
+             0x9b4a17bfu * (uint8_t)(158 < sizeof(str) ? str[158] : 0) +       \
+             0x4efad801u * (uint8_t)(159 < sizeof(str) ? str[159] : 0) +       \
+             0x47bc283fu * (uint8_t)(160 < sizeof(str) ? str[160] : 0) +       \
+             0xcf8ce781u * (uint8_t)(161 < sizeof(str) ? str[161] : 0) +       \
+             0xfb2df8bfu * (uint8_t)(162 < sizeof(str) ? str[162] : 0) +       \
+             0xc90f3701u * (uint8_t)(163 < sizeof(str) ? str[163] : 0) +       \
+             0xb1bf893fu * (uint8_t)(164 < sizeof(str) ? str[164] : 0) +       \
+             0x4761c681u * (uint8_t)(165 < sizeof(str) ? str[165] : 0) +       \
+             0x5790d9bfu * (uint8_t)(166 < sizeof(str) ? str[166] : 0) +       \
+             0x66649601u * (uint8_t)(167 < sizeof(str) ? str[167] : 0) +       \
+             0xc8c1ea3fu * (uint8_t)(168 < sizeof(str) ? str[168] : 0) +       \
+             0x51f7a581u * (uint8_t)(169 < sizeof(str) ? str[169] : 0) +       \
+             0xd172babfu * (uint8_t)(170 < sizeof(str) ? str[170] : 0) +       \
+             0x45faf501u * (uint8_t)(171 < sizeof(str) ? str[171] : 0) +       \
+             0x2dc34b3fu * (uint8_t)(172 < sizeof(str) ? str[172] : 0) +       \
+             0x8e4e8481u * (uint8_t)(173 < sizeof(str) ? str[173] : 0) +       \
+             0x89d39bbfu * (uint8_t)(174 < sizeof(str) ? str[174] : 0) +       \
+             0x86d25401u * (uint8_t)(175 < sizeof(str) ? str[175] : 0) +       \
+             0x81c3ac3fu * (uint8_t)(176 < sizeof(str) ? str[176] : 0) +       \
+             0x9b666381u * (uint8_t)(177 < sizeof(str) ? str[177] : 0) +       \
+             0xa1b37cbfu * (uint8_t)(178 < sizeof(str) ? str[178] : 0) +       \
+             0x47eab301u * (uint8_t)(179 < sizeof(str) ? str[179] : 0) +       \
+             0x65c30d3fu * (uint8_t)(180 < sizeof(str) ? str[180] : 0) +       \
+             0x183f4281u * (uint8_t)(181 < sizeof(str) ? str[181] : 0) +       \
+             0x3a125dbfu * (uint8_t)(182 < sizeof(str) ? str[182] : 0) +       \
+             0xa8441201u * (uint8_t)(183 < sizeof(str) ? str[183] : 0) +       \
+             0x7ac16e3fu * (uint8_t)(184 < sizeof(str) ? str[184] : 0) +       \
+             0xa3d92181u * (uint8_t)(185 < sizeof(str) ? str[185] : 0) +       \
+             0x73f03ebfu * (uint8_t)(186 < sizeof(str) ? str[186] : 0) +       \
+             0xc6de7101u * (uint8_t)(187 < sizeof(str) ? str[187] : 0) +       \
+             0x61becf3fu * (uint8_t)(188 < sizeof(str) ? str[188] : 0) +       \
+             0xdd340081u * (uint8_t)(189 < sizeof(str) ? str[189] : 0) +       \
+             0x704d1fbfu * (uint8_t)(190 < sizeof(str) ? str[190] : 0) +       \
+             0xc2b9d001u * (uint8_t)(191 < sizeof(str) ? str[191] : 0) +       \
+             0xbbbb303fu * (uint8_t)(192 < sizeof(str) ? str[192] : 0) +       \
+             0x634fdf81u * (uint8_t)(193 < sizeof(str) ? str[193] : 0) +       \
+             0x502900bfu * (uint8_t)(194 < sizeof(str) ? str[194] : 0) +       \
+             0xbad62f01u * (uint8_t)(195 < sizeof(str) ? str[195] : 0) +       \
+             0x29b6913fu * (uint8_t)(196 < sizeof(str) ? str[196] : 0) +       \
+             0xd52cbe81u * (uint8_t)(197 < sizeof(str) ? str[197] : 0) +       \
+             0x3483e1bfu * (uint8_t)(198 < sizeof(str) ? str[198] : 0) +       \
+             0xce338e01u * (uint8_t)(199 < sizeof(str) ? str[199] : 0) +       \
+             0x4cb0f23fu * (uint8_t)(200 < sizeof(str) ? str[200] : 0) +       \
+             0xd1ca9d81u * (uint8_t)(201 < sizeof(str) ? str[201] : 0) +       \
+             0x3e5dc2bfu * (uint8_t)(202 < sizeof(str) ? str[202] : 0) +       \
+             0x1bd1ed01u * (uint8_t)(203 < sizeof(str) ? str[203] : 0) +       \
+             0xc5aa533fu * (uint8_t)(204 < sizeof(str) ? str[204] : 0) +       \
+             0xf8297c81u * (uint8_t)(205 < sizeof(str) ? str[205] : 0) +       \
+             0x8eb6a3bfu * (uint8_t)(206 < sizeof(str) ? str[206] : 0) +       \
+             0xc2b14c01u * (uint8_t)(207 < sizeof(str) ? str[207] : 0) +       \
+             0x35a2b43fu * (uint8_t)(208 < sizeof(str) ? str[208] : 0) +       \
+             0xe7495b81u * (uint8_t)(209 < sizeof(str) ? str[209] : 0) +       \
+             0x468e84bfu * (uint8_t)(210 < sizeof(str) ? str[210] : 0) +       \
+             0xe1d1ab01u * (uint8_t)(211 < sizeof(str) ? str[211] : 0) +       \
+             0x3d9a153fu * (uint8_t)(212 < sizeof(str) ? str[212] : 0) +       \
+             0x3e2a3a81u * (uint8_t)(213 < sizeof(str) ? str[213] : 0) +       \
+             0x86e565bfu * (uint8_t)(214 < sizeof(str) ? str[214] : 0) +       \
+             0x98330a01u * (uint8_t)(215 < sizeof(str) ? str[215] : 0) +       \
+             0x7e90763fu * (uint8_t)(216 < sizeof(str) ? str[216] : 0) +       \
+             0x9bcc1981u * (uint8_t)(217 < sizeof(str) ? str[217] : 0) +       \
+             0x70bb46bfu * (uint8_t)(218 < sizeof(str) ? str[218] : 0) +       \
+             0x04d56901u * (uint8_t)(219 < sizeof(str) ? str[219] : 0) +       \
+             0x9985d73fu * (uint8_t)(220 < sizeof(str) ? str[220] : 0) +       \
+             0x9f2ef881u * (uint8_t)(221 < sizeof(str) ? str[221] : 0) +       \
+             0x251027bfu * (uint8_t)(222 < sizeof(str) ? str[222] : 0) +       \
+             0x46b8c801u * (uint8_t)(223 < sizeof(str) ? str[223] : 0) +       \
+             0x2f7a383fu * (uint8_t)(224 < sizeof(str) ? str[224] : 0) +       \
+             0xe752d781u * (uint8_t)(225 < sizeof(str) ? str[225] : 0) +       \
+             0xc4e408bfu * (uint8_t)(226 < sizeof(str) ? str[226] : 0) +       \
+             0x7cdd2701u * (uint8_t)(227 < sizeof(str) ? str[227] : 0) +       \
+             0xe16d993fu * (uint8_t)(228 < sizeof(str) ? str[228] : 0) +       \
+             0x1337b681u * (uint8_t)(229 < sizeof(str) ? str[229] : 0) +       \
+             0x7136e9bfu * (uint8_t)(230 < sizeof(str) ? str[230] : 0) +       \
+             0xc6428601u * (uint8_t)(231 < sizeof(str) ? str[231] : 0) +       \
+             0x505ffa3fu * (uint8_t)(232 < sizeof(str) ? str[232] : 0) +       \
+             0xc1dd9581u * (uint8_t)(233 < sizeof(str) ? str[233] : 0) +       \
+             0x4b08cabfu * (uint8_t)(234 < sizeof(str) ? str[234] : 0) +       \
+             0x41e8e501u * (uint8_t)(235 < sizeof(str) ? str[235] : 0) +       \
+             0x1d515b3fu * (uint8_t)(236 < sizeof(str) ? str[236] : 0) +       \
+             0x92447481u * (uint8_t)(237 < sizeof(str) ? str[237] : 0) +       \
+             0x7359abbfu * (uint8_t)(238 < sizeof(str) ? str[238] : 0) +       \
+             0x0ed04401u * (uint8_t)(239 < sizeof(str) ? str[239] : 0) +       \
+             0xe941bc3fu * (uint8_t)(240 < sizeof(str) ? str[240] : 0) +       \
+             0x236c5381u * (uint8_t)(241 < sizeof(str) ? str[241] : 0) +       \
+             0x0b298cbfu * (uint8_t)(242 < sizeof(str) ? str[242] : 0) +       \
+             0x4bf8a301u * (uint8_t)(243 < sizeof(str) ? str[243] : 0) +       \
+             0x55311d3fu * (uint8_t)(244 < sizeof(str) ? str[244] : 0) +       \
+             0x14553281u * (uint8_t)(245 < sizeof(str) ? str[245] : 0) +       \
+             0x33786dbfu * (uint8_t)(246 < sizeof(str) ? str[246] : 0) +       \
+             0x18620201u * (uint8_t)(247 < sizeof(str) ? str[247] : 0) +       \
+             0x021f7e3fu * (uint8_t)(248 < sizeof(str) ? str[248] : 0) +       \
+             0x03ff1181u * (uint8_t)(249 < sizeof(str) ? str[249] : 0) +       \
+             0x0d464ebfu * (uint8_t)(250 < sizeof(str) ? str[250] : 0) +       \
+             0x930c6101u * (uint8_t)(251 < sizeof(str) ? str[251] : 0) +       \
+             0x910cdf3fu * (uint8_t)(252 < sizeof(str) ? str[252] : 0) +       \
+             0x9169f081u * (uint8_t)(253 < sizeof(str) ? str[253] : 0) +       \
+             0xb9932fbfu * (uint8_t)(254 < sizeof(str) ? str[254] : 0) +       \
+             0xdaf7c001u * (uint8_t)(255 < sizeof(str) ? str[255] : 0))
 
 // clang-format on

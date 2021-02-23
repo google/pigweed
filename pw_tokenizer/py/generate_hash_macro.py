@@ -19,7 +19,7 @@ import os
 
 HASH_CONSTANT = 65599
 HASH_NAME = 'pw_tokenizer_65599_fixed_length'
-HASH_LENGTHS = 80, 96, 128
+HASH_LENGTHS = 80, 96, 128, 256
 
 FILE_HEADER = """\
 // Copyright {year} The Pigweed Authors

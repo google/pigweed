@@ -22,6 +22,7 @@
 #include "gtest/gtest.h"
 #include "pw_preprocessor/util.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_128_hash_macro.h"
+#include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_256_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h"
 #include "pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h"
 #include "pw_tokenizer_private/generated_hash_test_cases.h"
@@ -89,33 +90,28 @@ TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {
             StringLength("123456") + k2 * '1' + k3 * '2' + k4 * '3' + k5 * '4');
 }
 
+#define _CHECK_HASH_LENGTH(string, length)                                   \
+  static_assert(PwTokenizer65599FixedLengthHash(                             \
+                    std::string_view(string, sizeof(string) - 1), length) == \
+                    PW_TOKENIZER_65599_FIXED_LENGTH_##length##_HASH(string), \
+                #length "-byte hash mismatch!")
+
 // Use std::string_view so that \0 can appear in strings.
-#define TEST_SUPPORTED_HASHES(string_literal)                                  \
-  static_assert(                                                               \
-      PwTokenizer65599FixedLengthHash(                                         \
-          std::string_view(string_literal, sizeof(string_literal) - 1), 80) == \
-          PW_TOKENIZER_65599_FIXED_LENGTH_80_HASH(string_literal),             \
-      "80-byte hash mismatch!");                                               \
-  static_assert(                                                               \
-      PwTokenizer65599FixedLengthHash(                                         \
-          std::string_view(string_literal, sizeof(string_literal) - 1), 96) == \
-          PW_TOKENIZER_65599_FIXED_LENGTH_96_HASH(string_literal),             \
-      "96-byte hash mismatch!");                                               \
-  static_assert(                                                               \
-      PwTokenizer65599FixedLengthHash(                                         \
-          std::string_view(string_literal, sizeof(string_literal) - 1),        \
-          128) == PW_TOKENIZER_65599_FIXED_LENGTH_128_HASH(string_literal),    \
-      "128-byte hash mismatch!");                                              \
-  static_assert(                                                               \
-      PwTokenizer65599FixedLengthHash(                                         \
-          std::string_view(string_literal, sizeof(string_literal) - 1),        \
-          sizeof(string_literal) - 1) == Hash(string_literal),                 \
-      "Hash function mismatch!");                                              \
-  EXPECT_EQ(PwTokenizer65599FixedLengthHash(                                   \
-                std::string_view(string_literal, sizeof(string_literal) - 1),  \
-                sizeof(string_literal) - 1),                                   \
-            pw_tokenizer_65599FixedLengthHash(string_literal,                  \
-                                              sizeof(string_literal) - 1,      \
+#define TEST_SUPPORTED_HASHES(string_literal)                                 \
+  _CHECK_HASH_LENGTH(string_literal, 80);                                     \
+  _CHECK_HASH_LENGTH(string_literal, 96);                                     \
+  _CHECK_HASH_LENGTH(string_literal, 128);                                    \
+  _CHECK_HASH_LENGTH(string_literal, 256);                                    \
+  static_assert(                                                              \
+      PwTokenizer65599FixedLengthHash(                                        \
+          std::string_view(string_literal, sizeof(string_literal) - 1),       \
+          sizeof(string_literal) - 1) == Hash(string_literal),                \
+      "Hash function mismatch!");                                             \
+  EXPECT_EQ(PwTokenizer65599FixedLengthHash(                                  \
+                std::string_view(string_literal, sizeof(string_literal) - 1), \
+                sizeof(string_literal) - 1),                                  \
+            pw_tokenizer_65599FixedLengthHash(string_literal,                 \
+                                              sizeof(string_literal) - 1,     \
                                               sizeof(string_literal) - 1))
 
 TEST(HashMacro, Empty) { TEST_SUPPORTED_HASHES(""); }

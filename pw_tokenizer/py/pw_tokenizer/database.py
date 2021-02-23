@@ -296,8 +296,8 @@ def _handle_add(token_database, databases):
               len(token_database) - initial, token_database.path)
 
 
-def _handle_mark_removals(token_database, databases, date):
-    marked_removed = token_database.mark_removals(
+def _handle_mark_removed(token_database, databases, date):
+    marked_removed = token_database.mark_removed(
         (entry for entry in tokens.Database.merged(*databases).entries()
          if not entry.date_removed), date)
 
@@ -519,15 +519,15 @@ def _parse_args():
             'marked as removed.'))
     subparser.set_defaults(handler=_handle_add)
 
-    # The 'mark_removals' command marks removed entries to match a set of ELFs.
+    # The 'mark_removed' command marks removed entries to match a set of ELFs.
     subparser = subparsers.add_parser(
-        'mark_removals',
+        'mark_removed',
         parents=[option_db, option_tokens],
         help=(
             'Updates a database with tokenized strings from a set of strings. '
             'Strings not present in the set remain in the database but are '
             'marked as removed. New strings are NOT added.'))
-    subparser.set_defaults(handler=_handle_mark_removals)
+    subparser.set_defaults(handler=_handle_mark_removed)
     subparser.add_argument(
         '--date',
         type=year_month_day,

@@ -324,8 +324,8 @@ class TokenDatabaseTest(unittest.TestCase):
         self.assertEqual(len(db.entries()), 18)
         self.assertEqual(len(db.token_to_entries), 17)
 
-    def test_mark_removals(self):
-        """Tests that date_removed field is set by mark_removals."""
+    def test_mark_removed(self):
+        """Tests that date_removed field is set by mark_removed."""
         db = tokens.Database.from_strings(
             ['MILK', 'apples', 'oranges', 'CHEESE', 'pears'])
 
@@ -333,7 +333,7 @@ class TokenDatabaseTest(unittest.TestCase):
             all(entry.date_removed is None for entry in db.entries()))
         date_1 = datetime.datetime(1, 2, 3)
 
-        db.mark_removals(_entries('apples', 'oranges', 'pears'), date_1)
+        db.mark_removed(_entries('apples', 'oranges', 'pears'), date_1)
 
         self.assertEqual(
             db.token_to_entries[default_hash('MILK')][0].date_removed, date_1)
@@ -342,7 +342,7 @@ class TokenDatabaseTest(unittest.TestCase):
             date_1)
 
         now = datetime.datetime.now()
-        db.mark_removals(_entries('MILK', 'CHEESE', 'pears'))
+        db.mark_removed(_entries('MILK', 'CHEESE', 'pears'))
 
         # New strings are not added or re-added in mark_removed().
         self.assertGreaterEqual(
