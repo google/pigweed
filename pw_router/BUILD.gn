@@ -35,7 +35,6 @@ pw_source_set("static_router") {
   ]
   public = [ "public/pw_router/static_router.h" ]
   sources = [ "static_router.cc" ]
-  deps = [ dir_pw_log ]
 }
 
 pw_source_set("egress") {

@@ -17,8 +17,6 @@
 #include <algorithm>
 #include <mutex>
 
-#include "pw_log/log.h"
-
 namespace pw::router {
 
 Status StaticRouter::RoutePacket(ConstByteSpan packet) {
@@ -30,14 +28,12 @@ Status StaticRouter::RoutePacket(ConstByteSpan packet) {
     std::lock_guard lock(mutex_);
 
     if (!parser_.Parse(packet)) {
-      PW_LOG_ERROR("StaticRouter failed to parse packet; dropping");
       parser_errors_.Increment();
       return Status::DataLoss();
     }
 
     std::optional<uint32_t> result = parser_.GetDestinationAddress();
     if (!result.has_value()) {
-      PW_LOG_ERROR("StaticRouter packet does not have address; dropping");
       parser_errors_.Increment();
       return Status::DataLoss();
     }
@@ -49,20 +45,11 @@ Status StaticRouter::RoutePacket(ConstByteSpan packet) {
     return r.address == address;
   });
   if (route == routes_.end()) {
-    PW_LOG_ERROR("StaticRouter no route for address %u; dropping packet",
-                 static_cast<unsigned>(address));
     route_errors_.Increment();
     return Status::NotFound();
   }
 
-  PW_LOG_DEBUG("StaticRouter routing %u-byte packet to address %u",
-               static_cast<unsigned>(packet.size()),
-               static_cast<unsigned>(address));
-
   if (Status status = route->egress.SendPacket(packet); !status.ok()) {
-    PW_LOG_ERROR("StaticRouter egress error for address %u: %s",
-                 static_cast<unsigned>(address),
-                 status.str());
     egress_errors_.Increment();
     return Status::Unavailable();
   }
