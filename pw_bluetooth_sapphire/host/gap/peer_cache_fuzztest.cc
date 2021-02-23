@@ -5,8 +5,6 @@
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
 
-#include <functional>
-
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"

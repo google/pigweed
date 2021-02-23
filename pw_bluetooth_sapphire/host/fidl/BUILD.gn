@@ -1,0 +1,23 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("adapter_test_fixture") {
+  testonly = true
+
+  sources = [
+    "adapter_test_fixture.cc",
+    "adapter_test_fixture.h",
+  ]
+
+  public_deps = [
+    "//sdk/fidl/fuchsia.io",
+    "//sdk/lib/inspect/testing/cpp:cpp",
+    "//src/connectivity/bluetooth/core/bt-host/gap",
+    "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
+    "//zircon/public/lib/async-cpp",
+    "//zircon/public/lib/fbl",
+  ]
+}

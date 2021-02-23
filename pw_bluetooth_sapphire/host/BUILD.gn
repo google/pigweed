@@ -139,8 +139,6 @@ source_set("driver_tests") {
   testonly = true
 
   sources = [
-    "fidl/adapter_test_fixture.cc",
-    "fidl/adapter_test_fixture.h",
     "fidl/gatt_client_server_unittest.cc",
     "fidl/gatt_remote_service_server_unittest.cc",
     "fidl/helpers_unittest.cc",
@@ -153,6 +151,7 @@ source_set("driver_tests") {
 
   deps = [
     ":sources",
+    "fidl:adapter_test_fixture",
     "gap:testing",
     "gatt:testing",
     "testing:fake_controller",
@@ -160,6 +159,8 @@ source_set("driver_tests") {
     "//sdk/lib/inspect/testing/cpp:cpp",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
+    "//zircon/public/lib/async-cpp",
+    "//zircon/public/lib/fbl",
   ]
 }
 

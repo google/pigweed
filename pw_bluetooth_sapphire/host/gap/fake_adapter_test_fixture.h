@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "fake_adapter.h"
+#include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
 namespace bt::gap::testing {
 
