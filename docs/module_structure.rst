@@ -55,12 +55,14 @@ Example module structure
     zip_test.cc
 
     # Python files go into 'py/<module>/...'
-    py/setup.py     # All Python must be a Python module with setup.py
-    py/foo_test.py  # Tests go in py/ but outside of the Python module
+    py/BUILD.gn     # Python packages are declared in GN using pw_python_package
+    py/setup.py     # Python files are structured as standard Python packages
+    py/foo_test.py  # Tests go in py/ but outside of the Python package
     py/bar_test.py
     py/pw_foo/__init__.py
     py/pw_foo/__main__.py
     py/pw_foo/bar.py
+    py/pw_foo/py.typed  # Indicates that this package has type annotations
 
     # Go files go into 'go/...'
     go/...
@@ -341,6 +343,11 @@ This example shows two ways to configure a module in the GN build system.
     would have to be duplicated in every configurable module.
   * An optional config override header file would silently be excluded if the
     file path were accidentally misspelled.
+
+Python module structure
+-----------------------
+Python code is structured as described in the :ref:`docs-python-build-structure`
+section of :ref:`docs-python-build`.
 
 .. _docs-module-structure-facades:
 

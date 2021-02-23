@@ -11,6 +11,14 @@ As a modern embedded framework, Pigweed's goal is to collect these embedded use
 cases into a powerful and flexible build system, then extend it with support for
 modern software development practices.
 
+See :ref:`docs-python-build` for information about Python build automation with
+Pigweed.
+
+.. toctree::
+  :hidden:
+
+  python_build
+
 What's in a build system?
 =========================
 A quality build system provides a variety of features beyond compiling code.
@@ -60,8 +68,8 @@ See also
 
 * :ref:`module-pw_build-python-action`
 
-Python packaging
-----------------
+Python
+------
 Python is a favorite scripting language of many development teams, and here at
 Pigweed, we're no exception. Much of Pigweed's host-side tooling is written in
 Python. While Python works great for local development, problems can arise when

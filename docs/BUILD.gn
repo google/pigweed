@@ -129,6 +129,7 @@ pw_doc_gen("docs") {
     "build_system.rst",
     "index.rst",
     "module_guides.rst",
+    "python_build.rst",
     "targets.rst",
   ]
   output_directory = target_gen_dir

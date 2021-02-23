@@ -37,11 +37,8 @@ compiler defaults. (See Pigweed's ``//BUILDCONFIG.gn``)
 ``pw_build`` also provides several useful GN templates that are used throughout
 Pigweed.
 
-Templates
----------
-
 Target types
-^^^^^^^^^^^^
+------------
 .. code-block::
 
   import("$dir_pw_build/target_types.gni")
@@ -75,10 +72,20 @@ template for a project.
 All of the ``pw_*`` target type overrides accept any arguments, as they simply
 forward them through to the underlying target.
 
+Python packages
+---------------
+GN templates for :ref:`Python build automation <docs-python-build>` are
+described in :ref:`module-pw_build-python`.
+
+.. toctree::
+  :hidden:
+
+  python
+
 .. _module-pw_build-facade:
 
 pw_facade
-^^^^^^^^^
+---------
 In their simplest form, a :ref:`facade<docs-module-structure-facades>` is a GN
 build arg used to change a dependency at compile time. Pigweed targets configure
 these facades as needed.
@@ -106,7 +113,7 @@ The ``pw_facade`` template declares two targets:
 .. _module-pw_build-python-action:
 
 pw_python_action
-^^^^^^^^^^^^^^^^
+----------------
 The ``pw_python_action`` template is a convenience wrapper around ``action`` for
 running Python scripts. The main benefit it provides is resolution of GN target
 labels to compiled binary files. This allows Python scripts to be written
@@ -238,7 +245,7 @@ The following expressions are supported:
   }
 
 pw_input_group
-^^^^^^^^^^^^^^
+--------------
 ``pw_input_group`` defines a group of input files which are not directly
 processed by the build but are still important dependencies of later build
 steps. This is commonly used alongside metadata to propagate file dependencies
@@ -282,7 +289,7 @@ Targets depending on ``foo_metadata`` will rebuild when any of the ``.foo``
 files are modified.
 
 pw_zip
-^^^^^^
+------
 ``pw_zip`` is a target that allows users to zip up a set of input files and
 directories into a single output ``.zip`` file—a simple automation of a
 potentially repetitive task.
