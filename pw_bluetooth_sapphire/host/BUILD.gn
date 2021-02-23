@@ -175,6 +175,7 @@ fuzzers_package("fuzzers") {
   package_name = "bt-host-fuzzers"
   fuzzers = [
     "common:advertising_data_fuzzer",
+    "fidl:host_server_watch_peers_fuzzer",
     "gap:peer_cache_fuzzer",
     "hci:read_acl_data_packet_fuzzer",
     "hci:read_command_event_packet_fuzzer",
