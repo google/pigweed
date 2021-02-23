@@ -73,7 +73,8 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
     return;
   }
 
-  bt_log(TRACE, "gap-bredr", "opening l2cap channel on %#.4x for %s", psm, bt_str(peer_id()));
+  bt_log(INFO, "gap-bredr", "opening l2cap channel on psm %#.4x (peer: %s)", psm,
+         bt_str(peer_id()));
   domain_->OpenL2capChannel(link().handle(), psm, params, std::move(cb));
 }
 

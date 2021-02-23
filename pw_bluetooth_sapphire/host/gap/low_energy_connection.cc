@@ -84,7 +84,8 @@ std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef(
 
   refs_.Mutable()->insert(conn_ref.get());
 
-  bt_log(DEBUG, "gap-le", "added ref (handle %#.4x, count: %lu)", handle(), ref_count());
+  bt_log(DEBUG, "gap-le", "added ref (peer: %s, handle %#.4x, count: %lu)", bt_str(peer_id_),
+         handle(), ref_count());
 
   return conn_ref;
 }
@@ -94,7 +95,8 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
 
   size_t res = refs_.Mutable()->erase(ref);
   ZX_ASSERT_MSG(res == 1u, "DropRef called with wrong connection reference");
-  bt_log(DEBUG, "gap-le", "dropped ref (handle: %#.4x, count: %lu)", handle(), ref_count());
+  bt_log(DEBUG, "gap-le", "dropped ref (peer: %s, handle: %#.4x, count: %lu)", bt_str(peer_id_),
+         handle(), ref_count());
 }
 
 // Registers this connection with L2CAP and initializes the fixed channel
@@ -117,8 +119,10 @@ void LowEnergyConnection::InitializeFixedChannels() {
       return;
     }
 
-    bt_log(DEBUG, "gap-le", "received security upgrade request on L2CAP channel (peer: %s)",
-           bt_str(self->peer_id_));
+    bt_log(
+        INFO, "gap-le",
+        "received security upgrade request on L2CAP channel (level: %s, peer: %s, handle: %#.4x)",
+        sm::LevelToString(level), bt_str(self->peer_id_), handle);
     ZX_ASSERT(self->handle() == handle);
     self->OnSecurityRequest(level, std::move(cb));
   };
@@ -133,8 +137,10 @@ void LowEnergyConnection::InitializeFixedChannels() {
 // Used to respond to protocol/service requests for increased security.
 void LowEnergyConnection::OnSecurityRequest(sm::SecurityLevel level, sm::StatusCallback cb) {
   ZX_ASSERT(sm_);
-  sm_->UpgradeSecurity(level, [cb = std::move(cb)](sm::Status status, const auto& sp) {
-    bt_log(INFO, "gap-le", "pairing status: %s, properties: %s", bt_str(status), bt_str(sp));
+  sm_->UpgradeSecurity(level, [cb = std::move(cb), peer_id = peer_id_, handle = handle()](
+                                  sm::Status status, const auto& sp) {
+    bt_log(INFO, "gap-le", "pairing status: %s, properties: %s (peer: %s, handle: %#.4x)",
+           bt_str(status), bt_str(sp), bt_str(peer_id), handle);
     cb(status);
   });
 }
@@ -223,11 +229,12 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
     fbl::RefPtr<l2cap::Channel> att, fbl::RefPtr<l2cap::Channel> smp,
     LowEnergyConnectionOptions connection_options) {
   if (!att || !smp) {
-    bt_log(DEBUG, "gap-le", "link was closed before opening fixed channels");
+    bt_log(INFO, "gap-le", "link was closed before opening fixed channels (peer: %s)",
+           bt_str(peer_id_));
     return;
   }
 
-  bt_log(DEBUG, "gap-le", "ATT and SMP fixed channels open");
+  bt_log(DEBUG, "gap-le", "ATT and SMP fixed channels open (peer: %s)", bt_str(peer_id_));
 
   // Obtain existing pairing data, if any.
   std::optional<sm::LTK> ltk;
@@ -257,7 +264,8 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
   // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
   // will start encryption if the local device is the link-layer master.
   if (ltk) {
-    bt_log(INFO, "gap-le", "assigning existing LTK");
+    bt_log(INFO, "gap-le", "assigning existing LTK (peer: %s, handle: %#.4x)", bt_str(peer_id_),
+           handle());
     sm_->AssignLongTermKey(*ltk);
   }
 
@@ -266,7 +274,8 @@ void LowEnergyConnection::OnL2capFixedChannelsOpened(
 
 void LowEnergyConnection::OnNewLEConnectionParams(
     const hci::LEPreferredConnectionParameters& params) {
-  bt_log(DEBUG, "gap-le", "conn. parameters received (handle: %#.4x)", link_->handle());
+  bt_log(INFO, "gap-le", "LE connection parameters received (peer: %s, handle: %#.4x)",
+         bt_str(peer_id_), link_->handle());
 
   ZX_ASSERT(peer_);
 
@@ -316,8 +325,10 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   if (!status.is_success()) {
     if (status.protocol_error() == hci::StatusCode::kUnsupportedRemoteFeature) {
       // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
-      bt_log(TRACE, "gap-le",
-             "peer does not support HCI LE Connection Update command, trying l2cap request");
+      bt_log(
+          INFO, "gap-le",
+          "peer does not support HCI LE Connection Update command, trying l2cap request (peer: %s)",
+          bt_str(peer_id_));
       L2capRequestConnectionParameterUpdate(params);
     }
     return;
@@ -329,7 +340,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
     // Retry connection parameter update with l2cap if the peer doesn't support LL
     // procedure.
     if (status == hci::StatusCode::kUnsupportedRemoteFeature) {
-      bt_log(WARN, "gap-le",
+      bt_log(INFO, "gap-le",
              "peer does not support HCI LE Connection Update command, trying l2cap request "
              "(peer: %s)",
              bt_str(peer_id_));
@@ -343,11 +354,19 @@ void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
   ZX_ASSERT_MSG(link_->role() == hci::Connection::Role::kSlave,
                 "tried to send l2cap connection parameter update request as central");
 
-  bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request");
+  bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request (peer: %s)",
+         bt_str(peer_id_));
 
-  auto response_cb = [handle = handle()](bool accepted) {
-    bt_log(DEBUG, "gap-le", "peer %s l2cap connection parameter update request (handle: %#.4x)",
-           accepted ? "accepted" : "rejected", handle);
+  auto response_cb = [handle = handle(), peer_id = peer_id_](bool accepted) {
+    if (accepted) {
+      bt_log(DEBUG, "gap-le",
+             "peer accepted l2cap connection parameter update request (peer: %s, handle: %#.4x)",
+             bt_str(peer_id), handle);
+    } else {
+      bt_log(INFO, "gap-le",
+             "peer rejected l2cap connection parameter update request (peer: %s, handle: %#.4x)",
+             bt_str(peer_id), handle);
+    }
   };
 
   // TODO(fxbug.dev/49717): don't send request until after kLEConnectionParameterTimeout of an
@@ -407,8 +426,8 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
   if (payload->status != hci::StatusCode::kSuccess) {
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
-           "(status: %#.2x, handle: %#.4x)",
-           payload->status, handle);
+           "(peer: %s, status: %#.2x, handle: %#.4x)",
+           bt_str(peer_id_), payload->status, handle);
 
     return;
   }
@@ -498,11 +517,11 @@ void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) 
   // means we'll remain encrypted with the STK without creating a bond and
   // reinitiate pairing when we reconnect in the future.
   if (!ltk.has_value()) {
-    bt_log(INFO, "gap-le", "temporarily paired with peer (id: %s)", bt_str(peer_id_));
+    bt_log(INFO, "gap-le", "temporarily paired with peer (peer: %s)", bt_str(peer_id_));
     return;
   }
 
-  bt_log(INFO, "gap-le", "new %s pairing data [%s%s%s%s%s%sid: %s]",
+  bt_log(INFO, "gap-le", "new %s pairing data: [%s%s%s%s%s%s] (peer: %s)",
          ltk->security().secure_connections() ? "secure connections" : "legacy",
          pairing_data.peer_ltk ? "peer_ltk " : "", pairing_data.local_ltk ? "local_ltk " : "",
          pairing_data.irk ? "irk " : "", pairing_data.cross_transport_key ? "ct_key " : "",
@@ -517,7 +536,8 @@ void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) 
 }
 
 void LowEnergyConnection::OnPairingComplete(sm::Status status) {
-  bt_log(DEBUG, "gap-le", "pairing complete: %s", status.ToString().c_str());
+  bt_log(INFO, "gap-le", "pairing complete (status: %s, peer: %s)", bt_str(status),
+         bt_str(peer_id_));
 
   auto delegate = conn_mgr_->pairing_delegate();
   if (delegate) {
@@ -528,11 +548,13 @@ void LowEnergyConnection::OnPairingComplete(sm::Status status) {
 void LowEnergyConnection::OnAuthenticationFailure(hci::Status status) {
   // TODO(armansito): Clear bonding data from the remote peer cache as any
   // stored link key is not valid.
-  bt_log(ERROR, "gap-le", "link layer authentication failed: %s", status.ToString().c_str());
+  bt_log(WARN, "gap-le", "link layer authentication failed (status: %s, peer: %s)", bt_str(status),
+         bt_str(peer_id_));
 }
 
 void LowEnergyConnection::OnNewSecurityProperties(const sm::SecurityProperties& sec) {
-  bt_log(DEBUG, "gap-le", "new link security properties: %s", sec.ToString().c_str());
+  bt_log(INFO, "gap-le", "new link security properties (properties: %s, peer: %s)", bt_str(sec),
+         bt_str(peer_id_));
   // Update the data plane with the correct link security level.
   l2cap_->AssignLinkSecurityProperties(link_->handle(), sec);
 }
@@ -543,7 +565,8 @@ std::optional<sm::IdentityInfo> LowEnergyConnection::OnIdentityInformationReques
     return std::nullopt;
   }
 
-  bt_log(DEBUG, "gap-le", "will distribute local identity information");
+  bt_log(DEBUG, "gap-le", "will distribute local identity information (peer: %s)",
+         bt_str(peer_id_));
   sm::IdentityInfo id_info;
   id_info.irk = *conn_mgr_->local_address_delegate()->irk();
   id_info.address = conn_mgr_->local_address_delegate()->identity_address();
@@ -552,11 +575,14 @@ std::optional<sm::IdentityInfo> LowEnergyConnection::OnIdentityInformationReques
 }
 
 void LowEnergyConnection::ConfirmPairing(ConfirmCallback confirm) {
-  bt_log(DEBUG, "gap-le", "pairing delegate request for pairing confirmation w/ no passkey");
+  bt_log(INFO, "gap-le",
+         "pairing delegate request for pairing confirmation w/ no passkey (peer: %s)",
+         bt_str(peer_id_));
 
   auto* delegate = conn_mgr_->pairing_delegate();
   if (!delegate) {
-    bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
+    bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate! (peer: %s)",
+           bt_str(peer_id_));
     confirm(false);
   } else {
     delegate->ConfirmPairing(peer_id_, std::move(confirm));
@@ -565,8 +591,8 @@ void LowEnergyConnection::ConfirmPairing(ConfirmCallback confirm) {
 
 void LowEnergyConnection::DisplayPasskey(uint32_t passkey, sm::Delegate::DisplayMethod method,
                                          ConfirmCallback confirm) {
-  bt_log(TRACE, "gap-le", "pairing delegate request for %s",
-         sm::util::DisplayMethodToString(method).c_str());
+  bt_log(INFO, "gap-le", "pairing delegate request (method: %s, peer: %s)",
+         sm::util::DisplayMethodToString(method).c_str(), bt_str(peer_id_));
 
   auto* delegate = conn_mgr_->pairing_delegate();
   if (!delegate) {
@@ -578,11 +604,12 @@ void LowEnergyConnection::DisplayPasskey(uint32_t passkey, sm::Delegate::Display
 }
 
 void LowEnergyConnection::RequestPasskey(PasskeyResponseCallback respond) {
-  bt_log(TRACE, "gap-le", "pairing delegate request for passkey entry");
+  bt_log(INFO, "gap-le", "pairing delegate request for passkey entry (peer: %s)", bt_str(peer_id_));
 
   auto* delegate = conn_mgr_->pairing_delegate();
   if (!delegate) {
-    bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
+    bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate! (peer: %s)",
+           bt_str(peer_id_));
     respond(-1);
   } else {
     delegate->RequestPasskey(peer_id_, std::move(respond));

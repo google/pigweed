@@ -35,7 +35,7 @@ void Interrogator::Interrogation::Complete(hci::Status status) {
     return;
   }
 
-  bt_log(TRACE, "gap", "interrogation completed (status: %s, peer id: %s)", bt_str(status),
+  bt_log(DEBUG, "gap", "interrogation completed (status: %s, peer: %s)", bt_str(status),
          bt_str(peer_id_));
 
   result_cb_(status);

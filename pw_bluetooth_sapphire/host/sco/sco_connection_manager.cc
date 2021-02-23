@@ -180,6 +180,9 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
+  bt_log(INFO, "gap-bredr", "accepting incoming (e)SCO connection from %s (peer: %s)",
+         bt_str(params.bd_addr), bt_str(peer_id_));
+
   auto accept =
       hci::CommandPacket::New(hci::kEnhancedAcceptSynchronousConnectionRequest,
                               sizeof(hci::EnhancedAcceptSynchronousConnectionRequestCommandParams));

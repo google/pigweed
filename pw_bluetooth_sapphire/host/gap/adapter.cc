@@ -1029,8 +1029,12 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
   ZX_DEBUG_ASSERT(peer);
   ZX_DEBUG_ASSERT(peer->le());
 
+  PeerId peer_id = peer->identifier();
+
   if (!peer->le()->should_auto_connect()) {
-    bt_log(TRACE, "gap", "ignoring auto-connection (peer->should_auto_connect() is false)");
+    bt_log(INFO, "gap",
+           "ignoring auto-connection (peer->should_auto_connect() is false) (peer: %s)",
+           bt_str(peer_id));
     return;
   }
 
@@ -1038,23 +1042,22 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   le_connection_manager_->Connect(
-      peer->identifier(),
-      [self](auto result) {
+      peer_id,
+      [self, peer_id](auto result) {
         if (!self) {
           bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
           return;
         }
 
         if (result.is_error()) {
-          bt_log(INFO, "gap", "failed to auto-connect (error: %s)",
+          bt_log(INFO, "gap", "failed to auto-connect (peer: %s, error: %s)", bt_str(peer_id),
                  HostErrorToString(result.error()).c_str());
           return;
         }
 
         auto conn = result.take_value();
         ZX_ASSERT(conn);
-        PeerId id = conn->peer_identifier();
-        bt_log(INFO, "gap", "peer auto-connected (id: %s)", bt_str(id));
+        bt_log(INFO, "gap", "peer auto-connected (peer: %s)", bt_str(peer_id));
         if (self->auto_conn_cb_) {
           self->auto_conn_cb_(std::move(conn));
         }

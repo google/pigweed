@@ -117,7 +117,7 @@ void BrEdrDiscoveryManager::RequestDiscovery(DiscoveryCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
-  bt_log(DEBUG, "gap-bredr", "RequestDiscovery");
+  bt_log(INFO, "gap-bredr", "RequestDiscovery");
 
   // If we're already waiting on a callback, then scanning is already starting.
   // Queue this to create a session when the scanning starts.
@@ -340,7 +340,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   }
   Peer* peer = cache_->FindById(id);
   if (!peer) {
-    bt_log(WARN, "gap-bredr", "cannot request name, unknown id: %s", bt_str(id));
+    bt_log(WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
   auto packet =
@@ -391,7 +391,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   ZX_DEBUG_ASSERT(callback);
 
-  bt_log(DEBUG, "gap-bredr", "RequestDiscoverable");
+  bt_log(INFO, "gap-bredr", "RequestDiscoverable");
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, cb = callback.share()](const auto& status) {
@@ -418,7 +418,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
 
 void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
-  bt_log(TRACE, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
+  bt_log(DEBUG, "gap-bredr", "%s inquiry scan", (enable ? "enabling" : "disabling"));
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
@@ -547,9 +547,10 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
 }
 
 void BrEdrDiscoveryManager::RemoveDiscoverableSession(BrEdrDiscoverableSession* session) {
-  bt_log(TRACE, "gap-bredr", "removing discoverable session");
+  bt_log(DEBUG, "gap-bredr", "removing discoverable session");
   discoverable_.erase(session);
   if (discoverable_.empty()) {
+    bt_log(INFO, "gap-bredr", "removed last discoverable session, enabling inquiry scan");
     SetInquiryScan();
   }
 }

@@ -112,7 +112,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     if (!hci_is_error(event, TRACE, "gap-le", "failed to update random address")) {
       needs_refresh_ = false;
       random_ = random_addr;
-      bt_log(DEBUG, "gap-le", "random address updated: %s", random_->ToString().c_str());
+      bt_log(INFO, "gap-le", "random address updated: %s", bt_str(*random_));
 
       // Set the new random address to expire in kPrivateAddressTimeout.
       random_address_expiry_task_.set_handler([this](auto*, auto*, zx_status_t status) {

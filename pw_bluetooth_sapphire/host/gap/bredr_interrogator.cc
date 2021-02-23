@@ -187,8 +187,8 @@ void BrEdrInterrogator::ReadRemoteExtendedFeatures(InterrogationRefPtr interroga
     peer->SetFeaturePage(params.page_number, le64toh(params.lmp_features));
 
     if (params.page_number != page) {
-      bt_log(INFO, "gap-bredr", "requested page %u and got page %u, giving up", page,
-             params.page_number);
+      bt_log(INFO, "gap-bredr", "requested page %u and got page %u, giving up (peer: %s)", page,
+             params.page_number, bt_str(interrogation->peer_id()));
       peer->set_last_page_number(0);
       return;
     }

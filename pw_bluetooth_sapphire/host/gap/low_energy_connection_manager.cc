@@ -231,7 +231,8 @@ bool LowEnergyConnectionManager::Disconnect(PeerId peer_id) {
   // appropriately.
   peer_cache_->SetAutoConnectBehaviorForIntentionalDisconnect(peer_id);
 
-  bt_log(INFO, "gap-le", "disconnecting link: %s", bt_str(*conn->link()));
+  bt_log(INFO, "gap-le", "disconnecting (peer: %s, link: %s)", bt_str(conn->peer_id()),
+         bt_str(*conn->link()));
   CleanUpConnection(std::move(conn));
   return true;
 }
@@ -240,11 +241,12 @@ void LowEnergyConnectionManager::Pair(PeerId peer_id, sm::SecurityLevel pairing_
                                       sm::BondableMode bondable_mode, sm::StatusCallback cb) {
   auto iter = connections_.find(peer_id);
   if (iter == connections_.end()) {
-    bt_log(WARN, "gap-le", "cannot pair: peer not connected (id: %s)", bt_str(peer_id));
+    bt_log(WARN, "gap-le", "cannot pair: peer not connected (peer: %s)", bt_str(peer_id));
     cb(bt::sm::Status(bt::HostError::kNotFound));
     return;
   }
-  bt_log(DEBUG, "gap-le", "pairing with security level: %d", pairing_level);
+  bt_log(INFO, "gap-le", "pairing with security level: %d (peer: %s)", pairing_level,
+         bt_str(peer_id));
   iter->second->UpgradeSecurity(pairing_level, bondable_mode, std::move(cb));
 }
 
@@ -291,17 +293,19 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(hci::ConnectionPtr 
                                                              sm::BondableMode bondable_mode,
                                                              ConnectionResultCallback callback) {
   ZX_ASSERT(link);
-  bt_log(INFO, "gap-le", "new remote-initiated link (local addr: %s): %s",
-         bt_str(link->local_address()), bt_str(*link));
 
   Peer* peer = UpdatePeerWithLink(*link);
   auto peer_id = peer->identifier();
+
+  bt_log(INFO, "gap-le", "new remote-initiated link (peer: %s, local addr: %s, link: %s)",
+         bt_str(peer_id), bt_str(link->local_address()), bt_str(*link));
 
   // TODO(fxbug.dev/653): Use own address when storing the connection.
   // Currently this will refuse the connection and disconnect the link if |peer|
   // is already connected to us by a different local address.
   if (connections_.find(peer_id) != connections_.end()) {
-    bt_log(INFO, "gap-le", "multiple links from peer; connection refused (peer: %s)",
+    bt_log(INFO, "gap-le",
+           "multiple links from peer; remote-initiated connection refused (peer: %s)",
            bt_str(peer_id));
     callback(fit::error(HostError::kFailed));
     return;
@@ -360,7 +364,8 @@ void LowEnergyConnectionManager::ReleaseReference(LowEnergyConnectionHandle* con
   auto conn = std::move(iter->second);
   connections_.erase(iter);
 
-  bt_log(INFO, "gap-le", "all refs dropped on connection: %s", conn->link()->ToString().c_str());
+  bt_log(INFO, "gap-le", "all refs dropped on connection (link: %s, peer: %s)",
+         bt_str(*conn->link()), bt_str(conn->peer_id()));
   CleanUpConnection(std::move(conn));
 }
 
@@ -395,7 +400,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
       return;
     }
 
-    bt_log(DEBUG, "gap-le", "deferring connection attempt for peer: %s", bt_str(peer_id));
+    bt_log(WARN, "gap-le", "deferring connection attempt (peer: %s)", bt_str(peer_id));
 
     // TODO(fxbug.dev/908): For now the requests for this peer won't complete
     // until the next peer discovery. This will no longer be an issue when we
@@ -482,7 +487,9 @@ bool LowEnergyConnectionManager::InitializeConnection(
   // peer. This should change once this has more context on the local
   // destination for remote initiated connections.
   if (connections_.find(peer_id) != connections_.end()) {
-    bt_log(DEBUG, "gap-le", "multiple links from peer; connection refused");
+    bt_log(INFO, "gap-le",
+           "cannot initialize multiple links to same peer; connection refused (peer: %s)",
+           bt_str(peer_id));
     // Notify request that duplicate connection could not be initialized.
     request.NotifyCallbacks(fit::error(HostError::kFailed));
     // Do not update peer state, as there is another active LE connection in connections_ for this
@@ -551,7 +558,7 @@ void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connect
   // connections list.
   auto iter = FindConnection(handle);
   if (iter == connections_.end()) {
-    bt_log(TRACE, "gap-le", "disconnect from unknown connection handle: %#.4x", handle);
+    bt_log(WARN, "gap-le", "disconnect from unknown connection handle: %#.4x", handle);
     return;
   }
 
@@ -560,7 +567,8 @@ void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connect
   auto conn = std::move(iter->second);
   connections_.erase(iter);
 
-  bt_log(INFO, "gap-le", "peer %s disconnected (handle: %#.4x)", bt_str(conn->peer_id()), handle);
+  bt_log(INFO, "gap-le", "peer disconnected (peer: %s, handle: %#.4x)", bt_str(conn->peer_id()),
+         handle);
 
   CleanUpConnection(std::move(conn));
 }
