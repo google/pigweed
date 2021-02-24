@@ -204,6 +204,11 @@ class _Filter(NamedTuple):
                 and not any(exp.search(path) for exp in self.exclude))
 
 
+def _print_ui(*args) -> None:
+    """Prints to stdout and flushes to stay in sync with logs on stderr."""
+    print(*args, flush=True)
+
+
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
     def __init__(self, root: Path, repos: Sequence[Path],
@@ -223,18 +228,18 @@ class Presubmit:
         checks = self._apply_filters(program)
 
         _LOG.debug('Running %s for %s', program.title(), self._root.name)
-        print(_title(f'{self._root.name}: {program.title()}'))
+        _print_ui(_title(f'{self._root.name}: {program.title()}'))
 
         _LOG.info('%d of %d checks apply to %s in %s', len(checks),
                   len(program), plural(self._paths, 'file'), self._root)
 
-        print()
+        _print_ui()
         for line in tools.file_summary(self._relative_paths):
-            print(line)
-        print()
+            _print_ui(line)
+        _print_ui()
 
         if not self._paths:
-            print(color_yellow('No files are being checked!'))
+            _print_ui(color_yellow('No files are being checked!'))
 
         _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in checks))
 
@@ -296,7 +301,7 @@ class Presubmit:
                    plural(self._paths, 'file'), time_s)
         _LOG.debug('Presubmit checks %s: %s', result.value, summary)
 
-        print(
+        _print_ui(
             _box(
                 _SUMMARY_BOX, result.colorized(_LEFT, invert=True),
                 f'{total} checks on {plural(self._paths, "file")}: {summary}',
@@ -482,7 +487,7 @@ class _Check:
     def run(self, ctx: PresubmitContext, count: int, total: int) -> _Result:
         """Runs the presubmit check on the provided paths."""
 
-        print(
+        _print_ui(
             _box(_CHECK_UPPER, f'{count}/{total}', self.name,
                  plural(ctx.paths, "file")))
 
@@ -494,7 +499,8 @@ class _Check:
         time_str = _format_time(time.time() - start_time_s)
         _LOG.debug('%s %s', self.name, result.value)
 
-        print(_box(_CHECK_LOWER, result.colorized(_LEFT), self.name, time_str))
+        _print_ui(
+            _box(_CHECK_LOWER, result.colorized(_LEFT), self.name, time_str))
         _LOG.debug('%s duration:%s', self.name, time_str)
 
         return result
@@ -510,7 +516,7 @@ class _Check:
             _LOG.exception('Presubmit check %s failed!', self.name)
             return _Result.FAIL
         except KeyboardInterrupt:
-            print()
+            _print_ui()
             return _Result.CANCEL
 
         return _Result.PASS
