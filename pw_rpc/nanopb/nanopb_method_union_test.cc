@@ -32,15 +32,25 @@ class FakeGeneratedService : public Service {
   constexpr FakeGeneratedService(uint32_t id) : Service(id, kMethods) {}
 
   static constexpr std::array<NanopbMethodUnion, 4> kMethods = {
-      GetNanopbOrRawMethodFor<&Implementation::DoNothing, MethodType::kUnary>(
+      GetNanopbOrRawMethodFor<&Implementation::DoNothing,
+                              MethodType::kUnary,
+                              pw_rpc_test_Empty,
+                              pw_rpc_test_Empty>(
           10u, pw_rpc_test_Empty_fields, pw_rpc_test_Empty_fields),
       GetNanopbOrRawMethodFor<&Implementation::RawStream,
-                              MethodType::kServerStreaming>(
+                              MethodType::kServerStreaming,
+                              pw_rpc_test_TestRequest,
+                              pw_rpc_test_TestResponse>(
           11u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
-      GetNanopbOrRawMethodFor<&Implementation::AddFive, MethodType::kUnary>(
+      GetNanopbOrRawMethodFor<&Implementation::AddFive,
+                              MethodType::kUnary,
+                              pw_rpc_test_TestRequest,
+                              pw_rpc_test_TestResponse>(
           12u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
       GetNanopbOrRawMethodFor<&Implementation::StartStream,
-                              MethodType::kServerStreaming>(
+                              MethodType::kServerStreaming,
+                              pw_rpc_test_TestRequest,
+                              pw_rpc_test_TestResponse>(
           13u, pw_rpc_test_TestRequest_fields, pw_rpc_test_TestResponse_fields),
   };
 };

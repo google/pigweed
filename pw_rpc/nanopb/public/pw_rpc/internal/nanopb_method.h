@@ -119,9 +119,11 @@ using Response = typename MethodTraits<decltype(method)>::Response;
 // structs.
 class NanopbMethod : public Method {
  public:
-  template <auto method>
+  template <auto method, typename RequestType, typename ResponseType>
   static constexpr bool matches() {
-    return std::is_same_v<MethodImplementation<method>, NanopbMethod>;
+    return std::is_same_v<MethodImplementation<method>, NanopbMethod> &&
+           std::is_same_v<RequestType, Request<method>> &&
+           std::is_same_v<ResponseType, Response<method>>;
   }
 
   // Creates a NanopbMethod for a unary RPC.

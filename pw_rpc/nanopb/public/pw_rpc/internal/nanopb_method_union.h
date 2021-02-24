@@ -42,14 +42,14 @@ class NanopbMethodUnion : public MethodUnion {
 
 // Returns either a raw or nanopb method object, depending on the implemented
 // function's signature.
-template <auto method, MethodType type>
+template <auto method, MethodType type, typename Request, typename Response>
 constexpr auto GetNanopbOrRawMethodFor(
     uint32_t id,
     [[maybe_unused]] NanopbMessageDescriptor request_fields,
     [[maybe_unused]] NanopbMessageDescriptor response_fields) {
   if constexpr (RawMethod::matches<method>()) {
     return GetMethodFor<method, RawMethod, type>(id);
-  } else if constexpr (NanopbMethod::matches<method>()) {
+  } else if constexpr (NanopbMethod::matches<method, Request, Response>()) {
     return GetMethodFor<method, NanopbMethod, type>(
         id, request_fields, response_fields);
   } else {

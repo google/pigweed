@@ -63,6 +63,22 @@ class TestRawService final : public Service {
   }
 };
 
+// Test that the matches() function matches valid signatures.
+static_assert(RawMethod::template matches<&TestRawService::Unary>());
+static_assert(RawMethod::template matches<&TestRawService::ServerStreaming>());
+static_assert(RawMethod::template matches<&TestRawService::StaticUnary>());
+static_assert(
+    RawMethod::template matches<&TestRawService::StaticServerStreaming>());
+
+// Test that the matches() function does not match the wrong method type.
+static_assert(!RawMethod::template matches<&TestRawService::UnaryWrongArg>());
+static_assert(
+    !RawMethod::template matches<&TestRawService::StaticUnaryVoidReturn>());
+static_assert(
+    !RawMethod::template matches<&TestRawService::ServerStreamingBadReturn>());
+static_assert(!RawMethod::template matches<
+              &TestRawService::StaticServerStreamingMissingArg>());
+
 TEST(MethodImplTester, RawMethod) {
   constexpr MethodImplTester<RawMethod, TestRawService> method_tester;
   EXPECT_TRUE(method_tester.MethodImplIsValid());

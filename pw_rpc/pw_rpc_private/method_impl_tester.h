@@ -45,22 +45,6 @@ namespace {
 //
 template <typename MethodImpl, typename TestService, auto... extra_method_args>
 struct MethodImplTester {
-  // Test that the matches() function matches valid signatures.
-  static_assert(MethodImpl::template matches<&TestService::Unary>());
-  static_assert(MethodImpl::template matches<&TestService::ServerStreaming>());
-  static_assert(MethodImpl::template matches<&TestService::StaticUnary>());
-  static_assert(
-      MethodImpl::template matches<&TestService::StaticServerStreaming>());
-
-  // Test that the matches() function doesn't match invalid signatures.
-  static_assert(!MethodImpl::template matches<&TestService::UnaryWrongArg>());
-  static_assert(
-      !MethodImpl::template matches<&TestService::StaticUnaryVoidReturn>());
-  static_assert(
-      !MethodImpl::template matches<&TestService::ServerStreamingBadReturn>());
-  static_assert(!MethodImpl::template matches<
-                &TestService::StaticServerStreamingMissingArg>());
-
   // Test the MethodTraits::kType member.
   static_assert(MethodTraits<decltype(&TestService::Unary)>::kType ==
                 MethodType::kUnary);

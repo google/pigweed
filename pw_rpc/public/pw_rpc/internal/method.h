@@ -91,9 +91,14 @@ struct MethodTraits {
   // Specializations must set kType to the MethodType.
   // static constexpr MethodType kType = (method type);
 
-  // Specializations for member function types must set Service as an alias to
-  // the implemented service class.
+  // Specializations for member function types must set Service to an alias to
+  // for the implemented service class.
   using Service = rpc::Service;
+
+  // Specializations may provide the C++ types of the requests and responses if
+  // relevant.
+  using Request = void;
+  using Response = void;
 };
 
 template <auto method>

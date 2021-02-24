@@ -61,6 +61,64 @@ class TestNanopbService final : public Service {
                                               ServerWriter<FakePb>&) {}
 };
 
+// Test that the matches() function matches valid signatures.
+static_assert(NanopbMethod::template matches<&TestNanopbService::Unary,
+                                             FakePb,
+                                             FakePb>());
+static_assert(
+    NanopbMethod::template matches<&TestNanopbService::ServerStreaming,
+                                   FakePb,
+                                   FakePb>());
+static_assert(NanopbMethod::template matches<&TestNanopbService::StaticUnary,
+                                             FakePb,
+                                             FakePb>());
+static_assert(
+    NanopbMethod::template matches<&TestNanopbService::StaticServerStreaming,
+                                   FakePb,
+                                   FakePb>());
+
+// Test that the matches() function does not match the wrong method type.
+static_assert(!NanopbMethod::template matches<&TestNanopbService::UnaryWrongArg,
+                                              FakePb,
+                                              FakePb>());
+static_assert(
+    !NanopbMethod::template matches<&TestNanopbService::StaticUnaryVoidReturn,
+                                    FakePb,
+                                    FakePb>());
+static_assert(!NanopbMethod::template matches<
+              &TestNanopbService::ServerStreamingBadReturn,
+              FakePb,
+              FakePb>());
+static_assert(!NanopbMethod::template matches<
+              &TestNanopbService::StaticServerStreamingMissingArg,
+              FakePb,
+              FakePb>());
+
+struct WrongPb;
+
+// Test matches() rejects incorrect request/response types.
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
+                                              WrongPb,
+                                              FakePb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
+                                              FakePb,
+                                              WrongPb>());
+static_assert(!NanopbMethod::template matches<&TestNanopbService::Unary,
+                                              WrongPb,
+                                              WrongPb>());
+static_assert(
+    !NanopbMethod::template matches<&TestNanopbService::ServerStreaming,
+                                    WrongPb,
+                                    FakePb>());
+
+static_assert(!NanopbMethod::template matches<&TestNanopbService::StaticUnary,
+                                              FakePb,
+                                              WrongPb>());
+static_assert(
+    !NanopbMethod::template matches<&TestNanopbService::StaticServerStreaming,
+                                    FakePb,
+                                    WrongPb>());
+
 TEST(MethodImplTester, NanopbMethod) {
   constexpr MethodImplTester<NanopbMethod, TestNanopbService, nullptr, nullptr>
       method_tester;

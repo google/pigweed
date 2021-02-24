@@ -49,7 +49,9 @@ def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
 
     output.write_line(
         f'{RPC_NAMESPACE}::internal::GetNanopbOrRawMethodFor<{impl_method}, '
-        f'{method.type().cc_enum()}>(')
+        f'{method.type().cc_enum()}, '
+        f'{method.request_type().nanopb_name()}, '
+        f'{method.response_type().nanopb_name()}>(')
     with output.indent(4):
         output.write_line(f'0x{method_id:08x},  // Hash of "{method.name()}"')
         output.write_line(f'{req_fields},')
