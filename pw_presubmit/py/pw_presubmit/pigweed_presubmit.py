@@ -34,7 +34,7 @@ except ImportError:
 
 import pw_package.pigweed_packages
 
-from pw_presubmit import build, cli, environment, format_code, git_repo
+from pw_presubmit import build, cli, format_code, git_repo
 from pw_presubmit import call, filter_paths, plural, PresubmitContext
 from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
@@ -42,25 +42,6 @@ from pw_presubmit.install_hook import install_hook
 _LOG = logging.getLogger(__name__)
 
 pw_package.pigweed_packages.initialize()
-
-
-#
-# Initialization
-#
-def init_cipd(ctx: PresubmitContext):
-    environment.init_cipd(ctx.root, ctx.output_dir)
-
-
-def init_virtualenv(ctx: PresubmitContext):
-    environment.init_virtualenv(
-        ctx.root,
-        ctx.output_dir,
-        gn_targets=(
-            f'{ctx.root}#:python.install',
-            f'{ctx.root}#:target_support_packages.install',
-        ),
-    )
-
 
 # Trigger builds if files with these extensions change.
 _BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
@@ -515,12 +496,16 @@ BROKEN = (
     gn_nanopb_build,
 )
 
-QUICK = (
+LINTFORMAT = (
     commit_message_format,
-    source_is_in_build_files,
     copyright_notice,
     format_code.presubmit_checks(),
     pw_presubmit.pragma_once,
+    source_is_in_build_files,
+)
+
+QUICK = (
+    LINTFORMAT,
     gn_quick_build_check,
     # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
@@ -529,12 +514,7 @@ QUICK = (
 )
 
 FULL = (
-    commit_message_format,
-    init_cipd,
-    init_virtualenv,
-    copyright_notice,
-    format_code.presubmit_checks(),
-    pw_presubmit.pragma_once,
+    LINTFORMAT,
     gn_clang_build,
     gn_arm_build,
     gn_docs_build,
@@ -553,7 +533,12 @@ FULL = (
     gn_teensy_build if sys.platform in ['linux', 'darwin'] else (),
 )
 
-PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL)
+PROGRAMS = Programs(
+    broken=BROKEN,
+    quick=QUICK,
+    full=FULL,
+    lintformat=LINTFORMAT,
+)
 
 
 def parse_args() -> argparse.Namespace:
