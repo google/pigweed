@@ -23,6 +23,10 @@ pw_python_package("py") {
     "pw_trace_tokenized/get_trace.py",
     "pw_trace_tokenized/trace_tokenized.py",
   ]
-  python_deps = [ "$dir_pw_tokenizer/py" ]
+  python_deps = [
+    "$dir_pw_hdlc/py",
+    "$dir_pw_tokenizer/py",
+    "$dir_pw_trace/py",
+  ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
