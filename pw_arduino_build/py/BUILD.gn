@@ -35,4 +35,5 @@ pw_python_package("py") {
     "file_operations_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  python_deps = [ "$dir_pw_cli/py" ]
 }
