@@ -44,12 +44,12 @@ group("default") {
     ":docs",
     ":fuzzers",
     ":host",
-    ":python.install",
-    ":python.lint",
-    ":python.tests",
     ":stm32f429i",
-    ":target_support_packages.lint",
-    ":target_support_packages.tests",
+    "$dir_pw_env_setup:python.install",
+    "$dir_pw_env_setup:python.lint",
+    "$dir_pw_env_setup:python.tests",
+    "$dir_pw_env_setup:target_support_packages.lint",
+    "$dir_pw_env_setup:target_support_packages.tests",
   ]
 }
 
@@ -133,44 +133,14 @@ group("fuzzers") {
   }
 }
 
+# TODO(pwbug/325) Delete this target.
 pw_python_group("python") {
-  python_deps = [
-    # Python packages
-    "$dir_pw_allocator/py",
-    "$dir_pw_arduino_build/py",
-    "$dir_pw_bloat/py",
-    "$dir_pw_build/py",
-    "$dir_pw_cli/py",
-    "$dir_pw_cpu_exception_cortex_m/py",
-    "$dir_pw_docgen/py",
-    "$dir_pw_doctor/py",
-    "$dir_pw_env_setup/py",
-    "$dir_pw_hdlc/py",
-    "$dir_pw_module/py",
-    "$dir_pw_package/py",
-    "$dir_pw_presubmit/py",
-    "$dir_pw_protobuf/py",
-    "$dir_pw_protobuf_compiler/py",
-    "$dir_pw_rpc/py",
-    "$dir_pw_status/py",
-    "$dir_pw_tokenizer/py",
-    "$dir_pw_toolchain/py",
-    "$dir_pw_trace/py",
-    "$dir_pw_trace_tokenized/py",
-    "$dir_pw_unit_test/py",
-    "$dir_pw_watch/py",
-
-    # Standalone scripts
-    "$dir_pw_hdlc/rpc_example:example_script",
-  ]
+  python_deps = [ "$dir_pw_env_setup:python" ]
 }
 
-# Python packages for supporting specific targets.
+# TODO(pwbug/325) Delete this target.
 pw_python_group("target_support_packages") {
-  python_deps = [
-    "$dir_pigweed/targets/lm3s6965evb-qemu/py",
-    "$dir_pigweed/targets/stm32f429i-disc1/py",
-  ]
+  python_deps = [ "$dir_pw_env_setup:target_support_packages" ]
 }
 
 # By default, Pigweed will build this target when invoking ninja.
