@@ -86,7 +86,6 @@ def init_virtualenv(
         'python3',
         virtualenv_source,
         f'--venv_path={output_directory}',
-        f'--requirements={virtualenv_source / "requirements.txt"}',
         *(f'--requirements={x}' for x in requirements),
         *(f'--gn-target={t}' for t in gn_targets),
     )
