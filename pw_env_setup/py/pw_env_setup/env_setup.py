@@ -219,7 +219,7 @@ class EnvSetup(object):
             self._cipd_package_file.append(
                 os.path.join(setup_root, 'cipd_setup', 'luci.json'))
             # Only set if no other GN target is provided.
-            if not self._virtualenv_gn_targets:
+            if not virtualenv_gn_target:
                 self._virtualenv_gn_targets.append(
                     virtualenv_setup.GnTarget(
                         '{}#pw_env_setup:python.install'.format(pw_root)))
