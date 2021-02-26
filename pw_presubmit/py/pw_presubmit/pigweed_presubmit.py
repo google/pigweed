@@ -62,13 +62,6 @@ def gn_clang_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
-def gn_quick_build_check(ctx: PresubmitContext):
-    build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'host_clang_size_optimized',
-                'stm32f429i_size_optimized', 'python.tests', 'python.lint')
-
-
-@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
 
@@ -80,6 +73,28 @@ def gn_gcc_build(ctx: PresubmitContext):
     #
     # TODO(pwbug/255): Enable optimized GCC builds when this is fixed.
     build.ninja(ctx.output_dir, 'host_gcc_debug')
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_quick_build_check(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, 'host_clang_size_optimized',
+                'stm32f429i_size_optimized', 'python.tests', 'python.lint')
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_full_build_check(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'),
+                *_at_all_optimization_levels('stm32f429i'), 'python.tests',
+                'python.lint', 'docs')
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
+def gn_full_qemu_check(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'),
+                *_at_all_optimization_levels('qemu_clang'))
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
@@ -494,6 +509,8 @@ BROKEN = (
     bazel_test,
     cmake_tests,
     gn_nanopb_build,
+    gn_full_build_check,
+    gn_full_qemu_check,
 )
 
 LINTFORMAT = (
