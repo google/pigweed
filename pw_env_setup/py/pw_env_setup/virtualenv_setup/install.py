@@ -218,6 +218,7 @@ def install(
                     build_dir,
                     '--args=dir_pigweed="{}"'.format(pw_root),
                 )
+                print(gn_cmd, file=outs)
                 subprocess.check_call(gn_cmd,
                                       cwd=os.path.join(project_root,
                                                        gn_target.directory),
@@ -234,6 +235,7 @@ def install(
             with open(ninja_log_path, 'w') as outs:
                 ninja_cmd = ['ninja', '-C', build_dir]
                 ninja_cmd.append(gn_target.target)
+                print(ninja_cmd, file=outs)
                 subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
         except subprocess.CalledProcessError as err:
             with open(ninja_log_path, 'r') as ins:

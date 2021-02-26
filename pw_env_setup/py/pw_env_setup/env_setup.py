@@ -166,6 +166,10 @@ def result_func(glob_warnings):
     return result
 
 
+class ConfigFileError(Exception):
+    pass
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 # pylint: disable=too-many-instance-attributes
@@ -176,7 +180,7 @@ class EnvSetup(object):
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_gn_target,
                  virtualenv_gn_out_dir, cargo_package_file, enable_cargo,
-                 json_file, project_root):
+                 json_file, project_root, config_file):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -201,6 +205,9 @@ class EnvSetup(object):
         self._virtualenv_gn_targets = []
         self._cargo_package_file = []
         self._enable_cargo = enable_cargo
+
+        if config_file:
+            self._parse_config_file(config_file)
 
         self._json_file = json_file
 
@@ -237,6 +244,33 @@ class EnvSetup(object):
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('PW_ROOT', pw_root)
+
+    def _parse_config_file(self, config_file):
+        config = json.load(config_file)
+
+        self._cipd_package_file.extend(
+            os.path.join(self._project_root, x)
+            for x in config.pop('cipd_package_files', ()))
+
+        virtualenv = config.pop('virtualenv', {})
+
+        if virtualenv.get('gn_root'):
+            root = os.path.join(self._project_root, virtualenv.pop('gn_root'))
+        else:
+            root = self._project_root
+
+        for target in virtualenv.pop('gn_targets', ()):
+            self._virtualenv_gn_targets.append(
+                virtualenv_setup.GnTarget('{}#{}'.format(root, target)))
+
+        if virtualenv:
+            raise ConfigFileError(
+                'unrecognized option in {}: "virtualenv.{}"'.format(
+                    config_file.name, next(iter(virtualenv))))
+
+        if config:
+            raise ConfigFileError('unrecognized option in {}: "{}"'.format(
+                config_file.name, next(iter(config))))
 
     def _log(self, *args, **kwargs):
         # Not using logging module because it's awkward to flush a log handler.
@@ -505,6 +539,12 @@ def parse(argv=None):
     )
 
     parser.add_argument(
+        '--config-file',
+        help='JSON file describing CIPD and virtualenv requirements.',
+        type=argparse.FileType('r'),
+    )
+
+    parser.add_argument(
         '--use-pigweed-defaults',
         help='Use Pigweed default values in addition to the given environment '
         'variables.',
@@ -570,7 +610,7 @@ def parse(argv=None):
 
     args = parser.parse_args(argv)
 
-    one_required = (
+    others = (
         'use_pigweed_defaults',
         'cipd_package_file',
         'virtualenv_requirements',
@@ -578,9 +618,16 @@ def parse(argv=None):
         'cargo_package_file',
     )
 
+    one_required = others + ('config_file', )
+
     if not any(getattr(args, x) for x in one_required):
         parser.error('At least one of ({}) is required'.format(', '.join(
             '"--{}"'.format(x.replace('_', '-')) for x in one_required)))
+
+    if args.config_file and any(getattr(args, x) for x in others):
+        parser.error('Cannot combine --config-file with any of {}'.format(
+            ', '.join('"--{}"'.format(x.replace('_', '-'))
+                      for x in one_required)))
 
     return args
 

@@ -158,66 +158,45 @@ Downstream Projects Using Different Packages
 ********************************************
 
 Projects depending on Pigweed but using additional or different packages should
-copy the Pigweed `sample project`'s ``bootstrap.sh`` and update the call to
-``pw_bootstrap``. Search for "downstream" for other places that may require
-changes, like setting the ``PW_ROOT`` and ``PW_PROJECT_ROOT`` environment
-variables. Relevant arguments to ``pw_bootstrap`` are listed here.
+copy the Pigweed `sample project`'s ``bootstrap.sh`` and ``config.json`` and
+update the call to ``pw_bootstrap``. Search for "downstream" for other places
+that may require changes, like setting the ``PW_ROOT`` and ``PW_PROJECT_ROOT``
+environment variables. Explanations of parts of ``config.json`` are described
+here.
 
 .. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/master
 
-``--use-pigweed-defaults``
-  Use Pigweed default values in addition to the other switches.
-
-``--cipd-package-file path/to/packages.json``
+``cipd_package_files``
   CIPD package file. JSON file consisting of a list of dictionaries with "path"
   and "tags" keys, where "tags" is a list of strings.
 
-``--virtualenv-requierements path/to/requirements.txt``
-  Pip requirements file. Compiled with pip-compile.
+``virtualenv.gn_targets``
+  Target for installing Python packages. Downstream projects will need to
+  create targets to install their packages or only use Pigweed Python packages.
 
-``--virtualenv-gn-target path/to/directory#package-install-target``
-  Target for installing Python packages, and the directory from which it must be
-  run. Example for Pigweed: ``third_party/pigweed#:python.install`` (assuming
-  Pigweed is included in the project at ``third_party/pigweed``). Downstream
-  projects will need to create targets to install their packages and either
-  choose a subset of Pigweed packages or use
-  ``third_party/pigweed#:python.install`` to install all Pigweed packages.
+``virtualenv.gn_root``
+  The root directory of your GN build tree, relative to ``PW_PROJECT_ROOT``.
+  This is the directory your project's ``.gn`` file is located in. If you're
+  only installing Pigweed Python packages, use the location of the Pigweed
+  submodule.
 
-``--cargo-package-file path/to/packages.txt``
-  Rust cargo packages to install. Lines with package name and version separated
-  by a space. Has no effect without ``--enable-cargo``.
+An example of a config file is below.
 
-``--enable-cargo``
-  Enable cargo package installation.
+.. code-block:: json
 
-An example of the changed env_setup.py line is below.
-
-.. code-block:: bash
-
-  pw_bootstrap \
-    --shell-file "$SETUP_SH" \
-    --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" \
-    --use-pigweed-defaults \
-    --cipd-package-file "$PW_PROJECT_ROOT/path/to/cipd.json" \
-    --virtualenv-gn-target "$PW_PROJECT_ROOT#:python.install"
-
-Projects wanting some of the Pigweed environment packages but not all of them
-should not use ``--use-pigweed-defaults`` and must manually add the references
-to Pigweed default packages through the other arguments. The arguments below
-are identical to using ``--use-pigweed-defaults``.
-
-.. code-block:: bash
-
-  --cipd-package-file
-  "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json"
-  --cipd-package-file
-  "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
-  --virtualenv-requirements
-  "$PW_ROOT/pw_env_setup/py/pw_env_setup/virtualenv_setup/requirements.txt"
-  --virtualenv-gn-target
-  "$PW_ROOT#:python.install"
-  --cargo-package-file
-  "$PW_ROOT/pw_env_setup/py/pw_env_setup/cargo_setup/packages.txt"
+  {
+    "cipd_package_files": [
+      "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
+      "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
+      "tools/packages.json"
+    ],
+    "virtualenv": {
+      "gn_root": ".",
+      "gn_targets": [
+        ":python.install",
+      ]
+    }
+  }
 
 Environment Variables
 *********************
