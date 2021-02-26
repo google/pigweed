@@ -1032,7 +1032,7 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
   PeerId peer_id = peer->identifier();
 
   if (!peer->le()->should_auto_connect()) {
-    bt_log(INFO, "gap",
+    bt_log(DEBUG, "gap",
            "ignoring auto-connection (peer->should_auto_connect() is false) (peer: %s)",
            bt_str(peer_id));
     return;
