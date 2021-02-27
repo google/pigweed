@@ -43,6 +43,7 @@ source_set("common") {
     "uint256.h",
     "uuid.cc",
     "uuid.h",
+    "windowed_inspect_numeric_property.h",
   ]
 
   public_deps = [
@@ -86,6 +87,7 @@ source_set("tests") {
     "supplement_data_unittest.cc",
     "task_domain_unittest.cc",
     "uuid_unittest.cc",
+    "windowed_inspect_numeric_property_unittest.cc",
   ]
 
   deps = [
