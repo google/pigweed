@@ -75,6 +75,7 @@ const char* kInspectRequestNodeNamePrefix = "pending_request_";
 const char* kInspectConnectionsNodeName = "connections";
 const char* kInspectConnectionNodePrefix = "connection_";
 const char* kInspectOutboundConnectorNodeName = "outbound_connector";
+const char* kInspectConnectionFailuresPropertyName = "recent_connection_failures";
 
 }  // namespace
 
@@ -273,6 +274,8 @@ void LowEnergyConnectionManager::SetSecurityMode(LeSecurityMode mode) {
 
 void LowEnergyConnectionManager::AttachInspect(inspect::Node& parent) {
   inspect_node_ = parent.CreateChild(kInspectNodeName);
+  inspect_properties_.recent_connection_failures.AttachInspect(
+      inspect_node_, kInspectConnectionFailuresPropertyName);
   inspect_pending_requests_node_ = inspect_node_.CreateChild(kInspectRequestsNodeName);
   inspect_connections_node_ = inspect_node_.CreateChild(kInspectConnectionsNodeName);
   for (auto& request : pending_requests_) {
@@ -469,6 +472,9 @@ void LowEnergyConnectionManager::ProcessConnectResult(
 
     HostError host_error = err.is_protocol_error() ? HostError::kFailed : err.error();
     request.NotifyCallbacks(fit::error(host_error));
+
+    inspect_properties_.recent_connection_failures.Add(1);
+
     return;
   }
 

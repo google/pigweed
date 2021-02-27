@@ -77,6 +77,7 @@ adapter:
             registered_psms:
                 (none)
     low_energy_connection_manager:
+        recent_connection_failures
         pending_requests:
             pending_request_0x0:
                 peer_id

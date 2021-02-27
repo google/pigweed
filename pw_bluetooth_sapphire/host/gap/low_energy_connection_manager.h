@@ -17,6 +17,7 @@
 #include <fbl/macros.h>
 
 #include "low_energy_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
@@ -54,6 +55,9 @@ class PeerCache;
 // interrogating connections, intiating pairing, and disconnecting connections.
 class LowEnergyConnectionManager final {
  public:
+  // Duration after which connection failures are removed from Inspect.
+  static constexpr zx::duration kInspectRecentConnectionFailuresExpiryDuration = zx::min(10);
+
   // |hci|: The HCI transport used to track link layer connection events from
   //        the controller.
   // |addr_delegate|: Used to obtain local identity information during pairing
@@ -311,6 +315,12 @@ class LowEnergyConnectionManager final {
   // True if the connection manager is performing a scan for a peer before connecting.
   bool scanning_ = false;
 
+  struct InspectProperties {
+    // Count of connection failures in the past 10 minutes.
+    WindowedInspectIntProperty recent_connection_failures{
+        kInspectRecentConnectionFailuresExpiryDuration};
+  };
+  InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
   // Container node for pending request nodes.
   inspect::Node inspect_pending_requests_node_;

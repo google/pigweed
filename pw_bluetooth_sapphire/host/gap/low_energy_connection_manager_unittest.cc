@@ -3159,8 +3159,12 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
   auto empty_connections_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
 
+  auto conn_mgr_property_matcher =
+      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 0)));
+
   auto conn_mgr_during_connecting_matcher =
-      AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)),
+      AllOf(NodeMatches(AllOf(NameMatches(LowEnergyConnectionManager::kInspectNodeName),
+                              conn_mgr_property_matcher)),
             ChildrenMatch(UnorderedElementsAre(requests_matcher, empty_connections_matcher,
                                                outbound_connector_matcher_attempt_0)));
 
@@ -3183,10 +3187,56 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, Inspect) {
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(ElementsAre(conn_matcher)));
 
   auto conn_mgr_after_connecting_matcher =
-      ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher));
+      AllOf(NodeMatches(conn_mgr_property_matcher),
+            ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher)));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_connecting_matcher)));
+
+  // LECM must be destroyed before the inspector to avoid a page fault on destruction of inspect
+  // properties (they try to update the inspect VMO, which is deleted on inspector destruction).
+  DeleteConnMgr();
+}
+
+TEST_F(GAP_LowEnergyConnectionManagerTest, InspectFailedConnection) {
+  inspect::Inspector inspector;
+  conn_mgr()->AttachInspect(inspector.GetRoot());
+
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  fake_peer->set_connect_status(hci::StatusCode::kConnectionLimitExceeded);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  auto callback = [](auto result) { ASSERT_TRUE(result.is_error()); };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  RunLoopUntilIdle();
+
+  auto conn_mgr_property_matcher =
+      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 1)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(),
+              ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
+
+  RunLoopFor(LowEnergyConnectionManager::kInspectRecentConnectionFailuresExpiryDuration -
+             zx::nsec(1));
+  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(),
+              ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
+
+  // Failures should revert to 0 after expiry duration.
+  RunLoopFor(zx::nsec(1));
+  conn_mgr_property_matcher =
+      PropertyList(UnorderedElementsAre(IntIs("recent_connection_failures", 0)));
+  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(),
+              ChildrenMatch(ElementsAre(NodeMatches(conn_mgr_property_matcher))));
+
+  // LECM must be destroyed before the inspector to avoid a page fault on destruction of inspect
+  // properties (they try to update the inspect VMO, which is deleted on inspector destruction).
+  DeleteConnMgr();
 }
 
 // Tests for assertions that enforce invariants.
