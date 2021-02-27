@@ -390,8 +390,8 @@ def source_is_in_build_files(ctx: PresubmitContext):
         _GN_SOURCES_IN_BUILD,
         ctx.paths,
         bazel_dirs=[ctx.root],
-        gn_build_files=git_repo.list_files(
-            pathspecs=['BUILD.gn', '*BUILD.gn']))
+        gn_build_files=git_repo.list_files(pathspecs=['BUILD.gn', '*BUILD.gn'],
+                                           repo_path=ctx.root))
 
     if missing:
         _LOG.warning(
