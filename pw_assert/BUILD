@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -29,9 +29,9 @@ pw_cc_library(
     name = "facade",
     hdrs = [
         "public/pw_assert/assert.h",
+        "public/pw_assert/internal/assert_impl.h",
         "public/pw_assert/light.h",
         "public/pw_assert/options.h",
-        "public/pw_assert/internal/assert_impl.h",
     ],
     includes = ["public"],
     deps = [
@@ -45,6 +45,7 @@ pw_cc_library(
     deps = [
         ":facade",
         PW_ASSERT_BACKEND + ":headers",
+        PW_ASSERT_BACKEND,
     ],
 )
 
@@ -70,14 +71,15 @@ pw_cc_test(
         "//pw_span",
         "//pw_string",
         "//pw_unit_test",
+        PW_ASSERT_BACKEND,
     ],
 )
 
 pw_cc_test(
     name = "assert_backend_compile_test",
     srcs = [
-        "assert_backend_compile_test_c.c",
         "assert_backend_compile_test.cc",
+        "assert_backend_compile_test_c.c",
     ],
     deps = [
         ":backend",
