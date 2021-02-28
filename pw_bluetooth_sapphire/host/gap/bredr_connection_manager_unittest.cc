@@ -166,6 +166,9 @@ const auto kCreateConnectionRsp =
 const auto kCreateConnectionRspError =
     COMMAND_STATUS_RSP(hci::kCreateConnection, hci::StatusCode::kConnectionFailedToBeEstablished);
 
+const auto kCreateConnectionRspAlready =
+    COMMAND_STATUS_RSP(hci::kCreateConnection, hci::StatusCode::kConnectionAlreadyExists);
+
 const auto kCreateConnectionCancel = CreateStaticByteBuffer(LowerBits(hci::kCreateConnectionCancel),
                                                             UpperBits(hci::kCreateConnectionCancel),
                                                             0x06,  // parameter_total_size (6 bytes)
@@ -3294,14 +3297,15 @@ INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, ScoLinkTypesTest,
 class UnconnectedLinkTypesTest : public BrEdrConnectionManagerTest,
                                  public ::testing::WithParamInterface<hci::LinkType> {};
 
-TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedConnectionRequests) {
-  auto status_event =
-      testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
+// Test that an unexpected SCO connection request is rejected for kUnacceptableConnectionParameters
+TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedSCOConnectionRequests) {
+  auto status_event = testing::CommandStatusPacket(hci::kRejectSynchronousConnectionRequest,
+                                                   hci::StatusCode::kSuccess);
   auto complete_event = testing::ConnectionCompletePacket(
-      kTestDevAddr, kConnectionHandle, hci::StatusCode::kConnectionRejectedBadBdAddr);
+      kTestDevAddr, kConnectionHandle, hci::StatusCode::kUnacceptableConnectionParameters);
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::RejectConnectionRequestPacket(
-                            kTestDevAddr, hci::StatusCode::kConnectionRejectedBadBdAddr),
+                        testing::RejectSynchronousConnectionRequest(
+                            kTestDevAddr, hci::StatusCode::kUnacceptableConnectionParameters),
                         &status_event, &complete_event);
   test_device()->SendCommandChannelPacket(
       testing::ConnectionRequestPacket(kTestDevAddr, /*link_type=*/GetParam()));
@@ -3309,8 +3313,23 @@ TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedConnectionRequests) {
 }
 
 INSTANTIATE_TEST_SUITE_P(GAP_BrEdrConnectionManagerTest, UnconnectedLinkTypesTest,
-                         ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO,
-                                           static_cast<hci::LinkType>(0x09)));
+                         ::testing::Values(hci::LinkType::kSCO, hci::LinkType::kExtendedSCO));
+
+// Test that an unexpected link type connection request is rejected for
+// kUnsupportedFeatureOrParameter
+TEST_F(GAP_BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
+  auto linktype = static_cast<hci::LinkType>(0x09);
+  auto status_event =
+      testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
+  auto complete_event = testing::ConnectionCompletePacket(
+      kTestDevAddr, kConnectionHandle, hci::StatusCode::kUnsupportedFeatureOrParameter);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::RejectConnectionRequestPacket(
+                            kTestDevAddr, hci::StatusCode::kUnsupportedFeatureOrParameter),
+                        &status_event, &complete_event);
+  test_device()->SendCommandChannelPacket(testing::ConnectionRequestPacket(kTestDevAddr, linktype));
+  RunLoopUntilIdle();
+}
 
 // Tests for assertions that enforce invariants.
 class GAP_BrEdrConnectionManagerDeathTest : public BrEdrConnectionManagerTest {};
@@ -3354,7 +3373,142 @@ TEST_F(GAP_BrEdrConnectionManagerDeathTest, DisconnectAfterPeerRemovalAsserts) {
       ".*");
 }
 
-// TODO(fxbug.dev/1412) Connecting a peer that's being interrogated
+TEST_F(GAP_BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+
+  hci::Status status(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    // We expect this callback to be executed, with a succesful connection
+    EXPECT_TRUE(cb_conn_ref);
+    EXPECT_TRUE(cb_status.is_success());
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  // A client calls Connect() for the Peer, beginning an outgoing connection. We expect a
+  // CreateConnection, and ack with a status response but don't complete yet
+  EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp);
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), should_succeed));
+
+  // Meanwhile, an incoming connection is requested from the Peer
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  // We expect it to be accepted, and then return a command status response, but not a
+  // ConnectionComplete event yet
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp);
+  RunLoopUntilIdle();
+
+  // The controller now establishes the link, but will respond to the outgoing connection with the
+  // hci error: `ConnectionAlreadyExists`
+  // First, the controller notifies us of the failed outgoing connection - as from its perspective,
+  // we've already connected
+  const auto complete_already = testing::ConnectionCompletePacket(
+      kTestDevAddr, kConnectionHandle, hci::StatusCode::kConnectionAlreadyExists);
+  test_device()->SendCommandChannelPacket(complete_already);
+  // Then the controller notifies us of the successful incoming connection
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+  // We expect to connect and begin interrogation, and for our connect() callback to have been run
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->bredr()->connected());
+  EXPECT_TRUE(status.is_success());
+
+  // Prepare for disconnection upon teardown.
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, OutgoingConnectionRacesIncoming) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+  hci::Status status(HostError::kFailed);
+  BrEdrConnection* conn_ref = nullptr;
+  auto should_succeed = [&status, &conn_ref](auto cb_status, auto cb_conn_ref) {
+    EXPECT_TRUE(cb_conn_ref);
+    EXPECT_TRUE(cb_status.is_success());
+    status = cb_status;
+    conn_ref = std::move(cb_conn_ref);
+  };
+
+  // An incoming connection is requested from the Peer
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  // We expect it to be accepted, and then return a command status response, but not a
+  // ConnectionComplete event yet
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp);
+  RunLoopUntilIdle();
+  // Meanwhile, a client calls Connect() for the peer. We don't expect any packets out as the
+  // connection manager will defer requests that have an active incoming request. Instead, this
+  // request will be completed when the incoming procedure completes.
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), should_succeed));
+  // We should still expect to connect
+  RunLoopUntilIdle();
+
+  // The controller now notifies us of the complete incoming connection
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+  // We expect to connect and begin interrogation, and for the callback passed to Connect() to have
+  // been executed when the incoming connection succeeded.
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(peer->bredr()->connected());
+  EXPECT_TRUE(status.is_success());
+
+  // Prepare for disconnection upon teardown.
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejected) {
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+  ASSERT_TRUE(peer->bredr() && NotConnected(peer));
+
+  // Our first request should be accepted - we send back a success status, not the connection
+  // complete yet
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  auto status_event =
+      testing::CommandStatusPacket(hci::kRejectConnectionRequest, hci::StatusCode::kSuccess);
+  auto complete_error = testing::ConnectionCompletePacket(
+      kTestDevAddr, kConnectionHandle, hci::StatusCode::kUnsupportedFeatureOrParameter);
+  auto reject_packet = testing::RejectConnectionRequestPacket(
+      kTestDevAddr, hci::StatusCode::kConnectionRejectedBadBdAddr);
+
+  // Our second request should be rejected - we already have an incoming request
+  EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+  RunLoopUntilIdle();
+  test_device()->SendCommandChannelPacket(complete_error);
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(peer->bredr()->connected());
+
+  // Prepare for disconnection upon teardown.
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
+  // Initially, we should not have a peer for the given address
+  auto peer = peer_cache()->FindByAddress(kTestDevAddr);
+  EXPECT_FALSE(peer);
+  // Send a request, and once accepted send back a success status but not the connection complete
+  // yet
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  // We should now have a peer in the cache to track our incoming request address
+  // The peer is marked as 'NotConnected' as we do not mark 'Initializing' until we receive the
+  // ConnectionComplete
+  peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_TRUE(peer->bredr());
+  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+}
 
 #undef COMMAND_COMPLETE_RSP
 #undef COMMAND_STATUS_RSP

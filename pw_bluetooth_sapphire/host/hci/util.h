@@ -21,6 +21,9 @@ std::string HCIVersionToString(hci::HCIVersion version);
 // Returns a user-friendly string representation of |status|.
 std::string StatusCodeToString(hci::StatusCode code);
 
+// Returns a user-friendly string representation of |link_type|.
+std::string LinkTypeToString(hci::LinkType link_type);
+
 // Constructs a DeviceAddress structure from the contents of the given
 // advertising report. Returns false if the report contain an invalid value.
 // The address will be returned in the |out_address| parameter. The value of

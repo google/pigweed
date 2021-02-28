@@ -73,6 +73,26 @@ void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
 
 }  // namespace
 
+// An event signifying that a connection was completed by the controller
+BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(const hci::EventPacket& event) {
+  ZX_ASSERT(event.event_code() == hci::kConnectionCompleteEventCode);
+  const auto& params = event.params<hci::ConnectionCompleteEventParams>();
+  handle = letoh16(params.connection_handle);
+  addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
+  status = hci::Status(params.status);
+  link_type = params.link_type;
+}
+
+// An event signifying that an incoming connection is being requested by a peer
+BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
+    const hci::EventPacket& event) {
+  ZX_ASSERT(event.event_code() == hci::kConnectionRequestEventCode);
+  const auto& params = event.params<hci::ConnectionRequestEventParams>();
+  addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
+  link_type = params.link_type;
+  class_of_device = params.class_of_device;
+}
+
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci::EventCode& code, hci::CommandChannel::EventCallback cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -113,10 +133,14 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
   // Register event handlers
   AddEventHandler(hci::kAuthenticationCompleteEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnAuthenticationComplete));
-  AddEventHandler(hci::kConnectionCompleteEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnConnectionComplete));
-  AddEventHandler(hci::kConnectionRequestEventCode,
-                  fit::bind_member(this, &BrEdrConnectionManager::OnConnectionRequest));
+  AddEventHandler(hci::kConnectionCompleteEventCode, [this](const hci::EventPacket& event) {
+    OnConnectionComplete(ConnectionComplete(event));
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  });
+  AddEventHandler(hci::kConnectionRequestEventCode, [this](const hci::EventPacket& event) {
+    OnConnectionRequest(ConnectionRequestEvent(event));
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  });
   AddEventHandler(hci::kIOCapabilityRequestEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnIoCapabilityRequest));
   AddEventHandler(hci::kIOCapabilityResponseEventCode,
@@ -405,9 +429,9 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   // The controller has completed the HCI connection procedure, so the connection request can no
   // longer be failed by a lower layer error. Now tie error reporting of the request to the lifetime
   // of the connection state object (BrEdrConnection RAII).
-  auto request_node = connection_requests_.extract(peer_id);
-  std::optional<BrEdrConnection::Request> request =
-      request_node ? std::move(request_node.mapped()) : std::optional<BrEdrConnection::Request>();
+  auto node = connection_requests_.extract(peer_id);
+  auto request = node ? std::optional(std::move(node.mapped())) : std::nullopt;
+
   const hci::ConnectionHandle handle = link->handle();
   auto send_auth_request_cb = [this, handle]() {
     this->SendAuthenticationRequested(handle, [handle](auto status) {
@@ -446,6 +470,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
   if (pending_request_.has_value() && addr == pending_request_->peer_address()) {
     pending_request_.reset();
   }
+
   TryCreateNextConnection();
 }
 
@@ -527,99 +552,143 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticatio
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionRequest(
-    const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionRequestEventCode);
-  const auto& params = event.params<hci::ConnectionRequestEventParams>();
-  const char* link_type_str = params.link_type == hci::LinkType::kACL ? "ACL" : "(e)SCO";
-
-  DeviceAddress address(DeviceAddress::Type::kBREDR, params.bd_addr);
-  Peer* peer = cache_->FindByAddress(address);
-  std::string peer_id_string = peer ? bt_str(peer->identifier()) : "(unknown)";
-
-  bt_log(INFO, "gap-bredr", "incoming %s connection request from %s (%s) (peer: %s)", link_type_str,
-         bt_str(params.bd_addr), bt_str(params.class_of_device), peer_id_string.c_str());
-
-  if (params.link_type == hci::LinkType::kACL) {
-    // Accept the connection, performing a role switch. We receive a
-    // Connection Complete event when the connection is complete, and finish
-    // the link then.
-    bt_log(INFO, "gap-bredr", "accepting incoming connection from %s (peer: %s)",
-           bt_str(params.bd_addr), peer_id_string.c_str());
-
-    auto accept = hci::CommandPacket::New(hci::kAcceptConnectionRequest,
-                                          sizeof(hci::AcceptConnectionRequestCommandParams));
-    auto accept_params = accept->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
-    accept_params->bd_addr = params.bd_addr;
-    accept_params->role = hci::ConnectionRole::kMaster;
-
-    hci_->command_channel()->SendCommand(std::move(accept), nullptr, hci::kCommandStatusEventCode);
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  }
-
-  if (params.link_type == hci::LinkType::kSCO || params.link_type == hci::LinkType::kExtendedSCO) {
-    auto conn_pair = FindConnectionByAddress(params.bd_addr);
-    if (conn_pair) {
-      // The ScoConnectionManager owned by the BrEdrConnection will respond.
-      return hci::CommandChannel::EventCallbackResult::kContinue;
-    }
-    bt_log(WARN, "gap-bredr",
-           "received (e)SCO connection request for peer that is not connected (peer: %s)",
-           peer_id_string.c_str());
-  } else {
-    bt_log(WARN, "gap-bredr", "reject unsupported connection (type: %u)",
-           static_cast<unsigned int>(params.link_type));
-  }
-
-  auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,
-                                        sizeof(hci::RejectConnectionRequestCommandParams));
-  auto reject_params = reject->mutable_payload<hci::RejectConnectionRequestCommandParams>();
-  reject_params->bd_addr = params.bd_addr;
-  reject_params->reason = hci::StatusCode::kConnectionRejectedBadBdAddr;
-
-  hci_->command_channel()->SendCommand(std::move(reject), nullptr, hci::kCommandStatusEventCode);
-  return hci::CommandChannel::EventCallbackResult::kContinue;
+bool BrEdrConnectionManager::ExistsIncomingRequest(PeerId id) {
+  auto request = connection_requests_.find(id);
+  return (request != connection_requests_.end() && request->second.HasIncoming());
 }
 
-hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionComplete(
-    const hci::EventPacket& event) {
-  ZX_DEBUG_ASSERT(event.event_code() == hci::kConnectionCompleteEventCode);
+void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
+  // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
+  auto peer = FindOrInitPeer(event.addr);
+  auto peer_id = peer->identifier();
+  bt_log_scope("peer: %s, addr: %s, link_type: %s, class: %s", bt_str(peer_id), bt_str(event.addr),
+               LinkTypeToString(event.link_type).c_str(), bt_str(event.class_of_device));
 
-  const auto& params = event.params<hci::ConnectionCompleteEventParams>();
-  auto connection_handle = letoh16(params.connection_handle);
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
+  // In case of concurrent incoming requests from the same peer, reject all but the first
+  if (ExistsIncomingRequest(peer_id)) {
+    bt_log(WARN, "gap-bredr", "rejecting duplicate incoming connection request");
+    SendRejectConnectionRequest(event.addr, hci::StatusCode::kConnectionRejectedBadBdAddr);
+    return;
+  }
 
-  Peer* peer = cache_->FindByAddress(addr);
-  std::string peer_id_string = peer ? bt_str(peer->identifier()) : "(unknown)";
+  if (event.link_type == hci::LinkType::kACL) {
+    // If we happen to be already connected (for example, if our outgoing raced, or we received
+    // duplicate requests), we reject the request with 'ConnectionAlreadyExists'
+    if (FindConnectionById(peer_id)) {
+      bt_log(WARN, "gap-bredr", "rejecting incoming connection request; already connected");
+      SendRejectConnectionRequest(event.addr, hci::StatusCode::kConnectionAlreadyExists);
+      return;
+    }
 
-  if (pending_request_ && pending_request_->peer_address() == addr) {
+    // Accept the connection, performing a role switch. We receive a Connection Complete event
+    // when the connection is complete, and finish the link then.
+    bt_log(INFO, "gap-bredr", "accepting incoming connection");
+
+    // Register that we're in the middle of an incoming request for this peer - create a new
+    // request if one doesn't already exist
+    auto [request, _ignore] = connection_requests_.try_emplace(peer_id, event.addr);
+    request->second.BeginIncoming();
+
+    SendAcceptConnectionRequest(
+        event.addr.value(),
+        [addr = event.addr, self = weak_ptr_factory_.GetWeakPtr(), peer_id](auto status) {
+          if (self && !status)
+            self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
+        });
+
+    return;
+  }
+
+  if (event.link_type == hci::LinkType::kSCO || event.link_type == hci::LinkType::kExtendedSCO) {
+    auto conn_pair = FindConnectionByAddress(event.addr.value());
+    if (conn_pair) {
+      // The ScoConnectionManager owned by the BrEdrConnection will respond.
+      bt_log(INFO, "gap-bredr", "delegating incoming SCO connection to ScoConnectionManager");
+      return;
+    }
+    bt_log(WARN, "gap-bredr", "rejecting (e)SCO connection request for peer that is not connected");
+    SendRejectSynchronousRequest(event.addr, hci::StatusCode::kUnacceptableConnectionParameters);
+  } else {
+    auto link_type = static_cast<unsigned int>(event.link_type);
+    bt_log(WARN, "gap-bredr", "reject unsupported connection type %u", link_type);
+    SendRejectConnectionRequest(event.addr, hci::StatusCode::kUnsupportedFeatureOrParameter);
+  }
+}
+
+void BrEdrConnectionManager::OnConnectionComplete(ConnectionComplete event) {
+  if (event.link_type != hci::LinkType::kACL) {
+    // Only ACL links are processed
+    return;
+  }
+
+  // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId (we should
+  // usually have a peer by this point)
+  auto peer = FindOrInitPeer(event.addr);
+
+  CompleteRequest(peer->identifier(), event.addr, event.status, event.handle);
+}
+
+// A request for a connection - from an upstream client _or_ a remote peer - completed, successfully
+// or not. This may be due to a ConnectionComplete event being received, or due to a CommandStatus
+// response being received in response to a CreateConnection command
+void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress address,
+                                             hci::Status status, hci::ConnectionHandle handle) {
+  bt_log_scope("peer: %s, addr: %s, handle: %#.4x", bt_str(peer_id), bt_str(address), handle);
+
+  auto req_iter = connection_requests_.find(peer_id);
+  if (req_iter == connection_requests_.end()) {
+    // This could potentially happen if the peer expired from the peer cache during the connection
+    // procedure
     bt_log(INFO, "gap-bredr",
-           "outgoing connection complete (peer: %s, address: %s, status %#.2x, handle: %#.4x)",
-           bt_str(pending_request_->peer_id()), bt_str(params.bd_addr), params.status,
-           connection_handle);
-    auto status = hci::Status(params.status);
-    status = pending_request_->CompleteRequest(status);
+           "ConnectionComplete received for address with no known request (status: %s)",
+           bt_str(status));
+    return;
+  }
+  auto& request = req_iter->second;
 
-    if (!status) {
-      OnConnectFailure(status, pending_request_->peer_id());
+  bool completed_request_was_outgoing =
+      pending_request_ && pending_request_->peer_address() == address;
+  bool failed = !status.is_success();
+
+  const char* direction = completed_request_was_outgoing ? "outgoing" : "incoming";
+  const char* result = status ? "complete" : "error";
+  bt_log(INFO, "gap-bredr", "%s connection %s (status: %s)", direction, result, bt_str(status));
+
+  if (completed_request_was_outgoing) {
+    // Determine the modified status in case of cancellation or timeout
+    status = pending_request_->CompleteRequest(status);
+    pending_request_.reset();
+  } else {
+    // If this was an incoming attempt, clear it
+    request.CompleteIncoming();
+  }
+
+  if (failed) {
+    if (request.HasIncoming() || (!completed_request_was_outgoing && request.AwaitingOutgoing())) {
+      // This request failed, but we're still waiting on either:
+      // * an in-progress incoming request or
+      // * to attempt our own outgoing request
+      // Therefore we don't notify yet - instead take no action, and wait until we finish those
+      // steps before completing the request and notifying callbacks
+      TryCreateNextConnection();
+      return;
+    }
+    request.NotifyCallbacks(status, [] { return nullptr; });
+    connection_requests_.erase(req_iter);
+
+    // The peer may no longer be in the cache by the time this function is called
+    // TODO(fxbug.dev/70878): What if this request failed but a previous one succeeded? This is a
+    // potential race condition in tracking peer state
+    Peer* peer = cache_->FindByAddress(address);
+    if (peer) {
+      peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
     }
   } else {
-    bt_log(INFO, "gap-bredr",
-           "incoming connection complete (address: %s, status %#.2x, handle: %#.4x, peer: %s)",
-           bt_str(params.bd_addr), params.status, connection_handle, peer_id_string.c_str());
+    // Callbacks will be notified when interrogation completes
+    InitializeConnection(address, handle);
   }
 
-  if (params.link_type != hci::LinkType::kACL) {
-    // Drop the connection if we don't support it.
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  }
-
-  if (!hci_is_error(event, WARN, "gap-bredr",
-                    "connection error: (address: %s, handle: %#.4x, peer: %s)",
-                    bt_str(params.bd_addr), connection_handle, peer_id_string.c_str())) {
-    InitializeConnection(addr, connection_handle);
-  }
-  return hci::CommandChannel::EventCallbackResult::kContinue;
+  TryCreateNextConnection();
 }
 
 void BrEdrConnectionManager::OnPeerDisconnect(const hci::Connection* connection) {
@@ -916,75 +985,67 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   return true;
 }
 
-void BrEdrConnectionManager::TryCreateNextConnection() {
-  // There can only be one outstanding BrEdr CreateConnection request at a time
-  if (pending_request_)
-    return;
-
+std::optional<BrEdrConnectionManager::CreateConnectionParams>
+BrEdrConnectionManager::NextCreateConnectionParams() {
   if (connection_requests_.empty()) {
     bt_log(TRACE, "gap-bredr", "no pending requests remaining");
-    return;
+    return std::nullopt;
   }
 
   Peer* peer = nullptr;
-  for (auto& request : connection_requests_) {
-    const auto& next_peer_addr = request.second.address();
-    peer = cache_->FindByAddress(next_peer_addr);
-    if (peer && peer->bredr())
-      break;
+  // We use a rough heuristic of ordering likely connection requests by presence in the peer cache.
+  // If a peer is still in the cache, that implies it was seen more recently which is likely to
+  // correlate with being physically close and therefore still in range when we attempt to connect.
+  //
+  // So first try a request for which we have a peer struct:
+  for (auto& [identifier, request] : connection_requests_) {
+    const auto& addr = request.address();
+    peer = cache_->FindByAddress(addr);
+    if (peer && peer->bredr() && !request.HasIncoming())
+      return std::optional(CreateConnectionParams{peer->identifier(), addr,
+                                                  peer->bredr()->clock_offset(),
+                                                  peer->bredr()->page_scan_repetition_mode()});
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_failure = [self](hci::Status status, auto peer_id) {
-    if (self && !status) {
-      self->OnConnectFailure(status, peer_id);
+  // Otherwise, fall back to any other requests - it is entirely possible that while a connection is
+  // pending, discovery has ended and the peer which was intended to be connected to has timed out
+  // of the peer cache, but may still be in range and connectable.
+  for (auto& [identifier, request] : connection_requests_) {
+    if (!request.HasIncoming()) {
+      return std::optional(
+          CreateConnectionParams{identifier, request.address(), std::nullopt, std::nullopt});
     }
+  }
+  // Finally, if we didn't find a connection request we could process at this time:
+  return std::nullopt;
+}
+
+void BrEdrConnectionManager::TryCreateNextConnection() {
+  // There can only be one outstanding BrEdr CreateConnection request at a time
+  if (pending_request_) {
+    return;
+  }
+
+  auto next = NextCreateConnectionParams();
+  if (next) {
+    InitiatePendingConnection(*next);
+  }
+}
+
+void BrEdrConnectionManager::InitiatePendingConnection(CreateConnectionParams params) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto on_failure = [self, addr = params.addr](hci::Status status, auto peer_id) {
+    if (self && !status)
+      self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
   };
   auto on_timeout = [self] {
     if (self)
       self->OnRequestTimeout();
   };
-
-  if (peer) {
-    pending_request_.emplace(peer->identifier(), peer->address(), on_timeout);
-    pending_request_->CreateConnection(
-        hci_->command_channel(), dispatcher_, peer->bredr()->clock_offset(),
-        peer->bredr()->page_scan_repetition_mode(), request_timeout_, on_failure);
-  } else {
-    // If there are no pending requests for peers which are in the cache, try
-    // to connect to a peer which has left the cache, in case it is still
-    // possible
-    auto request = connection_requests_.begin();
-    if (request != connection_requests_.end()) {
-      auto identifier = request->first;
-      auto address = request->second.address();
-
-      pending_request_.emplace(identifier, address, on_timeout);
-      pending_request_->CreateConnection(hci_->command_channel(), dispatcher_, std::nullopt,
-                                         std::nullopt, request_timeout_, on_failure);
-    }
-  }
-}
-
-void BrEdrConnectionManager::OnConnectFailure(hci::Status status, PeerId peer_id) {
-  // The request failed or timed out.
-  bt_log(WARN, "gap-bredr", "Outgoing Connection Request failed (peer: %s, status: %s)",
-         bt_str(peer_id), bt_str(status));
-  Peer* peer = cache_->FindById(peer_id);
-  // The peer may no longer be in the cache by the time this function is called
-  if (peer) {
-    peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
-  }
-
-  pending_request_.reset();
-
-  // Notify the matching pending callbacks about the failure.
-  auto request = connection_requests_.extract(peer_id);
-  ZX_DEBUG_ASSERT(request);
-  request.mapped().NotifyCallbacks(status, [] { return nullptr; });
-
-  // Process the next pending attempt.
-  TryCreateNextConnection();
+  pending_request_.emplace(params.peer_id, params.addr, on_timeout);
+  pending_request_->CreateConnection(hci_->command_channel(), dispatcher_, params.clock_offset,
+                                     params.page_scan_repetition_mode, request_timeout_,
+                                     on_failure);
 }
 
 void BrEdrConnectionManager::OnRequestTimeout() {
@@ -1116,6 +1177,66 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
     };
   }
   hci_->command_channel()->SendCommand(std::move(command_packet), std::move(command_cb));
+}
+
+void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr,
+                                                         hci::StatusCallback cb) {
+  auto accept = hci::CommandPacket::New(hci::kAcceptConnectionRequest,
+                                        sizeof(hci::AcceptConnectionRequestCommandParams));
+  auto accept_params = accept->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
+  accept_params->bd_addr = addr;
+  accept_params->role = hci::ConnectionRole::kMaster;
+
+  hci::CommandChannel::CommandCallback command_cb;
+  if (cb) {
+    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+      cb(event.ToStatus());
+    };
+  }
+
+  hci_->command_channel()->SendCommand(std::move(accept), std::move(command_cb),
+                                       hci::kCommandStatusEventCode);
+}
+
+void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr, hci::StatusCode reason,
+                                                         hci::StatusCallback cb) {
+  auto reject = hci::CommandPacket::New(hci::kRejectConnectionRequest,
+                                        sizeof(hci::RejectConnectionRequestCommandParams));
+  auto reject_params = reject->mutable_payload<hci::RejectConnectionRequestCommandParams>();
+  reject_params->bd_addr = addr.value();
+  reject_params->reason = reason;
+
+  hci::CommandChannel::CommandCallback command_cb;
+  if (cb) {
+    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+      cb(event.ToStatus());
+    };
+  }
+
+  hci_->command_channel()->SendCommand(std::move(reject), std::move(command_cb),
+                                       hci::kCommandStatusEventCode);
+}
+
+void BrEdrConnectionManager::SendRejectSynchronousRequest(DeviceAddress addr,
+                                                          hci::StatusCode reason,
+                                                          hci::StatusCallback cb) {
+  auto reject =
+      hci::CommandPacket::New(hci::kRejectSynchronousConnectionRequest,
+                              sizeof(hci::RejectSynchronousConnectionRequestCommandParams));
+  auto reject_params =
+      reject->mutable_payload<hci::RejectSynchronousConnectionRequestCommandParams>();
+  reject_params->bd_addr = addr.value();
+  reject_params->reason = reason;
+
+  hci::CommandChannel::CommandCallback command_cb;
+  if (cb) {
+    command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {
+      cb(event.ToStatus());
+    };
+  }
+
+  hci_->command_channel()->SendCommand(std::move(reject), std::move(command_cb),
+                                       hci::kCommandStatusEventCode);
 }
 
 }  // namespace bt::gap

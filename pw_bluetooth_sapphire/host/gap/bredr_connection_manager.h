@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -140,20 +141,53 @@ class BrEdrConnectionManager final {
   // called with the result of the procedure, successful or not.
   void Pair(PeerId peer_id, BrEdrSecurityRequirements security, hci::StatusCallback callback);
 
-  // Called when the controller can not begin a new connection.
-  void OnConnectFailure(hci::Status status, PeerId peer_id);
-
-  // Called to cancel an outgoing connection request
-  void SendCreateConnectionCancelCommand(DeviceAddress addr);
-
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id, DisconnectReason reason);
 
+ private:
+  // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
+  // An event signifying that a connection was completed by the controller
+  struct ConnectionComplete {
+    DeviceAddress addr;
+    hci::ConnectionHandle handle;
+    hci::Status status;
+    hci::LinkType link_type;
+
+    // Create from an hci ConnectionComplete event
+    // It is the duty of the caller to ensure it is called with a packet that contains a
+    // ConnectionComplete event; otherwise it will assert
+    explicit ConnectionComplete(const hci::EventPacket& event);
+
+    hci::Status ToStatus() { return status; }
+  };
+
+  // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
+  // An event signifying that an incoming connection is being requested by a peer
+  struct ConnectionRequestEvent {
+    DeviceAddress addr;
+    hci::LinkType link_type;
+    DeviceClass class_of_device;
+
+    // Create from an hci ConnectionRequest event
+    // It is the duty of the caller to ensure it is called with a packet that contains a
+    // ConnectionRequest event; otherwise it will assert
+    explicit ConnectionRequestEvent(const hci::EventPacket& event);
+  };
+
   // Callback for hci::Connection. Called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);
 
- private:
+  // Called to cancel an outgoing connection request
+  void SendCreateConnectionCancelCommand(DeviceAddress addr);
+
+  // Attempt to complete the active connection request for the peer |peer_id| with status |status|
+  void CompleteRequest(PeerId peer_id, DeviceAddress address, hci::Status status,
+                       hci::ConnectionHandle handle);
+
+  // Is there a current incoming connection request in progress for the given address
+  bool ExistsIncomingRequest(PeerId id);
+
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
 
@@ -190,8 +224,8 @@ class BrEdrConnectionManager final {
 
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnConnectionComplete(const hci::EventPacket& event);
+  void OnConnectionRequest(ConnectionRequestEvent request);
+  void OnConnectionComplete(ConnectionComplete event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(const hci::EventPacket& event);
@@ -204,6 +238,20 @@ class BrEdrConnectionManager final {
   // Called when we complete a pending request. Initiates a new connection
   // attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();
+
+  // Collective parameters needed to begin a CreateConnection procedure
+  struct CreateConnectionParams {
+    PeerId peer_id;
+    DeviceAddress addr;
+    std::optional<uint16_t> clock_offset;
+    std::optional<hci::PageScanRepetitionMode> page_scan_repetition_mode;
+  };
+
+  // Find the next valid Request that is available to begin connecting
+  std::optional<CreateConnectionParams> NextCreateConnectionParams();
+
+  // Begin a CreateConnection procedure for a given Request
+  void InitiatePendingConnection(CreateConnectionParams request);
 
   // Called when a request times out waiting for a connection complete packet,
   // *after* the command status was received. This is responsible for canceling
@@ -237,6 +285,11 @@ class BrEdrConnectionManager final {
                                        hci::StatusCallback cb = nullptr);
   void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci::LinkKey link_key,
                                hci::StatusCallback cb = nullptr);
+  void SendAcceptConnectionRequest(DeviceAddressBytes addr, hci::StatusCallback cb = nullptr);
+  void SendRejectConnectionRequest(DeviceAddress addr, hci::StatusCode reason,
+                                   hci::StatusCallback cb = nullptr);
+  void SendRejectSynchronousRequest(DeviceAddress addr, hci::StatusCode reason,
+                                    hci::StatusCallback cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
   // will be decoded for its status, which is passed to |cb|.

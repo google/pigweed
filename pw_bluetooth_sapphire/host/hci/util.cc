@@ -113,6 +113,19 @@ std::string StatusCodeToString(StatusCode code) {
 }
 // clang-format on
 
+std::string LinkTypeToString(hci::LinkType link_type) {
+  switch (link_type) {
+    case LinkType::kSCO:
+      return "SCO";
+    case LinkType::kACL:
+      return "ACL";
+    case LinkType::kExtendedSCO:
+      return "eSCO";
+    default:
+      return "<Unknown LinkType>";
+  };
+}
+
 bool DeviceAddressFromAdvReport(const LEAdvertisingReportData& report, DeviceAddress* out_address,
                                 bool* out_resolved) {
   ZX_DEBUG_ASSERT(out_address);

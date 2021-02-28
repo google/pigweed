@@ -22,13 +22,21 @@ namespace bt::gap {
 // There is at most One ConnectionRequest per address at any given time; if
 // multiple clients wish to connect, they each append a callback to the list in
 // the ConnectionRequest for the device they are interested in.
+//
+// If a remote peer makes an incoming request for a connection, we track that
+// here also - whether an incoming request is pending is indicated by
+// HasIncoming()
 template <typename ConnectionRef>
 class ConnectionRequest final {
  public:
   using OnComplete = fit::function<void(hci::Status, ConnectionRef)>;
   using RefFactory = fit::function<ConnectionRef()>;
 
-  ConnectionRequest(const DeviceAddress& addr, OnComplete&& callback) : address_(addr) {
+  // Construct without a callback. Can be used for incoming only requests
+  explicit ConnectionRequest(const DeviceAddress& addr) : address_(addr), has_incoming_(false) {}
+
+  ConnectionRequest(const DeviceAddress& addr, OnComplete&& callback)
+      : address_(addr), has_incoming_(false) {
     callbacks_.push_back(std::move(callback));
   }
 
@@ -47,11 +55,17 @@ class ConnectionRequest final {
     }
   }
 
+  void BeginIncoming() { has_incoming_ = true; }
+  void CompleteIncoming() { has_incoming_ = false; }
+  bool HasIncoming() { return has_incoming_; }
+  bool AwaitingOutgoing() { return !callbacks_.empty(); }
+
   DeviceAddress address() const { return address_; }
 
  private:
   DeviceAddress address_;
   std::list<OnComplete> callbacks_;
+  bool has_incoming_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ConnectionRequest);
 };
