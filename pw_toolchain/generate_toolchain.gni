@@ -300,7 +300,10 @@ template("generate_toolchain") {
       tool("link") {
         command = _link_command
         description = "ld $_link_outfile"
-        outputs = [ _link_outfile ]
+        outputs = [
+          _link_outfile,
+          _link_mapfile,
+        ]
         default_output_dir = "{{target_out_dir}}/bin"
 
         if (defined(invoker.final_binary_extension)) {
@@ -315,7 +318,10 @@ template("generate_toolchain") {
       tool("solink") {
         command = _link_command + " -shared"
         description = "ld -shared $_link_outfile"
-        outputs = [ _link_outfile ]
+        outputs = [
+          _link_outfile,
+          _link_mapfile,
+        ]
         default_output_dir = "{{target_out_dir}}/lib"
         default_output_extension = ".so"
       }
