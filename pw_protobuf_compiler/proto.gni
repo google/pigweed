@@ -49,7 +49,6 @@ template("_pw_invoke_protoc") {
       rebase_path(get_target_outputs(":${invoker.base_target}._includes"))
 
   pw_python_action("$target_name._gen") {
-    forward_variables_from(invoker, [ "metadata" ])
     script =
         "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
 
@@ -88,6 +87,15 @@ template("_pw_invoke_protoc") {
       outputs = invoker.outputs
     } else {
       stamp = true
+    }
+
+    if (defined(invoker.metadata)) {
+      metadata = invoker.metadata
+    } else {
+      metadata = {
+        protoc_outputs = rebase_path(outputs)
+        root = [ rebase_path(_out_dir) ]
+      }
     }
   }
 }
@@ -252,42 +260,49 @@ template("_pw_go_proto_library") {
 # the generated files. This is internal and should not be used outside of this
 # file. Use pw_proto_library instead.
 template("_pw_python_proto_library") {
-  _target = target_name
-
   _pw_invoke_protoc(target_name) {
-    forward_variables_from(invoker, "*", _forwarded_vars)
+    forward_variables_from(invoker, "*", _forwarded_vars + [ "python_package" ])
     language = "python"
     python_deps = [ "$dir_pw_protobuf_compiler:protobuf_requirements" ]
   }
 
-  _setup_py = "${invoker.base_out_dir}/python/setup.py"
+  if (defined(invoker.python_package) && invoker.python_package != "") {
+    # If nested in a Python package, write the package's name to a file so
+    # pw_python_package can check that the dependencies are correct.
+    write_file("${invoker.base_out_dir}/python_package.txt",
+               get_label_info(invoker.python_package, "label_no_toolchain"))
 
-  # Create the setup and init files for the Python package.
-  action(target_name + "._package_gen") {
-    script = "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_python_package.py"
-    args = [
-             "--setup",
-             rebase_path(_setup_py),
-             "--package",
-             invoker._package_dir,
-           ] + rebase_path(invoker.outputs, "${invoker.base_out_dir}/python")
-
-    if (invoker.module_as_package != "") {
-      args += [ "--module-as-package" ]
+    # If anyone attempts to depend on this Python package, print an error.
+    pw_error(target_name) {
+      _pkg = get_label_info(invoker.python_package, "label_no_toolchain")
+      message_lines = [
+        "This proto Python package is embedded in the $_pkg Python package.",
+        "It cannot be used directly; instead, depend on $_pkg.",
+      ]
     }
+    foreach(subtarget, pw_python_package_subtargets) {
+      group("$target_name.$subtarget") {
+        deps = [ ":${invoker.target_name}" ]
+      }
+    }
+  } else {
+    write_file("${invoker.base_out_dir}/python_package.txt", "")
 
-    public_deps = [ ":$_target._gen($default_toolchain)" ]
-    outputs = [ _setup_py ]
-  }
+    # Create a Python package with the generated source files.
+    pw_python_package(target_name) {
+      forward_variables_from(invoker, _forwarded_vars)
+      generate_setup = {
+        name = invoker._package_dir
+        version = "0.0.1"  # TODO(hepler): Need to be able to set this verison.
+      }
+      sources = invoker.outputs
+      strip_prefix = "${invoker.base_out_dir}/python"
+      python_deps = invoker.deps
+      other_deps = [ ":$target_name._gen($default_toolchain)" ]
+      lint = false
 
-  # Create a Python package with the generated source files.
-  pw_python_package(target_name) {
-    forward_variables_from(invoker, _forwarded_vars)
-    setup = [ _setup_py ]
-    sources = invoker.outputs
-    python_deps = invoker.deps
-    other_deps = [ ":$_target._package_gen($default_toolchain)" ]
-    _pw_generated = true
+      _pw_module_as_package = invoker.module_as_package != ""
+    }
   }
 }
 
@@ -309,6 +324,7 @@ template("_pw_python_proto_library") {
 #       compiled with protoc as "nested/foo.proto".
 #   strip_prefix: Remove this prefix from the source protos. All source and
 #       input files must be nested under this path.
+#   python_package: Label of Python package in which to nest the proto modules.
 #
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
@@ -348,8 +364,9 @@ template("pw_proto_library") {
     # This is the output directory for all files related to this proto library.
     # Sources are mirrored to "$base_out_dir/sources" and protoc puts outputs in
     # "$base_out_dir/$language" by default.
-    base_out_dir = get_label_info(":$target_name($default_toolchain)",
-                                  "target_gen_dir") + "/$target_name"
+    base_out_dir =
+        get_label_info(":$target_name($default_toolchain)", "target_gen_dir") +
+        "/$target_name.proto_library"
 
     compile_dir = "$base_out_dir/sources"
 
@@ -422,7 +439,7 @@ template("pw_proto_library") {
     deps = process_file_template(_deps, "{{source}}._includes")
 
     data_keys = [ "protoc_includes" ]
-    outputs = [ "$target_gen_dir/${_common.base_target}/includes.txt" ]
+    outputs = [ "${_common.base_out_dir}/includes.txt" ]
 
     # Indicate this library's base directory for its dependents.
     metadata = {
@@ -537,6 +554,7 @@ template("pw_proto_library") {
 
   _pw_python_proto_library("$target_name.python") {
     forward_variables_from(_common, "*")
+    forward_variables_from(invoker, [ "python_package" ])
     module_as_package = _module_as_package
 
     deps = []

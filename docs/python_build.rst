@@ -302,11 +302,6 @@ nested within existing Python packages. In this case, the Python package in the
 source tree is incomplete; the final Python package, including protobufs, is
 generated in the output directory.
 
-.. admonition:: Under construction
-
-  Protobuf modules are currently only generated as standalone packages. Support
-  for generating protobuf modules into existing packages will be added.
-
 Generating setup.py
 -------------------
 The ``pw_python_package`` target in the ``BUILD.gn`` duplicates much of the

@@ -15,10 +15,11 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/input_group.gni")
+import("$dir_pw_build/mirror_tree.gni")
 import("$dir_pw_build/python_action.gni")
 
 # Python packages provide the following targets as $target_name.$subtarget.
-_python_subtargets = [
+pw_python_package_subtargets = [
   "tests",
   "lint",
   "lint.mypy",
@@ -47,12 +48,16 @@ _python_subtargets = [
 # Args:
 #   setup: List of setup file paths (setup.py or pyproject.toml & setup.cfg),
 #       which must all be in the same directory.
+#   generate_setup: As an alternative to 'setup', generate setup files with the
+#       keywords in this scope. 'name' is required.
 #   sources: Python sources files in the package.
 #   tests: Test files for this Python package.
 #   python_deps: Dependencies on other pw_python_packages in the GN build.
 #   python_test_deps: Test-only pw_python_package dependencies.
 #   other_deps: Dependencies on GN targets that are not pw_python_packages.
 #   inputs: Other files to track, such as package_data.
+#   proto_library: A pw_proto_library target to embed in this Python package.
+#       generate_setup is required in place of setup if proto_library is used.
 #   lint: If true (default), applies mypy and pylint to the package. If false,
 #       does not.
 #   pylintrc: Optional path to a pylintrc configuration file to use. If not
@@ -64,18 +69,6 @@ _python_subtargets = [
 #       executed from the package's setup directory, so mypy.ini files in that
 #       directory will take precedence over others.
 template("pw_python_package") {
-  if (defined(invoker.sources)) {
-    _all_py_files = invoker.sources
-  } else {
-    _all_py_files = []
-  }
-
-  if (defined(invoker.tests)) {
-    _test_sources = invoker.tests
-  } else {
-    _test_sources = []
-  }
-
   # The Python targets are always instantiated in the default toolchain. Use
   # fully qualified labels so that the toolchain is not lost.
   _other_deps = []
@@ -85,64 +78,111 @@ template("pw_python_package") {
     }
   }
 
-  _all_py_files += _test_sources
+  _python_deps = []
+  if (defined(invoker.python_deps)) {
+    foreach(dep, invoker.python_deps) {
+      _python_deps += [ get_label_info(dep, "label_with_toolchain") ]
+    }
+  }
 
   # pw_python_script uses pw_python_package, but with a limited set of features.
   # _pw_standalone signals that this target is actually a pw_python_script.
   _is_package = !(defined(invoker._pw_standalone) && invoker._pw_standalone)
 
-  # Some build targets generate Python packages, setting _pw_generated to
-  # indicate this.
-  _is_generated_package =
-      defined(invoker._pw_generated) && invoker._pw_generated
+  _generate_package = false
 
-  # Argument: invoker.lint = [true | false]; default = true.
-  # Default to false for generated packages, but allow overrides.
+  # Check the generate_setup and import_protos args to determine if this package
+  # is generated.
+  if (_is_package) {
+    assert(defined(invoker.generate_setup) != defined(invoker.setup),
+           "Either 'setup' or 'generate_setup' (but not both) must provided")
+
+    if (defined(invoker.proto_library)) {
+      assert(invoker.proto_library != "", "'proto_library' cannot be empty")
+      assert(defined(invoker.generate_setup),
+             "Python packages that import protos with 'proto_library' must " +
+                 "use 'generate_setup' instead of 'setup'")
+
+      _import_protos = [ invoker.proto_library ]
+    } else if (defined(invoker.generate_setup)) {
+      _import_protos = []
+    }
+
+    if (defined(invoker.generate_setup)) {
+      _generate_package = true
+      _setup_dir = "$target_gen_dir/$target_name.generated_python_package"
+
+      if (defined(invoker.strip_prefix)) {
+        _source_root = invoker.strip_prefix
+      } else {
+        _source_root = "."
+      }
+    } else {
+      # Non-generated packages with sources provided need an __init__.py.
+      assert(!defined(invoker.sources) || invoker.sources == [] ||
+                 filter_include(invoker.sources, [ "*\b__init__.py" ]) != [],
+             "Python packages must have at least one __init__.py file")
+
+      # Get the directories of the setup files. All must be in the same dir.
+      _setup_dirs = get_path_info(invoker.setup, "dir")
+      _setup_dir = _setup_dirs[0]
+
+      foreach(dir, _setup_dirs) {
+        assert(dir == _setup_dir,
+               "All files in 'setup' must be in the same directory")
+      }
+
+      assert(!defined(invoker.strip_prefix),
+             "'strip_prefix' may only be given if 'generate_setup' is provided")
+    }
+  }
+
+  # Process arguments defaults and set defaults.
+
+  # Argument: lint (bool); default = true.
   if (defined(invoker.lint)) {
     _should_lint = invoker.lint
   } else {
-    _should_lint = !_is_generated_package
+    _should_lint = true
   }
 
-  if (_is_package) {
-    assert(defined(invoker.setup) && invoker.setup != [],
-           "pw_python_package requires 'setup' to point to a setup.py file " +
-               "or pyproject.toml and setup.cfg files")
-
-    if (!_is_generated_package) {
-      _all_py_files += invoker.setup
-    }
-
-    # Get the directories of the setup files. All files must be in the same dir.
-    _setup_dirs = get_path_info(invoker.setup, "dir")
-    _setup_dir = _setup_dirs[0]
-
-    foreach(dir, _setup_dirs) {
-      assert(dir == _setup_dir,
-             "All files in 'setup' must be in the same directory")
-    }
-
-    # If sources are provided, make sure there is an __init__.py file.
-    if (!_is_generated_package && defined(invoker.sources) &&
-        invoker.sources != []) {
-      assert(filter_include(invoker.sources, [ "*\b__init__.py" ]) != [],
-             "Python packages must have at least one __init__.py file")
+  # Argument: sources (list)
+  _sources = []
+  if (defined(invoker.sources)) {
+    if (_generate_package) {
+      foreach(source, rebase_path(invoker.sources, _source_root)) {
+        _sources += [ "$_setup_dir/$source" ]
+      }
+    } else {
+      _sources += invoker.sources
     }
   }
 
-  _python_deps = []
-  if (defined(invoker.python_deps)) {
-    foreach(dep, invoker.python_deps) {
-      # Use the fully qualified name so the subtarget can be appended as needed.
-      _python_deps += [ get_label_info(dep, "label_no_toolchain") ]
+  # Argument: tests (list)
+  _test_sources = []
+  if (defined(invoker.tests)) {
+    if (_generate_package) {
+      foreach(source, rebase_path(invoker.tests, _source_root)) {
+        _test_sources += [ "$_setup_dir/$source" ]
+      }
+    } else {
+      _test_sources += invoker.tests
     }
   }
 
-  # All dependencies needed for the package and its tests.
-  _python_test_deps = _python_deps
+  # Argument: setup (list)
+  _setup_sources = []
+  if (defined(invoker.setup)) {
+    _setup_sources = invoker.setup
+  } else if (_generate_package) {
+    _setup_sources = [ "$_setup_dir/setup.py" ]
+  }
+
+  # Argument: python_test_deps (list)
+  _python_test_deps = _python_deps  # include all deps in test deps
   if (defined(invoker.python_test_deps)) {
-    foreach(test_dep, invoker.python_test_deps) {
-      _python_test_deps += [ get_label_info(test_dep, "label_no_toolchain") ]
+    foreach(dep, invoker.python_test_deps) {
+      _python_test_deps += [ get_label_info(dep, "label_with_toolchain") ]
     }
   }
 
@@ -150,220 +190,339 @@ template("pw_python_package") {
     assert(!defined(invoker.python_test_deps),
            "python_test_deps was provided, but there are no tests in " +
                get_label_info(":$target_name", "label_no_toolchain"))
-    not_needed(_python_test_deps)
+    not_needed([ "_python_test_deps" ])
   }
 
-  _internal_target = "$target_name._internal"
+  _all_py_files = _sources + _test_sources + _setup_sources
 
-  # Create groups with the public target names ($target_name, $target_name.lint,
-  # $target_name.install, etc.). These are actually wrappers around internal
-  # Python actions instantiated with the default toolchain. This ensures there
-  # is only a single copy of each Python action in the build.
-  #
-  # The $target_name.tests group is created separately below.
-  foreach(subtarget, _python_subtargets - [ "tests" ]) {
-    group("$target_name.$subtarget") {
-      deps = [ ":$_internal_target.$subtarget($default_toolchain)" ]
-    }
-  }
+  # The pw_python_package subtargets are only instantiated in the default
+  # toolchain. Other toolchains just refer to targets in the default toolchain.
+  if (current_toolchain == default_toolchain) {
+    # Declare the main Python package group. This represents the Python files,
+    # but does not take any actions. GN targets can depend on the package name
+    # to run when any files in the package change.
+    if (_generate_package) {
+      # If this package is generated, mirror the sources to the final directory.
+      pw_mirror_tree("$target_name._mirror_sources_to_out_dir") {
+        directory = _setup_dir
 
-  group("$target_name") {
-    deps = [ ":$_internal_target($default_toolchain)" ]
-  }
+        sources = []
+        if (defined(invoker.sources)) {
+          sources += invoker.sources
+        }
+        if (defined(invoker.tests)) {
+          sources += invoker.tests
+        }
 
-  # Declare the main Python package group. This represents the Python files, but
-  # does not take any actions. GN targets can depend on the package name to run
-  # when any files in the package change.
-  pw_input_group("$_internal_target") {
-    inputs = _all_py_files
-    if (defined(invoker.inputs)) {
-      inputs += invoker.inputs
-    }
-
-    deps = _python_deps + _other_deps
-  }
-
-  if (_is_package) {
-    # Install this Python package and its dependencies in the current Python
-    # environment.
-    pw_python_action("$_internal_target.install") {
-      module = "pip"
-      args = [ "install" ]
-
-      # Don't install generated packages with --editable, since the build
-      # directory is ephemeral.
-      if (!_is_generated_package) {
-        args += [ "--editable" ]
+        source_root = _source_root
+        public_deps = _python_deps + _other_deps
       }
-      args += [ rebase_path(_setup_dir) ]
 
-      stamp = true
-
-      # Parallel pip installations don't work, so serialize pip invocations.
-      pool = "$dir_pw_build:pip_pool"
-
-      deps = [ ":$_internal_target" ]
-      foreach(dep, _python_deps) {
-        _subtarget = get_label_info(dep, "label_no_toolchain") + ".install"
-        deps += [ "$_subtarget(" + get_label_info(dep, "toolchain") + ")" ]
+      # Depend on the proto's _gen targets (from the default toolchain).
+      _gen_protos = []
+      foreach(proto, _import_protos) {
+        _gen_protos +=
+            [ get_label_info(proto, "label_no_toolchain") + ".python._gen" ]
       }
-    }
 
-    # TODO(pwbug/239): Add support for building groups of wheels. The code below
-    #     is incomplete and untested.
-    pw_python_action("$_internal_target.wheel") {
-      script = "$dir_pw_build/py/pw_build/python_wheels.py"
-
-      args = [
-        "--out_dir",
-        rebase_path(target_out_dir),
-      ]
-      args += rebase_path(_all_py_files)
-
-      deps = [ ":$_internal_target.install" ]
-      stamp = true
-    }
-  } else {
-    # If this is not a package, install or build wheels for its deps only.
-    group("$_internal_target.install") {
-      deps = []
-      foreach(dep, _python_deps) {
-        deps += [ "$dep.install" ]
+      generated_file("$target_name._protos") {
+        deps = _gen_protos
+        data_keys = [ "protoc_outputs" ]
+        outputs = [ "$_setup_dir/protos.txt" ]
       }
-    }
-    group("$_internal_target.wheel") {
-      deps = []
-      foreach(dep, _python_deps) {
-        deps += [ "$dep.wheel" ]
+
+      _protos_file = get_target_outputs(":${invoker.target_name}._protos")
+
+      generated_file("$target_name._protos_root") {
+        deps = _gen_protos
+        data_keys = [ "root" ]
+        outputs = [ "$_setup_dir/proto_root.txt" ]
       }
-    }
-  }
 
-  # Define the static analysis targets for this package.
-  group("$_internal_target.lint") {
-    deps = [
-      ":$_internal_target.lint.mypy",
-      ":$_internal_target.lint.pylint",
-    ]
-  }
+      _root_file = get_target_outputs(":${invoker.target_name}._protos_root")
 
-  if (_should_lint || _test_sources != []) {
-    # Packages that must be installed to use the package or run its tests.
-    _test_install_deps = [ ":$_internal_target.install" ]
-    foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
-      _test_install_deps += [ "$dep.install" ]
-    }
-  }
+      # Get generated_setup scope and write it to disk ask JSON.
+      _gen_setup = invoker.generate_setup
+      assert(defined(_gen_setup.name), "'name' is required in generate_package")
+      assert(!defined(_gen_setup.packages) && !defined(_gen_setup.package_data),
+             "'packages' and 'package_data' may not be provided " +
+                 "in 'generate_package'")
+      write_file("$_setup_dir/setup.json", _gen_setup, "json")
 
-  # For packages that are not generated, create targets to run mypy and pylint.
-  # Linting is not performed on generated packages.
-  if (_should_lint) {
-    # Run lint tools from the setup or target directory so that the tools detect
-    # config files (e.g. pylintrc or mypy.ini) in that directory. Config files
-    # may be explicitly specified with the pylintrc or mypy_ini arguments.
-    if (defined(_setup_dir)) {
-      _lint_directory = rebase_path(_setup_dir)
+      # Generate the setup.py, py.typed, and __init__.py files as needed.
+      action(target_name) {
+        script = "$dir_pw_build/py/pw_build/generate_python_package.py"
+        args = [
+                 "--label",
+                 get_label_info(":$target_name", "label_no_toolchain"),
+                 "--root",
+                 rebase_path(_setup_dir),
+                 "--setup-json",
+                 rebase_path("$_setup_dir/setup.json"),
+                 "--file-list",
+                 rebase_path(_protos_file[0]),
+                 "--file-list-root",
+                 rebase_path(_root_file[0]),
+               ] + rebase_path(_sources)
+
+        if (defined(invoker._pw_module_as_package) &&
+            invoker._pw_module_as_package) {
+          args += [ "--module-as-package" ]
+        }
+
+        public_deps = [
+          ":$target_name._mirror_sources_to_out_dir",
+          ":$target_name._protos",
+          ":$target_name._protos_root",
+        ]
+
+        foreach(proto, _import_protos) {
+          _tgt = get_label_info(proto, "label_no_toolchain")
+          _path = get_label_info("$_tgt($default_toolchain)", "target_gen_dir")
+          _name = get_label_info(_tgt, "name")
+
+          args += [
+            "--proto-library=$_tgt",
+            "--proto-library-file",
+            rebase_path("$_path/$_name.proto_library/python_package.txt"),
+          ]
+
+          public_deps += [ "$_tgt.python._gen($default_toolchain)" ]
+        }
+
+        outputs = _setup_sources
+      }
     } else {
-      _lint_directory = rebase_path(".")
-    }
+      # If the package is not generated, use an input group for the sources.
+      pw_input_group(target_name) {
+        inputs = _all_py_files
+        if (defined(invoker.inputs)) {
+          inputs += invoker.inputs
+        }
 
-    pw_python_action("$_internal_target.lint.mypy") {
-      module = "mypy"
-      args = [
-        "--pretty",
-        "--show-error-codes",
-      ]
-
-      if (defined(invoker.mypy_ini)) {
-        args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
-        inputs = [ invoker.mypy_ini ]
-      }
-
-      args += rebase_path(_all_py_files)
-
-      # Use this environment variable to force mypy to colorize output.
-      # See https://github.com/python/mypy/issues/7771
-      environment = [ "MYPY_FORCE_COLOR=1" ]
-
-      directory = _lint_directory
-      stamp = true
-
-      deps = _test_install_deps
-
-      foreach(dep, _python_test_deps) {
-        deps += [ "$dep.lint.mypy" ]
+        deps = _python_deps + _other_deps
       }
     }
 
-    # Create a target to run pylint on each of the Python files in this
-    # package and its dependencies.
-    pw_python_action_foreach("$_internal_target.lint.pylint") {
-      module = "pylint"
-      args = [
-        rebase_path(".") + "/{{source_target_relative}}",
-        "--jobs=1",
-        "--output-format=colorized",
+    if (_is_package) {
+      # Install this Python package and its dependencies in the current Python
+      # environment.
+      pw_python_action("$target_name.install") {
+        module = "pip"
+        public_deps = []
+
+        args = [ "install" ]
+
+        # For generated packages, reinstall when any files change. For regular
+        # packages, only reinstall when setup.py changes.
+        if (_generate_package) {
+          public_deps += [ ":${invoker.target_name}" ]
+        } else {
+          inputs = invoker.setup
+
+          # Install with --editable since the complete package is in source.
+          args += [ "--editable" ]
+        }
+
+        args += [ rebase_path(_setup_dir) ]
+
+        stamp = true
+
+        # Parallel pip installations don't work, so serialize pip invocations.
+        pool = "$dir_pw_build:pip_pool"
+
+        foreach(dep, _python_deps) {
+          # We need to add a suffix to the target name, but the label is
+          # formatted as "//path/to:target(toolchain)", so we can't just append
+          # ".subtarget". Instead, we replace the opening parenthesis of the
+          # toolchain with ".suffix(".
+          public_deps += [ string_replace(dep, "(", ".install(") ]
+        }
+      }
+
+      # TODO(pwbug/239): Add support for building groups of wheels. The code below
+      #     is incomplete and untested.
+      pw_python_action("$target_name.wheel") {
+        script = "$dir_pw_build/py/pw_build/python_wheels.py"
+
+        args = [
+          "--out_dir",
+          rebase_path(target_out_dir),
+        ]
+        args += rebase_path(_all_py_files)
+
+        deps = [ ":${invoker.target_name}.install" ]
+        stamp = true
+      }
+    } else {
+      # If this is not a package, install or build wheels for its deps only.
+      group("$target_name.install") {
+        deps = []
+        foreach(dep, _python_deps) {
+          deps += [ string_replace(dep, "(", ".install(") ]
+        }
+      }
+      group("$target_name.wheel") {
+        deps = []
+        foreach(dep, _python_deps) {
+          deps += [ string_replace(dep, "(", ".wheel(") ]
+        }
+      }
+    }
+
+    # Define the static analysis targets for this package.
+    group("$target_name.lint") {
+      deps = [
+        ":${invoker.target_name}.lint.mypy",
+        ":${invoker.target_name}.lint.pylint",
       ]
+    }
 
-      if (defined(invoker.pylintrc)) {
-        args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
-        inputs = [ invoker.pylintrc ]
+    if (_should_lint || _test_sources != []) {
+      # All packages to install for either general use or test running.
+      _test_install_deps = [ ":$target_name.install" ]
+      foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
+        _test_install_deps += [ string_replace(dep, "(", ".install(") ]
+      }
+    }
+
+    # For packages that are not generated, create targets to run mypy and pylint.
+    if (_should_lint) {
+      # Run lint tools from the setup or target directory so that the tools detect
+      # config files (e.g. pylintrc or mypy.ini) in that directory. Config files
+      # may be explicitly specified with the pylintrc or mypy_ini arguments.
+      if (defined(_setup_dir)) {
+        _lint_directory = rebase_path(_setup_dir)
+      } else {
+        _lint_directory = rebase_path(".")
       }
 
-      if (host_os == "win") {
-        # Allow CRLF on Windows, in case Git is set to switch line endings.
-        args += [ "--disable=unexpected-line-ending-format" ]
+      pw_python_action("$target_name.lint.mypy") {
+        module = "mypy"
+        args = [
+          "--pretty",
+          "--show-error-codes",
+        ]
+
+        if (defined(invoker.mypy_ini)) {
+          args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
+          inputs = [ invoker.mypy_ini ]
+        }
+
+        args += rebase_path(_all_py_files)
+
+        # Use this environment variable to force mypy to colorize output.
+        # See https://github.com/python/mypy/issues/7771
+        environment = [ "MYPY_FORCE_COLOR=1" ]
+
+        directory = _lint_directory
+        stamp = true
+
+        deps = _test_install_deps
+
+        foreach(dep, _python_test_deps) {
+          deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+        }
       }
 
-      sources = _all_py_files
+      # Create a target to run pylint on each of the Python files in this
+      # package and its dependencies.
+      pw_python_action_foreach("$target_name.lint.pylint") {
+        module = "pylint"
+        args = [
+          rebase_path(".") + "/{{source_target_relative}}",
+          "--jobs=1",
+          "--output-format=colorized",
+        ]
 
-      directory = _lint_directory
-      stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
+        if (defined(invoker.pylintrc)) {
+          args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
+          inputs = [ invoker.pylintrc ]
+        }
 
-      deps = _test_install_deps
+        if (host_os == "win") {
+          # Allow CRLF on Windows, in case Git is set to switch line endings.
+          args += [ "--disable=unexpected-line-ending-format" ]
+        }
 
-      foreach(dep, _python_test_deps) {
-        deps += [ "$dep.lint.pylint" ]
+        sources = _all_py_files
+
+        directory = _lint_directory
+        stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
+
+        public_deps = _test_install_deps
+
+        foreach(dep, _python_test_deps) {
+          public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+        }
+      }
+    } else {
+      pw_input_group("$target_name.lint.mypy") {
+        if (defined(invoker.pylintrc)) {
+          inputs = [ invoker.pylintrc ]
+        }
+      }
+      pw_input_group("$target_name.lint.pylint") {
+        if (defined(invoker.mypy_ini)) {
+          inputs = [ invoker.mypy_ini ]
+        }
       }
     }
   } else {
-    pw_input_group("$_internal_target.lint.mypy") {
-      if (defined(invoker.pylintrc)) {
-        inputs = [ invoker.pylintrc ]
+    # Create groups with the public target names ($target_name, $target_name.lint,
+    # $target_name.install, etc.). These are actually wrappers around internal
+    # Python actions instantiated with the default toolchain. This ensures there
+    # is only a single copy of each Python action in the build.
+    #
+    # The $target_name.tests group is created separately below.
+    group("$target_name") {
+      deps = [ ":$target_name($default_toolchain)" ]
+    }
+
+    foreach(subtarget, pw_python_package_subtargets - [ "tests" ]) {
+      group("$target_name.$subtarget") {
+        deps = [ ":${invoker.target_name}.$subtarget($default_toolchain)" ]
       }
     }
-    pw_input_group("$_internal_target.lint.pylint") {
-      if (defined(invoker.mypy_ini)) {
-        inputs = [ invoker.mypy_ini ]
-      }
-    }
+
+    # Everything Python-related is only instantiated in the default toolchain.
+    # Silence not-needed warnings except for in the default toolchain.
+    not_needed("*")
+    not_needed(invoker, "*")
   }
 
   # Create a target for each test file.
   _test_targets = []
 
   foreach(test, _test_sources) {
-    _test_name = string_replace(test, "/", "_")
-    _internal_test_target = "$_internal_target.tests.$_test_name"
+    if (_is_package) {
+      _name = rebase_path(test, _setup_dir)
+    } else {
+      _name = test
+    }
 
-    pw_python_action(_internal_test_target) {
-      script = test
-      stamp = true
+    _test_target = "$target_name.tests." + string_replace(_name, "/", "_")
 
-      deps = _test_install_deps
+    if (current_toolchain == default_toolchain) {
+      pw_python_action(_test_target) {
+        script = test
+        stamp = true
 
-      foreach(dep, _python_test_deps) {
-        deps += [ "$dep.tests" ]
+        deps = _test_install_deps
+
+        foreach(dep, _python_test_deps) {
+          deps += [ string_replace(dep, "(", ".tests(") ]
+        }
+      }
+    } else {
+      # Create a public version of each test target, so tests can be executed as
+      # //path/to:package.tests.foo.py.
+      group(_test_target) {
+        deps = [ ":$_test_target($default_toolchain)" ]
       }
     }
 
-    # Create a public version of each test target, so tests can be executed as
-    # //path/to:package.tests.foo.py.
-    group("$target_name.tests.$_test_name") {
-      deps = [ ":$_internal_test_target" ]
-    }
-
-    _test_targets += [ ":$target_name.tests.$_test_name" ]
+    _test_targets += [ ":$_test_target" ]
   }
 
   group("$target_name.tests") {
@@ -386,7 +545,7 @@ template("pw_python_group") {
     deps = _python_deps
   }
 
-  foreach(subtarget, _python_subtargets) {
+  foreach(subtarget, pw_python_package_subtargets) {
     group("$target_name.$subtarget") {
       deps = []
       foreach(dep, _python_deps) {
@@ -472,7 +631,7 @@ template("pw_python_requirements") {
 
   # Create stubs for the unused subtargets so that pw_python_requirements can be
   # used as python_deps.
-  foreach(subtarget, _python_subtargets - [ "install" ]) {
+  foreach(subtarget, pw_python_package_subtargets - [ "install" ]) {
     group("$target_name.$subtarget") {
     }
   }

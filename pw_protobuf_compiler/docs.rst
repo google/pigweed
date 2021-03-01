@@ -66,6 +66,8 @@ dependency of another GN target.
   compiled with protoc as ``"nested/foo.proto"``.
 * ``strip_prefix``: Remove this prefix from the source protos. All source and
   input files must be nested under this path.
+* ``python_package``: Label of Python package in which to nest the proto
+  modules.
 
 **Example**
 
@@ -148,6 +150,44 @@ These protos will be compiled by protoc as if they were in this file structure:
   ├── beta.proto
   └── internal
       └── gamma.proto
+
+.. _module-pw_protobuf_compiler-add-to-python-package:
+
+Adding Python proto modules to an existing package
+--------------------------------------------------
+By default, generated Python proto modules are organized into their own Python
+package. These proto modules can instead be added to an existing Python package
+declared with ``pw_python_library``. This is done by setting the
+``python_package`` argument on the ``pw_proto_library`` and the
+``proto_library`` argument on the ``pw_python_package``.
+
+For example, the protos declared in ``my_protos`` will be nested in the Python
+package declared by ``my_package``.
+
+.. code-block::
+
+  pw_proto_library("my_protos") {
+    sources = [ "hello.proto ]
+    prefix = "foo"
+    python_package = ":my_package"
+  }
+
+  pw_python_pacakge("my_package") {
+    generate_setup = {
+      name = "foo"
+      version = "1.0"
+    }
+    sources = [ "foo/cool_module.py" ]
+    proto_library = ":my_protos"
+  }
+
+The ``hello_pb2.py`` proto module can be used alongside other files in the
+``foo`` package.
+
+.. code-block:: python
+
+  from foo import cool_module, hello_pb2
+
 
 Working with externally defined protos
 --------------------------------------

@@ -31,6 +31,9 @@ Arguments
 - ``python_test_deps`` - Test-only pw_python_package dependencies.
 - ``other_deps`` - Dependencies on GN targets that are not pw_python_packages.
 - ``inputs`` - Other files to track, such as package_data.
+- ``proto_library`` - A pw_proto_library target to embed in this Python package.
+  generate_setup is required in place of setup if proto_library is used. See
+  :ref:`module-pw_protobuf_compiler-add-to-python-package`.
 - ``lint`` - If true (default), applies Mypy and Pylint to the package. If
   false, does not.
 - ``pylintrc`` - Optional path to a pylintrc configuration file to use. If not
