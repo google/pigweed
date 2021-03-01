@@ -41,12 +41,25 @@ namespace pw {
 // StringBuilder supports C++-style << output, similar to std::ostringstream. It
 // also supports std::string-like append functions and printf-style output.
 //
-// StringBuilder uses the ToString function to support arbitrary types. Defining
-// a ToString template specialization overload in the pw namespace allows
-// writing that type to a StringBuilder with <<.
+// Support for custom types is added by overloading operator<< in the same
+// namespace as the custom type. For example:
 //
-// For example, the following ToString overload allows writing MyStatus objects
-// to StringBuilders:
+//   namespace my_project {
+//
+//   struct MyType {
+//     int foo;
+//     const char* bar;
+//   };
+//
+//   pw::StringBuilder& operator<<(pw::StringBuilder& sb, const MyType& value) {
+//     return sb << "MyType(" << value.foo << ", " << value.bar << ')';
+//   }
+//
+//   }  // namespace my_project
+//
+// The ToString template function can be specialized to support custom types
+// with StringBuilder, though overloading operator<< is generally preferred. For
+// example:
 //
 //   namespace pw {
 //
@@ -57,32 +70,6 @@ namespace pw {
 //
 //   }  // namespace pw
 //
-// For complex types, it may be easier to override StringBuilder's << operator,
-// similar to the standard library's std::ostream. For example:
-//
-//   namespace pw {
-//
-//   StringBuilder& operator<<(StringBuilder& sb, const MyType& value) {
-//     return sb << "MyType(" << value.foo << ", " << value.bar << ')';
-//   }
-//
-//   }  // namespace pw
-//
-// Alternately, complex types may use a StringBuilder in their ToString, but it
-// is likely to be simpler to override StringBuilder's operator<<.
-//
-// StringBuilder is safe, flexible, and results in much smaller code size than
-// using std::ostringstream. However, applications sensitive to code size should
-// use StringBuilder with care.
-//
-// The fixed code size cost of StringBuilder is significant, though smaller than
-// std::snprintf. Using StringBuilder's << and append methods exclusively in
-// place of snprintf reduces code size, but snprintf may be difficult to avoid.
-//
-// The incremental code size cost of StringBuilder is comparable to snprintf if
-// errors are handled. Each argument to StringBuilder's << expands to a function
-// call, but one or two StringBuilder appends may have a smaller code size
-// impact than a single snprintf call. See the size report for further analysis.
 class StringBuilder {
  public:
   // Creates an empty StringBuilder.
@@ -282,7 +269,7 @@ class StringBuilder {
 //   str.c_str();  // null terminated C string "The answer is 42."
 //   str.view();   // std::string_view of "The answer is 42."
 //
-template <size_t kSizeBytes>
+template <size_t size_bytes>
 class StringBuffer : public StringBuilder {
  public:
   StringBuffer() : StringBuilder(buffer_) {}
@@ -308,7 +295,7 @@ class StringBuffer : public StringBuilder {
   }
 
   StringBuffer& operator=(const StringBuffer& other) {
-    assign<kSizeBytes>(other);
+    assign<size_bytes>(other);
     return *this;
   }
 
@@ -322,9 +309,9 @@ class StringBuffer : public StringBuilder {
   }
 
   // Returns the maximum length of the string, excluding the null terminator.
-  static constexpr size_t max_size() { return kSizeBytes - 1; }
+  static constexpr size_t max_size() { return size_bytes - 1; }
 
-  // Returns a StringBuffer<kSizeBytes>& instead of a generic StringBuilder& for
+  // Returns a StringBuffer<size_bytes>& instead of a generic StringBuilder& for
   // append calls and stream-style operations.
   template <typename... Args>
   StringBuffer& append(Args&&... args) {
@@ -344,8 +331,8 @@ class StringBuffer : public StringBuilder {
     std::memcpy(buffer_, other.data(), other.size() + 1);  // include the \0
   }
 
-  static_assert(kSizeBytes >= 1u, "StringBuffers must be at least 1 byte long");
-  char buffer_[kSizeBytes];
+  static_assert(size_bytes >= 1u, "StringBuffers must be at least 1 byte long");
+  char buffer_[size_bytes];
 };
 
 namespace string_internal {

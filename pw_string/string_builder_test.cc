@@ -582,5 +582,42 @@ static_assert(DefaultStringBufferSize(1234, 5678, 9012, 3456, 7890, 1234) ==
               25);
 static_assert(DefaultStringBufferSize('a', nullptr, 'b', 4, 5, 6, 7, 8) == 33);
 
+struct SomeCustomType {};
+
+StringBuilder& operator<<(StringBuilder& sb, const SomeCustomType&) {
+  return sb << "SomeCustomType was here!";
+}
+
+TEST(StringBuilder, ShiftOperatorOverload_SameNamsepace) {
+  pw::StringBuffer<48> buffer;
+  buffer << SomeCustomType{};
+
+  EXPECT_STREQ("SomeCustomType was here!", buffer.c_str());
+}
+
 }  // namespace
 }  // namespace pw
+
+namespace some_other_ns {
+
+struct MyCustomType {
+  int item;
+};
+
+pw::StringBuilder& operator<<(pw::StringBuilder& sb,
+                              const MyCustomType& value) {
+  return sb << "MyCustomType(" << value.item << ')';
+}
+
+}  // namespace some_other_ns
+
+namespace pw_test_namespace {
+
+TEST(StringBuilder, ShiftOperatorOverload_DifferentNamsepace) {
+  pw::StringBuffer<48> buffer;
+  buffer << "This is " << some_other_ns::MyCustomType{1138};
+
+  EXPECT_STREQ("This is MyCustomType(1138)", buffer.data());
+}
+
+}  // namespace pw_test_namespace
