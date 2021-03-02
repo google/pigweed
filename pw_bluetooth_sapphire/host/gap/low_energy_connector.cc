@@ -72,7 +72,7 @@ LowEnergyConnector::LowEnergyConnector(
       result_cb_(std::move(cb)),
       hci_connector_(connector),
       connection_attempt_(0),
-      interrogator_(peer_cache_, transport, async_get_default_dispatcher()),
+      interrogator_(peer_cache_, transport),
       discovery_manager_(std::move(discovery_manager)),
       transport_(transport),
       le_connection_manager_(conn_mgr),
@@ -322,10 +322,14 @@ void LowEnergyConnector::StartInterrogation() {
 }
 
 void LowEnergyConnector::OnInterrogationComplete(hci::Status status) {
-  if (*state_ == State::kFailed) {
+  // If a disconnect event is received before interrogation completes, state_ will be either kFailed
+  // or kPauseBeforeConnectionRetry depending on the status of the disconnect.
+  ZX_ASSERT(*state_ == State::kInterrogating || *state_ == State::kFailed ||
+            *state_ == State::kPauseBeforeConnectionRetry);
+  if (*state_ == State::kFailed || *state_ == State::kPauseBeforeConnectionRetry) {
     return;
   }
-  ZX_ASSERT(*state_ == State::kInterrogating);
+
   ZX_ASSERT(connection_);
 
   // If the controller responds to an interrogation command with the 0x3e
@@ -360,7 +364,6 @@ void LowEnergyConnector::OnPeerDisconnect(hci::StatusCode status) {
                 StateToString(*state_), bt_str(hci::Status(status)));
   if (*state_ == State::kInterrogating &&
       status != hci::StatusCode::kConnectionFailedToBeEstablished) {
-    interrogator_.Cancel(peer_id_);
     NotifyFailure(hci::Status(status));
     return;
   }

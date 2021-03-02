@@ -63,8 +63,7 @@ class InterrogatorTest : public TestingBase {
     TestingBase::SetUp();
 
     peer_cache_ = std::make_unique<PeerCache>();
-    interrogator_ = std::make_unique<TestInterrogator>(peer_cache_.get(), transport()->WeakPtr(),
-                                                       async_get_default_dispatcher());
+    interrogator_ = std::make_unique<TestInterrogator>(peer_cache_.get(), transport()->WeakPtr());
 
     StartTestDevice();
   }
@@ -137,14 +136,49 @@ TEST_F(GAP_InterrogatorTest,
 
   DeleteInterrogator();
 
-  // The result callback should not be called yet because it is posted.
-  EXPECT_FALSE(result.has_value());
+  // The result callback should be called synchronously.
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
 
   test_device()->SendCommandChannelPacket(
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle));
 
   // Process command complete callback.
   RunLoopUntilIdle();
+}
+
+TEST_F(GAP_InterrogatorTest, Cancel) {
+  std::optional<InterrogationRefPtr> ref;
+  interrogator()->set_send_commands_cb([this, &ref](InterrogationRefPtr r) {
+    ref = std::move(r);
+    EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));
+    interrogator()->ReadRemoteVersionInformation(*ref);
+  });
+
+  auto* peer = peer_cache()->NewPeer(kTestDevAddr, true);
+
+  ASSERT_FALSE(ref.has_value());
+
+  std::optional<hci::Status> result;
+  interrogator()->Start(peer->identifier(), kConnectionHandle,
+                        [&](hci::Status status) { result = status; });
+
+  ASSERT_TRUE(ref.has_value());
+  EXPECT_FALSE(result.has_value());
+
+  interrogator()->Cancel(peer->identifier());
+
+  // The result callback should be called synchronously.
+  EXPECT_TRUE(result.has_value());
+  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
+
+  // Events after Cancel() should be ignored.
+  test_device()->SendCommandChannelPacket(
+      testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle));
+
+  // Process command complete callback.
+  RunLoopUntilIdle();
+  EXPECT_EQ(result.value(), hci::Status(HostError::kCanceled));
 }
 
 }  // namespace bt::gap

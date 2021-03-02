@@ -40,8 +40,7 @@ namespace gap {
 class BrEdrInterrogator final : public Interrogator {
  public:
   // |cache| must live longer than this object.
-  BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
-                    async_dispatcher_t* dispatcher);
+  BrEdrInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci);
 
  private:
   // Interrogator Overrides:

@@ -41,17 +41,17 @@ void Interrogator::Interrogation::Complete(hci::Status status) {
   result_cb_(status);
 }
 
-Interrogator::Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci,
-                           async_dispatcher_t* dispatcher)
-    : hci_(std::move(hci)), dispatcher_(dispatcher), cache_(cache), weak_ptr_factory_(this) {
+Interrogator::Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci)
+    : hci_(std::move(hci)), cache_(cache), weak_ptr_factory_(this) {
   ZX_ASSERT(hci_);
-  ZX_ASSERT(dispatcher_);
   ZX_ASSERT(cache_);
 }
 
 Interrogator::~Interrogator() {
-  for (auto& p : pending_) {
-    Cancel(p.first);
+  while (!pending_.empty()) {
+    auto peer_id = pending_.begin()->first;
+    // Result callback will erase this pending interrogation.
+    Cancel(peer_id);
   }
 }
 
@@ -82,19 +82,13 @@ void Interrogator::Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCal
 }
 
 void Interrogator::Cancel(PeerId peer_id) {
-  async::PostTask(dispatcher_, [peer_id, self = weak_ptr_factory_.GetWeakPtr()]() {
-    if (!self) {
-      return;
-    }
+  auto it = pending_.find(peer_id);
+  if (it == pending_.end()) {
+    return;
+  }
 
-    auto it = self->pending_.find(peer_id);
-    if (it == self->pending_.end()) {
-      return;
-    }
-
-    // Result callback will remove Interrogation from |pending_|.
-    it->second->Complete(hci::Status(HostError::kCanceled));
-  });
+  // Result callback will remove Interrogation from |pending_|.
+  it->second->Complete(hci::Status(HostError::kCanceled));
 }
 
 void Interrogator::ReadRemoteVersionInformation(InterrogationRefPtr interrogation) {

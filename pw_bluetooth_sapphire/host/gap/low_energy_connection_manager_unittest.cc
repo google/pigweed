@@ -70,6 +70,8 @@ const DeviceAddress kAdapterAddress(DeviceAddress::Type::kLEPublic, {9});
 const size_t kLEMaxNumPackets = 10;
 const hci::DataBufferInfo kLEDataBufferInfo(hci::kMaxACLPayloadSize, kLEMaxNumPackets);
 
+constexpr std::array kConnectDelays = {zx::sec(0), zx::sec(2), zx::sec(4)};
+
 const LowEnergyConnectionOptions kConnectionOptions{};
 
 class LowEnergyConnectionManagerTest : public TestingBase {
@@ -2899,15 +2901,14 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetrie
   EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
   // Exhaust retries and cause connection to fail.
-  std::array connect_delays = {0, 2, 4};
-  for (size_t i = 0; i < connect_delays.size(); i++) {
+  for (size_t i = 0; i < kConnectDelays.size(); i++) {
     SCOPED_TRACE(i);
     if (i != 0) {
-      RunLoopFor(zx::sec(connect_delays[i]) - zx::nsec(1));
+      RunLoopFor(kConnectDelays[i] - zx::nsec(1));
       EXPECT_EQ(connected_count, i);
       RunLoopFor(zx::nsec(1));
     } else {
-      RunLoopFor(zx::sec(connect_delays[i]));
+      RunLoopFor(kConnectDelays[i]);
     }
     EXPECT_EQ(connected_count, i + 1);
     EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
@@ -3010,6 +3011,62 @@ TEST_F(GAP_LowEnergyConnectionManagerTest,
   EXPECT_EQ(0u, connected_peers().size());
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kNotConnected, peer->le()->connection_state());
+}
+
+// Tests that receiving a peer kConnectionFailedToBeEstablished disconnect event before
+// interrogation fails does not crash.
+TEST_F(GAP_LowEnergyConnectionManagerTest,
+       ConnectionFailedToBeEstablishedDisconnectionBeforeInterrogationFails) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  EXPECT_TRUE(peer->temporary());
+
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  int connect_cb_count = 0;
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto callback = [&](auto result) {
+    ASSERT_TRUE(result.is_ok());
+    connect_cb_count++;
+    conn_handle = result.take_value();
+  };
+
+  EXPECT_TRUE(connected_peers().empty());
+
+  // Cause interrogation to stall waiting for command complete event.
+  test_device()->SetDefaultCommandStatus(hci::kReadRemoteVersionInfo, hci::StatusCode::kSuccess);
+
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  ASSERT_TRUE(peer->le());
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+  EXPECT_EQ(connect_cb_count, 0);
+
+  // Let retries succeed.
+  test_device()->ClearDefaultCommandStatus(hci::kReadRemoteVersionInfo);
+
+  // Peer disconnection during interrogation should also cause retry (after a pause).
+  test_device()->Disconnect(kAddress0, hci::StatusCode::kConnectionFailedToBeEstablished);
+  RunLoopUntilIdle();
+
+  // Complete interrogation with an error that will be received after the disconnect event.
+  // Event params other than status will be ignored because status is an error.
+  hci::ReadRemoteVersionInfoCompleteEventParams response{.status = hci::kUnknownConnectionId};
+  test_device()->SendEvent(hci::kReadRemoteVersionInfoCompleteEventCode,
+                           BufferView(&response, sizeof(response)));
+  RunLoopUntilIdle();
+  EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
+  EXPECT_EQ(connect_cb_count, 0);
+
+  // Wait for retry.
+  RunLoopFor(kConnectDelays[1]);
+  EXPECT_EQ(connect_cb_count, 1);
+  EXPECT_TRUE(conn_handle);
+  EXPECT_EQ(1u, connected_peers().size());
+  EXPECT_FALSE(peer->temporary());
+  EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
 }
 
 // Behavior verified in this test:

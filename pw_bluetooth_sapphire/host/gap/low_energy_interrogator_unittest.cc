@@ -39,8 +39,8 @@ class LowEnergyInterrogatorTest : public TestingBase {
     TestingBase::SetUp();
 
     peer_cache_ = std::make_unique<PeerCache>();
-    interrogator_ = std::make_unique<LowEnergyInterrogator>(
-        peer_cache_.get(), transport()->WeakPtr(), async_get_default_dispatcher());
+    interrogator_ =
+        std::make_unique<LowEnergyInterrogator>(peer_cache_.get(), transport()->WeakPtr());
 
     StartTestDevice();
   }

@@ -42,13 +42,13 @@ namespace gap {
 class Interrogator {
  public:
   // |cache| must live longer than this object.
-  Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
+  Interrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci);
 
   // Will cancel all uncompleted interrogations.
   virtual ~Interrogator();
 
   // Starts interrogation. Calls |callback| when the sequence is completed or
-  // fails.
+  // fails. Start must not be called for peers with outstanding interrogations.
   using ResultCallback = fit::callback<void(hci::Status status)>;
   void Start(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback callback);
 
@@ -65,7 +65,7 @@ class Interrogator {
     Interrogation(PeerId peer_id, hci::ConnectionHandle handle, ResultCallback result_cb);
     ~Interrogation();
 
-    // Completes interrogation by calling |result_cb| with ||status|, possibly early in the case of
+    // Completes interrogation by calling |result_cb| with |status|, possibly early in the case of
     // an error. No-op if interrogation already completed.
     void Complete(hci::Status status);
 
@@ -102,8 +102,6 @@ class Interrogator {
 
   PeerCache* peer_cache() const { return cache_; }
 
-  async_dispatcher_t* dispatcher() const { return dispatcher_; }
-
   // BR/EDR & LE HCI commands:
 
   // Read the remote version information from the peer.
@@ -112,9 +110,6 @@ class Interrogator {
  private:
   // The hci transport to use.
   fxl::WeakPtr<hci::Transport> hci_;
-
-  // The dispatcher we use.
-  async_dispatcher_t* const dispatcher_;
 
   // Cache to retrieve peer from.
   PeerCache* const cache_;

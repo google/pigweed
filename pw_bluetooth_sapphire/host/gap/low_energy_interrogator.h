@@ -20,7 +20,7 @@ namespace gap {
 class LowEnergyInterrogator final : public Interrogator {
  public:
   // |cache| must live longer than this object.
-  LowEnergyInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci, async_dispatcher_t* dispatcher);
+  LowEnergyInterrogator(PeerCache* cache, fxl::WeakPtr<hci::Transport> hci);
 
  private:
   // Interrogator Overrides:
