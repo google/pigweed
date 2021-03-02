@@ -43,8 +43,9 @@ if (dir_pw_third_party_nanopb != "") {
   }
 
   pw_proto_library("proto") {
-    include_path = "$dir_pw_third_party_nanopb/generator/proto"
+    strip_prefix = "$dir_pw_third_party_nanopb/generator/proto"
     sources = [ "$dir_pw_third_party_nanopb/generator/proto/nanopb.proto" ]
+    python_module_as_package = "nanopb_pb2"
   }
 } else {
   group("nanopb") {

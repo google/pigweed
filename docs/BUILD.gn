@@ -137,5 +137,6 @@ pw_doc_gen("docs") {
     ":core_docs",
     ":module_docs",
     ":target_docs",
+    "$dir_pw_env_setup:python.install",
   ]
 }

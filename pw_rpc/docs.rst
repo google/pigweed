@@ -246,9 +246,9 @@ Testing a pw_rpc integration
 ============================
 After setting up a ``pw_rpc`` server in your project, you can test that it is
 working as intended by registering the provided ``EchoService``, defined in
-``pw_rpc_protos/echo.proto``, which echoes back a message that it receives.
+``echo.proto``, which echoes back a message that it receives.
 
-.. literalinclude:: pw_rpc_protos/echo.proto
+.. literalinclude:: echo.proto
   :language: protobuf
   :lines: 14-
 
@@ -282,7 +282,7 @@ Pigweed RPC packets consist of a type and a set of fields. The packets are
 encoded as protocol buffers. The full packet format is described in
 ``pw_rpc/pw_rpc_protos/internal/packet.proto``.
 
-.. literalinclude:: pw_rpc_protos/internal/packet.proto
+.. literalinclude:: internal/packet.proto
   :language: protobuf
   :lines: 14-
 

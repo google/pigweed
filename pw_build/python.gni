@@ -76,6 +76,15 @@ template("pw_python_package") {
     _test_sources = []
   }
 
+  # The Python targets are always instantiated in the default toolchain. Use
+  # fully qualified labels so that the toolchain is not lost.
+  _other_deps = []
+  if (defined(invoker.other_deps)) {
+    foreach(dep, invoker.other_deps) {
+      _other_deps += [ get_label_info(dep, "label_with_toolchain") ]
+    }
+  }
+
   _all_py_files += _test_sources
 
   # pw_python_script uses pw_python_package, but with a limited set of features.
@@ -171,11 +180,7 @@ template("pw_python_package") {
       inputs += invoker.inputs
     }
 
-    deps = _python_deps
-
-    if (defined(invoker.other_deps)) {
-      deps += invoker.other_deps
-    }
+    deps = _python_deps + _other_deps
   }
 
   if (_is_package) {
@@ -199,7 +204,8 @@ template("pw_python_package") {
 
       deps = [ ":$_internal_target" ]
       foreach(dep, _python_deps) {
-        deps += [ "$dep.install" ]
+        _subtarget = get_label_info(dep, "label_no_toolchain") + ".install"
+        deps += [ "$_subtarget(" + get_label_info(dep, "toolchain") + ")" ]
       }
     }
 

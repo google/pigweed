@@ -20,8 +20,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 
 # Make sure dependencies are optional, since this script may be run when
 # installing Python package dependencies through GN.
@@ -35,13 +34,10 @@ _LOG = logging.getLogger(__name__)
 _COMMON_FLAGS = ('--experimental_allow_proto3_optional', )
 
 
-def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
-) -> argparse.ArgumentParser:
+def _argument_parser() -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
-    if parser is None:
-        parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument('--language',
                         required=True,
@@ -50,17 +46,19 @@ def argument_parser(
     parser.add_argument('--plugin-path',
                         type=Path,
                         help='Path to the protoc plugin')
-    parser.add_argument('--include-path',
-                        required=True,
-                        help='Include path for proto compilation')
     parser.add_argument('--include-file',
                         type=argparse.FileType('r'),
                         help='File containing additional protoc include paths')
     parser.add_argument('--out-dir',
+                        type=Path,
                         required=True,
                         help='Output directory for generated code')
-    parser.add_argument('protos',
-                        metavar='PROTO',
+    parser.add_argument('--compile-dir',
+                        type=Path,
+                        required=True,
+                        help='Root path for compilation')
+    parser.add_argument('--sources',
+                        type=Path,
                         nargs='+',
                         help='Input protobuf files')
 
@@ -89,8 +87,10 @@ def protoc_nanopb_args(args: argparse.Namespace) -> Tuple[str, ...]:
         '--plugin',
         f'protoc-gen-nanopb={args.plugin_path}',
         # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
-        # like when you merge the two using the `flag,...:out` syntax.
-        f'--nanopb_opt=-I{args.include_path}',
+        # like when you merge the two using the `flag,...:out` syntax. Use
+        # Posix-style paths since backslashes on Windows are treated like
+        # escape characters.
+        f'--nanopb_opt=-I{args.compile_dir.as_posix()}',
         f'--nanopb_out={args.out_dir}',
     )
 
@@ -142,14 +142,14 @@ BUILTIN_PROTOC_LANGS = ('go', 'python')
 def main() -> int:
     """Runs protoc as configured by command-line arguments."""
 
-    parser = argument_parser()
+    parser = _argument_parser()
     args = parser.parse_args()
 
     if args.plugin_path is None and args.language not in BUILTIN_PROTOC_LANGS:
         parser.error(
             f'--plugin-path is required for --language {args.language}')
 
-    os.makedirs(args.out_dir, exist_ok=True)
+    args.out_dir.mkdir(parents=True, exist_ok=True)
 
     include_paths = [f'-I{line.strip()}' for line in args.include_file]
 
@@ -169,23 +169,25 @@ def main() -> int:
             args.plugin_path = wrapper_script = Path(file.name)
             _LOG.debug('Using generated plugin wrapper %s', args.plugin_path)
 
+    cmd: Tuple[Union[str, Path], ...] = (
+        'protoc',
+        f'-I{args.compile_dir}',
+        *include_paths,
+        *DEFAULT_PROTOC_ARGS[args.language](args),
+        *args.sources,
+    )
+
     try:
-        process = subprocess.run(
-            [
-                'protoc',
-                f'-I{args.include_path}',
-                *include_paths,
-                *DEFAULT_PROTOC_ARGS[args.language](args),
-                *args.protos,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
+        process = subprocess.run(cmd,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
     finally:
         if wrapper_script:
             wrapper_script.unlink()
 
     if process.returncode != 0:
+        _LOG.error('Protocol buffer compilation failed!\n%s',
+                   ' '.join(str(c) for c in cmd))
         sys.stderr.buffer.write(process.stdout)
         sys.stderr.flush()
 

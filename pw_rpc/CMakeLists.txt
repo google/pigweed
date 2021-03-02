@@ -69,8 +69,12 @@ target_include_directories(pw_rpc.test_utils INTERFACE .)
 
 pw_proto_library(pw_rpc.protos
   SOURCES
-    pw_rpc_protos/internal/packet.proto
-    pw_rpc_protos/echo.proto
+    internal/packet.proto
+    echo.proto
+  INPUTS
+    echo.options
+  PREFIX
+    pw_rpc_protos
 )
 
 pw_proto_library(pw_rpc.test_protos

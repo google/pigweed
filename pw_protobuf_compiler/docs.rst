@@ -57,12 +57,19 @@ dependency of another GN target.
 
 **Arguments**
 
-* ``sources``: List of ``.proto`` files.
-* ``deps``: Other ``pw_proto_library`` targets that this one depends on.
+* ``sources``: List of input .proto files.
+* ``deps``: List of other pw_proto_library dependencies.
+* ``inputs``: Other files on which the protos depend (e.g. nanopb ``.options``
+  files).
+* ``prefix``: A prefix to add to the source protos prior to compilation. For
+  example, a source called ``"foo.proto"`` with ``prefix = "nested"`` will be
+  compiled with protoc as ``"nested/foo.proto"``.
+* ``strip_prefix``: Remove this prefix from the source protos. All source and
+  input files must be nested under this path.
 
 **Example**
 
-.. code::
+.. code-block::
 
   import("$dir_pw_protobuf_compiler/proto.gni")
 
@@ -74,7 +81,13 @@ dependency of another GN target.
   }
 
   pw_proto_library("my_other_protos") {
-    sources = [ "my_other_protos/baz.proto" ]  # imports foo.proto
+    sources = [ "some/other/path/baz.proto" ]  # imports foo.proto
+
+    # This removes the "some/other/path" prefix from the proto files.
+    strip_prefix = "some/other/path"
+
+    # This adds the "my_other_protos/" prefix to the proto files.
+    prefix = "my_other_protos"
 
     # Proto libraries depend on other proto libraries directly.
     deps = [ ":my_protos" ]
@@ -91,21 +104,146 @@ dependency of another GN target.
     deps = [ ":my_other_protos.pwpb" ]
   }
 
+From C++, ``baz.proto`` included as follows:
+
+.. code-block:: cpp
+
+  #include "my_other_protos/baz.pwpb.h"
+
+From Python, ``baz.proto`` is imported as follows:
+
+.. code-block:: python
+
+  from my_other_protos import baz_pb2
+
 Proto file structure
 --------------------
 Protobuf source files must be nested under another directory when they are
-listed in sources. This ensures that they can be packaged properly in Python.
-The first directory is used as the Python package name.
+compiled. This ensures that they can be packaged properly in Python. The first
+directory is used as the Python package name, so must be unique across the
+build. The ``prefix`` option may be used to set this directory.
 
-The requirements for proto file structure in the source tree will be relaxed in
-future updates.
+Using ``prefix`` and ``strip_prefix`` together allows remapping proto files to
+a completely different path. This can be useful when working with protos defined
+in external libraries. For example, consider this proto library:
+
+.. code-block::
+
+  pw_proto_library("external_protos") {
+    sources = [
+      "//other/external/some_library/src/protos/alpha.proto",
+      "//other/external/some_library/src/protos/beta.proto,
+      "//other/external/some_library/src/protos/internal/gamma.proto",
+    ]
+    strip_prefix = "//other/external/some_library/src/protos"
+    prefix = "some_library"
+  }
+
+These protos will be compiled by protoc as if they were in this file structure:
+
+.. code-block::
+
+  some_library/
+  ├── alpha.proto
+  ├── beta.proto
+  └── internal
+      └── gamma.proto
 
 Working with externally defined protos
 --------------------------------------
 ``pw_proto_library`` targets may be used to build ``.proto`` sources from
 existing projects. In these cases, it may be necessary to supply the
-``include_path`` argument, which specifies the protobuf include path to use for
+``strip_prefix`` argument, which specifies the protobuf include path to use for
 ``protoc``. If only a single external protobuf is being compiled, the
-requirement that the protobuf be nested under a directory is waived. This
-exception should only be used when absolutely necessary -- for example, to
-support proto files that includes ``import "nanopb.proto"`` in them.
+``python_module_as_package`` option can be used to override the requirement that
+the protobuf be nested under a directory. This option generates a Python package
+with the same name as the proto file, so that the generated proto can be
+imported as if it were a standalone Python module.
+
+For example, the ``pw_proto_library`` target for Nanopb sets
+``python_module_as_package`` to ``nanopb_pb2``.
+
+.. code-block::
+
+  pw_proto_library("proto") {
+    strip_prefix = "$dir_pw_third_party_nanopb/generator/proto"
+    sources = [ "$dir_pw_third_party_nanopb/generator/proto/nanopb.proto" ]
+    python_module_as_package = "nanopb_pb2"
+  }
+
+In Python, this makes ``nanopb.proto`` available as ``import nanopb_pb2`` via
+the ``nanopb_pb2`` Python package. In C++, ``nanopb.proto`` is accessed as
+``#include "nanopb.pwpb.h"``.
+
+The ``python_module_as_package`` feature should only be used when absolutely
+necessary --- for example, to support proto files that include
+``import "nanopb.proto"``.
+
+CMake
+=====
+CMake provides a ``pw_proto_library`` function with similar features as the
+GN template. The CMake build only supports building firmware code, so
+``pw_proto_library`` does not generate a Python package.
+
+**Arguments**
+
+* ``NAME``: the base name of the libraries to create
+* ``SOURCES``: .proto source files
+* ``DEPS``: dependencies on other ``pw_proto_library`` targets
+* ``PREFIX``: prefix add to the proto files
+* ``STRIP_PREFIX``: prefix to remove from the proto files
+* ``INPUTS``: files to include along with the .proto files (such as Nanopb
+  .options files)
+
+**Example**
+
+ .. code-block:: cmake
+
+  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+  include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+
+  pw_proto_library(my_module.my_protos
+    SOURCES
+      my_protos/foo.proto
+      my_protos/bar.proto
+  )
+
+  pw_proto_library(my_module.my_protos
+    SOURCES
+      my_protos/foo.proto
+      my_protos/bar.proto
+  )
+
+  pw_proto_library(my_module.my_other_protos
+    SOURCES
+      some/other/path/baz.proto  # imports foo.proto
+
+    # This removes the "some/other/path" prefix from the proto files.
+    STRIP_PREFIX
+      some/other/path
+
+    # This adds the "my_other_protos/" prefix to the proto files.
+    PREFIX
+      my_other_protos
+
+    # Proto libraries depend on other proto libraries directly.
+    DEPS
+      my_module.my_protos
+  )
+
+  add_library(my_module.my_cc_code
+      foo.cc
+      bar.cc
+      baz.cc
+  )
+
+  # When depending on protos in a source_set, specify the generator suffix.
+  target_link_libraries(my_module.my_cc_code PUBLIC
+    my_module.my_other_protos.pwpb
+  )
+
+These proto files are accessed in C++ the same as in the GN build:
+
+.. code-block:: cpp
+
+  #include "my_other_protos/baz.pwpb"

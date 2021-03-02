@@ -134,17 +134,18 @@ config("private_includes") {
 
 pw_proto_library("protos") {
   sources = [
-    "pw_rpc_protos/echo.proto",
-    "pw_rpc_protos/internal/packet.proto",
+    "echo.proto",
+    "internal/packet.proto",
   ]
-  inputs = [ "pw_rpc_protos/echo.options" ]
+  inputs = [ "echo.options" ]
+  prefix = "pw_rpc_protos"
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   inputs = [
-    "pw_rpc_protos/echo.proto",
-    "pw_rpc_protos/internal/packet.proto",
+    "echo.proto",
+    "internal/packet.proto",
   ]
   group_deps = [
     "nanopb:docs",

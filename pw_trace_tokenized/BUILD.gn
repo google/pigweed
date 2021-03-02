@@ -64,7 +64,7 @@ pw_source_set("pw_trace_tokenized") {
   ]
   public_deps = [
     ":config",
-    ":pw_trace_tokenized_core",
+    ":core",
     "$dir_pw_tokenizer",
   ]
   if (pw_trace_tokenizer_time != "") {
@@ -77,7 +77,7 @@ pw_source_set("pw_trace_tokenized") {
 pw_test("trace_tokenized_test") {
   enable_if = pw_trace_tokenizer_time != ""
   deps = [
-    ":pw_trace_tokenized_core",
+    ":core",
     "$dir_pw_trace",
   ]
 
@@ -97,6 +97,7 @@ pw_source_set("trace_rpc_service") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ ":trace_rpc_service_proto.nanopb_rpc" ]
   deps = [
+    ":core",
     ":tokenized_trace_buffer",
     "$dir_pw_log",
     "$dir_pw_trace",
@@ -108,7 +109,7 @@ pw_source_set("trace_rpc_service") {
 }
 
 pw_source_set("tokenized_trace_buffer") {
-  deps = [ ":pw_trace_tokenized_core" ]
+  deps = [ ":core" ]
   public_deps = [
     ":config",
     "$dir_pw_ring_buffer",
@@ -154,16 +155,16 @@ pw_test("tokenized_trace_buffer_log_test") {
 }
 
 pw_source_set("fake_trace_time") {
-  deps = [ ":pw_trace_tokenized_core" ]
+  deps = [ ":core" ]
   sources = [ "fake_trace_time.cc" ]
 }
 
 pw_source_set("host_trace_time") {
-  deps = [ ":pw_trace_tokenized_core" ]
+  deps = [ ":core" ]
   sources = [ "host_trace_time.cc" ]
 }
 
-pw_source_set("pw_trace_tokenized_core") {
+pw_source_set("core") {
   public_configs = [
     ":backend_config",
     ":public_include_path",
@@ -185,6 +186,7 @@ pw_source_set("pw_trace_tokenized_core") {
     "public/pw_trace_tokenized/trace_tokenized.h",
   ]
   sources = [ "trace.cc" ]
+  visibility = [ ":*" ]
 }
 
 pw_doc_group("docs") {

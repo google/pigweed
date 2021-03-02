@@ -54,7 +54,7 @@ def _parse_args():
                         required=True,
                         type=Path,
                         help='Path to setup.py file')
-    parser.add_argument('--standalone',
+    parser.add_argument('--module-as-package',
                         action='store_true',
                         help='The package is a standalone external proto')
     parser.add_argument('sources',
@@ -64,10 +64,10 @@ def _parse_args():
     return parser.parse_args()
 
 
-def main(package: str, setup: Path, standalone: bool,
+def main(package: str, setup: Path, module_as_package: bool,
          sources: List[Path]) -> int:
     """Generates __init__.py and py.typed files and a setup.py."""
-    assert not standalone or len(sources) == 2
+    assert not module_as_package or len(sources) == 2
 
     base = setup.parent.resolve()
     base.mkdir(exist_ok=True)
@@ -95,7 +95,7 @@ def main(package: str, setup: Path, standalone: bool,
         package_name = pkg.relative_to(base).as_posix().replace('/', '.')
         pkg_data[package_name].append(mypy_stub.name)
 
-        if standalone:
+        if module_as_package:
             pkg.joinpath('__init__.py').write_text(
                 f'from {mypy_stub.stem}.{mypy_stub.stem} import *\n')
 
