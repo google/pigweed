@@ -49,7 +49,19 @@ _BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
 
 
 def _at_all_optimization_levels(target):
-    for level in ['debug', 'size_optimized', 'speed_optimized']:
+    levels = ('debug', 'size_optimized', 'speed_optimized')
+
+    # Skip optimized host GCC builds for now, since GCC sometimes emits spurious
+    # warnings.
+    #
+    #   -02: GCC 9.3 emits spurious maybe-uninitialized warnings
+    #   -0s: GCC 8.1 (Mingw-w64) emits a spurious nonnull warning
+    #
+    # TODO(pwbug/255): Enable optimized GCC builds when this is fixed.
+    if target == 'host_gcc':
+        levels = ('debug', )
+
+    for level in levels:
         yield f'{target}_{level}'
 
 
@@ -64,30 +76,31 @@ def gn_clang_build(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_gcc_build(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_gcc'))
 
-    # Skip optimized host GCC builds for now, since GCC sometimes emits spurious
-    # warnings.
-    #
-    #   -02: GCC 9.3 emits spurious maybe-uninitialized warnings
-    #   -0s: GCC 8.1 (Mingw-w64) emits a spurious nonnull warning
-    #
-    # TODO(pwbug/255): Enable optimized GCC builds when this is fixed.
-    build.ninja(ctx.output_dir, 'host_gcc_debug')
+
+_HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
+
+
+def gn_host_build(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir)
+    build.ninja(ctx.output_dir,
+                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_quick_build_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, 'host_clang_size_optimized',
+    build.ninja(ctx.output_dir, f'host_{_HOST_COMPILER}_size_optimized',
                 'stm32f429i_size_optimized', 'python.tests', 'python.lint')
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_full_build_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('host_clang'),
-                *_at_all_optimization_levels('stm32f429i'), 'python.tests',
-                'python.lint', 'docs')
+    build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'),
+                *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+                'python.tests', 'python.lint', 'docs')
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
@@ -511,6 +524,8 @@ OTHER_CHECKS = (
     gn_nanopb_build,
     gn_full_build_check,
     gn_full_qemu_check,
+    gn_clang_build,
+    gn_gcc_build,
 )
 
 LINTFORMAT = (
@@ -532,13 +547,14 @@ QUICK = (
 
 FULL = (
     LINTFORMAT,
-    gn_clang_build,
+    gn_host_build,
     gn_arm_build,
     gn_docs_build,
     gn_host_tools,
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
-    # host builds on Mac for now.
-    gn_gcc_build if sys.platform != 'darwin' else (),
+    # host builds on Mac for now. Skip it on Windows too, since gn_host_build
+    # already uses 'gcc' on Windows.
+    gn_gcc_build if sys.platform not in ('darwin', 'win32') else (),
     # Windows doesn't support QEMU yet.
     gn_qemu_build if sys.platform != 'win32' else (),
     gn_qemu_clang_build if sys.platform != 'win32' else (),
