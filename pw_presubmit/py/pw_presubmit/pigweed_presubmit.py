@@ -20,6 +20,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 from typing import Sequence, IO, Tuple, Optional
 
@@ -516,6 +517,39 @@ def commit_message_format(_: PresubmitContext):
         raise PresubmitFailure
 
 
+def static_analysis(ctx: PresubmitContext):
+    """Check that files pass static analyzer checks."""
+    build.gn_gen(ctx.root, ctx.output_dir,
+                 '--export-compile-commands=host_clang_debug')
+    build.ninja(ctx.output_dir, 'host_clang_debug')
+
+    compile_commands = ctx.output_dir.joinpath('compile_commands.json')
+    analyzer_output = ctx.output_dir.joinpath('analyze-build-output')
+
+    if analyzer_output.exists():
+        shutil.rmtree(analyzer_output)
+
+    call('analyze-build',
+         '--cdb',
+         compile_commands,
+         '--exclude',
+         'third_party',
+         '--output',
+         analyzer_output,
+         cwd=ctx.root,
+         env=build.env_with_clang_vars())
+
+    # Search for reports under output directory.
+    reports = list(analyzer_output.glob('*/report*'))
+    if len(reports) != 0:
+        archive = shutil.make_archive(str(analyzer_output), 'zip',
+                                      reports[0].parent)
+        _LOG.error('Static analyzer found errors: %s', archive)
+        _LOG.error('To view report, open: %s',
+                   Path(reports[0]).joinpath('index.html'))
+        raise PresubmitFailure
+
+
 #
 # Presubmit check programs
 #
@@ -533,6 +567,7 @@ OTHER_CHECKS = (
     gn_full_qemu_check,
     gn_clang_build,
     gn_gcc_build,
+    static_analysis,
 )
 
 LINTFORMAT = (

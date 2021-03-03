@@ -22,6 +22,7 @@ setuptools.setup(
     author_email='pigweed-developers@googlegroups.com',
     description='Presubmit tools and a presubmit script for Pigweed',
     install_requires=[
+        'scan-build==2.0.19',
         'yapf==0.30.0',
         'pw_cli',
         'pw_package',
