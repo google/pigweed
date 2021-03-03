@@ -107,8 +107,6 @@ source_set("sources") {
 group("stack") {
   public_deps = [
     "att",
-    "cobalt:base",
-    "cobalt:real",
     "common",
     "gap",
     "gatt",
@@ -197,7 +195,6 @@ group("tests") {
     ":bt-host-driver-tests",
     ":fuzzers",
     "att:bt-host-att-tests",
-    "cobalt:bt-host-cobalt-tests",
     "common:bt-host-common-tests",
     "gap:bt-host-gap-tests",
     "gatt:bt-host-gatt-tests",
