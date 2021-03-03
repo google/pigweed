@@ -20,6 +20,7 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_build/__init__.py",
+    "pw_build/copy_from_cipd.py",
     "pw_build/error.py",
     "pw_build/exec.py",
     "pw_build/generate_python_package_gn.py",
