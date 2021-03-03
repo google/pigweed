@@ -188,7 +188,7 @@ An example of a config file is below.
     "cipd_package_files": [
       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
-      "tools/packages.json"
+      "tools/myprojectname.json"
     ],
     "virtualenv": {
       "gn_root": ".",
@@ -197,6 +197,17 @@ An example of a config file is below.
       ]
     }
   }
+
+In case the CIPD packages need to be referenced from other scripts, variables
+like ``PW_${BASENAME}_CIPD_INSTALL_DIR`` point to the CIPD install directories,
+where ``${BASENAME}`` is "PIGWEED" for
+"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json" and "LUCI" for
+"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json". This example would
+set the following environment variables.
+
+ - ``PW_LUCI_CIPD_INSTALL_DIR``
+ - ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
+ - ``PW_PIGWEED_CIPD_INSTALL_DIR``
 
 Environment Variables
 *********************
