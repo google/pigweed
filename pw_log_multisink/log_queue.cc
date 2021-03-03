@@ -23,9 +23,9 @@ namespace pw::log_rpc {
 namespace {
 
 using pw::protobuf::WireType;
-constexpr std::byte kLogKey = static_cast<std::byte>(pw::protobuf::MakeKey(
+constexpr uint32_t kLogKey = pw::protobuf::MakeKey(
     static_cast<uint32_t>(pw::log::LogEntries::Fields::ENTRIES),
-    WireType::kDelimited));
+    WireType::kDelimited);
 
 }  // namespace
 
@@ -66,7 +66,7 @@ Status LogQueue::PushTokenizedMessage(ConstByteSpan message,
     status = PW_STATUS_INTERNAL;
   } else {
     // Try to push back the encoded log entry.
-    status = ring_buffer_.TryPushBack(log_entry, std::byte(kLogKey));
+    status = ring_buffer_.TryPushBack(log_entry, kLogKey);
   }
 
   if (!status.ok()) {

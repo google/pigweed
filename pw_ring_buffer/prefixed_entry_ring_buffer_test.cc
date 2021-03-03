@@ -114,8 +114,13 @@ void SingleEntryWriteReadTest(bool user_data) {
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), 0u);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), 0u);
 
-    ASSERT_EQ(ring.PushBack(std::span(single_entry_data, data_size), byte(i)),
-              OkStatus());
+    // Limit the value of the preamble to a single byte, to ensure that we
+    // retain a static `single_entry_buffer_size` during the test. Single
+    // bytes are varint-encoded to the same value.
+    uint32_t preamble_byte = i % 128;
+    ASSERT_EQ(
+        ring.PushBack(std::span(single_entry_data, data_size), preamble_byte),
+        OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
@@ -136,7 +141,7 @@ void SingleEntryWriteReadTest(bool user_data) {
     ASSERT_EQ(ring.PopFront(), OkStatus());
 
     if (user_data) {
-      expect_buffer[0] = byte(i);
+      expect_buffer[0] = byte(preamble_byte);
     }
 
     // ASSERT_THAT(std::span(expect_buffer),
@@ -242,8 +247,13 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), 0u);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), 0u);
 
-    ASSERT_EQ(ring.PushBack(std::span(single_entry_data, data_size), byte(i)),
-              OkStatus());
+    // Limit the value of the preamble to a single byte, to ensure that we
+    // retain a static `single_entry_buffer_size` during the test. Single
+    // bytes are varint-encoded to the same value.
+    uint32_t preamble_byte = i % 128;
+    ASSERT_EQ(
+        ring.PushBack(std::span(single_entry_data, data_size), preamble_byte),
+        OkStatus());
     ASSERT_EQ(ring.FrontEntryDataSizeBytes(), data_size);
     ASSERT_EQ(ring.FrontEntryTotalSizeBytes(), single_entry_total_size);
 
@@ -262,7 +272,7 @@ void SingleEntryWriteReadWithSectionWriterTest(bool user_data) {
     ASSERT_EQ(ring.PopFront(), OkStatus());
 
     if (user_data) {
-      expect_buffer[0] = byte(i);
+      expect_buffer[0] = byte(preamble_byte);
     }
 
     ASSERT_EQ(

@@ -169,7 +169,7 @@ class PrefixedEntryRingBufferMulti {
   //
   // Preamble argument is a caller-provided value prepended to the front of the
   // entry. It is only used if user_preamble was set at class construction
-  // time.
+  // time. It is varint-encoded before insertion into the buffer.
   //
   // Return values:
   // OK - Data successfully written to the ring buffer.
@@ -177,15 +177,22 @@ class PrefixedEntryRingBufferMulti {
   // FAILED_PRECONDITION - Buffer not initialized.
   // OUT_OF_RANGE - Size of data is greater than buffer size.
   Status PushBack(std::span<const std::byte> data,
-                  std::byte user_preamble_data = std::byte(0)) {
+                  uint32_t user_preamble_data = 0) {
     return InternalPushBack(data, user_preamble_data, true);
+  }
+
+  // [Deprecated] An implementation of PushBack that accepts a single-byte as
+  // preamble data. Clients should migrate to passing uint32_t preamble data.
+  Status PushBack(std::span<const std::byte> data,
+                  std::byte user_preamble_data) {
+    return PushBack(data, static_cast<uint32_t>(user_preamble_data));
   }
 
   // Write a chunk of data to the ring buffer if there is space available.
   //
   // Preamble argument is a caller-provided value prepended to the front of the
   // entry. It is only used if user_preamble was set at class construction
-  // time.
+  // time. It is varint-encoded before insertion into the buffer.
   //
   // Return values:
   // OK - Data successfully written to the ring buffer.
@@ -195,8 +202,15 @@ class PrefixedEntryRingBufferMulti {
   // RESOURCE_EXHAUSTED - The ring buffer doesn't have space for the data
   // without popping off existing elements.
   Status TryPushBack(std::span<const std::byte> data,
-                     std::byte user_preamble_data = std::byte(0)) {
+                     uint32_t user_preamble_data = 0) {
     return InternalPushBack(data, user_preamble_data, false);
+  }
+
+  // [Deprecated] An implementation of TryPushBack that accepts a single-byte as
+  // preamble data. Clients should migrate to passing uint32_t preamble data.
+  Status TryPushBack(std::span<const std::byte> data,
+                     std::byte user_preamble_data) {
+    return TryPushBack(data, static_cast<uint32_t>(user_preamble_data));
   }
 
   // Get the size in bytes of all the current entries in the ring buffer,
@@ -266,7 +280,7 @@ class PrefixedEntryRingBufferMulti {
   // Push back implementation, which optionally discards front elements to fit
   // the incoming element.
   Status InternalPushBack(std::span<const std::byte> data,
-                          std::byte user_preamble_data,
+                          uint32_t user_preamble_data,
                           bool pop_front_if_needed);
 
   // Internal function to pop all of the slowest readers. This function may pop
@@ -310,10 +324,6 @@ class PrefixedEntryRingBufferMulti {
 
   // List of attached readers.
   IntrusiveList<Reader> readers_;
-
-  // Worst case size for the variable-sized preable that is prepended to
-  // each entry.
-  static constexpr size_t kMaxEntryPreambleBytes = sizeof(size_t) + 1;
 
   // Maximum bufer size allowed. Restricted to this to allow index aliasing to
   // not overflow.

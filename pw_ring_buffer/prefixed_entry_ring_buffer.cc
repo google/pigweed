@@ -75,7 +75,7 @@ Status PrefixedEntryRingBufferMulti::DetachReader(Reader& reader) {
 
 Status PrefixedEntryRingBufferMulti::InternalPushBack(
     std::span<const byte> data,
-    byte user_preamble_data,
+    uint32_t user_preamble_data,
     bool drop_elements_if_needed) {
   if (buffer_ == nullptr) {
     return Status::FailedPrecondition();
@@ -85,10 +85,17 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   }
 
   // Prepare the preamble, and ensure we can fit the preamble and entry.
-  byte varint_buf[kMaxEntryPreambleBytes];
-  size_t varint_bytes = varint::Encode<size_t>(data.size_bytes(), varint_buf);
+  byte preamble_buf[varint::kMaxVarint32SizeBytes];
+  byte length_buf[varint::kMaxVarint32SizeBytes];
+
+  size_t user_preamble_bytes = 0;
+  if (user_preamble_) {
+    user_preamble_bytes =
+        varint::Encode<uint32_t>(user_preamble_data, preamble_buf);
+  }
+  size_t length_bytes = varint::Encode<uint32_t>(data.size_bytes(), length_buf);
   size_t total_write_bytes =
-      (user_preamble_ ? 1 : 0) + varint_bytes + data.size_bytes();
+      user_preamble_bytes + length_bytes + data.size_bytes();
   if (buffer_bytes_ < total_write_bytes) {
     return Status::OutOfRange();
   }
@@ -105,10 +112,12 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   }
 
   // Write the new entry into the ring buffer.
+  // TODO(pwbug/337): This could be more efficient, the preamble and length
+  // data could be written in a single raw write call.
   if (user_preamble_) {
-    RawWrite(std::span(&user_preamble_data, sizeof(user_preamble_data)));
+    RawWrite(std::span(preamble_buf, user_preamble_bytes));
   }
-  RawWrite(std::span(varint_buf, varint_bytes));
+  RawWrite(std::span(length_buf, length_bytes));
   RawWrite(data);
 
   // Update all readers of the new count.
@@ -315,17 +324,27 @@ PrefixedEntryRingBufferMulti::EntryInfo
 PrefixedEntryRingBufferMulti::FrontEntryInfo(Reader& reader) {
   // Entry headers consists of: (optional prefix byte, varint size, data...)
 
-  // Read the entry header; extract the varint and it's size in bytes.
-  byte varint_buf[kMaxEntryPreambleBytes];
+  // If a preamble exists, extract the varint and it's bytes in bytes.
+  size_t user_preamble_bytes = 0;
+  byte varint_buf[varint::kMaxVarint32SizeBytes];
+  if (user_preamble_) {
+    RawRead(varint_buf, reader.read_idx, varint::kMaxVarint32SizeBytes);
+    uint64_t user_preamble_data;
+    user_preamble_bytes = varint::Decode(varint_buf, &user_preamble_data);
+    PW_DASSERT(user_preamble_bytes != 0u);
+  }
+
+  // Read the entry header; extract the varint and it's bytes in bytes.
   RawRead(varint_buf,
-          IncrementIndex(reader.read_idx, user_preamble_ ? 1 : 0),
-          kMaxEntryPreambleBytes);
-  uint64_t entry_size;
-  size_t varint_size = varint::Decode(varint_buf, &entry_size);
+          IncrementIndex(reader.read_idx, user_preamble_bytes),
+          varint::kMaxVarint32SizeBytes);
+  uint64_t entry_bytes;
+  size_t length_bytes = varint::Decode(varint_buf, &entry_bytes);
+  PW_DASSERT(length_bytes != 0u);
 
   EntryInfo info = {};
-  info.preamble_bytes = (user_preamble_ ? 1 : 0) + varint_size;
-  info.data_bytes = entry_size;
+  info.preamble_bytes = user_preamble_bytes + length_bytes;
+  info.data_bytes = entry_bytes;
   return info;
 }
 
