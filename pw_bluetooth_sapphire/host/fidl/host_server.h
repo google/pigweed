@@ -31,8 +31,6 @@
 
 namespace bthost {
 
-class GattHost;
-
 // Custom hanging getter for the `WatchPeers()` method. Here we keep track of each `updated` and
 // `removed` notification per PeerId so that the hanging get contains no duplicates and removed
 // entries aren't reflected in `updated`.
@@ -75,7 +73,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
                    public bt::gap::PairingDelegate {
  public:
   HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
-             fxl::WeakPtr<GattHost> gatt_host);
+             fxl::WeakPtr<bt::gatt::GATT> gatt);
   ~HostServer() override;
 
   // ::fuchsia::bluetooth::host::Host overrides:
@@ -174,8 +172,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   fuchsia::bluetooth::sys::PairingDelegatePtr pairing_delegate_;
 
-  // We hold a weak pointer to GattHost for dispatching GATT FIDL requests.
-  fxl::WeakPtr<GattHost> gatt_host_;
+  // We hold a weak pointer to GATT for dispatching GATT FIDL requests.
+  fxl::WeakPtr<bt::gatt::GATT> gatt_;
 
   bool requesting_discovery_;
   std::unique_ptr<bt::gap::LowEnergyDiscoverySession> le_discovery_session_;

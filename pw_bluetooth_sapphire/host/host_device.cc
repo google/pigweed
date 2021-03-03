@@ -112,7 +112,7 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
         // DDK will call Unbind here to clean up.
       } else {
         bt_log(DEBUG, "bt-host", "adapter initialized; make device visible");
-        host_->gatt_host()->SetRemoteServiceWatcher(
+        host_->gatt()->RegisterRemoteServiceWatcher(
             fit::bind_member(this, &HostDevice::OnRemoteGattServiceAdded));
         txn.Reply(ZX_OK);
         return;
@@ -129,7 +129,7 @@ void HostDevice::DdkUnbind(ddk::UnbindTxn txn) {
 
     // Do this immediately to stop receiving new service callbacks.
     bt_log(TRACE, "bt-host", "removing GATT service watcher");
-    host_->gatt_host()->SetRemoteServiceWatcher({});
+    ignore_gatt_services_ = true;
 
     async::PostTask(loop_.dispatcher(), [this] {
       std::lock_guard<std::mutex> lock(mtx_);
@@ -194,6 +194,10 @@ void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
   }
 
   std::lock_guard<std::mutex> lock(mtx_);
+
+  if (ignore_gatt_services_) {
+    return;
+  }
 
   // This is run on the host event loop. Bind(), Init() and Unbind() should maintain the invariant
   // that  host_ are initialized when the event loop is running.

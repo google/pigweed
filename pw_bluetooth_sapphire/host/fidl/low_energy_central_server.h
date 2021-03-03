@@ -13,10 +13,10 @@
 #include <fbl/macros.h>
 
 #include "lib/fidl/cpp/binding.h"
+#include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_client_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 
 namespace bthost {
 
@@ -25,8 +25,8 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
  public:
   LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                          ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
-                         fxl::WeakPtr<GattHost> gatt_host);
-  ~LowEnergyCentralServer() override;
+                         fxl::WeakPtr<bt::gatt::GATT> gatt);
+  ~LowEnergyCentralServer() override = default;
 
   // Returns the connection pointer in the connections_ map, if it exists. The pointer will be
   // nullptr if a request is pending. Should only be used for testing.
@@ -57,8 +57,11 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   // disconnected.
   void NotifyPeripheralDisconnected(bt::PeerId peer_id);
 
-  // The GATT host is used to instantiate GATT Clients upon connection.
-  fxl::WeakPtr<GattHost> gatt_host_;
+  // GATT is used to construct GattClientServers upon connection.
+  fxl::WeakPtr<bt::gatt::GATT> gatt_;
+
+  // Stores active GATT client FIDL servers. Only 1 client server per peer may exist.
+  std::unordered_map<bt::PeerId, std::unique_ptr<GattClientServer>> gatt_client_servers_;
 
   // The currently active LE discovery session. This is initialized when a
   // client requests to perform a scan.

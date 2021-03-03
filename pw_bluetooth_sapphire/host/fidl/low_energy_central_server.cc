@@ -6,6 +6,7 @@
 
 #include <zircon/assert.h>
 
+#include "gatt_client_server.h"
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -22,16 +23,12 @@ namespace bthost {
 
 LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
                                                fidl::InterfaceRequest<Central> request,
-                                               fxl::WeakPtr<GattHost> gatt_host)
+                                               fxl::WeakPtr<bt::gatt::GATT> gatt)
     : AdapterServerBase(adapter, this, std::move(request)),
-      gatt_host_(gatt_host),
+      gatt_(gatt),
       requesting_scan_(false),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(gatt_host_);
-}
-
-LowEnergyCentralServer::~LowEnergyCentralServer() {
-  gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this), std::nullopt);
+  ZX_ASSERT(gatt_);
 }
 
 std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindConnectionForTesting(
@@ -179,13 +176,25 @@ void LowEnergyCentralServer::ConnectPeripheral(
     ZX_ASSERT(conn_ref);
     ZX_ASSERT(peer_id == conn_ref->peer_identifier());
 
-    uintptr_t token = reinterpret_cast<GattHost::Token>(self.get());
-    self->gatt_host_->BindGattClient(token, peer_id, std::move(request));
+    if (self->gatt_client_servers_.find(peer_id) != self->gatt_client_servers_.end()) {
+      bt_log(WARN, "fidl", "only 1 gatt.Client FIDL handle allowed per peer (%s)", bt_str(peer_id));
+      // The handle owned by |request| will be closed.
+      return;
+    }
 
-    conn_ref->set_closed_callback([self, token, peer_id] {
+    auto server = std::make_unique<GattClientServer>(peer_id, self->gatt_, std::move(request));
+    server->set_error_handler([self, peer_id](zx_status_t status) {
+      if (self) {
+        bt_log(DEBUG, "bt-host", "GATT client disconnected");
+        self->gatt_client_servers_.erase(peer_id);
+      }
+    });
+    self->gatt_client_servers_.emplace(peer_id, std::move(server));
+
+    conn_ref->set_closed_callback([self, peer_id] {
       if (self && self->connections_.erase(peer_id) != 0) {
         bt_log(INFO, "fidl", "connection closed (peer: %s)", bt_str(peer_id));
-        self->gatt_host_->UnbindGattClient(token, {peer_id});
+        self->gatt_client_servers_.erase(peer_id);
         self->NotifyPeripheralDisconnected(peer_id);
       }
     });
@@ -235,7 +244,7 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
   if (was_pending) {
     bt_log(INFO, "fidl", "canceling connection request (peer: %s)", bt_str(*peer_id));
   } else {
-    gatt_host_->UnbindGattClient(reinterpret_cast<GattHost::Token>(this), {*peer_id});
+    gatt_client_servers_.erase(*peer_id);
     NotifyPeripheralDisconnected(*peer_id);
   }
 

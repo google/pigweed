@@ -47,8 +47,6 @@ source_set("fidl_helpers") {
 
 source_set("sources") {
   sources = [
-    "gatt_host.cc",
-    "gatt_host.h",
     "gatt_remote_service_device.cc",
     "gatt_remote_service_device.h",
     "host.cc",
@@ -144,7 +142,6 @@ source_set("driver_tests") {
     "fidl/low_energy_central_server_unittest.cc",
     "fidl/low_energy_peripheral_server_unittest.cc",
     "fidl/profile_server_unittest.cc",
-    "gatt_host_unittest.cc",
   ]
 
   deps = [

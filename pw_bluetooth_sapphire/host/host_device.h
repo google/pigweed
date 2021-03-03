@@ -53,6 +53,9 @@ class HostDevice final : public HostDeviceType {
   // Guards access to members below.
   std::mutex mtx_;
 
+  // Used to ignore new gatt services during & after unbinding.
+  bool ignore_gatt_services_ __TA_GUARDED(mtx_) = false;
+
   // HCI protocol struct
   bt_hci_protocol_t hci_proto_;
 

@@ -15,7 +15,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/lib/fxl/memory/ref_counted.h"
 
 namespace bthost {
@@ -59,8 +58,8 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   // Binds the given |channel| to a Host FIDL interface server.
   void BindHostInterface(zx::channel channel);
 
-  // Returns a pointer to the GATT host. Must not be called after ShutDown().
-  GattHost* gatt_host() const { return gatt_host_.get(); }
+  // Returns a pointer to GATT. Must not be called after ShutDown().
+  bt::gatt::GATT* gatt() const { return gatt_.get(); }
 
  private:
   FRIEND_MAKE_REF_COUNTED(Host);
@@ -78,7 +77,7 @@ class Host final : public fxl::RefCountedThreadSafe<Host> {
   std::unique_ptr<bt::gap::Adapter> gap_;
 
   // The GATT profile layer and bus.
-  std::unique_ptr<GattHost> gatt_host_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
 
   // Currently connected Host interface handle. A Host allows only one of these
   // to be connected at a time.

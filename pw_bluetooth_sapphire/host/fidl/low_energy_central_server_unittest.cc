@@ -40,9 +40,9 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
 
     // Create a LowEnergyCentralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Central> handle;
-    gatt_host_ = std::make_unique<GattHost>(take_gatt());
+    gatt_ = take_gatt();
     server_ = std::make_unique<LowEnergyCentralServer>(adapter(), handle.NewRequest(),
-                                                       gatt_host_->AsWeakPtr());
+                                                       gatt_->AsWeakPtr());
     proxy_.Bind(std::move(handle));
 
     bt::testing::FakeController::Settings settings;
@@ -55,7 +55,7 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
 
     proxy_ = nullptr;
     server_ = nullptr;
-    gatt_host_ = nullptr;
+    gatt_ = nullptr;
 
     RunLoopUntilIdle();
     AdapterTestFixture::TearDown();
@@ -92,7 +92,7 @@ class FIDL_LowEnergyCentralServerTest : public TestingBase {
  private:
   std::unique_ptr<LowEnergyCentralServer> server_;
   fble::CentralPtr proxy_;
-  std::unique_ptr<GattHost> gatt_host_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyCentralServerTest);
 };

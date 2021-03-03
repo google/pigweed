@@ -5,7 +5,6 @@
 #include "host.h"
 
 #include "fidl/host_server.h"
-#include "gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
@@ -30,9 +29,9 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback callback) {
   }
   hci_ = hci_result.take_value();
 
-  gatt_host_ = std::make_unique<GattHost>();
+  gatt_ = gatt::GATT::Create();
 
-  gap_ = gap::Adapter::Create(hci_->WeakPtr(), gatt_host_->profile(), std::nullopt);
+  gap_ = gap::Adapter::Create(hci_->WeakPtr(), gatt_->AsWeakPtr(), std::nullopt);
   if (!gap_)
     return false;
 
@@ -74,7 +73,7 @@ void Host::ShutDown() {
   gap_ = nullptr;
 
   // This shuts down the GATT profile and all of its clients.
-  gatt_host_ = nullptr;
+  gatt_ = nullptr;
 
   // Shuts down HCI command channel and ACL data channel.
   hci_ = nullptr;
@@ -88,10 +87,10 @@ void Host::BindHostInterface(zx::channel channel) {
   }
 
   ZX_DEBUG_ASSERT(gap_);
-  ZX_DEBUG_ASSERT(gatt_host_);
+  ZX_DEBUG_ASSERT(gatt_);
 
   host_server_ =
-      std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_host_->AsWeakPtr());
+      std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_->AsWeakPtr());
   host_server_->set_error_handler([this](zx_status_t status) {
     ZX_DEBUG_ASSERT(host_server_);
     bt_log(DEBUG, "bt-host", "Host interface disconnected");

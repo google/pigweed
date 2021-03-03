@@ -6,7 +6,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/peer_fuzzer.h"
 
 namespace bthost {
@@ -19,7 +18,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
   ~HostServerFuzzTest() override {
     host_ = nullptr;
     host_server_ = nullptr;
-    gatt_host_ = nullptr;
+    gatt_ = nullptr;
     AdapterTestFixture::TearDown();
   }
 
@@ -60,10 +59,10 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
 
   void SetUp() override {
     AdapterTestFixture::SetUp();
-    gatt_host_ = std::make_unique<GattHost>(take_gatt());
+    gatt_ = take_gatt();
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_host_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 
@@ -84,7 +83,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
   // No-op impl for the GoogleTest base class
   void TestBody() override {}
 
-  std::unique_ptr<GattHost> gatt_host_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
   std::unique_ptr<HostServer> host_server_;
   fuchsia::bluetooth::host::HostPtr host_;
 };

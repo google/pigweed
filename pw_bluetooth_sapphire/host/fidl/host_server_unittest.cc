@@ -24,7 +24,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/fake_layer.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -121,14 +120,14 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
   void SetUp() override {
     AdapterTestFixture::SetUp();
 
-    gatt_host_ = std::make_unique<GattHost>(take_gatt());
+    gatt_ = take_gatt();
     ResetHostServer();
   }
 
   void ResetHostServer() {
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_host_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 
@@ -137,7 +136,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
     host_ = nullptr;
     host_server_ = nullptr;
-    gatt_host_ = nullptr;
+    gatt_ = nullptr;
 
     AdapterTestFixture::TearDown();
   }
@@ -236,7 +235,7 @@ class FIDL_HostServerTest : public bthost::testing::AdapterTestFixture {
 
  private:
   std::unique_ptr<HostServer> host_server_;
-  std::unique_ptr<GattHost> gatt_host_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
   fuchsia::bluetooth::host::HostPtr host_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest);
@@ -1250,12 +1249,10 @@ class FIDL_HostServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTest
 
   void SetUp() override {
     FakeAdapterTestFixture::SetUp();
-    auto gatt = std::make_unique<bt::gatt::testing::FakeLayer>();
-    gatt_ = gatt.get();
-    gatt_host_ = std::make_unique<GattHost>(std::move(gatt));
+    gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_host_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 
@@ -1277,8 +1274,7 @@ class FIDL_HostServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTest
  private:
   std::unique_ptr<HostServer> host_server_;
   fuchsia::bluetooth::host::HostPtr host_;
-  bt::gatt::testing::FakeLayer* gatt_;
-  std::unique_ptr<GattHost> gatt_host_;
+  std::unique_ptr<bt::gatt::GATT> gatt_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_HostServerTest_FakeAdapter);
 };

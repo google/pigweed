@@ -9,6 +9,7 @@
 #include <lib/syslog/cpp/macros.h>
 #include <zircon/assert.h>
 
+#include "gatt_server_server.h"
 #include "helpers.h"
 #include "low_energy_central_server.h"
 #include "low_energy_peripheral_server.h"
@@ -22,7 +23,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/gatt_host.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/lib/fxl/strings/join_strings.h"
@@ -88,17 +88,17 @@ void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers)
 }
 
 HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
-                       fxl::WeakPtr<GattHost> gatt_host)
+                       fxl::WeakPtr<bt::gatt::GATT> gatt)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
-      gatt_host_(gatt_host),
+      gatt_(gatt),
       requesting_discovery_(false),
       requesting_background_scan_(false),
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
       watch_peers_getter_(adapter->peer_cache()),
       weak_ptr_factory_(this) {
-  ZX_DEBUG_ASSERT(gatt_host_);
+  ZX_ASSERT(gatt_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   adapter->peer_cache()->set_peer_updated_callback([self](const auto& peer) {
@@ -684,7 +684,7 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
 
 void HostServer::RequestLowEnergyCentral(
     fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request) {
-  BindServer<LowEnergyCentralServer>(std::move(request), gatt_host_);
+  BindServer<LowEnergyCentralServer>(std::move(request), gatt_);
 }
 
 void HostServer::RequestLowEnergyPeripheral(
@@ -694,8 +694,15 @@ void HostServer::RequestLowEnergyPeripheral(
 
 void HostServer::RequestGattServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request) {
-  // GATT FIDL requests are handled by GattHost.
-  gatt_host_->BindGattServer(std::move(request));
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto server = std::make_unique<GattServerServer>(gatt_->AsWeakPtr(), std::move(request));
+  server->set_error_handler([self, server = server.get()](zx_status_t status) {
+    if (self) {
+      bt_log(DEBUG, "bt-host", "GATT server disconnected");
+      self->servers_.erase(server);
+    }
+  });
+  servers_[server.get()] = std::move(server);
 }
 
 void HostServer::RequestProfile(
@@ -712,7 +719,6 @@ void HostServer::Close() {
 
   // Destroy all FIDL bindings.
   servers_.clear();
-  gatt_host_->CloseServers();
 
   // Cancel pending requests.
   requesting_discovery_ = false;
