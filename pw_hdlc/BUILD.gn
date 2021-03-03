@@ -56,12 +56,10 @@ pw_source_set("encoder") {
     "pw_hdlc_private/protocol.h",
   ]
   public_deps = [
-    "$dir_pw_stream:sys_io_stream",
     dir_pw_bytes,
     dir_pw_checksum,
     dir_pw_status,
     dir_pw_stream,
-    dir_pw_sys_io,
   ]
   friend = [ ":*" ]
 }
@@ -82,6 +80,7 @@ pw_source_set("pw_rpc") {
   public_deps = [
     ":pw_hdlc",
     "$dir_pw_rpc:server",
+    dir_pw_sys_io,
   ]
 }
 
