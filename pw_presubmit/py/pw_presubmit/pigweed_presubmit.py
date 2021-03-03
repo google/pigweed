@@ -500,8 +500,8 @@ def commit_message_format(_: PresubmitContext):
 # Presubmit check programs
 #
 
-BROKEN = (
-    # TODO(pwbug/45): Remove clang-tidy from BROKEN when it passes.
+OTHER_CHECKS = (
+    # TODO(pwbug/45): Remove clang-tidy from OTHER_CHECKS when it passes.
     clang_tidy,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
@@ -551,10 +551,10 @@ FULL = (
 )
 
 PROGRAMS = Programs(
-    broken=BROKEN,
-    quick=QUICK,
     full=FULL,
     lintformat=LINTFORMAT,
+    other_checks=OTHER_CHECKS,
+    quick=QUICK,
 )
 
 
