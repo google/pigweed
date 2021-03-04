@@ -91,7 +91,14 @@ def gn_host_build(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_quick_build_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, f'host_{_HOST_COMPILER}_size_optimized',
+
+    # TODO(pwbug/255): Switch to optimized GCC builds when this is fixed.
+    # See comment in _at_all_optimization_levels() above for details.
+    optimization_level = 'size_optimized'
+    if _HOST_COMPILER == 'gcc':
+        optimization_level = 'debug'
+
+    build.ninja(ctx.output_dir, f'host_{_HOST_COMPILER}_{optimization_level}',
                 'stm32f429i_size_optimized', 'python.tests', 'python.lint')
 
 
