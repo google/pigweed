@@ -6,7 +6,6 @@ import("//build/bind/bind.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
-import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 import("//src/sys/build/components.gni")
 
 bind_rules("bt_host_bind") {
@@ -28,23 +27,6 @@ driver_module("driver") {
   ]
 }
 
-# Conversions between host FIDL and internal library types.
-source_set("fidl_helpers") {
-  sources = [
-    "fidl/helpers.cc",
-    "fidl/helpers.h",
-  ]
-  public_deps = [
-    "common",
-    "gap",
-    "gatt",
-    "sdp",
-    "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.gatt",
-    "//src/connectivity/bluetooth/fidl:host",
-  ]
-}
-
 source_set("sources") {
   sources = [
     "gatt_remote_service_device.cc",
@@ -53,25 +35,6 @@ source_set("sources") {
     "host.h",
     "host_device.cc",
     "host_device.h",
-
-    # FIDL servers
-    "fidl/gatt_client_server.cc",
-    "fidl/gatt_client_server.h",
-    "fidl/gatt_remote_service_server.cc",
-    "fidl/gatt_remote_service_server.h",
-    "fidl/gatt_server_server.cc",
-    "fidl/gatt_server_server.h",
-    "fidl/host_server.cc",
-    "fidl/host_server.h",
-    "fidl/low_energy_central_server.cc",
-    "fidl/low_energy_central_server.h",
-    "fidl/low_energy_connection_server.cc",
-    "fidl/low_energy_connection_server.h",
-    "fidl/low_energy_peripheral_server.cc",
-    "fidl/low_energy_peripheral_server.h",
-    "fidl/profile_server.cc",
-    "fidl/profile_server.h",
-    "fidl/server_base.h",
   ]
 
   deps = [
@@ -80,13 +43,10 @@ source_set("sources") {
   ]
 
   public_deps = [
-    ":fidl_helpers",
     ":stack",
+    "fidl",
     "//sdk/banjo/fuchsia.hardware.bt.gattsvc",
     "//sdk/banjo/fuchsia.hardware.bt.vendor",
-    "//sdk/fidl/fuchsia.bluetooth",
-    "//sdk/fidl/fuchsia.bluetooth.gatt",
-    "//sdk/fidl/fuchsia.bluetooth.le",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
     "//src/connectivity/bluetooth/fidl:host",
     "//src/connectivity/bluetooth/lib/fidl",
@@ -129,41 +89,6 @@ driver_package("bt-host") {
   ]
 }
 
-# Unit tests for driver code, not including the Bluetooth stack unit tests
-# defined in subdirectories.
-source_set("driver_tests") {
-  testonly = true
-
-  sources = [
-    "fidl/gatt_client_server_unittest.cc",
-    "fidl/gatt_remote_service_server_unittest.cc",
-    "fidl/helpers_unittest.cc",
-    "fidl/host_server_unittest.cc",
-    "fidl/low_energy_central_server_unittest.cc",
-    "fidl/low_energy_peripheral_server_unittest.cc",
-    "fidl/profile_server_unittest.cc",
-  ]
-
-  deps = [
-    ":sources",
-    "fidl:adapter_test_fixture",
-    "gap:testing",
-    "gatt:testing",
-    "testing:fake_controller",
-    "testing:testing",
-    "//sdk/lib/inspect/testing/cpp:cpp",
-    "//third_party/googletest:gmock",
-    "//third_party/googletest:gtest",
-    "//zircon/public/lib/async-cpp",
-    "//zircon/public/lib/fbl",
-  ]
-}
-
-bt_gtest_package("bt-host-driver-tests") {
-  deps = [ ":driver_tests" ]
-  with_death_tests = true
-}
-
 # See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
 # for instructions on building the fuzzers package.
 fuzzers_package("fuzzers") {
@@ -189,10 +114,10 @@ fuzzers_package("fuzzers") {
 group("tests") {
   testonly = true
   deps = [
-    ":bt-host-driver-tests",
     ":fuzzers",
     "att:bt-host-att-tests",
     "common:bt-host-common-tests",
+    "fidl:bt-host-fidl-tests",
     "gap:bt-host-gap-tests",
     "gatt:bt-host-gatt-tests",
     "hci:bt-host-hci-tests",

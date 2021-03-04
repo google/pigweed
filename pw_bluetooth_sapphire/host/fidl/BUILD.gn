@@ -3,6 +3,60 @@
 # found in the LICENSE file.
 
 import("//build/fuzzing/fuzzer.gni")
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+
+static_library("fidl") {
+  sources = [
+    "gatt_client_server.cc",
+    "gatt_client_server.h",
+    "gatt_remote_service_server.cc",
+    "gatt_remote_service_server.h",
+    "gatt_server_server.cc",
+    "gatt_server_server.h",
+    "host_server.cc",
+    "host_server.h",
+    "low_energy_central_server.cc",
+    "low_energy_central_server.h",
+    "low_energy_connection_server.cc",
+    "low_energy_connection_server.h",
+    "low_energy_peripheral_server.cc",
+    "low_energy_peripheral_server.h",
+    "profile_server.cc",
+    "profile_server.h",
+    "server_base.h",
+  ]
+
+  public_deps = [
+    ":helpers",
+    "//sdk/fidl/fuchsia.bluetooth",
+    "//sdk/fidl/fuchsia.bluetooth.gatt",
+    "//sdk/fidl/fuchsia.bluetooth.le",
+    "//src/connectivity/bluetooth/core/bt-host:stack",
+    "//src/connectivity/bluetooth/fidl:host",
+    "//src/connectivity/bluetooth/lib/fidl",
+    "//src/lib/fxl",
+    "//zircon/public/lib/fbl",
+    "//zircon/public/lib/fit",
+    "//zircon/public/lib/zx",
+  ]
+}
+
+# Conversions between host FIDL and internal library types.
+source_set("helpers") {
+  sources = [
+    "helpers.cc",
+    "helpers.h",
+  ]
+  public_deps = [
+    "//sdk/fidl/fuchsia.bluetooth",
+    "//sdk/fidl/fuchsia.bluetooth.gatt",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/gap",
+    "//src/connectivity/bluetooth/core/bt-host/gatt",
+    "//src/connectivity/bluetooth/core/bt-host/sdp",
+    "//src/connectivity/bluetooth/fidl:host",
+  ]
+}
 
 source_set("adapter_test_fixture") {
   testonly = true
@@ -22,6 +76,39 @@ source_set("adapter_test_fixture") {
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/fbl",
   ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "gatt_client_server_unittest.cc",
+    "gatt_remote_service_server_unittest.cc",
+    "helpers_unittest.cc",
+    "host_server_unittest.cc",
+    "low_energy_central_server_unittest.cc",
+    "low_energy_peripheral_server_unittest.cc",
+    "profile_server_unittest.cc",
+  ]
+
+  deps = [
+    ":adapter_test_fixture",
+    ":fidl",
+    "//sdk/lib/inspect/testing/cpp:cpp",
+    "//src/connectivity/bluetooth/core/bt-host/gap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+    "//zircon/public/lib/async-cpp",
+    "//zircon/public/lib/fbl",
+  ]
+}
+
+bt_gtest_package("bt-host-fidl-tests") {
+  deps = [ ":tests" ]
+  with_death_tests = true
 }
 
 fuzzer("host_server_watch_peers_fuzzer") {
