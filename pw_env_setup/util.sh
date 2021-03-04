@@ -210,18 +210,26 @@ pw_bootstrap() {
 
   if [ -n "$_PW_ENV_SETUP" ]; then
     "$_PW_ENV_SETUP" "$@"
+    _PW_ENV_SETUP_STATUS="$?"
   else
     "$_PW_PYTHON" "$PW_ROOT/pw_env_setup/py/pw_env_setup/env_setup.py" "$@"
+    _PW_ENV_SETUP_STATUS="$?"
   fi
 }
 
 pw_activate() {
   _pw_hello "  ACTIVATOR! This sets your shell environment variables.\n"
+  _PW_ENV_SETUP_STATUS=0
 }
 
 pw_finalize() {
   _PW_NAME="$1"
   _PW_SETUP_SH="$2"
+
+  if [ "$_PW_ENV_SETUP_STATUS" -ne 0 ]; then
+     return
+  fi
+
   if [ -f "$_PW_SETUP_SH" ]; then
     . "$_PW_SETUP_SH"
 
@@ -249,6 +257,7 @@ pw_cleanup() {
   unset _PW_SETUP_SH
   unset _PW_DEACTIVATE_SH
   unset _NEW_PW_ROOT
+  unset _PW_ENV_SETUP_STATUS
 
   unset _pw_abspath
   unset pw_none
