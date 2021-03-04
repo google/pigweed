@@ -25,15 +25,17 @@ namespace pw::tokenizer {
 namespace {
 
 // Constructs an array with the hashed string followed by the provided bytes.
-template <uint8_t... kData, size_t kSize>
-constexpr auto ExpectedData(const char (&format)[kSize]) {
-  const uint32_t value = Hash(format);
-  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
+template <uint8_t... data, size_t size>
+constexpr auto ExpectedData(
+    const char (&format)[size],
+    uint32_t token_mask = std::numeric_limits<uint32_t>::max()) {
+  const uint32_t value = Hash(format) & token_mask;
+  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(data)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
       static_cast<uint8_t>(value >> 16 & 0xff),
       static_cast<uint8_t>(value >> 24 & 0xff),
-      kData...};
+      data...};
 }
 
 // Test fixture for both global handler functions. Both need a global message
@@ -87,6 +89,15 @@ TEST_F(TokenizeToGlobalHandler, Domain_Strings) {
       "TEST_DOMAIN", "The answer is: %s", "5432!");
   constexpr std::array<uint8_t, 10> expected =
       ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
+TEST_F(TokenizeToGlobalHandler, Mask) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_MASK(
+      "TEST_DOMAIN", 0x00FFF000, "The answer is: %s", "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x00FFF000);
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
@@ -178,6 +189,20 @@ TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Strings) {
       "5432!");
   ASSERT_EQ(kExpected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(kExpected.data(), message_, kExpected.size()), 0);
+  EXPECT_EQ(payload_, 5432);
+}
+
+TEST_F(TokenizeToGlobalHandlerWithPayload, Mask) {
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_MASK(
+      "TEST_DOMAIN",
+      0x12345678,
+      static_cast<pw_tokenizer_Payload>(5432),
+      "The answer is: %s",
+      "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x12345678);
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
   EXPECT_EQ(payload_, 5432);
 }
 

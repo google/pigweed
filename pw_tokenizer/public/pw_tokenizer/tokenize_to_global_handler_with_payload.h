@@ -46,10 +46,17 @@
 
 // Same as PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD, but tokenizes to the
 // specified domain.
-#define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN(               \
-    domain, payload, format, ...)                                        \
+#define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN( \
+    domain, payload, format, ...)                          \
+  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_MASK(         \
+      domain, UINT32_MAX, payload, format, __VA_ARGS__)
+
+// Same as PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_DOMAIN, but applies a mask
+// to the token.
+#define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_MASK(                 \
+    domain, mask, payload, format, ...)                                  \
   do {                                                                   \
-    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);             \
+    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);       \
     _pw_tokenizer_ToGlobalHandlerWithPayload(                            \
         payload,                                                         \
         _pw_tokenizer_token,                                             \

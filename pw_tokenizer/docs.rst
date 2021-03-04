@@ -397,6 +397,101 @@ example, the following reads strings in ``some_domain`` from ``my_image.elf``.
 See `Managing token databases`_ for information about the ``database.py``
 command line tool.
 
+Smaller tokens with masking
+---------------------------
+``pw_tokenizer`` uses 32-bit tokens. On 32-bit or 64-bit architectures, using
+fewer than 32 bits does not improve runtime or code size efficiency. However,
+when tokens are packed into data structures or stored in arrays, the size of the
+token directly affects memory usage. In those cases, every bit counts, and it
+may be desireable to use fewer bits for the token.
+
+``pw_tokenizer`` allows users to provide a mask to apply to the token. This
+masked token is used in both the token database and the code. The masked token
+is not a masked version of the full 32-bit token, the masked token is the token.
+This makes it trivial to decode tokens that use fewer than 32 bits.
+
+Masking functionality is provided through the ``*_MASK`` versions of the macros.
+For example, the following generates 16-bit tokens and packs them into an
+existing value.
+
+.. code-block:: cpp
+
+  constexpr uint32_t token = PW_TOKENIZE_STRING_MASK("domain", 0xFFFF, "Pigweed!");
+  uint32_t packed_word = (other_bits << 16) | token;
+
+Tokens are hashes, so tokens of any size have a collision risk. The fewer bits
+used for tokens, the more likely two strings are to hash to the same token. See
+`token collisions`_.
+
+Token collisions
+----------------
+Tokens are calculated with a hash function. It is possible for different
+strings to hash to the same token. When this happens, multiple strings will have
+the same token in the database, and it may not be possible to unambiguously
+decode a token.
+
+The detokenization tools attempt to resolve collisions automatically. Collisions
+are resolved based on two things:
+
+  - whether the tokenized data matches the strings arguments' (if any), and
+  - if / when the string was marked as having been removed from the database.
+
+Working with collisions
+^^^^^^^^^^^^^^^^^^^^^^^
+Collisions may occur occasionally. Run the command
+``python -m pw_tokenizer.database report <database>`` to see information about a
+token database, including any collisions.
+
+If there are collisions, take the following steps to resolve them.
+
+  - Change one of the colliding strings slightly to give it a new token.
+  - In C (not C++), artificial collisions may occur if strings longer than
+    ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` are hashed. If this is happening,
+    consider setting ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` to a larger value.
+    See ``pw_tokenizer/public/pw_tokenizer/config.h``.
+  - Run the ``mark_removed`` command with the latest version of the build
+    artifacts to mark missing strings as removed. This deprioritizes them in
+    collision resolution.
+
+    .. code-block:: sh
+
+      python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
+
+    The ``purge`` command may be used to delete these tokens from the database.
+
+Probability of collisions
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Hashes of any size have a collision risk. The probability of one at least
+one collision occurring for a given number of strings is unintuitively high
+(this is known as the `birthday problem
+<https://en.wikipedia.org/wiki/Birthday_problem>`_). If fewer than 32 bits are
+used for tokens, the probability of collisions increases substantially.
+
+This table shows the approximate number of strings that can be hashed to have a
+1% or 50% probability of at least one collision (assuming a uniform, random
+hash).
+
++-------+---------------------------------------+
+| Token | Collision probability by string count |
+| bits  +--------------------+------------------+
+|       |         50%        |          1%      |
++=======+====================+==================+
+|   32  |       77000        |        9300      |
++-------+--------------------+------------------+
+|   31  |       54000        |        6600      |
++-------+--------------------+------------------+
+|   24  |        4800        |         580      |
++-------+--------------------+------------------+
+|   16  |         300        |          36      |
++-------+--------------------+------------------+
+|    8  |          19        |           3      |
++-------+--------------------+------------------+
+
+Keep this table in mind when masking tokens (see `Smaller tokens with
+masking`_). 16 bits might be acceptable when tokenizing a small set of strings,
+such as module names, but won't be suitable for large sets of strings, like log
+messages.
+
 Token databases
 ===============
 Token databases store a mapping of tokens to the strings they represent. An ELF

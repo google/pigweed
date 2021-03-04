@@ -65,11 +65,21 @@ typedef uint32_t pw_tokenizer_Token;
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
 
 // Same as PW_TOKENIZE_STRING, but tokenizes to the specified domain.
-#define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)               \
-  /* assign to a variable */ PW_TOKENIZER_STRING_TOKEN(string_literal); \
-                                                                        \
-  _PW_TOKENIZER_RECORD_ORIGINAL_STRING(                                 \
-      PW_TOKENIZER_STRING_TOKEN(string_literal), domain, string_literal)
+#define PW_TOKENIZE_STRING_DOMAIN(domain, string_literal) \
+  PW_TOKENIZE_STRING_MASK(domain, UINT32_MAX, string_literal)
+
+// Same as PW_TOKENIZE_STRING_DOMAIN, but applies a mask to the token.
+#define PW_TOKENIZE_STRING_MASK(domain, mask, string_literal)                \
+  /* assign to a variable */ _PW_TOKENIZER_MASK_TOKEN(mask, string_literal); \
+                                                                             \
+  static_assert(0 < (mask) && (mask) <= UINT32_MAX,                          \
+                "Tokenizer masks must be non-zero uint32_t values.");        \
+                                                                             \
+  _PW_TOKENIZER_RECORD_ORIGINAL_STRING(                                      \
+      _PW_TOKENIZER_MASK_TOKEN(mask, string_literal), domain, string_literal)
+
+#define _PW_TOKENIZER_MASK_TOKEN(mask, string_literal) \
+  ((pw_tokenizer_Token)(mask)&PW_TOKENIZER_STRING_TOKEN(string_literal))
 
 // Encodes a tokenized string and arguments to the provided buffer. The size of
 // the buffer is passed via a pointer to a size_t. After encoding is complete,
@@ -99,15 +109,21 @@ typedef uint32_t pw_tokenizer_Token;
                                __VA_ARGS__)
 
 // Same as PW_TOKENIZE_TO_BUFFER, but tokenizes to the specified domain.
-#define PW_TOKENIZE_TO_BUFFER_DOMAIN(                          \
-    domain, buffer, buffer_size_pointer, format, ...)          \
-  do {                                                         \
-    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);   \
-    _pw_tokenizer_ToBuffer(buffer,                             \
-                           buffer_size_pointer,                \
-                           _pw_tokenizer_token,                \
-                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__) \
-                               PW_COMMA_ARGS(__VA_ARGS__));    \
+#define PW_TOKENIZE_TO_BUFFER_DOMAIN(                 \
+    domain, buffer, buffer_size_pointer, format, ...) \
+  PW_TOKENIZE_TO_BUFFER_MASK(                         \
+      domain, UINT32_MAX, buffer, buffer_size_pointer, format, __VA_ARGS__)
+
+// Same as PW_TOKENIZE_TO_BUFFER_DOMAIN, but applies a mask to the token.
+#define PW_TOKENIZE_TO_BUFFER_MASK(                                \
+    domain, mask, buffer, buffer_size_pointer, format, ...)        \
+  do {                                                             \
+    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__); \
+    _pw_tokenizer_ToBuffer(buffer,                                 \
+                           buffer_size_pointer,                    \
+                           _pw_tokenizer_token,                    \
+                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)     \
+                               PW_COMMA_ARGS(__VA_ARGS__));        \
   } while (0)
 
 // Encodes a tokenized string and arguments to a buffer on the stack. The
@@ -142,13 +158,19 @@ typedef uint32_t pw_tokenizer_Token;
   PW_TOKENIZE_TO_CALLBACK_DOMAIN(                      \
       PW_TOKENIZER_DEFAULT_DOMAIN, callback, format, __VA_ARGS__)
 
+// Same as PW_TOKENIZE_TO_CALLBACK, but tokenizes to the specified domain.
 #define PW_TOKENIZE_TO_CALLBACK_DOMAIN(domain, callback, format, ...) \
-  do {                                                                \
-    _PW_TOKENIZE_FORMAT_STRING(domain, format, __VA_ARGS__);          \
-    _pw_tokenizer_ToCallback(callback,                                \
-                             _pw_tokenizer_token,                     \
-                             PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)      \
-                                 PW_COMMA_ARGS(__VA_ARGS__));         \
+  PW_TOKENIZE_TO_CALLBACK_MASK(                                       \
+      domain, UINT32_MAX, callback, format, __VA_ARGS__)
+
+// Same as PW_TOKENIZE_TO_CALLBACK_DOMAIN, but applies a mask to the token.
+#define PW_TOKENIZE_TO_CALLBACK_MASK(domain, mask, callback, format, ...) \
+  do {                                                                    \
+    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);        \
+    _pw_tokenizer_ToCallback(callback,                                    \
+                             _pw_tokenizer_token,                         \
+                             PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)          \
+                                 PW_COMMA_ARGS(__VA_ARGS__));             \
   } while (0)
 
 PW_EXTERN_C_START
@@ -184,7 +206,7 @@ PW_EXTERN_C_END
 // checks that the arguments are correct, stores the format string in a special
 // section, and calculates the string's token at compile time.
 // clang-format off
-#define _PW_TOKENIZE_FORMAT_STRING(domain, format, ...)                        \
+#define _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)                  \
   if (0) { /* Do not execute to prevent double evaluation of the arguments. */ \
     pw_tokenizer_CheckFormatString(format PW_COMMA_ARGS(__VA_ARGS__));         \
   }                                                                            \
@@ -199,7 +221,7 @@ PW_EXTERN_C_END
                                                                                \
   /* Tokenize the string to a pw_tokenizer_Token at compile time. */           \
   static _PW_TOKENIZER_CONST pw_tokenizer_Token _pw_tokenizer_token =          \
-      PW_TOKENIZER_STRING_TOKEN(format);                                       \
+      _PW_TOKENIZER_MASK_TOKEN(mask, format);                                  \
                                                                                \
   _PW_TOKENIZER_RECORD_ORIGINAL_STRING(_pw_tokenizer_token, domain, format)
 

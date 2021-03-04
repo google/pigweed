@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>
+#include <limits>
 
 #include "gtest/gtest.h"
 #include "pw_tokenizer/hash.h"
@@ -28,15 +29,17 @@ namespace pw::tokenizer {
 namespace {
 
 // Constructs an array with the hashed string followed by the provided bytes.
-template <uint8_t... kData, size_t kSize>
-constexpr auto ExpectedData(const char (&format)[kSize]) {
-  const uint32_t value = Hash(format);
-  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
+template <uint8_t... data, size_t size>
+constexpr auto ExpectedData(
+    const char (&format)[size],
+    uint32_t token_mask = std::numeric_limits<uint32_t>::max()) {
+  const uint32_t value = Hash(format) & token_mask;
+  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(data)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
       static_cast<uint8_t>(value >> 16 & 0xff),
       static_cast<uint8_t>(value >> 24 & 0xff),
-      kData...};
+      data...};
 }
 
 TEST(TokenizeString, EmptyString_IsZero) {
@@ -63,6 +66,22 @@ static_assert(Hash("???") == TokenizedWithinClass::kThisToken);
 
 TEST(TokenizeString, ClassMember_MatchesHash) {
   EXPECT_EQ(Hash("???"), TokenizedWithinClass().kThisToken);
+}
+
+TEST(TokenizeString, Mask) {
+  [[maybe_unused]] constexpr uint32_t token = PW_TOKENIZE_STRING("(O_o)");
+  [[maybe_unused]] constexpr uint32_t masked_1 =
+      PW_TOKENIZE_STRING_MASK("domain", 0xAAAAAAAA, "(O_o)");
+  [[maybe_unused]] constexpr uint32_t masked_2 =
+      PW_TOKENIZE_STRING_MASK("domain", 0x55555555, "(O_o)");
+  [[maybe_unused]] constexpr uint32_t masked_3 =
+      PW_TOKENIZE_STRING_MASK("domain", 0xFFFF0000, "(O_o)");
+
+  static_assert(token != masked_1 && token != masked_2 && token != masked_3);
+  static_assert(masked_1 != masked_2 && masked_2 != masked_3);
+  static_assert((token & 0xAAAAAAAA) == masked_1);
+  static_assert((token & 0x55555555) == masked_2);
+  static_assert((token & 0xFFFF0000) == masked_3);
 }
 
 // Use a function with a shorter name to test tokenizing __func__ and
@@ -324,6 +343,23 @@ TEST_F(TokenizeToBuffer, Domain_String) {
   EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
 }
 
+TEST_F(TokenizeToBuffer, Mask) {
+  size_t message_size = sizeof(buffer_);
+
+  PW_TOKENIZE_TO_BUFFER_MASK("TEST_DOMAIN",
+                             0x0000FFFF,
+                             buffer_,
+                             &message_size,
+                             "The answer was: %s",
+                             "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer was: %s",
+                                               0x0000FFFF);
+
+  ASSERT_EQ(expected.size(), message_size);
+  EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
+}
+
 TEST_F(TokenizeToBuffer, TruncateArgs) {
   // Args that can't fit are dropped completely
   size_t message_size = 6;
@@ -468,6 +504,15 @@ TEST_F(TokenizeToCallback, Domain_Strings) {
       "TEST_DOMAIN", SetMessage, "The answer is: %s", "5432!");
   constexpr std::array<uint8_t, 10> expected =
       ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
+TEST_F(TokenizeToCallback, Mask) {
+  PW_TOKENIZE_TO_CALLBACK_MASK(
+      "TEST_DOMAIN", 0x00000FFF, SetMessage, "The answer is: %s", "5432!");
+  constexpr std::array<uint8_t, 10> expected =
+      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x00000FFF);
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }
