@@ -22,6 +22,71 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "binary_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_embos/binary_semaphore_inline.h",
+        "public/pw_sync_embos/binary_semaphore_native.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/binary_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # currently do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_chrono_embos:system_clock_headers",
+    ],
+)
+
+pw_cc_library(
+    name = "binary_semaphore",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
+    deps = [
+        ":binary_semaphore_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:binary_semaphore_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore_headers",
+    hdrs = [
+        "public/pw_sync_embos/counting_semaphore_inline.h",
+        "public/pw_sync_embos/counting_semaphore_native.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_inline.h",
+        "public_overrides/pw_sync_backend/counting_semaphore_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # currently do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_chrono_embos:system_clock_headers",
+    ],
+)
+
+pw_cc_library(
+    name = "counting_semaphore",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
+    deps = [
+        ":counting_semaphore_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:counting_semaphore_facade",
+    ],
+)
+
+
+pw_cc_library(
     name = "mutex_headers",
     hdrs = [
         "public/pw_sync_embos/mutex_inline.h",

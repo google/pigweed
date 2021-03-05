@@ -28,6 +28,62 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+# This target provides the backend for pw::sync::BinarySemaphore.
+pw_source_set("binary_semaphore") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_embos/binary_semaphore_inline.h",
+    "public/pw_sync_embos/binary_semaphore_native.h",
+    "public_overrides/pw_sync_backend/binary_semaphore_inline.h",
+    "public_overrides/pw_sync_backend/binary_semaphore_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_chrono_embos:system_clock",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_third_party/embos",
+  ]
+  sources = [ "binary_semaphore.cc" ]
+  deps = [ "$dir_pw_sync:binary_semaphore.facade" ]
+  assert(
+      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
+      "The embOS pw::sync::BinarySemaphore backend only works with the " +
+          "embOS pw::chrono::SystemClock backend.")
+}
+
+# This target provides the backend for pw::sync::CountingSemaphore.
+pw_source_set("counting_semaphore") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_embos/counting_semaphore_inline.h",
+    "public/pw_sync_embos/counting_semaphore_native.h",
+    "public_overrides/pw_sync_backend/counting_semaphore_inline.h",
+    "public_overrides/pw_sync_backend/counting_semaphore_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_chrono_embos:system_clock",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_third_party/embos",
+  ]
+  sources = [ "counting_semaphore.cc" ]
+  deps = [ "$dir_pw_sync:counting_semaphore.facade" ]
+  assert(
+      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
+      "The embOS pw::sync::CountingSemaphore backend only works with " +
+          "the embOS pw::chrono::SystemClock backend.")
+}
+
 # This target provides the backend for pw::sync::Mutex.
 pw_source_set("mutex") {
   public_configs = [
