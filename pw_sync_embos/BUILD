@@ -22,6 +22,38 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "mutex_headers",
+    hdrs = [
+        "public/pw_sync_embos/mutex_inline.h",
+        "public/pw_sync_embos/mutex_native.h",
+        "public_overrides/pw_sync_backend/mutex_inline.h",
+        "public_overrides/pw_sync_backend/mutex_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO(pwbug/317): This should depend on embOS but our third parties
+        # currently do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_chrono_embos:system_clock_headers",
+    ],
+)
+
+pw_cc_library(
+    name = "mutex",
+    srcs = [
+        "mutex.cc",
+    ],
+    deps = [
+        ":mutex_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:mutex_facade",
+    ],
+)
+
+pw_cc_library(
     name = "spin_lock_headers",
     hdrs = [
         "public/pw_sync_embos/spin_lock_inline.h",

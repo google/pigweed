@@ -28,6 +28,34 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+# This target provides the backend for pw::sync::Mutex.
+pw_source_set("mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_embos/mutex_inline.h",
+    "public/pw_sync_embos/mutex_native.h",
+    "public_overrides/pw_sync_backend/mutex_inline.h",
+    "public_overrides/pw_sync_backend/mutex_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_chrono_embos:system_clock",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_third_party/embos",
+  ]
+  sources = [ "mutex.cc" ]
+  deps = [ "$dir_pw_sync:mutex.facade" ]
+  assert(
+      pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
+          pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",
+      "The embOS pw::sync::Mutex backend only works with the embOS " +
+          "pw::chrono::SystemClock backend.")
+}
+
 # This target provides the backend for pw::sync::SpinLock.
 pw_source_set("spin_lock") {
   public_configs = [
