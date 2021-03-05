@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,10 +14,19 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_thread_threadx_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -27,6 +36,15 @@ config("public_include_path") {
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_thread_threadx/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/threadx",
+    pw_thread_threadx_CONFIG,
+  ]
 }
 
 # This target provides the backend for pw::thread::Id.
@@ -50,7 +68,7 @@ pw_source_set("id") {
 }
 
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
-  # This target provides the backend for pw::thread::sleep_{for,until}.
+  # This target provides the backend for pw::this_thread::sleep_{for,until}.
   pw_source_set("sleep") {
     public_configs = [
       ":public_include_path",
@@ -72,12 +90,37 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
         pw_thread_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK ||
             pw_chrono_SYSTEM_CLOCK_BACKEND ==
                 "$dir_pw_chrono_threadx:system_clock",
-        "The ThreadX pw::thread::sleep_{for,until} backend only works with " +
-            "the ThreadX pw::chrono::SystemClock backend.")
+        "The ThreadX pw::this_thread::sleep_{for,until} backend only works with " + "the ThreadX pw::chrono::SystemClock backend.")
   }
 }
 
-# This target provides the backend for pw::thread::yield.
+# This target provides the backend for pw::thread::Thread and the headers needed
+# for thread creation.
+pw_source_set("thread") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public_deps = [
+    ":config",
+    "$dir_pw_assert",
+    "$dir_pw_third_party/threadx",
+    "$dir_pw_thread:id",
+    "$dir_pw_thread:thread.facade",
+  ]
+  public = [
+    "public/pw_thread_threadx/context.h",
+    "public/pw_thread_threadx/options.h",
+    "public/pw_thread_threadx/thread_inline.h",
+    "public/pw_thread_threadx/thread_native.h",
+    "public_overrides/pw_thread_backend/thread_inline.h",
+    "public_overrides/pw_thread_backend/thread_native.h",
+  ]
+  allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
+  sources = [ "thread.cc" ]
+}
+
+# This target provides the backend for pw::this_thread::yield.
 pw_source_set("yield") {
   public_configs = [
     ":public_include_path",
@@ -93,6 +136,30 @@ pw_source_set("yield") {
     "$dir_pw_thread:id",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":thread_backend_test" ]
+}
+
+pw_source_set("test_threads") {
+  public_deps = [ "$dir_pw_thread:test_threads" ]
+  sources = [ "test_threads.cc" ]
+  deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+}
+
+pw_test("thread_backend_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_threadx:thread"
+  deps = [
+    ":test_threads",
+    "$dir_pw_thread:thread_facade_test",
+  ]
 }
 
 pw_doc_group("docs") {

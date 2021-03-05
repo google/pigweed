@@ -113,6 +113,8 @@ group("module_docs") {
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
     "$dir_pw_sys_io_stdio:docs",
     "$dir_pw_target_runner:docs",
+    "$dir_pw_thread:docs",
+    "$dir_pw_thread_threadx:docs",
     "$dir_pw_tokenizer:docs",
     "$dir_pw_toolchain:docs",
     "$dir_pw_trace:docs",

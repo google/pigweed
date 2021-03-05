@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -43,6 +44,66 @@ pw_cc_library(
     ],
     # TODO(pwbug/317): This should depend on ThreadX but our third parties
 		# currently do not have Bazel support.
+)
+
+# This target provides the ThreadX specific headers needs for thread creation.
+pw_cc_library(
+    name = "thread_headers",
+    hdrs = [
+        "public/pw_thread_threadx/context.h",
+        "public/pw_thread_threadx/options.h",
+        "public/pw_thread_threadx/config.h",
+        "public/pw_thread_threadx/thread_inline.h",
+        "public/pw_thread_threadx/thread_native.h",
+        "public_overrides/pw_thread_backend/thread_inline.h",
+        "public_overrides/pw_thread_backend/thread_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_assert",
+        ":id",
+        "//pw_thread:thread_headers",
+    ],
+    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "thread",
+    srcs = [
+        "thread.cc",
+    ],
+    deps = [
+        "//pw_assert",
+        ":id",
+        ":thread_headers",
+    ],
+    # TODO(pwbug/317): This should depend on ThreadX but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "test_threads",
+    deps = [
+        "//pw_thread:thread_facade",
+        "//pw_thread:test_threads_header",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+    srcs = [
+        "test_threads.cc",
+    ]
+)
+
+pw_cc_test(
+    name = "thread_backend_test",
+    deps = [
+        "//pw_thread:thread_facade_test",
+        ":test_threads",
+    ]
 )
 
 pw_cc_library(
