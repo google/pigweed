@@ -84,16 +84,16 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
     return Status::InvalidArgument();
   }
 
-  // Prepare the preamble, and ensure we can fit the preamble and entry.
-  byte preamble_buf[varint::kMaxVarint32SizeBytes];
-  byte length_buf[varint::kMaxVarint32SizeBytes];
-
+  // Prepare a single buffer that can hold both the user preamble and entry
+  // length.
+  byte preamble_buf[varint::kMaxVarint32SizeBytes * 2];
   size_t user_preamble_bytes = 0;
   if (user_preamble_) {
     user_preamble_bytes =
         varint::Encode<uint32_t>(user_preamble_data, preamble_buf);
   }
-  size_t length_bytes = varint::Encode<uint32_t>(data.size_bytes(), length_buf);
+  size_t length_bytes = varint::Encode<uint32_t>(
+      data.size_bytes(), std::span(preamble_buf).subspan(user_preamble_bytes));
   size_t total_write_bytes =
       user_preamble_bytes + length_bytes + data.size_bytes();
   if (buffer_bytes_ < total_write_bytes) {
@@ -112,12 +112,7 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   }
 
   // Write the new entry into the ring buffer.
-  // TODO(pwbug/337): This could be more efficient, the preamble and length
-  // data could be written in a single raw write call.
-  if (user_preamble_) {
-    RawWrite(std::span(preamble_buf, user_preamble_bytes));
-  }
-  RawWrite(std::span(length_buf, length_bytes));
+  RawWrite(std::span(preamble_buf, user_preamble_bytes + length_bytes));
   RawWrite(data);
 
   // Update all readers of the new count.
