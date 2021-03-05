@@ -26,7 +26,7 @@ struct NativeCountingSemaphore {
 };
 using NativeCountingSemaphoreHandle = NativeCountingSemaphore&;
 
-inline constexpr ptrdiff_t kBinarySemaphoreMaxValue =
+inline constexpr ptrdiff_t kCountingSemaphoreMaxValue =
     std::numeric_limits<ptrdiff_t>::max() <
             std::numeric_limits<UBaseType_t>::max()
         ? std::numeric_limits<ptrdiff_t>::max()
