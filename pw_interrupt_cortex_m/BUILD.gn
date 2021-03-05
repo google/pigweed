@@ -27,6 +27,10 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+config("armv6m") {
+  defines = [ "PW_INTERRUPT_CORTEX_M_ARMV6M=1" ]
+}
+
 config("armv7m") {
   defines = [ "PW_INTERRUPT_CORTEX_M_ARMV7M=1" ]
 }
@@ -45,6 +49,12 @@ _context_common = {
     "public/pw_interrupt_cortex_m/context_inline.h",
     "public_overrides/pw_interrupt_backend/context_inline.h",
   ]
+}
+
+# This targets provides the ARMv6-M backend for pw_interrupt's context facade.
+pw_source_set("context_armv6m") {
+  forward_variables_from(_context_common, "*")
+  public_configs += [ ":armv6m" ]
 }
 
 # This targets provides the ARMv7-M backend for pw_interrupt's context facade.

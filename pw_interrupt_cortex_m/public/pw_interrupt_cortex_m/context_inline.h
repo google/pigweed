@@ -17,7 +17,8 @@
 
 namespace pw::interrupt {
 
-#if defined(PW_INTERRUPT_CORTEX_M_ARMV7M) || \
+#if defined(PW_INTERRUPT_CORTEX_M_ARMV6M) || \
+    defined(PW_INTERRUPT_CORTEX_M_ARMV7M) || \
     defined(PW_INTERRUPT_CORTEX_M_ARMV8M)
 inline bool InInterruptContext() {
   // ARMv7M Reference manual section B1.4.2 describes how the Interrupt
