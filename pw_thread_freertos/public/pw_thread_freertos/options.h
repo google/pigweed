@@ -37,7 +37,7 @@ namespace pw::thread::freertos {
 //     pw::thread::freertos::Options()
 //         .set_name("static_example_thread")
 //         .set_priority(kFooPriority)
-//         .set_context(static_example_thread_context),
+//         .set_static_context(static_example_thread_context),
 //     example_thread_function);
 //
 class Options : public thread::Options {
