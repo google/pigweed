@@ -20,10 +20,10 @@
 
 // clang-format off
 #define PW_LOG_MODULE_NAME "TST"
-#define PW_LOG_USE_SHORT_NAMES 1
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 #define PW_LOG_LEVEL PW_LOG_LEVEL_DEBUG
 #include "pw_log/log.h"
+#include "pw_log/short.h"
+#include "pw_log/shorter.h"
 // clang-format on
 
 #include "gtest/gtest.h"

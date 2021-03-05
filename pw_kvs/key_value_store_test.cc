@@ -14,7 +14,6 @@
 
 #define DUMP_KVS_STATE_TO_FILE 0
 #define USE_MEMORY_BUFFER 1
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 
 #include "pw_kvs/key_value_store.h"
 
@@ -35,6 +34,7 @@
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/internal/entry.h"
 #include "pw_log/log.h"
+#include "pw_log/shorter.h"
 #include "pw_status/status.h"
 #include "pw_string/string_builder.h"
 

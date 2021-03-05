@@ -32,14 +32,14 @@ long-form names.
   }
 
 In ``.cc`` files, it is possible to dispense with the ``PW_`` part of the log
-names and go for shorter log macros.
+names and go for shorter log macros. Include ``pw_log/short.h`` or
+``pw_log/shorter.h`` for shorter versions of the macros.
 
 .. code-block:: cpp
 
   #define PW_LOG_MODULE_NAME "BLE"
-  #define PW_LOG_USE_ULTRA_SHORT_NAMES 1
 
-  #include "pw_log/log.h"
+  #include "pw_log/shorter.h"
 
   int main() {
     INF("Booting...");

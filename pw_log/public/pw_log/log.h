@@ -61,6 +61,17 @@
 //
 #include "pw_log_backend/log_backend.h"
 
+// For compatibility with code that uses the deprecated PW_LOG_USE_SHORT_NAMES
+// and PW_LOG_USE_ULTRA_SHORT_NAMES, include the appropriate headers.
+// TODO(hepler): Remove this workaround when all users have migrated.
+#if defined(PW_LOG_USE_SHORT_NAMES) && PW_LOG_USE_SHORT_NAMES == 1
+#include "pw_log/short.h"
+#endif  // PW_LOG_USE_SHORT_NAMES
+
+#if defined(PW_LOG_USE_ULTRA_SHORT_NAMES) && PW_LOG_USE_ULTRA_SHORT_NAMES == 1
+#include "pw_log/shorter.h"
+#endif  // PW_LOG_USE_ULTRA_SHORT_NAMES
+
 #ifndef PW_LOG
 #define PW_LOG(level, flags, message, ...)               \
   do {                                                   \
@@ -115,38 +126,3 @@
 #ifndef PW_LOG_FLAG_BITS
 #define PW_LOG_FLAG_BITS 10
 #endif  // PW_LOG_FLAG_BITS
-
-// Define short, usable names if requested.
-// TODO(pwbug/17): Convert this to the config system when available.
-#ifndef PW_LOG_USE_SHORT_NAMES
-#define PW_LOG_USE_SHORT_NAMES 0
-#endif
-
-// Define ultra short, usable names if requested.
-#ifndef PW_LOG_USE_ULTRA_SHORT_NAMES
-#define PW_LOG_USE_ULTRA_SHORT_NAMES 0
-#endif  // PW_LOG_USE_SHORT_NAMES
-
-// clang-format off
-#if PW_LOG_USE_SHORT_NAMES
-#define LOG          PW_LOG
-#define LOG_DEBUG    PW_LOG_DEBUG
-#define LOG_INFO     PW_LOG_INFO
-#define LOG_WARN     PW_LOG_WARN
-#define LOG_ERROR    PW_LOG_ERROR
-#define LOG_CRITICAL PW_LOG_CRITICAL
-#endif  // PW_LOG_USE_SHORT_NAMES
-// clang-format on
-
-// clang-format off
-#if PW_LOG_USE_ULTRA_SHORT_NAMES
-#if !PW_LOG_USE_SHORT_NAMES
-#define LOG PW_LOG
-#endif  // LOG
-#define DBG PW_LOG_DEBUG
-#define INF PW_LOG_INFO
-#define WRN PW_LOG_WARN
-#define ERR PW_LOG_ERROR
-#define CRT PW_LOG_CRITICAL
-#endif  // PW_LOG_USE_ULTRA_SHORT_NAMES
-// clang-format on

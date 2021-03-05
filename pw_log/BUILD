@@ -31,6 +31,8 @@ pw_cc_library(
         "public/pw_log/levels.h",
         "public/pw_log/log.h",
         "public/pw_log/options.h",
+        "public/pw_log/short.h",
+        "public/pw_log/shorter.h",
     ],
     includes = ["public"],
     deps = [

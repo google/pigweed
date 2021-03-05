@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -31,6 +31,8 @@ pw_facade("pw_log") {
     "public/pw_log/levels.h",
     "public/pw_log/log.h",
     "public/pw_log/options.h",
+    "public/pw_log/short.h",
+    "public/pw_log/shorter.h",
   ]
 }
 
