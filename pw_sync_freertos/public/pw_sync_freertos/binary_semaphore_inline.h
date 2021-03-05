@@ -29,7 +29,9 @@ inline BinarySemaphore::BinarySemaphore() : native_type_() {
   PW_DASSERT(native_type_.handle != nullptr);
 }
 
-inline BinarySemaphore::~BinarySemaphore() { vSemaphoreDelete(&native_type_); }
+inline BinarySemaphore::~BinarySemaphore() {
+  vSemaphoreDelete(native_type_.handle);
+}
 
 inline void BinarySemaphore::release() {
   if (interrupt::InInterruptContext()) {

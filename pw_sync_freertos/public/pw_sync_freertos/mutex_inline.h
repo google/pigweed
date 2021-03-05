@@ -29,7 +29,7 @@ inline Mutex::Mutex() : native_type_() {
   PW_DASSERT(native_type_.handle != nullptr);
 }
 
-inline Mutex::~Mutex() { vSemaphoreDelete(&native_type_); }
+inline Mutex::~Mutex() { vSemaphoreDelete(native_type_.handle); }
 
 inline void Mutex::lock() {
   PW_ASSERT(!interrupt::InInterruptContext());

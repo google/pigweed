@@ -31,7 +31,7 @@ inline CountingSemaphore::CountingSemaphore() : native_type_() {
 }
 
 inline CountingSemaphore::~CountingSemaphore() {
-  vSemaphoreDelete(&native_type_);
+  vSemaphoreDelete(native_type_.handle);
 }
 
 inline void CountingSemaphore::acquire() {
