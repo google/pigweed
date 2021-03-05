@@ -546,7 +546,7 @@ def static_analysis(ctx: PresubmitContext):
                                       reports[0].parent)
         _LOG.error('Static analyzer found errors: %s', archive)
         _LOG.error('To view report, open: %s',
-                   Path(reports[0]).joinpath('index.html'))
+                   Path(reports[0]).parent.joinpath('index.html'))
         raise PresubmitFailure
 
 
