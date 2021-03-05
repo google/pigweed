@@ -189,7 +189,7 @@ typedef struct {
 typedef int64_t pw_chrono_SystemClock_Nanoseconds;
 
 // Returns the current time, see SystemClock::now() for more detail.
-pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_Now();
+pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_Now(void);
 
 // Returns the change in time between the current_time - last_time.
 pw_chrono_SystemClock_Duration pw_chrono_SystemClock_TimeElapsed(

@@ -25,7 +25,7 @@
 
 #include "pw_assert/assert.h"
 
-static void EnsureNullIsIncluded() {
+static void EnsureNullIsIncluded(void) {
   // This is a compile check to ensure NULL is defined. It comes before the
   // status.h include to ensure we don't accidentally get NULL from status.h.
   PW_CHECK_NOTNULL(0xa);
@@ -64,7 +64,7 @@ static const int z = 10;
 
 static int Add3(int a, int b, int c) { return a + b + c; }
 
-void AssertBackendCompileTestsInC() {
+void AssertBackendCompileTestsInC(void) {
   {  // TEST(Crash, WithAndWithoutMessageArguments)
     MAYBE_SKIP_TEST;
     PW_CRASH(FAIL_IF_HIDDEN);

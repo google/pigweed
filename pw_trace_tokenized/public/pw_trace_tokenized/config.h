@@ -40,7 +40,7 @@
 // provided by the platform.
 #ifndef PW_TRACE_GET_TIME
 #define PW_TRACE_GET_TIME() pw_trace_GetTraceTime()
-extern PW_TRACE_TIME_TYPE pw_trace_GetTraceTime();
+extern PW_TRACE_TIME_TYPE pw_trace_GetTraceTime(void);
 #endif  // PW_TRACE_GET_TIME
 
 // PW_TRACE_GET_TIME_TICKS_PER_SECOND is the macro which is called to determine
@@ -50,7 +50,7 @@ extern PW_TRACE_TIME_TYPE pw_trace_GetTraceTime();
 #ifndef PW_TRACE_GET_TIME_TICKS_PER_SECOND
 #define PW_TRACE_GET_TIME_TICKS_PER_SECOND() \
   pw_trace_GetTraceTimeTicksPerSecond()
-extern size_t pw_trace_GetTraceTimeTicksPerSecond();
+extern size_t pw_trace_GetTraceTimeTicksPerSecond(void);
 #endif  // PW_TRACE_GET_TIME_TICKS_PER_SECOND
 
 // PW_TRACE_GET_TIME_DELTA is te macro which is called to determine

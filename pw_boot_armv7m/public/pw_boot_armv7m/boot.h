@@ -77,7 +77,7 @@ extern uint8_t pw_boot_vector_table_addr;
 
 // Forward declaration of main. Pigweed applications are expected to implement
 // this function. An implementation of main() is NOT provided by this module.
-int main();
+int main(void);
 
 // Reset handler or boot entry point.
 //
@@ -85,7 +85,7 @@ int main();
 // (which usually points to Reset_Handler) must be set to point to this
 // function. This function is implemented by pw_boot_armv7m, and does early
 // memory initialization.
-PW_NO_RETURN void pw_boot_Entry();
+PW_NO_RETURN void pw_boot_Entry(void);
 
 // pw_boot hook: Before static memory is initialized (user supplied)
 //
@@ -97,7 +97,7 @@ PW_NO_RETURN void pw_boot_Entry();
 // violates the C spec in several ways as .bss has not yet been zero-initialized
 // and static values have not yet been loaded into memory. This function is NOT
 // implemented by pw_boot_armv7m.
-void pw_boot_PreStaticMemoryInit();
+void pw_boot_PreStaticMemoryInit(void);
 
 // pw_boot hook: Before C++ static constructors are invoked (user supplied).
 //
@@ -107,7 +107,7 @@ void pw_boot_PreStaticMemoryInit();
 // function is called just before C++ static constructors are invoked. It is
 // safe to run C code, but NOT safe to call out to any C++ code. This function
 // is NOT implemented by pw_boot_armv7m.
-void pw_boot_PreStaticConstructorInit();
+void pw_boot_PreStaticConstructorInit(void);
 
 // pw_boot hook: Before main is invoked (user supplied).
 //
@@ -116,13 +116,13 @@ void pw_boot_PreStaticConstructorInit();
 // targets to have pre-main initialization of the device and seamlessly swap out
 // the main() implementation. This function is NOT implemented by
 // pw_boot_armv7m.
-void pw_boot_PreMainInit();
+void pw_boot_PreMainInit(void);
 
 // pw_boot hook: After main returned (user supplied).
 //
 // This is a hook function that users of pw_boot must supply. It is called by
 // pw_boot_Entry() after main() has returned. This function must not return!
 // This function is NOT implemented by pw_boot_armv7m.
-PW_NO_RETURN void pw_boot_PostMain();
+PW_NO_RETURN void pw_boot_PostMain(void);
 
 PW_EXTERN_C_END

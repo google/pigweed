@@ -22,7 +22,7 @@
 #error "This file must be compiled as plain C to verify C compilation works."
 #endif  // __cplusplus
 
-void BasicTraceTestPlainC() {
+void BasicTraceTestPlainC(void) {
   PW_TRACE_INSTANT("Test");
 
   PW_TRACE_START("Test");

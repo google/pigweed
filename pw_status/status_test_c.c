@@ -23,7 +23,7 @@ pw_Status PassStatusFromCpp(pw_Status status);
 #define CHECK_STATUS_FROM_CPP(status) \
   (PW_STATUS_##status != PassStatusFromCpp(PW_STATUS_##status))
 
-int TestStatusFromC() {
+int TestStatusFromC(void) {
   int errors = 0;
 
   errors += CHECK_STATUS_FROM_CPP(OK);
@@ -52,7 +52,7 @@ int TestStatusFromC() {
 #define CHECK_STATUS_STRING(status) \
   (strcmp(#status, pw_StatusString(PW_STATUS_##status)) != 0)
 
-int TestStatusStringsFromC() {
+int TestStatusStringsFromC(void) {
   int errors = 0;
 
   errors += CHECK_STATUS_STRING(OK);

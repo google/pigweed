@@ -36,7 +36,7 @@ static void DefaultFaultHandler(void) {
 // This typedef is for convenience when building the vector table. With the
 // exception of SP_main (0th entry in the vector table), all the entries of the
 // vector table are function pointers.
-typedef void (*InterruptHandler)();
+typedef void (*InterruptHandler)(void);
 
 PW_KEEP_IN_SECTION(".vector_table")
 const InterruptHandler vector_table[] = {

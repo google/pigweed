@@ -28,11 +28,11 @@
 #error "This file must be compiled as plain C to verify C compilation works."
 #endif  // __cplusplus
 
-static void LoggingFromFunctionPlainC() { PW_LOG_INFO("From a function!"); }
+static void LoggingFromFunctionPlainC(void) { PW_LOG_INFO("From a function!"); }
 
 static void CustomFormatStringTest(void);
 
-void BasicLogTestPlainC() {
+void BasicLogTestPlainC(void) {
   int n = 3;
 
   // Debug level

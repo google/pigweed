@@ -17,7 +17,7 @@
 
 #include "pw_chrono/system_clock.h"
 
-pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_CallNow() {
+pw_chrono_SystemClock_TimePoint pw_chrono_SystemClock_CallNow(void) {
   return pw_chrono_SystemClock_Now();
 }
 

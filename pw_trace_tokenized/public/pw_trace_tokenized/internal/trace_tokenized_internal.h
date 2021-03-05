@@ -73,7 +73,7 @@ void pw_trace_TraceEvent(uint32_t trace_token,
 void pw_trace_Enable(bool enabled);
 
 // Returns true if tracing is currently enabled.
-bool pw_trace_IsEnabled();
+bool pw_trace_IsEnabled(void);
 
 PW_EXTERN_C_END
 

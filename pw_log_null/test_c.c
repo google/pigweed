@@ -23,7 +23,7 @@ static int global;
 
 static int IncrementGlobal(void) { return ++global; }
 
-bool CTest() {
+bool CTest(void) {
   PW_LOG(1, 2, "3");
   PW_LOG(1, 2, "whoa");
   PW_LOG(1, 2, "%s", "hello");
