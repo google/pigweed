@@ -130,7 +130,9 @@ TEST(Thread, MoveOperator) {
 
   thread_0 = std::move(thread_1);
   EXPECT_NE(thread_0.get_id(), Id());
+#ifndef __clang_analyzer__
   EXPECT_EQ(thread_1.get_id(), Id());
+#endif  // ignore use-after-move
 
   thread_0.detach();
   EXPECT_EQ(thread_0.get_id(), Id());

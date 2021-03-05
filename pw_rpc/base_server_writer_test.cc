@@ -53,7 +53,9 @@ TEST(BaseServerWriter, Move_ClosesOriginal) {
   BaseServerWriter moved(context.get());
   BaseServerWriter writer(std::move(moved));
 
+#ifndef __clang_analyzer__
   EXPECT_FALSE(moved.open());
+#endif  // ignore use-after-move
   EXPECT_TRUE(writer.open());
 }
 
