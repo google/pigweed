@@ -61,9 +61,10 @@ void NopStatusCallback(bt::att::Status) {}
 
 GattRemoteServiceServer::GattRemoteServiceServer(
     fbl::RefPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
-    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
+    bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),
+      peer_id_(peer_id),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(service_);
 }
@@ -225,7 +226,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
                                          ReadByTypeCallback callback) {
   service_->ReadByType(
       fidl_helpers::UuidFromFidl(uuid),
-      [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback)](
+      [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
           bt::att::Status status, std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
         if (!self) {
           return;
@@ -235,8 +236,9 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
           case bt::HostError::kNoError:
             break;
           case bt::HostError::kInvalidParameters:
-            bt_log(DEBUG, "bt-host",
-                   "ReadByType called with invalid parameters, closing FIDL channel");
+            bt_log(WARN, "fidl",
+                   "%s: called with invalid parameters, closing FIDL channel (peer: %s)", func,
+                   bt_str(self->peer_id_));
             self->binding()->Close(ZX_ERR_INVALID_ARGS);
             return;
           default:

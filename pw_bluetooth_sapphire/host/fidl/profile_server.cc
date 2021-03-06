@@ -60,7 +60,7 @@ fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
 
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
   auto elem = fidlbredr::DataElement::New();
-  bt_log(TRACE, "sdp", "DataElementToFidl: %s", in->ToString().c_str());
+  bt_log(TRACE, "fidl", "DataElementToFidl: %s", in->ToString().c_str());
   ZX_DEBUG_ASSERT(in);
   switch (in->type()) {
     case bt::sdp::DataElement::Type::kUnsignedInt: {
@@ -78,7 +78,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
           elem->set_uint64(*in->Get<uint64_t>());
           break;
         default:
-          bt_log(INFO, "profile_server", "no 128-bit integer support in FIDL yet");
+          bt_log(INFO, "fidl", "no 128-bit integer support in FIDL yet");
           return nullptr;
       }
       return elem;
@@ -98,7 +98,7 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
           elem->set_int64(*in->Get<int64_t>());
           break;
         default:
-          bt_log(INFO, "profile_server", "no 128-bit integer support in FIDL yet");
+          bt_log(INFO, "fidl", "no 128-bit integer support in FIDL yet");
           return nullptr;
       }
       return elem;
@@ -136,11 +136,11 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
       return elem;
     }
     case bt::sdp::DataElement::Type::kUrl: {
-      bt_log(INFO, "profile_server", "no support for Url types in DataElement yet");
+      bt_log(INFO, "fidl", "no support for Url types in DataElement yet");
       return nullptr;
     }
     case bt::sdp::DataElement::Type::kNull: {
-      bt_log(INFO, "profile_server", "no support for null DataElement types in FIDL");
+      bt_log(INFO, "fidl", "no support for null DataElement types in FIDL");
       return nullptr;
     }
   }
@@ -210,8 +210,8 @@ void ProfileServer::Advertise(
     auto rec = fidl_helpers::ServiceDefinitionToServiceRecord(definition);
     // Drop the receiver on error.
     if (rec.is_error()) {
-      bt_log(INFO, "profile_server",
-             "Failed to create service record from service defintion - exiting!");
+      bt_log(WARN, "fidl", "%s: Failed to create service record from service defintion",
+             __FUNCTION__);
       callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
       return;
     }
@@ -230,6 +230,7 @@ void ProfileServer::Advertise(
       });
 
   if (!registration_handle) {
+    bt_log(WARN, "fidl", "%s: Failed to register service", __FUNCTION__);
     callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   };
@@ -280,6 +281,8 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
   // Anything other than L2CAP is not supported by this server.
   if (!connection.is_l2cap()) {
+    bt_log(WARN, "fidl", "%s: non-l2cap connections are not supported (is_rfcomm: %d, peer: %s)",
+           __FUNCTION__, connection.is_rfcomm(), bt_str(id));
     callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   }
@@ -287,6 +290,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   // The L2CAP parameters must include a PSM. ChannelParameters are optional.
   auto l2cap_params = std::move(connection.l2cap());
   if (!l2cap_params.has_psm()) {
+    bt_log(WARN, "fidl", "%s: missing l2cap psm (peer: %s)", __FUNCTION__, bt_str(id));
     callback(fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
   }
@@ -294,10 +298,11 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
-  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(),
-                       cb = callback.share()](fbl::RefPtr<bt::l2cap::Channel> chan) {
+  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(), cb = callback.share(), id,
+                       func = __FUNCTION__](fbl::RefPtr<bt::l2cap::Channel> chan) {
     if (!chan) {
-      bt_log(TRACE, "profile_server", "Channel socket is empty, returning failed.");
+      bt_log(INFO, "fidl", "%s: Channel socket is empty, returning failed. (peer: %s)", func,
+             bt_str(id));
       cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
@@ -319,13 +324,15 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 }
 
 void ProfileServer::ConnectSco(
-    ::fuchsia::bluetooth::PeerId peer_id, bool initiator,
+    ::fuchsia::bluetooth::PeerId fidl_peer_id, bool initiator,
     fuchsia::bluetooth::bredr::ScoConnectionParameters fidl_params,
     fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ScoConnectionReceiver> receiver) {
+  bt::PeerId peer_id(fidl_peer_id.value);
   auto client = receiver.Bind();
 
   auto params_result = fidl_helpers::FidlToScoParameters(fidl_params);
   if (params_result.is_error()) {
+    bt_log(WARN, "fidl", "%s: invalid parameters (peer: %s)", __FUNCTION__, bt_str(peer_id));
     client->Error(fidlbredr::ScoErrorCode::INVALID_ARGUMENTS);
     return;
   }
@@ -348,8 +355,8 @@ void ProfileServer::ConnectSco(
     self->OnScoConnectionResult(request, std::move(result));
   };
 
-  request->request_handle = adapter()->bredr()->OpenScoConnection(
-      bt::PeerId(peer_id.value), initiator, params, std::move(callback));
+  request->request_handle =
+      adapter()->bredr()->OpenScoConnection(peer_id, initiator, params, std::move(callback));
 }
 
 void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Channel> channel,
@@ -383,7 +390,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fbl::RefPtr<bt::l2cap::Ch
 }
 
 void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status) {
-  bt_log(TRACE, "profile_server", "Connection receiver closed, ending advertisement %lu", ad_id);
+  bt_log(DEBUG, "fidl", "Connection receiver closed, ending advertisement %lu", ad_id);
 
   auto it = current_advertised_.find(ad_id);
 
@@ -398,7 +405,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id, zx_status_t status
 }
 
 void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) {
-  bt_log(TRACE, "profile_server", "Search result closed, ending search %lu reason %s", search_id,
+  bt_log(DEBUG, "fidl", "Search result closed, ending search %lu reason %s", search_id,
          zx_status_get_string(status));
 
   auto it = searches_.find(search_id);
@@ -466,6 +473,9 @@ void ProfileServer::OnScoConnectionResult(fbl::RefPtr<ScoRequest> request,
       return;
     }
 
+    bt_log(INFO, "fidl", "%s: SCO connection failed (status: %s)", __FUNCTION__,
+           bt::HostErrorToString(result.error()).c_str());
+
     if (result.error() == bt::HostError::kCanceled) {
       receiver->Error(fuchsia::bluetooth::bredr::ScoErrorCode::CANCELLED);
       return;
@@ -484,13 +494,12 @@ void ProfileServer::OnScoConnectionResult(fbl::RefPtr<ScoRequest> request,
 }
 
 void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {
-  bt_log(TRACE, "profile_server", "audio direction ext server closed (reason: %s)",
+  bt_log(DEBUG, "fidl", "audio direction ext server closed (reason: %s)",
          zx_status_get_string(status));
 
   auto it = audio_direction_ext_servers_.find(ext_server);
   if (it == audio_direction_ext_servers_.end()) {
-    bt_log(WARN, "profile_server",
-           "could not find ext server in audio direction ext error callback");
+    bt_log(WARN, "fidl", "could not find ext server in audio direction ext error callback");
     return;
   }
 
@@ -542,6 +551,7 @@ void ProfileServer::AudioDirectionExt::SetPriority(
                                    cb(fit::ok());
                                    return;
                                  }
+                                 bt_log(DEBUG, "fidl", "ACL priority request failed");
                                  cb(fit::error(fuchsia::bluetooth::ErrorCode::FAILED));
                                });
 }

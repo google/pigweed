@@ -196,9 +196,9 @@ GattServerServer::~GattServerServer() {
 
 void GattServerServer::RemoveService(uint64_t id) {
   if (services_.erase(id)) {
-    bt_log(DEBUG, "bt-host", "service removed (id: %lu)", id);
+    bt_log(DEBUG, "fidl", "%s: service removed (id: %lu)", __FUNCTION__, id);
   } else {
-    bt_log(DEBUG, "bt-host", "service id not found: %lu", id);
+    bt_log(WARN, "fidl", "%s: service id not found: %lu", __FUNCTION__, id);
   }
 }
 
@@ -207,12 +207,14 @@ void GattServerServer::PublishService(ServiceInfo service_info,
                                       fidl::InterfaceRequest<LocalService> service_iface,
                                       PublishServiceCallback callback) {
   if (!delegate) {
+    bt_log(WARN, "fidl", "%s: missing service delegate", __FUNCTION__);
     auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "A delegate is required");
     callback(std::move(error));
     return;
   }
 
   if (!service_iface) {
+    bt_log(WARN, "fidl", "%s: missing service interface request", __FUNCTION__);
     auto error =
         fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Service interface is required");
     callback(std::move(error));
@@ -221,6 +223,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
 
   bt::UUID service_type;
   if (!bt::StringToUuid(service_info.type, &service_type)) {
+    bt_log(WARN, "fidl", "%s: invalid service UUID %s", __FUNCTION__, service_info.type.c_str());
     auto error = fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "Invalid service UUID");
     callback(std::move(error));
     return;
@@ -307,6 +310,7 @@ void GattServerServer::OnReadRequest(bt::gatt::IdType service_id, bt::gatt::IdTy
                                      uint16_t offset, bt::gatt::ReadResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
+    bt_log(WARN, "fidl", "%s: unknown service id %lu", __FUNCTION__, service_id);
     responder(bt::att::ErrorCode::kUnlikelyError, bt::BufferView());
     return;
   }
@@ -331,6 +335,7 @@ void GattServerServer::OnWriteRequest(bt::gatt::IdType service_id, bt::gatt::IdT
                                       bt::gatt::WriteResponder responder) {
   auto iter = services_.find(service_id);
   if (iter == services_.end()) {
+    bt_log(WARN, "fidl", "%s: unknown service id %lu", __FUNCTION__, service_id);
     responder(bt::att::ErrorCode::kUnlikelyError);
     return;
   }
@@ -355,11 +360,14 @@ void GattServerServer::OnCharacteristicConfig(bt::gatt::IdType service_id, bt::g
                                               bt::gatt::PeerId peer_id, bool notify,
                                               bool indicate) {
   auto iter = services_.find(service_id);
-  if (iter != services_.end()) {
-    auto* delegate = iter->second->delegate();
-    ZX_DEBUG_ASSERT(delegate);
-    delegate->OnCharacteristicConfiguration(chrc_id, peer_id.ToString(), notify, indicate);
+  if (iter == services_.end()) {
+    bt_log(WARN, "fidl", "%s: unknown service id %lu", __FUNCTION__, service_id);
+    return;
   }
+
+  auto* delegate = iter->second->delegate();
+  ZX_DEBUG_ASSERT(delegate);
+  delegate->OnCharacteristicConfiguration(chrc_id, peer_id.ToString(), notify, indicate);
 }
 
 }  // namespace bthost

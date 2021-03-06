@@ -170,7 +170,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
     }
     default:
       // Types not handled: Null datatype (never used) and Url data type (not supported by Set)
-      bt_log(WARN, "profile_server", "Encountered FidlToDataElement type not handled.");
+      bt_log(WARN, "fidl", "Encountered FidlToDataElement type not handled.");
       return std::nullopt;
   }
   return out;
@@ -179,7 +179,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
 bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,
                                bt::sdp::ServiceRecord::ProtocolListId id,
                                const ::std::vector<fbredr::ProtocolDescriptor>& descriptor_list) {
-  bt_log(TRACE, "profile_server", "ProtocolDescriptorList %d", id);
+  bt_log(TRACE, "fidl", "ProtocolDescriptorList %d", id);
   for (auto& descriptor : descriptor_list) {
     bt::sdp::DataElement protocol_params;
     if (descriptor.params.size() > 1) {
@@ -203,8 +203,8 @@ bool AddProtocolDescriptorList(bt::sdp::ServiceRecord* rec,
       protocol_params = FidlToDataElement(descriptor.params.front()).value();
     }
 
-    bt_log(TRACE, "profile_server", "%d : %s", fidl::ToUnderlying(descriptor.protocol),
-           protocol_params.ToString().c_str());
+    bt_log(TRACE, "fidl", "Adding protocol descriptor: {%d : %s}",
+           fidl::ToUnderlying(descriptor.protocol), protocol_params.ToString().c_str());
     rec->AddProtocolDescriptor(id, bt::UUID(static_cast<uint16_t>(descriptor.protocol)),
                                std::move(protocol_params));
   }
@@ -488,7 +488,7 @@ bt::gap::LeSecurityMode LeSecurityModeFromFidl(const fsys::LeSecurityMode mode) 
     case fsys::LeSecurityMode::SECURE_CONNECTIONS_ONLY:
       return bt::gap::LeSecurityMode::SecureConnectionsOnly;
   }
-  bt_log(WARN, "sm", "FIDL security mode not recognized, defaulting to SecureConnectionsOnly");
+  bt_log(WARN, "fidl", "FIDL security mode not recognized, defaulting to SecureConnectionsOnly");
   return bt::gap::LeSecurityMode::SecureConnectionsOnly;
 }
 
@@ -583,7 +583,7 @@ std::optional<bt::DeviceAddress> AddressFromFidlBondingData(
   if (bond.has_bredr_bond()) {
     // A random identity address can only be present in a LE-only bond.
     if (bond.address().type == fbt::AddressType::RANDOM) {
-      bt_log(ERROR, "bt-host", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
+      bt_log(WARN, "fidl", "BR/EDR or Dual-Mode bond cannot have a random identity address!");
       return std::nullopt;
     }
     // TODO(fxbug.dev/2761): We currently assign kBREDR as the address type for dual-mode bonds.
@@ -741,7 +741,7 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
     for (const auto& uuid_str : *fidl_filter.service_uuids) {
       bt::UUID uuid;
       if (!bt::StringToUuid(uuid_str, &uuid)) {
-        bt_log(DEBUG, "bt-host", "invalid parameters given to scan filter");
+        bt_log(WARN, "fidl", "invalid service UUID given to scan filter: %s", uuid_str.c_str());
         return false;
       }
       uuids.push_back(uuid);
@@ -800,7 +800,7 @@ std::optional<bt::AdvertisingData> AdvertisingDataFromFidl(const fble::Advertisi
     for (const auto& uuid : input.service_uuids()) {
       bt::UUID bt_uuid = UuidFromFidl(uuid);
       if (!output.AddServiceUuid(bt_uuid)) {
-        bt_log(WARN, "gap-le",
+        bt_log(WARN, "fidl",
                "Received more Service UUIDs than fit in a single AD - truncating UUID %s",
                bt_str(bt_uuid));
       }
@@ -969,7 +969,7 @@ bt::gatt::ReliableMode ReliableModeFromFidl(const fgatt::WriteOptions& write_opt
 // that underlies CharacteristicHandles when directly casted. Fix this.
 bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_id) {
   if (fidl_gatt_id > std::numeric_limits<bt::att::Handle>::max()) {
-    bt_log(ERROR, "gatt",
+    bt_log(ERROR, "fidl",
            "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX) to 16-bit "
            "Characteristic Handle",
            fidl_gatt_id);
@@ -981,7 +981,7 @@ bt::gatt::CharacteristicHandle CharacteristicHandleFromFidl(uint64_t fidl_gatt_i
 // that underlies DescriptorHandles when directly casted. Fix this.
 bt::gatt::DescriptorHandle DescriptorHandleFromFidl(uint64_t fidl_gatt_id) {
   if (fidl_gatt_id > std::numeric_limits<bt::att::Handle>::max()) {
-    bt_log(ERROR, "gatt",
+    bt_log(ERROR, "fidl",
            "Casting a 64-bit FIDL GATT ID with `bits[16, 63] != 0` (0x%lX) to 16-bit Descriptor "
            "Handle",
            fidl_gatt_id);
@@ -995,13 +995,13 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
   std::vector<bt::UUID> classes;
 
   if (!definition.has_service_class_uuids()) {
-    bt_log(INFO, "profile_server", "Advertised service contains no Service UUIDs");
+    bt_log(WARN, "fidl", "Advertised service contains no Service UUIDs");
     return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
   }
 
   for (auto& uuid : definition.service_class_uuids()) {
     bt::UUID btuuid = fidl_helpers::UuidFromFidl(uuid);
-    bt_log(TRACE, "profile_server", "Setting Service Class UUID %s", bt_str(btuuid));
+    bt_log(TRACE, "fidl", "Setting Service Class UUID %s", bt_str(btuuid));
     classes.emplace_back(std::move(btuuid));
   }
 
@@ -1010,7 +1010,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
   if (definition.has_protocol_descriptor_list()) {
     if (!AddProtocolDescriptorList(&rec, bt::sdp::ServiceRecord::kPrimaryProtocolList,
                                    definition.protocol_descriptor_list())) {
-      bt_log(ERROR, "profile_server", "Failed to add protocol descriptor list");
+      bt_log(ERROR, "fidl", "Failed to add protocol descriptor list");
       return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
     }
   }
@@ -1024,7 +1024,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
     bt::sdp::ServiceRecord::ProtocolListId protocol_list_id = 1;
     for (const auto& descriptor_list : definition.additional_protocol_descriptor_lists()) {
       if (!AddProtocolDescriptorList(&rec, protocol_list_id, descriptor_list)) {
-        bt_log(ERROR, "profile_server", "Failed to add additional protocol descriptor list");
+        bt_log(ERROR, "fidl", "Failed to add additional protocol descriptor list");
         return fit::error(fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS);
       }
       protocol_list_id++;
@@ -1033,8 +1033,8 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
 
   if (definition.has_profile_descriptors()) {
     for (const auto& profile : definition.profile_descriptors()) {
-      bt_log(TRACE, "profile_server", "Adding Profile %#hx v%d.%d", profile.profile_id,
-             profile.major_version, profile.minor_version);
+      bt_log(TRACE, "fidl", "Adding Profile %#hx v%d.%d", profile.profile_id, profile.major_version,
+             profile.minor_version);
       rec.AddProfile(bt::UUID(uint16_t(profile.profile_id)), profile.major_version,
                      profile.minor_version);
     }
@@ -1056,8 +1056,8 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
       if (info.has_provider()) {
         provider = info.provider();
       }
-      bt_log(TRACE, "profile_server", "Adding Info (%s): (%s, %s, %s)", language.c_str(),
-             name.c_str(), description.c_str(), provider.c_str());
+      bt_log(TRACE, "fidl", "Adding Info (%s): (%s, %s, %s)", language.c_str(), name.c_str(),
+             description.c_str(), provider.c_str());
       rec.AddInfo(language, name, description, provider);
     }
   }
@@ -1066,7 +1066,7 @@ fit::result<bt::sdp::ServiceRecord, fuchsia::bluetooth::ErrorCode> ServiceDefini
     for (const auto& attribute : definition.additional_attributes()) {
       auto elem = FidlToDataElement(attribute.element);
       if (elem) {
-        bt_log(TRACE, "profile_server", "Adding attribute %#x : %s", attribute.id,
+        bt_log(TRACE, "fidl", "Adding attribute %#x : %s", attribute.id,
                elem.value().ToString().c_str());
         rec.SetAttribute(attribute.id, std::move(elem.value()));
       }
@@ -1171,7 +1171,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   bt::hci::SynchronousConnectionParameters out;
 
   if (!params.has_parameter_set()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing parameter_set");
+    bt_log(WARN, "fidl", "SCO parameters missing parameter_set");
     return fit::error();
   }
   auto param_set = FidlToScoParameterSet(params.parameter_set());
@@ -1180,7 +1180,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   out.receive_bandwidth = out.transmit_bandwidth;
 
   if (!params.has_air_coding_format()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing air_coding_format");
+    bt_log(WARN, "fidl", "SCO parameters missing air_coding_format");
     return fit::error();
   }
   auto air_coding_format = FidlToScoCodingFormat(params.air_coding_format());
@@ -1188,28 +1188,28 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   out.receive_coding_format = out.transmit_coding_format;
 
   if (!params.has_air_frame_size()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing air_frame_size");
+    bt_log(WARN, "fidl", "SCO parameters missing air_frame_size");
     return fit::error();
   }
   out.transmit_codec_frame_size_bytes = params.air_frame_size();
   out.receive_codec_frame_size_bytes = out.transmit_codec_frame_size_bytes;
 
   if (!params.has_io_bandwidth()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing io_bandwidth");
+    bt_log(WARN, "fidl", "SCO parameters missing io_bandwidth");
     return fit::error();
   }
   out.input_bandwidth = params.io_bandwidth();
   out.output_bandwidth = out.input_bandwidth;
 
   if (!params.has_io_coding_format()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing io_coding_format");
+    bt_log(WARN, "fidl", "SCO parameters missing io_coding_format");
     return fit::error();
   }
   out.input_coding_format = FidlToScoCodingFormat(params.io_coding_format());
   out.output_coding_format = out.input_coding_format;
 
   if (!params.has_io_frame_size()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing io_frame_size");
+    bt_log(WARN, "fidl", "SCO parameters missing io_frame_size");
     return fit::error();
   }
   out.input_coded_data_size_bits = params.io_frame_size();
@@ -1219,14 +1219,14 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
       out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
     auto io_pcm_format = FidlToPcmDataFormat(params.io_pcm_data_format());
     if (io_pcm_format.is_error()) {
-      bt_log(DEBUG, "fidl", "Unsupported IO PCM data format in SCO parameters");
+      bt_log(WARN, "fidl", "Unsupported IO PCM data format in SCO parameters");
       return fit::error();
     }
     out.input_pcm_data_format = io_pcm_format.value();
     out.output_pcm_data_format = out.input_pcm_data_format;
 
   } else if (out.input_coding_format.coding_format == bt::hci::CodingFormat::kLinearPcm) {
-    bt_log(DEBUG, "fidl",
+    bt_log(WARN, "fidl",
            "SCO parameters missing io_pcm_data_format (required for linear PCM IO coding format)");
     return fit::error();
   } else {
@@ -1244,7 +1244,7 @@ fit::result<bt::hci::SynchronousConnectionParameters> FidlToScoParameters(
   }
 
   if (!params.has_path()) {
-    bt_log(DEBUG, "fidl", "SCO parameters missing data path");
+    bt_log(WARN, "fidl", "SCO parameters missing data path");
     return fit::error();
   }
   out.input_data_path = FidlToScoDataPath(params.path());

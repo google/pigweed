@@ -43,26 +43,26 @@ std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindC
 void LowEnergyCentralServer::GetPeripherals(::fidl::VectorPtr<::std::string> service_uuids,
                                             GetPeripheralsCallback callback) {
   // TODO:
-  bt_log(ERROR, "bt-host", "GetPeripherals() not implemented");
+  bt_log(ERROR, "fidl", "GetPeripherals() not implemented");
 }
 
 void LowEnergyCentralServer::GetPeripheral(::std::string identifier,
                                            GetPeripheralCallback callback) {
   // TODO:
-  bt_log(ERROR, "bt-host", "GetPeripheral() not implemented");
+  bt_log(ERROR, "fidl", "GetPeripheral() not implemented");
 }
 
 void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback callback) {
-  bt_log(DEBUG, "bt-host", "StartScan()");
+  bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
 
   if (requesting_scan_) {
-    bt_log(DEBUG, "bt-host", "scan request already in progress");
+    bt_log(DEBUG, "fidl", "%s: scan request already in progress", __FUNCTION__);
     callback(fidl_helpers::NewFidlError(ErrorCode::IN_PROGRESS, "Scan request in progress"));
     return;
   }
 
   if (filter && !fidl_helpers::IsScanFilterValid(*filter)) {
-    bt_log(DEBUG, "bt-host", "invalid scan filter given");
+    bt_log(WARN, "fidl", "%s: invalid scan filter given", __FUNCTION__);
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                         "ScanFilter contains an invalid UUID"));
     return;
@@ -79,14 +79,15 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
   requesting_scan_ = true;
   adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_ptr_factory_.GetWeakPtr(),
                                                     filter = std::move(filter),
-                                                    callback = std::move(callback)](auto session) {
+                                                    callback = std::move(callback),
+                                                    func = __FUNCTION__](auto session) {
     if (!self)
       return;
 
     self->requesting_scan_ = false;
 
     if (!session) {
-      bt_log(DEBUG, "bt-host", "failed to start discovery session");
+      bt_log(WARN, "fidl", "%s: failed to start LE discovery session", func);
       callback(fidl_helpers::NewFidlError(ErrorCode::FAILED, "Failed to start discovery session"));
       return;
     }
@@ -114,10 +115,10 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
 }
 
 void LowEnergyCentralServer::StopScan() {
-  bt_log(DEBUG, "bt-host", "StopScan()");
+  bt_log(DEBUG, "fidl", "StopScan()");
 
   if (!scan_session_) {
-    bt_log(DEBUG, "bt-host", "no active discovery session; nothing to do");
+    bt_log(DEBUG, "fidl", "%s: no active discovery session; nothing to do", __FUNCTION__);
     return;
   }
 
@@ -128,10 +129,11 @@ void LowEnergyCentralServer::StopScan() {
 void LowEnergyCentralServer::ConnectPeripheral(
     ::std::string identifier, fuchsia::bluetooth::le::ConnectionOptions connection_options,
     ::fidl::InterfaceRequest<Client> client_request, ConnectPeripheralCallback callback) {
-  bt_log(INFO, "fidl", "%s(): (peer: %s)", __FUNCTION__, identifier.c_str());
+  bt_log(INFO, "fidl", "%s: (peer: %s)", __FUNCTION__, identifier.c_str());
 
   auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
+    bt_log(WARN, "fidl", "%s: invalid peer id : %s", __FUNCTION__, identifier.c_str());
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
   }
@@ -152,20 +154,21 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto conn_cb = [self, callback = callback.share(), peer_id = *peer_id,
-                  request = std::move(client_request)](auto result) mutable {
+                  request = std::move(client_request), func = __FUNCTION__](auto result) mutable {
     if (!self)
       return;
 
     auto iter = self->connections_.find(peer_id);
     if (iter == self->connections_.end()) {
-      bt_log(INFO, "fidl", "connect request canceled (peer: %s)", bt_str(peer_id));
+      bt_log(INFO, "fidl", "%s: connect request canceled during connection procedure (peer: %s)",
+             func, bt_str(peer_id));
       auto error = fidl_helpers::NewFidlError(ErrorCode::FAILED, "Connect request canceled");
       callback(std::move(error));
       return;
     }
 
     if (result.is_error()) {
-      bt_log(INFO, "fidl", "failed to connect to peer (peer: %s)", bt_str(peer_id));
+      bt_log(INFO, "fidl", "%s: failed to connect to peer (peer: %s)", func, bt_str(peer_id));
       self->connections_.erase(peer_id);
       callback(fidl_helpers::StatusToFidlDeprecated(bt::hci::Status(result.error()),
                                                     "failed to connect"));
@@ -193,7 +196,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
     conn_ref->set_closed_callback([self, peer_id] {
       if (self && self->connections_.erase(peer_id) != 0) {
-        bt_log(INFO, "fidl", "connection closed (peer: %s)", bt_str(peer_id));
+        bt_log(INFO, "fidl", "peripheral connection closed (peer: %s)", bt_str(peer_id));
         self->gatt_client_servers_.erase(peer_id);
         self->NotifyPeripheralDisconnected(peer_id);
       }
@@ -225,13 +228,14 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
                                                   DisconnectPeripheralCallback callback) {
   auto peer_id = fidl_helpers::PeerIdFromString(identifier);
   if (!peer_id.has_value()) {
+    bt_log(WARN, "fidl", "%s: invalid peer id : %s", __FUNCTION__, identifier.c_str());
     callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS, "invalid peer ID"));
     return;
   }
 
   auto iter = connections_.find(*peer_id);
   if (iter == connections_.end()) {
-    bt_log(INFO, "fidl", "DisconnectPeripheral: client not connected to peer (id: %s)",
+    bt_log(INFO, "fidl", "%s: client not connected to peer (peer: %s)", __FUNCTION__,
            identifier.c_str());
     callback(Status());
     return;
@@ -242,7 +246,8 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
   connections_.erase(iter);
 
   if (was_pending) {
-    bt_log(INFO, "fidl", "canceling connection request (peer: %s)", bt_str(*peer_id));
+    bt_log(INFO, "fidl", "%s: canceling connection request (peer: %s)", __FUNCTION__,
+           bt_str(*peer_id));
   } else {
     gatt_client_servers_.erase(*peer_id);
     NotifyPeripheralDisconnected(*peer_id);
@@ -254,7 +259,8 @@ void LowEnergyCentralServer::DisconnectPeripheral(::std::string identifier,
 void LowEnergyCentralServer::OnScanResult(const bt::gap::Peer& peer) {
   auto fidl_device = fidl_helpers::NewLERemoteDevice(peer);
   if (!fidl_device) {
-    bt_log(DEBUG, "bt-host", "ignoring malformed scan result");
+    bt_log(ERROR, "fidl", "%s: ignoring malformed scan result (peer: %s)", __FUNCTION__,
+           bt_str(peer.identifier()));
     return;
   }
 

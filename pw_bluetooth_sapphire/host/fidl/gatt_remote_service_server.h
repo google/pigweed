@@ -22,7 +22,7 @@ namespace bthost {
 class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::RemoteService> {
  public:
   GattRemoteServiceServer(fbl::RefPtr<bt::gatt::RemoteService> service,
-                          fxl::WeakPtr<bt::gatt::GATT> gatt,
+                          fxl::WeakPtr<bt::gatt::GATT> gatt, bt::PeerId peer_id,
                           fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request);
   ~GattRemoteServiceServer() override;
 
@@ -51,6 +51,8 @@ class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::
 
   // The remote GATT service that backs this service.
   fbl::RefPtr<bt::gatt::RemoteService> service_;
+
+  const bt::PeerId peer_id_;
 
   using HandlerId = bt::gatt::IdType;
   std::unordered_map<bt::gatt::CharacteristicHandle, HandlerId> notify_handlers_;
