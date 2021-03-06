@@ -7,11 +7,16 @@
 
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
+#include <lib/fit/function.h>
 #include <lib/fit/nullable.h>
 #include <zircon/assert.h>
 
+#include <functional>
 #include <limits>
+#include <queue>
+#include <tuple>
 #include <unordered_map>
+#include <variant>
 
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -19,7 +24,9 @@ namespace bt {
 
 // In-process data pipeline monitoring service. This issues tokens that accompany data packets
 // through various buffers. When tokens are destroyed, their lifetimes are recorded.
-// TODO(xow): Set thresholds and subscribe to exceed warnings
+//
+// Clients may subscribe to alerts for when various values exceed specified thresholds.
+//
 // TODO(fxbug.dev/71341): Produce pollable statistics about retired tokens
 // TODO(fxbug.dev/71342): Timestamp stages of each token
 // TODO(fxbug.dev/71342): Provide mechanism to split/merge tokens through chunking/de-chunking
@@ -69,6 +76,25 @@ class PipelineMonitor final {
     TokenId id_ = kInvalidTokenId;
   };
 
+  // Alert types used for |SetAlert|. These are used as dimensioned value wrappers whose types
+  // identify what kind of value they hold.
+
+  // Alert for max_bytes_in_flight. Fires upon issuing the first token that exceeds the threshold.
+  struct MaxBytesInFlightAlert {
+    size_t value;
+  };
+
+  // Alert for max_bytes_in_flight. Fires upon issuing the first token that exceeds the threshold.
+  struct MaxTokensInFlightAlert {
+    int64_t value;
+  };
+
+  // Alert for token age (duration from issue to retirement). Fires upon retiring the first token
+  // that exceeds the threshold.
+  struct MaxAgeRetiredAlert {
+    zx::duration value;
+  };
+
   explicit PipelineMonitor(fit::nullable<async_dispatcher_t*> dispatcher)
       : dispatcher_(dispatcher.value_or(async_get_default_dispatcher())) {}
 
@@ -88,12 +114,45 @@ class PipelineMonitor final {
   // Start tracking |byte_count| bytes of data. This issues a token that is now considered
   // "in-flight" until it is retired.
   [[nodiscard]] Token Issue(size_t byte_count) {
+    // For consistency, complete all token map and counter modifications before processing alerts.
     const auto id = MakeTokenId();
     issued_tokens_.insert_or_assign(id, TokenInfo{async::Now(dispatcher_), byte_count});
     bytes_issued_ += byte_count;
     tokens_issued_++;
     bytes_in_flight_ += byte_count;
+
+    // Process alerts.
+    SignalAlertValue<MaxBytesInFlightAlert>(bytes_in_flight());
+    SignalAlertValue<MaxTokensInFlightAlert>(tokens_in_flight());
     return Token(weak_ptr_factory_.GetWeakPtr(), id);
+  }
+
+  // Subscribes to an alert that fires when the watched value strictly exceeds |threshold|. When
+  // that happens, |listener| is called with the alert type containing the actual value and the
+  // alert trigger is removed.
+  //
+  // New alerts will not be signaled until the next event that can change the value (token issued,
+  // retired, etc), so |listener| can re-subscribe (but likely at a different threshold to avoid a
+  // tight loop of re-subscriptions).
+  //
+  // For example,
+  //   monitor.SetAlert(MaxBytesInFlightAlert{kMaxBytes},
+  //                    [](MaxBytesInFlightAlert value) { /* value.value = bytes_in_flight() */ });
+  template <typename AlertType>
+  void SetAlert(AlertType threshold, fit::callback<void(decltype(threshold))> listener) {
+    GetAlertList<AlertType>().push(AlertInfo<AlertType>{threshold, std::move(listener)});
+  }
+
+  // Convenience function to set a single listener for all of |alerts|, called if any of the alerts
+  // defined by |thresholds| are triggered.
+  //
+  // Note: std::remove_cv is used to make |listener|'s type deduced from |thresholds| and should/can
+  // be replaced with std::identity in C++20.
+  template <typename... AlertTypes>
+  void SetAlerts(fit::function<void(std::variant<std::remove_cv_t<AlertTypes>...>)> listener,
+                 AlertTypes... thresholds) {
+    // This is a fold expression over the comma (,) operator with SetAlert.
+    (SetAlert<AlertTypes>(thresholds, listener.share()), ...);
   }
 
  private:
@@ -103,20 +162,74 @@ class PipelineMonitor final {
     size_t byte_count = 0;
   };
 
+  // Records alerts and their subscribers. Removed when fired.
+  template <typename AlertType>
+  struct AlertInfo {
+    AlertType threshold;
+    fit::callback<void(AlertType)> listener;
+
+    // Used by std::priority_queue through std::less. The logic is intentionally inverted so that
+    // the AlertInfo with the smallest threshold appears first.
+    bool operator<(const AlertInfo<AlertType>& other) const {
+      return this->threshold.value > other.threshold.value;
+    }
+  };
+
+  // Store subscribers so that the earliest and most likely to fire threshold is highest priority
+  // to make testing values against thresholds constant time and fast.
+  template <typename T>
+  using AlertList = std::priority_queue<AlertInfo<T>>;
+
+  template <typename... AlertTypes>
+  using AlertRegistry = std::tuple<AlertList<AlertTypes>...>;
+
   // Used in Token to represent an inactive Token object (one that does not represent an in-flight
   // token in the monitor).
   static constexpr TokenId kInvalidTokenId = std::numeric_limits<TokenId>::max();
+
+  template <typename AlertType>
+  AlertList<AlertType>& GetAlertList() {
+    return std::get<AlertList<AlertType>>(alert_registry_);
+  }
+
+  // Signal a change in the value watched by |AlertType| and test it against the subscribed
+  // alert thresholds. Any thresholds strict exceeded (with std::greater) cause its subscribed
+  // listener to be removed and invoked.
+  template <typename AlertType>
+  void SignalAlertValue(decltype(AlertType::value) value) {
+    auto& alert_list = GetAlertList<AlertType>();
+    while (!alert_list.empty()) {
+      auto& top = alert_list.top();
+      if (!std::greater()(value, top.threshold.value)) {
+        break;
+      }
+
+      // std::priority_queue intentionally has const access to top() in order to avoid breaking heap
+      // constraints. This cast to remove const and modify top respects that design intent because
+      // (1) it doesn't modify element order (2) the goal is to pop the top anyways. It is important
+      // to call |listener| after pop in case that call re-subscribes to this call (which could
+      // modify the heap top).
+      auto listener = std::move(const_cast<AlertInfo<AlertType>&>(top).listener);
+      alert_list.pop();
+      listener(AlertType{value});
+    }
+  }
 
   TokenId MakeTokenId() {
     return std::exchange(next_token_id_, (next_token_id_ + 1) % kInvalidTokenId);
   }
 
   void Retire(Token* token) {
+    // For consistency, complete all token map and counter modifications before processing alerts.
     ZX_ASSERT(this == token->parent_.get());
     auto node = issued_tokens_.extract(token->id_);
     ZX_ASSERT(bool{node});
     TokenInfo& packet_info = node.mapped();
     bytes_in_flight_ -= packet_info.byte_count;
+    const zx::duration age = async::Now(dispatcher_) - packet_info.issue_time;
+
+    // Process alerts.
+    SignalAlertValue<MaxAgeRetiredAlert>(age);
   };
 
   async_dispatcher_t* const dispatcher_ = nullptr;
@@ -130,6 +243,10 @@ class PipelineMonitor final {
   size_t bytes_issued_ = 0;
   int64_t tokens_issued_ = 0;
   size_t bytes_in_flight_ = 0;
+
+  // Use a single variable to store all of the alert subscribers. This can be split by type using
+  // std::get (see GetAlertList).
+  AlertRegistry<MaxBytesInFlightAlert, MaxTokensInFlightAlert, MaxAgeRetiredAlert> alert_registry_;
 
   fxl::WeakPtrFactory<PipelineMonitor> weak_ptr_factory_{this};
 };
