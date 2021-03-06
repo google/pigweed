@@ -23,6 +23,8 @@ import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
+import("$dir_pw_trace/backend.gni")
+import("$dir_pw_trace_tokenized/config.gni")
 
 _host_common = {
   # Use logging-based test output on host.
