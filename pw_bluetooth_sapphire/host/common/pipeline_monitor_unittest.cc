@@ -161,6 +161,29 @@ TEST_F(PipelineMonitorTest, SubscribeToMaxAgeAlert) {
   EXPECT_EQ(kMaxAge * 2, received_alert.value().value);
 }
 
+TEST_F(PipelineMonitorTest, SubscribeToAlertInsideHandler) {
+  PipelineMonitor monitor(fit::nullable{dispatcher()});
+
+  std::optional<PipelineMonitor::MaxBytesInFlightAlert> received_alert;
+  constexpr size_t kMaxBytesInFlight = 2;
+
+  auto renew_subscription = [&monitor, &received_alert](auto) {
+    // Same threshold, so it should be triggered eventually, but not immediately.
+    monitor.SetAlert(PipelineMonitor::MaxBytesInFlightAlert{kMaxBytesInFlight - 1},
+                     [&received_alert](auto alert) { received_alert = alert; });
+  };
+  monitor.SetAlert(PipelineMonitor::MaxBytesInFlightAlert{kMaxBytesInFlight}, renew_subscription);
+
+  // Total in-flight exceeds threshold.
+  auto token0 = monitor.Issue(kMaxBytesInFlight + 1);
+  EXPECT_FALSE(received_alert);
+
+  // Re-subscribed alert doesn't get called until the monitored value potentially changes again.
+  auto token1 = monitor.Issue(0);
+  ASSERT_TRUE(received_alert.has_value());
+  EXPECT_EQ(kMaxBytesInFlight + 1, received_alert.value().value);
+}
+
 TEST_F(PipelineMonitorTest, MultipleMaxBytesInFlightAlertsWithDifferentThresholds) {
   PipelineMonitor monitor(fit::nullable{dispatcher()});
 

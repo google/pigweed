@@ -198,6 +198,7 @@ class PipelineMonitor final {
   template <typename AlertType>
   void SignalAlertValue(decltype(AlertType::value) value) {
     auto& alert_list = GetAlertList<AlertType>();
+    std::vector<decltype(AlertInfo<AlertType>::listener)> listeners;
     while (!alert_list.empty()) {
       auto& top = alert_list.top();
       if (!std::greater()(value, top.threshold.value)) {
@@ -206,11 +207,15 @@ class PipelineMonitor final {
 
       // std::priority_queue intentionally has const access to top() in order to avoid breaking heap
       // constraints. This cast to remove const and modify top respects that design intent because
-      // (1) it doesn't modify element order (2) the goal is to pop the top anyways. It is important
-      // to call |listener| after pop in case that call re-subscribes to this call (which could
-      // modify the heap top).
-      auto listener = std::move(const_cast<AlertInfo<AlertType>&>(top).listener);
+      // (1) it doesn't modify element order (2) the intent is to pop the top anyways. It is
+      // important to call |listener| after pop in case that call re-subscribes to this call (which
+      // could modify the heap top).
+      listeners.push_back(std::move(const_cast<AlertInfo<AlertType>&>(top).listener));
       alert_list.pop();
+    }
+
+    // Deferring the call to after filtering helps prevent infinite alert loops.
+    for (auto& listener : listeners) {
       listener(AlertType{value});
     }
   }
