@@ -88,13 +88,13 @@ pw_cc_library(
 
 pw_cc_library(
     name = "rpc_service",
-    hdrs = [
-        "public/pw_unit_test/internal/rpc_event_handler.h",
-        "public/pw_unit_test/unit_test_service.h",
-    ],
     srcs = [
         "rpc_event_handler.cc",
         "unit_test_service.cc",
+    ],
+    hdrs = [
+        "public/pw_unit_test/internal/rpc_event_handler.h",
+        "public/pw_unit_test/unit_test_service.h",
     ],
     deps = [
         ":pw_unit_test",

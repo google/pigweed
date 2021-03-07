@@ -24,11 +24,6 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_hex_dump",
-    deps = [
-        "//pw_bytes",
-        "//pw_span",
-        "//pw_status",
-    ],
     srcs = [
         "hex_dump.cc",
     ],
@@ -36,8 +31,12 @@ pw_cc_library(
         "public/pw_hex_dump/hex_dump.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_span",
+        "//pw_status",
+    ],
 )
-
 
 pw_cc_test(
     name = "hex_dump_test",

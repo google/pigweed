@@ -25,8 +25,8 @@ pw_cc_binary(
     name = "pointer_simple",
     srcs = ["pointer_simple.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
     ],
 )
 
@@ -34,8 +34,8 @@ pw_cc_binary(
     name = "result_simple",
     srcs = ["result_simple.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
     ],
 )
 
@@ -43,8 +43,8 @@ pw_cc_binary(
     name = "pointer_noinline",
     srcs = ["pointer_noinline.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
     ],
 )
 
@@ -52,8 +52,8 @@ pw_cc_binary(
     name = "result_noinline",
     srcs = ["result_noinline.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
     ],
 )
 
@@ -61,8 +61,8 @@ pw_cc_binary(
     name = "pointer_read",
     srcs = ["pointer_read.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
         "//pw_span",
     ],
 )
@@ -71,8 +71,8 @@ pw_cc_binary(
     name = "result_read",
     srcs = ["result_read.cc"],
     deps = [
-        "//pw_result",
         "//pw_log",
+        "//pw_result",
         "//pw_span",
     ],
 )

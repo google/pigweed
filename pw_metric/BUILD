@@ -24,12 +24,12 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "metric",
+    srcs = ["metric.cc"],
     hdrs = [
-        "public/pw_metric/metric.h",
         "public/pw_metric/global.h",
+        "public/pw_metric/metric.h",
     ],
     includes = ["public"],
-    srcs = [ "metric.cc" ],
     deps = [
         "//pw_assert",
         "//pw_containers",
@@ -41,10 +41,10 @@ pw_cc_library(
 
 pw_cc_library(
     name = "global",
+    srcs = ["global.cc"],
     hdrs = [
         "public/pw_metric/global.h",
     ],
-    srcs = [ "global.cc" ],
     deps = [
         ":metric",
     ],
@@ -52,10 +52,10 @@ pw_cc_library(
 
 pw_cc_library(
     name = "metric_service_nanopb",
+    srcs = ["metric_service_nanopb.cc"],
     hdrs = [
         "public/pw_metric/metric_service_nanopb.h",
     ],
-    srcs = [ "metric_service_nanopb.cc" ],
     deps = [
         ":metric",
     ],

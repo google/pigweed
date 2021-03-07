@@ -27,7 +27,7 @@ pw_cc_library(
         "public/pw_interrupt_cortex_m/context_inline.h",
         "public_overrides/pw_interrupt_backend/context_inline.h",
     ],
-    copts = [ "-DPW_INTERRUPT_CORTEX_M_ARMV7M=1" ],
+    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV7M=1"],
     includes = [
         "public",
         "public_overrides",
@@ -36,7 +36,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "context_armv7m",
-    copts = [ "-DPW_INTERRUPT_CORTEX_M_ARMV7M=1" ],
+    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV7M=1"],
     deps = [
         ":context_armv7m_headers",
         "//pw_interrupt:context_facade",
@@ -49,7 +49,7 @@ pw_cc_library(
         "public/pw_interrupt_cortex_m/context.h",
         "public_overrides/pw_interrupt_backend/context_backend.h",
     ],
-    copts = [ "-DPW_INTERRUPT_CORTEX_M_ARMV8M=1" ],
+    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV8M=1"],
     includes = [
         "public",
         "public_overrides",
@@ -58,7 +58,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "context_armv8m",
-    copts = [ "-DPW_INTERRUPT_CORTEX_M_ARMV8M=1" ],
+    copts = ["-DPW_INTERRUPT_CORTEX_M_ARMV8M=1"],
     deps = [
         ":context_armv8m_headers",
         "//pw_interrupt:context_facade",

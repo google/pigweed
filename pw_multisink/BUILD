@@ -24,8 +24,15 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_multisink",
-    srcs = [ "drain.cc", "multisink.cc" ],
-    includes = [ "public" ],
+    srcs = [
+        "drain.cc",
+        "multisink.cc",
+    ],
+    hdrs = [
+        "public/pw_multisink/drain.h",
+        "public/pw_multisink/multisink.h",
+    ],
+    includes = ["public"],
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -33,10 +40,6 @@ pw_cc_library(
         "//pw_ring_buffer",
         "//pw_varint",
     ],
-    hdrs = [
-        "public/pw_multisink/drain.h",
-        "public/pw_multisink/multisink.h",
-    ]
 )
 
 pw_cc_test(

@@ -28,8 +28,8 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "facade",
     hdrs = [
-        "public/pw_trace/trace.h",
         "public/pw_trace/internal/trace_internal.h",
+        "public/pw_trace/trace.h",
     ],
     includes = ["public"],
     deps = [
@@ -67,13 +67,13 @@ pw_cc_test(
 pw_cc_test(
     name = "trace_facade_test",
     srcs = [
-        "trace_facade_test.cc",
         "pw_trace_test/fake_backend.h",
         "pw_trace_test/public_overrides/pw_trace_backend/trace_backend.h",
+        "trace_facade_test.cc",
     ],
     includes = [
         "pw_trace_test",
-        "pw_trace_test/public_overrides"
+        "pw_trace_test/public_overrides",
     ],
     deps = [
         ":backend",
@@ -86,17 +86,17 @@ pw_cc_test(
 
 pw_cc_library(
     name = "pw_trace_sample_app",
-    srcs = [ "example/sample_app.cc" ],
-    includes = [ "example/public" ],
-    deps = [ "//pw_trace" ],
-    hdrs = [ "example/public/pw_trace/example/sample_app.h" ]
+    srcs = ["example/sample_app.cc"],
+    hdrs = ["example/public/pw_trace/example/sample_app.h"],
+    includes = ["example/public"],
+    deps = ["//pw_trace"],
 )
 
 pw_cc_binary(
     name = "trace_example_basic",
+    srcs = ["example/basic.cc"],
     deps = [
         ":pw_trace_sample_app",
-        "//pw_log"
+        "//pw_log",
     ],
-    srcs = [ "example/basic.cc" ]
 )

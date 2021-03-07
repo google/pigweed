@@ -24,8 +24,12 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_log_queue",
-    srcs = [ "log_queue.cc" ],
-    includes = [ "public" ],
+    srcs = ["log_queue.cc"],
+    hdrs = [
+        "public/pw_log_multisink/log_queue.h",
+        "public/pw_log_multisink/sink.h",
+    ],
+    includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_containers",
@@ -34,10 +38,6 @@ pw_cc_library(
         "//pw_ring_buffer",
         "//pw_status",
     ],
-    hdrs = [
-        "public/pw_log_multisink/log_queue.h",
-        "public/pw_log_multisink/sink.h",
-    ]
 )
 
 pw_cc_test(

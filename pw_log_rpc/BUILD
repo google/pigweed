@@ -24,15 +24,15 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_logs",
-    srcs = [ "logs_rpc.cc" ],
-    includes = [ "public" ],
+    srcs = ["logs_rpc.cc"],
+    hdrs = ["public/pw_log_rpc/logs_rpc.h"],
+    includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_result",
         "//pw_ring_buffer",
         "//pw_status",
     ],
-    hdrs = [ "public/pw_log_rpc/logs_rpc.h" ]
 )
 
 pw_cc_test(

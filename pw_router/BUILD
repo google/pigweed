@@ -24,8 +24,8 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "static_router",
-    hdrs = ["public/pw_router/static_router.h"],
     srcs = ["static_router.cc"],
+    hdrs = ["public/pw_router/static_router.h"],
     deps = [
         ":egress",
         ":packet_parser",

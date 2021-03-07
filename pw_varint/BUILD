@@ -41,8 +41,8 @@ pw_cc_library(
 pw_cc_test(
     name = "varint_test",
     srcs = [
-        "varint_test_c.c",
         "varint_test.cc",
+        "varint_test_c.c",
     ],
     deps = [
         ":pw_varint",

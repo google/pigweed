@@ -85,7 +85,6 @@ pw_cc_library(
     ],
 )
 
-
 pw_cc_library(
     name = "mutex_headers",
     hdrs = [
@@ -138,12 +137,11 @@ pw_cc_library(
     ],
     deps = [
         ":timed_mutex_headers",
+        "//pw_chrono_embos:system_clock_headers",
         "//pw_interrupt:context",
         "//pw_sync:timed_mutex_facade",
-        "//pw_chrono_embos:system_clock_headers",
     ],
 )
-
 
 pw_cc_library(
     name = "interrupt_spin_lock_headers",
@@ -171,4 +169,3 @@ pw_cc_library(
         "//pw_sync:interrupt_spin_lock_facade",
     ],
 )
-

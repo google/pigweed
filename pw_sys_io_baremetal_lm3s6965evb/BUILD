@@ -14,7 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
-		"pw_cc_library",
+    "pw_cc_library",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -23,11 +23,10 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_sys_io_baremetal_lm3s6965evb",
-    hdrs = ["public/pw_sys_io_baremetal_lm3s6965evb/init.h"],
     srcs = ["sys_io_baremetal.cc"],
-		deps = [
+    hdrs = ["public/pw_sys_io_baremetal_lm3s6965evb/init.h"],
+    deps = [
         "//pw_preprocessor",
-				"//pw_sys_io",
-		],
+        "//pw_sys_io",
+    ],
 )
-

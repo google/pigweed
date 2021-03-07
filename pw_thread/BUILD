@@ -24,8 +24,11 @@ licenses(["notice"])  # Apache License 2.0
 
 # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
 PW_THREAD_ID_BACKEND = "//pw_thread_stl:id"
+
 PW_THREAD_SLEEP_BACKEND = "//pw_thread_stl:sleep"
+
 PW_THREAD_THREAD_BACKEND = "//pw_thread_stl:thread"
+
 PW_THREAD_YIELD_BACKEND = "//pw_thread_stl:yield"
 
 pw_cc_library(
@@ -50,19 +53,19 @@ pw_cc_library(
 pw_cc_library(
     name = "id_backend",
     deps = [
-       PW_THREAD_ID_BACKEND,
+        PW_THREAD_ID_BACKEND,
     ],
 )
 
 pw_cc_library(
     name = "sleep_facade",
+    srcs = [
+        "sleep.cc",
+    ],
     hdrs = [
         "public/pw_thread/sleep.h",
     ],
     includes = ["public"],
-    srcs = [
-        "sleep.cc"
-    ],
     deps = [
         PW_THREAD_SLEEP_BACKEND + "_headers",
         "//pw_chrono:system_clock",
@@ -81,7 +84,7 @@ pw_cc_library(
 pw_cc_library(
     name = "sleep_backend",
     deps = [
-       PW_THREAD_SLEEP_BACKEND,
+        PW_THREAD_SLEEP_BACKEND,
     ],
 )
 
@@ -99,20 +102,20 @@ pw_cc_library(
 
 pw_cc_library(
     name = "thread",
-    deps = [
-        ":thread_facade",
-        ":thread_core",
-        PW_THREAD_THREAD_BACKEND + "_headers",
-    ],
     srcs = [
-        "thread.cc"
+        "thread.cc",
+    ],
+    deps = [
+        ":thread_core",
+        ":thread_facade",
+        PW_THREAD_THREAD_BACKEND + "_headers",
     ],
 )
 
 pw_cc_library(
     name = "thread_backend",
     deps = [
-       PW_THREAD_THREAD_BACKEND,
+        PW_THREAD_THREAD_BACKEND,
     ],
 )
 
@@ -126,13 +129,13 @@ pw_cc_library(
 
 pw_cc_library(
     name = "yield_facade",
+    srcs = [
+        "yield.cc",
+    ],
     hdrs = [
         "public/pw_thread/yield.h",
     ],
     includes = ["public"],
-    srcs = [
-        "yield.cc"
-    ],
     deps = [
         PW_THREAD_YIELD_BACKEND + "_headers",
         "//pw_preprocessor",
@@ -150,7 +153,7 @@ pw_cc_library(
 pw_cc_library(
     name = "yield_backend",
     deps = [
-       PW_THREAD_YIELD_BACKEND,
+        PW_THREAD_YIELD_BACKEND,
     ],
 )
 
@@ -173,9 +176,9 @@ pw_cc_library(
         "thread_facade_test.cc",
     ],
     deps = [
-        ":thread",
         ":id",
         ":test_threads_header",
+        ":thread",
         "//pw_chrono:system_clock",
         "//pw_sync:binary_semaphore",
         "//pw_unit_test",

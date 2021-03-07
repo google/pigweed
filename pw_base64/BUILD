@@ -39,8 +39,8 @@ pw_cc_library(
 pw_cc_test(
     name = "base64_test",
     srcs = [
-        "base64_test_c.c",
         "base64_test.cc",
+        "base64_test_c.c",
     ],
     deps = [
         ":pw_base64",

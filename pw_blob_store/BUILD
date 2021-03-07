@@ -24,7 +24,7 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_blob_store",
-    srcs = [ "blob_store.cc" ],
+    srcs = ["blob_store.cc"],
     hdrs = [
         "public/pw_blob_store/blob_store.h",
     ],
@@ -69,6 +69,7 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
 pw_cc_test(
     name = "blob_store_deferred_write_test",
     srcs = [

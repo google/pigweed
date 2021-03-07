@@ -23,6 +23,9 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "headers",
+    srcs = [
+        "assert_log.cc",
+    ],
     hdrs = [
         "public/pw_assert_log/assert_log.h",
         "public_overrides/pw_assert_backend/assert_backend.h",
@@ -30,9 +33,6 @@ pw_cc_library(
     includes = [
         "public",
         "public_overrides",
-    ],
-    srcs = [
-        "assert_log.cc",
     ],
     deps = [
         "//pw_preprocessor",

@@ -31,8 +31,7 @@ pw_cc_library(
     deps = [
         "//pw_hdlc",
         "//pw_hdlc:pw_rpc",
-        "//pw_rpc:server",
         "//pw_log",
+        "//pw_rpc:server",
     ],
 )
-

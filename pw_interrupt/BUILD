@@ -26,13 +26,13 @@ PW_INTERRUPT_CONTEXT_BACKEND = "//pw_interrupt_context_cortex_m:context_armv7m"
 
 pw_cc_library(
     name = "context_facade",
+    srcs = [
+        "context.cc",
+    ],
     hdrs = [
         "public/pw_interrupt/context.h",
     ],
     includes = ["public"],
-    srcs = [
-        "context.cc"
-    ],
     deps = [
         PW_INTERRUPT_CONTEXT_BACKEND + "_headers",
     ],
@@ -49,6 +49,6 @@ pw_cc_library(
 pw_cc_library(
     name = "context_backend",
     deps = [
-       PW_INTERRUPT_CONTEXT_BACKEND,
+        PW_INTERRUPT_CONTEXT_BACKEND,
     ],
 )

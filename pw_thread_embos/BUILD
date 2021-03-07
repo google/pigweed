@@ -67,9 +67,9 @@ pw_cc_library(
     ],
     deps = [
         ":sleep_headers",
-        "//pw_chrono_embos:system_clock_headers",
         "//pw_assert",
         "//pw_chrono:system_clock",
+        "//pw_chrono_embos:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
     # TODO(pwbug/317): This should depend on embOS but our third parties

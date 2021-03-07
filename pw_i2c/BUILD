@@ -24,13 +24,13 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "address",
+    srcs = [
+        "address.cc",
+    ],
     hdrs = [
         "public/pw_i2c/address.h",
     ],
     includes = ["public"],
-    srcs = [
-      "address.cc",
-    ],
     deps = [
         "//pw_assert",
     ],

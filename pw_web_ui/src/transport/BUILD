@@ -36,8 +36,8 @@ ts_library(
     ],
     deps = [
         "//pw_web_ui/types:serial_lib",
-        "@npm//jasmine",
         "@npm//@types/jasmine",
+        "@npm//jasmine",
         "@npm//rxjs",
     ],
 )
@@ -62,24 +62,23 @@ ts_library(
     deps = [
         ":serial_mock_lib",
         ":web_serial_transport_lib",
-        "@npm//jasmine",
         "@npm//@types/jasmine",
+        "@npm//jasmine",
         "@npm//rxjs",
     ],
 )
 
 web_bundle(
     name = "web_serial_transport_lib_test_bundle",
+    entry_point = "web_serial_transport_test.ts",
     deps = [
         ":web_serial_transport_lib_test",
     ],
-    entry_point = "web_serial_transport_test.ts",
 )
-
 
 karma_web_test(
     name = "web_test",
     srcs = [
-        ":web_serial_transport_lib_test_bundle"
+        ":web_serial_transport_lib_test_bundle",
     ],
 )

@@ -25,30 +25,30 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "support_armv7m",
-    includes = ["public"],
-    deps = [
-        "//pw_preprocessor",
-        "//pw_string",
-        "//pw_log",
-    ],
-    hdrs = [ "public/pw_cpu_exception_cortex_m/cpu_state.h" ],
     srcs = [
         "cpu_state.cc",
         "pw_cpu_exception_cortex_m_private/cortex_m_constants.h",
+    ],
+    hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_log",
+        "//pw_preprocessor",
+        "//pw_string",
     ],
 )
 
 pw_cc_library(
     name = "proto_dump_armv7m",
+    srcs = ["proto_dump.cc"],
+    hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
     deps = [
-        ":support_armv7m",
         ":cpu_state_protos",
+        ":support_armv7m",
         "//pw_protobuf",
         "//pw_status",
         "//pw_stream",
     ],
-    hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
-    srcs = ["proto_dump.cc"],
 )
 
 proto_library(
@@ -61,16 +61,16 @@ proto_library(
 # but provide preprocessor defines to enable/disable architecture specific code.
 pw_cc_library(
     name = "cpu_exception_armv7m",
+    srcs = [
+        "entry.cc",
+        "pw_cpu_exception_cortex_m_private/cortex_m_constants.h",
+    ],
     deps = [
         ":proto_dump_armv7m",
         ":support_armv7m",
         # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
         "//pw_cpu_exception",
         "//pw_preprocessor",
-    ],
-    srcs = [
-        "entry.cc",
-        "pw_cpu_exception_cortex_m_private/cortex_m_constants.h",
     ],
 )
 

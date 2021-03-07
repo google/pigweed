@@ -24,8 +24,14 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_log_sink",
-    srcs = [ "log_sink.cc" ],
-    includes = [ "public" ],
+    srcs = ["log_sink.cc"],
+    hdrs = [
+        "public/pw_log_sink/log_sink.h",
+        "public/pw_log_sink/multisink_adapter.h",
+        "public/pw_log_sink/sink.h",
+        "public_overrides/pw_log_backend/log_backend.h",
+    ],
+    includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_log:facade",
@@ -34,20 +40,14 @@ pw_cc_library(
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",
     ],
-    hdrs = [
-        "public/pw_log_sink/log_sink.h",
-        "public/pw_log_sink/multisink_adapter.h",
-        "public/pw_log_sink/sink.h",
-        "public_overrides/pw_log_backend/log_backend.h",
-    ]
 )
 
 pw_cc_test(
     name = "pw_log_sink_test",
-    srcs = [ "log_sink_test.cc" ],
+    srcs = ["log_sink_test.cc"],
     deps = [
         ":pw_log_sink",
         "//pw_log:protos.pwpb",
         "//pw_unit_test",
-    ]
+    ],
 )

@@ -14,7 +14,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@npm//@bazel/typescript:index.bzl", "ts_library", "ts_devserver")
+load("@npm//@bazel/typescript:index.bzl", "ts_devserver", "ts_library")
 load("//pw_web_ui:web_bundle.bzl", "web_bundle")
 
 ts_library(
@@ -24,21 +24,21 @@ ts_library(
         "index.tsx",
     ],
     deps = [
-        "@npm//@types/react",
-        "@npm//react",
-        "@npm//@types/react-dom",
-        "@npm//react-dom",
-        "@npm//@material-ui/core",
         "//pw_web_ui/src/transport:web_serial_transport_lib",
+        "@npm//@material-ui/core",
+        "@npm//@types/react",
+        "@npm//@types/react-dom",
+        "@npm//react",
+        "@npm//react-dom",
     ],
 )
 
 web_bundle(
     name = "app_bundle",
+    entry_point = "index.tsx",
     deps = [
         ":app_lib",
     ],
-    entry_point = "index.tsx",
 )
 
 ts_devserver(
@@ -48,7 +48,7 @@ ts_devserver(
     static_files = [
         "index.html",
         ":app_bundle",
-    ]
+    ],
 )
 
 ts_devserver(
@@ -58,5 +58,5 @@ ts_devserver(
     static_files = [
         "index.html",
         ":app_bundle",
-    ]
+    ],
 )

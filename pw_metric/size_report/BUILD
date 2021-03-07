@@ -25,9 +25,9 @@ pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
     deps = [
+        "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
-        "//pw_assert",
     ],
 )
 
@@ -35,10 +35,10 @@ pw_cc_binary(
     name = "one_metric",
     srcs = ["one_metric.cc"],
     deps = [
-        "//pw_bloat:bloat_this_binary",
-        "//pw_metric",
-        "//pw_log",
         "//pw_assert",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+        "//pw_metric",
     ],
 )
 
@@ -46,10 +46,10 @@ pw_cc_binary(
     name = "dump",
     srcs = ["dump.cc"],
     deps = [
-        "//pw_bloat:bloat_this_binary",
-        "//pw_metric",
-        "//pw_log",
         "//pw_assert",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+        "//pw_metric",
     ],
 )
 
@@ -57,9 +57,9 @@ pw_cc_binary(
     name = "more_metrics",
     srcs = ["more_metrics.cc"],
     deps = [
-        "//pw_bloat:bloat_this_binary",
-        "//pw_metric",
-        "//pw_log",
         "//pw_assert",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_log",
+        "//pw_metric",
     ],
 )

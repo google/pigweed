@@ -93,21 +93,21 @@ pw_cc_library(
 
 pw_cc_library(
     name = "test_threads",
-    deps = [
-        "//pw_thread:thread_facade",
-        "//pw_thread:test_threads_header",
-    ],
     srcs = [
         "test_threads.cc",
-    ]
+    ],
+    deps = [
+        "//pw_thread:test_threads_header",
+        "//pw_thread:thread_facade",
+    ],
 )
 
 pw_cc_test(
     name = "thread_backend_test",
     deps = [
-        "//pw_thread:thread_facade_test",
         ":test_threads",
-    ]
+        "//pw_thread:thread_facade_test",
+    ],
 )
 
 pw_cc_library(

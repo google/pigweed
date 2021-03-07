@@ -29,5 +29,5 @@ pw_cc_library(
         "//pw_boot_armv7m",
         "//pw_preprocessor",
         "//pw_sys_io",
-    ]
+    ],
 )

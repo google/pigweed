@@ -62,14 +62,14 @@ pw_cc_library(
 
 pw_cc_library(
     name = "trace_rpc_service",
+    srcs = [
+        "trace_rpc_service_nanopb.cc",
+    ],
     hdrs = [
         "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
     ],
     includes = [
         "public",
-    ],
-    srcs = [
-        "trace_rpc_service_nanopb.cc",
     ],
     deps = [
         "//pw_log",
@@ -107,17 +107,17 @@ pw_cc_library(
 
 pw_cc_library(
     name = "pw_trace_tokenized_buffer_log",
-    hdrs = [
-        "public/pw_trace_tokenized/trace_buffer_log.h",
-    ],
     srcs = [
         "trace_buffer_log.cc",
     ],
+    hdrs = [
+        "public/pw_trace_tokenized/trace_buffer_log.h",
+    ],
     deps = [
         ":trace_buffer_headers",
-	"//pw_base64",
-	"//pw_log",
-	"//pw_string",
+        "//pw_base64",
+        "//pw_log",
+        "//pw_string",
     ],
 )
 
@@ -138,7 +138,7 @@ pw_cc_test(
     ],
     includes = [
         "pw_trace_test",
-        "pw_trace_test/public_overrides"
+        "pw_trace_test/public_overrides",
     ],
     deps = [
         ":backend",
@@ -179,61 +179,61 @@ pw_cc_test(
 
 pw_cc_library(
     name = "pw_trace_host_trace_time",
-    includes = [ "example/public" ],
-    deps = [ "//pw_trace" ],
-    srcs = [ "host_trace_time.cc" ]
+    srcs = ["host_trace_time.cc"],
+    includes = ["example/public"],
+    deps = ["//pw_trace"],
 )
 
 pw_cc_library(
     name = "pw_trace_example_to_file",
-    includes = [ "example/public" ],
-    deps = [ "//pw_trace" ],
-    hdrs = [ "example/public/pw_trace_tokenized/example/trace_to_file.h" ]
+    hdrs = ["example/public/pw_trace_tokenized/example/trace_to_file.h"],
+    includes = ["example/public"],
+    deps = ["//pw_trace"],
 )
 
 pw_cc_binary(
     name = "trace_tokenized_example_basic",
+    srcs = ["example/basic.cc"],
     deps = [
         ":pw_trace_example_to_file",
-        "//pw_log",
         "//dir_pw_trace",
         "//dir_pw_trace:pw_trace_sample_app",
+        "//pw_log",
     ],
-    srcs = [ "example/basic.cc" ]
 )
 
 pw_cc_binary(
     name = "trace_tokenized_example_trigger",
+    srcs = ["example/trigger.cc"],
     deps = [
         ":pw_trace_example_to_file",
-        "//pw_log",
         "//dir_pw_trace",
         "//dir_pw_trace:pw_trace_sample_app",
+        "//pw_log",
     ],
-    srcs = [ "example/trigger.cc" ]
 )
 
 pw_cc_binary(
     name = "trace_tokenized_example_filter",
+    srcs = ["example/filter.cc"],
     deps = [
         ":pw_trace_example_to_file",
-        "//pw_log",
         "//dir_pw_trace",
         "//dir_pw_trace:pw_trace_sample_app",
+        "//pw_log",
     ],
-    srcs = [ "example/filter.cc" ]
 )
 
 pw_cc_library(
     name = "trace_tokenized_example_rpc",
+    srcs = ["example/rpc.cc"],
     deps = [
         ":pw_trace_rpc_service",
         "//dir_pw_rpc:server",
         "//dir_pw_rpc:system_server",
-        "//pw_log",
-        "//pw_hdlc",
         "//dir_pw_trace",
         "//dir_pw_trace:pw_trace_sample_app",
+        "//pw_hdlc",
+        "//pw_log",
     ],
-    srcs = [ "example/rpc.cc" ]
 )

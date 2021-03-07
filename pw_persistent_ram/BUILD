@@ -24,12 +24,12 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_persistent_ram",
+    srcs = ["persistent_buffer.cc"],
     hdrs = [
         "public/pw_persistent_ram/persistent.h",
         "public/pw_persistent_ram/persistent_buffer.h",
     ],
     includes = ["public"],
-    srcs = ["persistent_buffer.cc"],
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -56,7 +56,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_persistent_ram",
-        "//pw_unit_test",
         "//pw_random",
+        "//pw_unit_test",
     ],
 )

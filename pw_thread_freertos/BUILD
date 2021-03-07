@@ -68,9 +68,9 @@ pw_cc_library(
     ],
     deps = [
         ":sleep_headers",
-        "//pw_chrono_freertos:system_clock_headers",
         "//pw_assert",
         "//pw_chrono:system_clock",
+        "//pw_chrono_freertos:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
@@ -81,9 +81,9 @@ pw_cc_library(
 pw_cc_library(
     name = "thread_headers",
     hdrs = [
+        "public/pw_thread_freertos/config.h",
         "public/pw_thread_freertos/context.h",
         "public/pw_thread_freertos/options.h",
-        "public/pw_thread_freertos/config.h",
         "public/pw_thread_freertos/thread_inline.h",
         "public/pw_thread_freertos/thread_native.h",
         "public_overrides/pw_thread_backend/thread_inline.h",
@@ -94,8 +94,9 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_assert",
         ":id",
+        "//pw_assert",
+        "//pw_sync:binary_semaphore",
         "//pw_thread:thread_headers",
     ],
     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
@@ -108,9 +109,9 @@ pw_cc_library(
         "thread.cc",
     ],
     deps = [
-        "//pw_assert",
         ":id",
         ":thread_headers",
+        "//pw_assert",
     ],
     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
@@ -118,44 +119,44 @@ pw_cc_library(
 
 pw_cc_library(
     name = "dynamic_test_threads",
-    deps = [
-        "//pw_thread:thread_facade",
-        "//pw_thread:test_threads_header",
-        "//pw_chrono:system_clock",
-        "//pw_thread:sleep",
-    ],
     srcs = [
         "dynamic_test_threads.cc",
-    ]
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+        "//pw_thread:test_threads_header",
+        "//pw_thread:thread_facade",
+    ],
 )
 
 pw_cc_test(
     name = "dynamic_thread_backend_test",
     deps = [
-        "//pw_thread:thread_facade_test",
         ":dynamic_test_threads",
-    ]
+        "//pw_thread:thread_facade_test",
+    ],
 )
 
 pw_cc_library(
     name = "static_test_threads",
-    deps = [
-        "//pw_thread:thread_facade",
-        "//pw_thread:test_threads_header",
-        "//pw_chrono:system_clock",
-        "//pw_thread:sleep",
-    ],
     srcs = [
         "static_test_threads.cc",
-    ]
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+        "//pw_thread:test_threads_header",
+        "//pw_thread:thread_facade",
+    ],
 )
 
 pw_cc_test(
     name = "static_thread_backend_test",
     deps = [
-        "//pw_thread:thread_facade_test",
         ":static_test_threads",
-    ]
+        "//pw_thread:thread_facade_test",
+    ],
 )
 
 pw_cc_library(
@@ -179,4 +180,3 @@ pw_cc_library(
         "//pw_thread:yield_facade",
     ],
 )
-

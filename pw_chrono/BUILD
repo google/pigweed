@@ -35,14 +35,14 @@ pw_cc_library(
 
 pw_cc_library(
     name = "system_clock_facade",
+    srcs = [
+        "system_clock.cc",
+    ],
     hdrs = [
         "public/pw_chrono/internal/system_clock_macros.h",
         "public/pw_chrono/system_clock.h",
     ],
     includes = ["public"],
-    srcs = [
-        "system_clock.cc"
-    ],
     deps = [
         ":epoch",
         PW_CHRONO_SYSTEM_CLOCK_BACKEND + "_headers",
@@ -61,7 +61,7 @@ pw_cc_library(
 pw_cc_library(
     name = "system_clock_backend",
     deps = [
-       PW_CHRONO_SYSTEM_CLOCK_BACKEND,
+        PW_CHRONO_SYSTEM_CLOCK_BACKEND,
     ],
 )
 

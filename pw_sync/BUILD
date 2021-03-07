@@ -24,20 +24,24 @@ licenses(["notice"])  # Apache License 2.0
 
 # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
 PW_SYNC_BINARY_SEMAPHORE_BACKEND = "//pw_sync_stl:binary_semaphore"
+
 PW_SYNC_COUNTING_SEMAPHORE_BACKEND = "//pw_sync_stl:counting_semaphore"
+
 PW_SYNC_MUTEX_BACKEND = "//pw_sync_stl:mutex"
+
 PW_SYNC_TIMED_MUTEX_BACKEND = "//pw_sync_stl:timed_mutex"
+
 PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND = "//pw_sync_stl:interrupt_spin_lock"
 
 pw_cc_library(
     name = "binary_semaphore_facade",
+    srcs = [
+        "binary_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync/binary_semaphore.h",
     ],
     includes = ["public"],
-    srcs = [
-        "binary_semaphore.cc"
-    ],
     deps = [
         PW_SYNC_BINARY_SEMAPHORE_BACKEND + "_headers",
         "//pw_chrono:system_clock",
@@ -56,19 +60,19 @@ pw_cc_library(
 pw_cc_library(
     name = "binary_semaphore_backend",
     deps = [
-       PW_SYNC_BINARY_SEMAPHORE_BACKEND,
+        PW_SYNC_BINARY_SEMAPHORE_BACKEND,
     ],
 )
 
 pw_cc_library(
     name = "counting_semaphore_facade",
+    srcs = [
+        "counting_semaphore.cc",
+    ],
     hdrs = [
         "public/pw_sync/counting_semaphore.h",
     ],
     includes = ["public"],
-    srcs = [
-        "counting_semaphore.cc"
-    ],
     deps = [
         PW_SYNC_COUNTING_SEMAPHORE_BACKEND + "_headers",
         "//pw_chrono:system_clock",
@@ -87,7 +91,7 @@ pw_cc_library(
 pw_cc_library(
     name = "counting_semaphore_backend",
     deps = [
-       PW_SYNC_COUNTING_SEMAPHORE_BACKEND,
+        PW_SYNC_COUNTING_SEMAPHORE_BACKEND,
     ],
 )
 
@@ -104,15 +108,15 @@ pw_cc_library(
 
 pw_cc_library(
     name = "mutex_facade",
+    srcs = [
+        "mutex.cc",
+    ],
     hdrs = [
         "public/pw_sync/mutex.h",
     ],
     includes = ["public"],
-    srcs = [
-        "mutex.cc"
-    ],
     deps = [
-		    ":lock_annotations",
+        ":lock_annotations",
         "//pw_preprocessor",
         PW_SYNC_MUTEX_BACKEND + "_headers",
     ],
@@ -129,21 +133,21 @@ pw_cc_library(
 pw_cc_library(
     name = "mutex_backend",
     deps = [
-       PW_SYNC_MUTEX_BACKEND,
+        PW_SYNC_MUTEX_BACKEND,
     ],
 )
 
 pw_cc_library(
     name = "timed_mutex_facade",
+    srcs = [
+        "timed_mutex.cc",
+    ],
     hdrs = [
         "public/pw_sync/timed_mutex.h",
     ],
     includes = ["public"],
-    srcs = [
-        "timed_mutex.cc"
-    ],
     deps = [
-		    ":lock_annotations",
+        ":lock_annotations",
         ":mutex_facade",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -162,21 +166,21 @@ pw_cc_library(
 pw_cc_library(
     name = "timed_mutex_backend",
     deps = [
-       PW_SYNC_TIMED_MUTEX_BACKEND,
+        PW_SYNC_TIMED_MUTEX_BACKEND,
     ],
 )
 
 pw_cc_library(
     name = "interrupt_spin_lock_facade",
+    srcs = [
+        "interrupt_spin_lock.cc",
+    ],
     hdrs = [
         "public/pw_sync/interrupt_spin_lock.h",
     ],
     includes = ["public"],
-    srcs = [
-        "interrupt_spin_lock.cc"
-    ],
     deps = [
-		    ":lock_annotations",
+        ":lock_annotations",
         "//pw_preprocessor",
         PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND + "_headers",
     ],
@@ -193,7 +197,7 @@ pw_cc_library(
 pw_cc_library(
     name = "interrupt_spin_lock_backend",
     deps = [
-       PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND,
+        PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND,
     ],
 )
 

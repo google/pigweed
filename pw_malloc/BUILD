@@ -20,6 +20,7 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
+
 # TODO(pwbug/101): Need to add support for facades/backends to Bazel.
 PW_MALLOC_BACKEND = "//pw_malloc_freelist"
 

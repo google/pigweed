@@ -21,10 +21,9 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_binary(
     name = "pw_tool",
-    srcs = [ "main.cc" ],
+    srcs = ["main.cc"],
     deps = [
         "//pw_log",
         "//pw_polyfill",
-    ]
+    ],
 )
-

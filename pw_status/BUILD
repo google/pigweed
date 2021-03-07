@@ -36,8 +36,8 @@ pw_cc_library(
 pw_cc_test(
     name = "status_test",
     srcs = [
-        "status_test_c.c",
         "status_test.cc",
+        "status_test_c.c",
     ],
     deps = [
         ":pw_status",

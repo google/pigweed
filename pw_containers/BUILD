@@ -26,14 +26,13 @@ pw_cc_library(
     name = "pw_containers",
     deps = [
         ":flat_map",
-        ":vector",
         ":intrusive_list",
+        ":vector",
     ],
 )
 
 pw_cc_library(
     name = "intrusive_list",
-    deps = [ "//pw_assert" ],
     srcs = [
         "intrusive_list.cc",
         "public/pw_containers/internal/intrusive_list_impl.h",
@@ -42,6 +41,7 @@ pw_cc_library(
         "public/pw_containers/intrusive_list.h",
     ],
     includes = ["public"],
+    deps = ["//pw_assert"],
 )
 
 pw_cc_library(

@@ -38,8 +38,8 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_kvs",
-        "//pw_kvs:flash_test_partition",
         "//pw_kvs:fake_flash_12_byte_partition",
+        "//pw_kvs:flash_test_partition",
         "//pw_log",
     ],
 )
@@ -51,8 +51,8 @@ pw_cc_binary(
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
         "//pw_kvs",
-        "//pw_kvs:flash_test_partition",
         "//pw_kvs:fake_flash_12_byte_partition",
+        "//pw_kvs:flash_test_partition",
         "//pw_log",
     ],
 )
