@@ -18,6 +18,7 @@ import collections
 import importlib
 import inspect
 import logging
+import os
 from pathlib import Path
 import sys
 from textwrap import TextWrapper
@@ -229,6 +230,13 @@ def register(directory: Path):
     # Find pw plugins files starting in the current and parent directories.
     for path in find_all_in_parents(REGISTRY_FILE, directory):
         if not path.is_file():
+            continue
+
+        root = Path(os.environ.get('PW_PROJECT_ROOT', '')).resolve()
+        if root not in path.parents:
+            _LOG.debug(
+                "Skipping plugins file %s because it's outside of "
+                'PW_PROJECT_ROOT (%s)', path, root)
             continue
 
         _LOG.debug('Found plugins file %s', path)
