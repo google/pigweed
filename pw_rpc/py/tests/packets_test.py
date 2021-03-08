@@ -17,8 +17,8 @@
 import unittest
 
 from pw_status import Status
-from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 
+from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 from pw_rpc import packets
 
 _TEST_REQUEST = RpcPacket(type=PacketType.REQUEST,

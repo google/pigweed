@@ -138,7 +138,8 @@ pw_proto_library("protos") {
     "internal/packet.proto",
   ]
   inputs = [ "echo.options" ]
-  prefix = "pw_rpc_protos"
+  python_package = "py"
+  prefix = "pw_rpc"
 }
 
 pw_doc_group("docs") {
@@ -217,7 +218,8 @@ pw_test("channel_test") {
 
 pw_python_action("generate_ids_test") {
   outputs = [ "$target_gen_dir/generated_ids_test.cc" ]
-  script = "py/ids_test.py"
+
+  script = "py/tests/ids_test.py"
   args = [ "--generate-cc-test" ] + rebase_path(outputs)
   python_deps = [
     "$dir_pw_build/py",

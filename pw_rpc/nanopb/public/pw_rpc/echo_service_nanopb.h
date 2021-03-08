@@ -15,7 +15,7 @@
 
 #include <cstring>
 
-#include "pw_rpc_protos/echo.rpc.pb.h"
+#include "pw_rpc/echo.rpc.pb.h"
 
 namespace pw::rpc {
 

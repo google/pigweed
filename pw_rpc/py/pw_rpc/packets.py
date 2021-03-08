@@ -14,8 +14,9 @@
 """Functions for working with pw_rpc packets."""
 
 from google.protobuf import message
-from pw_rpc_protos.internal import packet_pb2
 from pw_status import Status
+
+from pw_rpc.internal import packet_pb2
 
 
 def decode(data: bytes):

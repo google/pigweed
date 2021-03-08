@@ -16,12 +16,12 @@
 
 import unittest
 
-from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 from pw_protobuf_compiler import python_protos
 from pw_status import Status
 
 from pw_rpc import callback_client, client, packets
 import pw_rpc.ids
+from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 
 TEST_PROTO_1 = """\
 syntax = "proto3";

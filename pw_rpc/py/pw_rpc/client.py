@@ -20,11 +20,11 @@ from typing import (Any, Collection, Dict, Iterable, Iterator, List,
                     NamedTuple, Optional)
 
 from google.protobuf.message import DecodeError
-from pw_rpc_protos.internal.packet_pb2 import PacketType, RpcPacket
 from pw_status import Status
 
 from pw_rpc import descriptors, packets
 from pw_rpc.descriptors import Channel, Service, Method
+from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 
 _LOG = logging.getLogger(__name__)
 

@@ -23,7 +23,7 @@ import serial  # type: ignore
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 
 # Point the script to the .proto file with our RPC services.
-PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/pw_rpc_protos/echo.proto')
+PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/echo.proto')
 
 
 def script(device: str, baud: int) -> None:

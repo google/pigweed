@@ -74,7 +74,7 @@ pw_proto_library(pw_rpc.protos
   INPUTS
     echo.options
   PREFIX
-    pw_rpc_protos
+    pw_rpc
 )
 
 pw_proto_library(pw_rpc.test_protos
