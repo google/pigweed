@@ -25,7 +25,7 @@ setuptools.setup(
     package_data={
         'pw_arduino_build': [
             'core_patches/teensy/01-teensyduino_1.53-cpp17.diff',
-            'core_patches/teensy/02-teensy4_nonstatic_flash_functions.diff'
+            'core_patches/teensy/02-teensy4_nonstatic_flash_functions.diff',
             'py.typed',
         ]
     },
