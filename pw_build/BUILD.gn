@@ -95,6 +95,7 @@ config("extra_strict_warnings") {
     "-Wshadow",
     "-Wredundant-decls",
   ]
+  cflags_c = [ "-Wstrict-prototypes" ]
 }
 
 config("cpp11") {

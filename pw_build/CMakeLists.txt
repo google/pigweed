@@ -71,6 +71,7 @@ target_compile_options(pw_build.extra_strict_warnings
   INTERFACE
     "-Wshadow"
     "-Wredundant-decls"
+    $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
 )
 
 add_library(pw_build.cpp17 INTERFACE)
