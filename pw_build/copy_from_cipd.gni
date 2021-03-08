@@ -67,6 +67,10 @@ template("pw_cipd_static_library") {
       "--out-dir=${_out_relative}",
     ]
 
+    # Parallel calls might both be invoking CIPD on the same directory which
+    # might work but is redundant, so serialize calls.
+    pool = "$dir_pw_build:copy_from_cipd_pool"
+
     # TODO(pwbug/335): This should somehow track the actual .a for changes as
     # well.
     inputs = [ invoker.manifest ]

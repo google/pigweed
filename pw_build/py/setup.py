@@ -27,6 +27,7 @@ setuptools.setup(
     install_requires=[
         'wheel',
         'pw_cli',
+        'pw_env_setup',
         'pw_presubmit',
     ],
     entry_points={

@@ -125,6 +125,10 @@ pool("pip_pool") {
   depth = 1
 }
 
+pool("copy_from_cipd_pool") {
+  depth = 1
+}
+
 # Requirements for the pw_python_package lint targets.
 pw_python_requirements("python_lint") {
   requirements = [

@@ -47,6 +47,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pw_env_setup.cipd_setup.update
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,9 +106,9 @@ def check_version(manifest, cipd_path, package_name):
     cmd = ['cipd', 'describe', path, '-version', instance_id]
     output = subprocess.check_output(cmd).decode()
     if expected_version not in output:
-        # TODO(pwbug/334) Update package if it's out of date.
-        raise ValueError(
-            f'{package_name} is out of date, please rerun bootstrap')
+        pw_env_setup.cipd_setup.update.update(
+            'cipd', (manifest, ), os.environ['PW_CIPD_INSTALL_DIR'],
+            os.environ['CIPD_CACHE_DIR'])
 
 
 def main():
