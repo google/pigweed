@@ -105,7 +105,8 @@ def check_version(manifest, cipd_path, package_name):
     output = subprocess.check_output(cmd).decode()
     if expected_version not in output:
         # TODO(pwbug/334) Update package if it's out of date.
-        raise ValueError(f'{package_name} is out of date')
+        raise ValueError(
+            f'{package_name} is out of date, please rerun bootstrap')
 
 
 def main():
