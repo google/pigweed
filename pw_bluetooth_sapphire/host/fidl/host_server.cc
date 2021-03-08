@@ -848,7 +848,7 @@ void HostServer::DisplayPairingRequest(bt::PeerId id, std::optional<uint32_t> pa
               func, bt_str(id));
           return;
         }
-        bt_log(DEBUG, "fidl", "%s: got peer response: %s, \"%u\" (peer: %s)", func,
+        bt_log(INFO, "fidl", "%s: got PairingDelegate response: %s, \"%u\" (peer: %s)", func,
                accept ? "accept" : "reject", entered_passkey, bt_str(id));
         confirm(accept);
       });
