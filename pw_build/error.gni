@@ -14,23 +14,39 @@
 
 import("python_action.gni")
 
-# Prints an error message and exits the build unsuccessfully.
+# Prints an error message and exits the build unsuccessfully. Either 'message'
+# or 'message_lines' must be specified, but not both.
 #
 # Args:
-#   message: The message to print.
+#   message: The message to print. Use \n for newlines.
+#   message_lines: List of lines to use for the message.
 #
 template("pw_error") {
-  assert(defined(invoker.message) && invoker.message != "",
-         "pw_error requires an error message")
+  assert(
+      defined(invoker.message) != defined(invoker.message_lines),
+      "pw_error requires either a 'message' string or a 'message_lines' list")
 
-  pw_python_action(target_name) {
+  if (defined(invoker.message_lines)) {
+    _message = string_join("\n", invoker.message_lines)
+  } else {
+    _message = invoker.message
+  }
+  assert(_message != "", "The message cannot be empty")
+
+  action(target_name) {
     script = "$dir_pw_build/py/pw_build/error.py"
     args = [
       "--target",
-      get_label_info(target_name, "label_no_toolchain"),
+      get_label_info(":$target_name", "label_with_toolchain"),
       "--message",
-      invoker.message,
+      _message,
+      "--root",
+      rebase_path("//"),
+      "--out",
+      rebase_path(root_build_dir),
     ]
-    stamp = true
+
+    # This output file is never created.
+    outputs = [ "$target_gen_dir/$target_name.build_error" ]
   }
 }

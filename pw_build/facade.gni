@@ -14,7 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 
 # Declare a facade.
@@ -100,17 +100,35 @@ template("pw_facade") {
   }
 
   if (invoker.backend == "") {
+    # Try to guess the name of the facade's backend variable.
+    _dir = get_path_info(get_label_info(":$target_name", "dir"), "name")
+    if (target_name == _dir) {
+      _varname = target_name + "_BACKEND"
+    } else {
+      # There is no way to capitalize this string in GN, so use <FACADE_NAME>
+      # instead of the lowercase target name.
+      _varname = _dir + "_<FACADE_NAME>_BACKEND"
+    }
+
     # If backend is not set to anything, create a script that emits an error.
     # This will be added as a data dependency to the actual target, so that
     # attempting to build the facade without a backend fails with a relevant
     # error message.
-    _main_target_name = target_name
-
-    pw_python_action(_main_target_name + ".NO_BACKEND_SET") {
-      stamp = true
-      script = "$dir_pw_build/py/pw_build/null_backend.py"
-      args = [ _main_target_name ]
-      not_needed(invoker, "*")
+    pw_error(target_name + ".NO_BACKEND_SET") {
+      _label = get_label_info(":${invoker.target_name}", "label_no_toolchain")
+      message_lines = [
+        "Attempted to build the $_label facade with no backend.",
+        "",
+        "If you are using this facade, ensure you have configured a backend ",
+        "properly. The build arg for the facade must be set to a valid ",
+        "backend in the toolchain. For example, you may need to add a line ",
+        "like the following to the toolchain's .gni file:",
+        "",
+        "  $_varname = \"//path/to/the:backend\"",
+        "",
+        "If you are NOT using this facade, this error may have been triggered ",
+        "by trying to build all targets.",
+      ]
     }
   }
 
@@ -129,7 +147,7 @@ template("pw_facade") {
       public_deps += [ invoker.backend ]
     } else {
       # If the backend is not set, depend on the *.NO_BACKEND_SET target.
-      public_deps += [ ":$_main_target_name" + ".NO_BACKEND_SET" ]
+      public_deps += [ ":$target_name.NO_BACKEND_SET" ]
     }
   }
 }
