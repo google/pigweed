@@ -530,7 +530,10 @@ void LowEnergyConnection::OnNewPairingData(const sm::PairingData& pairing_data) 
              : "",
          pairing_data.csrk ? "csrk " : "", bt_str(peer_id_));
 
-  if (!conn_mgr_->peer_cache()->StoreLowEnergyBond(peer_id_, pairing_data)) {
+  if (conn_mgr_->peer_cache()->StoreLowEnergyBond(peer_id_, pairing_data)) {
+    conn_mgr_->peer_cache()->LogLeBondingEvent(true);
+  } else {
+    conn_mgr_->peer_cache()->LogLeBondingEvent(false);
     bt_log(ERROR, "gap-le", "failed to cache bonding data (id: %s)", bt_str(peer_id_));
   }
 }

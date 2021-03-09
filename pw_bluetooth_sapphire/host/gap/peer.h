@@ -17,8 +17,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
@@ -54,7 +56,7 @@ class Peer final {
   // (do the callbacks outlive |this|?).
   Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
        PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-       bool connectable);
+       bool connectable, PeerMetrics* peer_metrics);
 
   // Connection state as considered by the GAP layer. This may not correspond
   // exactly with the presence or absence of a link at the link layer. For
@@ -499,6 +501,9 @@ class Peer final {
   // Data that only applies to the BR/EDR transport. This is present if this
   // device is known to support BR/EDR.
   std::optional<BrEdrData> bredr_data_;
+
+  // Metrics counters used across all peer objects. Weak reference.
+  PeerMetrics* peer_metrics_;
 
   fxl::WeakPtrFactory<Peer> weak_ptr_factory_;
 

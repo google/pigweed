@@ -811,6 +811,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     bt_log(WARN, "gap-bredr",
            "no known peer with address %s found; link key not stored (key type: %u)", bt_str(addr),
            params.key_type);
+    cache_->LogBrEdrBondingEvent(false);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -823,6 +824,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     if (!peer->bredr() || !peer->bredr()->bonded()) {
       bt_log(WARN, "gap-bredr", "can't update link key of unbonded peer %s",
              bt_str(peer->identifier()));
+      cache_->LogBrEdrBondingEvent(false);
       return hci::CommandChannel::EventCallbackResult::kContinue;
     }
 
@@ -839,6 +841,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
   if (sec_props.level() == sm::SecurityLevel::kNoSecurity) {
     bt_log(WARN, "gap-bredr", "link key for peer %s has insufficient security; not stored",
            bt_str(peer_id));
+    cache_->LogBrEdrBondingEvent(false);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -855,7 +858,10 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnLinkKeyNotifi
     handle->second->pairing_state().OnLinkKeyNotification(key_value, key_type);
   }
 
-  if (!cache_->StoreBrEdrBond(addr, key)) {
+  if (cache_->StoreBrEdrBond(addr, key)) {
+    cache_->LogBrEdrBondingEvent(true);
+  } else {
+    cache_->LogBrEdrBondingEvent(false);
     bt_log(ERROR, "gap-bredr", "failed to cache bonding data (peer: %s)", bt_str(peer_id));
   }
   return hci::CommandChannel::EventCallbackResult::kContinue;

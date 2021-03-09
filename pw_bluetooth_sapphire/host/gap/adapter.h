@@ -65,6 +65,8 @@ class AdapterId : public Identifier<uint64_t> {
 // supported.
 class Adapter {
  public:
+  static constexpr const char* kMetricsInspectNodeName = "metrics";
+
   // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If nullopt is
   // passed, then the Adapter will create and initialize its own L2cap.
   static std::unique_ptr<Adapter> Create(fxl::WeakPtr<hci::Transport> hci,

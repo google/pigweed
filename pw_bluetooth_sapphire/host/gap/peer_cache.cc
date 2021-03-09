@@ -168,6 +168,7 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier, const sm::PairingData& bon
   if (peer->identity_known()) {
     NotifyPeerBonded(*peer);
   }
+
   return true;
 }
 
@@ -281,6 +282,8 @@ void PeerCache::AttachInspect(inspect::Node& parent, std::string name) {
     return;
   }
 
+  peer_metrics_.AttachInspect(node_);
+
   for (auto& [_, record] : peers_) {
     record.peer()->AttachInspect(node_, node_.UniqueName("peer_"));
   }
@@ -299,7 +302,7 @@ Peer* PeerCache::InsertPeerRecord(PeerId identifier, const DeviceAddress& addres
   std::unique_ptr<Peer> peer(new Peer(fit::bind_member(this, &PeerCache::NotifyPeerUpdated),
                                       fit::bind_member(this, &PeerCache::UpdateExpiry),
                                       fit::bind_member(this, &PeerCache::MakeDualMode), identifier,
-                                      address, connectable));
+                                      address, connectable, &peer_metrics_));
   if (node_) {
     peer->AttachInspect(node_, node_.UniqueName("peer_"));
   }

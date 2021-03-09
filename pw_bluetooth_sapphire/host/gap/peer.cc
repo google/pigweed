@@ -98,6 +98,12 @@ void Peer::LowEnergyData::SetConnectionState(ConnectionState state) {
 
   conn_state_.Set(state);
 
+  if (state == ConnectionState::kConnected) {
+    peer_->peer_metrics_->LogLeConnection();
+  } else if (state == ConnectionState::kNotConnected) {
+    peer_->peer_metrics_->LogLeDisconnection();
+  }
+
   // Become non-temporary if connected or a connection attempt is in progress.
   // Otherwise, become temporary again if the identity is unknown.
   if (state == ConnectionState::kInitializing || state == ConnectionState::kConnected) {
@@ -204,6 +210,12 @@ void Peer::BrEdrData::SetConnectionState(ConnectionState state) {
          bt_str(peer_->identifier()), ConnectionStateToString(connection_state()).c_str(),
          ConnectionStateToString(state).c_str());
 
+  if (state == ConnectionState::kConnected) {
+    peer_->peer_metrics_->LogBrEdrConnection();
+  } else if (state == ConnectionState::kNotConnected) {
+    peer_->peer_metrics_->LogBrEdrDisconnection();
+  }
+
   conn_state_.Set(state);
   peer_->UpdateExpiry();
   peer_->NotifyListeners(NotifyListenersChange::kBondNotUpdated);
@@ -297,7 +309,7 @@ void Peer::BrEdrData::AddService(UUID uuid) {
 
 Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback update_expiry_callback,
            PeerCallback dual_mode_callback, PeerId identifier, const DeviceAddress& address,
-           bool connectable)
+           bool connectable, PeerMetrics* peer_metrics)
     : notify_listeners_callback_(std::move(notify_listeners_callback)),
       update_expiry_callback_(std::move(update_expiry_callback)),
       dual_mode_callback_(std::move(dual_mode_callback)),
@@ -318,6 +330,7 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       connectable_(connectable),
       temporary_(true),
       rssi_(hci::kRSSIInvalid),
+      peer_metrics_(peer_metrics),
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(notify_listeners_callback_);
   ZX_DEBUG_ASSERT(update_expiry_callback_);
@@ -355,6 +368,7 @@ void Peer::AttachInspect(inspect::Node& parent, std::string name) {
     le_data_->AttachInspect(node_, Peer::LowEnergyData::kInspectNodeName);
   }
 }
+
 Peer::LowEnergyData& Peer::MutLe() {
   if (le_data_) {
     return *le_data_;

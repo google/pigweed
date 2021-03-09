@@ -32,6 +32,21 @@ adapter:
        failed_count
        scan_interval_ms
        scan_window_ms
+    metrics:
+        bredr:
+            open_l2cap_channel_requests
+            outgoing_connection_requests
+            pair_requests
+            request_discoverable_events
+            request_discovery_events
+            set_connectable_false_events
+            set_connectable_true_events
+        le:
+            outgoing_connection_requests
+            pair_requests
+            start_advertising_events
+            start_discovery_events
+            stop_advertising_events
     l2cap:
         logical_links:
           logical_link_0x0:
@@ -46,6 +61,17 @@ adapter:
           service_0x0:
             psm
     peer_cache:
+        metrics:
+            bredr:
+                bond_failure_events
+                bond_success_events
+                connection_events
+                disconnection_events
+            le:
+                bond_failure_events
+                bond_success_events
+                connection_events
+                disconnection_events
         peer_0x0:
             peer_id
             technology

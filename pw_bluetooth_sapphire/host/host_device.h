@@ -65,6 +65,9 @@ class HostDevice final : public HostDeviceType {
   // Inspector for driver inspect tree. This object is thread-safe.
   inspect::Inspector inspect_;
 
+  // Root inspect node for bt_host
+  inspect::Node bt_host_node_;
+
   // Host processes all its messages on |loop_|. |loop_| is initialized to run
   // in its own thread.
   //

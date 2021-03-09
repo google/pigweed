@@ -15,6 +15,7 @@
 #include "low_energy_discovery_manager.h"
 #include "peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/legacy_low_energy_advertiser.h"
@@ -38,7 +39,7 @@ class AdapterImpl final : public Adapter {
   // asynchronous tasks.
   explicit AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
                        std::optional<fbl::RefPtr<l2cap::L2cap>> l2cap);
-  ~AdapterImpl();
+  ~AdapterImpl() override;
 
   AdapterId identifier() const override { return identifier_; }
 
@@ -60,6 +61,7 @@ class AdapterImpl final : public Adapter {
                  LowEnergyConnectionOptions connection_options) override {
       adapter_->le_connection_manager_->Connect(peer_id, std::move(callback),
                                                 std::move(connection_options));
+      adapter_->metrics_.le.outgoing_connection_requests.Add();
     }
 
     bool Disconnect(PeerId peer_id) override {
@@ -75,6 +77,7 @@ class AdapterImpl final : public Adapter {
     void Pair(PeerId peer_id, sm::SecurityLevel pairing_level, sm::BondableMode bondable_mode,
               sm::StatusCallback cb) override {
       adapter_->le_connection_manager_->Pair(peer_id, pairing_level, bondable_mode, std::move(cb));
+      adapter_->metrics_.le.pair_requests.Add();
     }
 
     void SetSecurityMode(LeSecurityMode mode) override {
@@ -92,14 +95,17 @@ class AdapterImpl final : public Adapter {
       adapter_->le_advertising_manager_->StartAdvertising(
           std::move(data), std::move(scan_rsp), std::move(connect_callback), interval, anonymous,
           include_tx_power_level, std::move(status_callback));
+      adapter_->metrics_.le.start_advertising_events.Add();
     }
 
     void StopAdvertising(AdvertisementId advertisement_id) override {
       adapter_->le_advertising_manager_->StopAdvertising(advertisement_id);
+      adapter_->metrics_.le.stop_advertising_events.Add();
     }
 
     void StartDiscovery(bool active, SessionCallback callback) override {
       adapter_->le_discovery_manager_->StartDiscovery(active, std::move(callback));
+      adapter_->metrics_.le.start_discovery_events.Add();
     }
 
     void EnablePrivacy(bool enabled) override {
@@ -132,6 +138,7 @@ class AdapterImpl final : public Adapter {
 
     bool Connect(PeerId peer_id, ConnectResultCallback callback) override {
       return adapter_->bredr_connection_manager_->Connect(peer_id, std::move(callback));
+      adapter_->metrics_.bredr.outgoing_connection_requests.Add();
     }
 
     bool Disconnect(PeerId peer_id, DisconnectReason reason) override {
@@ -141,6 +148,7 @@ class AdapterImpl final : public Adapter {
     void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                           BrEdrSecurityRequirements security_requirements,
                           l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
+      adapter_->metrics_.bredr.open_l2cap_channel_requests.Add();
       adapter_->bredr_connection_manager_->OpenL2capChannel(peer_id, psm, security_requirements,
                                                             params, std::move(cb));
     }
@@ -162,18 +170,26 @@ class AdapterImpl final : public Adapter {
     void Pair(PeerId peer_id, BrEdrSecurityRequirements security,
               hci::StatusCallback callback) override {
       adapter_->bredr_connection_manager_->Pair(peer_id, security, std::move(callback));
+      adapter_->metrics_.bredr.pair_requests.Add();
     }
 
     void SetConnectable(bool connectable, hci::StatusCallback status_cb) override {
       adapter_->bredr_connection_manager_->SetConnectable(connectable, std::move(status_cb));
+      if (connectable) {
+        adapter_->metrics_.bredr.set_connectable_true_events.Add();
+      } else {
+        adapter_->metrics_.bredr.set_connectable_false_events.Add();
+      }
     }
 
     void RequestDiscovery(DiscoveryCallback callback) override {
       adapter_->bredr_discovery_manager_->RequestDiscovery(std::move(callback));
+      adapter_->metrics_.bredr.request_discovery_events.Add();
     }
 
     void RequestDiscoverable(DiscoverableCallback callback) override {
       adapter_->bredr_discovery_manager_->RequestDiscoverable(std::move(callback));
+      adapter_->metrics_.bredr.request_discoverable_events.Add();
     }
 
     RegistrationHandle RegisterService(std::vector<sdp::ServiceRecord> records,
@@ -282,6 +298,30 @@ class AdapterImpl final : public Adapter {
     inspect::StringProperty le_features;
   };
   InspectProperties inspect_properties_;
+
+  // Metrics properties
+  inspect::Node metrics_node_;
+  inspect::Node metrics_bredr_node_;
+  inspect::Node metrics_le_node_;
+  struct AdapterMetrics {
+    struct LeMetrics {
+      UintMetricCounter outgoing_connection_requests;
+      UintMetricCounter pair_requests;
+      UintMetricCounter start_advertising_events;
+      UintMetricCounter stop_advertising_events;
+      UintMetricCounter start_discovery_events;
+    } le;
+    struct BrEdrMetrics {
+      UintMetricCounter outgoing_connection_requests;
+      UintMetricCounter pair_requests;
+      UintMetricCounter set_connectable_true_events;
+      UintMetricCounter set_connectable_false_events;
+      UintMetricCounter request_discovery_events;
+      UintMetricCounter request_discoverable_events;
+      UintMetricCounter open_l2cap_channel_requests;
+    } bredr;
+  };
+  AdapterMetrics metrics_;
 
   // Uniquely identifies this adapter on the current system.
   AdapterId identifier_;
@@ -573,6 +613,31 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
   UpdateInspectProperties();
 
   peer_cache_.AttachInspect(adapter_node_);
+
+  metrics_node_ = adapter_node_.CreateChild(kMetricsInspectNodeName);
+
+  metrics_le_node_ = metrics_node_.CreateChild("le");
+  metrics_.le.outgoing_connection_requests.AttachInspect(metrics_le_node_,
+                                                         "outgoing_connection_requests");
+  metrics_.le.pair_requests.AttachInspect(metrics_le_node_, "pair_requests");
+  metrics_.le.start_advertising_events.AttachInspect(metrics_le_node_, "start_advertising_events");
+  metrics_.le.stop_advertising_events.AttachInspect(metrics_le_node_, "stop_advertising_events");
+  metrics_.le.start_discovery_events.AttachInspect(metrics_le_node_, "start_discovery_events");
+
+  metrics_bredr_node_ = metrics_node_.CreateChild("bredr");
+  metrics_.bredr.outgoing_connection_requests.AttachInspect(metrics_bredr_node_,
+                                                            "outgoing_connection_requests");
+  metrics_.bredr.pair_requests.AttachInspect(metrics_bredr_node_, "pair_requests");
+  metrics_.bredr.set_connectable_true_events.AttachInspect(metrics_bredr_node_,
+                                                           "set_connectable_true_events");
+  metrics_.bredr.set_connectable_false_events.AttachInspect(metrics_bredr_node_,
+                                                            "set_connectable_false_events");
+  metrics_.bredr.request_discovery_events.AttachInspect(metrics_bredr_node_,
+                                                        "request_discovery_events");
+  metrics_.bredr.request_discoverable_events.AttachInspect(metrics_bredr_node_,
+                                                           "request_discoverable_events");
+  metrics_.bredr.open_l2cap_channel_requests.AttachInspect(metrics_bredr_node_,
+                                                           "open_l2cap_channel_requests");
 }
 
 void AdapterImpl::InitializeStep2(InitializeCallback callback) {

@@ -99,7 +99,8 @@ void HostDevice::DdkInit(ddk::InitTxn txn) {
 
     std::lock_guard<std::mutex> lock(mtx_);
     host_ = fxl::MakeRefCounted<Host>(hci_proto_, vendor_proto_);
-    host_->Initialize(inspect_.GetRoot(), [this, txn{std::move(txn)}](bool success) mutable {
+    bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
+    host_->Initialize(bt_host_node_, [this, txn{std::move(txn)}](bool success) mutable {
       std::lock_guard<std::mutex> lock(mtx_);
 
       // host_ must be defined here as Bind() must have been called and the runloop has not

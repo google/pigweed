@@ -868,7 +868,8 @@ TEST_F(GAP_AdapterTest, IsDiscoverableBredr) {
 
 TEST_F(GAP_AdapterTest, InspectHierarchy) {
   inspect::Inspector inspector;
-  adapter()->AttachInspect(inspector.GetRoot(), "adapter");
+  auto bt_host_node = inspector.GetRoot().CreateChild("bt-host");
+  adapter()->AttachInspect(bt_host_node, "adapter");
 
   bool success;
   int init_cb_count = 0;
@@ -892,6 +893,36 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
       AllOf(NodeMatches(NameMatches(LowEnergyConnectionManager::kInspectNodeName)));
   auto peer_cache_matcher = AllOf(NodeMatches(NameMatches(PeerCache::kInspectNodeName)));
   auto sdp_server_matcher = AllOf(NodeMatches(NameMatches(sdp::Server::kInspectNodeName)));
+  auto le_matcher = AllOf(
+      NodeMatches(AllOf(
+          NameMatches("le"),
+          PropertyList(UnorderedElementsAre(
+            UintIs("outgoing_connection_requests", 0),
+            UintIs("pair_requests", 0),
+            UintIs("start_advertising_events", 0),
+            UintIs("stop_advertising_events", 0),
+            UintIs("start_discovery_events", 0)
+          ))
+      ))
+  );
+  auto bredr_matcher = AllOf(
+      NodeMatches(AllOf(
+          NameMatches("bredr"),
+          PropertyList(UnorderedElementsAre(
+            UintIs("outgoing_connection_requests", 0),
+            UintIs("pair_requests", 0),
+            UintIs("set_connectable_true_events", 0),
+            UintIs("set_connectable_false_events", 0),
+            UintIs("request_discovery_events", 0),
+            UintIs("request_discoverable_events", 0),
+            UintIs("open_l2cap_channel_requests", 0)
+          ))
+      ))
+  );
+  auto metrics_node_matcher = AllOf(
+      NodeMatches(NameMatches(Adapter::kMetricsInspectNodeName)),
+      ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher))
+  );
   auto le_discovery_manager_matcher =
       AllOf(NodeMatches(NameMatches("low_energy_discovery_manager")));
   auto adapter_matcher = AllOf(
@@ -915,11 +946,15 @@ TEST_F(GAP_AdapterTest, InspectHierarchy) {
                       "0x%016lx", adapter()->state().low_energy_state().supported_features())))))),
       ChildrenMatch(UnorderedElementsAre(peer_cache_matcher, sdp_server_matcher,
                                          le_connection_manager_matcher,
-                                         le_discovery_manager_matcher)));
+                                         le_discovery_manager_matcher,
+                                         metrics_node_matcher)));
+
+  auto bt_host_matcher = AllOf(NodeMatches(NameMatches("bt-host")),
+                               ChildrenMatch(UnorderedElementsAre(adapter_matcher)));
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
 
   EXPECT_THAT(hierarchy, AllOf(NodeMatches(NameMatches("root")),
-                               ChildrenMatch(UnorderedElementsAre(adapter_matcher))));
+                               ChildrenMatch(UnorderedElementsAre(bt_host_matcher))));
 }
 
 TEST_F(GAP_AdapterTest, VendorFeatures) {

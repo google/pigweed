@@ -63,6 +63,8 @@ static_library("gap") {
     "peer.h",
     "peer_cache.cc",
     "peer_cache.h",
+    "peer_metrics.cc",
+    "peer_metrics.h",
     "types.cc",
     "types.h",
   ]

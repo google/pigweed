@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bonding_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/identity_resolving_list.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/peer_metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -144,6 +145,24 @@ class PeerCache final {
   // Returns the number of peers that are currently in the peer cache.
   size_t count() const { return peers_.size(); }
 
+  // Used by connection managers to increment peer bonding metrics.
+  void LogBrEdrBondingEvent(bool success) {
+    if (success) {
+      peer_metrics_.LogBrEdrBondSuccessEvent();
+    } else {
+      peer_metrics_.LogBrEdrBondFailureEvent();
+    }
+  }
+
+  // Used by connection managers to increment peer bonding metrics.
+  void LogLeBondingEvent(bool success) {
+    if (success) {
+      peer_metrics_.LogLeBondSuccessEvent();
+    } else {
+      peer_metrics_.LogLeBondFailureEvent();
+    }
+  }
+
  private:
   class PeerRecord final {
    public:
@@ -222,6 +241,8 @@ class PeerCache final {
   PeerCallback peer_bonded_callback_;
 
   inspect::Node node_;
+
+  PeerMetrics peer_metrics_;
 
   fit::thread_checker thread_checker_;
 

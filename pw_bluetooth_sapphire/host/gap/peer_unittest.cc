@@ -32,7 +32,7 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
     peer_ = std::make_unique<Peer>(fit::bind_member(this, &GAP_PeerTest::NotifyListenersCallback),
                                    fit::bind_member(this, &GAP_PeerTest::UpdateExpiryCallback),
                                    fit::bind_member(this, &GAP_PeerTest::DualModeCallback),
-                                   RandomPeerId(), address_, connectable);
+                                   RandomPeerId(), address_, connectable, &metrics_);
   }
 
   void TearDown() override {
@@ -72,6 +72,7 @@ class GAP_PeerTest : public ::gtest::TestLoopFixture {
   Peer::NotifyListenersCallback notify_listeners_cb_;
   Peer::PeerCallback update_expiry_cb_;
   Peer::PeerCallback dual_mode_cb_;
+  PeerMetrics metrics_;
 };
 
 TEST_F(GAP_PeerTest, InspectHierarchy) {

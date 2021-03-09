@@ -114,6 +114,30 @@ class GAP_PeerCacheTest : public ::gtest::TestLoopFixture {
   Peer* peer_;
 };
 
+TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsMetrics) {
+  inspect::Inspector inspector;
+  cache()->AttachInspect(inspector.GetRoot());
+
+  auto le_matcher = AllOf(NodeMatches(AllOf(
+      NameMatches("le"), PropertyList(UnorderedElementsAre(
+                             UintIs("bond_success_events", 0), UintIs("bond_failure_events", 0),
+                             UintIs("connection_events", 0), UintIs("disconnection_events", 0))))));
+  auto bredr_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("bredr"),
+                        PropertyList(UnorderedElementsAre(
+                            UintIs("bond_success_events", 0), UintIs("bond_failure_events", 0),
+                            UintIs("connection_events", 0), UintIs("disconnection_events", 0))))));
+
+  auto metrics_node_matcher = AllOf(NodeMatches(NameMatches(PeerMetrics::kInspectNodeName)),
+                                    ChildrenMatch(UnorderedElementsAre(bredr_matcher, le_matcher)));
+
+  auto peer_cache_matcher = AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
+                                  ChildrenMatch(UnorderedElementsAre(metrics_node_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
+  EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher))));
+}
+
 TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRemovedPeers) {
   inspect::Inspector inspector;
   cache()->AttachInspect(inspector.GetRoot());
@@ -124,19 +148,22 @@ TEST_F(GAP_PeerCacheTest, InspectHierarchyContainsAddedPeersAndDoesNotContainRem
   cache()->NewPeer(kAddrBrEdr, true);
   auto peer1_matcher = AllOf(NodeMatches(AllOf(NameMatches("peer_0x1"))));
 
+  auto metrics_matcher = AllOf(NodeMatches(AllOf(NameMatches(PeerMetrics::kInspectNodeName))));
+
   // Hierarchy should contain peer0 and peer1.
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   auto peer_cache_matcher0 =
       AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
-            ChildrenMatch(UnorderedElementsAre(peer0_matcher, peer1_matcher)));
+            ChildrenMatch(UnorderedElementsAre(peer0_matcher, peer1_matcher, metrics_matcher)));
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher0))));
 
   // peer0 should be removed from hierarchy after it is removed from the cache because its Node is
   // destroyed along with the Peer object.
   EXPECT_TRUE(cache()->RemoveDisconnectedPeer(peer0->identifier()));
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
-  auto peer_cache_matcher1 = AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
-                                   ChildrenMatch(UnorderedElementsAre(peer1_matcher)));
+  auto peer_cache_matcher1 =
+      AllOf(NodeMatches(AllOf(PropertyList(testing::IsEmpty()))),
+            ChildrenMatch(UnorderedElementsAre(peer1_matcher, metrics_matcher)));
   EXPECT_THAT(hierarchy, AllOf(ChildrenMatch(UnorderedElementsAre(peer_cache_matcher1))));
 }
 
