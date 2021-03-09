@@ -92,6 +92,7 @@ declare_args() {
   dir_pw_target_runner = get_path_info("pw_target_runner", "abspath")
   dir_pw_thread = get_path_info("pw_thread", "abspath")
   dir_pw_thread_stl = get_path_info("pw_thread_stl", "abspath")
+  dir_pw_thread_embos = get_path_info("pw_thread_embos", "abspath")
   dir_pw_thread_freertos = get_path_info("pw_thread_freertos", "abspath")
   dir_pw_thread_threadx = get_path_info("pw_thread_threadx", "abspath")
   dir_pw_third_party = get_path_info("third_party", "abspath")
