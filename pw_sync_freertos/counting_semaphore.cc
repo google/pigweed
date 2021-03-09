@@ -24,7 +24,6 @@
 #include "semphr.h"
 
 using pw::chrono::SystemClock;
-using pw::chrono::freertos::kMaxTimeout;
 
 namespace pw::sync {
 namespace {
@@ -32,7 +31,8 @@ namespace {
 static_assert(configUSE_COUNTING_SEMAPHORES != 0,
               "FreeRTOS counting semaphores aren't enabled.");
 
-static_assert(configSUPPORT_STATIC_ALLOCATION != 0);
+static_assert(configSUPPORT_STATIC_ALLOCATION != 0,
+              "FreeRTOS static allocations are required for this backend.");
 
 }  // namespace
 
@@ -55,15 +55,25 @@ void CountingSemaphore::release(ptrdiff_t update) {
 
 bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
-  while (for_at_least > kMaxTimeout) {
-    if (xSemaphoreTake(native_type_.handle, kMaxTimeout.count()) == pdTRUE) {
+
+  // Use non-blocking try_acquire for negative durations.
+  if (for_at_least < SystemClock::duration::zero()) {
+    return try_acquire();
+  }
+
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    if (xSemaphoreTake(native_type_.handle, kMaxTimeoutMinusOne.count()) ==
+        pdTRUE) {
       return true;
     }
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, SystemClock::duration::zero());
-  return xSemaphoreTake(native_type_.handle, for_at_least.count()) == pdTRUE;
+  return xSemaphoreTake(native_type_.handle, for_at_least.count() + 1) ==
+         pdTRUE;
 }
 
 }  // namespace pw::sync

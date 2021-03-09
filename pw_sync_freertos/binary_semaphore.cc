@@ -24,28 +24,36 @@
 #include "semphr.h"
 
 using pw::chrono::SystemClock;
-using pw::chrono::freertos::kMaxTimeout;
 
 namespace pw::sync {
 namespace {
 
-static_assert(configSUPPORT_STATIC_ALLOCATION != 0);
+static_assert(configSUPPORT_STATIC_ALLOCATION != 0,
+              "FreeRTOS static allocations are required for this backend.");
 
 }  // namespace
 
 bool BinarySemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, SystemClock::duration::zero());
+  // Use non-blocking try_acquire for negative durations.
+  if (for_at_least < SystemClock::duration::zero()) {
+    return try_acquire();
+  }
 
-  while (for_at_least > kMaxTimeout) {
-    if (xSemaphoreTake(native_type_.handle, kMaxTimeout.count()) == pdTRUE) {
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    if (xSemaphoreTake(native_type_.handle, kMaxTimeoutMinusOne.count()) ==
+        pdTRUE) {
       return true;
     }
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(native_type_.handle, for_at_least.count()) == pdTRUE;
+  return xSemaphoreTake(native_type_.handle, for_at_least.count() + 1) ==
+         pdTRUE;
 }
 
 }  // namespace pw::sync

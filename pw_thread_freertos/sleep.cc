@@ -23,21 +23,28 @@
 #include "pw_thread/id.h"
 #include "task.h"
 
-using pw::chrono::freertos::kMaxTimeout;
+using pw::chrono::SystemClock;
 
 namespace pw::this_thread {
 
-void sleep_for(chrono::SystemClock::duration for_at_least) {
+void sleep_for(SystemClock::duration for_at_least) {
   PW_DCHECK(get_id() != thread::Id());
 
-  // Clamp negative durations to be 0 which maps to yield with vTaskDelay.
-  for_at_least = std::max(for_at_least, chrono::SystemClock::duration::zero());
-
-  while (for_at_least > kMaxTimeout) {
-    vTaskDelay(kMaxTimeout.count());
-    for_at_least -= kMaxTimeout;
+  // Yield for negative durations.
+  if (for_at_least < SystemClock::duration::zero()) {
+    taskYIELD();
+    return;
   }
-  vTaskDelay(for_at_least.count());
+
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    vTaskDelay(kMaxTimeoutMinusOne.count());
+    for_at_least -= kMaxTimeoutMinusOne;
+  }
+  vTaskDelay(for_at_least.count() + 1);
 }
 
 }  // namespace pw::this_thread
