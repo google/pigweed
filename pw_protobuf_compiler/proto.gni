@@ -35,68 +35,75 @@ _forwarded_vars = [
 # This creates the internal GN target $target_name.$language._gen that compiles
 # proto files with protoc.
 template("_pw_invoke_protoc") {
-  if (defined(invoker.out_dir)) {
-    _out_dir = invoker.out_dir
-  } else {
-    _out_dir = "${invoker.base_out_dir}/${invoker.language}"
-    if (defined(invoker.module_as_package) && invoker.module_as_package != "") {
-      assert(invoker.language == "python")
-      _out_dir = "$_out_dir/${invoker.module_as_package}"
-    }
-  }
-
-  _includes =
-      rebase_path(get_target_outputs(":${invoker.base_target}._includes"))
-
-  pw_python_action("$target_name._gen") {
-    script =
-        "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
-
-    python_deps = [ "$dir_pw_protobuf_compiler/py" ]
-    if (defined(invoker.python_deps)) {
-      python_deps += invoker.python_deps
-    }
-
-    deps = [
-      ":${invoker.base_target}._includes",
-      ":${invoker.base_target}._sources",
-    ]
-
-    foreach(dep, invoker.deps) {
-      deps += [ get_label_info(dep, "label_no_toolchain") + "._gen" ]
-    }
-
-    args = [
-             "--language",
-             invoker.language,
-             "--include-file",
-             _includes[0],
-             "--compile-dir",
-             rebase_path(invoker.compile_dir),
-             "--out-dir",
-             rebase_path(_out_dir),
-             "--sources",
-           ] + rebase_path(invoker.sources)
-
-    if (defined(invoker.plugin)) {
-      inputs = [ invoker.plugin ]
-      args += [ "--plugin-path=" + rebase_path(invoker.plugin) ]
-    }
-
-    if (defined(invoker.outputs)) {
-      outputs = invoker.outputs
+  if (current_toolchain == default_toolchain) {
+    if (defined(invoker.out_dir)) {
+      _out_dir = invoker.out_dir
     } else {
-      stamp = true
-    }
-
-    if (defined(invoker.metadata)) {
-      metadata = invoker.metadata
-    } else {
-      metadata = {
-        protoc_outputs = rebase_path(outputs)
-        root = [ rebase_path(_out_dir) ]
+      _out_dir = "${invoker.base_out_dir}/${invoker.language}"
+      if (defined(invoker.module_as_package) &&
+          invoker.module_as_package != "") {
+        assert(invoker.language == "python")
+        _out_dir = "$_out_dir/${invoker.module_as_package}"
       }
     }
+
+    _includes =
+        rebase_path(get_target_outputs(":${invoker.base_target}._includes"))
+
+    pw_python_action("$target_name._gen") {
+      script =
+          "$dir_pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py"
+
+      python_deps = [ "$dir_pw_protobuf_compiler/py" ]
+      if (defined(invoker.python_deps)) {
+        python_deps += invoker.python_deps
+      }
+
+      deps = [
+        ":${invoker.base_target}._includes",
+        ":${invoker.base_target}._sources",
+      ]
+
+      foreach(dep, invoker.deps) {
+        deps += [ get_label_info(dep, "label_no_toolchain") + "._gen" ]
+      }
+
+      args = [
+               "--language",
+               invoker.language,
+               "--include-file",
+               _includes[0],
+               "--compile-dir",
+               rebase_path(invoker.compile_dir),
+               "--out-dir",
+               rebase_path(_out_dir),
+               "--sources",
+             ] + rebase_path(invoker.sources)
+
+      if (defined(invoker.plugin)) {
+        inputs = [ invoker.plugin ]
+        args += [ "--plugin-path=" + rebase_path(invoker.plugin) ]
+      }
+
+      if (defined(invoker.outputs)) {
+        outputs = invoker.outputs
+      } else {
+        stamp = true
+      }
+
+      if (defined(invoker.metadata)) {
+        metadata = invoker.metadata
+      } else {
+        metadata = {
+          protoc_outputs = rebase_path(outputs)
+          root = [ rebase_path(_out_dir) ]
+        }
+      }
+    }
+  } else {
+    # protoc is only ever invoked from the default toolchain.
+    not_needed([ "target_name" ])
+    not_needed(invoker, "*")
   }
 }
 
