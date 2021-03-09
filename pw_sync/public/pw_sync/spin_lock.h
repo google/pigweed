@@ -48,7 +48,7 @@ class SpinLock {
  public:
   using native_handle_type = backend::NativeSpinLockHandle;
 
-  SpinLock();
+  constexpr SpinLock();
   ~SpinLock() = default;
   SpinLock(const SpinLock&) = delete;
   SpinLock(SpinLock&&) = delete;

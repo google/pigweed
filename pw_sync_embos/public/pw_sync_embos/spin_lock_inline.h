@@ -17,10 +17,7 @@
 
 namespace pw::sync {
 
-// TODO(ewout): update the SpinLock facade to be constexpr constructable which
-// should help use of spin locks before C++ construction massively and appears
-// to be portable.
-inline SpinLock::SpinLock() : native_type_{.locked{false}} {}
+constexpr SpinLock::SpinLock() : native_type_{.locked{false}} {}
 
 inline SpinLock::native_handle_type SpinLock::native_handle() {
   return native_type_;

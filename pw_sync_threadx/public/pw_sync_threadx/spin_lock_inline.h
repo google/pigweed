@@ -17,8 +17,8 @@
 
 namespace pw::sync {
 
-inline SpinLock::SpinLock()
-    : native_type_{.locked = false, .saved_interrupt_mask = 0} {}
+constexpr SpinLock::SpinLock()
+    : native_type_{.locked{false}, .saved_interrupt_mask = 0} {}
 
 inline SpinLock::native_handle_type SpinLock::native_handle() {
   return native_type_;

@@ -19,7 +19,7 @@
 
 namespace pw::sync {
 
-inline SpinLock::SpinLock() : native_type_() {}
+constexpr SpinLock::SpinLock() : native_type_() {}
 
 inline void SpinLock::lock() { PW_ASSERT(try_lock()); }
 
