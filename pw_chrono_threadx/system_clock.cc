@@ -29,25 +29,7 @@ namespace {
 #error "This backend is not compatible with TX_NO_TIMER"
 #endif  // defined(TX_NO_TIMER) && TX_NO_TIMER
 
-// Extension wrapping pw::SpinLock to allow an atomic to be used to determine
-// whether it has been constructed and is ready to be used.
-class ConstructionSignalingSpinLock : public sync::SpinLock {
- public:
-  ConstructionSignalingSpinLock(std::atomic<bool>& constructed_signal)
-      : sync::SpinLock() {
-    // Note that the memory order is relaxed because C++ global static
-    // construction is a single threaded environment.
-    constructed_signal.store(true, std::memory_order_relaxed);
-  };
-};
-
-// This is POD, meaning this atomic is available before static C++ global
-// constructors are run.
-std::atomic<bool> system_clock_spin_lock_constructed = {false};
-
-ConstructionSignalingSpinLock system_clock_spin_lock(
-    system_clock_spin_lock_constructed);
-
+sync::SpinLock system_clock_spin_lock;
 int64_t overflow_tick_count = 0;
 ULONG native_tick_count = 0;
 static_assert(!SystemClock::is_nmi_safe,
@@ -60,12 +42,6 @@ constexpr int64_t kNativeOverflowTickCount =
 }  // namespace
 
 int64_t GetSystemClockTickCount() {
-  // Note that the memory order is relaxed because C++ global static
-  // construction is a single threaded environment.
-  if (!system_clock_spin_lock_constructed.load(std::memory_order_relaxed)) {
-    return tx_time_get();
-  }
-
   std::lock_guard lock(system_clock_spin_lock);
   const ULONG new_native_tick_count = tx_time_get();
   // WARNING: This must be called more than once per overflow period!
