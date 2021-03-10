@@ -18,10 +18,7 @@
 
 namespace pw::sync::backend {
 
-struct NativeMutex {
-  StaticSemaphore_t buffer;
-  SemaphoreHandle_t handle;
-};
+using NativeMutex = StaticSemaphore_t;
 using NativeMutexHandle = NativeMutex&;
 
 }  // namespace pw::sync::backend

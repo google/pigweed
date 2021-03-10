@@ -41,13 +41,13 @@ void CountingSemaphore::release(ptrdiff_t update) {
     for (; update > 0; --update) {
       BaseType_t woke_higher_task = pdFALSE;
       const BaseType_t result =
-          xSemaphoreGiveFromISR(native_type_.handle, &woke_higher_task);
+          xSemaphoreGiveFromISR(&native_type_, &woke_higher_task);
       PW_DCHECK_UINT_EQ(result, pdTRUE, "Overflowed counting semaphore.");
       portYIELD_FROM_ISR(woke_higher_task);
     }
   } else {  // Task context
     for (; update > 0; --update) {
-      const BaseType_t result = xSemaphoreGive(native_type_.handle);
+      const BaseType_t result = xSemaphoreGive(&native_type_);
       PW_DCHECK_UINT_EQ(result, pdTRUE, "Overflowed counting semaphore.");
     }
   }
@@ -66,14 +66,12 @@ bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    if (xSemaphoreTake(native_type_.handle, kMaxTimeoutMinusOne.count()) ==
-        pdTRUE) {
+    if (xSemaphoreTake(&native_type_, kMaxTimeoutMinusOne.count()) == pdTRUE) {
       return true;
     }
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(native_type_.handle, for_at_least.count() + 1) ==
-         pdTRUE;
+  return xSemaphoreTake(&native_type_, for_at_least.count() + 1) == pdTRUE;
 }
 
 }  // namespace pw::sync

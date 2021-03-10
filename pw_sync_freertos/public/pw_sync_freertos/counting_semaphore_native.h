@@ -20,10 +20,7 @@
 
 namespace pw::sync::backend {
 
-struct NativeCountingSemaphore {
-  StaticSemaphore_t buffer;
-  SemaphoreHandle_t handle;
-};
+using NativeCountingSemaphore = StaticSemaphore_t;
 using NativeCountingSemaphoreHandle = NativeCountingSemaphore&;
 
 inline constexpr ptrdiff_t kCountingSemaphoreMaxValue =

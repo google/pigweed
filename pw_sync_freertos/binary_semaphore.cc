@@ -46,14 +46,12 @@ bool BinarySemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    if (xSemaphoreTake(native_type_.handle, kMaxTimeoutMinusOne.count()) ==
-        pdTRUE) {
+    if (xSemaphoreTake(&native_type_, kMaxTimeoutMinusOne.count()) == pdTRUE) {
       return true;
     }
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(native_type_.handle, for_at_least.count() + 1) ==
-         pdTRUE;
+  return xSemaphoreTake(&native_type_, for_at_least.count() + 1) == pdTRUE;
 }
 
 }  // namespace pw::sync

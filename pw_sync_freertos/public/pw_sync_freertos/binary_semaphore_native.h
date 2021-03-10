@@ -20,10 +20,7 @@
 
 namespace pw::sync::backend {
 
-struct NativeBinarySemaphore {
-  StaticSemaphore_t buffer;
-  SemaphoreHandle_t handle;
-};
+using NativeBinarySemaphore = StaticSemaphore_t;
 using NativeBinarySemaphoreHandle = NativeBinarySemaphore&;
 
 inline constexpr ptrdiff_t kBinarySemaphoreMaxValue =
