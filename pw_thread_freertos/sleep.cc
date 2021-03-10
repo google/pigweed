@@ -30,8 +30,8 @@ namespace pw::this_thread {
 void sleep_for(SystemClock::duration for_at_least) {
   PW_DCHECK(get_id() != thread::Id());
 
-  // Yield for negative durations.
-  if (for_at_least < SystemClock::duration::zero()) {
+  // Yield for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
     taskYIELD();
     return;
   }
@@ -41,10 +41,10 @@ void sleep_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    vTaskDelay(kMaxTimeoutMinusOne.count());
+    vTaskDelay(static_cast<TickType_t>(kMaxTimeoutMinusOne.count()));
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  vTaskDelay(for_at_least.count() + 1);
+  vTaskDelay(static_cast<TickType_t>(for_at_least.count() + 1));
 }
 
 }  // namespace pw::this_thread

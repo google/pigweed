@@ -56,8 +56,8 @@ void CountingSemaphore::release(ptrdiff_t update) {
 bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Use non-blocking try_acquire for negative durations.
-  if (for_at_least < SystemClock::duration::zero()) {
+  // Use non-blocking try_acquire for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
     return try_acquire();
   }
 
@@ -66,12 +66,16 @@ bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    if (xSemaphoreTake(&native_type_, kMaxTimeoutMinusOne.count()) == pdTRUE) {
+    if (xSemaphoreTake(&native_type_,
+                       static_cast<TickType_t>(kMaxTimeoutMinusOne.count())) ==
+        pdTRUE) {
       return true;
     }
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(&native_type_, for_at_least.count() + 1) == pdTRUE;
+  return xSemaphoreTake(&native_type_,
+                        static_cast<TickType_t>(for_at_least.count() + 1)) ==
+         pdTRUE;
 }
 
 }  // namespace pw::sync
