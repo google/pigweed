@@ -72,11 +72,7 @@ class Context {
 #endif  // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
 
 #if PW_THREAD_JOINING_ENABLED
-  void CreateJoinEventGroup() {
-    event_group_handle_ = xEventGroupCreateStatic(&event_group_buffer_);
-    PW_DASSERT(event_group_handle_ != nullptr);  // Ensure it succeeded.
-  }
-  EventGroupHandle_t join_event_group() { return event_group_handle_; }
+  StaticEventGroup_t& join_event_group() { return event_group_; }
 #endif  // PW_THREAD_JOINING_ENABLED
 
   static void RunThread(void* void_context_ptr);
@@ -88,8 +84,7 @@ class Context {
 #if PW_THREAD_JOINING_ENABLED
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.
-  StaticEventGroup_t event_group_buffer_;
-  EventGroupHandle_t event_group_handle_ = nullptr;
+  StaticEventGroup_t event_group_;
 #endif  // PW_THREAD_JOINING_ENABLED
   bool detached_ = false;
   bool dynamically_allocated_ = false;

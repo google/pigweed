@@ -46,7 +46,7 @@ void Context::RunThread(void* void_context_ptr) {
 #if PW_THREAD_JOINING_ENABLED
     // Just in case someone abused our API, ensure their use of the event group
     // is properly handled by the kernel regardless.
-    vEventGroupDelete(context.join_event_group());
+    vEventGroupDelete(&context.join_event_group());
 #endif  // PW_THREAD_JOINING_ENABLED
 
 #if PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
@@ -69,7 +69,7 @@ void Context::RunThread(void* void_context_ptr) {
   xTaskResumeAll();
 
 #if PW_THREAD_JOINING_ENABLED
-  xEventGroupSetBits(context.join_event_group(), kThreadDoneBit);
+  xEventGroupSetBits(&context.join_event_group(), kThreadDoneBit);
 #endif  // PW_THREAD_JOINING_ENABLED
 
   while (true) {
@@ -94,7 +94,7 @@ void Context::TerminateThread(Context& context) {
 #if PW_THREAD_JOINING_ENABLED
   // Just in case someone abused our API, ensure their use of the event group is
   // properly handled by the kernel regardless.
-  vEventGroupDelete(context.join_event_group());
+  vEventGroupDelete(&context.join_event_group());
 #endif  // PW_THREAD_JOINING_ENABLED
 
 #if PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
@@ -121,7 +121,11 @@ Thread::Thread(const thread::Options& facade_options,
     native_type_->set_detached(false);
     native_type_->set_thread_done(false);
 #if PW_THREAD_JOINING_ENABLED
-    native_type_->CreateJoinEventGroup();
+    const EventGroupHandle_t event_group_handle =
+        xEventGroupCreateStatic(&native_type_->join_event_group());
+    PW_DCHECK_PTR_EQ(event_group_handle,
+                     &native_type_->join_event_group(),
+                     "Failed to create the joining event group");
 #endif  // PW_THREAD_JOINING_ENABLED
 
     // In order to support functions which return and joining, a delegate is
@@ -148,7 +152,11 @@ Thread::Thread(const thread::Options& facade_options,
     native_type_ = new pw::thread::freertos::Context();
     native_type_->set_dynamically_allocated();
 #if PW_THREAD_JOINING_ENABLED
-    native_type_->CreateJoinEventGroup();
+    const EventGroupHandle_t event_group_handle =
+        xEventGroupCreateStatic(&native_type_->join_event_group());
+    PW_DCHECK_PTR_EQ(event_group_handle,
+                     &native_type_->join_event_group(),
+                     "Failed to create the joining event group");
 #endif  // PW_THREAD_JOINING_ENABLED
 
     // In order to support functions which return and joining, a delegate is
@@ -207,7 +215,7 @@ void Thread::join() {
   PW_CHECK(this_thread::get_id() != get_id());
 
   // Wait indefinitely until kThreadDoneBit is set.
-  while (xEventGroupWaitBits(native_type_->join_event_group(),
+  while (xEventGroupWaitBits(&native_type_->join_event_group(),
                              kThreadDoneBit,
                              pdTRUE,   // Clear the bits.
                              pdFALSE,  // Any bits is fine, N/A.
