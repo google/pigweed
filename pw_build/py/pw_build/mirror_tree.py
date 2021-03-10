@@ -16,7 +16,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, Iterator, List
 
 
 def _parse_args() -> argparse.Namespace:
@@ -30,20 +30,21 @@ def _parse_args() -> argparse.Namespace:
                         help='Prefix to strip from the source files')
     parser.add_argument('sources',
                         type=Path,
-                        nargs='+',
+                        nargs='*',
                         help='Files to mirror to the directory')
     parser.add_argument('--directory',
                         type=Path,
                         required=True,
                         help='Directory to which to mirror the sources')
+    parser.add_argument('--path-file',
+                        type=Path,
+                        help='File with paths to files to mirror')
 
     return parser.parse_args()
 
 
-def mirror_paths(source_root: Path, sources: Iterable[Path],
-                 directory: Path) -> List[Path]:
-    outputs: List[Path] = []
-
+def _link_files(source_root: Path, sources: Iterable[Path],
+                directory: Path) -> Iterator[Path]:
     for source in sources:
         dest = directory / source.relative_to(source_root)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -53,7 +54,47 @@ def mirror_paths(source_root: Path, sources: Iterable[Path],
 
         # Use a hard link to avoid unnecessary copies.
         os.link(source, dest)
-        outputs.append(dest)
+
+        yield dest
+
+
+def _link_files_or_dirs(paths: Iterable[Path],
+                        directory: Path) -> Iterator[Path]:
+    """Links files or directories into the output directory.
+
+    Files are linked directly; files in directories are linked as relative paths
+    from the directory.
+    """
+
+    for path in paths:
+        if path.is_dir():
+            files = (p for p in path.glob('**/*') if p.is_file())
+            yield from _link_files(path, files, directory)
+        elif path.is_file():
+            yield from _link_files(path.parent, [path], directory)
+        else:
+            raise FileNotFoundError(f'{path} does not exist!')
+
+
+def mirror_paths(source_root: Path,
+                 sources: Iterable[Path],
+                 directory: Path,
+                 path_file: Path = None) -> List[Path]:
+    """Creates hard links in the provided directory for the provided sources.
+
+    Args:
+      source_root: Base path for files in sources.
+      sources: Files to link to from the directory.
+      directory: The output directory.
+      path_file: A file with file or directory paths to link to.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+
+    outputs = list(_link_files(source_root, sources, directory))
+
+    if path_file:
+        paths = (Path(p).resolve() for p in path_file.read_text().splitlines())
+        outputs.extend(_link_files_or_dirs(paths, directory))
 
     return outputs
 

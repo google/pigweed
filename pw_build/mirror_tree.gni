@@ -14,6 +14,8 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/python_action.gni")
+
 # Mirrors a directory structure to the output directory.
 #
 # This is similar to a GN copy target, with some differences:
@@ -28,10 +30,12 @@ import("//build_overrides/pigweed.gni")
 #   directory: Output directory for the files.
 #   sources: List of files to mirror to the output directory.
 #   source_root: Root path for sources; defaults to ".".
+#   path_data_keys: GN metadata data_keys from which to extract file or
+#       directory paths to add to the list of sources.
 #
 template("pw_mirror_tree") {
-  assert(defined(invoker.sources) && invoker.sources != [],
-         "At least one source file must be provided in 'sources'")
+  assert(defined(invoker.sources) || defined(invoker.path_data_keys),
+         "At least one of 'sources' or 'path_data_keys' must be provided")
   assert(defined(invoker.directory) && invoker.directory != "",
          "The output path must be specified as 'directory'")
 
@@ -41,21 +45,62 @@ template("pw_mirror_tree") {
     _root = "."
   }
 
-  action(target_name) {
-    script = "$dir_pw_build/py/pw_build/mirror_tree.py"
+  _args = [
+    "--source-root",
+    rebase_path(_root),
+    "--directory",
+    rebase_path(invoker.directory),
+  ]
 
-    outputs = []
-    foreach(path, rebase_path(invoker.sources, _root)) {
-      outputs += [ "${invoker.directory}/$path" ]
+  _deps = []
+  if (defined(invoker.deps)) {
+    _deps += invoker.deps
+  }
+
+  if (defined(invoker.path_data_keys)) {
+    assert(_deps != [],
+           "'path_data_keys' requires at least one dependency in 'deps'")
+
+    generated_file("$target_name._path_list") {
+      data_keys = invoker.path_data_keys
+      rebase = root_build_dir
+      deps = _deps
+      outputs = [ "$target_gen_dir/$target_name.txt" ]
     }
 
-    args = [
-             "--source-root",
-             rebase_path(_root),
-             "--directory",
-             rebase_path(invoker.directory),
-           ] + rebase_path(invoker.sources)
+    _deps += [ ":$target_name._path_list" ]
+    _args += [ "--path-file" ] +
+             rebase_path(get_target_outputs(":$target_name._path_list"))
+  }
 
-    forward_variables_from(invoker, "*", [ "script" ])
+  pw_python_action(target_name) {
+    script = "$dir_pw_build/py/pw_build/mirror_tree.py"
+    args = _args
+
+    outputs = []
+
+    if (defined(invoker.sources)) {
+      args += rebase_path(invoker.sources)
+
+      foreach(path, rebase_path(invoker.sources, _root)) {
+        outputs += [ "${invoker.directory}/$path" ]
+      }
+    }
+
+    # If path_data_keys is used, the outputs may be unknown.
+    if (outputs == []) {
+      stamp = true
+    }
+
+    deps = _deps
+
+    _ignore_args = [
+      "script",
+      "args",
+      "outputs",
+      "deps",
+      "directory",
+    ]
+    forward_variables_from(invoker, "*", _ignore_args)
   }
 }
