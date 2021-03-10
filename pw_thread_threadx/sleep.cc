@@ -22,30 +22,31 @@
 #include "pw_thread/id.h"
 #include "tx_api.h"
 
-using pw::chrono::threadx::kMaxTimeout;
+using pw::chrono::SystemClock;
 
 namespace pw::this_thread {
 
 void sleep_for(chrono::SystemClock::duration for_at_least) {
   PW_DCHECK(get_id() != thread::Id());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, chrono::SystemClock::duration::zero());
-
-  // The pw::sleep_{for,until} API contract is to yield if we attempt to sleep
-  // for a duration of 0. ThreadX's tx_thread_sleep does a no-op if 0 is passed,
-  // ergo we explicitly check for the yield condition if the duration is 0.
-  if (for_at_least == chrono::SystemClock::duration::zero()) {
-    tx_thread_relinquish();  // Direct API is used to reduce overhead.
+  // Yield for negative and zero length durations.
+  if (for_at_least <= chrono::SystemClock::duration::zero()) {
+    tx_thread_relinquish();
     return;
   }
 
-  while (for_at_least > kMaxTimeout) {
-    const UINT result = tx_thread_sleep(kMaxTimeout.count());
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::threadx::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    const UINT result =
+        tx_thread_sleep(static_cast<ULONG>(kMaxTimeoutMinusOne.count()));
     PW_CHECK_UINT_EQ(TX_SUCCESS, result);
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  const UINT result = tx_thread_sleep(for_at_least.count());
+  const UINT result =
+      tx_thread_sleep(static_cast<ULONG>(for_at_least.count() + 1));
   PW_CHECK_UINT_EQ(TX_SUCCESS, result);
 }
 

@@ -23,7 +23,6 @@
 #include "tx_api.h"
 
 using pw::chrono::SystemClock;
-using pw::chrono::threadx::kMaxTimeout;
 
 namespace pw::sync {
 
@@ -31,20 +30,27 @@ bool BinarySemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   // Enforce the pw::sync::BinarySemaphore IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, SystemClock::duration::zero());
+  // Use non-blocking try_acquire for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
+    return try_acquire();
+  }
 
-  while (for_at_least > kMaxTimeout) {
-    const UINT result = tx_semaphore_get(&native_type_, kMaxTimeout.count());
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::threadx::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    const UINT result = tx_semaphore_get(
+        &native_type_, static_cast<ULONG>(kMaxTimeoutMinusOne.count()));
     if (result != TX_NO_INSTANCE) {
       // If we didn't time out (TX_NO_INSTANCE), then we should have succeeded.
       PW_CHECK_UINT_EQ(TX_SUCCESS, result);
       return true;
     }
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-
-  const UINT result = tx_semaphore_get(&native_type_, for_at_least.count());
+  const UINT result = tx_semaphore_get(
+      &native_type_, static_cast<ULONG>(for_at_least.count() + 1));
   if (result == TX_NO_INSTANCE) {
     return false;  // We timed out, there's still no token.
   }
