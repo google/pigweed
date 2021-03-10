@@ -210,6 +210,8 @@ object's checksum is updated to reflect the changes.
       // ... rest of main
     }
 
+.. _module-pw_persistent_ram-persistent_buffer:
+
 ------------------------------------
 pw::persistent_ram::PersistentBuffer
 ------------------------------------

@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -130,6 +131,10 @@ pw_test("yield_facade_test") {
     ":id",
     ":yield",
   ]
+}
+
+pw_proto_library("protos") {
+  sources = [ "pw_thread_protos/thread.proto" ]
 }
 
 pw_doc_group("docs") {

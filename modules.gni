@@ -74,6 +74,7 @@ declare_args() {
   dir_pw_ring_buffer = get_path_info("pw_ring_buffer", "abspath")
   dir_pw_router = get_path_info("pw_router", "abspath")
   dir_pw_rpc = get_path_info("pw_rpc", "abspath")
+  dir_pw_snapshot = get_path_info("pw_snapshot", "abspath")
   dir_pw_span = get_path_info("pw_span", "abspath")
   dir_pw_status = get_path_info("pw_status", "abspath")
   dir_pw_stream = get_path_info("pw_stream", "abspath")

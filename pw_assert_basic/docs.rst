@@ -20,6 +20,8 @@ behavior.
   intended mostly for ease of initial bringup. We encourage teams to use
   tokenized asserts since they are much smaller both in terms of ROM and RAM.
 
+.. _module-pw_assert_basic-custom_handler:
+
 Custom handler backend example
 ------------------------------
 Here is a typical usage example implementing a simple handler backend which uses
