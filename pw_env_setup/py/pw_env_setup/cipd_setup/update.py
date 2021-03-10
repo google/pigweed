@@ -61,7 +61,7 @@ def parse(argv=None):
     return parser.parse_args(argv)
 
 
-def check_auth(cipd, package_files):
+def check_auth(cipd, package_files, spin):
     """Check have access to CIPD pigweed directory."""
 
     paths = []
@@ -77,12 +77,12 @@ def check_auth(cipd, package_files):
                     parts.pop(-1)
                 paths.append('/'.join(parts))
 
+    username = None
     try:
         output = subprocess.check_output([cipd, 'auth-info'],
                                          stderr=subprocess.STDOUT).decode()
         logged_in = True
 
-        username = None
         match = re.search(r'Logged in as (\S*)\.', output)
         if match:
             username = match.group(1)
@@ -90,38 +90,60 @@ def check_auth(cipd, package_files):
     except subprocess.CalledProcessError:
         logged_in = False
 
-    for path in paths:
-        # Not catching CalledProcessError because 'cipd ls' seems to never
-        # return an error code unless it can't reach the CIPD server.
-        output = subprocess.check_output([cipd, 'ls', path],
-                                         stderr=subprocess.STDOUT).decode()
-        if 'No matching packages' not in output:
-            continue
+    def _check_all_paths():
+        inaccessible_paths = []
 
-        # 'cipd ls' only lists sub-packages but ignores any packages at the
-        # given path. 'cipd instances' will give versions of that package.
-        # 'cipd instances' does use an error code if there's no such package or
-        # that package is inaccessible.
-        try:
-            subprocess.check_output([cipd, 'instances', path],
-                                    stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError:
+        for path in paths:
+            # Not catching CalledProcessError because 'cipd ls' seems to never
+            # return an error code unless it can't reach the CIPD server.
+            output = subprocess.check_output(
+                [cipd, 'ls', path], stderr=subprocess.STDOUT).decode()
+            if 'No matching packages' not in output:
+                continue
+
+            # 'cipd ls' only lists sub-packages but ignores any packages at the
+            # given path. 'cipd instances' will give versions of that package.
+            # 'cipd instances' does use an error code if there's no such package
+            # or that package is inaccessible.
+            try:
+                subprocess.check_output([cipd, 'instances', path],
+                                        stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                inaccessible_paths.append(path)
+
+        return inaccessible_paths
+
+    inaccessible_paths = _check_all_paths()
+
+    if inaccessible_paths and not logged_in:
+        with spin.pause():
             stderr = lambda *args: print(*args, file=sys.stderr)
             stderr()
-            stderr('=' * 60)
-            stderr('ERROR: no access to CIPD path "{}"'.format(path))
-            if logged_in:
-                username_part = ''
-                if username:
-                    username_part = '({}) '.format(username)
-                stderr('Your account {}does not have access to this '
-                       'path'.format(username_part))
-            else:
-                stderr('Try logging in with this command:')
-                stderr()
-                stderr('    {} auth-login'.format(cipd))
-            stderr('=' * 60)
-            return False
+            stderr('No access to the following CIPD paths:')
+            for path in inaccessible_paths:
+                stderr('  {}'.format(path))
+            stderr()
+            stderr('Attempting CIPD login')
+            try:
+                subprocess.check_call([cipd, 'auth-login'])
+            except subprocess.CalledProcessError:
+                stderr('CIPD login failed')
+                return False
+
+        inaccessible_paths = _check_all_paths()
+
+    if inaccessible_paths:
+        stderr = lambda *args: print(*args, file=sys.stderr)
+        stderr('=' * 60)
+        username_part = ''
+        if username:
+            username_part = '({}) '.format(username)
+        stderr('Your account {}does not have access to the following '
+               'paths'.format(username_part))
+        for path in inaccessible_paths:
+            stderr('  {}'.format(path))
+        stderr('=' * 60)
+        return False
 
     return True
 
@@ -151,10 +173,11 @@ def update(
     root_install_dir,
     cache_dir,
     env_vars=None,
+    spin=None,
 ):
     """Grab the tools listed in ensure_files."""
 
-    if not check_auth(cipd, package_files):
+    if not check_auth(cipd, package_files, spin):
         return False
 
     # TODO(mohrr) use os.makedirs(..., exist_ok=True).

@@ -339,7 +339,7 @@ Then use `set +x` to go back to normal.
 
             spin = spinner.Spinner()
             with spin():
-                result = step()
+                result = step(spin)
 
             self._log(result.status_str())
 
@@ -394,7 +394,7 @@ Then use `set +x` to go back to normal.
 
         return 0
 
-    def cipd(self):
+    def cipd(self, spin):
         install_dir = os.path.join(self._install_dir, 'cipd')
 
         cipd_client = cipd_wrapper.init(install_dir, silent=True)
@@ -409,12 +409,13 @@ Then use `set +x` to go back to normal.
                                   root_install_dir=install_dir,
                                   package_files=package_files,
                                   cache_dir=self._cipd_cache_dir,
-                                  env_vars=self._env):
+                                  env_vars=self._env,
+                                  spin=spin):
             return result(_Result.Status.FAILED)
 
         return result(_Result.Status.DONE)
 
-    def virtualenv(self):
+    def virtualenv(self, unused_spin):
         """Setup virtualenv."""
 
         requirements, req_glob_warnings = _process_globs(
@@ -453,7 +454,7 @@ Then use `set +x` to go back to normal.
 
         return result(_Result.Status.DONE)
 
-    def host_tools(self):
+    def host_tools(self, unused_spin):
         # The host tools are grabbed from CIPD, at least initially. If the
         # user has a current host build, that build will be used instead.
         # TODO(mohrr) find a way to do stuff like this for all projects.
@@ -461,14 +462,14 @@ Then use `set +x` to go back to normal.
         self._env.prepend('PATH', os.path.join(host_dir, 'host_tools'))
         return _Result(_Result.Status.DONE)
 
-    def win_scripts(self):
+    def win_scripts(self, unused_spin):
         # These scripts act as a compatibility layer for windows.
         env_setup_dir = os.path.join(self._pw_root, 'pw_env_setup')
         self._env.prepend('PATH', os.path.join(env_setup_dir,
                                                'windows_scripts'))
         return _Result(_Result.Status.DONE)
 
-    def cargo(self):
+    def cargo(self, unused_spin):
         install_dir = os.path.join(self._install_dir, 'cargo')
 
         package_files, glob_warnings = _process_globs(self._cargo_package_file)

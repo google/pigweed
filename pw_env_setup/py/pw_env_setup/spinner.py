@@ -65,3 +65,11 @@ class Spinner(object):  # pylint: disable=useless-object-inheritance
             yield self
         finally:
             self.stop()
+
+    @contextlib.contextmanager
+    def pause(self):
+        try:
+            self.stop()
+            yield self
+        finally:
+            self.start()
