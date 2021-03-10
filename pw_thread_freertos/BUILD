@@ -97,7 +97,6 @@ pw_cc_library(
         "//pw_assert",
         ":id",
         "//pw_thread:thread_headers",
-        "//pw_sync:binary_semaphore",
     ],
     # TODO(pwbug/317): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
