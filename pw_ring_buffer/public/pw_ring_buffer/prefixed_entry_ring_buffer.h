@@ -76,8 +76,8 @@ class PrefixedEntryRingBufferMulti {
     // bytes than the data size of the data chunk being read.  Available
     // destination bytes were filled, remaining bytes of the data chunk were
     // ignored.
-    Status PeekFront(std::span<std::byte> data, size_t* bytes_read) {
-      return buffer->InternalPeekFront(*this, data, bytes_read);
+    Status PeekFront(std::span<std::byte> data, size_t* bytes_read_out) {
+      return buffer->InternalPeekFront(*this, data, bytes_read_out);
     }
 
     Status PeekFront(ReadOutput output) {
@@ -86,9 +86,15 @@ class PrefixedEntryRingBufferMulti {
 
     // Same as PeekFront but includes the entry's preamble of optional user
     // value and the varint of the data size.
+    // TODO(pwbug/341): Move all other APIs to passing bytes_read by reference,
+    // as it is required to determine the length populated in the span.
     Status PeekFrontWithPreamble(std::span<std::byte> data,
-                                 size_t* bytes_read) {
-      return buffer->InternalPeekFrontWithPreamble(*this, data, bytes_read);
+                                 uint32_t& user_preamble_out,
+                                 size_t& entry_bytes_read_out);
+
+    Status PeekFrontWithPreamble(std::span<std::byte> data,
+                                 size_t* bytes_read_out) {
+      return buffer->InternalPeekFrontWithPreamble(*this, data, bytes_read_out);
     }
 
     Status PeekFrontWithPreamble(ReadOutput output) {
@@ -229,7 +235,7 @@ class PrefixedEntryRingBufferMulti {
  protected:
   // Read the oldest stored data chunk of data from the ring buffer to
   // the provided destination std::span. The number of bytes read is written to
-  // bytes_read
+  // `bytes_read_out`.
   //
   // Return values:
   // OK - Data successfully read from the ring buffer.
@@ -240,14 +246,14 @@ class PrefixedEntryRingBufferMulti {
   // bytes were filled, remaining bytes of the data chunk were ignored.
   Status InternalPeekFront(Reader& reader,
                            std::span<std::byte> data,
-                           size_t* bytes_read);
+                           size_t* bytes_read_out);
   Status InternalPeekFront(Reader& reader, ReadOutput output);
 
   // Same as Read but includes the entry's preamble of optional user value and
   // the varint of the data size
   Status InternalPeekFrontWithPreamble(Reader& reader,
                                        std::span<std::byte> data,
-                                       size_t* bytes_read);
+                                       size_t* bytes_read_out);
   Status InternalPeekFrontWithPreamble(Reader& reader, ReadOutput output);
 
   // Pop and discard the oldest stored data chunk of data from the ring buffer.
@@ -269,11 +275,15 @@ class PrefixedEntryRingBufferMulti {
   // Internal version of Read used by all the public interface versions. T
   // should be of type ReadOutput.
   template <typename T>
-  Status InternalRead(Reader& reader, T read_output, bool get_preamble);
+  Status InternalRead(Reader& reader,
+                      T read_output,
+                      bool include_preamble_in_output,
+                      uint32_t* user_preamble_out = nullptr);
 
  private:
   struct EntryInfo {
     size_t preamble_bytes;
+    uint32_t user_preamble;
     size_t data_bytes;
   };
 

@@ -82,6 +82,7 @@ void SingleEntryWriteReadTest(bool user_data) {
   // Set read_size to an unexpected value to make sure result checks don't luck
   // out and happen to see a previous value.
   size_t read_size = 500U;
+  uint32_t user_preamble = 0U;
 
   EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
 
@@ -138,7 +139,6 @@ void SingleEntryWriteReadTest(bool user_data) {
     read_size = 500U;
     ASSERT_EQ(ring.PeekFrontWithPreamble(read_buffer, &read_size), OkStatus());
     ASSERT_EQ(read_size, single_entry_total_size);
-    ASSERT_EQ(ring.PopFront(), OkStatus());
 
     if (user_data) {
       expect_buffer[0] = byte(preamble_byte);
@@ -147,6 +147,21 @@ void SingleEntryWriteReadTest(bool user_data) {
     // ASSERT_THAT(std::span(expect_buffer),
     //            testing::ElementsAreArray(std::span(read_buffer)));
     ASSERT_EQ(memcmp(expect_buffer, read_buffer, single_entry_total_size), 0);
+
+    if (user_data) {
+      user_preamble = 0U;
+      ASSERT_EQ(
+          ring.PeekFrontWithPreamble(read_buffer, user_preamble, read_size),
+          OkStatus());
+      ASSERT_EQ(read_size, data_size);
+      ASSERT_EQ(user_preamble, preamble_byte);
+      ASSERT_EQ(memcmp(std::span(expect_buffer).last(data_size).data(),
+                       read_buffer,
+                       data_size),
+                0);
+    }
+
+    ASSERT_EQ(ring.PopFront(), OkStatus());
   }
 }
 

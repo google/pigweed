@@ -136,9 +136,9 @@ auto GetOutput(std::span<byte> data_out, size_t* write_index) {
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFront(Reader& reader,
                                                        std::span<byte> data,
-                                                       size_t* bytes_read) {
-  *bytes_read = 0;
-  return InternalRead(reader, GetOutput(data, bytes_read), false);
+                                                       size_t* bytes_read_out) {
+  *bytes_read_out = 0;
+  return InternalRead(reader, GetOutput(data, bytes_read_out), false);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFront(Reader& reader,
@@ -147,9 +147,9 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFront(Reader& reader,
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
-    Reader& reader, std::span<byte> data, size_t* bytes_read) {
-  *bytes_read = 0;
-  return InternalRead(reader, GetOutput(data, bytes_read), true);
+    Reader& reader, std::span<byte> data, size_t* bytes_read_out) {
+  *bytes_read_out = 0;
+  return InternalRead(reader, GetOutput(data, bytes_read_out), true);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
@@ -157,11 +157,15 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
   return InternalRead(reader, output, true);
 }
 
+// TODO(pwbug/339): Consider whether this internal templating is required, or if
+// we can simply promote GetOutput to a static function and remove the template.
 // T should be similar to Status (*read_output)(std::span<const byte>)
 template <typename T>
-Status PrefixedEntryRingBufferMulti::InternalRead(Reader& reader,
-                                                  T read_output,
-                                                  bool get_preamble) {
+Status PrefixedEntryRingBufferMulti::InternalRead(
+    Reader& reader,
+    T read_output,
+    bool include_preamble_in_output,
+    uint32_t* user_preamble_out) {
   if (buffer_ == nullptr) {
     return Status::FailedPrecondition();
   }
@@ -173,7 +177,10 @@ Status PrefixedEntryRingBufferMulti::InternalRead(Reader& reader,
   EntryInfo info = FrontEntryInfo(reader);
   size_t read_bytes = info.data_bytes;
   size_t data_read_idx = reader.read_idx;
-  if (get_preamble) {
+  if (user_preamble_out) {
+    *user_preamble_out = info.user_preamble;
+  }
+  if (include_preamble_in_output) {
     read_bytes += info.preamble_bytes;
   } else {
     data_read_idx = IncrementIndex(data_read_idx, info.preamble_bytes);
@@ -321,10 +328,10 @@ PrefixedEntryRingBufferMulti::FrontEntryInfo(Reader& reader) {
 
   // If a preamble exists, extract the varint and it's bytes in bytes.
   size_t user_preamble_bytes = 0;
+  uint64_t user_preamble_data = 0;
   byte varint_buf[varint::kMaxVarint32SizeBytes];
   if (user_preamble_) {
     RawRead(varint_buf, reader.read_idx, varint::kMaxVarint32SizeBytes);
-    uint64_t user_preamble_data;
     user_preamble_bytes = varint::Decode(varint_buf, &user_preamble_data);
     PW_DASSERT(user_preamble_bytes != 0u);
   }
@@ -339,6 +346,7 @@ PrefixedEntryRingBufferMulti::FrontEntryInfo(Reader& reader) {
 
   EntryInfo info = {};
   info.preamble_bytes = user_preamble_bytes + length_bytes;
+  info.user_preamble = static_cast<uint32_t>(user_preamble_data);
   info.data_bytes = entry_bytes;
   return info;
 }
@@ -408,6 +416,15 @@ size_t PrefixedEntryRingBufferMulti::IncrementIndex(size_t index,
     index -= buffer_bytes_;
   }
   return index;
+}
+
+Status PrefixedEntryRingBufferMulti::Reader::PeekFrontWithPreamble(
+    std::span<byte> data,
+    uint32_t& user_preamble_out,
+    size_t& entry_bytes_read_out) {
+  entry_bytes_read_out = 0;
+  return buffer->InternalRead(
+      *this, GetOutput(data, &entry_bytes_read_out), false, &user_preamble_out);
 }
 
 }  // namespace ring_buffer
