@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -38,12 +38,10 @@ pw_python_package_subtargets = [
 #     - $name.lint.pylint - Runs pylint (if enabled).
 #   - $name.tests - Runs all tests for this package.
 #   - $name.install - Installs the package in a venv.
-#   - $name.wheel - Builds a Python wheel for the package. (Not implemented.)
+#   - $name.wheel - Builds a Python wheel for the package.
 #
 # All Python packages are instantiated with the default toolchain, regardless of
 # the current toolchain.
-#
-# TODO(pwbug/239): Implement wheel building.
 #
 # Args:
 #   setup: List of setup file paths (setup.py or pyproject.toml & setup.cfg),
@@ -68,6 +66,7 @@ pw_python_package_subtargets = [
 #       provided, mypy's default configuration file search is used. mypy is
 #       executed from the package's setup directory, so mypy.ini files in that
 #       directory will take precedence over others.
+#
 template("pw_python_package") {
   # The Python targets are always instantiated in the default toolchain. Use
   # fully qualified labels so that the toolchain is not lost.
@@ -340,18 +339,27 @@ template("pw_python_package") {
         }
       }
 
-      # TODO(pwbug/239): Add support for building groups of wheels. The code below
-      #     is incomplete and untested.
+      # Builds a Python wheel for this package. Records the output directory
+      # in the pw_python_package_wheels metadata key.
       pw_python_action("$target_name.wheel") {
-        script = "$dir_pw_build/py/pw_build/python_wheels.py"
+        metadata = {
+          pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
+        }
+
+        module = "build"
 
         args = [
-          "--out_dir",
-          rebase_path(target_out_dir),
-        ]
-        args += rebase_path(_all_py_files)
+                 rebase_path(_setup_dir),
+                 "--wheel",
+                 "--no-isolation",
+                 "--outdir",
+               ] + rebase_path(metadata.pw_python_package_wheels)
 
-        deps = [ ":${invoker.target_name}.install" ]
+        deps = [ ":${invoker.target_name}" ]
+        foreach(dep, _python_deps) {
+          deps += [ string_replace(dep, "(", ".wheel(") ]
+        }
+
         stamp = true
       }
     } else {
@@ -467,6 +475,9 @@ template("pw_python_package") {
           inputs = [ invoker.mypy_ini ]
         }
       }
+
+      # Generated packages with linting disabled never need the whole file list.
+      not_needed([ "_all_py_files" ])
     }
   } else {
     # Create groups with the public target names ($target_name, $target_name.lint,

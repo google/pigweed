@@ -132,6 +132,7 @@ pool("copy_from_cipd_pool") {
 # Requirements for the pw_python_package lint targets.
 pw_python_requirements("python_lint") {
   requirements = [
+    "build",
     "mypy==0.800",
     "pylint==2.6.0",
   ]

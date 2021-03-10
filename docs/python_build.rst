@@ -278,20 +278,14 @@ Wheels are the standard format for distributing Python packages. The Pigweed
 Python build supports creating wheels for individual packages and groups of
 packages. Building the ``.wheel`` subtarget creates a ``.whl`` file for the
 package using the PyPA's `build <https://pypa-build.readthedocs.io/en/stable/>`_
-tool. The location of this file is recorded with `GN metadata
+tool.
+
+The ``.wheel`` subtarget of ``pw_python_package`` records the location of
+the generated wheel with `GN metadata
 <https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_.
-
-The ``pw_python_wheels`` template creates a collection of wheels from a list of
-``pw_python_package`` targets and their dependencies. It uses GN metadata to
-locate the wheels for all transitive dependencies. This collection can be used
-to deploy packages to different Python environments without requiring the
-original source repository.
-
-.. admonition:: Under construction
-
-  Pigweed's wheel building is not yet fully implemented. ``pw_python_wheels``
-  currently only supports listing individual ``setup.py`` files. This will be
-  updated to automatically collect wheels for all transitive dependencies.
+Wheels for a Python package and its transitive dependencies can be collected
+from the ``pw_python_package_wheels`` key. See
+:ref:`module-pw_build-python-wheels`.
 
 Protocol buffers
 ^^^^^^^^^^^^^^^^

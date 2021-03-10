@@ -75,6 +75,30 @@ This is an example Python package declaration for a ``pw_my_module`` module.
     pylintrc = "$dir_pigweed/.pylintrc"
   }
 
+
+.. _module-pw_build-python-wheels:
+
+Collecting Python wheels for distribution
+-----------------------------------------
+The ``.wheel`` subtarget generates a wheel (``.whl``) for the Python package.
+Wheels for a package and its transitive dependencies can be collected by
+traversing the ``pw_python_package_wheels`` `GN metadata
+<https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_ key,
+which lists the output directory for each wheel.
+
+The ``pw_mirror_tree`` template can be used to collect wheels in an output
+directory:
+
+.. code-block::
+
+  import("$dir_pw_build/mirror_tree.gni")
+
+  pw_mirror_tree("my_wheels") {
+    path_data_keys = [ "pw_python_package_wheels" ]
+    deps = [ ":python_packages" ]
+    directory = "$root_out_dir/the_wheels"
+  }
+
 pw_python_script
 ================
 A ``pw_python_script`` represents a set of standalone Python scripts and/or
@@ -87,13 +111,6 @@ pw_python_group
 Represents a group of ``pw_python_package`` and ``pw_python_script`` targets.
 These targets do not add any files. Their subtargets simply forward to those of
 their dependencies.
-
-pw_python_wheels
-================
-Builds and collects Python wheels for one or more ``pw_python_package`` targets.
-A package's ``.wheel`` subtarget builds the wheel for just that package.
-``pw_python_package`` collects wheels from all of its transitive dependencies
-and collects them in a specified directory.
 
 pw_python_requirements
 ======================
