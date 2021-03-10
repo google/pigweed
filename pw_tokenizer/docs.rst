@@ -500,21 +500,15 @@ database after each build.
 GN integration
 ^^^^^^^^^^^^^^
 Token databases may be updated or created as part of a GN build. The
-``pw_tokenizer_database`` template provided by ``dir_pw_tokenizer/database.gni``
-automatically updates an in-source tokenized strings database or creates a new
-database with artifacts from one or more GN targets or other database files.
+``pw_tokenizer_database`` template provided by
+``$dir_pw_tokenizer/database.gni`` automatically updates an in-source tokenized
+strings database or creates a new database with artifacts from one or more GN
+targets or other database files.
 
 To create a new database, set the ``create`` variable to the desired database
 type (``"csv"`` or ``"binary"``). The database will be created in the output
 directory. To update an existing database, provide the path to the database with
 the ``database`` variable.
-
-Each database in the source tree can only be updated from a single
-``pw_tokenizer_database`` rule. Updating the same database in multiple rules
-results in ``Duplicate output file`` GN errors or ``multiple rules generate
-<file>`` Ninja errors. To avoid these errors, ``pw_tokenizer_database`` rules
-should be defined in the default toolchain, and the input targets should be
-referenced with specific toolchains.
 
 .. code-block::
 
@@ -526,6 +520,17 @@ referenced with specific toolchains.
     database = "database_in_the_source_tree.csv"
     targets = [ "//firmware/image:foo(//targets/my_board:some_toolchain)" ]
     input_databases = [ "other_database.csv" ]
+  }
+
+Instead of specifying GN targets, paths or globs to output files may be provided
+with the ``paths`` option.
+
+.. code-block::
+
+  pw_tokenizer_database("my_database") {
+    database = "database_in_the_source_tree.csv"
+    deps = [ ":apps" ]
+    paths = [ "$root_build_dir/**/*.elf" ]
   }
 
 Detokenization

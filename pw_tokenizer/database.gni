@@ -34,6 +34,9 @@ import("$dir_pw_build/python_action.gni")
 #       these targets are added to deps
 #   optional_targets: GN targets from which to add tokens, if the output files
 #       already exist; these targets are NOT added to deps
+#   paths: Paths or globs from which to add tokens. A common use for this is to
+#       find all .elf files in the output directory (e.g.
+#       "$root_build_dir/**/*.elf").
 #   input_databases: paths to other database files from which to add tokens
 #   deps: GN targets to build prior to generating the database; artifacts from
 #       these targets are NOT implicitly used for database generation
@@ -127,6 +130,10 @@ template("pw_tokenizer_database") {
     # added to deps. Use TARGET_FILE_IF_EXISTS to handle this.
     foreach(target, _optional_targets) {
       args += [ "<TARGET_FILE_IF_EXISTS($target)>$_domain" ]
+    }
+
+    if (defined(invoker.paths)) {
+      args += rebase_path(invoker.paths)
     }
 
     deps = _targets
