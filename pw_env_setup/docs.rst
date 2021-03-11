@@ -180,6 +180,13 @@ here.
   only installing Pigweed Python packages, use the location of the Pigweed
   submodule.
 
+``virtualenv.requirements``
+  A ``requirements.txt`` file as written by ``pip-compile``, relative to
+  ``PW_PROJECT_ROOT``. Listing multiple files is supported but unlikely to
+  work because the same package may be pinned to two different versions. Best
+  practice is to include dependencies in ``setup.py`` files and not just in
+  ``requirements.txt``.
+
 An example of a config file is below.
 
 .. code-block:: json
@@ -194,6 +201,9 @@ An example of a config file is below.
       "gn_root": ".",
       "gn_targets": [
         ":python.install",
+      ],
+      "requirements": [
+        "tools/requirements.txt"
       ]
     }
   }

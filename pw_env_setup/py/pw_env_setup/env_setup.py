@@ -254,6 +254,8 @@ class EnvSetup(object):
 
         virtualenv = config.pop('virtualenv', {})
 
+        self._virtualenv_requirements = virtualenv.pop('requirements', [])
+
         if virtualenv.get('gn_root'):
             root = os.path.join(self._project_root, virtualenv.pop('gn_root'))
         else:
