@@ -18,36 +18,65 @@
 
 namespace pw {
 namespace varint {
+namespace {
 
-extern "C" size_t pw_VarintEncode(uint64_t integer,
-                                  void* output,
-                                  size_t output_size) {
+inline bool ZeroTerminated(pw_varint_Format format) {
+  return (static_cast<unsigned>(format) & 0b10) == 0;
+}
+
+inline bool LeastSignificant(pw_varint_Format format) {
+  return (static_cast<unsigned>(format) & 0b01) == 0;
+}
+
+}  // namespace
+
+extern "C" size_t pw_varint_EncodeCustom(uint64_t input,
+                                         void* output,
+                                         size_t output_size,
+                                         pw_varint_Format format) {
   size_t written = 0;
   std::byte* buffer = static_cast<std::byte*>(output);
+
+  int value_shift = LeastSignificant(format) ? 1 : 0;
+  int term_shift = value_shift == 1 ? 0 : 7;
+
+  std::byte cont, term;
+  if (ZeroTerminated(format)) {
+    cont = std::byte(0x01) << term_shift;
+    term = std::byte(0x00) << term_shift;
+  } else {
+    cont = std::byte(0x00) << term_shift;
+    term = std::byte(0x01) << term_shift;
+  }
 
   do {
     if (written >= output_size) {
       return 0;
     }
 
-    // Grab 7 bits; the eighth bit is set to 1 to indicate more data coming.
-    buffer[written++] = static_cast<std::byte>(integer) | std::byte(0x80);
-    integer >>= 7;
-  } while (integer != 0u);
+    bool last_byte = (input >> 7) == 0u;
 
-  buffer[written - 1] &= std::byte(0x7f);  // clear the top bit of the last byte
+    // Grab 7 bits and set the eighth according to the continuation bit.
+    std::byte value = (static_cast<std::byte>(input) & std::byte(0x7f))
+                      << value_shift;
+
+    if (last_byte) {
+      value |= term;
+    } else {
+      value |= cont;
+    }
+
+    buffer[written++] = value;
+    input >>= 7;
+  } while (input != 0u);
+
   return written;
 }
 
-extern "C" size_t pw_VarintZigZagEncode(int64_t integer,
-                                        void* output,
-                                        size_t output_size) {
-  return pw_VarintEncode(ZigZagEncode(integer), output, output_size);
-}
-
-extern "C" size_t pw_VarintDecode(const void* input,
-                                  size_t input_size,
-                                  uint64_t* output) {
+extern "C" size_t pw_varint_DecodeCustom(const void* input,
+                                         size_t input_size,
+                                         uint64_t* output,
+                                         pw_varint_Format format) {
   uint64_t decoded_value = 0;
   uint_fast8_t count = 0;
   const std::byte* buffer = static_cast<const std::byte*>(input);
@@ -55,17 +84,35 @@ extern "C" size_t pw_VarintDecode(const void* input,
   // The largest 64-bit ints require 10 B.
   const size_t max_count = std::min(kMaxVarint64SizeBytes, input_size);
 
+  std::byte mask;
+  uint32_t shift;
+  if (LeastSignificant(format)) {
+    mask = std::byte(0xfe);
+    shift = 1;
+  } else {
+    mask = std::byte(0x7f);
+    shift = 0;
+  }
+
+  // Determines whether a byte is the last byte of a varint.
+  auto is_last_byte = [&](std::byte byte) {
+    if (ZeroTerminated(format)) {
+      return (byte & ~mask) == std::byte(0);
+    }
+    return (byte & ~mask) != std::byte(0);
+  };
+
   while (true) {
     if (count >= max_count) {
       return 0;
     }
 
     // Add the bottom seven bits of the next byte to the result.
-    decoded_value |= static_cast<uint64_t>(buffer[count] & std::byte(0x7f))
+    decoded_value |= static_cast<uint64_t>((buffer[count] & mask) >> shift)
                      << (7 * count);
 
-    // Stop decoding if the top bit is not set.
-    if ((buffer[count++] & std::byte(0x80)) == std::byte(0)) {
+    // Stop decoding if the end is reached.
+    if (is_last_byte(buffer[count++])) {
       break;
     }
   }
@@ -74,20 +121,40 @@ extern "C" size_t pw_VarintDecode(const void* input,
   return count;
 }
 
-extern "C" size_t pw_VarintZigZagDecode(const void* input,
-                                        size_t input_size,
-                                        int64_t* output) {
+// TODO(frolv): Remove this deprecated function.
+extern "C" size_t pw_VarintEncode(uint64_t integer,
+                                  void* output,
+                                  size_t output_size) {
+  return pw_varint_Encode(integer, output, output_size);
+}
+
+extern "C" size_t pw_varint_ZigZagEncode(int64_t integer,
+                                         void* output,
+                                         size_t output_size) {
+  return pw_varint_Encode(ZigZagEncode(integer), output, output_size);
+}
+
+// TODO(frolv): Remove this deprecated function.
+extern "C" size_t pw_VarintDecode(const void* input,
+                                  size_t input_size,
+                                  uint64_t* output) {
+  return pw_varint_Decode(input, input_size, output);
+}
+
+extern "C" size_t pw_varint_ZigZagDecode(const void* input,
+                                         size_t input_size,
+                                         int64_t* output) {
   uint64_t value = 0;
-  size_t bytes = pw_VarintDecode(input, input_size, &value);
+  size_t bytes = pw_varint_Decode(input, input_size, &value);
   *output = ZigZagDecode(value);
   return bytes;
 }
 
-extern "C" size_t pw_VarintEncodedSize(uint64_t integer) {
+extern "C" size_t pw_varint_EncodedSize(uint64_t integer) {
   return EncodedSize(integer);
 }
 
-extern "C" size_t pw_VarintZigZagEncodedSize(int64_t integer) {
+extern "C" size_t pw_varint_ZigZagEncodedSize(int64_t integer) {
   return ZigZagEncodedSize(integer);
 }
 

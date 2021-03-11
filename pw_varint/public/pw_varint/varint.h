@@ -24,17 +24,47 @@ extern "C" {
 
 // Expose a subset of the varint API for use in C code.
 
-size_t pw_VarintEncode(uint64_t integer, void* output, size_t output_size);
-size_t pw_VarintZigZagEncode(int64_t integer, void* output, size_t output_size);
+typedef enum {
+  PW_VARINT_ZERO_TERMINATED_LEAST_SIGNIFICANT = 0b00,
+  PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT = 0b01,
+  PW_VARINT_ONE_TERMINATED_LEAST_SIGNIFICANT = 0b10,
+  PW_VARINT_ONE_TERMINATED_MOST_SIGNIFICANT = 0b11,
+} pw_varint_Format;
 
-size_t pw_VarintDecode(const void* input, size_t input_size, uint64_t* output);
-size_t pw_VarintZigZagDecode(const void* input,
-                             size_t input_size,
-                             int64_t* output);
+size_t pw_varint_EncodeCustom(uint64_t integer,
+                              void* output,
+                              size_t output_size,
+                              pw_varint_Format format);
+size_t pw_varint_DecodeCustom(const void* input,
+                              size_t input_size,
+                              uint64_t* output,
+                              pw_varint_Format format);
+
+static inline size_t pw_varint_Encode(uint64_t integer,
+                                      void* output,
+                                      size_t output_size) {
+  return pw_varint_EncodeCustom(
+      integer, output, output_size, PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT);
+}
+
+size_t pw_varint_ZigZagEncode(int64_t integer,
+                              void* output,
+                              size_t output_size);
+
+static inline size_t pw_varint_Decode(const void* input,
+                                      size_t input_size,
+                                      uint64_t* output) {
+  return pw_varint_DecodeCustom(
+      input, input_size, output, PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT);
+}
+
+size_t pw_varint_ZigZagDecode(const void* input,
+                              size_t input_size,
+                              int64_t* output);
 
 // Returns the size of an when encoded as a varint.
-size_t pw_VarintEncodedSize(uint64_t integer);
-size_t pw_VarintZigZagEncodedSize(int64_t integer);
+size_t pw_varint_EncodedSize(uint64_t integer);
+size_t pw_varint_ZigZagEncodedSize(int64_t integer);
 
 #ifdef __cplusplus
 
@@ -83,7 +113,7 @@ constexpr std::make_signed_t<T> ZigZagDecode(T n)
 // Encodes a uint64_t with Little-Endian Base 128 (LEB128) encoding.
 inline size_t EncodeLittleEndianBase128(uint64_t integer,
                                         const std::span<std::byte>& output) {
-  return pw_VarintEncode(integer, output.data(), output.size());
+  return pw_varint_Encode(integer, output.data(), output.size());
 }
 
 // Encodes the provided integer using a variable-length encoding and returns the
@@ -99,9 +129,9 @@ inline size_t EncodeLittleEndianBase128(uint64_t integer,
 template <typename T>
 size_t Encode(T integer, const std::span<std::byte>& output) {
   if (std::is_signed<T>()) {
-    return pw_VarintZigZagEncode(integer, output.data(), output.size());
+    return pw_varint_ZigZagEncode(integer, output.data(), output.size());
   } else {
-    return pw_VarintEncode(integer, output.data(), output.size());
+    return pw_varint_Encode(integer, output.data(), output.size());
   }
 }
 
@@ -126,11 +156,36 @@ size_t Encode(T integer, const std::span<std::byte>& output) {
 //   }
 //
 inline size_t Decode(const std::span<const std::byte>& input, int64_t* value) {
-  return pw_VarintZigZagDecode(input.data(), input.size(), value);
+  return pw_varint_ZigZagDecode(input.data(), input.size(), value);
 }
 
 inline size_t Decode(const std::span<const std::byte>& input, uint64_t* value) {
-  return pw_VarintDecode(input.data(), input.size(), value);
+  return pw_varint_Decode(input.data(), input.size(), value);
+}
+
+enum class Format {
+  kZeroTerminatedLeastSignificant = PW_VARINT_ZERO_TERMINATED_LEAST_SIGNIFICANT,
+  kZeroTerminatedMostSignificant = PW_VARINT_ZERO_TERMINATED_MOST_SIGNIFICANT,
+  kOneTerminatedLeastSignificant = PW_VARINT_ONE_TERMINATED_LEAST_SIGNIFICANT,
+  kOneTerminatedMostSignificant = PW_VARINT_ONE_TERMINATED_MOST_SIGNIFICANT,
+};
+
+// Encodes a varint in a custom format.
+inline size_t Encode(uint64_t value,
+                     std::span<std::byte> output,
+                     Format format) {
+  return pw_varint_EncodeCustom(value,
+                                output.data(),
+                                output.size(),
+                                static_cast<pw_varint_Format>(format));
+}
+
+// Decodes a varint from a custom format.
+inline size_t Decode(std::span<const std::byte> input,
+                     uint64_t* value,
+                     Format format) {
+  return pw_varint_DecodeCustom(
+      input.data(), input.size(), value, static_cast<pw_varint_Format>(format));
 }
 
 // Returns a size of an integer when encoded as a varint.
