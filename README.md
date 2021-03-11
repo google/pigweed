@@ -20,7 +20,8 @@ value developer feedback along the way.
  - [Chat room (Discord)](https://discord.gg/M9NSeTA)
  - [Open Source blog post](https://opensource.googleblog.com/2020/03/pigweed-collection-of-embedded-libraries.html)
 
-Get the code: `git clone https://pigweed.googlesource.com/pigweed/pigweed`
+Get the code: `git clone https://pigweed.googlesource.com/pigweed/pigweed` (or
+[fork us on GitHub](https://github.com/google/pigweed)).
 
 # Getting Started
 
