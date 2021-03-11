@@ -23,9 +23,9 @@ namespace {
 
 // We can't control the SystemClock's period configuration, so just in case
 // 42 hours cannot be accurately expressed in integer ticks, round the
-// duration w/ ceil.
-constexpr auto kRoundedArbitraryDuration =
-    std::chrono::ceil<SystemClock::duration>(42h);
+// duration up.
+constexpr SystemClock::duration kRoundedArbitraryDuration =
+    SystemClock::for_at_least(42h);
 
 TEST(SimulatedSystemClock, InitialTime) {
   SimulatedSystemClock clock;

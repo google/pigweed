@@ -41,8 +41,8 @@ const Options& TestOptionsThread1() {
 // the application will on average not be able to starve the heap if they
 // execute this test over and over again.
 void WaitUntilDetachedThreadsCleanedUp() {
-  this_thread::sleep_for(std::chrono::ceil<chrono::SystemClock::duration>(
-      std::chrono::milliseconds(50)));
+  this_thread::sleep_for(
+      chrono::SystemClock::for_at_least(std::chrono::milliseconds(50)));
 }
 
 }  // namespace pw::thread::test

@@ -105,6 +105,14 @@ struct SystemClock {
   static time_point now() noexcept {
     return time_point(duration(backend::GetSystemClockTickCount()));
   }
+
+  // This is purely a helper, identical to directly using std::chrono::ceil, to
+  // convert a duration type which cannot be implicitly converted where the
+  // result is rounded up.
+  template <class Rep, class Period>
+  static constexpr duration for_at_least(std::chrono::duration<Rep, Period> d) {
+    return std::chrono::ceil<duration>(d);
+  };
 };
 
 // An abstract interface representing a SystemClock.
