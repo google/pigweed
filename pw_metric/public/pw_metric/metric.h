@@ -28,6 +28,8 @@ namespace pw::metric {
 // metric names are supported.
 using tokenizer::Token;
 
+#define _PW_METRIC_TOKEN_MASK 0x7fffffff
+
 // An individual metric. There are only two supported types: uint32_t and
 // float. More complicated compound metrics can be built on these primitives.
 // See the documentation for a discussion for this design was selected.
@@ -92,8 +94,8 @@ class Metric : public IntrusiveList<Metric>::Item {
     uint32_t uint_;
   };
 
-  enum {
-    kTokenMask = 0x7fff'ffff,
+  enum : uint32_t {
+    kTokenMask = _PW_METRIC_TOKEN_MASK,  // 0x7fff'ffff
     kTypeMask = 0x8000'0000,
     kTypeFloat = 0x8000'0000,
     kTypeInt = 0x0,
@@ -255,17 +257,17 @@ class Group : public IntrusiveList<Group>::Item {
                      uint32_t>
 
 // Case: PW_METRIC(name, initial_value)
-#define _PW_METRIC_4(static_def, variable_name, metric_name, init)       \
-  static constexpr uint32_t variable_name##_token =                      \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", metric_name);                 \
-  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> \
+#define _PW_METRIC_4(static_def, variable_name, metric_name, init)            \
+  static constexpr uint32_t variable_name##_token =                           \
+      PW_TOKENIZE_STRING_MASK("metrics", _PW_METRIC_TOKEN_MASK, metric_name); \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>      \
       variable_name = {variable_name##_token, init}
 
 // Case: PW_METRIC(group, name, initial_value)
-#define _PW_METRIC_5(static_def, group, variable_name, metric_name, init) \
-  static constexpr uint32_t variable_name##_token =                       \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", metric_name);                  \
-  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>  \
+#define _PW_METRIC_5(static_def, group, variable_name, metric_name, init)     \
+  static constexpr uint32_t variable_name##_token =                           \
+      PW_TOKENIZE_STRING_MASK("metrics", _PW_METRIC_TOKEN_MASK, metric_name); \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>      \
       variable_name = {variable_name##_token, init, group.metrics()}
 
 // Define a metric group. Works like PW_METRIC, and works in the same contexts.

@@ -20,9 +20,15 @@
 #include "pw_preprocessor/concat.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
-// This macro implements PW_LOG, using
+// This macro implements PW_LOG using
 // PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD. The log level, module token, and
 // flags are packed into the payload argument.
+//
+// Two strings are tokenized in this macro:
+//
+//   - The log format string, tokenized in the default tokenizer domain.
+//   - PW_LOG_MODULE_NAME, masked to 16 bits and tokenized in the
+//     "pw_log_module_names" tokenizer domain.
 //
 // To use this macro, implement pw_tokenizer_HandleEncodedMessageWithPayload,
 // which is defined in pw_tokenizer/tokenize.h. The log metadata can be accessed
@@ -41,12 +47,12 @@
     level, flags, message, ...)                                                \
   do {                                                                         \
     _PW_TOKENIZER_CONST uintptr_t _pw_log_module_token =                       \
-        PW_TOKENIZE_STRING_DOMAIN("log_module_names", PW_LOG_MODULE_NAME);     \
+        PW_TOKENIZE_STRING_MASK("pw_log_module_names",                         \
+                                ((1u << _PW_LOG_TOKENIZED_MODULE_BITS) - 1u),  \
+                                PW_LOG_MODULE_NAME);                           \
     PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                                \
         ((uintptr_t)(level) |                                                  \
-         ((_pw_log_module_token &                                              \
-           ((1u << _PW_LOG_TOKENIZED_MODULE_BITS) - 1u))                       \
-          << _PW_LOG_TOKENIZED_LEVEL_BITS) |                                   \
+         (_pw_log_module_token << _PW_LOG_TOKENIZED_LEVEL_BITS) |              \
          ((uintptr_t)(flags)                                                   \
           << (_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS))), \
         PW_LOG_TOKENIZED_FORMAT_STRING(message),                               \
