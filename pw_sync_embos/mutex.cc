@@ -23,25 +23,32 @@
 #include "pw_interrupt/context.h"
 
 using pw::chrono::SystemClock;
-using pw::chrono::embos::kMaxTimeout;
 
 namespace pw::sync {
 
 bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, SystemClock::duration::zero());
+  // Use non-blocking try_lock for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
+    return try_lock();
+  }
 
-  while (for_at_least > kMaxTimeout) {
-    const int lock_count = OS_UseTimed(&native_type_, kMaxTimeout.count());
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    const int lock_count = OS_UseTimed(
+        &native_type_, static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
     if (lock_count != 0) {
       PW_CHECK_UINT_EQ(1, lock_count, "Recursive locking is not permitted");
       return true;
     }
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  const int lock_count = OS_UseTimed(&native_type_, for_at_least.count());
+  const int lock_count = OS_UseTimed(
+      &native_type_, static_cast<OS_TIME>(for_at_least.count() + 1));
   PW_CHECK_UINT_LE(1, lock_count, "Recursive locking is not permitted");
   return lock_count == 1;
 }

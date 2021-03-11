@@ -23,7 +23,6 @@
 #include "pw_interrupt/context.h"
 
 using pw::chrono::SystemClock;
-using pw::chrono::embos::kMaxTimeout;
 
 namespace pw::sync {
 
@@ -44,16 +43,24 @@ void CountingSemaphore::release(ptrdiff_t update) {
 bool CountingSemaphore::try_acquire_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, SystemClock::duration::zero());
+  // Use non-blocking try_acquire for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
+    return try_acquire();
+  }
 
-  while (for_at_least > kMaxTimeout) {
-    if (OS_WaitCSemaTimed(&native_type_, kMaxTimeout.count())) {
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    if (OS_WaitCSemaTimed(&native_type_,
+                          static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()))) {
       return true;
     }
-    for_at_least -= kMaxTimeout;
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  return OS_WaitCSemaTimed(&native_type_, for_at_least.count());
+  return OS_WaitCSemaTimed(&native_type_,
+                           static_cast<OS_TIME>(for_at_least.count() + 1));
 }
 
 }  // namespace pw::sync

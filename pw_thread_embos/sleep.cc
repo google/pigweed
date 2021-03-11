@@ -22,29 +22,28 @@
 #include "pw_chrono_embos/system_clock_constants.h"
 #include "pw_thread/id.h"
 
-using pw::chrono::embos::kMaxTimeout;
+using pw::chrono::SystemClock;
 
 namespace pw::this_thread {
 
 void sleep_for(chrono::SystemClock::duration for_at_least) {
   PW_DCHECK(get_id() != thread::Id());
 
-  // Clamp negative durations to be 0 which maps to non-blocking.
-  for_at_least = std::max(for_at_least, chrono::SystemClock::duration::zero());
-
-  // The pw::sleep_{for,until} API contract is to yield if we attempt to sleep
-  // for a duration of 0. The embOS delay does not explicitly yield if 0 is
-  // passed, ergo we explicitly check for the yield condition.
-  if (for_at_least == chrono::SystemClock::duration::zero()) {
-    OS_Yield();  // Direct API is used to reduce overhead.
+  // Yield for negative and zero length durations.
+  if (for_at_least <= SystemClock::duration::zero()) {
+    OS_Yield();
     return;
   }
 
-  while (for_at_least > kMaxTimeout) {
-    OS_Delay(kMaxTimeout.count());
-    for_at_least -= kMaxTimeout;
+  // On a tick based kernel we cannot tell how far along we are on the current
+  // tick, ergo we add one whole tick to the final duration.
+  constexpr SystemClock::duration kMaxTimeoutMinusOne =
+      pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
+  while (for_at_least > kMaxTimeoutMinusOne) {
+    OS_Delay(static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
+    for_at_least -= kMaxTimeoutMinusOne;
   }
-  OS_Delay(for_at_least.count());
+  OS_Delay(static_cast<OS_TIME>(for_at_least.count()));
 }
 
 }  // namespace pw::this_thread
