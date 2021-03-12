@@ -34,9 +34,6 @@ config("backend_config") {
 # global interrupts, so this implementation does not support simultaneous
 # multi-threaded environments including IRQs, and is only meant to prevent
 # data corruption.
-pw_source_set("spin_lock") {
-  public_deps = [ ":interrupt_spin_lock" ]
-}
 pw_source_set("interrupt_spin_lock") {
   public_configs = [
     ":public_include_path",

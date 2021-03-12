@@ -124,7 +124,6 @@ pw_cc_library(
 pw_cc_library(
     name = "interrupt_spin_lock_facade",
     hdrs = [
-        "public/pw_sync/spin_lock.h",
         "public/pw_sync/interrupt_spin_lock.h",
     ],
     includes = ["public"],

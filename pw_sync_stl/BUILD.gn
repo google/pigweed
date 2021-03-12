@@ -102,9 +102,6 @@ pw_source_set("mutex_backend") {
 }
 
 # This target provides the backend for pw::sync::InterruptSpinLock.
-pw_source_set("spin_lock") {
-  public_deps = [ ":interrupt_spin_lock" ]
-}
 pw_source_set("interrupt_spin_lock") {
   public_configs = [
     ":public_include_path",

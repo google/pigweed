@@ -124,9 +124,6 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
 
 # This target provides the backend for pw::sync::InterruptSpinLock, note that
 # this implementation does NOT support ThreadX w/ SMP.
-pw_source_set("spin_lock") {
-  public_deps = [ ":interrupt_spin_lock" ]
-}
 pw_source_set("interrupt_spin_lock") {
   public_configs = [
     ":public_include_path",
