@@ -625,8 +625,15 @@ with the ``paths`` option.
   pw_tokenizer_database("my_database") {
     database = "database_in_the_source_tree.csv"
     deps = [ ":apps" ]
-    paths = [ "$root_build_dir/**/*.elf" ]
+    optional_paths = [ "$root_build_dir/**/*.elf" ]
   }
+
+.. note::
+
+  The ``paths`` and ``optional_targets`` arguments do not add anything to
+  ``deps``, so there is no guarantee that the referenced artifacts will exist
+  when the database is updated. Provide ``targets`` or ``deps`` or build other
+  GN targets first if this is a concern.
 
 Detokenization
 ==============

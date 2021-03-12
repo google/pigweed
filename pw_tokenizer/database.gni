@@ -33,10 +33,11 @@ import("$dir_pw_build/python_action.gni")
 #   targets: GN targets (executables or libraries) from which to add tokens;
 #       these targets are added to deps
 #   optional_targets: GN targets from which to add tokens, if the output files
-#       already exist; these targets are NOT added to deps
-#   paths: Paths or globs from which to add tokens. A common use for this is to
-#       find all .elf files in the output directory (e.g.
-#       "$root_build_dir/**/*.elf").
+#       already exist; these targets are NOT added to 'deps'
+#   optional_paths: Paths or globs to files in the output directory from which
+#       to add tokens. For example, "$root_build_dir/**/*.elf" finds all ELF
+#       files in the output directory; this does NOT add anything to 'deps': add
+#       targets to 'deps' or 'targets' if they must be built first
 #   input_databases: paths to other database files from which to add tokens
 #   deps: GN targets to build prior to generating the database; artifacts from
 #       these targets are NOT implicitly used for database generation
@@ -132,8 +133,13 @@ template("pw_tokenizer_database") {
       args += [ "<TARGET_FILE_IF_EXISTS($target)>$_domain" ]
     }
 
-    if (defined(invoker.paths)) {
-      args += rebase_path(invoker.paths)
+    if (defined(invoker.optional_paths)) {
+      _paths = rebase_path(invoker.optional_paths)
+      _out_dir = rebase_path(root_build_dir)
+      assert(filter_include(_paths, [ "$_out_dir/*" ]) == _paths,
+             "Paths in 'optional_paths' must be in the out directory. Use " +
+                 "'input_databases' for files in the source tree.")
+      args += _paths
     }
 
     deps = _targets
