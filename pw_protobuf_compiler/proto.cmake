@@ -39,6 +39,12 @@ function(pw_proto_library NAME)
   cmake_parse_arguments(PARSE_ARGV 1 arg "" "STRIP_PREFIX;PREFIX"
       "SOURCES;INPUTS;DEPS")
 
+  if("${arg_SOURCES}" STREQUAL "")
+    message(FATAL_ERROR
+        "pw_proto_library requires at least one .proto file in SOURCES. No "
+        "SOURCES were listed for ${NAME}.")
+  endif()
+
   set(out_dir "${CMAKE_CURRENT_BINARY_DIR}/${NAME}")
 
   # Use INTERFACE libraries to track the proto include paths that are passed to
