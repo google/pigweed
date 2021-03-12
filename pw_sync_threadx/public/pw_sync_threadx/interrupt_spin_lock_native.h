@@ -13,15 +13,16 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
+#include <atomic>
 
-namespace pw::sync {
+#include "tx_api.h"
 
-constexpr SpinLock::SpinLock()
-    : native_type_{.locked{false}, .saved_interrupt_mask = 0} {}
+namespace pw::sync::backend {
 
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
+struct NativeInterruptSpinLock {
+  std::atomic<bool> locked;  // Used to detect recursion.
+  UINT saved_interrupt_mask;
+};
+using NativeInterruptSpinLockHandle = NativeInterruptSpinLock&;
 
-}  // namespace pw::sync
+}  // namespace pw::sync::backend

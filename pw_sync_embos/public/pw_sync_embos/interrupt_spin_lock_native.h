@@ -19,9 +19,9 @@
 
 namespace pw::sync::backend {
 
-struct NativeSpinLock {
+struct NativeInterruptSpinLock {
   std::atomic<bool> locked;  // Used to detect recursion.
 };
-using NativeSpinLockHandle = NativeSpinLock&;
+using NativeInterruptSpinLockHandle = NativeInterruptSpinLock&;
 
 }  // namespace pw::sync::backend

@@ -58,12 +58,24 @@ pw_facade("mutex") {
   sources = [ "mutex.cc" ]
 }
 
-pw_facade("spin_lock") {
-  backend = pw_sync_SPIN_LOCK_BACKEND
-  public_configs = [ ":public_include_path" ]
+# TODO(ewout): Finish the migration and remove this logic.
+if (pw_sync_SPIN_LOCK_BACKEND != "") {
+  assert(pw_sync_INTERRUPT_SPIN_LOCK_BACKEND == "",
+         "You cannot define the backend for pw::sync::InterruptSpinLock twice!")
+  pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = pw_sync_SPIN_LOCK_BACKEND
+}
+
+pw_source_set("spin_lock") {
+  public_deps = [ ":interrupt_spin_lock" ]
   public = [ "public/pw_sync/spin_lock.h" ]
+}
+
+pw_facade("interrupt_spin_lock") {
+  backend = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/interrupt_spin_lock.h" ]
   public_deps = [ "$dir_pw_preprocessor" ]
-  sources = [ "spin_lock.cc" ]
+  sources = [ "interrupt_spin_lock.cc" ]
 }
 
 pw_source_set("yield_core") {
@@ -76,7 +88,7 @@ pw_test_group("tests") {
     ":binary_semaphore_facade_test",
     ":counting_semaphore_facade_test",
     ":mutex_facade_test",
-    ":spin_lock_facade_test",
+    ":interrupt_spin_lock_facade_test",
   ]
 }
 
@@ -119,16 +131,16 @@ pw_test("mutex_facade_test") {
   ]
 }
 
-pw_test("spin_lock_facade_test") {
-  enable_if = pw_sync_SPIN_LOCK_BACKEND != ""
+pw_test("interrupt_spin_lock_facade_test") {
+  enable_if = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != ""
   sources = [
-    "spin_lock_facade_test.cc",
-    "spin_lock_facade_test_c.c",
+    "interrupt_spin_lock_facade_test.cc",
+    "interrupt_spin_lock_facade_test_c.c",
   ]
   deps = [
-    ":spin_lock",
+    ":interrupt_spin_lock",
     "$dir_pw_preprocessor",
-    pw_sync_SPIN_LOCK_BACKEND,
+    pw_sync_INTERRUPT_SPIN_LOCK_BACKEND,
   ]
 }
 

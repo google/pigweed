@@ -118,12 +118,12 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "spin_lock_headers",
+    name = "interrupt_spin_lock_headers",
     hdrs = [
-        "public/pw_sync_freertos/spin_lock_inline.h",
-        "public/pw_sync_freertos/spin_lock_native.h",
-        "public_overrides/pw_sync_backend/spin_lock_inline.h",
-        "public_overrides/pw_sync_backend/spin_lock_native.h",
+        "public/pw_sync_freertos/interrupt_spin_lock_inline.h",
+        "public/pw_sync_freertos/interrupt_spin_lock_native.h",
+        "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
+        "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
     ],
     includes = [
         "public",
@@ -134,13 +134,13 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "spin_lock",
+    name = "interrupt_spin_lock",
     srcs = [
-        "spin_lock.cc",
+        "interrupt_spin_lock.cc",
     ],
     deps = [
-        ":spin_lock_headers",
+        ":interrupt_spin_lock_headers",
         "//pw_interrupt:context",
-        "//pw_sync:spin_lock_facade",
+        "//pw_sync:interrupt_spin_lock_facade",
     ],
 )

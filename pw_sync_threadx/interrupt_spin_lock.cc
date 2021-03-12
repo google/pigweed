@@ -12,15 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 #include "pw_assert/assert.h"
 #include "tx_api.h"
 
 namespace pw::sync {
 
-void SpinLock::lock() {
-  // In order to be pw::sync::SpinLock compliant, mask the interrupts
+void InterruptSpinLock::lock() {
+  // In order to be pw::sync::InterruptSpinLock compliant, mask the interrupts
   // before attempting to grab the internal spin lock.
   native_type_.saved_interrupt_mask = tx_interrupt_control(TX_INT_DISABLE);
 
@@ -28,13 +28,13 @@ void SpinLock::lock() {
   // deadlock here due to the global interrupt lock, so we crash on recursion
   // on a specific spinlock instead.
   PW_CHECK(!native_type_.locked.load(std::memory_order_relaxed),
-           "Recursive SpinLock::lock() detected");
+           "Recursive InterruptSpinLock::lock() detected");
 
   native_type_.locked.store(true, std::memory_order_relaxed);
 }
 
-bool SpinLock::try_lock() {
-  // In order to be pw::sync::SpinLock compliant, mask the interrupts
+bool InterruptSpinLock::try_lock() {
+  // In order to be pw::sync::InterruptSpinLock compliant, mask the interrupts
   // before attempting to grab the internal spin lock.
   UINT saved_interrupt_mask = tx_interrupt_control(TX_INT_DISABLE);
 
@@ -49,7 +49,7 @@ bool SpinLock::try_lock() {
   return true;
 }
 
-void SpinLock::unlock() {
+void InterruptSpinLock::unlock() {
   native_type_.locked.store(false, std::memory_order_relaxed);
   tx_interrupt_control(native_type_.saved_interrupt_mask);
 }

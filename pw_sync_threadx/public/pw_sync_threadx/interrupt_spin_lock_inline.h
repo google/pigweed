@@ -13,4 +13,16 @@
 // the License.
 #pragma once
 
-#include "pw_sync_stl/spin_lock_inline.h"
+#include "pw_sync/interrupt_spin_lock.h"
+
+namespace pw::sync {
+
+constexpr InterruptSpinLock::InterruptSpinLock()
+    : native_type_{.locked{false}, .saved_interrupt_mask = 0} {}
+
+inline InterruptSpinLock::native_handle_type
+InterruptSpinLock::native_handle() {
+  return native_type_;
+}
+
+}  // namespace pw::sync

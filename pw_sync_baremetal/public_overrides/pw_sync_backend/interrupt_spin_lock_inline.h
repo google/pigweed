@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,16 +13,4 @@
 // the License.
 #pragma once
 
-#include <atomic>
-
-#include "tx_api.h"
-
-namespace pw::sync::backend {
-
-struct NativeSpinLock {
-  std::atomic<bool> locked;  // Used to detect recursion.
-  UINT saved_interrupt_mask;
-};
-using NativeSpinLockHandle = NativeSpinLock&;
-
-}  // namespace pw::sync::backend
+#include "pw_sync_baremetal/interrupt_spin_lock_inline.h"

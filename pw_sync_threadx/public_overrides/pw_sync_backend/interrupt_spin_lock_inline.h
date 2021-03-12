@@ -11,17 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_sync/spin_lock.h"
-
-extern "C" void pw_sync_SpinLock_Lock(pw_sync_SpinLock* spin_lock) {
-  spin_lock->lock();
-}
-
-extern "C" bool pw_sync_SpinLock_TryLock(pw_sync_SpinLock* spin_lock) {
-  return spin_lock->try_lock();
-}
-
-extern "C" void pw_sync_SpinLock_Unlock(pw_sync_SpinLock* spin_lock) {
-  spin_lock->unlock();
-}
+#include "pw_sync_threadx/interrupt_spin_lock_inline.h"

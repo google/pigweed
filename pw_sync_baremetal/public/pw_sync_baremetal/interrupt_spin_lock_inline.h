@@ -14,25 +14,26 @@
 #pragma once
 
 #include "pw_assert/light.h"
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/yield_core.h"
 
 namespace pw::sync {
 
-constexpr SpinLock::SpinLock() : native_type_() {}
+constexpr InterruptSpinLock::InterruptSpinLock() : native_type_() {}
 
-inline void SpinLock::lock() { PW_ASSERT(try_lock()); }
+inline void InterruptSpinLock::lock() { PW_ASSERT(try_lock()); }
 
-inline bool SpinLock::try_lock() {
+inline bool InterruptSpinLock::try_lock() {
   // TODO(pwbug/303): Use the pw_interrupt API here to disable interrupts.
   return !native_type_.test_and_set(std::memory_order_acquire);
 }
 
-inline void SpinLock::unlock() {
+inline void InterruptSpinLock::unlock() {
   native_type_.clear(std::memory_order_release);
 }
 
-inline SpinLock::native_handle_type SpinLock::native_handle() {
+inline InterruptSpinLock::native_handle_type
+InterruptSpinLock::native_handle() {
   return native_type_;
 }
 

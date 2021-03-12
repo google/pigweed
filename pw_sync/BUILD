@@ -26,7 +26,7 @@ licenses(["notice"])  # Apache License 2.0
 PW_SYNC_BINARY_SEMAPHORE_BACKEND = "//pw_sync_stl:binary_semaphore"
 PW_SYNC_COUNTING_SEMAPHORE_BACKEND = "//pw_sync_stl:counting_semaphore"
 PW_SYNC_MUTEX_BACKEND = "//pw_sync_stl:mutex"
-PW_SYNC_SPIN_LOCK_BACKEND = "//pw_sync_stl:spin_lock"
+PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND = "//pw_sync_stl:interrupt_spin_lock"
 
 pw_cc_library(
     name = "binary_semaphore_facade",
@@ -122,32 +122,33 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "spin_lock_facade",
+    name = "interrupt_spin_lock_facade",
     hdrs = [
         "public/pw_sync/spin_lock.h",
+        "public/pw_sync/interrupt_spin_lock.h",
     ],
     includes = ["public"],
     srcs = [
-        "spin_lock.cc"
+        "interrupt_spin_lock.cc"
     ],
     deps = [
-        PW_SYNC_SPIN_LOCK_BACKEND + "_headers",
+        PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND + "_headers",
         "//pw_preprocessor",
     ],
 )
 
 pw_cc_library(
-    name = "spin_lock",
+    name = "interrupt_spin_lock",
     deps = [
-        ":spin_lock_facade",
-        PW_SYNC_SPIN_LOCK_BACKEND + "_headers",
+        ":interrupt_spin_lock_facade",
+        PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND + "_headers",
     ],
 )
 
 pw_cc_library(
-    name = "spin_lock_backend",
+    name = "interrupt_spin_lock_backend",
     deps = [
-       PW_SYNC_SPIN_LOCK_BACKEND,
+       PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND,
     ],
 )
 
@@ -199,13 +200,13 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "spin_lock_facade_test",
+    name = "interrupt_spin_lock_facade_test",
     srcs = [
-        "spin_lock_facade_test.cc",
-        "spin_lock_facade_test_c.c",
+        "interrupt_spin_lock_facade_test.cc",
+        "interrupt_spin_lock_facade_test_c.c",
     ],
     deps = [
-        ":spin_lock",
+        ":interrupt_spin_lock",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],

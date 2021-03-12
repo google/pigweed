@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,22 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-// These tests call the pw_sync module spin_lock API from C. The return values
-// are checked in the main C++ tests.
+#include <atomic>
 
-#include <stdbool.h>
+namespace pw::sync::backend {
 
-#include "pw_sync/spin_lock.h"
+using NativeInterruptSpinLock = std::atomic_flag;
+using NativeInterruptSpinLockHandle = std::atomic_flag&;
 
-void pw_sync_SpinLock_CallLock(pw_sync_SpinLock* spin_lock) {
-  pw_sync_SpinLock_Lock(spin_lock);
-}
-
-bool pw_sync_SpinLock_CallTryLock(pw_sync_SpinLock* spin_lock) {
-  return pw_sync_SpinLock_TryLock(spin_lock);
-}
-
-void pw_sync_SpinLock_CallUnlock(pw_sync_SpinLock* spin_lock) {
-  pw_sync_SpinLock_Unlock(spin_lock);
-}
+}  // namespace pw::sync::backend

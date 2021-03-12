@@ -101,20 +101,23 @@ pw_source_set("mutex_backend") {
           "pw::chrono::SystemClock backend.")
 }
 
-# This target provides the backend for pw::sync::SpinLock.
-pw_source_set("spin_lock_backend") {
+# This target provides the backend for pw::sync::InterruptSpinLock.
+pw_source_set("spin_lock") {
+  public_deps = [ ":interrupt_spin_lock" ]
+}
+pw_source_set("interrupt_spin_lock") {
   public_configs = [
     ":public_include_path",
     ":backend_config",
   ]
   public = [
-    "public/pw_sync_stl/spin_lock_inline.h",
-    "public/pw_sync_stl/spin_lock_native.h",
-    "public_overrides/pw_sync_backend/spin_lock_inline.h",
-    "public_overrides/pw_sync_backend/spin_lock_native.h",
+    "public/pw_sync_stl/interrupt_spin_lock_inline.h",
+    "public/pw_sync_stl/interrupt_spin_lock_native.h",
+    "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
+    "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
   ]
   public_deps = [
-    "$dir_pw_sync:spin_lock.facade",
+    "$dir_pw_sync:interrupt_spin_lock.facade",
     "$dir_pw_sync:yield_core",
   ]
 }

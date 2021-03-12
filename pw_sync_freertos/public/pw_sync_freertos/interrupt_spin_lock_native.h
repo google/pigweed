@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,9 +15,14 @@
 
 #include <atomic>
 
+#include "FreeRTOS.h"
+
 namespace pw::sync::backend {
 
-using NativeSpinLock = std::atomic_flag;
-using NativeSpinLockHandle = std::atomic_flag&;
+struct NativeInterruptSpinLock {
+  std::atomic<bool> locked;  // Used to detect recursion.
+  UBaseType_t saved_interrupt_mask;
+};
+using NativeInterruptSpinLockHandle = NativeInterruptSpinLock&;
 
 }  // namespace pw::sync::backend

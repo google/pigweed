@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2020 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,14 +13,4 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
-
-namespace pw::sync {
-
-constexpr SpinLock::SpinLock() : native_type_{.locked{false}} {}
-
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
-
-}  // namespace pw::sync
+#include "pw_sync_threadx/interrupt_spin_lock_native.h"

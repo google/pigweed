@@ -13,29 +13,4 @@
 // the License.
 #pragma once
 
-#include "pw_sync/spin_lock.h"
-#include "pw_sync/yield_core.h"
-
-namespace pw::sync {
-
-constexpr SpinLock::SpinLock() : native_type_() {}
-
-inline void SpinLock::lock() {
-  while (!try_lock()) {
-    PW_SYNC_YIELD_CORE_FOR_SMT();
-  }
-}
-
-inline bool SpinLock::try_lock() {
-  return !native_type_.test_and_set(std::memory_order_acquire);
-}
-
-inline void SpinLock::unlock() {
-  native_type_.clear(std::memory_order_release);
-}
-
-inline SpinLock::native_handle_type SpinLock::native_handle() {
-  return native_type_;
-}
-
-}  // namespace pw::sync
+#include "pw_sync_stl/interrupt_spin_lock_native.h"
