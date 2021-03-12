@@ -473,6 +473,13 @@ def commit_message_format(_: PresubmitContext):
     for line in lines:
         _LOG.debug(line)
 
+    # Ignore Gerrit-generated reverts.
+    if ('Revert' in lines[0]
+            and 'This reverts commit ' in git_repo.commit_message()
+            and 'Reason for revert: ' in git_repo.commit_message()):
+        _LOG.warning('Ignoring apparent Gerrit-generated revert')
+        return
+
     if not lines:
         _LOG.error('The commit message is too short!')
         raise PresubmitFailure
