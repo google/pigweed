@@ -3,9 +3,14 @@
 ----------------
 pw_log_tokenized
 ----------------
-``pw_log_tokenized`` is a ``pw_log`` backend that tokenizes log messages using
-the ``pw_tokenizer`` module. Log messages are tokenized and passed to the
-``pw_tokenizer_HandleEncodedMessageWithPayload`` function. For maximum
+The ``pw_log_tokenized`` module contains utilities for tokenized logging. It
+connects ``pw_log`` to ``pw_tokenizer``.
+
+C++ backend
+===========
+``pw_log_tokenized`` provides a backend for ``pw_log`` that tokenizes log
+messages with the ``pw_tokenizer`` module. Log messages are tokenized and passed
+to the ``pw_tokenizer_HandleEncodedMessageWithPayload`` function. For maximum
 efficiency, the log level, 16-bit tokenized module name, and flags bits are
 passed through the payload argument.
 
@@ -41,5 +46,13 @@ implements the backend for the ``pw_log`` facade. ``pw_log_tokenized`` invokes
 the ``pw_tokenizer:global_handler_with_payload`` facade, which must be
 implemented by the user of ``pw_log_tokenized``.
 
-.. note::
-  The documentation for this module is currently incomplete.
+Python package
+==============
+``pw_log_tokenized`` includes a Python package for decoding tokenized messages
+logs.
+
+pw_log_tokenized
+----------------
+.. automodule:: pw_log_tokenized
+  :members:
+  :undoc-members:

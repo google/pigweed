@@ -96,4 +96,5 @@ pw_facade_test("log_tokenized_test") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  other_deps = [ "py" ]
 }
