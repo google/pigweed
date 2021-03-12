@@ -20,12 +20,12 @@
 #include <mutex>
 
 #include "RTOS.h"
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::chrono::backend {
 namespace {
 
-sync::SpinLock system_clock_spin_lock;
+sync::InterruptSpinLock system_clock_interrupt_spin_lock;
 int64_t overflow_tick_count = 0;
 uint32_t native_tick_count = 0;
 static_assert(!SystemClock::is_nmi_safe,
@@ -48,7 +48,7 @@ constexpr int64_t kNativeOverflowTickCount =
 }  // namespace
 
 int64_t GetSystemClockTickCount() {
-  std::lock_guard lock(system_clock_spin_lock);
+  std::lock_guard lock(system_clock_interrupt_spin_lock);
   const uint32_t new_native_tick_count = GetUint32TickCount();
   // WARNING: This must be called more than once per overflow period!
   if (new_native_tick_count < native_tick_count) {

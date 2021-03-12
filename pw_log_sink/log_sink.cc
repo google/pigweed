@@ -23,7 +23,7 @@
 #include "pw_protobuf/wire_format.h"
 #include "pw_status/try.h"
 #include "pw_string/string_builder.h"
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::log_sink {
 namespace {
@@ -41,10 +41,10 @@ IntrusiveList<Sink>& sink_list() {
   return sink_list;
 }
 
-pw::sync::SpinLock& sink_list_lock() {
+pw::sync::InterruptSpinLock& sink_list_lock() {
   // TODO(pwbug/304): Make lock selection configurable, some applications may
   // not be able to tolerate interrupt jitter and may prefer a pw::sync::Mutex.
-  static pw::sync::SpinLock sink_list_lock;
+  static pw::sync::InterruptSpinLock sink_list_lock;
   return sink_list_lock;
 }
 
@@ -89,7 +89,7 @@ extern "C" void pw_LogSink_Log(int level,
   // TODO(pwbug/305): Consider using a shared buffer between users. For now,
   // only lock after completing the encoding.
   {
-    const std::lock_guard<pw::sync::SpinLock> lock(sink_list_lock());
+    const std::lock_guard<pw::sync::InterruptSpinLock> lock(sink_list_lock());
 
     // If no sinks are configured, ignore the message. When sinks are attached,
     // they will receive this drop count to indicate logs drop to early boot.
@@ -125,12 +125,12 @@ extern "C" void pw_LogSink_Log(int level,
 }
 
 void AddSink(Sink& sink) {
-  const std::lock_guard<pw::sync::SpinLock> lock(sink_list_lock());
+  const std::lock_guard lock(sink_list_lock());
   sink_list().push_back(sink);
 }
 
 void RemoveSink(Sink& sink) {
-  const std::lock_guard<pw::sync::SpinLock> lock(sink_list_lock());
+  const std::lock_guard lock(sink_list_lock());
   sink_list().remove(sink);
 }
 

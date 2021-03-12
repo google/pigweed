@@ -19,7 +19,7 @@
 #include <limits>
 #include <mutex>
 
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "tx_api.h"
 
 namespace pw::chrono::backend {
@@ -29,7 +29,7 @@ namespace {
 #error "This backend is not compatible with TX_NO_TIMER"
 #endif  // defined(TX_NO_TIMER) && TX_NO_TIMER
 
-sync::SpinLock system_clock_spin_lock;
+sync::InterruptSpinLock system_clock_interrupt_spin_lock;
 int64_t overflow_tick_count = 0;
 ULONG native_tick_count = 0;
 static_assert(!SystemClock::is_nmi_safe,
@@ -42,7 +42,7 @@ constexpr int64_t kNativeOverflowTickCount =
 }  // namespace
 
 int64_t GetSystemClockTickCount() {
-  std::lock_guard lock(system_clock_spin_lock);
+  std::lock_guard lock(system_clock_interrupt_spin_lock);
   const ULONG new_native_tick_count = tx_time_get();
   // WARNING: This must be called more than once per overflow period!
   if (new_native_tick_count < native_tick_count) {

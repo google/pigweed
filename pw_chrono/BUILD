@@ -72,7 +72,7 @@ pw_cc_library(
     ],
     deps = [
         ":system_clock",
-        "//pw_sync:spin_lock",
+        "//pw_sync:interrupt_spin_lock",
     ],
 )
 

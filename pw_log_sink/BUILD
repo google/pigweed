@@ -32,7 +32,7 @@ pw_cc_library(
         "//pw_log_multisink:log_queue",
         "//pw_preprocessor",
         "//pw_status",
-        "//pw_sync:spin_lock",
+        "//pw_sync:interrupt_spin_lock",
     ],
     hdrs = [
         "public/pw_log_sink/log_sink.h",

@@ -21,13 +21,13 @@
 
 #include "FreeRTOS.h"
 #include "pw_interrupt/context.h"
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 #include "task.h"
 
 namespace pw::chrono::backend {
 namespace {
 
-sync::SpinLock system_clock_spin_lock;
+sync::InterruptSpinLock system_clock_interrupt_spin_lock;
 int64_t overflow_tick_count = 0;
 TickType_t native_tick_count = 0;
 static_assert(!SystemClock::is_nmi_safe,
@@ -40,7 +40,7 @@ constexpr int64_t kNativeOverflowTickCount =
 }  // namespace
 
 int64_t GetSystemClockTickCount() {
-  std::lock_guard lock(system_clock_spin_lock);
+  std::lock_guard lock(system_clock_interrupt_spin_lock);
   const TickType_t new_native_tick_count = interrupt::InInterruptContext()
                                                ? xTaskGetTickCountFromISR()
                                                : xTaskGetTickCount();

@@ -17,7 +17,7 @@
 #include <mutex>
 
 #include "pw_chrono/system_clock.h"
-#include "pw_sync/spin_lock.h"
+#include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::chrono {
 
@@ -45,25 +45,25 @@ class SimulatedSystemClock : public VirtualSystemClock {
       : current_timestamp_(timestamp) {}
 
   void AdvanceTime(SystemClock::duration duration) {
-    std::lock_guard lock(spin_lock_);
+    std::lock_guard lock(interrupt_spin_lock_);
     current_timestamp_ += duration;
   }
 
   // WARNING: Use of this function may violate the is_monotonic clock attribute.
   void SetTime(SystemClock::time_point timestamp) {
-    std::lock_guard lock(spin_lock_);
+    std::lock_guard lock(interrupt_spin_lock_);
     current_timestamp_ = timestamp;
   }
 
   SystemClock::time_point now() override {
-    std::lock_guard lock(spin_lock_);
+    std::lock_guard lock(interrupt_spin_lock_);
     return current_timestamp_;
   };
 
  private:
   // In theory atomics could be used if 64bit atomics are supported, however
   // performance of this test object shouldn't matter.
-  sync::SpinLock spin_lock_;
+  sync::InterruptSpinLock interrupt_spin_lock_;
   SystemClock::time_point current_timestamp_;
 };
 

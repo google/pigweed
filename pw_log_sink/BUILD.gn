@@ -47,7 +47,7 @@ pw_source_set("pw_log_sink") {
   deps = [
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_string",
-    "$dir_pw_sync:spin_lock",
+    "$dir_pw_sync:interrupt_spin_lock",
   ]
 }
 

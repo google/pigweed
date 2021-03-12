@@ -65,7 +65,7 @@ pw_source_set("system_clock") {
   deps = [
     "$dir_pw_chrono:system_clock.facade",
     "$dir_pw_interrupt:context",
-    "$dir_pw_sync:spin_lock",
+    "$dir_pw_sync:interrupt_spin_lock",
   ]
 }
 

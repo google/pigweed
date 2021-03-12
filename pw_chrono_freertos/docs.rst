@@ -14,9 +14,8 @@ SystemClock backend
 -------------------
 The FreeRTOS based ``system_clock`` backend implements the
 ``pw_chrono:system_clock`` facade by using ``xTaskGetTickCountFromISR()`` and
-``xTaskGetTickCount()`` based on the current context. Before the global
-singleton SystemClock's SpinLock is constructed the raw result is returned,
-after the overflows are managed in a thread and IRQ safe manner to produce a
+``xTaskGetTickCount()`` based on the current context. An InterruptSpinLock is
+used to manage overflows in a thread and interrupt safe manner to produce a
 signed 64 bit timestamp.
 
 The ``SystemClock::now()`` must be used more than once per overflow of the

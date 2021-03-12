@@ -13,10 +13,9 @@ implemented using ThreadX.
 SystemClock backend
 -------------------
 The ThreadX based ``system_clock`` backend implements the
-``pw_chrono:system_clock`` facade by using ``tx_time_get()``. Before the global
-singleton SystemClock's SpinLock is constructed the raw result is returned,
-after the overflows are managed in a thread and IRQ safe manner to produce a
-signed 64 bit timestamp.
+``pw_chrono:system_clock`` facade by using ``tx_time_get()``. An
+InterruptSpinLock is used to manage overflows in a thread and interrupt safe
+manner to produce a signed 64 bit timestamp.
 
 The ``SystemClock::now()`` must be used more than once per overflow of the
 native ThreadX ``tx_time_get()`` overflow. Note that this duration may vary if

@@ -13,12 +13,11 @@ implemented using embOS v4 for 32bit targets.
 SystemClock backend
 -------------------
 The embOS based ``system_clock`` backend implements the
-``pw_chrono:system_clock`` facade by using ``OS_GetTime32()``. Before the global
-singleton SystemClock's SpinLock is constructed the raw result is returned,
-after the overflows are managed in a thread and IRQ safe manner to produce a
-signed 64 bit timestamp. Note that this does NOT use ``OS_GetTime_us64()`` which
-is not always available, this could be considered for a future alternative
-backend for the SystemClock.
+``pw_chrono:system_clock`` facade by using ``OS_GetTime32()``. An
+InterruptSpinLock is used to manage overflows in a thread and interrupt safe
+manner to produce a signed 64 bit timestamp. Note that this does NOT use
+``OS_GetTime_us64()`` which is not always available, this could be considered
+for a future alternative backend for the SystemClock.
 
 The ``SystemClock::now()`` must be used more than once per overflow of the
 native embOS ``OS_GetTime32()`` overflow. Note that this duration may
