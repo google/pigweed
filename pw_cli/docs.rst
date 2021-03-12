@@ -265,3 +265,13 @@ Branding the ``pw`` tool is a great start, but more changes are planned:
 - Supporting renaming the ``pw`` command to something project specific, like
   ``foo`` in this case.
 - Re-coloring the log headers from the ``pw`` tool.
+
+pw_cli Python package
+=====================
+The ``pw_cli`` Pigweed module includes the ``pw_cli`` Python package, which
+provides utilities for creating command line tools with Pigweed.
+
+pw_cli log
+----------
+.. automodule:: pw_cli.log
+  :members:
