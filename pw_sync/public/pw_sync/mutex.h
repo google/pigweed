@@ -30,11 +30,10 @@ namespace pw::sync {
 // inheritance is used to solve the classic priority-inversion problem.
 // This is thread safe, but NOT IRQ safe.
 //
-// WARNING: In order to support global statically constructed Mutex, the backend
-// MUST ensure that any initialization required in your environment prior to the
-// creation and/or initialization of the native semaphore (e.g. kernel
-// initialization), is done before or during the invocation of the global static
-// C++ constructors.
+// WARNING: In order to support global statically constructed Mutexes, the user
+// and/or backend MUST ensure that any initialization required in your
+// environment is done prior to the creation and/or initialization of the native
+// synchronization primitives (e.g. kernel initialization).
 class Mutex {
  public:
   using native_handle_type = backend::NativeMutexHandle;
@@ -82,7 +81,7 @@ class Mutex {
   // Unlocks the mutex. Failures are fatal.
   //
   // PRECONDITION:
-  //   The lock is held by this thread.
+  //   The mutex is held by this thread.
   void unlock();
 
   native_handle_type native_handle();

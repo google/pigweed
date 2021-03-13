@@ -33,11 +33,10 @@ namespace pw::sync {
 // Pigweed does not recommend semaphores for mutual exclusion. The entire API is
 // thread safe but only a subset is IRQ safe.
 //
-// WARNING: In order to support global statically constructed
-// CountingSemaphores, the backend MUST ensure that any initialization required
-// in your environment prior to the creation and/or initialization of the native
-// semaphore (e.g. kernel initialization), is done before or during the
-// invocation of the global static C++ constructors.
+// WARNING: In order to support global statically constructed CountingSemaphores
+// the user and/or backend MUST ensure that any initialization required in your
+// environment is done prior to the creation and/or initialization of the native
+// synchronization primitives (e.g. kernel initialization).
 class CountingSemaphore {
  public:
   using native_handle_type = backend::NativeCountingSemaphoreHandle;

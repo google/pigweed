@@ -25,7 +25,8 @@ namespace pw::sync {
 
 // The InterruptSpinLock is a synchronization primitive that can be used to
 // protect shared data from being simultaneously accessed by multiple threads
-// and/or interrupts as a targeted global lock (except for NMIs).
+// and/or interrupts as a targeted global lock, with the exception of
+// Non-Maskable Interrupts (NMIs).
 // It offers exclusive, non-recursive ownership semantics where IRQs up to a
 // backend defined level of "NMIs" will be masked to solve priority-inversion.
 //
@@ -34,7 +35,11 @@ namespace pw::sync {
 // unmask interrupts when using this primitive.
 //
 // Unlike global interrupt locks, this also works safely and efficiently on SMP
-// systems. This entire API is IRQ safe.
+// systems. On systems which are not SMP, spinning is not required and it's
+// possible that only interrupt masking occurs but some state may still be used
+// to detect recursion.
+//
+// This entire API is IRQ safe, but NOT NMI safe.
 //
 // Precondition: Code that holds a specific InterruptSpinLock must not try to
 // re-acquire it. However, it is okay to nest distinct spinlocks.
@@ -61,6 +66,9 @@ class InterruptSpinLock {
   bool try_lock();
 
   // Unlocks the spinlock. Failures are fatal.
+  //
+  // PRECONDITION:
+  //   The spinlock is held by the caller.
   void unlock();
 
   native_handle_type native_handle();

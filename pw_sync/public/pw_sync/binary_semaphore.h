@@ -25,7 +25,7 @@
 
 namespace pw::sync {
 
-// BinarySemaphore is a specialization of CountingSemaphore with arbitrary
+// BinarySemaphore is a specialization of CountingSemaphore with an arbitrary
 // token limit of 1. Note that that max() is >= 1, meaning it may be
 // released up to max() times but only acquired once for those N releases.
 // Implementations of BinarySemaphore are typically more efficient than the
@@ -33,10 +33,9 @@ namespace pw::sync {
 // but only a subset is IRQ safe.
 //
 // WARNING: In order to support global statically constructed BinarySemaphores,
-// the backend MUST ensure that any initialization required in your environment
-// prior to the creation and/or initialization of the native semaphore
-// (e.g. kernel initialization), is done before or during the invocation of the
-// global static C++ constructors.
+// the user and/or backend MUST ensure that any initialization required in your
+// environment is done prior to the creation and/or initialization of the native
+// synchronization primitives (e.g. kernel initialization).
 class BinarySemaphore {
  public:
   using native_handle_type = backend::NativeBinarySemaphoreHandle;
