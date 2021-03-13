@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 SCRIPT_HEADER: str = '''
@@ -83,12 +84,6 @@ def mkdir(dirname: str, exist_ok: bool = False) -> None:
     os.makedirs(dirname, exist_ok=exist_ok)
 
 
-def copy(src: str, dst: str) -> None:
-    """Wrapper around shutil.copy that prints the operation."""
-    print(f'COPY  {src} -> {dst}')
-    shutil.copy(src, dst)
-
-
 def copy_doc_tree(args: argparse.Namespace) -> None:
     """Copies doc source and input files into a build tree."""
     def build_path(path):
@@ -105,8 +100,9 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
 
     mkdir(args.sphinx_build_dir)
     for source_path in args.sources:
-        copy(source_path, f'{args.sphinx_build_dir}/')
-    copy(args.conf, f'{args.sphinx_build_dir}/conf.py')
+        os.link(source_path,
+                f'{args.sphinx_build_dir}/{Path(source_path).name}')
+    os.link(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.
     dirs: Dict[str, List[Tuple[str, str]]] = collections.defaultdict(list)
@@ -118,7 +114,7 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
     for directory, file_pairs in dirs.items():
         mkdir(directory, exist_ok=True)
         for src, dst in file_pairs:
-            copy(src, dst)
+            os.link(src, dst)
 
 
 def main() -> int:
