@@ -30,39 +30,39 @@ namespace pw::hdlc {
 // flag bytes. Instances of Frame are only created when a full, valid frame has
 // been read.
 //
-// For now, the Frame class assumes single-byte address and control fields and a
-// 32-bit frame check sequence (FCS).
+// For now, the Frame class assumes a single-byte control field and a 32-bit
+// frame check sequence (FCS).
 class Frame {
  private:
-  static constexpr size_t kAddressSize = 1;
+  static constexpr size_t kMinimumAddressSize = 1;
   static constexpr size_t kControlSize = 1;
   static constexpr size_t kFcsSize = sizeof(uint32_t);
 
  public:
   // The minimum size of a frame, excluding control bytes (flag or escape).
   static constexpr size_t kMinSizeBytes =
-      kAddressSize + kControlSize + kFcsSize;
+      kMinimumAddressSize + kControlSize + kFcsSize;
 
+  static Result<Frame> Parse(ConstByteSpan frame);
+
+  constexpr uint64_t address() const { return address_; }
+
+  constexpr std::byte control() const { return control_; }
+
+  constexpr ConstByteSpan data() const { return data_; }
+
+ private:
   // Creates a Frame with the specified data. The data MUST be valid frame data
   // with a verified frame check sequence.
-  explicit constexpr Frame(ConstByteSpan data) : frame_(data) {
+  constexpr Frame(uint64_t address, std::byte control, ConstByteSpan data)
+      : data_(data), address_(address), control_(control) {
     // TODO(pwbug/246): Use PW_DASSERT when available.
     // PW_DASSERT(data.size() >= kMinSizeBytes);
   }
 
-  constexpr unsigned address() const {
-    return std::to_integer<unsigned>(frame_[0]);
-  }
-
-  constexpr std::byte control() const { return frame_[kAddressSize]; }
-
-  constexpr ConstByteSpan data() const {
-    return frame_.subspan(kAddressSize + kControlSize,
-                          frame_.size() - kMinSizeBytes);
-  }
-
- private:
-  ConstByteSpan frame_;
+  ConstByteSpan data_;
+  uint64_t address_;
+  std::byte control_;
 };
 
 // The Decoder class facilitates decoding of data frames using the HDLC

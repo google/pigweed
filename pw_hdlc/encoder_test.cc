@@ -21,7 +21,7 @@
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_hdlc/internal/encoder.h"
-#include "pw_hdlc_private/protocol.h"
+#include "pw_hdlc/internal/protocol.h"
 #include "pw_stream/memory_stream.h"
 
 using std::byte;
@@ -30,6 +30,7 @@ namespace pw::hdlc {
 namespace {
 
 constexpr uint8_t kAddress = 0x7B;  // 123
+constexpr uint8_t kEncodedAddress = (kAddress << 1) | 1;
 
 #define EXPECT_ENCODER_WROTE(...)                                           \
   do {                                                                      \
@@ -54,39 +55,46 @@ constexpr byte kUnnumberedControl = byte{0x3};
 TEST_F(WriteUnnumberedFrame, EmptyPayload) {
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, std::span<byte>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
-      kFlag, kAddress, kUnnumberedControl, uint32_t{0x141BE378}, kFlag));
+      kFlag, kEncodedAddress, kUnnumberedControl, uint32_t{0x832d343f}, kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload) {
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("A"), writer_));
-  EXPECT_ENCODER_WROTE(bytes::Concat(
-      kFlag, kAddress, kUnnumberedControl, 'A', uint32_t{0x8D137C66}, kFlag));
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     kEncodedAddress,
+                                     kUnnumberedControl,
+                                     'A',
+                                     uint32_t{0x653c9e82},
+                                     kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7d) {
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::Array<0x7d>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
                                      kEscape,
                                      byte{0x7d} ^ byte{0x20},
-                                     uint32_t{0xA27C00E1},
+                                     uint32_t{0x4a53e205},
                                      kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, OneBytePayload_Escape0x7E) {
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::Array<0x7e>(), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
                                      kEscape,
                                      byte{0x7e} ^ byte{0x20},
-                                     uint32_t{0x3B75515B},
+                                     uint32_t{0xd35ab3bf},
                                      kFlag));
 }
 
 TEST_F(WriteUnnumberedFrame, AddressNeedsEscaping) {
-  ASSERT_EQ(OkStatus(), WriteUIFrame(0x7d, bytes::String("A"), writer_));
+  // Becomes 0x7d when encoded.
+  constexpr uint8_t kEscapeRequiredAddress = 0x7d >> 1;
+  ASSERT_EQ(OkStatus(),
+            WriteUIFrame(kEscapeRequiredAddress, bytes::String("A"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
                                      kEscape,
                                      byte{0x5d},
@@ -97,14 +105,15 @@ TEST_F(WriteUnnumberedFrame, AddressNeedsEscaping) {
 }
 
 TEST_F(WriteUnnumberedFrame, Crc32NeedsEscaping) {
-  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("a"), writer_));
+  ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("aa"), writer_));
 
-  // The CRC-32 is 0xB67D5CAE, so the 0x7D must be escaped.
-  constexpr auto expected_crc32 = bytes::Array<0xae, 0x5c, 0x7d, 0x5d, 0xb6>();
+  // The CRC-32 of {kEncodedAddress, kUnnumberedControl, "aa"} is 0x7ee04473, so
+  // the 0x7e must be escaped.
+  constexpr auto expected_crc32 = bytes::Array<0x73, 0x44, 0xe0, 0x7d, 0x5e>();
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
-                                     bytes::String("a"),
+                                     bytes::String("aa"),
                                      expected_crc32,
                                      kFlag));
 }
@@ -113,16 +122,16 @@ TEST_F(WriteUnnumberedFrame, MultiplePayloads) {
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("ABC"), writer_));
   ASSERT_EQ(OkStatus(), WriteUIFrame(kAddress, bytes::String("DEF"), writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
                                      bytes::String("ABC"),
-                                     uint32_t{0x06575377},
+                                     uint32_t{0x72410ee4},
                                      kFlag,
                                      kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
                                      bytes::String("DEF"),
-                                     uint32_t{0x3FB7F3D4},
+                                     uint32_t{0x4ba1ae47},
                                      kFlag));
 }
 
@@ -132,10 +141,21 @@ TEST_F(WriteUnnumberedFrame, PayloadWithNoEscapes) {
       WriteUIFrame(kAddress, bytes::String("1995 toyota corolla"), writer_));
 
   EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
-                                     kAddress,
+                                     kEncodedAddress,
                                      kUnnumberedControl,
                                      bytes::String("1995 toyota corolla"),
-                                     uint32_t{0x56560172},
+                                     uint32_t{0x53ee911c},
+                                     kFlag));
+}
+
+TEST_F(WriteUnnumberedFrame, MultibyteAddress) {
+  ASSERT_EQ(OkStatus(), WriteUIFrame(0x3fff, bytes::String("abc"), writer_));
+
+  EXPECT_ENCODER_WROTE(bytes::Concat(kFlag,
+                                     bytes::String("\xfe\xff"),
+                                     kUnnumberedControl,
+                                     bytes::String("abc"),
+                                     uint32_t{0x8cee2978},
                                      kFlag));
 }
 
@@ -147,11 +167,11 @@ TEST_F(WriteUnnumberedFrame, PayloadWithMultipleEscapes) {
                    writer_));
   EXPECT_ENCODER_WROTE(bytes::Concat(
       kFlag,
-      kAddress,
+      kEncodedAddress,
       kUnnumberedControl,
       bytes::
           Array<0x7D, 0x5E, 0x7B, 0x61, 0x62, 0x63, 0x7D, 0x5D, 0x7D, 0x5E>(),
-      uint32_t{0x950257BD},
+      uint32_t{0x1563a4e6},
       kFlag));
 }
 
@@ -180,26 +200,26 @@ namespace {
 constexpr uint8_t kEscapeAddress = 0x7d;
 
 TEST(Encoder, MaxEncodedSize_EmptyPayload) {
-  EXPECT_EQ(9u, Encoder::MaxEncodedSize(kAddress, {}));
-  EXPECT_EQ(10u, Encoder::MaxEncodedSize(kEscapeAddress, {}));
+  EXPECT_EQ(11u, Encoder::MaxEncodedSize(kAddress, {}));
+  EXPECT_EQ(11u, Encoder::MaxEncodedSize(kEscapeAddress, {}));
 }
 
 TEST(Encoder, MaxEncodedSize_PayloadWithoutEscapes) {
   constexpr auto data = bytes::Array<0x00, 0x01, 0x02, 0x03>();
-  EXPECT_EQ(13u, Encoder::MaxEncodedSize(kAddress, data));
-  EXPECT_EQ(14u, Encoder::MaxEncodedSize(kEscapeAddress, data));
+  EXPECT_EQ(15u, Encoder::MaxEncodedSize(kAddress, data));
+  EXPECT_EQ(15u, Encoder::MaxEncodedSize(kEscapeAddress, data));
 }
 
 TEST(Encoder, MaxEncodedSize_PayloadWithOneEscape) {
   constexpr auto data = bytes::Array<0x00, 0x01, 0x7e, 0x03>();
-  EXPECT_EQ(14u, Encoder::MaxEncodedSize(kAddress, data));
-  EXPECT_EQ(15u, Encoder::MaxEncodedSize(kEscapeAddress, data));
+  EXPECT_EQ(16u, Encoder::MaxEncodedSize(kAddress, data));
+  EXPECT_EQ(16u, Encoder::MaxEncodedSize(kEscapeAddress, data));
 }
 
 TEST(Encoder, MaxEncodedSize_PayloadWithAllEscapes) {
   constexpr auto data = bytes::Initialized<8>(0x7e);
-  EXPECT_EQ(25u, Encoder::MaxEncodedSize(kAddress, data));
-  EXPECT_EQ(26u, Encoder::MaxEncodedSize(kEscapeAddress, data));
+  EXPECT_EQ(27u, Encoder::MaxEncodedSize(kAddress, data));
+  EXPECT_EQ(27u, Encoder::MaxEncodedSize(kEscapeAddress, data));
 }
 
 }  // namespace

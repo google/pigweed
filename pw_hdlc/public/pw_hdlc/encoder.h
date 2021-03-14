@@ -20,16 +20,16 @@
 namespace pw::hdlc {
 
 // Writes an HDLC unnumbered information frame (UI-frame) to the provided
-// writer. The frame contains the following:
+// writer. The complete frame contains the following:
 //
 //   - HDLC flag byte (0x7e)
 //   - Address
-//   - UI-frame control byte
-//   - Data (0 or more bytes)
+//   - UI-frame control (metadata) byte
+//   - Payload (0 or more bytes)
 //   - Frame check sequence (CRC-32)
 //   - HDLC flag byte (0x7e)
 //
-Status WriteUIFrame(uint8_t address,
+Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer);
 

@@ -121,7 +121,7 @@ extern "C" size_t pw_varint_DecodeCustom(const void* input,
   return count;
 }
 
-// TODO(frolv): Remove this deprecated function.
+// TODO(frolv): Remove this deprecated alias.
 extern "C" size_t pw_VarintEncode(uint64_t integer,
                                   void* output,
                                   size_t output_size) {
@@ -134,7 +134,7 @@ extern "C" size_t pw_varint_ZigZagEncode(int64_t integer,
   return pw_varint_Encode(ZigZagEncode(integer), output, output_size);
 }
 
-// TODO(frolv): Remove this deprecated function.
+// TODO(frolv): Remove this deprecated alias.
 extern "C" size_t pw_VarintDecode(const void* input,
                                   size_t input_size,
                                   uint64_t* output) {

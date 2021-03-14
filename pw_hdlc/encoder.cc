@@ -22,15 +22,12 @@
 
 #include "pw_bytes/endian.h"
 #include "pw_hdlc/internal/encoder.h"
-#include "pw_hdlc_private/protocol.h"
+#include "pw_varint/varint.h"
 
 using std::byte;
 
 namespace pw::hdlc {
 namespace internal {
-
-// Indicates this an information packet with sequence numbers set to 0.
-constexpr byte kUnusedControl = byte{0};
 
 Status EscapeAndWrite(const byte b, stream::Writer& writer) {
   if (b == kFlag) {
@@ -40,28 +37,6 @@ Status EscapeAndWrite(const byte b, stream::Writer& writer) {
     return writer.Write(kEscapedEscape);
   }
   return writer.Write(b);
-}
-
-Status Encoder::StartInformationFrame(uint8_t address) {
-  fcs_.clear();
-  if (Status status = writer_.Write(kFlag); !status.ok()) {
-    return status;
-  }
-
-  const byte address_and_control[] = {
-      std::byte{address}, kUnusedControl, kUnusedControl};
-  return WriteData(address_and_control);
-}
-
-Status Encoder::StartUnnumberedFrame(uint8_t address) {
-  fcs_.clear();
-  if (Status status = writer_.Write(kFlag); !status.ok()) {
-    return status;
-  }
-
-  const byte address_and_control[] = {
-      std::byte{address}, UFrameControl::UnnumberedInformation().data()};
-  return WriteData(address_and_control);
 }
 
 Status Encoder::WriteData(ConstByteSpan data) {
@@ -92,19 +67,37 @@ Status Encoder::FinishFrame() {
   return writer_.Write(kFlag);
 }
 
-size_t Encoder::MaxEncodedSize(uint8_t address, ConstByteSpan payload) {
+size_t Encoder::MaxEncodedSize(uint64_t address, ConstByteSpan payload) {
   constexpr size_t kFcsMaxSize = 8;  // Worst case FCS: 0x7e7e7e7e.
-  size_t encoded_address_size = NeedsEscaping(std::byte{address}) ? 2 : 1;
+  size_t max_encoded_address_size = varint::EncodedSize(address) * 2;
   size_t encoded_payload_size =
       payload.size() +
       std::count_if(payload.begin(), payload.end(), NeedsEscaping);
 
-  return encoded_address_size + encoded_payload_size + kFcsMaxSize;
+  return max_encoded_address_size + sizeof(kUnusedControl) +
+         encoded_payload_size + kFcsMaxSize;
+}
+
+Status Encoder::StartFrame(uint64_t address, std::byte control) {
+  fcs_.clear();
+  if (Status status = writer_.Write(kFlag); !status.ok()) {
+    return status;
+  }
+
+  std::array<std::byte, 16> metadata_buffer;
+  size_t metadata_size =
+      varint::Encode(address, metadata_buffer, kAddressFormat);
+  if (metadata_size == 0) {
+    return Status::InvalidArgument();
+  }
+
+  metadata_buffer[metadata_size++] = control;
+  return WriteData(std::span(metadata_buffer).first(metadata_size));
 }
 
 }  // namespace internal
 
-Status WriteUIFrame(uint8_t address,
+Status WriteUIFrame(uint64_t address,
                     ConstByteSpan payload,
                     stream::Writer& writer) {
   if (internal::Encoder::MaxEncodedSize(address, payload) >

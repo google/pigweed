@@ -21,10 +21,11 @@ from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
 from pw_build.generated_tests import parse_test_generation_args
 from pw_hdlc.decode import Frame, FrameDecoder, FrameStatus, NO_ADDRESS
 from pw_hdlc.protocol import frame_check_sequence as fcs
+from pw_hdlc.protocol import encode_address
 
 
 def _encode(address: int, control: int, data: bytes) -> bytes:
-    frame = bytearray([address, control]) + data
+    frame = encode_address(address) + bytes([control]) + data
     frame += fcs(frame)
     frame = frame.replace(b'\x7d', b'\x7d\x5d')
     frame = frame.replace(b'\x7e', b'\x7d\x5e')
@@ -96,6 +97,10 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expectation]]], ...] = (
     (_encode(0x7e, 0x7d, b'E'), [Expected(0x7e, b'\x7d', b'E')]),
     (_encode(0x7d, 0x7e, b'F'), [Expected(0x7d, b'\x7e', b'F')]),
     (_encode(0x7e, 0x7e, b'\x7e'), [Expected(0x7e, b'\x7e', b'\x7e')]),
+    'Multibyte address',
+    (_encode(128, 0, b'big address'), [Expected(128, b'\0', b'big address')]),
+    (_encode(0xffffffff, 0, b'\0\0\1\0\0'),
+     [Expected(0xffffffff, b'\0', b'\0\0\1\0\0')]),
     'Multiple frames separated by single flag',
     (_encode(0, 0, b'A')[:-1] + _encode(1, 2, b'123'),
      [Expected(0, b'\0', b'A'),
@@ -113,13 +118,16 @@ TEST_CASES: Tuple[GroupOrTest[Tuple[bytes, List[Expectation]]], ...] = (
     'Cannot escape flag',
     (b'\x7e\xAA\x7d\x7e\xab\x00Hello' + fcs(b'\xab\0Hello') + b'\x7e', [
         Expected.error(FrameStatus.FRAMING_ERROR),
-        Expected(0xab, b'\0', b'Hello'),
+        Expected(0x55, b'\0', b'Hello'),
     ]),
     _ESCAPED_FLAG_TEST_CASE,
     'Frame too short',
     (b'\x7e1\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
     (b'\x7e12\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
     (b'\x7e12345\x7e', [Expected.error(FrameStatus.FRAMING_ERROR)]),
+    'Multibyte address too long',
+    (_encode(2 ** 100, 0, b'too long'),
+     [Expected.error(FrameStatus.BAD_ADDRESS)]),
     'Incorrect frame check sequence',
     (b'\x7e123456\x7e', [Expected.error(FrameStatus.FCS_MISMATCH)]),
     (b'\x7e\1\2msg\xff\xff\xff\xff\x7e',
@@ -185,7 +193,9 @@ _TESTS = TestGenerator(TEST_CASES)
 def _expected(frames: List[Frame]) -> Iterator[str]:
     for i, frame in enumerate(frames, 1):
         if frame.ok():
-            yield f'      Frame(kDecodedFrame{i:02}),'
+            yield f'      Frame::Parse(kDecodedFrame{i:02}).value(),'
+        elif frame.status is FrameStatus.BAD_ADDRESS:
+            yield f'      Frame::Parse(kDecodedFrame{i:02}).status(),'
         else:
             yield f'      Status::DataLoss(),  // Frame {i}'
 
@@ -219,7 +229,7 @@ def _cpp_test(ctx: Context) -> Iterator[str]:
     yield f'  static constexpr auto kData = bytes::String("{data_bytes}");\n'
 
     for i, frame in enumerate(frames, 1):
-        if frame.status is FrameStatus.OK:
+        if frame.ok() or frame.status is FrameStatus.BAD_ADDRESS:
             frame_bytes = ''.join(rf'\x{byte:02x}'
                                   for byte in frame.raw_decoded)
             yield (f'  static constexpr auto kDecodedFrame{i:02} = '
@@ -235,7 +245,7 @@ def _cpp_test(ctx: Context) -> Iterator[str]:
     yield f"""\
   DecoderBuffer<{decoder_size}> decoder;
 
-  static constexpr std::array<std::variant<Frame, Status>, {len(frames)}> kExpected = {{
+  static std::array<std::variant<Frame, Status>, {len(frames)}> kExpected = {{
 {expected}
   }};
 

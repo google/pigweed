@@ -102,7 +102,7 @@ C++
 ^^^
 .. cpp:namespace:: pw
 
-.. cpp:function:: Status hdlc::WriteUIFrame(uint8_t address, ConstByteSpan data, stream::Writer& writer)
+.. cpp:function:: Status hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer& writer)
 
   Writes a span of data to a :ref:`pw::stream::Writer <module-pw_stream>` and
   returns the status. This implementation uses the :ref:`module-pw_checksum`
@@ -221,9 +221,8 @@ HdlcRpcClient
 Roadmap
 =======
 - **Expanded protocol support** - ``pw_hdlc`` currently only supports
-  unnumbered information frames with a single address byte and control byte.
-  Support for different frame types and extended address or control fields may
-  be added in the future.
+  unnumbered information frames. Support for different frame types and
+  extended control fields may be added in the future.
 
 - **Higher performance** - We plan to improve the overall performance of the
   decoder and encoder implementations by using SIMD/NEON.

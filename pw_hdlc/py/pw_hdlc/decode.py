@@ -13,7 +13,6 @@
 # the License.
 """Decoder class for decoding bytes using HDLC protocol"""
 
-from dataclasses import dataclass
 import enum
 import logging
 from typing import Iterator, Optional
@@ -32,35 +31,41 @@ class FrameStatus(enum.Enum):
     OK = 'OK'
     FCS_MISMATCH = 'frame check sequence failure'
     FRAMING_ERROR = 'invalid flag or escape characters'
+    BAD_ADDRESS = 'address field too long'
 
 
-@dataclass(frozen=True)
 class Frame:
     """Represents an HDLC frame."""
+    def __init__(self,
+                 raw_encoded: bytes,
+                 raw_decoded: bytes,
+                 status: FrameStatus = FrameStatus.OK):
+        """Parses fields from an HDLC frame.
 
-    # The complete HDLC-encoded frame, excluding HDLC flag characters.
-    raw_encoded: bytes
+        Arguments:
+            raw_encoded: The complete HDLC-encoded frame, excluding HDLC flag
+                characters.
+            raw_decoded: The complete decoded frame (address, control,
+                information, FCS).
+            status: Whether parsing the frame succeeded.
+        """
+        self.raw_encoded = raw_encoded
+        self.raw_decoded = raw_decoded
+        self.status = status
 
-    # The complete decoded frame (address, control, information, FCS).
-    raw_decoded: bytes
+        self.address: int = NO_ADDRESS
+        self.control: bytes = b''
+        self.data: bytes = b''
 
-    # Whether parsing the frame succeeded.
-    status: FrameStatus = FrameStatus.OK
+        if status == FrameStatus.OK:
+            address, address_length = protocol.decode_address(raw_decoded)
+            if address_length == 0:
+                self.status = FrameStatus.BAD_ADDRESS
+                return
 
-    @property
-    def address(self) -> int:
-        """The frame's address field (assumes only one byte for now)."""
-        return self.raw_decoded[0] if self.ok() else NO_ADDRESS
-
-    @property
-    def control(self) -> bytes:
-        """The control byte (assumes only one byte for now)."""
-        return self.raw_decoded[1:2] if self.ok() else b''
-
-    @property
-    def data(self) -> bytes:
-        """The information field in the frame."""
-        return self.raw_decoded[2:-4] if self.ok() else b''
+            self.address = address
+            self.control = raw_decoded[address_length:address_length + 1]
+            self.data = raw_decoded[address_length + 1:-4]
 
     def ok(self) -> bool:
         """True if this represents a valid frame.

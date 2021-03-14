@@ -15,6 +15,8 @@
 
 #include <cstddef>
 
+#include "pw_varint/varint.h"
+
 namespace pw::hdlc {
 
 inline constexpr std::byte kFlag = std::byte{0x7E};
@@ -25,6 +27,9 @@ inline constexpr std::array<std::byte, 2> kEscapedFlag = {kEscape,
                                                           std::byte{0x5E}};
 inline constexpr std::array<std::byte, 2> kEscapedEscape = {kEscape,
                                                             std::byte{0x5D}};
+
+inline constexpr varint::Format kAddressFormat =
+    varint::Format::kOneTerminatedLeastSignificant;
 
 constexpr bool NeedsEscaping(std::byte b) {
   return (b == kFlag || b == kEscape);

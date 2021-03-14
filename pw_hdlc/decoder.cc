@@ -16,12 +16,26 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/endian.h"
-#include "pw_hdlc_private/protocol.h"
+#include "pw_hdlc/internal/protocol.h"
 #include "pw_log/log.h"
+#include "pw_varint/varint.h"
 
 using std::byte;
 
 namespace pw::hdlc {
+
+Result<Frame> Frame::Parse(ConstByteSpan frame) {
+  uint64_t address;
+  size_t address_size = varint::Decode(frame, &address, kAddressFormat);
+  int data_size = frame.size() - address_size - kControlSize - kFcsSize;
+
+  if (address_size == 0 || data_size < 0) {
+    return Status::DataLoss();
+  }
+
+  return Frame(
+      address, frame[address_size], frame.subspan(address_size + 1, data_size));
+}
 
 Result<Frame> Decoder::Process(const byte new_byte) {
   switch (state_) {
@@ -48,7 +62,7 @@ Result<Frame> Decoder::Process(const byte new_byte) {
         Reset();
 
         if (status.ok()) {
-          return Frame(buffer_.first(completed_frame_size));
+          return Frame::Parse(buffer_.first(completed_frame_size));
         }
         return status;
       }

@@ -19,7 +19,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
-#include "pw_hdlc_private/protocol.h"
+#include "pw_hdlc/internal/protocol.h"
 
 namespace pw::hdlc {
 namespace {
@@ -27,15 +27,43 @@ namespace {
 using std::byte;
 
 TEST(Frame, Fields) {
-  static constexpr auto kFrameData = bytes::String("1234\xa3\xe0\xe3\x9b");
-  constexpr Frame frame(kFrameData);
+  static constexpr auto kFrameData =
+      bytes::String("\x05\xab\x42\x24\xf9\x54\xfb\x3d");
+  auto result = Frame::Parse(kFrameData);
+  ASSERT_TRUE(result.ok());
+  Frame& frame = result.value();
 
-  static_assert(frame.address() == unsigned{'1'});
-  static_assert(frame.control() == byte{'2'});
+  EXPECT_EQ(frame.address(), 2u);
+  EXPECT_EQ(frame.control(), byte{0xab});
 
-  static_assert(frame.data().size() == 2u);
-  static_assert(frame.data()[0] == byte{'3'});
-  static_assert(frame.data()[1] == byte{'4'});
+  EXPECT_EQ(frame.data().size(), 2u);
+  EXPECT_EQ(frame.data()[0], byte{0x42});
+  EXPECT_EQ(frame.data()[1], byte{0x24});
+}
+
+TEST(Frame, MultibyteAddress) {
+  static constexpr auto kFrameData =
+      bytes::String("\x2c\xd9\x33\x01\x02\xaf\xc8\x77\x48");
+  auto result = Frame::Parse(kFrameData);
+  ASSERT_TRUE(result.ok());
+  Frame& frame = result.value();
+
+  EXPECT_EQ(frame.address(), 0b11011000010110u);
+  EXPECT_EQ(frame.control(), byte{0x33});
+
+  EXPECT_EQ(frame.data().size(), 2u);
+  EXPECT_EQ(frame.data()[0], byte{0x01});
+  EXPECT_EQ(frame.data()[1], byte{0x02});
+}
+
+TEST(Frame, MultibyteAddressTooLong) {
+  // 11-byte encoded address.
+  constexpr auto kLongAddress =
+      bytes::String("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01");
+  static constexpr auto kFrameData = bytes::Concat(
+      kLongAddress, bytes::String("\x33\x01\x02\xaf\xc8\x77\x48"));
+  auto result = Frame::Parse(kFrameData);
+  EXPECT_EQ(result.status(), Status::DataLoss());
 }
 
 TEST(Decoder, Clear) {

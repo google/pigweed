@@ -17,7 +17,7 @@
 #include "pw_bytes/endian.h"
 #include "pw_checksum/crc32.h"
 #include "pw_hdlc/decoder.h"
-#include "pw_hdlc_private/protocol.h"
+#include "pw_hdlc/internal/protocol.h"
 
 namespace pw::hdlc {
 
@@ -30,10 +30,9 @@ bool WirePacketParser::Parse(ConstByteSpan packet) {
     return false;
   }
 
-  // Partially decode into a buffer with space only for the first two bytes
-  // (address and control) of the frame. The decoder will verify the frame's
-  // FCS field.
-  std::array<std::byte, 2> buffer = {};
+  // Partially decode into a buffer with space only for the address and control
+  // fields of the frame. The decoder will verify the frame's FCS field.
+  std::array<std::byte, 16> buffer = {};
   Decoder decoder(buffer);
   Status status = Status::Unknown();
 
@@ -41,8 +40,12 @@ bool WirePacketParser::Parse(ConstByteSpan packet) {
     status = result.status();
   });
 
-  // Address is the first byte in the packet.
-  address_ = static_cast<uint8_t>(buffer[0]) >> address_shift_;
+  Result<Frame> result = Frame::Parse(buffer);
+  if (!result.ok()) {
+    return false;
+  }
+
+  address_ = result.value().address();
 
   // RESOURCE_EXHAUSTED is expected as the buffer is too small for the packet.
   return status.ok() || status.IsResourceExhausted();

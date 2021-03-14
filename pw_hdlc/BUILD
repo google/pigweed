@@ -27,7 +27,7 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "public/pw_hdlc/internal/encoder.h",
-        "pw_hdlc_private/protocol.h",
+        "public/pw_hdlc/internal/protocol.h",
         "rpc_packets.cc",
     ],
     hdrs = [
@@ -43,6 +43,7 @@ pw_cc_library(
         "//pw_span",
         "//pw_status",
         "//pw_stream",
+        "//pw_varint",
     ],
 )
 

@@ -13,33 +13,31 @@
 // the License.
 #pragma once
 
-#include "pw_assert/light.h"
 #include "pw_router/packet_parser.h"
 
 namespace pw::hdlc {
 
 // HDLC frame parser for routers that operates on wire-encoded frames.
 //
-// Currently, this assumes 1-byte HDLC address fields. An optional address_bits
-// value can be provided to the constructor to use a smaller address size.
-class WirePacketParser final : public router::PacketParser {
+// This allows routing HDLC frames through Pigweed routers without having to
+// first decode them from their wire format.
+class WirePacketParser : public router::PacketParser {
  public:
-  constexpr WirePacketParser(uint8_t address_bits = 8)
-      : address_(0), address_shift_(8 - address_bits) {
-    PW_ASSERT(address_bits <= 8);
-  }
+  constexpr WirePacketParser() : address_(0) {}
 
   // Verifies and parses an HDLC frame. Packet passed in is expected to be a
   // single, complete, wire-encoded frame, starting and ending with a flag.
   bool Parse(ConstByteSpan packet) final;
 
-  std::optional<uint32_t> GetDestinationAddress() const final {
+  std::optional<uint32_t> GetDestinationAddress() const override {
     return address_;
   }
 
+ protected:
+  constexpr uint64_t address() const { return address_; }
+
  private:
-  uint8_t address_;
-  uint8_t address_shift_;
+  uint64_t address_;
 };
 
 }  // namespace pw::hdlc

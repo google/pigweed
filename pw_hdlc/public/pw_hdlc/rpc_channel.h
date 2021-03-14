@@ -35,7 +35,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
   // a writer object to which will be used to write and send the bytes.
   constexpr RpcChannelOutput(stream::Writer& writer,
                              std::span<std::byte> buffer,
-                             uint8_t address,
+                             uint64_t address,
                              const char* channel_name)
       : ChannelOutput(channel_name),
         writer_(writer),
@@ -55,7 +55,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
  private:
   stream::Writer& writer_;
   const std::span<std::byte> buffer_;
-  const uint8_t address_;
+  const uint64_t address_;
 };
 
 // RpcChannelOutput with its own buffer.
@@ -66,7 +66,7 @@ template <size_t buffer_size>
 class RpcChannelOutputBuffer : public rpc::ChannelOutput {
  public:
   constexpr RpcChannelOutputBuffer(stream::Writer& writer,
-                                   uint8_t address,
+                                   uint64_t address,
                                    const char* channel_name)
       : ChannelOutput(channel_name), writer_(writer), address_(address) {}
 
@@ -83,7 +83,7 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
  private:
   stream::Writer& writer_;
   std::array<std::byte, buffer_size> buffer_;
-  const uint8_t address_;
+  const uint64_t address_;
 };
 
 }  // namespace pw::hdlc
