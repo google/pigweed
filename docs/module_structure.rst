@@ -457,7 +457,7 @@ To create a new Pigweed module, follow the below steps.
 
 10. Add the new module to docs module
 
-    - Add in ``docs/BUILD.gn`` to ``pw_doc_gen("docs")``
+    - Add in ``docs/BUILD.gn`` to ``group("module_docs")``
 
 11. Run :ref:`module-pw_module-module-check`
 
