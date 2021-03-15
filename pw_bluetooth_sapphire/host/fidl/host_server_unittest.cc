@@ -312,23 +312,6 @@ fsys::BondingData MakeTestBond(bt::PeerId id, fbt::Address address) {
   return bond;
 }
 
-using FIDL_HostServerDeathTest = FIDL_HostServerTest;
-TEST_F(FIDL_HostServerDeathTest, RestoreDeprecatedTransportSpecificBondingDataDies) {
-  fsys::BondingData deprecated_le = MakeTestBond(kTestId, kTestFidlAddrPublic);
-  deprecated_le.clear_le_bond();
-  deprecated_le.set_le(fsys::LeData{});
-  ASSERT_DEATH_IF_SUPPORTED(
-      { host_server()->RestoreBonds(MakeClonedVector(deprecated_le), [](auto /*ignore*/) {}); },
-      ".*deprecated LeData.*");
-
-  fsys::BondingData deprecated_bredr{};
-  deprecated_bredr.clear_le_bond();
-  deprecated_bredr.set_bredr(fsys::BredrData{});
-  ASSERT_DEATH_IF_SUPPORTED(
-      { host_server()->RestoreBonds(MakeClonedVector(deprecated_bredr), [](auto /*ignore*/) {}); },
-      ".*deprecated BredrData");
-}
-
 TEST_F(FIDL_HostServerTest, FidlIoCapabilitiesMapToHostIoCapability) {
   // Isolate HostServer's private bt::gap::PairingDelegate implementation.
   auto host_pairing_delegate = static_cast<bt::gap::PairingDelegate*>(host_server());

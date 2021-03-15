@@ -304,11 +304,6 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
   }
 
   for (auto& bond : bonds) {
-    // This method is only accessible by bt-gap, so we can be confident no clients will use the
-    // deprecated `le` sys/LeData or `bredr` sys/BredrData fields.
-    ZX_ASSERT_MSG(!bond.has_le(), "Cannot restore bond with deprecated LeData field");
-    ZX_ASSERT_MSG(!bond.has_bredr(), "Cannot restore bond with deprecated BredrData field");
-
     if (!bond.has_identifier() || !bond.has_address() ||
         !(bond.has_le_bond() || bond.has_bredr_bond())) {
       bt_log(ERROR, "fidl", "%s: BondingData mandatory fields missing!", __FUNCTION__);
