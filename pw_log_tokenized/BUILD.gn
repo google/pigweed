@@ -14,12 +14,19 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_tokenizer/backend.gni")
-import("$dir_pw_unit_test/facade_test.gni")
 import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_log_tokenized_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_includes") {
   include_dirs = [ "public" ]
@@ -49,8 +56,12 @@ pw_source_set("pw_log_tokenized") {
     "$dir_pw_log:facade",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
     dir_pw_preprocessor,
+    pw_log_tokenized_CONFIG,
   ]
-  public = [ "public/pw_log_tokenized/log_tokenized.h" ]
+  public = [
+    "public/pw_log_tokenized/config.h",
+    "public/pw_log_tokenized/log_tokenized.h",
+  ]
 }
 
 # This target provides the backend for pw_log.
@@ -79,19 +90,9 @@ pw_test_group("tests") {
   tests = [ ":log_tokenized_test" ]
 }
 
-pw_facade_test("log_tokenized_test") {
-  build_args = {
-    # The test provides pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND in the
-    # .cc file, but we can't depend on the test as it creates a circular
-    # dependency.
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "$dir_pw_build:empty"
-  }
+pw_test("log_tokenized_test") {
   sources = [ "test.cc" ]
-  deps = [
-    ":log_backend",
-    ":pw_log_tokenized",
-  ]
-  enable_if = pw_log_BACKEND == "$dir_pw_log_tokenized:log_backend"
+  deps = [ ":pw_log_tokenized" ]
 }
 
 pw_doc_group("docs") {

@@ -9,10 +9,12 @@ connects ``pw_log`` to ``pw_tokenizer``.
 C++ backend
 ===========
 ``pw_log_tokenized`` provides a backend for ``pw_log`` that tokenizes log
-messages with the ``pw_tokenizer`` module. Log messages are tokenized and passed
-to the ``pw_tokenizer_HandleEncodedMessageWithPayload`` function. For maximum
-efficiency, the log level, 16-bit tokenized module name, and flags bits are
-passed through the payload argument.
+messages with the ``pw_tokenizer`` module. By default, log messages are
+tokenized with the ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` macro.
+The log level, 16-bit tokenized module name, and flags bits are passed through
+the payload argument. The macro eventually passes logs to the
+``pw_tokenizer_HandleEncodedMessageWithPayload`` function, which must be
+implemented by the application.
 
 Example implementation:
 
@@ -35,7 +37,14 @@ Example implementation:
      }
    }
 
-See the documentation for ``pw_tokenizer`` for further details.
+See the documentation for :ref:`module-pw_tokenizer` for further details.
+
+Applications may select a different macro than
+``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` by setting the
+``PW_LOG_TOKENIZED_ENCODE_MESSAGE`` config macro. This macro should take
+arguments equivalent to ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``:
+
+  .. c:function:: PW_LOG_TOKENIZED_ENCODE_MESSAGE(pw_tokenizer_Payload log_metadata, const char* message, ...)
 
 Build targets
 -------------

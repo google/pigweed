@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,15 +13,14 @@
 // the License.
 #pragma once
 
-#include <assert.h>
 #include <stdint.h>
 
-#include "pw_log/options.h"
-#include "pw_preprocessor/concat.h"
+#include "pw_log_tokenized/config.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 // This macro implements PW_LOG using
-// PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD. The log level, module token, and
+// PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD or an equivalent alternate macro
+// provided by PW_LOG_TOKENIZED_ENCODE_MESSAGE. The log level, module token, and
 // flags are packed into the payload argument.
 //
 // Two strings are tokenized in this macro:
@@ -43,45 +42,23 @@
 //     }
 //   }
 //
-#define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                       \
-    level, flags, message, ...)                                                \
-  do {                                                                         \
-    _PW_TOKENIZER_CONST uintptr_t _pw_log_module_token =                       \
-        PW_TOKENIZE_STRING_MASK("pw_log_module_names",                         \
-                                ((1u << _PW_LOG_TOKENIZED_MODULE_BITS) - 1u),  \
-                                PW_LOG_MODULE_NAME);                           \
-    PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                                \
-        ((uintptr_t)(level) |                                                  \
-         (_pw_log_module_token << _PW_LOG_TOKENIZED_LEVEL_BITS) |              \
-         ((uintptr_t)(flags)                                                   \
-          << (_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS))), \
-        PW_LOG_TOKENIZED_FORMAT_STRING(message),                               \
-        __VA_ARGS__);                                                          \
+#define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                     \
+    level, flags, message, ...)                                              \
+  do {                                                                       \
+    _PW_TOKENIZER_CONST uintptr_t _pw_log_module_token =                     \
+        PW_TOKENIZE_STRING_MASK("pw_log_module_names",                       \
+                                ((1u << PW_LOG_TOKENIZED_MODULE_BITS) - 1u), \
+                                PW_LOG_MODULE_NAME);                         \
+    PW_LOG_TOKENIZED_ENCODE_MESSAGE(                                         \
+        ((uintptr_t)(level) |                                                \
+         (_pw_log_module_token << PW_LOG_TOKENIZED_LEVEL_BITS) |             \
+         ((uintptr_t)(flags)                                                 \
+          << (PW_LOG_TOKENIZED_LEVEL_BITS + PW_LOG_TOKENIZED_MODULE_BITS))), \
+        PW_LOG_TOKENIZED_FORMAT_STRING(message),                             \
+        __VA_ARGS__);                                                        \
   } while (0)
 
-// By default, log format strings include the PW_LOG_MODULE_NAME, if defined.
-#ifndef PW_LOG_TOKENIZED_FORMAT_STRING
-
-#define PW_LOG_TOKENIZED_FORMAT_STRING(string) \
-  PW_CONCAT(_PW_LOG_TOKENIZED_FMT_, PW_LOG_MODULE_NAME_DEFINED)(string)
-
-#define _PW_LOG_TOKENIZED_FMT_0(string) string
-#define _PW_LOG_TOKENIZED_FMT_1(string) PW_LOG_MODULE_NAME " " string
-
-#endif  // PW_LOG_TOKENIZED_FORMAT_STRING
-
-// The log level, module token, and flag bits are packed into the tokenizer's
-// payload argument, which is typically 32 bits. These macros specify the number
-// of bits to use for each field.
-#define _PW_LOG_TOKENIZED_LEVEL_BITS 6
-#define _PW_LOG_TOKENIZED_MODULE_BITS 16
-#define _PW_LOG_TOKENIZED_FLAG_BITS 10
-
 #ifdef __cplusplus
-
-static_assert((_PW_LOG_TOKENIZED_LEVEL_BITS + _PW_LOG_TOKENIZED_MODULE_BITS +
-               _PW_LOG_TOKENIZED_FLAG_BITS) == 32,
-              "Log metadata must fit in a 32-bit integer");
 
 namespace pw {
 namespace log_tokenized {
@@ -133,9 +110,9 @@ class GenericMetadata {
 
 }  // namespace internal
 
-using Metadata = internal::GenericMetadata<_PW_LOG_TOKENIZED_LEVEL_BITS,
-                                           _PW_LOG_TOKENIZED_MODULE_BITS,
-                                           _PW_LOG_TOKENIZED_FLAG_BITS>;
+using Metadata = internal::GenericMetadata<PW_LOG_TOKENIZED_LEVEL_BITS,
+                                           PW_LOG_TOKENIZED_MODULE_BITS,
+                                           PW_LOG_TOKENIZED_FLAG_BITS>;
 
 }  // namespace log_tokenized
 }  // namespace pw

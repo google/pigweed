@@ -25,6 +25,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "headers",
     hdrs = [
+        "public/pw_log_tokenized/config.h",
         "public/pw_log_tokenized/log_tokenized.h",
         "public_overrides/pw_log_backend/log_backend.h",
     ],
