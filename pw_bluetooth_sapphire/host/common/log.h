@@ -163,13 +163,12 @@ LogContext SaveLogContext();
 }  // namespace bt
 
 // This macro should be kept as small as possible to reduce binary size.
+// This macro should not wrap its contents in a lambda, as it breaks logs using __FUNCTION__.
 // TODO(fxbug.dev/1390): Due to limitations, |tag| is processed by printf-style formatters as a
 // format string, so check that |tag| does not specify any additional args.
-#define bt_log(flag, tag, fmt...)                                          \
-  [&] {                                                                    \
-    ::bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
-    ::bt::internal::CheckFormat(tag);                                      \
-  }()
+#define bt_log(flag, tag, fmt...)                                        \
+  ::bt::LogMessage(__FILE__, __LINE__, bt::LogSeverity::flag, tag, fmt); \
+  ::bt::internal::CheckFormat(tag)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
 
