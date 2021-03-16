@@ -5,10 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 
+#include <lib/ddk/driver.h>
+
 #include <cstddef>
 #include <string>
-
-#include <ddk/driver.h>
 
 // Logging utilities for the host library. This provides a common abstraction
 // over Zircon DDK debug utilities (used when the host stack code runs in a
@@ -30,7 +30,7 @@
 //
 // DRIVER MODE:
 //
-// By default, the log messages use <ddk/debug.h> as its backend. In this mode
+// By default, the log messages use <lib/ddk/debug.h> as its backend. In this mode
 // the ERROR, WARN, INFO, DEBUG and TRACE severity levels directly correspond to
 // the DDK severity levels. Log levels are supplied to the kernel commandline,
 // e.g. to disable INFO level and enable TRACE level messages in the bt-host
@@ -82,7 +82,7 @@
 namespace bt {
 
 // Log severity levels used by the host library, following the convention of
-// <ddk/debug.h>
+// <lib/ddk/debug.h>
 enum class LogSeverity {
   // Indicates unexpected failures.
   ERROR = 0,

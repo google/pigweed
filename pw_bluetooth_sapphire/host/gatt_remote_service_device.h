@@ -10,10 +10,10 @@
 #include <lib/async-loop/default.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/dispatcher.h>
+#include <lib/ddk/driver.h>
 #include <lib/fit/thread_checker.h>
 #include <zircon/types.h>
 
-#include <ddk/driver.h>
 #include <ddktl/device.h>
 #include <fbl/macros.h>
 

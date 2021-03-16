@@ -4,13 +4,12 @@
 
 #include "log.h"
 
+#include <lib/ddk/debug.h>
 #include <stdarg.h>
 
 #include <algorithm>
 #include <string_view>
 #include <vector>
-
-#include <ddk/debug.h>
 
 #include "src/lib/fxl/strings/string_printf.h"
 

@@ -4,11 +4,10 @@
 
 #include "gatt_remote_service_device.h"
 
+#include <lib/ddk/binding.h>
 #include <zircon/status.h>
 
 #include <memory>
-
-#include <ddk/binding.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
