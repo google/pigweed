@@ -155,6 +155,11 @@ Generally, these expressions are used within templates rather than directly in
 BUILD.gn files. This allows build code to use GN labels without having to worry
 about converting them to files.
 
+.. note::
+
+  We intend to replace these expressions with native GN features when possible.
+  See `pwbug/347 <http://bugs.pigweed.dev/347>`_.
+
 The following expressions are supported:
 
 .. describe:: <TARGET_FILE(gn_target)>

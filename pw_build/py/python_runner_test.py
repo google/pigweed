@@ -131,7 +131,7 @@ target_output_name = this_is_a_test
 build fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o: fake_toolchain_cxx ../fake_module/fake_test.cc
 build fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o: fake_toolchain_cc ../fake_module/fake_test_c.c
 
-build fake_toolchain/obj/fake_module/test/fake_test.elf: fake_toolchain_link fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o
+build fake_toolchain/obj/fake_module/test/fake_test.elf fake_toolchain/obj/fake_module/test/fake_test.map: fake_toolchain_link fake_toolchain/obj/fake_module/fake_test.fake_test.cc.o fake_toolchain/obj/fake_module/fake_test.fake_test_c.c.o
   ldflags = -Og -fdiagnostics-color
   libs =
   frameworks =

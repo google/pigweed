@@ -160,6 +160,27 @@ class _Artifact(NamedTuple):
 # Matches a non-phony build statement.
 _GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 
+_MAIN_ARTIFACTS = '', '.elf', '.a', '.so'
+
+
+def _get_artifact(build_dir: Path, entries: List[str]) -> _Artifact:
+    """Attempts to resolve which artifact to use if there are multiple.
+
+    Selects artifacts based on extension. This will not work if a toolchain
+    creates multiple compilation artifacts from one command (e.g. .a and .elf).
+    """
+    assert entries, "There should be at least one entry here!"
+
+    if len(entries) != 1:
+        entries = [p for p in entries if Path(p).suffix in _MAIN_ARTIFACTS]
+
+    if len(entries) == 1:
+        return _Artifact(build_dir / entries[0], {})
+
+    raise ExpressionError(
+        f'Expected 1, but found {len(entries)} artifacts, after filtering for '
+        f'extensions {", ".join(repr(e) for e in _MAIN_ARTIFACTS)}: {entries}')
+
 
 def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
     """Partially parses the build statements in a Ninja file."""
@@ -188,7 +209,7 @@ def _parse_build_artifacts(build_dir: Path, fd) -> Iterator[_Artifact]:
         else:
             match = _GN_NINJA_BUILD_STATEMENT.match(line)
             if match:
-                artifact = _Artifact(build_dir / match.group(1), {})
+                artifact = _get_artifact(build_dir, match.group(1).split())
 
             line = next_line()
 
@@ -364,6 +385,7 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
         yield _ArgAction.EMIT_NEW, str(obj)
 
 
+# TODO(pwbug/347): Replace expressions with native GN features when possible.
 _FUNCTIONS: Dict['str', Callable[[GnPaths, _Expression], _Actions]] = {
     'TARGET_FILE': _target_file,
     'TARGET_FILE_IF_EXISTS': _target_file_if_exists,
