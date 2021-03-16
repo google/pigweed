@@ -87,6 +87,7 @@ group("module_docs") {
     "$dir_pw_module:docs",
     "$dir_pw_multisink:docs",
     "$dir_pw_package:docs",
+    "$dir_pw_persistent_ram:docs",
     "$dir_pw_polyfill:docs",
     "$dir_pw_preprocessor:docs",
     "$dir_pw_presubmit:docs",
