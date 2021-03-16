@@ -9,8 +9,6 @@
 #include <initializer_list>
 #include <string>
 
-#include <fbl/string_piece.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
 namespace bt {
