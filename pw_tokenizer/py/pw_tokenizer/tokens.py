@@ -457,7 +457,7 @@ class DatabaseFile(Database):
 
         # Read the path as a CSV file.
         _check_that_file_is_csv_database(self.path)
-        with self.path.open('r', newline='') as file:
+        with self.path.open('r', newline='', encoding='utf-8') as file:
             super().__init__(parse_csv(file))
             self._export = write_csv
 
