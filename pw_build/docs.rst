@@ -461,17 +461,14 @@ Third party libraries
 ---------------------
 The CMake build includes third-party libraries similarly to the GN build. A
 ``dir_pw_third_party_<library>`` cache variable is defined for each third-party
-dependency. This variable can have one of three values:
+dependency. The variable must be set to the absolute path of the library in
+order to use it. If the variable is empty
+(``if("${dir_pw_third_party_<library>}" STREQUAL "")``), the dependency is not
+available.
 
-* ``""`` (empty) -- the dependency is not available
-* ``PRESENT`` -- the dependency is available and is already included in the
-  build
-* ``</path/to/the/dependency>`` -- the dependency is available and will be
-  automatically imported from this path using ``add_subdirectory``.
-
-If the variable is empty (``if("${dir_pw_third_party_<library>}" STREQUAL
-"")``), the dependency is not available. Otherwise, it is available and
-libraries declared by it can be referenced.
+Third-party dependencies are not automatically added to the build. They can be
+manually added with ``add_subdirectory`` or by setting the
+``pw_third_party_<library>_ADD_SUBDIRECTORY`` option to ``ON``.
 
 Third party variables are set like any other cache global variable in CMake. It
 is recommended to set these in one of the following ways:
@@ -481,7 +478,7 @@ is recommended to set these in one of the following ways:
 
   .. code-block:: cmake
 
-    set(dir_pw_third_party_nanopb PRESENT CACHE STRING "" FORCE)
+    set(dir_pw_third_party_nanopb ${CMAKE_CURRENT_SOURCE_DIR}/external/nanopb CACHE PATH "" FORCE)
 
 * Set the variable at the command line with the ``-D`` option.
 

@@ -12,19 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-set(dir_pw_third_party_nanopb "" CACHE PATH
-    "Path to a Nanopb installation to import. Set to PRESENT if Nanopb is already present in the build."
-)
+set(dir_pw_third_party_nanopb "" CACHE PATH "Path to the Nanopb installation.")
+option(pw_third_party_nanopb_ADD_SUBDIRECTORY
+    "Whether to add the dir_pw_third_party_nanopb subdirectory" OFF)
 
 if("${dir_pw_third_party_nanopb}" STREQUAL "")
   return()
-elseif(NOT "${dir_pw_third_party_nanopb}" STREQUAL PRESENT)
+elseif(pw_third_party_nanopb_ADD_SUBDIRECTORY)
   add_subdirectory("${dir_pw_third_party_nanopb}" third_party/nanopb)
 endif()
 
+set(nanopb_main_library
+    $<IF:$<TARGET_EXISTS:protobuf-nanopb-static>,protobuf-nanopb-static,protobuf-nanopb>)
+
 add_library(pw_third_party.nanopb INTERFACE)
-target_link_libraries(pw_third_party.nanopb INTERFACE protobuf-nanopb-static)
+target_link_libraries(pw_third_party.nanopb INTERFACE "${nanopb_main_library}")
 target_include_directories(pw_third_party.nanopb
   INTERFACE
-    $<TARGET_PROPERTY:protobuf-nanopb-static,SOURCE_DIR>
+    "${dir_pw_third_party_nanopb}"
 )

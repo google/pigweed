@@ -200,6 +200,7 @@ def _run_cmake(ctx: PresubmitContext) -> None:
                 f'-DCMAKE_TOOLCHAIN_FILE={toolchain}',
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
                 f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
+                '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
                 env=build.env_with_clang_vars())
 
 

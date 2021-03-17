@@ -79,7 +79,7 @@ function(pw_proto_library NAME)
 
   add_custom_command(
     COMMAND
-      python
+      python3
       "$ENV{PW_ROOT}/pw_build/py/pw_build/mirror_tree.py"
       --source-root "${arg_STRIP_PREFIX}"
       --directory "${out_dir}/sources/${arg_PREFIX}"
@@ -141,7 +141,7 @@ function(_pw_generate_protos
   set(script "$ENV{PW_ROOT}/pw_protobuf_compiler/py/pw_protobuf_compiler/generate_protos.py")
   add_custom_command(
     COMMAND
-      python
+      python3
       "${script}"
       --language "${LANGUAGE}"
       --plugin-path "${PLUGIN}"
@@ -213,20 +213,32 @@ endfunction(_pw_raw_rpc_library)
 function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
   list(TRANSFORM DEPS APPEND .nanopb)
 
-  set(nanopb_dir "$<TARGET_PROPERTY:$<IF:$<TARGET_EXISTS:protobuf-nanopb-static>,protobuf-nanopb-static,pw_build.empty>,SOURCE_DIR>")
-  set(nanopb_plugin
-      "$<IF:$<TARGET_EXISTS:protobuf-nanopb-static>,${nanopb_dir}/generator/protoc-gen-nanopb,COULD_NOT_FIND_protobuf-nanopb-static_TARGET_PLEASE_SET_UP_NANOPB>")
-
-  _pw_generate_protos("${NAME}.generate.nanopb"
-      nanopb
-      "${nanopb_plugin}"
-      ".pb.h;.pb.c"
-      "${INCLUDE_FILE}"
-      "${OUT_DIR}"
-      "${SOURCES}"
-      "${INPUTS}"
-      "${DEPS}"
-  )
+  if("${dir_pw_third_party_nanopb}" STREQUAL "")
+    add_custom_target("${NAME}.generate.nanopb"
+        cmake -E echo
+            ERROR: Attempting to use pw_proto_library, but
+            dir_pw_third_party_nanopb is not set. Set dir_pw_third_party_nanopb
+            to the path to the Nanopb repository.
+      COMMAND
+        cmake -E false
+      DEPENDS
+        ${DEPS}
+      SOURCES
+        ${SOURCES}
+    )
+    set(generated_outputs $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
+  else()
+    _pw_generate_protos("${NAME}.generate.nanopb"
+        nanopb
+        "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
+        ".pb.h;.pb.c"
+        "${INCLUDE_FILE}"
+        "${OUT_DIR}"
+        "${SOURCES}"
+        "${INPUTS}"
+        "${DEPS}"
+    )
+  endif()
 
   # Create the library with the generated source files.
   add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
