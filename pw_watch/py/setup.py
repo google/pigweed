@@ -26,6 +26,11 @@ setuptools.setup(
     zip_safe=False,
     install_requires=[
         'pw_cli',
-        'watchdog',
+        # Fixes the watchdog version to 0.10.3, released 2020-06-25
+        # as versions later than this ignore the 'recursive' argument
+        # on MacOS. This was causing us to trigger on any file within
+        # the source tree, even those that should have been ignored.
+        # See https://github.com/gorakhargosh/watchdog/issues/771.
+        'watchdog==0.10.3',
     ],
 )

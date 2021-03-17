@@ -487,26 +487,30 @@ def get_common_excludes() -> List[Path]:
     """Find commonly excluded directories, and return them as a [Path]"""
     exclude_list: List[Path] = []
 
+    typical_ignored_directories: List[str] = [
+        '.environment',  # Legacy bootstrap-created CIPD and Python venv.
+        '.presubmit',  # Presubmit-created CIPD and Python venv.
+        '.git',  # Pigweed's git repo.
+        '.mypy_cache',  # Python static analyzer.
+        '.cargo',  # Rust package manager.
+        'environment',  # Bootstrap-created CIPD and Python venv.
+        'out',  # Typical build directory.
+    ]
+
     # Preset exclude list for Pigweed's upstream directories.
     pw_root_dir = Path(os.environ['PW_ROOT'])
-    exclude_list.extend([
-        pw_root_dir / ignored_directory for ignored_directory in [
-            '.environment',  # Bootstrap-created CIPD and Python venv.
-            '.presubmit',  # Presubmit-created CIPD and Python venv.
-            '.git',  # Pigweed's git repo.
-            '.mypy_cache',  # Python static analyzer.
-            '.cargo',  # Rust package manager.
-            'out',  # Typical build directory.
-        ]
-    ])
+    exclude_list.extend(pw_root_dir / ignored_directory
+                        for ignored_directory in typical_ignored_directories)
 
     # Preset exclude for common downstream project structures.
     #
-    # By convention, Pigweed projects use "out" as a build directory, so if
-    # watch is invoked outside the Pigweed root, also ignore the local out
-    # directory.
-    if Path.cwd() != pw_root_dir:
-        exclude_list.append(Path('out'))
+    # If watch is invoked outside of the Pigweed root, exclude common
+    # directories.
+    pw_project_root_dir = Path(os.environ['PW_PROJECT_ROOT'])
+    if pw_project_root_dir != pw_root_dir:
+        exclude_list.extend(
+            pw_project_root_dir / ignored_directory
+            for ignored_directory in typical_ignored_directories)
 
     # Check for and warn about legacy directories.
     legacy_directories = [
