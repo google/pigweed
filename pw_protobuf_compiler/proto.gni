@@ -306,7 +306,7 @@ template("_pw_python_proto_library") {
       strip_prefix = "${invoker.base_out_dir}/python"
       python_deps = invoker.deps
       other_deps = [ ":$target_name._gen($default_toolchain)" ]
-      lint = false
+      static_analysis = []
 
       _pw_module_as_package = invoker.module_as_package != ""
     }

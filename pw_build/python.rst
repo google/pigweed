@@ -34,8 +34,8 @@ Arguments
 - ``proto_library`` - A pw_proto_library target to embed in this Python package.
   generate_setup is required in place of setup if proto_library is used. See
   :ref:`module-pw_protobuf_compiler-add-to-python-package`.
-- ``lint`` - If true (default), applies Mypy and Pylint to the package. If
-  false, does not.
+- ``static_analysis`` List of static analysis tools to run; ``"*"`` (default)
+  runs all tools. The supported tools are ``"mypy"`` and ``"pylint"``.
 - ``pylintrc`` - Optional path to a pylintrc configuration file to use. If not
   provided, Pylint's default rcfile search is used. Pylint is executed
   from the package's setup directory, so pylintrc files in that directory

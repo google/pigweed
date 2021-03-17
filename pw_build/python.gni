@@ -28,6 +28,72 @@ pw_python_package_subtargets = [
   "wheel",
 ]
 
+# Internal template that runs Mypy.
+template("_pw_python_static_analysis_mypy") {
+  pw_python_action(target_name) {
+    module = "mypy"
+    args = [
+      "--pretty",
+      "--show-error-codes",
+    ]
+
+    if (defined(invoker.mypy_ini)) {
+      args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
+      inputs = [ invoker.mypy_ini ]
+    }
+
+    args += rebase_path(invoker.sources)
+
+    # Use this environment variable to force mypy to colorize output.
+    # See https://github.com/python/mypy/issues/7771
+    environment = [ "MYPY_FORCE_COLOR=1" ]
+
+    directory = invoker.directory
+    stamp = true
+
+    deps = invoker.deps
+
+    foreach(dep, invoker.python_deps) {
+      deps += [ string_replace(dep, "(", ".lint.mypy(") ]
+    }
+  }
+}
+
+# Internal template that runs Pylint.
+template("_pw_python_static_analysis_pylint") {
+  # Create a target to run pylint on each of the Python files in this
+  # package and its dependencies.
+  pw_python_action_foreach(target_name) {
+    module = "pylint"
+    args = [
+      rebase_path(".") + "/{{source_target_relative}}",
+      "--jobs=1",
+      "--output-format=colorized",
+    ]
+
+    if (defined(invoker.pylintrc)) {
+      args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
+      inputs = [ invoker.pylintrc ]
+    }
+
+    if (host_os == "win") {
+      # Allow CRLF on Windows, in case Git is set to switch line endings.
+      args += [ "--disable=unexpected-line-ending-format" ]
+    }
+
+    sources = invoker.sources
+    directory = invoker.directory
+
+    stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
+
+    public_deps = invoker.deps
+
+    foreach(dep, invoker.python_deps) {
+      public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+    }
+  }
+}
+
 # Defines a Python package. GN Python packages contain several GN targets:
 #
 #   - $name - Provides the Python files in the build, but does not take any
@@ -56,8 +122,8 @@ pw_python_package_subtargets = [
 #   inputs: Other files to track, such as package_data.
 #   proto_library: A pw_proto_library target to embed in this Python package.
 #       generate_setup is required in place of setup if proto_library is used.
-#   lint: If true (default), applies mypy and pylint to the package. If false,
-#       does not.
+#   static_analysis: List of static analysis tools to run; "*" (default) runs
+#       all tools. The supported tools are "mypy" and "pylint".
 #   pylintrc: Optional path to a pylintrc configuration file to use. If not
 #       provided, Pylint's default rcfile search is used. Pylint is executed
 #       from the package's setup directory, so pylintrc files in that directory
@@ -138,11 +204,36 @@ template("pw_python_package") {
 
   # Process arguments defaults and set defaults.
 
-  # Argument: lint (bool); default = true.
-  if (defined(invoker.lint)) {
-    _should_lint = invoker.lint
+  _supported_static_analysis_tools = [
+    "mypy",
+    "pylint",
+  ]
+  not_needed([ "_supported_static_analysis_tools" ])
+
+  # Argument: static_analysis (list of tool names or "*"); default = "*" (all)
+  if (!defined(invoker.static_analysis) || invoker.static_analysis == "*") {
+    _static_analysis = _supported_static_analysis_tools
   } else {
-    _should_lint = true
+    _static_analysis = invoker.static_analysis
+  }
+
+  # TODO(hepler): Remove support for the lint option.
+  if (defined(invoker.lint)) {
+    assert(!defined(invoker.static_analysis),
+           "'lint' is deprecated; use 'static_analysis' instead")
+
+    # Only allow 'lint = false', for backwards compatibility.
+    assert(invoker.lint == false, "'lint' is deprecated; use 'static_analysis'")
+    print("WARNING:",
+          "The 'lint' option for pw_python_package is deprecated.",
+          "Instead, use 'static_analysis = []' to disable linting.")
+    _static_analysis = []
+  }
+
+  foreach(_tool, _static_analysis) {
+    assert(_supported_static_analysis_tools + [ _tool ] - [ _tool ] !=
+               _supported_static_analysis_tools,
+           "'$_tool' is not a supported static analysis tool")
   }
 
   # Argument: sources (list)
@@ -388,7 +479,7 @@ template("pw_python_package") {
       ]
     }
 
-    if (_should_lint || _test_sources != []) {
+    if (_static_analysis != [] || _test_sources != []) {
       # All packages to install for either general use or test running.
       _test_install_deps = [ ":$target_name.install" ]
       foreach(dep, _python_test_deps + [ "$dir_pw_build:python_lint" ]) {
@@ -397,84 +488,38 @@ template("pw_python_package") {
     }
 
     # For packages that are not generated, create targets to run mypy and pylint.
-    if (_should_lint) {
+    foreach(_tool, _static_analysis) {
       # Run lint tools from the setup or target directory so that the tools detect
       # config files (e.g. pylintrc or mypy.ini) in that directory. Config files
       # may be explicitly specified with the pylintrc or mypy_ini arguments.
-      if (defined(_setup_dir)) {
-        _lint_directory = rebase_path(_setup_dir)
-      } else {
-        _lint_directory = rebase_path(".")
-      }
-
-      pw_python_action("$target_name.lint.mypy") {
-        module = "mypy"
-        args = [
-          "--pretty",
-          "--show-error-codes",
-        ]
-
-        if (defined(invoker.mypy_ini)) {
-          args += [ "--config-file=" + rebase_path(invoker.mypy_ini) ]
-          inputs = [ invoker.mypy_ini ]
-        }
-
-        args += rebase_path(_all_py_files)
-
-        # Use this environment variable to force mypy to colorize output.
-        # See https://github.com/python/mypy/issues/7771
-        environment = [ "MYPY_FORCE_COLOR=1" ]
-
-        directory = _lint_directory
-        stamp = true
-
-        deps = _test_install_deps
-
-        foreach(dep, _python_test_deps) {
-          deps += [ string_replace(dep, "(", ".lint.mypy(") ]
-        }
-      }
-
-      # Create a target to run pylint on each of the Python files in this
-      # package and its dependencies.
-      pw_python_action_foreach("$target_name.lint.pylint") {
-        module = "pylint"
-        args = [
-          rebase_path(".") + "/{{source_target_relative}}",
-          "--jobs=1",
-          "--output-format=colorized",
-        ]
-
-        if (defined(invoker.pylintrc)) {
-          args += [ "--rcfile=" + rebase_path(invoker.pylintrc) ]
-          inputs = [ invoker.pylintrc ]
-        }
-
-        if (host_os == "win") {
-          # Allow CRLF on Windows, in case Git is set to switch line endings.
-          args += [ "--disable=unexpected-line-ending-format" ]
-        }
-
+      target("_pw_python_static_analysis_$_tool", "$target_name.lint.$_tool") {
         sources = _all_py_files
+        deps = _test_install_deps
+        python_deps = _python_deps
 
-        directory = _lint_directory
-        stamp = "$target_gen_dir/{{source_target_relative}}.pylint.passed"
-
-        public_deps = _test_install_deps
-
-        foreach(dep, _python_test_deps) {
-          public_deps += [ string_replace(dep, "(", ".lint.pylint(") ]
+        if (defined(_setup_dir)) {
+          directory = rebase_path(_setup_dir)
+        } else {
+          directory = rebase_path(".")
         }
+
+        _optional_variables = [
+          "mypy_ini",
+          "pylintrc",
+        ]
+        forward_variables_from(invoker, _optional_variables)
+        not_needed(_optional_variables)
       }
-    } else {
-      pw_input_group("$target_name.lint.mypy") {
+    }
+
+    foreach(_unused_tool, _supported_static_analysis_tools - _static_analysis) {
+      pw_input_group("$target_name.lint.$_unused_tool") {
+        inputs = []
         if (defined(invoker.pylintrc)) {
-          inputs = [ invoker.pylintrc ]
+          inputs += [ invoker.pylintrc ]
         }
-      }
-      pw_input_group("$target_name.lint.pylint") {
         if (defined(invoker.mypy_ini)) {
-          inputs = [ invoker.mypy_ini ]
+          inputs += [ invoker.mypy_ini ]
         }
       }
 
@@ -588,6 +633,8 @@ template("pw_python_script") {
     "other_deps",
     "inputs",
     "pylintrc",
+    "mypy_ini",
+    "static_analysis",
   ]
 
   pw_python_package(target_name) {
