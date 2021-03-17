@@ -105,7 +105,8 @@ def _collect_all_files(files: List[Path], root: Path, file_list: TextIO,
     # Make sure there are __init__.py and py.typed files for each subpackage.
     for pkg in subpackages:
         for file in (pkg / name for name in ['__init__.py', 'py.typed']):
-            file.touch()
+            if not file.exists():
+                file.touch()
             files.append(file)
 
     pkg_data: Dict[str, Set[str]] = defaultdict(set)

@@ -269,6 +269,8 @@ template("pw_python_package") {
           args += [ "--module-as-package" ]
         }
 
+        inputs = [ "$_setup_dir/setup.json" ]
+
         public_deps = [
           ":$target_name._mirror_sources_to_out_dir",
           ":$target_name._protos",
