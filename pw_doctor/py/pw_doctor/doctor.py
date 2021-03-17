@@ -350,6 +350,11 @@ def run_doctor(strict=False, checks=None):
 
     if doctor.failures:
         doctor.log.info('Failed checks: %s', ', '.join(doctor.failures))
+        doctor.log.info(
+            "Your environment setup has completed, but something isn't right "
+            'and some things may not work correctly. You may continue with '
+            'development, but please seek support at '
+            'https://bugs.pigweed.dev/ or by reaching out to your team.')
     else:
         doctor.log.info('Environment passes all checks!')
     return len(doctor.failures)
