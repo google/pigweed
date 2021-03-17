@@ -13,11 +13,13 @@
 # the License.
 """Provides functionality for encoding tokenized messages."""
 
+import base64
 import struct
 from typing import Union
 
 _INT32_MAX = 2**31 - 1
 _UINT32_MAX = 2**32 - 1
+BASE64_PREFIX = '$'
 
 
 def _zig_zag_encode(value: int) -> int:
@@ -86,3 +88,8 @@ def encode_token_and_args(token: int, *args: Union[int, float, bytes,
                 f'{arg} has type {type(arg)}, which is not supported')
 
     return bytes(data)
+
+
+def prefixed_base64(data: bytes, prefix: str = '$') -> str:
+    """Encodes a tokenized message as prefixed Base64."""
+    return prefix + base64.b64encode(data).decode()

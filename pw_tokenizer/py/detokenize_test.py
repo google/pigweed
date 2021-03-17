@@ -179,7 +179,9 @@ class DetokenizeTest(unittest.TestCase):
         self.assertIn('unknown token',
                       detok.detokenize(b'1234').error_message())
         self.assertIn('unknown token', repr(detok.detokenize(b'1234')))
-        self.assertEqual('', str(detok.detokenize(b'1234')))
+
+        self.assertEqual('$' + base64.b64encode(b'1234').decode(),
+                         str(detok.detokenize(b'1234')))
 
         self.assertIsNone(detok.detokenize(b'').token)
 
@@ -211,16 +213,18 @@ class DetokenizeTest(unittest.TestCase):
     def test_missing_token(self):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF))
         self.assertIn('missing token', detok.detokenize(b'').error_message())
-        self.assertEqual('', str(detok.detokenize(b'')))
+        self.assertEqual('$', str(detok.detokenize(b'')))
         self.assertIn('missing token', repr(detok.detokenize(b'123')))
 
         self.assertIn('missing token', detok.detokenize(b'1').error_message())
-        self.assertEqual('', str(detok.detokenize(b'1')))
+        self.assertEqual('$' + base64.b64encode(b'1').decode(),
+                         str(detok.detokenize(b'1')))
         self.assertIn('missing token', repr(detok.detokenize(b'1')))
 
         self.assertIn('missing token',
                       detok.detokenize(b'123').error_message())
-        self.assertEqual('', str(detok.detokenize(b'123')))
+        self.assertEqual('$' + base64.b64encode(b'123').decode(),
+                         str(detok.detokenize(b'123')))
         self.assertIn('missing token', repr(detok.detokenize(b'123')))
 
     def test_decode_from_elf_data(self):

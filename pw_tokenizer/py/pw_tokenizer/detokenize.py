@@ -48,13 +48,13 @@ from typing import (BinaryIO, Callable, Dict, List, Iterable, Iterator, Match,
                     NamedTuple, Optional, Pattern, Tuple, Union)
 
 try:
-    from pw_tokenizer import database, decode, tokens
+    from pw_tokenizer import database, decode, encode, tokens
 except ImportError:
     # Append this path to the module search path to allow running this module
     # without installing the pw_tokenizer package.
     sys.path.append(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))))
-    from pw_tokenizer import database, decode, tokens
+    from pw_tokenizer import database, decode, encode, tokens
 
 ENCODED_TOKEN = struct.Struct('<I')
 _LOG = logging.getLogger('pw_tokenizer')
@@ -149,7 +149,9 @@ class DetokenizedString:
         if self._show_errors:
             return '<[ERROR: {}|{!r}]>'.format(self.error_message(),
                                                self.encoded_message)
-        return ''
+
+        # Display the string as prefixed Base64 if it cannot be decoded.
+        return encode.prefixed_base64(self.encoded_message)
 
     def __repr__(self) -> str:
         if self.ok():
@@ -353,7 +355,7 @@ def _detokenize_prefixed_base64(
     return decode_and_detokenize
 
 
-BASE64_PREFIX = b'$'
+BASE64_PREFIX = encode.BASE64_PREFIX.encode()
 DEFAULT_RECURSION = 9
 
 
