@@ -16,6 +16,10 @@
 
 #include <cstring>
 
+#include "pw_assert/assert.h"
+#include "pw_assert/light.h"
+#include "pw_log/log.h"
+
 namespace pw::bloat {
 
 char* volatile non_optimizable_pointer;
@@ -50,6 +54,14 @@ void BloatThisBinary() {
                kRandomLargeNumber);
 
   *non_optimizable_pointer = std::strlen(non_optimizable_pointer);
+
+  // This code ensures users do not have to pay for the base cost of using
+  // asserts and logging.
+  PW_ASSERT(*non_optimizable_pointer);
+  PW_DASSERT(*non_optimizable_pointer);
+  PW_CHECK_INT_GE(*non_optimizable_pointer, 0, "Ensure this logic stays");
+  PW_DCHECK_INT_GE(*non_optimizable_pointer, 0, "Ensure this logic stays");
+  PW_LOG_INFO("We care about optimizing: %d", *non_optimizable_pointer);
 }
 
 }  // namespace pw::bloat

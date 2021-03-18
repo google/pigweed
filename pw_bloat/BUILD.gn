@@ -28,6 +28,10 @@ pw_source_set("bloat_this_binary") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_bloat/bloat_this_binary.h" ]
   sources = [ "bloat_this_binary.cc" ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_log,
+  ]
 }
 
 pw_source_set("base_main") {
