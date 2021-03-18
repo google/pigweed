@@ -158,6 +158,14 @@ the Persistent container.
       // ... rest of main
     }
 
+Size Report
+-----------
+The following size report showcases the overhead for using Persistent. Note that
+this is templating the Persistent only on a ``uint32_t``, ergo the cost without
+pw_checksum's CRC16 is the approximate cost per type.
+
+.. include:: persistent_size
+
 Compatibility
 -------------
 * C++17
