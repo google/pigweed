@@ -22,9 +22,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt::hci {
+
+// Our ACL implementation allows specifying a Unique ChannelId for purposes of grouping packets so
+// they can be dropped together when necessary. In practice, this channel id will always be equal
+// to a given L2CAP ChannelId, as specified in the l2cap library
+using UniqueChannelId = uint16_t;
 
 class Transport;
 
@@ -66,7 +70,7 @@ class DataBufferInfo {
 // This currently only supports the Packet-based Data Flow Control as defined in
 // Core Spec v5.0, Vol 2, Part E, Section 4.1.1.
 using ACLPacketPredicate =
-    fit::function<bool(const ACLDataPacketPtr& packet, l2cap::ChannelId channel_id)>;
+    fit::function<bool(const ACLDataPacketPtr& packet, UniqueChannelId channel_id)>;
 
 class ACLDataChannel final {
  public:
@@ -114,7 +118,7 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
+  bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                   PacketPriority priority = PacketPriority::kLow);
 
   // Queues the given list of ACL data packets to be sent to the controller. The
@@ -133,7 +137,7 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPackets(LinkedList<ACLDataPacket> packets, l2cap::ChannelId channel_id,
+  bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
                    PacketPriority priority = PacketPriority::kLow);
 
   // Allowlist packets destined for the link identified by |handle| (of link type |ll_type|) for
@@ -187,7 +191,7 @@ class ACLDataChannel final {
  private:
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {
-    QueuedDataPacket(Connection::LinkType ll_type, l2cap::ChannelId channel_id,
+    QueuedDataPacket(Connection::LinkType ll_type, UniqueChannelId channel_id,
                      PacketPriority priority, ACLDataPacketPtr packet)
         : ll_type(ll_type), channel_id(channel_id), priority(priority), packet(std::move(packet)) {}
 
@@ -196,7 +200,7 @@ class ACLDataChannel final {
     QueuedDataPacket& operator=(QueuedDataPacket&& other) = default;
 
     Connection::LinkType ll_type;
-    l2cap::ChannelId channel_id;
+    UniqueChannelId channel_id;
     PacketPriority priority;
     ACLDataPacketPtr packet;
   };

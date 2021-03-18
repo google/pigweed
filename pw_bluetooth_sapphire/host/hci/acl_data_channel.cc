@@ -121,7 +121,7 @@ void ACLDataChannel::SetDataRxHandler(ACLPacketHandler rx_callback) {
   rx_callback_ = std::move(rx_callback);
 }
 
-bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId channel_id,
+bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                                 PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
@@ -154,7 +154,7 @@ bool ACLDataChannel::SendPacket(ACLDataPacketPtr data_packet, l2cap::ChannelId c
   return true;
 }
 
-bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, l2cap::ChannelId channel_id,
+bool ACLDataChannel::SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
                                  PacketPriority priority) {
   if (!is_initialized_) {
     bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
@@ -221,7 +221,7 @@ void ACLDataChannel::UnregisterLink(hci::ConnectionHandle handle) {
   }
 
   // remove packets with matching connection handle in send queue
-  auto filter = [handle](const ACLDataPacketPtr& packet, l2cap::ChannelId channel_id) {
+  auto filter = [handle](const ACLDataPacketPtr& packet, UniqueChannelId channel_id) {
     return packet->connection_handle() == handle;
   };
   DropQueuedPackets(filter);
