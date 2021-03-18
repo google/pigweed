@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_bloat/bloat_this_binary.h"
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
 #include "pw_status/status.h"
 
@@ -20,6 +21,8 @@ constexpr std::byte kValue = (std::byte)0xFF;
 constexpr std::byte kData[1] = {kValue};
 
 int main() {
+  pw::bloat::BloatThisBinary();
+
   pw::ring_buffer::PrefixedEntryRingBuffer ring(true /* user_preamble */);
   std::byte buffer[kRingBufferSize];
 

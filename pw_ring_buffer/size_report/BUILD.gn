@@ -18,10 +18,16 @@ import("$dir_pw_build/target_types.gni")
 
 pw_executable("ring_buffer_simple") {
   sources = [ "ring_buffer_simple.cc" ]
-  deps = [ ".." ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
 }
 
 pw_executable("ring_buffer_multi") {
   sources = [ "ring_buffer_multi.cc" ]
-  deps = [ ".." ]
+  deps = [
+    "$dir_pw_bloat:bloat_this_binary",
+    "..",
+  ]
 }
