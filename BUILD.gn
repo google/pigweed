@@ -205,6 +205,7 @@ if (current_toolchain != default_toolchain) {
     deps = [
       "$dir_pigweed/docs",
       "$dir_pw_allocator",
+      "$dir_pw_analog",
       "$dir_pw_base64",
       "$dir_pw_blob_store",
       "$dir_pw_bytes",
@@ -247,6 +248,7 @@ if (current_toolchain != default_toolchain) {
   pw_test_group("pw_module_tests") {
     group_deps = [
       "$dir_pw_allocator:tests",
+      "$dir_pw_analog:tests",
       "$dir_pw_assert:tests",
       "$dir_pw_base64:tests",
       "$dir_pw_blob_store:tests",
