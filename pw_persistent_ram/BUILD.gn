@@ -26,20 +26,37 @@ config("public_include_path") {
 
 pw_source_set("pw_persistent_ram") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_persistent_ram/persistent.h" ]
+  public = [
+    "public/pw_persistent_ram/persistent.h",
+    "public/pw_persistent_ram/persistent_buffer.h",
+  ]
+  sources = [ "persistent_buffer.cc" ]
   public_deps = [
     dir_pw_assert,
+    dir_pw_bytes,
     dir_pw_checksum,
+    dir_pw_stream,
   ]
 }
 
 pw_test_group("tests") {
-  tests = [ ":persistent_test" ]
+  tests = [
+    ":persistent_test",
+    ":persistent_buffer_test",
+  ]
 }
 
 pw_test("persistent_test") {
   deps = [ ":pw_persistent_ram" ]
   sources = [ "persistent_test.cc" ]
+}
+
+pw_test("persistent_buffer_test") {
+  deps = [
+    ":pw_persistent_ram",
+    dir_pw_random,
+  ]
+  sources = [ "persistent_buffer_test.cc" ]
 }
 
 pw_doc_group("docs") {

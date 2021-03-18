@@ -209,6 +209,54 @@ object's checksum is updated to reflect the changes.
       // ... rest of main
     }
 
+------------------------------------
+pw::persistent_ram::PersistentBuffer
+------------------------------------
+The PersistentBuffer is a persistent storage container for variable-length
+serialized data. Rather than allowing direct access to the underlying buffer for
+random-access mutations, the PersistentBuffer is mutable through a
+PersistentBufferWriter that implements the pw::stream::Writer interface. This
+removes the potential for logical errors due to RAII or open()/close() semantics
+as both the PersistentBuffer and PersistentBufferWriter can be used validly as
+long as their access is serialized.
+
+Example
+-------
+An example use case is emitting crash handler logs to a buffer for them to be
+available after a the device reboots. Once the device reboots, the logs would be
+emitted by the logging system. While this isn't always practical for plaintext
+logs, tokenized logs are small enough for this to be useful.
+
+.. code-block:: cpp
+
+    #include "pw_persistent_ram/persistent_buffer.h"
+    #include "pw_preprocessor/compiler.h"
+
+    using pw::persistent_ram::PersistentBuffer;
+    using pw::persistent_ram::PersistentBuffer::PersistentBufferWriter;
+
+    PW_KEEP_IN_SECTION(".noinit") PersistentBuffer<2048> crash_logs;
+    void CheckForCrashLogs() {
+      if (crash_logs.has_value()) {
+        // A function that dumps sequentially serialized logs using pw_log.
+        DumpRawLogs(crash_logs.written_data());
+        crash_logs.clear();
+      }
+    }
+
+    void HandleCrash(CrashInfo* crash_info) {
+      PersistentBufferWriter crash_log_writer = crash_logs.GetWriter();
+      // Sets the pw::stream::Writer that pw_log should dump logs to.
+      crash_log_writer.clear();
+      SetLogSink(crash_log_writer);
+      // Handle crash, calling PW_LOG to log useful info.
+    }
+
+    int main() {
+      void CheckForCrashLogs();
+      // ... rest of main
+    }
+
 Size Report
 -----------
 The following size report showcases the overhead for using Persistent. Note that

@@ -26,8 +26,16 @@ pw_cc_library(
     name = "pw_persistent_ram",
     hdrs = [
         "public/pw_persistent_ram/persistent.h",
+        "public/pw_persistent_ram/persistent_buffer.h",
     ],
     includes = ["public"],
+    srcs = ["persistent_buffer.cc"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_checksum",
+        "//pw_stream",
+    ],
 )
 
 pw_cc_test(
@@ -38,5 +46,17 @@ pw_cc_test(
     deps = [
         ":pw_persistent_ram",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "persistent_buffer_test",
+    srcs = [
+        "persistent_buffer_test.cc",
+    ],
+    deps = [
+        ":pw_persistent_ram",
+        "//pw_unit_test",
+        "//pw_random",
     ],
 )
