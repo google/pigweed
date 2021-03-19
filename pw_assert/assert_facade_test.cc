@@ -22,8 +22,7 @@
 // assert backend from triggering.
 //
 // clang-format off
-#define PW_ASSERT_USE_SHORT_NAMES 1
-#include "pw_assert/internal/assert_impl.h"
+#include "pw_assert/internal/check_impl.h"
 // clang-format on
 
 #include "gtest/gtest.h"
@@ -452,26 +451,6 @@ TEST(AssertPass, DCheckDisabledBinaryOpTwoSideEffectingCalls_2) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 0);
 }
 #endif  // PW_ASSERT_ENABLE_DEBUG
-
-// Note: This requires enabling PW_ASSERT_USE_SHORT_NAMES 1 above.
-TEST(Check, ShortNamesWork) {
-  // Crash
-  CRASH("msg");
-  CRASH("msg: %d", 5);
-
-  // Check
-  CHECK(true);
-  CHECK(true, "msg");
-  CHECK(true, "msg: %d", 5);
-  CHECK(false);
-  CHECK(false, "msg");
-  CHECK(false, "msg: %d", 5);
-
-  // Check with binary comparison
-  CHECK_INT_LE(1, 2);
-  CHECK_INT_LE(1, 2, "msg");
-  CHECK_INT_LE(1, 2, "msg: %d", 5);
-}
 
 // Verify PW_CHECK_OK, including message handling.
 TEST_F(AssertFail, StatusNotOK) {

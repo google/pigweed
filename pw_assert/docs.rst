@@ -25,11 +25,11 @@ The ``pw_assert`` API provides three classes of macros:
   a message.
 - **PW_CHECK_<type>_<cmp>(a, b[, fmt, ...])** - Assert that the expression ``a
   <cmp> b`` is true, optionally with a message.
-- **PW_ASSERT(condition)** - Header- and constexpr- assert.
+- **PW_ASSERT(condition)** - Header- and constexpr-safe assert.
 
 .. tip::
 
-  All of the assert macros optionally support a message with additional
+  All of the ``CHECK`` macros optionally support a message with additional
   arguments, to assist in debugging when an assert triggers:
 
   .. code-block:: cpp
@@ -42,7 +42,7 @@ Example
 
 .. code-block:: cpp
 
-  #include "pw_assert/assert.h"
+  #include "pw_assert/check.h"
 
   int main() {
     bool sensor_running = StartSensor(&msg);
@@ -72,7 +72,7 @@ Example
 
 .. tip::
 
-  Use ``PW_ASSERT`` from ``pw_assert/light.h`` for asserts in headers or
+  Use ``PW_ASSERT`` from ``pw_assert/assert.h`` for asserts in headers or
   asserting in ``constexpr`` contexts.
 
 Structure of assert modules
@@ -102,9 +102,8 @@ See the Backend API section below for more details.
 ----------
 Facade API
 ----------
-
 The below functions describe the assert API functions that applications should
-invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
+invoke to assert. These macros are found in the ``pw_assert/check.h`` header.
 
 .. cpp:function:: PW_CRASH(format, ...)
 
@@ -392,9 +391,9 @@ invoke to assert. These macros found in the ``pw_assert/assert.h`` header.
     code; for example ``status == RESOURCE_EXHAUSTED`` instead of ``status ==
     5``.
 
----------
-Light API
----------
+----------
+Assert API
+----------
 The normal ``PW_CHECK_*`` and ``PW_DCHECK_*`` family of macros are intended to
 provide rich debug information, like the file, line number, value of operands
 in boolean comparisons, and more. However, this comes at a cost: these macros
@@ -411,12 +410,11 @@ There are several issues with the normal ``PW_CHECK_*`` suite of macros:
 4. ``PW_CHECK_*`` can trigger circular dependencies when asserts are used from
    low-level contexts, like in ``<span>``.
 
-**Light asserts** solve all of the above three problems: No risk of ODR
-violations, are constexpr safe, and have a tiny call site footprint; and there
-is no header dependency on the backend preventing circular include issues.
-However, there are **no format messages, no captured line number, no captured
-file, no captured expression, or anything other than a binary indication of
-failure**.
+**PW_ASSERT** solves all of the above problems: No risk of ODR violations, are
+constexpr safe, and have a tiny call site footprint; and there is no header
+dependency on the backend preventing circular include issues.  However, there
+are **no format messages, no captured line number, no captured file, no captured
+expression, or anything other than a binary indication of failure**.
 
 Example
 -------
@@ -425,7 +423,7 @@ Example
 
   // This example demonstrates asserting in a header.
 
-  #include "pw_assert/light.h"
+  #include "pw_assert/assert.h"
 
   class InlinedSubsystem {
    public:
@@ -441,8 +439,8 @@ Example
     }
   };
 
-Light API reference
--------------------
+PW_ASSERT API reference
+-----------------------
 .. cpp:function:: PW_ASSERT(condition)
 
   A header- and constexpr-safe version of ``PW_CHECK()``.
@@ -468,10 +466,11 @@ Light API reference
 
   Use ``PW_CHECK_*()`` whenever possible.
 
-Light API backend
------------------
-The light API ultimately calls the C function ``pw_assert_HandleFailure()``,
-which must be provided by the assert backend.
+PW_ASSERT API backend
+---------------------
+The ``PW_ASSERT`` API ultimately calls the C function
+``pw_assert_HandleFailure()``, which must be provided by the ``pw_assert``
+backend.
 
 -----------
 Backend API
@@ -547,14 +546,14 @@ and that header must define the following macros:
     See :ref:`module-pw_assert_basic` for one way to combine these arguments
     into a meaningful error message.
 
-Additionally, the backend must provide a link-time function for the light
-assert handler. This does not need to appear in the backend header, but instead
-is in a ``.cc`` file.
+Additionally, the backend must provide a link-time function for the
+``PW_ASSERT`` assert handler. This does not need to appear in the backend
+header, but instead is in a ``.cc`` file.
 
 .. cpp:function:: pw_assert_HandleFailure()
 
   Handle a low-level crash. This crash entry happens through
-  ``pw_assert/light.h``. In this crash handler, there is no access to line,
+  ``pw_assert/assert.h``. In this crash handler, there is no access to line,
   file, expression, or other rich assert information. Backends should do
   something reasonable in this case; typically, capturing the stack is useful.
 

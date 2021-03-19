@@ -91,6 +91,9 @@ template("pw_facade") {
   }
 
   _facade_vars = [
+    # allow_circular_includes_from should very rarely be used, but when it is,
+    # it only applies to headers, so should be in the .facade target.
+    "allow_circular_includes_from",
     "public_configs",
     "public_deps",
     "public",

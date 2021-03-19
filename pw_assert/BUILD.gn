@@ -31,15 +31,21 @@ pw_facade("pw_assert") {
   backend = pw_assert_BACKEND
   public_configs = [ ":default_config" ]
   public = [
-    "public/pw_assert/assert.h",
-    "public/pw_assert/internal/assert_impl.h",
+    "public/pw_assert/check.h",
+    "public/pw_assert/internal/check_impl.h",
+    "public/pw_assert/short.h",
   ]
   public_deps = [
     dir_pw_preprocessor,
 
-    # Also expose light.h to all users of pw_assert.
+    # Also expose assert.h to all users of pw_assert.
     ":light",
   ]
+
+  # TODO(pwbug/350): Allow assert.h to include check.h for backwards
+  #     compatibility. Remove this when projects have migrated.
+  allow_circular_includes_from = [ ":light" ]
+  deps = [ ":light" ]
 }
 
 # Provide a way include "pw_assert/light.h" without depending on the full
@@ -51,6 +57,7 @@ pw_facade("pw_assert") {
 pw_source_set("light") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_assert/assert.h",
     "public/pw_assert/light.h",
 
     # Needed for PW_ASSERT_ENABLE_DEBUG. Note that depending on :pw_assert to
@@ -85,7 +92,7 @@ pw_test("assert_facade_test") {
   sources = [
     "assert_facade_test.cc",
     "fake_backend.cc",
-    "public/pw_assert/internal/assert_impl.h",
+    "public/pw_assert/internal/check_impl.h",
     "pw_assert_test/fake_backend.h",
   ]
   deps = [

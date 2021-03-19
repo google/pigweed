@@ -29,9 +29,11 @@ pw_cc_library(
     name = "facade",
     hdrs = [
         "public/pw_assert/assert.h",
-        "public/pw_assert/internal/assert_impl.h",
+        "public/pw_assert/check.h",
+        "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/light.h",
         "public/pw_assert/options.h",
+        "public/pw_assert/short.h",
     ],
     includes = ["public"],
     deps = [
