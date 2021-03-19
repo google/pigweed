@@ -160,7 +160,8 @@ class _Artifact(NamedTuple):
 # Matches a non-phony build statement.
 _GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 
-_MAIN_ARTIFACTS = '', '.elf', '.a', '.so'
+# Extensions used for compilation artifacts.
+_MAIN_ARTIFACTS = '', '.elf', '.a', '.so', '.dylib', '.exe', '.lib', '.dll'
 
 
 def _get_artifact(build_dir: Path, entries: List[str]) -> _Artifact:
@@ -171,14 +172,16 @@ def _get_artifact(build_dir: Path, entries: List[str]) -> _Artifact:
     """
     assert entries, "There should be at least one entry here!"
 
-    if len(entries) != 1:
-        entries = [p for p in entries if Path(p).suffix in _MAIN_ARTIFACTS]
-
     if len(entries) == 1:
         return _Artifact(build_dir / entries[0], {})
 
+    filtered = [p for p in entries if Path(p).suffix in _MAIN_ARTIFACTS]
+
+    if len(filtered) == 1:
+        return _Artifact(build_dir / filtered[0], {})
+
     raise ExpressionError(
-        f'Expected 1, but found {len(entries)} artifacts, after filtering for '
+        f'Expected 1, but found {len(filtered)} artifacts, after filtering for '
         f'extensions {", ".join(repr(e) for e in _MAIN_ARTIFACTS)}: {entries}')
 
 
