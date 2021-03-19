@@ -119,5 +119,11 @@
     "tags": [
       "version:2020-08-05"
     ]
+  },
+  {
+    "path": "infra/3pp/tools/renode/${os=linux}-${arch=amd64}",
+    "tags": [
+      "version:2@renode-1.11.0+20210306gite7897c1"
+    ]
   }
 ]

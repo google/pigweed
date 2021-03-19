@@ -558,6 +558,11 @@ def static_analysis(ctx: PresubmitContext):
         raise PresubmitFailure
 
 
+def renode_check(ctx: PresubmitContext):
+    """Placeholder for future check."""
+    _LOG.info('%s %s', ctx.root, ctx.output_dir)
+
+
 #
 # Presubmit check programs
 #
@@ -575,6 +580,7 @@ OTHER_CHECKS = (
     gn_full_qemu_check,
     gn_clang_build,
     gn_gcc_build,
+    renode_check,
     static_analysis,
 )
 
