@@ -31,7 +31,6 @@ pw_cc_library(
         "public/pw_assert/assert.h",
         "public/pw_assert/check.h",
         "public/pw_assert/internal/check_impl.h",
-        "public/pw_assert/light.h",
         "public/pw_assert/options.h",
         "public/pw_assert/short.h",
     ],

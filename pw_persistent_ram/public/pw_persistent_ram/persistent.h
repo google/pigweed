@@ -21,6 +21,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_checksum/crc16_ccitt.h"
+#include "pw_preprocessor/compiler.h"
 
 namespace pw::persistent_ram {
 

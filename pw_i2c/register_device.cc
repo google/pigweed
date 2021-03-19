@@ -14,6 +14,7 @@
 
 #include "pw_i2c/register_device.h"
 
+#include "pw_assert/check.h"
 #include "pw_bytes/byte_builder.h"
 
 namespace pw {
