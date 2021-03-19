@@ -14,7 +14,7 @@
 
 #include "pb_decode.h"
 #include "pb_encode.h"
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_log/log.h"
 #include "pw_sys_io/sys_io.h"

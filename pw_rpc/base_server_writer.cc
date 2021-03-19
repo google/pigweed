@@ -14,7 +14,7 @@
 
 #include "pw_rpc/internal/base_server_writer.h"
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server.h"

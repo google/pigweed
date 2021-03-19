@@ -17,7 +17,7 @@
 #include <cstring>
 #include <span>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_containers/vector.h"
 #include "pw_metric/metric.h"
 #include "pw_preprocessor/util.h"

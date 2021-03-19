@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/packet.h"

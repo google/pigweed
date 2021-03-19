@@ -17,6 +17,7 @@
 #include <array>
 #include <span>
 
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_tokenizer/base64.h"
 

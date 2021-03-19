@@ -15,7 +15,7 @@
 
 #include <cstring>
 
-#include "pw_assert/light.h"
+#include "pw_assert/check.h"
 #include "pw_multisink/drain.h"
 #include "pw_status/try.h"
 #include "pw_varint/varint.h"

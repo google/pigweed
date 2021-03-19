@@ -14,7 +14,7 @@
 
 #include "pw_sync/binary_semaphore.h"
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 
 using pw::chrono::SystemClock;
 

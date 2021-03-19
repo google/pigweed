@@ -14,7 +14,7 @@
 #pragma once
 
 #include "RTOS.h"
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_interrupt/context.h"
 #include "pw_sync/mutex.h"
 

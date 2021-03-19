@@ -17,7 +17,6 @@
 #include <initializer_list>
 #include <limits>
 
-#include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_preprocessor/arguments.h"
 #include "pw_tokenizer/tokenize.h"

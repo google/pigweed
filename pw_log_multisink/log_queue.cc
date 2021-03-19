@@ -14,7 +14,7 @@
 
 #include "pw_log_multisink/log_queue.h"
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_log/levels.h"
 #include "pw_log_proto/log.pwpb.h"
 #include "pw_protobuf/wire_format.h"

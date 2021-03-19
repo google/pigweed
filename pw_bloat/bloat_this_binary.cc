@@ -17,7 +17,7 @@
 #include <cstring>
 
 #include "pw_assert/assert.h"
-#include "pw_assert/light.h"
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 
 namespace pw::bloat {

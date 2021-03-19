@@ -17,7 +17,7 @@
 #include <cstddef>
 #include <span>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"

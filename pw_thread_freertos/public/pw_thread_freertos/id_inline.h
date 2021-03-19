@@ -14,7 +14,7 @@
 #pragma once
 
 #include "FreeRTOS.h"
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_interrupt/context.h"
 #include "pw_thread/id.h"
 #include "task.h"

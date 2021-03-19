@@ -47,7 +47,7 @@ bootloaders and the application boot code do not clobber it.
 
    .. code-block:: cpp
 
-      #include "pw_assert/assert.h"
+      #include "pw_assert/check.h"
       #include "pw_persistent_ram/persistent.h"
 
       // Provided for example through a linker script.

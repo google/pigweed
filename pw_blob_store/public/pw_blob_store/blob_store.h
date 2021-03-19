@@ -15,7 +15,7 @@
 
 #include <span>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_kvs/checksum.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs/key_value_store.h"

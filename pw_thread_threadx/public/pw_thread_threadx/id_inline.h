@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_thread/id.h"
 #include "tx_api.h"
 // Prior to ThreadX 6.1, this contained TX_THREAD_GET_SYSTEM_STATE().

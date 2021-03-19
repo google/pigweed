@@ -17,7 +17,7 @@
 #include <span>
 #include <type_traits>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {

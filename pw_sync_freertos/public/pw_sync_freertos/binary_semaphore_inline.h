@@ -14,7 +14,7 @@
 #pragma once
 
 #include "FreeRTOS.h"
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_chrono_freertos/system_clock_constants.h"
 #include "pw_interrupt/context.h"

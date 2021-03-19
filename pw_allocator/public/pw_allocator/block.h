@@ -18,7 +18,6 @@
 
 #include <span>
 
-#include "pw_assert/assert.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -211,7 +210,7 @@ class Block final {
   // return false to indicate this block is corrupted.
   bool IsValid() const { return CheckStatus() == BlockStatus::VALID; }
 
-  // Uses PW_DCHECK to log information about the reason if a blcok is invalid.
+  // Uses PW_DCHECK to log information about the reason if a block is invalid.
   // This function will do nothing if the block is valid.
   void CrashIfInvalid();
 

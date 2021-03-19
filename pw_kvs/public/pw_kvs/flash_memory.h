@@ -18,7 +18,7 @@
 #include <initializer_list>
 #include <span>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_kvs/alignment.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"

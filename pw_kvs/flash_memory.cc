@@ -21,7 +21,7 @@
 #include <cinttypes>
 #include <cstring>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/log.h"
 #include "pw_status/status_with_size.h"

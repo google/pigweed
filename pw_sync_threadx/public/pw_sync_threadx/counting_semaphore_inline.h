@@ -15,7 +15,7 @@
 
 #include <algorithm>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_interrupt/context.h"
 #include "pw_sync/counting_semaphore.h"

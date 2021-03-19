@@ -14,7 +14,7 @@
 
 #include "pw_hdlc/decoder.h"
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_bytes/endian.h"
 #include "pw_hdlc/internal/protocol.h"
 #include "pw_log/log.h"

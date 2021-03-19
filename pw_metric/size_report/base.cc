@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_log/log.h"
 

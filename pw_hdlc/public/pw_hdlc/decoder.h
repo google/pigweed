@@ -19,7 +19,7 @@
 #include <cstring>
 #include <functional>  // std::invoke
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_checksum/crc32.h"
 #include "pw_result/result.h"

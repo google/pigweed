@@ -16,7 +16,7 @@
 #include <array>
 #include <span>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_hdlc/encoder.h"
 #include "pw_rpc/channel.h"
 #include "pw_stream/stream.h"

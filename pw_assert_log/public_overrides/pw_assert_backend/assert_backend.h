@@ -14,7 +14,7 @@
 
 // This override header merely points to the true backend, in this case the
 // basic one. The reason to redirect is to permit the use of multiple backends
-// (though only pw_assert/assert.h can only point to 1 backend).
+// (though only pw_assert/check.h can only point to 1 backend).
 #pragma once
 
 #include "pw_assert_log/assert_log.h"

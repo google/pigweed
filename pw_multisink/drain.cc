@@ -13,8 +13,6 @@
 // the License.
 #include "pw_multisink/drain.h"
 
-#include "pw_assert/light.h"
-
 namespace pw {
 namespace multisink {
 

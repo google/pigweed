@@ -17,7 +17,7 @@
 #include <algorithm>
 
 #include "RTOS.h"
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_chrono_embos/system_clock_constants.h"
 #include "pw_thread/id.h"

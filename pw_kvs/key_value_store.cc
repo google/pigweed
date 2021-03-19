@@ -22,7 +22,7 @@
 #include <cstring>
 #include <type_traits>
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_kvs_private/config.h"
 #include "pw_log/shorter.h"
 #include "pw_status/try.h"

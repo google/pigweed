@@ -19,7 +19,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_checksum/crc16_ccitt.h"
 
 namespace pw::persistent_ram {

@@ -37,7 +37,7 @@
 
 // clang-format off
 #define PW_ASSERT_USE_SHORT_NAMES 1
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 // clang-format on
 
 #include "gtest/gtest.h"

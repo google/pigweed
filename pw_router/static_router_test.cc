@@ -15,6 +15,7 @@
 #include "pw_router/static_router.h"
 
 #include "gtest/gtest.h"
+#include "pw_assert/check.h"
 #include "pw_router/egress_function.h"
 
 namespace pw::router {

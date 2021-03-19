@@ -15,7 +15,7 @@
 #include "pw_sync/interrupt_spin_lock.h"
 
 #include "RTOS.h"
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 
 namespace pw::sync {
 

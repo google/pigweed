@@ -38,12 +38,12 @@ class Channel : public rpc::Channel {
 
     OutputBuffer(OutputBuffer&& other) { *this = std::move(other); }
 
-    ~OutputBuffer() { PW_DCHECK(buffer_.empty()); }
+    ~OutputBuffer() { PW_DASSERT(buffer_.empty()); }
 
     OutputBuffer& operator=(const OutputBuffer&) = delete;
 
     OutputBuffer& operator=(OutputBuffer&& other) {
-      PW_DCHECK(buffer_.empty());
+      PW_DASSERT(buffer_.empty());
       buffer_ = other.buffer_;
       other.buffer_ = {};
       return *this;

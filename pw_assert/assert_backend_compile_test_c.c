@@ -23,7 +23,7 @@
 #undef PW_ASSERT_USE_SHORT_NAMES
 #define PW_ASSERT_USE_SHORT_NAMES 1
 
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 
 static void EnsureNullIsIncluded(void) {
   // This is a compile check to ensure NULL is defined. It comes before the
@@ -34,7 +34,7 @@ static void EnsureNullIsIncluded(void) {
 
 #include <stdbool.h>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_status/status.h"
 
 #ifdef __cplusplus

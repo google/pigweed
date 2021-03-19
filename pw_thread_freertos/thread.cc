@@ -14,7 +14,7 @@
 #include "pw_thread/thread.h"
 
 #include "FreeRTOS.h"
-#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_thread/id.h"
 #include "pw_thread_freertos/config.h"

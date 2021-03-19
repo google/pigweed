@@ -21,7 +21,7 @@
 #include <cstdint>
 #include <span>
 
-#include "pw_assert/light.h"
+#include "pw_assert/assert.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/method.h"
