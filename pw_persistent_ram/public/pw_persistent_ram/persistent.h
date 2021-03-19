@@ -46,6 +46,37 @@ namespace pw::persistent_ram {
 template <typename T>
 class Persistent {
  public:
+  // This object provides mutable access to the underlying object of a
+  // Persistent<T>.
+  //
+  // WARNING: This object must remain in scope for any modifications of the
+  // Underlying object. If the object is modified after the Mutator goes out
+  // of scope, the CRC will not be updated to reflect changes, invalidating the
+  // contents of the Persistent<T>!
+  //
+  // WARNING: Persistent<T>::has_value() will return false if there are
+  // in-flight modifications by a Mutator that have not yet been flushed.
+  class Mutator {
+   public:
+    explicit constexpr Mutator(Persistent<T>& persistent)
+        : persistent_(persistent) {}
+    ~Mutator() { persistent_.crc_ = persistent_.CalculateCrc(); }
+
+    Mutator(const Mutator&) = delete;  // Copy constructor is disabled.
+
+    T* operator->() { return const_cast<T*>(&persistent_.contents_); }
+
+    // Be careful when sharing a reference or pointer to the underlying object.
+    // Once the Mutator goes out of scope, any changes to the object will
+    // invalidate the checksum. Avoid directly using the underlying object
+    // unless you need to pass it to a function.
+    T& value() { return persistent_.contents_; }
+    T& operator*() { return *const_cast<T*>(&persistent_.contents_); }
+
+   private:
+    Persistent<T>& persistent_;
+  };
+
   // Constructor which does nothing, meaning it never sets the value.
   constexpr Persistent() {}
 
@@ -57,7 +88,7 @@ class Persistent {
   template <class... Args>
   const T& emplace(Args&&... args) {
     new (const_cast<T*>(&contents_)) T(std::forward<Args>(args)...);
-    crc_ = Crc(contents_);
+    crc_ = CalculateCrc();
     return const_cast<T&>(contents_);
   }
 
@@ -65,7 +96,7 @@ class Persistent {
   template <typename U = T>
   Persistent& operator=(U&& value) {
     contents_ = std::move(value);
-    crc_ = Crc(contents_);
+    crc_ = CalculateCrc();
     return *this;
   }
 
@@ -78,7 +109,7 @@ class Persistent {
 
   // Returns true if a value is held by the Persistent.
   bool has_value() const {
-    return crc_ == Crc(contents_);  // There's a value if its CRC matches.
+    return crc_ == CalculateCrc();  // There's a value if its CRC matches.
   }
 
   // Access the value.
@@ -89,18 +120,29 @@ class Persistent {
     return const_cast<T&>(contents_);
   }
 
+  // Get a mutable handle to the underlying data.
+  //
+  // Precondition: has_value() must be true.
+  Mutator mutator() {
+    PW_ASSERT(has_value());
+    return Mutator(*this);
+  }
+
  private:
+  friend class Mutator;
+
   static_assert(std::is_trivially_copy_constructible<T>::value,
                 "If a Persistent persists across reboots, it is effectively "
                 "loaded through a trivial copy constructor.");
+
   static_assert(std::is_trivially_destructible<T>::value,
                 "A Persistent's destructor does not invoke the value's "
                 "destructor, ergo only trivially destructible types are "
                 "supported.");
 
-  static uint16_t Crc(volatile const T& value) {
+  uint16_t CalculateCrc() const {
     return checksum::Crc16Ccitt::Calculate(
-        std::as_bytes(std::span(const_cast<const T*>(&value), 1)));
+        std::as_bytes(std::span(const_cast<const T*>(&contents_), 1)));
   }
 
   // Use unions to denote that these members are never initialized by design and

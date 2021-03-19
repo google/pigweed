@@ -117,8 +117,8 @@ state initially or a valid persisted value from a previous session.
 The destructor does nothing, ergo it is okay if it is not executed during
 shutdown.
 
-Example
--------
+Example: Storing an integer
+---------------------------
 A common use case of persistent data is to track boot counts, or effectively
 how often the device has rebooted. This can be useful for monitoring how many
 times the device rebooted and/or crashed. This can be easily accomplished using
@@ -155,6 +155,57 @@ the Persistent container.
 
     int main() {
       const uint16_t boot_count = boot_count.GetBootCount();
+      // ... rest of main
+    }
+
+Example: Storing larger objects
+-------------------------------
+Larger objects may be inefficient to copy back and forth due to the need for
+a working copy. To work around this, you can get a Mutator handle that provides
+direct access to the underlying object. As long as the Mutator is in scope, it
+is invalid to access the underlying Persistent, but you'll be able to directly
+modify the object in place. Once the Mutator goes out of scope, the Persistent
+object's checksum is updated to reflect the changes.
+
+.. code-block:: cpp
+
+    #include "pw_persistent_ram/persistent.h"
+    #include "pw_preprocessor/compiler.h"
+
+    using pw::persistent_ram::Persistent;
+
+    contexpr size_t kMaxReasonLength = 256;
+
+    struct LastCrashInfo {
+      uint32_t uptime_ms;
+      uint32_t boot_id;
+      char reason[kMaxReasonLength];
+    }
+
+    PW_KEEP_IN_SECTION(".noinit") Persistent<LastBootInfo> persistent_crash_info;
+
+    void HandleCrash(const char* fmt, va_list args) {
+      // Once this scope ends, we know the persistent object has been updated
+      // to reflect changes.
+      {
+        auto& mutable_crash_info = persistent_crash_info.mutator();
+        vsnprintf(mutable_crash_info.reason,
+                  sizeof(mutable_crash_info.reason),
+                  fmt,
+                  args);
+        mutable_crash_info.uptime_ms = system::GetUptimeMs();
+        mutable_crash_info.boot_id = system::GetBootId();
+      }
+      // ...
+    }
+
+    int main() {
+      if (persistent_crash_info.has_value()) {
+        LogLastCrashInfo(persistent_crash_info.value());
+        // Clear crash info once it has been dumped.
+        persistent_crash_info.reset();
+      }
+
       // ... rest of main
     }
 

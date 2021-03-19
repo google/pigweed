@@ -81,5 +81,58 @@ TEST_F(PersistentTest, Emplace) {
   EXPECT_EQ(42u, persistent.value());
 }
 
+class MutablePersistentTest : public ::testing::Test {
+ protected:
+  struct Coordinate {
+    int x;
+    int y;
+    int z;
+  };
+  MutablePersistentTest() { ZeroPersistentMemory(); }
+
+  // Emulate invalidation of persistent section(s).
+  void ZeroPersistentMemory() { memset(&buffer_, 0, sizeof(buffer_)); }
+
+  // Allocate a chunk of aligned storage that can be independently controlled.
+  std::aligned_storage_t<sizeof(Persistent<Coordinate>),
+                         alignof(Persistent<Coordinate>)>
+      buffer_;
+};
+
+TEST_F(MutablePersistentTest, DefaultConstructionAndDestruction) {
+  {
+    // Emulate a boot where the persistent sections were invalidated.
+    // Although the fixture always does this, we do this an extra time to be
+    // 100% confident that an integrity check cannot be accidentally selected
+    // which results in reporting there is valid data when zero'd.
+    ZeroPersistentMemory();
+    auto& persistent = *(new (&buffer_) Persistent<Coordinate>());
+    EXPECT_FALSE(persistent.has_value());
+
+    // Default construct of a Coordinate.
+    persistent.emplace(Coordinate({.x = 5, .y = 6, .z = 7}));
+    ASSERT_TRUE(persistent.has_value());
+    {
+      auto mutable_persistent = persistent.mutator();
+      mutable_persistent->x = 42;
+      (*mutable_persistent).y = 1337;
+      mutable_persistent->z = -99;
+      ASSERT_FALSE(persistent.has_value());
+    }
+
+    EXPECT_EQ(1337, persistent.value().y);
+    EXPECT_EQ(-99, persistent.value().z);
+
+    persistent.~Persistent();  // Emulate shutdown / global destructors.
+  }
+
+  {
+    // Emulate a boot where persistent memory was kept as is.
+    auto& persistent = *(new (&buffer_) Persistent<Coordinate>());
+    ASSERT_TRUE(persistent.has_value());
+    EXPECT_EQ(42, persistent.value().x);
+  }
+}
+
 }  // namespace
 }  // namespace pw::persistent_ram
