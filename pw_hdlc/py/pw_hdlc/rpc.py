@@ -154,7 +154,8 @@ class HdlcRpcClient:
         # Start background thread that reads and processes RPC packets.
         threading.Thread(target=read_and_process_data,
                          daemon=True,
-                         args=(read, lambda: None, frame_handlers)).start()
+                         args=(read, lambda exc: None,
+                               frame_handlers)).start()
 
     def rpcs(self, channel_id: int = None) -> Any:
         """Returns object for accessing services on the specified channel.
