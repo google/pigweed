@@ -243,7 +243,8 @@ brew uninstall python && brew install python
         else:
             break
 
-    raise Exception('failed to download client')
+    raise Exception('failed to download client from https://{}{}'.format(
+        CIPD_HOST, path))
 
 
 def bootstrap(client, silent=('PW_ENVSETUP_QUIET' in os.environ)):
