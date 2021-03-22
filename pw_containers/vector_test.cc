@@ -15,7 +15,6 @@
 #include "pw_containers/vector.h"
 
 #include <cstddef>
-#include <vector>
 
 #include "gtest/gtest.h"
 
@@ -428,6 +427,22 @@ TEST(Vector, Generic) {
     i += 1;
   }
 }
+
+// Test that Vector<T> is trivially destructible when its type is.
+static_assert(std::is_trivially_destructible_v<Vector<int>>);
+static_assert(std::is_trivially_destructible_v<Vector<int, 4>>);
+
+static_assert(std::is_trivially_destructible_v<MoveOnly>);
+static_assert(std::is_trivially_destructible_v<Vector<MoveOnly>>);
+static_assert(std::is_trivially_destructible_v<Vector<MoveOnly, 1>>);
+
+static_assert(std::is_trivially_destructible_v<CopyOnly>);
+static_assert(std::is_trivially_destructible_v<Vector<CopyOnly>>);
+static_assert(std::is_trivially_destructible_v<Vector<CopyOnly, 99>>);
+
+static_assert(!std::is_trivially_destructible_v<Counter>);
+static_assert(!std::is_trivially_destructible_v<Vector<Counter>>);
+static_assert(!std::is_trivially_destructible_v<Vector<Counter, 99>>);
 
 }  // namespace
 }  // namespace pw
