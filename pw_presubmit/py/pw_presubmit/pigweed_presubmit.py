@@ -211,17 +211,66 @@ def cmake_tests(ctx: PresubmitContext):
     build.ninja(ctx.output_dir, 'pw_apps', 'pw_run_tests.modules')
 
 
+# TODO: Slowly add modules here that work with bazel until all
+# modules are added. Then replace with //...
+_MODULES_THAT_WORK_WITH_BAZEL = [
+    '//pw_assert_basic/...',
+    '//pw_base64/...',
+    '//pw_build/...',
+    '//pw_chrono_stl/...',
+    '//pw_containers/...',
+    '//pw_cpu_exception/...',
+    '//pw_docgen/...',
+    '//pw_doctor/...',
+    '//pw_i2c/...',
+    '//pw_log/...',
+    '//pw_log_basic/...',
+    '//pw_polyfill/...',
+    '//pw_preprocessor/...',
+    '//pw_protobuf_compiler/...',
+    '//pw_span/...',
+    '//pw_status/...',
+    '//pw_sys_io/...',
+    '//pw_sys_io_baremetal_lm3s6965evb/...',
+    '//pw_sys_io_stdio/...',
+    '//pw_thread_stl/...',
+    '//pw_toolchain/...',
+    '//pw_varint/...',
+    '//pw_web_ui/...',
+]
+
+
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
 def bazel_test(ctx: PresubmitContext):
+    """Runs bazel test on each bazel compatible module"""
+
     try:
         call('bazel',
              'test',
-             '//...',
+             *_MODULES_THAT_WORK_WITH_BAZEL,
              '--verbose_failures',
              '--verbose_explanations',
              '--worker_verbose',
-             '--symlink_prefix',
-             ctx.output_dir.joinpath('bazel-'),
+             '--test_output=errors',
+             cwd=ctx.root,
+             env=build.env_with_clang_vars())
+    except:
+        _LOG.info('If the Bazel build inexplicably fails while the '
+                  'other builds are passing, try deleting the Bazel cache:\n'
+                  '    rm -rf ~/.cache/bazel')
+        raise
+
+
+@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bzl', 'BUILD'))
+def bazel_build(ctx: PresubmitContext):
+    """Runs Bazel build on each Bazel compatible module"""
+    try:
+        call('bazel',
+             'build',
+             *_MODULES_THAT_WORK_WITH_BAZEL,
+             '--verbose_failures',
+             '--verbose_explanations',
+             '--worker_verbose',
              cwd=ctx.root,
              env=build.env_with_clang_vars())
     except:
@@ -594,6 +643,7 @@ LINTFORMAT = (
 
 QUICK = (
     LINTFORMAT,
+    bazel_test,
     gn_quick_build_check,
     # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
@@ -607,6 +657,8 @@ FULL = (
     gn_arm_build,
     gn_docs_build,
     gn_host_tools,
+    bazel_build,
+    bazel_test,
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now. Skip it on Windows too, since gn_host_build
     # already uses 'gcc' on Windows.
