@@ -397,7 +397,13 @@ Then use `set +x` to go back to normal.
     def cipd(self, spin):
         install_dir = os.path.join(self._install_dir, 'cipd')
 
-        cipd_client = cipd_wrapper.init(install_dir, silent=True)
+        try:
+            cipd_client = cipd_wrapper.init(install_dir, silent=True)
+        except cipd_wrapper.UnsupportedPlatform as exc:
+            return result_func(('    {!r}'.format(exc), ))(
+                _Result.Status.SKIPPED,
+                '    abandoning CIPD setup',
+            )
 
         package_files, glob_warnings = _process_globs(self._cipd_package_file)
         result = result_func(glob_warnings)

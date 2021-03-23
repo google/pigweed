@@ -40,6 +40,31 @@ try:
 except ImportError:
     import urllib.parse as urlparse  # type: ignore[no-redef]
 
+# Generated from the following command. May need to be periodically rerun.
+# $ cipd ls infra/tools/cipd | perl -pe "s[.*/][];s/^/    '/;s/\s*$/',\n/;"
+SUPPORTED_PLATFORMS = (
+    'aix-ppc64',
+    'linux-386',
+    'linux-amd64',
+    'linux-arm64',
+    'linux-armv6l',
+    'linux-mips64',
+    'linux-mips64le',
+    'linux-mipsle',
+    'linux-ppc64',
+    'linux-ppc64le',
+    'linux-s390x',
+    'mac-amd64',
+    'mac-arm64',
+    'windows-386',
+    'windows-amd64',
+)
+
+
+class UnsupportedPlatform(Exception):
+    pass
+
+
 try:
     SCRIPT_DIR = os.path.dirname(__file__)
 except NameError:  # __file__ not defined.
@@ -195,10 +220,11 @@ brew uninstall python && brew install python
         print('=' * 70)
         raise
 
-    path = '/client?platform={platform}-{arch}&version={version}'.format(
-        platform=platform_normalized(),
-        arch=arch_normalized(),
-        version=version)
+    full_platform = '{}-{}'.format(platform_normalized(), arch_normalized())
+    if full_platform not in SUPPORTED_PLATFORMS:
+        raise UnsupportedPlatform(full_platform)
+
+    path = '/client?platform={}&version={}'.format(full_platform, version)
 
     for _ in range(10):
         try:
@@ -285,26 +311,46 @@ def selfupdate(client):
     subprocess.check_call(cmd)
 
 
-def init(install_dir=DEFAULT_INSTALL_DIR, silent=False):
-    """Install/update cipd client."""
-
-    os.environ['CIPD_HTTP_USER_AGENT_PREFIX'] = user_agent()
-
+def _default_client(install_dir):
     client = os.path.join(install_dir, 'cipd')
     if os.name == 'nt':
         client += '.exe'
+    return client
+
+
+def init(install_dir=DEFAULT_INSTALL_DIR, silent=False, client=None):
+    """Install/update cipd client."""
+
+    if not client:
+        client = _default_client(install_dir)
+
+    os.environ['CIPD_HTTP_USER_AGENT_PREFIX'] = user_agent()
+
+    if not os.path.isfile(client):
+        bootstrap(client, silent)
 
     try:
-        if not os.path.isfile(client):
-            bootstrap(client, silent)
+        selfupdate(client)
+    except subprocess.CalledProcessError:
+        print('CIPD selfupdate failed. Bootstrapping then retrying...',
+              file=sys.stderr)
+        bootstrap(client)
+        selfupdate(client)
 
-        try:
-            selfupdate(client)
-        except subprocess.CalledProcessError:
-            print('CIPD selfupdate failed. Bootstrapping then retrying...',
-                  file=sys.stderr)
-            bootstrap(client)
-            selfupdate(client)
+    return client
+
+
+def main(install_dir=DEFAULT_INSTALL_DIR, silent=False):
+    """Install/update cipd client."""
+
+    client = _default_client(install_dir)
+
+    try:
+        init(install_dir=install_dir, silent=silent, client=client)
+
+    except UnsupportedPlatform:
+        # Don't show help message below for this exception.
+        raise
 
     except Exception:
         print('Failed to initialize CIPD. Run '
@@ -322,5 +368,5 @@ def init(install_dir=DEFAULT_INSTALL_DIR, silent=False):
 
 
 if __name__ == '__main__':
-    client_exe = init()
+    client_exe = main()
     subprocess.check_call([client_exe] + sys.argv[1:])
