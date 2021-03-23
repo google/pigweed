@@ -19,6 +19,9 @@
 #include "gtest/gtest.h"
 #include "pw_log/levels.h"
 #include "pw_log_proto/log.pwpb.h"
+#include "pw_log_sink/multisink_adapter.h"
+#include "pw_multisink/drain.h"
+#include "pw_multisink/multisink.h"
 #include "pw_protobuf/decoder.h"
 
 namespace pw::log_sink {
@@ -26,37 +29,19 @@ namespace {
 constexpr size_t kMaxTokenizedMessageSize = 512;
 constexpr char kTokenizedMessage[] = "Test Message";
 
-class TestSink : public Sink {
- public:
-  void HandleEntry(ConstByteSpan message) {
-    pw::protobuf::Decoder log_decoder(message);
-    std::string_view log_entry_message;
+std::string LogMessageToString(ConstByteSpan message) {
+  pw::protobuf::Decoder log_decoder(message);
+  std::string_view log_entry_message;
 
-    EXPECT_TRUE(log_decoder.Next().ok());  // line_level - 2
-    EXPECT_TRUE(log_decoder.Next().ok());  // flags - 3
-    EXPECT_TRUE(log_decoder.Next().ok());  // timestamp - 5
-    EXPECT_TRUE(log_decoder.Next().ok());  // message_string - 16
-    EXPECT_EQ(16U, log_decoder.FieldNumber());
-    EXPECT_TRUE(log_decoder.ReadString(&log_entry_message).ok());
+  EXPECT_TRUE(log_decoder.Next().ok());  // line_level - 2
+  EXPECT_TRUE(log_decoder.Next().ok());  // flags - 3
+  EXPECT_TRUE(log_decoder.Next().ok());  // timestamp - 5
+  EXPECT_TRUE(log_decoder.Next().ok());  // message_string - 16
+  EXPECT_EQ(16U, log_decoder.FieldNumber());
+  EXPECT_TRUE(log_decoder.ReadString(&log_entry_message).ok());
 
-    last_message_string_ = log_entry_message;
-    message_count_++;
-  }
-
-  void HandleDropped(size_t count) { drop_count_ += count; }
-
-  void VerifyMessage(std::string tokenized_message) {
-    EXPECT_EQ(tokenized_message, last_message_string_);
-  }
-
-  size_t GetMessageCount() { return message_count_; }
-  size_t GetDropCount() { return drop_count_; }
-
- private:
-  std::string last_message_string_;
-  size_t message_count_ = 0;
-  size_t drop_count_ = 0;
-};
+  return std::string(log_entry_message);
+}
 
 void LogMessageForTest(const char* message) {
   pw_LogSink_Log(0, 0, nullptr, nullptr, 0, nullptr, "%s", message);
@@ -69,6 +54,28 @@ void LogInvalidMessageForTest() {
 
   pw_LogSink_Log(0, 0, nullptr, nullptr, 0, nullptr, "%s", long_message);
 }
+
+class TestSink final : public Sink {
+ public:
+  void HandleEntry(ConstByteSpan message) final {
+    last_message_string_ = LogMessageToString(message);
+    message_count_++;
+  }
+
+  void HandleDropped(uint32_t count) final { drop_count_ += count; }
+
+  void VerifyMessage(std::string tokenized_message) {
+    EXPECT_EQ(tokenized_message, last_message_string_);
+  }
+
+  uint32_t GetMessageCount() { return message_count_; }
+  uint32_t GetDropCount() { return drop_count_; }
+
+ private:
+  std::string last_message_string_;
+  uint32_t message_count_ = 0;
+  uint32_t drop_count_ = 0;
+};
 
 }  // namespace
 
@@ -124,6 +131,27 @@ TEST(LogSink, DroppedEntries) {
   EXPECT_EQ(test_sink.GetDropCount(), 2U);
 
   RemoveSink(test_sink);
+}
+
+TEST(LogSink, MultiSinkAdapter) {
+  constexpr size_t kMultiSinkBufferSize = 1024;
+  std::byte buffer[kMultiSinkBufferSize];
+  std::byte entry_buffer[kMultiSinkBufferSize];
+  pw::multisink::MultiSink multisink(buffer);
+  pw::multisink::Drain drain;
+  MultiSinkAdapter multisink_adapter(multisink);
+
+  multisink.AttachDrain(drain);
+  LogMessageForTest(kTokenizedMessage);
+
+  AddSink(multisink_adapter);
+  LogMessageForTest(kTokenizedMessage);
+
+  uint32_t drop_count = 0;
+  Result<ConstByteSpan> entry = drain.GetEntry(entry_buffer, drop_count);
+  ASSERT_TRUE(entry.ok());
+  EXPECT_EQ(LogMessageToString(entry.value()), kTokenizedMessage);
+  EXPECT_EQ(drop_count, 1U);
 }
 
 }  // namespace pw::log_sink

@@ -55,7 +55,7 @@ PW_EXTERN_C_END
 #include <string_view>
 
 #include "pw_bytes/span.h"
-#include "pw_log_multisink/sink.h"
+#include "pw_log_sink/sink.h"
 
 namespace pw::log_sink {
 

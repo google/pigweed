@@ -34,13 +34,15 @@ pw_source_set("pw_log_sink") {
   ]
   public = [
     "public/pw_log_sink/log_sink.h",
+    "public/pw_log_sink/multisink_adapter.h",
+    "public/pw_log_sink/sink.h",
     "public_overrides/pw_log_backend/log_backend.h",
   ]
   sources = [ "log_sink.cc" ]
   public_deps = [
     "$dir_pw_bytes",
     "$dir_pw_log:facade",
-    "$dir_pw_log_multisink:log_queue",
+    "$dir_pw_multisink",
     "$dir_pw_preprocessor",
     "$dir_pw_status",
   ]

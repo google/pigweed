@@ -29,14 +29,16 @@ pw_cc_library(
     deps = [
         "//pw_bytes",
         "//pw_log:facade",
-        "//pw_log_multisink:log_queue",
+        "//pw_multisink",
         "//pw_preprocessor",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",
     ],
     hdrs = [
         "public/pw_log_sink/log_sink.h",
-        "public_overrides/pw_log_backend/log_backend.h"
+        "public/pw_log_sink/multisink_adapter.h",
+        "public/pw_log_sink/sink.h",
+        "public_overrides/pw_log_backend/log_backend.h",
     ]
 )
 
