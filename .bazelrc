@@ -1,1 +1,4 @@
 build --incompatible_enable_cc_toolchain_resolution
+
+coverage --experimental_generate_llvm_lcov
+coverage --combined_report=lcov

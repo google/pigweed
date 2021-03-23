@@ -154,20 +154,6 @@ Pigweed-based projects to choose the most suitable one for them.
 Of the supported build systems, GN is the most full-featured, followed by CMake,
 and finally Bazel.
 
-CMake
------
-A well-known name in C/C++ development, `CMake`_ is widely used by all kinds of
-projects, including embedded devices. Pigweed's CMake support is provided
-primarily for projects that have an existing CMake build and wish to integrate
-Pigweed modules.
-
-Bazel
------
-The open source version of Google's internal build system. `Bazel`_ has been
-growing in popularity within the open source world, as well as being adopted by
-various proprietary projects. Its modular structure makes it a great fit for
-à la carte usage.
-
 GN
 --
 A perhaps unfamiliar name, `GN (Generate Ninja)`_ is a meta-build system that
@@ -523,3 +509,103 @@ Building a custom executable/app image
    .. code::
 
      out/stm32f429i_disc1_debug/obj/foo/bin/foo
+
+
+CMake
+-----
+A well-known name in C/C++ development, `CMake`_ is widely used by all kinds of
+projects, including embedded devices. Pigweed's CMake support is provided
+primarily for projects that have an existing CMake build and wish to integrate
+Pigweed modules.
+
+Bazel
+-----
+The open source version of Google's internal build system. `Bazel`_ has been
+growing in popularity within the open source world, as well as being adopted by
+various proprietary projects. Its modular structure makes it a great fit for
+à la carte usage.
+
+The Bazel build
+===============
+This section describes Pigweed's Bazel build structure, how it is used upstream,
+build conventions, and recommendations for Pigweed-based projects. While
+containing some details about how Bazel works in general, this section is not
+intended to be a guide on how to use Bazel. To learn more about the tool itself,
+refer to the official `Bazel reference`_.
+
+.. _Bazel reference: https://docs.bazel.build/versions/4.0.0/bazel-overview.html
+
+General usage
+-------------
+While described in more detail in the Bazel docs there a few Bazel features that
+are of particular importance when targeting embedded platforms. The most
+commonly used commands used in bazel are;
+
+.. code:: sh
+
+  bazel build //your:target
+  bazel test //your:target
+  bazel coverage //your:target
+
+.. note:: Code coverage support is only available on the host for now.
+
+Building
+^^^^^^^^
+When it comes to building/testing your Bazel target for a specific Pigweed
+target (e.g. stm32f429i-discovery) a slight variation is required.
+
+.. code:: sh
+
+  bazel build //your:target \
+    --platforms=@pigweed//pw_build/platforms:stm32f429i-disc1
+
+For more information on how to create your own platforms refer to the official
+`Bazel platforms reference`_. You may also find helpful examples of constraints
+and platforms in the '//pw_build/platforms' and '//pw_build/constraints'
+directories.
+
+.. _Bazel platforms reference: https://docs.bazel.build/versions/master/platforms.html
+
+Testing
+^^^^^^^
+Running tests on an embedded target with Bazel is possible although support for
+this is experimental. The easiest way of achieving this at the moment is to use
+Bazel's '--run_under' flag. To make this work create a Bazel target
+('//your_handler') that;
+
+1. Takes a single argument (the path to the elf) and uploads the elf to your
+   Pigweed target.
+2. Connects with your target using serial or other communication method.
+3. Listens to the communication transport for the keywords ("PASSED", "FAIL")
+   and returns (0, 1) respectively if one of the keywords is intercepted. (This
+   step assumes you are using the pw_unit_test package and it is configured for
+   your target).
+4. Run;
+
+   .. code:: sh
+
+    bazel test //your:test --platforms=//your/platform --run_under=//your_handler
+
+Code Coverage
+^^^^^^^^^^^^^
+Making use of the code coverage functionality in Bazel is straightforward.
+
+1. Add the following lines to your '.bazelrc'.
+
+  .. code:: sh
+
+    coverage --experimental_generate_llvm_lcov
+    coverage --combined_report=lcov
+
+2. Generate a combined lcov coverage report. This will produce a combined lcov
+   coverage report at the path 'bazel-out/_coverage/_coverage_report.dat'. e.g.
+
+  .. code:: sh
+
+    bazel coverage //pw_log/...
+
+3. View the results using the command line utility 'lcov'.
+
+  .. code:: sh
+
+    lcov --list bazel-out/_coverage/_coverage_report.dat
