@@ -3529,14 +3529,29 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
+  auto connection_matcher = NodeMatches(
+      AllOf(NameMatches("connection_0x0"),
+            PropertyList(ElementsAre(StringIs("peer_id", peer->identifier().ToString())))));
+  auto connections_matcher = AllOf(NodeMatches(NameMatches("connections")),
+                                   ChildrenMatch(ElementsAre(connection_matcher)));
+  auto recent_conn_list_matcher =
+      AllOf(NodeMatches(NameMatches("last_disconnected")), ChildrenMatch(::testing::IsEmpty()));
+  auto conn_mgr_matcher =
+      AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
+            ChildrenMatch(UnorderedElementsAre(connections_matcher, recent_conn_list_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
+
   // Delay disconnect so connection has non-zero duration.
   RunLoopFor(zx::sec(1));
-
   QueueDisconnection(kConnectionHandle);
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   RunLoopUntilIdle();
 
-  auto recent_conn_list_matcher =
+  auto connections_after_disconnect_matcher =
+      AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
+  auto recent_conn_list_after_disconnect_matcher =
       AllOf(NodeMatches(NameMatches("last_disconnected")),
             ChildrenMatch(ElementsAre(NodeMatches(
                 AllOf(NameMatches("0"),
@@ -3544,11 +3559,13 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
                           StringIs("peer_id", peer->identifier().ToString()),
                           UintIs("duration_s", 1u), IntIs("@time", zx::sec(1).to_nsecs()))))))));
 
-  auto conn_mgr_matcher = AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
-                                ChildrenMatch(ElementsAre(recent_conn_list_matcher)));
+  auto conn_mgr_after_disconnect_matcher =
+      AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
+            ChildrenMatch(UnorderedElementsAre(connections_after_disconnect_matcher,
+                                               recent_conn_list_after_disconnect_matcher)));
 
-  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
-  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
+  hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
 }
 
 #undef COMMAND_COMPLETE_RSP

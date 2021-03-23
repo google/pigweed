@@ -147,6 +147,7 @@ class BrEdrConnectionManager final {
   bool Disconnect(PeerId peer_id, DisconnectReason reason);
 
   // Attach Inspect node as child of |parent| named |name|.
+  // Only connections established after a call to AttachInspect are tracked.
   void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
@@ -350,6 +351,7 @@ class BrEdrConnectionManager final {
 
   struct InspectProperties {
     BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
+    inspect::Node connections_node_;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;

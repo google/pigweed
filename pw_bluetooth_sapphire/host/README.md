@@ -119,6 +119,9 @@ adapter:
                 peer_address
                 ref_count
     bredr_connection_manager:
+        connections:
+            connection_0x0:
+                peer_id
         last_disconnected:
             0:
                 peer_id

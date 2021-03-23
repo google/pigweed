@@ -8,6 +8,12 @@
 
 namespace bt::gap {
 
+namespace {
+
+const char* const kInspectPeerIdPropertyName = "peer_id";
+
+}
+
 BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                                  fit::closure send_auth_request_cb, fit::closure disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,
@@ -88,6 +94,12 @@ BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(
     return sco_manager_->OpenConnection(parameters, std::move(callback));
   }
   return sco_manager_->AcceptConnection(parameters, std::move(callback));
+}
+
+void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
+  inspect_properties_.peer_id =
+      inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
 }
 
 }  // namespace bt::gap

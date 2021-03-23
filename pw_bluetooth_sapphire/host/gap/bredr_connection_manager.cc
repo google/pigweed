@@ -27,6 +27,8 @@ using ConnectionState = Peer::ConnectionState;
 
 namespace {
 
+const char* const kInspectConnectionsNodeName = "connections";
+const char* const kInspectConnectionNodeNamePrefix = "connection_";
 const char* const kInspectLastDisconnectedListName = "last_disconnected";
 const char* const kInspectLastDisconnectedItemDurationPropertyName = "duration_s";
 const char* const kInspectLastDisconnectedItemPeerPropertyName = "peer_id";
@@ -336,6 +338,7 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
 
 void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_node_ = parent.CreateChild(name);
+  inspect_properties_.connections_node_ = inspect_node_.CreateChild(kInspectConnectionsNodeName);
   inspect_properties_.last_disconnected_list.AttachInspect(inspect_node_,
                                                            kInspectLastDisconnectedListName);
 }
@@ -461,6 +464,9 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 
   BrEdrConnection& connection = conn_iter->second;
   connection.pairing_state().SetPairingDelegate(pairing_delegate_);
+  connection.AttachInspect(
+      inspect_properties_.connections_node_,
+      inspect_properties_.connections_node_.UniqueName(kInspectConnectionNodeNamePrefix));
 
   // Interrogate this peer to find out its version/capabilities.
   auto self = weak_ptr_factory_.GetWeakPtr();

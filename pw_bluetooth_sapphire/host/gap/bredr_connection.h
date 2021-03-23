@@ -72,6 +72,9 @@ class BrEdrConnection final {
                                      hci::SynchronousConnectionParameters parameters,
                                      ScoConnectionCallback callback);
 
+  // Attach connection inspect node as a child of |parent| named |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
+
   const hci::Connection& link() const { return *link_; }
   hci::Connection& link() { return *link_; }
   PeerId peer_id() const { return peer_id_; }
@@ -93,6 +96,12 @@ class BrEdrConnection final {
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   // Time this object was constructed.
   zx::time create_time_;
+
+  struct InspectProperties {
+    inspect::StringProperty peer_id;
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };
