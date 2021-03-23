@@ -4,6 +4,8 @@
 
 #include "bredr_connection.h"
 
+#include <lib/async/default.h>
+
 namespace bt::gap {
 
 BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
@@ -27,7 +29,8 @@ BrEdrConnection::BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection
       request_(std::move(request)),
       domain_(std::move(l2cap)),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
-          peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)) {
+          peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
+      create_time_(async::Now(async_get_default_dispatcher())) {
   link_->set_peer_disconnect_callback([peer_disconnect_cb = std::move(on_peer_disconnect_cb)](
                                           auto conn, auto /*reason*/) { peer_disconnect_cb(); });
 }

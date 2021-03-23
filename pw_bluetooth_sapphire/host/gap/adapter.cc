@@ -28,7 +28,8 @@
 
 namespace bt::gap {
 
-const char* kInspectLowEnergyDiscoveryManagerNodeName = "low_energy_discovery_manager";
+const char* const kInspectLowEnergyDiscoveryManagerNodeName = "low_energy_discovery_manager";
+const char* const kInspectBrEdrConnectionManagerNodeName = "bredr_connection_manager";
 
 // All asynchronous callbacks are posted on the Loop on which this Adapter
 // instance is created.
@@ -929,6 +930,7 @@ void AdapterImpl::InitializeStep4(InitializeCallback callback) {
     bredr_connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         hci_, &peer_cache_, local_bredr_address, l2cap_,
         state_.features().HasBit(0, hci::LMPFeature::kInterlacedPageScan));
+    bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
     hci::InquiryMode mode = hci::InquiryMode::kStandard;
     if (state_.features().HasBit(0, hci::LMPFeature::kExtendedInquiryResponse)) {

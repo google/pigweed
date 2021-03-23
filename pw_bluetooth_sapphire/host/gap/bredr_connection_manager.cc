@@ -4,6 +4,7 @@
 
 #include "bredr_connection_manager.h"
 
+#include <lib/async/time.h>
 #include <zircon/assert.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -25,6 +26,11 @@ using std::unique_ptr;
 using ConnectionState = Peer::ConnectionState;
 
 namespace {
+
+const char* const kInspectLastDisconnectedListName = "last_disconnected";
+const char* const kInspectLastDisconnectedItemDurationPropertyName = "duration_s";
+const char* const kInspectLastDisconnectedItemPeerPropertyName = "peer_id";
+const char* const kInspectTimestampPropertyName = "@time";
 
 std::string ReasonAsString(DisconnectReason reason) {
   switch (reason) {
@@ -326,6 +332,12 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
   auto [handle, connection] = *conn_pair;
   CleanUpConnection(handle, std::move(connections_.extract(handle).mapped()));
   return true;
+}
+
+void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
+  inspect_node_ = parent.CreateChild(name);
+  inspect_properties_.last_disconnected_list.AttachInspect(inspect_node_,
+                                                           kInspectLastDisconnectedListName);
 }
 
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t window,
@@ -714,6 +726,8 @@ void BrEdrConnectionManager::CleanUpConnection(hci::ConnectionHandle handle, BrE
   peer->MutBrEdr().SetConnectionState(ConnectionState::kNotConnected);
 
   l2cap_->RemoveConnection(handle);
+
+  RecordDisconnectInspect(conn);
 
   // |conn| is destroyed when it goes out of scope.
 }
@@ -1243,6 +1257,17 @@ void BrEdrConnectionManager::SendRejectSynchronousRequest(DeviceAddress addr,
 
   hci_->command_channel()->SendCommand(std::move(reject), std::move(command_cb),
                                        hci::kCommandStatusEventCode);
+}
+
+void BrEdrConnectionManager::RecordDisconnectInspect(const BrEdrConnection& conn) {
+  // Add item to recent disconnections list.
+  auto& inspect_item = inspect_properties_.last_disconnected_list.CreateItem();
+  inspect_item.node.CreateString(kInspectLastDisconnectedItemPeerPropertyName,
+                                 conn.peer_id().ToString(), &inspect_item.values);
+  inspect_item.node.CreateUint(kInspectLastDisconnectedItemDurationPropertyName,
+                               conn.duration().to_secs(), &inspect_item.values);
+  inspect_item.node.CreateInt(kInspectTimestampPropertyName, async::Now(dispatcher_).get(),
+                              &inspect_item.values);
 }
 
 }  // namespace bt::gap

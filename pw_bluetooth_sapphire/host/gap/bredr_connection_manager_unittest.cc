@@ -4,6 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 
+#include <lib/async/time.h>
+#include <lib/inspect/testing/cpp/inspect.h>
+
+#include <gmock/gmock.h>
+
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
@@ -24,6 +29,8 @@
 
 namespace bt::gap {
 namespace {
+
+using namespace inspect::testing;
 
 using bt::hci::AuthRequirements;
 using bt::hci::IOCapability;
@@ -3508,6 +3515,40 @@ TEST_F(GAP_BrEdrConnectionManagerTest, IncomingRequestInitializesPeer) {
   ASSERT_TRUE(peer);
   ASSERT_TRUE(peer->bredr());
   ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kNotConnected);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
+  inspect::Inspector inspector;
+  connmgr()->AttachInspect(inspector.GetRoot(), "bredr_connection_manager");
+
+  QueueSuccessfulIncomingConn();
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+
+  // Delay disconnect so connection has non-zero duration.
+  RunLoopFor(zx::sec(1));
+
+  QueueDisconnection(kConnectionHandle);
+  EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
+  RunLoopUntilIdle();
+
+  auto recent_conn_list_matcher =
+      AllOf(NodeMatches(NameMatches("last_disconnected")),
+            ChildrenMatch(ElementsAre(NodeMatches(
+                AllOf(NameMatches("0"),
+                      PropertyList(UnorderedElementsAre(
+                          StringIs("peer_id", peer->identifier().ToString()),
+                          UintIs("duration_s", 1u), IntIs("@time", zx::sec(1).to_nsecs()))))))));
+
+  auto conn_mgr_matcher = AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
+                                ChildrenMatch(ElementsAre(recent_conn_list_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
 }
 
 #undef COMMAND_COMPLETE_RSP

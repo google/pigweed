@@ -5,6 +5,9 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_H_
 
+#include <lib/async/cpp/time.h>
+#include <lib/async/default.h>
+
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
@@ -74,6 +77,11 @@ class BrEdrConnection final {
   PeerId peer_id() const { return peer_id_; }
   PairingState& pairing_state() { return *pairing_state_; }
 
+  // Returns the duration that this connection has been alive.
+  zx::duration duration() const {
+    return async::Now(async_get_default_dispatcher()) - create_time_;
+  }
+
  private:
   // True if Start() has been called.
   bool ready_;
@@ -83,6 +91,8 @@ class BrEdrConnection final {
   std::optional<Request> request_;
   fbl::RefPtr<l2cap::L2cap> domain_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
+  // Time this object was constructed.
+  zx::time create_time_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnection);
 };

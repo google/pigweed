@@ -118,4 +118,10 @@ adapter:
                 peer_id
                 peer_address
                 ref_count
+    bredr_connection_manager:
+        last_disconnected:
+            0:
+                peer_id
+                duration_s
+                @time
 ```

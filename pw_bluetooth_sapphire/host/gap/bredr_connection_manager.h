@@ -8,6 +8,7 @@
 #include <functional>
 #include <optional>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
@@ -144,6 +145,9 @@ class BrEdrConnectionManager final {
   // Disconnects any existing BR/EDR connection to |peer_id|. Returns true if
   // the peer is disconnected, false if the peer can not be disconnected.
   bool Disconnect(PeerId peer_id, DisconnectReason reason);
+
+  // Attach Inspect node as child of |parent| named |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
   // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
@@ -296,6 +300,9 @@ class BrEdrConnectionManager final {
   void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
                                      hci::StatusCallback cb);
 
+  // Record a disconnection in Inspect's list of disconnections.
+  void RecordDisconnectInspect(const BrEdrConnection& conn);
+
   using ConnectionMap = std::unordered_map<hci::ConnectionHandle, BrEdrConnection>;
 
   fxl::WeakPtr<hci::Transport> hci_;
@@ -340,6 +347,12 @@ class BrEdrConnectionManager final {
 
   // Time after which a connection attempt is considered to have timed out.
   zx::duration request_timeout_;
+
+  struct InspectProperties {
+    BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
+  };
+  InspectProperties inspect_properties_;
+  inspect::Node inspect_node_;
 
   // The dispatcher that all commands are queued on.
   async_dispatcher_t* dispatcher_;
