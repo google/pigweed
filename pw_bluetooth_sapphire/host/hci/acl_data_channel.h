@@ -22,6 +22,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
 
 namespace bt::hci {
 
@@ -69,15 +70,16 @@ class DataBufferInfo {
 //
 // This currently only supports the Packet-based Data Flow Control as defined in
 // Core Spec v5.0, Vol 2, Part E, Section 4.1.1.
-using ACLPacketPredicate =
-    fit::function<bool(const ACLDataPacketPtr& packet, UniqueChannelId channel_id)>;
-
-class ACLDataChannel final {
+class AclDataChannel {
  public:
   enum class PacketPriority { kHigh, kLow };
 
-  ACLDataChannel(Transport* transport, zx::channel hci_acl_channel);
-  ~ACLDataChannel();
+  using AclPacketPredicate =
+      fit::function<bool(const ACLDataPacketPtr& packet, UniqueChannelId channel_id)>;
+
+  static std::unique_ptr<AclDataChannel> Create(Transport* transport, zx::channel hci_acl_channel);
+
+  virtual ~AclDataChannel() = default;
 
   // Starts listening on the HCI ACL data channel and starts handling data flow
   // control. |bredr_buffer_info| represents the controller's data buffering
@@ -92,16 +94,17 @@ class ACLDataChannel final {
   //
   // As this class is intended to support flow-control for both, this function
   // should be called based on what is reported by the controller.
-  void Initialize(const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
+  virtual void Initialize(const DataBufferInfo& bredr_buffer_info,
+                          const DataBufferInfo& le_buffer_info) = 0;
 
   // Unregisters event handlers and cleans up.
   // NOTE: Initialize() and ShutDown() MUST be called on the same thread. These
   // methods are not thread-safe.
-  void ShutDown();
+  virtual void ShutDown() = 0;
 
   // Assigns a handler callback for received ACL data packets. |rx_callback| will shall take
   // ownership of each packet received from the controller.
-  void SetDataRxHandler(ACLPacketHandler rx_callback);
+  virtual void SetDataRxHandler(ACLPacketHandler rx_callback) = 0;
 
   // Queues the given ACL data packet to be sent to the controller. Returns
   // false if the packet cannot be queued up, e.g. if the size of |data_packet|
@@ -118,8 +121,8 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
-                  PacketPriority priority = PacketPriority::kLow);
+  virtual bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
+                          PacketPriority priority) = 0;
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
@@ -137,8 +140,8 @@ class ACLDataChannel final {
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
   // packets of other priorities. Note that high priority packets may still wait behind low priority
   // packets that have already been sent to the controller.
-  bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
-                   PacketPriority priority = PacketPriority::kLow);
+  virtual bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
+                           PacketPriority priority) = 0;
 
   // Allowlist packets destined for the link identified by |handle| (of link type |ll_type|) for
   // submission to the controller.
@@ -146,7 +149,7 @@ class ACLDataChannel final {
   // Failure to register a link before sending packets will result in the packets
   // being dropped immediately. A handle must not be registered again until after UnregisterLink has
   // been called on that handle.
-  void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type);
+  virtual void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) = 0;
 
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
@@ -158,174 +161,37 @@ class ACLDataChannel final {
   // |UnregisterLink| does not clear the controller packet count, so |ClearControllerPacketCount|
   // must be called after |UnregisterLink| and the HCI Disconnection Complete event has been
   // received.
-  void UnregisterLink(hci::ConnectionHandle handle);
+  virtual void UnregisterLink(hci::ConnectionHandle handle) = 0;
 
   // Removes all queued data packets for which |predicate| returns true.
-  void DropQueuedPackets(ACLPacketPredicate predicate);
+  virtual void DropQueuedPackets(AclPacketPredicate predicate) = 0;
 
   // Resets controller packet count for |handle| so that controller buffer credits can be reused.
   // This must be called on the HCI_Disconnection_Complete event to notify ACLDataChannel that
   // packets in the controller's buffer for |handle| have been flushed. See Core Spec v5.1, Vol 2,
   // Part E, Section 4.3. This must be called after |UnregisterLink|.
-  void ClearControllerPacketCount(hci::ConnectionHandle handle);
-
-  // Returns the underlying channel handle.
-  const zx::channel& channel() const { return channel_; }
+  virtual void ClearControllerPacketCount(hci::ConnectionHandle handle) = 0;
 
   // Returns the BR/EDR buffer information that the channel was initialized
   // with.
-  const DataBufferInfo& GetBufferInfo() const;
+  virtual const DataBufferInfo& GetBufferInfo() const = 0;
 
   // Returns the LE buffer information that the channel was initialized with.
   // This defaults to the BR/EDR buffers if the controller does not have a
   // dedicated LE buffer.
-  const DataBufferInfo& GetLEBufferInfo() const;
+  virtual const DataBufferInfo& GetLeBufferInfo() const = 0;
 
   // Reads bytes from the channel and try to parse them as ACLDataPacket.
   // ZX_ERR_IO means error happens while reading from the channel.
   // ZX_ERR_INVALID_ARGS means the packet is malformed.
   // Otherwise, ZX_OK is returned.
-  static zx_status_t ReadACLDataPacketFromChannel(const zx::channel& channel,
+  static zx_status_t ReadAclDataPacketFromChannel(const zx::channel& channel,
                                                   const ACLDataPacketPtr& packet);
 
- private:
-  // Represents a queued ACL data packet.
-  struct QueuedDataPacket {
-    QueuedDataPacket(Connection::LinkType ll_type, UniqueChannelId channel_id,
-                     PacketPriority priority, ACLDataPacketPtr packet)
-        : ll_type(ll_type), channel_id(channel_id), priority(priority), packet(std::move(packet)) {}
-
-    QueuedDataPacket() = default;
-    QueuedDataPacket(QueuedDataPacket&& other) = default;
-    QueuedDataPacket& operator=(QueuedDataPacket&& other) = default;
-
-    Connection::LinkType ll_type;
-    UniqueChannelId channel_id;
-    PacketPriority priority;
-    ACLDataPacketPtr packet;
-  };
-
-  // Returns the data buffer MTU for the given connection.
-  size_t GetBufferMTU(Connection::LinkType ll_type) const;
-
-  // Handler for the HCI Number of Completed Packets Event, used for
-  // packet-based data flow control.
-  CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(const EventPacket& event);
-
-  // Tries to send the next batch of queued data packets if the controller has
-  // any space available. All packets in higher priority queues will be sent before packets in lower
-  // priority queues.
-  void TrySendNextQueuedPackets();
-
-  // Returns the number of BR/EDR packets for which the controller has available
-  // space to buffer.
-  size_t GetNumFreeBREDRPackets() const;
-
-  // Returns the number of LE packets for which controller has available space
-  // to buffer.
-  size_t GetNumFreeLEPackets() const;
-
-  // Decreases the total number of sent packets count by the given amount.
-  void DecrementTotalNumPackets(size_t count);
-
-  // Decreases the total number of sent packets count for LE by the given
-  // amount.
-  void DecrementLETotalNumPackets(size_t count);
-
-  // Increments the total number of sent packets count by the given amount.
-  void IncrementTotalNumPackets(size_t count);
-
-  // Increments the total number of sent LE packets count by the given amount.
-  void IncrementLETotalNumPackets(size_t count);
-
-  // Read Ready Handler for |channel_|
-  void OnChannelReady(async_dispatcher_t* dispatcher, async::WaitBase* wait, zx_status_t status,
-                      const zx_packet_signal_t* signal);
-
-  // Handler for HCI_Buffer_Overflow_event
-  CommandChannel::EventCallbackResult DataBufferOverflowCallback(const EventPacket& event);
-
-  // Used to assert that certain public functions are only called on the
-  // creation thread.
-  fit::thread_checker thread_checker_;
-
-  // The Transport object that owns this instance.
-  Transport* transport_;  // weak;
-
-  // The channel that we use to send/receive HCI ACL data packets.
-  zx::channel channel_;
-
-  // Wait object for |channel_|
-  async::WaitMethod<ACLDataChannel, &ACLDataChannel::OnChannelReady> channel_wait_{this};
-
-  // True if this instance has been initialized through a call to Initialize().
-  std::atomic_bool is_initialized_;
-
-  // The event handler ID for the Number Of Completed Packets event.
-  CommandChannel::EventHandlerId num_completed_packets_event_handler_id_;
-
-  // The event handler ID for the Data Buffer Overflow event.
-  CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_;
-
-  // The dispatcher used for posting tasks on the HCI transport I/O thread.
-  async_dispatcher_t* io_dispatcher_;
-
-  // The current handler for incoming data.
-  ACLPacketHandler rx_callback_;
-
-  // BR/EDR data buffer information. This buffer will not be available on
-  // LE-only controllers.
-  DataBufferInfo bredr_buffer_info_;
-
-  // LE data buffer information. This buffer will not be available on
-  // BR/EDR-only controllers (which we do not support) and MAY be available on
-  // dual-mode controllers. We maintain that if this buffer is not available,
-  // then the BR/EDR buffer MUST be available.
-  DataBufferInfo le_buffer_info_;
-
-  // The current count of the number of ACL data packets that have been sent to
-  // the controller. |le_num_sent_packets_| is ignored if the controller uses
-  // one buffer for LE and BR/EDR.
-  size_t num_sent_packets_;
-  size_t le_num_sent_packets_;
-
-  // The ACL data packet queue contains the data packets that are waiting to be
-  // sent to the controller.
-  // TODO(armansito): Use priority_queue based on L2CAP channel priority.
-  // TODO(fxbug.dev/944): Keep a separate queue for each open connection. Benefits:
-  //   * Helps address the packet-prioritization TODO above.
-  //   * Also: having separate queues, which know their own
-  //     Connection::LinkType, would let us replace std::list<QueuedDataPacket>
-  //     with LinkedList<ACLDataPacket> which has a more efficient
-  //     memory layout.
-  using DataPacketQueue = std::list<QueuedDataPacket>;
-  DataPacketQueue send_queue_;
-
-  // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
-  // their |priority|:
-  // If |priority| is |kLow|: returns past-the-end of |send_queue_|.
-  // If |priority| is |kHigh|: returns the location of the first |kLow| priority packet.
-  DataPacketQueue::iterator SendQueueInsertLocationForPriority(PacketPriority priority);
-
-  // Stores the link type of connections on which we have a pending packet that
-  // has been sent to the controller. Entries are removed on the HCI Number Of
-  // Completed Packets event.
-  struct PendingPacketData {
-    PendingPacketData() = default;
-
-    // We initialize the packet count at 1 since a new entry will only be
-    // created once.
-    PendingPacketData(Connection::LinkType ll_type) : ll_type(ll_type), count(1u) {}
-
-    Connection::LinkType ll_type;
-    size_t count;
-  };
-  std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_;
-
-  // Stores links registered by RegisterLink
-  std::unordered_map<hci::ConnectionHandle, Connection::LinkType> registered_links_;
-
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannel);
+  // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
+  // called with the result of the request.
+  virtual void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
+                                  fit::callback<void(fit::result<>)> callback) = 0;
 };
 
 }  // namespace bt::hci

@@ -26,6 +26,7 @@
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
@@ -178,14 +179,14 @@ class Channel : public fbl::RefCounted<Channel> {
   // Calls |callback| with success if the request succeeded, or error otherwise.
   // Requests may fail if the controller does not support changing the ACL priority or the indicated
   // priority conflicts with another channel.
-  virtual void RequestAclPriority(AclPriority priority,
+  virtual void RequestAclPriority(hci::AclPriority priority,
                                   fit::callback<void(fit::result<>)> callback) = 0;
 
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 
   // The ACL priority that was both requested and accepted by the controller.
-  AclPriority requested_acl_priority() const { return requested_acl_priority_; }
+  hci::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
  protected:
   friend class fbl::RefPtr<Channel>;
@@ -200,7 +201,7 @@ class Channel : public fbl::RefCounted<Channel> {
   const hci::ConnectionHandle link_handle_;
   const ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
-  AclPriority requested_acl_priority_;
+  hci::AclPriority requested_acl_priority_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
@@ -259,7 +260,7 @@ class ChannelImpl : public Channel {
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback callback,
                        async_dispatcher_t* dispatcher) override;
-  void RequestAclPriority(AclPriority priority,
+  void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fit::result<>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
 

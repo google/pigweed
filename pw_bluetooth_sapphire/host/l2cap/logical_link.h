@@ -25,6 +25,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
@@ -49,15 +50,6 @@ class SignalingChannel;
 // Instances are created and owned by a ChannelManager.
 class LogicalLink final : public fbl::RefCounted<LogicalLink> {
  public:
-  // Used to schedule a sequence of packets to be sent to the Bluetooth controller for the type of
-  // link represented by this object.
-  using SendPacketsCallback =
-      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id)>;
-
-  using DropQueuedAclCallback = ChannelManager::DropQueuedAclCallback;
-
-  using RequestAclPriorityCallback = ChannelManager::RequestAclPriorityCallback;
-
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
   // registered for that PSM.
@@ -74,10 +66,9 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // starting at the beginning of the dynamic channel range.
   static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                                       hci::Connection::Role role, fit::executor* executor,
-                                      size_t max_payload_size, SendPacketsCallback send_packets_cb,
-                                      DropQueuedAclCallback drop_queued_acl_cb,
+                                      size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
-                                      RequestAclPriorityCallback acl_priority_cb,
+                                      hci::AclDataChannel* acl_data_channel,
                                       bool random_channel_ids);
 
   // Notifies and closes all open channels on this link. This must be called to
@@ -142,11 +133,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // controller does not support changing the ACL priority.
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
-  void RequestAclPriority(Channel* channel, AclPriority priority,
+  void RequestAclPriority(Channel* channel, hci::AclPriority priority,
                           fit::callback<void(fit::result<>)> callback);
 
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
+
+  // Returns mapping of ChannelId -> PacketPriority for use with AclDataChannel::SendPacket.
+  static hci::AclDataChannel::PacketPriority ChannelPriority(ChannelId id);
 
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
@@ -177,8 +171,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
               hci::Connection::Role role, fit::executor* executor, size_t max_acl_payload_size,
-              SendPacketsCallback send_packets_cb, DropQueuedAclCallback drop_queued_acl_cb,
-              QueryServiceCallback query_service_cb, RequestAclPriorityCallback acl_priority_cb);
+              QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
   // channel registry based on the link type. Called by the factory method
@@ -286,7 +279,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   struct PendingAclRequest {
     fbl::RefPtr<ChannelImpl> channel;
-    AclPriority priority;
+    hci::AclPriority priority;
     fit::callback<void(fit::result<>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
@@ -295,14 +288,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // procedures terminated when this link gets closed.
   std::unique_ptr<DynamicChannelRegistry> dynamic_registry_;
 
-  // Queues data packets to be delivered to the controller and sent over the underlying link.
-  SendPacketsCallback send_packets_cb_;
-
-  // Drops data packets queued for delivery to controller.
-  DropQueuedAclCallback drop_queued_acl_cb_;
-
-  // Requests that the ACL priority vendor command be sent.
-  RequestAclPriorityCallback acl_priority_cb_;
+  hci::AclDataChannel* acl_data_channel_;
 
   // Search function for inbound service requests. Returns handler that accepts opened channels.
   QueryServiceCallback query_service_cb_;

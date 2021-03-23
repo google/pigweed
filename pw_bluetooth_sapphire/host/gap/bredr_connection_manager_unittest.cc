@@ -2849,12 +2849,12 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       hci::ACLDataPacket::New(kConnectionHandle, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                               hci::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       hci::ACLDataPacket::New(kConnectionHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                               hci::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -2881,7 +2881,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest,
   ASSERT_FALSE(acl_data_channel()->SendPacket(
       hci::ACLDataPacket::New(kConnectionHandle, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                               hci::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
   QueueDisconnection(kConnectionHandle2);
 }

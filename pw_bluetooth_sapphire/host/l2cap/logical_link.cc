@@ -58,38 +58,31 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 // static
 fbl::RefPtr<LogicalLink> LogicalLink::New(
     hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
-    fit::executor* executor, size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
-    DropQueuedAclCallback drop_queued_acl_cb, QueryServiceCallback query_service_cb,
-    RequestAclPriorityCallback acl_priority_cb, bool random_channel_ids) {
+    fit::executor* executor, size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
+    hci::AclDataChannel* acl_data_channel, bool random_channel_ids) {
   auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, executor, max_acl_payload_size,
-                                          std::move(send_packets_cb), std::move(drop_queued_acl_cb),
-                                          std::move(query_service_cb), std::move(acl_priority_cb)));
+                                          std::move(query_service_cb), acl_data_channel));
   ll->Initialize(random_channel_ids);
   return ll;
 }
 
 LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
                          hci::Connection::Role role, fit::executor* executor,
-                         size_t max_acl_payload_size, SendPacketsCallback send_packets_cb,
-                         DropQueuedAclCallback drop_queued_acl_cb,
-                         QueryServiceCallback query_service_cb,
-                         RequestAclPriorityCallback acl_priority_cb)
+                         size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
+                         hci::AclDataChannel* acl_data_channel)
     : handle_(handle),
       type_(type),
       role_(role),
       closed_(false),
       fragmenter_(handle, max_acl_payload_size),
       recombiner_(handle),
-      send_packets_cb_(std::move(send_packets_cb)),
-      drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
-      acl_priority_cb_(std::move(acl_priority_cb)),
+      acl_data_channel_(acl_data_channel),
       query_service_cb_(std::move(query_service_cb)),
       executor_(executor),
       weak_ptr_factory_(this) {
   ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
   ZX_ASSERT(executor_);
-  ZX_ASSERT(send_packets_cb_);
-  ZX_ASSERT(drop_queued_acl_cb_);
+  ZX_ASSERT(acl_data_channel_);
   ZX_ASSERT(query_service_cb_);
 }
 
@@ -296,7 +289,7 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());
-  send_packets_cb_(std::move(fragments), id);
+  acl_data_channel_->SendPackets(std::move(fragments), id, ChannelPriority(id));
 }
 
 void LogicalLink::set_error_callback(fit::closure callback) {
@@ -353,10 +346,11 @@ fit::promise<> LogicalLink::RemoveChannel(Channel* chan) {
   channels_.erase(iter);
 
   // Drop stale packets queued for this channel.
-  hci::ACLPacketPredicate predicate = [this, id](const auto& packet, l2cap::ChannelId channel_id) {
+  hci::AclDataChannel::AclPacketPredicate predicate = [this, id](const auto& packet,
+                                                                 l2cap::ChannelId channel_id) {
     return packet->connection_handle() == handle_ && id == channel_id;
   };
-  drop_queued_acl_cb_(std::move(predicate));
+  acl_data_channel_->DropQueuedPackets(std::move(predicate));
 
   // Disconnect the channel if it's a dynamic channel. This path is for local-
   // initiated closures and does not invoke callbacks back to the channel user.
@@ -464,11 +458,11 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   auto channel = iter->second;
   ZX_DEBUG_ASSERT(channel->remote_id() == dyn_chan->remote_cid());
 
-  hci::ACLPacketPredicate predicate = [this, id = channel->id()](const auto& packet,
-                                                                 l2cap::ChannelId channel_id) {
-    return packet->connection_handle() == handle_ && id == channel_id;
-  };
-  drop_queued_acl_cb_(std::move(predicate));
+  hci::AclDataChannel::AclPacketPredicate predicate =
+      [this, id = channel->id()](const auto& packet, l2cap::ChannelId channel_id) {
+        return packet->connection_handle() == handle_ && id == channel_id;
+      };
+  acl_data_channel_->DropQueuedPackets(std::move(predicate));
 
   // Signal closure because this is a remote disconnection.
   channel->OnClosed();
@@ -574,7 +568,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
       });
 }
 
-void LogicalLink::RequestAclPriority(Channel* channel, AclPriority priority,
+void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority,
                                      fit::callback<void(fit::result<>)> callback) {
   ZX_ASSERT(channel);
   auto iter = channels_.find(channel->id());
@@ -607,6 +601,18 @@ void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   }
 }
 
+hci::AclDataChannel::PacketPriority LogicalLink::ChannelPriority(ChannelId id) {
+  switch (id) {
+    case kSignalingChannelId:
+    case kLESignalingChannelId:
+    case kSMPChannelId:
+    case kLESMPChannelId:
+      return hci::AclDataChannel::PacketPriority::kHigh;
+    default:
+      return hci::AclDataChannel::PacketPriority::kLow;
+  }
+}
+
 void LogicalLink::HandleNextAclPriorityRequest() {
   if (pending_acl_requests_.empty() || closed_) {
     return;
@@ -618,7 +624,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
   // Prevent closed channels with queued requests from upgrading channel priority.
   if (channels_.find(request.channel->id()) == channels_.end() &&
-      request.priority != AclPriority::kNormal) {
+      request.priority != hci::AclPriority::kNormal) {
     request.callback(fit::error());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
@@ -639,11 +645,11 @@ void LogicalLink::HandleNextAclPriorityRequest() {
       continue;
     }
 
-    if (chan->requested_acl_priority() != AclPriority::kNormal) {
+    if (chan->requested_acl_priority() != hci::AclPriority::kNormal) {
       // If the request returns priority to normal but a different channel still requires high
       // priority OR if another channel already is using the requested priority, skip sending
       // command and just report success.
-      if (request.priority == AclPriority::kNormal ||
+      if (request.priority == hci::AclPriority::kNormal ||
           request.priority == chan->requested_acl_priority()) {
         request.callback(fit::ok());
         break;
@@ -651,7 +657,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
       // If the request tries to upgrade priority but it conflicts with another channel's priority
       // (e.g. sink vs. source), report an error.
-      if (request.priority != AclPriority::kNormal &&
+      if (request.priority != hci::AclPriority::kNormal &&
           request.priority != chan->requested_acl_priority()) {
         request.callback(fit::error());
         break;
@@ -674,7 +680,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
     self->HandleNextAclPriorityRequest();
   };
 
-  acl_priority_cb_(request.priority, handle_, std::move(cb_wrapper));
+  acl_data_channel_->RequestAclPriority(request.priority, handle_, std::move(cb_wrapper));
 }
 
 void LogicalLink::ServeConnectionParameterUpdateRequest() {

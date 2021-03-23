@@ -14,36 +14,25 @@ namespace bt::l2cap {
 
 class Impl final : public L2cap {
  public:
-  Impl(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids)
-      : L2cap(), dispatcher_(async_get_default_dispatcher()), hci_(std::move(hci)) {
-    ZX_ASSERT(hci_);
-    ZX_ASSERT(hci_->acl_data_channel());
-    const auto& acl_buffer_info = hci_->acl_data_channel()->GetBufferInfo();
-    const auto& le_buffer_info = hci_->acl_data_channel()->GetLEBufferInfo();
+  Impl(hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
+      : L2cap(), dispatcher_(async_get_default_dispatcher()), acl_data_channel_(acl_data_channel) {
+    const auto& acl_buffer_info = acl_data_channel_->GetBufferInfo();
+    const auto& le_buffer_info = acl_data_channel_->GetLeBufferInfo();
 
     // LE Buffer Info is always available from ACLDataChannel.
     ZX_ASSERT(acl_buffer_info.IsAvailable());
-    auto send_packets =
-        fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::SendPackets);
-    auto drop_queued_acl =
-        fit::bind_member(hci_->acl_data_channel(), &hci::ACLDataChannel::DropQueuedPackets);
-    auto acl_priority = fit::bind_member(this, &Impl::RequestAclPriority);
 
-    channel_manager_ = std::make_unique<ChannelManager>(
-        acl_buffer_info.max_data_length(), le_buffer_info.max_data_length(),
-        std::move(send_packets), std::move(drop_queued_acl), std::move(acl_priority),
-        random_channel_ids);
-    hci_->acl_data_channel()->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
+    channel_manager_ = std::make_unique<ChannelManager>(acl_buffer_info.max_data_length(),
+                                                        le_buffer_info.max_data_length(),
+                                                        acl_data_channel_, random_channel_ids);
+    acl_data_channel_->SetDataRxHandler(channel_manager_->MakeInboundDataHandler());
 
     bt_log(DEBUG, "l2cap", "initialized");
   }
 
   ~Impl() {
     bt_log(DEBUG, "l2cap", "shutting down");
-
-    ZX_ASSERT(hci_->acl_data_channel());
-    hci_->acl_data_channel()->SetDataRxHandler(nullptr);
-
+    acl_data_channel_->SetDataRxHandler(nullptr);
     channel_manager_ = nullptr;
   }
 
@@ -101,58 +90,13 @@ class Impl final : public L2cap {
   void UnregisterService(PSM psm) override { channel_manager_->UnregisterService(psm); }
 
  private:
-  void RequestAclPriority(AclPriority priority, hci::ConnectionHandle handle,
-                          fit::callback<void(fit::result<>)> cb) {
-    bt_log(TRACE, "l2cap", "sending ACL priority command");
-
-    bt_vendor_set_acl_priority_params_t priority_params = {
-        .connection_handle = handle,
-        .priority = static_cast<bt_vendor_acl_priority_t>((priority == AclPriority::kNormal)
-                                                              ? BT_VENDOR_ACL_PRIORITY_NORMAL
-                                                              : BT_VENDOR_ACL_PRIORITY_HIGH),
-        .direction = static_cast<bt_vendor_acl_direction_t>((priority == AclPriority::kSource)
-                                                                ? BT_VENDOR_ACL_DIRECTION_SOURCE
-                                                                : BT_VENDOR_ACL_DIRECTION_SINK)};
-    bt_vendor_params_t cmd_params = {.set_acl_priority = priority_params};
-    auto encode_result = hci_->EncodeVendorCommand(BT_VENDOR_COMMAND_SET_ACL_PRIORITY, cmd_params);
-    if (encode_result.is_error()) {
-      bt_log(TRACE, "l2cap", "encoding ACL priority command failed");
-      cb(fit::error());
-      return;
-    }
-    auto encoded = encode_result.take_value();
-    if (encoded.size() < sizeof(hci::CommandHeader)) {
-      bt_log(TRACE, "l2cap", "encoded ACL priority command too small (size: %zu)", encoded.size());
-      cb(fit::error());
-      return;
-    }
-
-    hci::OpCode op_code = letoh16(encoded.As<hci::CommandHeader>().opcode);
-    auto packet = bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci::CommandHeader));
-    auto packet_view = packet->mutable_view()->mutable_data();
-    encoded.Copy(&packet_view);
-
-    hci_->command_channel()->SendCommand(
-        std::move(packet),
-        [cb = std::move(cb), priority](auto id, const hci::EventPacket& event) mutable {
-          if (hci_is_error(event, WARN, "l2cap", "acl priority failed")) {
-            cb(fit::error());
-            return;
-          }
-
-          bt_log(DEBUG, "l2cap", "acl priority updated (priority: %#.8x)",
-                 static_cast<uint32_t>(priority));
-          cb(fit::ok());
-        });
-  }
-
   async_dispatcher_t* dispatcher_;
 
   // Inspect hierarchy node representing the data domain.
   inspect::Node node_;
 
   // Handle to the underlying HCI transport.
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::AclDataChannel* acl_data_channel_;
 
   std::unique_ptr<ChannelManager> channel_manager_;
 
@@ -160,9 +104,9 @@ class Impl final : public L2cap {
 };  // namespace bt::l2cap
 
 // static
-fbl::RefPtr<L2cap> L2cap::Create(fxl::WeakPtr<hci::Transport> hci, bool random_channel_ids) {
-  ZX_DEBUG_ASSERT(hci);
-  return AdoptRef(new Impl(hci, random_channel_ids));
+fbl::RefPtr<L2cap> L2cap::Create(hci::AclDataChannel* acl_data_channel, bool random_channel_ids) {
+  ZX_ASSERT(acl_data_channel);
+  return AdoptRef(new Impl(acl_data_channel, random_channel_ids));
 }
 
 }  // namespace bt::l2cap

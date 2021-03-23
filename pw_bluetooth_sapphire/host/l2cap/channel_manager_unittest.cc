@@ -13,10 +13,10 @@
 
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/mock_acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 
@@ -32,10 +32,10 @@ constexpr PSM kTestPsm = 0x0001;
 constexpr ChannelId kLocalId = 0x0040;
 constexpr ChannelId kRemoteId = 0x9042;
 constexpr CommandId kPeerConfigRequestId = 153;
-constexpr hci::ACLDataChannel::PacketPriority kLowPriority =
-    hci::ACLDataChannel::PacketPriority::kLow;
-constexpr hci::ACLDataChannel::PacketPriority kHighPriority =
-    hci::ACLDataChannel::PacketPriority::kHigh;
+constexpr hci::AclDataChannel::PacketPriority kLowPriority =
+    hci::AclDataChannel::PacketPriority::kLow;
+constexpr hci::AclDataChannel::PacketPriority kHighPriority =
+    hci::AclDataChannel::PacketPriority::kHigh;
 constexpr ChannelParameters kChannelParams;
 
 void DoNothing() {}
@@ -49,7 +49,7 @@ struct PacketExpectation {
   int line_number;
   DynamicByteBuffer data;
   hci::Connection::LinkType ll_type;
-  hci::ACLDataChannel::PacketPriority priority;
+  hci::AclDataChannel::PacketPriority priority;
 };
 
 // Helpers to set an outbound packet expectation with the link type and source location
@@ -247,16 +247,13 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size) {
     TestingBase::SetUp();
 
-    auto send_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets);
-    auto drop_queued_packets = fit::bind_member(this, &L2CAP_ChannelManagerTest::DropQueuedPackets);
-    auto acl_priority = fit::bind_member(this, &L2CAP_ChannelManagerTest::RequestAclPriority);
-    // TODO(63074): Make these tests not depend on strict channel ID ordering.
-    chanmgr_ = std::make_unique<ChannelManager>(
-        max_acl_payload_size, max_le_payload_size, std::move(send_packets),
-        std::move(drop_queued_packets), std::move(acl_priority), /*random_channel_ids=*/false);
-    packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
+    acl_data_channel_.set_send_packets_cb(
+        fit::bind_member(this, &L2CAP_ChannelManagerTest::SendPackets));
 
-    drop_queued_packets_cb_ = [](hci::ACLPacketPredicate) {};
+    // TODO(63074): Make these tests not depend on strict channel ID ordering.
+    chanmgr_ = std::make_unique<ChannelManager>(max_acl_payload_size, max_le_payload_size,
+                                                &acl_data_channel_, /*random_channel_ids=*/false);
+    packet_rx_handler_ = chanmgr()->MakeInboundDataHandler();
 
     next_command_id_ = 1;
   }
@@ -389,7 +386,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   // completes or if the outbound data doesn't match expectations, including the ordering between
   // LE and ACL packets.
   void ExpectOutboundPacket(hci::Connection::LinkType ll_type,
-                            hci::ACLDataChannel::PacketPriority priority, const ByteBuffer& data,
+                            hci::AclDataChannel::PacketPriority priority, const ByteBuffer& data,
                             const char* file_name = "", int line_number = 0) {
     expected_packets_.push({file_name, line_number, DynamicByteBuffer(data), ll_type, priority});
   }
@@ -436,19 +433,13 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
   ChannelManager* chanmgr() const { return chanmgr_.get(); }
 
-  void set_drop_queued_packets_cb(ChannelManager::DropQueuedAclCallback cb) {
-    drop_queued_packets_cb_ = std::move(cb);
-  }
-
-  void set_acl_priority_cb(ChannelManager::RequestAclPriorityCallback cb) {
-    acl_priority_cb_ = std::move(cb);
-  }
+  hci::testing::MockAclDataChannel* acl_data_channel() { return &acl_data_channel_; }
 
   CommandId NextCommandId() { return next_command_id_++; }
 
  private:
   bool SendPackets(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
-                   hci::ACLDataChannel::PacketPriority priority) {
+                   hci::AclDataChannel::PacketPriority priority) {
     for (const auto& packet : packets) {
       const ByteBuffer& data = packet.view().data();
       if (expected_packets_.empty()) {
@@ -466,11 +457,11 @@ class L2CAP_ChannelManagerTest : public TestingBase {
 
         if (expected.priority != priority) {
           std::cout << "Expected: "
-                    << static_cast<std::underlying_type_t<hci::ACLDataChannel::PacketPriority>>(
+                    << static_cast<std::underlying_type_t<hci::AclDataChannel::PacketPriority>>(
                            expected.priority)
                     << std::endl;
           std::cout << "Found: "
-                    << static_cast<std::underlying_type_t<hci::ACLDataChannel::PacketPriority>>(
+                    << static_cast<std::underlying_type_t<hci::AclDataChannel::PacketPriority>>(
                            priority)
                     << std::endl;
           ADD_FAILURE_AT(expected.file_name, expected.line_number)
@@ -483,21 +474,9 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     return !packets.is_empty();
   }
 
-  void DropQueuedPackets(hci::ACLPacketPredicate filter) {
-    drop_queued_packets_cb_(std::move(filter));
-  }
-
-  void RequestAclPriority(AclPriority priority, hci::ConnectionHandle handle,
-                          fit::callback<void(fit::result<>)> cb) {
-    if (acl_priority_cb_) {
-      acl_priority_cb_(priority, handle, std::move(cb));
-    }
-  }
-
   std::unique_ptr<ChannelManager> chanmgr_;
   hci::ACLPacketHandler packet_rx_handler_;
-  ChannelManager::DropQueuedAclCallback drop_queued_packets_cb_;
-  ChannelManager::RequestAclPriorityCallback acl_priority_cb_;
+  hci::testing::MockAclDataChannel acl_data_channel_;
 
   std::queue<const PacketExpectation> expected_packets_;
 
@@ -1356,7 +1335,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
       hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                               hci::ACLBroadcastFlag::kPointToPoint, 0x00);
   size_t filter_cb_count = 0;
-  auto filter_cb = [&](hci::ACLPacketPredicate filter) {
+  auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
     // filter out correct closed channel on correct connection handle
     EXPECT_TRUE(filter(dummy_packet1, kLocalId));
     // do not filter out other channels
@@ -1365,7 +1344,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
     EXPECT_FALSE(filter(dummy_packet2, kLocalId));
     filter_cb_count++;
   };
-  set_drop_queued_packets_cb(std::move(filter_cb));
+  acl_data_channel()->set_drop_queued_packets_cb(std::move(filter_cb));
 
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
@@ -1454,7 +1433,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
       hci::ACLDataPacket::New(kTestHandle2, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                               hci::ACLBroadcastFlag::kPointToPoint, 0x00);
   size_t filter_cb_count = 0;
-  auto filter_cb = [&](hci::ACLPacketPredicate filter) {
+  auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
     // filter out correct closed channel
     EXPECT_TRUE(filter(dummy_packet1, kLocalId));
     // do not filter out other channels
@@ -1463,7 +1442,7 @@ TEST_F(L2CAP_ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
     EXPECT_FALSE(filter(dummy_packet2, kLocalId));
     filter_cb_count++;
   };
-  set_drop_queued_packets_cb(std::move(filter_cb));
+  acl_data_channel()->set_drop_queued_packets_cb(std::move(filter_cb));
 
   // clang-format off
   ReceiveAclDataPacket(CreateStaticByteBuffer(
@@ -1876,24 +1855,6 @@ TEST_F(L2CAP_ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChann
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-}
-
-#define EXPECT_HIGH_PRIORITY(channel_id)                   \
-  EXPECT_EQ(ChannelManager::ChannelPriority((channel_id)), \
-            hci::ACLDataChannel::PacketPriority::kHigh)
-#define EXPECT_LOW_PRIORITY(channel_id)                    \
-  EXPECT_EQ(ChannelManager::ChannelPriority((channel_id)), \
-            hci::ACLDataChannel::PacketPriority::kLow)
-
-TEST_F(L2CAP_ChannelManagerTest, ChannelPriority) {
-  EXPECT_HIGH_PRIORITY(kSignalingChannelId);
-  EXPECT_HIGH_PRIORITY(kLESignalingChannelId);
-  EXPECT_HIGH_PRIORITY(kSMPChannelId);
-  EXPECT_HIGH_PRIORITY(kLESMPChannelId);
-
-  EXPECT_LOW_PRIORITY(kFirstDynamicChannelId);
-  EXPECT_LOW_PRIORITY(kLastACLDynamicChannelId);
-  EXPECT_LOW_PRIORITY(kATTChannelId);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, MtuOutboundChannelConfiguration) {
@@ -2389,39 +2350,70 @@ TEST_F(L2CAP_ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndC
   EXPECT_FALSE(link);
 }
 
+TEST_F(L2CAP_ChannelManagerTest, RequestAclPriorityNormal) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+
+  auto channel = SetUpOutboundChannel();
+
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb(
+      [&requested_priority](auto priority, auto handle, auto cb) {
+        EXPECT_EQ(handle, kTestHandle1);
+        requested_priority = priority;
+        cb(fit::ok());
+      });
+
+  size_t result_cb_count = 0;
+  channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
+    EXPECT_TRUE(result.is_ok());
+    result_cb_count++;
+  });
+
+  EXPECT_EQ(result_cb_count, 1u);
+  EXPECT_FALSE(requested_priority.has_value());
+
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
+  // Closing channel should not request normal priority because it is already the current priority.
+  channel->Deactivate();
+  EXPECT_EQ(result_cb_count, 1u);
+  EXPECT_FALSE(requested_priority.has_value());
+}
+
 TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
   QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
 
-  std::optional<AclPriority> requested_priority;
-  set_acl_priority_cb([&requested_priority](auto priority, auto handle, auto cb) {
-    EXPECT_EQ(handle, kTestHandle1);
-    requested_priority = priority;
-    cb(fit::ok());
-  });
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb(
+      [&requested_priority](auto priority, auto handle, auto cb) {
+        EXPECT_EQ(handle, kTestHandle1);
+        requested_priority = priority;
+        cb(fit::ok());
+      });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
 
   EXPECT_EQ(result_cb_count, 1u);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kSink);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
 
-  channel->RequestAclPriority(AclPriority::kNormal, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kNormal, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
 
   EXPECT_EQ(result_cb_count, 2u);
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kNormal);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 
   requested_priority.reset();
 
@@ -2437,30 +2429,31 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfte
 
   auto channel = SetUpOutboundChannel();
 
-  std::optional<AclPriority> requested_priority;
-  set_acl_priority_cb([&requested_priority](auto priority, auto handle, auto cb) {
-    EXPECT_EQ(handle, kTestHandle1);
-    requested_priority = priority;
-    cb(fit::ok());
-  });
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb(
+      [&requested_priority](auto priority, auto handle, auto cb) {
+        EXPECT_EQ(handle, kTestHandle1);
+        requested_priority = priority;
+        cb(fit::ok());
+      });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
 
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kSink);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
 
   requested_priority.reset();
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   channel->Deactivate();
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kNormal);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
@@ -2469,23 +2462,24 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequ
 
   auto channel = SetUpOutboundChannel();
 
-  std::optional<AclPriority> requested_priority;
-  set_acl_priority_cb([&requested_priority](auto priority, auto handle, auto cb) {
-    EXPECT_EQ(handle, kTestHandle1);
-    requested_priority = priority;
-    cb(fit::ok());
-  });
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb(
+      [&requested_priority](auto priority, auto handle, auto cb) {
+        EXPECT_EQ(handle, kTestHandle1);
+        requested_priority = priority;
+        cb(fit::ok());
+      });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
 
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kSink);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   requested_priority.reset();
 
@@ -2495,8 +2489,8 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequ
       testing::AclDisconnectionReq(kPeerDisconReqId, kTestHandle1, kRemoteId, kLocalId));
   RunLoopUntilIdle();
   ASSERT_TRUE(requested_priority.has_value());
-  EXPECT_EQ(*requested_priority, AclPriority::kNormal);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(L2CAP_ChannelManagerTest,
@@ -2506,34 +2500,34 @@ TEST_F(L2CAP_ChannelManagerTest,
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<AclPriority, fit::callback<void(fit::result<>)>>> requests;
-  set_acl_priority_cb([&](auto priority, auto handle, auto cb) {
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fit::result<>)>>> requests;
+  acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
   EXPECT_EQ(result_cb_count, 0u);
   EXPECT_EQ(requests.size(), 1u);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   channel->Deactivate();
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
   ASSERT_EQ(requests.size(), 1u);
 
   requests[0].second(fit::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
   EXPECT_EQ(result_cb_count, 1u);
   ASSERT_EQ(requests.size(), 2u);
-  EXPECT_EQ(requests[1].first, AclPriority::kNormal);
+  EXPECT_EQ(requests[1].first, hci::AclPriority::kNormal);
 
   requests[1].second(fit::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkFails) {
@@ -2542,19 +2536,19 @@ TEST_F(L2CAP_ChannelManagerTest, RequestAclPrioritySinkFails) {
 
   auto channel = SetUpOutboundChannel();
 
-  set_acl_priority_cb([](auto priority, auto handle, auto cb) {
+  acl_data_channel()->set_request_acl_priority_cb([](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     cb(fit::error());
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_error());
     result_cb_count++;
   });
 
   EXPECT_EQ(result_cb_count, 1u);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   channel->Deactivate();
@@ -2570,32 +2564,32 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate)
   auto channel_0 = SetUpOutboundChannel(kChannelIds0.first, kChannelIds0.second);
   auto channel_1 = SetUpOutboundChannel(kChannelIds1.first, kChannelIds1.second);
 
-  std::optional<AclPriority> requested_priority;
-  set_acl_priority_cb([&](auto priority, auto handle, auto cb) {
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
     cb(fit::ok());
   });
 
   size_t result_cb_count = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
-  EXPECT_EQ(*requested_priority, AclPriority::kSink);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
   EXPECT_EQ(result_cb_count, 1u);
-  EXPECT_EQ(channel_0->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel_0->requested_acl_priority(), hci::AclPriority::kSink);
   requested_priority.reset();
 
-  channel_1->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel_1->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
   // Priority is already sink. No additional request should be sent.
   EXPECT_FALSE(requested_priority);
   EXPECT_EQ(result_cb_count, 2u);
-  EXPECT_EQ(channel_1->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel_1->requested_acl_priority(), hci::AclPriority::kSink);
 
   EXPECT_ACL_PACKET_OUT(testing::AclDisconnectionReq(NextCommandId(), kTestHandle1,
                                                      kChannelIds0.first, kChannelIds0.second),
@@ -2609,7 +2603,7 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate)
                         kHighPriority);
   channel_1->Deactivate();
   ASSERT_TRUE(requested_priority);
-  EXPECT_EQ(*requested_priority, AclPriority::kNormal);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
@@ -2622,38 +2616,38 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
   auto channel_0 = SetUpOutboundChannel(kChannelIds0.first, kChannelIds0.second);
   auto channel_1 = SetUpOutboundChannel(kChannelIds1.first, kChannelIds1.second);
 
-  std::optional<AclPriority> requested_priority;
-  set_acl_priority_cb([&](auto priority, auto handle, auto cb) {
+  std::optional<hci::AclPriority> requested_priority;
+  acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requested_priority = priority;
     cb(fit::ok());
   });
 
   size_t result_cb_count = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
-  EXPECT_EQ(*requested_priority, AclPriority::kSink);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kSink);
   EXPECT_EQ(result_cb_count, 1u);
   requested_priority.reset();
 
-  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto result) {
+  channel_1->RequestAclPriority(hci::AclPriority::kSource, [&](auto result) {
     EXPECT_TRUE(result.is_error());
     result_cb_count++;
   });
   // Priority conflict should prevent priority request.
   EXPECT_FALSE(requested_priority);
   EXPECT_EQ(result_cb_count, 2u);
-  EXPECT_EQ(channel_1->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel_1->requested_acl_priority(), hci::AclPriority::kNormal);
 
   EXPECT_ACL_PACKET_OUT(testing::AclDisconnectionReq(NextCommandId(), kTestHandle1,
                                                      kChannelIds0.first, kChannelIds0.second),
                         kHighPriority);
   channel_0->Deactivate();
   ASSERT_TRUE(requested_priority);
-  EXPECT_EQ(*requested_priority, AclPriority::kNormal);
+  EXPECT_EQ(*requested_priority, hci::AclPriority::kNormal);
   requested_priority.reset();
 
   EXPECT_ACL_PACKET_OUT(testing::AclDisconnectionReq(NextCommandId(), kTestHandle1,
@@ -2676,16 +2670,17 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   auto channel_1 = SetUpOutboundChannel(kChannelIds1.first, kChannelIds1.second);
 
   std::vector<fit::callback<void(fit::result<>)>> command_callbacks;
-  set_acl_priority_cb(
+  acl_data_channel()->set_request_acl_priority_cb(
       [&](auto priority, auto handle, auto cb) { command_callbacks.push_back(std::move(cb)); });
 
   size_t result_cb_count_0 = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) { result_cb_count_0++; });
+  channel_0->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) { result_cb_count_0++; });
   EXPECT_EQ(command_callbacks.size(), 1u);
   EXPECT_EQ(result_cb_count_0, 0u);
 
   size_t result_cb_count_1 = 0;
-  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto result) { result_cb_count_1++; });
+  channel_1->RequestAclPriority(hci::AclPriority::kSource,
+                                [&](auto result) { result_cb_count_1++; });
   EXPECT_EQ(result_cb_count_1, 0u);
   ASSERT_EQ(command_callbacks.size(), 1u);
 
@@ -2696,8 +2691,8 @@ TEST_F(L2CAP_ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
   EXPECT_EQ(command_callbacks.size(), 1u);
 
   // Because requests should be handled sequentially, the second request should have failed.
-  EXPECT_EQ(channel_0->requested_acl_priority(), AclPriority::kSink);
-  EXPECT_EQ(channel_1->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel_0->requested_acl_priority(), hci::AclPriority::kSink);
+  EXPECT_EQ(channel_1->requested_acl_priority(), hci::AclPriority::kNormal);
 
   EXPECT_ACL_PACKET_OUT(testing::AclDisconnectionReq(NextCommandId(), kTestHandle1,
                                                      kChannelIds0.first, kChannelIds0.second),
@@ -2716,39 +2711,39 @@ TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored)
 
   auto channel = SetUpOutboundChannel();
 
-  std::vector<std::pair<AclPriority, fit::callback<void(fit::result<>)>>> requests;
-  set_acl_priority_cb([&](auto priority, auto handle, auto cb) {
+  std::vector<std::pair<hci::AclPriority, fit::callback<void(fit::result<>)>>> requests;
+  acl_data_channel()->set_request_acl_priority_cb([&](auto priority, auto handle, auto cb) {
     EXPECT_EQ(handle, kTestHandle1);
     requests.push_back({priority, std::move(cb)});
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 1u);
   requests[0].second(fit::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   // Source request is queued and request is sent.
-  channel->RequestAclPriority(AclPriority::kSource, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSource, [&](auto result) {
     EXPECT_TRUE(result.is_ok());
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
   EXPECT_EQ(result_cb_count, 1u);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   // Sink request is queued. It should receive an error since it is handled after the channel is
   // closed.
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
+  channel->RequestAclPriority(hci::AclPriority::kSink, [&](auto result) {
     EXPECT_TRUE(result.is_error());
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
   EXPECT_EQ(result_cb_count, 1u);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSink);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   // Closing channel will queue normal request.
@@ -2757,13 +2752,13 @@ TEST_F(L2CAP_ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored)
   // Send result to source request. Second sink request should receive error result too.
   requests[1].second(fit::ok());
   EXPECT_EQ(result_cb_count, 3u);
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSource);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kSource);
   ASSERT_EQ(requests.size(), 3u);
-  EXPECT_EQ(requests[2].first, AclPriority::kNormal);
+  EXPECT_EQ(requests[2].first, hci::AclPriority::kNormal);
 
   // Send response to normal request.
   requests[2].second(fit::ok());
-  EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
+  EXPECT_EQ(channel->requested_acl_priority(), hci::AclPriority::kNormal);
 }
 
 TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {

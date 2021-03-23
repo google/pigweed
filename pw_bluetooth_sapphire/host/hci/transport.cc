@@ -79,7 +79,7 @@ bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info
   // We watch for handle errors and closures to perform the necessary clean up.
   WatchChannelClosed(channel, acl_channel_wait_);
 
-  acl_data_channel_ = std::make_unique<ACLDataChannel>(this, std::move(channel));
+  acl_data_channel_ = AclDataChannel::Create(this, std::move(channel));
   acl_data_channel_->Initialize(bredr_buffer_info, le_buffer_info);
 
   return true;

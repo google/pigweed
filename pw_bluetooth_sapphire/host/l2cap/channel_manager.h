@@ -60,35 +60,14 @@ class ChannelManager final {
  public:
   using LinkErrorCallback = fit::closure;
 
-  // Used to schedule a series of packets on the link type |ll_type| to be transmitted to the
-  // controller's ACL endpoint. All the packets in each invocation must be transmitted contiguously
-  // and in order. This will be called on the thread which the ChannelManager object is created, up
-  // to the object's duration.
-  using SendAclCallback =
-      fit::function<bool(LinkedList<hci::ACLDataPacket> packets, ChannelId channel_id,
-                         hci::ACLDataChannel::PacketPriority priority)>;
-
-  // Used to drop stale queued ACL data packets for which |predicate| returns true (eg. when a
-  // channel is closed). Queued ACL data packets are those that were sent with |SendAclCallback| but
-  // not have not yet been transmitted to the controller.
-  using DropQueuedAclCallback = fit::function<void(hci::ACLPacketPredicate predicate)>;
-
-  // Used to request that the ACL priority vendor command be sent with the indicated priority and
-  // connection handle.
-  using RequestAclPriorityCallback = fit::function<void(l2cap::AclPriority, hci::ConnectionHandle,
-                                                        fit::callback<void(fit::result<>)>)>;
-
   // Creates L2CAP state for logical links and channels.
   //
   // |max_acl_payload_size| and |max_le_payload_size| are the "maximum size[s] of HCI ACL
   // (excluding header) Data Packets... sent from the Host to the Controller" (Core v5.0 Vol 2,
   // Part E, Section 4.1) used for fragmenting outbound data. Data that is fragmented will be
-  // passed contiguously as invocations of |send_packets_cb|.
-  //
-  // State changes are processed on |l2cap_dispatcher|.
+  // passed contiguously as invocations of |acl_data_channel->SendPackets()|.
   ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                 SendAclCallback send_acl_cb, DropQueuedAclCallback filter_acl_cb,
-                 RequestAclPriorityCallback priority_cb, bool random_channel_ids);
+                 hci::AclDataChannel* acl_data_channel, bool random_channel_ids);
   ~ChannelManager();
 
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -167,9 +146,6 @@ class ChannelManager final {
   // new channels for this service.
   using ServiceInfo = ServiceInfo<ChannelCallback>;
 
-  // Returns mapping of ChannelId -> PacketPriority for use with ACLDataChannel::SendPacket.
-  static hci::ACLDataChannel::PacketPriority ChannelPriority(ChannelId id);
-
   // Send a Connection Parameter Update Request on the LE signaling channel. When the Connection
   // Parameter Update Response is received, |request_cb| will be called with the result, |accepted|.
   //
@@ -211,14 +187,7 @@ class ChannelManager final {
   const size_t max_acl_payload_size_;
   const size_t max_le_payload_size_;
 
-  // Queues data packets to be delivered to the controller for a given link type.
-  SendAclCallback send_acl_cb_;
-
-  // Drops data packets pending delivery to the controller.
-  DropQueuedAclCallback drop_queued_acl_cb_;
-
-  // Requests that the ACL priority vendor command be sent.
-  RequestAclPriorityCallback acl_priority_cb_;
+  hci::AclDataChannel* acl_data_channel_;
 
   using LinkMap = std::unordered_map<hci::ConnectionHandle, fbl::RefPtr<internal::LogicalLink>>;
   LinkMap ll_map_;

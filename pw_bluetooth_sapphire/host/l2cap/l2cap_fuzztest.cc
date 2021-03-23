@@ -46,7 +46,7 @@ class DataFuzzTest : public TestingBase {
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
 
-    domain_ = l2cap::L2cap::Create(transport()->WeakPtr(), /*random_channel_ids=*/true);
+    domain_ = l2cap::L2cap::Create(transport()->acl_data_channel(), /*random_channel_ids=*/true);
 
     StartTestDevice();
   };

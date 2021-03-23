@@ -13,6 +13,7 @@ source_set("definitions") {
     "connection_parameters.h",
     "hci.h",
     "hci_constants.h",
+    "hci_defs.h",
     "link_key.cc",
     "link_key.h",
     "status.cc",
@@ -89,6 +90,7 @@ source_set("testing") {
     "fake_connection.h",
     "fake_local_address_delegate.cc",
     "fake_local_address_delegate.h",
+    "mock_acl_data_channel.h",
   ]
 
   public_deps = [ ":hci" ]

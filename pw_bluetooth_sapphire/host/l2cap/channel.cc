@@ -29,7 +29,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
       link_type_(link_type),
       link_handle_(link_handle),
       info_(info),
-      requested_acl_priority_(AclPriority::kNormal) {
+      requested_acl_priority_(hci::AclPriority::kNormal) {
   ZX_DEBUG_ASSERT(id_);
   ZX_DEBUG_ASSERT(link_type_ == hci::Connection::LinkType::kLE ||
                   link_type_ == hci::Connection::LinkType::kACL);
@@ -194,7 +194,7 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
   link_->UpgradeSecurity(level, std::move(callback), dispatcher);
 }
 
-void ChannelImpl::RequestAclPriority(AclPriority priority,
+void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
                                      fit::callback<void(fit::result<>)> callback) {
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
@@ -281,7 +281,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 }
 
 void ChannelImpl::CleanUp() {
-  RequestAclPriority(AclPriority::kNormal, [](auto result) {
+  RequestAclPriority(hci::AclPriority::kNormal, [](auto result) {
     if (result.is_error()) {
       bt_log(WARN, "l2cap", "Resetting ACL priority on channel closed failed");
     }

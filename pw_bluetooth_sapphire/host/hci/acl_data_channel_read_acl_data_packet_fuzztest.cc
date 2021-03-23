@@ -21,7 +21,7 @@ void fuzz(const uint8_t* data, size_t size) {
     return;
   }
   a.write(0u, data, size, nullptr, 0);
-  ACLDataChannel::ReadACLDataPacketFromChannel(b, packet);
+  AclDataChannel::ReadAclDataPacketFromChannel(b, packet);
 }
 
 }  // namespace bt::hci

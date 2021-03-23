@@ -93,7 +93,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
 
   hci::Transport* transport() const { return transport_.get(); }
   hci::CommandChannel* cmd_channel() const { return transport_->command_channel(); }
-  hci::ACLDataChannel* acl_data_channel() const { return transport_->acl_data_channel(); }
+  hci::AclDataChannel* acl_data_channel() const { return transport_->acl_data_channel(); }
 
   // Deletes |test_device_| and resets the pointer.
   void DeleteTestDevice() { test_device_ = nullptr; }

@@ -547,16 +547,16 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   if (kExpectSuccess) {
     switch (kPriority) {
       case fidlbredr::A2dpDirectionPriority::SOURCE:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSource);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSource);
         break;
       case fidlbredr::A2dpDirectionPriority::SINK:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSink);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSink);
         break;
       default:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kNormal);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kNormal);
     }
   } else {
-    EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kNormal);
+    EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kNormal);
   }
 }
 
@@ -613,7 +613,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
   RunLoopUntilIdle();
   EXPECT_EQ(priority_cb_count, 1u);
   ASSERT_TRUE(fake_channel);
-  EXPECT_EQ(fake_channel->requested_acl_priority(), bt::l2cap::AclPriority::kSink);
+  EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSink);
 }
 
 // Verifies that a socket channel relay is correctly set up such that bytes written to the socket

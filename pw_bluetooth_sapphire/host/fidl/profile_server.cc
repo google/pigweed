@@ -164,14 +164,14 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
   return desc;
 }
 
-bt::l2cap::AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
+bt::hci::AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
   switch (in) {
     case fidlbredr::A2dpDirectionPriority::SOURCE:
-      return bt::l2cap::AclPriority::kSource;
+      return bt::hci::AclPriority::kSource;
     case fidlbredr::A2dpDirectionPriority::SINK:
-      return bt::l2cap::AclPriority::kSink;
+      return bt::hci::AclPriority::kSink;
     default:
-      return bt::l2cap::AclPriority::kNormal;
+      return bt::hci::AclPriority::kNormal;
   }
 }
 

@@ -195,13 +195,13 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
     EXPECT_TRUE(acl_data_channel()->SendPacket(
         ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                            ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId));
+        l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   }
 
   EXPECT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -229,7 +229,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   EXPECT_FALSE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kHandle1));
 }
@@ -270,13 +270,13 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
     EXPECT_TRUE(acl_data_channel()->SendPacket(
         ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                            ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId));
+        l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   }
 
   EXPECT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -303,7 +303,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   EXPECT_FALSE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   // Since controller packet count was cleared, packet for |kHandle1| should
   // have been sent.
@@ -911,7 +911,8 @@ TEST_F(HCI_ConnectionTest,
     auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, 1);
     packet->mutable_view()->mutable_payload_bytes()[0] = payload0;
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
   }
 
   // Run until the data is flushed out to the MockController.
@@ -944,7 +945,8 @@ TEST_F(HCI_ConnectionTest,
     auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, 1);
     packet->mutable_view()->mutable_payload_bytes()[0] = payload1;
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
   }
 
   RunLoopUntilIdle();

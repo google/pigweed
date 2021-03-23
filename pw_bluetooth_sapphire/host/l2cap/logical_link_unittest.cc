@@ -8,9 +8,9 @@
 #include "lib/fit/single_threaded_executor.h"
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/mock_acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -34,13 +34,9 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
   void NewLogicalLink(Conn::LinkType type = Conn::LinkType::kLE) {
     const hci::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
-    auto send_packets_cb = [](auto, auto) { return true; };
-    auto drop_acl_cb = [](hci::ACLPacketPredicate) {};
     auto query_service_cb = [](hci::ConnectionHandle, PSM) { return std::nullopt; };
-    auto acl_priority_cb = [](auto, auto, auto) {};
     link_ = LogicalLink::New(kConnHandle, type, Conn::Role::kMaster, &executor_, kMaxPayload,
-                             std::move(send_packets_cb), std::move(drop_acl_cb),
-                             std::move(query_service_cb), std::move(acl_priority_cb),
+                             std::move(query_service_cb), &acl_data_channel_,
                              /*random_channel_ids=*/true);
   }
   LogicalLink* link() const { return link_.get(); }
@@ -49,6 +45,7 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
  private:
   fbl::RefPtr<LogicalLink> link_;
   fit::single_threaded_executor executor_;
+  hci::testing::MockAclDataChannel acl_data_channel_;
 };
 
 using L2CAP_LogicalLinkDeathTest = L2CAP_LogicalLinkTest;
@@ -90,6 +87,22 @@ TEST_F(L2CAP_LogicalLinkTest, DropsBroadcastPackets) {
 
   // Should be dropped.
   EXPECT_EQ(0u, rx_count);
+}
+
+#define EXPECT_HIGH_PRIORITY(channel_id) \
+  EXPECT_EQ(LogicalLink::ChannelPriority((channel_id)), hci::AclDataChannel::PacketPriority::kHigh)
+#define EXPECT_LOW_PRIORITY(channel_id) \
+  EXPECT_EQ(LogicalLink::ChannelPriority((channel_id)), hci::AclDataChannel::PacketPriority::kLow)
+
+TEST_F(L2CAP_LogicalLinkTest, ChannelPriority) {
+  EXPECT_HIGH_PRIORITY(kSignalingChannelId);
+  EXPECT_HIGH_PRIORITY(kLESignalingChannelId);
+  EXPECT_HIGH_PRIORITY(kSMPChannelId);
+  EXPECT_HIGH_PRIORITY(kLESMPChannelId);
+
+  EXPECT_LOW_PRIORITY(kFirstDynamicChannelId);
+  EXPECT_LOW_PRIORITY(kLastACLDynamicChannelId);
+  EXPECT_LOW_PRIORITY(kATTChannelId);
 }
 
 }  // namespace

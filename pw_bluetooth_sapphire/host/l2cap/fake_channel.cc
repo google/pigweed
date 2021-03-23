@@ -123,7 +123,8 @@ void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::StatusCallback ca
                    level]() mutable { f(handle, level, std::move(cb)); });
 }
 
-void FakeChannel::RequestAclPriority(AclPriority priority, fit::callback<void(fit::result<>)> cb) {
+void FakeChannel::RequestAclPriority(hci::AclPriority priority,
+                                     fit::callback<void(fit::result<>)> cb) {
   if (acl_priority_fails_) {
     cb(fit::error());
     return;

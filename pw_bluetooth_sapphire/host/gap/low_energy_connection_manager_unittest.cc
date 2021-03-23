@@ -3381,7 +3381,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
           hci::ACLDataPacket::New(conn_handle0_->handle(),
                                   hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                   hci::ACLBroadcastFlag::kPointToPoint, 1),
-          l2cap::kInvalidChannelId));
+          l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
     }
 
     // Queue packet for |peer1|.
@@ -3389,7 +3389,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
         hci::ACLDataPacket::New(conn_handle1_->handle(),
                                 hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                 hci::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId));
+        l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
     RunLoopUntilIdle();
 
@@ -3413,7 +3413,7 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     ASSERT_FALSE(acl_data_channel()->SendPacket(
         hci::ACLDataPacket::New(handle0_, hci::ACLPacketBoundaryFlag::kFirstNonFlushable,
                                 hci::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId));
+        l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
 
     // Packet for |peer1| should have been sent.
     EXPECT_EQ(kLEMaxNumPackets + 1, packet_count_);

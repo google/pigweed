@@ -66,7 +66,7 @@ class Transport final {
   CommandChannel* command_channel() const { return command_channel_.get(); }
 
   // Returns a pointer to the HCI ACL data flow control handler.
-  ACLDataChannel* acl_data_channel() const { return acl_data_channel_.get(); }
+  AclDataChannel* acl_data_channel() const { return acl_data_channel_.get(); }
 
   // Set a callback that should be invoked when any one of the underlying
   // channels gets closed for any reason (e.g. the HCI device has disappeared)
@@ -109,7 +109,7 @@ class Transport final {
   Waiter acl_channel_wait_{this};
 
   // The ACL data flow control handler.
-  std::unique_ptr<ACLDataChannel> acl_data_channel_;
+  std::unique_ptr<AclDataChannel> acl_data_channel_;
 
   // The HCI command and event flow control handler.
   std::unique_ptr<CommandChannel> command_channel_;

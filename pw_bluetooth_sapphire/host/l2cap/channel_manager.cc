@@ -25,20 +25,14 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 }  // namespace
 
 ChannelManager::ChannelManager(size_t max_acl_payload_size, size_t max_le_payload_size,
-                               SendAclCallback send_acl_cb,
-                               DropQueuedAclCallback drop_queued_acl_cb,
-                               RequestAclPriorityCallback priority_cb, bool random_channel_ids)
+                               hci::AclDataChannel* acl_data_channel, bool random_channel_ids)
     : max_acl_payload_size_(max_acl_payload_size),
       max_le_payload_size_(max_le_payload_size),
-      send_acl_cb_(std::move(send_acl_cb)),
-      drop_queued_acl_cb_(std::move(drop_queued_acl_cb)),
-      acl_priority_cb_(std::move(priority_cb)),
+      acl_data_channel_(acl_data_channel),
       random_channel_ids_(random_channel_ids),
       executor_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(send_acl_cb_);
-  ZX_ASSERT(drop_queued_acl_cb_);
-  ZX_ASSERT(acl_priority_cb_);
+  ZX_ASSERT(acl_data_channel_);
 }
 
 ChannelManager::~ChannelManager() {
@@ -252,15 +246,9 @@ internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle ha
   auto iter = ll_map_.find(handle);
   ZX_DEBUG_ASSERT_MSG(iter == ll_map_.end(), "connection handle re-used! (handle=%#.4x)", handle);
 
-  auto send_acl_cb = [this](auto packets, ChannelId channel_id) {
-    return send_acl_cb_(std::move(packets), channel_id,
-                        ChannelManager::ChannelPriority(channel_id));
-  };
-
   auto ll = internal::LogicalLink::New(handle, ll_type, role, &executor_, max_payload_size,
-                                       std::move(send_acl_cb), drop_queued_acl_cb_.share(),
                                        fit::bind_member(this, &ChannelManager::QueryService),
-                                       acl_priority_cb_.share(), random_channel_ids_);
+                                       acl_data_channel_, random_channel_ids_);
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
   }
@@ -294,18 +282,6 @@ std::optional<ChannelManager::ServiceInfo> ChannelManager::QueryService(
   // to the appropriate dispatcher (passed to RegisterService).
   return ChannelManager::ServiceInfo(iter->second.info.channel_params,
                                      iter->second.info.channel_cb.share());
-}
-
-hci::ACLDataChannel::PacketPriority ChannelManager::ChannelPriority(ChannelId id) {
-  switch (id) {
-    case kSignalingChannelId:
-    case kLESignalingChannelId:
-    case kSMPChannelId:
-    case kLESMPChannelId:
-      return hci::ACLDataChannel::PacketPriority::kHigh;
-    default:
-      return hci::ACLDataChannel::PacketPriority::kLow;
-  }
 }
 
 void ChannelManager::ServiceData::AttachInspect(inspect::Node& parent) {

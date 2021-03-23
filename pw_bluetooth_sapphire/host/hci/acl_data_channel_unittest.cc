@@ -17,9 +17,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::hci {
 namespace {
+
+constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -48,7 +51,7 @@ TEST_F(HCI_ACLDataChannelTest, VerifyMTUs) {
   // BR/EDR buffer only.
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
   EXPECT_EQ(kBREDRBufferInfo, acl_data_channel()->GetBufferInfo());
-  EXPECT_EQ(kBREDRBufferInfo, acl_data_channel()->GetLEBufferInfo());
+  EXPECT_EQ(kBREDRBufferInfo, acl_data_channel()->GetLeBufferInfo());
 
   TearDown();
   SetUp();
@@ -56,7 +59,7 @@ TEST_F(HCI_ACLDataChannelTest, VerifyMTUs) {
   // LE buffer only.
   InitializeACLDataChannel(DataBufferInfo(), kLEBufferInfo);
   EXPECT_EQ(DataBufferInfo(), acl_data_channel()->GetBufferInfo());
-  EXPECT_EQ(kLEBufferInfo, acl_data_channel()->GetLEBufferInfo());
+  EXPECT_EQ(kLEBufferInfo, acl_data_channel()->GetLeBufferInfo());
 
   TearDown();
   SetUp();
@@ -64,7 +67,7 @@ TEST_F(HCI_ACLDataChannelTest, VerifyMTUs) {
   // Both buffers available.
   InitializeACLDataChannel(kBREDRBufferInfo, kLEBufferInfo);
   EXPECT_EQ(kBREDRBufferInfo, acl_data_channel()->GetBufferInfo());
-  EXPECT_EQ(kLEBufferInfo, acl_data_channel()->GetLEBufferInfo());
+  EXPECT_EQ(kLEBufferInfo, acl_data_channel()->GetLeBufferInfo());
 }
 
 // Test that SendPacket works using only the BR/EDR buffer.
@@ -104,7 +107,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
     }
   });
 
@@ -147,7 +151,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
   // This should fail because the payload exceeds the MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                    ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1);
-  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                              AclDataChannel::PacketPriority::kLow));
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
@@ -176,9 +181,11 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
                                        ACLBroadcastFlag::kPointToPoint, kMaxMTU);
       if (i % 2) {
         // ACL-U packets should fail due to 0 MTU size.
-        EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+        EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                                    AclDataChannel::PacketPriority::kLow));
       } else {
-        EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+        EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                                   AclDataChannel::PacketPriority::kLow));
       }
     }
   });
@@ -224,7 +231,8 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
   // This should fail because the payload exceeds the LE MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                    ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                              AclDataChannel::PacketPriority::kLow));
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
@@ -249,7 +257,8 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
-      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
     }
   });
 
@@ -293,7 +302,8 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   // This should fail because the payload exceeds the ACL MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                    ACLBroadcastFlag::kPointToPoint, kLEMaxMTU);
-  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+  EXPECT_FALSE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                              AclDataChannel::PacketPriority::kLow));
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
@@ -318,7 +328,8 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
       ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
       auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
     }
   });
 
@@ -351,14 +362,15 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
   acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kACL);
 
   // Empty packet list.
-  EXPECT_FALSE(
-      acl_data_channel()->SendPackets(LinkedList<ACLDataPacket>(), l2cap::kInvalidChannelId));
+  EXPECT_FALSE(acl_data_channel()->SendPackets(
+      LinkedList<ACLDataPacket>(), l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   // Packet exceeds MTU
   LinkedList<ACLDataPacket> packets;
   packets.push_back(ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                        ACLBroadcastFlag::kPointToPoint, kMaxMTU + 1));
-  EXPECT_FALSE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId));
+  EXPECT_FALSE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
 }
 
 // Tests sending multiple packets in a single call.
@@ -395,7 +407,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPackets) {
     packets.push_back(std::move(packet));
   }
 
-  EXPECT_TRUE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId));
+  EXPECT_TRUE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
+                                              AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -422,15 +435,15 @@ TEST_F(HCI_ACLDataChannelTest,
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle2, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -463,7 +476,7 @@ TEST_F(HCI_ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
   ASSERT_FALSE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -517,15 +530,15 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle2, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -565,11 +578,11 @@ TEST_F(HCI_ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregist
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -622,11 +635,11 @@ TEST_F(HCI_ACLDataChannelTest,
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -655,7 +668,8 @@ TEST_F(HCI_ACLDataChannelTest,
                                    ACLBroadcastFlag::kPointToPoint, 1);
   packet->mutable_view()->mutable_payload_data().Fill(1);
 
-  ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId));
+  ASSERT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
+                                             AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
 
@@ -678,7 +692,7 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   ASSERT_TRUE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
   ASSERT_EQ(1, packet_count);
@@ -689,7 +703,7 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
   ASSERT_FALSE(acl_data_channel()->SendPacket(
       ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                          ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId));
+      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
 
   RunLoopUntilIdle();
   // second packet should not have been sent
@@ -833,7 +847,8 @@ TEST_F(HCI_ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFrom
     ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
     auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), (i % 2) ? kChanId1 : kChanId0));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), (i % 2) ? kChanId1 : kChanId0,
+                                               AclDataChannel::PacketPriority::kLow));
   }
 
   RunLoopUntilIdle();
@@ -916,7 +931,7 @@ TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsA
     auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
-                                               ACLDataChannel::PacketPriority::kLow));
+                                               AclDataChannel::PacketPriority::kLow));
   }
   RunLoopUntilIdle();
 
@@ -927,7 +942,7 @@ TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsA
   for (size_t i = 0; i < 2 * kMaxNumPackets; ++i) {
     ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
     auto priority =
-        (i % 2) ? ACLDataChannel::PacketPriority::kLow : ACLDataChannel::PacketPriority::kHigh;
+        (i % 2) ? AclDataChannel::PacketPriority::kLow : AclDataChannel::PacketPriority::kHigh;
     auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
     EXPECT_TRUE(
@@ -997,7 +1012,8 @@ TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
     ConnectionHandle handle = (i % 2) ? kHandle1 : kHandle0;
     auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
   }
   RunLoopUntilIdle();
 
@@ -1010,12 +1026,14 @@ TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
     auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
   }
   for (size_t i = 0; i < kMaxNumPackets / 2; ++i) {
     auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                      ACLBroadcastFlag::kPointToPoint, kMaxMTU);
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId));
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
   }
 
   RunLoopUntilIdle();
@@ -1051,6 +1069,104 @@ TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
   // handle1 packets should have been sent anyway
   EXPECT_EQ(3u, handle0_packet_count);
   EXPECT_EQ(2u, handle1_packet_count);
+}
+
+class AclPriorityTest : public HCI_ACLDataChannelTest,
+                        public ::testing::WithParamInterface<std::pair<hci::AclPriority, bool>> {};
+TEST_P(AclPriorityTest, RequestAclPriority) {
+  const auto kPriority = GetParam().first;
+  const bool kExpectSuccess = GetParam().second;
+
+  const DataBufferInfo kBREDRBufferInfo(1024, 50);
+  InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
+
+  // Arbitrary command payload larger than CommandHeader.
+  const auto op_code = hci::VendorOpCode(0x01);
+  const StaticByteBuffer kEncodedCommand(LowerBits(op_code), UpperBits(op_code),  // op code
+                                         0x04,                                    // parameter size
+                                         0x00, 0x01, 0x02, 0x03);                 // test parameter
+
+  constexpr hci::ConnectionHandle kLinkHandle = 0x0001;
+
+  std::optional<bt_vendor_command_t> encode_vendor_command;
+  std::optional<bt_vendor_params_t> encode_vendor_command_params;
+  set_encode_vendor_command_cb([&](auto command, auto params) {
+    encode_vendor_command = command;
+    encode_vendor_command_params = params;
+    return fit::ok(DynamicByteBuffer(kEncodedCommand));
+  });
+
+  auto cmd_complete = testing::CommandCompletePacket(
+      op_code, kExpectSuccess ? hci::StatusCode::kSuccess : hci::StatusCode::kUnknownCommand);
+  EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
+
+  size_t request_cb_count = 0;
+  acl_data_channel()->RequestAclPriority(kPriority, kLinkHandle, [&](auto result) {
+    request_cb_count++;
+    EXPECT_EQ(kExpectSuccess, result.is_ok());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
+  ASSERT_TRUE(encode_vendor_command);
+  EXPECT_EQ(encode_vendor_command.value(), BT_VENDOR_COMMAND_SET_ACL_PRIORITY);
+  ASSERT_TRUE(encode_vendor_command_params);
+  EXPECT_EQ(encode_vendor_command_params->set_acl_priority.connection_handle, kLinkHandle);
+  if (kPriority == hci::AclPriority::kNormal) {
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority,
+              BT_VENDOR_ACL_PRIORITY_NORMAL);
+  } else {
+    EXPECT_EQ(encode_vendor_command_params->set_acl_priority.priority, BT_VENDOR_ACL_PRIORITY_HIGH);
+    if (kPriority == hci::AclPriority::kSink) {
+      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
+                BT_VENDOR_ACL_DIRECTION_SINK);
+    } else {
+      EXPECT_EQ(encode_vendor_command_params->set_acl_priority.direction,
+                BT_VENDOR_ACL_DIRECTION_SOURCE);
+    }
+  }
+}
+
+const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
+    {{hci::AclPriority::kSource, /*expect_success=*/false},
+     {hci::AclPriority::kSource, true},
+     {hci::AclPriority::kSink, true},
+     {hci::AclPriority::kNormal, true}}};
+INSTANTIATE_TEST_SUITE_P(HCI_ACLDataChannelTest, AclPriorityTest,
+                         ::testing::ValuesIn(kPriorityParams));
+
+TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeFails) {
+  const DataBufferInfo kBREDRBufferInfo(1024, 50);
+  InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
+
+  set_encode_vendor_command_cb([&](auto command, auto params) { return fit::error(); });
+
+  size_t request_cb_count = 0;
+  acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
+    request_cb_count++;
+    EXPECT_TRUE(result.is_error());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
+}
+
+TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
+  const DataBufferInfo kBREDRBufferInfo(1024, 50);
+  InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
+
+  set_encode_vendor_command_cb([&](auto command, auto params) {
+    return fit::ok(DynamicByteBuffer(StaticByteBuffer(0x00)));
+  });
+
+  size_t request_cb_count = 0;
+  acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
+    request_cb_count++;
+    EXPECT_TRUE(result.is_error());
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(request_cb_count, 1u);
 }
 
 }  // namespace
