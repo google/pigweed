@@ -318,6 +318,14 @@ template("_pw_python_proto_library") {
 #
 #   <target_name>.<generator>
 #
+# GN permits using abbreviated labels when the target name matches the directory
+# name (e.g. //foo for //foo:foo). For consistency with this, the sub-targets
+# for each generator are aliased to the directory when the target name is the
+# same. For example, these two labels are equivalent:
+#
+#   //path/to/my_protos:my_protos.pwpb
+#   //path/to/my_protos:pwpb
+#
 # pw_protobuf_library targets generate Python packages. As such, they must have
 # globally unique package names. The first directory of the prefix or the first
 # common directory of the sources is used as the Python package.
@@ -331,7 +339,7 @@ template("_pw_python_proto_library") {
 #       compiled with protoc as "nested/foo.proto".
 #   strip_prefix: Remove this prefix from the source protos. All source and
 #       input files must be nested under this path.
-#   python_package: Label of Python package in which to nest the proto modules.
+#   python_package: Label of Python package to which to add the proto modules.
 #
 template("pw_proto_library") {
   assert(defined(invoker.sources) && invoker.sources != [],
@@ -443,7 +451,12 @@ template("pw_proto_library") {
   # all of its dependencies to list as include paths to protoc.
   generated_file("$target_name._includes") {
     # Collect metadata from the include path files of each dependency.
-    deps = process_file_template(_deps, "{{source}}._includes")
+
+    deps = []
+    foreach(dep, _deps) {
+      _base = get_label_info(dep, "label_no_toolchain")
+      deps += [ "$_base._includes(" + get_label_info(dep, "toolchain") + ")" ]
+    }
 
     data_keys = [ "protoc_includes" ]
     outputs = [ "${_common.base_out_dir}/includes.txt" ]
@@ -594,6 +607,17 @@ template("pw_proto_library") {
     "go",
     "python",
   ]
+
+  # If the label matches the directory name, alias the subtargets to the
+  # directory (e.g. //foo:nanopb is an alias for //foo:foo.nanopb).
+  if (get_label_info(":$target_name", "name") ==
+      get_path_info(get_label_info(":$target_name", "dir"), "name")) {
+    foreach(_generator, _protobuf_generators) {
+      group("$_generator") {
+        public_deps = [ ":${invoker.target_name}.$_generator" ]
+      }
+    }
+  }
 
   # If the user attempts to use the target directly instead of one of the
   # generator targets, run a script which prints a nice error message.

@@ -55,6 +55,16 @@ compiles using Nanopb (if it's installed).
 Protobuf code is only generated when a generator sub-target is listed as a
 dependency of another GN target.
 
+GN permits using abbreviated labels when the target name matches the directory
+name (e.g. ``//foo`` for ``//foo:foo``). For consistency with this, the
+sub-targets for each generator are aliased to the directory when the target name
+is the same. For example, these two labels are equivalent:
+
+.. code-block::
+
+  //path/to/my_protos:my_protos.pwpb
+  //path/to/my_protos:pwpb
+
 **Arguments**
 
 * ``sources``: List of input .proto files.
@@ -66,8 +76,7 @@ dependency of another GN target.
   compiled with protoc as ``"nested/foo.proto"``.
 * ``strip_prefix``: Remove this prefix from the source protos. All source and
   input files must be nested under this path.
-* ``python_package``: Label of Python package in which to nest the proto
-  modules.
+* ``python_package``: Label of Python package to which to add the proto modules.
 
 **Example**
 
@@ -188,7 +197,6 @@ The ``hello_pb2.py`` proto module can be used alongside other files in the
 
   from foo import cool_module, hello_pb2
 
-
 Working with externally defined protos
 --------------------------------------
 ``pw_proto_library`` targets may be used to build ``.proto`` sources from
@@ -286,4 +294,4 @@ These proto files are accessed in C++ the same as in the GN build:
 
 .. code-block:: cpp
 
-  #include "my_other_protos/baz.pwpb"
+  #include "my_other_protos/baz.pwpb.h"
