@@ -352,6 +352,7 @@ class BrEdrConnectionManager final {
   struct InspectProperties {
     BoundedInspectListNode last_disconnected_list = BoundedInspectListNode(/*capacity=*/5);
     inspect::Node connections_node_;
+    inspect::Node requests_node_;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;

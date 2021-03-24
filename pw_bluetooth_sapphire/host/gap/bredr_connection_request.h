@@ -10,6 +10,8 @@
 #include <list>
 
 #include "fbl/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
 
 namespace bt::gap {
@@ -34,40 +36,38 @@ class BrEdrConnectionRequest final {
   using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
-  explicit BrEdrConnectionRequest(const DeviceAddress& addr)
-      : address_(addr), has_incoming_(false) {}
+  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id);
 
-  BrEdrConnectionRequest(const DeviceAddress& addr, OnComplete&& callback)
-      : address_(addr), has_incoming_(false) {
-    callbacks_.push_back(std::move(callback));
-  }
+  BrEdrConnectionRequest(const DeviceAddress& addr, PeerId peer_id, OnComplete&& callback);
 
   BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
   BrEdrConnectionRequest& operator=(BrEdrConnectionRequest&&) = default;
 
-  void AddCallback(OnComplete cb) { callbacks_.push_back(std::move(cb)); }
+  void AddCallback(OnComplete cb) { callbacks_.Mutable()->push_back(std::move(cb)); }
 
   // Notifies all elements in |callbacks| with |status| and the result of
   // |generate_ref|. Called by the appropriate manager once a connection request
   // has completed, successfully or otherwise
-  void NotifyCallbacks(hci::Status status, const RefFactory& generate_ref) {
-    // If this request has been moved from, |callbacks_| may be empty.
-    for (const auto& callback : callbacks_) {
-      callback(status, generate_ref());
-    }
-  }
+  void NotifyCallbacks(hci::Status status, const RefFactory& generate_ref);
 
-  void BeginIncoming() { has_incoming_ = true; }
-  void CompleteIncoming() { has_incoming_ = false; }
-  bool HasIncoming() { return has_incoming_; }
-  bool AwaitingOutgoing() { return !callbacks_.empty(); }
+  void BeginIncoming() { has_incoming_.Set(true); }
+  void CompleteIncoming() { has_incoming_.Set(false); }
+  bool HasIncoming() { return *has_incoming_; }
+  bool AwaitingOutgoing() { return !callbacks_->empty(); }
+
+  // Attach request inspect node as a child of |parent| named |name|.
+  void AttachInspect(inspect::Node& parent, std::string name);
 
   DeviceAddress address() const { return address_; }
 
  private:
+  PeerId peer_id_;
   DeviceAddress address_;
-  std::list<OnComplete> callbacks_;
-  bool has_incoming_;
+  UintInspectable<std::list<OnComplete>> callbacks_;
+  BoolInspectable<bool> has_incoming_;
+
+  inspect::StringProperty peer_id_property_;
+  inspect::Node inspect_node_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };

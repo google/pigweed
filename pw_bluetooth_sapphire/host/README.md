@@ -119,6 +119,11 @@ adapter:
                 peer_address
                 ref_count
     bredr_connection_manager:
+        connection_requests:
+            request_0x0:
+                peer_id
+                has_incoming
+                callbacks
         connections:
             connection_0x0:
                 peer_id

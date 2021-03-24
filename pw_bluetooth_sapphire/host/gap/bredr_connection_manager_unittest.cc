@@ -3521,16 +3521,36 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
   inspect::Inspector inspector;
   connmgr()->AttachInspect(inspector.GetRoot(), "bredr_connection_manager");
 
-  QueueSuccessfulIncomingConn();
-
+  // Don't receive connection complete yet in order to keep request pending.
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(kTestDevAddr),
+                        &kAcceptConnectionRequestRsp);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
 
+  auto requests_one_request_matcher =
+      AllOf(NodeMatches(NameMatches("connection_requests")),
+            ChildrenMatch(ElementsAre(NodeMatches(NameMatches("request_0x0")))));
+
+  auto conn_mgr_with_request_matcher =
+      AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
+            ChildrenMatch(::testing::IsSupersetOf({requests_one_request_matcher})));
+
+  EXPECT_THAT(inspect::ReadFromVmo(inspector.DuplicateVmo()).value(),
+              ChildrenMatch(ElementsAre(conn_mgr_with_request_matcher)));
+
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+  const auto connection_complete =
+      testing::ConnectionCompletePacket(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(connection_complete);
+  RunLoopUntilIdle();
   auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
+  ASSERT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
 
+  auto empty_requests_matcher =
+      AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
   auto connection_matcher = NodeMatches(
-      AllOf(NameMatches("connection_0x0"),
+      AllOf(NameMatches("connection_0x1"),
             PropertyList(ElementsAre(StringIs("peer_id", peer->identifier().ToString())))));
   auto connections_matcher = AllOf(NodeMatches(NameMatches("connections")),
                                    ChildrenMatch(ElementsAre(connection_matcher)));
@@ -3538,7 +3558,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
       AllOf(NodeMatches(NameMatches("last_disconnected")), ChildrenMatch(::testing::IsEmpty()));
   auto conn_mgr_matcher =
       AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
-            ChildrenMatch(UnorderedElementsAre(connections_matcher, recent_conn_list_matcher)));
+            ChildrenMatch(UnorderedElementsAre(empty_requests_matcher, connections_matcher,
+                                               recent_conn_list_matcher)));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
@@ -3549,6 +3570,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
   EXPECT_TRUE(connmgr()->Disconnect(peer->identifier(), DisconnectReason::kApiRequest));
   RunLoopUntilIdle();
 
+  auto requests_matcher =
+      AllOf(NodeMatches(NameMatches("connection_requests")), ChildrenMatch(::testing::IsEmpty()));
   auto connections_after_disconnect_matcher =
       AllOf(NodeMatches(NameMatches("connections")), ChildrenMatch(::testing::IsEmpty()));
   auto recent_conn_list_after_disconnect_matcher =
@@ -3561,7 +3584,8 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
 
   auto conn_mgr_after_disconnect_matcher =
       AllOf(NodeMatches(NameMatches("bredr_connection_manager")),
-            ChildrenMatch(UnorderedElementsAre(connections_after_disconnect_matcher,
+            ChildrenMatch(UnorderedElementsAre(empty_requests_matcher,
+                                               connections_after_disconnect_matcher,
                                                recent_conn_list_after_disconnect_matcher)));
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());

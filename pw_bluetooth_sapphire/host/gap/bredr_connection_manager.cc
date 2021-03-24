@@ -27,6 +27,8 @@ using ConnectionState = Peer::ConnectionState;
 
 namespace {
 
+const char* const kInspectRequestsNodeName = "connection_requests";
+const char* const kInspectRequestNodeNamePrefix = "request_";
 const char* const kInspectConnectionsNodeName = "connections";
 const char* const kInspectConnectionNodeNamePrefix = "connection_";
 const char* const kInspectLastDisconnectedListName = "last_disconnected";
@@ -338,9 +340,16 @@ bool BrEdrConnectionManager::Disconnect(PeerId peer_id, DisconnectReason reason)
 
 void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_node_ = parent.CreateChild(name);
+
   inspect_properties_.connections_node_ = inspect_node_.CreateChild(kInspectConnectionsNodeName);
   inspect_properties_.last_disconnected_list.AttachInspect(inspect_node_,
                                                            kInspectLastDisconnectedListName);
+
+  inspect_properties_.requests_node_ = inspect_node_.CreateChild(kInspectRequestsNodeName);
+  for (auto& [_, req] : connection_requests_) {
+    req.AttachInspect(inspect_properties_.requests_node_,
+                      inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
+  }
 }
 
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t window,
@@ -604,8 +613,11 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
 
     // Register that we're in the middle of an incoming request for this peer - create a new
     // request if one doesn't already exist
-    auto [request, _ignore] = connection_requests_.try_emplace(peer_id, event.addr);
+    auto [request, _ignore] = connection_requests_.try_emplace(peer_id, event.addr, peer_id);
     request->second.BeginIncoming();
+    request->second.AttachInspect(
+        inspect_properties_.requests_node_,
+        inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
 
     SendAcceptConnectionRequest(
         event.addr.value(),
@@ -1004,7 +1016,11 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
   }
   // If we are not already connected or pending, initiate a new connection
   peer->MutBrEdr().SetConnectionState(ConnectionState::kInitializing);
-  connection_requests_.try_emplace(peer_id, peer->address(), std::move(on_connection_result));
+  auto [request_iter, _] = connection_requests_.try_emplace(peer_id, peer->address(), peer_id,
+                                                            std::move(on_connection_result));
+  request_iter->second.AttachInspect(
+      inspect_properties_.requests_node_,
+      inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
 
   TryCreateNextConnection();
 
