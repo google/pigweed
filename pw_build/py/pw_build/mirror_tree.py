@@ -52,8 +52,9 @@ def _link_files(source_root: Path, sources: Iterable[Path],
         if dest.exists():
             dest.unlink()
 
-        # Use a hard link to avoid unnecessary copies.
-        os.link(source, dest)
+        # Use a hard link to avoid unnecessary copies. Resolve the source before
+        # linking in case it is a symlink.
+        os.link(source.resolve(), dest)
 
         yield dest
 
