@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "connection_request.h"
+#include "bredr_connection_request.h"
 
 #include <gtest/gtest.h>
 
@@ -11,13 +11,11 @@
 namespace bt::gap {
 namespace {
 
-struct Unit {};
-
 const DeviceAddress kTestAddr(DeviceAddress::Type::kBREDR, {1});
 
-TEST(GAP_ConnectionRequestTests, IncomingRequestStatusTracked) {
+TEST(GAP_BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming
-  auto req = ConnectionRequest<Unit>(kTestAddr);
+  auto req = BrEdrConnectionRequest(kTestAddr);
   EXPECT_FALSE(req.HasIncoming());
 
   req.BeginIncoming();
@@ -30,15 +28,15 @@ TEST(GAP_ConnectionRequestTests, IncomingRequestStatusTracked) {
   EXPECT_FALSE(req.HasIncoming());
 }
 
-TEST(GAP_ConnectionRequestTests, CallbacksExecuted) {
+TEST(GAP_BrEdrConnectionRequestTests, CallbacksExecuted) {
   bool callback_called = false;
-  auto req = ConnectionRequest<Unit>(kTestAddr,
-                                     [&callback_called](auto, auto) { callback_called = true; });
+  auto req =
+      BrEdrConnectionRequest(kTestAddr, [&callback_called](auto, auto) { callback_called = true; });
 
   // A freshly created request with a callback is awaiting outgoing
   EXPECT_TRUE(req.AwaitingOutgoing());
   // Notifying callbacks triggers the callback
-  req.NotifyCallbacks(hci::Status(), []() { return Unit{}; });
+  req.NotifyCallbacks(hci::Status(), []() { return nullptr; });
   ASSERT_TRUE(callback_called);
 }
 

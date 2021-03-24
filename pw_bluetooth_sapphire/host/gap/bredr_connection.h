@@ -11,7 +11,7 @@
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap.h"
@@ -32,7 +32,7 @@ class BrEdrConnection final {
   // |disconnect_cb| is called when an error occurs and the link should be disconnected.
   // |on_peer_disconnect_cb| is called when the peer disconnects and this connection should be
   // destroyed.
-  using Request = ConnectionRequest<BrEdrConnection*>;
+  using Request = BrEdrConnectionRequest;
   BrEdrConnection(PeerId peer_id, std::unique_ptr<hci::Connection> link,
                   fit::closure send_auth_request_cb, fit::closure disconnect_cb,
                   fit::closure on_peer_disconnect_cb, PeerCache* peer_cache,

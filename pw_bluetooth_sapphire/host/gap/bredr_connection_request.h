@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_
 
 #include <lib/fit/function.h>
 
@@ -14,34 +14,36 @@
 
 namespace bt::gap {
 
-// A |ConnectionRequest| represents a request for the GAP to connect to a given
-// |DeviceAddress| by one or more clients. The Appropriate (BrEdr|LowEnergy) mgr
+class BrEdrConnection;
+
+// A |BrEdrConnectionRequest| represents a request for the GAP to connect to a given
+// |DeviceAddress| by one or more clients. BrEdrConnectionManager
 // is responsible for tracking ConnectionRequests and passing them to the
 // Connector when ready.
 //
-// There is at most One ConnectionRequest per address at any given time; if
+// There is at most One BrEdrConnectionRequest per address at any given time; if
 // multiple clients wish to connect, they each append a callback to the list in
 // the ConnectionRequest for the device they are interested in.
 //
 // If a remote peer makes an incoming request for a connection, we track that
 // here also - whether an incoming request is pending is indicated by
 // HasIncoming()
-template <typename ConnectionRef>
-class ConnectionRequest final {
+class BrEdrConnectionRequest final {
  public:
-  using OnComplete = fit::function<void(hci::Status, ConnectionRef)>;
-  using RefFactory = fit::function<ConnectionRef()>;
+  using OnComplete = fit::function<void(hci::Status, BrEdrConnection*)>;
+  using RefFactory = fit::function<BrEdrConnection*()>;
 
   // Construct without a callback. Can be used for incoming only requests
-  explicit ConnectionRequest(const DeviceAddress& addr) : address_(addr), has_incoming_(false) {}
+  explicit BrEdrConnectionRequest(const DeviceAddress& addr)
+      : address_(addr), has_incoming_(false) {}
 
-  ConnectionRequest(const DeviceAddress& addr, OnComplete&& callback)
+  BrEdrConnectionRequest(const DeviceAddress& addr, OnComplete&& callback)
       : address_(addr), has_incoming_(false) {
     callbacks_.push_back(std::move(callback));
   }
 
-  ConnectionRequest(ConnectionRequest&&) = default;
-  ConnectionRequest& operator=(ConnectionRequest&&) = default;
+  BrEdrConnectionRequest(BrEdrConnectionRequest&&) = default;
+  BrEdrConnectionRequest& operator=(BrEdrConnectionRequest&&) = default;
 
   void AddCallback(OnComplete cb) { callbacks_.push_back(std::move(cb)); }
 
@@ -67,9 +69,9 @@ class ConnectionRequest final {
   std::list<OnComplete> callbacks_;
   bool has_incoming_;
 
-  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ConnectionRequest);
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionRequest);
 };
 
 }  // namespace bt::gap
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_CONNECTION_REQUEST_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_CONNECTION_REQUEST_H_

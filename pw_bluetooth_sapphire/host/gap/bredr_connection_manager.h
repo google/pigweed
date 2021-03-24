@@ -10,8 +10,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/bounded_inspect_list_node.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/connection_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
@@ -342,7 +342,7 @@ class BrEdrConnectionManager final {
   bool use_interlaced_scan_;
 
   // Outstanding connection requests based on remote peer ID.
-  std::unordered_map<PeerId, ConnectionRequest<BrEdrConnection*>> connection_requests_;
+  std::unordered_map<PeerId, BrEdrConnectionRequest> connection_requests_;
 
   std::optional<hci::BrEdrConnectionRequest> pending_request_;
 
