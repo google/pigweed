@@ -57,15 +57,20 @@ template("pw_mirror_tree") {
     _deps += invoker.deps
   }
 
-  if (defined(invoker.path_data_keys)) {
-    assert(_deps != [],
-           "'path_data_keys' requires at least one dependency in 'deps'")
+  _public_deps = []
+  if (defined(invoker.public_deps)) {
+    _public_deps += invoker.public_deps
+  }
 
+  if (defined(invoker.path_data_keys)) {
     generated_file("$target_name._path_list") {
       data_keys = invoker.path_data_keys
       rebase = root_build_dir
-      deps = _deps
       outputs = [ "$target_gen_dir/$target_name.txt" ]
+      deps = _deps + _public_deps
+
+      assert(deps != [],
+             "'path_data_keys' requires at least one dependency in 'deps'")
     }
 
     _deps += [ ":$target_name._path_list" ]
@@ -93,13 +98,15 @@ template("pw_mirror_tree") {
     }
 
     deps = _deps
+    public_deps = _public_deps
 
     _ignore_args = [
       "script",
       "args",
       "outputs",
-      "deps",
       "directory",
+      "deps",
+      "public_deps",
     ]
     forward_variables_from(invoker, "*", _ignore_args)
   }

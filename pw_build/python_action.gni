@@ -152,7 +152,8 @@ template("pw_python_action") {
 
   if (defined(invoker.python_deps)) {
     foreach(dep, invoker.python_deps) {
-      _deps += [ get_label_info(dep, "label_no_toolchain") + ".install" ]
+      _deps += [ get_label_info(dep, "label_no_toolchain") + ".install(" +
+                 get_label_info(dep, "toolchain") + ")" ]
     }
   }
 

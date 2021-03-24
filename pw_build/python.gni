@@ -26,6 +26,10 @@ pw_python_package_subtargets = [
   "lint.pylint",
   "install",
   "wheel",
+
+  # Internal targets that directly depend on one another.
+  "_run_pip_install",
+  "_build_wheel",
 ]
 
 # Internal template that runs Mypy.
@@ -398,8 +402,8 @@ template("pw_python_package") {
 
     if (_is_package) {
       # Install this Python package and its dependencies in the current Python
-      # environment.
-      pw_python_action("$target_name.install") {
+      # environment using pip.
+      pw_python_action("$target_name._run_pip_install") {
         module = "pip"
         public_deps = []
 
@@ -428,13 +432,13 @@ template("pw_python_package") {
           # formatted as "//path/to:target(toolchain)", so we can't just append
           # ".subtarget". Instead, we replace the opening parenthesis of the
           # toolchain with ".suffix(".
-          public_deps += [ string_replace(dep, "(", ".install(") ]
+          public_deps += [ string_replace(dep, "(", "._run_pip_install(") ]
         }
       }
 
       # Builds a Python wheel for this package. Records the output directory
       # in the pw_python_package_wheels metadata key.
-      pw_python_action("$target_name.wheel") {
+      pw_python_action("$target_name._build_wheel") {
         metadata = {
           pw_python_package_wheels = [ "$target_out_dir/$target_name" ]
         }
@@ -456,27 +460,49 @@ template("pw_python_package") {
         stamp = true
       }
     } else {
-      # If this is not a package, install or build wheels for its deps only.
-      group("$target_name.install") {
-        deps = []
-        foreach(dep, _python_deps) {
-          deps += [ string_replace(dep, "(", ".install(") ]
-        }
+      # Stubs for non-package targets.
+      group("$target_name._run_pip_install") {
       }
-      group("$target_name.wheel") {
-        deps = []
-        foreach(dep, _python_deps) {
-          deps += [ string_replace(dep, "(", ".wheel(") ]
-        }
+      group("$target_name._build_wheel") {
+      }
+    }
+
+    # Create the .install and .wheel targets. To limit unnecessary pip
+    # executions, non-generated packages are only reinstalled when their
+    # setup.py changes. However, targets that depend on the .install subtarget
+    # re-run whenever any source files change.
+    #
+    # These targets just represent the source files if this isn't a package.
+    group("$target_name.install") {
+      public_deps = [ ":${invoker.target_name}" ]
+
+      if (_is_package) {
+        public_deps += [ ":${invoker.target_name}._run_pip_install" ]
+      }
+
+      foreach(dep, _python_deps) {
+        public_deps += [ string_replace(dep, "(", ".install(") ]
+      }
+    }
+
+    group("$target_name.wheel") {
+      public_deps = [ ":${invoker.target_name}.install" ]
+
+      if (_is_package) {
+        public_deps += [ ":${invoker.target_name}._build_wheel" ]
+      }
+
+      foreach(dep, _python_deps) {
+        public_deps += [ string_replace(dep, "(", ".wheel(") ]
       }
     }
 
     # Define the static analysis targets for this package.
     group("$target_name.lint") {
-      deps = [
-        ":${invoker.target_name}.lint.mypy",
-        ":${invoker.target_name}.lint.pylint",
-      ]
+      deps = []
+      foreach(_tool, _supported_static_analysis_tools) {
+        deps += [ ":${invoker.target_name}.lint.$_tool" ]
+      }
     }
 
     if (_static_analysis != [] || _test_sources != []) {
