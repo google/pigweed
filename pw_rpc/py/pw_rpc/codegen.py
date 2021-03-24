@@ -13,6 +13,7 @@
 # the License.
 """Common RPC codegen utilities."""
 
+import abc
 from datetime import datetime
 import os
 from typing import cast, Any, Callable, Iterable
@@ -170,7 +171,42 @@ def _method_lookup_table(service: ProtoService, output: OutputFile) -> None:
     output.write_line('};\n')
 
 
-StubFunction = Callable[[ProtoServiceMethod, OutputFile], None]
+class StubGenerator(abc.ABC):
+    @abc.abstractmethod
+    def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
+        """Returns the signature of this unary method."""
+
+    @abc.abstractmethod
+    def unary_stub(self, method: ProtoServiceMethod,
+                   output: OutputFile) -> None:
+        """Returns the stub for this unary method."""
+
+    @abc.abstractmethod
+    def server_streaming_signature(self, method: ProtoServiceMethod,
+                                   prefix: str) -> str:
+        """Returns the signature of this server streaming method."""
+
+    def server_streaming_stub(  # pylint: disable=no-self-use
+            self, unused_method: ProtoServiceMethod,
+            output: OutputFile) -> None:
+        """Returns the stub for this server streaming method."""
+        output.write_line(STUB_REQUEST_TODO)
+        output.write_line('static_cast<void>(request);')
+        output.write_line(STUB_WRITER_TODO)
+        output.write_line('static_cast<void>(writer);')
+
+
+def _select_stub_methods(generator: StubGenerator, method: ProtoServiceMethod):
+    if method.type() is ProtoServiceMethod.Type.UNARY:
+        return generator.unary_signature, generator.unary_stub
+
+    if method.type() is ProtoServiceMethod.Type.SERVER_STREAMING:
+        return (generator.server_streaming_signature,
+                generator.server_streaming_stub)
+
+    raise NotImplementedError(
+        'Client and bidirectional streaming not yet implemented')
+
 
 _STUBS_COMMENT = r'''
 /*
@@ -194,36 +230,51 @@ _STUBS_COMMENT = r'''
 
 
 def package_stubs(proto_package: ProtoNode, output: OutputFile,
-                  unary_stub: StubFunction,
-                  server_streaming_stub: StubFunction) -> None:
+                  stub_generator: StubGenerator) -> None:
+    """Generates the RPC stubs for a package."""
+    if proto_package.cpp_namespace():
+        file_ns = proto_package.cpp_namespace()
+        if file_ns.startswith('::'):
+            file_ns = file_ns[2:]
+
+        start_ns = lambda: output.write_line(f'namespace {file_ns} {{\n')
+        finish_ns = lambda: output.write_line(f'}}  // namespace {file_ns}\n')
+    else:
+        start_ns = finish_ns = lambda: None
+
+    services = [
+        cast(ProtoService, node) for node in proto_package
+        if node.type() == ProtoNode.Type.SERVICE
+    ]
 
     output.write_line('#ifdef _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
     output.write_line(_STUBS_COMMENT)
 
     output.write_line(f'#include "{output.name()}"\n')
 
-    if proto_package.cpp_namespace():
-        file_namespace = proto_package.cpp_namespace()
-        if file_namespace.startswith('::'):
-            file_namespace = file_namespace[2:]
+    start_ns()
 
-        output.write_line(f'namespace {file_namespace} {{')
+    for node in services:
+        _generate_service_class(node, output, stub_generator)
 
-    for node in proto_package:
-        if node.type() == ProtoNode.Type.SERVICE:
-            _generate_service_stub(cast(ProtoService, node), output,
-                                   unary_stub, server_streaming_stub)
-
-    if proto_package.cpp_namespace():
-        output.write_line(f'}}  // namespace {file_namespace}')
-
-    output.write_line('\n#endif  // _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
-
-
-def _generate_service_stub(service: ProtoService, output: OutputFile,
-                           unary_stub: StubFunction,
-                           server_streaming_stub: StubFunction) -> None:
     output.write_line()
+
+    finish_ns()
+
+    start_ns()
+
+    for node in services:
+        _generate_service_stubs(node, output, stub_generator)
+        output.write_line()
+
+    finish_ns()
+
+    output.write_line('#endif  // _PW_RPC_COMPILE_GENERATED_SERVICE_STUBS')
+
+
+def _generate_service_class(service: ProtoService, output: OutputFile,
+                            stub_generator: StubGenerator) -> None:
+    output.write_line(f'// Implementation class for {service.proto_path()}.')
     output.write_line(
         f'class {service.name()} '
         f': public generated::{service.name()}<{service.name()}> {{')
@@ -239,12 +290,28 @@ def _generate_service_stub(service: ProtoService, output: OutputFile,
             else:
                 blank_line = True
 
-            if method.type() is ProtoServiceMethod.Type.UNARY:
-                unary_stub(method, output)
-            elif method.type() is ProtoServiceMethod.Type.SERVER_STREAMING:
-                server_streaming_stub(method, output)
-            else:
-                raise NotImplementedError(
-                    'Client and bidirectional streaming not yet implemented')
+            signature, _ = _select_stub_methods(stub_generator, method)
+
+            output.write_line(signature(method, '') + ';')
 
     output.write_line('};\n')
+
+
+def _generate_service_stubs(service: ProtoService, output: OutputFile,
+                            stub_generator: StubGenerator) -> None:
+    output.write_line(f'// Method definitions for {service.proto_path()}.')
+
+    blank_line = False
+
+    for method in service.methods():
+        if blank_line:
+            output.write_line()
+        else:
+            blank_line = True
+
+        signature, stub = _select_stub_methods(stub_generator, method)
+
+        output.write_line(signature(method, f'{service.name()}::') + ' {')
+        with output.indent():
+            stub(method, output)
+        output.write_line('}')

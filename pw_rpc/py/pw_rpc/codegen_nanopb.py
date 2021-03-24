@@ -163,35 +163,26 @@ def _generate_code_for_package(proto_file, package: ProtoNode,
                     _generate_code_for_service, _generate_code_for_client)
 
 
-def _unary_stub(method: ProtoServiceMethod, output: OutputFile) -> None:
-    output.write_line(f'pw::Status {method.name()}(ServerContext&, '
-                      f'const {method.request_type().nanopb_name()}& request, '
-                      f'{method.response_type().nanopb_name()}& response) {{')
+class StubGenerator(codegen.StubGenerator):
+    def unary_signature(self, method: ProtoServiceMethod, prefix: str) -> str:
+        return (f'pw::Status {prefix}{method.name()}(ServerContext&, '
+                f'const {method.request_type().nanopb_name()}& request, '
+                f'{method.response_type().nanopb_name()}& response)')
 
-    with output.indent():
+    def unary_stub(self, method: ProtoServiceMethod,
+                   output: OutputFile) -> None:
         output.write_line(codegen.STUB_REQUEST_TODO)
         output.write_line('static_cast<void>(request);')
         output.write_line(codegen.STUB_RESPONSE_TODO)
         output.write_line('static_cast<void>(response);')
         output.write_line('return pw::Status::Unimplemented();')
 
-    output.write_line('}')
-
-
-def _server_streaming_stub(method: ProtoServiceMethod,
-                           output: OutputFile) -> None:
-    output.write_line(
-        f'void {method.name()}(ServerContext&, '
-        f'const {method.request_type().nanopb_name()}& request, '
-        f'ServerWriter<{method.response_type().nanopb_name()}>& writer) {{')
-
-    with output.indent():
-        output.write_line(codegen.STUB_REQUEST_TODO)
-        output.write_line('static_cast<void>(request);')
-        output.write_line(codegen.STUB_WRITER_TODO)
-        output.write_line('static_cast<void>(writer);')
-
-    output.write_line('}')
+    def server_streaming_signature(self, method: ProtoServiceMethod,
+                                   prefix: str) -> str:
+        return (
+            f'void {prefix}{method.name()}(ServerContext&, '
+            f'const {method.request_type().nanopb_name()}& request, '
+            f'ServerWriter<{method.response_type().nanopb_name()}>& writer)')
 
 
 def process_proto_file(proto_file) -> Iterable[OutputFile]:
@@ -203,7 +194,6 @@ def process_proto_file(proto_file) -> Iterable[OutputFile]:
     _generate_code_for_package(proto_file, package_root, output_file)
 
     output_file.write_line()
-    codegen.package_stubs(package_root, output_file, _unary_stub,
-                          _server_streaming_stub)
+    codegen.package_stubs(package_root, output_file, StubGenerator())
 
     return [output_file]

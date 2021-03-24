@@ -136,6 +136,21 @@ Services may mix and match protobuf implementations within one service.
   reference or copy and paste these to get started with implementing a service.
   These stub classes are generated at the bottom of the pw_rpc proto header.
 
+  To use the stubs, do the following:
+
+  #. Locate the generated RPC header in the build directory. For example:
+
+     .. code-block:: sh
+
+       find out/ -name <proto_name>.rpc.pb.h
+
+  #. Scroll to the bottom of the generated RPC header.
+  #. Copy the stub class declaration to a header file.
+  #. Copy the member function definitions to a source file.
+  #. Rename the class or change the namespace, if desired.
+  #. List these files in a build target with a dependency on the
+     ``pw_proto_library``.
+
 A Nanopb implementation of this service would be as follows:
 
 .. code-block:: cpp

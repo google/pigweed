@@ -67,8 +67,8 @@ class ProtoNode(abc.ABC):
 
     def cpp_namespace(self, root: Optional['ProtoNode'] = None) -> str:
         """C++ namespace of the node, up to the specified root."""
-        return '::'.join(
-            self._attr_hierarchy(lambda node: node.cpp_name(), root))
+        return '::'.join(name for name in self._attr_hierarchy(
+            lambda node: node.cpp_name(), root) if name)
 
     def proto_path(self) -> str:
         """Fully-qualified package path of the node."""
