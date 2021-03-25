@@ -205,6 +205,9 @@ class StreamingResponses:
     def method(self) -> Method:
         return self._method_client.method
 
+    def cancel(self) -> None:
+        self._method_client._rpcs.send_cancel(self._method_client._rpc)  # pylint: disable=protected-access
+
     def responses(self,
                   *,
                   block: bool = True,
@@ -230,9 +233,11 @@ class StreamingResponses:
 
                 yield response
         except queue.Empty:
-            pass
-
-        raise RpcTimeout(self._method_client._rpc, timeout_s)  # pylint: disable=protected-access
+            self.cancel()
+            raise RpcTimeout(self._method_client._rpc, timeout_s)  # pylint: disable=protected-access
+        except:
+            self.cancel()  # pylint: disable=protected-access
+            raise
 
     def __iter__(self):
         return self.responses()
