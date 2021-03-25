@@ -74,6 +74,7 @@ static_library("gap") {
     ":definitions",
     "//sdk/banjo/fuchsia.hardware.bt.vendor",
     "//sdk/fidl/fuchsia.io",
+    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt",
     "//src/connectivity/bluetooth/core/bt-host/hci",

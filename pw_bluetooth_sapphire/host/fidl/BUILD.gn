@@ -31,12 +31,12 @@ static_library("fidl") {
     "//sdk/fidl/fuchsia.bluetooth",
     "//sdk/fidl/fuchsia.bluetooth.gatt",
     "//sdk/fidl/fuchsia.bluetooth.le",
+    "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host:stack",
     "//src/connectivity/bluetooth/fidl:host",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/fxl",
     "//zircon/public/lib/fbl",
-    "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
   ]
 }
