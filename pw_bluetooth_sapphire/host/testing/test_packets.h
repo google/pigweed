@@ -89,6 +89,9 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2Packet(hci::ConnectionHandle conn);
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn);
 
+DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci::ConnectionHandle conn,
+                                                   uint16_t flush_timeout);
+
 }  // namespace bt::testing
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_TEST_PACKETS_H_

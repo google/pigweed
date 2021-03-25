@@ -63,6 +63,10 @@ class MockAclDataChannel final : public AclDataChannel {
     }
   }
 
+  void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout, hci::ConnectionHandle handle,
+      fit::callback<void(fit::result<void, StatusCode>)> callback) override {}
+
  private:
   DataBufferInfo bredr_buffer_info_;
   DataBufferInfo le_buffer_info_;

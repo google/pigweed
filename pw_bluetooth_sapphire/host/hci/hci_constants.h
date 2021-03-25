@@ -1500,6 +1500,14 @@ enum class ScoRetransmissionEffort : uint8_t {
   kDontCare = 0xFF,
 };
 
+// Flush Timeout = N * 0.625ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.30).
+constexpr float kFlushTimeoutCommandParameterToMillisecondsConversionFactor = 0.625f;
+constexpr float kFlushTimeoutMsToCommandParameterConversionFactor = 1.0f / kFlushTimeoutCommandParameterToMillisecondsConversionFactor;
+
+// See Core Spec v5.2, Vol 4, Part E, Sec 7.3.30
+constexpr uint16_t kMaxAutomaticFlushTimeoutCommandParameterValue = 0x07FF;
+constexpr zx::duration kMaxAutomaticFlushTimeoutDuration = zx::msec(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
+
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_CONSTANTS_H_

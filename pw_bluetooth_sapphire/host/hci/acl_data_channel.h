@@ -192,6 +192,17 @@ class AclDataChannel {
   // called with the result of the request.
   virtual void RequestAclPriority(hci::AclPriority priority, hci::ConnectionHandle handle,
                                   fit::callback<void(fit::result<>)> callback) = 0;
+
+  // Sets an automatic flush timeout with duration |flush_timeout| for the connection indicated by
+  // |handle|. |callback| will be called with the result of the operation.
+  // |handle| must correspond to a BR/EDR connection.
+  // |flush_timeout| must be in the range [1ms - kMaxAutomaticFlushTimeoutDuration]. A flush timeout
+  // of zx::duration::infinite() indicates an infinite flush timeout (no automatic flush), the
+  // default. If an invalid value of |flush_timeout| is specified, an error will be returned to
+  // |callback|.
+  virtual void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout, hci::ConnectionHandle handle,
+      fit::callback<void(fit::result<void, StatusCode>)> callback) = 0;
 };
 
 }  // namespace bt::hci

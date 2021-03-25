@@ -1169,5 +1169,65 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   EXPECT_EQ(request_cb_count, 1u);
 }
 
+TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
+  const DataBufferInfo kBREDRBufferInfo(1024, 50);
+  InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
+  acl_data_channel()->RegisterLink(kLinkHandle, Connection::LinkType::kACL);
+
+  std::optional<fit::result<void, hci::StatusCode>> cb_status;
+  auto result_cb = [&](auto status) { cb_status = status; };
+
+  // Test command complete error
+  const auto kCommandCompleteError = testing::CommandCompletePacket(
+      hci::kWriteAutomaticFlushTimeout, hci::StatusCode::kUnknownConnectionId);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
+                        &kCommandCompleteError);
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
+                                                    result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  ASSERT_TRUE(cb_status->is_error());
+  EXPECT_EQ(cb_status->error(), hci::StatusCode::kUnknownConnectionId);
+  cb_status.reset();
+
+  // Test flush timeout = 0 (no command should be sent)
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::msec(0), kLinkHandle, result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_error());
+  EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
+
+  // Test infinite flush timeout (flush timeout of 0 should be sent).
+  const auto kCommandComplete =
+      testing::CommandCompletePacket(hci::kWriteAutomaticFlushTimeout, hci::StatusCode::kSuccess);
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 0),
+                        &kCommandComplete);
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(zx::duration::infinite(), kLinkHandle,
+                                                    result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_ok());
+  cb_status.reset();
+
+  // Test msec to parameter conversion (kMaxAutomaticFlushTimeoutDuration(1279) *
+  // conversion_factor(1.6) = 2046).
+  EXPECT_CMD_PACKET_OUT(test_device(), testing::WriteAutomaticFlushTimeoutPacket(kLinkHandle, 2046),
+                        &kCommandComplete);
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(kMaxAutomaticFlushTimeoutDuration, kLinkHandle,
+                                                    result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_ok());
+  cb_status.reset();
+
+  // Test too large flush timeout (no command should be sent).
+  acl_data_channel()->SetBrEdrAutomaticFlushTimeout(kMaxAutomaticFlushTimeoutDuration + zx::msec(1),
+                                                    kLinkHandle, result_cb);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(cb_status.has_value());
+  EXPECT_TRUE(cb_status->is_error());
+  EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
+}
+
 }  // namespace
 }  // namespace bt::hci

@@ -402,4 +402,14 @@ DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci::ConnectionHandle conn) 
       ));
 }
 
+DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci::ConnectionHandle conn,
+                                                   uint16_t flush_timeout) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci::kWriteAutomaticFlushTimeout), UpperBits(hci::kWriteAutomaticFlushTimeout),
+      0x04,                                               // parameter_total_size (4 bytes)
+      LowerBits(conn), UpperBits(conn),                   // Little-Endian Connection_Handle
+      LowerBits(flush_timeout), UpperBits(flush_timeout)  // Little-Endian Flush_Timeout
+      ));
+}
+
 }  // namespace bt::testing
