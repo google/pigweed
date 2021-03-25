@@ -52,6 +52,7 @@ adapter:
           logical_link_0x0:
             handle
             link_type
+            flush_timeout_ms
             channels:
               channel_0x0:
                 local_id

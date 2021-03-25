@@ -22,6 +22,7 @@
 #include <fbl/ref_counted.h>
 
 #include "lib/fit/result.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
@@ -136,6 +137,14 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   void RequestAclPriority(Channel* channel, hci::AclPriority priority,
                           fit::callback<void(fit::result<>)> callback);
 
+  // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
+  // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
+  // |flush_timeout| must be in the range [1ms - hci::kMaxAutomaticFlushTimeoutDuration]. A flush
+  // timeout of zx::duration::infinite() indicates an infinite flush timeout (no automatic flush),
+  // the default.
+  void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback);
+
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
@@ -247,6 +256,10 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   hci::ConnectionHandle handle_;
   hci::Connection::LinkType type_;
   hci::Connection::Role role_;
+
+  // The duration after which BR/EDR packets are flushed from the controller.
+  // By default, the flush timeout is infinite (no automatic flush).
+  UintInspectable<zx::duration> flush_timeout_;
 
   fit::closure link_error_cb_;
 

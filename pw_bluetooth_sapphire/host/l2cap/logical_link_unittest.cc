@@ -42,6 +42,8 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }
 
+  hci::testing::MockAclDataChannel* acl_data_channel() { return &acl_data_channel_; }
+
  private:
   fbl::RefPtr<LogicalLink> link_;
   fit::single_threaded_executor executor_;
@@ -103,6 +105,44 @@ TEST_F(L2CAP_LogicalLinkTest, ChannelPriority) {
   EXPECT_LOW_PRIORITY(kFirstDynamicChannelId);
   EXPECT_LOW_PRIORITY(kLastACLDynamicChannelId);
   EXPECT_LOW_PRIORITY(kATTChannelId);
+}
+
+TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
+  link()->Close();
+  NewLogicalLink(Conn::LinkType::kACL);
+  constexpr zx::duration kTimeout(zx::msec(100));
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](auto timeout, auto handle, auto cb) {
+        EXPECT_EQ(timeout, kTimeout);
+        EXPECT_EQ(handle, link()->handle());
+        cb(fit::ok());
+      });
+
+  bool cb_called = false;
+  link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
+    cb_called = true;
+    EXPECT_TRUE(result.is_ok());
+  });
+  EXPECT_TRUE(cb_called);
+}
+
+TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
+  constexpr zx::duration kTimeout(zx::msec(100));
+  // LE links are unsupported, so result should be an error.
+  link()->Close();
+  NewLogicalLink(Conn::LinkType::kLE);
+
+  // No command should be sent.
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](auto timeout, auto handle, auto cb) { FAIL(); });
+
+  bool cb_called = false;
+  link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
+    cb_called = true;
+    EXPECT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), hci::StatusCode::kInvalidHCICommandParameters);
+  });
+  EXPECT_TRUE(cb_called);
 }
 
 }  // namespace

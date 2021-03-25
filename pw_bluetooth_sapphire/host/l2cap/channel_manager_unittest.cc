@@ -2803,12 +2803,16 @@ TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {
       NodeMatches(NameMatches("logical_links")),
       ChildrenMatch(ElementsAre(AllOf(
           NodeMatches(AllOf(NameMatches("logical_link_0x1"),
-                            PropertyList(UnorderedElementsAre(StringIs("handle", "0x0001"),
-                                                              StringIs("link_type", "ACL"))))),
+                            PropertyList(UnorderedElementsAre(
+                                StringIs("handle", "0x0001"), StringIs("link_type", "ACL"),
+                                UintIs("flush_timeout_ms", zx::duration::infinite().to_msecs()))))),
           ChildrenMatch(ElementsAre(channels_matcher))))));
 
   auto hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo()).take_value();
   EXPECT_THAT(hierarchy, ChildrenMatch(UnorderedElementsAre(link_matcher, services_matcher)));
+
+  // inspector must outlive ChannelManager
+  chanmgr()->Unregister(kTestHandle1);
 }
 
 }  // namespace

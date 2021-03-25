@@ -28,6 +28,7 @@ const char* kInspectHandlePropertyName = "handle";
 const char* kInspectLinkTypePropertyName = "link_type";
 const char* kInspectChannelsNodeName = "channels";
 const char* kInspectChannelNodePrefix = "channel_";
+const char* kInspectFlushTimeoutPropertyName = "flush_timeout_ms";
 
 constexpr bool IsValidLEFixedChannel(ChannelId id) {
   switch (id) {
@@ -73,6 +74,7 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
     : handle_(handle),
       type_(type),
       role_(role),
+      flush_timeout_(zx::duration::infinite(), /*convert=*/[](auto f) { return f.to_msecs(); }),
       closed_(false),
       fragmenter_(handle, max_acl_payload_size),
       recombiner_(handle),
@@ -582,6 +584,26 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
   }
 }
 
+void LogicalLink::SetBrEdrAutomaticFlushTimeout(
+    zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+  if (type_ != hci::Connection::LinkType::kACL) {
+    bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
+    callback(fit::error(hci::StatusCode::kInvalidHCICommandParameters));
+    return;
+  }
+
+  auto callback_wrapper = [self = GetWeakPtr(), flush_timeout,
+                           cb = std::move(callback)](auto result) mutable {
+    if (self && result.is_ok()) {
+      self->flush_timeout_.Set(flush_timeout);
+    }
+    cb(result);
+  };
+
+  acl_data_channel_->SetBrEdrAutomaticFlushTimeout(flush_timeout, handle_,
+                                                   std::move(callback_wrapper));
+}
+
 void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   if (!parent) {
     return;
@@ -593,6 +615,7 @@ void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_properties_.link_type =
       node.CreateString(kInspectLinkTypePropertyName, hci::Connection::LinkTypeToString(type_));
   inspect_properties_.channels_node = node.CreateChild(kInspectChannelsNodeName);
+  flush_timeout_.AttachInspect(node, kInspectFlushTimeoutPropertyName);
   inspect_properties_.node = std::move(node);
 
   for (auto& [_, chan] : channels_) {

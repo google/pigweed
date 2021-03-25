@@ -30,6 +30,12 @@ class MockAclDataChannel final : public AclDataChannel {
     request_acl_priority_cb_ = std::move(cb);
   }
 
+  using SetBrEdrAutomaticFlushTimeoutCallback = fit::function<void(
+      zx::duration, hci::ConnectionHandle, fit::callback<void(fit::result<void, StatusCode>)>)>;
+  void set_set_bredr_automatic_flush_timeout_cb(SetBrEdrAutomaticFlushTimeoutCallback callback) {
+    flush_timeout_cb_ = std::move(callback);
+  }
+
   // AclDataChannel overrides:
   void Initialize(const DataBufferInfo& bredr_buffer_info,
                   const DataBufferInfo& le_buffer_info) override {}
@@ -65,7 +71,11 @@ class MockAclDataChannel final : public AclDataChannel {
 
   void SetBrEdrAutomaticFlushTimeout(
       zx::duration flush_timeout, hci::ConnectionHandle handle,
-      fit::callback<void(fit::result<void, StatusCode>)> callback) override {}
+      fit::callback<void(fit::result<void, StatusCode>)> callback) override {
+    if (flush_timeout_cb_) {
+      flush_timeout_cb_(flush_timeout, handle, std::move(callback));
+    }
+  }
 
  private:
   DataBufferInfo bredr_buffer_info_;
@@ -74,6 +84,7 @@ class MockAclDataChannel final : public AclDataChannel {
   SendPacketsCallback send_packets_cb_;
   DropQueuedPacketsCallback drop_queued_packets_cb_;
   RequestAclPriorityCallback request_acl_priority_cb_;
+  SetBrEdrAutomaticFlushTimeoutCallback flush_timeout_cb_;
 };
 
 }  // namespace bt::hci::testing
