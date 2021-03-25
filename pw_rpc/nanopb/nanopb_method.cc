@@ -53,7 +53,7 @@ bool NanopbMethod::DecodeRequest(Channel& channel,
     return true;
   }
 
-  PW_LOG_WARN("Failed to decode request payload from channel %u",
+  PW_LOG_WARN("Nanopb failed to decode request payload from channel %u",
               unsigned(channel.id()));
   channel.Send(Packet::ServerError(request, Status::DataLoss()));
   return false;
@@ -85,9 +85,10 @@ void NanopbMethod::SendResponse(Channel& channel,
     // Re-acquire the buffer to encode an error packet.
     response_buffer = channel.AcquireBuffer();
   } else {
-    PW_LOG_WARN("Failed to encode response packet for channel %u, status %u",
-                unsigned(channel.id()),
-                encoded.status().code());
+    PW_LOG_WARN(
+        "Nanopb failed to encode response packet for channel %u, status %u",
+        unsigned(channel.id()),
+        encoded.status().code());
   }
   channel.Send(response_buffer,
                Packet::ServerError(request, Status::Internal()));

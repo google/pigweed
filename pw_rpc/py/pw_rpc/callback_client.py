@@ -236,7 +236,7 @@ class StreamingResponses:
             self.cancel()
             raise RpcTimeout(self._method_client._rpc, timeout_s)  # pylint: disable=protected-access
         except:
-            self.cancel()  # pylint: disable=protected-access
+            self.cancel()
             raise
 
     def __iter__(self):

@@ -31,7 +31,8 @@ Status Channel::Send(OutputBuffer& buffer, const internal::Packet& packet) {
   Result encoded = packet.Encode(buffer.buffer_);
 
   if (!encoded.ok()) {
-    PW_LOG_ERROR("Failed to encode response packet to channel buffer");
+    PW_LOG_ERROR("Failed to encode RPC response packet to channel %u buffer",
+                 static_cast<unsigned>(id()));
     output().DiscardBuffer(buffer.buffer_);
     buffer.buffer_ = {};
     return Status::Internal();
