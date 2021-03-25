@@ -52,6 +52,7 @@ source_set("common") {
   ]
 
   public_deps = [
+    "//sdk/lib/fit",
     "//sdk/lib/sys/inspect/cpp",
     "//src/connectivity/bluetooth/lib/cpp-type",
     "//src/devices/lib/driver",
@@ -59,7 +60,6 @@ source_set("common") {
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/fbl",
-    "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
     "//zircon/system/ulib/async-default",
   ]

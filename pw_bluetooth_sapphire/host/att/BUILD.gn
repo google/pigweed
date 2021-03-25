@@ -38,10 +38,10 @@ static_library("att") {
 
   public_deps = [
     ":definitions",
+    "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
     "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
     "//src/lib/fxl",
-    "//zircon/public/lib/fit",
   ]
 }
 

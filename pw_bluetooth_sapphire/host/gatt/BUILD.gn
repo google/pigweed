@@ -42,9 +42,9 @@ static_library("gatt") {
   public_deps = [
     ":definitions",
     "//sdk/lib/fidl/cpp",
+    "//sdk/lib/fit",
     "//sdk/lib/fit-promise",
     "//src/connectivity/bluetooth/core/bt-host/att",
-    "//zircon/public/lib/fit",
   ]
 }
 

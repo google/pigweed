@@ -72,6 +72,7 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
 
     # TODO(armansito): Pull in just the hci:definitions target.
+    "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
@@ -79,7 +80,6 @@ source_set("fake_controller") {
     "//src/lib/fxl",
     "//zircon/public/lib/async-cpp",
     "//zircon/public/lib/fbl",
-    "//zircon/public/lib/fit",
     "//zircon/public/lib/zx",
     "//zircon/system/ulib/async-default",
   ]
