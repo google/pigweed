@@ -37,6 +37,7 @@ pw_source_set("flat_map") {
 
 pw_source_set("vector") {
   public_configs = [ ":default_config" ]
+  public_deps = [ dir_pw_assert ]
   public = [ "public/pw_containers/vector.h" ]
 }
 

@@ -23,6 +23,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_assert/assert.h"
 #include "pw_polyfill/language_feature_macros.h"
 
 namespace pw {
@@ -236,12 +237,23 @@ class Vector<T, vector_impl::kGeneric>
 
   // Access
 
-  // TODO(hepler): Add an assert for bounds checking in at.
-  reference at(size_type index) { return data()[index]; }
-  const_reference at(size_type index) const { return data()[index]; }
+  reference at(size_type index) {
+    PW_ASSERT(index < size());
+    return data()[index];
+  }
+  const_reference at(size_type index) const {
+    PW_ASSERT(index < size());
+    return data()[index];
+  }
 
-  reference operator[](size_type index) { return data()[index]; }
-  const_reference operator[](size_type index) const { return data()[index]; }
+  reference operator[](size_type index) {
+    PW_DASSERT(index < size());
+    return data()[index];
+  }
+  const_reference operator[](size_type index) const {
+    PW_DASSERT(index < size());
+    return data()[index];
+  }
 
   reference front() { return data()[0]; }
   const_reference front() const { return data()[0]; }
@@ -338,7 +350,8 @@ class Vector<T, vector_impl::kGeneric>
  protected:
   // Vectors without an explicit size cannot be constructed directly. Instead,
   // the maximum size must be provided.
-  explicit Vector(size_type max_size) noexcept : max_size_(max_size) {}
+  explicit constexpr Vector(size_type max_size) noexcept
+      : max_size_(max_size) {}
 
   Vector(size_type max_size, size_type count, const T& value)
       : Vector(max_size) {
