@@ -223,10 +223,9 @@ template("generate_toolchain") {
           rspfile = "{{output}}.rsp"
           rspfile_content = "{{inputs}}"
           rm_command = "del /F /Q \"{{output}}\" 2> NUL"
-          command = "cmd /c \"($rm_command) & ${invoker.ar} rcs {{output}} @$rspfile\""
+          command = "cmd /c \"($rm_command) & ${invoker.ar} {{arflags}} rcs {{output}} @$rspfile\""
         } else {
-          command =
-              "rm -f {{output}} && ${invoker.ar} rcs {{output}} {{inputs}}"
+          command = "rm -f {{output}} && ${invoker.ar} {{arflags}} rcs {{output}} {{inputs}}"
         }
 
         description = "ar {{target_output_name}}{{output_extension}}"
