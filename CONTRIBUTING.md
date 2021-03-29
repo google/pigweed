@@ -21,6 +21,8 @@ Pigweed contribution overview:
    * Install the Pigweed presubmit check hook (`pw presubmit --install`).
      (recommended).
  1. Ensure all files include a correct [copyright and license header](CONTRIBUTING.md#source-code-headers).
+ 1. Include any necessary changes to
+    [documentation](CONTRIBUTING.md#documentation).
  1. Run `pw presubmit` (see below) to detect style or compilation issues before
     uploading.
  1. Upload the change with `git push origin HEAD:refs/for/master`.
@@ -58,6 +60,20 @@ and then copy it to the `.git\hooks` directory in the Pigweed repository.
 ```batch
 copy %HOMEPATH%\Downloads\commit-msg %HOMEPATH%\pigweed\.git\hooks\commit-msg
 ```
+
+## Documentation
+
+All Pigweed changes must either
+
+ 1. Include updates to documentation, or
+ 1. Include `No-Docs-Update-Reason: <reason>` in the commit message or a Gerrit
+    comment on the CL. Potential reasons might include
+    * "minor code formatting change",
+    * "internal cleanup of pw_modulename, no changes to API"
+
+It's acceptable to only document new changes in an otherwise underdocumented
+module, but it's not acceptable to not document new changes because the module
+doesn't have any other documentation.
 
 ## Code Reviews
 
