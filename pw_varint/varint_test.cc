@@ -1054,5 +1054,29 @@ TEST(Varint, ZigZagEncodedSize) {
   EXPECT_EQ(ZigZagEncodedSize(std::numeric_limits<int64_t>::max()), 10u);
 }
 
+constexpr uint64_t CalculateMaxValueInBytes(size_t bytes) {
+  uint64_t value = 0;
+  for (size_t i = 0; i < bytes; ++i) {
+    value |= uint64_t(0x7f) << (7 * i);
+  }
+  return value;
+}
+
+TEST(Varint, MaxValueInBytes) {
+  static_assert(MaxValueInBytes(0) == 0);
+  static_assert(MaxValueInBytes(1) == 0x7f);
+  static_assert(MaxValueInBytes(2) == 0x3fff);
+  static_assert(MaxValueInBytes(3) == 0x1fffff);
+  static_assert(MaxValueInBytes(4) == 0x0fffffff);
+  static_assert(MaxValueInBytes(5) == CalculateMaxValueInBytes(5));
+  static_assert(MaxValueInBytes(6) == CalculateMaxValueInBytes(6));
+  static_assert(MaxValueInBytes(7) == CalculateMaxValueInBytes(7));
+  static_assert(MaxValueInBytes(8) == CalculateMaxValueInBytes(8));
+  static_assert(MaxValueInBytes(9) == CalculateMaxValueInBytes(9));
+  static_assert(MaxValueInBytes(10) == std::numeric_limits<uint64_t>::max());
+  static_assert(MaxValueInBytes(11) == std::numeric_limits<uint64_t>::max());
+  static_assert(MaxValueInBytes(100) == std::numeric_limits<uint64_t>::max());
+}
+
 }  // namespace
 }  // namespace pw::varint

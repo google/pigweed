@@ -28,6 +28,11 @@ and unsigned integers.
 
 Returns the size of a signed integer when ZigZag encoded as a varint.
 
+.. cpp:function:: uint64_t MaxValueInBytes(size_t bytes)
+
+Returns the maximum integer value that can be encoded as a varint into the
+specified number of bytes.
+
 Dependencies
 ============
 * ``pw_span``
