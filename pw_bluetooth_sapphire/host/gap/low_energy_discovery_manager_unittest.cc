@@ -1380,5 +1380,34 @@ TEST_F(GAP_LowEnergyDiscoveryManagerTest, Inspect) {
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));
 }
 
+TEST_F(GAP_LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
+  auto fake_peer_0 = std::make_unique<FakePeer>(kAddress0);
+  test_device()->AddPeer(std::move(fake_peer_0));
+  Peer* peer_0 = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  PeerId peer_id_0 = peer_0->identifier();
+
+  auto fake_peer_1 = std::make_unique<FakePeer>(kAddress1);
+  test_device()->AddPeer(std::move(fake_peer_1));
+  Peer* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
+  PeerId peer_id_1 = peer_1->identifier();
+
+  // Start active session so that results get cached.
+  auto session = StartDiscoverySession(/*active=*/true);
+
+  std::unordered_map<PeerId, int> result_counts;
+  session->SetResultCallback([&](const Peer& peer) { result_counts[peer.identifier()]++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(result_counts[peer_id_0], 1);
+  EXPECT_EQ(result_counts[peer_id_1], 1);
+
+  // Remove peer_0 to make the cached result stale. The result callback should not be called again
+  // for peer_0.
+  ASSERT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer_0->identifier()));
+  session->SetResultCallback([&](const Peer& peer) { result_counts[peer.identifier()]++; });
+  RunLoopUntilIdle();
+  EXPECT_EQ(result_counts[peer_id_0], 1);
+  EXPECT_EQ(result_counts[peer_id_1], 2);
+}
+
 }  // namespace
 }  // namespace bt::gap

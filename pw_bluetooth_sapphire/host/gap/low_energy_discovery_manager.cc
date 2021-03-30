@@ -44,7 +44,12 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
     return;
   for (PeerId cached_peer_id : manager_->cached_scan_results()) {
     auto peer = manager_->peer_cache()->FindById(cached_peer_id);
-    ZX_DEBUG_ASSERT(peer);
+    // Ignore peers that have since been removed from the peer cache.
+    if (!peer) {
+      bt_log(TRACE, "gap", "Ignoring cached scan result for peer %s missing from peer cache",
+             bt_str(cached_peer_id));
+      continue;
+    }
     NotifyDiscoveryResult(*peer);
   }
 }
