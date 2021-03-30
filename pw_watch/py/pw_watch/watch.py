@@ -127,7 +127,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         patterns: Sequence[str] = (),
         ignore_patterns: Sequence[str] = (),
         build_commands: Sequence[BuildCommand] = (),
-        ignore_dirs=Optional[List[str]],
+        ignore_dirs: Iterable[Path] = (),
         charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = False,
     ):
@@ -136,12 +136,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.build_commands = build_commands
-        self.ignore_dirs = ignore_dirs or []
+        self.ignore_dirs = list(ignore_dirs)
         self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
         self.charset: WatchCharset = charset
 
         self.restart_on_changes = restart
-        self._current_build: Optional[subprocess.Popen] = None
+        self._current_build: subprocess.Popen
 
         self.debouncer = Debouncer(self)
 
@@ -154,10 +154,12 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             None, self._wait_for_enter)
         self.wait_for_keypress_thread.start()
 
-    def _wait_for_enter(self):
+    def _wait_for_enter(self) -> NoReturn:
         try:
             while True:
                 _ = input()
+                self._current_build.kill()
+
                 self.debouncer.press('Manual build requested...')
         # Ctrl-C on Unix generates KeyboardInterrupt
         # Ctrl-Z on Windows generates EOFError
@@ -173,7 +175,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # watching directories at the OS level is not trivial due to limitations
         # of the watchdog module.
         for ignore_dir in self.ignore_dirs:
-            resolved_ignore_dir = Path(ignore_dir).resolve()
+            resolved_ignore_dir = ignore_dir.resolve()
             try:
                 modified_path.relative_to(resolved_ignore_dir)
                 # If no ValueError is raised by the .relative_to() call, then
@@ -221,7 +223,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Note: This will run on the timer thread created by the Debouncer, rather
     # than on the main thread that's watching file events. This enables the
     # watcher to continue receiving file change events during a build.
-    def run(self):
+    def run(self) -> None:
         """Run all the builds in serial and capture pass/fail for each."""
 
         # Clear the screen and show a banner indicating the build is starting.
@@ -263,7 +265,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.builds_succeeded.append(build_ok)
 
     # Implementation of DebouncedFunction.cancel()
-    def cancel(self):
+    def cancel(self) -> bool:
         if self.restart_on_changes:
             self._current_build.kill()
             return True
@@ -271,7 +273,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         return False
 
     # Implementation of DebouncedFunction.run()
-    def on_complete(self, cancelled=False):
+    def on_complete(self, cancelled: bool = False) -> None:
         # First, use the standard logging facilities to report build status.
         if cancelled:
             _LOG.error('Finished; build was interrupted')
@@ -312,7 +314,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.matching_path = None
 
     # Implementation of DebouncedFunction.on_keyboard_interrupt()
-    def on_keyboard_interrupt(self):
+    def on_keyboard_interrupt(self) -> NoReturn:
         _exit_due_to_interrupt()
 
 
@@ -382,7 +384,7 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
               '-C out tgt`'))
 
 
-def _exit(code):
+def _exit(code: int) -> NoReturn:
     # Note: The "proper" way to exit is via observer.stop(), then
     # running a join. However it's slower, so just exit immediately.
     #
@@ -392,7 +394,7 @@ def _exit(code):
     os._exit(code)  # pylint: disable=protected-access
 
 
-def _exit_due_to_interrupt():
+def _exit_due_to_interrupt() -> NoReturn:
     # To keep the log lines aligned with each other in the presence of
     # a '^C' from the keyboard interrupt, add a newline before the log.
     print()
@@ -600,8 +602,6 @@ def watch(default_build_targets: List[str], build_directories: List[str],
     # Ignore top level pw_root_dir/.gitignore patterns.
     ignore_patterns += gitignore_patterns()
 
-    ignore_dirs = ['.presubmit', '.python3-env']
-
     env = pw_cli.env.pigweed_environment()
     if env.PW_EMOJI:
         charset = _EMOJI_CHARSET
@@ -612,7 +612,8 @@ def watch(default_build_targets: List[str], build_directories: List[str],
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
         build_commands=build_commands,
-        ignore_dirs=ignore_dirs,
+        ignore_dirs=[Path('.presubmit'),
+                     Path('.python3-env')],
         charset=charset,
         restart=restart,
     )

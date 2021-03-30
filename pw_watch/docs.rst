@@ -47,6 +47,8 @@ The ``--exclude_list`` argument can be used to exclude directories from
 being watched by your system. This can decrease the inotify number in Linux
 system.
 
+While running ``pw watch``, press enter to immediately trigger a rebuild.
+
 Unit Test Integration
 =====================
 Thanks to GN's understanding of the full dependency tree, only the tests

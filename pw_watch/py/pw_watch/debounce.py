@@ -34,7 +34,7 @@ class DebouncedFunction(ABC):
         Returns true if run was successfully cancelled, false otherwise"""
 
     @abstractmethod
-    def on_complete(self, cancelled: bool = False) -> bool:
+    def on_complete(self, cancelled: bool = False) -> None:
         """Called after run() finishes. If true, cancelled indicates
         cancel() was invoked during the last run()"""
 
@@ -57,7 +57,7 @@ class State(enum.Enum):
 
 class Debouncer:
     """Run an interruptable, cancellable function with debouncing"""
-    def __init__(self, function):
+    def __init__(self, function: DebouncedFunction) -> None:
         super().__init__()
         self.function = function
 
@@ -69,22 +69,22 @@ class Debouncer:
         self.cooldown_seconds = 1
         self.cooldown_timer = None
 
-        self.rerun_event_description = None
+        self.rerun_event_description = ''
 
         self.lock = threading.Lock()
 
-    def press(self, event_description=None):
+    def press(self, event_description: str = '') -> None:
         """Try to run the function for the class. If the function is recently
         started, this may push out the deadline for actually starting. If the
         function is already running, will interrupt the function"""
         with self.lock:
             self._press_unlocked(event_description)
 
-    def _press_unlocked(self, event_description=None):
+    def _press_unlocked(self, event_description: str) -> None:
         _LOG.debug('Press - state = %s', str(self.state))
         if self.state == State.IDLE:
             if event_description:
-                _LOG.info(event_description)
+                _LOG.info('%s', event_description)
             self._start_debounce_timer()
             self._transition(State.DEBOUNCING)
 
@@ -118,8 +118,8 @@ class Debouncer:
             self._transition(State.RERUN)
             self.rerun_event_description = event_description
 
-    def _transition(self, new_state):
-        _LOG.debug('State: %s -> %s', str(self.state), str(new_state))
+    def _transition(self, new_state: State) -> None:
+        _LOG.debug('State: %s -> %s', self.state, new_state)
         self.state = new_state
 
     def _start_debounce_timer(self):
@@ -173,7 +173,7 @@ class Debouncer:
 
                 # If we were in the RERUN state, then re-trigger the event.
                 if rerun:
-                    self._press_unlocked('Rerunning: %s' %
+                    self._press_unlocked('Rerunning: ' +
                                          self.rerun_event_description)
 
         # Ctrl-C on Unix generates KeyboardInterrupt
