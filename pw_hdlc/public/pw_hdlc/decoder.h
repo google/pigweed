@@ -157,19 +157,19 @@ class Decoder {
 };
 
 // DecoderBuffers declare a buffer along with a Decoder.
-template <size_t size_bytes>
+template <size_t kSizeBytes>
 class DecoderBuffer : public Decoder {
  public:
   DecoderBuffer() : Decoder(frame_buffer_) {}
 
   // Returns the maximum length of the bytes that can be inserted in the bytes
   // buffer.
-  static constexpr size_t max_size() { return size_bytes; }
+  static constexpr size_t max_size() { return kSizeBytes; }
 
  private:
-  static_assert(size_bytes >= Frame::kMinSizeBytes);
+  static_assert(kSizeBytes >= Frame::kMinSizeBytes);
 
-  std::array<std::byte, size_bytes> frame_buffer_;
+  std::array<std::byte, kSizeBytes> frame_buffer_;
 };
 
 }  // namespace pw::hdlc

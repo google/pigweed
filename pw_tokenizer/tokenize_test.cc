@@ -29,17 +29,17 @@ namespace pw::tokenizer {
 namespace {
 
 // Constructs an array with the hashed string followed by the provided bytes.
-template <uint8_t... data, size_t size>
+template <uint8_t... kData, size_t kSize>
 constexpr auto ExpectedData(
-    const char (&format)[size],
+    const char (&format)[kSize],
     uint32_t token_mask = std::numeric_limits<uint32_t>::max()) {
   const uint32_t value = Hash(format) & token_mask;
-  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(data)>{
+  return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
       static_cast<uint8_t>(value >> 16 & 0xff),
       static_cast<uint8_t>(value >> 24 & 0xff),
-      data...};
+      kData...};
 }
 
 TEST(TokenizeString, EmptyString_IsZero) {

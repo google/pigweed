@@ -48,14 +48,14 @@ constexpr size_t kMaxEntries = 256;
 constexpr size_t kMaxUsableSectors = 256;
 
 // This is a self contained flash unit with both memory and a single partition.
-template <uint32_t sector_size_bytes, uint16_t sector_count>
+template <uint32_t kSectorSizeBytes, uint16_t kSectorCount>
 struct FlashWithPartitionFake {
   // Default to 16 byte alignment, which is common in practice.
   FlashWithPartitionFake() : FlashWithPartitionFake(16) {}
   FlashWithPartitionFake(size_t alignment_bytes)
       : memory(alignment_bytes), partition(&memory, 0, memory.sector_count()) {}
 
-  FakeFlashMemoryBuffer<sector_size_bytes, sector_count> memory;
+  FakeFlashMemoryBuffer<kSectorSizeBytes, kSectorCount> memory;
   FlashPartition partition;
 
  public:

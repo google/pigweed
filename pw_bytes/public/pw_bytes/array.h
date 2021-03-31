@@ -88,9 +88,9 @@ consteval auto Concat(Args... args) {
 
 // Converts a string literal to an array of bytes, without the trailing '\0'.
 template <typename B = std::byte,
-          size_t size,
-          typename Indices = std::make_index_sequence<size - 1>>
-consteval auto String(const char (&str)[size]) {
+          size_t kSize,
+          typename Indices = std::make_index_sequence<kSize - 1>>
+consteval auto String(const char (&str)[kSize]) {
   return internal::String<B>(str, Indices{});
 }
 
@@ -116,11 +116,11 @@ consteval auto Array() {
 
 // Creates an initialized array of bytes. Initializes the array to a value or
 // the return values from a function that accepts the index as a parameter.
-template <typename B, size_t size, typename T>
+template <typename B, size_t kSize, typename T>
 constexpr auto Initialized(const T& value_or_function) {
-  std::array<B, size> array{};
+  std::array<B, kSize> array{};
 
-  for (size_t i = 0; i < size; ++i) {
+  for (size_t i = 0; i < kSize; ++i) {
     if constexpr (std::is_integral_v<T>) {
       array[i] = static_cast<B>(value_or_function);
     } else {
@@ -131,9 +131,9 @@ constexpr auto Initialized(const T& value_or_function) {
 }
 
 // Initialized(value_or_function) defaults to using std::byte.
-template <size_t size, typename T>
+template <size_t kSize, typename T>
 constexpr auto Initialized(const T& value_or_function) {
-  return Initialized<std::byte, size>(value_or_function);
+  return Initialized<std::byte, kSize>(value_or_function);
 }
 
 // Creates an array of bytes from a series of function arguments. Unlike

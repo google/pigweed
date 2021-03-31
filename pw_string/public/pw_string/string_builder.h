@@ -269,7 +269,7 @@ class StringBuilder {
 //   str.c_str();  // null terminated C string "The answer is 42."
 //   str.view();   // std::string_view of "The answer is 42."
 //
-template <size_t size_bytes>
+template <size_t kSizeBytes>
 class StringBuffer : public StringBuilder {
  public:
   StringBuffer() : StringBuilder(buffer_) {}
@@ -295,7 +295,7 @@ class StringBuffer : public StringBuilder {
   }
 
   StringBuffer& operator=(const StringBuffer& other) {
-    assign<size_bytes>(other);
+    assign<kSizeBytes>(other);
     return *this;
   }
 
@@ -309,9 +309,9 @@ class StringBuffer : public StringBuilder {
   }
 
   // Returns the maximum length of the string, excluding the null terminator.
-  static constexpr size_t max_size() { return size_bytes - 1; }
+  static constexpr size_t max_size() { return kSizeBytes - 1; }
 
-  // Returns a StringBuffer<size_bytes>& instead of a generic StringBuilder& for
+  // Returns a StringBuffer<kSizeBytes>& instead of a generic StringBuilder& for
   // append calls and stream-style operations.
   template <typename... Args>
   StringBuffer& append(Args&&... args) {
@@ -331,8 +331,8 @@ class StringBuffer : public StringBuilder {
     std::memcpy(buffer_, other.data(), other.size() + 1);  // include the \0
   }
 
-  static_assert(size_bytes >= 1u, "StringBuffers must be at least 1 byte long");
-  char buffer_[size_bytes];
+  static_assert(kSizeBytes >= 1u, "StringBuffers must be at least 1 byte long");
+  char buffer_[kSizeBytes];
 };
 
 namespace string_internal {

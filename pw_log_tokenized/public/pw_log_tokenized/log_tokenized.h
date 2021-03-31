@@ -89,35 +89,35 @@ namespace internal {
 
 // This class, which is aliased to pw::log_tokenized::Metadata below, is used to
 // access the log metadata packed into the tokenizer's payload argument.
-template <unsigned level_bits,
-          unsigned module_bits,
-          unsigned flag_bits,
+template <unsigned kLevelBits,
+          unsigned kModuleBits,
+          unsigned kFlagBits,
           typename T = uintptr_t>
 class GenericMetadata {
  public:
   template <T log_level, T module, T flags>
   static constexpr GenericMetadata Set() {
-    static_assert(log_level < (1 << level_bits), "The level is too large!");
-    static_assert(module < (1 << module_bits), "The module is too large!");
-    static_assert(flags < (1 << flag_bits), "The flags are too large!");
+    static_assert(log_level < (1 << kLevelBits), "The level is too large!");
+    static_assert(module < (1 << kModuleBits), "The module is too large!");
+    static_assert(flags < (1 << kFlagBits), "The flags are too large!");
 
-    return GenericMetadata(log_level | (module << level_bits) |
-                           (flags << (module_bits + level_bits)));
+    return GenericMetadata(log_level | (module << kLevelBits) |
+                           (flags << (kModuleBits + kLevelBits)));
   }
 
   constexpr GenericMetadata(T value) : bits_(value) {}
 
   // The log level of this message.
-  constexpr T level() const { return bits_ & Mask<level_bits>(); }
+  constexpr T level() const { return bits_ & Mask<kLevelBits>(); }
 
   // The 16 bit tokenized version of the module name (PW_LOG_MODULE_NAME).
   constexpr T module() const {
-    return (bits_ >> level_bits) & Mask<module_bits>();
+    return (bits_ >> kLevelBits) & Mask<kModuleBits>();
   }
 
   // The flags provided to the log call.
   constexpr T flags() const {
-    return (bits_ >> (level_bits + module_bits)) & Mask<flag_bits>();
+    return (bits_ >> (kLevelBits + kModuleBits)) & Mask<kFlagBits>();
   }
 
  private:
@@ -128,7 +128,7 @@ class GenericMetadata {
 
   T bits_;
 
-  static_assert(level_bits + module_bits + flag_bits <= sizeof(bits_) * 8);
+  static_assert(kLevelBits + kModuleBits + kFlagBits <= sizeof(bits_) * 8);
 };
 
 }  // namespace internal

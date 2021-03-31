@@ -21,7 +21,7 @@
 
 namespace pw::allocator {
 
-template <size_t num_buckets>
+template <size_t kNumBuckets>
 class FreeListBuffer;
 
 // Basic freelist implementation for an allocator.
@@ -84,7 +84,7 @@ class FreeList {
   size_t FindChunkPtrForSize(size_t size, bool non_null) const;
 
  private:
-  template <size_t num_buckets>
+  template <size_t kNumBuckets>
   friend class FreeListBuffer;
 
   struct FreeListNode {
@@ -101,21 +101,21 @@ class FreeList {
 };
 
 // Holder for FreeList's storage.
-template <size_t num_buckets>
+template <size_t kNumBuckets>
 class FreeListBuffer : public FreeList {
  public:
   // These constructors are a little hacky because of the initialization order.
   // Because FreeList has a trivial constructor, this is safe, however.
   explicit FreeListBuffer(std::initializer_list<size_t> sizes)
-      : FreeList(chunks_, sizes_), sizes_(sizes), chunks_(num_buckets + 1, 0) {}
-  explicit FreeListBuffer(std::array<size_t, num_buckets> sizes)
+      : FreeList(chunks_, sizes_), sizes_(sizes), chunks_(kNumBuckets + 1, 0) {}
+  explicit FreeListBuffer(std::array<size_t, kNumBuckets> sizes)
       : FreeList(chunks_, sizes_),
         sizes_(sizes.begin(), sizes.end()),
-        chunks_(num_buckets + 1, 0) {}
+        chunks_(kNumBuckets + 1, 0) {}
 
  private:
-  Vector<size_t, num_buckets> sizes_;
-  Vector<FreeList::FreeListNode*, num_buckets + 1> chunks_;
+  Vector<size_t, kNumBuckets> sizes_;
+  Vector<FreeList::FreeListNode*, kNumBuckets + 1> chunks_;
 };
 
 }  // namespace pw::allocator

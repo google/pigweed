@@ -120,8 +120,8 @@ TEST(ServerWriter, Finish_SendsCancellationPacket) {
 
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), PacketType::SERVER_STREAM_END);
-  EXPECT_EQ(packet.channel_id(), context.kChannelId);
-  EXPECT_EQ(packet.service_id(), context.kServiceId);
+  EXPECT_EQ(packet.channel_id(), context.channel_id());
+  EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_TRUE(packet.payload().empty());
   EXPECT_EQ(packet.status(), OkStatus());

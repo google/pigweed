@@ -59,10 +59,10 @@ TEST(Hashing, GeneratedCasesAtRuntime) {
 
 // Gets the size of the string, excluding the null terminator. A uint32_t is
 // used instead of a size_t since the hash calculation requires a uint32_t.
-template <uint32_t size_with_null>
-constexpr uint32_t StringLength(const char (&)[size_with_null]) {
-  static_assert(size_with_null > 0u);
-  return size_with_null - 1;  // subtract the null terminator
+template <uint32_t kSizeWithNull>
+constexpr uint32_t StringLength(const char (&)[kSizeWithNull]) {
+  static_assert(kSizeWithNull > 0u);
+  return kSizeWithNull - 1;  // subtract the null terminator
 }
 
 TEST(Hashing, Runtime) PW_NO_SANITIZE("unsigned-integer-overflow") {

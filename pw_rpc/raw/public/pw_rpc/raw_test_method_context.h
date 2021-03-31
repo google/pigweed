@@ -65,8 +65,8 @@ namespace pw::rpc {
 //
 // PW_RAW_TEST_METHOD_CONTEXT takes two optional arguments:
 //
-//   size_t max_responses: maximum responses to store; ignored unless streaming
-//   size_t output_size_bytes: buffer size; must be large enough for a packet
+//   size_t kMaxResponse: maximum responses to store; ignored unless streaming
+//   size_t kOutputSizeBytes: buffer size; must be large enough for a packet
 //
 // Example:
 //
@@ -80,19 +80,19 @@ namespace pw::rpc {
                                   ##__VA_ARGS__>
 template <typename Service,
           auto method,
-          uint32_t method_id,
-          size_t max_responses = 4,
-          size_t output_size_bytes = 128>
+          uint32_t kMethodId,
+          size_t kMaxResponse = 4,
+          size_t kOutputSizeBytes = 128>
 class RawTestMethodContext;
 
 // Internal classes that implement RawTestMethodContext.
 namespace internal::test::raw {
 
 // A ChannelOutput implementation that stores the outgoing payloads and status.
-template <size_t output_size>
+template <size_t kOutputSize>
 class MessageOutput final : public ChannelOutput {
  public:
-  using ResponseBuffer = std::array<std::byte, output_size>;
+  using ResponseBuffer = std::array<std::byte, kOutputSize>;
 
   MessageOutput(Vector<ByteSpan>& responses,
                 Vector<ResponseBuffer>& buffers,
@@ -134,9 +134,9 @@ class MessageOutput final : public ChannelOutput {
 
 // Collects everything needed to invoke a particular RPC.
 template <typename Service,
-          uint32_t method_id,
-          size_t max_responses,
-          size_t output_size>
+          uint32_t kMethodId,
+          size_t kMaxResponse,
+          size_t kOutputSize>
 struct InvocationContext {
   template <typename... Args>
   InvocationContext(Args&&... args)
@@ -147,26 +147,26 @@ struct InvocationContext {
         call(static_cast<internal::Server&>(server),
              static_cast<internal::Channel&>(channel),
              service,
-             MethodLookup::GetRawMethod<Service, method_id>()) {}
+             MethodLookup::GetRawMethod<Service, kMethodId>()) {}
 
-  using ResponseBuffer = std::array<std::byte, output_size>;
+  using ResponseBuffer = std::array<std::byte, kOutputSize>;
 
-  MessageOutput<output_size> output;
+  MessageOutput<kOutputSize> output;
   rpc::Channel channel;
   rpc::Server server;
   Service service;
-  Vector<ByteSpan, max_responses> responses;
-  Vector<ResponseBuffer, max_responses> buffers;
-  std::array<std::byte, output_size> packet_buffer = {};
+  Vector<ByteSpan, kMaxResponse> responses;
+  Vector<ResponseBuffer, kMaxResponse> buffers;
+  std::array<std::byte, kOutputSize> packet_buffer = {};
   internal::ServerCall call;
 };
 
 // Method invocation context for a unary RPC. Returns the status in call() and
 // provides the response through the response() method.
-template <typename Service, auto method, uint32_t method_id, size_t output_size>
+template <typename Service, auto method, uint32_t kMethodId, size_t kOutputSize>
 class UnaryContext {
  private:
-  using Context = InvocationContext<Service, method_id, 1, output_size>;
+  using Context = InvocationContext<Service, kMethodId, 1, kOutputSize>;
   Context ctx_;
 
  public:
@@ -198,13 +198,13 @@ class UnaryContext {
 // Method invocation context for a server streaming RPC.
 template <typename Service,
           auto method,
-          uint32_t method_id,
-          size_t max_responses,
-          size_t output_size>
+          uint32_t kMethodId,
+          size_t kMaxResponse,
+          size_t kOutputSize>
 class ServerStreamingContext {
  private:
   using Context =
-      InvocationContext<Service, method_id, max_responses, output_size>;
+      InvocationContext<Service, kMethodId, kMaxResponse, kOutputSize>;
   Context ctx_;
 
  public:
@@ -252,22 +252,22 @@ class ServerStreamingContext {
 // RPC it is for.
 template <typename Service,
           auto method,
-          uint32_t method_id,
-          size_t responses,
-          size_t output_size>
+          uint32_t kMethodId,
+          size_t kMaxResponse,
+          size_t kOutputSize>
 using Context = std::tuple_element_t<
     static_cast<size_t>(MethodTraits<decltype(method)>::kType),
-    std::tuple<UnaryContext<Service, method, method_id, output_size>,
+    std::tuple<UnaryContext<Service, method, kMethodId, kOutputSize>,
                ServerStreamingContext<Service,
                                       method,
-                                      method_id,
-                                      responses,
-                                      output_size>
+                                      kMethodId,
+                                      kMaxResponse,
+                                      kOutputSize>
                // TODO(hepler): Support client and bidi streaming
                >>;
 
-template <size_t output_size>
-Status MessageOutput<output_size>::SendAndReleaseBuffer(
+template <size_t kOutputSize>
+Status MessageOutput<kOutputSize>::SendAndReleaseBuffer(
     std::span<const std::byte> buffer) {
   PW_ASSERT(!stream_ended_);
   PW_ASSERT(buffer.data() == packet_buffer_.data());
@@ -306,25 +306,19 @@ Status MessageOutput<output_size>::SendAndReleaseBuffer(
 
 template <typename Service,
           auto method,
-          uint32_t method_id,
-          size_t max_responses,
-          size_t output_size_bytes>
+          uint32_t kMethodId,
+          size_t kMaxResponse,
+          size_t kOutputSizeBytes>
 class RawTestMethodContext
-    : public internal::test::raw::Context<Service,
-                                          method,
-                                          method_id,
-                                          max_responses,
-                                          output_size_bytes> {
+    : public internal::test::raw::
+          Context<Service, method, kMethodId, kMaxResponse, kOutputSizeBytes> {
  public:
   // Forwards constructor arguments to the service class.
   template <typename... ServiceArgs>
   RawTestMethodContext(ServiceArgs&&... service_args)
-      : internal::test::raw::Context<Service,
-                                     method,
-                                     method_id,
-                                     max_responses,
-                                     output_size_bytes>(
-            std::forward<ServiceArgs>(service_args)...) {}
+      : internal::test::raw::
+            Context<Service, method, kMethodId, kMaxResponse, kOutputSizeBytes>(
+                std::forward<ServiceArgs>(service_args)...) {}
 };
 
 }  // namespace pw::rpc

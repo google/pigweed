@@ -153,23 +153,23 @@ T ReadInOrder(std::endian order, const void* buffer) {
 // ReadInOrder from a static-extent span, with compile-time bounds checking.
 template <typename T,
           typename B,
-          size_t buffer_size,
-          typename = std::enable_if_t<buffer_size != std::dynamic_extent &&
+          size_t kBufferSize,
+          typename = std::enable_if_t<kBufferSize != std::dynamic_extent &&
                                       sizeof(B) == sizeof(std::byte)>>
-T ReadInOrder(std::endian order, std::span<B, buffer_size> buffer) {
-  static_assert(buffer_size >= sizeof(T));
+T ReadInOrder(std::endian order, std::span<B, kBufferSize> buffer) {
+  static_assert(kBufferSize >= sizeof(T));
   return ReadInOrder<T>(order, buffer.data());
 }
 
 // ReadInOrder from a std::array, with compile-time bounds checking.
-template <typename T, typename B, size_t buffer_size>
-T ReadInOrder(std::endian order, const std::array<B, buffer_size>& buffer) {
+template <typename T, typename B, size_t kBufferSize>
+T ReadInOrder(std::endian order, const std::array<B, kBufferSize>& buffer) {
   return ReadInOrder<T>(order, std::span(buffer));
 }
 
 // ReadInOrder from a C array, with compile-time bounds checking.
-template <typename T, typename B, size_t buffer_size>
-T ReadInOrder(std::endian order, const B (&buffer)[buffer_size]) {
+template <typename T, typename B, size_t kBufferSize>
+T ReadInOrder(std::endian order, const B (&buffer)[kBufferSize]) {
   return ReadInOrder<T>(order, std::span(buffer));
 }
 

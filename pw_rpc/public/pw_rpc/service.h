@@ -34,13 +34,13 @@ class Service : public IntrusiveList<Service>::Item {
   uint32_t id() const { return id_; }
 
  protected:
-  template <typename T, size_t method_count>
-  constexpr Service(uint32_t id, const std::array<T, method_count>& methods)
+  template <typename T, size_t kMethodCount>
+  constexpr Service(uint32_t id, const std::array<T, kMethodCount>& methods)
       : id_(id),
         methods_(methods.data()),
         method_size_(sizeof(T)),
-        method_count_(static_cast<uint16_t>(method_count)) {
-    static_assert(method_count <= std::numeric_limits<uint16_t>::max());
+        method_count_(static_cast<uint16_t>(kMethodCount)) {
+    static_assert(kMethodCount <= std::numeric_limits<uint16_t>::max());
   }
 
   // For use by tests with only one method.

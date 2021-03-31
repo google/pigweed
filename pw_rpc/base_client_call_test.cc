@@ -26,8 +26,8 @@ TEST(BaseClientCall, RegistersAndRemovesItselfFromClient) {
 
   {
     BaseClientCall call(&context.channel(),
-                        context.kServiceId,
-                        context.kMethodId,
+                        context.service_id(),
+                        context.method_id(),
                         [](BaseClientCall&, const Packet&) {});
     EXPECT_EQ(context.client().active_calls(), 1u);
   }
@@ -53,8 +53,8 @@ class FakeClientCall : public BaseClientCall {
 TEST(BaseClientCall, SendsPacketWithPayload) {
   ClientContextForTest context;
   FakeClientCall call(&context.channel(),
-                      context.kServiceId,
-                      context.kMethodId,
+                      context.service_id(),
+                      context.method_id(),
                       [](BaseClientCall&, const Packet&) {});
 
   constexpr std::byte payload[]{std::byte{0x08}, std::byte{0x39}};
@@ -63,8 +63,8 @@ TEST(BaseClientCall, SendsPacketWithPayload) {
   EXPECT_EQ(context.output().packet_count(), 1u);
   Packet packet = context.output().sent_packet();
   EXPECT_EQ(packet.channel_id(), context.channel().id());
-  EXPECT_EQ(packet.service_id(), context.kServiceId);
-  EXPECT_EQ(packet.method_id(), context.kMethodId);
+  EXPECT_EQ(packet.service_id(), context.service_id());
+  EXPECT_EQ(packet.method_id(), context.method_id());
   EXPECT_EQ(std::memcmp(packet.payload().data(), payload, sizeof(payload)), 0);
 }
 

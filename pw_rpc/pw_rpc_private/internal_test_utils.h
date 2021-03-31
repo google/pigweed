@@ -30,10 +30,10 @@
 
 namespace pw::rpc {
 
-template <size_t output_buffer_size>
+template <size_t kOutputBufferSize>
 class TestOutput : public ChannelOutput {
  public:
-  static constexpr size_t buffer_size() { return output_buffer_size; }
+  static constexpr size_t buffer_size() { return kOutputBufferSize; }
 
   constexpr TestOutput(const char* name = "TestOutput")
       : ChannelOutput(name), sent_data_{} {}
@@ -82,13 +82,13 @@ class TestServer : public internal::Server {
 };
 
 template <typename Service,
-          size_t output_buffer_size = 128,
-          uint32_t channel_id = 99,
-          uint32_t service_id = 16>
+          size_t kOutputBufferSize = 128,
+          uint32_t kChannelId = 99,
+          uint32_t kServiceId = 16>
 class ServerContextForTest {
  public:
-  static constexpr uint32_t kChannelId = channel_id;
-  static constexpr uint32_t kServiceId = service_id;
+  static constexpr uint32_t channel_id() { return kChannelId; }
+  static constexpr uint32_t service_id() { return kServiceId; }
 
   ServerContextForTest(const internal::Method& method)
       : channel_(Channel::Create<kChannelId>(&output_)),
@@ -116,7 +116,7 @@ class ServerContextForTest {
   TestServer& server() { return static_cast<TestServer&>(server_); }
 
  private:
-  TestOutput<output_buffer_size> output_;
+  TestOutput<kOutputBufferSize> output_;
   Channel channel_;
   Server server_;
   Service service_;
@@ -124,16 +124,16 @@ class ServerContextForTest {
   internal::ServerCall context_;
 };
 
-template <size_t output_buffer_size = 128,
+template <size_t kOutputBufferSize = 128,
           size_t input_buffer_size = 128,
-          uint32_t channel_id = 99,
-          uint32_t service_id = 16,
-          uint32_t method_id = 111>
+          uint32_t kChannelId = 99,
+          uint32_t kServiceId = 16,
+          uint32_t kMethodId = 111>
 class ClientContextForTest {
  public:
-  static constexpr uint32_t kChannelId = channel_id;
-  static constexpr uint32_t kServiceId = service_id;
-  static constexpr uint32_t kMethodId = method_id;
+  static constexpr uint32_t channel_id() { return kChannelId; }
+  static constexpr uint32_t service_id() { return kServiceId; }
+  static constexpr uint32_t method_id() { return kMethodId; }
 
   ClientContextForTest()
       : channel_(Channel::Create<kChannelId>(&output_)),
@@ -161,7 +161,7 @@ class ClientContextForTest {
   }
 
  private:
-  TestOutput<output_buffer_size> output_;
+  TestOutput<kOutputBufferSize> output_;
   Channel channel_;
   Client client_;
 };

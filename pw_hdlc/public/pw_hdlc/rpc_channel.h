@@ -62,7 +62,7 @@ class RpcChannelOutput : public rpc::ChannelOutput {
 //
 // WARNING: This ChannelOutput is not thread-safe. If thread-safety is required,
 // wrap this in a pw::rpc::SynchronizedChannelOutput.
-template <size_t buffer_size>
+template <size_t kBufferSize>
 class RpcChannelOutputBuffer : public rpc::ChannelOutput {
  public:
   constexpr RpcChannelOutputBuffer(stream::Writer& writer,
@@ -82,7 +82,7 @@ class RpcChannelOutputBuffer : public rpc::ChannelOutput {
 
  private:
   stream::Writer& writer_;
-  std::array<std::byte, buffer_size> buffer_;
+  std::array<std::byte, kBufferSize> buffer_;
   const uint64_t address_;
 };
 

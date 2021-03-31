@@ -69,10 +69,10 @@ constexpr uint32_t Hash(std::string_view string)
 
 // Take the string as an array to support either literals or character arrays,
 // but not const char*.
-template <size_t size>
-constexpr uint32_t Hash(const char (&string)[size]) {
-  static_assert(size > 0);
-  return Hash(std::string_view(string, size - 1));
+template <size_t kSize>
+constexpr uint32_t Hash(const char (&string)[kSize]) {
+  static_assert(kSize > 0);
+  return Hash(std::string_view(string, kSize - 1));
 }
 
 // This hash function is equivalent to the C hashing macros. It hashses a string
@@ -93,12 +93,12 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(
 }
 
 // Character array version of PwTokenizer65599FixedLengthHash.
-template <size_t size>
+template <size_t kSize>
 constexpr uint32_t PwTokenizer65599FixedLengthHash(
-    const char (&string)[size],
+    const char (&string)[kSize],
     size_t hash_length = PW_TOKENIZER_CFG_C_HASH_LENGTH) {
-  static_assert(size > 0);
-  return PwTokenizer65599FixedLengthHash(std::string_view(string, size - 1),
+  static_assert(kSize > 0);
+  return PwTokenizer65599FixedLengthHash(std::string_view(string, kSize - 1),
                                          hash_length);
 }
 

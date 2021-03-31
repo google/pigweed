@@ -28,7 +28,7 @@ namespace pw::containers {
 //
 // The keys do not need to be sorted as the constructor will sort the items
 // if need be.
-template <typename Key, typename Value, size_t array_size>
+template <typename Key, typename Value, size_t kArraySize>
 class FlatMap {
  public:
   // Define and use a custom Pair object. This is because std::pair does not
@@ -45,22 +45,22 @@ class FlatMap {
   using value_type = Pair<key_type, mapped_type>;
   using size_type = size_t;
   using difference_type = ptrdiff_t;
-  using container_type = typename std::array<value_type, array_size>;
+  using container_type = typename std::array<value_type, kArraySize>;
   using iterator = typename container_type::iterator;
   using const_iterator = typename container_type::const_iterator;
 
-  constexpr FlatMap(const std::array<value_type, array_size>& items)
+  constexpr FlatMap(const std::array<value_type, kArraySize>& items)
       : items_(items) {
-    ConstexprSort(items_.data(), array_size);
+    ConstexprSort(items_.data(), kArraySize);
   }
 
   FlatMap(FlatMap&) = delete;
   FlatMap& operator=(FlatMap&) = delete;
 
   // Capacity.
-  constexpr size_type size() const { return array_size; }
+  constexpr size_type size() const { return kArraySize; }
   constexpr size_type empty() const { return size() == 0; }
-  constexpr size_type max_size() const { return array_size; }
+  constexpr size_type max_size() const { return kArraySize; }
 
   // Lookup.
   constexpr bool contains(const key_type& key) const {
@@ -131,7 +131,7 @@ class FlatMap {
     }
   }
 
-  std::array<value_type, array_size> items_;
+  std::array<value_type, kArraySize> items_;
 };
 
 }  // namespace pw::containers

@@ -198,8 +198,8 @@ TEST(RawServerWriter, Write_SendsPreviouslyAcquiredBuffer) {
 
   const internal::Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
-  EXPECT_EQ(packet.channel_id(), context.kChannelId);
-  EXPECT_EQ(packet.service_id(), context.kServiceId);
+  EXPECT_EQ(packet.channel_id(), context.channel_id());
+  EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_EQ(std::memcmp(packet.payload().data(), data.data(), data.size()), 0);
   EXPECT_EQ(packet.status(), OkStatus());
@@ -216,8 +216,8 @@ TEST(RawServerWriter, Write_SendsExternalBuffer) {
 
   const internal::Packet& packet = context.output().sent_packet();
   EXPECT_EQ(packet.type(), internal::PacketType::RESPONSE);
-  EXPECT_EQ(packet.channel_id(), context.kChannelId);
-  EXPECT_EQ(packet.service_id(), context.kServiceId);
+  EXPECT_EQ(packet.channel_id(), context.channel_id());
+  EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
   EXPECT_EQ(std::memcmp(packet.payload().data(), data.data(), data.size()), 0);
   EXPECT_EQ(packet.status(), OkStatus());

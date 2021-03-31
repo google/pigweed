@@ -48,13 +48,13 @@ class MemoryWriter : public Writer {
   size_t bytes_written_ = 0;
 };
 
-template <size_t size_bytes>
+template <size_t kSizeBytes>
 class MemoryWriterBuffer final : public MemoryWriter {
  public:
   MemoryWriterBuffer() : MemoryWriter(buffer_) {}
 
  private:
-  std::array<std::byte, size_bytes> buffer_;
+  std::array<std::byte, kSizeBytes> buffer_;
 };
 
 class MemoryReader final : public Reader {

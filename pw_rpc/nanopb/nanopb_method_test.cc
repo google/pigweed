@@ -195,7 +195,7 @@ TEST(NanopbMethod, UnaryRpc_InvalidPayload_SendsError) {
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DataLoss(), packet.status());
-  EXPECT_EQ(context.kServiceId, packet.service_id());
+  EXPECT_EQ(context.service_id(), packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());
 }
 
@@ -216,7 +216,7 @@ TEST(NanopbMethod, UnaryRpc_BufferTooSmallForResponse_SendsInternalError) {
   const Packet& packet = context.output().sent_packet();
   EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::Internal(), packet.status());
-  EXPECT_EQ(context.kServiceId, packet.service_id());
+  EXPECT_EQ(context.service_id(), packet.service_id());
   EXPECT_EQ(method.id(), packet.method_id());
 
   EXPECT_EQ(value, last_request.integer);

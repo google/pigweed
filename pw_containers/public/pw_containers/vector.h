@@ -38,7 +38,7 @@ PW_INLINE_VARIABLE constexpr size_t kGeneric = size_t(-1);
 
 // The DestructorHelper is used to make Vector<T> trivially destructible if T
 // is. This could be replaced with a C++20 constraint.
-template <typename VectorClass, bool is_trivially_destructible>
+template <typename VectorClass, bool kIsTriviallyDestructible>
 class DestructorHelper;
 
 template <typename VectorClass>
@@ -99,15 +99,15 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   Vector(const Vector& other)
       : Vector<T, vector_impl::kGeneric>(max_size, other) {}
 
-  template <size_t other_max_size>
-  Vector(const Vector<T, other_max_size>& other)
+  template <size_t kOtherMaxSize>
+  Vector(const Vector<T, kOtherMaxSize>& other)
       : Vector<T, vector_impl::kGeneric>(max_size, other) {}
 
   Vector(Vector&& other) noexcept
       : Vector<T, vector_impl::kGeneric>(max_size, std::move(other)) {}
 
-  template <size_t other_max_size>
-  Vector(Vector<T, other_max_size>&& other) noexcept
+  template <size_t kOtherMaxSize>
+  Vector(Vector<T, kOtherMaxSize>&& other) noexcept
       : Vector<T, vector_impl::kGeneric>(max_size, std::move(other)) {}
 
   Vector(std::initializer_list<T> list)
@@ -118,8 +118,8 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
     return *this;
   }
 
-  template <size_t other_max_size>
-  Vector& operator=(const Vector<T, other_max_size>& other) noexcept {
+  template <size_t kOtherMaxSize>
+  Vector& operator=(const Vector<T, kOtherMaxSize>& other) noexcept {
     Vector<T>::assign(other.begin(), other.end());
     return *this;
   }
@@ -129,8 +129,8 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
     return *this;
   }
 
-  template <size_t other_max_size>
-  Vector& operator=(Vector<T, other_max_size>&& other) noexcept {
+  template <size_t kOtherMaxSize>
+  Vector& operator=(Vector<T, kOtherMaxSize>&& other) noexcept {
     Vector<T>::operator=(std::move(other));
     return *this;
   }

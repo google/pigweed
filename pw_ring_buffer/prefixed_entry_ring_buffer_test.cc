@@ -182,20 +182,20 @@ constexpr size_t kCountingUpMaxExpectedEntries =
 // Write data that is filled with a byte value that increments each write. Write
 // many times without read/pop and then check to make sure correct contents are
 // in the ring buffer.
-template <bool user_data>
+template <bool kUserData>
 void CountingUpWriteReadTest() {
-  PrefixedEntryRingBuffer ring(user_data);
+  PrefixedEntryRingBuffer ring(kUserData);
   byte test_buffer[single_entry_test_buffer_size];
 
   EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
   EXPECT_EQ(ring.EntryCount(), 0u);
 
-  constexpr size_t data_size = sizeof(single_entry_data) - (user_data ? 1 : 0);
+  constexpr size_t kDataSize = sizeof(single_entry_data) - (kUserData ? 1 : 0);
 
   for (size_t i = 0; i < kOuterCycles; i++) {
     size_t seed = i;
 
-    byte write_buffer[data_size];
+    byte write_buffer[kDataSize];
 
     size_t j;
     for (j = 0; j < kSingleEntryCycles; j++) {
@@ -217,7 +217,7 @@ void CountingUpWriteReadTest() {
       memset(write_buffer, fill_val + j, sizeof(write_buffer));
       ASSERT_EQ(ring.PeekFront(read_buffer, &read_size), OkStatus());
 
-      ASSERT_EQ(memcmp(write_buffer, read_buffer, data_size), 0);
+      ASSERT_EQ(memcmp(write_buffer, read_buffer, kDataSize), 0);
 
       ASSERT_EQ(ring.PopFront(), OkStatus());
     }

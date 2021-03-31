@@ -249,15 +249,15 @@ class NanopbMethod : public Method {
   // Invoker function for unary RPCs. Allocates request and response structs by
   // size, with maximum alignment, to avoid generating unnecessary copies of
   // this function for each request/response type.
-  template <size_t request_size, size_t response_size>
+  template <size_t kRequestSize, size_t kResponseSize>
   static void UnaryInvoker(const Method& method,
                            ServerCall& call,
                            const Packet& request) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
-    std::aligned_storage_t<request_size, alignof(std::max_align_t)>
+    std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
-    std::aligned_storage_t<response_size, alignof(std::max_align_t)>
+    std::aligned_storage_t<kResponseSize, alignof(std::max_align_t)>
         response_struct{};
 
     static_cast<const NanopbMethod&>(method).CallUnary(
@@ -267,12 +267,12 @@ class NanopbMethod : public Method {
   // Invoker function for server streaming RPCs. Allocates space for a request
   // struct. Ignores the payload buffer since resposnes are sent through the
   // ServerWriter.
-  template <size_t request_size>
+  template <size_t kRequestSize>
   static void ServerStreamingInvoker(const Method& method,
                                      ServerCall& call,
                                      const Packet& request) {
     _PW_RPC_NANOPB_STRUCT_STORAGE_CLASS
-    std::aligned_storage_t<request_size, alignof(std::max_align_t)>
+    std::aligned_storage_t<kRequestSize, alignof(std::max_align_t)>
         request_struct{};
 
     static_cast<const NanopbMethod&>(method).CallServerStreaming(

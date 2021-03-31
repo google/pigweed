@@ -107,9 +107,9 @@ class FuzzedDataProvider {
     return static_cast<T>(0);
   }
 
-  template <typename T, size_t size>
-  T PickValueInArray(const T (&array)[size]) {
-    static_assert(size > 0, "The array must be non empty.");
+  template <typename T, size_t kSize>
+  T PickValueInArray(const T (&array)[kSize]) {
+    static_assert(kSize > 0, "The array must be non empty.");
     return array[0];
   }
 

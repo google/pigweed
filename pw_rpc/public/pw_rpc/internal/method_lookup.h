@@ -25,24 +25,24 @@ namespace pw::rpc::internal {
 // union member in a constant expression, so this results in a compiler error.
 class MethodLookup {
  public:
-  template <typename Service, uint32_t method_id>
+  template <typename Service, uint32_t kMethodId>
   static constexpr const auto& GetRawMethod() {
-    const auto& method = GetMethodUnion<Service, method_id>().raw_method();
-    static_assert(method.id() == method_id, "Incorrect method implementation");
+    const auto& method = GetMethodUnion<Service, kMethodId>().raw_method();
+    static_assert(method.id() == kMethodId, "Incorrect method implementation");
     return method;
   }
 
-  template <typename Service, uint32_t method_id>
+  template <typename Service, uint32_t kMethodId>
   static constexpr const auto& GetNanopbMethod() {
-    const auto& method = GetMethodUnion<Service, method_id>().nanopb_method();
-    static_assert(method.id() == method_id, "Incorrect method implementation");
+    const auto& method = GetMethodUnion<Service, kMethodId>().nanopb_method();
+    static_assert(method.id() == kMethodId, "Incorrect method implementation");
     return method;
   }
 
  private:
-  template <typename Service, uint32_t method_id>
+  template <typename Service, uint32_t kMethodId>
   static constexpr const auto& GetMethodUnion() {
-    constexpr auto method = GetMethodUnionPointer<Service>(method_id);
+    constexpr auto method = GetMethodUnionPointer<Service>(kMethodId);
     static_assert(method != nullptr,
                   "The selected function is not an RPC service method");
     return *method;
@@ -51,9 +51,9 @@ class MethodLookup {
   template <typename Service>
   static constexpr
       typename decltype(GeneratedService<Service>::kMethods)::const_pointer
-      GetMethodUnionPointer(uint32_t method_id) {
+      GetMethodUnionPointer(uint32_t kMethodId) {
     for (size_t i = 0; i < GeneratedService<Service>::kMethodIds.size(); ++i) {
-      if (GeneratedService<Service>::kMethodIds[i] == method_id) {
+      if (GeneratedService<Service>::kMethodIds[i] == kMethodId) {
         return &GeneratedService<Service>::kMethods[i];
       }
     }

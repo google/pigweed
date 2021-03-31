@@ -24,7 +24,7 @@ namespace pw::allocator {
 
 class FreeListHeap {
  public:
-  template <size_t N>
+  template <size_t kNumBuckets>
   friend class FreeListHeapBuffer;
   struct HeapStats {
     size_t total_bytes;
@@ -55,10 +55,10 @@ class FreeListHeap {
   HeapStats heap_stats_;
 };
 
-template <size_t N = 6>
+template <size_t kNumBuckets = 6>
 class FreeListHeapBuffer {
  public:
-  static constexpr std::array<size_t, N> defaultBuckets{
+  static constexpr std::array<size_t, kNumBuckets> defaultBuckets{
       16, 32, 64, 128, 256, 512};
 
   FreeListHeapBuffer(std::span<std::byte> region)
@@ -76,7 +76,7 @@ class FreeListHeapBuffer {
   void LogHeapStats() { heap_.LogHeapStats(); }
 
  private:
-  FreeListBuffer<N> freelist_;
+  FreeListBuffer<kNumBuckets> freelist_;
   FreeListHeap heap_;
 };
 

@@ -31,7 +31,7 @@ pw_bytes/byte_builder.h
   bytes in a fixed-size buffer. ByteBuilder handles reading and writing integers
   with varying endianness.
 
-.. cpp:class:: template <size_t max_size> ByteBuffer
+.. cpp:class:: template <size_t kMaxSize> ByteBuffer
 
   ``ByteBuilder`` with an internally allocated buffer.
 
