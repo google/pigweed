@@ -285,7 +285,7 @@ the generated wheel with `GN metadata
 <https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_.
 Wheels for a Python package and its transitive dependencies can be collected
 from the ``pw_python_package_wheels`` key. See
-:ref:`module-pw_build-python-wheels`.
+:ref:`module-pw_build-python-dist`.
 
 Protocol buffers
 ^^^^^^^^^^^^^^^^

@@ -1,0 +1,126 @@
+# Copyright 2021 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/zip.gni")
+
+# Builds a directory containing a collection of Python wheels.
+#
+# Given one or more pw_python_package targets, this target will build their
+# .wheel sub-targets along with the .wheel sub-targets of all dependencies,
+# direct and indirect, as understood by GN. The resulting .whl files will be
+# collected into a single directory called 'python_wheels'.
+#
+# Args:
+#   packages: A list of pw_python_package targets whose wheels should be
+#       included; their dependencies will be pulled in as wheels also.
+template("pw_python_wheels") {
+  _outer_name = target_name
+  _wheel_paths_path = "${target_gen_dir}/${target_name}_wheel_paths.txt"
+
+  _deps = []
+  if (defined(invoker.deps)) {
+    _deps = invoker.deps
+  }
+
+  _packages = []
+  foreach(_pkg, invoker.packages) {
+    _pkg_name = get_label_info(_pkg, "label_no_toolchain")
+    _pkg_toolchain = get_label_info(_pkg, "toolchain")
+    _packages += [ "${_pkg_name}.wheel(${_pkg_toolchain})" ]
+  }
+
+  # Build a list of relative paths containing all the wheels we depend on.
+  generated_file("${target_name}._wheel_paths") {
+    data_keys = [ "pw_python_package_wheels" ]
+    rebase = root_build_dir
+    deps = _packages
+    outputs = [ _wheel_paths_path ]
+  }
+
+  pw_python_action(target_name) {
+    deps = _deps + [ ":${_outer_name}._wheel_paths" ]
+    module = "pw_build.collect_wheels"
+
+    args = [
+      "--prefix",
+      rebase_path(root_build_dir),
+      "--suffix",
+      rebase_path(_wheel_paths_path),
+      "--out_dir",
+      rebase_path("${target_out_dir}/python_wheels"),
+    ]
+
+    stamp = true
+  }
+}
+
+# Builds a .zip containing Python wheels and setup scripts.
+#
+# The resulting .zip archive will contain a directory with Python wheels for
+# all pw_python_package targets listed in 'packages', plus wheels for any
+# pw_python_package targets those packages depend on, directly or indirectly,
+# as understood by GN.
+#
+# In addition to Python wheels, the resulting .zip will also contain simple
+# setup scripts for Linux, MacOS, and Windows that take care of creating a
+# Python venv and installing all the included wheels into it, and a README.md
+# file with setup and usage instructions.
+#
+# Args:
+#   packages: A list of pw_python_package targets whose wheels should be
+#       included; their dependencies will be pulled in as wheels also.
+#   inputs: An optional list of extra files to include in the generated .zip,
+#       formatted the same was as the 'inputs' argument to pw_zip targets.
+#   dirs: An optional list of directories to include in the generated .zip,
+#       formatted the same way as the 'dirs' argument to pw_zip targets.
+template("pw_python_zip_with_setup") {
+  _outer_name = target_name
+  _zip_path = "${target_out_dir}/${target_name}.zip"
+  _deps = []
+  if (defined(invoker.deps)) {
+    _deps = invoker.deps
+  }
+  _inputs = []
+  if (defined(invoker.inputs)) {
+    _inputs = invoker.inputs
+  }
+  _dirs = []
+  if (defined(invoker.dirs)) {
+    _dirs = invoker.dirs
+  }
+
+  pw_python_wheels("${target_name}.wheels") {
+    packages = invoker.packages
+    deps = _deps
+  }
+
+  pw_zip("${target_name}") {
+    inputs = _inputs + [
+               "$dir_pw_build/python_dist/setup.bat > /${target_name}/",
+               "$dir_pw_build/python_dist/setup.sh > /${target_name}/",
+             ]
+
+    dirs =
+        _dirs +
+        [ "${target_out_dir}/python_wheels/ > /${target_name}/python_wheels/" ]
+
+    output = _zip_path
+
+    deps = [ ":${_outer_name}.wheels" ]
+  }
+}

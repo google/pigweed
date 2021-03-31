@@ -4,7 +4,7 @@
 Python GN templates
 -------------------
 The Python build is implemented with GN templates defined in
-``pw_build/python.gni``. That file contains the complete usage documentation.
+``pw_build/python.gni``. See the .gni file for complete usage documentation.
 
 .. seealso:: :ref:`docs-python-build`
 
@@ -34,7 +34,8 @@ same as the directory. For example, these two labels are equivalent:
 The actions in a ``pw_python_package`` (e.g. installing packages and running
 Pylint) are done within a single GN toolchain to avoid duplication in
 multi-toolchain builds. This toolchain can be set with the
-``pw_build_PYTHON_TOOLCHAIN`` GN arg, which defaults to a dummy toolchain.
+``pw_build_PYTHON_TOOLCHAIN`` GN arg, which defaults to
+``$dir_pw_build/python_toolchain:python``.
 
 Arguments
 ---------
@@ -100,30 +101,6 @@ This is an example Python package declaration for a ``pw_my_module`` module.
     pylintrc = "$dir_pigweed/.pylintrc"
   }
 
-
-.. _module-pw_build-python-wheels:
-
-Collecting Python wheels for distribution
------------------------------------------
-The ``.wheel`` subtarget generates a wheel (``.whl``) for the Python package.
-Wheels for a package and its transitive dependencies can be collected by
-traversing the ``pw_python_package_wheels`` `GN metadata
-<https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_ key,
-which lists the output directory for each wheel.
-
-The ``pw_mirror_tree`` template can be used to collect wheels in an output
-directory:
-
-.. code-block::
-
-  import("$dir_pw_build/mirror_tree.gni")
-
-  pw_mirror_tree("my_wheels") {
-    path_data_keys = [ "pw_python_package_wheels" ]
-    deps = [ ":python_packages.wheel" ]
-    directory = "$root_out_dir/the_wheels"
-  }
-
 pw_python_script
 ================
 A ``pw_python_script`` represents a set of standalone Python scripts and/or
@@ -160,3 +137,87 @@ pw_python_requirements
 ======================
 Represents a set of local and PyPI requirements, with no associated source
 files. These targets serve the role of a ``requirements.txt`` file.
+
+.. _module-pw_build-python-dist:
+
+---------------------
+Python distributables
+---------------------
+Pigweed also provides some templates to make it easier to bundle Python packages
+for deployment. These templates are found in ``pw_build/python_dist.gni``. See
+the .gni file for complete usage doclumentation.
+
+pw_python_wheels
+================
+Collects Python wheels for one or more ``pw_python_package`` targets, plus any
+additional ``pw_python_package`` targets they depend on, directly or indirectly.
+Note that this does not include Python dependencies that come from outside the
+GN build, like packages from PyPI, for example. Those should still be declared
+in the package's ``setup.py`` file as usual.
+
+Arguments
+---------
+- ``packages`` - List of ``pw_python_package`` targets whose wheels should be
+  included; their dependencies will be pulled in as wheels also.
+
+Wheel collection under the hood
+-------------------------------
+The ``.wheel`` subtarget of every ``pw_python_package`` generates a wheel
+(``.whl``) for the Python package. The ``pw_python_wheels`` template figures
+out which wheels to collect by traversing the ``pw_python_package_wheels``
+`GN metadata
+<https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_ key,
+which lists the output directory for each wheel.
+
+The ``pw_mirror_tree`` template is then used to collect wheels in an output
+directory:
+
+.. code-block::
+
+  import("$dir_pw_build/mirror_tree.gni")
+
+  pw_mirror_tree("my_wheels") {
+    path_data_keys = [ "pw_python_package_wheels" ]
+    deps = [ ":python_packages.wheel" ]
+    directory = "$root_out_dir/the_wheels"
+  }
+
+pw_python_zip_with_setup
+========================
+Generates a ``.zip`` archive suitable for deployment outside of the project's
+developer environment. The generated ``.zip`` contains Python wheels
+(``.whl`` files) for one or more ``pw_python_package`` targets, plus wheels for
+any additional ``pw_python_package`` targets in the GN build they depend on,
+directly or indirectly. Dependencies from outside the GN build, such as packages
+from PyPI, must be listed in packages' ``setup.py`` files as usual.
+
+The ``.zip`` also includes simple setup scripts for Linux,
+MacOS, and Windows. The setup scripts automatically create a Python virtual
+environment and install the whole collection of wheels into it using ``pip``.
+
+Optionally, additional files and directories can be included in the archive.
+
+Arguments
+---------
+- ``packages`` - A list of `pw_python_package` targets whose wheels should be
+  included; their dependencies will be pulled in as wheels also.
+- ``inputs`` - An optional list of extra files to include in the generated
+  ``.zip``, formatted the same way as the ``inputs`` argument to ``pw_zip``
+  targets.
+- ``dirs`` - An optional list of directories to include in the generated
+  ``.zip``, formatted the same was as the ``dirs`` argument to ``pw_zip``
+  targets.
+
+Example
+-------
+
+.. code-block::
+
+  import("//build_overrides/pigweed.gni")
+
+  import("$dir_pw_build/python_dist.gni")
+
+  pw_python_zip_with_setup("my_tools") {
+    packages = [ ":some_python_package" ]
+    inputs = [ "$dir_pw_build/python_dist/README.md > /${target_name}/" ]
+  }
