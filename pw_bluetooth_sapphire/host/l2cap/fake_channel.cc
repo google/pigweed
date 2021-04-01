@@ -133,4 +133,9 @@ void FakeChannel::RequestAclPriority(hci::AclPriority priority,
   cb(fit::ok());
 }
 
+void FakeChannel::SetBrEdrAutomaticFlushTimeout(
+    zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+  callback(fit::ok());
+}
+
 }  // namespace bt::l2cap::testing

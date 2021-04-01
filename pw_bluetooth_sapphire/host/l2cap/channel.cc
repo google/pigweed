@@ -64,26 +64,19 @@ fbl::RefPtr<ChannelImpl> ChannelImpl::CreateDynamicChannel(ChannelId id, Channel
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
                          fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info)
-    : Channel(id, remote_id, link->type(), link->handle(), info), active_(false), link_(link) {
+    : Channel(id, remote_id, link->type(), link->handle(), info),
+      active_(false),
+      link_(link),
+      weak_ptr_factory_(this) {
   ZX_ASSERT(link_);
   ZX_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
       "Channel constructed with unsupported mode: %hhu\n", info.mode);
 
-  // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
-  FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
-                                            ? FrameCheckSequenceOption::kIncludeFcs
-                                            : FrameCheckSequenceOption::kNoFcs;
-  auto send_cb = [remote_id, link, fcs_option](auto pdu) {
-    if (link) {
-      // |link| is expected to ignore this call and drop the packet if it has been closed.
-      link->SendFrame(remote_id, *pdu, fcs_option);
-    }
-  };
-
   if (info_.mode == ChannelMode::kBasic) {
     rx_engine_ = std::make_unique<BasicModeRxEngine>();
-    tx_engine_ = std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), send_cb);
+    tx_engine_ = std::make_unique<BasicModeTxEngine>(
+        id, max_tx_sdu_size(), fit::bind_member(this, &ChannelImpl::SendFrame));
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
     auto connection_failure_cb = [this, link] {
@@ -95,8 +88,8 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
       }
     };
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
-        id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window, send_cb,
-        std::move(connection_failure_cb));
+        id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window,
+        fit::bind_member(this, &ChannelImpl::SendFrame), std::move(connection_failure_cb));
   }
 }
 
@@ -211,6 +204,34 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
                             });
 }
 
+void ChannelImpl::SetBrEdrAutomaticFlushTimeout(
+    zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+  ZX_ASSERT(link_type_ == hci::Connection::LinkType::kACL);
+
+  // Channel may be inactive if this method is called before activation.
+  if (!link_) {
+    bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
+    callback(fit::error(hci::StatusCode::kCommandDisallowed));
+    return;
+  }
+
+  auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
+                     flush_timeout](auto result) mutable {
+    if (!self) {
+      cb(fit::error(hci::StatusCode::kUnspecifiedError));
+      return;
+    }
+
+    if (result.is_ok()) {
+      self->info_.flush_timeout = flush_timeout;
+    }
+
+    cb(result);
+  };
+
+  link_->SetBrEdrAutomaticFlushTimeout(flush_timeout, std::move(cb_wrapper));
+}
+
 void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_.node = parent.CreateChild(name);
   if (info_.psm) {
@@ -293,6 +314,20 @@ void ChannelImpl::CleanUp() {
   closed_cb_ = nullptr;
   rx_engine_ = nullptr;
   tx_engine_ = nullptr;
+}
+
+void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
+  if (!link_ || !active_) {
+    return;
+  }
+
+  // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
+  FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
+                                            ? FrameCheckSequenceOption::kIncludeFcs
+                                            : FrameCheckSequenceOption::kNoFcs;
+
+  // |link_| is expected to ignore this call and drop the packet if it has been closed.
+  link_->SendFrame(remote_id_, *pdu, fcs_option, /*flushable=*/info_.flush_timeout.has_value());
 }
 
 }  // namespace internal

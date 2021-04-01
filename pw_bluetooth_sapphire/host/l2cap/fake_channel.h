@@ -74,6 +74,9 @@ class FakeChannel : public Channel {
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fit::result<>)> cb) override;
+  void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout,
+      fit::callback<void(fit::result<void, hci::StatusCode>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
  private:

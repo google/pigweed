@@ -345,14 +345,10 @@ class L2CAP_ChannelManagerTest : public TestingBase {
     chanmgr()->OpenChannel(conn_handle, psm, chan_params, std::move(open_cb));
   }
 
-  fbl::RefPtr<Channel> SetUpOutboundChannel(ChannelId local_id = kLocalId,
-                                            ChannelId remote_id = kRemoteId,
-                                            Channel::ClosedCallback closed_cb = DoNothing) {
-    fbl::RefPtr<Channel> channel;
-    auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
-      channel = std::move(activated_chan);
-    };
-
+  void SetUpOutboundChannelWithCallback(ChannelId local_id, ChannelId remote_id,
+                                        Channel::ClosedCallback closed_cb,
+                                        ChannelParameters channel_params,
+                                        fit::function<void(fbl::RefPtr<Channel>)> channel_cb) {
     const auto conn_req_id = NextCommandId();
     const auto config_req_id = NextCommandId();
     EXPECT_ACL_PACKET_OUT(testing::AclConnectionReq(conn_req_id, kTestHandle1, local_id, kTestPsm),
@@ -364,7 +360,7 @@ class L2CAP_ChannelManagerTest : public TestingBase {
         testing::AclConfigRsp(kPeerConfigRequestId, kTestHandle1, remote_id, kChannelParams),
         kHighPriority);
 
-    ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
+    ActivateOutboundChannel(kTestPsm, channel_params, std::move(channel_cb), kTestHandle1,
                             std::move(closed_cb));
     RunLoopUntilIdle();
 
@@ -375,8 +371,20 @@ class L2CAP_ChannelManagerTest : public TestingBase {
         testing::AclConfigRsp(config_req_id, kTestHandle1, local_id, kChannelParams));
 
     RunLoopUntilIdle();
-
     EXPECT_TRUE(AllExpectedPacketsSent());
+  }
+
+  fbl::RefPtr<Channel> SetUpOutboundChannel(ChannelId local_id = kLocalId,
+                                            ChannelId remote_id = kRemoteId,
+                                            Channel::ClosedCallback closed_cb = DoNothing,
+                                            ChannelParameters channel_params = kChannelParams) {
+    fbl::RefPtr<Channel> channel;
+    auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+      channel = std::move(activated_chan);
+    };
+
+    SetUpOutboundChannelWithCallback(local_id, remote_id, std::move(closed_cb), channel_params,
+                                     channel_cb);
     EXPECT_TRUE(channel);
     return channel;
   }
@@ -2813,6 +2821,250 @@ TEST_F(L2CAP_ChannelManagerTest, InspectHierarchy) {
 
   // inspector must outlive ChannelManager
   chanmgr()->Unregister(kTestHandle1);
+}
+
+TEST_F(L2CAP_ChannelManagerTest,
+       OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {
+  const zx::duration kFlushTimeout = zx::msec(1);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+
+  int flush_timeout_cb_count = 0;
+  fit::callback<void(fit::result<void, hci::StatusCode>)> flush_timeout_result_cb = nullptr;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        flush_timeout_cb_count++;
+        EXPECT_EQ(duration, kFlushTimeout);
+        EXPECT_EQ(handle, kTestHandle1);
+        flush_timeout_result_cb = std::move(cb);
+      });
+
+  ChannelParameters chan_params;
+  chan_params.flush_timeout = kFlushTimeout;
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> activated_chan) {
+    channel = std::move(activated_chan);
+  };
+  SetUpOutboundChannelWithCallback(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params,
+                                   channel_cb);
+  RunLoopUntilIdle();
+  EXPECT_EQ(flush_timeout_cb_count, 1);
+  // Channel should not be returned yet because setting flush timeout has not completed yet.
+  EXPECT_FALSE(channel);
+  ASSERT_TRUE(flush_timeout_result_cb);
+
+  // Calling result callback should cause channel to be returned.
+  flush_timeout_result_cb(fit::ok());
+  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel->info().flush_timeout.has_value());
+  EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstFlushable, length: 6)
+          0x01, 0x20, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,  // length: 2
+          LowerBits(kRemoteId),
+          UpperBits(kRemoteId),  // remote id
+          'h', 'i'),             // payload
+      kLowPriority);
+  EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
+}
+
+TEST_F(L2CAP_ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
+  const zx::duration kFlushTimeout = zx::msec(1);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+
+  int flush_timeout_cb_count = 0;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        flush_timeout_cb_count++;
+        EXPECT_EQ(duration, kFlushTimeout);
+        EXPECT_EQ(handle, kTestHandle1);
+        cb(fit::error(hci::StatusCode::kUnspecifiedError));
+      });
+
+  ChannelParameters chan_params;
+  chan_params.flush_timeout = kFlushTimeout;
+
+  auto channel = SetUpOutboundChannel(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params);
+  EXPECT_EQ(flush_timeout_cb_count, 1);
+  // Flush timeout should not be set in channel info because setting a flush timeout failed.
+  EXPECT_FALSE(channel->info().flush_timeout.has_value());
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstNonFlushable, length: 6)
+          0x01, 0x00, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,  // length: 2
+          LowerBits(kRemoteId),
+          UpperBits(kRemoteId),  // remote id
+          'h', 'i'),             // payload
+      kLowPriority);
+  EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
+}
+
+TEST_F(L2CAP_ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
+  const zx::duration kFlushTimeout = zx::msec(1);
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+
+  int flush_timeout_cb_count = 0;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        flush_timeout_cb_count++;
+        EXPECT_EQ(duration, kFlushTimeout);
+        EXPECT_EQ(handle, kTestHandle1);
+        cb(fit::ok());
+      });
+
+  ChannelParameters chan_params;
+  chan_params.flush_timeout = kFlushTimeout;
+
+  fbl::RefPtr<Channel> channel;
+  auto channel_cb = [&channel](fbl::RefPtr<l2cap::Channel> opened_chan) {
+    channel = std::move(opened_chan);
+    EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
+  };
+
+  EXPECT_TRUE(chanmgr()->RegisterService(kTestPsm, chan_params, std::move(channel_cb)));
+
+  CommandId kPeerConnectionRequestId = 3;
+  const auto config_req_id = NextCommandId();
+
+  EXPECT_ACL_PACKET_OUT(OutboundConnectionResponse(kPeerConnectionRequestId), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
+  EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
+
+  ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnectionRequestId));
+  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
+  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  ASSERT_TRUE(channel);
+  EXPECT_EQ(flush_timeout_cb_count, 1);
+  ASSERT_TRUE(channel->info().flush_timeout.has_value());
+  EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstFlushable, length: 6)
+          0x01, 0x20, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,  // length: 2
+          LowerBits(kRemoteId),
+          UpperBits(kRemoteId),  // remote id
+          'h', 'i'),             // payload
+      kLowPriority);
+  EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
+}
+
+TEST_F(L2CAP_ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+  auto nonflushable_channel = SetUpOutboundChannel();
+  auto flushable_channel = SetUpOutboundChannel(kLocalId + 1, kRemoteId + 1);
+
+  int flush_timeout_cb_count = 0;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        flush_timeout_cb_count++;
+        EXPECT_EQ(duration, zx::duration(0));
+        EXPECT_EQ(handle, kTestHandle1);
+        cb(fit::ok());
+      });
+
+  flushable_channel->SetBrEdrAutomaticFlushTimeout(
+      zx::msec(0), [](auto result) { EXPECT_TRUE(result.is_ok()); });
+  EXPECT_EQ(flush_timeout_cb_count, 1);
+  EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());
+  ASSERT_TRUE(flushable_channel->info().flush_timeout.has_value());
+  EXPECT_EQ(flushable_channel->info().flush_timeout.value(), zx::duration(0));
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstFlushable, length: 6)
+          0x01, 0x20, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,  // length: 2
+          LowerBits(flushable_channel->remote_id()),
+          UpperBits(flushable_channel->remote_id()),  // remote id
+          'h', 'i'),                                  // payload
+      kLowPriority);
+  EXPECT_TRUE(flushable_channel->Send(NewBuffer('h', 'i')));
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstNonFlushable, length: 6)
+          0x01, 0x00, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,  // length: 2
+          LowerBits(nonflushable_channel->remote_id()),
+          UpperBits(nonflushable_channel->remote_id()),  // remote id
+          'h', 'i'),                                     // payload
+      kLowPriority);
+  EXPECT_TRUE(nonflushable_channel->Send(NewBuffer('h', 'i')));
+}
+
+TEST_F(L2CAP_ChannelManagerTest, SettingFlushTimeoutFails) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+  auto channel = SetUpOutboundChannel();
+
+  int flush_timeout_cb_count = 0;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        flush_timeout_cb_count++;
+        cb(fit::error(hci::StatusCode::kUnknownConnectionId));
+      });
+
+  channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [](auto result) {
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), hci::StatusCode::kUnknownConnectionId);
+  });
+  EXPECT_EQ(flush_timeout_cb_count, 1);
+
+  EXPECT_ACL_PACKET_OUT(
+      StaticByteBuffer(
+          // ACL data header (handle: 1, packet boundary flag: kFirstNonFlushable, length: 6)
+          0x01, 0x00, 0x06, 0x00,
+          // L2CAP B-frame
+          0x02, 0x00,                                  // length: 2
+          LowerBits(kRemoteId), UpperBits(kRemoteId),  // remote id
+          'h', 'i'),                                   // payload
+      kLowPriority);
+  EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
+}
+
+TEST_F(L2CAP_ChannelManagerTest, SetFlushTimeoutOnDeactivatedChannel) {
+  QueueRegisterACL(kTestHandle1, hci::Connection::Role::kMaster);
+  RunLoopUntilIdle();
+  auto channel = SetUpOutboundChannel();
+
+  int set_flush_timeout_cb_count = 0;
+  acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
+      [&](zx::duration duration, hci::ConnectionHandle handle, auto cb) {
+        set_flush_timeout_cb_count++;
+      });
+
+  EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
+  channel->Deactivate();
+
+  int flush_timeout_cb_count = 0;
+  channel->SetBrEdrAutomaticFlushTimeout(zx::msec(0), [&](auto result) {
+    flush_timeout_cb_count++;
+    ASSERT_TRUE(result.is_error());
+    EXPECT_EQ(result.error(), hci::StatusCode::kCommandDisallowed);
+  });
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(set_flush_timeout_cb_count, 0);
+  EXPECT_EQ(flush_timeout_cb_count, 1);
 }
 
 }  // namespace

@@ -105,9 +105,12 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // |remote_id| identifies the peer's L2CAP channel endpoint for this frame. This must be called on
   // the creation thread.
   //
+  // |flushable| indicates whether the PDU should be marked as flushable (the controller can
+  // flush the PDU after the automatic flush timeout).
+  //
   // It is safe to call this function on a closed link; it will have no effect.
   void SendFrame(ChannelId remote_id, const ByteBuffer& payload,
-                 FrameCheckSequenceOption fcs_option);
+                 FrameCheckSequenceOption fcs_option, bool flushable);
 
   // Requests a security upgrade using the registered security upgrade callback.
   // Invokes the |callback| argument with the result of the operation.

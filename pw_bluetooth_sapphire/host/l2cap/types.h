@@ -53,8 +53,11 @@ struct ChannelParameters {
   // MTU
   std::optional<uint16_t> max_rx_sdu_size;
 
+  std::optional<zx::duration> flush_timeout;
+
   bool operator==(const ChannelParameters& rhs) const {
-    return mode == rhs.mode && max_rx_sdu_size == rhs.max_rx_sdu_size;
+    return mode == rhs.mode && max_rx_sdu_size == rhs.max_rx_sdu_size &&
+           flush_timeout == rhs.flush_timeout;
   }
 
   std::string ToString() const {
@@ -62,8 +65,11 @@ struct ChannelParameters {
                                         : std::string("nullopt");
     auto sdu_string = max_rx_sdu_size.has_value() ? fxl::StringPrintf("%hu", *max_rx_sdu_size)
                                                   : std::string("nullopt");
-    return fxl::StringPrintf("ChannelParameters{mode: %s, max_rx_sdu_size: %s}",
-                             mode_string.c_str(), sdu_string.c_str());
+    auto flush_timeout_string = flush_timeout
+                                    ? fxl::StringPrintf("%ldms", flush_timeout->to_msecs())
+                                    : std::string("nullopt");
+    return fxl::StringPrintf("ChannelParameters{mode: %s, max_rx_sdu_size: %s, flush_timeout: %s}",
+                             mode_string.c_str(), sdu_string.c_str(), flush_timeout_string.c_str());
   };
 };
 
@@ -73,30 +79,34 @@ struct ChannelInfo {
   ChannelInfo() = default;
 
   static ChannelInfo MakeBasicMode(uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
-                                   std::optional<PSM> psm = std::nullopt) {
-    return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0, psm);
+                                   std::optional<PSM> psm = std::nullopt,
+                                   std::optional<zx::duration> flush_timeout = std::nullopt) {
+    return ChannelInfo(ChannelMode::kBasic, max_rx_sdu_size, max_tx_sdu_size, 0, 0, 0, psm,
+                       flush_timeout);
   }
 
-  static ChannelInfo MakeEnhancedRetransmissionMode(uint16_t max_rx_sdu_size,
-                                                    uint16_t max_tx_sdu_size,
-                                                    uint8_t n_frames_in_tx_window,
-                                                    uint8_t max_transmissions,
-                                                    uint16_t max_tx_pdu_payload_size,
-                                                    std::optional<PSM> psm = std::nullopt) {
+  static ChannelInfo MakeEnhancedRetransmissionMode(
+      uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size, uint8_t n_frames_in_tx_window,
+      uint8_t max_transmissions, uint16_t max_tx_pdu_payload_size,
+      std::optional<PSM> psm = std::nullopt,
+      std::optional<zx::duration> flush_timeout = std::nullopt) {
     return ChannelInfo(ChannelMode::kEnhancedRetransmission, max_rx_sdu_size, max_tx_sdu_size,
-                       n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size, psm);
+                       n_frames_in_tx_window, max_transmissions, max_tx_pdu_payload_size, psm,
+                       flush_timeout);
   }
 
   ChannelInfo(ChannelMode mode, uint16_t max_rx_sdu_size, uint16_t max_tx_sdu_size,
               uint8_t n_frames_in_tx_window, uint8_t max_transmissions,
-              uint16_t max_tx_pdu_payload_size, std::optional<PSM> psm = std::nullopt)
+              uint16_t max_tx_pdu_payload_size, std::optional<PSM> psm = std::nullopt,
+              std::optional<zx::duration> flush_timeout = std::nullopt)
       : mode(mode),
         max_rx_sdu_size(max_rx_sdu_size),
         max_tx_sdu_size(max_tx_sdu_size),
         n_frames_in_tx_window(n_frames_in_tx_window),
         max_transmissions(max_transmissions),
         max_tx_pdu_payload_size(max_tx_pdu_payload_size),
-        psm(psm) {}
+        psm(psm),
+        flush_timeout(flush_timeout) {}
 
   ChannelMode mode;
   uint16_t max_rx_sdu_size;
@@ -110,6 +120,10 @@ struct ChannelInfo {
 
   // PSM of the service the channel is used for.
   std::optional<PSM> psm;
+
+  // If present, the channel's packets will be marked as flushable. The value will be used to
+  // configure the link's automatic flush timeout.
+  std::optional<zx::duration> flush_timeout;
 };
 
 // Data stored for services registered by higher layers.

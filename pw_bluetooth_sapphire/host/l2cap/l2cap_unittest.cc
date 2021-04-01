@@ -45,7 +45,8 @@ constexpr size_t kMaxPacketCount = 10;
 // 2x Information Requests: Extended Features, Fixed Channels Supported
 constexpr size_t kConnectionCreationPacketCount = 2;
 
-constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic, l2cap::kMaxMTU};
+constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic, l2cap::kMaxMTU,
+                                                      std::nullopt};
 constexpr l2cap::ExtendedFeatures kExtendedFeatures =
     l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 

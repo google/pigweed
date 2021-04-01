@@ -278,7 +278,7 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
 }
 
 void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
-                            FrameCheckSequenceOption fcs_option) {
+                            FrameCheckSequenceOption fcs_option, bool flushable) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
 
   if (closed_) {
@@ -287,7 +287,7 @@ void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
   }
 
   // Copy payload into L2CAP frame fragments, sized for the HCI data transport.
-  PDU pdu = fragmenter_.BuildFrame(id, payload, fcs_option);
+  PDU pdu = fragmenter_.BuildFrame(id, payload, fcs_option, flushable);
   auto fragments = pdu.ReleaseFragments();
 
   ZX_ASSERT(!fragments.is_empty());
@@ -485,13 +485,27 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   bt_log(DEBUG, "l2cap", "Link %#.4x: Channel opened with ID %#.4x (remote ID: %#.4x, psm: %s)",
          handle_, local_cid, remote_cid, PsmToString(dyn_chan->psm()).c_str());
 
-  auto chan =
-      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), dyn_chan->info());
+  auto chan_info = dyn_chan->info();
+  // Extract preferred flush timeout to avoid creating channel with a flush timeout that hasn't been
+  // successfully configured yet.
+  auto preferred_flush_timeout = chan_info.flush_timeout;
+  chan_info.flush_timeout.reset();
+
+  auto chan = ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info);
   channels_[local_cid] = chan;
 
   if (inspect_properties_.channels_node) {
     chan->AttachInspect(inspect_properties_.channels_node,
                         inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
+  }
+
+  // If a flush timeout was requested for this channel, try to set it before returning the channel
+  // to the client to ensure outbound PDUs have correct flushable flag.
+  if (preferred_flush_timeout.has_value()) {
+    chan->SetBrEdrAutomaticFlushTimeout(
+        preferred_flush_timeout.value(),
+        [cb = std::move(open_cb), chan](auto /*result*/) { cb(chan); });
+    return;
   }
 
   open_cb(std::move(chan));

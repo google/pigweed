@@ -364,9 +364,10 @@ ChannelInfo BrEdrDynamicChannel::info() const {
 
   const auto max_rx_sdu_size = local_config().mtu_option()->mtu();
   const auto peer_mtu = remote_config().mtu_option()->mtu();
+  const auto flush_timeout = parameters_.flush_timeout;
   if (local_config().retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
     const auto max_tx_sdu_size = peer_mtu;
-    return ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size, psm());
+    return ChannelInfo::MakeBasicMode(max_rx_sdu_size, max_tx_sdu_size, psm(), flush_timeout);
   }
   const auto n_frames_in_tx_window =
       remote_config().retransmission_flow_control_option()->tx_window_size();
@@ -380,9 +381,9 @@ ChannelInfo BrEdrDynamicChannel::info() const {
            "which would otherwise be %hu according to MTU",
            local_cid(), max_tx_sdu_size, peer_mtu);
   }
-  auto info = ChannelInfo::MakeEnhancedRetransmissionMode(max_rx_sdu_size, max_tx_sdu_size,
-                                                          n_frames_in_tx_window, max_transmissions,
-                                                          max_tx_pdu_payload_size, psm());
+  auto info = ChannelInfo::MakeEnhancedRetransmissionMode(
+      max_rx_sdu_size, max_tx_sdu_size, n_frames_in_tx_window, max_transmissions,
+      max_tx_pdu_payload_size, psm(), flush_timeout);
   return info;
 }
 

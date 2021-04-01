@@ -32,7 +32,8 @@ constexpr ChannelId kRemoteCId = 0x60a3;
 constexpr ChannelId kBadCId = 0x003f;  // Not a dynamic channel.
 
 constexpr ChannelParameters kChannelParams;
-constexpr ChannelParameters kERTMChannelParams{ChannelMode::kEnhancedRetransmission, std::nullopt};
+constexpr ChannelParameters kERTMChannelParams{ChannelMode::kEnhancedRetransmission, std::nullopt,
+                                               std::nullopt};
 
 // Commands Reject
 
@@ -1791,7 +1792,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kEnhancedRetransmission, kPreferredMtu},
+  registry()->OpenOutbound(kPsm,
+                           {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
                            std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -2313,7 +2315,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu}, open_cb);
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
   RunLoopUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
@@ -2341,7 +2343,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kMtu}, open_cb);
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kMtu, std::nullopt}, open_cb);
   RunLoopUntilIdle();
 
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
@@ -2373,7 +2375,8 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kEnhancedRetransmission, kPreferredMtu},
+  registry()->OpenOutbound(kPsm,
+                           {ChannelMode::kEnhancedRetransmission, kPreferredMtu, std::nullopt},
                            std::move(open_cb));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
@@ -2412,7 +2415,7 @@ TEST_F(L2CAP_BrEdrDynamicChannelTest,
     open_cb_count++;
   };
 
-  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu}, open_cb);
+  registry()->OpenOutbound(kPsm, {ChannelMode::kBasic, kPreferredMtu, std::nullopt}, open_cb);
   RunLoopUntilIdle();
 
   const ByteBuffer& kExpectedOutboundOkConfigRsp = MakeConfigRspWithMtu(kRemoteCId, kPeerMtu);

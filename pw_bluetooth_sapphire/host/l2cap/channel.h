@@ -182,6 +182,15 @@ class Channel : public fbl::RefCounted<Channel> {
   virtual void RequestAclPriority(hci::AclPriority priority,
                                   fit::callback<void(fit::result<>)> callback) = 0;
 
+  // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
+  // the result of the operation. This is only supported if the link type is kACL (BR/EDR).
+  // |flush_timeout| must be in the range [1ms - hci::kMaxAutomaticFlushTimeoutDuration]. A flush
+  // timeout of zx::duration::infinite() indicates an infinite flush timeout (packets will be marked
+  // flushable, but there will be no automatic flush timeout).
+  virtual void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout,
+      fit::callback<void(fit::result<void, hci::StatusCode>)> callback) = 0;
+
   // Attach this channel as a child node of |parent| with the given |name|.
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 
@@ -199,7 +208,7 @@ class Channel : public fbl::RefCounted<Channel> {
   const ChannelId remote_id_;
   const hci::Connection::LinkType link_type_;
   const hci::ConnectionHandle link_handle_;
-  const ChannelInfo info_;
+  ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
   hci::AclPriority requested_acl_priority_;
 
@@ -262,6 +271,9 @@ class ChannelImpl : public Channel {
                        async_dispatcher_t* dispatcher) override;
   void RequestAclPriority(hci::AclPriority priority,
                           fit::callback<void(fit::result<>)> callback) override;
+  void SetBrEdrAutomaticFlushTimeout(
+      zx::duration flush_timeout,
+      fit::callback<void(fit::result<void, hci::StatusCode>)> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
  private:
@@ -273,6 +285,9 @@ class ChannelImpl : public Channel {
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
+
+  // Callback that |tx_engine_| uses to deliver a PDU to lower layers.
+  void SendFrame(ByteBufferPtr pdu);
 
   bool active_;
   RxCallback rx_cb_;
@@ -310,6 +325,8 @@ class ChannelImpl : public Channel {
   InspectProperties inspect_;
 
   fit::thread_checker thread_checker_;
+
+  fxl::WeakPtrFactory<ChannelImpl> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };
