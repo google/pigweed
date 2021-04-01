@@ -73,16 +73,22 @@ void NanopbMethod::SendResponse(Channel& channel,
 
     response.set_payload(payload_buffer.first(encoded.size()));
     response.set_status(status);
-    if (channel.Send(response_buffer, response).ok()) {
+    pw::Status send_status = channel.Send(response_buffer, response);
+    if (send_status.ok()) {
       return;
     }
 
+    PW_LOG_WARN("Failed to send response packet for channel %u, status %u",
+                unsigned(channel.id()),
+                send_status.code());
+
     // Re-acquire the buffer to encode an error packet.
     response_buffer = channel.AcquireBuffer();
+  } else {
+    PW_LOG_WARN("Failed to encode response packet for channel %u, status %u",
+                unsigned(channel.id()),
+                encoded.status().code());
   }
-
-  PW_LOG_WARN("Failed to encode response packet for channel %u",
-              unsigned(channel.id()));
   channel.Send(response_buffer,
                Packet::ServerError(request, Status::Internal()));
 }
