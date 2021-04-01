@@ -304,7 +304,7 @@ This example shows two ways to configure a module in the GN build system.
   }
 
   config("define_options") {
-    defines = [ "-DPW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
+    defines = [ "PW_FOO_INPUT_BUFFER_SIZE_BYTES=256" ]
   }
 
   # This configuration sets PW_FOO_INPUT_BUFFER_SIZE_BYTES in a header file.
