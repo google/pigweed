@@ -51,6 +51,28 @@ meaning it is a
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
 
+.. Warning::
+  This interface will likely be split between a Mutex and TimedMutex to ease
+  portability for baremetal support.
+
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - :ref:`module-pw_sync_freertos`
+  * - ThreadX
+    - :ref:`module-pw_sync_threadx`
+  * - embOS
+    - :ref:`module-pw_sync_embos`
+  * - STL
+    - :ref:`module-pw_sync_stl`
+  * - Baremetal
+    - Planned
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
 
 C++
 ---
@@ -258,6 +280,24 @@ The InterruptSpinLock is a
 and
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_.
 
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - :ref:`module-pw_sync_freertos`
+  * - ThreadX
+    - :ref:`module-pw_sync_threadx`
+  * - embOS
+    - :ref:`module-pw_sync_embos`
+  * - STL
+    - :ref:`module-pw_sync_stl`
+  * - Baremetal
+    - Planned, not ready for use
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
 
 C++
 ---
@@ -378,6 +418,26 @@ Example in C
 Signaling Primitives
 --------------------
 
+Native signaling primitives tend to vary more compared to critial section locks
+across different platforms. For example, although common signaling primtives
+like semaphores are in most if not all RTOSes and even POSIX, it was not in the
+STL before C++20. Likewise many C++ developers are surprised that conditional
+variables tend to not be natively supported on RTOSes. Although you can usually
+build any signaling primitive based on other native signaling primitives, this
+may come with non-trivial added overhead in ROM, RAM, and execution efficiency.
+
+For this reason, Pigweed intends to provide some "simpler" signaling primitives
+which exist to solve a narrow programming need but can be implemented as
+efficiently as possible for the platform that it is used on.
+
+This simpler but highly portable class of signaling primitives is intended to
+ensure that a portability efficiency tradeoff does not have to be made up front.
+For example we intend to provide a ``pw::sync::Notification`` facade which
+permits a singler consumer to block until an event occurs. This should be
+backed by the most efficient native primitive for a target, regardless of
+whether that is a semaphore, event flag group, condition variable, or something
+else.
+
 CountingSemaphore
 =================
 The CountingSemaphore is a synchronization primitive that can be used for
@@ -398,6 +458,23 @@ is NMI safe.
   end up invoking the native kernel API many times, i.e. once per token you
   are releasing!
 
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - :ref:`module-pw_sync_freertos`
+  * - ThreadX
+    - :ref:`module-pw_sync_threadx`
+  * - embOS
+    - :ref:`module-pw_sync_embos`
+  * - STL
+    - :ref:`module-pw_sync_stl`
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
+
 BinarySemaphore
 ===============
 BinarySemaphore is a specialization of CountingSemaphore with an arbitrary token
@@ -411,3 +488,34 @@ The BinarySemaphore is initialized to being empty or having no tokens.
 
 The entire API is thread safe, but only a subset is interrupt safe. None of it
 is NMI safe.
+
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - :ref:`module-pw_sync_freertos`
+  * - ThreadX
+    - :ref:`module-pw_sync_threadx`
+  * - embOS
+    - :ref:`module-pw_sync_embos`
+  * - STL
+    - :ref:`module-pw_sync_stl`
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
+
+Coming Soon
+===========
+We are intending to provide facades for:
+
+* ``pw::sync::Notification``: A portable abstraction to allow threads to receive
+  notification of a single occurrence of a single event.
+
+* ``pw::sync::EventGroup`` A facade for a common primitive on RTOSes like
+  FreeRTOS, RTX5, ThreadX, and embOS which permit threads and interrupts to
+  signal up to 32 events. This permits others threads to be notified when either
+  any or some combination of these events have been signaled. This is frequently
+  used as an alternative to a set of binary semaphore(s). This is not supported
+  natively on Zephyr.
