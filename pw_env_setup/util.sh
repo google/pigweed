@@ -73,7 +73,7 @@ pw_bold_white() {
 
 pw_eval_sourced() {
   if [ "$1" -eq 0 ]; then
-    _PW_NAME=$(basename "$PW_SETUP_SCRIPT_PATH" .sh)
+    _PW_NAME=$(basename "$_BOOTSTRAP_PATH" .sh)
     pw_bold_red "Error: Attempting to $_PW_NAME in a subshell"
     pw_red "  Since $_PW_NAME.sh modifies your shell's environment variables,"
     pw_red "  it must be sourced rather than executed. In particular, "
