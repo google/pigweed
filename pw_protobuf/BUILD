@@ -23,6 +23,12 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["public/pw_protobuf/config.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "pw_protobuf",
     srcs = [
         "decoder.cc",
@@ -39,6 +45,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         "//pw_span",
         "//pw_status",
         "//pw_varint",
@@ -78,6 +85,14 @@ filegroup(
     name = "codegen_test",
     srcs = [
         "codegen_test.cc",
+    ],
+)
+
+# TODO(frolv): Figure out how to add facade tests to Bazel.
+filegroup(
+    name = "varint_size_test",
+    srcs = [
+        "varint_size_test.cc",
     ],
 )
 

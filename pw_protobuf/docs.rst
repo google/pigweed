@@ -27,6 +27,32 @@ low-level wire format operations with a user-friendly API for processing
 specific protobuf messages. The code generation integrates with Pigweed's GN
 build system.
 
+Configuration
+=============
+``pw_protobuf`` supports the following configuration options.
+
+* ``PW_PROTOBUF_CFG_MAX_VARINT_SIZE``:
+  When encoding nested messages, the number of bytes to reserve for the varint
+  submessage length. Nested messages are limited in size to the maximum value
+  that can be varint-encoded into this reserved space.
+
+  The values that can be set, and their corresponding maximum submessage
+  lengths, are outlined below.
+
+  +-------------------+----------------------------------------+
+  | MAX_VARINT_SIZE   | Maximum submessage length              |
+  +===================+========================================+
+  | 1 byte            | 127                                    |
+  +-------------------+----------------------------------------+
+  | 2 bytes           | 16,383 or < 16KiB                      |
+  +-------------------+----------------------------------------+
+  | 3 bytes           | 2,097,151 or < 2048KiB                 |
+  +-------------------+----------------------------------------+
+  | 4 bytes (default) | 268,435,455 or < 256MiB                |
+  +-------------------+----------------------------------------+
+  | 5 bytes           | 4,294,967,295 or < 4GiB (max uint32_t) |
+  +-------------------+----------------------------------------+
+
 Usage
 =====
 ``pw_protobuf`` splits wire format encoding and decoding operations. Links to

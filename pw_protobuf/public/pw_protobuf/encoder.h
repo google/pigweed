@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -18,9 +18,10 @@
 #include <span>
 
 #include "pw_bytes/span.h"
+#include "pw_protobuf/config.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_result/result.h"
-#include "pw_status/status.h"
+#include "pw_status/try.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -28,10 +29,7 @@ namespace pw::protobuf {
 // A streaming protobuf encoder which encodes to a user-specified buffer.
 class Encoder {
  public:
-  // TODO(frolv): Right now, only one intermediate size is supported. However,
-  // this can be wasteful, as it requires 4 or 8 bytes of space per nested
-  // message. This can be templated to minimize the overhead.
-  using SizeType = size_t;
+  using SizeType = config::SizeType;
 
   constexpr Encoder(ByteSpan buffer,
                     std::span<SizeType*> locations,
@@ -144,9 +142,8 @@ class Encoder {
   Status WriteFixed32(uint32_t field_number, uint32_t value) {
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed32);
-    Status status = WriteRawBytes(value);
-    IncreaseParentSize(cursor_ - original_cursor);
-    return status;
+    WriteRawBytes(value);
+    return IncreaseParentSize(cursor_ - original_cursor);
   }
 
   // Writes a repeated fixed32 field using packed encoding.
@@ -159,9 +156,8 @@ class Encoder {
   Status WriteFixed64(uint32_t field_number, uint64_t value) {
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed64);
-    Status status = WriteRawBytes(value);
-    IncreaseParentSize(cursor_ - original_cursor);
-    return status;
+    WriteRawBytes(value);
+    return IncreaseParentSize(cursor_ - original_cursor);
   }
 
   // Writes a repeated fixed64 field using packed encoding.
@@ -198,9 +194,8 @@ class Encoder {
                   "Float and uint32_t are not the same size");
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed32);
-    Status status = WriteRawBytes(value);
-    IncreaseParentSize(cursor_ - original_cursor);
-    return status;
+    WriteRawBytes(value);
+    return IncreaseParentSize(cursor_ - original_cursor);
   }
 
   // Writes a repeated float field using packed encoding.
@@ -215,9 +210,8 @@ class Encoder {
                   "Double and uint64_t are not the same size");
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kFixed64);
-    Status status = WriteRawBytes(value);
-    IncreaseParentSize(cursor_ - original_cursor);
-    return status;
+    WriteRawBytes(value);
+    return IncreaseParentSize(cursor_ - original_cursor);
   }
 
   // Writes a repeated double field using packed encoding.
@@ -231,9 +225,8 @@ class Encoder {
     std::byte* original_cursor = cursor_;
     WriteFieldKey(field_number, WireType::kDelimited);
     WriteVarint(value.size_bytes());
-    Status status = WriteRawBytes(value.data(), value.size_bytes());
-    IncreaseParentSize(cursor_ - original_cursor);
-    return status;
+    WriteRawBytes(value.data(), value.size_bytes());
+    return IncreaseParentSize(cursor_ - original_cursor);
   }
 
   // Writes a proto string key-value pair.
@@ -330,17 +323,13 @@ class Encoder {
         WriteVarint(value);
       }
     }
-    IncreaseParentSize(cursor_ - original_cursor);
+    PW_TRY(IncreaseParentSize(cursor_ - original_cursor));
 
     return Pop();
   }
 
   // Adds to the parent proto's size field in the buffer.
-  void IncreaseParentSize(size_t bytes) {
-    if (depth_ > 0) {
-      *blob_stack_[depth_ - 1] += bytes;
-    }
-  }
+  Status IncreaseParentSize(size_t size_bytes);
 
   // Returns the size of `n` encoded as a varint.
   size_t VarintSizeBytes(uint64_t n) {
@@ -382,8 +371,8 @@ class NestedEncoder : public Encoder {
   NestedEncoder& operator=(const NestedEncoder& other) = delete;
 
  private:
-  std::array<size_t*, kMaxBlobs> blobs_;
-  std::array<size_t*, kMaxNestedDepth> stack_;
+  std::array<Encoder::SizeType*, kMaxBlobs> blobs_;
+  std::array<Encoder::SizeType*, kMaxNestedDepth> stack_;
 };
 
 // Explicit template argument deduction to hide warnings.

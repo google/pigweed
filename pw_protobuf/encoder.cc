@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,14 +14,15 @@
 
 #include "pw_protobuf/encoder.h"
 
+#include <limits>
+
 namespace pw::protobuf {
 
 Status Encoder::WriteUint64(uint32_t field_number, uint64_t value) {
   std::byte* original_cursor = cursor_;
   WriteFieldKey(field_number, WireType::kVarint);
-  Status status = WriteVarint(value);
-  IncreaseParentSize(cursor_ - original_cursor);
-  return status;
+  WriteVarint(value);
+  return IncreaseParentSize(cursor_ - original_cursor);
 }
 
 // Encodes a base-128 varint to the buffer.
@@ -90,7 +91,7 @@ Status Encoder::Push(uint32_t field_number) {
   }
 
   // Update parent size with the written key.
-  IncreaseParentSize(cursor_ - original_cursor);
+  PW_TRY(IncreaseParentSize(cursor_ - original_cursor));
 
   union {
     std::byte* cursor;
@@ -121,7 +122,7 @@ Status Encoder::Pop() {
   // Update the parent's size with how much total space the child will take
   // after its size field is varint encoded.
   SizeType child_size = *blob_stack_[--depth_];
-  IncreaseParentSize(child_size + VarintSizeBytes(child_size));
+  PW_TRY(IncreaseParentSize(child_size + VarintSizeBytes(child_size)));
 
   // Encode the child
   if (Status status = EncodeFrom(blob_count_ - 1).status(); !status.ok()) {
@@ -186,6 +187,30 @@ Result<ConstByteSpan> Encoder::EncodeFrom(size_t blob) {
   // Point the cursor to the end of the encoded proto.
   cursor_ = write_cursor;
   return Result<ConstByteSpan>(buffer_.first(EncodedSize()));
+}
+
+Status Encoder::IncreaseParentSize(size_t size_bytes) {
+  if (!encode_status_.ok()) {
+    return encode_status_;
+  }
+
+  if (depth_ == 0) {
+    return OkStatus();
+  }
+
+  size_t current_size = *blob_stack_[depth_ - 1];
+
+  constexpr size_t max_size =
+      std::min(varint::MaxValueInBytes(sizeof(SizeType)),
+               static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+
+  if (size_bytes > max_size || current_size > max_size - size_bytes) {
+    encode_status_ = Status::OutOfRange();
+    return encode_status_;
+  }
+
+  *blob_stack_[depth_ - 1] = current_size + size_bytes;
+  return OkStatus();
 }
 
 }  // namespace pw::protobuf
