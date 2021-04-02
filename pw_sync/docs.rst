@@ -117,24 +117,41 @@ C++
 
      **Precondition:** The mutex is held by this thread.
 
-  +--------------------------------+----------+-------------+-------+
-  | *Safe to use in context*       | *Thread* | *Interrupt* | *NMI* |
-  +--------------------------------+----------+-------------+-------+
-  | ``Mutex::Mutex``               | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``Mutex::~Mutex``              | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``void Mutex::lock``           | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``bool Mutex::try_lock``       | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``bool Mutex::try_lock_for``   | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``bool Mutex::try_lock_until`` | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
-  | ``void Mutex::unlock``         | ✔        |             |       |
-  +--------------------------------+----------+-------------+-------+
 
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``Mutex::Mutex``
+      - ✔
+      -
+      -
+    * - ``Mutex::~Mutex``
+      - ✔
+      -
+      -
+    * - ``void Mutex::lock``
+      - ✔
+      -
+      -
+    * - ``bool Mutex::try_lock``
+      - ✔
+      -
+      -
+    * - ``bool Mutex::try_lock_for``
+      - ✔
+      -
+      -
+    * - ``bool Mutex::try_lock_until``
+      - ✔
+      -
+      -
+    * - ``void Mutex::unlock``
+      - ✔
+      -
+      -
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -215,20 +232,32 @@ The Mutex must be created in C++, however it can be passed into C using the
 
   Invokes the ``Mutex::unlock`` member function on the given ``mutex``.
 
-+-------------------------------------+----------+-------------+-------+
-| *Safe to use in context*            | *Thread* | *Interrupt* | *NMI* |
-+-------------------------------------+----------+-------------+-------+
-| ``void pw_sync_Mutex_Lock``         | ✔        |             |       |
-+-------------------------------------+----------+-------------+-------+
-| ``bool pw_sync_Mutex_TryLock``      | ✔        |             |       |
-+-------------------------------------+----------+-------------+-------+
-| ``bool pw_sync_Mutex_TryLockFor``   | ✔        |             |       |
-+-------------------------------------+----------+-------------+-------+
-| ``bool pw_sync_Mutex_TryLockUntil`` | ✔        |             |       |
-+-------------------------------------+----------+-------------+-------+
-| ``void pw_sync_Mutex_Unlock``       | ✔        |             |       |
-+-------------------------------------+----------+-------------+-------+
+.. list-table::
 
+  * - *Safe to use in context*
+    - *Thread*
+    - *Interrupt*
+    - *NMI*
+  * - ``void pw_sync_Mutex_Lock``
+    - ✔
+    -
+    -
+  * - ``bool pw_sync_Mutex_TryLock``
+    - ✔
+    -
+    -
+  * - ``bool pw_sync_Mutex_TryLockFor``
+    - ✔
+    -
+    -
+  * - ``bool pw_sync_Mutex_TryLockUntil``
+    - ✔
+    -
+    -
+  * - ``void pw_sync_Mutex_Unlock``
+    - ✔
+    -
+    -
 
 Example in C
 ^^^^^^^^^^^^
@@ -322,20 +351,32 @@ C++
 
      **Precondition:** The spinlock is held by the caller.
 
-  +-------------------------------------------+----------+-------------+-------+
-  | *Safe to use in context*                  | *Thread* | *Interrupt* | *NMI* |
-  +-------------------------------------------+----------+-------------+-------+
-  | ``InterruptSpinLock::InterruptSpinLock``  | ✔        | ✔           |       |
-  +-------------------------------------------+----------+-------------+-------+
-  | ``InterruptSpinLock::~InterruptSpinLock`` | ✔        | ✔           |       |
-  +-------------------------------------------+----------+-------------+-------+
-  | ``void InterruptSpinLock::lock``          | ✔        | ✔           |       |
-  +-------------------------------------------+----------+-------------+-------+
-  | ``bool InterruptSpinLock::try_lock``      | ✔        | ✔           |       |
-  +-------------------------------------------+----------+-------------+-------+
-  | ``void InterruptSpinLock::unlock``        | ✔        | ✔           |       |
-  +-------------------------------------------+----------+-------------+-------+
+  .. list-table::
 
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``InterruptSpinLock::InterruptSpinLock``
+      - ✔
+      - ✔
+      -
+    * - ``InterruptSpinLock::~InterruptSpinLock``
+      - ✔
+      - ✔
+      -
+    * - ``void InterruptSpinLock::lock``
+      - ✔
+      - ✔
+      -
+    * - ``bool InterruptSpinLock::try_lock``
+      - ✔
+      - ✔
+      -
+    * - ``void InterruptSpinLock::unlock``
+      - ✔
+      - ✔
+      -
 
 Examples in C++
 ^^^^^^^^^^^^^^^
@@ -385,16 +426,24 @@ The InterruptSpinLock must be created in C++, however it can be passed into C us
 
   Invokes the ``InterruptSpinLock::unlock`` member function on the given ``interrupt_spin_lock``.
 
-+--------------------------------------------+----------+-------------+-------+
-| *Safe to use in context*                   | *Thread* | *Interrupt* | *NMI* |
-+--------------------------------------------+----------+-------------+-------+
-| ``void pw_sync_InterruptSpinLock_Lock``    | ✔        | ✔           |       |
-+--------------------------------------------+----------+-------------+-------+
-| ``bool pw_sync_InterruptSpinLock_TryLock`` | ✔        | ✔           |       |
-+--------------------------------------------+----------+-------------+-------+
-| ``void pw_sync_InterruptSpinLock_Unlock``  | ✔        | ✔           |       |
-+--------------------------------------------+----------+-------------+-------+
+.. list-table::
 
+  * - *Safe to use in context*
+    - *Thread*
+    - *Interrupt*
+    - *NMI*
+  * - ``void pw_sync_InterruptSpinLock_Lock``
+    - ✔
+    - ✔
+    -
+  * - ``bool pw_sync_InterruptSpinLock_TryLock``
+    - ✔
+    - ✔
+    -
+  * - ``void pw_sync_InterruptSpinLock_Unlock``
+    - ✔
+    - ✔
+    -
 
 Example in C
 ^^^^^^^^^^^^
