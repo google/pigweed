@@ -16,8 +16,8 @@
 import abc
 from dataclasses import dataclass
 import logging
-from typing import (Any, Collection, Dict, Iterable, Iterator, List,
-                    NamedTuple, Optional)
+from typing import (Any, Collection, Dict, Iterable, Iterator, NamedTuple,
+                    Optional)
 
 from google.protobuf.message import DecodeError
 from pw_status import Status
@@ -43,27 +43,26 @@ class PendingRpc(NamedTuple):
         return f'PendingRpc(channel={self.channel.id}, method={self.method})'
 
 
+class _PendingRpcMetadata:
+    def __init__(self, context: Any, keep_open: bool):
+        self.context = context
+        self.keep_open = keep_open
+
+
 class PendingRpcs:
     """Tracks pending RPCs and encodes outgoing RPC packets."""
     def __init__(self):
-        self._pending: Dict[PendingRpc, List] = {}
+        self._pending: Dict[PendingRpc, _PendingRpcMetadata] = {}
 
     def request(self,
                 rpc: PendingRpc,
                 request,
                 context,
-                override_pending: bool = False) -> bytes:
+                override_pending: bool = True,
+                keep_open: bool = False) -> bytes:
         """Starts the provided RPC and returns the encoded packet to send."""
         # Ensure that every context is a unique object by wrapping it in a list.
-        unique_ctx = [context]
-
-        if override_pending:
-            self._pending[rpc] = unique_ctx
-        elif self._pending.setdefault(rpc, unique_ctx) is not unique_ctx:
-            # If the context was not added, the RPC was already pending.
-            raise Error(f'Sent request for {rpc}, but it is already pending! '
-                        'Cancel the RPC before invoking it again')
-
+        self.open(rpc, context, override_pending, keep_open)
         _LOG.debug('Starting %s', rpc)
         return packets.encode_request(rpc, request)
 
@@ -71,12 +70,33 @@ class PendingRpcs:
                      rpc: PendingRpc,
                      request,
                      context,
-                     override_pending: bool = False) -> None:
+                     override_pending: bool = False,
+                     keep_open: bool = False) -> None:
         """Calls request and sends the resulting packet to the channel."""
         # TODO(hepler): Remove `type: ignore` on this and similar lines when
         #     https://github.com/python/mypy/issues/5485 is fixed
         rpc.channel.output(  # type: ignore
-            self.request(rpc, request, context, override_pending))
+            self.request(rpc, request, context, override_pending, keep_open))
+
+    def open(self,
+             rpc: PendingRpc,
+             context,
+             override_pending: bool = False,
+             keep_open: bool = False) -> None:
+        """Creates a context for an RPC, but does not invoke it.
+
+        open() can be used to receive streaming responses to an RPC that was not
+        invoked by this client. For example, a server may stream logs with a
+        server streaming RPC prior to any clients invoking it.
+        """
+        metadata = _PendingRpcMetadata(context, keep_open)
+
+        if override_pending:
+            self._pending[rpc] = metadata
+        elif self._pending.setdefault(rpc, metadata) is not metadata:
+            # If the context was not added, the RPC was already pending.
+            raise Error(f'Sent request for {rpc}, but it is already pending! '
+                        'Cancel the RPC before invoking it again')
 
     def cancel(self, rpc: PendingRpc) -> Optional[bytes]:
         """Cancels the RPC. Returns the CANCEL packet to send.
@@ -110,10 +130,14 @@ class PendingRpcs:
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
         """Gets the pending RPC's context. If status is set, clears the RPC."""
         if status is None:
-            return self._pending[rpc][0]  # Unwrap the context from the list
+            return self._pending[rpc].context
 
-        _LOG.debug('Finishing %s with status %s', rpc, status)
-        return self._pending.pop(rpc)[0]
+        if self._pending[rpc].keep_open:
+            _LOG.debug('%s finished with status %s; keeping open', rpc, status)
+            return self._pending[rpc].context
+
+        _LOG.debug('%s finished with status %s', rpc, status)
+        return self._pending.pop(rpc).context
 
 
 class ClientImpl(abc.ABC):

@@ -167,6 +167,38 @@ class CallbackClientImplTest(unittest.TestCase):
             self.assertIs(Status.ABORTED, status)
             self.assertEqual('0_o', response.payload)
 
+    def test_invoke_unary_rpc_keep_open(self) -> None:
+        method = self._service.SomeUnary.method
+
+        payload_1 = method.response_type(payload='-_-')
+        payload_2 = method.response_type(payload='0_o')
+
+        self._enqueue_response(1, method, Status.ABORTED, payload_1)
+
+        replies: list = []
+        enqueue_replies = lambda _, reply: replies.append(reply)
+
+        self._service.SomeUnary.invoke(method.request_type(magic_number=6),
+                                       enqueue_replies,
+                                       enqueue_replies,
+                                       keep_open=True)
+
+        self.assertEqual([payload_1, Status.ABORTED], replies)
+
+        # Send another packet and make sure it is processed even though the RPC
+        # terminated.
+        self._client.process_packet(
+            packet_pb2.RpcPacket(
+                type=packet_pb2.PacketType.RESPONSE,
+                channel_id=1,
+                service_id=method.service.id,
+                method_id=method.id,
+                status=Status.OK.value,
+                payload=payload_2.SerializeToString()).SerializeToString())
+
+        self.assertEqual([payload_1, Status.ABORTED, payload_2, Status.OK],
+                         replies)
+
     def test_invoke_unary_rpc_with_callback(self):
         method = self._service.SomeUnary.method
 

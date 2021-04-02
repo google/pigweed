@@ -12,6 +12,11 @@ pw_rpc.client
 .. automodule:: pw_rpc.client
   :members: Client, ClientImpl
 
+pw_rpc.callback_client
+======================
+.. autoclass:: pw_rpc.callback_client.Impl
+  :members:
+
 pw_rpc.console_tools
 ====================
 .. automodule:: pw_rpc.console_tools

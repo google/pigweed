@@ -115,12 +115,15 @@ class _MethodClient:
                response: ResponseCallback = _default_response,
                completion: CompletionCallback = _default_completion,
                error: ErrorCallback = _default_error,
-               override_pending: bool = True) -> '_AsyncCall':
+               *,
+               override_pending: bool = True,
+               keep_open: bool = False) -> '_AsyncCall':
         """Invokes an RPC with callbacks."""
         self._rpcs.send_request(self._rpc,
                                 request,
                                 _Callbacks(response, completion, error),
-                                override_pending=override_pending)
+                                override_pending=override_pending,
+                                keep_open=keep_open)
         return _AsyncCall(self._rpcs, self._rpc)
 
     def __repr__(self) -> str:
@@ -391,7 +394,9 @@ class ClientStreamingMethodClient(_MethodClient):
                response: ResponseCallback = _default_response,
                completion: CompletionCallback = _default_completion,
                error: ErrorCallback = _default_error,
-               override_pending: bool = True) -> _AsyncCall:
+               *,
+               override_pending: bool = True,
+               keep_open: bool = False) -> _AsyncCall:
         raise NotImplementedError
 
 
@@ -404,7 +409,9 @@ class BidirectionalStreamingMethodClient(_MethodClient):
                response: ResponseCallback = _default_response,
                completion: CompletionCallback = _default_completion,
                error: ErrorCallback = _default_error,
-               override_pending: bool = True) -> _AsyncCall:
+               *,
+               override_pending: bool = True,
+               keep_open: bool = False) -> _AsyncCall:
         raise NotImplementedError
 
 
