@@ -26,23 +26,23 @@ _bootstrap_abspath () {
 # variable set.
 # TODO(mohrr) find out a way to do this without PW_CHECKOUT_ROOT.
 if test -n "$PW_CHECKOUT_ROOT"; then
-  _BOOTSTRAP_PATH="$(_bootstrap_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
+  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
   # Downstream projects need to set PW_CHECKOUT_ROOT to point to Pigweed if
   # they're using Pigweed's CI/CQ system.
   unset PW_CHECKOUT_ROOT
 # Shell: bash.
 elif test -n "$BASH"; then
-  _BOOTSTRAP_PATH="$(_bootstrap_abspath "$BASH_SOURCE")"
+  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "$BASH_SOURCE")"
 # Shell: zsh.
 elif test -n "$ZSH_NAME"; then
-  _BOOTSTRAP_PATH="$(_bootstrap_abspath "${(%):-%N}")"
+  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "${(%):-%N}")"
 # Shell: dash.
 elif test ${0##*/} = dash; then
-  _BOOTSTRAP_PATH="$(_bootstrap_abspath \
+  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath \
     "$(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;')")"
 # If everything else fails, try $0. It could work.
 else
-  _BOOTSTRAP_PATH="$(_bootstrap_abspath "$0")"
+  _PW_BOOTSTRAP_PATH="$(_bootstrap_abspath "$0")"
 fi
 
 # Check if this file is being executed or sourced.
@@ -66,7 +66,7 @@ fi
 # Downstream projects need to set something other than PW_ROOT here, like
 # YOUR_PROJECT_ROOT. Please also set PW_ROOT before invoking pw_bootstrap or
 # pw_activate.
-PW_ROOT="$(dirname "$_BOOTSTRAP_PATH")"
+PW_ROOT="$(dirname "$_PW_BOOTSTRAP_PATH")"
 export PW_ROOT
 
 # Please also set PW_PROJECT_ROOT to YOUR_PROJECT_ROOT.
@@ -76,7 +76,7 @@ export PW_PROJECT_ROOT
 . "$PW_ROOT/pw_env_setup/util.sh"
 
 pw_deactivate
-pw_eval_sourced "$_pw_sourced"
+pw_eval_sourced "$_pw_sourced" "$_PW_BOOTSTRAP_PATH"
 pw_check_root "$PW_ROOT"
 _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
 export _PW_ACTUAL_ENVIRONMENT_ROOT
@@ -86,7 +86,7 @@ SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
 # an ASCII art banner here.
 
 # Run full bootstrap when invoked as bootstrap, or env file is missing/empty.
-if [ "$(basename "$_BOOTSTRAP_PATH")" = "bootstrap.sh" ] || \
+if [ "$(basename "$_PW_BOOTSTRAP_PATH")" = "bootstrap.sh" ] || \
   [ ! -f "$SETUP_SH" ] || \
   [ ! -s "$SETUP_SH" ]; then
   pw_bootstrap --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" --json-file "$_PW_ACTUAL_ENVIRONMENT_ROOT/actions.json" --config-file "$PW_ROOT/pw_env_setup/config.json"
@@ -97,7 +97,7 @@ else
 fi
 
 unset _pw_sourced
-unset _BOOTSTRAP_PATH
+unset _PW_BOOTSTRAP_PATH
 unset SETUP_SH
 unset _bootstrap_abspath
 
