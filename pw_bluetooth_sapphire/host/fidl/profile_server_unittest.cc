@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
@@ -23,6 +24,8 @@ namespace {
 namespace fidlbredr = fuchsia::bluetooth::bredr;
 
 namespace {
+
+using FakeChannel = bt::l2cap::testing::FakeChannel;
 
 void NopAdvertiseCallback(fidlbredr::Profile_Advertise_Result){};
 
@@ -57,6 +60,20 @@ fidlbredr::ServiceDefinition MakeFIDLServiceDefinition() {
   def.mutable_profile_descriptors()->emplace_back(prof_desc);
 
   return def;
+}
+
+// Returns a basic protocol list element with a protocol descriptor list that only contains an L2CAP
+// descriptor.
+bt::sdp::DataElement MakeL2capProtocolListElement() {
+  bt::sdp::DataElement l2cap_uuid_el;
+  l2cap_uuid_el.Set(bt::UUID(bt::sdp::protocol::kL2CAP));
+  std::vector<bt::sdp::DataElement> l2cap_descriptor_list;
+  l2cap_descriptor_list.emplace_back(std::move(l2cap_uuid_el));
+  std::vector<bt::sdp::DataElement> protocols;
+  protocols.emplace_back(std::move(l2cap_descriptor_list));
+  bt::sdp::DataElement protocol_list_el;
+  protocol_list_el.Set(std::move(protocols));
+  return protocol_list_el;
 }
 
 }  // namespace
@@ -362,6 +379,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer, ConnectL2capChannelParameters) {
   // FakeL2cap returns channels with max tx sdu size of kDefaultMTU.
   EXPECT_EQ(channel->max_tx_sdu_size(), bt::l2cap::kDefaultMTU);
   EXPECT_FALSE(channel->has_ext_direction());
+  EXPECT_FALSE(channel->has_flush_timeout());
 }
 
 TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
@@ -473,6 +491,7 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
         EXPECT_EQ(channel.channel_mode(), fidlbredr::ChannelMode::ENHANCED_RETRANSMISSION);
         EXPECT_EQ(channel.max_tx_sdu_size(), kTxMtu);
         EXPECT_FALSE(channel.has_ext_direction());
+        EXPECT_FALSE(channel.has_flush_timeout());
       });
 
   EXPECT_TRUE(
@@ -855,6 +874,191 @@ TEST_F(FIDL_ProfileServerTest_ConnectedPeer,
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   EXPECT_FALSE(receiver.connection().has_value());
+}
+
+class FIDL_ProfileServerTest_FakeAdapter : public bt::gap::testing::FakeAdapterTestFixture {
+ public:
+  FIDL_ProfileServerTest_FakeAdapter() = default;
+  ~FIDL_ProfileServerTest_FakeAdapter() override = default;
+
+  void SetUp() override {
+    FakeAdapterTestFixture::SetUp();
+
+    fidl::InterfaceHandle<fidlbredr::Profile> profile_handle;
+    client_.Bind(std::move(profile_handle));
+    server_ =
+        std::make_unique<ProfileServer>(adapter()->AsWeakPtr(), client_.NewRequest(dispatcher()));
+  }
+
+  void TearDown() override { FakeAdapterTestFixture::TearDown(); }
+
+  fidlbredr::ProfilePtr& client() { return client_; }
+
+ private:
+  std::unique_ptr<ProfileServer> server_;
+  fidlbredr::ProfilePtr client_;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_ProfileServerTest_FakeAdapter);
+};
+
+TEST_F(FIDL_ProfileServerTest_FakeAdapter, ConnectChannelParametersContainsFlushTimeout) {
+  const bt::PeerId kPeerId;
+  const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
+  const zx::duration kFlushTimeout(zx::msec(100));
+
+  fbl::RefPtr<FakeChannel> last_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
+
+  fidlbredr::ChannelParameters chan_params;
+  chan_params.set_flush_timeout(kFlushTimeout.get());
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+  l2cap_params.set_parameters(std::move(chan_params));
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(kFidlPeerId, std::move(conn_params),
+                    [&](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_channel);
+  EXPECT_EQ(last_channel->info().flush_timeout, std::optional(kFlushTimeout));
+  ASSERT_TRUE(response_channel.has_value());
+  ASSERT_TRUE(response_channel->has_flush_timeout());
+  ASSERT_EQ(response_channel->flush_timeout(), kFlushTimeout.get());
+}
+
+TEST_F(FIDL_ProfileServerTest_FakeAdapter, AdvertiseChannelParametersContainsFlushTimeout) {
+  const zx::duration kFlushTimeout(zx::msec(100));
+  const bt::hci::ConnectionHandle kHandle(1);
+
+  std::vector<fidlbredr::ServiceDefinition> services;
+  services.emplace_back(MakeFIDLServiceDefinition());
+  fidlbredr::ChannelParameters chan_params;
+  chan_params.set_flush_timeout(kFlushTimeout.get());
+
+  std::optional<fidlbredr::Channel> fidl_channel;
+  using ::testing::StrictMock;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
+  auto connect_receiver = std::make_unique<StrictMock<MockConnectionReceiver>>(
+      connect_receiver_handle.NewRequest(), dispatcher());
+  EXPECT_CALL(*connect_receiver, Connected(::testing::_, ::testing::_, ::testing::_))
+      .WillOnce([&fidl_channel](::testing::Unused, fidlbredr::Channel cb_channel,
+                                ::testing::Unused) { fidl_channel = std::move(cb_channel); });
+  client()->Advertise(std::move(services), std::move(chan_params),
+                      std::move(connect_receiver_handle), NopAdvertiseCallback);
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_bredr()->registered_services().size(), 1u);
+  auto service_iter = adapter()->fake_bredr()->registered_services().begin();
+  EXPECT_EQ(service_iter->second.channel_params.flush_timeout, std::optional(kFlushTimeout));
+
+  bt::l2cap::ChannelInfo chan_info = bt::l2cap::ChannelInfo::MakeBasicMode(
+      bt::l2cap::kDefaultMTU, bt::l2cap::kDefaultMTU, bt::l2cap::kAVDTP, kFlushTimeout);
+  auto channel = fbl::AdoptRef(new FakeChannel(bt::l2cap::kFirstDynamicChannelId,
+                                               bt::l2cap::kFirstDynamicChannelId, kHandle,
+                                               bt::hci::Connection::LinkType::kACL, chan_info));
+  service_iter->second.connect_callback(channel, MakeL2capProtocolListElement());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fidl_channel);
+  ASSERT_TRUE(fidl_channel->has_flush_timeout());
+  EXPECT_EQ(fidl_channel->flush_timeout(), kFlushTimeout.get());
+}
+
+TEST_F(FIDL_ProfileServerTest_FakeAdapter, L2capParametersExtRequestParametersSucceeds) {
+  const bt::PeerId kPeerId;
+  const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
+  const zx::duration kFlushTimeout(zx::msec(100));
+  const uint16_t kMaxRxSduSize(200);
+
+  fbl::RefPtr<FakeChannel> last_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
+
+  fidlbredr::ChannelParameters chan_params;
+  chan_params.set_channel_mode(fidlbredr::ChannelMode::BASIC);
+  chan_params.set_max_rx_sdu_size(kMaxRxSduSize);
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+  l2cap_params.set_parameters(std::move(chan_params));
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(kFidlPeerId, std::move(conn_params),
+                    [&](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_channel);
+  EXPECT_FALSE(last_channel->info().flush_timeout.has_value());
+  ASSERT_TRUE(response_channel.has_value());
+  ASSERT_FALSE(response_channel->has_flush_timeout());
+  ASSERT_TRUE(response_channel->has_ext_l2cap());
+
+  fidlbredr::ChannelParameters request_chan_params;
+  request_chan_params.set_flush_timeout(kFlushTimeout.get());
+
+  std::optional<fidlbredr::ChannelParameters> result_chan_params;
+  auto l2cap_client = response_channel->mutable_ext_l2cap()->Bind();
+  l2cap_client->RequestParameters(
+      std::move(request_chan_params),
+      [&](fidlbredr::ChannelParameters new_params) { result_chan_params = std::move(new_params); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result_chan_params.has_value());
+  ASSERT_TRUE(result_chan_params->has_channel_mode());
+  ASSERT_TRUE(result_chan_params->has_max_rx_sdu_size());
+  // TODO(fxb/73039): set current security requirements in returned channel parameters
+  ASSERT_FALSE(result_chan_params->has_security_requirements());
+  ASSERT_TRUE(result_chan_params->has_flush_timeout());
+  EXPECT_EQ(result_chan_params->channel_mode(), fidlbredr::ChannelMode::BASIC);
+  EXPECT_EQ(result_chan_params->max_rx_sdu_size(), kMaxRxSduSize);
+  EXPECT_EQ(result_chan_params->flush_timeout(), kFlushTimeout.get());
+  l2cap_client.Unbind();
+  RunLoopUntilIdle();
+}
+
+TEST_F(FIDL_ProfileServerTest_FakeAdapter, L2capParametersExtRequestParametersFails) {
+  const bt::PeerId kPeerId;
+  const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
+  const zx::duration kFlushTimeout(zx::msec(100));
+
+  fbl::RefPtr<FakeChannel> last_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(kFidlPeerId, std::move(conn_params),
+                    [&](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_channel);
+  EXPECT_FALSE(last_channel->info().flush_timeout.has_value());
+  ASSERT_TRUE(response_channel.has_value());
+  ASSERT_FALSE(response_channel->has_flush_timeout());
+  ASSERT_TRUE(response_channel->has_ext_l2cap());
+
+  last_channel->set_flush_timeout_succeeds(false);
+
+  fidlbredr::ChannelParameters request_chan_params;
+  request_chan_params.set_flush_timeout(kFlushTimeout.get());
+  std::optional<fidlbredr::ChannelParameters> result_chan_params;
+  auto l2cap_client = response_channel->mutable_ext_l2cap()->Bind();
+  l2cap_client->RequestParameters(
+      std::move(request_chan_params),
+      [&](fidlbredr::ChannelParameters new_params) { result_chan_params = std::move(new_params); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result_chan_params.has_value());
+  EXPECT_FALSE(result_chan_params->has_flush_timeout());
+  l2cap_client.Unbind();
+  RunLoopUntilIdle();
 }
 
 }  // namespace

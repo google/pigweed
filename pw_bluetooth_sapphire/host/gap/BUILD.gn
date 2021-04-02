@@ -109,6 +109,7 @@ source_set("testing") {
   public_deps = [
     ":gap",
     "//garnet/public/lib/gtest",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/lib/fxl",
     "//third_party/googletest:gtest",
   ]

@@ -64,6 +64,8 @@ class FakeChannel : public Channel {
   // RequestAclPriority always fails if true.
   void set_acl_priority_fails(bool fail) { acl_priority_fails_ = fail; }
 
+  void set_flush_timeout_succeeds(bool succeed) { flush_timeout_succeeds_ = succeed; }
+
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
   bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) override;
@@ -99,6 +101,7 @@ class FakeChannel : public Channel {
   bool link_error_;
 
   bool acl_priority_fails_;
+  bool flush_timeout_succeeds_ = true;
 
   // The pending SDUs on this channel. Received PDUs are buffered if |rx_cb_| is
   // currently not set.

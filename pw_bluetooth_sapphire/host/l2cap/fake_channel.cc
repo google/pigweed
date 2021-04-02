@@ -135,6 +135,11 @@ void FakeChannel::RequestAclPriority(hci::AclPriority priority,
 
 void FakeChannel::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
+  if (!flush_timeout_succeeds_) {
+    callback(fit::error(hci::StatusCode::kUnspecifiedError));
+    return;
+  }
+  info_.flush_timeout = flush_timeout;
   callback(fit::ok());
 }
 

@@ -6,6 +6,7 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_ADAPTER_H_
 
 #include "adapter.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
 
 namespace bt::gap::testing {
 
@@ -79,9 +80,25 @@ class FakeAdapter final : public Adapter {
 
   class FakeBrEdr final : public BrEdr {
    public:
+    struct RegisteredService {
+      std::vector<sdp::ServiceRecord> records;
+      l2cap::ChannelParameters channel_params;
+      ServiceConnectCallback connect_callback;
+    };
+
     FakeBrEdr() = default;
     ~FakeBrEdr() override = default;
 
+    // Called with a reference to the l2cap::FakeChannel created when a channel is connected with
+    // Connect().
+    using ChannelCallback = fit::function<void(fbl::RefPtr<l2cap::testing::FakeChannel>)>;
+    void set_l2cap_channel_callback(ChannelCallback cb) { channel_cb_ = std::move(cb); }
+
+    const std::map<RegistrationHandle, RegisteredService>& registered_services() const {
+      return registered_services_;
+    }
+
+    // BrEdr overrides:
     [[nodiscard]] bool Connect(PeerId peer_id, ConnectResultCallback callback) override {
       return false;
     }
@@ -90,9 +107,7 @@ class FakeAdapter final : public Adapter {
 
     void OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                           BrEdrSecurityRequirements security_requirements,
-                          l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override {
-      cb(nullptr);
-    }
+                          l2cap::ChannelParameters params, l2cap::ChannelCallback cb) override;
 
     PeerId GetPeerId(hci::ConnectionHandle handle) const override { return PeerId(); }
 
@@ -114,9 +129,7 @@ class FakeAdapter final : public Adapter {
 
     RegistrationHandle RegisterService(std::vector<sdp::ServiceRecord> records,
                                        l2cap::ChannelParameters chan_params,
-                                       ServiceConnectCallback conn_cb) override {
-      return RegistrationHandle();
-    }
+                                       ServiceConnectCallback conn_cb) override;
 
     bool UnregisterService(RegistrationHandle handle) override { return false; }
 
@@ -125,9 +138,16 @@ class FakeAdapter final : public Adapter {
         ScoConnectionCallback callback) override {
       return std::nullopt;
     }
+
+   private:
+    // Callback used by tests to get new channel refs.
+    ChannelCallback channel_cb_;
+    RegistrationHandle next_registration_handle_ = 1;
+    std::map<RegistrationHandle, RegisteredService> registered_services_;
   };
 
   BrEdr* bredr() const override { return fake_bredr_.get(); }
+  FakeBrEdr* fake_bredr() const { return fake_bredr_.get(); }
 
   PeerCache* peer_cache() override { return &peer_cache_; }
 

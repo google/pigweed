@@ -42,6 +42,9 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(const fidlbredr::ChannelPar
   if (fidl.has_max_rx_sdu_size()) {
     params.max_rx_sdu_size = fidl.max_rx_sdu_size();
   }
+  if (fidl.has_flush_timeout()) {
+    params.flush_timeout = zx::duration(fidl.flush_timeout());
+  }
   return params;
 }
 
@@ -56,6 +59,17 @@ fidlbredr::ChannelMode ChannelModeToFidl(bt::l2cap::ChannelMode mode) {
     default:
       ZX_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
   }
+}
+
+fidlbredr::ChannelParameters ChannelInfoToFidlChannelParameters(
+    const bt::l2cap::ChannelInfo& info) {
+  fidlbredr::ChannelParameters params;
+  params.set_channel_mode(ChannelModeToFidl(info.mode));
+  params.set_max_rx_sdu_size(info.max_rx_sdu_size);
+  if (info.flush_timeout) {
+    params.set_flush_timeout(info.flush_timeout.value().get());
+  }
+  return params;
 }
 
 fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
@@ -149,10 +163,12 @@ fidlbredr::DataElementPtr DataElementToFidl(const bt::sdp::DataElement* in) {
 fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::DataElement* in) {
   auto desc = fidlbredr::ProtocolDescriptor::New();
   if (in->type() != bt::sdp::DataElement::Type::kSequence) {
+    bt_log(DEBUG, "fidl", "DataElement type is not kSequence (in: %s)", bt_str(*in));
     return nullptr;
   }
   const auto protocol_uuid = in->At(0)->Get<bt::UUID>();
   if (!protocol_uuid) {
+    bt_log(DEBUG, "fidl", "first DataElement in sequence is not type kUUID (in: %s)", bt_str(*in));
     return nullptr;
   }
   desc->protocol = fidlbredr::ProtocolIdentifier(*protocol_uuid->As16Bit());
@@ -196,6 +212,36 @@ ProfileServer::~ProfileServer() {
       adapter()->bredr()->RemoveServiceSearch(it.second.search_id);
     }
   }
+}
+
+ProfileServer::L2capParametersExt::L2capParametersExt(
+    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::L2capParametersExt> request,
+    fbl::RefPtr<bt::l2cap::Channel> channel)
+    : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
+
+void ProfileServer::L2capParametersExt::RequestParameters(
+    fuchsia::bluetooth::bredr::ChannelParameters requested, RequestParametersCallback callback) {
+  if (requested.has_flush_timeout()) {
+    channel_->SetBrEdrAutomaticFlushTimeout(
+        zx::duration(requested.flush_timeout()),
+        [chan = channel_, cb = std::move(callback)](auto result) {
+          if (result.is_ok()) {
+            bt_log(DEBUG, "fidl",
+                   "L2capParametersExt::RequestParameters: setting flush timeout succeeded");
+          } else {
+            bt_log(INFO, "fidl",
+                   "L2capParametersExt::RequestParameters: setting flush timeout failed");
+          }
+          // Return the current parameters even if the request failed.
+          // TODO(fxb/73039): set current security requirements in returned channel parameters
+          cb(ChannelInfoToFidlChannelParameters(chan->info()));
+        });
+    return;
+  }
+
+  // No other channel parameters are  supported, so just return the current parameters.
+  // TODO(fxb/73039): set current security requirements in returned channel parameters
+  callback(ChannelInfoToFidlChannelParameters(channel_->info()));
 }
 
 void ProfileServer::Advertise(
@@ -522,19 +568,45 @@ fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDire
   return client;
 }
 
+void ProfileServer::OnL2capParametersExtError(L2capParametersExt* ext_server, zx_status_t status) {
+  bt_log(DEBUG, "fidl", "fidl parameters ext server closed (reason: %s)",
+         zx_status_get_string(status));
+  auto handle = l2cap_parameters_ext_servers_.extract(ext_server);
+  ZX_ASSERT(handle);
+}
+
+fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capParametersExtServer(
+    fbl::RefPtr<bt::l2cap::Channel> channel) {
+  fidl::InterfaceHandle<fidlbredr::L2capParametersExt> client;
+
+  auto l2cap_parameters_ext_server =
+      std::make_unique<L2capParametersExt>(client.NewRequest(), std::move(channel));
+  L2capParametersExt* server_ptr = l2cap_parameters_ext_server.get();
+
+  l2cap_parameters_ext_server->set_error_handler(
+      [this, server_ptr](zx_status_t status) { OnL2capParametersExtError(server_ptr, status); });
+
+  l2cap_parameters_ext_servers_[server_ptr] = std::move(l2cap_parameters_ext_server);
+  return client;
+}
+
 fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
     fbl::RefPtr<bt::l2cap::Channel> channel) {
   ZX_ASSERT(channel);
   fidlbredr::Channel fidl_chan;
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());
+  if (channel->info().flush_timeout) {
+    fidl_chan.set_flush_timeout(channel->info().flush_timeout->get());
+  }
   auto sock = l2cap_socket_factory_.MakeSocketForChannel(channel);
   fidl_chan.set_socket(std::move(sock));
 
   if (adapter()->state().vendor_features() & BT_VENDOR_FEATURES_SET_ACL_PRIORITY_COMMAND) {
-    fidl_chan.set_ext_direction(BindAudioDirectionExtServer(std::move(channel)));
+    fidl_chan.set_ext_direction(BindAudioDirectionExtServer(channel));
   }
 
+  fidl_chan.set_ext_l2cap(BindL2capParametersExtServer(std::move(channel)));
   return fidl_chan;
 }
 
