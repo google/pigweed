@@ -47,7 +47,7 @@ top of those.
 Toolchain target variables
 --------------------------
 The core of a toolchain is defining the tools it uses. This is done by setting
-the variables ``ar``, ``cc``, and ``cxx`` to the appropirate compilers. Pigweed
+the variables ``ar``, ``cc``, and ``cxx`` to the appropriate compilers. Pigweed
 provides many commonly used compiler configurations in the ``pw_toolchain``
 module.
 

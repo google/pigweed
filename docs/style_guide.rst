@@ -163,7 +163,7 @@ C functions with no parameters must include ``void``.
 
 Comments
 ========
-Prefer C++-style (``//``) comments over C-style commments (``/* */``). C-style
+Prefer C++-style (``//``) comments over C-style comments (``/* */``). C-style
 comments should only be used for inline comments.
 
 .. code-block:: cpp
@@ -552,11 +552,11 @@ Build files: GN
 
 Each Pigweed source module will require a build file named BUILD.gn which
 encapsulates the build targets and specifies their sources and dependencies.
-The format of this file is simlar in structure to the
+The format of this file is similar in structure to the
 `Bazel/Blaze format <https://docs.bazel.build/versions/3.2.0/build-ref.html>`_
 (Googlers may also review `go/build-style <go/build-style>`_), but with
 nomenclature specific to Pigweed. For each target specified within the build
-file there are a list of depdency fields. Those fields, in their expected
+file there are a list of dependency fields. Those fields, in their expected
 order, are:
 
   * ``<public_config>`` -- external build configuration

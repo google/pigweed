@@ -375,7 +375,7 @@ Facades are essential in some circumstances:
 .. caution::
 
   Modules should only use facades when necessary. Facades are permanently locked
-  to a particular implementation at compile time. Multpile backends cannot be
+  to a particular implementation at compile time. Multiple backends cannot be
   used in one build, and runtime dependency injection is not possible, which
   makes testing difficult. Where appropriate, modules should use other
   mechanisms, such as virtual interfaces, callbacks, or templates, in place of

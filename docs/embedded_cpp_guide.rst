@@ -73,7 +73,7 @@ example, the following clamps a value within a minimum and maximum:
       return min;
     }
     if (value > max) {
-      return min;
+      return max;
     }
     return value;
   }

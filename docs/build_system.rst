@@ -391,7 +391,7 @@ repository within the project.
 
 Module variables
 ----------------
-As Pigweed is inteded to be a subcomponent of a larger project, it cannot assume
+As Pigweed is intended to be a subcomponent of a larger project, it cannot assume
 where it or its modules is located. Therefore, Pigweed's upstream BUILD.gn files
 do not use absolute paths; instead, variables are defined pointing to each of
 Pigweed's modules, set relative to a project-specific ``dir_pigweed``.
@@ -409,7 +409,7 @@ reference these module variables.
 
 GN target type wrappers
 -----------------------
-To faciliate injecting global configuration options, Pigweed defines wrappers
+To facilitate injecting global configuration options, Pigweed defines wrappers
 around builtin GN target types such as ``source_set`` and ``executable``. These
 are defined within ``$dir_pw_build/target_types.gni``.
 

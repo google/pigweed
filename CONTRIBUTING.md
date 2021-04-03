@@ -29,7 +29,7 @@ Pigweed contribution overview:
  1. Address any reviewer feedback by amending the commit (`git commit --amend`).
  1. Submit change to CI builders to merge. If you are not part of Pigweed's
     core team, you can ask the reviewer to add the `+2 CQ` vote, which will
-    trigger a rebase asd submit once the builders pass.
+    trigger a rebase and submit once the builders pass.
 
 ## Contributor License Agreement
 
