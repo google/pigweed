@@ -38,6 +38,7 @@ pw_cc_library(
         "decoder.cc",
         "encoder.cc",
         "find.cc",
+        "streaming_encoder.cc",
     ],
     hdrs = [
         "public/pw_protobuf/codegen.h",
@@ -45,15 +46,18 @@ pw_cc_library(
         "public/pw_protobuf/encoder.h",
         "public/pw_protobuf/find.h",
         "public/pw_protobuf/serialized_size.h",
+        "public/pw_protobuf/streaming_encoder.h",
         "public/pw_protobuf/wire_format.h",
     ],
     includes = ["public"],
     deps = [
         ":config",
+        "//pw_assert",
         "//pw_bytes",
         "//pw_result",
         "//pw_span",
         "//pw_status",
+        "//pw_stream",
         "//pw_varint",
     ],
 )
@@ -71,6 +75,15 @@ pw_cc_test(
 pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "streaming_encoder_test",
+    srcs = ["streaming_encoder_test.cc"],
     deps = [
         ":pw_protobuf",
         "//pw_unit_test",

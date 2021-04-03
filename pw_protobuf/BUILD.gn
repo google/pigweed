@@ -45,9 +45,11 @@ pw_source_set("pw_protobuf") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
+    dir_pw_assert,
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
+    dir_pw_stream,
     dir_pw_varint,
   ]
   public = [
@@ -56,12 +58,14 @@ pw_source_set("pw_protobuf") {
     "public/pw_protobuf/encoder.h",
     "public/pw_protobuf/find.h",
     "public/pw_protobuf/serialized_size.h",
+    "public/pw_protobuf/streaming_encoder.h",
     "public/pw_protobuf/wire_format.h",
   ]
   sources = [
     "decoder.cc",
     "encoder.cc",
     "find.cc",
+    "streaming_encoder.cc",
   ]
 }
 
@@ -69,6 +73,7 @@ pw_doc_group("docs") {
   sources = [
     "decoding.rst",
     "docs.rst",
+    "encoding.rst",
   ]
   report_deps = [
     "size_report:decoder_full",
@@ -84,6 +89,7 @@ pw_test_group("tests") {
     ":encoder_fuzzer",
     ":find_test",
     ":varint_size_test",
+    ":streaming_encoder_test",
   ]
 }
 
@@ -95,6 +101,11 @@ pw_test("decoder_test") {
 pw_test("encoder_test") {
   deps = [ ":pw_protobuf" ]
   sources = [ "encoder_test.cc" ]
+}
+
+pw_test("streaming_encoder_test") {
+  deps = [ ":pw_protobuf" ]
+  sources = [ "streaming_encoder_test.cc" ]
 }
 
 pw_test("find_test") {

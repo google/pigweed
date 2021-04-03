@@ -17,6 +17,13 @@
 
 namespace pw::protobuf {
 
+// Per the protobuf specification, valid field numbers range between 1 and
+// 2**29 - 1, inclusive. The numbers 19000-19999 are reserved for internal
+// use.
+constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
+constexpr static uint32_t kFirstReservedNumber = 19000;
+constexpr static uint32_t kLastReservedNumber = 19999;
+
 enum class WireType {
   kVarint = 0,
   kFixed64 = 1,
@@ -30,6 +37,12 @@ inline constexpr unsigned int kWireTypeMask = (1u << kFieldNumberShift) - 1u;
 
 constexpr uint32_t MakeKey(uint32_t field_number, WireType wire_type) {
   return (field_number << kFieldNumberShift | static_cast<uint32_t>(wire_type));
+}
+
+constexpr bool ValidFieldNumber(uint32_t field_number) {
+  return field_number != 0 && field_number <= kMaxFieldNumber &&
+         !(field_number >= kFirstReservedNumber &&
+           field_number <= kLastReservedNumber);
 }
 
 }  // namespace pw::protobuf

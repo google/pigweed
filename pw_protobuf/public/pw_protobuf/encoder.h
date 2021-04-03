@@ -27,6 +27,8 @@
 namespace pw::protobuf {
 
 // A streaming protobuf encoder which encodes to a user-specified buffer.
+//
+// Warning: This encoder will soon be deprecated in favor of the MemoryEncoder.
 class Encoder {
  public:
   using SizeType = config::SizeType;
@@ -45,13 +47,6 @@ class Encoder {
   // Disallow copy/assign to avoid confusion about who owns the buffer.
   Encoder(const Encoder& other) = delete;
   Encoder& operator=(const Encoder& other) = delete;
-
-  // Per the protobuf specification, valid field numbers range between 1 and
-  // 2**29 - 1, inclusive. The numbers 19000-19999 are reserved for internal
-  // use.
-  constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
-  constexpr static uint32_t kFirstReservedNumber = 19000;
-  constexpr static uint32_t kLastReservedNumber = 19999;
 
   // Writes a proto uint32 key-value pair.
   Status WriteUint32(uint32_t field_number, uint32_t value) {
@@ -275,12 +270,6 @@ class Encoder {
   }
 
  private:
-  constexpr bool ValidFieldNumber(uint32_t field_number) const {
-    return field_number != 0 && field_number <= kMaxFieldNumber &&
-           !(field_number >= kFirstReservedNumber &&
-             field_number <= kLastReservedNumber);
-  }
-
   // Encodes the key for a proto field consisting of its number and wire type.
   Status WriteFieldKey(uint32_t field_number, WireType wire_type) {
     if (!ValidFieldNumber(field_number)) {
@@ -360,7 +349,9 @@ class Encoder {
   Status encode_status_;
 };
 
-// A proto encoder with its own blob stack.
+// A Encoder that allocates the necessary buffers to enable nested submessages.
+//
+// Warning: This encoder will soon be deprecated in favor of the MemoryEncoder.
 template <size_t kMaxNestedDepth = 1, size_t kMaxBlobs = kMaxNestedDepth>
 class NestedEncoder : public Encoder {
  public:

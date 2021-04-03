@@ -66,6 +66,7 @@ build system integration.
 .. toctree::
   :maxdepth: 1
 
+  encoding
   decoding
 
 Comparison with other protobuf libraries
