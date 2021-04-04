@@ -97,7 +97,7 @@
   {
     "path": "infra/rbe/client/${os=linux,windows}-${arch=amd64}",
     "tags": [
-      "git_revision:3b3042c16accd40f0d3f7e40002f9ad2099cfe94"
+      "git_revision:b4551962f5aa902a5983db2ccf065259ad9f1e81"
     ]
   },
   {
