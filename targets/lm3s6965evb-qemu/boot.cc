@@ -20,7 +20,7 @@
 // Note that constexpr is used inside of this function instead of using a static
 // constexpr or declaring it outside of this function in an anonymous namespace,
 // because constexpr makes it available for the compiler to evaluate during
-// copmile time but does NOT require it to be evaluated at compile team and we
+// compile time but does NOT require it to be evaluated at compile time and we
 // have to be incredibly careful that this does not end up in the .data section.
 void pw_boot_PreStaticMemoryInit() {
   // Force RCC to be at default at boot.
