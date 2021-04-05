@@ -20,18 +20,14 @@ namespace pw {
 namespace tokenizer {
 
 extern "C" void _pw_tokenizer_ToGlobalHandler(pw_tokenizer_Token token,
-                                              _pw_tokenizer_ArgTypes types,
+                                              pw_tokenizer_ArgTypes types,
                                               ...) {
-  EncodedMessage encoded;
-  encoded.token = token;
-
   va_list args;
   va_start(args, types);
-  const size_t encoded_bytes = EncodeArgs(types, args, encoded.args);
+  EncodedMessage encoded(token, types, args);
   va_end(args);
 
-  pw_tokenizer_HandleEncodedMessage(reinterpret_cast<const uint8_t*>(&encoded),
-                                    sizeof(encoded.token) + encoded_bytes);
+  pw_tokenizer_HandleEncodedMessage(encoded.data_as_uint8(), encoded.size());
 }
 
 }  // namespace tokenizer

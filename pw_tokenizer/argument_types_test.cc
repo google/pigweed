@@ -187,38 +187,38 @@ TEST(ArgumentTypes, TwoArgs) {
 
 TEST(ArgumentTypes, MultipleArgs) {
   // clang-format off
-  static_assert(PW_TOKENIZER_ARG_TYPES(1) == 1);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2) == 2);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3) == 3);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4) == 4);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5) == 5);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6) == 6);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7) == 7);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8) == 8);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9) == 9);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 10);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11) == 11);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == 12);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13) == 13);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14) == 14);  // NOLINT
+  static_assert(PW_TOKENIZER_ARG_TYPES(1) == 1);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2) == 2);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3) == 3);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4) == 4);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5) == 5);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6) == 6);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7) == 7);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8) == 8);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9) == 9);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) == 10);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11) == 11);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == 12);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13) == 13);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14) == 14);
 
 #if PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES >= 8
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14) == 14);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) == 15);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16) == 16);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17) == 17);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18) == 18);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19) == 19);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20) == 20);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) == 21);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22) == 22);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23) == 23);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24) == 24);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25) == 25);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26) == 26);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27) == 27);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28) == 28);  // NOLINT
-  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29) == 29);  // NOLINT
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14) == 14);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) == 15);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16) == 16);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17) == 17);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18) == 18);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19) == 19);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20) == 20);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21) == 21);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22) == 22);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23) == 23);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24) == 24);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25) == 25);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26) == 26);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27) == 27);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28) == 28);
+  static_assert(PW_TOKENIZER_ARG_TYPES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29) == 29);
 #endif  // PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES
   // clang-format on
 }

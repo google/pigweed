@@ -401,6 +401,14 @@ TEST_F(TokenizeToBuffer, NoRoomForToken) {
   EXPECT_TRUE(std::all_of(buffer_, std::end(buffer_), is_untouched));
 }
 
+TEST_F(TokenizeToBuffer, CharArray) {
+  size_t message_size = sizeof(buffer_);
+  PW_TOKENIZE_TO_BUFFER(buffer_, &message_size, __func__);
+  constexpr auto expected = ExpectedData(__func__);
+  ASSERT_EQ(expected.size(), message_size);
+  EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
+}
+
 TEST_F(TokenizeToBuffer, C_StringShortFloat) {
   size_t size = sizeof(buffer_);
   pw_tokenizer_ToBufferTest_StringShortFloat(buffer_, &size);
@@ -513,6 +521,13 @@ TEST_F(TokenizeToCallback, Mask) {
       "TEST_DOMAIN", 0x00000FFF, SetMessage, "The answer is: %s", "5432!");
   constexpr std::array<uint8_t, 10> expected =
       ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x00000FFF);
+  ASSERT_EQ(expected.size(), message_size_bytes_);
+  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
+}
+
+TEST_F(TokenizeToCallback, CharArray) {
+  PW_TOKENIZE_TO_CALLBACK(SetMessage, __func__);
+  constexpr auto expected = ExpectedData(__func__);
   ASSERT_EQ(expected.size(), message_size_bytes_);
   EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
 }

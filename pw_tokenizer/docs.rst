@@ -233,8 +233,97 @@ than the other macros, so its per-use code size overhead is larger.
   widely expanded macros, such as a logging macro, because it will result in
   larger code size than its alternatives.
 
-Example: binary logging
-^^^^^^^^^^^^^^^^^^^^^^^
+.. _module-pw_tokenizer-custom-macro:
+
+Tokenize with a custom macro
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Projects may need more flexbility than the standard ``pw_tokenizer`` macros
+provide. To support this, projects may define custom tokenization macros. This
+requires the use of two low-level ``pw_tokenizer`` macros:
+
+.. c:macro:: PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)
+
+  Tokenizes a format string and sets the ``_pw_tokenizer_token`` variable to the
+  token. Must be used in its own scope, since the same variable is used in every
+  invocation.
+
+  The tokenized string uses the specified :ref:`tokenization domain
+  <module-pw_tokenizer-domains>`.  Use ``PW_TOKENIZER_DEFAULT_DOMAIN`` for the
+  default. The token also may be masked; use ``UINT32_MAX`` to keep all bits.
+
+.. c:macro:: PW_TOKENIZER_ARG_TYPES(...)
+
+  Converts a series of arguments to a compact format that replaces the format
+  string literal.
+
+Use these two macros within the custom tokenization macro to call a function
+that does the encoding. The following example implements a custom tokenization
+macro for use with :ref:`module-pw_log_tokenized`.
+
+.. code-block:: cpp
+
+  #include "pw_tokenizer/tokenize.h"
+
+  #ifndef __cplusplus
+  extern "C" {
+  #endif
+
+  void EncodeTokenizedMessage(pw_tokenizer_Payload metadata,
+                              pw_tokenizer_Token token,
+                              pw_tokenizer_ArgTypes types,
+                              ...);
+
+  #ifndef __cplusplus
+  }  // extern "C"
+  #endif
+
+  #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)         \
+    do {                                                                 \
+      _PW_TOKENIZE_FORMAT_STRING(                                        \
+          PW_TOKENIZER_DEFAULT_DOMAIN, UINT32_MAX, format, __VA_ARGS__); \
+      EncodeTokenizedMessage(payload,                                    \
+                             _pw_tokenizer_token,                        \
+                             PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)         \
+                                 PW_COMMA_ARGS(__VA_ARGS__));            \
+    } while (0)
+
+In this example, the ``EncodeTokenizedMessage`` function would handle encoding
+and processing the message. Encoding is done by the
+``pw::tokenizer::EncodedMessage`` class or ``pw::tokenizer::EncodeArgs``
+function from ``pw_tokenizer/encode_args.h``. The encoded message can then be
+transmitted or stored as needed.
+
+.. code-block:: cpp
+
+  #include "pw_log_tokenized/log_tokenized.h"
+  #include "pw_tokenizer/encode_args.h"
+
+  void HandleTokenizedMessage(pw::log_tokenized::Metadata metadata,
+                              std::span<std::byte> message);
+
+  extern "C" void EncodeTokenizedMessage(const pw_tokenizer_Payload metadata,
+                                         const pw_tokenizer_Token token,
+                                         const pw_tokenizer_ArgTypes types,
+                                         ...) {
+    va_list args;
+    va_start(args, types);
+    pw::tokenizer::EncodedMessage encoded_message(token, types, args);
+    va_end(args);
+
+    HandleTokenizedMessage(metadata, encoded_message);
+  }
+
+.. admonition:: When to use a custom macro
+
+  Use existing tokenization macros whenever possible. A custom macro may be
+  needed to support use cases like the following:
+
+    * Variations of ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` that take
+      different arguments.
+    * Supporting global handler macros that use different handler functions.
+
+Binary logging with pw_tokenizer
+--------------------------------
 String tokenization is perfect for logging. Consider the following log macro,
 which gathers the file, line number, and log message. It calls the ``RecordLog``
 function, which formats the log string, collects a timestamp, and transmits the
@@ -362,6 +451,8 @@ any length of string and has lower compilation time impact than the C macros.
 For consistency, C++ tokenization uses the same hash algorithm, but the
 calculated values will differ between C and C++ for strings longer than
 ``PW_TOKENIZER_CFG_C_HASH_LENGTH`` characters.
+
+.. _module-pw_tokenizer-domains:
 
 Tokenization domains
 --------------------

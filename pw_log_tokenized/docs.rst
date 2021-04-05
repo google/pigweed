@@ -39,12 +39,17 @@ Example implementation:
 
 See the documentation for :ref:`module-pw_tokenizer` for further details.
 
-Applications may select a different macro than
+Using a custom macro
+--------------------
+Applications may use their own macro instead of
 ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` by setting the
 ``PW_LOG_TOKENIZED_ENCODE_MESSAGE`` config macro. This macro should take
 arguments equivalent to ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``:
 
   .. c:function:: PW_LOG_TOKENIZED_ENCODE_MESSAGE(pw_tokenizer_Payload log_metadata, const char* message, ...)
+
+For instructions on how to implement a custom tokenization macro, see
+:ref:`module-pw_tokenizer-custom-macro`.
 
 Build targets
 -------------
@@ -57,8 +62,7 @@ implemented by the user of ``pw_log_tokenized``.
 
 Python package
 ==============
-``pw_log_tokenized`` includes a Python package for decoding tokenized messages
-logs.
+``pw_log_tokenized`` includes a Python package for decoding tokenized logs.
 
 pw_log_tokenized
 ----------------

@@ -56,7 +56,7 @@
 #define PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD_MASK(                 \
     domain, mask, payload, format, ...)                                  \
   do {                                                                   \
-    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);       \
+    PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);        \
     _pw_tokenizer_ToGlobalHandlerWithPayload(                            \
         payload,                                                         \
         _pw_tokenizer_token,                                             \
@@ -79,7 +79,7 @@ void pw_tokenizer_HandleEncodedMessageWithPayload(
 // instead, use the PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD macro.
 void _pw_tokenizer_ToGlobalHandlerWithPayload(pw_tokenizer_Payload payload,
                                               pw_tokenizer_Token token,
-                                              _pw_tokenizer_ArgTypes types,
+                                              pw_tokenizer_ArgTypes types,
                                               ...);
 
 PW_EXTERN_C_END

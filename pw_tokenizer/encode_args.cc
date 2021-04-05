@@ -38,15 +38,15 @@ static_assert(0b01u == static_cast<uint8_t>(ArgType::kInt64));
 static_assert(0b10u == static_cast<uint8_t>(ArgType::kDouble));
 static_assert(0b11u == static_cast<uint8_t>(ArgType::kString));
 
-size_t EncodeInt(int value, const std::span<uint8_t>& output) {
+size_t EncodeInt(int value, const std::span<std::byte>& output) {
   return varint::Encode(value, std::as_writable_bytes(output));
 }
 
-size_t EncodeInt64(int64_t value, const std::span<uint8_t>& output) {
+size_t EncodeInt64(int64_t value, const std::span<std::byte>& output) {
   return varint::Encode(value, std::as_writable_bytes(output));
 }
 
-size_t EncodeFloat(float value, const std::span<uint8_t>& output) {
+size_t EncodeFloat(float value, const std::span<std::byte>& output) {
   if (output.size() < sizeof(value)) {
     return 0;
   }
@@ -54,7 +54,7 @@ size_t EncodeFloat(float value, const std::span<uint8_t>& output) {
   return sizeof(value);
 }
 
-size_t EncodeString(const char* string, const std::span<uint8_t>& output) {
+size_t EncodeString(const char* string, const std::span<std::byte>& output) {
   // The top bit of the status byte indicates if the string was truncated.
   static constexpr size_t kMaxStringLength = 0x7Fu;
 
@@ -71,17 +71,17 @@ size_t EncodeString(const char* string, const std::span<uint8_t>& output) {
 
   // Scan the string to find out how many bytes to copy.
   size_t bytes_to_copy = 0;
-  uint8_t overflow_bit = 0;
+  std::byte overflow_bit = std::byte(0);
 
   while (string[bytes_to_copy] != '\0') {
     if (bytes_to_copy == max_bytes) {
-      overflow_bit = '\x80';
+      overflow_bit = std::byte('\x80');
       break;
     }
     bytes_to_copy += 1;
   }
 
-  output[0] = bytes_to_copy | overflow_bit;
+  output[0] = static_cast<std::byte>(bytes_to_copy) | overflow_bit;
   std::memcpy(output.data() + 1, string, bytes_to_copy);
 
   return bytes_to_copy + 1;  // include the status byte in the total
@@ -89,9 +89,9 @@ size_t EncodeString(const char* string, const std::span<uint8_t>& output) {
 
 }  // namespace
 
-size_t EncodeArgs(_pw_tokenizer_ArgTypes types,
+size_t EncodeArgs(pw_tokenizer_ArgTypes types,
                   va_list args,
-                  std::span<uint8_t> output) {
+                  std::span<std::byte> output) {
   size_t arg_count = types & PW_TOKENIZER_TYPE_COUNT_MASK;
   types >>= PW_TOKENIZER_TYPE_COUNT_SIZE_BITS;
 

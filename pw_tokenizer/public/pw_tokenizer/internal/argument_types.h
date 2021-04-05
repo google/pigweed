@@ -31,7 +31,7 @@
 #define PW_TOKENIZER_TYPE_COUNT_SIZE_BITS 4u
 #define PW_TOKENIZER_TYPE_COUNT_MASK 0x0Fu
 
-typedef uint32_t _pw_tokenizer_ArgTypes;
+typedef uint32_t pw_tokenizer_ArgTypes;
 
 #elif PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 8
 
@@ -42,7 +42,7 @@ typedef uint32_t _pw_tokenizer_ArgTypes;
 #define PW_TOKENIZER_TYPE_COUNT_SIZE_BITS 6u
 #define PW_TOKENIZER_TYPE_COUNT_MASK 0x1Fu  // only 5 bits will be needed
 
-typedef uint64_t _pw_tokenizer_ArgTypes;
+typedef uint64_t pw_tokenizer_ArgTypes;
 
 #else
 
@@ -52,7 +52,7 @@ typedef uint64_t _pw_tokenizer_ArgTypes;
 
 // The tokenized string encoding function is a variadic function that works
 // similarly to printf. Instead of a format string, however, the argument types
-// are packed into a _pw_tokenizer_ArgTypes.
+// are packed into a pw_tokenizer_ArgTypes.
 //
 // The four supported argument types are represented by two-bit argument codes.
 // Just four types are required because only printf-compatible arguments are
@@ -62,10 +62,10 @@ typedef uint64_t _pw_tokenizer_ArgTypes;
 // char* values cannot be printed as pointers with %p. These arguments are
 // always encoded as strings. To format a char* as an address, cast it to void*
 // or an integer.
-#define PW_TOKENIZER_ARG_TYPE_INT ((_pw_tokenizer_ArgTypes)0)
-#define PW_TOKENIZER_ARG_TYPE_INT64 ((_pw_tokenizer_ArgTypes)1)
-#define PW_TOKENIZER_ARG_TYPE_DOUBLE ((_pw_tokenizer_ArgTypes)2)
-#define PW_TOKENIZER_ARG_TYPE_STRING ((_pw_tokenizer_ArgTypes)3)
+#define PW_TOKENIZER_ARG_TYPE_INT ((pw_tokenizer_ArgTypes)0)
+#define PW_TOKENIZER_ARG_TYPE_INT64 ((pw_tokenizer_ArgTypes)1)
+#define PW_TOKENIZER_ARG_TYPE_DOUBLE ((pw_tokenizer_ArgTypes)2)
+#define PW_TOKENIZER_ARG_TYPE_STRING ((pw_tokenizer_ArgTypes)3)
 
 // Select the int argument type based on the size of the type. Values smaller
 // than int are promoted to int.
@@ -89,7 +89,7 @@ namespace tokenizer {
 
 // This function selects the matching type enum for supported argument types.
 template <typename T>
-constexpr _pw_tokenizer_ArgTypes VarargsType() {
+constexpr pw_tokenizer_ArgTypes VarargsType() {
   using ArgType = std::decay_t<T>;
 
   if constexpr (std::is_floating_point<ArgType>()) {
@@ -116,26 +116,26 @@ struct SelectVarargsType;
 
 template <typename T, bool kDontCare1, bool kDontCare2>
 struct SelectVarargsType<T, true, kDontCare1, kDontCare2> {
-  static constexpr _pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_DOUBLE;
+  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_DOUBLE;
 };
 
 template <typename T, bool kDontCare>
 struct SelectVarargsType<T, false, true, kDontCare> {
-  static constexpr _pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_STRING;
+  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_STRING;
 };
 
 template <typename T>
 struct SelectVarargsType<T, false, false, true> {
-  static constexpr _pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT64;
+  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT64;
 };
 
 template <typename T>
 struct SelectVarargsType<T, false, false, false> {
-  static constexpr _pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT;
+  static constexpr pw_tokenizer_ArgTypes kValue = PW_TOKENIZER_ARG_TYPE_INT;
 };
 
 template <typename T>
-constexpr _pw_tokenizer_ArgTypes VarargsType() {
+constexpr pw_tokenizer_ArgTypes VarargsType() {
   return SelectVarargsType<typename std::decay<T>::type>::kValue;
 }
 
@@ -174,8 +174,8 @@ constexpr _pw_tokenizer_ArgTypes VarargsType() {
 
 #endif  // __cplusplus
 
-// Encodes the types of the provided arguments as a _pw_tokenizer_ArgTypes
-// value. Depending on the size of _pw_tokenizer_ArgTypes, the bottom 4 or 6
+// Encodes the types of the provided arguments as a pw_tokenizer_ArgTypes
+// value. Depending on the size of pw_tokenizer_ArgTypes, the bottom 4 or 6
 // bits store the number of arguments and the remaining bits store the types,
 // two bits per type.
 //
@@ -184,4 +184,4 @@ constexpr _pw_tokenizer_ArgTypes VarargsType() {
 #define PW_TOKENIZER_ARG_TYPES(...) \
   PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZER_TYPES_, __VA_ARGS__)
 
-#define _PW_TOKENIZER_TYPES_0() ((_pw_tokenizer_ArgTypes)0)
+#define _PW_TOKENIZER_TYPES_0() ((pw_tokenizer_ArgTypes)0)

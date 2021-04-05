@@ -115,15 +115,15 @@ typedef uint32_t pw_tokenizer_Token;
       domain, UINT32_MAX, buffer, buffer_size_pointer, format, __VA_ARGS__)
 
 // Same as PW_TOKENIZE_TO_BUFFER_DOMAIN, but applies a mask to the token.
-#define PW_TOKENIZE_TO_BUFFER_MASK(                                \
-    domain, mask, buffer, buffer_size_pointer, format, ...)        \
-  do {                                                             \
-    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__); \
-    _pw_tokenizer_ToBuffer(buffer,                                 \
-                           buffer_size_pointer,                    \
-                           _pw_tokenizer_token,                    \
-                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)     \
-                               PW_COMMA_ARGS(__VA_ARGS__));        \
+#define PW_TOKENIZE_TO_BUFFER_MASK(                               \
+    domain, mask, buffer, buffer_size_pointer, format, ...)       \
+  do {                                                            \
+    PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__); \
+    _pw_tokenizer_ToBuffer(buffer,                                \
+                           buffer_size_pointer,                   \
+                           _pw_tokenizer_token,                   \
+                           PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)    \
+                               PW_COMMA_ARGS(__VA_ARGS__));       \
   } while (0)
 
 // Encodes a tokenized string and arguments to a buffer on the stack. The
@@ -166,7 +166,7 @@ typedef uint32_t pw_tokenizer_Token;
 // Same as PW_TOKENIZE_TO_CALLBACK_DOMAIN, but applies a mask to the token.
 #define PW_TOKENIZE_TO_CALLBACK_MASK(domain, mask, callback, format, ...) \
   do {                                                                    \
-    _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);        \
+    PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);         \
     _pw_tokenizer_ToCallback(callback,                                    \
                              _pw_tokenizer_token,                         \
                              PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)          \
@@ -180,13 +180,13 @@ PW_EXTERN_C_START
 void _pw_tokenizer_ToBuffer(void* buffer,
                             size_t* buffer_size_bytes,  // input and output arg
                             pw_tokenizer_Token token,
-                            _pw_tokenizer_ArgTypes types,
+                            pw_tokenizer_ArgTypes types,
                             ...);
 
 void _pw_tokenizer_ToCallback(void (*callback)(const uint8_t* encoded_message,
                                                size_t size_bytes),
                               pw_tokenizer_Token token,
-                              _pw_tokenizer_ArgTypes types,
+                              pw_tokenizer_ArgTypes types,
                               ...);
 
 // This empty function allows the compiler to check the format string.
@@ -204,9 +204,9 @@ PW_EXTERN_C_END
 
 // This macro takes a printf-style format string and corresponding arguments. It
 // checks that the arguments are correct, stores the format string in a special
-// section, and calculates the string's token at compile time.
+// section, and calculates the string's token at compile time. This
 // clang-format off
-#define _PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)                  \
+#define PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)                  \
   if (0) { /* Do not execute to prevent double evaluation of the arguments. */ \
     pw_tokenizer_CheckFormatString(format PW_COMMA_ARGS(__VA_ARGS__));         \
   }                                                                            \

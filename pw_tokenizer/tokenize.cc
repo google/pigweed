@@ -54,7 +54,7 @@ static_assert(sizeof(Metadata) == 32);
 #endif  // __APPLE__
 
 constexpr Metadata metadata[] PW_TOKENIZER_INFO_SECTION = {
-    {"hash_length_bytes", PW_TOKENIZER_CFG_C_HASH_LENGTH},
+    {"c_hash_length_bytes", PW_TOKENIZER_CFG_C_HASH_LENGTH},
     {"sizeof_long", sizeof(long)},            // %l conversion specifier
     {"sizeof_intmax_t", sizeof(intmax_t)},    // %j conversion specifier
     {"sizeof_size_t", sizeof(size_t)},        // %z conversion specifier
@@ -66,7 +66,7 @@ constexpr Metadata metadata[] PW_TOKENIZER_INFO_SECTION = {
 extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
                                        size_t* buffer_size_bytes,
                                        Token token,
-                                       _pw_tokenizer_ArgTypes types,
+                                       pw_tokenizer_ArgTypes types,
                                        ...) {
   if (*buffer_size_bytes < sizeof(token)) {
     *buffer_size_bytes = 0;
@@ -80,8 +80,8 @@ extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
   const size_t encoded_bytes = EncodeArgs(
       types,
       args,
-      std::span<uint8_t>(static_cast<uint8_t*>(buffer) + sizeof(token),
-                         *buffer_size_bytes - sizeof(token)));
+      std::span<std::byte>(static_cast<std::byte*>(buffer) + sizeof(token),
+                           *buffer_size_bytes - sizeof(token)));
   va_end(args);
 
   *buffer_size_bytes = sizeof(token) + encoded_bytes;
@@ -90,18 +90,14 @@ extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
 extern "C" void _pw_tokenizer_ToCallback(
     void (*callback)(const uint8_t* encoded_message, size_t size_bytes),
     Token token,
-    _pw_tokenizer_ArgTypes types,
+    pw_tokenizer_ArgTypes types,
     ...) {
-  EncodedMessage encoded;
-  encoded.token = token;
-
   va_list args;
   va_start(args, types);
-  const size_t encoded_bytes = EncodeArgs(types, args, encoded.args);
+  EncodedMessage encoded(token, types, args);
   va_end(args);
 
-  callback(reinterpret_cast<const uint8_t*>(&encoded),
-           sizeof(encoded.token) + encoded_bytes);
+  callback(encoded.data_as_uint8(), encoded.size());
 }
 
 }  // namespace tokenizer
