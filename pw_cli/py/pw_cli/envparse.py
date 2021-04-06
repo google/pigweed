@@ -14,9 +14,9 @@
 """The envparse module defines an environment variable parser."""
 
 import argparse
+from dataclasses import dataclass
 import os
-from typing import Callable, Dict, Generic, IO, List, Mapping
-from typing import NamedTuple, Optional, TypeVar
+from typing import Callable, Dict, Generic, IO, List, Mapping, Optional, TypeVar
 
 
 class EnvNamespace(argparse.Namespace):  # pylint: disable=too-few-public-methods
@@ -27,7 +27,8 @@ T = TypeVar('T')
 TypeConversion = Callable[[str], T]
 
 
-class VariableDescriptor(NamedTuple, Generic[T]):
+@dataclass
+class VariableDescriptor(Generic[T]):
     name: str
     type: TypeConversion[T]
     default: Optional[T]
@@ -79,7 +80,7 @@ class EnvironmentParser:
         self,
         name: str,
         # pylint: disable=redefined-builtin
-        type: TypeConversion[T] = str,  # type: ignore
+        type: TypeConversion[T] = str,  # type: ignore[assignment]
         # pylint: enable=redefined-builtin
         default: Optional[T] = None,
     ) -> None:
@@ -98,10 +99,7 @@ class EnvironmentParser:
             raise ValueError(
                 f'Variable {name} does not have prefix {self._prefix}')
 
-        self._variables[name] = VariableDescriptor(
-            name,
-            type,  # type: ignore
-            default)  # type: ignore
+        self._variables[name] = VariableDescriptor(name, type, default)
 
     def add_allowed_suffix(self, suffix: str) -> None:
         """Registers an environmant variable name suffix to be allowed."""
@@ -128,7 +126,7 @@ class EnvironmentParser:
                 val = desc.default
             else:
                 try:
-                    val = desc.type(env[var])
+                    val = desc.type(env[var])  # type: ignore
                 except Exception as err:
                     raise EnvironmentValueError(var, env[var]) from err
 
