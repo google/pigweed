@@ -49,7 +49,6 @@ pw_python_package("py") {
     "tests/packets_test.py",
   ]
   python_deps = [
-    "$dir_pw_build/py",
     "$dir_pw_protobuf/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_status/py",
