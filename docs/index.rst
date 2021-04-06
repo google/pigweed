@@ -8,7 +8,7 @@
 
   Home <self>
   docs/getting_started.md
-  Source Code <https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/master>
+  Source Code <https://cs.opensource.google/pigweed/pigweed>
   Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>

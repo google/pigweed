@@ -13,7 +13,8 @@ value developer feedback along the way.
 # Quick links
 
  - [Getting started guide](docs/getting_started.md)
- - [Source code](https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/master)
+ - [Documentation](https://pigweed.dev)
+ - [Source code](https://cs.opensource.google/pigweed/pigweed)
  - [Code reviews](https://pigweed-review.googlesource.com/)
  - [Issue tracker](https://bugs.pigweed.dev/)
  - [Mailing list](https://groups.google.com/forum/#!forum/pigweed)

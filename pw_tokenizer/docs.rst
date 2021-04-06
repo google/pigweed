@@ -279,7 +279,7 @@ macro for use with :ref:`module-pw_log_tokenized`.
 
   #define PW_LOG_TOKENIZED_ENCODE_MESSAGE(metadata, format, ...)         \
     do {                                                                 \
-      _PW_TOKENIZE_FORMAT_STRING(                                        \
+      PW_TOKENIZE_FORMAT_STRING(                                         \
           PW_TOKENIZER_DEFAULT_DOMAIN, UINT32_MAX, format, __VA_ARGS__); \
       EncodeTokenizedMessage(payload,                                    \
                              _pw_tokenizer_token,                        \

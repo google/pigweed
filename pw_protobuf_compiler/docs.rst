@@ -166,7 +166,7 @@ Adding Python proto modules to an existing package
 --------------------------------------------------
 By default, generated Python proto modules are organized into their own Python
 package. These proto modules can instead be added to an existing Python package
-declared with ``pw_python_library``. This is done by setting the
+declared with ``pw_python_package``. This is done by setting the
 ``python_package`` argument on the ``pw_proto_library`` and the
 ``proto_library`` argument on the ``pw_python_package``.
 
