@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_tokenizer_private/encode_args.h"
+#include "pw_tokenizer/encode_args.h"
 
 #include <algorithm>
 #include <cstring>

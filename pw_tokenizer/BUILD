@@ -37,10 +37,10 @@ pw_cc_library(
         "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
         "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
         "public/pw_tokenizer/internal/tokenize_string.h",
-        "pw_tokenizer_private/encode_args.h",
         "tokenize.cc",
     ],
     hdrs = [
+        "public/pw_tokenizer/encode_args.h",
         "public/pw_tokenizer/hash.h",
         "public/pw_tokenizer/tokenize.h",
     ],

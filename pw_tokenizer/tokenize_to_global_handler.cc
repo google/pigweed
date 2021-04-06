@@ -14,7 +14,7 @@
 
 #include "pw_tokenizer/tokenize_to_global_handler.h"
 
-#include "pw_tokenizer_private/encode_args.h"
+#include "pw_tokenizer/encode_args.h"
 
 namespace pw {
 namespace tokenizer {

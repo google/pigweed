@@ -76,6 +76,7 @@ pw_source_set("pw_tokenizer") {
   ]
   deps = [ dir_pw_varint ]
   public = [
+    "public/pw_tokenizer/encode_args.h",
     "public/pw_tokenizer/hash.h",
     "public/pw_tokenizer/tokenize.h",
   ]
@@ -90,7 +91,6 @@ pw_source_set("pw_tokenizer") {
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_80_hash_macro.h",
     "public/pw_tokenizer/internal/pw_tokenizer_65599_fixed_length_96_hash_macro.h",
     "public/pw_tokenizer/internal/tokenize_string.h",
-    "pw_tokenizer_private/encode_args.h",
     "tokenize.cc",
   ]
   friend = [ ":*" ]
@@ -274,6 +274,7 @@ _simple_tokenize_test_sources = [
   "$dir_pw_varint/varint.cc",
   "encode_args.cc",
   "public/pw_tokenizer/config.h",
+  "public/pw_tokenizer/encode_args.h",
   "public/pw_tokenizer/hash.h",
   "public/pw_tokenizer/internal/argument_types.h",
   "public/pw_tokenizer/internal/argument_types_macro_4_byte.h",
@@ -285,7 +286,6 @@ _simple_tokenize_test_sources = [
   "public/pw_tokenizer/tokenize.h",
   "public/pw_tokenizer/tokenize_to_global_handler.h",
   "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h",
-  "pw_tokenizer_private/encode_args.h",
   "simple_tokenize_test.cc",
   "tokenize.cc",
   "tokenize_to_global_handler.cc",

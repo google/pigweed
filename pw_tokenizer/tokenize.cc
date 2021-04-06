@@ -20,7 +20,7 @@
 
 #include <cstring>
 
-#include "pw_tokenizer_private/encode_args.h"
+#include "pw_tokenizer/encode_args.h"
 
 namespace pw {
 namespace tokenizer {
