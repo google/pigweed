@@ -14,6 +14,7 @@
 
 #include "pw_unit_test/unit_test_service.h"
 
+#include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
 #include "pw_unit_test/framework.h"
@@ -26,6 +27,11 @@ void UnitTestService::Run(ServerContext&,
   writer_ = std::move(writer);
   verbose_ = false;
 
+  // List of test suite names to run. The string views in this vector point to
+  // data in the raw protobuf request message, so it is only valid for the
+  // duration of this function.
+  pw::Vector<std::string_view, 16> suites_to_run;
+
   protobuf::Decoder decoder(request);
 
   Status status;
@@ -34,6 +40,24 @@ void UnitTestService::Run(ServerContext&,
       case TestRunRequest::Fields::REPORT_PASSED_EXPECTATIONS:
         decoder.ReadBool(&verbose_);
         break;
+
+      case TestRunRequest::Fields::TEST_SUITE: {
+        std::string_view suite_name;
+        if (!decoder.ReadString(&suite_name).ok()) {
+          break;
+        }
+
+        if (!suites_to_run.full()) {
+          suites_to_run.push_back(suite_name);
+        } else {
+          PW_LOG_ERROR("Maximum of %d test suite filters supported",
+                       suites_to_run.max_size());
+          writer_.Finish(Status::InvalidArgument());
+          return;
+        }
+
+        break;
+      }
     }
   }
 
@@ -42,12 +66,19 @@ void UnitTestService::Run(ServerContext&,
     return;
   }
 
-  PW_LOG_DEBUG("Starting unit test run");
+  PW_LOG_INFO("Starting unit test run");
 
-  pw::unit_test::RegisterEventHandler(&handler_);
+  RegisterEventHandler(&handler_);
+  SetTestSuitesToRun(suites_to_run);
+  PW_LOG_DEBUG("%u test suite filters applied",
+               static_cast<unsigned>(suites_to_run.size()));
+
   RUN_ALL_TESTS();
-  pw::unit_test::RegisterEventHandler(nullptr);
-  PW_LOG_DEBUG("Unit test run complete");
+
+  RegisterEventHandler(nullptr);
+  SetTestSuitesToRun({});
+
+  PW_LOG_INFO("Unit test run complete");
 
   writer_.Finish();
 }
@@ -62,6 +93,8 @@ void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
     TestRunEnd::Encoder test_run_end = event.GetTestRunEndEncoder();
     test_run_end.WritePassed(summary.passed_tests);
     test_run_end.WriteFailed(summary.failed_tests);
+    test_run_end.WriteSkipped(summary.skipped_tests);
+    test_run_end.WriteDisabled(summary.disabled_tests);
   });
 }
 

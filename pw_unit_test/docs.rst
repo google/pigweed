@@ -109,6 +109,18 @@ framework, register an event handler, and call the ``RUN_ALL_TESTS`` macro.
     return RUN_ALL_TESTS();
   }
 
+Test filtering
+^^^^^^^^^^^^^^
+If using C++17, filters can be set on the test framework to run only a subset of
+the registered unit tests. This is useful when many tests are bundled into a
+single application image.
+
+Currently, only a test suite filter is supported. This is set by calling
+``pw::unit_test::SetTestSuitesToRun`` with a list of suite names.
+
+.. note::
+  Test filtering is only supported in C++17.
+
 Build system integration
 ^^^^^^^^^^^^^^^^^^^^^^^^
 ``pw_unit_test`` integrates directly into Pigweed's GN build system. To define
@@ -271,3 +283,8 @@ logging.
 
   client = HdlcRpcClient(serial.Serial(device, baud), PROTO)
   run_tests(client.rpcs())
+
+pw_unit_test.rpc
+^^^^^^^^^^^^^^^^
+.. automodule:: pw_unit_test.rpc
+  :members: EventHandler, run_tests

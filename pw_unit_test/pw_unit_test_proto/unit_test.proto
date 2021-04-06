@@ -81,6 +81,9 @@ message Event {
 message TestRunRequest {
   // Whether to send expectation events for successful checks.
   bool report_passed_expectations = 1;
+
+  // Optional list of test suites to run.
+  repeated string test_suite = 2;
 }
 
 service UnitTest {

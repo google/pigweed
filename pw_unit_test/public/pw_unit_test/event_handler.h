@@ -84,6 +84,12 @@ struct RunTestsSummary {
 
   // The number of passed tests among the run tests.
   int failed_tests;
+
+  // The number of tests skipped or filtered out.
+  int skipped_tests;
+
+  // The number of disabled tests encountered.
+  int disabled_tests;
 };
 
 // An event handler is responsible for collecting and processing the results of

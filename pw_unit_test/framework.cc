@@ -14,6 +14,7 @@
 
 #include "pw_unit_test/framework.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace pw {
@@ -49,15 +50,23 @@ void Framework::RegisterTest(TestInfo* new_test) {
 int Framework::RunAllTests() {
   run_tests_summary_.passed_tests = 0;
   run_tests_summary_.failed_tests = 0;
+  run_tests_summary_.skipped_tests = 0;
+  run_tests_summary_.disabled_tests = 0;
 
   if (event_handler_ != nullptr) {
     event_handler_->RunAllTestsStart();
   }
   for (const TestInfo* test = tests_; test != nullptr; test = test->next()) {
-    if (test->enabled()) {
+    if (ShouldRunTest(*test)) {
       test->run();
-    } else if (event_handler_ != nullptr) {
-      event_handler_->TestCaseDisabled(test->test_case());
+    } else if (!test->enabled()) {
+      run_tests_summary_.disabled_tests++;
+
+      if (event_handler_ != nullptr) {
+        event_handler_->TestCaseDisabled(test->test_case());
+      }
+    } else {
+      run_tests_summary_.skipped_tests++;
     }
   }
   if (event_handler_ != nullptr) {
@@ -113,6 +122,26 @@ void Framework::ExpectationResult(const char* expression,
   };
 
   event_handler_->TestCaseExpect(current_test_->test_case(), expectation);
+}
+
+bool Framework::ShouldRunTest(const TestInfo& test_info) {
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+  // Test suite filtering is only supported if using C++17.
+  if (!test_suites_to_run_.empty()) {
+    std::string_view test_suite(test_info.test_case().suite_name);
+
+    bool suite_matches =
+        std::any_of(test_suites_to_run_.begin(),
+                    test_suites_to_run_.end(),
+                    [&](auto& name) { return test_suite == name; });
+
+    if (!suite_matches) {
+      return false;
+    }
+  }
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+  return test_info.enabled();
 }
 
 bool TestInfo::enabled() const {

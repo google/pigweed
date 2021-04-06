@@ -30,9 +30,9 @@ config("default_config") {
 pw_source_set("pw_unit_test") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    "$dir_pw_polyfill",
-    "$dir_pw_preprocessor",
-    "$dir_pw_string",
+    dir_pw_polyfill,
+    dir_pw_preprocessor,
+    dir_pw_string,
   ]
   public = [
     "public/pw_unit_test/event_handler.h",
@@ -90,6 +90,7 @@ pw_source_set("rpc_service") {
     ":pw_unit_test",
     ":unit_test_proto.pwpb",
     ":unit_test_proto.raw_rpc",
+    "$dir_pw_containers:vector",
   ]
   deps = [ dir_pw_log ]
   public = [

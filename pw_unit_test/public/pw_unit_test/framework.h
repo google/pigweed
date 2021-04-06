@@ -29,6 +29,8 @@
 #include "pw_unit_test/event_handler.h"
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
+#include <string_view>
+
 #include "pw_string/string_builder.h"
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
@@ -155,7 +157,10 @@ class Framework {
   constexpr Framework()
       : current_test_(nullptr),
         current_result_(TestResult::kSuccess),
-        run_tests_summary_{.passed_tests = 0, .failed_tests = 0},
+        run_tests_summary_{.passed_tests = 0,
+                           .failed_tests = 0,
+                           .skipped_tests = 0,
+                           .disabled_tests = 0},
         exit_status_(0),
         event_handler_(nullptr),
         memory_pool_() {}
@@ -176,6 +181,17 @@ class Framework {
   // nonzero if there were any failures. Test events that occur during the run
   // are sent to the registered event handler, if any.
   int RunAllTests();
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+  // Only run test suites whose names are included in the provided list during
+  // the next test run. This is C++17 only; older versions of C++ will run all
+  // non-disabled tests.
+  void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
+    test_suites_to_run_ = test_suites;
+  }
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+  bool ShouldRunTest(const TestInfo& test_info);
 
   // Constructs an instance of a unit test class and runs the test.
   //
@@ -280,6 +296,10 @@ class Framework {
   // Handler to which to dispatch test events.
   EventHandler* event_handler_;
 
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+  std::span<std::string_view> test_suites_to_run_;
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+
   // Memory region in which to construct test case classes as they are run.
   // TODO(frolv): Make the memory pool size configurable.
   static constexpr size_t kTestMemoryPoolSizeBytes = 16384;
@@ -375,6 +395,12 @@ class Test {
   // The user-provided body of the test case. Populated by the TEST macro.
   virtual void PigweedTestBody() = 0;
 };
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+inline void SetTestSuitesToRun(std::span<std::string_view> test_suites) {
+  internal::Framework::Get().SetTestSuitesToRun(test_suites);
+}
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 }  // namespace unit_test
 }  // namespace pw

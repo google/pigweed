@@ -113,6 +113,7 @@ class LoggingEventHandler(EventHandler):
 
 def run_tests(rpcs: pw_rpc.client.Services,
               report_passed_expectations: bool = False,
+              test_suites: Iterable[str] = (),
               event_handlers: Iterable[EventHandler] = (
                   LoggingEventHandler(), ),
               timeout_s: OptionalTimeout = UseDefault.VALUE) -> bool:
@@ -126,6 +127,7 @@ def run_tests(rpcs: pw_rpc.client.Services,
     test_responses = iter(
         unit_test_service.Run(
             report_passed_expectations=report_passed_expectations,
+            test_suite=test_suites,
             pw_rpc_timeout_s=timeout_s))
 
     # Read the first response, which must be a test_run_start message.
