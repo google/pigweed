@@ -11,13 +11,21 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
+#include "pw_chrono/system_clock.h"
 #include "pw_sync/mutex.h"
 
-extern "C" void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex) { mutex->lock(); }
+namespace pw::sync {
 
-extern "C" bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex) {
-  return mutex->try_lock();
+inline bool TimedMutex::try_lock_for(
+    chrono::SystemClock::duration for_at_least) {
+  return native_handle().try_lock_for(for_at_least);
 }
 
-extern "C" void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex) { mutex->unlock(); }
+inline bool TimedMutex::try_lock_until(
+    chrono::SystemClock::time_point until_at_least) {
+  return native_handle().try_lock_until(until_at_least);
+}
+
+}  // namespace pw::sync

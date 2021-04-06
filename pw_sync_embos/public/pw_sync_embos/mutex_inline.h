@@ -15,8 +15,6 @@
 
 #include "RTOS.h"
 #include "pw_assert/light.h"
-#include "pw_chrono/system_clock.h"
-#include "pw_chrono_embos/system_clock_constants.h"
 #include "pw_interrupt/context.h"
 #include "pw_sync/mutex.h"
 
@@ -35,13 +33,6 @@ inline void Mutex::lock() {
 inline bool Mutex::try_lock() {
   PW_ASSERT(!interrupt::InInterruptContext());
   return OS_Request(&native_type_) != 0;
-}
-
-inline bool Mutex::try_lock_until(
-    chrono::SystemClock::time_point until_at_least) {
-  // Note that if this deadline is in the future, it will get rounded up by
-  // one whole tick due to how try_lock_for is implemented.
-  return try_lock_for(until_at_least - chrono::SystemClock::now());
 }
 
 inline void Mutex::unlock() {

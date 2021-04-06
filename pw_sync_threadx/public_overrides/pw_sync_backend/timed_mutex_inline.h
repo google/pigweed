@@ -11,13 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_sync/mutex.h"
-
-extern "C" void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex) { mutex->lock(); }
-
-extern "C" bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex) {
-  return mutex->try_lock();
-}
-
-extern "C" void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex) { mutex->unlock(); }
+#include "pw_sync_threadx/timed_mutex_inline.h"

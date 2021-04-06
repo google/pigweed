@@ -51,11 +51,20 @@ pw_facade("mutex") {
   backend = pw_sync_MUTEX_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/mutex.h" ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+  sources = [ "mutex.cc" ]
+}
+
+pw_facade("timed_mutex") {
+  backend = pw_sync_TIMED_MUTEX_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/timed_mutex.h" ]
   public_deps = [
+    ":mutex",
     "$dir_pw_chrono:system_clock",
     "$dir_pw_preprocessor",
   ]
-  sources = [ "mutex.cc" ]
+  sources = [ "timed_mutex.cc" ]
 }
 
 pw_facade("interrupt_spin_lock") {
@@ -76,6 +85,7 @@ pw_test_group("tests") {
     ":binary_semaphore_facade_test",
     ":counting_semaphore_facade_test",
     ":mutex_facade_test",
+    ":timed_mutex_facade_test",
     ":interrupt_spin_lock_facade_test",
   ]
 }
@@ -116,6 +126,19 @@ pw_test("mutex_facade_test") {
     ":mutex",
     "$dir_pw_preprocessor",
     pw_sync_MUTEX_BACKEND,
+  ]
+}
+
+pw_test("timed_mutex_facade_test") {
+  enable_if = pw_sync_TIMED_MUTEX_BACKEND != ""
+  sources = [
+    "timed_mutex_facade_test.cc",
+    "timed_mutex_facade_test_c.c",
+  ]
+  deps = [
+    ":timed_mutex",
+    "$dir_pw_preprocessor",
+    pw_sync_TIMED_MUTEX_BACKEND,
   ]
 }
 

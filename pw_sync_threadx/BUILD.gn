@@ -29,6 +29,26 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+# This target provides the backend for pw::sync::Mutex.
+pw_source_set("mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_threadx/mutex_inline.h",
+    "public/pw_sync_threadx/mutex_native.h",
+    "public_overrides/pw_sync_backend/mutex_inline.h",
+    "public_overrides/pw_sync_backend/mutex_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_sync:mutex.facade",
+    "$dir_pw_third_party/threadx",
+  ]
+}
+
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
   # This target provides the backend for pw::sync::BinarySemaphore.
   pw_source_set("binary_semaphore") {
@@ -91,27 +111,25 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
                "the ThreadX pw::chrono::SystemClock backend.")
   }
 
-  # This target provides the backend for pw::sync::Mutex.
-  pw_source_set("mutex") {
+  # This target provides the backend for pw::sync::TimedMutex.
+  pw_source_set("timed_mutex") {
     public_configs = [
       ":public_include_path",
       ":backend_config",
     ]
     public = [
-      "public/pw_sync_threadx/mutex_inline.h",
-      "public/pw_sync_threadx/mutex_native.h",
-      "public_overrides/pw_sync_backend/mutex_inline.h",
-      "public_overrides/pw_sync_backend/mutex_native.h",
+      "public/pw_sync_threadx/timed_mutex_inline.h",
+      "public_overrides/pw_sync_backend/timed_mutex_inline.h",
     ]
     public_deps = [
-      "$dir_pw_assert",
       "$dir_pw_chrono:system_clock",
+      "$dir_pw_sync:timed_mutex.facade",
+    ]
+    sources = [ "timed_mutex.cc" ]
+    deps = [
+      "$dir_pw_assert",
       "$dir_pw_interrupt:context",
       "$dir_pw_third_party/threadx",
-    ]
-    sources = [ "mutex.cc" ]
-    deps = [
-      "$dir_pw_sync:mutex.facade",
       pw_chrono_SYSTEM_CLOCK_BACKEND,
     ]
     assert(pw_sync_OVERRIDE_SYSTEM_CLOCK_BACKEND_CHECK ||

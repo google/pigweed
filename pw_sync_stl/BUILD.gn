@@ -90,14 +90,25 @@ pw_source_set("mutex_backend") {
     "public_overrides/pw_sync_backend/mutex_inline.h",
     "public_overrides/pw_sync_backend/mutex_native.h",
   ]
-  deps = [
-    "$dir_pw_chrono:system_clock",
-    "$dir_pw_sync:mutex.facade",
+  public_deps = [ "$dir_pw_sync:mutex.facade" ]
+}
+
+# This target provides the backend for pw::sync::TimedMutex.
+pw_source_set("timed_mutex_backend") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
   ]
+  public = [
+    "$dir_pw_sync:timed_mutex.facade",
+    "public/pw_sync_stl/timed_mutex_inline.h",
+    "public_overrides/pw_sync_backend/timed_mutex_inline.h",
+  ]
+  public_deps = [ "$dir_pw_chrono:system_clock" ]
   assert(
       pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
           pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_stl:system_clock",
-      "The STL pw::sync::Mutex backend only works with the STL " +
+      "The STL pw::sync::TimedMutex backend only works with the STL " +
           "pw::chrono::SystemClock backend.")
 }
 

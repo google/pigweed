@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_sync/mutex.h"
+#include "pw_sync/timed_mutex.h"
 
 #include <algorithm>
 
@@ -26,16 +26,8 @@
 using pw::chrono::SystemClock;
 
 namespace pw::sync {
-namespace {
 
-static_assert(configUSE_MUTEXES != 0, "FreeRTOS mutexes aren't enabled.");
-
-static_assert(configSUPPORT_STATIC_ALLOCATION != 0,
-              "FreeRTOS static allocations are required for this backend.");
-
-}  // namespace
-
-bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
+bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_acquire for negative and zero length durations.
@@ -48,14 +40,14 @@ bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
   constexpr SystemClock::duration kMaxTimeoutMinusOne =
       pw::chrono::freertos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
-    if (xSemaphoreTake(&native_type_,
+    if (xSemaphoreTake(&native_handle(),
                        static_cast<TickType_t>(kMaxTimeoutMinusOne.count())) ==
         pdTRUE) {
       return true;
     }
     for_at_least -= kMaxTimeoutMinusOne;
   }
-  return xSemaphoreTake(&native_type_,
+  return xSemaphoreTake(&native_handle(),
                         static_cast<TickType_t>(for_at_least.count() + 1)) ==
          pdTRUE;
 }

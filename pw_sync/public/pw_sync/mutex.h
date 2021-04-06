@@ -15,7 +15,6 @@
 
 #include <stdbool.h>
 
-#include "pw_chrono/system_clock.h"
 #include "pw_preprocessor/util.h"
 
 #ifdef __cplusplus
@@ -60,24 +59,6 @@ class Mutex {
   //   undefined behavior.
   bool try_lock();
 
-  // Attempts to lock the mutex where, if needed, blocking for at least the
-  // specified duration.
-  // Returns true if the mutex was successfully acquired.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
-  bool try_lock_for(chrono::SystemClock::duration for_at_least);
-
-  // Attempts to lock the mutex where, if needed, blocking until at least the
-  // specified time_point.
-  // Returns true if the mutex was successfully acquired.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
-  bool try_lock_until(chrono::SystemClock::time_point until_at_least);
-
   // Unlocks the mutex. Failures are fatal.
   //
   // PRECONDITION:
@@ -107,10 +88,6 @@ PW_EXTERN_C_START
 
 void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex);
 bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex);
-bool pw_sync_Mutex_TryLockFor(pw_sync_Mutex* mutex,
-                              pw_chrono_SystemClock_Duration for_at_least);
-bool pw_sync_Mutex_TryLockUntil(pw_sync_Mutex* mutex,
-                                pw_chrono_SystemClock_TimePoint until_at_least);
 void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex);
 
 PW_EXTERN_C_END

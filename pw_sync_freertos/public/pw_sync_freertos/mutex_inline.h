@@ -15,13 +15,19 @@
 
 #include "FreeRTOS.h"
 #include "pw_assert/light.h"
-#include "pw_chrono/system_clock.h"
-#include "pw_chrono_freertos/system_clock_constants.h"
 #include "pw_interrupt/context.h"
 #include "pw_sync/mutex.h"
 #include "semphr.h"
 
 namespace pw::sync {
+namespace backend {
+
+static_assert(configUSE_MUTEXES != 0, "FreeRTOS mutexes aren't enabled.");
+
+static_assert(configSUPPORT_STATIC_ALLOCATION != 0,
+              "FreeRTOS static allocations are required for this backend.");
+
+}  // namespace backend
 
 inline Mutex::Mutex() : native_type_() {
   const SemaphoreHandle_t handle = xSemaphoreCreateMutexStatic(&native_type_);
@@ -49,13 +55,6 @@ inline void Mutex::lock() {
 inline bool Mutex::try_lock() {
   PW_ASSERT(!interrupt::InInterruptContext());
   return xSemaphoreTake(&native_type_, 0) == pdTRUE;
-}
-
-inline bool Mutex::try_lock_until(
-    chrono::SystemClock::time_point until_at_least) {
-  // Note that if this deadline is in the future, it will get rounded up by
-  // one whole tick due to how try_lock_for is implemented.
-  return try_lock_for(until_at_least - chrono::SystemClock::now());
 }
 
 inline void Mutex::unlock() {

@@ -17,14 +17,26 @@
 
 #include <stdbool.h>
 
-#include "pw_sync/mutex.h"
+#include "pw_sync/timed_mutex.h"
 
-void pw_sync_Mutex_CallLock(pw_sync_Mutex* mutex) { pw_sync_Mutex_Lock(mutex); }
-
-bool pw_sync_Mutex_CallTryLock(pw_sync_Mutex* mutex) {
-  return pw_sync_Mutex_TryLock(mutex);
+void pw_sync_TimedMutex_CallLock(pw_sync_TimedMutex* mutex) {
+  pw_sync_TimedMutex_Lock(mutex);
 }
 
-void pw_sync_Mutex_CallUnlock(pw_sync_Mutex* mutex) {
-  pw_sync_Mutex_Unlock(mutex);
+bool pw_sync_TimedMutex_CallTryLock(pw_sync_TimedMutex* mutex) {
+  return pw_sync_TimedMutex_TryLock(mutex);
+}
+
+bool pw_sync_TimedMutex_CallTryLockFor(
+    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_Duration for_at_least) {
+  return pw_sync_TimedMutex_TryLockFor(mutex, for_at_least);
+}
+
+bool pw_sync_TimedMutex_CallTryLockUntil(
+    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least) {
+  return pw_sync_TimedMutex_TryLockUntil(mutex, until_at_least);
+}
+
+void pw_sync_TimedMutex_CallUnlock(pw_sync_TimedMutex* mutex) {
+  pw_sync_TimedMutex_Unlock(mutex);
 }

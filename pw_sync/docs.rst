@@ -45,15 +45,10 @@ non-recursive ownership semantics where priority inheritance is used to solve
 the classic priority-inversion problem.
 
 The Mutex's API is C++11 STL
-`std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_ like,
+`std::mutex <https://en.cppreference.com/w/cpp/thread/mutex>`_ like,
 meaning it is a
-`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
-`Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
-`TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
-
-.. Warning::
-  This interface will likely be split between a Mutex and TimedMutex to ease
-  portability for baremetal support.
+`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_
+and `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_.
 
 .. list-table::
 
@@ -77,6 +72,177 @@ meaning it is a
 C++
 ---
 .. cpp:class:: pw::sync::Mutex
+
+  .. cpp:function:: void lock()
+
+     Locks the mutex, blocking indefinitely. Failures are fatal.
+
+     **Precondition:** The lock isn't already held by this thread. Recursive
+     locking is undefined behavior.
+
+  .. cpp:function:: bool try_lock()
+
+     Attempts to lock the mutex in a non-blocking manner.
+     Returns true if the mutex was successfully acquired.
+
+     **Precondition:** The lock isn't already held by this thread. Recursive
+     locking is undefined behavior.
+
+  .. cpp:function:: void unlock()
+
+     Unlocks the mutex. Failures are fatal.
+
+     **Precondition:** The mutex is held by this thread.
+
+
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``Mutex::Mutex``
+      - ✔
+      -
+      -
+    * - ``Mutex::~Mutex``
+      - ✔
+      -
+      -
+    * - ``void Mutex::lock``
+      - ✔
+      -
+      -
+    * - ``bool Mutex::try_lock``
+      - ✔
+      -
+      -
+    * - ``void Mutex::unlock``
+      - ✔
+      -
+      -
+
+Examples in C++
+^^^^^^^^^^^^^^^
+.. code-block:: cpp
+
+  #include "pw_sync/mutex.h"
+
+  pw::sync::Mutex mutex;
+
+  void ThreadSafeCriticalSection() {
+    mutex.lock();
+    NotThreadSafeCriticalSection();
+    mutex.unlock();
+  }
+
+
+Alternatively you can use C++'s RAII helpers to ensure you always unlock.
+
+.. code-block:: cpp
+
+  #include <mutex>
+
+  #include "pw_sync/mutex.h"
+
+  pw::sync::Mutex mutex;
+
+  void ThreadSafeCriticalSection() {
+    std::lock_guard lock(mutex);
+    NotThreadSafeCriticalSection();
+  }
+
+
+C
+-
+The Mutex must be created in C++, however it can be passed into C using the
+``pw_sync_Mutex`` opaque struct alias.
+
+.. cpp:function:: void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex)
+
+  Invokes the ``Mutex::lock`` member function on the given ``mutex``.
+
+.. cpp:function:: bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex)
+
+  Invokes the ``Mutex::try_lock`` member function on the given ``mutex``.
+
+.. cpp:function:: void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex)
+
+  Invokes the ``Mutex::unlock`` member function on the given ``mutex``.
+
+.. list-table::
+
+  * - *Safe to use in context*
+    - *Thread*
+    - *Interrupt*
+    - *NMI*
+  * - ``void pw_sync_Mutex_Lock``
+    - ✔
+    -
+    -
+  * - ``bool pw_sync_Mutex_TryLock``
+    - ✔
+    -
+    -
+  * - ``void pw_sync_Mutex_Unlock``
+    - ✔
+    -
+    -
+
+Example in C
+^^^^^^^^^^^^
+.. code-block:: cpp
+
+  #include "pw_sync/mutex.h"
+
+  pw::sync::Mutex mutex;
+
+  extern pw_sync_Mutex mutex;  // This can only be created in C++.
+
+  void ThreadSafeCriticalSection(void) {
+    pw_sync_Mutex_Lock(&mutex);
+    NotThreadSafeCriticalSection();
+    pw_sync_Mutex_Unlock(&mutex);
+  }
+
+TimedMutex
+==========
+The TimedMutex is an extension of the Mutex which offers timeout and deadline
+based semantics.
+
+The TimedMutex's API is C++11 STL
+`std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_ like,
+meaning it is a
+`BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
+`Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
+`TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
+
+Note that the ``TimedMutex`` is a derived ``Mutex`` class, meaning that
+a ``TimedMutex`` can be used by someone who needs the basic ``Mutex``. This is
+in stark contrast to the C++ STL's
+`std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_.
+
+
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - :ref:`module-pw_sync_freertos`
+  * - ThreadX
+    - :ref:`module-pw_sync_threadx`
+  * - embOS
+    - :ref:`module-pw_sync_embos`
+  * - STL
+    - :ref:`module-pw_sync_stl`
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
+
+C++
+---
+.. cpp:class:: pw::sync::TimedMutex
 
   .. cpp:function:: void lock()
 
@@ -124,31 +290,31 @@ C++
       - *Thread*
       - *Interrupt*
       - *NMI*
-    * - ``Mutex::Mutex``
+    * - ``TimedMutex::TimedMutex``
       - ✔
       -
       -
-    * - ``Mutex::~Mutex``
+    * - ``TimedMutex::~TimedMutex``
       - ✔
       -
       -
-    * - ``void Mutex::lock``
+    * - ``void TimedMutex::lock``
       - ✔
       -
       -
-    * - ``bool Mutex::try_lock``
+    * - ``bool TimedMutex::try_lock``
       - ✔
       -
       -
-    * - ``bool Mutex::try_lock_for``
+    * - ``bool TimedMutex::try_lock_for``
       - ✔
       -
       -
-    * - ``bool Mutex::try_lock_until``
+    * - ``bool TimedMutex::try_lock_until``
       - ✔
       -
       -
-    * - ``void Mutex::unlock``
+    * - ``void TimedMutex::unlock``
       - ✔
       -
       -
@@ -158,15 +324,9 @@ Examples in C++
 .. code-block:: cpp
 
   #include "pw_chrono/system_clock.h"
-  #include "pw_sync/mutex.h"
+  #include "pw_sync/timed_mutex.h"
 
-  pw::sync::Mutex mutex;
-
-  void ThreadSafeCriticalSection() {
-    mutex.lock();
-    NotThreadSafeCriticalSection();
-    mutex.unlock();
-  }
+  pw::sync::TimedMutex mutex;
 
   bool ThreadSafeCriticalSectionWithTimeout(
       const SystemClock::duration timeout) {
@@ -186,14 +346,9 @@ Alternatively you can use C++'s RAII helpers to ensure you always unlock.
   #include <mutex>
 
   #include "pw_chrono/system_clock.h"
-  #include "pw_sync/mutex.h"
+  #include "pw_sync/timed_mutex.h"
 
-  pw::sync::Mutex mutex;
-
-  void ThreadSafeCriticalSection() {
-    std::lock_guard lock(mutex);
-    NotThreadSafeCriticalSection();
-  }
+  pw::sync::TimedMutex mutex;
 
   bool ThreadSafeCriticalSectionWithTimeout(
       const SystemClock::duration timeout) {
@@ -209,28 +364,28 @@ Alternatively you can use C++'s RAII helpers to ensure you always unlock.
 
 C
 -
-The Mutex must be created in C++, however it can be passed into C using the
-``pw_sync_Mutex`` opaque struct alias.
+The TimedMutex must be created in C++, however it can be passed into C using the
+``pw_sync_TimedMutex`` opaque struct alias.
 
-.. cpp:function:: void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex)
+.. cpp:function:: void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex)
 
-  Invokes the ``Mutex::lock`` member function on the given ``mutex``.
+  Invokes the ``TimedMutex::lock`` member function on the given ``mutex``.
 
-.. cpp:function:: bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex)
+.. cpp:function:: bool pw_sync_TimedMutex_TryLock(pw_sync_TimedMutex* mutex)
 
-  Invokes the ``Mutex::try_lock`` member function on the given ``mutex``.
+  Invokes the ``TimedMutex::try_lock`` member function on the given ``mutex``.
 
-.. cpp:function:: bool pw_sync_Mutex_TryLockFor(pw_sync_Mutex* mutex, pw_chrono_SystemClock_Duration for_at_least)
+.. cpp:function:: bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_Duration for_at_least)
 
-  Invokes the ``Mutex::try_lock_for`` member function on the given ``mutex``.
+  Invokes the ``TimedMutex::try_lock_for`` member function on the given ``mutex``.
 
-.. cpp:function:: bool pw_sync_Mutex_TryLockUntil(pw_sync_Mutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least)
+.. cpp:function:: bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least)
 
-  Invokes the ``Mutex::try_lock_until`` member function on the given ``mutex``.
+  Invokes the ``TimedMutex::try_lock_until`` member function on the given ``mutex``.
 
-.. cpp:function:: void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex)
+.. cpp:function:: void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex)
 
-  Invokes the ``Mutex::unlock`` member function on the given ``mutex``.
+  Invokes the ``TimedMutex::unlock`` member function on the given ``mutex``.
 
 .. list-table::
 
@@ -238,23 +393,23 @@ The Mutex must be created in C++, however it can be passed into C using the
     - *Thread*
     - *Interrupt*
     - *NMI*
-  * - ``void pw_sync_Mutex_Lock``
+  * - ``void pw_sync_TimedMutex_Lock``
     - ✔
     -
     -
-  * - ``bool pw_sync_Mutex_TryLock``
+  * - ``bool pw_sync_TimedMutex_TryLock``
     - ✔
     -
     -
-  * - ``bool pw_sync_Mutex_TryLockFor``
+  * - ``bool pw_sync_TimedMutex_TryLockFor``
     - ✔
     -
     -
-  * - ``bool pw_sync_Mutex_TryLockUntil``
+  * - ``bool pw_sync_TimedMutex_TryLockUntil``
     - ✔
     -
     -
-  * - ``void pw_sync_Mutex_Unlock``
+  * - ``void pw_sync_TimedMutex_Unlock``
     - ✔
     -
     -
@@ -264,25 +419,19 @@ Example in C
 .. code-block:: cpp
 
   #include "pw_chrono/system_clock.h"
-  #include "pw_sync/mutex.h"
+  #include "pw_sync/timed_mutex.h"
 
-  pw::sync::Mutex mutex;
+  pw::sync::TimedMutex mutex;
 
-  extern pw_sync_Mutex mutex;  // This can only be created in C++.
-
-  void ThreadSafeCriticalSection(void) {
-    pw_sync_Mutex_Lock(&mutex);
-    NotThreadSafeCriticalSection();
-    pw_sync_Mutex_Unlock(&mutex);
-  }
+  extern pw_sync_TimedMutex mutex;  // This can only be created in C++.
 
   bool ThreadSafeCriticalSectionWithTimeout(
       const pw_chrono_SystemClock_Duration timeout) {
-    if (!pw_sync_Mutex_TryLockFor(&mutex, timeout)) {
+    if (!pw_sync_TimedMutex_TryLockFor(&mutex, timeout)) {
       return false;
     }
     NotThreadSafeCriticalSection();
-    pw_sync_Mutex_Unlock(&mutex);
+    pw_sync_TimedMutex_Unlock(&mutex);
     return true;
   }
 

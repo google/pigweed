@@ -87,6 +87,7 @@ _win_incompatible_config = {
   pw_sync_COUNTING_SEMAPHORE_BACKEND =
       "$dir_pw_sync_stl:counting_semaphore_backend"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_stl:mutex_backend"
+  pw_sync_TIMED_MUTEX_BACKEND = "$dir_pw_sync_stl:timed_mutex_backend"
 
   # Configure backends for pw_thread's facades.
   pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"

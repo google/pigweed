@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_sync/mutex.h"
+#include "pw_sync/timed_mutex.h"
 
 #include <algorithm>
 
@@ -26,8 +26,8 @@ using pw::chrono::SystemClock;
 
 namespace pw::sync {
 
-bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
-  // Enforce the pw::sync::Mutex IRQ contract.
+bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
+  // Enforce the pw::sync::TimedMutex IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_lock for negative or zero length durations.

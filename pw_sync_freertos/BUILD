@@ -100,20 +100,46 @@ pw_cc_library(
     deps = [
         # TODO: This should depend on FreeRTOS but our third parties currently
         # do not have Bazel support.
-        "//pw_chrono:system_clock",
-        "//pw_chrono_freertos:system_clock_headers",
+        "//pw_sync:mutex_facade",
     ],
 )
 
 pw_cc_library(
     name = "mutex",
-    srcs = [
-        "mutex.cc",
-    ],
     deps = [
         ":mutex_headers",
-        "//pw_interrupt:context",
         "//pw_sync:mutex_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_mutex_headers",
+    hdrs = [
+        "public/pw_sync_freertos/timed_mutex_inline.h",
+        "public_overrides/pw_sync_backend/timed_mutex_inline.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        # TODO: This should depend on FreeRTOS but our third parties currently
+        # do not have Bazel support.
+        "//pw_chrono:system_clock",
+        "//pw_chrono_freertos:system_clock_headers",
+        "//pw_sync:timed_mutex_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_mutex",
+    srcs = [
+        "timed_mutex.cc",
+    ],
+    deps = [
+        ":timed_mutex_headers",
+        "//pw_interrupt:context",
+        "//pw_sync:timed_mutex_facade",
     ],
 )
 

@@ -22,6 +22,9 @@ declare_args() {
   # Backend for the pw_sync module's mutex.
   pw_sync_MUTEX_BACKEND = ""
 
+  # Backend for the pw_sync module's timed mutex.
+  pw_sync_TIMED_MUTEX_BACKEND = ""
+
   # Backend for the pw_sync module's interrupt spin lock.
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = ""
 

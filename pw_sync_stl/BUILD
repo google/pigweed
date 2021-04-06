@@ -92,7 +92,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        "//pw_chrono:system_clock",
+        "//pw_sync:mutex_facade",
     ],
 )
 
@@ -100,8 +100,31 @@ pw_cc_library(
     name = "mutex",
     deps = [
         ":mutex_headers",
-        "//pw_chrono:system_clock",
         "//pw_sync:mutex_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_mutex_headers",
+    hdrs = [
+        "public/pw_sync_stl/timed_mutex_inline.h",
+        "public_overrides/pw_sync_backend/timed_mutex_inline.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_sync:timed_mutex_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_mutex",
+    deps = [
+        ":timed_mutex_headers",
+        "//pw_sync:timed_mutex_facade",
     ],
 )
 

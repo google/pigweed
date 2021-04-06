@@ -98,13 +98,33 @@ pw_source_set("mutex") {
   ]
   public_deps = [
     "$dir_pw_assert",
+    "$dir_pw_interrupt:context",
+    "$dir_pw_sync:mutex.facade",
+    "$dir_pw_third_party/embos",
+  ]
+}
+
+# This target provides the backend for pw::sync::TimedMutex.
+pw_source_set("timed_mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_embos/timed_mutex_inline.h",
+    "public_overrides/pw_sync_backend/timed_mutex_inline.h",
+  ]
+  public_deps = [
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:timed_mutex.facade",
+  ]
+  sources = [ "timed_mutex.cc" ]
+  deps = [
+    "$dir_pw_assert",
     "$dir_pw_chrono_embos:system_clock",
     "$dir_pw_interrupt:context",
     "$dir_pw_third_party/embos",
   ]
-  sources = [ "mutex.cc" ]
-  deps = [ "$dir_pw_sync:mutex.facade" ]
   assert(
       pw_chrono_SYSTEM_CLOCK_BACKEND == "" ||
           pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_embos:system_clock",

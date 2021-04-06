@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_sync/mutex.h"
+#include "pw_sync/timed_mutex.h"
 
 #include <algorithm>
 
@@ -26,7 +26,7 @@ using pw::chrono::SystemClock;
 
 namespace pw::sync {
 
-bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
+bool TimedMutex::try_lock_for(SystemClock::duration for_at_least) {
   PW_DCHECK(!interrupt::InInterruptContext());
 
   // Use non-blocking try_lock for negative and zero length durations.
@@ -40,7 +40,7 @@ bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
       pw::chrono::embos::kMaxTimeout - SystemClock::duration(1);
   while (for_at_least > kMaxTimeoutMinusOne) {
     const int lock_count = OS_UseTimed(
-        &native_type_, static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
+        &native_handle(), static_cast<OS_TIME>(kMaxTimeoutMinusOne.count()));
     if (lock_count != 0) {
       PW_CHECK_UINT_EQ(1, lock_count, "Recursive locking is not permitted");
       return true;
@@ -48,7 +48,7 @@ bool Mutex::try_lock_for(SystemClock::duration for_at_least) {
     for_at_least -= kMaxTimeoutMinusOne;
   }
   const int lock_count = OS_UseTimed(
-      &native_type_, static_cast<OS_TIME>(for_at_least.count() + 1));
+      &native_handle(), static_cast<OS_TIME>(for_at_least.count() + 1));
   PW_CHECK_UINT_LE(1, lock_count, "Recursive locking is not permitted");
   return lock_count == 1;
 }
