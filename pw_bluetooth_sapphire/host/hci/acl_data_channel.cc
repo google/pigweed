@@ -355,14 +355,19 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
     return false;
   }
 
+  // This call assumes that each call includes a full PDU, which means that there can't be a
+  // continuing fragment at the head. There is no check for whether |packets| have enough data to
+  // form whole PDUs because queue management doesn't require that and it would break abstraction
+  // even more.
+  ZX_ASSERT_MSG(
+      packets.front().packet_boundary_flag() != ACLPacketBoundaryFlag::kContinuingFragment,
+      "expected full PDU");
+
   for (const auto& packet : packets) {
-    // Make sure that all packets have registered connection handles.
-    if (registered_links_.find(packet.connection_handle()) == registered_links_.end()) {
-      bt_log(TRACE, "hci",
-             "dropping packets for unregistered connection (handle: %#.4x, count: %lu)",
-             packet.connection_handle(), packets.size_slow());
-      return false;
-    }
+    // This call assumes that all packets in each call are for the same connection
+    ZX_ASSERT_MSG(packet.connection_handle() == handle,
+                  "expected only fragments for one connection (%#.4x, got %#.4x)", handle,
+                  packet.connection_handle());
 
     // Make sure that all packets are within the MTU.
     if (packet.view().payload_size() >

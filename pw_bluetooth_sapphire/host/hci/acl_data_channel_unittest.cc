@@ -373,6 +373,46 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
                                                AclDataChannel::PacketPriority::kLow));
 }
 
+// Suffix DeathTest has GoogleTest-specific behavior
+using HCI_ACLDataChannelDeathTest = HCI_ACLDataChannelTest;
+
+TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
+  constexpr size_t kMaxMTU = 5;
+  constexpr ConnectionHandle kHandle = 0x0001;
+  InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
+
+  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kACL);
+
+  LinkedList<ACLDataPacket> packets;
+  packets.push_back(ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kContinuingFragment,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  ASSERT_DEATH_IF_SUPPORTED(
+      acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
+                                      AclDataChannel::PacketPriority::kLow),
+      "expected full PDU");
+}
+
+TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneConnection) {
+  constexpr size_t kMaxMTU = 5;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+  InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+
+  // Packet exceeds MTU
+  LinkedList<ACLDataPacket> packets;
+  packets.push_back(ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  packets.push_back(ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kContinuingFragment,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMTU));
+  ASSERT_DEATH_IF_SUPPORTED(
+      acl_data_channel()->SendPackets(std::move(packets), l2cap::kInvalidChannelId,
+                                      AclDataChannel::PacketPriority::kLow),
+      "expected only fragments for one connection");
+}
+
 // Tests sending multiple packets in a single call.
 TEST_F(HCI_ACLDataChannelTest, SendPackets) {
   constexpr int kExpectedPacketCount = 5;

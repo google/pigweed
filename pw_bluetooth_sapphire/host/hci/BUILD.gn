@@ -128,6 +128,7 @@ source_set("tests") {
 }
 
 bt_gtest_package("bt-host-hci-tests") {
+  with_death_tests = true
   deps = [ ":tests" ]
 }
 

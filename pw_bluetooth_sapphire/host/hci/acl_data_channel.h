@@ -126,8 +126,9 @@ class AclDataChannel {
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
-  // packets that are in |packets| are queued atomically. If any packet's handle is not registered
-  // in the allowlist, then none will be queued.
+  // packets that are in |packets| are queued atomically. The contents of |packets| must comprise
+  // one or more complete PDUs for the same handle in order, due to queue management assumptions. If
+  // any packet's handle is not registered in the allowlist, then none will be queued.
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for its link type or |packets| is empty.
