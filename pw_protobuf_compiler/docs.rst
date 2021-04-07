@@ -65,6 +65,13 @@ is the same. For example, these two labels are equivalent:
   //path/to/my_protos:my_protos.pwpb
   //path/to/my_protos:pwpb
 
+``pw_python_package`` subtargets are also available on the ``python`` subtarget:
+
+.. code-block::
+
+  //path/to/my_protos:my_protos.python.lint
+  //path/to/my_protos:python.lint
+
 **Arguments**
 
 * ``sources``: List of input .proto files.

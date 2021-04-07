@@ -612,10 +612,14 @@ template("pw_proto_library") {
   # directory (e.g. //foo:nanopb is an alias for //foo:foo.nanopb).
   if (get_label_info(":$target_name", "name") ==
       get_path_info(get_label_info(":$target_name", "dir"), "name")) {
-    foreach(_generator, _protobuf_generators) {
-      group("$_generator") {
+    foreach(_generator, _protobuf_generators - [ "python" ]) {
+      group(_generator) {
         public_deps = [ ":${invoker.target_name}.$_generator" ]
       }
+    }
+
+    pw_python_group("python") {
+      python_deps = [ ":${invoker.target_name}.python" ]
     }
   }
 
