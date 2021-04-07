@@ -329,35 +329,10 @@ void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
 
 bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                                     PacketPriority priority) {
-  if (!is_initialized_) {
-    bt_log(DEBUG, "hci", "cannot send packets while uninitialized");
-    return false;
-  }
-
-  ZX_DEBUG_ASSERT(data_packet);
-
-  const auto handle = data_packet->connection_handle();
-
-  auto link_iter = registered_links_.find(handle);
-
-  if (link_iter == registered_links_.end()) {
-    bt_log(TRACE, "hci", "dropping packet for unregistered connection (handle: %#.4x)", handle);
-    return false;
-  }
-
-  Connection::LinkType ll_type = link_iter->second;
-
-  if (data_packet->view().payload_size() > GetBufferMtu(ll_type)) {
-    bt_log(ERROR, "hci", "ACL data packet too large!");
-    return false;
-  }
-
-  send_queue_.insert(SendQueueInsertLocationForPriority(priority),
-                     QueuedDataPacket(ll_type, channel_id, priority, std::move(data_packet)));
-
-  TrySendNextQueuedPackets();
-
-  return true;
+  ZX_ASSERT(data_packet);
+  LinkedList<ACLDataPacket> packets;
+  packets.push_back(std::move(data_packet));
+  return SendPackets(std::move(packets), channel_id, priority);
 }
 
 bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
