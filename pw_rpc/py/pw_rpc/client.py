@@ -354,8 +354,14 @@ class Client:
             for channel in channels
         }
 
-    def channel(self, channel_id: int) -> ChannelClient:
-        """Returns a ChannelClient, which is used to call RPCs on a channel."""
+    def channel(self, channel_id: int = None) -> ChannelClient:
+        """Returns a ChannelClient, which is used to call RPCs on a channel.
+
+        If no channel is provided, the first channel is used.
+        """
+        if channel_id is None:
+            return next(iter(self._channels_by_id.values()))
+
         return self._channels_by_id[channel_id]
 
     def channels(self) -> Iterable[ChannelClient]:

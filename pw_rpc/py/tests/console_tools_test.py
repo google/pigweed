@@ -17,12 +17,18 @@
 import unittest
 from unittest import mock
 
-from pw_rpc.console_tools import CommandHelper, Watchdog
+import pw_status
+
+from pw_protobuf_compiler import python_protos
+import pw_rpc
+from pw_rpc import callback_client
+from pw_rpc.console_tools import (CommandHelper, ClientInfo, Watchdog,
+                                  multi_client_terminal_variables)
 
 
 class TestWatchdog(unittest.TestCase):
     """Tests the Watchdog class."""
-    def setUp(self):
+    def setUp(self) -> None:
         self._reset = mock.Mock()
         self._expiration = mock.Mock()
         self._while_expired = mock.Mock()
@@ -30,12 +36,12 @@ class TestWatchdog(unittest.TestCase):
         self._watchdog = Watchdog(self._reset, self._expiration,
                                   self._while_expired, 99999)
 
-    def _trigger_timeout(self):
+    def _trigger_timeout(self) -> None:
         # Don't wait for the timeout -- that's too flaky. Call the internal
         # timeout function instead.
         self._watchdog._timeout_expired()  # pylint: disable=protected-access
 
-    def test_expiration_callbacks(self):
+    def test_expiration_callbacks(self) -> None:
         self._watchdog.start()
 
         self._expiration.not_called()
@@ -55,7 +61,7 @@ class TestWatchdog(unittest.TestCase):
         self._expiration.assert_called_once_with()
         self._while_expired.assert_called()
 
-    def test_reset_not_called_unless_expires(self):
+    def test_reset_not_called_unless_expires(self) -> None:
         self._watchdog.start()
         self._watchdog.reset()
 
@@ -63,7 +69,7 @@ class TestWatchdog(unittest.TestCase):
         self._expiration.assert_not_called()
         self._while_expired.assert_not_called()
 
-    def test_reset_called_if_expired(self):
+    def test_reset_called_if_expired(self) -> None:
         self._watchdog.start()
         self._trigger_timeout()
 
@@ -81,7 +87,7 @@ class TestCommandHelper(unittest.TestCase):
         self._helper = CommandHelper(self._commands, 'The header',
                                      'The footer')
 
-    def test_help_contents(self):
+    def test_help_contents(self) -> None:
         help_contents = self._helper.help()
 
         self.assertTrue(help_contents.startswith('The header'))
@@ -92,6 +98,119 @@ class TestCommandHelper(unittest.TestCase):
 
     def test_repr_is_help(self):
         self.assertEqual(repr(self._helper), self._helper.help())
+
+
+_PROTO = """\
+syntax = "proto3";
+
+package the.pkg;
+
+message SomeMessage {
+  uint32 magic_number = 1;
+
+    message AnotherMessage {
+      string payload = 1;
+    }
+
+}
+
+service Service {
+  rpc Unary(SomeMessage) returns (SomeMessage.AnotherMessage);
+}
+"""
+
+
+class TestMultiClientTerminal(unittest.TestCase):
+    """Tests console_tools.console.multi_client_terminal_variables."""
+    def setUp(self) -> None:
+        self._protos = python_protos.Library.from_strings(_PROTO)
+
+        self._info = ClientInfo(
+            'the_client', object(),
+            pw_rpc.Client.from_modules(callback_client.Impl(), [
+                pw_rpc.Channel(1, lambda _: None),
+                pw_rpc.Channel(2, lambda _: None),
+            ], self._protos.modules()))
+
+    def test_sets_expected_variables(self) -> None:
+        variables = multi_client_terminal_variables(
+            clients=[self._info],
+            default_client=self._info.client,
+            protos=self._protos)
+        self.assertIn('set_target', variables)
+
+        self.assertIsInstance(variables['help'], CommandHelper)
+        self.assertIs(variables['python_help'], help)
+        self.assertIs(pw_status.Status, variables['Status'])
+        self.assertIs(self._info.client, variables['the_client'])
+
+    def test_set_target_switches_between_clients(self) -> None:
+        client_1_channel = self._info.rpc_client.channel(1).channel
+
+        client_2_channel = pw_rpc.Channel(99, lambda _: None)
+        info_2 = ClientInfo(
+            'other_client', object(),
+            pw_rpc.Client.from_modules(callback_client.Impl(),
+                                       [client_2_channel],
+                                       self._protos.modules()))
+
+        variables = multi_client_terminal_variables(
+            clients=[self._info, info_2],
+            default_client=self._info.client,
+            protos=self._protos)
+
+        # Make sure the RPC service switches from one client to the other.
+        self.assertIs(variables['the'].pkg.Service.Unary.channel,
+                      client_1_channel)
+
+        variables['set_target'](info_2.client)
+
+        self.assertIs(variables['the'].pkg.Service.Unary.channel,
+                      client_2_channel)
+
+    def test_default_client_must_be_in_clients(self) -> None:
+        with self.assertRaises(ValueError):
+            multi_client_terminal_variables(clients=[self._info],
+                                            default_client='something else',
+                                            protos=self._protos)
+
+    def test_set_target_invalid_channel(self) -> None:
+        variables = multi_client_terminal_variables(
+            clients=[self._info],
+            default_client=self._info.client,
+            protos=self._protos)
+
+        with self.assertRaises(KeyError):
+            variables['set_target'](self._info.client, 100)
+
+    def test_set_target_non_default_channel(self) -> None:
+        channel_1 = self._info.rpc_client.channel(1).channel
+        channel_2 = self._info.rpc_client.channel(2).channel
+
+        variables = multi_client_terminal_variables(
+            clients=[self._info],
+            default_client=self._info.client,
+            protos=self._protos)
+
+        self.assertIs(variables['the'].pkg.Service.Unary.channel, channel_1)
+
+        variables['set_target'](self._info.client, 2)
+
+        self.assertIs(variables['the'].pkg.Service.Unary.channel, channel_2)
+
+        with self.assertRaises(KeyError):
+            variables['set_target'](self._info.client, 100)
+
+    def test_set_target_requires_client_object(self) -> None:
+        variables = multi_client_terminal_variables(
+            clients=[self._info],
+            default_client=self._info.client,
+            protos=self._protos)
+
+        with self.assertRaises(ValueError):
+            variables['set_target'](self._info.rpc_client)
+
+        variables['set_target'](self._info.client)
 
 
 if __name__ == '__main__':

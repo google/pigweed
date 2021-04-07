@@ -13,5 +13,6 @@
 # the License.
 """Utilities for building tools that interact with pw_rpc."""
 
-from pw_rpc.console_tools.console import *
+from pw_rpc.console_tools.console import (CommandHelper, ClientInfo,
+                                          multi_client_terminal_variables)
 from pw_rpc.console_tools.watchdog import Watchdog
