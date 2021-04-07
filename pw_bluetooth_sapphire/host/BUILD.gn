@@ -4,7 +4,6 @@
 
 import("//build/bind/bind.gni")
 import("//build/config/fuchsia/rules.gni")
-import("//build/driver_package.gni")
 import("//build/fuzzing/fuzzer.gni")
 import("//src/sys/build/components.gni")
 
@@ -79,14 +78,11 @@ group("stack") {
 
 # TODO(armansito): Enable debug assertions by default from here for all package
 # dependencies when there is a way for it.
-driver_package("bt-host") {
+fuchsia_system_package("bt-host") {
   deps = [ ":driver" ]
 
-  drivers = [
-    {
-      name = "bt-host.so"
-    },
-  ]
+  # This package is reachable from //garnet/packages/prod:all
+  allowed_in_extra_deps = true
 }
 
 # See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
