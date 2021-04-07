@@ -32,6 +32,21 @@ pw_python_package_subtargets = [
   "_build_wheel",
 ]
 
+# Create aliases for subsargets when the target name matches the directory name.
+# This allows //foo:foo.tests to be accessed as //foo:tests, for example.
+template("_pw_create_aliases_if_name_matches_directory") {
+  not_needed([ "invoker" ])
+
+  if (get_label_info(":$target_name", "name") ==
+      get_path_info(get_label_info(":$target_name", "dir"), "name")) {
+    foreach(subtarget, pw_python_package_subtargets) {
+      group(subtarget) {
+        public_deps = [ ":${invoker.target_name}.$subtarget" ]
+      }
+    }
+  }
+}
+
 # Internal template that runs Mypy.
 template("_pw_python_static_analysis_mypy") {
   pw_python_action(target_name) {
@@ -612,6 +627,9 @@ template("pw_python_package") {
   group("$target_name.tests") {
     deps = _test_targets
   }
+
+  _pw_create_aliases_if_name_matches_directory(target_name) {
+  }
 }
 
 # Declares a group of Python packages or other Python groups. pw_python_groups
@@ -631,14 +649,17 @@ template("pw_python_group") {
 
   foreach(subtarget, pw_python_package_subtargets) {
     group("$target_name.$subtarget") {
-      deps = []
+      public_deps = []
       foreach(dep, _python_deps) {
         # Split out the toolchain to support deps with a toolchain specified.
         _target = get_label_info(dep, "label_no_toolchain")
         _toolchain = get_label_info(dep, "toolchain")
-        deps += [ "$_target.$subtarget($_toolchain)" ]
+        public_deps += [ "$_target.$subtarget($_toolchain)" ]
       }
     }
+  }
+
+  _pw_create_aliases_if_name_matches_directory(target_name) {
   }
 }
 
@@ -666,6 +687,9 @@ template("pw_python_script") {
   pw_python_package(target_name) {
     _pw_standalone = true
     forward_variables_from(invoker, _supported_variables)
+  }
+
+  _pw_create_aliases_if_name_matches_directory(target_name) {
   }
 }
 
@@ -720,5 +744,8 @@ template("pw_python_requirements") {
   foreach(subtarget, pw_python_package_subtargets - [ "install" ]) {
     group("$target_name.$subtarget") {
     }
+  }
+
+  _pw_create_aliases_if_name_matches_directory(target_name) {
   }
 }

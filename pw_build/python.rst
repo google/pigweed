@@ -21,10 +21,30 @@ several subtargets. In summary, these are:
 - ``<name>.install`` - Installs the package
 - ``<name>.wheel`` - Builds a Python wheel
 
+GN permits using abbreviated labels when the target name matches the directory
+name (e.g. ``//foo`` for ``//foo:foo``). For consistency with this, Python
+package subtargets are aliased to the directory when the target name is the
+same as the directory. For example, these two labels are equivalent:
+
+.. code-block::
+
+  //path/to/my_python_package:my_python_package.tests
+  //path/to/my_python_package:tests
+
 Arguments
 ---------
 - ``setup`` - List of setup file paths (setup.py or pyproject.toml & setup.cfg),
   which must all be in the same directory.
+- ``generate_setup``: As an alternative to ``setup``, generate setup files with
+  the keywords in this scope. ``name`` is required. For example:
+
+  .. code-block::
+
+    generate_setup = {
+      name = "a_nifty_package"
+      version = "1.2a"
+    }
+
 - ``sources`` - Python sources files in the package.
 - ``tests`` - Test files for this Python package.
 - ``python_deps`` - Dependencies on other pw_python_packages in the GN build.
@@ -32,7 +52,7 @@ Arguments
 - ``other_deps`` - Dependencies on GN targets that are not pw_python_packages.
 - ``inputs`` - Other files to track, such as package_data.
 - ``proto_library`` - A pw_proto_library target to embed in this Python package.
-  generate_setup is required in place of setup if proto_library is used. See
+  ``generate_setup`` is required in place of setup if proto_library is used. See
   :ref:`module-pw_protobuf_compiler-add-to-python-package`.
 - ``static_analysis`` List of static analysis tools to run; ``"*"`` (default)
   runs all tools. The supported tools are ``"mypy"`` and ``"pylint"``.
@@ -95,7 +115,7 @@ directory:
 
   pw_mirror_tree("my_wheels") {
     path_data_keys = [ "pw_python_package_wheels" ]
-    deps = [ ":python_packages" ]
+    deps = [ ":python_packages.wheel" ]
     directory = "$root_out_dir/the_wheels"
   }
 
