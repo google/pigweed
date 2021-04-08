@@ -30,7 +30,7 @@ Status MemoryWriter::DoWrite(ConstByteSpan data) {
   }
 
   size_t bytes_to_write = data.size_bytes();
-  std::memcpy(dest_.data() + bytes_written_, data.data(), bytes_to_write);
+  std::memmove(dest_.data() + bytes_written_, data.data(), bytes_to_write);
   bytes_written_ += bytes_to_write;
 
   return OkStatus();

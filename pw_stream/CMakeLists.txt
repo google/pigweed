@@ -37,3 +37,13 @@ pw_add_module_library(pw_stream.sys_io_stream
     pw_stream
     pw_sys_io
 )
+
+pw_add_test(pw_stream.memory_stream_test
+  SOURCES
+    memory_stream_test.cc
+  DEPS
+    pw_stream
+  GROUPS
+    modules
+    pw_stream
+)

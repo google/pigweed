@@ -131,6 +131,21 @@ TEST(MemoryWriter, ValidateContents_SingleByteWrites) {
   EXPECT_EQ(memory_writer.data()[1], std::byte{0x7E});
 }
 
+TEST(MemoryWriter, OverlappingBuffer) {
+  constexpr std::string_view kTestString("This is staged into the same buffer");
+  // Write at a five-byte offset from the start of the destination buffer.
+  constexpr std::byte* kOverlappingStart = memory_buffer.data() + 5;
+  std::memcpy(kOverlappingStart, kTestString.data(), kTestString.size());
+  MemoryWriter memory_writer(memory_buffer);
+  EXPECT_TRUE(memory_writer.Write(kOverlappingStart, kTestString.size()).ok());
+  EXPECT_TRUE(memory_writer.Write(std::byte(0)).ok());
+  EXPECT_EQ(memory_writer.bytes_written(), kTestString.size() + 1);
+
+  EXPECT_STREQ(
+      reinterpret_cast<const char*>(memory_writer.WrittenData().data()),
+      kTestString.data());
+}
+
 #define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
 
