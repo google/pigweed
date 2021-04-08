@@ -30,6 +30,7 @@ pw_source_set("static_router") {
   public_deps = [
     ":egress",
     ":packet_parser",
+    "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
     dir_pw_metric,
   ]
