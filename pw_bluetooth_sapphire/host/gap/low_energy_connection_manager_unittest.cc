@@ -135,16 +135,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   // Deletes |conn_mgr_|.
   void DeleteConnMgr() { conn_mgr_ = nullptr; }
 
-  // Due to the retry logic in LEConnector, this is necessary to emulate an internal::Connection
-  // failure notification specifically with the kConnectionFailedToBeEstablished 0x3e error.
-  void DisconnectPersistentlyThroughRetryLogic(DeviceAddress peer_to_disconnect,
-                                               size_t num_retries) {
-    for (size_t i = 0; i < num_retries; ++i) {
-      test_device()->Disconnect(peer_to_disconnect);
-      RunLoopRepeatedlyFor(zx::duration(1));
-    }
-  }
-
   PeerCache* peer_cache() const { return peer_cache_.get(); }
   LowEnergyConnectionManager* conn_mgr() const { return conn_mgr_.get(); }
   l2cap::testing::FakeL2cap* fake_l2cap() const { return l2cap_.get(); }
@@ -3139,11 +3129,11 @@ TEST_F(GAP_LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDi
     result = ConnectionResult{};
     conn_mgr()->RegisterRemoteInitiatedLink(std::move(link), BondableMode::Bondable, failure_cb);
     RunLoopUntilIdle();
-    // RegisterRemoteInitiatedLink will cause interrogation to start, and the above SetDefault
-    // CommandStatus will cause interrogation to fail. Special care needs to be taken with the
-    // 0x3e error to ensure connection failure due to the LEConnector retry logic.
+    // We always wait until the peer disconnects to relay connection failure when dealing with
+    // the 0x3e kConnectionFailedToBeEstablished error.
     if (statuses_that_disable_autoconnect[i] == hci::StatusCode::kConnectionFailedToBeEstablished) {
-      DisconnectPersistentlyThroughRetryLogic(kAddressI, 3);
+      test_device()->Disconnect(kAddressI, hci::StatusCode::kConnectionFailedToBeEstablished);
+      RunLoopUntilIdle();
     }
     // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
     ASSERT_EQ(fit::result_state::error, result.state());
