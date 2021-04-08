@@ -106,3 +106,12 @@
 #else
 #define PW_NO_SANITIZE(check)
 #endif  // __clang__
+
+// Wrapper around `__has_attribute`, which is defined by GCC 5+ and Clang and
+// evaluates to a non zero constant integer if the attribute is supported or 0
+// if not.
+#ifdef __has_attribute
+#define PW_HAVE_ATTRIBUTE(x) __has_attribute(x)
+#else
+#define PW_HAVE_ATTRIBUTE(x) 0
+#endif

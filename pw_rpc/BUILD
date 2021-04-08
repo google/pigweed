@@ -90,6 +90,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":common",
+        "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
     ],
 )

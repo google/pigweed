@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "pw_rpc/channel.h"
+#include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::rpc {
@@ -25,18 +26,20 @@ namespace pw::rpc {
 // ChannelOutput implementation to run in multi-threaded contexts. More complex
 // implementations may want to roll their own synchronization.
 template <typename BaseChannelOutput>
-class SynchronizedChannelOutput final : public BaseChannelOutput {
+class PW_LOCKABLE("pw::rpc::SynchronizedChannelOutput")
+    SynchronizedChannelOutput final : public BaseChannelOutput {
  public:
   template <typename... Args>
   constexpr SynchronizedChannelOutput(sync::Mutex& mutex, Args&&... args)
       : BaseChannelOutput(std::forward<Args>(args)...), mutex_(mutex) {}
 
-  std::span<std::byte> AcquireBuffer() final {
+  std::span<std::byte> AcquireBuffer() final PW_EXCLUSIVE_LOCK_FUNCTION() {
     mutex_.lock();
     return BaseChannelOutput::AcquireBuffer();
   }
 
-  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) final {
+  Status SendAndReleaseBuffer(std::span<const std::byte> buffer) final
+      PW_UNLOCK_FUNCTION() {
     Status status = BaseChannelOutput::SendAndReleaseBuffer(buffer);
     mutex_.unlock();
     return status;

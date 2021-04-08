@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #include "pw_preprocessor/util.h"
+#include "pw_sync/lock_annotations.h"
 
 #ifdef __cplusplus
 
@@ -33,7 +34,7 @@ namespace pw::sync {
 // and/or backend MUST ensure that any initialization required in your
 // environment is done prior to the creation and/or initialization of the native
 // synchronization primitives (e.g. kernel initialization).
-class Mutex {
+class PW_LOCKABLE("pw::sync::Mutex") Mutex {
  public:
   using native_handle_type = backend::NativeMutexHandle;
 
@@ -49,7 +50,7 @@ class Mutex {
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  void lock();
+  void lock() PW_EXCLUSIVE_LOCK_FUNCTION();
 
   // Attempts to lock the mutex in a non-blocking manner.
   // Returns true if the mutex was successfully acquired.
@@ -57,13 +58,13 @@ class Mutex {
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  bool try_lock();
+  bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   // Unlocks the mutex. Failures are fatal.
   //
   // PRECONDITION:
   //   The mutex is held by this thread.
-  void unlock();
+  void unlock() PW_UNLOCK_FUNCTION();
 
   native_handle_type native_handle();
 
@@ -86,8 +87,8 @@ typedef struct pw_sync_Mutex pw_sync_Mutex;
 
 PW_EXTERN_C_START
 
-void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex);
-bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex);
-void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex);
+void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
+bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
+void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
 
 PW_EXTERN_C_END

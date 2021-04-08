@@ -47,11 +47,20 @@ pw_facade("counting_semaphore") {
   sources = [ "counting_semaphore.cc" ]
 }
 
+pw_source_set("lock_annotations") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/lock_annotations.h" ]
+  public_deps = [ "$dir_pw_preprocessor" ]
+}
+
 pw_facade("mutex") {
   backend = pw_sync_MUTEX_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/mutex.h" ]
-  public_deps = [ "$dir_pw_preprocessor" ]
+  public_deps = [
+    ":lock_annotations",
+    "$dir_pw_preprocessor",
+  ]
   sources = [ "mutex.cc" ]
 }
 
@@ -71,7 +80,10 @@ pw_facade("interrupt_spin_lock") {
   backend = pw_sync_INTERRUPT_SPIN_LOCK_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/interrupt_spin_lock.h" ]
-  public_deps = [ "$dir_pw_preprocessor" ]
+  public_deps = [
+    ":lock_annotations",
+    "$dir_pw_preprocessor",
+  ]
   sources = [ "interrupt_spin_lock.cc" ]
 }
 

@@ -49,10 +49,13 @@ TEST(InterruptSpinLock, LockUnlockStatic) {
 
 TEST(InterruptSpinLock, TryLockUnlock) {
   pw::sync::InterruptSpinLock interrupt_spin_lock;
-  ASSERT_TRUE(interrupt_spin_lock.try_lock());
-  // Ensure it fails to lock when already held.
-  EXPECT_FALSE(interrupt_spin_lock.try_lock());
-  interrupt_spin_lock.unlock();
+  const bool locked = interrupt_spin_lock.try_lock();
+  EXPECT_TRUE(locked);
+  if (locked) {
+    // Ensure it fails to lock when already held.
+    EXPECT_FALSE(interrupt_spin_lock.try_lock());
+    interrupt_spin_lock.unlock();
+  }
 }
 
 TEST(InterruptSpinLock, LockUnlockInC) {

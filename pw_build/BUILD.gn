@@ -87,6 +87,12 @@ config("strict_warnings") {
   cflags_cc = [ "-Wnon-virtual-dtor" ]
 }
 
+# Thread safety warnings are only supported by Clang.
+config("clang_thread_safety_warnings") {
+  cflags = [ "-Wthread-safety" ]
+  defines = [ "_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1" ]
+}
+
 # This config contains warnings that we don't necessarily recommend projects
 # enable, but are enabled for upstream Pigweed for maximum project
 # compatibility.

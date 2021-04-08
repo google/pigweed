@@ -108,6 +108,7 @@ pw_source_set("synchronized_channel_output") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":common",
+    "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
   ]
   public = [ "public/pw_rpc/synchronized_channel_output.h" ]

@@ -71,6 +71,7 @@ _gcc_target_default_configs = [
 ]
 
 _clang_target_default_configs = [
+  "$dir_pw_build:clang_thread_safety_warnings",
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_toolchain/arm_clang:enable_float_printf",
 ]

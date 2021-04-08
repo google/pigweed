@@ -611,6 +611,345 @@ Example in C
     pw_sync_InterruptSpinLock_Unlock(&interrupt_spin_lock);
   }
 
+Thread Safety Lock Annotations
+==============================
+Pigweed's critical section lock primitives support Clang's thread safety
+analysis extension for C++. The analysis is completely static at compile-time.
+This is only supported when building with Clang. The annotations are no-ops when
+using different compilers.
+
+Pigweed provides the ``pw_sync/lock_annotations.h`` header file with macro
+definitions to allow developers to document the locking policies of
+multi-threaded code. The annotations can also help program analysis tools to
+identify potential thread safety issues.
+
+More information on Clang's thread safety analysis system can be found
+`here <https://clang.llvm.org/docs/ThreadSafetyAnalysis.html>`_.
+
+Enabling Clang's Analysis
+-------------------------
+In order to enable the analysis, Clang requires that the ``-Wthread-safety``
+compilation flag be used. In addition, if any STL components like
+``std::lock_guard`` are used, the STL's built in annotations have to be manually
+enabled, typically by setting the ``_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS``
+macro.
+
+If using GN, the ``pw_build:clang_thread_safety_warnings`` config is provided
+to do this for you, when added to your clang toolchain definition's default
+configs.
+
+Why use lock annotations?
+-------------------------
+Lock annotations can help warn you about potential race conditions in your code
+when using locks: you have to remember to grab lock(s) before entering a
+critical section, yuou have to remember to unlock it when you leave, and you
+have to avoid deadlocks.
+
+Clang's lock annotations let you inform the compiler and anyone reading your
+code which variables are guarded by which locks, which locks should or cannot be
+held when calling which function, which order locks should be acquired in, etc.
+
+Using Lock Annotations
+----------------------
+When referring to locks in the arguments of the attributes, you should
+use variable names or more complex expressions (e.g. ``my_object->lock_``)
+that evaluate to a concrete lock object whenever possible. If the lock
+you want to refer to is not in scope, you may use a member pointer
+(e.g. ``&MyClass::lock_``) to refer to a lock in some (unknown) object.
+
+Annotating Lock Usage
+^^^^^^^^^^^^^^^^^^^^^
+.. cpp:function:: PW_GUARDED_BY(x)
+
+  Documents if a shared field or global variable needs to be protected by a
+  lock. ``PW_GUARDED_BY()`` allows the user to specify a particular lock that
+  should be held when accessing the annotated variable.
+
+  Although this annotation (and ``PW_PT_GUARDED_BY``, below) cannot be applied
+  to local variables, a local variable and its associated lock can often be
+  combined into a small class or struct, thereby allowing the annotation.
+
+  Example:
+
+  .. code-block:: cpp
+
+    class Foo {
+      Mutex mu_;
+      int p1_ PW_GUARDED_BY(mu_);
+      ...
+    };
+
+.. cpp:function:: PW_PT_GUARDED_BY(x)
+
+  Documents if the memory location pointed to by a pointer should be guarded
+  by a lock when dereferencing the pointer.
+
+  Example:
+
+  .. code-block:: cpp
+
+    class Foo {
+      Mutex mu_;
+      int *p1_ PW_PT_GUARDED_BY(mu_);
+      ...
+    };
+
+  Note that a pointer variable to a shared memory location could itself be a
+  shared variable.
+
+  Example:
+
+  .. code-block:: cpp
+
+    // `q_`, guarded by `mu1_`, points to a shared memory location that is
+    // guarded by `mu2_`:
+    int *q_ PW_GUARDED_BY(mu1_) PW_PT_GUARDED_BY(mu2_);
+
+.. cpp:function:: PW_ACQUIRED_AFTER(...)
+.. cpp:function:: PW_ACQUIRED_BEFORE(...)
+
+  Documents the acquisition order between locks that can be held
+  simultaneously by a thread. For any two locks that need to be annotated
+  to establish an acquisition order, only one of them needs the annotation.
+  (i.e. You don't have to annotate both locks with both ``PW_ACQUIRED_AFTER``
+  and ``PW_ACQUIRED_BEFORE``.)
+
+  As with ``PW_GUARDED_BY``, this is only applicable to locks that are shared
+  fields or global variables.
+
+  Example:
+
+  .. code-block:: cpp
+
+    Mutex m1_;
+    Mutex m2_ PW_ACQUIRED_AFTER(m1_);
+
+.. cpp:function:: PW_EXCLUSIVE_LOCKS_REQUIRED(...)
+.. cpp:function:: PW_SHARED_LOCKS_REQUIRED(...)
+
+  Documents a function that expects a lock to be held prior to entry.
+  The lock is expected to be held both on entry to, and exit from, the
+  function.
+
+  An exclusive lock allows read-write access to the guarded data member(s), and
+  only one thread can acquire a lock exclusively at any one time. A shared lock
+  allows read-only access, and any number of threads can acquire a shared lock
+  concurrently.
+
+  Generally, non-const methods should be annotated with
+  ``PW_EXCLUSIVE_LOCKS_REQUIRED``, while const methods should be annotated with
+  ``PW_SHARED_LOCKS_REQUIRED``.
+
+  Example:
+
+  .. code-block:: cpp
+
+    Mutex mu1, mu2;
+    int a PW_GUARDED_BY(mu1);
+    int b PW_GUARDED_BY(mu2);
+
+    void foo() PW_EXCLUSIVE_LOCKS_REQUIRED(mu1, mu2) { ... }
+    void bar() const PW_SHARED_LOCKS_REQUIRED(mu1, mu2) { ... }
+
+.. cpp:function:: PW_LOCKS_EXCLUDED(...)
+
+  Documents the locks acquired in the body of the function. These locks
+  cannot be held when calling this function (as Pigweed's default locks are
+  non-reentrant).
+
+  Example:
+
+  .. code-block:: cpp
+
+    Mutex mu;
+    int a PW_GUARDED_BY(mu);
+
+    void foo() PW_LOCKS_EXCLUDED(mu) {
+      mu.lock();
+      ...
+      mu.unlock();
+    }
+
+.. cpp:function:: PW_LOCK_RETURNED(...)
+
+  Documents a function that returns a lock without acquiring it.  For example,
+  a public getter method that returns a pointer to a private lock should
+  be annotated with ``PW_LOCK_RETURNED``.
+
+  Example:
+
+  .. code-block:: cpp
+
+    class Foo {
+     public:
+      Mutex* mu() PW_LOCK_RETURNED(mu) { return &mu; }
+
+     private:
+      Mutex mu;
+    };
+
+.. cpp:function:: PW_NO_LOCK_SAFETY_ANALYSIS()
+
+   Turns off thread safety checking within the body of a particular function.
+   This annotation is used to mark functions that are known to be correct, but
+   the locking behavior is more complicated than the analyzer can handle.
+
+Annotating Lock Objects
+^^^^^^^^^^^^^^^^^^^^^^^
+In order of lock usage annotation to work, the lock objects themselves need to
+be annotated as well. In case you are providing your own lock or psuedo-lock
+object, you can use the macros in this section to annotate it.
+
+As an example we've annotated a Lock and a RAII ScopedLocker object for you, see
+the macro documentation after for more details:
+
+.. code-block:: cpp
+
+  class PW_LOCKABLE("Lock") Lock {
+   public:
+    void Lock() PW_EXCLUSIVE_LOCK_FUNCTION();
+
+    void ReaderLock() PW_SHARED_LOCK_FUNCTION();
+
+    void Unlock() PW_UNLOCK_FUNCTION();
+
+    void ReaderUnlock() PW_SHARED_TRYLOCK_FUNCTION();
+
+    bool TryLock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
+
+    bool ReaderTryLock() PW_SHARED_TRYLOCK_FUNCTION(true);
+
+    void AssertHeld() PW_ASSERT_EXCLUSIVE_LOCK();
+
+    void AssertReaderHeld() PW_ASSERT_SHARED_LOCK();
+  };
+
+
+  // Tag types for selecting a constructor.
+  struct adopt_lock_t {} inline constexpr adopt_lock = {};
+  struct defer_lock_t {} inline constexpr defer_lock = {};
+  struct shared_lock_t {} inline constexpr shared_lock = {};
+
+  class PW_SCOPED_LOCKABLE ScopedLocker {
+    // Acquire lock, implicitly acquire *this and associate it with lock.
+    ScopedLocker(Lock *lock) PW_EXCLUSIVE_LOCK_FUNCTION(lock)
+        : lock_(lock), locked(true) {
+      lock->Lock();
+    }
+
+    // Assume lock is held, implicitly acquire *this and associate it with lock.
+    ScopedLocker(Lock *lock, adopt_lock_t) PW_EXCLUSIVE_LOCKS_REQUIRED(lock)
+        : lock_(lock), locked(true) {}
+
+    // Acquire lock in shared mode, implicitly acquire *this and associate it
+    // with lock.
+    ScopedLocker(Lock *lock, shared_lock_t) PW_SHARED_LOCK_FUNCTION(lock)
+        : lock_(lock), locked(true) {
+      lock->ReaderLock();
+    }
+
+    // Assume lock is held in shared mode, implicitly acquire *this and associate
+    // it with lock.
+    ScopedLocker(Lock *lock, adopt_lock_t, shared_lock_t)
+        PW_SHARED_LOCKS_REQUIRED(lock) : lock_(lock), locked(true) {}
+
+    // Assume lock is not held, implicitly acquire *this and associate it with
+    // lock.
+    ScopedLocker(Lock *lock, defer_lock_t) PW_LOCKS_EXCLUDED(lock)
+        : lock_(lock), locked(false) {}
+
+    // Release *this and all associated locks, if they are still held.
+    // There is no warning if the scope was already unlocked before.
+    ~ScopedLocker() PW_UNLOCK_FUNCTION() {
+      if (locked)
+        lock_->GenericUnlock();
+    }
+
+    // Acquire all associated locks exclusively.
+    void Lock() PW_EXCLUSIVE_LOCK_FUNCTION() {
+      lock_->Lock();
+      locked = true;
+    }
+
+    // Try to acquire all associated locks exclusively.
+    bool TryLock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+      return locked = lock_->TryLock();
+    }
+
+    // Acquire all associated locks in shared mode.
+    void ReaderLock() PW_SHARED_LOCK_FUNCTION() {
+      lock_->ReaderLock();
+      locked = true;
+    }
+
+    // Try to acquire all associated locks in shared mode.
+    bool ReaderTryLock() PW_SHARED_TRYLOCK_FUNCTION(true) {
+      return locked = lock_->ReaderTryLock();
+    }
+
+    // Release all associated locks. Warn on double unlock.
+    void Unlock() PW_UNLOCK_FUNCTION() {
+      lock_->Unlock();
+      locked = false;
+    }
+
+    // Release all associated locks. Warn on double unlock.
+    void ReaderUnlock() PW_UNLOCK_FUNCTION() {
+      lock_->ReaderUnlock();
+      locked = false;
+    }
+
+   private:
+    Lock* lock_;
+    bool locked_;
+  };
+
+.. cpp:function:: PW_LOCKABLE(name)
+
+  Documents if a class/type is a lockable type (such as the ``pw::sync::Mutex``
+  class). The name is used in the warning messages. This can also be useful on
+  classes which have locking like semantics but aren't actually locks.
+
+.. cpp:function:: PW_SCOPED_LOCKABLE()
+
+  Documents if a class does RAII locking. The name is used in the warning
+  messages.
+
+  The constructor should use ``LOCK_FUNCTION()`` to specify the lock that is
+  acquired, and the destructor should use ``UNLOCK_FUNCTION()`` with no
+  arguments; the analysis will assume that the destructor unlocks whatever the
+  constructor locked.
+
+.. cpp:function:: PW_EXCLUSIVE_LOCK_FUNCTION()
+
+  Documents functions that acquire a lock in the body of a function, and do
+  not release it.
+
+.. cpp:function:: PW_SHARED_LOCK_FUNCTION()
+
+   Documents functions that acquire a shared (reader) lock in the body of a
+   function, and do not release it.
+
+.. cpp:function:: PW_UNLOCK_FUNCTION()
+
+   Documents functions that expect a lock to be held on entry to the function,
+   and release it in the body of the function.
+
+.. cpp:function:: PW_EXCLUSIVE_TRYLOCK_FUNCTION(try_success)
+.. cpp:function:: PW_SHARED_TRYLOCK_FUNCTION(try_success)
+
+  Documents functions that try to acquire a lock, and return success or failure
+  (or a non-boolean value that can be interpreted as a boolean).
+  The first argument should be ``true`` for functions that return ``true`` on
+  success, or ``false`` for functions that return `false` on success. The second
+  argument specifies the lock that is locked on success. If unspecified, this
+  lock is assumed to be ``this``.
+
+.. cpp:function:: PW_ASSERT_EXCLUSIVE_LOCK()
+.. cpp:function:: PW_ASSERT_SHARED_LOCK()
+
+   Documents functions that dynamically check to see if a lock is held, and fail
+   if it is not held.
 
 --------------------
 Signaling Primitives

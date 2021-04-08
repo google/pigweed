@@ -16,6 +16,7 @@
 #include <stdbool.h>
 
 #include "pw_preprocessor/util.h"
+#include "pw_sync/lock_annotations.h"
 
 #ifdef __cplusplus
 
@@ -43,7 +44,7 @@ namespace pw::sync {
 //
 // Precondition: Code that holds a specific InterruptSpinLock must not try to
 // re-acquire it. However, it is okay to nest distinct spinlocks.
-class InterruptSpinLock {
+class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
  public:
   using native_handle_type = backend::NativeInterruptSpinLockHandle;
 
@@ -57,19 +58,19 @@ class InterruptSpinLock {
   // Locks the spinlock, blocking indefinitely. Failures are fatal.
   //
   // Precondition: Recursive locking is undefined behavior.
-  void lock();
+  void lock() PW_EXCLUSIVE_LOCK_FUNCTION();
 
   // Attempts to lock the spinlock in a non-blocking manner.
   // Returns true if the spinlock was successfully acquired.
   //
   // Precondition: Recursive locking is undefined behavior.
-  bool try_lock();
+  bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   // Unlocks the spinlock. Failures are fatal.
   //
   // PRECONDITION:
   //   The spinlock is held by the caller.
-  void unlock();
+  void unlock() PW_UNLOCK_FUNCTION();
 
   native_handle_type native_handle();
 
@@ -92,8 +93,11 @@ typedef struct pw_sync_InterruptSpinLock pw_sync_InterruptSpinLock;
 
 PW_EXTERN_C_START
 
-void pw_sync_InterruptSpinLock_Lock(pw_sync_InterruptSpinLock* spin_lock);
-bool pw_sync_InterruptSpinLock_TryLock(pw_sync_InterruptSpinLock* spin_lock);
-void pw_sync_InterruptSpinLock_Unlock(pw_sync_InterruptSpinLock* spin_lock);
+void pw_sync_InterruptSpinLock_Lock(pw_sync_InterruptSpinLock* spin_lock)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
+bool pw_sync_InterruptSpinLock_TryLock(pw_sync_InterruptSpinLock* spin_lock)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
+void pw_sync_InterruptSpinLock_Unlock(pw_sync_InterruptSpinLock* spin_lock)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
 
 PW_EXTERN_C_END

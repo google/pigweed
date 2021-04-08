@@ -65,27 +65,33 @@ TEST(TimedMutex, LockUnlockStatic) {
 
 TEST(TimedMutex, TryLockUnlock) {
   pw::sync::TimedMutex mutex;
-  ASSERT_TRUE(mutex.try_lock());
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
-  // EXPECT_FALSE(mutex.try_lock());
-  mutex.unlock();
+  const bool locked = mutex.try_lock();
+  EXPECT_TRUE(locked);
+  if (locked) {
+    // TODO(pwbug/291): Ensure it fails to lock when already held.
+    // EXPECT_FALSE(mutex.try_lock());
+    mutex.unlock();
+  }
 }
 
 TEST(TimedMutex, TryLockUnlockFor) {
   pw::sync::TimedMutex mutex;
 
   SystemClock::time_point before = SystemClock::now();
-  ASSERT_TRUE(mutex.try_lock_for(kRoundedArbitraryDuration));
-  SystemClock::duration time_elapsed = SystemClock::now() - before;
-  EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
+  const bool locked = mutex.try_lock_for(kRoundedArbitraryDuration);
+  EXPECT_TRUE(locked);
+  if (locked) {
+    SystemClock::duration time_elapsed = SystemClock::now() - before;
+    EXPECT_LT(time_elapsed, kRoundedArbitraryDuration);
 
-  // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-  // before = SystemClock::now();
-  // EXPECT_FALSE(mutex.try_lock_for(kRoundedArbitraryDuration));
-  // time_elapsed = SystemClock::now() - before;
-  /// EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
+    // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
+    // before = SystemClock::now();
+    // EXPECT_FALSE(mutex.try_lock_for(kRoundedArbitraryDuration));
+    // time_elapsed = SystemClock::now() - before;
+    /// EXPECT_GE(time_elapsed, kRoundedArbitraryDuration);
 
-  mutex.unlock();
+    mutex.unlock();
+  }
 }
 
 TEST(TimedMutex, TryLockUnlockUntil) {
@@ -93,15 +99,19 @@ TEST(TimedMutex, TryLockUnlockUntil) {
 
   const SystemClock::time_point deadline =
       SystemClock::now() + kRoundedArbitraryDuration;
-  ASSERT_TRUE(mutex.try_lock_until(deadline));
-  EXPECT_LT(SystemClock::now(), deadline);
+  const bool locked = mutex.try_lock_until(deadline);
+  EXPECT_TRUE(locked);
+  if (locked) {
+    EXPECT_LT(SystemClock::now(), deadline);
 
-  // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
-  // EXPECT_FALSE(
-  //     mutex.try_lock_until(SystemClock::now() + kRoundedArbitraryDuration));
-  // EXPECT_GE(SystemClock::now(), deadline);
+    // TODO(pwbug/291): Ensure it blocks fails to lock when already held.
+    // EXPECT_FALSE(
+    //     mutex.try_lock_until(SystemClock::now() +
+    //     kRoundedArbitraryDuration));
+    // EXPECT_GE(SystemClock::now(), deadline);
 
-  mutex.unlock();
+    mutex.unlock();
+  }
 }
 
 TEST(TimedMutex, LockUnlockInC) {
@@ -155,7 +165,7 @@ TEST(TimedMutex, TryLockUnlockUntilInC) {
   // EXPECT_GE(pw_chrono_SystemClock_Now().duration_since_epoch.ticks,
   //           deadline.duration_since_epoch.ticks);
 
-  mutex.unlock();
+  pw_sync_TimedMutex_CallUnlock(&mutex);
 }
 
 }  // namespace

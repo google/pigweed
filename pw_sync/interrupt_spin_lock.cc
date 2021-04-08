@@ -14,6 +14,8 @@
 
 #include "pw_sync/interrupt_spin_lock.h"
 
+#include "pw_sync/lock_annotations.h"
+
 extern "C" void pw_sync_InterruptSpinLock_Lock(
     pw_sync_InterruptSpinLock* interrupt_spin_lock) {
   interrupt_spin_lock->lock();

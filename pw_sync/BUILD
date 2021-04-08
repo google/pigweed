@@ -92,6 +92,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "lock_annotations",
+    hdrs = [
+        "public/pw_sync/lock_annotations.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
     name = "mutex_facade",
     hdrs = [
         "public/pw_sync/mutex.h",
@@ -101,8 +112,9 @@ pw_cc_library(
         "mutex.cc"
     ],
     deps = [
-        PW_SYNC_MUTEX_BACKEND + "_headers",
+		    ":lock_annotations",
         "//pw_preprocessor",
+        PW_SYNC_MUTEX_BACKEND + "_headers",
     ],
 )
 
@@ -131,10 +143,11 @@ pw_cc_library(
         "timed_mutex.cc"
     ],
     deps = [
-        PW_SYNC_TIMED_MUTEX_BACKEND + "_headers",
-        "//pw_chrono:system_clock",
+		    ":lock_annotations",
         ":mutex_facade",
+        "//pw_chrono:system_clock",
         "//pw_preprocessor",
+        PW_SYNC_TIMED_MUTEX_BACKEND + "_headers",
     ],
 )
 
@@ -163,8 +176,9 @@ pw_cc_library(
         "interrupt_spin_lock.cc"
     ],
     deps = [
-        PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND + "_headers",
+		    ":lock_annotations",
         "//pw_preprocessor",
+        PW_SYNC_INTERRUPT_SPIN_LOCK_BACKEND + "_headers",
     ],
 )
 

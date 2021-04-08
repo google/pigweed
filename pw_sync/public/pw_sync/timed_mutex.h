@@ -17,6 +17,7 @@
 
 #include "pw_chrono/system_clock.h"
 #include "pw_preprocessor/util.h"
+#include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
 #ifdef __cplusplus
@@ -50,7 +51,8 @@ class TimedMutex : public Mutex {
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  bool try_lock_for(chrono::SystemClock::duration for_at_least);
+  bool try_lock_for(chrono::SystemClock::duration for_at_least)
+      PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
   // Attempts to lock the mutex where, if needed, blocking until at least the
   // specified time_point.
@@ -59,7 +61,8 @@ class TimedMutex : public Mutex {
   // PRECONDITION:
   //   The lock isn't already held by this thread. Recursive locking is
   //   undefined behavior.
-  bool try_lock_until(chrono::SystemClock::time_point until_at_least);
+  bool try_lock_until(chrono::SystemClock::time_point until_at_least)
+      PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 };
 
 }  // namespace pw::sync
@@ -76,12 +79,17 @@ typedef struct pw_sync_TimedMutex pw_sync_TimedMutex;
 
 PW_EXTERN_C_START
 
-void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex);
-bool pw_sync_TimedMutex_TryLock(pw_sync_TimedMutex* mutex);
+void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
+bool pw_sync_TimedMutex_TryLock(pw_sync_TimedMutex* mutex)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
 bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex,
-                                   pw_chrono_SystemClock_Duration for_at_least);
+                                   pw_chrono_SystemClock_Duration for_at_least)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
 bool pw_sync_TimedMutex_TryLockUntil(
-    pw_sync_TimedMutex* mutex, pw_chrono_SystemClock_TimePoint until_at_least);
-void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex);
+    pw_sync_TimedMutex* mutex,
+    pw_chrono_SystemClock_TimePoint until_at_least) PW_NO_LOCK_SAFETY_ANALYSIS;
+void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex)
+    PW_NO_LOCK_SAFETY_ANALYSIS;
 
 PW_EXTERN_C_END

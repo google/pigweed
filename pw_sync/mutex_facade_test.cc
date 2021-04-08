@@ -49,10 +49,13 @@ TEST(Mutex, LockUnlockStatic) {
 
 TEST(Mutex, TryLockUnlock) {
   pw::sync::Mutex mutex;
-  ASSERT_TRUE(mutex.try_lock());
-  // TODO(pwbug/291): Ensure it fails to lock when already held.
-  // EXPECT_FALSE(mutex.try_lock());
-  mutex.unlock();
+  const bool locked = mutex.try_lock();
+  EXPECT_TRUE(locked);
+  if (locked) {
+    // TODO(pwbug/291): Ensure it fails to lock when already held.
+    // EXPECT_FALSE(mutex.try_lock());
+    mutex.unlock();
+  }
 }
 
 TEST(Mutex, LockUnlockInC) {
