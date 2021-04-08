@@ -26,7 +26,7 @@ import sys
 import tempfile
 from typing import Callable, Iterable, List, Set
 
-import pw_cli.plugins
+import pw_cli.pw_command_plugins
 
 
 def call_stdout(*args, **kwargs):
@@ -130,7 +130,7 @@ CHECKS: List[Callable] = []
 
 @register_into(CHECKS)
 def pw_plugins(ctx: DoctorContext):
-    if pw_cli.plugins.errors():
+    if pw_cli.pw_command_plugins.errors():
         ctx.error('Not all pw plugins loaded successfully')
 
 

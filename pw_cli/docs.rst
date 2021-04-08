@@ -271,7 +271,40 @@ pw_cli Python package
 The ``pw_cli`` Pigweed module includes the ``pw_cli`` Python package, which
 provides utilities for creating command line tools with Pigweed.
 
-pw_cli log
+pw_cli.log
 ----------
 .. automodule:: pw_cli.log
+  :members:
+
+pw_cli.plugins
+--------------
+:py:mod:`pw_cli.plugins` provides general purpose plugin functionality. The
+module can be used to create plugins for command line tools, interactive
+consoles, or anything else. Pigweed's ``pw`` command uses this module for its
+plugins.
+
+To use plugins, create a :py:class:`pw_cli.plugins.Registry`. The registry may
+have an optional validator function that checks plugins before they are
+registered (see :py:meth:`pw_cli.plugins.Registry.__init__`).
+
+Plugins may be registered in a few different ways.
+
+ * Register with a direct function call. See
+   :py:meth:`pw_cli.plugins.Registry.register` and
+   :py:meth:`pw_cli.plugins.Registry.register_by_name`.
+ * Register from plugins files. See
+   :py:meth:`pw_cli.plugins.Registry.register_file` and
+   :py:meth:`pw_cli.plugins.Registry.register_directory`. Plugins files use a
+   simple format:
+
+   .. code-block::
+
+     # Comments start with "#". Blank lines are ignored.
+     name_of_the_plugin module.name module_member
+
+     another_plugin some_module some_function
+
+Module reference
+^^^^^^^^^^^^^^^^
+.. automodule:: pw_cli.plugins
   :members:

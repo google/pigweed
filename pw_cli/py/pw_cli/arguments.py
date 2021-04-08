@@ -39,9 +39,9 @@ def print_banner() -> None:
     print(banner(), file=sys.stderr)
 
 
-def format_help() -> str:
+def format_help(registry: plugins.Registry) -> str:
     """Returns the pw help information as a string."""
-    return f'{_parser().format_help()}\n{plugins.command_help()}'
+    return f'{_parser().format_help()}\n{registry.short_help()}'
 
 
 class _ArgumentParserWithBanner(argparse.ArgumentParser):

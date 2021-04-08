@@ -19,7 +19,7 @@ import sys
 from typing import NoReturn
 
 import pw_cli.log
-from pw_cli import arguments, plugins
+from pw_cli import arguments, plugins, pw_command_plugins
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,15 +38,15 @@ def main() -> NoReturn:
     _LOG.debug('Executing the pw command from %s', args.directory)
     os.chdir(args.directory)
 
-    plugins.register(args.directory)
+    pw_command_plugins.register(args.directory)
 
     if args.help or args.command is None:
-        print(arguments.format_help(), file=sys.stderr)
+        print(pw_command_plugins.format_help(), file=sys.stderr)
         sys.exit(0)
 
     try:
-        sys.exit(plugins.run(args.command, args.plugin_args))
-    except plugins.Error as err:
+        sys.exit(pw_command_plugins.run(args.command, args.plugin_args))
+    except (plugins.Error, KeyError) as err:
         _LOG.critical('Cannot run command %s.', args.command)
         _LOG.critical('%s', err)
         sys.exit(2)
