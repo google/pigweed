@@ -15,6 +15,7 @@
 
 #include <cstdint>
 #include <span>
+#include <type_traits>
 
 #include "pw_assert/assert.h"
 #include "pw_status/status.h"
@@ -74,6 +75,19 @@ class Channel {
   constexpr static Channel Create(ChannelOutput* output) {
     static_assert(kId != kUnassignedChannelId, "Channel ID cannot be 0");
     return Channel(kId, output);
+  }
+
+  // Creates a channel with a static ID from an enum value.
+  template <auto kId,
+            typename T = decltype(kId),
+            typename = std::enable_if_t<std::is_enum_v<T>>,
+            typename U = std::underlying_type_t<T>>
+  constexpr static Channel Create(ChannelOutput* output) {
+    constexpr U kIntId = static_cast<U>(kId);
+    static_assert(kIntId >= 0, "Channel ID cannot be negative");
+    static_assert(kIntId <= std::numeric_limits<uint32_t>::max(),
+                  "Channel ID must fit in a uint32");
+    return Create<static_cast<uint32_t>(kIntId)>(output);
   }
 
   constexpr uint32_t id() const { return id_; }

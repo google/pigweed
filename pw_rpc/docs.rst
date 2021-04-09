@@ -238,6 +238,33 @@ channel output and the example service.
         server, hdlc_channel_output, input_buffer);
   }
 
+Channels
+========
+``pw_rpc`` sends all of its packets over channels. These are logical,
+application-layer routes used to tell the RPC system where a packet should go.
+
+Channels over a client-server connection must all have a unique ID, which can be
+assigned statically at compile time or dynamically.
+
+.. code-block:: cpp
+
+  // Creating a channel with the static ID 3.
+  pw::rpc::Channel static_channel = pw::rpc::Channel::Create<3>(&output);
+
+  // Grouping channel IDs within an enum can lead to clearer code.
+  enum ChannelId {
+    kUartChannel = 1,
+    kSpiChannel = 2,
+  };
+
+  // Creating a channel with a static ID defined within an enum.
+  pw::rpc::Channel another_static_channel =
+      pw::rpc::Channel::Create<ChannelId::kUartChannel>(&output);
+
+  // Creating a channel with a dynamic ID (note that no output is provided; it
+  // will be set when the channel is used.
+  pw::rpc::Channel dynamic_channel;
+
 Services
 ========
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``

@@ -42,6 +42,18 @@ const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
                              2 /* status */;
 
+enum class ChannelId {
+  kOne = 1,
+  kTwo = 2,
+};
+
+TEST(Channel, Create_FromEnum) {
+  constexpr rpc::Channel one = Channel::Create<ChannelId::kOne>(nullptr);
+  constexpr rpc::Channel two = Channel::Create<ChannelId::kTwo>(nullptr);
+  static_assert(one.id() == 1);
+  static_assert(two.id() == 2);
+}
+
 TEST(Channel, TestPacket_ReservedSizeMatchesMinEncodedSizeBytes) {
   EXPECT_EQ(kReservedSize, kTestPacket.MinEncodedSizeBytes());
 }
