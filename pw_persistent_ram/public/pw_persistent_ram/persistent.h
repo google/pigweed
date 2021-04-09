@@ -24,14 +24,11 @@
 
 namespace pw::persistent_ram {
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wuninitialized"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wuninitialized"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+// The Persistent class intentionally uses uninitialized memory, which triggers
+// compiler warnings. Disable those warnings for this file.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wuninitialized");
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
 
 // A simple container for holding a value T with CRC16 integrity checking.
 //
@@ -157,10 +154,6 @@ class Persistent {
   };
 };
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
+PW_MODIFY_DIAGNOSTICS_POP();
 
 }  // namespace pw::persistent_ram

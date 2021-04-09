@@ -16,6 +16,8 @@
 // This file is used by both C++ and C code.
 #pragma once
 
+#include <assert.h>
+
 // Marks a struct or class as packed.
 #define PW_PACKED(declaration) declaration __attribute__((packed))
 
@@ -115,3 +117,37 @@
 #else
 #define PW_HAVE_ATTRIBUTE(x) 0
 #endif
+
+#define _PW_REQUIRE_SEMICOLON \
+  static_assert(1, "This macro must be terminated with a semicolon")
+
+// PW_MODIFY_DIAGNOSTICS_PUSH and PW_MODIFY_DIAGNOSTICS_POP are used to turn off
+// or on diagnostics (warnings or errors) for a section of code. Use
+// PW_MODIFY_DIAGNOSTICS_PUSH, use PW_MODIFY_DIAGNOSTIC as many times as needed,
+// then use PW_MODIFY_DIAGNOSTICS_POP to restore the previous settings.
+#define PW_MODIFY_DIAGNOSTICS_PUSH() \
+  _Pragma("GCC diagnostic push") _PW_REQUIRE_SEMICOLON
+#define PW_MODIFY_DIAGNOSTICS_POP() \
+  _Pragma("GCC diagnostic pop") _PW_REQUIRE_SEMICOLON
+
+// Changes how a diagnostic (warning or error) is handled. Most commonly used to
+// disable warnings. PW_MODIFY_DIAGNOSTIC should be used between
+// PW_MODIFY_DIAGNOSTICS_PUSH and PW_MODIFY_DIAGNOSTICS_POP statements to avoid
+// applying the modifications too broadly.
+//
+// 'kind' must be one of warning, error, or ignored.
+#define PW_MODIFY_DIAGNOSTIC(kind, option) \
+  PW_PRAGMA(GCC diagnostic kind option) _PW_REQUIRE_SEMICOLON
+
+// Applies PW_MODIFY_DIAGNOSTIC only for GCC. This is useful for warnings that
+// aren't supported by or don't need to be changed in other compilers.
+#ifdef __clang__
+#define PW_MODIFY_DIAGNOSTIC_GCC(kind, option) _PW_REQUIRE_SEMICOLON
+#else
+#define PW_MODIFY_DIAGNOSTIC_GCC(kind, option) \
+  PW_MODIFY_DIAGNOSTIC(kind, option)
+#endif  // __clang__
+
+// Expands to a _Pragma with the contents as a string. _Pragma must take a
+// single string literal; this can be used to construct a _Pragma argument.
+#define PW_PRAGMA(contents) _Pragma(#contents)

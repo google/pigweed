@@ -43,6 +43,7 @@ pw_test_group("tests") {
   tests = [
     ":arguments_test",
     ":boolean_test",
+    ":compiler_test",
     ":concat_test",
     ":util_test",
   ]
@@ -56,6 +57,11 @@ pw_test("arguments_test") {
 pw_test("boolean_test") {
   deps = [ ":pw_preprocessor" ]
   sources = [ "boolean_test.cc" ]
+}
+
+pw_test("compiler_test") {
+  deps = [ ":pw_preprocessor" ]
+  sources = [ "compiler_test.cc" ]
 }
 
 pw_test("concat_test") {

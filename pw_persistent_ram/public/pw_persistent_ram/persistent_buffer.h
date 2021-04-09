@@ -21,6 +21,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_checksum/crc16_ccitt.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 
@@ -56,14 +57,11 @@ class PersistentBufferWriter : public stream::Writer {
   volatile uint16_t& checksum_;
 };
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wuninitialized"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wuninitialized"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+// The PersistentBuffer class intentionally uses uninitialized memory, which
+// triggers compiler warnings. Disable those warnings for this file.
+PW_MODIFY_DIAGNOSTICS_PUSH();
+PW_MODIFY_DIAGNOSTIC(ignored, "-Wuninitialized");
+PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
 
 // When a PersistentBuffer is statically allocated in persistent memory, its
 // state will persist across soft resets in accordance with the expected
@@ -142,9 +140,6 @@ class PersistentBuffer {
   volatile std::byte buffer_[kMaxSizeBytes];
 };
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
+PW_MODIFY_DIAGNOSTICS_POP();
+
 }  // namespace pw::persistent_ram

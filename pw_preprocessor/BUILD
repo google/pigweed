@@ -32,6 +32,7 @@ pw_cc_library(
 TESTS = [
     "arguments_test",
     "boolean_test",
+    "compiler_test",
     "concat_test",
     "util_test",
 ]

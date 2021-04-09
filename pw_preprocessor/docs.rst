@@ -67,6 +67,48 @@ pw_preprocessor/compiler.h
 --------------------------
 Macros for compiler-specific features, such as attributes or builtins.
 
+Modifying compiler diagnostics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``pw_preprocessor/compiler.h`` provides macros for enabling or disabling
+compiler diagnostics (warnings or errors).
+
+.. c:macro:: PW_MODIFY_DIAGNOSTICS_PUSH()
+
+  Starts a new group of :c:macro:`PW_MODIFY_DIAGNOSTIC` statements. A
+  :c:macro:`PW_MODIFY_DIAGNOSTICS_POP` statement must follow.
+
+.. c:macro:: PW_MODIFY_DIAGNOSTICS_POP()
+
+  :c:macro:`PW_MODIFY_DIAGNOSTIC` statements since the most recent
+  :c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH` no longer apply after this statement.
+
+.. c:macro:: PW_MODIFY_DIAGNOSTIC(kind, option)
+
+  Changes how a diagnostic (warning or error) is handled. Most commonly used to
+  disable warnings. ``PW_MODIFY_DIAGNOSTIC`` should be used between
+  :c:macro:`PW_MODIFY_DIAGNOSTICS_PUSH` and :c:macro:`PW_MODIFY_DIAGNOSTICS_POP`
+  statements to avoid applying the modifications too broadly.
+
+  ``kind`` may be ``warning``, ``error``, or ``ignored``.
+
+These macros can be used to disable warnings for precise sections of code, even
+a single line if necessary.
+
+.. code-block:: c
+
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wunused-variable");
+
+  static int this_variable_is_never_used;
+
+  PW_MODIFY_DIAGNOSTICS_POP();
+
+.. tip::
+
+  :c:macro:`PW_MODIFY_DIAGNOSTIC` and related macros should rarely be used.
+  Whenever possible, fix the underlying issues about which the compiler is
+  warning, rather than silencing the diagnostics.
+
 pw_preprocessor/concat.h
 ------------------------
 Defines the ``PW_CONCAT(...)`` macro, which expands its arguments if they are
