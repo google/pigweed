@@ -31,18 +31,22 @@
 
 namespace pw::string {
 
-char* volatile get_buffer;
+char buffer_1[128];
+char buffer_2[128];
+
+char* volatile get_buffer_1 = buffer_1;
+char* volatile get_buffer_2 = buffer_2;
 volatile unsigned get_size;
 
 unsigned OutputStringsToBuffer() {
-  char* buffer = get_buffer;
+  char* buffer = get_buffer_1;
   unsigned buffer_size = get_size;
 
 #if USE_FORMAT
   // The code for using pw::string::Format is much simpler and safer.
   return Format(std::span(buffer, buffer_size),
                 "hello %s %d",
-                get_buffer,
+                get_buffer_2,
                 get_size)
       .size();
 #else  // std::snprintf
@@ -51,7 +55,7 @@ unsigned OutputStringsToBuffer() {
   }
 
   int result =
-      std::snprintf(buffer, buffer_size, "hello %s %d", get_buffer, get_size);
+      std::snprintf(buffer, buffer_size, "hello %s %d", get_buffer_2, get_size);
   if (result < 0) {
     buffer[0] = '\0';
     return 0;

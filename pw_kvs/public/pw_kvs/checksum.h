@@ -95,7 +95,7 @@ class AlignedChecksum : public ChecksumAlgorithm {
  protected:
   constexpr AlignedChecksum(std::span<const std::byte> state)
       : ChecksumAlgorithm(state),
-        output_(this),
+        output_(*this),
         writer_(kAlignmentBytes, output_) {}
 
   ~AlignedChecksum() = default;
@@ -112,10 +112,20 @@ class AlignedChecksum : public ChecksumAlgorithm {
 
   virtual void FinalizeAligned() = 0;
 
-  OutputToMethod<void (AlignedChecksum<kAlignmentBytes, kBufferSize>::*)(
-                     std::span<const std::byte>),
-                 &AlignedChecksum::UpdateAligned>
-      output_;
+  class CallUpdateAligned final : public Output {
+   public:
+    constexpr CallUpdateAligned(AlignedChecksum& object) : object_(object) {}
+
+   private:
+    StatusWithSize DoWrite(std::span<const std::byte> data) override {
+      object_.UpdateAligned(data);
+      return StatusWithSize(data.size());
+    }
+
+    AlignedChecksum& object_;
+  };
+
+  CallUpdateAligned output_;
   AlignedWriterBuffer<kBufferSize> writer_;
 };
 

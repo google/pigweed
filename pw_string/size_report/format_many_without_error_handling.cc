@@ -38,18 +38,22 @@
 
 namespace pw::string {
 
-char* volatile get_buffer;
+char buffer_1[128];
+char buffer_2[128];
+
+char* volatile get_buffer_1 = buffer_1;
+char* volatile get_buffer_2 = buffer_2;
 volatile unsigned get_size;
 
 void OutputStringsToBuffer() {
 #if USE_FORMAT
-  auto buffer = std::span(get_buffer, get_size);
+  auto buffer = std::span(get_buffer_1, get_size);
 #else
-  char* buffer = get_buffer;
+  char* buffer = get_buffer_1;
   unsigned buffer_size = get_size;
 #endif  // USE_FORMAT
 
-  const char* string = get_buffer;
+  const char* string = get_buffer_2;
   unsigned value = get_size;
 
   FORMAT_CASE("The quick brown");

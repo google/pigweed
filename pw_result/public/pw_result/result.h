@@ -68,7 +68,11 @@ class Result {
   template <typename U>
   constexpr T value_or(U&& default_value) const& {
     if (ok()) {
+      PW_MODIFY_DIAGNOSTICS_PUSH();
+      // GCC 10 emits -Wmaybe-uninitialized warnings about value_.
+      PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wmaybe-uninitialized");
       return value_;
+      PW_MODIFY_DIAGNOSTICS_POP();
     }
     return std::forward<U>(default_value);
   }

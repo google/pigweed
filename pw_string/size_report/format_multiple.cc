@@ -82,12 +82,16 @@ bool ProcessResult(char* buffer, unsigned* total, unsigned size, int result) {
 
 namespace pw::string {
 
-char* volatile get_buffer;
+char buffer_1[128];
+char buffer_2[128];
+
+char* volatile get_buffer_1 = buffer_1;
+char* volatile get_buffer_2 = buffer_2;
 volatile unsigned get_size;
 
 unsigned OutputStringsToBuffer() {
-  char* buffer = get_buffer;
-  const char* string = get_buffer;
+  char* buffer = get_buffer_1;
+  const char* string = get_buffer_2;
 
   unsigned buffer_size = get_size;
   unsigned string_size = 0;

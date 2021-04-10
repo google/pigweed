@@ -20,6 +20,6 @@ INCLUDE pw_tokenizer_linker_sections.ld
  * The INSERT directive instructs the linker to append the directives in this
  * script to the default linker script, rather than replace the default with
  * this script. It doesn't matter where the tokenizer sections are inserted, so
- * insert them after the standard .strtab section.
+ * insert them after the .debug_info section, which both clang and GCC use.
  */
-INSERT AFTER .strtab
+INSERT AFTER .debug_info

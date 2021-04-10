@@ -40,3 +40,9 @@ config("mingw_z_format") {
     cflags = [ "-D__USE_MINGW_ANSI_STDIO=1" ]
   }
 }
+
+# GCC needs the -pthread option to support multithreading. This must be
+# specified to build e.g. pw_thread_stl.
+config("threading_support") {
+  ldflags = [ "-pthread" ]
+}

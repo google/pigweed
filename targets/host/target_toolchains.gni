@@ -112,7 +112,10 @@ _clang_default_configs = [
   "$dir_pw_build:extra_strict_warnings",
   "$dir_pw_build:clang_thread_safety_warnings",
 ]
-_gcc_default_configs = [ "$dir_pw_build:extra_strict_warnings" ]
+_gcc_default_configs = [
+  "$dir_pw_build:extra_strict_warnings",
+  "$dir_pw_toolchain/host_gcc:threading_support",
+]
 
 pw_target_toolchain_host = {
   _excluded_members = [

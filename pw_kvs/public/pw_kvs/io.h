@@ -71,43 +71,6 @@ class Input {
   virtual StatusWithSize DoRead(std::span<std::byte> data) = 0;
 };
 
-// Output adapter that calls a method on a class with a std::span of bytes. If
-// the method returns void instead of the expected Status, Write always returns
-// OkStatus().
-template <typename T, T kMethod>
-class OutputToMethod final : public Output {
-  using Class = typename internal::FunctionTraits<decltype(kMethod)>::Class;
-
- public:
-  constexpr OutputToMethod(Class* object) : object_(*object) {}
-
- private:
-  using Return = typename internal::FunctionTraits<decltype(kMethod)>::Return;
-  template <T kMethodImpl = kMethod>
-  typename std::enable_if<std::is_void<typename internal::FunctionTraits<
-                              decltype(kMethodImpl)>::Return>::value,
-                          StatusWithSize>::type
-  DoWriteImpl(std::span<const std::byte> data) {
-    (object_.*kMethod)(data);
-    return StatusWithSize(data.size());
-  }
-
-  template <T kMethodImpl = kMethod>
-  typename std::enable_if<!std::is_void<typename internal::FunctionTraits<
-                              decltype(kMethodImpl)>::Return>::value,
-                          StatusWithSize>::type
-  DoWriteImpl(std::span<const std::byte> data) {
-    return (object_.*kMethod)(data);
-  }
-
-  StatusWithSize DoWrite(std::span<const std::byte> data) override {
-    return DoWriteImpl(data);
-  }
-
- private:
-  Class& object_;
-};
-
 // Output adapter that calls a free function.
 class OutputToFunction final : public Output {
  public:
