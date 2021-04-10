@@ -1,6 +1,6 @@
 .. _module-pw_chrono_threadx:
 
--=---------------
+-----------------
 pw_chrono_threadx
 -----------------
 ``pw_chrono_threadx`` is a collection of ``pw_chrono`` backends that are
@@ -22,8 +22,8 @@ native ThreadX ``tx_time_get()`` overflow. Note that this duration may vary if
 ``tx_time_set()`` is used.
 
 .. warning::
-Note that this is not compatible with TX_NO_TIMER as this disables
-``tx_time_get()``.
+  Note that this is not compatible with TX_NO_TIMER as this disables
+  ``tx_time_get()``.
 
 Build targets
 -------------
