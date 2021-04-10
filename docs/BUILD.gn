@@ -16,6 +16,8 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_docgen/docs.gni")
 
+# Note: These may be useful for downstream projects, which is why they are
+# split out from the overall docgen target below.
 pw_doc_group("core_docs") {
   inputs = [
     "images/pw_env_setup_demo.gif",
@@ -26,9 +28,11 @@ pw_doc_group("core_docs") {
     "images/stm32f429i-disc1_connected.jpg",
   ]
   sources = [
+    "code_of_conduct.rst",
+    "contributing.rst",
     "embedded_cpp_guide.rst",
     "faq.rst",
-    "getting_started.md",
+    "getting_started.rst",
     "module_structure.rst",
     "style_guide.rst",
   ]
@@ -135,9 +139,6 @@ group("module_docs") {
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
-    "../CODE_OF_CONDUCT.md",
-    "../CONTRIBUTING.md",
-    "../README.md",
     "build_system.rst",
     "index.rst",
     "module_guides.rst",
