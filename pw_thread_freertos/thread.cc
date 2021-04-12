@@ -179,7 +179,7 @@ Thread::Thread(const thread::Options& facade_options,
 }
 
 void Thread::detach() {
-  PW_DCHECK(joinable());
+  PW_CHECK(joinable());
 
 #if INCLUDE_vTaskSuspend == 1
   // No need to suspend extra tasks.
