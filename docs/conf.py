@@ -16,7 +16,7 @@
 import sphinx_rtd_theme
 
 # The suffix of source filenames.
-source_suffix = ['.rst', '.md']
+source_suffix = ['.rst']
 
 # The master toctree document.
 master_doc = 'index'
@@ -40,7 +40,6 @@ pygm = 'sphinx'
 extensions = [
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
-    'm2r',  # Converts Markdown to reStructuredText
 
     # Blockdiag suite of diagram generators.
     'sphinxcontrib.blockdiag',
@@ -96,6 +95,18 @@ html_show_sourcelink = False
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = False
 
+# These folders are copied to the documentation's HTML output
+html_static_path = ['docs/_static']
+
+# These paths are either relative to html_static_path
+# or fully qualified paths (eg. https://...)
+html_css_files = [
+    'css/pigweed.css',
+
+    # Needed for Inconsolata font.
+    'https://fonts.googleapis.com/css2?family=Inconsolata&display=swap',
+]
+
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'
 
@@ -111,17 +122,20 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-# Markdown files imported using m2r aren't marked as "referenced," so exclude
-# them from the error reference checking.
-exclude_patterns = ['README.md']
-
 
 def do_not_skip_init(app, what, name, obj, would_skip, options):
     if name == "__init__":
         return False  # never skip __init__ functions
-
     return would_skip
 
 
+# Problem: CSS files aren't copied after modifying them. Solution:
+# https://github.com/sphinx-doc/sphinx/issues/2090#issuecomment-572902572
+def env_get_outdated(app, env, added, changed, removed):
+    return ['index']
+
+
 def setup(app):
+    app.add_css_file('css/pigweed.css')
+    app.connect('env-get-outdated', env_get_outdated)
     app.connect("autodoc-skip-member", do_not_skip_init)

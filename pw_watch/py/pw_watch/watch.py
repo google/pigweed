@@ -330,6 +330,7 @@ _WATCH_PATTERNS = (
     '*.bloaty',
     '*.c',
     '*.cc',
+    '*.css',
     '*.cpp',
     '*.cmake',
     'CMakeLists.txt',

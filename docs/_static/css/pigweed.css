@@ -1,0 +1,54 @@
+/*
+ * Copyright 2021 The Pigweed Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
+/********** Top left logo & search bar ***********/
+
+/* Hide the version string since we're not yet using it. */
+.wy-side-nav-search div.version {
+  display: none;
+}
+
+/* Hide the little house icon */
+.wy-side-nav-search a.icon.icon-home::before {
+  display: none;
+}
+
+/* Make the "Pigweed" logo text. One day, this will be an image. */
+.wy-side-nav-search a {
+  font-size: 2em;
+  font-family: 'Inconsolata', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Make the logo background more amaranth-like */
+.wy-side-nav-search {
+  background-color: #e815a5;
+}
+
+/* The input box has a subtle outline; make it match the background */
+.wy-side-nav-search input[type=text] {
+  border-color: #b529aa;
+}
+
+/********** General document coloring ***********/
+
+/* Re-color the fixed width text away from the red color to something more
+ * gentle, that aligns with the Pigweed colored theme. */
+.rst-content code.literal, .rst-content tt.literal {
+    color: #b756bd;
+}
+

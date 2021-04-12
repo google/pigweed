@@ -46,7 +46,19 @@ Applications may use their own macro instead of
 ``PW_LOG_TOKENIZED_ENCODE_MESSAGE`` config macro. This macro should take
 arguments equivalent to ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``:
 
-  .. c:function:: PW_LOG_TOKENIZED_ENCODE_MESSAGE(pw_tokenizer_Payload log_metadata, const char* message, ...)
+.. c:macro:: PW_LOG_TOKENIZED_ENCODE_MESSAGE(log_metadata, message, ...)
+
+  :param log_metadata:
+
+    Packed metadata for the log message. See the Metadata_ class for how to
+    unpack the details.
+
+  :type log_metadata: pw_tokenizer_Payload
+
+  :param message: The log message format string (untokenized)
+  :type message: :c:texpr:`const char*`
+
+  .. _Metadata: https://cs.opensource.google/pigweed/pigweed/+/master:pw_log_tokenized/public/pw_log_tokenized/log_tokenized.h;l=113
 
 For instructions on how to implement a custom tokenization macro, see
 :ref:`module-pw_tokenizer-custom-macro`.

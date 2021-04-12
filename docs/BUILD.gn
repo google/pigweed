@@ -26,6 +26,9 @@ pw_doc_group("core_docs") {
     "images/pw_watch_on_device_demo.gif",
     "images/pw_watch_test_demo.gif",
     "images/stm32f429i-disc1_connected.jpg",
+
+    # TODO(pwbug/368): This should be in the pw_doc_gen target instead of here.
+    "_static/css/pigweed.css",
   ]
   sources = [
     "code_of_conduct.rst",
@@ -140,6 +143,8 @@ group("module_docs") {
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
+    # Note: These must use the "docs" prefix for links and image references. In
+    # contrast, the pw_doc_group above should not use the docs prefix.
     "build_system.rst",
     "index.rst",
     "module_guides.rst",

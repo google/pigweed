@@ -18,7 +18,7 @@ pw_preprocessor/arguments.h
 Defines macros for handling variadic arguments to function-like macros. Macros
 include the following:
 
-.. c:function:: PW_DELEGATE_BY_ARG_COUNT(name, ...)
+.. c:macro:: PW_DELEGATE_BY_ARG_COUNT(name, ...)
 
   Selects and invokes a macro based on the number of arguments provided. Expands
   to ``<name><arg_count>(...)``. For example,
@@ -45,7 +45,7 @@ include the following:
       ARG_PRINT("a", "b");       // Outputs: 2 args: a, b
       ARG_PRINT("a", "b", "c");  // Outputs: 3 args: a, b, c
 
-.. c:function:: PW_COMMA_ARGS(...)
+.. c:macro:: PW_COMMA_ARGS(...)
 
   Expands to a comma followed by the arguments if any arguments are provided.
   Otherwise, expands to nothing. If the final argument is empty, it is omitted.

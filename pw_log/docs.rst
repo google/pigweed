@@ -202,7 +202,7 @@ source files, not headers. For example:
        PW_LOG_WARN("This is above INFO level, and will display");
      }
 
-.. c:function:: PW_LOG_ENABLE_IF(level, flags)
+.. c:macro:: PW_LOG_ENABLE_IF(level, flags)
 
    Filters logs by an arbitrary expression based on ``level`` and ``flags``.
    Source files that define ``PW_LOG_ENABLE_IF(level, flags)`` will display if

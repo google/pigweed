@@ -13,7 +13,7 @@ calling ``pw::log_basic::SetOutput``.
 
 .. cpp:namespace:: pw::log_basic
 
-.. cpp:function:: void SetOutput(void (\*log_output)(std::string_view))
+.. cpp:function:: void SetOutput(void (*log_output)(std::string_view))
 
   Set the log output function, which defaults ``pw_sys_io::WriteLine``. This
   function is called with each formatted log message.
