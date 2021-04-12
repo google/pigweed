@@ -1,0 +1,85 @@
+// Copyright 2020 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+
+#include "pw_rpc/client_server.h"
+
+#include "gtest/gtest.h"
+#include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/raw_method_union.h"
+#include "pw_rpc/server_context.h"
+#include "pw_rpc/service.h"
+#include "pw_rpc_private/internal_test_utils.h"
+
+namespace pw::rpc::internal {
+namespace {
+
+constexpr uint32_t kFakeChannelId = 1;
+constexpr uint32_t kFakeServiceId = 3;
+constexpr uint32_t kFakeMethodId = 10;
+
+TestOutput<32> output;
+rpc::Channel channels[] = {Channel::Create<kFakeChannelId>(&output)};
+
+StatusWithSize FakeMethod(ServerContext&, ConstByteSpan, ByteSpan) {
+  return StatusWithSize::Unimplemented();
+}
+
+class FakeService : public Service {
+ public:
+  FakeService(uint32_t id) : Service(id, kMethods) {}
+
+  static constexpr std::array<RawMethodUnion, 1> kMethods = {
+      RawMethod::Unary<FakeMethod>(kFakeMethodId),
+  };
+};
+
+FakeService service(kFakeServiceId);
+
+TEST(ClientServer, ProcessPacket_CallsServer) {
+  ClientServer client_server(channels);
+  client_server.server().RegisterService(service);
+
+  Packet packet(
+      PacketType::REQUEST, kFakeChannelId, kFakeServiceId, kFakeMethodId);
+  std::array<std::byte, 32> buffer;
+  Result result = packet.Encode(buffer);
+  EXPECT_EQ(result.status(), OkStatus());
+
+  EXPECT_EQ(client_server.ProcessPacket(result.value(), output), OkStatus());
+}
+
+TEST(ClientServer, ProcessPacket_CallsClient) {
+  ClientServer client_server(channels);
+  client_server.server().RegisterService(service);
+
+  // Same packet as above, but type RESPONSE will skip the server and call into
+  // the client.
+  Packet packet(
+      PacketType::RESPONSE, kFakeChannelId, kFakeServiceId, kFakeMethodId);
+  std::array<std::byte, 32> buffer;
+  Result result = packet.Encode(buffer);
+  EXPECT_EQ(result.status(), OkStatus());
+
+  // No calls are registered on the client, so this should fail.
+  EXPECT_EQ(client_server.ProcessPacket(result.value(), output),
+            Status::NotFound());
+}
+
+TEST(ClientServer, ProcessPacket_BadData) {
+  ClientServer client_server(channels);
+  EXPECT_EQ(client_server.ProcessPacket({}, output), Status::DataLoss());
+}
+
+}  // namespace
+}  // namespace pw::rpc::internal

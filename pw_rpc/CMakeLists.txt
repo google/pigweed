@@ -43,6 +43,14 @@ pw_add_module_library(pw_rpc.client
     pw_log
 )
 
+pw_add_module_library(pw_rpc.client_server
+  SOURCES
+    client_server.cc
+  PUBLIC_DEPS
+    pw_rpc.client
+    pw_rpc.server
+)
+
 pw_add_module_library(pw_rpc.common
   SOURCES
     channel.cc

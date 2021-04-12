@@ -848,3 +848,26 @@ interfaces for working with RPCs.
 The RPC server stores a list of all of active ``ClientCall`` objects. When an
 incoming packet is recieved, it dispatches to one of its active calls, which
 then decodes the payload and presents it to the user.
+
+ClientServer
+============
+Sometimes, a device needs to both process RPCs as a server, as well as making
+calls to another device as a client. To do this, both a client and server must
+be set up, and incoming packets must be sent to both of them.
+
+Pigweed simplifies this setup by providing a ``ClientServer`` class which wraps
+an RPC client and server with the same set of channels.
+
+.. code-block:: cpp
+
+  pw::rpc::Channel channels[] = {
+      pw::rpc::Channel::Create<1>(&channel_output)};
+
+  // Creates both a client and a server.
+  pw::rpc::ClientServer client_server(channels);
+
+  void ProcessRpcData(pw::ConstByteSpan packet) {
+    // Calls into both the client and the server, sending the packet to the
+    // appropriate one.
+    client_server.ProcessPacket(packet, output);
+  }

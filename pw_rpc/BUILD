@@ -63,6 +63,16 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "client_server",
+    srcs = ["client_server.cc"],
+    hdrs = ["public/pw_rpc/client_server.h"],
+    deps = [
+        ":client",
+        ":server",
+    ],
+)
+
+pw_cc_library(
     name = "common",
     srcs = [
         "channel.cc",
@@ -183,6 +193,15 @@ pw_cc_test(
     ],
     deps = [
         ":server",
+    ],
+)
+
+pw_cc_test(
+    name = "client_server_test",
+    srcs = ["client_server_test.cc"],
+    deps = [
+        ":client_server",
+        "//pw_rpc/raw:method_union",
     ],
 )
 

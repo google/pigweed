@@ -82,6 +82,16 @@ pw_source_set("client") {
   ]
 }
 
+pw_source_set("client_server") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":client",
+    ":server",
+  ]
+  public = [ "public/pw_rpc/client_server.h" ]
+  sources = [ "client_server.cc" ]
+}
+
 # Classes shared by the server and client.
 pw_source_set("common") {
   public_configs = [ ":public_include_path" ]
@@ -184,6 +194,7 @@ pw_test_group("tests") {
     ":base_server_writer_test",
     ":channel_test",
     ":client_test",
+    ":client_server_test",
     ":ids_test",
     ":packet_test",
     ":server_test",
@@ -260,6 +271,15 @@ pw_test("client_test") {
     ":test_utils",
   ]
   sources = [ "client_test.cc" ]
+}
+
+pw_test("client_server_test") {
+  deps = [
+    ":client_server",
+    ":test_utils",
+    "raw:method_union",
+  ]
+  sources = [ "client_server_test.cc" ]
 }
 
 pw_test("base_client_call_test") {
