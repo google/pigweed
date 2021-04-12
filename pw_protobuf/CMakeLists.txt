@@ -68,6 +68,11 @@ pw_add_test(pw_protobuf.codegen_test
     pw_protobuf
 )
 
+pw_proto_library(pw_protobuf.common_protos
+  SOURCES
+    pw_protobuf_protos/common.proto
+)
+
 pw_proto_library(pw_protobuf.codegen_test_protos
   SOURCES
     pw_protobuf_test_protos/full_test.proto
@@ -76,4 +81,6 @@ pw_proto_library(pw_protobuf.codegen_test_protos
     pw_protobuf_test_protos/non_pw_package.proto
     pw_protobuf_test_protos/proto2.proto
     pw_protobuf_test_protos/repeated.proto
+  DEPS
+    pw_protobuf.common_protos
 )
