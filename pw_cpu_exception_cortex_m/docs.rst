@@ -113,3 +113,33 @@ Configuration Options
    by >1.5KB when using plain-text logs, or ~460 Bytes when using tokenized
    logging. It's useful to enable this for device bringup until your application
    has an end-to-end crash reporting solution.
+
+Exception Analysis
+==================
+This module provides Python tooling to analyze CPU state captured by a Cortex-M
+core during an exception. This can be particularly useful as part of a larger
+crash report analyzer.
+
+CFSR decoder
+------------
+The ARMv7-M and ARMv8-M architectures have a Configurable Fault Status Register
+(CFSR) that explains what illegal behavior caused a fault. Even with no
+additional context, it can provide quite a bit of insight into what caused the
+CPU to fault. This module provides a simple command-line tool to decode raw CFSR
+contents (e.g. 0x00010000) as human-readable information (e.g. "Encountered
+invalid instruction"). An example of this tool in use is provided below:
+
+  .. code-block::
+
+    $ python -m pw_cpu_exception_cortex_m.cfsr_decoder 0x00010100
+    20210412 15:11:14 INF Exception caused by a usage fault, bus fault.
+
+    Active Crash Fault Status Register (CFSR) fields:
+    IBUSERR     Bus fault on instruction fetch.
+    UNDEFINSTR  Encountered invalid instruction.
+
+    All registers:
+    cfsr       0x00010100
+
+.. note::
+  The CFSR is not supported on ARMv6-M CPUs (Cortex M0, M0+, M1).

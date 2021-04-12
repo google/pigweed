@@ -20,6 +20,7 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_cpu_exception_cortex_m/__init__.py",
+    "pw_cpu_exception_cortex_m/cfsr_decoder.py",
     "pw_cpu_exception_cortex_m/cortex_m_constants.py",
     "pw_cpu_exception_cortex_m/exception_analyzer.py",
   ]
@@ -27,6 +28,7 @@ pw_python_package("py") {
   python_deps = [
     "$dir_pw_cli/py",
     "$dir_pw_protobuf_compiler/py",
+    "..:cpu_state_protos.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
 }
