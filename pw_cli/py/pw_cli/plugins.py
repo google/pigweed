@@ -34,6 +34,7 @@ import importlib
 import inspect
 import logging
 from pathlib import Path
+import pkgutil
 import sys
 from textwrap import TextWrapper
 import types
@@ -364,6 +365,22 @@ class Registry(collections.abc.Mapping):
         else:
             yield '  (none found)'
 
+    def plugin(self,
+               function: Callable = None,
+               *,
+               name: str = None) -> Callable[[Callable], Callable]:
+        """Decorator that registers a function with this plugin registry."""
+        def decorator(function: Callable) -> Callable:
+            self.register(function.__name__ if name is None else name,
+                          function)
+            return function
+
+        if function is None:
+            return decorator
+
+        self.register(function.__name__, function)
+        return function
+
 
 def find_in_parents(name: str, path: Path) -> Optional[Path]:
     """Searches parent directories of the path for a file or directory."""
@@ -388,3 +405,20 @@ def find_all_in_parents(name: str, path: Path) -> Iterator[Path]:
 
         yield result
         path = result.parent.parent
+
+
+def import_submodules(module: types.ModuleType,
+                      recursive: bool = False) -> None:
+    """Imports the submodules of a package.
+
+    This can be used to collect plugins registered with a decorator from a
+    directory.
+    """
+    path = module.__path__  # type: ignore[attr-defined]
+    if recursive:
+        modules = pkgutil.walk_packages(path, module.__name__ + '.')
+    else:
+        modules = pkgutil.iter_modules(path, module.__name__ + '.')
+
+    for info in modules:
+        importlib.import_module(info.name)

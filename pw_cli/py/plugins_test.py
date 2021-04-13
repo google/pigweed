@@ -184,6 +184,27 @@ class TestPluginRegistry(unittest.TestCase):
         finally:
             del sys.modules[fake_module_name]
 
+    def test_decorator_not_called(self) -> None:
+        @self._registry.plugin
+        def nifty() -> None:
+            pass
+
+        self.assertEqual(self._registry['nifty'].target, nifty)
+
+    def test_decorator_called_no_args(self) -> None:
+        @self._registry.plugin()
+        def nifty() -> None:
+            pass
+
+        self.assertEqual(self._registry['nifty'].target, nifty)
+
+    def test_decorator_called_with_args(self) -> None:
+        @self._registry.plugin(name='nifty')
+        def my_nifty_keen_plugin() -> None:
+            pass
+
+        self.assertEqual(self._registry['nifty'].target, my_nifty_keen_plugin)
+
 
 if __name__ == '__main__':
     unittest.main()
