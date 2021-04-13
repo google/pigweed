@@ -117,17 +117,16 @@ Configuration Options
 Exception Analysis
 ==================
 This module provides Python tooling to analyze CPU state captured by a Cortex-M
-core during an exception. This can be particularly useful as part of a larger
-crash report analyzer.
+core during an exception. This can be useful as part of a crash report analyzer.
 
 CFSR decoder
 ------------
 The ARMv7-M and ARMv8-M architectures have a Configurable Fault Status Register
-(CFSR) that explains what illegal behavior caused a fault. Even with no
-additional context, it can provide quite a bit of insight into what caused the
-CPU to fault. This module provides a simple command-line tool to decode raw CFSR
-contents (e.g. 0x00010000) as human-readable information (e.g. "Encountered
-invalid instruction"). An example of this tool in use is provided below:
+(CFSR) that explains what illegal behavior caused a fault. This module provides
+a simple command-line tool to decode CFSR contents (e.g. 0x00010000) as
+human-readable information (e.g. "Encountered invalid instruction").
+
+For example:
 
   .. code-block::
 
