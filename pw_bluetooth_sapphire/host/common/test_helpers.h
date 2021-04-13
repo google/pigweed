@@ -108,7 +108,7 @@ constexpr std::array<uint8_t, sizeof(T)> ToBytes(T x) {
   static_assert(std::is_integral_v<T>, "Must use integral types for safe bytewise access");
   std::array<uint8_t, sizeof(T)> bytes;
   for (auto& byte : bytes) {
-    byte = x;
+    byte = static_cast<uint8_t>(x);
     x >>= 8;
   }
   return bytes;
