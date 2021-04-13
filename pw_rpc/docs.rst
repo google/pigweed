@@ -265,6 +265,22 @@ assigned statically at compile time or dynamically.
   // will be set when the channel is used.
   pw::rpc::Channel dynamic_channel;
 
+Sometimes, the ID and output of a channel are not known at compile time as they
+depend on information stored on the physical device. To support this use case, a
+dynamically-assignable channel can be configured once at runtime with an ID and
+output.
+
+.. code-block:: cpp
+
+  // Create a dynamic channel without a compile-time ID or output.
+  pw::rpc::Channel dynamic_channel;
+
+  void Init() {
+    // Called during boot to pull the channel configuration from the system.
+    dynamic_channel.Configure(GetChannelId(), some_output);
+  }
+
+
 Services
 ========
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``

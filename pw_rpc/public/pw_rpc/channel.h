@@ -90,6 +90,27 @@ class Channel {
     return Create<static_cast<uint32_t>(kIntId)>(output);
   }
 
+  // Manually configures a dynamically-assignable channel with a specified ID
+  // and output. This is useful when a channels parameters are not known until
+  // runtime. This can only be called once per channel.
+  constexpr void Configure(uint32_t id, ChannelOutput& output) {
+    PW_ASSERT(id_ == kUnassignedChannelId);
+    PW_ASSERT(id != kUnassignedChannelId);
+    id_ = id;
+    output_ = &output;
+  }
+
+  // Configure using an enum value channel ID.
+  template <typename T,
+            typename = std::enable_if_t<std::is_enum_v<T>>,
+            typename U = std::underlying_type_t<T>>
+  constexpr void Configure(T id, ChannelOutput& output) {
+    static_assert(sizeof(U) <= sizeof(uint32_t));
+    const U kIntId = static_cast<U>(id);
+    PW_ASSERT(kIntId > 0);
+    return Configure(static_cast<uint32_t>(kIntId), output);
+  }
+
   constexpr uint32_t id() const { return id_; }
   constexpr bool assigned() const { return id_ != kUnassignedChannelId; }
 
