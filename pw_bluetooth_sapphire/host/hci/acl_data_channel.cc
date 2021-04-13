@@ -5,9 +5,13 @@
 #include "acl_data_channel.h"
 
 #include <endian.h>
+#include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <zircon/assert.h>
 #include <zircon/status.h>
+
+#include <iterator>
+#include <numeric>
 
 #include "lib/fit/function.h"
 #include "slab_allocators.h"
@@ -112,6 +116,16 @@ class AclDataChannelImpl final : public AclDataChannel {
   // packet-based data flow control.
   CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(const EventPacket& event);
 
+  // Searches send queue for packets with the same link and channel as |archetypal_packet| and
+  // removes the least recently-inserted full PDU if necessary. Called before inserting
+  // |archetypal_packet| to ensure that there are only up to |kMaxAclPacketsPerChannel| PDUs queued
+  // for the given connection and handle.
+  void DropOverflowPacket(const QueuedDataPacket& archetypal_packet);
+
+  // Drains |dropped_packet_counts_| and logs any recorded drops. Should only be called by
+  // |log_dropped_overflow_task_|.
+  void LogDroppedOverflowPackets();
+
   // Tries to send the next batch of queued data packets if the controller has
   // any space available. All packets in higher priority queues will be sent before packets in lower
   // priority queues.
@@ -188,6 +202,13 @@ class AclDataChannelImpl final : public AclDataChannel {
   // one buffer for LE and BR/EDR.
   size_t num_sent_packets_;
   size_t le_num_sent_packets_;
+
+  // Counts of automatically-discarded packets on each channel due to overflow. Cleared by
+  // LogDroppedOverflowPackets.
+  std::map<std::pair<hci::ConnectionHandle, UniqueChannelId>, int64_t> dropped_packet_counts_;
+
+  async::TaskClosureMethod<AclDataChannelImpl, &AclDataChannelImpl::LogDroppedOverflowPackets>
+      log_dropped_overflow_task_{this};
 
   // The ACL data packet queue contains the data packets that are waiting to be
   // sent to the controller.
@@ -302,6 +323,8 @@ void AclDataChannelImpl::ShutDown() {
 
   bt_log(INFO, "hci", "shutting down");
 
+  log_dropped_overflow_task_.Cancel();
+
   auto handler_cleanup_task = [this] {
     bt_log(DEBUG, "hci", "removing I/O handler");
     zx_status_t status = channel_wait_.Cancel();
@@ -378,10 +401,16 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   }
 
   auto insert_iter = SendQueueInsertLocationForPriority(priority);
-  while (!packets.is_empty()) {
+  for (int i = 0; !packets.is_empty(); i++) {
     auto packet = packets.pop_front();
     auto ll_type = registered_links_[packet->connection_handle()];
     auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet));
+    if (i == 0) {
+      if (queue_packet.priority == PacketPriority::kLow &&
+          ll_type == hci::Connection::LinkType::kACL) {
+        DropOverflowPacket(queue_packet);
+      }
+    }
     send_queue_.insert(insert_iter, std::move(queue_packet));
   }
 
@@ -585,7 +614,8 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
 
     auto iter = pending_links_.find(le16toh(data->connection_handle));
     if (iter == pending_links_.end()) {
-      bt_log(WARN, "hci", "controller reported sent packets on unknown connection handle!");
+      bt_log(WARN, "hci", "controller reported sent packets on unknown connection handle %#.4x!",
+             data->connection_handle);
       continue;
     }
 
@@ -593,9 +623,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
 
     ZX_DEBUG_ASSERT(iter->second.count);
     if (iter->second.count < comp_packets) {
-      bt_log(WARN, "hci",
-             "packet tx count mismatch! (handle: %#.4x, expected: %zu, "
-             "actual : %u)",
+      bt_log(WARN, "hci", "packet tx count mismatch! (handle: %#.4x, expected: %zu, actual : %u)",
              le16toh(data->connection_handle), iter->second.count, comp_packets);
 
       iter->second.count = 0u;
@@ -623,6 +651,63 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
   DecrementLETotalNumPackets(le_total_comp_packets);
   TrySendNextQueuedPackets();
   return CommandChannel::EventCallbackResult::kContinue;
+}
+
+void AclDataChannelImpl::DropOverflowPacket(const QueuedDataPacket& archetypal_packet) {
+  TRACE_DURATION("bluetooth", "ACLDataChannel::DropOverflowPacket", "send_queue_.size",
+                 send_queue_.size());
+
+  // TODO(fxbug.dev/71061): Performance of these O(N) searches is not amazing, taking tens of µs
+  // on low-end ARM when kMaxAclPacketsPerChannel=64. The std::list nodes do seem to have decent
+  // cache locality because that time increases sublinearly up to at least 64, and overall
+  // performance is acceptable, with the above TRACE_DURATION taking <15% of the total
+  // l2cap::channel_send flow duration. Performance optimization should be a future goal of work
+  // that reorganizes channel and link data flow layouts.
+
+  // predicate that checks if a QDP is the head of a PDU (not a continuing fragment)
+  auto is_head = [](const QueuedDataPacket& p) {
+    return p.packet->packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kFirstFlushable ||
+           p.packet->packet_boundary_flag() == hci::ACLPacketBoundaryFlag::kFirstNonFlushable;
+  };
+  // predicate that checks if a QDP is like |archetypal_packet| and is the head of a PDU
+  auto is_similar_and_head = [&a = archetypal_packet, is_head](const QueuedDataPacket& b) {
+    return a.packet->connection_handle() == b.packet->connection_handle() &&
+           a.channel_id == b.channel_id && is_head(b);
+  };
+  const size_t queued_similar_pdu_count =
+      std::count_if(send_queue_.begin(), send_queue_.end(), is_similar_and_head);
+  if (queued_similar_pdu_count < kMaxAclPacketsPerChannel) {
+    return;
+  }
+
+  const auto to_drop_iter =
+      std::find_if(send_queue_.begin(), send_queue_.end(), is_similar_and_head);
+  ZX_ASSERT(to_drop_iter != send_queue_.end());
+  const auto next_packet_iter = std::find_if(std::next(to_drop_iter), send_queue_.end(), is_head);
+
+  dropped_packet_counts_[{archetypal_packet.packet->connection_handle(),
+                          archetypal_packet.channel_id}] +=
+      std::distance(to_drop_iter, next_packet_iter);
+  send_queue_.erase(to_drop_iter, next_packet_iter);
+
+  // Schedule a deadline to log this drop and any other drops that occur until the logging drains
+  // the counters.
+  if (!log_dropped_overflow_task_.is_pending()) {
+    constexpr zx::duration kMinLogInterval = zx::sec(1);
+    log_dropped_overflow_task_.PostDelayed(io_dispatcher_, kMinLogInterval);
+  }
+}
+
+void AclDataChannelImpl::LogDroppedOverflowPackets() {
+  // This exchange clears the accumulated counts since the previous call (which should be at least
+  // kMinLogInterval ago) and gets the number of dropped packets for each channel (if any).
+  const auto dropped_packet_counts = std::exchange(dropped_packet_counts_, {});
+
+  // This logs at most once per channel, at a temporal period of kMinLogInterval, and only for the
+  // channels where overflow occurred.
+  for (auto& [ids, count] : dropped_packet_counts) {
+    bt_log(WARN, "hci", "%#.4x:%#.4x dropped %zu fragments(s)", ids.first, ids.second, count);
+  }
 }
 
 void AclDataChannelImpl::TrySendNextQueuedPackets() {

@@ -1269,5 +1269,206 @@ TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
   EXPECT_EQ(cb_status->error(), hci::StatusCode::kInvalidHCICommandParameters);
 }
 
+TEST_F(HCI_ACLDataChannelTest,
+       SendingLowPriorityBrEdrPacketsWhenTooManyAreQueuedDropsLeastRecentlySentPduOnSameChannel) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
+                           DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+
+  // Fill up both LE and BR/EDR controller buffers
+  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+    for (size_t i = 0; i < kMaxNumPackets; ++i) {
+      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
+    }
+  }
+  RunLoopUntilIdle();
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  size_t packet_count = 0;
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    ASSERT_LE(sizeof(ACLDataHeader), bytes.size());
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    // LE is still waiting for controller credits
+    EXPECT_EQ(kHandle1, connection_handle);
+
+    if ((packet_count == 0) || (packet_count == 1)) {
+      // The first low-priority queued packet and its continuation packet were dropped so the first
+      // packets actually sent should be those for the second PDU
+      EXPECT_EQ(1u, packet.payload_data()[0]);
+    }
+
+    packet_count++;
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Send enough data that the first PDU sent in this loop gets dropped
+  for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; ++i) {
+    // Send two fragments per PDU
+    LinkedList<ACLDataPacket> packets;
+    for (auto pbf :
+         {ACLPacketBoundaryFlag::kFirstNonFlushable, ACLPacketBoundaryFlag::kContinuingFragment}) {
+      auto packet = ACLDataPacket::New(kHandle1, pbf, ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+
+      // Write a sequence number into the payload, starting at 0
+      packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+      packets.push_back(std::move(packet));
+    }
+    EXPECT_TRUE(acl_data_channel()->SendPackets(std::move(packets), l2cap::kFirstDynamicChannelId,
+                                                AclDataChannel::PacketPriority::kLow));
+  }
+
+  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle1, 2));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(2u, packet_count);
+}
+
+TEST_F(HCI_ACLDataChannelTest,
+       SendingLowPriorityPacketsThatDropDoNotAffectDataOnSameLinkDifferentChannel) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr UniqueChannelId kChannelId0 = l2cap::kFirstDynamicChannelId;
+  constexpr UniqueChannelId kChannelId1 = l2cap::kFirstDynamicChannelId + 1;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
+
+  // Fill up controller buffers
+  for (size_t i = 0; i < kMaxNumPackets; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+  RunLoopUntilIdle();
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  size_t packet_count = 0;
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    ASSERT_LT(sizeof(ACLDataHeader), bytes.size());
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+
+    // The first packet should be left in the queue because it is for kChannelId0 but the second
+    // should be dropped as it was the least recently sent unsent packet for channel kChannelId1.
+    if (packet_count == 0) {
+      EXPECT_EQ(0u, packet.payload_data()[0]);
+    } else if (packet_count == 1) {
+      EXPECT_EQ(2u, packet.payload_data()[0]);
+    }
+
+    packet_count++;
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Send one packet on kChannelId0
+  {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+
+    // Write a sequence number into the payload, starting at 0
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(0);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), kChannelId0,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+
+  // Send enough data on kChannel1 that the first PDU sent in this loop gets dropped
+  for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; i++) {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+
+    // Write a sequence number into the payload, starting at 0
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i + 1);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), kChannelId1,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+
+  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(2u, packet_count);
+}
+
+TEST_F(HCI_ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataOnDifferentLink) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+
+  // Fill up controller buffers
+  for (size_t i = 0; i < kMaxNumPackets; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+  RunLoopUntilIdle();
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  size_t packet_count = 0;
+  auto data_callback = [&](const ByteBuffer& bytes) {
+    ASSERT_LT(sizeof(ACLDataHeader), bytes.size());
+    PacketView<hci::ACLDataHeader> packet(&bytes, bytes.size() - sizeof(ACLDataHeader));
+    ConnectionHandle connection_handle = le16toh(packet.header().handle_and_flags) & 0xFFF;
+
+    // First packet on kHandle0 doesn't get dropped, but first packet on kHandle1 does get dropped
+    // because there are too many queued for that channel on that link.
+    if (packet_count == 0) {
+      EXPECT_EQ(kHandle0, connection_handle);
+      EXPECT_EQ(0u, packet.payload_data()[0]);
+    } else if (packet_count == 1) {
+      EXPECT_EQ(kHandle1, connection_handle);
+      EXPECT_EQ(2u, packet.payload_data()[0]);
+    }
+    packet_count++;
+  };
+  test_device()->SetDataCallback(data_callback, dispatcher());
+
+  // Send one data packet on kHandle0
+  {
+    auto packet = ACLDataPacket::New(kHandle0, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+
+    // Write a sequence number into the payload, starting at 0
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(0);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+
+  // Send enough data on kHandle1 that the first PDU sent in this loop gets dropped
+  for (size_t i = 0; i < AclDataChannel::kMaxAclPacketsPerChannel + 1; i++) {
+    auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+
+    // Write a sequence number into the payload, starting at 0
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i + 1);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+
+  test_device()->SendCommandChannelPacket(testing::NumberOfCompletedPacketsPacket(kHandle0, 2));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(2u, packet_count);
+}
+
 }  // namespace
 }  // namespace bt::hci

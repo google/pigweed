@@ -13,6 +13,7 @@
 #include <zircon/compiler.h>
 
 #include <list>
+#include <map>
 #include <queue>
 #include <unordered_map>
 
@@ -76,6 +77,8 @@ class AclDataChannel {
 
   using AclPacketPredicate =
       fit::function<bool(const ACLDataPacketPtr& packet, UniqueChannelId channel_id)>;
+
+  static constexpr size_t kMaxAclPacketsPerChannel = 32;
 
   static std::unique_ptr<AclDataChannel> Create(Transport* transport, zx::channel hci_acl_channel);
 
