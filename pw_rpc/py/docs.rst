@@ -20,4 +20,4 @@ pw_rpc.callback_client
 pw_rpc.console_tools
 ====================
 .. automodule:: pw_rpc.console_tools
-  :members: multi_client_terminal_variables, ClientInfo, Watchdog
+  :members: Context, ClientInfo, Watchdog, help_as_repr

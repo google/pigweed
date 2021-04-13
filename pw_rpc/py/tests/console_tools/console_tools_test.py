@@ -22,8 +22,7 @@ import pw_status
 from pw_protobuf_compiler import python_protos
 import pw_rpc
 from pw_rpc import callback_client
-from pw_rpc.console_tools import (CommandHelper, ClientInfo, Watchdog,
-                                  multi_client_terminal_variables)
+from pw_rpc.console_tools import CommandHelper, Context, ClientInfo, Watchdog
 
 
 class TestWatchdog(unittest.TestCase):
@@ -84,14 +83,18 @@ class TestWatchdog(unittest.TestCase):
 class TestCommandHelper(unittest.TestCase):
     def setUp(self) -> None:
         self._commands = {'command_a': 'A', 'command_B': 'B'}
-        self._helper = CommandHelper(self._commands, 'The header',
-                                     'The footer')
+        self._variables = {'hello': 1, 'world': 2}
+        self._helper = CommandHelper(self._commands, self._variables,
+                                     'The header', 'The footer')
 
     def test_help_contents(self) -> None:
         help_contents = self._helper.help()
 
         self.assertTrue(help_contents.startswith('The header'))
         self.assertIn('The footer', help_contents)
+
+        for var_name in self._variables:
+            self.assertIn(var_name, help_contents)
 
         for cmd_name in self._commands:
             self.assertIn(cmd_name, help_contents)
@@ -120,8 +123,8 @@ service Service {
 """
 
 
-class TestMultiClientTerminal(unittest.TestCase):
-    """Tests console_tools.console.multi_client_terminal_variables."""
+class TestConsoleContext(unittest.TestCase):
+    """Tests console_tools.console.Context."""
     def setUp(self) -> None:
         self._protos = python_protos.Library.from_strings(_PROTO)
 
@@ -133,10 +136,10 @@ class TestMultiClientTerminal(unittest.TestCase):
             ], self._protos.modules()))
 
     def test_sets_expected_variables(self) -> None:
-        variables = multi_client_terminal_variables(
-            clients=[self._info],
-            default_client=self._info.client,
-            protos=self._protos)
+        variables = Context([self._info],
+                            default_client=self._info.client,
+                            protos=self._protos).variables()
+
         self.assertIn('set_target', variables)
 
         self.assertIsInstance(variables['help'], CommandHelper)
@@ -154,63 +157,76 @@ class TestMultiClientTerminal(unittest.TestCase):
                                        [client_2_channel],
                                        self._protos.modules()))
 
-        variables = multi_client_terminal_variables(
-            clients=[self._info, info_2],
-            default_client=self._info.client,
-            protos=self._protos)
+        context = Context([self._info, info_2],
+                          default_client=self._info.client,
+                          protos=self._protos)
 
         # Make sure the RPC service switches from one client to the other.
-        self.assertIs(variables['the'].pkg.Service.Unary.channel,
+        self.assertIs(context.variables()['the'].pkg.Service.Unary.channel,
                       client_1_channel)
 
-        variables['set_target'](info_2.client)
+        context.set_target(info_2.client)
 
-        self.assertIs(variables['the'].pkg.Service.Unary.channel,
+        self.assertIs(context.variables()['the'].pkg.Service.Unary.channel,
                       client_2_channel)
 
     def test_default_client_must_be_in_clients(self) -> None:
         with self.assertRaises(ValueError):
-            multi_client_terminal_variables(clients=[self._info],
-                                            default_client='something else',
-                                            protos=self._protos)
+            Context([self._info],
+                    default_client='something else',
+                    protos=self._protos)
 
     def test_set_target_invalid_channel(self) -> None:
-        variables = multi_client_terminal_variables(
-            clients=[self._info],
-            default_client=self._info.client,
-            protos=self._protos)
+        context = Context([self._info],
+                          default_client=self._info.client,
+                          protos=self._protos)
 
         with self.assertRaises(KeyError):
-            variables['set_target'](self._info.client, 100)
+            context.set_target(self._info.client, 100)
 
     def test_set_target_non_default_channel(self) -> None:
         channel_1 = self._info.rpc_client.channel(1).channel
         channel_2 = self._info.rpc_client.channel(2).channel
 
-        variables = multi_client_terminal_variables(
-            clients=[self._info],
-            default_client=self._info.client,
-            protos=self._protos)
+        context = Context([self._info],
+                          default_client=self._info.client,
+                          protos=self._protos)
+        variables = context.variables()
 
         self.assertIs(variables['the'].pkg.Service.Unary.channel, channel_1)
 
-        variables['set_target'](self._info.client, 2)
+        context.set_target(self._info.client, 2)
 
         self.assertIs(variables['the'].pkg.Service.Unary.channel, channel_2)
 
         with self.assertRaises(KeyError):
-            variables['set_target'](self._info.client, 100)
+            context.set_target(self._info.client, 100)
 
     def test_set_target_requires_client_object(self) -> None:
-        variables = multi_client_terminal_variables(
-            clients=[self._info],
-            default_client=self._info.client,
-            protos=self._protos)
+        context = Context([self._info],
+                          default_client=self._info.client,
+                          protos=self._protos)
 
         with self.assertRaises(ValueError):
-            variables['set_target'](self._info.rpc_client)
+            context.set_target(self._info.rpc_client)
 
+        context.set_target(self._info.client)
+
+    def test_derived_context(self) -> None:
+        called_derived_set_target = False
+
+        class DerivedContext(Context):
+            def set_target(self,
+                           unused_selected_client,
+                           unused_channel_id: int = None) -> None:
+                nonlocal called_derived_set_target
+                called_derived_set_target = True
+
+        variables = DerivedContext(client_info=[self._info],
+                                   default_client=self._info.client,
+                                   protos=self._protos).variables()
         variables['set_target'](self._info.client)
+        self.assertTrue(called_derived_set_target)
 
 
 if __name__ == '__main__':
