@@ -9,8 +9,8 @@
 #include <zircon/status.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 
 namespace bt::testing {
 

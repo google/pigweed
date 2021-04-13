@@ -7,6 +7,7 @@
 #include <endian.h>
 
 #include "fake_l2cap.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::testing {
 

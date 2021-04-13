@@ -5,7 +5,7 @@
 #include "test_packets.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"

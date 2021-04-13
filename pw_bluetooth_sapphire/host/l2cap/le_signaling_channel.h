@@ -9,7 +9,7 @@
 
 #include <fbl/macros.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 
 namespace bt::l2cap::internal {

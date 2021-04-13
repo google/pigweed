@@ -8,7 +8,7 @@
 #include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/status.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 
 // This file provides a Status template specialization for hci::Status
 //

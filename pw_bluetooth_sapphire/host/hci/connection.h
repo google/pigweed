@@ -12,10 +12,10 @@
 #include <fbl/macros.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection_parameters.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 

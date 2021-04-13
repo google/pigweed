@@ -10,7 +10,7 @@
 
 #include <fbl/macros.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/defaults.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"

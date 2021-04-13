@@ -12,7 +12,7 @@
 #include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"

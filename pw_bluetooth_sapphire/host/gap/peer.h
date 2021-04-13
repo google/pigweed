@@ -22,9 +22,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/persisted_data.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/lmp_feature_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 

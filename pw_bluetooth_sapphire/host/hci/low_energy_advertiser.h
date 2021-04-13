@@ -12,8 +12,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 
 namespace bt::hci {
@@ -81,8 +81,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // when this advertisement is connected to and the advertisement has been
   // stopped.
   //
-  // |adv_options.interval| must be a value in "controller timeslices". See hci/hci_constants.h for
-  // the valid range.
+  // |adv_options.interval| must be a value in "controller timeslices". See
+  // hci-spec/hci_constants.h for the valid range.
   //
   // Provides results in |callback|. If advertising is setup, the final
   // interval of advertising is provided in |interval| and |status|

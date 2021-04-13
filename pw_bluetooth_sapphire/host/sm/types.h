@@ -12,8 +12,8 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/link_key.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
 namespace bt::sm {

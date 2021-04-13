@@ -1,0 +1,38 @@
+# Copyright 2021 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+
+# Static library containing the HCI specification definitions
+static_library("hci-spec") {
+  sources = [
+    "constants.h",
+    "defaults.h",
+    "le_connection_parameters.cc",
+    "le_connection_parameters.h",
+    "link_key.cc",
+    "link_key.h",
+    "lmp_feature_set.h",
+    "protocol.h",
+    "util.cc",
+    "util.h",
+  ]
+
+  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [ "util_unittest.cc" ]
+
+  deps = [
+    ":hci-spec",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+bt_gtest_package("bt-host-hci-spec-tests") {
+  deps = [ ":tests" ]
+}

@@ -7,7 +7,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_H_
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 
 namespace bt::sco {
 

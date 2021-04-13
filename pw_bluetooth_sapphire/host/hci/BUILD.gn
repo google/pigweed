@@ -9,20 +9,15 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 # emulation.
 source_set("definitions") {
   sources = [
-    "connection_parameters.cc",
-    "connection_parameters.h",
-    "hci.h",
-    "hci_constants.h",
     "hci_defs.h",
-    "link_key.cc",
-    "link_key.h",
     "status.cc",
     "status.h",
-    "util.cc",
-    "util.h",
   ]
 
-  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+  public_deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
+  ]
 }
 
 static_library("hci") {
@@ -42,7 +37,6 @@ static_library("hci") {
     "connection.h",
     "control_packets.cc",
     "control_packets.h",
-    "defaults.h",
     "device_wrapper.cc",
     "device_wrapper.h",
     "legacy_low_energy_advertiser.cc",
@@ -117,7 +111,6 @@ source_set("tests") {
     "slab_allocators_unittest.cc",
     "status_unittest.cc",
     "transport_unittest.cc",
-    "util_unittest.cc",
   ]
 
   deps = [

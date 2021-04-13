@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
 
 #include <zircon/compiler.h>
 
@@ -15,8 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_class.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 
 // This file contains general opcode/number and static packet definitions for
 // the Bluetooth Host-Controller Interface. Each packet payload structure
@@ -777,7 +776,6 @@ struct WriteAutomaticFlushTimeoutCommandParams {
   // Time Range: 0.625ms to 1279.375ms.
   uint16_t flush_timeout;
 } __PACKED;
-
 
 // ===============================================================
 // Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
@@ -2813,7 +2811,7 @@ struct LERemoteConnectionParamReqNegativeReplyCommandParams {
   ConnectionHandle connection_handle;
 
   // Reason that the connection parameter request was rejected.
-  Status reason;
+  StatusCode reason;
 } __PACKED;
 
 struct LERemoteConnectionParamReqNegativeReplyReturnParams {
@@ -3685,4 +3683,4 @@ constexpr OpCode VendorOpCode(const uint16_t ocf) { return DefineOpCode(kVendorO
 
 }  // namespace bt::hci
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_HCI_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_

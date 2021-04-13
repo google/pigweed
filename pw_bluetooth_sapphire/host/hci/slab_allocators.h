@@ -11,8 +11,8 @@
 #include <fbl/slab_allocator.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
 // This file defines a fbl::SlabAllocator trait template that can be used to

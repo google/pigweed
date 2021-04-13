@@ -4,7 +4,7 @@
 
 #include "status.h"
 
-#include "util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 
 namespace bt {
 

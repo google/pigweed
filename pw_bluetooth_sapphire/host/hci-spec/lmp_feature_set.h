@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_
 
 #include <zircon/assert.h>
 
@@ -11,7 +11,7 @@
 #include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::hci {
@@ -79,4 +79,4 @@ class LMPFeatureSet {
 
 }  // namespace bt::hci
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LMP_FEATURE_SET_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_LMP_FEATURE_SET_H_

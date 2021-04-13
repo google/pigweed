@@ -7,10 +7,10 @@
 #include <endian.h>
 
 #include "command_channel.h"
-#include "defaults.h"
 #include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"

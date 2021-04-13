@@ -5,7 +5,7 @@
 #include "sequential_command_runner.h"
 
 #include "command_channel.h"
-#include "hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "transport.h"
 
 namespace bt::hci {

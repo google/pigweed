@@ -7,7 +7,7 @@
 #include <fuzzer/FuzzedDataProvider.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"

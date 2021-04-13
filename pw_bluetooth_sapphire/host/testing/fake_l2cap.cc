@@ -7,6 +7,8 @@
 #include <endian.h>
 #include <zircon/assert.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+
 namespace bt::testing {
 
 FakeL2cap::FakeL2cap(SendFrameCallback send_frame_callback,

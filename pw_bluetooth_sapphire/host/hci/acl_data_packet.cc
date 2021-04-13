@@ -8,6 +8,7 @@
 #include <zircon/assert.h>
 
 #include "slab_allocators.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::hci {
 namespace slab_allocators {

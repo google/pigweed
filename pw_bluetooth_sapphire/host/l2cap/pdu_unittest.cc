@@ -9,7 +9,7 @@
 #include "fragmenter.h"
 #include "recombiner.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
 
 namespace bt::l2cap {
