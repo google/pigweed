@@ -232,7 +232,7 @@ class FlashPartition {
   // UNKNOWN - HAL error
   // TODO: Result<bool>
   virtual Status IsRegionErased(Address source_flash_address,
-                                size_t len,
+                                size_t length,
                                 bool* is_erased);
 
   // Check if the entire partition is erased.

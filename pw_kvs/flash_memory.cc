@@ -105,24 +105,25 @@ Status FlashPartition::IsRegionErased(Address source_flash_address,
 
   // TODO(pwbug/214): Currently using a single flash alignment to do both the
   // read and write. The allowable flash read length may be less than what write
-  // needs (possibly by a bunch), resulting in buffer and erased_pattern_buffer
-  // being bigger than they need to be.
+  // needs (possibly by a bunch), resulting in read_buffer and
+  // erased_pattern_buffer being bigger than they need to be.
   const size_t alignment = alignment_bytes();
   if (alignment > kMaxFlashAlignment || kMaxFlashAlignment % alignment ||
       length % alignment) {
     return Status::InvalidArgument();
   }
 
-  byte buffer[kMaxFlashAlignment];
+  byte read_buffer[kMaxFlashAlignment];
   const byte erased_byte = flash_.erased_memory_content();
   size_t offset = 0;
   *is_erased = false;
   while (length > 0u) {
     // Check earlier that length is aligned, no need to round up
-    size_t read_size = std::min(sizeof(buffer), length);
-    PW_TRY(Read(source_flash_address + offset, read_size, buffer).status());
+    size_t read_size = std::min(sizeof(read_buffer), length);
+    PW_TRY(
+        Read(source_flash_address + offset, read_size, read_buffer).status());
 
-    for (byte b : std::span(buffer, read_size)) {
+    for (byte b : std::span(read_buffer, read_size)) {
       if (b != erased_byte) {
         // Detected memory chunk is not entirely erased
         return OkStatus();
