@@ -10,8 +10,7 @@
 #include <iostream>
 #include <type_traits>
 
-#include <gtest/gtest.h>
-
+#include "lib/zx/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
@@ -117,6 +116,8 @@ constexpr std::array<uint8_t, sizeof(T)> ToBytes(T x) {
 // Returns the Upper/Lower bits of a uint16_t
 constexpr uint8_t UpperBits(const uint16_t x) { return ToBytes(x).back(); }
 constexpr uint8_t LowerBits(const uint16_t x) { return ToBytes(x).front(); }
+
+bool IsChannelPeerClosed(const zx::channel& channel);
 
 }  // namespace bt
 

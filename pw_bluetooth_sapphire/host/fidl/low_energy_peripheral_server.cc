@@ -245,7 +245,7 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
   }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto on_conn = [self, local = std::move(local), remote = std::move(remote),
+  auto on_conn = [self, local = std::move(local), remote = std::move(remote), advertisement_id,
                   link_str = link->ToString(), func = __FUNCTION__](auto result) mutable {
     if (!self) {
       return;
@@ -276,8 +276,12 @@ void LowEnergyPeripheralServer::OnConnected(bt::gap::AdvertisementId advertiseme
     self->binding()->events().OnPeerConnected(
         std::move(fidl_peer), fidl::InterfaceHandle<fble::Connection>(std::move(remote)));
 
-    // Close the AdvertisingHandle since advertising is stopped in response to a connection.
-    self->advertisement_.reset();
+    // Close the AdvertisingHandle in response to a connection iff the connection's associated
+    // advertisement ID still corresponds to the active advertisement. This may not be the case if
+    // another StartAdvertising request comes in during the GAP Connection creation process.
+    if (self->advertisement_ && self->advertisement_->id() == advertisement_id) {
+      self->advertisement_.reset();
+    }
     self->connections_[peer_id] = std::move(conn_handle);
   };
 

@@ -7,6 +7,8 @@
 #include "adapter_test_fixture.h"
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -303,5 +305,77 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, AdvertiseNonBondableConnectsNonBondab
   ASSERT_TRUE(conn_handle);
   ASSERT_EQ(conn_handle->bondable_mode(), bt::sm::BondableMode::NonBondable);
 }
+
+TEST_F(FIDL_LowEnergyPeripheralServerTest, RestartAdvDuringInboundConnKeepsNewAdvAlive) {
+  fble::Peer peer;
+  // `conn` is stored so that the connection is not dropped immediately after connection.
+  fidl::InterfaceHandle<fble::Connection> conn;
+  auto peer_connected_cb = [&](auto cb_peer, auto cb_conn) {
+    peer = std::move(cb_peer);
+    conn = std::move(cb_conn);
+  };
+  SetOnPeerConnectedCallback(peer_connected_cb);
+
+  FidlAdvHandle first_token, second_token;
+
+  fble::AdvertisingParameters params;
+  params.set_connectable(true);
+  std::optional<fit::result<void, fble::PeripheralError>> result;
+  server()->StartAdvertising(std::move(params), first_token.NewRequest(),
+                             [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
+
+  fit::closure complete_interrogation;
+  // Hang interrogation so we can control when the inbound connection procedure completes.
+  test_device()->pause_responses_for_opcode(
+      bt::hci::kReadRemoteVersionInfo,
+      [&](fit::closure trigger) { complete_interrogation = std::move(trigger); });
+
+  test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
+  test_device()->ConnectLowEnergy(kTestAddr);
+  RunLoopUntilIdle();
+
+  EXPECT_FALSE(peer.has_id());
+  EXPECT_FALSE(conn.is_valid());
+  // test_device()->ConnectLowEnergy caused interrogation as part of the inbound GAP connection
+  // process, so this closure should be filled in.
+  ASSERT_TRUE(complete_interrogation);
+
+  // Hang the SetAdvertisingParameters HCI command so we can invoke the advertising status callback
+  // after connection completion.
+  fit::closure complete_start_advertising;
+  test_device()->pause_responses_for_opcode(
+      bt::hci::kLESetAdvertisingParameters,
+      [&](fit::closure trigger) { complete_start_advertising = std::move(trigger); });
+
+  // Restart advertising during inbound connection, simulating the race seen in fxbug.dev/72825.
+  result = std::nullopt;
+  server()->StartAdvertising(fble::AdvertisingParameters{}, second_token.NewRequest(),
+                             [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(complete_start_advertising);
+  // Advertising shouldn't complete until we trigger the above closure
+  EXPECT_FALSE(result.has_value());
+  // The first AdvertisingHandle should be closed, as we have started a second advertisement.
+  EXPECT_TRUE(bt::IsChannelPeerClosed(first_token.channel()));
+
+  // Allow interrogation to complete, enabling the connection process to proceed.
+  complete_interrogation();
+  RunLoopUntilIdle();
+  // Now peer should be connected
+  EXPECT_TRUE(peer.has_id());
+  EXPECT_TRUE(conn.is_valid());
+
+  // Allow second StartAdvertising to complete.
+  complete_start_advertising();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
+  // The second advertising handle should still be active.
+  EXPECT_FALSE(bt::IsChannelPeerClosed(second_token.channel()));
+}
+
 }  // namespace
 }  // namespace bthost

@@ -298,6 +298,16 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Enabled by default (i.e it will respond to TXPowerLevelRead by default).
   void set_tx_power_level_read_response_flag(bool respond) { respond_to_tx_power_read_ = respond; }
 
+  // Upon reception of a command packet with `opcode`, FakeController invokes `pause_listener` with
+  // a closure. The command will hang until this closure is invoked, enabling clients to control the
+  // timing of command completion.
+  void pause_responses_for_opcode(hci::OpCode code,
+                                  fit::function<void(fit::closure)> pause_listener) {
+    paused_opcode_listeners_[code] = std::move(pause_listener);
+  }
+
+  void clear_pause_listener_for_opcode(hci::OpCode code) { paused_opcode_listeners_.erase(code); }
+
   // Send a HCI Read TX Power Level response.
   void SendTxPowerLevelReadResponse();
 
@@ -434,6 +444,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   // Called when a command with an OGF of hci::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci::CommandHeader>& command_packet);
 
+  // Respond to a command packet. This may be done immediately upon reception or via a client-
+  // triggered callback if pause_responses_for_opcode has been called for that command's opcode.
+  void HandleReceivedCommandPacket(const PacketView<hci::CommandHeader>& command_packet);
+
   // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci::CommandHeader>& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
@@ -507,6 +521,10 @@ class FakeController : public ControllerTestDoubleBase, public fbl::RefCounted<F
   LEConnectionParametersCallback le_conn_params_cb_;
   fit::closure le_read_remote_features_cb_;
   VendorCommandCallback vendor_command_cb_;
+
+  // Associates opcodes with client-supplied pause listeners. Commands with these opcodes will hang
+  // with no response until the client invokes the passed-out closure.
+  std::unordered_map<hci::OpCode, fit::function<void(fit::closure)>> paused_opcode_listeners_;
 
   // Called when ACL data packets received.
   DataCallback data_callback_;

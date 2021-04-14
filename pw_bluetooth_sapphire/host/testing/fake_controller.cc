@@ -1152,6 +1152,24 @@ void FakeController::OnCommandPacketReceived(const PacketView<hci::CommandHeader
   hci::OpCode opcode = le16toh(command_packet.header().opcode);
 
   bt_log(TRACE, "fake-hci", "received command packet with opcode: %#.4x", opcode);
+  // We handle commands immediately unless a client has explicitly set a listener for `opcode`.
+  if (paused_opcode_listeners_.find(opcode) == paused_opcode_listeners_.end()) {
+    HandleReceivedCommandPacket(command_packet);
+    return;
+  }
+
+  bt_log(DEBUG, "fake-hci", "pausing response for opcode: %#.4x", opcode);
+  paused_opcode_listeners_[opcode](
+      [this, packet_data = DynamicByteBuffer(command_packet.data())]() {
+        PacketView<hci::CommandHeader> command_packet(
+            &packet_data, packet_data.size() - sizeof(hci::CommandHeader));
+        HandleReceivedCommandPacket(command_packet);
+      });
+}
+
+void FakeController::HandleReceivedCommandPacket(
+    const PacketView<hci::CommandHeader>& command_packet) {
+  hci::OpCode opcode = le16toh(command_packet.header().opcode);
 
   if (MaybeRespondWithDefaultCommandStatus(opcode)) {
     return;

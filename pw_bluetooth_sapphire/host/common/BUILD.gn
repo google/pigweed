@@ -43,6 +43,7 @@ source_set("common") {
     "supplement_data.cc",
     "supplement_data.h",
     "task_domain.h",
+    "test_helpers.cc",
     "test_helpers.h",
     "uint128.h",
     "uint256.h",
