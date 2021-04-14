@@ -12,10 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-_pw_abspath () {
-  python -c "import os.path; print(os.path.abspath('$@'))"
-}
-
 # Just in case PATH isn't already exported.
 export PATH
 
@@ -202,6 +198,10 @@ pw_bootstrap() {
     _PW_PYTHON="$PW_BOOTSTRAP_PYTHON"
   elif which python &> /dev/null; then
     _PW_PYTHON=python
+  elif which python3 &> /dev/null; then
+    _PW_PYTHON=python3
+  elif which python2 &> /dev/null; then
+    _PW_PYTHON=python2
   else
     pw_bold_red "Error: No system Python present\n"
     pw_red "  Pigweed's bootstrap process requires a local system Python."
@@ -265,7 +265,6 @@ pw_cleanup() {
   unset _NEW_PW_ROOT
   unset _PW_ENV_SETUP_STATUS
 
-  unset _pw_abspath
   unset pw_none
   unset pw_red
   unset pw_bold_red

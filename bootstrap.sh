@@ -15,7 +15,7 @@
 # This script must be tested on bash, zsh, and dash.
 
 _bootstrap_abspath () {
-  python -c "import os.path; print(os.path.abspath('$@'))"
+  $(which python || which python3 || which python2) -c "import os.path; print(os.path.abspath('$@'))"
 }
 
 # Users are not expected to set PW_CHECKOUT_ROOT, it's only used because it
