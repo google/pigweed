@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 import("//build/bind/bind.gni")
+import("//build/components.gni")
 import("//build/config/fuchsia/rules.gni")
 import("//build/fuzzing/fuzzer.gni")
-import("//src/sys/build/components.gni")
 
 bind_rules("bt_host_bind") {
   rules = "bt_host.bind"
