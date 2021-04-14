@@ -1644,6 +1644,25 @@ TEST_F(GAP_PairingStateTest, OnLinkKeyRequestReceivedMissingPeerFailsPairing) {
   EXPECT_EQ(hci::Status(HostError::kFailed), status_handler.status().value());
 }
 
+TEST_F(GAP_PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPairing) {
+  TestStatusHandler status_handler;
+  auto connection = MakeFakeConnection();
+  PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
+                             status_handler.MakeStatusCallback());
+  NoOpPairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
+  pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
+
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  EXPECT_EQ(0, status_handler.call_count());
+
+  const auto status_code = hci::StatusCode::kAuthenticationFailure;
+  pairing_state.OnAuthenticationComplete(status_code);
+  ASSERT_EQ(1, status_handler.call_count());
+  EXPECT_EQ(hci::Status(status_code), status_handler.status().value());
+}
+
 TEST_F(GAP_PairingStateTest,
        MultipleQueuedPairingRequestsWithSameSecurityRequirementsCompleteAtSameTimeWithSuccess) {
   TestStatusHandler status_handler;

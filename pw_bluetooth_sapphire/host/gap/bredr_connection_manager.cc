@@ -568,8 +568,8 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticatio
   auto iter = connections_.find(params.connection_handle);
   if (iter == connections_.end()) {
     bt_log(INFO, "gap-bredr",
-           "ignoring authentication complete for unknown connection handle %#.04x",
-           params.connection_handle);
+           "ignoring authentication complete (status: %s) for unknown connection handle %#.04x",
+           bt_str(hci::Status(params.status)), params.connection_handle);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 

@@ -70,6 +70,7 @@ enum class PairingAction {
 // Initiator flow
 // --------------
 // Authentication Requested▶
+// (◀ Authentication Complete with an error is possible at any time after this)
 //     ◀ Link Key Request
 // Link Key Request Reply▶ (skip to "Authentication Complete")
 //     or

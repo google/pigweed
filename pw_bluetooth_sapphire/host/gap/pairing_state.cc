@@ -416,12 +416,8 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci::LinkKeyTy
 }
 
 void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
-  if (state() != State::kInitiatorWaitAuthComplete) {
-    FailWithUnexpectedEvent(__func__);
-    return;
-  }
-  ZX_ASSERT(initiator());
-
+  // The pairing process may fail early, which the controller will deliver as an Authentication
+  // Complete with a non-success status. Log and proxy the error code.
   if (const hci::Status status(status_code);
       bt_is_error(status, INFO, "gap-bredr", "Authentication failed on link %#.4x (id: %s)",
                   handle(), bt_str(peer_id()))) {
@@ -430,6 +426,12 @@ void PairingState::OnAuthenticationComplete(hci::StatusCode status_code) {
     return;
   }
 
+  // Handle successful Authentication Complete events that are not expected.
+  if (state() != State::kInitiatorWaitAuthComplete) {
+    FailWithUnexpectedEvent(__func__);
+    return;
+  }
+  ZX_ASSERT(initiator());
   EnableEncryption();
 }
 
