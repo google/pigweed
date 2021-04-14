@@ -16,7 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/non_c_toolchain.gni")
 
-# This toolchain has been DEPRECATED. Do not use it; use
-# "$dir_pw_toolchain/default:default" instead.
-pw_non_c_toolchain("dummy") {
+# A toolchain used for compiling protocol buffers. This toolchain cannot compile
+# C/C++, and trying to use it to do so results in errors.
+pw_non_c_toolchain("protocol_buffer") {
 }

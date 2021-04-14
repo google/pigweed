@@ -17,6 +17,13 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/mirror_tree.gni")
 import("$dir_pw_build/python_action.gni")
+import("$dir_pw_protobuf_compiler/toolchain.gni")
+
+declare_args() {
+  # Python tasks, such as running tests and Pylint, are done in a single GN
+  # toolchain to avoid unnecessary duplication in the build.
+  pw_build_PYTHON_TOOLCHAIN = "$dir_pw_build/python_toolchain:python"
+}
 
 # Python packages provide the following targets as $target_name.$subtarget.
 pw_python_package_subtargets = [
@@ -125,8 +132,9 @@ template("_pw_python_static_analysis_pylint") {
 #   - $name.install - Installs the package in a venv.
 #   - $name.wheel - Builds a Python wheel for the package.
 #
-# All Python packages are instantiated with the default toolchain, regardless of
-# the current toolchain.
+# All Python packages are instantiated with in pw_build_PYTHON_TOOLCHAIN,
+# regardless of the current toolchain. This prevents Python-specific work, like
+# running Pylint, from occurring multiple times in a build.
 #
 # Args:
 #   setup: List of setup file paths (setup.py or pyproject.toml & setup.cfg),
@@ -153,7 +161,7 @@ template("_pw_python_static_analysis_pylint") {
 #       directory will take precedence over others.
 #
 template("pw_python_package") {
-  # The Python targets are always instantiated in the default toolchain. Use
+  # The Python targets are always instantiated in pw_build_PYTHON_TOOLCHAIN. Use
   # fully qualified labels so that the toolchain is not lost.
   _other_deps = []
   if (defined(invoker.other_deps)) {
@@ -304,9 +312,10 @@ template("pw_python_package") {
 
   _all_py_files = _sources + _test_sources + _setup_sources
 
-  # The pw_python_package subtargets are only instantiated in the default
-  # toolchain. Other toolchains just refer to targets in the default toolchain.
-  if (current_toolchain == default_toolchain) {
+  # The pw_python_package subtargets are only instantiated in
+  # pw_build_PYTHON_TOOLCHAIN. Targets in other toolchains just refer to the
+  # targets in this toolchain.
+  if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
     # Declare the main Python package group. This represents the Python files,
     # but does not take any actions. GN targets can depend on the package name
     # to run when any files in the package change.
@@ -330,8 +339,8 @@ template("pw_python_package") {
       # Depend on the proto's _gen targets (from the default toolchain).
       _gen_protos = []
       foreach(proto, _import_protos) {
-        _gen_protos +=
-            [ get_label_info(proto, "label_no_toolchain") + ".python._gen" ]
+        _gen_protos += [ get_label_info(proto, "label_no_toolchain") +
+                         ".python._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
       }
 
       generated_file("$target_name._protos") {
@@ -387,9 +396,12 @@ template("pw_python_package") {
           ":$target_name._protos_root",
         ]
 
+        # Each pw_proto_library generates a file that indicates which Python
+        # package it is nested in, if any. Locate those files.
         foreach(proto, _import_protos) {
           _tgt = get_label_info(proto, "label_no_toolchain")
-          _path = get_label_info("$_tgt($default_toolchain)", "target_gen_dir")
+          _path = get_label_info("$_tgt($pw_protobuf_compiler_TOOLCHAIN)",
+                                 "target_gen_dir")
           _name = get_label_info(_tgt, "name")
 
           args += [
@@ -398,7 +410,8 @@ template("pw_python_package") {
             rebase_path("$_path/$_name.proto_library/python_package.txt"),
           ]
 
-          public_deps += [ "$_tgt.python._gen($default_toolchain)" ]
+          public_deps +=
+              [ "$_tgt.python._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
         }
 
         outputs = _setup_sources
@@ -575,12 +588,13 @@ template("pw_python_package") {
     #
     # The $target_name.tests group is created separately below.
     group("$target_name") {
-      deps = [ ":$target_name($default_toolchain)" ]
+      deps = [ ":$target_name($pw_build_PYTHON_TOOLCHAIN)" ]
     }
 
     foreach(subtarget, pw_python_package_subtargets - [ "tests" ]) {
       group("$target_name.$subtarget") {
-        deps = [ ":${invoker.target_name}.$subtarget($default_toolchain)" ]
+        deps =
+            [ ":${invoker.target_name}.$subtarget($pw_build_PYTHON_TOOLCHAIN)" ]
       }
     }
 
@@ -602,7 +616,7 @@ template("pw_python_package") {
 
     _test_target = "$target_name.tests." + string_replace(_name, "/", "_")
 
-    if (current_toolchain == default_toolchain) {
+    if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
       pw_python_action(_test_target) {
         script = test
         stamp = true
@@ -617,7 +631,7 @@ template("pw_python_package") {
       # Create a public version of each test target, so tests can be executed as
       # //path/to:package.tests.foo.py.
       group(_test_target) {
-        deps = [ ":$_test_target($default_toolchain)" ]
+        deps = [ ":$_test_target($pw_build_PYTHON_TOOLCHAIN)" ]
       }
     }
 

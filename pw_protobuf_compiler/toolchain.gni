@@ -14,9 +14,10 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_toolchain/non_c_toolchain.gni")
-
-# This toolchain has been DEPRECATED. Do not use it; use
-# "$dir_pw_toolchain/default:default" instead.
-pw_non_c_toolchain("dummy") {
+declare_args() {
+  # Compiling protobufs involves mirroring .proto files to the output directory
+  # in a specific configuration and invoking protoc on them. This work is done
+  # in a single toolchain to avoid unnecessary duplication in the build.
+  pw_protobuf_compiler_TOOLCHAIN =
+      "$dir_pw_protobuf_compiler/toolchain:protocol_buffer"
 }

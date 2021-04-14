@@ -21,6 +21,7 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("toolchain.gni")
 
 # Variables forwarded from the public pw_proto_library template to the final
 # pw_source_set.
@@ -35,7 +36,7 @@ _forwarded_vars = [
 # This creates the internal GN target $target_name.$language._gen that compiles
 # proto files with protoc.
 template("_pw_invoke_protoc") {
-  if (current_toolchain == default_toolchain) {
+  if (current_toolchain == pw_protobuf_compiler_TOOLCHAIN) {
     if (defined(invoker.out_dir)) {
       _out_dir = invoker.out_dir
     } else {
@@ -101,7 +102,7 @@ template("_pw_invoke_protoc") {
       }
     }
   } else {
-    # protoc is only ever invoked from the default toolchain.
+    # protoc is only ever invoked from pw_protobuf_compiler_TOOLCHAIN.
     not_needed([ "target_name" ])
     not_needed(invoker, "*")
   }
@@ -127,7 +128,7 @@ template("_pw_pwpb_proto_library") {
   pw_source_set(target_name) {
     forward_variables_from(invoker, _forwarded_vars)
     public_configs = [ ":$target_name._include_path" ]
-    deps = [ ":$target_name._gen($default_toolchain)" ]
+    deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     public_deps = [ dir_pw_protobuf ] + invoker.deps
     sources = invoker.outputs
     public = filter_include(sources, [ "*.pwpb.h" ])
@@ -156,7 +157,7 @@ template("_pw_nanopb_rpc_proto_library") {
   pw_source_set(target_name) {
     forward_variables_from(invoker, _forwarded_vars)
     public_configs = [ ":$target_name._include_path" ]
-    deps = [ ":$target_name._gen($default_toolchain)" ]
+    deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     public_deps = [
                     ":${invoker.base_target}.nanopb",
                     "$dir_pw_rpc:server",
@@ -175,11 +176,14 @@ template("_pw_nanopb_proto_library") {
   # compiled internally, so skip recompiling it with protoc.
   if (rebase_path(invoker.sources, invoker.compile_dir) == [ "nanopb.proto" ]) {
     group("$target_name._gen") {
-      deps = [ ":${invoker.base_target}._sources" ]
+      deps = [
+        ":${invoker.base_target}._sources($pw_protobuf_compiler_TOOLCHAIN)",
+      ]
     }
 
     group("$target_name") {
-      deps = invoker.deps + [ ":$target_name._gen($default_toolchain)" ]
+      deps = invoker.deps +
+             [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     }
   } else {
     # Create a target which runs protoc configured with the nanopb plugin to
@@ -199,7 +203,7 @@ template("_pw_nanopb_proto_library") {
     pw_source_set(target_name) {
       forward_variables_from(invoker, _forwarded_vars)
       public_configs = [ ":$target_name._include_path" ]
-      deps = [ ":$target_name._gen($default_toolchain)" ]
+      deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
       public_deps = [ "$dir_pw_third_party/nanopb" ] + invoker.deps
       sources = invoker.outputs
       public = filter_include(sources, [ "*.pb.h" ])
@@ -229,7 +233,7 @@ template("_pw_raw_rpc_proto_library") {
   pw_source_set(target_name) {
     forward_variables_from(invoker, _forwarded_vars)
     public_configs = [ ":$target_name._include_path" ]
-    deps = [ ":$target_name._gen($default_toolchain)" ]
+    deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
     public_deps = [
                     "$dir_pw_rpc:server",
                     "$dir_pw_rpc/raw:method_union",
@@ -259,7 +263,8 @@ template("_pw_go_proto_library") {
   }
 
   group(target_name) {
-    deps = invoker.deps + [ ":$target_name._gen($default_toolchain)" ]
+    deps =
+        invoker.deps + [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
   }
 }
 
@@ -305,7 +310,7 @@ template("_pw_python_proto_library") {
       sources = invoker.outputs
       strip_prefix = "${invoker.base_out_dir}/python"
       python_deps = invoker.deps
-      other_deps = [ ":$target_name._gen($default_toolchain)" ]
+      other_deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
       static_analysis = []
 
       _pw_module_as_package = invoker.module_as_package != ""
@@ -380,8 +385,8 @@ template("pw_proto_library") {
     # Sources are mirrored to "$base_out_dir/sources" and protoc puts outputs in
     # "$base_out_dir/$language" by default.
     base_out_dir =
-        get_label_info(":$target_name($default_toolchain)", "target_gen_dir") +
-        "/$target_name.proto_library"
+        get_label_info(":$target_name($pw_protobuf_compiler_TOOLCHAIN)",
+                       "target_gen_dir") + "/$target_name.proto_library"
 
     compile_dir = "$base_out_dir/sources"
 
@@ -468,15 +473,19 @@ template("pw_proto_library") {
   }
 
   # Mirror the proto sources to the output directory with the prefix added.
-  pw_mirror_tree("$target_name._sources") {
-    source_root = _source_root
-    sources = invoker.sources
+  if (current_toolchain == pw_protobuf_compiler_TOOLCHAIN) {
+    pw_mirror_tree("$target_name._sources") {
+      source_root = _source_root
+      sources = invoker.sources
 
-    if (defined(invoker.inputs)) {
-      sources += invoker.inputs
+      if (defined(invoker.inputs)) {
+        sources += invoker.inputs
+      }
+
+      directory = "${_common.compile_dir}/$_prefix"
     }
-
-    directory = "${_common.compile_dir}/$_prefix"
+  } else {
+    not_needed(invoker, [ "inputs" ])
   }
 
   # Enumerate all of the protobuf generator targets.

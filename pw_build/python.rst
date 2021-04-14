@@ -31,6 +31,11 @@ same as the directory. For example, these two labels are equivalent:
   //path/to/my_python_package:my_python_package.tests
   //path/to/my_python_package:tests
 
+The actions in a ``pw_python_package`` (e.g. installing packages and running
+Pylint) are done within a single GN toolchain to avoid duplication in
+multi-toolchain builds. This toolchain can be set with the
+``pw_build_PYTHON_TOOLCHAIN`` GN arg, which defaults to a dummy toolchain.
+
 Arguments
 ---------
 - ``setup`` - List of setup file paths (setup.py or pyproject.toml & setup.cfg),

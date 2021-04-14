@@ -16,7 +16,8 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_toolchain/non_c_toolchain.gni")
 
-# This toolchain has been DEPRECATED. Do not use it; use
-# "$dir_pw_toolchain/default:default" instead.
-pw_non_c_toolchain("dummy") {
+# A toolchain that provides no C/C++ compiler. It can be used for non-C/C++
+# languages or actions that should only happen once across all builds. This
+# toolchain cannot compile C/C++, and trying to use it to do so causes errors.
+pw_non_c_toolchain("python") {
 }

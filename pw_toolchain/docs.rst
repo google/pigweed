@@ -3,10 +3,15 @@
 ------------
 pw_toolchain
 ------------
-The ``pw_toolchain`` module enumerates GN toolchain definitions that may be used
-to build pigweed.
+GN toolchains function both as a set of tools for compilation and as a workspace
+for evaluating build files. The same compilations and actions can be executed by
+different toolchains. Each toolchain maintains its own set of build args, and
+build steps from all toolchains can be executed in parallel.
 
-``pw_toolchain`` defines the following toolchains:
+Toolchains
+==========
+``pw_toolchain`` provides GN toolchains that may be used to build Pigweed. The
+following toolchains are defined:
 
  - arm_gcc_cortex_m4_og
  - arm_gcc_cortex_m4_o1
@@ -25,3 +30,21 @@ to build pigweed.
 
 .. note::
   The documentation for this module is currently incomplete.
+
+Non-C/C++ toolchains
+====================
+``pw_toolchain/non_c_toolchain.gni`` provides the ``pw_non_c_toolchain``
+template. This template creates toolchains that cannot compile C/C++ source
+code. These toolchains may only be used to execute GN actions or declare groups
+of targets in other toolchains. Attempting to compile C/C++ code with either of
+these toolchains results in errors.
+
+Non-C/C++ toolchains can be used to consolidate actions that should only occur
+once in a multi-toolchain build. Build targets from all toolchains can refer to
+these actions in a non-C/C++ toolchain so they only execute once instead of once
+per toolchain.
+
+For example, Pigweed runs protobuf compilation and Python package actions like
+installation and Pylint in toolchains created with ``pw_non_c_toolchain``. This
+allows all toolchains to cleanly share the same protobuf and Python declarations
+without any duplicated work.

@@ -22,7 +22,7 @@ _pigweed_directory = {
   import("//build_overrides/pigweed.gni")
 }
 
-# The default toolchain is not used in Pigweed builds, so it is set to a dummy
-# toolchain. The top-level BUILD.gn should stamp a group with all of the build
-# targets and their toolchains.
-set_default_toolchain("${_pigweed_directory.dir_pw_toolchain}/dummy")
+# The default toolchain is not used in Pigweed builds, so it is set to a
+# toolchain that cannot compile C/C++ code. The top-level BUILD.gn should stamp
+# a group with all of the build targets and their toolchains.
+set_default_toolchain("${_pigweed_directory.dir_pw_toolchain}/default")
