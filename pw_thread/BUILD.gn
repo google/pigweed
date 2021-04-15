@@ -46,7 +46,16 @@ pw_facade("thread") {
   backend = pw_thread_THREAD_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_thread/thread.h" ]
-  public_deps = [ ":id" ]
+  public_deps = [
+    ":id",
+    ":thread_core",
+  ]
+  sources = [ "thread.cc" ]
+}
+
+pw_source_set("thread_core") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/thread_core.h" ]
 }
 
 pw_facade("yield") {

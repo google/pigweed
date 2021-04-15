@@ -101,7 +101,11 @@ pw_cc_library(
     name = "thread",
     deps = [
         ":thread_facade",
+        ":thread_core",
         PW_THREAD_THREAD_BACKEND + "_headers",
+    ],
+    srcs = [
+        "thread.cc"
     ],
 )
 
@@ -110,6 +114,14 @@ pw_cc_library(
     deps = [
        PW_THREAD_THREAD_BACKEND,
     ],
+)
+
+pw_cc_library(
+    name = "thread_core",
+    hdrs = [
+        "public/pw_thread/thread_core.h",
+    ],
+    includes = ["public"],
 )
 
 pw_cc_library(

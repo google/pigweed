@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -141,5 +141,27 @@ TEST(Thread, MoveOperator) {
   WaitUntilDetachedThreadsCleanedUp();
 }
 
+class SemaphoreReleaser : public ThreadCore {
+ public:
+  pw::sync::BinarySemaphore& semaphore() { return semaphore_; }
+
+ private:
+  void Run() override { semaphore_.release(); }
+
+  sync::BinarySemaphore semaphore_;
+};
+
+TEST(Thread, ThreadCore) {
+  SemaphoreReleaser semaphore_releaser;
+  Thread thread(TestOptionsThread0(), semaphore_releaser);
+  EXPECT_NE(thread.get_id(), Id());
+  EXPECT_TRUE(thread.joinable());
+  thread.detach();
+  EXPECT_EQ(thread.get_id(), Id());
+  EXPECT_FALSE(thread.joinable());
+  semaphore_releaser.semaphore().acquire();
+
+  WaitUntilDetachedThreadsCleanedUp();
+}
 }  // namespace
 }  // namespace pw::thread
