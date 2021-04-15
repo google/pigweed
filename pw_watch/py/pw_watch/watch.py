@@ -47,8 +47,8 @@ import threading
 from typing import (Iterable, List, NamedTuple, NoReturn, Optional, Sequence,
                     Tuple)
 
-from watchdog.events import FileSystemEventHandler  # type: ignore
-from watchdog.observers import Observer  # type: ignore
+from watchdog.events import FileSystemEventHandler  # type: ignore[import]
+from watchdog.observers import Observer  # type: ignore[import]
 
 import pw_cli.branding
 import pw_cli.color
@@ -120,6 +120,19 @@ class BuildCommand:
         return ' '.join(shlex.quote(arg) for arg in self.args())
 
 
+def git_ignored(file: Path) -> bool:
+    """Returns true if this file is in a Git repo and ignored by that repo.
+
+    Returns true for ignored files that were manually added to a repo.
+    """
+    returncode = subprocess.run(
+        ['git', 'check-ignore', '--quiet', '--no-index', file],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        cwd=file.parent).returncode
+    return returncode in (0, 128)
+
+
 class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     """Process filesystem events and launch builds if necessary."""
     def __init__(
@@ -127,7 +140,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         patterns: Sequence[str] = (),
         ignore_patterns: Sequence[str] = (),
         build_commands: Sequence[BuildCommand] = (),
-        ignore_dirs: Iterable[Path] = (),
         charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = False,
     ):
@@ -136,8 +148,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.build_commands = build_commands
-        self.ignore_dirs = list(ignore_dirs)
-        self.ignore_dirs.extend(cmd.build_dir for cmd in self.build_commands)
         self.charset: WatchCharset = charset
 
         self.restart_on_changes = restart
@@ -147,7 +157,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         # Track state of a build. These need to be members instead of locals
         # due to the split between dispatch(), run(), and on_complete().
-        self.matching_path: Optional[str] = None
+        self.matching_path: Optional[Path] = None
         self.builds_succeeded: List[bool] = []
 
         self.wait_for_keypress_thread = threading.Thread(
@@ -166,28 +176,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         except (KeyboardInterrupt, EOFError):
             _exit_due_to_interrupt()
 
-    def _path_matches(self, raw_path: str) -> bool:
+    def _path_matches(self, path: Path) -> bool:
         """Returns true if path matches according to the watcher patterns"""
-        modified_path = Path(raw_path).resolve()
-
-        # Check for modifications inside the ignore directories, and skip them.
-        # Ideally these events would never hit the watcher, but selectively
-        # watching directories at the OS level is not trivial due to limitations
-        # of the watchdog module.
-        for ignore_dir in self.ignore_dirs:
-            resolved_ignore_dir = ignore_dir.resolve()
-            try:
-                modified_path.relative_to(resolved_ignore_dir)
-                # If no ValueError is raised by the .relative_to() call, then
-                # this file is inside the ignore directory; so skip it.
-                return False
-            except ValueError:
-                # Otherwise, the file isn't in the ignore directory, so run the
-                # normal pattern checks below.
-                pass
-
-        return ((not any(modified_path.match(x) for x in self.ignore_patterns))
-                and any(modified_path.match(x) for x in self.patterns))
+        return (not any(path.match(x) for x in self.ignore_patterns)
+                and any(path.match(x) for x in self.patterns))
 
     def dispatch(self, event) -> None:
         # There isn't any point in triggering builds on new directory creation.
@@ -202,16 +194,16 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             paths.append(os.fsdecode(event.dest_path))
         if event.src_path:
             paths.append(os.fsdecode(event.src_path))
-        for path in paths:
-            _LOG.debug('File event: %s', path)
+        for raw_path in paths:
+            _LOG.debug('File event: %s', raw_path)
 
-        # Check for matching paths among the one or two in the event.
-        for path in paths:
-            if self._path_matches(path):
+        # Check whether Git cares about any of these paths.
+        for path in (Path(p).resolve() for p in paths):
+            if not git_ignored(path) and self._path_matches(path):
                 self._handle_matched_event(path)
                 return
 
-    def _handle_matched_event(self, matching_path: str) -> None:
+    def _handle_matched_event(self, matching_path: Path) -> None:
         if self.matching_path is None:
             self.matching_path = matching_path
 
@@ -356,7 +348,7 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--exclude_list',
                         nargs='+',
                         type=Path,
-                        help=('directories to ignore during pw watch'),
+                        help='directories to ignore during pw watch',
                         default=[])
     parser.add_argument('--restart',
                         action='store_true',
@@ -468,21 +460,6 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
             if (item.is_dir() and item not in exclude_dir_parents
                     and item not in directories_to_exclude):
                 yield item, True
-
-
-def gitignore_patterns():
-    """Load patterns in pw_root_dir/.gitignore and return as [str]"""
-    pw_root_dir = Path(os.environ['PW_ROOT'])
-
-    # Get top level .gitignore entries
-    gitignore_path = pw_root_dir / Path('.gitignore')
-    if gitignore_path.exists():
-        for line in gitignore_path.read_text().splitlines():
-            globname = line.strip()
-            # If line is empty or a comment.
-            if not globname or globname.startswith('#'):
-                continue
-            yield line
 
 
 def get_common_excludes() -> List[Path]:
@@ -599,8 +576,6 @@ def watch(default_build_targets: List[str], build_directories: List[str],
     # Ignore the user-specified patterns.
     ignore_patterns = (ignore_patterns_string.split(_WATCH_PATTERN_DELIMITER)
                        if ignore_patterns_string else [])
-    # Ignore top level pw_root_dir/.gitignore patterns.
-    ignore_patterns += gitignore_patterns()
 
     env = pw_cli.env.pigweed_environment()
     if env.PW_EMOJI:
@@ -612,8 +587,6 @@ def watch(default_build_targets: List[str], build_directories: List[str],
         patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
         ignore_patterns=ignore_patterns,
         build_commands=build_commands,
-        ignore_dirs=[Path('.presubmit'),
-                     Path('.python3-env')],
         charset=charset,
         restart=restart,
     )
@@ -658,7 +631,7 @@ def watch(default_build_targets: List[str], build_directories: List[str],
     observer.join()
 
 
-def main():
+def main() -> None:
     """Watch files for changes and rebuild."""
     parser = argparse.ArgumentParser(
         description=__doc__,

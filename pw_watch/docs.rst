@@ -40,12 +40,15 @@ this behavior, provide the ``-C`` argument to ``pw watch``.
   # Find a directory and build python.tests, and build pw_apps in out/cmake
   pw watch python.tests -C out/cmake pw_apps
 
-The ``--patterns`` and ``--ignore_patterns`` arguments can be used to include
-and exclude certain file patterns that will trigger rebuilds.
+``pw watch`` only rebuilds when a file that is not ignored by Git changes.
+Adding exclusions to a ``.gitignore`` causes watch to ignore them, even if the
+files were forcibly added to a repo. By default, only files matching certain
+extensions are applied, even if they're tracked by Git. The ``--patterns`` and
+``--ignore_patterns`` arguments can be used to include or exclude specific
+patterns. These patterns do not override Git's ignoring logic.
 
-The ``--exclude_list`` argument can be used to exclude directories from
-being watched by your system. This can decrease the inotify number in Linux
-system.
+The ``--exclude_list`` argument can be used to exclude directories from being
+watched. This decreases the number of files monitored with inotify in Linux.
 
 While running ``pw watch``, press enter to immediately trigger a rebuild.
 
