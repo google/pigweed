@@ -141,7 +141,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         ignore_patterns: Sequence[str] = (),
         build_commands: Sequence[BuildCommand] = (),
         charset: WatchCharset = _ASCII_CHARSET,
-        restart: bool = False,
+        restart: bool = True,
     ):
         super().__init__()
 
@@ -350,9 +350,10 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
                         type=Path,
                         help='directories to ignore during pw watch',
                         default=[])
-    parser.add_argument('--restart',
-                        action='store_true',
-                        help='restart an ongoing build if files change')
+    parser.add_argument('--no-restart',
+                        dest='restart',
+                        action='store_false',
+                        help='do not restart ongoing builds if files change')
     parser.add_argument(
         'default_build_targets',
         nargs='*',

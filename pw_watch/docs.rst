@@ -50,7 +50,9 @@ patterns. These patterns do not override Git's ignoring logic.
 The ``--exclude_list`` argument can be used to exclude directories from being
 watched. This decreases the number of files monitored with inotify in Linux.
 
-While running ``pw watch``, press enter to immediately trigger a rebuild.
+By default, ``pw watch`` automatically restarts an ongoing build when files
+change. This can be disabled with the ``--no-restart`` option. While running
+``pw watch``, you may also press enter to immediately restart a build.
 
 Unit Test Integration
 =====================
