@@ -382,8 +382,8 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "key_value_store_fuzz_test",
-    srcs = ["key_value_store_fuzz_test.cc"],
+    name = "key_value_store_put_test",
+    srcs = ["key_value_store_put_test.cc"],
     deps = [
         ":crc16",
         ":pw_kvs",
