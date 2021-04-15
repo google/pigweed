@@ -906,7 +906,8 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnSimplePairing
 
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
   if (!conn_pair) {
-    bt_log(WARN, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(params.bd_addr));
+    bt_log(WARN, "gap-bredr", "got Simple Pairing Complete (status: %s) for unconnected addr %s",
+           bt_str(hci::Status(params.status)), bt_str(params.bd_addr));
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   conn_pair->second->pairing_state().OnSimplePairingComplete(params.status);

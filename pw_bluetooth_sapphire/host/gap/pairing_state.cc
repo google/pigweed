@@ -282,13 +282,10 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
 }
 
 void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
-  if (state() != State::kWaitPairingComplete) {
-    FailWithUnexpectedEvent(__func__);
-    return;
-  }
-  ZX_ASSERT(is_pairing());
-
+  // The pairing process may fail early, which the controller will deliver as an Simple Pairing
+  // Complete with a non-success status. Log and proxy the error code.
   if (const hci::Status status(status_code);
+      is_pairing() &&
       bt_is_error(status, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
                   bt_str(peer_id()))) {
     // TODO(fxbug.dev/37447): Checking pairing_delegate() for reset like this isn't thread safe.
@@ -299,6 +296,13 @@ void PairingState::OnSimplePairingComplete(hci::StatusCode status_code) {
     SignalStatus(status);
     return;
   }
+
+  // Handle successful Authentication Complete events that are not expected.
+  if (state() != State::kWaitPairingComplete) {
+    FailWithUnexpectedEvent(__func__);
+    return;
+  }
+  ZX_ASSERT(is_pairing());
 
   pairing_delegate()->CompletePairing(peer_id(), sm::Status());
   state_ = State::kWaitLinkKey;

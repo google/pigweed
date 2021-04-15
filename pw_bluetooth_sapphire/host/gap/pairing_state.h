@@ -77,6 +77,7 @@ enum class PairingAction {
 // Link Key Request Negative Reply▶ (continue with pairing)
 //     ◀ Command Complete
 //     ◀ IO Capability Request
+// (◀ Simple Pairing Complete with an error is possible at any time after this)
 // IO Capability Request Reply▶
 //     or
 // IO Capability Request Negative Reply▶ (reject pairing)
@@ -120,6 +121,7 @@ enum class PairingAction {
 // If initiator doesn't have key:
 //     ◀ IO Capability Response
 //     ◀ IO Capability Request
+// (◀ Simple Pairing Complete with an error is possible at any time after this)
 // IO Capability Request Reply▶
 //     or
 // IO Capability Request Negative Reply▶ (reject pairing)
