@@ -204,7 +204,7 @@ object's checksum is updated to reflect the changes.
       if (persistent_crash_info.has_value()) {
         LogLastCrashInfo(persistent_crash_info.value());
         // Clear crash info once it has been dumped.
-        persistent_crash_info.reset();
+        persistent_crash_info.Invalidate();
       }
 
       // ... rest of main

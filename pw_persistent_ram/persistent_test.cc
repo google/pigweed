@@ -62,7 +62,7 @@ TEST_F(PersistentTest, Reset) {
     auto& persistent = *(new (&buffer_) Persistent<uint32_t>());
     persistent = 42u;
     EXPECT_TRUE(persistent.has_value());
-    persistent.reset();
+    persistent.Invalidate();
 
     persistent.~Persistent();  // Emulate shutdown / global destructors.
   }
