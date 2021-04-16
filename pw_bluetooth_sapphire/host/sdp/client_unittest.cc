@@ -551,7 +551,7 @@ TEST_F(SDP_ClientTest, InvalidResponse) {
 
 // Time out (or possibly dropped packets that were malformed)
 TEST_F(SDP_ClientTest, Timeout) {
-  constexpr uint32_t kTimeoutMs = 5000;
+  constexpr uint32_t kTimeoutMs = 10000;
   auto client = Client::Create(channel());
 
   size_t cb_count = 0;

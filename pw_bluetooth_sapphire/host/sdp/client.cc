@@ -12,7 +12,9 @@ namespace bt::sdp {
 
 namespace {
 
-constexpr zx::duration kTransactionTimeout = zx::sec(5);
+// Increased after some particularly slow devices taking a long time for transactions with
+// continuations.
+constexpr zx::duration kTransactionTimeout = zx::sec(10);
 
 class Impl final : public Client {
  public:
@@ -132,7 +134,10 @@ void Impl::TrySendNextTransaction() {
   auto& timeout = pending_timeout_.emplace();
 
   // Timeouts are held in this so it is safe to use.
-  timeout.set_handler([this, id = next.id]() { Cancel(id, Status(HostError::kTimedOut)); });
+  timeout.set_handler([this, id = next.id]() {
+    bt_log(WARN, "sdp", "Transaction %d timed out, removing!", id);
+    Cancel(id, Status(HostError::kTimedOut));
+  });
   timeout.PostDelayed(async_get_default_dispatcher(), kTransactionTimeout);
 }
 
