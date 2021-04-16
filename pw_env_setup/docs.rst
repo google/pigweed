@@ -91,6 +91,38 @@ assumes `bootstrap.sh` is at the top level of your repository.
   pw_bootstrap --args...  # See below for details about args.
   pw_finalize bootstrap "$SETUP_SH"
 
+
+Bazel Usage
+-----------
+It is possible to pull in a CIPD dependency into Bazel using WORKSPACE rules
+rather than using `bootstrap.sh`. e.g.
+
+.. code:: python
+
+  # WORKSPACE
+
+  load(
+      "@pigweed//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
+      "cipd_client_repository",
+      "cipd_repository",
+  )
+
+  # Must be called before cipd_repository
+  cipd_client_repository()
+
+  cipd_repository(
+      name = "bloaty",
+      path = "pigweed/third_party/bloaty-embedded/${os=linux,mac}-${arch=amd64}",
+      tag = "git_revision:2d87d204057b419f5290f8d38b61b9c2c5b4fb52-2",
+  )
+
+From here it is possible to get access to the Bloaty binaries using the
+following command.
+
+.. code:: sh
+
+  bazel run @bloaty//:bloaty -- --help
+
 User-Friendliness
 -----------------
 
