@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -40,13 +41,33 @@ pw_source_set("initiator") {
   ]
 }
 
+pw_source_set("device") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c/device.h" ]
+  public_deps = [
+    ":address",
+    ":initiator",
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_status",
+  ]
+}
 pw_test_group("tests") {
-  tests = [ ":address_test" ]
+  tests = [
+    ":address_test",
+    ":device_test",
+  ]
 }
 
 pw_test("address_test") {
   sources = [ "address_test.cc" ]
   deps = [ ":address" ]
+}
+
+pw_test("device_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "device_test.cc" ]
+  deps = [ ":device" ]
 }
 
 pw_doc_group("docs") {
