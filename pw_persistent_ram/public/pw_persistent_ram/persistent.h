@@ -24,6 +24,15 @@
 
 namespace pw::persistent_ram {
 
+// Behavior to use when attempting to get a handle to the underlying data stored
+// in persistent memory.
+enum class GetterAction {
+  // Default-construct the object before returning a handle.
+  kReset,
+  // Assert that the object is valid before returning a handle.
+  kAssertValid,
+};
+
 // The Persistent class intentionally uses uninitialized memory, which triggers
 // compiler warnings. Disable those warnings for this file.
 PW_MODIFY_DIAGNOSTICS_PUSH();
@@ -119,9 +128,17 @@ class Persistent {
 
   // Get a mutable handle to the underlying data.
   //
+  // Args:
+  //   action: Whether to default-construct the underlying value before
+  //           providing a mutator, or to assert that the object is valid
+  //           without modifying the underlying data.
   // Precondition: has_value() must be true.
-  Mutator mutator() {
-    PW_ASSERT(has_value());
+  Mutator mutator(GetterAction action = GetterAction::kAssertValid) {
+    if (action == GetterAction::kReset) {
+      emplace();
+    } else {
+      PW_ASSERT(has_value());
+    }
     return Mutator(*this);
   }
 

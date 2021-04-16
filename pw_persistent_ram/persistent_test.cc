@@ -16,6 +16,7 @@
 #include <type_traits>
 
 #include "gtest/gtest.h"
+#include "pw_random/xor_shift.h"
 
 namespace pw::persistent_ram {
 namespace {
@@ -92,6 +93,13 @@ class MutablePersistentTest : public ::testing::Test {
 
   // Emulate invalidation of persistent section(s).
   void ZeroPersistentMemory() { memset(&buffer_, 0, sizeof(buffer_)); }
+  void RandomFillMemory() {
+    random::XorShiftStarRng64 rng(0x9ad75);
+    StatusWithSize sws = rng.Get(std::span<std::byte>(
+        reinterpret_cast<std::byte*>(&buffer_), sizeof(buffer_)));
+    ASSERT_TRUE(sws.ok());
+    ASSERT_EQ(sws.size(), sizeof(buffer_));
+  }
 
   // Allocate a chunk of aligned storage that can be independently controlled.
   std::aligned_storage_t<sizeof(Persistent<Coordinate>),
@@ -131,6 +139,36 @@ TEST_F(MutablePersistentTest, DefaultConstructionAndDestruction) {
     auto& persistent = *(new (&buffer_) Persistent<Coordinate>());
     ASSERT_TRUE(persistent.has_value());
     EXPECT_EQ(42, persistent.value().x);
+  }
+}
+
+TEST_F(MutablePersistentTest, ResetObject) {
+  {
+    // Emulate a boot where the persistent sections were lost and ended up in
+    // random data.
+    RandomFillMemory();
+    auto& persistent = *(new (&buffer_) Persistent<Coordinate>());
+
+    // Default construct of a Coordinate.
+    ASSERT_FALSE(persistent.has_value());
+    {
+      auto mutable_persistent = persistent.mutator(GetterAction::kReset);
+      mutable_persistent->x = 42;
+    }
+
+    EXPECT_EQ(42, persistent.value().x);
+    EXPECT_EQ(0, persistent.value().y);
+    EXPECT_EQ(0, persistent.value().z);
+
+    persistent.~Persistent();  // Emulate shutdown / global destructors.
+  }
+
+  {
+    // Emulate a boot where persistent memory was kept as is.
+    auto& persistent = *(new (&buffer_) Persistent<Coordinate>());
+    ASSERT_TRUE(persistent.has_value());
+    EXPECT_EQ(42, persistent.value().x);
+    EXPECT_EQ(0, persistent.value().y);
   }
 }
 

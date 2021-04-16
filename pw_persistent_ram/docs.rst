@@ -188,13 +188,14 @@ object's checksum is updated to reflect the changes.
       // Once this scope ends, we know the persistent object has been updated
       // to reflect changes.
       {
-        auto& mutable_crash_info = persistent_crash_info.mutator();
-        vsnprintf(mutable_crash_info.reason,
-                  sizeof(mutable_crash_info.reason),
+        auto& mutable_crash_info =
+            persistent_crash_info.mutator(GetterAction::kReset);
+        vsnprintf(mutable_crash_info->reason,
+                  sizeof(mutable_crash_info->reason),
                   fmt,
                   args);
-        mutable_crash_info.uptime_ms = system::GetUptimeMs();
-        mutable_crash_info.boot_id = system::GetBootId();
+        mutable_crash_info->uptime_ms = system::GetUptimeMs();
+        mutable_crash_info->boot_id = system::GetBootId();
       }
       // ...
     }
