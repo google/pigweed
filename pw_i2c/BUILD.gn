@@ -52,10 +52,28 @@ pw_source_set("device") {
     "$dir_pw_status",
   ]
 }
+
+pw_source_set("register_device") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c/register_device.h" ]
+  public_deps = [
+    ":address",
+    ":device",
+    ":initiator",
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_result",
+    "$dir_pw_status",
+  ]
+  sources = [ "register_device.cc" ]
+  deps = [ "$dir_pw_assert" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":address_test",
     ":device_test",
+    ":register_device_test",
   ]
 }
 
@@ -68,6 +86,15 @@ pw_test("device_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "device_test.cc" ]
   deps = [ ":device" ]
+}
+
+pw_test("register_device_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "register_device_test.cc" ]
+  deps = [
+    ":register_device",
+    "$dir_pw_assert",
+  ]
 }
 
 pw_doc_group("docs") {

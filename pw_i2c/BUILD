@@ -64,6 +64,24 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "register_device",
+    hdrs = [
+        "public/pw_i2c/register_device.h",
+    ],
+    includes = ["public"],
+    srcs = [ "register_device.cc" ],
+    deps = [
+        ":address",
+        ":device",
+        ":initiator",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "address_test",
     srcs = [
@@ -82,6 +100,18 @@ pw_cc_test(
     ],
     deps = [
         ":device",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "register_device_test",
+    srcs = [
+        "register_device_test.cc",
+    ],
+    deps = [
+        ":register_device",
+        "//pw_assert",
         "//pw_unit_test",
     ],
 )

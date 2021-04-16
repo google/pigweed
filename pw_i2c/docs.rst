@@ -25,3 +25,11 @@ The common interface for interfacing with generic I2C devices. This object
 contains ``pw::i2c::Address`` and wraps the ``pw::i2c::Initiator`` API.
 Common use case includes streaming arbitrary data (Read/Write). Only works
 with devices with a single device address.
+
+pw::i2c::RegisterDevice
+-----------------------
+The common interface for interfacing with register devices. Contains methods
+to help read and write registers from and to the device. Users should have a
+understanding of the capabilities of their device such as register address
+sizes, register data sizes, byte addressability, bulk transactions, etc in
+order to effectively use this interface.
