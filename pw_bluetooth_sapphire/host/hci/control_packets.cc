@@ -133,6 +133,7 @@ bool EventPacket::ToStatusCode(StatusCode* out_code) const {
     CASE_EVENT_STATUS(ReadRemoteVersionInfoComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(ReadRemoteExtendedFeaturesComplete);
+    CASE_EVENT_STATUS(RoleChange);
     CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EVENT_STATUS(SynchronousConnectionComplete);
     case kLEMetaEventCode: {

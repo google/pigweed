@@ -584,11 +584,18 @@ class BrEdrConnectionManagerTest : public TestingBase {
   // after an inbound Connection Request Event is received. Results in
   // |kIncomingConnTransactions| transactions.
 
-  void QueueSuccessfulIncomingConn(DeviceAddress addr = kTestDevAddr,
-                                   hci::ConnectionHandle handle = kConnectionHandle) const {
+  void QueueSuccessfulIncomingConn(
+      DeviceAddress addr = kTestDevAddr, hci::ConnectionHandle handle = kConnectionHandle,
+      std::optional<hci::ConnectionRole> role_change = std::nullopt) const {
     const auto connection_complete = testing::ConnectionCompletePacket(addr, handle);
-    EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(addr),
-                          &kAcceptConnectionRequestRsp, &connection_complete);
+    if (role_change) {
+      const auto role_change_event = testing::RoleChangePacket(addr, role_change.value());
+      EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(addr),
+                            &kAcceptConnectionRequestRsp, &role_change_event, &connection_complete);
+    } else {
+      EXPECT_CMD_PACKET_OUT(test_device(), testing::AcceptConnectionRequestPacket(addr),
+                            &kAcceptConnectionRequestRsp, &connection_complete);
+    }
     QueueSuccessfulInterrogation(addr, handle);
   }
 
@@ -2536,6 +2543,7 @@ TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_EQ(status.ToString(), hci::Status().ToString());
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_TRUE(IsConnected(peer));
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kMaster);
 }
 
 TEST_F(GAP_BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
@@ -3590,6 +3598,82 @@ TEST_F(GAP_BrEdrConnectionManagerTest, Inspect) {
 
   hierarchy = inspect::ReadFromVmo(inspector.DuplicateVmo());
   EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
+
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+
+  // Request an outbound connection in order to get a pointer to the existing connection.
+  // No packets should be sent.
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
+
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+
+  test_device()->SendCommandChannelPacket(
+      testing::RoleChangePacket(kTestDevAddr, hci::ConnectionRole::kMaster));
+  RunLoopUntilIdle();
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kMaster);
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnection) {
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
+
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+
+  // Request an outbound connection in order to get a pointer to the existing connection.
+  // No packets should be sent.
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+
+  test_device()->SendCommandChannelPacket(testing::RoleChangePacket(
+      kTestDevAddr, hci::ConnectionRole::kMaster, hci::StatusCode::kUnspecifiedError));
+  RunLoopUntilIdle();
+  // The role should not change.
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kSlave);
+
+  QueueDisconnection(kConnectionHandle);
+}
+
+TEST_F(GAP_BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
+  EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
+
+  QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle,
+                              /*role_change=*/hci::ConnectionRole::kMaster);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  EXPECT_EQ(peer->bredr()->connection_state(), Peer::ConnectionState::kConnected);
+
+  // Request an outbound connection in order to get a pointer to the existing connection.
+  // No packets should be sent.
+  BrEdrConnection* conn_ref = nullptr;
+  auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
+  EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
+  ASSERT_TRUE(conn_ref);
+  EXPECT_EQ(conn_ref->link().role(), hci::Connection::Role::kMaster);
+
+  QueueDisconnection(kConnectionHandle);
 }
 
 #undef COMMAND_COMPLETE_RSP

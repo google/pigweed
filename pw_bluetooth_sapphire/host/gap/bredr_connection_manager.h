@@ -220,8 +220,9 @@ class BrEdrConnectionManager final {
   Peer* FindOrInitPeer(DeviceAddress addr);
 
   // Initialize ACL connection state from |connection_handle| obtained from the controller and begin
-  // interrogation.
-  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle);
+  // interrogation. The connection will be initialized with the role |role|.
+  void InitializeConnection(DeviceAddress addr, hci::ConnectionHandle connection_handle,
+                            hci::ConnectionRole role);
 
   // Called once interrogation completes to make connection identified by |handle| available to
   // upper layers and begin new connection procedures.
@@ -239,6 +240,7 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnRoleChange(const hci::EventPacket& event);
 
   // Called when we complete a pending request. Initiates a new connection
   // attempt for the next peer in the pending list, if any.

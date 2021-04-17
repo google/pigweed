@@ -167,6 +167,8 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                   fit::bind_member(this, &BrEdrConnectionManager::OnUserPasskeyRequest));
   AddEventHandler(hci::kUserPasskeyNotificationEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnUserPasskeyNotification));
+  AddEventHandler(hci::kRoleChangeEventCode,
+                  fit::bind_member(this, &BrEdrConnectionManager::OnRoleChange));
 }
 
 BrEdrConnectionManager::~BrEdrConnectionManager() {
@@ -438,10 +440,12 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
 // Build connection state for a new connection and begin interrogation. L2CAP is not enabled for
 // this link but pairing is allowed before interrogation completes.
 void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
-                                                  hci::ConnectionHandle connection_handle) {
-  // TODO(fxbug.dev/881): support non-master connections.
-  auto link = hci::Connection::CreateACL(connection_handle, hci::Connection::Role::kMaster,
-                                         local_address_, addr, hci_);
+                                                  hci::ConnectionHandle connection_handle,
+                                                  hci::ConnectionRole role) {
+  hci::Connection::Role conn_role = role == hci::ConnectionRole::kMaster
+                                        ? hci::Connection::Role::kMaster
+                                        : hci::Connection::Role::kSlave;
+  auto link = hci::Connection::CreateACL(connection_handle, conn_role, local_address_, addr, hci_);
   Peer* const peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
   bt_log(INFO, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
@@ -682,7 +686,14 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   const char* direction = completed_request_was_outgoing ? "outgoing" : "incoming";
   const char* result = status ? "complete" : "error";
-  bt_log(INFO, "gap-bredr", "%s connection %s (status: %s)", direction, result, bt_str(status));
+  hci::ConnectionRole role =
+      completed_request_was_outgoing ? hci::ConnectionRole::kMaster : hci::ConnectionRole::kSlave;
+  if (request.role_change()) {
+    role = request.role_change().value();
+  }
+
+  bt_log(INFO, "gap-bredr", "%s connection %s (status: %s, role: %s)", direction, result,
+         bt_str(status), role == hci::ConnectionRole::kMaster ? "leader" : "follower");
 
   if (completed_request_was_outgoing) {
     // Determine the modified status in case of cancellation or timeout
@@ -715,7 +726,7 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
     }
   } else {
     // Callbacks will be notified when interrogation completes
-    InitializeConnection(address, handle);
+    InitializeConnection(address, handle, role);
   }
 
   TryCreateNextConnection();
@@ -985,6 +996,50 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyNo
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
+hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
+    const hci::EventPacket& event) {
+  ZX_ASSERT(event.event_code() == hci::kRoleChangeEventCode);
+  const auto& params = event.params<hci::RoleChangeEventParams>();
+
+  DeviceAddress address(DeviceAddress::Type::kBREDR, params.bd_addr);
+  Peer* peer = cache_->FindByAddress(address);
+  if (!peer) {
+    bt_log(WARN, "gap-bredr", "got %s for unknown peer (address: %s)", __func__, bt_str(address));
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+  PeerId peer_id = peer->identifier();
+
+  // When a role change is requested in the HCI_Accept_Connection_Request command, a HCI_Role_Change
+  // event may be received prior to the HCI_Connection_Complete event (so no connection object will
+  // exist yet) (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
+  auto request_iter = connection_requests_.find(peer_id);
+  if (request_iter != connection_requests_.end()) {
+    request_iter->second.set_role_change(params.new_role);
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  auto conn_pair = FindConnectionByAddress(params.bd_addr);
+  if (!conn_pair) {
+    bt_log(WARN, "gap-bredr", "got %s for unconnected peer %s", __func__, bt_str(peer_id));
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  hci::Connection::Role new_role = params.new_role == hci::ConnectionRole::kMaster
+                                       ? hci::Connection::Role::kMaster
+                                       : hci::Connection::Role::kSlave;
+  const char* new_role_str = new_role == hci::Connection::Role::kMaster ? "leader" : "follower";
+
+  if (hci_is_error(event, WARN, "gap-bredr", "role change failed and remains %s (peer: %s)",
+                   new_role_str, bt_str(peer_id))) {
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
+  bt_log(DEBUG, "gap-bredr", "role changed to %s (peer: %s)", new_role_str, bt_str(peer_id));
+  conn_pair->second->link().set_role(new_role);
+
+  return hci::CommandChannel::EventCallbackResult::kContinue;
+}
+
 bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_connection_result) {
   Peer* peer = cache_->FindById(peer_id);
   if (!peer) {
@@ -1228,6 +1283,8 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
                                         sizeof(hci::AcceptConnectionRequestCommandParams));
   auto accept_params = accept->mutable_payload<hci::AcceptConnectionRequestCommandParams>();
   accept_params->bd_addr = addr;
+  // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
+  // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
   accept_params->role = hci::ConnectionRole::kMaster;
 
   hci::CommandChannel::CommandCallback command_cb;

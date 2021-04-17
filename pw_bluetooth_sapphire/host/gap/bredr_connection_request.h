@@ -61,11 +61,20 @@ class BrEdrConnectionRequest final {
 
   DeviceAddress address() const { return address_; }
 
+  // If a role change occurs while this request is still pending, set it here so that the correct
+  // role is used when connection establishment completes.
+  void set_role_change(hci::ConnectionRole role) { role_change_ = role; }
+
+  // If the default role of the requested connection is changed during connection establishment, the
+  // new role will be returned.
+  const std::optional<hci::ConnectionRole>& role_change() const { return role_change_; }
+
  private:
   PeerId peer_id_;
   DeviceAddress address_;
   UintInspectable<std::list<OnComplete>> callbacks_;
   BoolInspectable<bool> has_incoming_;
+  std::optional<hci::ConnectionRole> role_change_;
 
   inspect::StringProperty peer_id_property_;
   inspect::Node inspect_node_;

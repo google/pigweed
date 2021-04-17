@@ -68,6 +68,9 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci::ConnectionHandl
 DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
                                                      hci::StatusCode status_code);
 
+DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci::ConnectionRole role,
+                                   hci::StatusCode status = hci::StatusCode::kSuccess);
+
 DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable);
 
 DynamicByteBuffer SynchronousConnectionCompletePacket(hci::ConnectionHandle conn,

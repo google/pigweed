@@ -1026,6 +1026,7 @@ uint64_t AdapterImpl::BuildEventMask() {
   ENABLE_EVT(kReadRemoteSupportedFeaturesCompleteEvent);
   ENABLE_EVT(kReadRemoteVersionInformationCompleteEvent);
   ENABLE_EVT(kReadRemoteExtendedFeaturesCompleteEvent);
+  ENABLE_EVT(kRoleChangeEvent);
   ENABLE_EVT(kSimplePairingCompleteEvent);
   ENABLE_EVT(kSynchronousConnectionCompleteEvent);
   ENABLE_EVT(kUserConfirmationRequestEvent);

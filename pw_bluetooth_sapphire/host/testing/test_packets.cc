@@ -294,6 +294,19 @@ DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
                                             status_code     // reason
                                             ));
 }
+
+DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci::ConnectionRole role,
+                                   hci::StatusCode status) {
+  auto addr_bytes = address.value().bytes();
+  return DynamicByteBuffer(StaticByteBuffer(hci::kRoleChangeEventCode,
+                                            0x08,    // parameter_total_size
+                                            status,  // status
+                                            addr_bytes[0], addr_bytes[1], addr_bytes[2],
+                                            addr_bytes[3], addr_bytes[4],
+                                            addr_bytes[5],  // peer address
+                                            role));
+}
+
 DynamicByteBuffer SetConnectionEncryption(hci::ConnectionHandle conn, bool enable) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci::kSetConnectionEncryption), UpperBits(hci::kSetConnectionEncryption),

@@ -124,6 +124,9 @@ class Connection {
   // Returns the role of the local device in the established connection.
   Role role() const { return role_; }
 
+  // Update the role of the local device when a role change occurs.
+  void set_role(Role role) { role_ = role; }
+
   // The active LE connection parameters of this connection. Must only be called
   // on a Connection with the LE link type.
   const LEConnectionParameters& low_energy_parameters() const {
