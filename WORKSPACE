@@ -215,3 +215,11 @@ http_archive(
     strip_prefix = "buildtools-4.0.1",
     url = "https://github.com/bazelbuild/buildtools/archive/4.0.1.tar.gz",
 )
+
+load("//pw_build:target_config.bzl", "pigweed_config")
+
+# Configure Pigweeds backend.
+pigweed_config(
+    name = "pigweed_config",
+    build_file = "//targets:default_config.BUILD",
+)

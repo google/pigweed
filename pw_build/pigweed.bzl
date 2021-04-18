@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 """Pigweed build environment for bazel."""
 
 DEBUGGING = [
@@ -104,7 +106,7 @@ def _add_cc_and_c_targets(target, kwargs):
     cc_kwargs, c_kwargs = _default_cc_and_c_kwargs(kwargs)
 
     if c_kwargs:
-        native.cc_library(**c_kwargs)
+        cc_library(**c_kwargs)
 
     target(**cc_kwargs)
 
@@ -117,3 +119,15 @@ def pw_cc_library(**kwargs):
 def pw_cc_test(**kwargs):
     kwargs["deps"] = kwargs.get("deps", []) + ["//pw_unit_test:main"]
     _add_cc_and_c_targets(native.cc_test, kwargs)
+
+def pw_cc_facade(**kwargs):
+    # Bazel facades should be source only cc_library's this is to simplify
+    # lazy header evaluation. Bazel headers are not 'precompiled' so the build
+    # system does not check to see if the build has the right dependant headers
+    # in the sandbox. If a source file is declared here and includes a header
+    # file the toolchain will compile as normal and complain about the missing
+    # backend headers.
+    if "srcs" in kwargs.keys():
+        fail("'srcs' attribute does not exist in pw_cc_facade, please use \
+        main implementing target.")
+    _add_cc_and_c_targets(native.cc_library, kwargs)
