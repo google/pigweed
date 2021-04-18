@@ -56,6 +56,12 @@ protobuf_deps()
 # Set up build_bazel_rules_nodejs.
 # Required by: pigweed.
 # Used in modules: //pw_web_ui.
+git_repository(
+    name = "platforms",
+    commit = "d4c9d7f51a7c403814b60f66d20eeb425fbaaacb",
+    remote = "https://github.com/bazelbuild/platforms.git",
+)
+
 http_archive(
     name = "build_bazel_rules_nodejs",
     sha256 = "4952ef879704ab4ad6729a29007e7094aef213ea79e9f2e94cbe1c9a753e63ef",
@@ -104,7 +110,7 @@ browser_repositories(
 # Used in modules: //pw_polyfill, //pw_build (all pw_cc* targets).
 git_repository(
     name = "bazel_embedded",
-    commit = "b8e1b66067ac54e86784479e5cde57c2ed88d099",
+    commit = "d4717a6e33b88cb9fe1b6663d78656728c49b5c8",
     remote = "https://github.com/silvergasp/bazel-embedded.git",
 )
 

@@ -32,6 +32,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_assert",
         "//pw_span",
         "//pw_status",
     ],
@@ -61,9 +62,11 @@ pw_cc_library(
     hdrs = [
         "public/pw_allocator/freelist_heap.h",
     ],
+    includes = ["public"],
     deps = [
         ":block",
         ":freelist",
+        "//pw_log",
     ],
 )
 

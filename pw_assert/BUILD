@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -22,10 +23,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_ASSERT_BACKEND = "//pw_assert_basic"
-
-pw_cc_library(
+pw_cc_facade(
     name = "facade",
     hdrs = [
         "public/pw_assert/assert.h",
@@ -36,7 +34,6 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        PW_ASSERT_BACKEND + ":headers",
         "//pw_preprocessor",
     ],
 )
@@ -45,16 +42,14 @@ pw_cc_library(
     name = "pw_assert",
     deps = [
         ":facade",
-        PW_ASSERT_BACKEND + ":headers",
-        PW_ASSERT_BACKEND,
+        "@pigweed_config//:pw_assert_backend",
     ],
 )
 
 pw_cc_library(
-    name = "backend",
-    deps = [
-        PW_ASSERT_BACKEND,
-    ],
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = ["@pigweed//pw_assert_basic"],
 )
 
 pw_cc_test(
@@ -63,16 +58,16 @@ pw_cc_test(
         "assert_facade_test.cc",
         "assert_test.cc",
         "fake_backend.cc",
-        "public/pw_assert/internal/assert_impl.h",
+        "public/pw_assert/internal/check_impl.h",
         "pw_assert_test/fake_backend.h",
     ],
     deps = [
         ":facade",
+        ":pw_assert",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_string",
         "//pw_unit_test",
-        PW_ASSERT_BACKEND,
     ],
 )
 
@@ -83,8 +78,6 @@ pw_cc_test(
         "assert_backend_compile_test_c.c",
     ],
     deps = [
-        ":backend",
-        ":facade",
         ":pw_assert",
         "//pw_unit_test",
     ],

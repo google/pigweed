@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
 )
 
@@ -21,34 +22,42 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_INTERRUPT_CONTEXT_BACKEND = "//pw_interrupt_context_cortex_m:context_armv7m"
-
-pw_cc_library(
+pw_cc_facade(
     name = "context_facade",
-    srcs = [
-        "context.cc",
-    ],
     hdrs = [
         "public/pw_interrupt/context.h",
     ],
     includes = ["public"],
-    deps = [
-        PW_INTERRUPT_CONTEXT_BACKEND + "_headers",
-    ],
 )
 
 pw_cc_library(
     name = "context",
     deps = [
         ":context_facade",
-        PW_INTERRUPT_CONTEXT_BACKEND + "_headers",
+        "@pigweed_config//:pw_interrupt_backend",
     ],
 )
 
 pw_cc_library(
-    name = "context_backend",
-    deps = [
-        PW_INTERRUPT_CONTEXT_BACKEND,
-    ],
+    name = "backend_multiplexer",
+    # Normally this would be done in the backend packages but because there is
+    # no host implementation we have to define this here.
+    target_compatible_with = select({
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv8-m": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "@platforms//cpu:armv7-m": ["//pw_interrupt_cortex_m:context_armv7m"],
+        "@platforms//cpu:armv7e-m": ["//pw_interrupt_cortex_m:context_armv7m"],
+        "@platforms//cpu:armv8-m": ["//pw_interrupt_cortex_m:context_armv8m"],
+        # This is required for this to be a valid select when building for the
+        # host i.e. 'bazel build //pw_interrupt/...'. The
+        # target_compatible_with attribute is used to skip this target when
+        # built with a wildcard. If explicitly depended on for a host build
+        # the build will fail.
+        "//conditions:default": [],
+    }),
 )

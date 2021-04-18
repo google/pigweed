@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -22,10 +23,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_LOG_BACKEND = "//pw_log_basic"
-
-pw_cc_library(
+pw_cc_facade(
     name = "facade",
     hdrs = [
         "public/pw_log/levels.h",
@@ -36,7 +34,6 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        PW_LOG_BACKEND + ":headers",
         "//pw_preprocessor",
     ],
 )
@@ -45,15 +42,14 @@ pw_cc_library(
     name = "pw_log",
     deps = [
         ":facade",
-        PW_LOG_BACKEND + ":headers",
+        "@pigweed_config//:pw_log_backend",
     ],
 )
 
 pw_cc_library(
-    name = "backend",
-    deps = [
-        PW_LOG_BACKEND,
-    ],
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = ["//pw_log_basic"],
 )
 
 pw_cc_test(
@@ -63,7 +59,6 @@ pw_cc_test(
         "basic_log_test_plain_c.c",
     ],
     deps = [
-        ":backend",
         ":facade",
         ":pw_log",
         "//pw_preprocessor",

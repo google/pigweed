@@ -33,10 +33,12 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = ["@platforms//os:none"],
 )
 
 pw_cc_library(
     name = "interrupt_spin_lock",
+    target_compatible_with = ["@platforms//os:none"],
     deps = [
         ":interrupt_spin_lock_headers",
         "//pw_assert",

@@ -16,6 +16,10 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -33,6 +37,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_chrono:system_clock",
     ],
@@ -43,8 +48,10 @@ pw_cc_library(
     srcs = [
         "binary_semaphore.cc",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":binary_semaphore_headers",
+        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_sync:binary_semaphore_facade",
     ],
@@ -62,6 +69,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_chrono:system_clock",
     ],
@@ -72,8 +80,10 @@ pw_cc_library(
     srcs = [
         "counting_semaphore.cc",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":counting_semaphore_headers",
+        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_sync:counting_semaphore_facade",
     ],
@@ -91,13 +101,12 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
-    deps = [
-        "//pw_sync:mutex_facade",
-    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 pw_cc_library(
     name = "mutex",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":mutex_headers",
         "//pw_sync:mutex_facade",
@@ -114,14 +123,15 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_chrono:system_clock",
-        "//pw_sync:timed_mutex_facade",
     ],
 )
 
 pw_cc_library(
     name = "timed_mutex",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":timed_mutex_headers",
         "//pw_sync:timed_mutex_facade",
@@ -140,10 +150,15 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        "//pw_sync:yield_core",
+    ],
 )
 
 pw_cc_library(
     name = "interrupt_spin_lock",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":interrupt_spin_lock_headers",
         "//pw_sync:interrupt_spin_lock_facade",

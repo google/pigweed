@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
 )
 
@@ -21,31 +22,24 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_MALLOC_BACKEND = "//pw_malloc_freelist"
-
-pw_cc_library(
+pw_cc_facade(
     name = "facade",
     hdrs = [
         "public/pw_malloc/malloc.h",
     ],
     includes = ["public"],
-    deps = [
-        PW_MALLOC_BACKEND + ":headers",
-    ],
 )
 
 pw_cc_library(
     name = "pw_malloc",
     deps = [
         ":facade",
-        PW_MALLOC_BACKEND + ":headers",
+        "@pigweed_config//:pw_malloc_backend",
     ],
 )
 
 pw_cc_library(
-    name = "backend",
-    deps = [
-        PW_MALLOC_BACKEND,
-    ],
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = ["//pw_malloc_freelist"],
 )

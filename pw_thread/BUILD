@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -22,52 +23,40 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_THREAD_ID_BACKEND = "//pw_thread_stl:id"
-
-PW_THREAD_SLEEP_BACKEND = "//pw_thread_stl:sleep"
-
-PW_THREAD_THREAD_BACKEND = "//pw_thread_stl:thread"
-
-PW_THREAD_YIELD_BACKEND = "//pw_thread_stl:yield"
-
-pw_cc_library(
+pw_cc_facade(
     name = "id_facade",
     hdrs = [
         "public/pw_thread/id.h",
     ],
     includes = ["public"],
-    deps = [
-        PW_THREAD_ID_BACKEND + "_headers",
-    ],
 )
 
 pw_cc_library(
     name = "id",
     deps = [
         ":id_facade",
-        PW_THREAD_ID_BACKEND + "_headers",
+        "@pigweed_config//:pw_thread_id_backend",
     ],
 )
 
 pw_cc_library(
-    name = "id_backend",
-    deps = [
-        PW_THREAD_ID_BACKEND,
-    ],
+    name = "id_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:id"],
+        "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:id"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:id"],
+        "//conditions:default": ["//pw_thread_stl:id"],
+    }),
 )
 
-pw_cc_library(
+pw_cc_facade(
     name = "sleep_facade",
-    srcs = [
-        "sleep.cc",
-    ],
     hdrs = [
         "public/pw_thread/sleep.h",
     ],
     includes = ["public"],
     deps = [
-        PW_THREAD_SLEEP_BACKEND + "_headers",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
     ],
@@ -75,20 +64,28 @@ pw_cc_library(
 
 pw_cc_library(
     name = "sleep",
+    srcs = [
+        "sleep.cc",
+    ],
     deps = [
+        ":id",
         ":sleep_facade",
-        PW_THREAD_SLEEP_BACKEND + "_headers",
+        "@pigweed_config//:pw_thread_sleep_backend",
     ],
 )
 
 pw_cc_library(
-    name = "sleep_backend",
-    deps = [
-        PW_THREAD_SLEEP_BACKEND,
-    ],
+    name = "sleep_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:sleep"],
+        "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:sleep"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:sleep"],
+        "//conditions:default": ["//pw_thread_stl:sleep"],
+    }),
 )
 
-pw_cc_library(
+pw_cc_facade(
     name = "thread_facade",
     hdrs = [
         "public/pw_thread/thread.h",
@@ -97,7 +94,6 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":id_facade",
-        PW_THREAD_THREAD_BACKEND + "_headers",
     ],
 )
 
@@ -107,17 +103,22 @@ pw_cc_library(
         "thread.cc",
     ],
     deps = [
+        ":id",
         ":thread_core",
         ":thread_facade",
-        PW_THREAD_THREAD_BACKEND + "_headers",
+        "@pigweed_config//:pw_thread_thread_backend",
     ],
 )
 
 pw_cc_library(
-    name = "thread_backend",
-    deps = [
-        PW_THREAD_THREAD_BACKEND,
-    ],
+    name = "thread_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread"],
+        "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:thread"],
+        "//conditions:default": ["//pw_thread_stl:thread"],
+    }),
 )
 
 pw_cc_library(
@@ -128,34 +129,38 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+pw_cc_facade(
     name = "yield_facade",
-    srcs = [
-        "yield.cc",
-    ],
     hdrs = [
         "public/pw_thread/yield.h",
     ],
     includes = ["public"],
     deps = [
-        PW_THREAD_YIELD_BACKEND + "_headers",
         "//pw_preprocessor",
     ],
 )
 
 pw_cc_library(
     name = "yield",
+    srcs = [
+        "yield.cc",
+    ],
     deps = [
+        ":id",
         ":yield_facade",
-        PW_THREAD_YIELD_BACKEND + "_headers",
+        "@pigweed_config//:pw_thread_yield_backend",
     ],
 )
 
 pw_cc_library(
-    name = "yield_backend",
-    deps = [
-        PW_THREAD_YIELD_BACKEND,
-    ],
+    name = "yield_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:yield"],
+        "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:yield"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:yield"],
+        "//conditions:default": ["//pw_thread_stl:yield"],
+    }),
 )
 
 pw_cc_library(

@@ -25,8 +25,12 @@ pw_cc_library(
     name = "pw_sys_io_baremetal_lm3s6965evb",
     srcs = ["sys_io_baremetal.cc"],
     hdrs = ["public/pw_sys_io_baremetal_lm3s6965evb/init.h"],
+    target_compatible_with = [
+        "//pw_build/constraints/chipset:lm3s6965evb",
+        "@platforms//os:none",
+    ],
     deps = [
         "//pw_preprocessor",
-        "//pw_sys_io",
+        "//pw_sys_io:facade",
     ],
 )

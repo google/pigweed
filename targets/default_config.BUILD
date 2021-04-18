@@ -98,3 +98,8 @@ label_flag(
     name = "pw_sys_io_backend",
     build_setting_default = "@pigweed//pw_sys_io:backend_multiplexer",
 )
+
+label_flag(
+    name = "target_rtos",
+    build_setting_default = "@pigweed//pw_build/constraints/rtos:none",
+)

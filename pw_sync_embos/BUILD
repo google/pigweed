@@ -33,6 +33,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         # TODO(pwbug/317): This should depend on embOS but our third parties
         # currently do not have Bazel support.
@@ -45,6 +48,9 @@ pw_cc_library(
     name = "binary_semaphore",
     srcs = [
         "binary_semaphore.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
     deps = [
         ":binary_semaphore_headers",
@@ -65,6 +71,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         # TODO(pwbug/317): This should depend on embOS but our third parties
         # currently do not have Bazel support.
@@ -77,6 +86,9 @@ pw_cc_library(
     name = "counting_semaphore",
     srcs = [
         "counting_semaphore.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
     deps = [
         ":counting_semaphore_headers",
@@ -97,6 +109,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         # TODO(pwbug/317): This should depend on embOS but our third parties
         # currently do not have Bazel support.
@@ -106,6 +121,9 @@ pw_cc_library(
 
 pw_cc_library(
     name = "mutex",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         ":mutex_headers",
         "//pw_sync:mutex_facade",
@@ -122,6 +140,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         # TODO(pwbug/317): This should depend on embOS but our third parties
         # currently do not have Bazel support.
@@ -134,6 +155,9 @@ pw_cc_library(
     name = "timed_mutex",
     srcs = [
         "timed_mutex.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
     deps = [
         ":timed_mutex_headers",
@@ -155,6 +179,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     # TODO(pwbug/317): This should depend on embOS but our third parties
     # currently do not have Bazel support.
 )
@@ -163,6 +190,9 @@ pw_cc_library(
     name = "interrupt_spin_lock",
     srcs = [
         "interrupt_spin_lock.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
     ],
     deps = [
         ":interrupt_spin_lock_headers",

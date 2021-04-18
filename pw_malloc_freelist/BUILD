@@ -39,21 +39,22 @@ pw_cc_library(
     ],
     deps = [
         ":headers",
-        "//dir_pw_allocator:block",
-        "//dir_pw_allocator:freelist_heap",
-        "//dir_pw_boot_armv7m",
-        "//dir_pw_malloc:facade",
-        "//dir_pw_preprocessor",
+        "//pw_allocator:block",
+        "//pw_allocator:freelist_heap",
+        "//pw_boot_armv7m",
+        "//pw_malloc:facade",
+        "//pw_preprocessor",
     ],
 )
 
 pw_cc_test(
-    name = "freelist_malloctest",
+    name = "freelist_malloc_test",
     srcs = [
         "freelist_malloc_test.cc",
     ],
     deps = [
         ":headers",
+        ":pw_malloc_freelist",
         "//pw_unit_test",
     ],
 )

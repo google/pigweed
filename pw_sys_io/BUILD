@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
 )
 
@@ -21,7 +22,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_library(
+pw_cc_facade(
     name = "facade",
     hdrs = ["public/pw_sys_io/sys_io.h"],
     includes = ["public"],
@@ -48,8 +49,16 @@ pw_cc_library(
         ":facade",
         "//pw_span",
         "//pw_status",
-        # For now, hard-code to depend on stdio until bazel build is updated
-        # to support multiple target configurations.
-        "//pw_sys_io_stdio",
+        "@pigweed_config//:pw_sys_io_backend",
     ],
+)
+
+pw_cc_library(
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/chipset:stm32f429": ["@pigweed//pw_sys_io_baremetal_stm32f429"],
+        "//pw_build/constraints/chipset:lm3s6965evb": ["@pigweed//pw_sys_io_baremetal_lm3s6965evb"],
+        "//conditions:default": ["@pigweed//pw_sys_io_stdio"],
+    }),
 )

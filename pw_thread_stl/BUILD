@@ -17,6 +17,10 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,10 +38,12 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 pw_cc_library(
     name = "id",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":id_headers",
         "//pw_thread:id_facade",
@@ -54,6 +60,7 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_chrono:system_clock",
     ],
@@ -61,6 +68,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "sleep",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":sleep_headers",
         "//pw_chrono:system_clock",
@@ -81,10 +89,12 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 pw_cc_library(
     name = "thread",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":thread_headers",
         "//pw_thread:thread_facade",
@@ -96,6 +106,7 @@ pw_cc_library(
     srcs = [
         "test_threads.cc",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_thread:test_threads_header",
         "//pw_thread:thread_facade",
@@ -104,6 +115,7 @@ pw_cc_library(
 
 pw_cc_test(
     name = "thread_backend_test",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":test_threads",
         "//pw_thread:thread_facade_test",
@@ -120,10 +132,12 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
 
 pw_cc_library(
     name = "yield",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":yield_headers",
         "//pw_thread:yield_facade",

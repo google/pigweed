@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
@@ -53,14 +54,9 @@ pw_cc_library(
     ],
 )
 
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_TOKENIZER_GLOBAL_HANDLER_BACKEND = "//pw_tokenizer:test_backend"
-
-PW_TOKENIZER_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "//pw_tokenizer:test_backend"
-
 pw_cc_library(
     name = "test_backend",
-    visibility = ["//visibility:private"],
+    visibility = ["@pigweed_config//:__pkg__"],
 )
 
 pw_cc_library(
@@ -69,7 +65,7 @@ pw_cc_library(
     hdrs = ["public/pw_tokenizer/tokenize_to_global_handler.h"],
     deps = [
         ":pw_tokenizer",
-        PW_TOKENIZER_GLOBAL_HANDLER_BACKEND,
+        "@pigweed_config//:pw_tokenizer_global_handler_backend",
     ],
 )
 
@@ -79,7 +75,7 @@ pw_cc_library(
     hdrs = ["public/pw_tokenizer/tokenize_to_global_handler_with_payload.h"],
     deps = [
         ":pw_tokenizer",
-        PW_TOKENIZER_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND,
+        "@pigweed_config//:pw_tokenizer_global_handler_with_payload_backend",
     ],
 )
 
@@ -93,6 +89,7 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":pw_tokenizer",
         "//pw_base64",
         "//pw_preprocessor",
         "//pw_span",
@@ -124,8 +121,15 @@ pw_cc_binary(
     name = "generate_decoding_test_data",
     srcs = [
         "generate_decoding_test_data.cc",
-        "tokenize_test_fakes.cc",
     ],
+    target_compatible_with = select(
+        {
+            "@platforms//os:linux": [],
+            "@platforms//os:windows": [],
+            "@platforms//os:macos": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        },
+    ),
     deps = [
         ":decoder",
         ":pw_tokenizer",
@@ -155,7 +159,6 @@ pw_cc_test(
         "argument_types_test.cc",
         "argument_types_test_c.c",
         "pw_tokenizer_private/argument_types_test.h",
-        "tokenize_test_fakes.cc",
     ],
     deps = [
         ":pw_tokenizer",
@@ -219,7 +222,6 @@ pw_cc_test(
     srcs = [
         "hash_test.cc",
         "pw_tokenizer_private/generated_hash_test_cases.h",
-        "tokenize_test_fakes.cc",
     ],
     deps = [
         ":pw_tokenizer",
@@ -234,6 +236,8 @@ pw_cc_test(
         "simple_tokenize_test.cc",
     ],
     deps = [
+        ":global_handler",
+        ":global_handler_with_payload",
         ":pw_tokenizer",
         "//pw_unit_test",
     ],

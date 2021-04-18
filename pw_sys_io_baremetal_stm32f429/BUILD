@@ -26,7 +26,8 @@ pw_cc_library(
     srcs = ["sys_io_baremetal.cc"],
     hdrs = ["public/pw_sys_io_baremetal_stm32f429/init.h"],
     target_compatible_with = [
-        "//pw_build/constraints/boards:stm32f429i-disc1",
+        "//pw_build/constraints/chipset:stm32f429",
+        "@platforms//os:none",
     ],
     deps = [
         "//pw_boot_armv7m",

@@ -33,6 +33,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         "//pw_chrono:epoch",
     ],
@@ -43,10 +46,11 @@ pw_cc_library(
     srcs = [
         "system_clock.cc",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
     deps = [
         ":system_clock_headers",
         "//pw_chrono:system_clock_facade",
-        # TODO(pwbug/317): This should depend on embOS but our third parties
-        # currently do not have Bazel support.
     ],
 )

@@ -16,6 +16,10 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,6 +44,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "system_clock",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         ":system_clock_headers",
         "//pw_chrono:system_clock_facade",

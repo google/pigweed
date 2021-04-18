@@ -16,6 +16,10 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
 )
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,6 +28,7 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_sys_io_stdio",
     srcs = ["sys_io.cc"],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:facade",

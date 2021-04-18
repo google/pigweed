@@ -13,40 +13,77 @@
 # the License.
 package(default_visibility = ["//visibility:public"])
 
+# --- OS's ---
+platform(
+    name = "freertos",
+    constraint_values = [
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//os:none",
+    ],
+)
+
+platform(
+    name = "embos",
+    constraint_values = [
+        "//pw_build/constraints/rtos:embos",
+        "@platforms//os:none",
+    ],
+)
+
+platform(
+    name = "threadx",
+    constraint_values = [
+        "//pw_build/constraints/rtos:threadx",
+        "@platforms//os:none",
+    ],
+)
+
+platform(
+    name = "none",
+    constraint_values = ["@platforms//os:none"],
+)
+
 # --- CPU's ---
-alias(
+platform(
     name = "cortex_m0",
-    actual = "@bazel_embedded//platforms:cortex_m0",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m0"],
 )
 
-alias(
+platform(
     name = "cortex_m1",
-    actual = "@bazel_embedded//platforms:cortex_m1",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m1"],
 )
 
-alias(
+platform(
     name = "cortex_m3",
-    actual = "@bazel_embedded//platforms:cortex_m3",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m3"],
 )
 
-alias(
+platform(
     name = "cortex_m4",
-    actual = "@bazel_embedded//platforms:cortex_m4",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m4"],
 )
 
-alias(
+platform(
     name = "cortex_m4_fpu",
-    actual = "@bazel_embedded//platforms:cortex_m4",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m4"],
 )
 
-alias(
+platform(
     name = "cortex_m7",
-    actual = "@bazel_embedded//platforms:cortex_m7",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m7"],
 )
 
-alias(
+platform(
     name = "cortex_m7_fpu",
-    actual = "@bazel_embedded//platforms:cortex_m7_fpu",
+    constraint_values = ["@pigweed_config//:target_rtos"],
+    parents = ["@bazel_embedded//platforms:cortex_m7_fpu"],
 )
 
 # --- Chipsets ---

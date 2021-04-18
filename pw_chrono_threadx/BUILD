@@ -33,6 +33,9 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
+    ],
     deps = [
         "//pw_chrono:epoch",
     ],
@@ -42,6 +45,9 @@ pw_cc_library(
     name = "system_clock",
     srcs = [
         "system_clock.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:threadx",
     ],
     deps = [
         ":system_clock_headers",

@@ -14,6 +14,7 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -21,9 +22,6 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # Apache License 2.0
-
-# TODO(pwbug/101): Need to add support for facades/backends to Bazel.
-PW_CHRONO_SYSTEM_CLOCK_BACKEND = "//pw_chrono_stl:system_clock"
 
 pw_cc_library(
     name = "epoch",
@@ -33,11 +31,8 @@ pw_cc_library(
     includes = ["public"],
 )
 
-pw_cc_library(
+pw_cc_facade(
     name = "system_clock_facade",
-    srcs = [
-        "system_clock.cc",
-    ],
     hdrs = [
         "public/pw_chrono/internal/system_clock_macros.h",
         "public/pw_chrono/system_clock.h",
@@ -45,24 +40,30 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":epoch",
-        PW_CHRONO_SYSTEM_CLOCK_BACKEND + "_headers",
         "//pw_preprocessor",
     ],
 )
 
 pw_cc_library(
     name = "system_clock",
+    srcs = [
+        "system_clock.cc",
+    ],
     deps = [
         ":system_clock_facade",
-        PW_CHRONO_SYSTEM_CLOCK_BACKEND + "_headers",
+        "@pigweed_config//:pw_chrono_backend",
     ],
 )
 
 pw_cc_library(
-    name = "system_clock_backend",
-    deps = [
-        PW_CHRONO_SYSTEM_CLOCK_BACKEND,
-    ],
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_clock"],
+        "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_clock"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_chrono_threadx:system_clock"],
+        "//conditions:default": ["//pw_chrono_stl:system_clock"],
+    }),
 )
 
 pw_cc_library(
