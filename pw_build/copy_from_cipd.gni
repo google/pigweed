@@ -75,6 +75,8 @@ template("pw_cipd_static_library") {
     # well.
     inputs = [ invoker.manifest ]
     outputs = [ _out_file ]
+
+    python_deps = [ "$dir_pw_build/py" ]
   }
 
   pw_source_set(target_name) {
