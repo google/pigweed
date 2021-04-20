@@ -15,6 +15,7 @@
 #include "pw_result/result.h"
 
 #include "gtest/gtest.h"
+#include "pw_status/try.h"
 
 namespace pw {
 namespace {
@@ -70,6 +71,29 @@ TEST(Divide, ReturnNotOk) {
   Result<float> res = Divide(10, 0);
   EXPECT_FALSE(res.ok());
   EXPECT_EQ(res.status(), Status::InvalidArgument());
+}
+
+Result<bool> ReturnResult(Result<bool> result) { return result; }
+
+Status TryResultAssign(Result<bool> result) {
+  PW_TRY_ASSIGN(const bool value, ReturnResult(result));
+
+  // Any status other than OK should have already returned.
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(value, result.value());
+  return result.status();
+}
+
+// TODO(pwbug/363): Once pw::Result has been refactored to properly support
+// non-default move and/or copy assignment operators and/or constructors, we
+// should add explicit tests to confirm this is properly handled by
+// PW_TRY_ASSIGN.
+TEST(Result, TryAssign) {
+  EXPECT_EQ(TryResultAssign(Status::Cancelled()), Status::Cancelled());
+  EXPECT_EQ(TryResultAssign(Status::DataLoss()), Status::DataLoss());
+  EXPECT_EQ(TryResultAssign(Status::Unimplemented()), Status::Unimplemented());
+  EXPECT_EQ(TryResultAssign(false), OkStatus());
+  EXPECT_EQ(TryResultAssign(true), OkStatus());
 }
 
 }  // namespace

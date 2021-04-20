@@ -7,6 +7,44 @@ pw_result
 data when the status is OK. This is meant for returning lightweight result
 types or references to larger results.
 
+``pw::Result`` is compatible with ``PW_TRY`` and ``PW_TRY_ASSIGN``, for example:
+
+.. code-block:: cpp
+
+  #include "pw_status/try.h"
+  #include "pw_result/result.h"
+
+  pw::Result<int> GetAnswer();  // Example function.
+
+  pw::Status UseAnswer() {
+    const pw::Result<int> answer = GetAnswer();
+    if (!answer.ok()) {
+      return answer.status();
+    }
+    if (answer.value() == 42) {
+      WhatWasTheUltimateQuestion();
+    }
+    return pw::OkStatus();
+  }
+
+  pw::Status UseAnswerWithTry() {
+    const pw::Result<int> answer = GetAnswer();
+    PW_TRY(answer.status());
+    if (answer.value() == 42) {
+      WhatWasTheUltimateQuestion();
+    }
+    return pw::OkStatus();
+  }
+
+  pw::Status UseAnswerWithTryAssign() {
+    PW_TRY_ASSIGN(const int answer, GetAnswer());
+    if (answer == 42) {
+      WhatWasTheUltimateQuestion();
+    }
+    return pw::OkStatus();
+  }
+
+
 .. warning::
 
   Be careful not to use larger types by value as this can quickly consume

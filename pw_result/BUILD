@@ -39,6 +39,7 @@ pw_cc_test(
     srcs = ["result_test.cc"],
     deps = [
         ":pw_result",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )

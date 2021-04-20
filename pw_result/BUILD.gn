@@ -37,7 +37,10 @@ pw_test_group("tests") {
 }
 
 pw_test("result_test") {
-  deps = [ ":pw_result" ]
+  deps = [
+    ":pw_result",
+    dir_pw_status,
+  ]
   sources = [ "result_test.cc" ]
 }
 

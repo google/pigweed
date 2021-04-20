@@ -14,6 +14,7 @@
 #pragma once
 
 #include <algorithm>
+#include <utility>
 
 #include "pw_assert/light.h"
 #include "pw_status/status.h"
@@ -23,6 +24,9 @@ namespace pw {
 // A Result represents the result of an operation which can fail. It is a
 // convenient wrapper around returning a Status alongside some data when the
 // status is OK.
+//
+// TODO(pwbug/363): Refactor pw::Result to properly support non-default move
+// and/or copy assignment operators and/or constructors.
 template <typename T>
 class Result {
  public:
@@ -96,4 +100,17 @@ class Result {
   Status status_;
 };
 
+namespace internal {
+
+template <typename T>
+constexpr Status ConvertToStatus(const Result<T>& result) {
+  return result.status();
+}
+
+template <typename T>
+constexpr T ConvertToValue(Result<T>& result) {
+  return std::move(result.value());
+}
+
+}  // namespace internal
 }  // namespace pw
