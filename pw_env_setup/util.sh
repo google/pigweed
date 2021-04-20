@@ -169,7 +169,7 @@ pw_deactivate() {
   # If there's a _pw_deactivate function run it. Redirect output to /dev/null
   # in case _pw_deactivate doesn't exist.
   if [ -n "$(command -v _pw_deactivate)" ]; then
-    _pw_deactivate &> /dev/null
+    _pw_deactivate > /dev/null 2> /dev/null
   fi
 
   # Restore.
@@ -193,15 +193,28 @@ pw_deactivate() {
 pw_bootstrap() {
   _pw_hello "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
 
+  alias python > /dev/null 2> /dev/null
+  if [ "$?" -eq 0 ]; then
+    pw_bold_red "Error: 'python' is an alias"
+    pw_red "The shell has a 'python' alias set. This causes many obscure"
+    pw_red "Python-related issues both in and out of Pigweed. Please remove"
+    pw_red "the Python alias from your shell init file or at least run the"
+    pw_red "following command before bootstrapping Pigweed."
+    pw_red
+    pw_red "  unalias python"
+    pw_red
+    return
+  fi
+
   # Allow forcing a specific version of Python for testing pursposes.
   if [ -n "$PW_BOOTSTRAP_PYTHON" ]; then
     _PW_PYTHON="$PW_BOOTSTRAP_PYTHON"
-  elif which python &> /dev/null; then
-    _PW_PYTHON=python
-  elif which python3 &> /dev/null; then
+  elif command -v python3 > /dev/null 2> /dev/null; then
     _PW_PYTHON=python3
-  elif which python2 &> /dev/null; then
+  elif command -v python2 > /dev/null 2> /dev/null; then
     _PW_PYTHON=python2
+  elif command -v python > /dev/null 2> /dev/null; then
+    _PW_PYTHON=python
   else
     pw_bold_red "Error: No system Python present\n"
     pw_red "  Pigweed's bootstrap process requires a local system Python."
