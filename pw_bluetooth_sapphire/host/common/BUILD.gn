@@ -105,9 +105,6 @@ source_set("tests") {
     "//sdk/lib/inspect/testing/cpp",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-common-tests") {
