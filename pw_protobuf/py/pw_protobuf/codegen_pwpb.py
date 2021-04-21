@@ -117,9 +117,15 @@ class ProtoMethod(abc.ABC):
         scope = self._root if from_root else self._scope
         type_node = self._field.type_node()
         assert type_node is not None
+
+        # If a class method is referencing its class, the namespace provided
+        # must be from the root or it will be empty.
+        if type_node == scope:
+            scope = self._root
+
         ancestor = scope.common_ancestor(type_node)
         namespace = type_node.cpp_namespace(ancestor)
-        assert namespace is not None
+        assert namespace
         return namespace
 
 

@@ -114,6 +114,12 @@ message DeviceInfo {
   repeated KeyValuePair attributes = 4;
 }
 
+// Ensure recursive submessages work.
+message Crate {
+  string name = 1;
+  repeated Crate smaller_crates = 2;
+}
+
 // This might be useful.
 message KeyValuePair {
   string key = 1;

@@ -174,6 +174,53 @@ TEST(Codegen, Codegen) {
             0);
 }
 
+TEST(Codegen, RecursiveSubmessage) {
+  std::byte encode_buffer[512];
+  NestedEncoder<20, 20> encoder(encode_buffer);
+
+  Crate::Encoder biggest_crate(&encoder);
+  biggest_crate.WriteName("Huge crate");
+
+  {
+    Crate::Encoder medium_crate = biggest_crate.GetSmallerCratesEncoder();
+    medium_crate.WriteName("Medium crate");
+    {
+      Crate::Encoder small_crate = medium_crate.GetSmallerCratesEncoder();
+      small_crate.WriteName("Small crate");
+    }
+    {
+      Crate::Encoder tiny_crate = medium_crate.GetSmallerCratesEncoder();
+      tiny_crate.WriteName("Tiny crate");
+    }
+  }
+
+  // clang-format off
+  constexpr uint8_t expected_proto[] = {
+    // crate.name
+    0x0a, 0x0a, 'H', 'u', 'g', 'e', ' ', 'c', 'r', 'a', 't', 'e',
+    // crate.smaller_crate[0]
+    0x12, 0x2b,
+    // crate.smaller_crate[0].name
+    0x0a, 0x0c, 'M', 'e', 'd', 'i', 'u', 'm', ' ', 'c', 'r', 'a', 't', 'e',
+    // crate.smaller_crate[0].smaller_crate[0]
+    0x12, 0x0d,
+    // crate.smaller_crate[0].smaller_crate[0].name
+    0x0a, 0x0b, 'S', 'm', 'a', 'l', 'l', ' ', 'c', 'r', 'a', 't', 'e',
+    // crate.smaller_crate[0].smaller_crate[1]
+    0x12, 0x0c,
+    // crate.smaller_crate[0].smaller_crate[1].name
+    0x0a, 0x0a, 'T', 'i', 'n', 'y', ' ', 'c', 'r', 'a', 't', 'e',
+  };
+  // clang-format on
+
+  Result result = encoder.Encode();
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(
+                result.value().data(), expected_proto, sizeof(expected_proto)),
+            0);
+}
+
 TEST(CodegenRepeated, NonPackedScalar) {
   std::byte encode_buffer[32];
   NestedEncoder encoder(encode_buffer);
