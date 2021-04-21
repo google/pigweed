@@ -247,6 +247,11 @@ brew uninstall python && brew install python
                 '    brew uninstall python\n'
                 '    brew install python\n'
                 '\n'
+                "If those don't work, address all the potential issues shown \n"
+                'by the following command.\n'
+                '\n'
+                '    brew doctor\n'
+                '\n'
                 "Otherwise, check that your machine's Python can use SSL, "
                 'testing with the httplib module on Python 2 or http.client on '
                 'Python 3.',
