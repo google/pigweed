@@ -125,12 +125,27 @@ def git_ignored(file: Path) -> bool:
 
     Returns true for ignored files that were manually added to a repo.
     """
-    returncode = subprocess.run(
-        ['git', 'check-ignore', '--quiet', '--no-index', file],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        cwd=file.parent).returncode
-    return returncode in (0, 128)
+    file = file.resolve()
+    directory = file.parent
+
+    # Run the Git command from file's parent so that the correct repo is used.
+    while True:
+        try:
+            returncode = subprocess.run(
+                ['git', 'check-ignore', '--quiet', '--no-index', file],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                cwd=directory).returncode
+            return returncode in (0, 128)
+        except FileNotFoundError:
+            # If the directory no longer exists, try parent directories until
+            # an existing directory is found or all directories have been
+            # checked. This approach makes it possible to check if a deleted
+            # path is ignored in the repo it was originally created in.
+            if directory == directory.parent:
+                return False
+
+            directory = directory.parent
 
 
 class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
