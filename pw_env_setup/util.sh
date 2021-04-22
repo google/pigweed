@@ -193,8 +193,9 @@ pw_deactivate() {
 pw_bootstrap() {
   _pw_hello "  BOOTSTRAP! Bootstrap may take a few minutes; please be patient.\n"
 
-  alias python > /dev/null 2> /dev/null
-  if [ "$?" -eq 0 ]; then
+  _pw_alias_check=0
+  alias python > /dev/null 2> /dev/null || _pw_alias_check=$?
+  if [ "$_pw_alias_check" -eq 0 ]; then
     pw_bold_red "Error: 'python' is an alias"
     pw_red "The shell has a 'python' alias set. This causes many obscure"
     pw_red "Python-related issues both in and out of Pigweed. Please remove"
@@ -297,4 +298,5 @@ pw_cleanup() {
   unset pw_activate
   unset pw_finalize
   unset _pw_cleanup
+  unset _pw_alias_check
 }
