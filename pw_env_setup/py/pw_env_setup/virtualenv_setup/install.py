@@ -234,7 +234,7 @@ def install(
         ninja_log_path = os.path.join(venv_path, ninja_log)
         try:
             with open(ninja_log_path, 'w') as outs:
-                ninja_cmd = ['ninja', '-C', build_dir]
+                ninja_cmd = ['ninja', '-C', build_dir, '-v']
                 ninja_cmd.append(gn_target.target)
                 print(ninja_cmd, file=outs)
                 subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
