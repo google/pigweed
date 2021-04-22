@@ -72,7 +72,7 @@ static_library("gap") {
 
   public_deps = [
     ":definitions",
-    "//sdk/banjo/fuchsia.hardware.bt.vendor",
+    "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
     "//sdk/fidl/fuchsia.io",
     "//sdk/lib/fit",
     "//sdk/lib/fit-promise",
