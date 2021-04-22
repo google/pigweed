@@ -76,13 +76,6 @@
     ]
   },
   {
-    "_comment": "TODO(pwbug/69) Put rust in cipd for Windows.",
-    "path": "fuchsia/rust/${os=linux,mac}-${arch=amd64}",
-    "tags": [
-      "git_revision:027149919e36ce5645ca5d02d55b97ef52eb55ba"
-    ]
-  },
-  {
     "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch=amd64}",
     "tags": [
       "version:10.2.0-11"
