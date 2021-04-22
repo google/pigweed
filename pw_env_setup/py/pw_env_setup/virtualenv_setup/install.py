@@ -15,34 +15,24 @@
 
 from __future__ import print_function
 
+import datetime
 import glob
-import hashlib
 import os
 import re
 import subprocess
 import sys
 import tempfile
 
+# Grabbing datetime string once so it will always be the same for all GnTarget
+# objects.
+_DATETIME_STRING = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
 
 class GnTarget(object):  # pylint: disable=useless-object-inheritance
     def __init__(self, val):
         self.directory, self.target = val.split('#', 1)
-        # hash() doesn't necessarily give the same value in new runs of Python,
-        # so compute a unique id for this object that's consistent from run to
-        # run.
-        try:
-            val = val.encode()
-        except AttributeError:
-            pass
-        self._unique_id = hashlib.md5(val).hexdigest()
-
-    @property
-    def name(self):
-        """A reasonably stable and unique name for each pair."""
-        result = '{}-{}'.format(
-            os.path.basename(os.path.normpath(self.directory)),
-            self._unique_id)
-        return re.sub(r'[:/#_]+', '_', result)
+        self.name = '-'.join(
+            (re.sub(r'\W+', '_', self.target).strip('_'), _DATETIME_STRING))
 
 
 def git_stdout(*args, **kwargs):
