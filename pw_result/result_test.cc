@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,6 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+// pw::Result is derived from absl::StatusOr, but has some small differences.
+// This test covers basic pw::Result functionality and as well as the features
+// supported by pw::Result that are not supported by absl::StatusOr (constexpr
+// use in particular).
+//
+// The complete, thorough pw::Result tests are in statusor_test.cc, which is
+// derived from Abseil's tests for absl::StatusOr.
 
 #include "pw_result/result.h"
 
@@ -46,7 +54,7 @@ TEST(Result, Deref) {
     constexpr bool False() { return false; };
   };
 
-  auto tester = Result(Tester());
+  auto tester = Result<Tester>(Tester());
   EXPECT_TRUE(tester.ok());
   EXPECT_TRUE(tester->True());
   EXPECT_FALSE(tester->False());
@@ -62,7 +70,7 @@ TEST(Result, ConstDeref) {
     constexpr bool False() const { return false; };
   };
 
-  const auto tester = Result(Tester());
+  const auto tester = Result<Tester>(Tester());
   EXPECT_TRUE(tester.ok());
   EXPECT_TRUE(tester->True());
   EXPECT_FALSE(tester->False());
@@ -126,6 +134,50 @@ TEST(Result, TryAssign) {
   EXPECT_EQ(TryResultAssign(Status::Unimplemented()), Status::Unimplemented());
   EXPECT_EQ(TryResultAssign(false), OkStatus());
   EXPECT_EQ(TryResultAssign(true), OkStatus());
+}
+
+struct Value {
+  int number;
+};
+
+TEST(Result, ConstexprOk) {
+  static constexpr pw::Result<Value> kResult(Value{123});
+
+  static_assert(kResult.status() == pw::OkStatus());
+  static_assert(kResult.ok());
+
+  static_assert((*kResult).number == 123);
+  static_assert((*std::move(kResult)).number == 123);
+
+  static_assert(kResult->number == 123);
+  static_assert(std::move(kResult)->number == 123);
+
+  static_assert(kResult.value().number == 123);
+  static_assert(std::move(kResult).value().number == 123);
+
+  static_assert(kResult.value_or(Value{99}).number == 123);
+  static_assert(std::move(kResult).value_or(Value{99}).number == 123);
+}
+
+TEST(Result, ConstexprNotOk) {
+  static constexpr pw::Result<Value> kResult(pw::Status::NotFound());
+
+  static_assert(kResult.status() == pw::Status::NotFound());
+  static_assert(!kResult.ok());
+
+  static_assert(kResult.value_or(Value{99}).number == 99);
+  static_assert(std::move(kResult).value_or(Value{99}).number == 99);
+}
+
+TEST(Result, ConstexprNotOkCopy) {
+  static constexpr pw::Result<Value> kResult(pw::Status::NotFound());
+  constexpr pw::Result<Value> kResultCopy(kResult);
+
+  static_assert(kResultCopy.status() == pw::Status::NotFound());
+  static_assert(!kResultCopy.ok());
+
+  static_assert(kResultCopy.value_or(Value{99}).number == 99);
+  static_assert(std::move(kResultCopy).value_or(Value{99}).number == 99);
 }
 
 }  // namespace

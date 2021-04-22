@@ -31,6 +31,7 @@ pw_source_set("pw_result") {
     "$dir_pw_status",
   ]
   public = [ "public/pw_result/result.h" ]
+  sources = [ "public/pw_result/internal/result_internal.h" ]
 }
 
 pw_test_group("tests") {
@@ -42,7 +43,10 @@ pw_test("result_test") {
     ":pw_result",
     dir_pw_status,
   ]
-  sources = [ "result_test.cc" ]
+  sources = [
+    "result_test.cc",
+    "statusor_test.cc",
+  ]
 }
 
 pw_doc_group("docs") {

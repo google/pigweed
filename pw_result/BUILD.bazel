@@ -24,9 +24,8 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_result",
-    hdrs = [
-        "public/pw_result/result.h",
-    ],
+    srcs = ["public/pw_result/internal/result_internal.h"],
+    hdrs = ["public/pw_result/result.h"],
     includes = ["public"],
     deps = [
         "//pw_assert:facade",
@@ -37,6 +36,16 @@ pw_cc_library(
 pw_cc_test(
     name = "result_test",
     srcs = ["result_test.cc"],
+    deps = [
+        ":pw_result",
+        "//pw_status",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "statusor_test",
+    srcs = ["statusor_test.cc"],
     deps = [
         ":pw_result",
         "//pw_status",
