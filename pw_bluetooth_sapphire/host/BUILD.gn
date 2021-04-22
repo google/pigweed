@@ -44,7 +44,7 @@ source_set("sources") {
   public_deps = [
     ":stack",
     "fidl",
-    "//sdk/banjo/fuchsia.hardware.bt.gattsvc",
+    "//sdk/banjo/fuchsia.hardware.bt.gattsvc:fuchsia.hardware.bt.gattsvc_banjo_cpp",
     "//sdk/banjo/fuchsia.hardware.bt.vendor",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
     "//src/connectivity/bluetooth/fidl:host",
