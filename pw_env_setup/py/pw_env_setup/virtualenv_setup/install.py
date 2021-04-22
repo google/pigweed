@@ -254,6 +254,7 @@ def install(
             env.set('VIRTUAL_ENV', venv_path)
             env.prepend('PATH', venv_bin)
             env.clear('PYTHONHOME')
+            env.clear('__PYVENV_LAUNCHER__')
             with env():
                 for gn_target in gn_targets:
                     install_packages(gn_target)
