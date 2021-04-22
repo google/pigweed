@@ -1470,5 +1470,46 @@ TEST_F(HCI_ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataO
   EXPECT_EQ(2u, packet_count);
 }
 
+TEST_F(HCI_ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr ConnectionHandle kHandle0 = 0x0001;
+  constexpr ConnectionHandle kHandle1 = 0x0002;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
+                           DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+
+  // Fill up both LE and BR/EDR controller buffers, leaving one additional packet in the queue of
+  // each type
+  for (ConnectionHandle handle : {kHandle0, kHandle1}) {
+    for (size_t i = 0; i < kMaxNumPackets + 1; ++i) {
+      auto packet = ACLDataPacket::New(handle, ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                       ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+      EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                                 AclDataChannel::PacketPriority::kLow));
+    }
+  }
+  RunLoopUntilIdle();
+
+  // Callback invoked by TestDevice when it receive a data packet from us.
+  size_t packet_count = 0;
+  test_device()->SetDataCallback([&](auto&) { packet_count++; }, dispatcher());
+
+  StaticByteBuffer event_buffer(0x13, 0x09,  // Event header
+                                0x02,        // Number of handles
+                                LowerBits(kHandle0), UpperBits(kHandle0), LowerBits(uint16_t{1}),
+                                UpperBits(uint16_t{1}),  // 1 packets on kHandle0
+                                LowerBits(kHandle1), UpperBits(kHandle1), LowerBits(uint16_t{1}),
+                                UpperBits(uint16_t{1})  // 1 packets on kHandle1
+  );
+  test_device()->SendCommandChannelPacket(event_buffer);
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(2u, packet_count);
+}
+
 }  // namespace
 }  // namespace bt::hci

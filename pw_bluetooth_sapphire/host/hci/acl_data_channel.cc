@@ -109,6 +109,13 @@ class AclDataChannelImpl final : public AclDataChannel {
     ACLDataPacketPtr packet;
   };
 
+  using DataPacketQueue = std::list<QueuedDataPacket>;
+
+  // Take packets from |send_queue| up to and equal to the available capacities given in
+  // |avail_bredr_packets| and |avail_le_packets| respectively
+  static DataPacketQueue TakePacketsToSend(DataPacketQueue& send_queue, size_t avail_bredr_packets,
+                                           size_t avail_le_packets);
+
   // Returns the data buffer MTU for the given connection.
   size_t GetBufferMtu(Connection::LinkType ll_type) const;
 
@@ -219,7 +226,6 @@ class AclDataChannelImpl final : public AclDataChannel {
   //     Connection::LinkType, would let us replace std::list<QueuedDataPacket>
   //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
-  using DataPacketQueue = std::list<QueuedDataPacket>;
   DataPacketQueue send_queue_;
 
   // Returns an iterator to the location new packets should be inserted into |send_queue_| based on
@@ -710,25 +716,20 @@ void AclDataChannelImpl::LogDroppedOverflowPackets() {
   }
 }
 
-void AclDataChannelImpl::TrySendNextQueuedPackets() {
-  if (!is_initialized_)
-    return;
-
-  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
-  size_t avail_le_packets = GetNumFreeLEPackets();
-
+AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend(
+    DataPacketQueue& send_queue, size_t avail_bredr_packets, size_t avail_le_packets) {
   // Based on what we know about controller buffer availability, we process
-  // packets that are currently in |send_queue_|. The packets that can be sent
+  // packets that are currently in |send_queue|. The packets that can be sent
   // are added to |to_send|. Packets that cannot be sent remain in
-  // |send_queue_|.
+  // |send_queue|.
   DataPacketQueue to_send;
-  for (auto iter = send_queue_.begin(); iter != send_queue_.end();) {
+  for (auto iter = send_queue.begin(); iter != send_queue.end();) {
     if (!avail_bredr_packets && !avail_le_packets)
       break;
 
-    if (send_queue_.front().ll_type == Connection::LinkType::kACL && avail_bredr_packets) {
+    if (iter->ll_type == Connection::LinkType::kACL && avail_bredr_packets) {
       --avail_bredr_packets;
-    } else if (send_queue_.front().ll_type == Connection::LinkType::kLE && avail_le_packets) {
+    } else if (iter->ll_type == Connection::LinkType::kLE && avail_le_packets) {
       --avail_le_packets;
     } else {
       // Cannot send packet yet, so skip it.
@@ -737,8 +738,23 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
     }
 
     to_send.push_back(std::move(*iter));
-    send_queue_.erase(iter++);
+    iter = send_queue.erase(iter);
   }
+
+  return to_send;
+}
+
+void AclDataChannelImpl::TrySendNextQueuedPackets() {
+  if (!is_initialized_)
+    return;
+
+  // TODO(fxbug.dev/72582) - This logic is incorrect for a controller which uses a shared BrEdr &
+  // LE buffer, as we will report the capacity twice, and possibly attempt to send up to double the
+  // number of available packets, resulting in some being dropped.
+  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
+  size_t avail_le_packets = GetNumFreeLEPackets();
+
+  auto to_send = TakePacketsToSend(send_queue_, avail_bredr_packets, avail_le_packets);
 
   if (to_send.empty())
     return;
