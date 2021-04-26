@@ -502,7 +502,11 @@ def main(
     elif touch:
         # If a stamp file is provided and the command executed successfully,
         # touch the stamp file to indicate a successful run of the command.
+        touch = touch.resolve()
         _LOG.debug('TOUCH %s', touch)
+
+        # Create the parent directory in case GN / Ninja hasn't created it.
+        touch.parent.mkdir(parents=True, exist_ok=True)
         touch.touch()
 
     return completed_process.returncode
