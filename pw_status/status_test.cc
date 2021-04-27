@@ -156,6 +156,16 @@ TEST(Status, UnknownString) {
   EXPECT_STREQ("INVALID STATUS", Status(kInvalidCode).str());
 }
 
+TEST(Status, Update) {
+  Status status;
+  status.Update(Status::Cancelled());
+  EXPECT_EQ(status, Status::Cancelled());
+  status.Update(OkStatus());
+  EXPECT_EQ(status, Status::Cancelled());
+  status.Update(Status::NotFound());
+  EXPECT_EQ(status, Status::Cancelled());
+}
+
 // Functions for executing the C pw_Status tests.
 extern "C" {
 

@@ -179,6 +179,47 @@ function that corresponds with the status code.
   The Python tool ``pw_status/update_style.py`` may be used to migrate code in a
   Git repo to the new status style.
 
+Tracking the first error encountered
+------------------------------------
+In some contexts it is useful to track the first error encountered while
+allowing execution to continue. Manually writing out ``if`` statements to check
+and then assign quickly becomes verbose, and doesn't explicitly highlight the
+intended behavior of "latching" to the first error.
+
+  .. code-block:: cpp
+
+    Status overall_status;
+    for (Sector& sector : sectors) {
+      Status erase_status = sector.Erase();
+      if (!overall_status.ok()) {
+        overall_status = erase_status;
+      }
+
+      if (erase_status.ok()) {
+        Status header_write_status = sector.WriteHeader();
+        if (!overall_status.ok()) {
+          overall_status = header_write_status;
+        }
+      }
+    }
+    return overall_status;
+
+``pw::Status`` has an ``Update()`` helper function that does exactly this to
+reduce visual clutter and succinctly highlight the intended behavior.
+
+  .. code-block:: cpp
+
+    Status overall_status;
+    for (Sector& sector : sectors) {
+      Status erase_status = sector.Erase();
+      overall_status.Update(erase_status);
+
+      if (erase_status.ok()) {
+        overall_status.Update(sector.WriteHeader());
+      }
+    }
+    return overall_status;
+
 C compatibility
 ---------------
 ``pw_status`` provides the C-compatible ``pw_Status`` enum for the status codes.

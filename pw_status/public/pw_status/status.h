@@ -303,6 +303,15 @@ class Status {
     return code_ == PW_STATUS_UNAUTHENTICATED;
   }
 
+  // Updates this Status to the provided Status IF this status is OK. This is
+  // useful for tracking the first encountered error, as calls to this helper
+  // will not change one error status to another error status.
+  constexpr void Update(Status other) {
+    if (ok()) {
+      code_ = other.code();
+    }
+  }
+
   // Returns a null-terminated string representation of the Status.
   [[nodiscard]] const char* str() const { return pw_StatusString(code_); }
 
