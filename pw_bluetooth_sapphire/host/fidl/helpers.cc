@@ -703,6 +703,8 @@ fble::RemoteDevicePtr NewLERemoteDevice(const bt::gap::Peer& peer) {
   if (le.advertising_data().size() != 0u) {
     std::optional<bt::AdvertisingData> ad = bt::AdvertisingData::FromBytes(le.advertising_data());
     if (!ad.has_value()) {
+      bt_log(INFO, "fidl", "advertising data failed to parse (peer: %s)",
+             bt_str(peer.identifier()));
       return nullptr;
     }
     auto data = fidl_helpers::AdvertisingDataToFidlDeprecated(ad.value());
