@@ -72,6 +72,15 @@ class BaseNanopbClientCall : public BaseClientCall {
       : BaseClientCall(channel, service_id, method_id, handler),
         serde_(request_fields, response_fields) {}
 
+  constexpr BaseNanopbClientCall()
+      : BaseClientCall(), serde_(nullptr, nullptr) {}
+
+  BaseNanopbClientCall(const BaseNanopbClientCall&) = delete;
+  BaseNanopbClientCall& operator=(const BaseNanopbClientCall&) = delete;
+
+  BaseNanopbClientCall(BaseNanopbClientCall&&) = default;
+  BaseNanopbClientCall& operator=(BaseNanopbClientCall&&) = default;
+
   constexpr const internal::NanopbMethodSerde& serde() const { return serde_; }
 
  private:
@@ -112,7 +121,15 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
                              &ResponseHandler,
                              request_fields,
                              response_fields),
-        callback_(callback) {}
+        callback_(&callback) {}
+
+  constexpr NanopbClientCall() : BaseNanopbClientCall(), callback_(nullptr) {}
+
+  NanopbClientCall(const NanopbClientCall&) = delete;
+  NanopbClientCall& operator=(const NanopbClientCall&) = delete;
+
+  NanopbClientCall(NanopbClientCall&&) = default;
+  NanopbClientCall& operator=(NanopbClientCall&&) = default;
 
  private:
   using Traits = internal::CallbackTraits<Callback>;
@@ -141,18 +158,18 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
   void InvokeUnaryCallback(const internal::Packet& packet) {
     if (packet.type() == internal::PacketType::SERVER_ERROR) {
-      callback_.RpcError(packet.status());
+      callback_->RpcError(packet.status());
       return;
     }
 
     ResponseBuffer response_struct{};
 
     if (serde().DecodeResponse(&response_struct, packet.payload())) {
-      callback_.ReceivedResponse(
+      callback_->ReceivedResponse(
           packet.status(),
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
     } else {
-      callback_.RpcError(Status::DataLoss());
+      callback_->RpcError(Status::DataLoss());
     }
 
     Unregister();
@@ -160,26 +177,26 @@ class NanopbClientCall : public internal::BaseNanopbClientCall {
 
   void InvokeServerStreamingCallback(const internal::Packet& packet) {
     if (packet.type() == internal::PacketType::SERVER_ERROR) {
-      callback_.RpcError(packet.status());
+      callback_->RpcError(packet.status());
       return;
     }
 
     if (packet.type() == internal::PacketType::SERVER_STREAM_END) {
-      callback_.Complete(packet.status());
+      callback_->Complete(packet.status());
       return;
     }
 
     ResponseBuffer response_struct{};
 
     if (serde().DecodeResponse(&response_struct, packet.payload())) {
-      callback_.ReceivedResponse(
+      callback_->ReceivedResponse(
           *std::launder(reinterpret_cast<Response*>(&response_struct)));
     } else {
-      callback_.RpcError(Status::DataLoss());
+      callback_->RpcError(Status::DataLoss());
     }
   }
 
-  Callback& callback_;
+  Callback* callback_;
 };
 
 }  // namespace pw::rpc

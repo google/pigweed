@@ -850,6 +850,48 @@ call is only active as long as its ``ClientCall`` object is alive.
   Use ``std::move`` when passing around ``ClientCall`` objects to keep RPCs
   alive.
 
+Example
+^^^^^^^
+.. code-block:: c++
+
+  #include "pw_rpc/echo_service_nanopb.h"
+
+  namespace {
+
+  // RPC response handler for pw.rpc.EchoService/Echo.
+  class EchoResponseHandler
+      : public pw::rpc::UnaryResponseHandler<pw_rpc_EchoMessage> {
+   public:
+    // Callback invoked when a response is received. This is called
+    // synchronously from Client::ProcessPacket.
+    void ReceivedResponse(pw::Status status,
+                          const pw_rpc_EchoMessage& response) final {
+      if (status.ok()) {
+        PW_LOG_INFO("Received echo response: %s", response.msg);
+      } else {
+        PW_LOG_ERROR("Echo failed with status %d",
+                     static_cast<int>(status.code()));
+      }
+    }
+  };
+
+  pw::rpc::NanopbClientCall<pw::rpc::UnaryResponseHandler<pw_rpc_EchoMessage>>
+      echo_call;
+  EchoResponseHandler response_handler;
+
+  }  // namespace
+
+  void CallEcho(const char* message) {
+    pw_rpc_EchoMessage request = pw_rpc_EchoMessage_init_default;
+    pw::string::Copy(message, request.msg);
+
+    // By assigning the returned ClientCall to the global echo_call, the RPC
+    // call is kept alive until it completes. When a response is received, it
+    // will be logged by the handler function and the call will complete.
+    echo_call = pw::rpc::nanopb::EchoServiceClient::Echo(
+        my_channel, request, response_handler);
+  }
+
 Client implementation details
 -----------------------------
 

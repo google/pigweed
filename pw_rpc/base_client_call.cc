@@ -18,6 +18,29 @@
 
 namespace pw::rpc::internal {
 
+BaseClientCall& BaseClientCall::operator=(BaseClientCall&& other) {
+  // If the current client call is active, it must be unregistered from the
+  // client as it will no longer be alive after assignment.
+  Unregister();
+
+  active_ = other.active_;
+
+  if (other.active()) {
+    // If the call being assigned is active, replace it in the client's list
+    // with a reference to the current object.
+    other.Unregister();
+    other.channel_->client()->RegisterCall(*this);
+  }
+
+  channel_ = other.channel_;
+  service_id_ = other.service_id_;
+  method_id_ = other.method_id_;
+  request_ = std::move(other.request_);
+  handler_ = other.handler_;
+
+  return *this;
+}
+
 void BaseClientCall::Cancel() {
   if (active()) {
     channel_->Send(NewPacket(PacketType::CANCEL_SERVER_STREAM));

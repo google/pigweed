@@ -165,6 +165,7 @@ template("_pw_nanopb_rpc_proto_library") {
     public_deps = [
                     ":${invoker.base_target}.nanopb",
                     "$dir_pw_rpc:server",
+                    "$dir_pw_rpc/nanopb:client",
                     "$dir_pw_rpc/nanopb:method_union",
                     "$dir_pw_third_party/nanopb",
                   ] + invoker.deps

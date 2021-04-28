@@ -35,6 +35,26 @@ TEST(BaseClientCall, RegistersAndRemovesItselfFromClient) {
   EXPECT_EQ(context.client().active_calls(), 0u);
 }
 
+TEST(BaseClientCall, Move_UnregistersOriginal) {
+  ClientContextForTest context;
+  EXPECT_EQ(context.client().active_calls(), 0u);
+
+  BaseClientCall moved(&context.channel(),
+                       context.service_id(),
+                       context.method_id(),
+                       [](BaseClientCall&, const Packet&) {});
+  EXPECT_EQ(context.client().active_calls(), 1u);
+
+  BaseClientCall call(std::move(moved));
+  EXPECT_EQ(context.client().active_calls(), 1u);
+
+// Ignore use-after-move.
+#ifndef __clang_analyzer__
+  EXPECT_FALSE(moved.active());
+#endif  // __clang_analyzer__
+  EXPECT_TRUE(call.active());
+}
+
 class FakeClientCall : public BaseClientCall {
  public:
   constexpr FakeClientCall(rpc::Channel* channel,

@@ -41,12 +41,21 @@ class BaseClientCall : public IntrusiveList<BaseClientCall>::Item {
     Register();
   }
 
+  constexpr BaseClientCall()
+      : channel_(nullptr),
+        service_id_(0),
+        method_id_(0),
+        handler_(nullptr),
+        active_(false) {}
+
   ~BaseClientCall() { Unregister(); }
 
   BaseClientCall(const BaseClientCall&) = delete;
   BaseClientCall& operator=(const BaseClientCall&) = delete;
 
-  BaseClientCall(BaseClientCall&& other) { *this = std::move(other); }
+  BaseClientCall(BaseClientCall&& other) : active_(false) {
+    *this = std::move(other);
+  }
   BaseClientCall& operator=(BaseClientCall&& other);
 
   constexpr bool active() const { return active_; }
