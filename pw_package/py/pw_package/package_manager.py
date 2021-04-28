@@ -66,11 +66,8 @@ class Package:
 _PACKAGES: Dict[str, Package] = {}
 
 
-def register(package_class: type, name: str = None) -> None:
-    if name:
-        obj = package_class(name)
-    else:
-        obj = package_class()
+def register(package_class: type, *args, **kwargs) -> None:
+    obj = package_class(*args, **kwargs)
     _PACKAGES[obj.name] = obj
 
 

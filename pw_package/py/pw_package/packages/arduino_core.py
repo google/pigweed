@@ -137,4 +137,5 @@ class ArduinoCore(pw_package.package_manager.Package):
 
 
 for arduino_core_name in core_installer.supported_cores():
-    pw_package.package_manager.register(ArduinoCore, name=arduino_core_name)
+    pw_package.package_manager.register(ArduinoCore,
+                                        core_name=arduino_core_name)

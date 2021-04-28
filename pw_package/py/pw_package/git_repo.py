@@ -41,10 +41,14 @@ def git(*args: PathOrStr,
 
 class GitRepo(pw_package.package_manager.Package):
     """Install and check status of Git repository-based packages."""
-    def __init__(self, url, commit, *args, **kwargs):
+    def __init__(self, url, *args, commit='', tag='', **kwargs):
         super().__init__(*args, **kwargs)
+        if not (commit or tag):
+            raise ValueError('git repo must specify a commit or tag')
+
         self._url = url
         self._commit = commit
+        self._tag = tag
 
     def status(self, path: pathlib.Path) -> bool:
         if not os.path.isdir(path / '.git'):
@@ -62,8 +66,16 @@ class GitRepo(pw_package.package_manager.Package):
             remote = 'https://{}{}'.format(host, url.path)
 
         commit = git_stdout('rev-parse', 'HEAD', repo=path)
+        if self._commit and self._commit != commit:
+            return False
+
+        if self._tag:
+            tag = git_stdout('describe', '--tags', repo=path)
+            if self._tag != tag:
+                return False
+
         status = git_stdout('status', '--porcelain=v1', repo=path)
-        return remote == self._url and commit == self._commit and not status
+        return remote == self._url and not status
 
     def install(self, path: pathlib.Path) -> None:
         # If already installed and at correct version exit now.
@@ -78,5 +90,9 @@ class GitRepo(pw_package.package_manager.Package):
         # revision. If we later run commands that need history it will be
         # retrieved on-demand. For small repositories the effect is negligible
         # but for large repositories this should be a significant improvement.
-        git('clone', '--filter=blob:none', self._url, path)
-        git('reset', '--hard', self._commit, repo=path)
+        if self._commit:
+            git('clone', '--filter=blob:none', self._url, path)
+            git('reset', '--hard', self._commit, repo=path)
+        elif self._tag:
+            git('clone', '-b', self._tag, '--filter=blob:none', self._url,
+                path)
