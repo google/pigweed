@@ -203,12 +203,13 @@ def install(
         gn_log_path = os.path.join(venv_path, gn_log)
         try:
             with open(gn_log_path, 'w') as outs:
-                gn_cmd = (
-                    'gn',
-                    'gen',
-                    build_dir,
-                    '--args=dir_pigweed="{}"'.format(pw_root),
-                )
+                gn_cmd = ['gn', 'gen', build_dir]
+
+                # Only set dir_pigweed if we don't have an existing build
+                # directory.
+                if not os.path.isdir(build_dir):
+                    gn_cmd.append('--args=dir_pigweed="{}"'.format(pw_root))
+
                 print(gn_cmd, file=outs)
                 subprocess.check_call(gn_cmd,
                                       cwd=os.path.join(project_root,
