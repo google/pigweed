@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -133,6 +133,16 @@ TEST(NanopbCodegen, Server_InvokeStreamingRpc_ManualWriting) {
 using TestServiceClient = test::nanopb::TestServiceClient;
 using internal::TestServerStreamingResponseHandler;
 using internal::TestUnaryResponseHandler;
+
+TEST(NanopbCodegen, Client_GeneratesCallAliases) {
+  static_assert(
+      std::is_same_v<
+          TestServiceClient::TestRpcCall,
+          NanopbClientCall<UnaryResponseHandler<pw_rpc_test_TestResponse>>>);
+  static_assert(std::is_same_v<TestServiceClient::TestStreamRpcCall,
+                               NanopbClientCall<ServerStreamingResponseHandler<
+                                   pw_rpc_test_TestStreamResponse>>>);
+}
 
 TEST(NanopbCodegen, Client_InvokesUnaryRpcWithCallback) {
   constexpr uint32_t service_id = internal::Hash("pw.rpc.test.TestService");

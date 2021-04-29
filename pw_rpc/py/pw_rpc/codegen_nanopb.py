@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -60,7 +60,8 @@ def _generate_method_descriptor(method: ProtoServiceMethod, method_id: int,
 
 def _generate_server_writer_alias(output: OutputFile) -> None:
     output.write_line('template <typename T>')
-    output.write_line('using ServerWriter = ::pw::rpc::ServerWriter<T>;')
+    output.write_line(
+        f'using ServerWriter = {RPC_NAMESPACE}::ServerWriter<T>;')
 
 
 def _generate_code_for_service(service: ProtoService, root: ProtoNode,
@@ -86,17 +87,22 @@ def _generate_code_for_client_method(method: ProtoServiceMethod,
         raise NotImplementedError(
             'Only unary and server streaming RPCs are currently supported')
 
+    call_alias = f'{method.name()}Call'
+
     output.write_line()
-    output.write_line(f'static NanopbClientCall<\n    {callback}>')
-    output.write_line(f'{method.name()}({RPC_NAMESPACE}::Channel& channel,')
-    with output.indent(len(method.name()) + 1):
+    output.write_line(
+        f'using {call_alias} = {RPC_NAMESPACE}::NanopbClientCall<')
+    output.write_line(f'    {callback}>;')
+    output.write_line()
+    output.write_line(f'static {call_alias} {method.name()}(')
+    with output.indent(4):
+        output.write_line(f'{RPC_NAMESPACE}::Channel& channel,')
         output.write_line(f'const {req}& request,')
         output.write_line(f'{callback}& callback) {{')
 
     with output.indent():
-        output.write_line(f'NanopbClientCall<{callback}>')
-        output.write_line('    call(&channel,')
-        with output.indent(9):
+        output.write_line(f'{call_alias} call(&channel,')
+        with output.indent(len(call_alias) + 6):
             output.write_line('kServiceId,')
             output.write_line(
                 f'0x{method_id:08x},  // Hash of "{method.name()}"')
@@ -120,11 +126,6 @@ def _generate_code_for_client(service: ProtoService, root: ProtoNode,
     output.write_line(' public:')
 
     with output.indent():
-        output.write_line('template <typename T>')
-        output.write_line(
-            f'using NanopbClientCall = {RPC_NAMESPACE}::NanopbClientCall<T>;')
-
-        output.write_line('')
         output.write_line(f'{class_name}() = delete;')
 
         for method in service.methods():

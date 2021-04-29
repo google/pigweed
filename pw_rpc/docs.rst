@@ -875,8 +875,10 @@ Example
     }
   };
 
-  pw::rpc::NanopbClientCall<pw::rpc::UnaryResponseHandler<pw_rpc_EchoMessage>>
-      echo_call;
+  // Generated clients are namespaced with their proto library.
+  using pw::rpc::nanopb::EchoServiceClient;
+
+  EchoServiceClient::EchoCall echo_call;
   EchoResponseHandler response_handler;
 
   }  // namespace
@@ -888,8 +890,7 @@ Example
     // By assigning the returned ClientCall to the global echo_call, the RPC
     // call is kept alive until it completes. When a response is received, it
     // will be logged by the handler function and the call will complete.
-    echo_call = pw::rpc::nanopb::EchoServiceClient::Echo(
-        my_channel, request, response_handler);
+    echo_call = EchoServiceClient::Echo(my_channel, request, response_handler);
   }
 
 Client implementation details
