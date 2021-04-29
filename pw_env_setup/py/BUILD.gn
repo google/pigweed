@@ -22,7 +22,6 @@ pw_python_package("py") {
     "pw_env_setup/__init__.py",
     "pw_env_setup/apply_visitor.py",
     "pw_env_setup/batch_visitor.py",
-    "pw_env_setup/cargo_setup/__init__.py",
     "pw_env_setup/cipd_setup/__init__.py",
     "pw_env_setup/cipd_setup/update.py",
     "pw_env_setup/cipd_setup/wrapper.py",

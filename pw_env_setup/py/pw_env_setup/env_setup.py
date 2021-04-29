@@ -69,7 +69,6 @@ if not getattr(sys, 'oxidized', False):
 from pw_env_setup.cipd_setup import update as cipd_update
 from pw_env_setup.cipd_setup import wrapper as cipd_wrapper
 from pw_env_setup.colors import Color, enable_colors
-from pw_env_setup import cargo_setup
 from pw_env_setup import environment
 from pw_env_setup import spinner
 from pw_env_setup import virtualenv_setup
@@ -179,8 +178,7 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_gn_target,
-                 virtualenv_gn_out_dir, cargo_package_file, enable_cargo,
-                 json_file, project_root, config_file):
+                 virtualenv_gn_out_dir, json_file, project_root, config_file):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -203,8 +201,6 @@ class EnvSetup(object):
         self._cipd_package_file = []
         self._virtualenv_requirements = []
         self._virtualenv_gn_targets = []
-        self._cargo_package_file = []
-        self._enable_cargo = enable_cargo
 
         if config_file:
             self._parse_config_file(config_file)
@@ -230,14 +226,11 @@ class EnvSetup(object):
                 self._virtualenv_gn_targets.append(
                     virtualenv_setup.GnTarget(
                         '{}#pw_env_setup:python.install'.format(pw_root)))
-            self._cargo_package_file.append(
-                os.path.join(setup_root, 'cargo_setup', 'packages.txt'))
 
         self._cipd_package_file.extend(cipd_package_file)
         self._virtualenv_requirements.extend(virtualenv_requirements)
         self._virtualenv_gn_targets.extend(virtualenv_gn_target)
         self._virtualenv_gn_out_dir = virtualenv_gn_out_dir
-        self._cargo_package_file.extend(cargo_package_file)
 
         self._env.set('PW_PROJECT_ROOT', project_root)
         self._env.set('PW_ROOT', pw_root)
@@ -294,10 +287,6 @@ class EnvSetup(object):
             ('Python environment', self.virtualenv),
             ('Host tools', self.host_tools),
         ]
-
-        # TODO(pwbug/63): Add a Windows version of cargo to CIPD.
-        if not self._is_windows and self._enable_cargo:
-            steps.append(("Rust cargo", self.cargo))
 
         if self._is_windows:
             steps.append(("Windows scripts", self.win_scripts))
@@ -475,22 +464,6 @@ Then use `set +x` to go back to normal.
                                                'windows_scripts'))
         return _Result(_Result.Status.DONE)
 
-    def cargo(self, unused_spin):
-        install_dir = os.path.join(self._install_dir, 'cargo')
-
-        package_files, glob_warnings = _process_globs(self._cargo_package_file)
-        result = result_func(glob_warnings)
-
-        if not package_files:
-            return result(_Result.Status.SKIPPED)
-
-        if not cargo_setup.install(install_dir=install_dir,
-                                   package_files=package_files,
-                                   env=self._env):
-            return result(_Result.Status.FAILED)
-
-        return result(_Result.Status.DONE)
-
 
 def parse(argv=None):
     """Parse command-line arguments."""
@@ -596,20 +569,6 @@ def parse(argv=None):
     )
 
     parser.add_argument(
-        '--cargo-package-file',
-        help='Rust cargo packages to install. Lines with package name and '
-        'version separated by a space.',
-        default=[],
-        action='append',
-    )
-
-    parser.add_argument(
-        '--enable-cargo',
-        help='Enable cargo installation.',
-        action='store_true',
-    )
-
-    parser.add_argument(
         '--json-file',
         help='Dump environment variable operations to a JSON file.',
         default=None,
@@ -622,7 +581,6 @@ def parse(argv=None):
         'cipd_package_file',
         'virtualenv_requirements',
         'virtualenv_gn_target',
-        'cargo_package_file',
     )
 
     one_required = others + ('config_file', )
