@@ -112,6 +112,27 @@ enable joining if it's not already enabled by default.
   A constructed ``pw::thread::Thread`` which represents a thread of execution
   must be EITHER detached or joined, else the destructor will assert!
 
+DetachedThread
+==============
+To make it slightly easier and cleaner to spawn detached threads without having
+to worry about thread handles, a wrapper ``DetachedThread()`` function is
+provided which creates a ``Thread`` and immediately detaches it. For example
+instead of:
+
+.. code-block:: cpp
+
+  Thread(options, foo).detach();
+
+You can instead use this helper wrapper to:
+
+.. code-block:: cpp
+
+   DetachedThread(options, foo);
+
+The arguments are directly forwarded to the Thread constructor and ergo exactly
+match the Thread constuctor arguments for creating a thread of execution.
+
+
 ThreadRoutine & ThreadCore
 ==========================
 Threads must either be invoked through a

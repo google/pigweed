@@ -92,6 +92,7 @@ pw_cc_library(
     name = "thread_facade",
     hdrs = [
         "public/pw_thread/thread.h",
+        "public/pw_thread/detached_thread.h",
     ],
     includes = ["public"],
     deps = [
