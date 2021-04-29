@@ -23,6 +23,7 @@
 #include <type_traits>
 
 #include "pw_status/status_with_size.h"
+#include "pw_string/util.h"
 
 namespace pw::string {
 
@@ -107,36 +108,46 @@ inline constexpr std::string_view kNullPointerString("(null)");
 // CopyEntireString.
 StatusWithSize PointerToString(const void* pointer, std::span<char> buffer);
 
+// Specialized form of pw::string::Copy which supports nullptr values.
+//
 // Copies the string to the buffer, truncating if the full string does not fit.
 // Always null terminates if buffer.size() > 0.
 //
+// If value is a nullptr, then "(null)" is used as a fallback.
+//
 // Returns the number of characters written, excluding the null terminator. If
 // the string is truncated, the status is RESOURCE_EXHAUSTED.
-StatusWithSize CopyString(const std::string_view& value,
-                          std::span<char> buffer);
-
-inline StatusWithSize CopyString(const char* value, std::span<char> buffer) {
+inline StatusWithSize CopyStringOrNull(const std::string_view& value,
+                                       std::span<char> buffer) {
+  return Copy(value, buffer);
+}
+inline StatusWithSize CopyStringOrNull(const char* value,
+                                       std::span<char> buffer) {
   if (value == nullptr) {
     return PointerToString(value, buffer);
   }
-  return CopyString(std::string_view(value), buffer);
+  return Copy(value, buffer);
 }
 
 // Copies the string to the buffer, if the entire string fits. Always null
 // terminates if buffer.size() > 0.
 //
+// If value is a nullptr, then "(null)" is used as a fallback.
+//
 // Returns the number of characters written, excluding the null terminator. If
 // the full string does not fit, only a null terminator is written and the
 // status is RESOURCE_EXHAUSTED.
-StatusWithSize CopyEntireString(const std::string_view& value,
-                                std::span<char> buffer);
+StatusWithSize CopyEntireStringOrNull(const std::string_view& value,
+                                      std::span<char> buffer);
 
-inline StatusWithSize CopyEntireString(const char* value,
-                                       std::span<char> buffer) {
+// Same as the string_view form of CopyEntireString, except that if value is a
+// nullptr, then "(null)" is used as a fallback.
+inline StatusWithSize CopyEntireStringOrNull(const char* value,
+                                             std::span<char> buffer) {
   if (value == nullptr) {
     return PointerToString(value, buffer);
   }
-  return CopyEntireString(std::string_view(value), buffer);
+  return CopyEntireStringOrNull(std::string_view(value), buffer);
 }
 
 // This function is a fallback that is called if by ToString if no overload

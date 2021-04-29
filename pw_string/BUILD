@@ -40,6 +40,7 @@ pw_cc_library(
     deps = [
         "//pw_preprocessor",
         "//pw_span",
+        "//pw_assert",
         "//pw_status",
     ],
 )

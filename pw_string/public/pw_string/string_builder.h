@@ -65,7 +65,7 @@ namespace pw {
 //
 //   template <>
 //   StatusWithSize ToString<MyStatus>(MyStatus value, std::span<char> buffer) {
-//     return CopyString(MyStatusString(value), buffer);
+//     return Copy(MyStatusString(value), buffer);
 //   }
 //
 //   }  // namespace pw

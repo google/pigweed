@@ -34,6 +34,36 @@ using ``Format``.
 
 .. include:: format_size_report
 
+pw::string::Length
+==================
+The ``pw::string::Length`` function provides a safer alternative to
+``std::strlen`` in case a string is extremely long and/or potentially not
+null-terminated. It is a constexpr version of C11's ``strnlen_s``.
+
+.. cpp:function:: constexpr size_t Length(const char* str, size_t max_len)
+
+   Calculates the length of a null-terminated string up to the specified maximum
+   length. If str is nullptr, returns 0.
+
+pw::string::Copy
+================
+The ``pw::string::Copy`` functions provide a safer alternative to
+``std::strncpy`` as it always null-terminates whenever the destination
+buffer has a non-zero size.
+
+.. cpp:function:: StatusWithSize Copy(const std::string_view& source, std::span<char> dest)
+.. cpp:function:: StatusWithSize Copy(const char* source, std::span<char> dest)
+.. cpp:function:: StatusWithSize Copy(const char* source, char* dest, size_t num)
+
+   Copies the source string to the dest, truncating if the full string does not
+   fit. Always null terminates if dest.size() or num > 0.
+
+   Returns the number of characters written, excluding the null terminator. If
+   the string is truncated, the status is ResourceExhausted.
+
+   Precondition: The destination and source shall not overlap.
+   Precondition: The source shall be a valid pointer.
+
 pw::StringBuilder
 =================
 ``pw::StringBuilder`` facilitates building formatted strings in a fixed-size
@@ -74,7 +104,7 @@ This example shows how to specialize ``pw::ToString``:
 
   template <>
   StatusWithSize ToString<MyStatus>(MyStatus value, std::span<char> buffer) {
-    return CopyString(MyStatusString(value), buffer);
+    return Copy(MyStatusString(value), buffer);
   }
 
   }  // namespace pw

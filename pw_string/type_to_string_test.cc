@@ -407,71 +407,84 @@ TEST_F(FloatAsIntToStringTest, TooSmall_NaN_NullTerminates) {
   EXPECT_STREQ("", buffer_);
 }
 
-class CopyStringTest : public TestWithBuffer {};
+class CopyStringOrNullTest : public TestWithBuffer {};
 
 using namespace std::literals::string_view_literals;
 
-TEST_F(CopyStringTest, EmptyStringView_WritesNullTerminator) {
-  EXPECT_EQ(0u, CopyString("", buffer_).size());
+TEST_F(CopyStringOrNullTest, NullSource_WritesNullPointerString) {
+  EXPECT_EQ(kNullPointerString.size(),
+            CopyStringOrNull(nullptr, buffer_).size());
+  EXPECT_EQ(kNullPointerString, buffer_);
+}
+
+TEST_F(CopyStringOrNullTest, EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(0u, CopyStringOrNull("", buffer_).size());
   EXPECT_EQ('\0', buffer_[0]);
 }
 
-TEST_F(CopyStringTest, EmptyBuffer_WritesNothing) {
-  auto result = CopyString("Hello", std::span(buffer_, 0));
+TEST_F(CopyStringOrNullTest, EmptyBuffer_WritesNothing) {
+  auto result = CopyStringOrNull("Hello", std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
-TEST_F(CopyStringTest, TooSmall_Truncates) {
-  auto result = CopyString("Hi!", std::span(buffer_, 3));
+TEST_F(CopyStringOrNullTest, TooSmall_Truncates) {
+  auto result = CopyStringOrNull("Hi!", std::span(buffer_, 3));
   EXPECT_EQ(2u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("Hi", buffer_);
 }
 
-TEST_F(CopyStringTest, ExactFit) {
-  auto result = CopyString("Hi!", std::span(buffer_, 4));
+TEST_F(CopyStringOrNullTest, ExactFit) {
+  auto result = CopyStringOrNull("Hi!", std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("Hi!", buffer_);
 }
 
-TEST_F(CopyStringTest, NullTerminatorsInString) {
-  ASSERT_EQ(4u, CopyString("\0!\0\0"sv, std::span(buffer_, 5)).size());
+TEST_F(CopyStringOrNullTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u, CopyStringOrNull("\0!\0\0"sv, std::span(buffer_, 5)).size());
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 
-class CopyEntireStringTest : public TestWithBuffer {};
+class CopyEntireStringOrNullTest : public TestWithBuffer {};
 
-TEST_F(CopyEntireStringTest, EmptyStringView_WritesNullTerminator) {
-  EXPECT_EQ(0u, CopyEntireString("", buffer_).size());
+TEST_F(CopyEntireStringOrNullTest, NullSource_WritesNullPointerString) {
+  EXPECT_EQ(kNullPointerString.size(),
+            CopyEntireStringOrNull(nullptr, buffer_).size());
+  EXPECT_EQ(kNullPointerString, buffer_);
+}
+
+TEST_F(CopyEntireStringOrNullTest, EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(0u, CopyEntireStringOrNull("", buffer_).size());
   EXPECT_EQ('\0', buffer_[0]);
 }
 
-TEST_F(CopyEntireStringTest, EmptyBuffer_WritesNothing) {
-  auto result = CopyEntireString("Hello", std::span(buffer_, 0));
+TEST_F(CopyEntireStringOrNullTest, EmptyBuffer_WritesNothing) {
+  auto result = CopyEntireStringOrNull("Hello", std::span(buffer_, 0));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ(kStartingString, buffer_);
 }
 
-TEST_F(CopyEntireStringTest, TooSmall_WritesNothing) {
-  auto result = CopyEntireString("Hi!", std::span(buffer_, 3));
+TEST_F(CopyEntireStringOrNullTest, TooSmall_WritesNothing) {
+  auto result = CopyEntireStringOrNull("Hi!", std::span(buffer_, 3));
   EXPECT_EQ(0u, result.size());
   EXPECT_FALSE(result.ok());
   EXPECT_STREQ("", buffer_);
 }
 
-TEST_F(CopyEntireStringTest, ExactFit) {
-  auto result = CopyEntireString("Hi!", std::span(buffer_, 4));
+TEST_F(CopyEntireStringOrNullTest, ExactFit) {
+  auto result = CopyEntireStringOrNull("Hi!", std::span(buffer_, 4));
   EXPECT_EQ(3u, result.size());
   EXPECT_TRUE(result.ok());
   EXPECT_STREQ("Hi!", buffer_);
 }
 
-TEST_F(CopyEntireStringTest, NullTerminatorsInString) {
-  ASSERT_EQ(4u, CopyEntireString("\0!\0\0"sv, std::span(buffer_, 5)).size());
+TEST_F(CopyEntireStringOrNullTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u,
+            CopyEntireStringOrNull("\0!\0\0"sv, std::span(buffer_, 5)).size());
   EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
 }
 

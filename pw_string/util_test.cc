@@ -1,4 +1,4 @@
-// Copyright 2019 The Pigweed Authors
+// Copyright 2021 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -36,6 +36,50 @@ TEST(Length, StringMaxLongerThanMax_ReturnsMax) {
 }
 
 TEST(Length, LengthEqualsMax) { EXPECT_EQ(5u, Length("12345", 5)); }
+
+class TestWithBuffer : public ::testing::Test {
+ protected:
+  static constexpr char kStartingString[] = "!@#$%^&*()!@#$%^&*()";
+
+  TestWithBuffer() { std::memcpy(buffer_, kStartingString, sizeof(buffer_)); }
+
+  char buffer_[sizeof(kStartingString)];
+};
+
+class CopyTest : public TestWithBuffer {};
+
+using namespace std::literals::string_view_literals;
+
+TEST_F(CopyTest, EmptyStringView_WritesNullTerminator) {
+  EXPECT_EQ(0u, Copy("", buffer_).size());
+  EXPECT_EQ('\0', buffer_[0]);
+}
+
+TEST_F(CopyTest, EmptyBuffer_WritesNothing) {
+  auto result = Copy("Hello", std::span(buffer_, 0));
+  EXPECT_EQ(0u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ(kStartingString, buffer_);
+}
+
+TEST_F(CopyTest, TooSmall_Truncates) {
+  auto result = Copy("Hi!", std::span(buffer_, 3));
+  EXPECT_EQ(2u, result.size());
+  EXPECT_FALSE(result.ok());
+  EXPECT_STREQ("Hi", buffer_);
+}
+
+TEST_F(CopyTest, ExactFit) {
+  auto result = Copy("Hi!", std::span(buffer_, 4));
+  EXPECT_EQ(3u, result.size());
+  EXPECT_TRUE(result.ok());
+  EXPECT_STREQ("Hi!", buffer_);
+}
+
+TEST_F(CopyTest, NullTerminatorsInString) {
+  ASSERT_EQ(4u, Copy("\0!\0\0"sv, std::span(buffer_, 5)).size());
+  EXPECT_EQ("\0!\0\0"sv, std::string_view(buffer_, 4));
+}
 
 }  // namespace
 }  // namespace pw::string

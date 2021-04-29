@@ -68,7 +68,7 @@ StatusWithSize ToString(const T& value, std::span<char> buffer) {
   if constexpr (std::is_same_v<std::remove_cv_t<T>, bool>) {
     return string::BoolToString(value, buffer);
   } else if constexpr (std::is_same_v<std::remove_cv_t<T>, char>) {
-    return string::CopyString(std::string_view(&value, 1), buffer);
+    return string::Copy(std::string_view(&value, 1), buffer);
   } else if constexpr (std::is_integral_v<T>) {
     return string::IntToString(value, buffer);
   } else if constexpr (std::is_enum_v<T>) {
@@ -76,7 +76,7 @@ StatusWithSize ToString(const T& value, std::span<char> buffer) {
   } else if constexpr (std::is_floating_point_v<T>) {
     return string::FloatAsIntToString(value, buffer);
   } else if constexpr (std::is_convertible_v<T, std::string_view>) {
-    return string::CopyString(value, buffer);
+    return string::CopyStringOrNull(value, buffer);
   } else if constexpr (std::is_pointer_v<std::remove_cv_t<T>> ||
                        std::is_null_pointer_v<T>) {
     return string::PointerToString(value, buffer);
@@ -89,7 +89,7 @@ StatusWithSize ToString(const T& value, std::span<char> buffer) {
 // ToString overloads for Pigweed types. To override ToString for a custom type,
 // specialize the ToString template function.
 inline StatusWithSize ToString(Status status, std::span<char> buffer) {
-  return string::CopyString(status.str(), buffer);
+  return string::Copy(status.str(), buffer);
 }
 
 inline StatusWithSize ToString(pw_Status status, std::span<char> buffer) {
