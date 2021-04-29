@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,20 +19,17 @@ import("$dir_pw_build/python.gni")
 pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
-    "pw_package/__init__.py",
-    "pw_package/git_repo.py",
-    "pw_package/package_manager.py",
-    "pw_package/packages/__init__.py",
-    "pw_package/packages/arduino_core.py",
-    "pw_package/packages/boringssl.py",
-    "pw_package/packages/mbedtls.py",
-    "pw_package/packages/nanopb.py",
-    "pw_package/packages/stm32cube.py",
-    "pw_package/pigweed_packages.py",
+    "pw_stm32cube_build/__init__.py",
+    "pw_stm32cube_build/__main__.py",
+    "pw_stm32cube_build/find_files.py",
+    "pw_stm32cube_build/gen_file_list.py",
+    "pw_stm32cube_build/icf_to_ld.py",
+    "pw_stm32cube_build/inject_init.py",
+  ]
+  tests = [
+    "tests/find_files_test.py",
+    "tests/icf_to_ld_test.py",
+    "tests/inject_init_test.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
-  python_deps = [
-    "$dir_pw_arduino_build/py",
-    "$dir_pw_stm32cube_build/py",
-  ]
 }

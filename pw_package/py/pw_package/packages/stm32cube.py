@@ -16,6 +16,7 @@
 import pathlib
 from typing import Sequence
 
+import pw_stm32cube_build.gen_file_list
 import pw_package.git_repo
 import pw_package.package_manager
 
@@ -94,7 +95,7 @@ _STM32CUBE_VERSIONS = {
     "wl": {
         "hal_driver_tag": "v1.0.0",
         "cmsis_device_tag": "v1.0.0",
-        "cmsis_core_tag": "V5.6.0_cm4",
+        "cmsis_core_tag": "v5.6.0_cm4",
     },
 }
 
@@ -102,12 +103,12 @@ _STM32CUBE_VERSIONS = {
 class Stm32Cube(pw_package.package_manager.Package):
     """Install and check status of stm32cube."""
     def __init__(self, family, tags, *args, **kwargs):
-        super().__init__(*args, name=f'stm32cube{family}', **kwargs)
+        super().__init__(*args, name=f'stm32cube_{family}', **kwargs)
 
         st_github_url = 'https://github.com/STMicroelectronics'
 
         self._hal_driver = pw_package.git_repo.GitRepo(
-            name=f'stm32{family}xx_hal_driver',
+            name='hal_driver',
             url=f'{st_github_url}/stm32{family}xx_hal_driver.git',
             tag=tags['hal_driver_tag'],
         )
@@ -119,7 +120,7 @@ class Stm32Cube(pw_package.package_manager.Package):
         )
 
         self._cmsis_device = pw_package.git_repo.GitRepo(
-            name=f'cmsis_device_{family}',
+            name='cmsis_device',
             url=f'{st_github_url}/cmsis_device_{family}.git',
             tag=tags['cmsis_device_tag'],
         )
@@ -129,12 +130,15 @@ class Stm32Cube(pw_package.package_manager.Package):
         self._cmsis_core.install(path / self._cmsis_core.name)
         self._cmsis_device.install(path / self._cmsis_device.name)
 
+        pw_stm32cube_build.gen_file_list.gen_file_list(path)
+
     def status(self, path: pathlib.Path) -> bool:
-        return (
+        return all([
             self._hal_driver.status(path / self._hal_driver.name),
             self._cmsis_core.status(path / self._cmsis_core.name),
             self._cmsis_device.status(path / self._cmsis_device.name),
-        ) == (True, True, True)
+            (path / "files.txt").is_file(),
+        ])
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (
