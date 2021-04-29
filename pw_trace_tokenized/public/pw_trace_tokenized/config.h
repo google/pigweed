@@ -102,7 +102,7 @@ static_assert(
 // could not be aquired.
 #ifndef PW_TRACE_TRY_LOCK
 #define PW_TRACE_TRY_LOCK() (true)  // Returns true if lock successful
-#endif  // PW_TRACE_TRY_LOCK
+#endif                              // PW_TRACE_TRY_LOCK
 
 #ifndef PW_TRACE_UNLOCK
 #define PW_TRACE_UNLOCK()

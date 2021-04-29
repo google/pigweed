@@ -49,7 +49,7 @@ unsigned OutputStringsToBuffer() {
                 get_buffer_2,
                 get_size)
       .size();
-#else  // std::snprintf
+#else   // std::snprintf
   if (buffer_size == 0u) {
     return 0;
   }

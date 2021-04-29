@@ -416,7 +416,7 @@ TEST(AssertFail, DCheckEnabledBinaryOpTwoSideEffectingCalls) {
   EXPECT_EQ(global_state_for_multi_evaluate_test, 2);
 }
 
-#else  // PW_ASSERT_ENABLE_DEBUG
+#else   // PW_ASSERT_ENABLE_DEBUG
 
 // When DCHECKs are disabled, they should not trip, and their arguments
 // shouldn't be evaluated.
@@ -495,7 +495,7 @@ TEST_F(AssertPass, DCheckFunction) { PW_DCHECK_OK(pw::OkStatus()); }
 TEST_F(AssertPass, DCheckEnum) { PW_DCHECK_OK(PW_STATUS_OK); }
 TEST_F(AssertFail, DCheckFunction) { PW_DCHECK_OK(pw::Status::Unknown()); }
 TEST_F(AssertFail, DCheckEnum) { PW_DCHECK_OK(PW_STATUS_UNKNOWN); }
-#else  // PW_ASSERT_ENABLE_DEBUG
+#else   // PW_ASSERT_ENABLE_DEBUG
 
 // In release mode, all the asserts should pass.
 TEST_F(AssertPass, DCheckFunction_Ok) { PW_DCHECK_OK(pw::OkStatus()); }
