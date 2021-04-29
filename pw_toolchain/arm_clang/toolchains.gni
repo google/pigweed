@@ -14,13 +14,11 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_toolchain/clang_tools.gni")
+
 # Specifies the tools used by host Clang toolchains.
 _arm_clang_toolchain = {
-  # Note: On macOS, there is no "llvm-ar", only "ar", which happens to be LLVM
-  # ar. This should get updated for linux systems.
-  ar = "ar"
-  cc = "clang"
-  cxx = "clang++"
+  forward_variables_from(pw_toolchain_clang_tools, "*")
 
   link_whole_archive = true
 }

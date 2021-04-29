@@ -48,3 +48,11 @@ For example, Pigweed runs protobuf compilation and Python package actions like
 installation and Pylint in toolchains created with ``pw_non_c_toolchain``. This
 allows all toolchains to cleanly share the same protobuf and Python declarations
 without any duplicated work.
+
+Testing other compiler versions
+===============================
+The clang-based toolchain provided by Pigweed can be substituted with another
+version by modifying the ``pw_toolchain_CLANG_PREFIX`` GN build argument to
+point to the directory that contains the desired clang, clang++, and llvm-ar
+binaries. This should only be used for debugging purposes. Pigweed does not
+officially support any compilers other than those provided by Pigweed.
