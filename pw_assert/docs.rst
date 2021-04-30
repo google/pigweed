@@ -472,6 +472,21 @@ The ``PW_ASSERT`` API ultimately calls the C function
 ``pw_assert_HandleFailure()``, which must be provided by the ``pw_assert``
 backend.
 
+Avoiding circular dependencies with ``PW_ASSERT``
+-------------------------------------------------
+Because asserts are so widely used, including in low-level libraries, it is
+common for the ``pw_assert`` backend to cause circular dependencies. These can
+be avoided by only using the ``PW_ASSERT`` macro and depending directly on the
+library that provides it, rather than the whole ``pw_assert`` module. The
+``pw_assert`` backend, which defines ``pw_assert_HandleFailure()``, will need to
+be linked in elsewhere in the build, so only depend directly on the
+``pw_assert`` build target when necessary.
+
+In GN, depend on ``"$dir_pw_assert:assert"`` rather than on ``dir_pw_assert`` to
+access only ``PW_ASSERT`` without risking circular dependencies. The
+``pw_assert_HandleFailure()`` function is provided by the
+``$dir_pw_assert:pw_assert`` or ``"$dir_pw_assert:check"`` target.
+
 .. _module-pw_assert-backend_api:
 
 -----------
@@ -489,8 +504,8 @@ This facade module (``pw_assert``) does not provide a backend. See
 .. attention::
 
   The facade macros (``PW_CRASH`` and related) are expected to behave like they
-  have the ``[[ noreturn ]]`` attribute set. This implies that the backend
-  handler functions, ``PW_HANDLE_*`` defined by the backend, must not return.
+  have the ``[[noreturn]]`` attribute set. This implies that the backend handler
+  functions, ``PW_HANDLE_*`` defined by the backend, must not return.
 
   In other words, the device must reboot.
 

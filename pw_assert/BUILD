@@ -61,8 +61,8 @@ pw_cc_test(
     name = "assert_facade_test",
     srcs = [
         "assert_facade_test.cc",
+        "assert_test.cc",
         "fake_backend.cc",
-        "light_test.cc",
         "public/pw_assert/internal/assert_impl.h",
         "pw_assert_test/fake_backend.h",
     ],

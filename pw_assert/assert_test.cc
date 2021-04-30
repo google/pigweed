@@ -12,8 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "gtest/gtest.h"
 #include "pw_assert/assert.h"
+
+#include "gtest/gtest.h"
 
 // PW_ASSERT() should always be enabled, and always evaluate the expression.
 TEST(Light, AssertTrue) {

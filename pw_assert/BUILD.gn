@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -23,40 +23,61 @@ declare_args() {
   pw_assert_BACKEND = ""
 }
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
-pw_facade("pw_assert") {
+# Depending on dir_pw_assert provides both assert and check.
+group("pw_assert") {
+  public_deps = [
+    ":assert",
+    ":check",
+  ]
+}
+
+# Wrap :pw_assert with facade-style targets, so it can be used as if it were
+# created with pw_facade.
+group("facade") {
+  public_deps = [
+    ":assert",
+    ":check.facade",
+  ]
+}
+
+group("pw_assert.facade") {
+  public_deps = [ ":facade" ]
+}
+
+# Provides the rich PW_CHECK macros.
+pw_facade("check") {
   backend = pw_assert_BACKEND
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_assert/check.h",
     "public/pw_assert/internal/check_impl.h",
+    "public/pw_assert/options.h",
     "public/pw_assert/short.h",
   ]
-  public_deps = [
-    dir_pw_preprocessor,
-
-    # Also expose assert.h to all users of pw_assert.
-    ":light",
-  ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
-# Provide a way include "pw_assert/assert.h" without depending on the full
-# assert facade. This enables relying on light asserts from low-level headers
-# like polyfill or span that might trigger circular includes due to the
-# backend.
+# Provide "pw_assert/assert.h" in its own source set, so it can be used without
+# depending on pw_assert_BACKEND. This makes it possible to use PW_ASSERT in
+# situations that might result in circular dependencies, such as in low-level
+# headers like polyfill or span. See the docs for more discussion around where
+# to use which assert headers.
 #
-# See the docs for more discussion around where to use which assert system.
-pw_source_set("light") {
-  public_configs = [ ":default_config" ]
+# The implementation function pw_assert_HandleFailure() must be provided at link
+# time. It is linked by the pw_assert:pw_assert (or pw_assert:check) targets.
+pw_source_set("assert") {
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_assert/assert.h",
 
     # Needed for PW_ASSERT_ENABLE_DEBUG. Note that depending on :pw_assert to
     # get options.h won't work here since it will trigger the circular include
-    # problem that light asserts are designed to solve.
+    # problem that the :assert target is intended solve.
     "public/pw_assert/options.h",
   ]
   public_deps = [ dir_pw_preprocessor ]
@@ -64,17 +85,17 @@ pw_source_set("light") {
 
 # Note: While this is technically a test, doesn't verify any of the output and
 # is more of a compile test. The results can be visually verified if desired.
-pw_test("light_test") {
-  configs = [ ":default_config" ]
-  sources = [ "light_test.cc" ]
+pw_test("assert_test") {
+  configs = [ ":public_include_path" ]
+  sources = [ "assert_test.cc" ]
   deps = [ ":pw_assert" ]
 }
 
 pw_test_group("tests") {
   tests = [
+    ":assert_test",
     ":assert_backend_compile_test",
     ":assert_facade_test",
-    ":light_test",
   ]
 }
 
@@ -82,7 +103,7 @@ pw_test_group("tests") {
 # provided. However, since this doesn't depend on the backend it re-includes
 # the facade headers.
 pw_test("assert_facade_test") {
-  configs = [ ":default_config" ]  # For internal/assert_impl.h
+  configs = [ ":public_include_path" ]  # For internal/assert_impl.h
   sources = [
     "assert_facade_test.cc",
     "fake_backend.cc",
@@ -90,7 +111,7 @@ pw_test("assert_facade_test") {
     "pw_assert_test/fake_backend.h",
   ]
   deps = [
-    ":light",
+    ":assert",
     dir_pw_status,
   ]
 
