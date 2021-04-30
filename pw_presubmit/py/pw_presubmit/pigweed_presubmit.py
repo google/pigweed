@@ -230,6 +230,7 @@ _MODULES_THAT_WORK_WITH_BAZEL = [
     '//pw_protobuf_compiler/...',
     '//pw_span/...',
     '//pw_status/...',
+    '//pw_stream/...',
     '//pw_sys_io/...',
     '//pw_sys_io_baremetal_lm3s6965evb/...',
     '//pw_sys_io_stdio/...',

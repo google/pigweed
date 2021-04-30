@@ -25,7 +25,6 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_stream",
     srcs = [
-        "buffered_stream.cc",
         "memory_stream.cc",
     ],
     hdrs = [
