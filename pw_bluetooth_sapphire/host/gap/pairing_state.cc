@@ -49,15 +49,6 @@ PairingState::~PairingState() {
 
 void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requirements,
                                    StatusCallback status_cb) {
-  // Raise an error to only the initiator—and not others—if we can't pair because there's no pairing
-  // delegate.
-  if (!pairing_delegate()) {
-    bt_log(DEBUG, "gap-bredr", "No pairing delegate for link %#.4x (id: %s); not pairing", handle(),
-           bt_str(peer_id()));
-    status_cb(handle(), hci::Status(HostError::kNotReady));
-    return;
-  }
-
   if (state() == State::kIdle) {
     ZX_ASSERT(!is_pairing());
 
@@ -69,7 +60,10 @@ void PairingState::InitiatePairing(BrEdrSecurityRequirements security_requiremen
       status_cb(handle(), hci::Status());
       return;
     }
-
+    // TODO(fxbug.dev/42403): If there is no pairing delegate set AND the current peer does not have
+    // a bonded link key, there is no way to upgrade the link security, so we don't need to bother
+    // calling `send_auth_request`.
+    //
     // TODO(fxbug.dev/55770): If current IO capabilities would make meeting security requirements
     // impossible, skip pairing and report failure immediately.
 
@@ -119,39 +113,35 @@ void PairingState::InitiateNextPairingRequest() {
 }
 
 std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
+  if (state() != State::kInitiatorWaitIoCapRequest &&
+      state() != State::kResponderWaitIoCapRequest) {
+    FailWithUnexpectedEvent(__func__);
+    return std::nullopt;
+  }
+
+  // Log an error and return std::nullopt if we can't respond to a pairing request because there's
+  // no pairing delegate. This corresponds to the non-bondable state as outlined in spec v5.2 Vol.
+  // 3 Part C 4.3.1.
+  if (!pairing_delegate()) {
+    bt_log(ERROR, "gap-bredr", "No pairing delegate set; not pairing link %#.4x (peer: %s)",
+           handle(), bt_str(peer_id()));
+    // We set the state_ to Idle instead of Failed because it is possible that a PairingDelegate
+    // will be set before the next pairing attempt, allowing it to succeed.
+    state_ = State::kIdle;
+    SignalStatus(hci::Status(HostError::kNotReady));
+    return std::nullopt;
+  }
+
+  current_pairing_->local_iocap = sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
   if (state() == State::kInitiatorWaitIoCapRequest) {
     ZX_ASSERT(initiator());
-    ZX_ASSERT_MSG(pairing_delegate(), "PairingDelegate was reset after pairing began");
-
-    // TODO(fxbug.dev/37447): PairingDelegate may be reset if bt-gap exits and clears
-    // PairingDelegate (which is processed on a different thread).
-    current_pairing_->local_iocap =
-        sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
-
     state_ = State::kInitiatorWaitIoCapResponse;
-  } else if (state() == State::kResponderWaitIoCapRequest) {
+  } else {
     ZX_ASSERT(is_pairing());
     ZX_ASSERT(!initiator());
-
-    // Raise an error if we can't respond to a pairing request because there's no pairing delegate.
-    if (!pairing_delegate()) {
-      bt_log(ERROR, "gap-bredr", "No pairing delegate for link %#.4x (id: %s); not pairing",
-             handle(), bt_str(peer_id()));
-      state_ = State::kIdle;
-      SignalStatus(hci::Status(HostError::kNotReady));
-      return std::nullopt;
-    }
-
-    // TODO(fxbug.dev/37447): PairingDelegate may be reset if bt-gap exits and clears
-    // PairingDelegate (which is processed on a different thread).
-    current_pairing_->local_iocap =
-        sm::util::IOCapabilityForHci(pairing_delegate()->io_capability());
     current_pairing_->ComputePairingData();
 
     state_ = GetStateForPairingEvent(current_pairing_->expected_event);
-  } else {
-    FailWithUnexpectedEvent(__func__);
-    return std::nullopt;
   }
 
   return current_pairing_->local_iocap;

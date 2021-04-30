@@ -264,12 +264,13 @@ TEST_F(GAP_PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWi
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 pairing_status_handler.MakeStatusCallback());
 
-  // The status callback for this attempt should be notified with an error.
+  // The status callback for pairing attempts made after a pairing failure should be rejected as
+  // canceled.
   EXPECT_EQ(1, pairing_status_handler.call_count());
   ASSERT_TRUE(pairing_status_handler.handle());
   EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
   ASSERT_TRUE(pairing_status_handler.status());
-  EXPECT_EQ(hci::Status(HostError::kNotReady), *pairing_status_handler.status());
+  EXPECT_EQ(hci::Status(HostError::kCanceled), *pairing_status_handler.status());
 }
 
 TEST_F(GAP_PairingStateTest, UnexpectedEncryptionChangeDoesNotTriggerStatusCallback) {
@@ -521,38 +522,49 @@ TEST_F(GAP_PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
   EXPECT_EQ(hci::Status(HostError::kLinkDisconnected), *request_status.status());
 }
 
-TEST_F(GAP_PairingStateTest, PairingStateRejectsPairingInitiationWithoutPairingDelegate) {
+TEST_F(GAP_PairingStateTest, InitiatorPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler owner_status_handler;
   PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
                              owner_status_handler.MakeStatusCallback());
 
   TestStatusHandler initiator_status_handler;
+  // Advance state machine to Initiator Waiting IOCap Request
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
-  EXPECT_FALSE(pairing_state.initiator());
-
-  // The owning link doesn't get an error for a failure to initiator pairing.
+  EXPECT_TRUE(pairing_state.initiator());
+  // We should permit the pairing state machine to continue even without a PairingDelegate, as we
+  // may have an existing bond to restore, which can be done without a PairingDelegate.
   EXPECT_EQ(0, owner_status_handler.call_count());
-
-  // But the initiator should get an error.
+  EXPECT_EQ(0, initiator_status_handler.call_count());
+  // We will only start the pairing process if there is no stored bond
+  EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest(kPeerAddress));
+  // We expect to be notified that there are no IOCapabilities, as there is no PairingDelegate to
+  // provide them
+  EXPECT_EQ(std::nullopt, pairing_state.OnIoCapabilityRequest());
+  // All callbacks should be notified of pairing failure
+  EXPECT_EQ(1, owner_status_handler.call_count());
   EXPECT_EQ(1, initiator_status_handler.call_count());
   ASSERT_TRUE(initiator_status_handler.status());
   EXPECT_EQ(hci::Status(HostError::kNotReady), *initiator_status_handler.status());
+  EXPECT_EQ(initiator_status_handler.status(), owner_status_handler.status());
 }
 
-TEST_F(GAP_PairingStateTest, PairingStateRejectsPairingResponseWithoutPairingDelegate) {
+TEST_F(GAP_PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDelegate) {
   auto connection = MakeFakeConnection();
   TestStatusHandler status_handler;
   PairingState pairing_state(kTestPeerId, &connection, peer_cache(), MakeAuthRequestCallback(),
                              status_handler.MakeStatusCallback());
-  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
 
-  // PairingState rejects the pairing with a negative reply.
-  EXPECT_FALSE(pairing_state.OnIoCapabilityRequest());
+  // Advance state machine to Responder Waiting IOCap Request
+  pairing_state.OnIoCapabilityResponse(hci::IOCapability::kDisplayYesNo);
   EXPECT_FALSE(pairing_state.initiator());
+  EXPECT_EQ(0, status_handler.call_count());
 
-  // The owner should be alerted with an error.
+  // We expect to be notified that there are no IOCapabilities, as there is no PairingDelegate to
+  // provide them.
+  EXPECT_EQ(std::nullopt, pairing_state.OnIoCapabilityRequest());
+  // All callbacks should be notified of pairing failure
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(hci::Status(HostError::kNotReady), *status_handler.status());
