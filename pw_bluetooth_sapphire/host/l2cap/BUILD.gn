@@ -14,7 +14,7 @@ source_set("definitions") {
   ]
 
   public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/hci:definitions",
+    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
     "//src/connectivity/bluetooth/core/bt-host/sm:definitions",
   ]
 }
@@ -149,6 +149,7 @@ source_set("tests") {
     "//src/connectivity/bluetooth/core/bt-host/hci:testing",
     "//src/connectivity/bluetooth/core/bt-host/socket",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]

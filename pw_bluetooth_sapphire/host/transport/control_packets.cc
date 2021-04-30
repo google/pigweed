@@ -103,7 +103,9 @@ std::unique_ptr<CommandPacket> CommandPacket::New(OpCode opcode, size_t payload_
 
 void CommandPacket::WriteHeader(OpCode opcode) {
   mutable_view()->mutable_header()->opcode = htole16(opcode);
-  mutable_view()->mutable_header()->parameter_total_size = view().payload_size();
+  ZX_ASSERT(view().payload_size() < std::numeric_limits<uint8_t>::max());
+  mutable_view()->mutable_header()->parameter_total_size =
+      static_cast<uint8_t>(view().payload_size());
 }
 
 // static

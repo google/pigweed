@@ -129,7 +129,7 @@ class DataFuzzTest : public TestingBase {
       return;
     }
 
-    acl_data_channel()->RegisterLink(kHandle, hci::Connection::LinkType::kACL);
+    acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
     domain_->AddACLConnection(
         kHandle, hci::Connection::Role::kMaster, /*link_error_callback=*/[] {},
         /*security_upgrade_callback=*/[](auto, auto, auto) {});

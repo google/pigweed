@@ -18,11 +18,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::l2cap {
 
-Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
+Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
                  hci::ConnectionHandle link_handle, ChannelInfo info)
     : id_(id),
       remote_id_(remote_id),
@@ -31,8 +32,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType li
       info_(info),
       requested_acl_priority_(hci::AclPriority::kNormal) {
   ZX_DEBUG_ASSERT(id_);
-  ZX_DEBUG_ASSERT(link_type_ == hci::Connection::LinkType::kLE ||
-                  link_type_ == hci::Connection::LinkType::kACL);
+  ZX_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
 }
 
 namespace internal {
@@ -206,7 +206,7 @@ void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
-  ZX_ASSERT(link_type_ == hci::Connection::LinkType::kACL);
+  ZX_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
   if (!link_) {

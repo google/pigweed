@@ -60,15 +60,15 @@ class ConnectionTest : public TestingBase {
 // Tests using this harness will be instantiated using ACL and LE link types.
 // See INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest, ...)
 class LinkTypeConnectionTest : public ConnectionTest,
-                               public ::testing::WithParamInterface<Connection::LinkType> {
+                               public ::testing::WithParamInterface<bt::LinkType> {
  protected:
   ConnectionPtr NewConnection(Connection::Role role = Connection::Role::kMaster,
                               ConnectionHandle handle = kTestHandle) {
-    const Connection::LinkType ll_type = GetParam();
+    const bt::LinkType ll_type = GetParam();
     switch (ll_type) {
-      case Connection::LinkType::kACL:
+      case bt::LinkType::kACL:
         return NewACLConnection(role, handle);
-      case Connection::LinkType::kLE:
+      case bt::LinkType::kLE:
         return NewLEConnection(role, handle);
       default:
         break;
@@ -79,8 +79,8 @@ class LinkTypeConnectionTest : public ConnectionTest,
 
   // Assigns the appropriate test link key based on the type of link being tested.
   void SetTestLinkKey(Connection* connection) {
-    const Connection::LinkType ll_type = GetParam();
-    if (ll_type == Connection::LinkType::kLE) {
+    const bt::LinkType ll_type = GetParam();
+    if (ll_type == bt::LinkType::kLE) {
       connection->set_le_ltk(LinkKey(kLTK, kRand, kEDiv));
     } else {
       connection->set_bredr_link_key(LinkKey(kLTK, 0, 0), kLinkKeyType);
@@ -93,7 +93,7 @@ using HCI_ConnectionTest = ConnectionTest;
 TEST_F(HCI_ConnectionTest, Getters) {
   auto connection = NewLEConnection();
 
-  EXPECT_EQ(Connection::LinkType::kLE, connection->ll_type());
+  EXPECT_EQ(bt::LinkType::kLE, connection->ll_type());
   EXPECT_EQ(kTestHandle, connection->handle());
   EXPECT_EQ(Connection::Role::kMaster, connection->role());
   EXPECT_EQ(kTestParams, connection->low_energy_parameters());
@@ -111,7 +111,7 @@ TEST_F(HCI_ConnectionTest, Getters) {
 TEST_F(HCI_ConnectionTest, AclLinkKeyAndTypeAccessors) {
   auto connection = NewACLConnection();
 
-  EXPECT_EQ(Connection::LinkType::kACL, connection->ll_type());
+  EXPECT_EQ(bt::LinkType::kACL, connection->ll_type());
   EXPECT_EQ(std::nullopt, connection->ltk());
   EXPECT_EQ(std::nullopt, connection->ltk_type());
   connection->set_bredr_link_key(LinkKey(), kLinkKeyType);
@@ -163,12 +163,11 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 }
 
 TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
-  const Connection::LinkType ll_type = GetParam();
+  const bt::LinkType ll_type = GetParam();
   const ConnectionHandle kHandle0 = 0x0001;
   const ConnectionHandle kHandle1 = 0x0002;
 
-  const auto& kBufferInfo =
-      ll_type == Connection::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
+  const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
   auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
@@ -237,12 +236,11 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
 // In remote disconnection, Connection::Disconnect is not called. Instead,
 // Connection::OnDisconnectionComplete is invoked and handles all cleanup.
 TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
-  const Connection::LinkType ll_type = GetParam();
+  const bt::LinkType ll_type = GetParam();
   const ConnectionHandle kHandle0 = 0x0001;
   const ConnectionHandle kHandle1 = 0x0002;
 
-  const auto& kBufferInfo =
-      ll_type == Connection::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
+  const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
   auto conn0 = NewConnection(Connection::Role::kMaster, kHandle0);
@@ -598,7 +596,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
     enabled = cb_enabled;
   });
 
-  if (conn->ll_type() == Connection::LinkType::kACL) {
+  if (conn->ll_type() == bt::LinkType::kACL) {
     // The host tries to validate the size of key used to encrypt ACL links.
     EXPECT_CMD_PACKET_OUT(test_device(), kReadEncryptionKeySizeCommand, &kKeySizeComplete);
   }
@@ -986,7 +984,7 @@ TEST_F(HCI_ConnectionTest, PeerDisconnectCallback) {
 
 // Test connection handling cases for all types of links.
 INSTANTIATE_TEST_SUITE_P(HCI_ConnectionTest, LinkTypeConnectionTest,
-                         ::testing::Values(Connection::LinkType::kACL, Connection::LinkType::kLE));
+                         ::testing::Values(bt::LinkType::kACL, bt::LinkType::kLE));
 
 }  // namespace
 }  // namespace bt::hci

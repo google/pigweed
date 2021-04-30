@@ -33,8 +33,7 @@ class DATA_SocketFactoryTest : public ::testing::Test {
   DATA_SocketFactoryTest() : loop_(&kAsyncLoopConfigAttachToCurrentThread) {
     EXPECT_EQ(ASYNC_LOOP_RUNNABLE, loop_.GetState());
     channel_ = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
-        kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle,
-        hci::Connection::LinkType::kACL);
+        kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
     EXPECT_TRUE(channel_);
   }
 
@@ -84,16 +83,14 @@ TEST_F(DATA_SocketFactoryTest, SocketCreationFailsIfChannelActivationFails) {
 TEST_F(DATA_SocketFactoryTest, CanCreateSocketForNewChannelWithRecycledId) {
   FactoryT socket_factory;
   auto original_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
-      kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle,
-      hci::Connection::LinkType::kACL);
+      kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
   zx::socket socket = socket_factory.MakeSocketForChannel(original_channel);
   ASSERT_TRUE(socket);
   original_channel->Close();
   RunLoopUntilIdle();  // Process any events related to channel closure.
 
   auto new_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
-      kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle,
-      hci::Connection::LinkType::kACL);
+      kDynamicChannelIdMin + 1, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(new_channel));
 }
 
@@ -117,8 +114,7 @@ TEST_F(DATA_SocketFactoryTest, SameChannelIdDifferentHandles) {
   FactoryT socket_factory;
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(channel()));
   auto another_channel = fbl::MakeRefCounted<l2cap::testing::FakeChannel>(
-      kDynamicChannelIdMin, kRemoteChannelId, kAnotherConnectionHandle,
-      hci::Connection::LinkType::kACL);
+      kDynamicChannelIdMin, kRemoteChannelId, kAnotherConnectionHandle, bt::LinkType::kACL);
   EXPECT_TRUE(socket_factory.MakeSocketForChannel(another_channel));
 }
 

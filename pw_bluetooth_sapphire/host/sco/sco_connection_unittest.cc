@@ -28,8 +28,8 @@ class SCO_ScoConnectionTest : public TestingBase {
     TestingBase::SetUp();
 
     auto fake_conn = std::make_unique<hci::testing::FakeConnection>(
-        kConnectionHandle, hci::Connection::LinkType::kSCO, hci::Connection::Role::kMaster,
-        DeviceAddress(), DeviceAddress());
+        kConnectionHandle, bt::LinkType::kSCO, hci::Connection::Role::kMaster, DeviceAddress(),
+        DeviceAddress());
     hci_conn_ = fake_conn->WeakPtr();
     deactivated_cb_count_ = 0;
     sco_conn_ = ScoConnection::Create(std::move(fake_conn), [this] { deactivated_cb_count_++; });

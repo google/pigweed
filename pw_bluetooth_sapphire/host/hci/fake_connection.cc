@@ -6,7 +6,7 @@
 
 namespace bt::hci::testing {
 
-FakeConnection::FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
+FakeConnection::FakeConnection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address)
     : Connection(handle, ll_type, role, local_address, peer_address),

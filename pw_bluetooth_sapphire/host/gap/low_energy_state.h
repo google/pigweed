@@ -8,7 +8,7 @@
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::gap {
 

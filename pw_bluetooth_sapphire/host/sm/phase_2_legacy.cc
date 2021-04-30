@@ -145,7 +145,7 @@ void Phase2Legacy::SendConfirmValue() {
   ZX_ASSERT(!sent_local_confirm_);
   ZX_ASSERT(local_confirm_.has_value());
   // Only allowed on the LE transport.
-  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "attempted to send confirm value over BR/EDR, not sending");
     return;
   }
@@ -185,7 +185,7 @@ void Phase2Legacy::SendRandomValue() {
   ZX_ASSERT(local_rand_.has_value());
 
   // Only allowed on the LE transport.
-  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(WARN, "sm", "attempted to send confirm value over BR/EDR, not sending");
     return;
   }
@@ -242,7 +242,7 @@ void Phase2Legacy::OnPairingRandom(PairingRandomValue rand) {
 
 ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
   // Only allowed on the LE transport.
-  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Confirm value\" over BR/EDR not supported!");
     return ErrorCode::kCommandNotSupported;
   }
@@ -275,7 +275,7 @@ ErrorCode Phase2Legacy::CanReceivePairingConfirm() const {
 
 ErrorCode Phase2Legacy::CanReceivePairingRandom() const {
   // Only allowed on the LE transport.
-  if (sm_chan().link_type() != hci::Connection::LinkType::kLE) {
+  if (sm_chan().link_type() != bt::LinkType::kLE) {
     bt_log(DEBUG, "sm", "\"Random value\" over BR/EDR not supported!");
     return ErrorCode::kCommandNotSupported;
   }

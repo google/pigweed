@@ -10,7 +10,7 @@
 
 #include "peer.h"
 #include "peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
 

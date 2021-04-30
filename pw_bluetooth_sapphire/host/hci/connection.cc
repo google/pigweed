@@ -6,21 +6,21 @@
 
 #include <endian.h>
 
-#include "command_channel.h"
 #include "lib/async/default.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/strings/string_printf.h"
-#include "transport.h"
 
 namespace bt::hci {
 
 // Production implementation of the Connection class against a HCI transport.
 class ConnectionImpl final : public Connection {
  public:
-  ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
+  ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Role role,
                  const DeviceAddress& local_address, const DeviceAddress& peer_address,
                  fxl::WeakPtr<Transport> hci);
   ~ConnectionImpl() override;
@@ -39,7 +39,8 @@ class ConnectionImpl final : public Connection {
 
  private:
   // Start the BR/EDR link layer encryption. |ltk_| and |ltk_type_| must have already been set and
-  // may be used for bonding and detecting the security properties following the encryption enable.
+  // may be used for bonding and detecting the security properties following the encryption
+  // enable.
   bool BrEdrStartEncryption();
 
   // Start the LE link layer authentication procedure using the given |ltk|.
@@ -108,22 +109,6 @@ CommandChannel::EventCallback BindEventHandler(fxl::WeakPtr<ConnectionImpl> conn
 
 // ====== Connection member methods  =====
 
-std::string Connection::LinkTypeToString(Connection::LinkType type) {
-  switch (type) {
-    case Connection::LinkType::kACL:
-      return "ACL";
-    case Connection::LinkType::kSCO:
-      return "SCO";
-    case Connection::LinkType::kESCO:
-      return "ESCO";
-    case Connection::LinkType::kLE:
-      return "LE";
-  }
-
-  ZX_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
-  return "(invalid)";
-}
-
 // static
 std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role role,
                                                  const DeviceAddress& local_address,
@@ -132,7 +117,7 @@ std::unique_ptr<Connection> Connection::CreateLE(ConnectionHandle handle, Role r
                                                  fxl::WeakPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
-  auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kLE, role, local_address,
+  auto conn = std::make_unique<ConnectionImpl>(handle, bt::LinkType::kLE, role, local_address,
                                                peer_address, std::move(hci));
   conn->set_low_energy_parameters(params);
   return conn;
@@ -145,7 +130,7 @@ std::unique_ptr<Connection> Connection::CreateACL(ConnectionHandle handle, Role 
                                                   fxl::WeakPtr<Transport> hci) {
   ZX_DEBUG_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   ZX_DEBUG_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  auto conn = std::make_unique<ConnectionImpl>(handle, LinkType::kACL, role, local_address,
+  auto conn = std::make_unique<ConnectionImpl>(handle, bt::LinkType::kACL, role, local_address,
                                                peer_address, std::move(hci));
   return conn;
 }
@@ -158,7 +143,8 @@ std::unique_ptr<Connection> Connection::CreateSCO(hci::LinkType link_type, Conne
   ZX_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   ZX_ASSERT(link_type == hci::LinkType::kSCO || link_type == hci::LinkType::kExtendedSCO);
 
-  LinkType conn_type = link_type == hci::LinkType::kSCO ? LinkType::kSCO : LinkType::kESCO;
+  bt::LinkType conn_type =
+      link_type == hci::LinkType::kSCO ? bt::LinkType::kSCO : bt::LinkType::kESCO;
 
   // TODO(fxb/61070): remove role for SCO connections, as it has no meaning
   auto conn = std::make_unique<ConnectionImpl>(handle, conn_type, Role::kMaster, local_address,
@@ -166,7 +152,7 @@ std::unique_ptr<Connection> Connection::CreateSCO(hci::LinkType link_type, Conne
   return conn;
 }
 
-Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
+Connection::Connection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
                        const DeviceAddress& local_address, const DeviceAddress& peer_address)
     : ll_type_(ll_type),
       handle_(handle),
@@ -178,7 +164,7 @@ Connection::Connection(ConnectionHandle handle, LinkType ll_type, Role role,
 
 std::string Connection::ToString() const {
   std::string params = "";
-  if (ll_type() == LinkType::kLE) {
+  if (ll_type() == bt::LinkType::kLE) {
     params = ", " + le_params_.ToString();
   }
   return fxl::StringPrintf("(%s link - handle: %#.4x, role: %s, address: %s%s)",
@@ -189,7 +175,7 @@ std::string Connection::ToString() const {
 
 // ====== ConnectionImpl member methods ======
 
-ConnectionImpl::ConnectionImpl(ConnectionHandle handle, LinkType ll_type, Role role,
+ConnectionImpl::ConnectionImpl(ConnectionHandle handle, bt::LinkType ll_type, Role role,
                                const DeviceAddress& local_address,
                                const DeviceAddress& peer_address, fxl::WeakPtr<Transport> hci)
     : Connection(handle, ll_type, role, local_address, peer_address),
@@ -306,7 +292,7 @@ bool ConnectionImpl::StartEncryption() {
     return false;
   }
 
-  if (ll_type() != LinkType::kLE) {
+  if (ll_type() != bt::LinkType::kLE) {
     return BrEdrStartEncryption();
   }
 
@@ -418,7 +404,7 @@ void ConnectionImpl::HandleEncryptionStatus(Status status, bool enabled) {
 }
 
 void ConnectionImpl::ValidateAclEncryptionKeySize(hci::StatusCallback key_size_validity_cb) {
-  ZX_ASSERT(ll_type() == LinkType::kACL);
+  ZX_ASSERT(ll_type() == bt::LinkType::kACL);
   ZX_ASSERT(conn_state_ == Connection::State::kConnected);
 
   auto cmd = CommandPacket::New(kReadEncryptionKeySize, sizeof(ReadEncryptionKeySizeParams));
@@ -479,7 +465,7 @@ CommandChannel::EventCallbackResult ConnectionImpl::OnEncryptionChangeEvent(
   bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          status.ToString().c_str());
 
-  if (ll_type() == LinkType::kACL && status && enabled) {
+  if (ll_type() == bt::LinkType::kACL && status && enabled) {
     ValidateAclEncryptionKeySize([this](const Status& key_valid_status) {
       HandleEncryptionStatus(key_valid_status, true /* enabled */);
     });

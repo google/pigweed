@@ -23,13 +23,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/phase_2_secure_connections.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_request_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "util.h"
 
 namespace bt::sm {
@@ -226,7 +226,7 @@ SecurityManagerImpl::SecurityManagerImpl(
   ZX_ASSERT(le_link_);
   ZX_ASSERT(smp);
   ZX_ASSERT(le_link_->handle() == smp->link_handle());
-  ZX_ASSERT(le_link_->ll_type() == hci::Connection::LinkType::kLE);
+  ZX_ASSERT(le_link_->ll_type() == bt::LinkType::kLE);
   ZX_ASSERT(smp->id() == l2cap::kLESMPChannelId);
   // `current_phase_` is default constructed into std::monostate in the initializer list as no
   // security upgrade is in progress upon construction.

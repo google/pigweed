@@ -17,6 +17,7 @@
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_task_sync.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 #include "src/lib/fxl/strings/string_printf.h"
 #include "transport.h"
 
@@ -80,7 +81,7 @@ class AclDataChannelImpl final : public AclDataChannel {
                   PacketPriority priority) override;
   bool SendPackets(LinkedList<ACLDataPacket> packets, UniqueChannelId channel_id,
                    PacketPriority priority) override;
-  void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) override;
+  void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) override;
   void UnregisterLink(hci::ConnectionHandle handle) override;
   void DropQueuedPackets(AclPacketPredicate predicate) override;
   void ClearControllerPacketCount(hci::ConnectionHandle handle) override;
@@ -95,15 +96,15 @@ class AclDataChannelImpl final : public AclDataChannel {
  private:
   // Represents a queued ACL data packet.
   struct QueuedDataPacket {
-    QueuedDataPacket(Connection::LinkType ll_type, UniqueChannelId channel_id,
-                     PacketPriority priority, ACLDataPacketPtr packet)
+    QueuedDataPacket(bt::LinkType ll_type, UniqueChannelId channel_id, PacketPriority priority,
+                     ACLDataPacketPtr packet)
         : ll_type(ll_type), channel_id(channel_id), priority(priority), packet(std::move(packet)) {}
 
     QueuedDataPacket() = default;
     QueuedDataPacket(QueuedDataPacket&& other) = default;
     QueuedDataPacket& operator=(QueuedDataPacket&& other) = default;
 
-    Connection::LinkType ll_type;
+    bt::LinkType ll_type;
     UniqueChannelId channel_id;
     PacketPriority priority;
     ACLDataPacketPtr packet;
@@ -117,7 +118,7 @@ class AclDataChannelImpl final : public AclDataChannel {
                                            size_t avail_le_packets);
 
   // Returns the data buffer MTU for the given connection.
-  size_t GetBufferMtu(Connection::LinkType ll_type) const;
+  size_t GetBufferMtu(bt::LinkType ll_type) const;
 
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
@@ -223,7 +224,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // TODO(fxbug.dev/944): Keep a separate queue for each open connection. Benefits:
   //   * Helps address the packet-prioritization TODO above.
   //   * Also: having separate queues, which know their own
-  //     Connection::LinkType, would let us replace std::list<QueuedDataPacket>
+  //     bt::LinkType, would let us replace std::list<QueuedDataPacket>
   //     with LinkedList<ACLDataPacket> which has a more efficient
   //     memory layout.
   DataPacketQueue send_queue_;
@@ -242,15 +243,15 @@ class AclDataChannelImpl final : public AclDataChannel {
 
     // We initialize the packet count at 1 since a new entry will only be
     // created once.
-    PendingPacketData(Connection::LinkType ll_type) : ll_type(ll_type), count(1u) {}
+    PendingPacketData(bt::LinkType ll_type) : ll_type(ll_type), count(1u) {}
 
-    Connection::LinkType ll_type;
+    bt::LinkType ll_type;
     size_t count;
   };
   std::unordered_map<ConnectionHandle, PendingPacketData> pending_links_;
 
   // Stores links registered by RegisterLink
-  std::unordered_map<hci::ConnectionHandle, Connection::LinkType> registered_links_;
+  std::unordered_map<hci::ConnectionHandle, bt::LinkType> registered_links_;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
@@ -412,8 +413,7 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
     auto ll_type = registered_links_[packet->connection_handle()];
     auto queue_packet = QueuedDataPacket(ll_type, channel_id, priority, std::move(packet));
     if (i == 0) {
-      if (queue_packet.priority == PacketPriority::kLow &&
-          ll_type == hci::Connection::LinkType::kACL) {
+      if (queue_packet.priority == PacketPriority::kLow && ll_type == bt::LinkType::kACL) {
         DropOverflowPacket(queue_packet);
       }
     }
@@ -425,7 +425,7 @@ bool AclDataChannelImpl::SendPackets(LinkedList<ACLDataPacket> packets, UniqueCh
   return true;
 }
 
-void AclDataChannelImpl::RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) {
+void AclDataChannelImpl::RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) {
   bt_log(DEBUG, "hci", "ACL register link (handle: %#.4x)", handle);
   ZX_DEBUG_ASSERT(registered_links_.find(handle) == registered_links_.end());
   registered_links_[handle] = ll_type;
@@ -475,7 +475,7 @@ void AclDataChannelImpl::ClearControllerPacketCount(hci::ConnectionHandle handle
   }
 
   const PendingPacketData& data = iter->second;
-  if (data.ll_type == Connection::LinkType::kLE) {
+  if (data.ll_type == bt::LinkType::kLE) {
     DecrementLETotalNumPackets(data.count);
   } else {
     DecrementTotalNumPackets(data.count);
@@ -544,7 +544,7 @@ void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
     fit::callback<void(fit::result<void, StatusCode>)> callback) {
   auto link_iter = registered_links_.find(handle);
   ZX_ASSERT(link_iter != registered_links_.end());
-  ZX_ASSERT(link_iter->second == Connection::LinkType::kACL);
+  ZX_ASSERT(link_iter->second == bt::LinkType::kACL);
 
   if (flush_timeout < zx::msec(1) || (flush_timeout > kMaxAutomaticFlushTimeoutDuration &&
                                       flush_timeout != zx::duration::infinite())) {
@@ -587,8 +587,8 @@ void AclDataChannelImpl::SetBrEdrAutomaticFlushTimeout(
       });
 }
 
-size_t AclDataChannelImpl::GetBufferMtu(Connection::LinkType ll_type) const {
-  if (ll_type == Connection::LinkType::kACL)
+size_t AclDataChannelImpl::GetBufferMtu(bt::LinkType ll_type) const {
+  if (ll_type == bt::LinkType::kACL)
     return bredr_buffer_info_.max_data_length();
   return GetLeBufferInfo().max_data_length();
 }
@@ -642,7 +642,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
       iter->second.count -= comp_packets;
     }
 
-    if (iter->second.ll_type == Connection::LinkType::kACL) {
+    if (iter->second.ll_type == bt::LinkType::kACL) {
       total_comp_packets += comp_packets;
     } else {
       le_total_comp_packets += comp_packets;
@@ -727,9 +727,9 @@ AclDataChannelImpl::DataPacketQueue AclDataChannelImpl::TakePacketsToSend(
     if (!avail_bredr_packets && !avail_le_packets)
       break;
 
-    if (iter->ll_type == Connection::LinkType::kACL && avail_bredr_packets) {
+    if (iter->ll_type == bt::LinkType::kACL && avail_bredr_packets) {
       --avail_bredr_packets;
-    } else if (iter->ll_type == Connection::LinkType::kLE && avail_le_packets) {
+    } else if (iter->ll_type == bt::LinkType::kLE && avail_le_packets) {
       --avail_le_packets;
     } else {
       // Cannot send packet yet, so skip it.
@@ -773,7 +773,7 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
       continue;
     }
 
-    if (packet.ll_type == Connection::LinkType::kACL) {
+    if (packet.ll_type == bt::LinkType::kACL) {
       ++bredr_packets_sent;
     } else {
       ++le_packets_sent;

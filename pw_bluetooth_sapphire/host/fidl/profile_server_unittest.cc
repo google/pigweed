@@ -958,7 +958,7 @@ TEST_F(FIDL_ProfileServerTest_FakeAdapter, AdvertiseChannelParametersContainsFlu
       bt::l2cap::kDefaultMTU, bt::l2cap::kDefaultMTU, bt::l2cap::kAVDTP, kFlushTimeout);
   auto channel = fbl::AdoptRef(new FakeChannel(bt::l2cap::kFirstDynamicChannelId,
                                                bt::l2cap::kFirstDynamicChannelId, kHandle,
-                                               bt::hci::Connection::LinkType::kACL, chan_info));
+                                               bt::LinkType::kACL, chan_info));
   service_iter->second.connect_callback(channel, MakeL2capProtocolListElement());
   RunLoopUntilIdle();
   ASSERT_TRUE(fidl_channel);

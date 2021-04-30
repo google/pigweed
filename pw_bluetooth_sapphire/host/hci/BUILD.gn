@@ -5,40 +5,15 @@
 import("//build/fuzzing/fuzzer.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
-# Basic target with protocol definitions and no logic, suitable for test
-# emulation.
-source_set("definitions") {
-  sources = [
-    "hci_defs.h",
-    "status.cc",
-    "status.h",
-  ]
-
-  public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec",
-  ]
-}
-
 static_library("hci") {
   sources = [
-    "acl_data_channel.cc",
-    "acl_data_channel.h",
-    "acl_data_packet.cc",
-    "acl_data_packet.h",
     "advertising_report_parser.cc",
     "advertising_report_parser.h",
     "bredr_connection_request.cc",
     "bredr_connection_request.h",
-    "command_channel.cc",
-    "command_channel.h",
     "command_handler.h",
     "connection.cc",
     "connection.h",
-    "control_packets.cc",
-    "control_packets.h",
-    "device_wrapper.cc",
-    "device_wrapper.h",
     "legacy_low_energy_advertiser.cc",
     "legacy_low_energy_advertiser.h",
     "legacy_low_energy_scanner.cc",
@@ -49,16 +24,11 @@ static_library("hci") {
     "low_energy_connector.h",
     "low_energy_scanner.cc",
     "low_energy_scanner.h",
-    "packet.h",
     "sequential_command_runner.cc",
     "sequential_command_runner.h",
-    "slab_allocators.h",
-    "transport.cc",
-    "transport.h",
   ]
 
   public_deps = [
-    ":definitions",
     "//sdk/banjo/fuchsia.hardware.bt.hci:fuchsia.hardware.bt.hci_banjo_cpp",
     "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
@@ -66,6 +36,7 @@ static_library("hci") {
     "//sdk/lib/fdio",
     "//sdk/lib/fit",
     "//sdk/lib/fit-promise",
+    "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/lib/ddk",
     "//src/lib/files",
     "//src/lib/fxl",
@@ -85,7 +56,6 @@ source_set("testing") {
     "fake_connection.h",
     "fake_local_address_delegate.cc",
     "fake_local_address_delegate.h",
-    "mock_acl_data_channel.h",
   ]
 
   public_deps = [ ":hci" ]
@@ -97,20 +67,13 @@ source_set("tests") {
   testonly = true
 
   sources = [
-    "acl_data_channel_unittest.cc",
     "advertising_report_parser_unittest.cc",
-    "command_channel_unittest.cc",
     "command_handler_unittest.cc",
     "connection_unittest.cc",
-    "device_wrapper_unittest.cc",
     "legacy_low_energy_advertiser_unittest.cc",
     "legacy_low_energy_scanner_unittest.cc",
     "low_energy_connector_unittest.cc",
-    "packet_unittest.cc",
     "sequential_command_runner_unittest.cc",
-    "slab_allocators_unittest.cc",
-    "status_unittest.cc",
-    "transport_unittest.cc",
   ]
 
   deps = [
@@ -123,22 +86,4 @@ source_set("tests") {
 bt_gtest_package("bt-host-hci-tests") {
   with_death_tests = true
   deps = [ ":tests" ]
-}
-
-fuzzer("read_acl_data_packet_fuzzer") {
-  sources = [ "acl_data_channel_read_acl_data_packet_fuzztest.cc" ]
-  deps = [
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
-}
-
-fuzzer("read_command_event_packet_fuzzer") {
-  sources = [ "command_channel_read_event_packet_fuzztest.cc" ]
-  deps = [
-    ":testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-  ]
 }

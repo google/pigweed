@@ -6,7 +6,7 @@
 
 #include <zircon/assert.h>
 
-#include "control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 
 namespace bt::hci {
 

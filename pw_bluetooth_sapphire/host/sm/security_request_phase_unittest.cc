@@ -40,9 +40,9 @@ class SMP_SecurityRequestPhaseTest : public l2cap::testing::FakeChannelTest {
   void TearDown() override { security_request_phase_ = nullptr; }
 
   void NewSecurityRequestPhase(SecurityRequestOptions opts = SecurityRequestOptions(),
-                               hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+                               bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 

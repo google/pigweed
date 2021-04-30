@@ -10,9 +10,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/mock_acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
 
 namespace bt::l2cap::internal {
 namespace {
@@ -31,7 +31,7 @@ class L2CAP_LogicalLinkTest : public ::gtest::TestLoopFixture {
       link_ = nullptr;
     }
   }
-  void NewLogicalLink(Conn::LinkType type = Conn::LinkType::kLE) {
+  void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
     const hci::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci::ConnectionHandle, PSM) { return std::nullopt; };
@@ -66,7 +66,7 @@ TEST_F(L2CAP_LogicalLinkTest, FixedChannelHasCorrectMtu) {
 
 TEST_F(L2CAP_LogicalLinkTest, DropsBroadcastPackets) {
   link()->Close();
-  NewLogicalLink(Conn::LinkType::kACL);
+  NewLogicalLink(bt::LinkType::kACL);
   fbl::RefPtr<Channel> connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
   ASSERT_TRUE(connectionless_chan);
 
@@ -109,7 +109,7 @@ TEST_F(L2CAP_LogicalLinkTest, ChannelPriority) {
 
 TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutSucceeds) {
   link()->Close();
-  NewLogicalLink(Conn::LinkType::kACL);
+  NewLogicalLink(bt::LinkType::kACL);
   constexpr zx::duration kTimeout(zx::msec(100));
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(
       [&](auto timeout, auto handle, auto cb) {
@@ -130,7 +130,7 @@ TEST_F(L2CAP_LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   constexpr zx::duration kTimeout(zx::msec(100));
   // LE links are unsupported, so result should be an error.
   link()->Close();
-  NewLogicalLink(Conn::LinkType::kLE);
+  NewLogicalLink(bt::LinkType::kLE);
 
   // No command should be sent.
   acl_data_channel()->set_set_bredr_automatic_flush_timeout_cb(

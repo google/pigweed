@@ -38,7 +38,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
     ChannelId remote_id;
     uint16_t mtu;
     hci::ConnectionHandle conn_handle = 0x0001;
-    hci::Connection::LinkType link_type = hci::Connection::LinkType::kLE;
+    bt::LinkType link_type = bt::LinkType::kLE;
   };
 
   void SetUp() override;

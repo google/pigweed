@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_CHANNEL_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_CHANNEL_H_
 
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
@@ -19,11 +19,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
 namespace bt::hci {
 
@@ -122,16 +122,16 @@ class AclDataChannel {
   // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
   //
   // |priority| indicates the order this packet should be dispatched off of the queue relative to
-  // packets of other priorities. Note that high priority packets may still wait behind low priority
-  // packets that have already been sent to the controller.
+  // packets of other priorities. Note that high priority packets may still wait behind low
+  // priority packets that have already been sent to the controller.
   virtual bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
                           PacketPriority priority) = 0;
 
   // Queues the given list of ACL data packets to be sent to the controller. The
   // behavior is identical to that of SendPacket() with the guarantee that all
   // packets that are in |packets| are queued atomically. The contents of |packets| must comprise
-  // one or more complete PDUs for the same handle in order, due to queue management assumptions. If
-  // any packet's handle is not registered in the allowlist, then none will be queued.
+  // one or more complete PDUs for the same handle in order, due to queue management assumptions.
+  // If any packet's handle is not registered in the allowlist, then none will be queued.
   //
   // Takes ownership of the contents of |packets|. Returns false if |packets|
   // contains an element that exceeds the MTU for its link type or |packets| is empty.
@@ -151,9 +151,9 @@ class AclDataChannel {
   // submission to the controller.
   //
   // Failure to register a link before sending packets will result in the packets
-  // being dropped immediately. A handle must not be registered again until after UnregisterLink has
-  // been called on that handle.
-  virtual void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) = 0;
+  // being dropped immediately. A handle must not be registered again until after UnregisterLink
+  // has been called on that handle.
+  virtual void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) = 0;
 
   // Cleans up all outgoing data buffering state related to the logical link
   // with the given |handle|. This must be called upon disconnection of a link
@@ -211,4 +211,4 @@ class AclDataChannel {
 
 }  // namespace bt::hci
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_ACL_DATA_CHANNEL_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_ACL_DATA_CHANNEL_H_

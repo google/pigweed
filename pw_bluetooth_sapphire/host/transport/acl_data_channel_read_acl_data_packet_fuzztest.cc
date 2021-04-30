@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "slab_allocators.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::hci {
 

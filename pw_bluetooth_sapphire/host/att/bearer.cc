@@ -257,7 +257,7 @@ Bearer::Bearer(fbl::RefPtr<l2cap::Channel> chan)
       weak_ptr_factory_(this) {
   ZX_DEBUG_ASSERT(chan_);
 
-  if (chan_->link_type() == hci::Connection::LinkType::kLE) {
+  if (chan_->link_type() == bt::LinkType::kLE) {
     min_mtu_ = kLEMinMTU;
   } else {
     min_mtu_ = kBREDRMinMTU;

@@ -15,7 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 

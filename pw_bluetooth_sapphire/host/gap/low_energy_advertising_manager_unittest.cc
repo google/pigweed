@@ -102,8 +102,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     // determine which one that is.
     const auto& cb = ads_->begin()->second.connect_cb;
     if (cb) {
-      cb(std::make_unique<hci::testing::FakeConnection>(handle, hci::Connection::LinkType::kLE,
-                                                        role, ads_->begin()->first, peer_address));
+      cb(std::make_unique<hci::testing::FakeConnection>(handle, bt::LinkType::kLE, role,
+                                                        ads_->begin()->first, peer_address));
     }
   }
 

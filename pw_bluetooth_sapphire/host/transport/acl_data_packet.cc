@@ -120,9 +120,10 @@ void ACLDataPacket::WriteHeader(ConnectionHandle connection_handle,
   ZX_DEBUG_ASSERT(static_cast<uint8_t>(packet_boundary_flag) <= 0x03);
   ZX_DEBUG_ASSERT(static_cast<uint8_t>(broadcast_flag) <= 0x03);
 
-  uint16_t handle_and_flags = connection_handle |
-                              (static_cast<uint16_t>(packet_boundary_flag) << 12) |
-                              (static_cast<uint16_t>(broadcast_flag) << 14);
+  // Bitwise OR causes int promotion, so the result must be explicitly casted.
+  uint16_t handle_and_flags = static_cast<uint16_t>(
+      connection_handle | (static_cast<uint16_t>(packet_boundary_flag) << 12) |
+      (static_cast<uint16_t>(broadcast_flag) << 14));
   mutable_view()->mutable_header()->handle_and_flags = htole16(handle_and_flags);
   mutable_view()->mutable_header()->data_total_length = htole16(view().payload_size());
 }

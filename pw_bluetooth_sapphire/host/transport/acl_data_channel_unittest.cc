@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 #include <lib/async/cpp/task.h>
 #include <zircon/assert.h>
@@ -13,11 +13,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
 namespace {
@@ -79,8 +80,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketBREDRBuffer) {
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
@@ -145,8 +146,8 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketLEBuffer) {
 
   InitializeACLDataChannel(DataBufferInfo(), DataBufferInfo(kMaxMTU, kBufferNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // This should fail because the payload exceeds the MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
@@ -225,8 +226,8 @@ TEST_F(HCI_ACLDataChannelTest, SendLEPacketBothBuffers) {
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets),
                            DataBufferInfo(kLEMaxMTU, kLEMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kLE);
 
   // This should fail because the payload exceeds the LE MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
@@ -296,8 +297,8 @@ TEST_F(HCI_ACLDataChannelTest, SendBREDRPacketBothBuffers) {
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets),
                            DataBufferInfo(kLEMaxMTU, kLEMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // This should fail because the payload exceeds the ACL MTU.
   auto packet = ACLDataPacket::New(kHandle1, ACLPacketBoundaryFlag::kFirstNonFlushable,
@@ -359,7 +360,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPacketsFailure) {
   constexpr ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
 
   // Empty packet list.
   EXPECT_FALSE(acl_data_channel()->SendPackets(
@@ -381,7 +382,7 @@ TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithContinuingFragments) {
   constexpr ConnectionHandle kHandle = 0x0001;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
 
   LinkedList<ACLDataPacket> packets;
   packets.push_back(ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kContinuingFragment,
@@ -398,8 +399,8 @@ TEST_F(HCI_ACLDataChannelDeathTest, SendPacketsCrashesWithPacketsForMoreThanOneC
   constexpr ConnectionHandle kHandle1 = 0x0002;
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, 100), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // Packet exceeds MTU
   LinkedList<ACLDataPacket> packets;
@@ -420,7 +421,7 @@ TEST_F(HCI_ACLDataChannelTest, SendPackets) {
 
   InitializeACLDataChannel(DataBufferInfo(1024, 100), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   bool pass = true;
   int seq_no = 0;
@@ -465,8 +466,8 @@ TEST_F(HCI_ACLDataChannelTest,
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle2, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle2, bt::LinkType::kLE);
 
   int packet_count = 0;
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
@@ -525,7 +526,7 @@ TEST_F(HCI_ACLDataChannelTest, SendingPacketsOnUnregisteredLinkDropsPackets) {
 
   // Now register link. Packet should have been dropped and should still
   // not be sent.
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   RunLoopUntilIdle();
 
@@ -546,8 +547,8 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkClearsPendingPackets) {
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle2, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle2, bt::LinkType::kLE);
 
   int handle1_packet_count = 0;
   int handle2_packet_count = 0;
@@ -610,7 +611,7 @@ TEST_F(HCI_ACLDataChannelTest, PacketsQueuedByFlowControlAreNotSentAfterUnregist
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kLE);
 
   int packet_count = 0;
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
@@ -653,7 +654,7 @@ TEST_F(HCI_ACLDataChannelTest,
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   // Unique packet to send to re-registered link with same handle.
   const auto kPacket = CreateStaticByteBuffer(
@@ -702,7 +703,7 @@ TEST_F(HCI_ACLDataChannelTest,
   ASSERT_EQ(1, data_cb_count);
 
   // Re-Register same link handle
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   auto packet = ACLDataPacket::New(kHandle, ACLPacketBoundaryFlag::kFirstNonFlushable,
                                    ACLBroadcastFlag::kPointToPoint, 1);
@@ -724,7 +725,7 @@ TEST_F(HCI_ACLDataChannelTest, UnregisterLinkDropsFutureSentPackets) {
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle, Connection::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kLE);
 
   int packet_count = 0;
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
@@ -860,8 +861,8 @@ TEST_F(HCI_ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFrom
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   int handle0_packet_count = 0;
   int handle1_packet_count = 0;
@@ -944,8 +945,8 @@ TEST_F(HCI_ACLDataChannelTest, HighPriorityPacketsQueuedAfterLowPriorityPacketsA
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
@@ -1025,8 +1026,8 @@ TEST_F(HCI_ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMTU, kMaxNumPackets), DataBufferInfo());
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   size_t handle0_packet_count = 0;
   size_t handle1_packet_count = 0;
@@ -1212,7 +1213,7 @@ TEST_F(HCI_ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
 TEST_F(HCI_ACLDataChannelTest, SetAutomaticFlushTimeout) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
-  acl_data_channel()->RegisterLink(kLinkHandle, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kLinkHandle, bt::LinkType::kACL);
 
   std::optional<fit::result<void, hci::StatusCode>> cb_status;
   auto result_cb = [&](auto status) { cb_status = status; };
@@ -1279,8 +1280,8 @@ TEST_F(HCI_ACLDataChannelTest,
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
                            DataBufferInfo(kMaxMtu, kMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // Fill up both LE and BR/EDR controller buffers
   for (ConnectionHandle handle : {kHandle0, kHandle1}) {
@@ -1345,7 +1346,7 @@ TEST_F(HCI_ACLDataChannelTest,
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
 
   // Fill up controller buffers
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
@@ -1410,8 +1411,8 @@ TEST_F(HCI_ACLDataChannelTest, SendingLowPriorityPacketsThatDropDoNotAffectDataO
 
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kACL);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // Fill up controller buffers
   for (size_t i = 0; i < kMaxNumPackets; ++i) {
@@ -1479,8 +1480,8 @@ TEST_F(HCI_ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCo
   InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
                            DataBufferInfo(kMaxMtu, kMaxNumPackets));
 
-  acl_data_channel()->RegisterLink(kHandle0, Connection::LinkType::kLE);
-  acl_data_channel()->RegisterLink(kHandle1, Connection::LinkType::kACL);
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kLE);
+  acl_data_channel()->RegisterLink(kHandle1, bt::LinkType::kACL);
 
   // Fill up both LE and BR/EDR controller buffers, leaving one additional packet in the queue of
   // each type

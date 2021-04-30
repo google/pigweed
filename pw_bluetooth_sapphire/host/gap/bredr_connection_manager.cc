@@ -15,10 +15,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
 
@@ -414,7 +414,7 @@ BrEdrConnectionManager::FindConnectionById(PeerId peer_id) {
   }
 
   auto& [handle, conn] = *it;
-  ZX_ASSERT(conn.link().ll_type() != hci::Connection::LinkType::kLE);
+  ZX_ASSERT(conn.link().ll_type() != bt::LinkType::kLE);
 
   return std::pair(handle, &conn);
 }

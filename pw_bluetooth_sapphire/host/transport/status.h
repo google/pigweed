@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_STATUS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_STATUS_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_STATUS_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_STATUS_H_
 
 #include <lib/fit/function.h>
 
@@ -48,4 +48,4 @@ using StatusCallback = fit::function<void(const Status& status)>;
 }  // namespace hci
 }  // namespace bt
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_STATUS_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_STATUS_H_

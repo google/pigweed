@@ -15,13 +15,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/fake_connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/ecdh_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "util.h"
 
 namespace bt::sm {
@@ -55,8 +55,8 @@ class SMP_SecurityManagerTest : public l2cap::testing::FakeChannelTest, public s
     // Setup a fake logical link.
     auto link_role =
         role == Role::kInitiator ? hci::Connection::Role::kMaster : hci::Connection::Role::kSlave;
-    fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, hci::Connection::LinkType::kLE,
-                                                                link_role, kLocalAddr, kPeerAddr);
+    fake_link_ = std::make_unique<hci::testing::FakeConnection>(1, bt::LinkType::kLE, link_role,
+                                                                kLocalAddr, kPeerAddr);
 
     pairing_ = SecurityManager::Create(fake_link_->WeakPtr(), fake_chan_, ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,

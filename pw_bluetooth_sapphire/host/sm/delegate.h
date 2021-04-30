@@ -6,9 +6,9 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_DELEGATE_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 
 namespace bt::sm {
 

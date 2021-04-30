@@ -25,8 +25,6 @@
 
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
@@ -34,6 +32,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/status.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::l2cap {
 
@@ -76,7 +77,7 @@ class Channel : public fbl::RefCounted<Channel> {
   ChannelId remote_id() const { return remote_id_; }
 
   // The type of the logical link this channel operates on.
-  hci::Connection::LinkType link_type() const { return link_type_; }
+  bt::LinkType link_type() const { return link_type_; }
 
   // The connection handle of the underlying logical link.
   hci::ConnectionHandle link_handle() const { return link_handle_; }
@@ -200,13 +201,13 @@ class Channel : public fbl::RefCounted<Channel> {
  protected:
   friend class fbl::RefPtr<Channel>;
   // TODO(fxbug.dev/1022): define a preferred MTU somewhere
-  Channel(ChannelId id, ChannelId remote_id, hci::Connection::LinkType link_type,
+  Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
           hci::ConnectionHandle link_handle, ChannelInfo info);
   virtual ~Channel() = default;
 
   const ChannelId id_;
   const ChannelId remote_id_;
-  const hci::Connection::LinkType link_type_;
+  const bt::LinkType link_type_;
   const hci::ConnectionHandle link_handle_;
   ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.

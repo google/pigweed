@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_
 
 #include <endian.h>
 
@@ -13,8 +13,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/status.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 
 namespace bt::hci {
 
@@ -124,4 +124,4 @@ class Packet<EventHeader> : public PacketBase<EventHeader, EventPacket> {
 // Evaluate to true if the event status is not success.
 #define hci_is_error(event, flag, tag, fmt...) bt_is_error(event.ToStatus(), flag, tag, fmt)
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_CONTROL_PACKETS_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_CONTROL_PACKETS_H_

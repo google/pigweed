@@ -4,6 +4,8 @@
 
 #include "fake_adapter.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+
 namespace bt::gap::testing {
 
 FakeAdapter::FakeAdapter()
@@ -33,7 +35,7 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                           params.flush_timeout);
   auto channel = fbl::AdoptRef(new l2cap::testing::FakeChannel(
       /*id=*/l2cap::kFirstDynamicChannelId, /*remote_id=*/l2cap::kFirstDynamicChannelId,
-      /*handle=*/1, hci::Connection::LinkType::kACL, info));
+      /*handle=*/1, bt::LinkType::kACL, info));
   if (channel_cb_) {
     channel_cb_(channel);
   }

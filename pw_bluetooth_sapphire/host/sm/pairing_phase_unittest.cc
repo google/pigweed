@@ -66,10 +66,9 @@ class SMP_PairingPhaseTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { pairing_phase_ = nullptr; }
 
-  void NewPairingPhase(Role role = Role::kInitiator,
-                       hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+  void NewPairingPhase(Role role = Role::kInitiator, bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 

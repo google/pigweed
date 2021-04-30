@@ -43,9 +43,9 @@ class SMP_Phase1Test : public l2cap::testing::FakeChannelTest {
   void TearDown() override { phase_1_ = nullptr; }
 
   void NewPhase1(Role role = Role::kInitiator, Phase1Args phase_args = Phase1Args(),
-                 hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+                 bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     uint16_t mtu = phase_args.sc_supported ? l2cap::kMaxMTU : kNoSecureConnectionsMtu;
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;

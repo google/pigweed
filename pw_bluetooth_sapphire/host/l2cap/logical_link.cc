@@ -17,8 +17,8 @@
 #include "lib/fit/promise.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/run_or_post.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/strings/string_printf.h"
 
 namespace bt::l2cap::internal {
@@ -57,17 +57,19 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 // static
-fbl::RefPtr<LogicalLink> LogicalLink::New(
-    hci::ConnectionHandle handle, hci::Connection::LinkType type, hci::Connection::Role role,
-    fit::executor* executor, size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
-    hci::AclDataChannel* acl_data_channel, bool random_channel_ids) {
+fbl::RefPtr<LogicalLink> LogicalLink::New(hci::ConnectionHandle handle, bt::LinkType type,
+                                          hci::Connection::Role role, fit::executor* executor,
+                                          size_t max_acl_payload_size,
+                                          QueryServiceCallback query_service_cb,
+                                          hci::AclDataChannel* acl_data_channel,
+                                          bool random_channel_ids) {
   auto ll = fbl::AdoptRef(new LogicalLink(handle, type, role, executor, max_acl_payload_size,
                                           std::move(query_service_cb), acl_data_channel));
   ll->Initialize(random_channel_ids);
   return ll;
 }
 
-LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
+LogicalLink::LogicalLink(hci::ConnectionHandle handle, bt::LinkType type,
                          hci::Connection::Role role, fit::executor* executor,
                          size_t max_acl_payload_size, QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel)
@@ -82,7 +84,7 @@ LogicalLink::LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType
       query_service_cb_(std::move(query_service_cb)),
       executor_(executor),
       weak_ptr_factory_(this) {
-  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE || type_ == hci::Connection::LinkType::kACL);
+  ZX_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
   ZX_ASSERT(executor_);
   ZX_ASSERT(acl_data_channel_);
   ZX_ASSERT(query_service_cb_);
@@ -93,7 +95,7 @@ void LogicalLink::Initialize(bool randomize_channel_ids) {
   ZX_DEBUG_ASSERT(!dynamic_registry_);
 
   // Set up the signaling channel and dynamic channels.
-  if (type_ == hci::Connection::LinkType::kLE) {
+  if (type_ == bt::LinkType::kLE) {
     signaling_channel_ =
         std::make_unique<LESignalingChannel>(OpenFixedChannel(kLESignalingChannelId), role_);
     // TODO(armansito): Initialize LE registry when it exists.
@@ -159,7 +161,7 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
   ZX_DEBUG_ASSERT(!closed_);
 
   // TODO(fxbug.dev/968): Implement channels for LE credit-based connections
-  if (type_ == hci::Connection::LinkType::kLE) {
+  if (type_ == bt::LinkType::kLE) {
     bt_log(WARN, "l2cap", "not opening LE channel for PSM %.4x", psm);
     CompleteDynamicOpen(nullptr, std::move(callback));
     return;
@@ -313,14 +315,12 @@ void LogicalLink::set_connection_parameter_update_callback(
 }
 
 LESignalingChannel* LogicalLink::le_signaling_channel() const {
-  return (type_ == hci::Connection::LinkType::kLE)
-             ? static_cast<LESignalingChannel*>(signaling_channel_.get())
-             : nullptr;
+  return (type_ == bt::LinkType::kLE) ? static_cast<LESignalingChannel*>(signaling_channel_.get())
+                                      : nullptr;
 }
 
 bool LogicalLink::AllowsFixedChannel(ChannelId id) {
-  return (type_ == hci::Connection::LinkType::kLE) ? IsValidLEFixedChannel(id)
-                                                   : IsValidBREDRFixedChannel(id);
+  return (type_ == bt::LinkType::kLE) ? IsValidLEFixedChannel(id) : IsValidBREDRFixedChannel(id);
 }
 
 fit::promise<> LogicalLink::RemoveChannel(Channel* chan) {
@@ -563,7 +563,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
     hci::LEPreferredConnectionParameters params,
     ConnectionParameterUpdateRequestCallback request_cb) {
   ZX_ASSERT(signaling_channel_);
-  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);
+  ZX_ASSERT(type_ == bt::LinkType::kLE);
   ZX_ASSERT(role_ == hci::Connection::Role::kSlave);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
@@ -600,7 +600,7 @@ void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority
 
 void LogicalLink::SetBrEdrAutomaticFlushTimeout(
     zx::duration flush_timeout, fit::callback<void(fit::result<void, hci::StatusCode>)> callback) {
-  if (type_ != hci::Connection::LinkType::kACL) {
+  if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
     callback(fit::error(hci::StatusCode::kInvalidHCICommandParameters));
     return;
@@ -627,7 +627,7 @@ void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   inspect_properties_.handle =
       node.CreateString(kInspectHandlePropertyName, fxl::StringPrintf("%#.4x", handle_));
   inspect_properties_.link_type =
-      node.CreateString(kInspectLinkTypePropertyName, hci::Connection::LinkTypeToString(type_));
+      node.CreateString(kInspectLinkTypePropertyName, LinkTypeToString(type_));
   inspect_properties_.channels_node = node.CreateChild(kInspectChannelsNodeName);
   flush_timeout_.AttachInspect(node, kInspectFlushTimeoutPropertyName);
   inspect_properties_.node = std::move(node);
@@ -722,7 +722,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
 void LogicalLink::ServeConnectionParameterUpdateRequest() {
   ZX_ASSERT(signaling_channel_);
-  ZX_ASSERT(type_ == hci::Connection::LinkType::kLE);
+  ZX_ASSERT(type_ == bt::LinkType::kLE);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.ServeConnectionParameterUpdateRequest(

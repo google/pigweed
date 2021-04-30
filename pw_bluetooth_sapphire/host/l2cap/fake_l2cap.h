@@ -99,7 +99,7 @@ class FakeL2cap final : public L2cap {
     bool connected;
     hci::ConnectionHandle handle;
     hci::Connection::Role role;
-    hci::Connection::LinkType type;
+    bt::LinkType type;
 
     async_dispatcher_t* dispatcher;
 
@@ -115,8 +115,7 @@ class FakeL2cap final : public L2cap {
   ~FakeL2cap() override;
 
   LinkData* RegisterInternal(hci::ConnectionHandle handle, hci::Connection::Role role,
-                             hci::Connection::LinkType link_type,
-                             LinkErrorCallback link_error_callback);
+                             bt::LinkType link_type, LinkErrorCallback link_error_callback);
 
   fbl::RefPtr<testing::FakeChannel> OpenFakeChannel(
       LinkData* link, ChannelId id, ChannelId remote_id,

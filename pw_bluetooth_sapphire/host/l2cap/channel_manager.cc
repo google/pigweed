@@ -59,7 +59,7 @@ void ChannelManager::RegisterACL(hci::ConnectionHandle handle, hci::Connection::
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
-  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kACL, role, max_acl_payload_size_);
+  auto* ll = RegisterInternal(handle, bt::LinkType::kACL, role, max_acl_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
   ll->set_security_upgrade_callback(std::move(security_cb));
 }
@@ -71,7 +71,7 @@ void ChannelManager::RegisterLE(hci::ConnectionHandle handle, hci::Connection::R
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
 
-  auto* ll = RegisterInternal(handle, hci::Connection::LinkType::kLE, role, max_le_payload_size_);
+  auto* ll = RegisterInternal(handle, bt::LinkType::kLE, role, max_le_payload_size_);
   ll->set_error_callback(std::move(link_error_cb));
   ll->set_security_upgrade_callback(std::move(security_cb));
   ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
@@ -235,7 +235,7 @@ void ChannelManager::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
 }
 
 internal::LogicalLink* ChannelManager::RegisterInternal(hci::ConnectionHandle handle,
-                                                        hci::Connection::LinkType ll_type,
+                                                        bt::LinkType ll_type,
                                                         hci::Connection::Role role,
                                                         size_t max_payload_size) {
   ZX_DEBUG_ASSERT(thread_checker_.is_thread_valid());

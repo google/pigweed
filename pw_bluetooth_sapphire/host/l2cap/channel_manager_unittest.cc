@@ -14,11 +14,11 @@
 #include "lib/gtest/test_loop_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/mock_acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/mock_acl_data_channel.h"
 
 namespace bt::l2cap {
 namespace {
@@ -48,18 +48,16 @@ struct PacketExpectation {
   const char* file_name;
   int line_number;
   DynamicByteBuffer data;
-  hci::Connection::LinkType ll_type;
+  bt::LinkType ll_type;
   hci::AclDataChannel::PacketPriority priority;
 };
 
 // Helpers to set an outbound packet expectation with the link type and source location
 // boilerplate prefilled.
-#define EXPECT_LE_PACKET_OUT(packet_buffer, priority)                                         \
-  ExpectOutboundPacket(hci::Connection::LinkType::kLE, (priority), (packet_buffer), __FILE__, \
-                       __LINE__)
-#define EXPECT_ACL_PACKET_OUT(packet_buffer, priority)                                         \
-  ExpectOutboundPacket(hci::Connection::LinkType::kACL, (priority), (packet_buffer), __FILE__, \
-                       __LINE__)
+#define EXPECT_LE_PACKET_OUT(packet_buffer, priority) \
+  ExpectOutboundPacket(bt::LinkType::kLE, (priority), (packet_buffer), __FILE__, __LINE__)
+#define EXPECT_ACL_PACKET_OUT(packet_buffer, priority) \
+  ExpectOutboundPacket(bt::LinkType::kACL, (priority), (packet_buffer), __FILE__, __LINE__)
 
 auto MakeExtendedFeaturesInformationRequest(CommandId id, hci::ConnectionHandle handle) {
   return CreateStaticByteBuffer(
@@ -393,9 +391,9 @@ class L2CAP_ChannelManagerTest : public TestingBase {
   // they're added. The test fails if not all expected packets have been set when the test case
   // completes or if the outbound data doesn't match expectations, including the ordering between
   // LE and ACL packets.
-  void ExpectOutboundPacket(hci::Connection::LinkType ll_type,
-                            hci::AclDataChannel::PacketPriority priority, const ByteBuffer& data,
-                            const char* file_name = "", int line_number = 0) {
+  void ExpectOutboundPacket(bt::LinkType ll_type, hci::AclDataChannel::PacketPriority priority,
+                            const ByteBuffer& data, const char* file_name = "",
+                            int line_number = 0) {
     expected_packets_.push({file_name, line_number, DynamicByteBuffer(data), ll_type, priority});
   }
 

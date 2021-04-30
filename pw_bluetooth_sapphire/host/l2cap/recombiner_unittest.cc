@@ -8,7 +8,7 @@
 
 #include "pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
 namespace bt::l2cap {
 namespace {

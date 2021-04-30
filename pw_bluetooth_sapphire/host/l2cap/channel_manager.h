@@ -19,13 +19,13 @@
 
 #include "lib/async/cpp/executor.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/le_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
 namespace bt {
 
@@ -172,8 +172,7 @@ class ChannelManager final {
 
   // Called by the various Register functions. Returns a pointer to the newly
   // added link.
-  internal::LogicalLink* RegisterInternal(hci::ConnectionHandle handle,
-                                          hci::Connection::LinkType ll_type,
+  internal::LogicalLink* RegisterInternal(hci::ConnectionHandle handle, bt::LinkType ll_type,
                                           hci::Connection::Role role, size_t max_payload_size);
 
   // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object

@@ -26,7 +26,7 @@ class SDP_ClientTest : public TestingBase {
  protected:
   void SetUp() override {
     ChannelOptions options(kTestChannelId);
-    options.link_type = hci::Connection::LinkType::kACL;
+    options.link_type = bt::LinkType::kACL;
     channel_ = CreateFakeChannel(options);
   }
 

@@ -11,7 +11,7 @@ namespace bt::hci::testing {
 
 class FakeConnection final : public Connection {
  public:
-  FakeConnection(ConnectionHandle handle, LinkType ll_type, Role role,
+  FakeConnection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
                  const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   // Triggers the encryption change callback.

@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "slab_allocators.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 namespace bt::hci {
 

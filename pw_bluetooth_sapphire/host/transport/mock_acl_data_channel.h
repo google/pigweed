@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_MOCK_ACL_DATA_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_MOCK_ACL_DATA_CHANNEL_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::hci::testing {
 
@@ -52,7 +52,7 @@ class MockAclDataChannel final : public AclDataChannel {
     }
     return true;
   }
-  void RegisterLink(hci::ConnectionHandle handle, Connection::LinkType ll_type) override {}
+  void RegisterLink(hci::ConnectionHandle handle, bt::LinkType ll_type) override {}
   void UnregisterLink(hci::ConnectionHandle handle) override {}
   void DropQueuedPackets(AclPacketPredicate predicate) override {
     if (drop_queued_packets_cb_) {
@@ -89,4 +89,4 @@ class MockAclDataChannel final : public AclDataChannel {
 
 }  // namespace bt::hci::testing
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_MOCK_ACL_DATA_CHANNEL_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_MOCK_ACL_DATA_CHANNEL_H_

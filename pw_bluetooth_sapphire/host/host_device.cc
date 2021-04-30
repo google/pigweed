@@ -9,7 +9,7 @@
 
 #include "host.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/device_wrapper.h"
 
 namespace bthost {
 namespace {

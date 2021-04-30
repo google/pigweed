@@ -12,8 +12,8 @@ ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
       connection_(std::move(connection)),
       deactivated_cb_(std::move(deactivated_cb)) {
   ZX_ASSERT(connection_);
-  ZX_ASSERT(connection_->ll_type() == hci::Connection::LinkType::kSCO ||
-            connection_->ll_type() == hci::Connection::LinkType::kESCO);
+  ZX_ASSERT(connection_->ll_type() == bt::LinkType::kSCO ||
+            connection_->ll_type() == bt::LinkType::kESCO);
   handle_ = connection_->handle();
 }
 

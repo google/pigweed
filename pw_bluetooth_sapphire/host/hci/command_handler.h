@@ -10,7 +10,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/command_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {

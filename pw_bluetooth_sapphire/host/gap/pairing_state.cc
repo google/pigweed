@@ -5,8 +5,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_state.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
 
@@ -23,7 +23,7 @@ PairingState::PairingState(PeerId peer_id, hci::Connection* link, PeerCache* pee
       send_auth_request_callback_(std::move(auth_cb)),
       status_callback_(std::move(status_cb)) {
   ZX_ASSERT(link_);
-  ZX_ASSERT(link_->ll_type() != hci::Connection::LinkType::kLE);
+  ZX_ASSERT(link_->ll_type() != bt::LinkType::kLE);
   ZX_ASSERT(send_auth_request_callback_);
   ZX_ASSERT(status_callback_);
   link_->set_encryption_change_callback(fit::bind_member(this, &PairingState::OnEncryptionChange));

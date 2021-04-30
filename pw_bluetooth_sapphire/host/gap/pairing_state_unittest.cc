@@ -68,8 +68,8 @@ class NoOpPairingDelegate final : public PairingDelegate {
 };
 
 FakeConnection MakeFakeConnection() {
-  return FakeConnection(kTestHandle, hci::Connection::LinkType::kACL,
-                        hci::Connection::Role::kMaster, kLocalAddress, kPeerAddress);
+  return FakeConnection(kTestHandle, bt::LinkType::kACL, hci::Connection::Role::kMaster,
+                        kLocalAddress, kPeerAddress);
 }
 
 class GAP_PairingStateTest : public ::gtest::TestLoopFixture {

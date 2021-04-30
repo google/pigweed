@@ -50,10 +50,10 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { sm_chan_ = nullptr; }
 
-  void NewPairingChannel(hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE,
+  void NewPairingChannel(bt::LinkType ll_type = bt::LinkType::kLE,
                          uint16_t mtu = kNoSecureConnectionsMtu) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid, mtu);
     options.link_type = ll_type;
     sm_chan_ = std::make_unique<PairingChannel>(
@@ -74,9 +74,8 @@ class SMP_PairingChannelTest : public l2cap::testing::FakeChannelTest {
 
 using SMP_PairingChannelDeathTest = SMP_PairingChannelTest;
 TEST_F(SMP_PairingChannelDeathTest, L2capChannelMtuTooSmallDies) {
-  ASSERT_DEATH_IF_SUPPORTED(
-      NewPairingChannel(hci::Connection::LinkType::kLE, kNoSecureConnectionsMtu - 1),
-      ".*max.*_sdu_size.*");
+  ASSERT_DEATH_IF_SUPPORTED(NewPairingChannel(bt::LinkType::kLE, kNoSecureConnectionsMtu - 1),
+                            ".*max.*_sdu_size.*");
 }
 
 TEST_F(SMP_PairingChannelDeathTest, SendInvalidMessageDies) {

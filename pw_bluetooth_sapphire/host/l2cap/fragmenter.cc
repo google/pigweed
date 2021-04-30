@@ -10,9 +10,9 @@
 #include <limits>
 #include <optional>
 
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fcs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 
 namespace bt::l2cap {
 namespace {

@@ -24,10 +24,6 @@
 #include "lib/fit/result.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/hci_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
@@ -36,6 +32,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/low_energy_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::l2cap::internal {
 
@@ -65,7 +64,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // executed on this object's creation thread.
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
-  static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, hci::Connection::LinkType type,
+  static fbl::RefPtr<LogicalLink> New(hci::ConnectionHandle handle, bt::LinkType type,
                                       hci::Connection::Role role, fit::executor* executor,
                                       size_t max_payload_size,
                                       QueryServiceCallback query_service_cb,
@@ -165,7 +164,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   // on the signaling channel.
   void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
-  hci::Connection::LinkType type() const { return type_; }
+  bt::LinkType type() const { return type_; }
   hci::Connection::Role role() const { return role_; }
   hci::ConnectionHandle handle() const { return handle_; }
 
@@ -181,8 +180,8 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
   friend class ChannelImpl;
   friend fbl::RefPtr<LogicalLink>;
 
-  LogicalLink(hci::ConnectionHandle handle, hci::Connection::LinkType type,
-              hci::Connection::Role role, fit::executor* executor, size_t max_acl_payload_size,
+  LogicalLink(hci::ConnectionHandle handle, bt::LinkType type, hci::Connection::Role role,
+              fit::executor* executor, size_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel);
 
   // Initializes the fragmenter, the fixed signaling channel, and the dynamic
@@ -257,7 +256,7 @@ class LogicalLink final : public fbl::RefCounted<LogicalLink> {
 
   // Information about the underlying controller logical link.
   hci::ConnectionHandle handle_;
-  hci::Connection::LinkType type_;
+  bt::LinkType type_;
   hci::Connection::Role role_;
 
   // The duration after which BR/EDR packets are flushed from the controller.

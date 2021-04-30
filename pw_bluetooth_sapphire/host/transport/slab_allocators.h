@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_
 
 #include <memory>
 
@@ -13,7 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/slab_allocator_traits.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/packet.h"
 
 // This file defines a fbl::SlabAllocator trait template that can be used to
 // slab-allocate instances of hci::Packet. It's signature is as follows:
@@ -131,4 +131,4 @@ class SlabPacket : public FixedSizePacket<HeaderType, BufferSize>,
 
 }  // namespace bt::hci::slab_allocators
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SLAB_ALLOCATORS_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SLAB_ALLOCATORS_H_

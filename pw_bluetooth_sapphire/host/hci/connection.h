@@ -15,7 +15,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/le_connection_parameters.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/link_key.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/status.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -50,22 +52,6 @@ class Transport;
 // TODO(fxb/61070): create subclasses for each link type
 class Connection {
  public:
-  // This defines the various connection types. These do not exactly correspond
-  // to the baseband logical/physical link types but instead provide a
-  // high-level abstraction.
-  enum class LinkType {
-    // Represents a BR/EDR baseband link (ACL-U).
-    kACL,
-
-    // BR/EDR isochronous links (SCO-S, eSCO-S).
-    kSCO,
-    kESCO,
-
-    // A LE logical link (LE-U).
-    kLE,
-  };
-  static std::string LinkTypeToString(Connection::LinkType type);
-
   // Role of the local device in the established connection.
   enum class Role {
     kMaster,
@@ -115,7 +101,7 @@ class Connection {
   std::string ToString() const;
 
   // The type of the connection.
-  LinkType ll_type() const { return ll_type_; }
+  bt::LinkType ll_type() const { return ll_type_; }
 
   // Returns the 12-bit connection handle of this connection. This handle is
   // used to identify an individual logical link maintained by the controller.
@@ -130,14 +116,14 @@ class Connection {
   // The active LE connection parameters of this connection. Must only be called
   // on a Connection with the LE link type.
   const LEConnectionParameters& low_energy_parameters() const {
-    ZX_DEBUG_ASSERT(ll_type_ == LinkType::kLE);
+    ZX_DEBUG_ASSERT(ll_type_ == bt::LinkType::kLE);
     return le_params_;
   }
 
   // Sets the active LE parameters of this connection. Must only be called on a
   // Connection with the LE link type.
   void set_low_energy_parameters(const LEConnectionParameters& params) {
-    ZX_DEBUG_ASSERT(ll_type_ == LinkType::kLE);
+    ZX_DEBUG_ASSERT(ll_type_ == bt::LinkType::kLE);
     le_params_ = params;
   }
 
@@ -150,7 +136,7 @@ class Connection {
   // Assigns a long term key to this LE-U connection. This will be used for all future encryption
   // procedures.
   void set_le_ltk(const LinkKey& ltk) {
-    ZX_ASSERT(ll_type_ == LinkType::kLE);
+    ZX_ASSERT(ll_type_ == bt::LinkType::kLE);
     ltk_ = ltk;
     ltk_type_ = std::nullopt;
   }
@@ -158,7 +144,7 @@ class Connection {
   // Assigns a link key with its corresponding HCI type to this BR/EDR connection. This will be
   // used for bonding procedures and determines the resulting security properties of the link.
   void set_bredr_link_key(const LinkKey& link_key, hci::LinkKeyType type) {
-    ZX_ASSERT(ll_type_ != LinkType::kLE);
+    ZX_ASSERT(ll_type_ != bt::LinkType::kLE);
     ltk_ = link_key;
     ltk_type_ = type;
   }
@@ -201,7 +187,7 @@ class Connection {
   virtual void Disconnect(StatusCode reason) = 0;
 
  protected:
-  Connection(ConnectionHandle handle, LinkType ll_type, Role role,
+  Connection(ConnectionHandle handle, bt::LinkType ll_type, Role role,
              const DeviceAddress& local_address, const DeviceAddress& peer_address);
 
   const EncryptionChangeCallback& encryption_change_callback() const {
@@ -213,7 +199,7 @@ class Connection {
   }
 
  private:
-  LinkType ll_type_;
+  bt::LinkType ll_type_;
   ConnectionHandle handle_;
   Role role_;
 

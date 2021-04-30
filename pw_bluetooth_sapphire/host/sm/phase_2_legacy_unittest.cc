@@ -78,9 +78,9 @@ class SMP_Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
   void TearDown() override { phase_2_legacy_ = nullptr; }
 
   void NewPhase2Legacy(Phase2LegacyArgs phase_args = Phase2LegacyArgs(),
-                       hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+                       bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 

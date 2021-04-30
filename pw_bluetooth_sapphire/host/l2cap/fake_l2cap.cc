@@ -88,7 +88,7 @@ void FakeL2cap::TriggerLinkError(hci::ConnectionHandle handle) {
 void FakeL2cap::AddACLConnection(hci::ConnectionHandle handle, hci::Connection::Role role,
                                  l2cap::LinkErrorCallback link_error_cb,
                                  l2cap::SecurityUpgradeCallback security_cb) {
-  RegisterInternal(handle, role, hci::Connection::LinkType::kACL, std::move(link_error_cb));
+  RegisterInternal(handle, role, bt::LinkType::kACL, std::move(link_error_cb));
 }
 
 L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
@@ -96,8 +96,7 @@ L2cap::LEFixedChannels FakeL2cap::AddLEConnection(
     l2cap::LinkErrorCallback link_error_cb,
     l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
     l2cap::SecurityUpgradeCallback security_cb) {
-  LinkData* data =
-      RegisterInternal(handle, role, hci::Connection::LinkType::kLE, std::move(link_error_cb));
+  LinkData* data = RegisterInternal(handle, role, bt::LinkType::kLE, std::move(link_error_cb));
   data->le_conn_param_cb = std::move(conn_param_cb);
 
   // Open the ATT and SMP fixed channels.
@@ -174,8 +173,7 @@ FakeL2cap::~FakeL2cap() {
 }
 
 FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci::ConnectionHandle handle,
-                                                 hci::Connection::Role role,
-                                                 hci::Connection::LinkType link_type,
+                                                 hci::Connection::Role role, bt::LinkType link_type,
                                                  l2cap::LinkErrorCallback link_error_cb) {
   auto& data = GetLinkData(handle);
   ZX_DEBUG_ASSERT_MSG(!data.connected, "connection handle re-used (handle: %#.4x)", handle);

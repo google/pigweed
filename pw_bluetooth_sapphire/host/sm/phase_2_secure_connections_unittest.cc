@@ -83,7 +83,7 @@ class SMP_Phase2SecureConnectionsTest : public l2cap::testing::FakeChannelTest {
     features_.initiator = (local_role == Role::kInitiator);
     features_.method = method;
     ChannelOptions options(l2cap::kLESMPChannelId, mtu);
-    options.link_type = hci::Connection::LinkType::kLE;
+    options.link_type = bt::LinkType::kLE;
     sm_chan_ = std::make_unique<PairingChannel>(CreateFakeChannel(options));
 
     listener_ = std::make_unique<FakeListener>();

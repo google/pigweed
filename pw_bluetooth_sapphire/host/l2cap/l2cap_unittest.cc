@@ -156,7 +156,7 @@ class L2CAP_L2capTest : public TestingBase {
     EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
                                              cmd_ids.fixed_channels_supported_id, handle));
 
-    acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kACL);
+    acl_data_channel()->RegisterLink(handle, bt::LinkType::kACL);
     l2cap()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
         /*security_upgrade_callback=*/[](auto, auto, auto) {});
@@ -165,7 +165,7 @@ class L2CAP_L2capTest : public TestingBase {
 
   L2cap::LEFixedChannels QueueLEConnection(hci::ConnectionHandle handle,
                                            hci::Connection::Role role) {
-    acl_data_channel()->RegisterLink(handle, hci::Connection::LinkType::kLE);
+    acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return l2cap()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
         /*security_callback=*/[](auto, auto, auto) {});

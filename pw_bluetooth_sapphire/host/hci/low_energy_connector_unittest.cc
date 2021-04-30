@@ -74,7 +74,7 @@ class LowEnergyConnectorTest : public TestingBase {
                                    const DeviceAddress& peer_address,
                                    const LEConnectionParameters& conn_params) {
     in_connections_.push_back(std::make_unique<testing::FakeConnection>(
-        handle, hci::Connection::LinkType::kLE, role, kLocalAddress, peer_address));
+        handle, bt::LinkType::kLE, role, kLocalAddress, peer_address));
   }
 
   void OnConnectionStateChanged(const DeviceAddress& address, hci::ConnectionHandle handle,

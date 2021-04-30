@@ -13,10 +13,10 @@
 #include <fbl/macros.h>
 
 #include "lib/gtest/test_loop_fixture.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/device_wrapper.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::testing {
 

@@ -36,7 +36,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   auto fake_chan = fbl::AdoptRef(new bt::l2cap::testing::FakeChannel(
       bt::l2cap::kSignalingChannelId, bt::l2cap::kSignalingChannelId, kTestHandle,
-      bt::hci::Connection::LinkType::kACL));
+      bt::LinkType::kACL));
 
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(fake_chan,
                                                       bt::hci::Connection::Role::kMaster);

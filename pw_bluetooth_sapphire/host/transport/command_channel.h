@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
-#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
+#ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_
+#define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/cpp/wait.h>
@@ -26,7 +26,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/lib/fxl/functional/cancelable_callback.h"
 #include "src/lib/fxl/memory/ref_ptr.h"
 
@@ -117,17 +117,17 @@ class CommandChannel final {
       const EventCode complete_event_code = kCommandCompleteEventCode,
       std::unordered_set<OpCode> exclusions = {});
 
-  // As SendExclusiveCommand, but the transaction completes on the LE Meta Event with subevent code
-  // |le_meta_subevent_code|.
+  // As SendExclusiveCommand, but the transaction completes on the LE Meta Event with subevent
+  // code |le_meta_subevent_code|.
   TransactionId SendLeAsyncExclusiveCommand(std::unique_ptr<CommandPacket> command_packet,
                                             CommandCallback callback,
                                             std::optional<EventCode> le_meta_subevent_code,
                                             std::unordered_set<OpCode> exclusions = {});
 
-  // If the command identified by |id| has not been sent to the controller, remove it from the send
-  // queue and return true. In this case, its CommandCallback will not be notified. If the command
-  // identified by |id| has already been sent to the controller or if it does not exist, this has no
-  // effect and returns false.
+  // If the command identified by |id| has not been sent to the controller, remove it from the
+  // send queue and return true. In this case, its CommandCallback will not be notified. If the
+  // command identified by |id| has already been sent to the controller or if it does not exist,
+  // this has no effect and returns false.
   [[nodiscard]] bool RemoveQueuedCommand(TransactionId id);
 
   // Used to identify an individual HCI event handler that was registered with
@@ -249,7 +249,8 @@ class CommandChannel final {
     // Completes the transaction with |event|.
     void Complete(std::unique_ptr<EventPacket> event);
 
-    // Cancels the transaction timeout and erases the callback so it isn't called upon destruction.
+    // Cancels the transaction timeout and erases the callback so it isn't called upon
+    // destruction.
     void Cancel();
 
     // Makes an EventCallback that calls |callback_| correctly.
@@ -415,4 +416,4 @@ class CommandChannel final {
 
 }  // namespace bt::hci
 
-#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_COMMAND_CHANNEL_H_
+#endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_

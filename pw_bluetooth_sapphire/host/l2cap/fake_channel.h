@@ -25,7 +25,7 @@ namespace bt::l2cap::testing {
 class FakeChannel : public Channel {
  public:
   FakeChannel(ChannelId id, ChannelId remote_id, hci::ConnectionHandle handle,
-              hci::Connection::LinkType link_type,
+              bt::LinkType link_type,
               ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU));
   ~FakeChannel() override = default;
 

@@ -70,10 +70,9 @@ class SMP_Phase3Test : public l2cap::testing::FakeChannelTest {
 
   void TearDown() override { phase_3_ = nullptr; }
 
-  void NewPhase3(Phase3Args phase_args = Phase3Args(),
-                 hci::Connection::LinkType ll_type = hci::Connection::LinkType::kLE) {
+  void NewPhase3(Phase3Args phase_args = Phase3Args(), bt::LinkType ll_type = bt::LinkType::kLE) {
     l2cap::ChannelId cid =
-        ll_type == hci::Connection::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
+        ll_type == bt::LinkType::kLE ? l2cap::kLESMPChannelId : l2cap::kSMPChannelId;
     ChannelOptions options(cid);
     options.link_type = ll_type;
 

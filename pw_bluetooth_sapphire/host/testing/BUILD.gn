@@ -66,15 +66,13 @@ source_set("fake_controller") {
   ]
 
   public_deps = [
+    "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt:definitions",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
-
-    # TODO(armansito): Pull in just the hci:definitions target.
-    "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
     "//src/lib/files",
     "//src/lib/fxl",

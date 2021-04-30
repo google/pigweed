@@ -74,6 +74,7 @@ group("stack") {
     "sdp",
     "sm",
     "socket",
+    "transport",
   ]
 }
 
@@ -94,8 +95,8 @@ fuzzers_package("fuzzers") {
     "common:advertising_data_fuzzer",
     "fidl:host_server_watch_peers_fuzzer",
     "gap:peer_cache_fuzzer",
-    "hci:read_acl_data_packet_fuzzer",
-    "hci:read_command_event_packet_fuzzer",
+    "transport:read_acl_data_packet_fuzzer",
+    "transport:read_command_event_packet_fuzzer",
     "l2cap:l2cap_fuzzer",
     "l2cap:basic_mode_rx_engine_fuzzer",
     "l2cap:enhanced_retransmission_mode_engines_fuzzer",
@@ -125,5 +126,6 @@ group("tests") {
     "sm:bt-host-sm-tests",
     "socket:bt-host-socket-tests",
     "testing:bt-host-testing-tests",
+    "transport:bt-host-transport-tests",
   ]
 }

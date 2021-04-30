@@ -64,7 +64,7 @@ class PairingChannel {
   }
 
   void SignalLinkError() { chan_->SignalLinkError(); }
-  hci::Connection::LinkType link_type() const { return chan_->link_type(); }
+  bt::LinkType link_type() const { return chan_->link_type(); }
   ~PairingChannel() = default;
 
  private:
