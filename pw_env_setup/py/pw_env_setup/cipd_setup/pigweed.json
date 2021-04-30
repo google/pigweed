@@ -85,7 +85,7 @@
   {
     "path": "pigweed/third_party/mingw64-x86_64-win32-seh/${os=windows}-${arch=amd64}",
     "tags": [
-      "version:8.1.0"
+      "version:10.2.0-11"
     ]
   },
   {
