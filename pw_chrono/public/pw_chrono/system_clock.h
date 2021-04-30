@@ -113,6 +113,18 @@ struct SystemClock {
   static constexpr duration for_at_least(std::chrono::duration<Rep, Period> d) {
     return std::chrono::ceil<duration>(d);
   };
+
+  // Computes the nearest time_point after the specified duration has elapsed.
+  //
+  // This is useful for translating delay or timeout durations into deadlines.
+  //
+  // The time_point is computed based on now() plus the specified duration
+  // where a singular clock tick is added to handle partial ticks. This ensures
+  // that a duration of at least 1 tick does not result in [0,1] ticks and
+  // instead in [1,2] ticks.
+  static time_point TimePointAfterAtLeast(duration after_at_least) {
+    return now() + after_at_least + duration(1);
+  }
 };
 
 // An abstract interface representing a SystemClock.
