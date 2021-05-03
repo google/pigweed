@@ -80,7 +80,10 @@ pw_doc_group("docs") {
 # Sample fuzzer
 pw_fuzzer("toy_fuzzer") {
   sources = [ "examples/toy_fuzzer.cc" ]
-  deps = [ "$dir_pw_string" ]
+  deps = [
+    "$dir_pw_result",
+    "$dir_pw_string",
+  ]
 }
 
 pw_test_group("tests") {

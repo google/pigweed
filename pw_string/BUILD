@@ -31,6 +31,7 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_string/format.h",
+        "public/pw_string/internal/length.h",
         "public/pw_string/string_builder.h",
         "public/pw_string/to_string.h",
         "public/pw_string/type_to_string.h",
@@ -42,6 +43,7 @@ pw_cc_library(
         "//pw_span",
         "//pw_assert",
         "//pw_status",
+        "//pw_result",
     ],
 )
 

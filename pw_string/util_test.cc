@@ -19,23 +19,85 @@
 namespace pw::string {
 namespace {
 
-TEST(Length, Nullptr_Returns0) { EXPECT_EQ(0u, Length(nullptr, 100)); }
+using namespace std::literals::string_view_literals;
 
-TEST(Length, EmptyString_Returns0) {
-  EXPECT_EQ(0u, Length("", 0));
-  EXPECT_EQ(0u, Length("", 100));
+TEST(ClampedLength, Nullptr_Returns0) {
+  EXPECT_EQ(0u, internal::ClampedLength(nullptr, 100));
 }
 
-TEST(Length, MaxLongerThanString_ReturnsStrlen) {
-  EXPECT_EQ(5u, Length("12345", 100));
+TEST(ClampedLength, EmptyString_Returns0) {
+  EXPECT_EQ(0u, internal::ClampedLength("", 0));
+  EXPECT_EQ(0u, internal::ClampedLength("", 100));
 }
 
-TEST(Length, StringMaxLongerThanMax_ReturnsMax) {
-  EXPECT_EQ(0u, Length("12345", 0));
-  EXPECT_EQ(4u, Length("12345", 4));
+TEST(ClampedLength, MaxLongerThanString_ReturnsStrlen) {
+  EXPECT_EQ(5u, internal::ClampedLength("12345", 100));
 }
 
-TEST(Length, LengthEqualsMax) { EXPECT_EQ(5u, Length("12345", 5)); }
+TEST(ClampedLength, StringMaxLongerThanMax_ReturnsMax) {
+  EXPECT_EQ(0u, internal::ClampedLength("12345", 0));
+  EXPECT_EQ(4u, internal::ClampedLength("12345", 4));
+}
+
+TEST(ClampedLength, LengthEqualsMax) {
+  EXPECT_EQ(5u, internal::ClampedLength("12345", 5));
+}
+
+TEST(ClampedCString, NullPtr_ReturnsEmpty) {
+  EXPECT_TRUE(ClampedCString(nullptr, 100).empty());
+}
+
+TEST(ClampedCString, EmptyString_Returns0) {
+  EXPECT_TRUE(ClampedCString("", 0).empty());
+  EXPECT_TRUE(ClampedCString("", 100).empty());
+}
+
+TEST(ClampedCString, MaxLongerThanString_ReturnsStr) {
+  static constexpr char kInput[] = "12345";
+  const std::string_view result = ClampedCString(kInput, 100);
+  EXPECT_EQ(result.size(), strlen(kInput));
+  EXPECT_EQ(result.data(), &kInput[0]);
+}
+
+TEST(ClampedCString, StringMaxLongerThanMax_ClampsView) {
+  static constexpr char kInput[] = "12345";
+
+  EXPECT_TRUE(ClampedCString(kInput, 0).empty());
+
+  const std::string_view result = ClampedCString(kInput, 4);
+  EXPECT_EQ(result.size(), 4u);
+  EXPECT_EQ(result.data(), &kInput[0]);
+}
+
+TEST(ClampedCString, FullStringView) {
+  static constexpr char kInput[] = "12345";
+  const std::string_view result = ClampedCString(kInput);
+  EXPECT_EQ(result.size(), strlen(kInput));
+  EXPECT_EQ(result.data(), &kInput[0]);
+}
+
+TEST(NullTerminatedLength, EmptyString_RequiresNullTerminator) {
+  EXPECT_TRUE(NullTerminatedLength("", 0).status().IsOutOfRange());
+
+  ASSERT_TRUE(NullTerminatedLength("", 100).status().ok());
+  EXPECT_EQ(0u, NullTerminatedLength("", 100).value());
+}
+
+TEST(NullTerminatedLength, MaxLongerThanString_ReturnsStrlen) {
+  ASSERT_TRUE(NullTerminatedLength("12345", 100).status().ok());
+  EXPECT_EQ(5u, NullTerminatedLength("12345", 100).value());
+}
+
+TEST(NullTerminatedLength, StringMaxLongerThanMax_Fails) {
+  EXPECT_TRUE(NullTerminatedLength("12345", 0).status().IsOutOfRange());
+  EXPECT_TRUE(NullTerminatedLength("12345", 4).status().IsOutOfRange());
+}
+
+TEST(NullTerminatedLength, LengthEqualsMax) {
+  static constexpr char kInput[] = "12345";
+  ASSERT_TRUE(NullTerminatedLength(kInput).ok());
+  EXPECT_EQ(5u, NullTerminatedLength(kInput).value());
+}
 
 class TestWithBuffer : public ::testing::Test {
  protected:
@@ -47,8 +109,6 @@ class TestWithBuffer : public ::testing::Test {
 };
 
 class CopyTest : public TestWithBuffer {};
-
-using namespace std::literals::string_view_literals;
 
 TEST_F(CopyTest, EmptyStringView_WritesNullTerminator) {
   EXPECT_EQ(0u, Copy("", buffer_).size());

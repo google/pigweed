@@ -22,7 +22,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <span>
 
+#include "pw_result/result.h"
 #include "pw_string/util.h"
 
 namespace {
@@ -62,24 +64,26 @@ void toy_example(const char* word1, const char* word2) {
 // The fuzz target function
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // We want to split our input into two strings.
-  const char* word1 = reinterpret_cast<const char*>(data);
+  const std::span<const char> input(reinterpret_cast<const char*>(data), size);
 
   // If that's not feasible, toss this input. The fuzzer will quickly learn that
   // inputs without null-terminators are uninteresting.
-  size_t offset = pw::string::Length(word1, size) + 1;
-  if (offset >= size) {
+  const pw::Result<size_t> possible_word1_size =
+      pw::string::NullTerminatedLength(input);
+  if (!possible_word1_size.ok()) {
     return 0;
   }
+  const std::span<const char> word1 =
+      input.first(possible_word1_size.value() + 1);
 
   // Actually, inputs without TWO null terminators are uninteresting.
-  const char* word2 = reinterpret_cast<const char*>(&data[offset]);
-  size -= offset;
-  if (pw::string::Length(word2, size) == size) {
+  std::span<const char> remaining_input = input.subspan(word1.size());
+  if (!pw::string::NullTerminatedLength(remaining_input).ok()) {
     return 0;
   }
 
   // Call the code we're targeting!
-  toy_example(word1, word2);
+  toy_example(word1.data(), remaining_input.data());
 
   // By convention, the fuzzer always returns zero.
   return 0;

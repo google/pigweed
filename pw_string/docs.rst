@@ -34,16 +34,41 @@ using ``Format``.
 
 .. include:: format_size_report
 
-pw::string::Length
-==================
-The ``pw::string::Length`` function provides a safer alternative to
-``std::strlen`` in case a string is extremely long and/or potentially not
-null-terminated. It is a constexpr version of C11's ``strnlen_s``.
+Safe Length Checking
+====================
+This module provides two safer alternatives to ``std::strlen`` in case the
+string is extremely long and/or potentially not null-terminated.
 
-.. cpp:function:: constexpr size_t Length(const char* str, size_t max_len)
+First, a constexpr alternative to C11's ``strnlen_s`` is offerred through
+:cpp:func:`pw::string::ClampedCString`. This does not return a length by
+design and instead returns a string_view which does not require
+null-termination.
 
-   Calculates the length of a null-terminated string up to the specified maximum
-   length. If str is nullptr, returns 0.
+Second, a constexpr specialized form is offered where null termination is
+required through :cpp:func:`pw::string::NullTerminatedLength`. This will only
+return a length if the string is null-terminated.
+
+.. cpp:function:: constexpr std::string_view pw::string::ClampedCString(std::span<const char> str)
+.. cpp:function:: constexpr std::string_view pw::string::ClampedCString(const char* str, size_t max_len)
+
+   Safe alternative to the string_view constructor to avoid the risk of an
+   unbounded implicit or explicit use of strlen.
+
+   This is strongly recommended over using something like C11's strnlen_s as
+   a string_view does not require null-termination.
+
+.. cpp:function:: constexpr pw::Result<size_t> pw::string::NullTerminatedLength(std::span<const char> str)
+.. cpp:function:: pw::Result<size_t> pw::string::NullTerminatedLength(const char* str, size_t max_len)
+
+   Safe alternative to strlen to calculate the null-terminated length of the
+   string within the specified span, excluding the null terminator. Like C11's
+   strnlen_s, the scan for the null-terminator is bounded.
+
+   Returns:
+     null-terminated length of the string excluding the null terminator.
+     OutOfRange - if the string is not null-terminated.
+
+   Precondition: The string shall be at a valid pointer.
 
 pw::string::Copy
 ================

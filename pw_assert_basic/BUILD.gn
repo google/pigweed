@@ -35,6 +35,7 @@ config("backend_config") {
 # TODO(pwbug/372): Reorganize this.
 group("pw_assert_basic.impl") {
   public_deps = [
+    dir_pw_result,
     dir_pw_string,
     dir_pw_sys_io,
   ]
@@ -72,7 +73,10 @@ pw_source_set("basic_handler") {
   check_includes = false
 
   # Depend on the include path instead of the library to avoid circular deps.
-  configs = [ "$dir_pw_string:public_include_path" ]
+  configs = [
+    "$dir_pw_string:public_include_path",
+    "$dir_pw_result:public_include_path",
+  ]
   deps = [
     ":handler.facade",
     "$dir_pw_assert:facade",
