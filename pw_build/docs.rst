@@ -72,6 +72,21 @@ template for a project.
 All of the ``pw_*`` target type overrides accept any arguments, as they simply
 forward them through to the underlying target.
 
+.. _module-pw_build-link-deps:
+
+Link-only deps
+--------------
+It may be necessary to specify additional link-time dependencies that may not be
+explicitly depended on elsewhere in the build. One example of this is a
+``pw_assert`` backend, which may need to leave out dependencies to avoid
+circular dependencies. Its dependencies need to be linked for executables and
+libraries, even if they aren't pulled in elsewhere.
+
+The ``pw_build_LINK_DEPS`` build arg is a list of dependencies to add to all
+``pw_executable``, ``pw_static_library``, and ``pw_shared_library`` targets.
+This should only be used as a last resort when dependencies cannot be properly
+expressed in the build.
+
 Python packages
 ---------------
 GN templates for :ref:`Python build automation <docs-python-build>` are

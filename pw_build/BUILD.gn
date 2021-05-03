@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
+import("target_types.gni")
 
 # IMPORTANT: The compilation flags in this file must be kept in sync with
 #            the CMake flags pw_build/CMakeLists.txt.
@@ -119,6 +120,18 @@ config("cpp17") {
     # Allow uses of the register keyword, which may appear in C headers.
     "-Wno-register",
   ]
+}
+
+# This group is linked into all pw_executable, pw_static_library, and
+# pw_shared_library targets. This makes it possible to ensure symbols are
+# defined without a dependency on them.
+#
+# pw_build_LINK_DEPS should only be used when necessary. For example,
+# pw_assert relies on pw_build_LINK_DEPS to avoid circular dependencies
+# in GN. In almost all other cases, build targets should explicitly depend on
+# the other targets they use.
+group("link_deps") {
+  deps = pw_build_LINK_DEPS
 }
 
 # This empty target is used as the default value for module configurations.

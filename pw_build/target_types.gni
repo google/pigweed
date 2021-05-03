@@ -27,6 +27,14 @@ declare_args() {
   # If pw_build_EXECUTABLE_TARGET_TYPE is not the default of `executable`, this
   # .gni file is imported to provide the template definition.
   pw_build_EXECUTABLE_TARGET_TYPE_FILE = ""
+
+  # Additional build targets to add as dependencies for pw_executable,
+  # pw_static_library, and pw_shared_library targets. The
+  # $dir_pw_build:link_deps target pulls in these libraries.
+  #
+  # pw_build_LINK_DEPS can be used to break circular dependencies for low-level
+  # libraries such as pw_assert.
+  pw_build_LINK_DEPS = []
 }
 
 if (pw_build_EXECUTABLE_TARGET_TYPE != "executable" &&
@@ -112,10 +120,9 @@ template("pw_static_library") {
       configs += invoker.configs
     }
 
+    public_deps = [ "$dir_pw_build:link_deps" ]
     if (defined(pw_build_defaults.public_deps)) {
-      public_deps = pw_build_defaults.public_deps
-    } else {
-      public_deps = []
+      public_deps += pw_build_defaults.public_deps
     }
     if (defined(remove_public_deps)) {
       if (remove_public_deps != [] && remove_public_deps[0] == "*") {
@@ -161,10 +168,9 @@ template("pw_shared_library") {
       configs += invoker.configs
     }
 
+    public_deps = [ "$dir_pw_build:link_deps" ]
     if (defined(pw_build_defaults.public_deps)) {
-      public_deps = pw_build_defaults.public_deps
-    } else {
-      public_deps = []
+      public_deps += pw_build_defaults.public_deps
     }
     if (defined(remove_public_deps)) {
       if (remove_public_deps != [] && remove_public_deps[0] == "*") {
@@ -213,10 +219,9 @@ template("pw_executable") {
       configs += invoker.configs
     }
 
+    public_deps = [ "$dir_pw_build:link_deps" ]
     if (defined(pw_build_defaults.public_deps)) {
-      public_deps = pw_build_defaults.public_deps
-    } else {
-      public_deps = []
+      public_deps += pw_build_defaults.public_deps
     }
     if (defined(remove_public_deps)) {
       if (remove_public_deps != [] && remove_public_deps[0] == "*") {

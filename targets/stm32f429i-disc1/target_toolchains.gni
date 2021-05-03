@@ -73,6 +73,8 @@ _target_config = {
     "PW_BOOT_VECTOR_TABLE_SIZE=512",
   ]
 
+  pw_build_LINK_DEPS = [ "$dir_pw_assert:deps" ]
+
   current_cpu = "arm"
   current_os = ""
 }

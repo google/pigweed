@@ -64,6 +64,9 @@ _host_common = {
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
 
+  pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
+  pw_build_LINK_DEPS = [ "$dir_pw_assert:deps" ]
+
   # Specify builtin GN variables.
   current_os = host_os
   current_cpu = host_cpu

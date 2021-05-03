@@ -19,13 +19,13 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("backend.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
 pw_facade("pw_sys_io") {
   backend = pw_sys_io_BACKEND
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_status ]
   public = [ "public/pw_sys_io/sys_io.h" ]
 }
