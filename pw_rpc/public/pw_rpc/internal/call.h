@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_assert/check.h"
+#include "pw_assert/assert.h"
 #include "pw_rpc/internal/channel.h"
 
 namespace pw::rpc {
@@ -59,22 +59,22 @@ class ServerCall {
   ServerContext& context();
 
   Server& server() const {
-    PW_DCHECK_NOTNULL(server_);
+    PW_DASSERT(server_ != nullptr);
     return *server_;
   }
 
   Channel& channel() const {
-    PW_DCHECK_NOTNULL(channel_);
+    PW_DASSERT(channel_ != nullptr);
     return *channel_;
   }
 
   Service& service() const {
-    PW_DCHECK_NOTNULL(service_);
+    PW_DASSERT(service_ != nullptr);
     return *service_;
   }
 
   const internal::Method& method() const {
-    PW_DCHECK_NOTNULL(method_);
+    PW_DASSERT(method_ != nullptr);
     return *method_;
   }
 

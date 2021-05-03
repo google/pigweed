@@ -297,7 +297,7 @@ Status MessageOutput<kOutputSize>::SendAndReleaseBuffer(
       stream_ended_ = true;
       break;
     default:
-      PW_CRASH("Unhandled PacketType");
+      pw_assert_HandleFailure();  // Unhandled PacketType
   }
   return OkStatus();
 }
