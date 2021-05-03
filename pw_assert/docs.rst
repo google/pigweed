@@ -470,7 +470,7 @@ PW_ASSERT API backend
 ---------------------
 The ``PW_ASSERT`` API ultimately calls the C function
 ``pw_assert_HandleFailure()``, which must be provided by the ``pw_assert``
-backend.
+backend. The ``pw_assert_HandleFailure()`` function must not return.
 
 .. _module-pw_assert-circular-deps:
 
