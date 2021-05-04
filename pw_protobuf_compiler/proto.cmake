@@ -246,6 +246,11 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
         "${INPUTS}"
         "${DEPS}"
     )
+
+    # Ensure that nanopb_pb2.py is generated to avoid race conditions.
+    add_dependencies("${NAME}._generate.nanopb"
+        pw_third_party.nanopb.generate_proto
+    )
   endif()
 
   # Create the library with the generated source files.

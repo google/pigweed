@@ -655,6 +655,7 @@ template("pw_python_group") {
     _python_deps = invoker.python_deps
   } else {
     _python_deps = []
+    not_needed([ "invoker" ])  # Allow empty groups.
   }
 
   group(target_name) {

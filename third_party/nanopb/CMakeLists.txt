@@ -31,3 +31,15 @@ target_include_directories(pw_third_party.nanopb
   INTERFACE
     "${dir_pw_third_party_nanopb}"
 )
+
+# Generates nanopb_pb2.py, which is needed to compile protobufs with Nanopb.
+add_custom_command(
+  COMMAND
+    python "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py" "${dir_pw_third_party_nanopb}"
+  OUTPUT
+    "${dir_pw_third_party_nanopb}/generator/proto/nanopb_pb2.py"
+)
+add_custom_target(pw_third_party.nanopb.generate_proto
+  DEPENDS
+    "${dir_pw_third_party_nanopb}/generator/proto/nanopb_pb2.py"
+)

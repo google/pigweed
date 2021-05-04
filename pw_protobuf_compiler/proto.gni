@@ -69,6 +69,10 @@ template("_pw_invoke_protoc") {
         deps += [ get_label_info(dep, "label_no_toolchain") + "._gen" ]
       }
 
+      if (defined(invoker.other_deps)) {
+        deps += invoker.other_deps
+      }
+
       args = [
                "--language",
                invoker.language,
@@ -192,6 +196,7 @@ template("_pw_nanopb_proto_library") {
       forward_variables_from(invoker, "*", _forwarded_vars)
       language = "nanopb"
       plugin = "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb"
+      other_deps = [ "$dir_pw_third_party/nanopb:generate_nanopb_proto.action" ]
     }
 
     # Create a library with the generated source files.
