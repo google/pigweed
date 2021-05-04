@@ -686,8 +686,14 @@ template("pw_python_group") {
 # pw_python_script provides the same subtargets as pw_python_package, but
 # $target_name.install and $target_name.wheel only affect the python_deps of
 # this GN target, not the target itself.
+#
+# pw_python_script allows creating a pw_python_action associated with the
+# script. This is provided by passing an 'action' scope to pw_python_script.
+# This functions like a normal action, with a few additions: the action uses the
+# pw_python_script's python_deps and defaults to using the source file as its
+# 'script' argument, if there is only a single source file.
 template("pw_python_script") {
-  _supported_variables = [
+  _package_variables = [
     "sources",
     "tests",
     "python_deps",
@@ -700,10 +706,25 @@ template("pw_python_script") {
 
   pw_python_package(target_name) {
     _pw_standalone = true
-    forward_variables_from(invoker, _supported_variables)
+    forward_variables_from(invoker, _package_variables)
   }
 
   _pw_create_aliases_if_name_matches_directory(target_name) {
+  }
+
+  if (defined(invoker.action)) {
+    pw_python_action("$target_name.action") {
+      forward_variables_from(invoker.action, "*", [ "python_deps" ])
+      python_deps = [ ":${invoker.target_name}" ]
+
+      if (!defined(script) && !defined(module) && defined(invoker.sources)) {
+        _sources = invoker.sources
+        assert(_sources != [] && _sources == [ _sources[0] ],
+               "'script' must be specified unless there is only one source " +
+                   "in 'sources'")
+        script = _sources[0]
+      }
+    }
   }
 }
 

@@ -131,6 +131,25 @@ tests. These files support all of the arguments of ``pw_python_package`` except
 those ``setup``. These targets can be installed, but this only installs their
 dependencies.
 
+``pw_python_script`` allows creating a
+:ref:`pw_python_action <module-pw_build-python-action>` associated with the
+script. To create an action, pass an ``action`` scope to ``pw_python_script``.
+If there is only a single source file, it serves as the action's ``script`` by
+default.
+
+An action in ``pw_python_script`` can always be replaced with a standalone
+``pw_python_action``, but using the embedded action has some advantages:
+
+- The embedded action target bridges the gap between actions and Python targets.
+  A Python script can be expressed in a single, concise GN target, rather than
+  in two overlapping, dependent targets.
+- The action automatically depends on the ``pw_python_script``. This ensures
+  that the script's dependencies are installed and the action automatically
+  reruns when the script's sources change, without needing to specify a
+  dependency, a step which is easy to forget.
+- Using a ``pw_python_script`` with an embedded action is a simple way to check
+  an existing action's script with Pylint or Mypy or to add tests.
+
 pw_python_group
 ===============
 Represents a group of ``pw_python_package`` and ``pw_python_script`` targets.

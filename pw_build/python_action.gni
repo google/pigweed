@@ -53,6 +53,9 @@ import("//build_overrides/pigweed.gni")
 #   python_deps     Dependencies on pw_python_package or related Python targets.
 #
 template("pw_python_action") {
+  assert(defined(invoker.script) != defined(invoker.module),
+         "pw_python_action requires either 'script' or 'module'")
+
   _script_args = [
     # GN root directory relative to the build directory (in which the runner
     # script is invoked).
@@ -155,6 +158,10 @@ template("pw_python_action") {
       _deps += [ get_label_info(dep, "label_no_toolchain") + ".install(" +
                  get_label_info(dep, "toolchain") + ")" ]
     }
+
+    # Add the base target as a dep so the action reruns when any source files
+    # change, even if the package does not have to be reinstalled.
+    _deps += invoker.python_deps
   }
 
   target(_action_type, target_name) {
