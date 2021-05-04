@@ -57,9 +57,9 @@
     ]
   },
   {
-    "path": "infra/go/${os}-${arch=amd64}",
+    "path": "infra/3pp/tools/go/${platform}",
     "tags": [
-      "version:1.13.5"
+      "version:2@1.16.3"
     ]
   },
   {

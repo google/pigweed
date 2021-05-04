@@ -122,7 +122,10 @@ template("pw_go_executable") {
     program = "go"
     args = [ "get" ]
     deps = [ ":$_deps_metadata_target_name" ] + invoker.deps
-    env = [ "GOPATH=$_default_gopath" ]
+    env = [
+      "GO111MODULE=off",
+      "GOPATH=$_default_gopath",
+    ]
     args_file = _deps_metadata_file
 
     # If the args file is empty, don't run the "go get" command.
@@ -145,7 +148,10 @@ template("pw_go_executable") {
       ":$_download_target_name",
       ":$_metadata_target_name",
     ]
-    env = [ "GOPATH+=$_default_gopath" ]
+    env = [
+      "GO111MODULE=off",
+      "GOPATH+=$_default_gopath",
+    ]
     env_file = _metadata_file
 
     _binary_name = get_path_info(invoker.package, "name")
