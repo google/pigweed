@@ -89,6 +89,33 @@ pw_cc_test(
     ],
     deps = [
         ":address",
+        "//pw_assert",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_library(
+    name = "initiator_mock",
+    testonly = True,
+    srcs = ["initiator_mock.cc"],
+    hdrs = ["public/pw_i2c/initiator_mock.h"],
+    includes = ["public"],
+    deps = [
+        ":address",
+        ":initiator",
+        "//pw_assert",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "initiator_mock_test",
+    srcs = [
+        "initiator_mock_test.cc",
+    ],
+    deps = [
+        ":initiator_mock",
+        "//pw_bytes",
         "//pw_unit_test",
     ],
 )

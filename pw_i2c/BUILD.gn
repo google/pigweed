@@ -69,6 +69,17 @@ pw_source_set("register_device") {
   deps = [ "$dir_pw_assert" ]
 }
 
+pw_source_set("mock") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c/initiator_mock.h" ]
+  sources = [ "initiator_mock.cc" ]
+  public_deps = [
+    ":initiator",
+    "$dir_pw_assert",
+  ]
+}
+
+# TODO: add mock_test here once chrono backend is supported for stm32f429i-disc1
 pw_test_group("tests") {
   tests = [
     ":address_test",
@@ -95,6 +106,11 @@ pw_test("register_device_test") {
     ":register_device",
     "$dir_pw_assert",
   ]
+}
+
+pw_test("initiator_mock_test") {
+  sources = [ "initiator_mock_test.cc" ]
+  deps = [ ":initiator_mock" ]
 }
 
 pw_doc_group("docs") {
