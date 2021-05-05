@@ -19,3 +19,12 @@ a single analog input or channel. Users will need to supply their own ADC
 driver implementation in order to configure and enable the ADC peripheral.
 Users are responsible for managing multithreaded access to the ADC driver if the
 ADC services multiple channels.
+
+pw::analog::MicrovoltInput
+--------------------------
+The common interface for obtaining voltage samples in microvolts. This interface
+represents a single voltage input or channel. Users will need to supply their
+own ADC driver implementation in order to configure and enable the ADC
+peripheral in order to provide the reference voltages and to configure and
+enable the ADC peripheral where needed. Users are responsible for managing
+multithreaded access to the ADC driver if the ADC services multiple channels.

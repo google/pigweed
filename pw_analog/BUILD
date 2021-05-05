@@ -34,6 +34,20 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "microvolt_input",
+    hdrs = [
+        "public/pw_analog/microvolt_input.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":analog_input",
+        "//pw_chrono:system_clock",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
 pw_cc_test(
     name = "analog_input_test",
     srcs = [
@@ -41,6 +55,17 @@ pw_cc_test(
     ],
     deps = [
         ":analog_input",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "microvolt_input_test",
+    srcs = [
+        "microvolt_input_test.cc",
+    ],
+    deps = [
+        ":microvolt_input",
         "//pw_unit_test",
     ],
 )

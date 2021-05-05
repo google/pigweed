@@ -32,13 +32,33 @@ pw_source_set("pw_analog") {
   public = [ "public/pw_analog/analog_input.h" ]
 }
 
+pw_source_set("microvolt_input") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":pw_analog",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_result",
+    "$dir_pw_status",
+  ]
+  public = [ "public/pw_analog/microvolt_input.h" ]
+}
+
 pw_test_group("tests") {
-  tests = [ ":analog_input_test" ]
+  tests = [
+    ":analog_input_test",
+    ":microvolt_input_test",
+  ]
 }
 
 pw_test("analog_input_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "analog_input_test.cc" ]
+  deps = [ ":pw_analog" ]
+}
+
+pw_test("microvolt_input_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "microvolt_input_test.cc" ]
   deps = [ ":pw_analog" ]
 }
 
