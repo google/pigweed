@@ -25,7 +25,7 @@ namespace pw::stream {
 
 class MemoryWriter : public Writer {
  public:
-  MemoryWriter(ByteSpan dest) : dest_(dest) {}
+  constexpr MemoryWriter(ByteSpan dest) : dest_(dest) {}
 
   size_t bytes_written() const { return bytes_written_; }
 
@@ -51,7 +51,7 @@ class MemoryWriter : public Writer {
 template <size_t kSizeBytes>
 class MemoryWriterBuffer final : public MemoryWriter {
  public:
-  MemoryWriterBuffer() : MemoryWriter(buffer_) {}
+  constexpr MemoryWriterBuffer() : MemoryWriter(buffer_) {}
 
  private:
   std::array<std::byte, kSizeBytes> buffer_;
@@ -59,7 +59,8 @@ class MemoryWriterBuffer final : public MemoryWriter {
 
 class MemoryReader final : public Reader {
  public:
-  MemoryReader(ConstByteSpan source) : source_(source), bytes_read_(0) {}
+  constexpr MemoryReader(ConstByteSpan source)
+      : source_(source), bytes_read_(0) {}
 
   size_t ConservativeReadLimit() const override {
     return source_.size_bytes() - bytes_read_;
