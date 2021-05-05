@@ -114,8 +114,12 @@ def gn_full_build_check(ctx: PresubmitContext):
 @filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_full_qemu_check(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir)
-    build.ninja(ctx.output_dir, *_at_all_optimization_levels('qemu_gcc'),
-                *_at_all_optimization_levels('qemu_clang'))
+    build.ninja(
+        ctx.output_dir,
+        *_at_all_optimization_levels('qemu_gcc'),
+        # TODO(pwbug/321) Re-enable clang.
+        #*_at_all_optimization_levels('qemu_clang'),
+    )
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
