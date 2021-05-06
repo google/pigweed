@@ -29,6 +29,10 @@ pw_cc_library(
     srcs = ["bloat_this_binary.cc"],
     hdrs = ["public/pw_bloat/bloat_this_binary.h"],
     includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_log",
+    ],
 )
 
 # Standard minimal base binary for bloat reports.

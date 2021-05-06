@@ -106,7 +106,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
         ctx.output_dir,
         *_at_all_optimization_levels('qemu_gcc'),
         # TODO(pwbug/321) Re-enable clang.
-        #*_at_all_optimization_levels('qemu_clang'),
+        # *_at_all_optimization_levels('qemu_clang'),
     )
 
 
@@ -218,6 +218,7 @@ _MODULES_THAT_WORK_WITH_BAZEL = [
     '//pw_assert_basic/...',
     '//pw_protobuf/...',
     '//pw_base64/...',
+    '//pw_bloat/...',
     '//pw_build/...',
     '//pw_chrono/...',
     '//pw_chrono_stl/...',
