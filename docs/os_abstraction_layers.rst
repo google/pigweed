@@ -27,7 +27,7 @@ Pigweed has ports for the following systems:
   * - `Azure RTOS (formerly ThreadX) <https://azure.microsoft.com/en-us/services/rtos/>`_
     - **✔ Supported**
   * - `SEGGER embOS <https://www.segger.com/products/rtos/embos/>`_
-    - *In Progress*
+    - **✔ Supported**
   * - Baremetal
     - *In Progress*
   * - `Zephyr <https://www.zephyrproject.org/>`_
@@ -313,17 +313,17 @@ using threads including yielding and sleeping.
     - **Thread Creation**
     - **Thread Id/Sleep/Yield**
   * - FreeRTOS
-    - :ref:`module-pw_sync_freertos`
-    - :ref:`module-pw_sync_freertos`
+    - :ref:`module-pw_thread_freertos`
+    - :ref:`module-pw_thread_freertos`
   * - ThreadX
-    - :ref:`module-pw_sync_threadx`
-    - :ref:`module-pw_sync_threadx`
+    - :ref:`module-pw_thread_threadx`
+    - :ref:`module-pw_thread_threadx`
   * - embOS
-    - Under Development
-    - :ref:`module-pw_sync_embos`
+    - :ref:`module-pw_thread_embos`
+    - :ref:`module-pw_thread_embos`
   * - STL
-    - :ref:`module-pw_sync_stl`
-    - :ref:`module-pw_sync_stl`
+    - :ref:`module-pw_thread_stl`
+    - :ref:`module-pw_thread_stl`
   * - Zephyr
     - Planned
     - Planned
@@ -475,22 +475,21 @@ Pigweed is still actively expanding and improving its OS Abstraction Layers.
 That being said, the following concrete areas are being worked on and can be
 expected to land at some point in the future:
 
-1. Thread creation support for embOS is in progress.
-2. We'd like to offer a system clock based timer abstraction facade which can be
+1. We'd like to offer a system clock based timer abstraction facade which can be
    used on either an RTOS or a hardware timer.
-3. We are evaluating a less-portable but very useful portability facade for
+2. We are evaluating a less-portable but very useful portability facade for
    event flags / groups. This would make it even easier to ensure all firmware
    can be fully executed on the host.
-4. Cooperative cancellation thread joining along with a ``std::jhtread`` like
+3. Cooperative cancellation thread joining along with a ``std::jhtread`` like
    wrapper is in progress.
-5. We'd like to add support for queues, message queues, and similar channel
+4. We'd like to add support for queues, message queues, and similar channel
    abstractions which also support interprocessor communication in a transparent
    manner.
-6. We're interested in supporting asynchronous worker queues and worker queue
+5. We're interested in supporting asynchronous worker queues and worker queue
    pools.
-7. Migrate HAL and similar APIs to use deadlines for the backend virtual
+6. Migrate HAL and similar APIs to use deadlines for the backend virtual
    interfaces to permit a smaller vtable which supports both public timeout and
    deadline semantics.
-8. Baremetal support is partially in place today, but it's not ready for use.
-9. Most of our APIs today are focused around synchronous blocking APIs, however
+7. Baremetal support is partially in place today, but it's not ready for use.
+8. Most of our APIs today are focused around synchronous blocking APIs, however
    we would love to extend this to include asynchronous APIs.

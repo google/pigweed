@@ -14,10 +14,19 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_thread_embos_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -27,6 +36,15 @@ config("public_include_path") {
 config("backend_config") {
   include_dirs = [ "public_overrides" ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_thread_embos/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/embos",
+    pw_thread_embos_CONFIG,
+  ]
 }
 
 # This target provides the backend for pw::thread::Id.
@@ -77,6 +95,33 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
   }
 }
 
+# This target provides the backend for pw::thread::Thread and the headers needed
+# for thread creation.
+pw_source_set("thread") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public_deps = [
+    ":config",
+    "$dir_pw_assert",
+    "$dir_pw_string",
+    "$dir_pw_third_party/embos",
+    "$dir_pw_thread:id",
+    "$dir_pw_thread:thread.facade",
+  ]
+  public = [
+    "public/pw_thread_embos/context.h",
+    "public/pw_thread_embos/options.h",
+    "public/pw_thread_embos/thread_inline.h",
+    "public/pw_thread_embos/thread_native.h",
+    "public_overrides/pw_thread_backend/thread_inline.h",
+    "public_overrides/pw_thread_backend/thread_native.h",
+  ]
+  allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
+  sources = [ "thread.cc" ]
+}
+
 # This target provides the backend for pw::thread::yield.
 pw_source_set("yield") {
   public_configs = [
@@ -93,6 +138,30 @@ pw_source_set("yield") {
     "$dir_pw_thread:id",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":thread_backend_test" ]
+}
+
+pw_source_set("test_threads") {
+  public_deps = [ "$dir_pw_thread:test_threads" ]
+  sources = [ "test_threads.cc" ]
+  deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+}
+
+pw_test("thread_backend_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_embos:thread"
+  deps = [
+    ":test_threads",
+    "$dir_pw_thread:thread_facade_test",
+  ]
 }
 
 pw_doc_group("docs") {

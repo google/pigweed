@@ -58,7 +58,7 @@ MoveAssignable.
   * - ThreadX
     - :ref:`module-pw_thread_threadx`
   * - embOS
-    - Planned
+    - :ref:`module-pw_thread_embos`
   * - STL
     - :ref:`module-pw_thread_stl`
   * - Zephyr

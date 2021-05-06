@@ -76,6 +76,59 @@ pw_cc_library(
     # currently do not have Bazel support.
 )
 
+# This target provides the embOS specific headers needs for thread creation.
+pw_cc_library(
+    name = "thread_headers",
+    hdrs = [
+        "public/pw_thread_embos/config.h",
+        "public/pw_thread_embos/context.h",
+        "public/pw_thread_embos/options.h",
+        "public/pw_thread_embos/thread_inline.h",
+        "public/pw_thread_embos/thread_native.h",
+        "public_overrides/pw_thread_backend/thread_inline.h",
+        "public_overrides/pw_thread_backend/thread_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        ":id",
+        "//pw_assert",
+        "//pw_string",
+        "//pw_thread:thread_headers",
+    ],
+    # TODO(pwbug/317): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "thread",
+    srcs = [
+        "thread.cc",
+    ],
+    deps = [
+        ":id",
+        ":thread_headers",
+        "//pw_assert",
+    ],
+    # TODO(pwbug/317): This should depend on embOS but our third parties
+    # currently do not have Bazel support.
+)
+
+pw_cc_library(
+    name = "test_threads",
+    srcs = [
+        "test_threads.cc",
+    ],
+    deps = [
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+        "//pw_thread:test_threads_header",
+        "//pw_thread:thread_facade",
+    ],
+)
+
 pw_cc_library(
     name = "yield_headers",
     hdrs = [

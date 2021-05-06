@@ -188,6 +188,8 @@ Example:
     BUILD.gn
     README.md
 
+.. _module-structure-compile-time-configuration:
+
 Compile-time configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Pigweed modules are intended to be used in a wide variety of environments.
