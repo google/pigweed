@@ -72,6 +72,9 @@ import("$dir_pw_build/target_types.gni")
 #    include headers from the facade itself. If the facade doesn't expose any
 #    headers, it's basically the same as just depending directly on the build
 #    arg that `backend` is set to.
+#  require_link_deps: A list of build targets that must be included in
+#    pw_build_LINK_DEPS if this facade is used. This mechanism is used to
+#    avoid circular dependencies in low-level facades like pw_assert.
 #
 template("pw_facade") {
   assert(defined(invoker.backend),
@@ -99,7 +102,7 @@ template("pw_facade") {
     "public",
   ]
   pw_source_set(_facade_name) {
-    forward_variables_from(invoker, _facade_vars)
+    forward_variables_from(invoker, _facade_vars, [ "require_link_deps" ])
   }
 
   if (invoker.backend == "") {
@@ -140,7 +143,10 @@ template("pw_facade") {
   # correctly expressed for gn check.
   pw_source_set(target_name) {
     # The main library contains everything else specified in the template.
-    _ignore_vars = [ "backend" ] + _facade_vars
+    _ignore_vars = _facade_vars + [
+                     "backend",
+                     "require_link_deps",
+                   ]
     forward_variables_from(invoker, "*", _ignore_vars)
 
     public_deps = [ ":$_facade_name" ]
@@ -152,5 +158,29 @@ template("pw_facade") {
       # If the backend is not set, depend on the *.NO_BACKEND_SET target.
       public_deps += [ ":$target_name.NO_BACKEND_SET" ]
     }
+  }
+
+  if (defined(invoker.require_link_deps) && invoker.backend != "") {
+    # Check that the specified labels are listed in pw_build_LINK_DEPS. This
+    # ensures these dependencies are available during linking, even if nothing
+    # else in the build depends on them.
+    foreach(label, invoker.require_link_deps) {
+      _required_dep = get_label_info(label, "label_no_toolchain")
+      _dep_is_in_link_dependencies = false
+
+      foreach(link_dep, pw_build_LINK_DEPS) {
+        if (get_label_info(link_dep, "label_no_toolchain") == _required_dep) {
+          _dep_is_in_link_dependencies = true
+        }
+      }
+
+      _facade_name = get_label_info(":$target_name", "label_no_toolchain")
+      assert(_dep_is_in_link_dependencies,
+             "$_required_dep must be listed in the pw_build_LINK_DEPS build " +
+                 "arg when the $_facade_name facade is in use. Please update " +
+                 "your toolchain configuration.")
+    }
+  } else {
+    not_needed(invoker, [ "require_link_deps" ])
   }
 }

@@ -481,17 +481,21 @@ common for the ``pw_assert`` backend to cause circular dependencies. Because of
 this, assert backends may avoid declaring explicit dependencies, instead relying
 on include paths to access header files.
 
-In GN, the ``pw_assert`` backend's true dependencies are made available through
-the ``$dir_pw_assert:deps`` group. When ``pw_assert_BACKEND`` is set,
-``$dir_pw_assert:deps`` must be listed in the ``pw_build_LINK_DEPS`` variable.
-See :ref:`module-pw_build-link-deps`.
+In GN, the ``pw_assert`` backend's full implementation with true dependencies is
+made available through the ``$dir_pw_assert:impl`` group. When
+``pw_assert_BACKEND`` is set, ``$dir_pw_assert:impl`` must be listed in the
+``pw_build_LINK_DEPS`` variable. See :ref:`module-pw_build-link-deps`.
 
-If necessary, ``pw_assert`` backends can access dependencies from include paths
-rather than GN ``deps``. In this case, the may disable GN header checking with
-``check_includes = false``. The true build dependencies must be listed in a
-``deps`` group, which the ``pw_assert`` facade depends on. The ``deps`` group
-may be empty if the backend can use its dependencies directly without causing
-circular dependencies.
+In the ``pw_assert``, the backend's full implementation is placed in the
+``$pw_assert_BACKEND.impl`` target. ``$dir_pw_assert:impl`` depends on this
+backend target. The ``$pw_assert_BACKEND.impl`` target may be an empty group if
+the backend target can use its dependencies directly without causing circular
+dependencies.
+
+In order to break dependency cycles, the ``pw_assert_BACKEND`` target may need
+to directly provide dependencies through include paths only, rather than GN
+``public_deps``. In this case, GN header checking can be disabled with
+``check_includes = false``.
 
 .. _module-pw_assert-backend_api:
 
@@ -582,11 +586,13 @@ header, but instead is in a ``.cc`` file.
 
 Backend build targets
 ---------------------
-In GN, the backend must provide a ``deps`` build target in the same directory as
-the backend target. The ``deps`` target contains the backend's dependencies that
-could result in a dependency cycle. In the simplest case, it can be an empty
-group. Circular dependencies are a common problem with ``pw_assert`` because it
-is so widely used. See :ref:`module-pw_assert-circular-deps`.
+In GN, the backend must provide a ``pw_assert.impl`` build target in the same
+directory as the backend target. If the main backend target's dependencies would
+cause dependency cycles, the actual backend implementation with its full
+dependencies is placed in the ``pw_assert.impl`` target. If this is not
+necessary, ``pw_assert.impl`` can be an empty group. Circular dependencies are a
+common problem with ``pw_assert`` because it is so widely used. See
+:ref:`module-pw_assert-circular-deps`.
 
 --------------------------
 Frequently asked questions

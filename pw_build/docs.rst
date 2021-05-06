@@ -125,6 +125,14 @@ The ``pw_facade`` template declares two targets:
     public = [ "public/pw_foo/foo.h" ]
   }
 
+Low-level facades like ``pw_assert`` cannot express all of their dependencies
+due to the potential for dependency cycles. Facades with this issue may require
+backends to place their implementations in a separate build target to be listed
+in ``pw_build_LINK_DEPS`` (see :ref:`module-pw_build-link-deps`). The
+``require_link_deps`` variable in ``pw_facade`` asserts that all specified build
+targets are present in ``pw_build_LINK_DEPS`` if the facade's backend variable
+is set.
+
 .. _module-pw_build-python-action:
 
 pw_python_action

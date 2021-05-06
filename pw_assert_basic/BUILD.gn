@@ -32,7 +32,8 @@ config("backend_config") {
 # These assert backend deps that might cause circular dependencies, since
 # pw_assert is so ubiquitous. These deps are kept separate so they can be
 # depended on from elsewhere.
-group("deps") {
+# TODO(pwbug/372): Reorganize this.
+group("pw_assert_basic.impl") {
   public_deps = [
     dir_pw_string,
     dir_pw_sys_io,

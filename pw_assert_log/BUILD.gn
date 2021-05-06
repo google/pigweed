@@ -46,9 +46,10 @@ pw_source_set("core") {
   sources = [ "assert_log.cc" ]
 }
 
+# TODO(pwbug/372): Reorganize this.
 # pw_assert_log doesn't have deps with potential circular dependencies, so
 # "deps" can be empty.
-group("deps") {
+group("pw_assert_log.impl") {
 }
 
 pw_doc_group("docs") {

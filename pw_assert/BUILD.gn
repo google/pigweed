@@ -60,6 +60,9 @@ pw_facade("check") {
     "public/pw_assert/short.h",
   ]
   public_deps = [ dir_pw_preprocessor ]
+
+  # TODO(pwbug/372): Update projects to properly list pw_assert:impl.
+  # require_link_deps = [ ":impl" ]
 }
 
 # Provide "pw_assert/assert.h" in its own source set, so it can be used without
@@ -87,39 +90,18 @@ pw_source_set("assert") {
 # circular dependencies. This target collects dependencies from the backend that
 # cannot be used because they would cause circular deps.
 #
-# This group ("$dir_pw_assert:deps") must listed in pw_build_LINK_DEPS if
+# This group ("$dir_pw_assert:impl") must listed in pw_build_LINK_DEPS if
 # pw_assert_BACKEND is set.
 #
-# pw_assert backends must provide their own "deps" group that collects their
-# actual dependencies. The backend "deps" group may be empty.
-group("deps") {
+# pw_assert backends must provide their own "impl" target that collects their
+# actual dependencies. The backend "impl" group may be empty if everything can
+# go directly in the backend target without causing circular dependencies.
+group("impl") {
   public_deps = []
 
   if (pw_assert_BACKEND != "") {
-    public_deps += [ get_label_info(pw_assert_BACKEND, "dir") + ":deps" ]
-
-    # Make sure this target is listed in pw_build_LINK_DEPS. This
-    # ensures these dependencies are available during linking, even if nothing
-    # else in the build depends on them.
-    _deps_label = get_label_info(":$target_name", "label_no_toolchain")
-    _deps_is_in_link_dependencies = false
-
-    foreach(label, pw_build_LINK_DEPS) {
-      if (get_label_info(label, "label_no_toolchain") == _deps_label) {
-        _deps_is_in_link_dependencies = true
-      }
-    }
-
-    # TODO(pwbug/372): Update projects with pw_assert to link the :deps target.
-    _disable_this_check_for_now = true
-    not_needed([
-                 "_deps_is_in_link_dependencies",
-                 "_deps_label",
-               ])
-
-    assert(_disable_this_check_for_now || _deps_is_in_link_dependencies,
-           "\$dir_pw_assert:$target_name must be listed in " +
-               "pw_build_LINK_DEPS when pw_assert_BACKEND is set")
+    public_deps +=
+        [ get_label_info(pw_assert_BACKEND, "label_no_toolchain") + ".impl" ]
   }
 }
 
