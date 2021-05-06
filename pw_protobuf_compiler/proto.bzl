@@ -35,6 +35,7 @@ cc_proto_compile_aspect = aspect(
             providers = [ProtoPluginInfo],
             default = [
                 Label("@pigweed//pw_protobuf:pw_cc_plugin"),
+                Label("@pigweed//pw_rpc:pw_cc_plugin"),
             ],
         ),
         _prefix = attr.string(

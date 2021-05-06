@@ -18,7 +18,6 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
-load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_proto_grpc//:plugin.bzl", "proto_plugin")
 load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
@@ -147,21 +146,12 @@ filegroup(
     ]),
 )
 
-py_binary(
-    name = "plugin",
-    srcs = glob(["py/pw_protobuf/*.py"]),
-    imports = ["py"],
-    main = "py/pw_protobuf/plugin.py",
-    python_version = "PY3",
-    deps = ["@com_google_protobuf//:protobuf_python"],
-)
-
 proto_plugin(
     name = "pw_cc_plugin",
     outputs = [
         "{protopath}.pwpb.h",
     ],
     protoc_plugin_name = "pwpb",
-    tool = "@pigweed//pw_protobuf:plugin",
+    tool = "@pigweed//pw_protobuf/py:plugin",
     visibility = ["//visibility:public"],
 )

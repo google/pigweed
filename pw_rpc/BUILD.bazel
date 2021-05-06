@@ -12,11 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
     "pw_cc_test",
 )
+load("@rules_proto_grpc//:plugin.bzl", "proto_plugin")
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,6 +37,7 @@ pw_cc_library(
     ],
     deps = [
         ":common",
+        "//pw_containers:intrusive_list",
     ],
 )
 
@@ -59,6 +63,8 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":common",
+        ":internal_packet_pwpb",
+        "//pw_containers",
     ],
 )
 
@@ -87,7 +93,9 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":internal_packet_pwpb",
         "//pw_assert",
+        "//pw_bytes",
         "//pw_log",
         "//pw_span",
         "//pw_status",
@@ -112,8 +120,13 @@ pw_cc_library(
         "pw_rpc_private/internal_test_utils.h",
         "pw_rpc_private/method_impl_tester.h",
     ],
-    visibility = ["//visibility:private"],
+    includes = [
+        ".",
+        "public",
+    ],
+    visibility = [":__subpackages__"],
     deps = [
+        ":client",
         ":server",
         "//pw_span",
     ],
@@ -181,8 +194,8 @@ pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
     deps = [
+        ":internal_test_utils",
         ":server",
-        ":test_utils_test_server",
     ],
 )
 
@@ -201,6 +214,7 @@ pw_cc_test(
     srcs = ["client_server_test.cc"],
     deps = [
         ":client_server",
+        ":internal_test_utils",
         "//pw_rpc/raw:method_union",
     ],
 )
@@ -208,7 +222,7 @@ pw_cc_test(
 proto_library(
     name = "packet_proto",
     srcs = [
-        "pw_rpc_protos/internal/packet.proto",
+        "internal/packet.proto",
     ],
 )
 
@@ -234,4 +248,36 @@ pw_cc_test(
         ":server",
         "//pw_assert",
     ],
+)
+
+proto_library(
+    name = "internal_packet_proto",
+    srcs = ["internal/packet.proto"],
+    visibility = ["//visibility:private"],
+)
+
+pw_proto_library(
+    name = "internal_packet_pwpb",
+    deps = [":internal_packet_proto"],
+)
+
+proto_library(
+    name = "pw_rpc_test_proto",
+    srcs = ["pw_rpc_test_protos/test.proto"],
+    strip_import_prefix = "//pw_rpc",
+)
+
+pw_proto_library(
+    name = "pw_rpc_test_pwpb",
+    deps = [":pw_rpc_test_proto"],
+)
+
+proto_plugin(
+    name = "pw_cc_plugin",
+    outputs = [
+        "{protopath}.raw_rpc.pb.h",
+    ],
+    protoc_plugin_name = "raw_rpc",
+    tool = "@pigweed//pw_rpc/py:plugin",
+    visibility = ["//visibility:public"],
 )

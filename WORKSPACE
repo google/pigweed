@@ -54,7 +54,7 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
 # Setup tools to build custom grpc rules.
-# Regquired by: pigweed.
+# Required by: pigweed.
 # Used in modules: //pw_protobuf
 http_archive(
     name = "rules_proto_grpc",
@@ -63,7 +63,11 @@ http_archive(
     urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/1.0.2.tar.gz"],
 )
 
-load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
+load(
+    "@rules_proto_grpc//:repositories.bzl",
+    "rules_proto_grpc_repos",
+    "rules_proto_grpc_toolchains",
+)
 
 rules_proto_grpc_toolchains()
 

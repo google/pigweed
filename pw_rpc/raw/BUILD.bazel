@@ -30,8 +30,10 @@ pw_cc_library(
     hdrs = [
         "public/pw_rpc/internal/raw_method.h",
     ],
+    includes = ["public"],
     deps = [
         "//pw_bytes",
+        "//pw_rpc:internal_packet_pwpb",
         "//pw_rpc:server",
     ],
 )
@@ -65,7 +67,9 @@ pw_cc_test(
     ],
     deps = [
         ":method_union",
+        ":test_method_context",
         "//pw_protobuf",
+        "//pw_rpc:pw_rpc_test_pwpb",
     ],
 )
 
@@ -78,6 +82,7 @@ pw_cc_test(
         ":method_union",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_pwpb",
     ],
 )
 
@@ -90,12 +95,16 @@ pw_cc_test(
         ":method_union",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
+        "//pw_rpc:pw_rpc_test_pwpb",
     ],
 )
 
 pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],
-    # TODO(hepler): Figure out proto BUILD integration.
-    # deps = ["..:test_protos.raw_rpc"],
+    deps = [
+        "//pw_rpc:pw_rpc_test_pwpb",
+        "//pw_rpc:server",
+        "//pw_rpc/raw:method_union",
+    ],
 )
