@@ -28,6 +28,12 @@ declare_args() {
   # Backend for the pw_sync module's interrupt spin lock.
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND = ""
 
+  # Backend for the pw_sync module's thread notification.
+  pw_sync_THREAD_NOTIFICATION_BACKEND = ""
+
+  # Backend for the pw_sync module's timed thread notification.
+  pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND = ""
+
   # Whether the GN asserts should be silenced in ensuring that a compatible
   # backend for pw_chrono_SYSTEM_CLOCK_BACKEND is chosen.
   # Set to true to disable the asserts.

@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +22,11 @@ import("backend.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("backend_config") {
+  include_dirs = [ "public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -87,6 +92,59 @@ pw_facade("interrupt_spin_lock") {
   sources = [ "interrupt_spin_lock.cc" ]
 }
 
+pw_facade("thread_notification") {
+  backend = pw_sync_THREAD_NOTIFICATION_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/thread_notification.h" ]
+}
+
+pw_facade("timed_thread_notification") {
+  backend = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/timed_thread_notification.h" ]
+  public_deps = [
+    ":thread_notification",
+    "$dir_pw_chrono:system_clock",
+  ]
+}
+
+# This target provides the backend for pw::sync::ThreadNotification based on
+# pw::sync::BinarySemaphore.
+pw_source_set("binary_semaphore_thread_notification_backend") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync/backends/binary_semaphore_thread_notification_inline.h",
+    "public/pw_sync/backends/binary_semaphore_thread_notification_native.h",
+    "public_overrides/pw_sync_backend/thread_notification_inline.h",
+    "public_overrides/pw_sync_backend/thread_notification_native.h",
+  ]
+  public_deps = [
+    ":binary_semaphore",
+    ":thread_notification.facade",
+  ]
+}
+
+# This target provides the backend for pw::sync::TimedThreadNotification based
+# on pw::sync::BinarySemaphore.
+pw_source_set("binary_semaphore_timed_thread_notification_backend") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync/backends/binary_semaphore_timed_thread_notification_inline.h",
+    "public_overrides/pw_sync_backend/timed_thread_notification_inline.h",
+  ]
+  public_deps = [
+    ":binary_semaphore_thread_notification_backend",
+    ":timed_thread_notification.facade",
+    "$dir_pw_chrono:system_clock",
+  ]
+}
+
 pw_source_set("yield_core") {
   public = [ "public/pw_sync/yield_core.h" ]
   public_configs = [ ":public_include_path" ]
@@ -99,6 +157,8 @@ pw_test_group("tests") {
     ":mutex_facade_test",
     ":timed_mutex_facade_test",
     ":interrupt_spin_lock_facade_test",
+    ":thread_notification_facade_test",
+    ":timed_thread_notification_facade_test",
   ]
 }
 
@@ -164,6 +224,24 @@ pw_test("interrupt_spin_lock_facade_test") {
     ":interrupt_spin_lock",
     "$dir_pw_preprocessor",
     pw_sync_INTERRUPT_SPIN_LOCK_BACKEND,
+  ]
+}
+
+pw_test("thread_notification_facade_test") {
+  enable_if = pw_sync_THREAD_NOTIFICATION_BACKEND != ""
+  sources = [ "thread_notification_facade_test.cc" ]
+  deps = [
+    ":thread_notification",
+    pw_sync_THREAD_NOTIFICATION_BACKEND,
+  ]
+}
+
+pw_test("timed_thread_notification_facade_test") {
+  enable_if = pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
+  sources = [ "timed_thread_notification_facade_test.cc" ]
+  deps = [
+    ":timed_thread_notification",
+    pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND,
   ]
 }
 

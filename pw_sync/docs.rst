@@ -963,17 +963,319 @@ variables tend to not be natively supported on RTOSes. Although you can usually
 build any signaling primitive based on other native signaling primitives, this
 may come with non-trivial added overhead in ROM, RAM, and execution efficiency.
 
-For this reason, Pigweed intends to provide some "simpler" signaling primitives
+For this reason, Pigweed intends to provide some simpler signaling primitives
 which exist to solve a narrow programming need but can be implemented as
 efficiently as possible for the platform that it is used on.
 
 This simpler but highly portable class of signaling primitives is intended to
 ensure that a portability efficiency tradeoff does not have to be made up front.
-For example we intend to provide a ``pw::sync::ThreadNotification`` facade which
-permits a singler consumer to block until an event occurs. This should be
+Today this is class of simpler signaling primitives is limited to the
+``pw::sync::ThreadNotification`` and ``pw::sync::TimedThreadNotification``.
+
+ThreadNotification
+==================
+The ThreadNotification is a synchronization primitive that can be used to
+permit a SINGLE thread to block and consume a latching, saturating
+notification from multiple notifiers.
+
+.. Warning::
+  This is a single consumer/waiter, multiple producer/notifier API!
+  The acquire APIs must only be invoked by a single consuming thread. As a
+  result, having multiple threads receiving notifications via the acquire API
+  is unsupported.
+
+This is effectively a subset of the ``pw::sync::BinarySemaphore`` API, except
+that only a single thread can be notified and block at a time.
+
+The single consumer aspect of the API permits the use of a smaller and/or
+faster native APIs such as direct thread signaling. This should be
 backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
 else.
+
+Generic BinarySemaphore-based Backend
+-------------------------------------
+This module provides a generic backend for ``pw::sync::ThreadNotification`` via
+``pw_sync:binary_semaphore_thread_notification`` which uses a
+``pw::sync::BinarySemaphore`` as the backing primitive. See
+:ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
+availability.
+
+Optimized Backend
+-----------------
+.. list-table::
+
+  * - *Supported on*
+    - *Optimized backend module*
+  * - FreeRTOS
+    - Planned
+  * - ThreadX
+    - Planned
+  * - embOS
+    - Planned
+  * - STL
+    - Not planned, use ``pw_sync:binary_semaphore_thread_notification``
+  * - Baremetal
+    - Planned
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
+
+C++
+---
+.. cpp:class:: pw::sync::ThreadNotification
+
+  .. cpp:function:: void acquire()
+
+     Blocks indefinitely until the thread is notified, i.e. until the
+     notification latch can be cleared because it was set.
+
+     Clears the notification latch.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. cpp:function:: bool try_acquire()
+
+     Returns whether the thread has been notified, i.e. whether the notificion
+     latch was set and resets the latch regardless.
+
+     Clears the notification latch.
+
+     Returns true if the thread was notified, meaning the the internal latch was
+     reset successfully.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. cpp:function:: void release()
+
+     Notifies the thread in a saturating manner, setting the notification latch.
+
+     Raising the notification multiple time without it being acquired by the
+     consuming thread is equivalent to raising the notification once to the
+     thread. The notification is latched in case the thread was not waiting at
+     the time.
+
+     This is IRQ and thread safe.
+
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``ThreadNotification::ThreadNotification``
+      - ✔
+      -
+      -
+    * - ``ThreadNotification::~ThreadNotification``
+      - ✔
+      -
+      -
+    * - ``void ThreadNotification::acquire``
+      - ✔
+      -
+      -
+    * - ``bool ThreadNotification::try_acquire``
+      - ✔
+      -
+      -
+    * - ``void ThreadNotification::release``
+      - ✔
+      - ✔
+      -
+
+Examples in C++
+^^^^^^^^^^^^^^^
+.. code-block:: cpp
+
+  #include "pw_sync/thread_notification.h"
+  #include "pw_thread/thread_core.h"
+
+  class FooHandler() : public pw::thread::ThreadCore {
+   // Public API invoked by other threads and/or interrupts.
+   void NewFooAvailable() {
+     new_foo_notification_.release();
+   }
+
+   private:
+    pw::sync::ThreadNotification new_foo_notification_;
+
+    // Thread function.
+    void Run() override {
+      while (true) {
+        new_foo_notification_.acquire();
+        HandleFoo();
+      }
+    }
+
+    void HandleFoo();
+  }
+
+TimedThreadNotification
+=======================
+The TimedThreadNotification is an extension of the ThreadNotification which
+offers timeout and deadline based semantics.
+
+.. Warning::
+  This is a single consumer/waiter, multiple producer/notifier API!
+  The acquire APIs must only be invoked by a single consuming thread. As a
+  result, having multiple threads receiving notifications via the acquire API
+  is unsupported.
+
+Generic BinarySemaphore-based Backend
+-------------------------------------
+This module provides a generic backend for ``pw::sync::TimedThreadNotification``
+via ``pw_sync:binary_semaphore_timed_thread_notification`` which uses a
+``pw::sync::BinarySemaphore`` as the backing primitive. See
+:ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
+availability.
+
+Optimized Backend
+-----------------
+.. list-table::
+
+  * - *Supported on*
+    - *Backend module*
+  * - FreeRTOS
+    - Planned
+  * - ThreadX
+    - Planned
+  * - embOS
+    - Planned
+  * - STL
+    - Not planned, use ``pw_sync:binary_semaphore_thread_notification``
+  * - Zephyr
+    - Planned
+  * - CMSIS-RTOS API v2 & RTX5
+    - Planned
+
+C++
+---
+.. cpp:class:: pw::sync::TimedThreadNotification
+
+  .. cpp:function:: void acquire()
+
+     Blocks indefinitely until the thread is notified, i.e. until the
+     notification latch can be cleared because it was set.
+
+     Clears the notification latch.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. cpp:function:: bool try_acquire()
+
+     Returns whether the thread has been notified, i.e. whether the notificion
+     latch was set and resets the latch regardless.
+
+     Clears the notification latch.
+
+     Returns true if the thread was notified, meaning the the internal latch was
+     reset successfully.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. cpp:function:: void release()
+
+     Notifies the thread in a saturating manner, setting the notification latch.
+
+     Raising the notification multiple time without it being acquired by the
+     consuming thread is equivalent to raising the notification once to the
+     thread. The notification is latched in case the thread was not waiting at
+     the time.
+
+     This is IRQ and thread safe.
+
+  .. cpp:function:: bool try_acquire_for(chrono::SystemClock::duration timeout)
+
+     Blocks until the specified timeout duration has elapsed or the thread
+     has been notified (i.e. notification latch can be cleared because it was
+     set), whichever comes first.
+
+     Clears the notification latch.
+
+     Returns true if the thread was notified, meaning the the internal latch was
+     reset successfully.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. cpp:function:: bool try_acquire_until(chrono::SystemClock::time_point deadline)
+
+     Blocks until the specified deadline time has been reached the thread has
+     been notified (i.e. notification latch can be cleared because it was set),
+     whichever comes first.
+
+     Clears the notification latch.
+
+     Returns true if the thread was notified, meaning the the internal latch was
+     reset successfully.
+
+     **IMPORTANT:** This should only be used by a single consumer thread.
+
+  .. list-table::
+
+    * - *Safe to use in context*
+      - *Thread*
+      - *Interrupt*
+      - *NMI*
+    * - ``ThreadNotification::ThreadNotification``
+      - ✔
+      -
+      -
+    * - ``ThreadNotification::~ThreadNotification``
+      - ✔
+      -
+      -
+    * - ``void ThreadNotification::acquire``
+      - ✔
+      -
+      -
+    * - ``bool ThreadNotification::try_acquire``
+      - ✔
+      -
+      -
+    * - ``bool ThreadNotification::try_acquire_for``
+      - ✔
+      -
+      -
+    * - ``bool ThreadNotification::try_acquire_until``
+      - ✔
+      -
+      -
+    * - ``void ThreadNotification::release``
+      - ✔
+      - ✔
+      -
+
+Examples in C++
+^^^^^^^^^^^^^^^
+.. code-block:: cpp
+
+  #include "pw_sync/timed_thread_notification.h"
+  #include "pw_thread/thread_core.h"
+
+  class FooHandler() : public pw::thread::ThreadCore {
+   // Public API invoked by other threads and/or interrupts.
+   void NewFooAvailable() {
+     new_foo_notification_.release();
+   }
+
+   private:
+    pw::sync::TimedThreadNotification new_foo_notification_;
+
+    // Thread function.
+    void Run() override {
+      while (true) {
+        if (new_foo_notification_.try_acquire_for(kNotificationTimeout)) {
+          HandleFoo();
+        }
+        DoOtherStuff();
+      }
+    }
+
+    void HandleFoo();
+    void DoOtherStuff();
+  }
 
 CountingSemaphore
 =================
@@ -1011,6 +1313,8 @@ is NMI safe.
     - Planned
   * - CMSIS-RTOS API v2 & RTX5
     - Planned
+
+.. _module-pw_sync-binary-semaphore:
 
 BinarySemaphore
 ===============
@@ -1053,17 +1357,3 @@ synchronization primitives on RTOSes. That being said, one could implement them
 using our semaphore and mutex layers and we may consider providing this in the
 future. However for most of our resource constrained customers they will mostly
 likely be using semaphores more often than CVs.
-
-Coming Soon
-===========
-We are intending to provide facades for:
-
-* ``pw::sync::ThreadNotification``: A portable abstraction to allow a single
-  thread to receive notification of a single occurrence of a single event.
-
-* ``pw::sync::EventGroup`` A facade for a common primitive on RTOSes like
-  FreeRTOS, RTX5, ThreadX, and embOS which permit threads and interrupts to
-  signal up to 32 events. This permits others threads to be notified when either
-  any or some combination of these events have been signaled. This is frequently
-  used as an alternative to a set of binary semaphore(s). This is not supported
-  natively on Zephyr.

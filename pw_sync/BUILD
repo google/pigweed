@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -17,6 +17,10 @@ load(
     "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
+)
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -212,6 +216,114 @@ pw_cc_library(
     }),
 )
 
+pw_cc_facade(
+    name = "thread_notification_facade",
+    hdrs = [
+        "public/pw_sync/thread_notification.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "thread_notification",
+    deps = [
+        ":thread_notification_facade",
+        "@pigweed_config//:pw_sync_thread_notification_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "thread_notification_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": ["//pw_sync:binary_semaphore_thread_notification_backend"],
+    }),
+)
+
+pw_cc_facade(
+    name = "timed_thread_notification_facade",
+    hdrs = [
+        "public/pw_sync/timed_thread_notification.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":thread_notification_facade",
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_thread_notification",
+    deps = [
+        ":thread_notification",
+        ":timed_thread_notification_facade",
+        "@pigweed_config//:pw_sync_timed_thread_notification_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "timed_thread_notification_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": ["//pw_sync:binary_semaphore_timed_thread_notification_backend"],
+    }),
+)
+
+pw_cc_library(
+    name = "binary_semaphore_thread_notification_backend_headers",
+    hdrs = [
+        "public/pw_sync/backends/binary_semaphore_thread_notification_inline.h",
+        "public/pw_sync/backends/binary_semaphore_thread_notification_native.h",
+        "public_overrides/pw_sync_backend/thread_notification_inline.h",
+        "public_overrides/pw_sync_backend/thread_notification_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    deps = [
+        ":binary_semaphore_headers",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+)
+
+pw_cc_library(
+    name = "binary_semaphore_thread_notification_backend",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":binary_semaphore_thread_notification_headers",
+        ":binary_semaphore_facade",
+        ":thread_notification_facade",
+    ],
+)
+
+pw_cc_library(
+    name = "binary_semaphore_timed_thread_notification_backend_headers",
+    hdrs = [
+        "public/pw_sync/backends/binary_semaphore_timed_thread_notification_inline.h",
+        "public_overrides/pw_sync_backend/timed_thread_notification_inline.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":binary_semaphore_thread_notification_backend_headers",
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "binary_semaphore_timed_thread_notification_backend",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":binary_semaphore_thread_notification_backend",
+        ":binary_semaphore_timed_thread_notification_backend_headers",
+        "//pw_sync:timed_thread_notification_facade",
+    ],
+)
+
 pw_cc_library(
     name = "yield_core",
     hdrs = [
@@ -267,6 +379,7 @@ pw_cc_test(
     ],
     deps = [
         ":timed_mutex",
+        "//pw_chrono:system_clock",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],
@@ -281,6 +394,31 @@ pw_cc_test(
     deps = [
         ":interrupt_spin_lock",
         "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "thread_notification_facade_test",
+    srcs = [
+        "thread_notification_facade_test.cc",
+        "thread_notification_facade_test_c.c",
+    ],
+    deps = [
+        ":thread_notification",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "timed_thread_notification_facade_test",
+    srcs = [
+        "timed_thread_notification_facade_test.cc",
+        "timed_thread_notification_facade_test_c.c",
+    ],
+    deps = [
+        ":timed_thread_notification",
+        "//pw_chrono:system_clock",
         "//pw_unit_test",
     ],
 )
