@@ -48,6 +48,7 @@ extensions = [
     'sphinxcontrib.actdiag',
     'sphinxcontrib.rackdiag',
     'sphinxcontrib.packetdiag',
+    'sphinxcontrib.mermaid',
 ]
 
 _DIAG_HTML_IMAGE_FORMAT = 'SVG'

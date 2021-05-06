@@ -38,6 +38,20 @@ rendered to HTML using `Sphinx`_ through Pigweed's GN build system.
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _Sphinx: http://www.sphinx-doc.org/en/master
 
+There are additonal Sphinx plugins used for rendering diagrams within
+reStructuredText files including:
+
+* `Blockdiag <http://blockdiag.com/>`_ via these sphinxcontrib packages:
+
+    * `sphinxcontrib-blockdiag
+      <https://pypi.org/project/sphinxcontrib-blockdiag/>`_
+    * `sphinxcontrib-actdiag <https://pypi.org/project/sphinxcontrib-actdiag/>`_
+    * `sphinxcontrib-nwdiag <https://pypi.org/project/sphinxcontrib-nwdiag/>`_
+    * `sphinxcontrib-seqdiag <https://pypi.org/project/sphinxcontrib-seqdiag/>`_
+
+* `mermaid <https://mermaid-js.github.io/>`_ via the `sphinxcontrib-mermaid
+  <https://pypi.org/project/sphinxcontrib-mermaid/>`_ package.
+
 Documentation source and asset files are placed alongside code within a module
 and registered as a ``pw_docgen_group`` target within a ``BUILD.gn`` file. These
 groups become available for import within a special documentation generation
