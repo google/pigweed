@@ -425,4 +425,12 @@ DynamicByteBuffer WriteAutomaticFlushTimeoutPacket(hci::ConnectionHandle conn,
       ));
 }
 
+DynamicByteBuffer WritePageTimeoutPacket(uint16_t page_timeout) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      LowerBits(hci::kWritePageTimeout), UpperBits(hci::kWritePageTimeout),
+      0x02,                                             // parameter_total_size (2 bytes)
+      LowerBits(page_timeout), UpperBits(page_timeout)  // Little-Endian Page_Timeout
+      ));
+}
+
 }  // namespace bt::testing

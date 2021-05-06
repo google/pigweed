@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel.h"
@@ -125,6 +126,8 @@ const auto kWritePageScanTypeRsp =
                                  LowerBits((opcode)), UpperBits((opcode)));
 
 // clang-format on
+
+const auto kWritePageTimeoutRsp = COMMAND_COMPLETE_RSP(hci::kWritePageTimeout);
 
 const auto kConnectionRequest = testing::ConnectionRequestPacket(kTestDevAddr);
 
@@ -540,10 +543,17 @@ class BrEdrConnectionManagerTest : public TestingBase {
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = l2cap::testing::FakeL2cap::Create();
 
+    // Respond to BrEdrConnectionManager controller setup with success.
+    EXPECT_CMD_PACKET_OUT(
+        test_device(),
+        testing::WritePageTimeoutPacket(hci::kDefaultPageTimeoutCommandParameterValue),
+        &kWritePageTimeoutRsp);
+
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_, true);
 
     StartTestDevice();
+    RunLoopUntilIdle();
 
     test_device()->SetTransactionCallback([this] { transaction_count_++; },
                                           async_get_default_dispatcher());

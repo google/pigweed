@@ -653,6 +653,22 @@ struct ReadLocalNameReturnParams {
   uint8_t local_name[kMaxNameLength];
 } __PACKED;
 
+// ==========================================
+// Write Page Timeout Command (v1.1) (BR/EDR)
+constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);
+
+struct WritePageTimeoutCommandParams {
+  // Page_Timeout, in time slices (0.625 ms)
+  // Range: kMinPageTimeoutCommandParameterValue to kMaxPageTimeoutCommandParameterValue in
+  // hci-spec/constants.h
+  uint16_t page_timeout;
+} __PACKED;
+
+struct WritePageTimeoutReturnParams {
+  // See enum StatusCode in hci_constants.h.
+  StatusCode status;
+} __PACKED;
+
 // ========================================
 // Read Scan Enable Command (v1.1) (BR/EDR)
 constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);

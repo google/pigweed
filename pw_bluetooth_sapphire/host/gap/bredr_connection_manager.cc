@@ -169,6 +169,11 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
                   fit::bind_member(this, &BrEdrConnectionManager::OnUserPasskeyNotification));
   AddEventHandler(hci::kRoleChangeEventCode,
                   fit::bind_member(this, &BrEdrConnectionManager::OnRoleChange));
+
+  // Set the timeout for outbound connections explicitly to the spec default.
+  WritePageTimeout(hci::kDefaultPageTimeoutDuration, [](const hci::Status status) {
+    [[maybe_unused]] bool _ = bt_is_error(status, WARN, "gap-bredr", "write page timeout failed");
+  });
 }
 
 BrEdrConnectionManager::~BrEdrConnectionManager() {
@@ -352,6 +357,24 @@ void BrEdrConnectionManager::AttachInspect(inspect::Node& parent, std::string na
     req.AttachInspect(inspect_properties_.requests_node_,
                       inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
   }
+}
+
+void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::StatusCallback cb) {
+  ZX_ASSERT(page_timeout >= hci::kMinPageTimeoutDuration);
+  ZX_ASSERT(page_timeout <= hci::kMaxPageTimeoutDuration);
+
+  const int64_t raw_page_timeout = page_timeout / hci::kDurationPerPageTimeoutUnit;
+  ZX_ASSERT(raw_page_timeout >= hci::kMinPageTimeoutCommandParameterValue);
+  ZX_ASSERT(raw_page_timeout <= hci::kMaxPageTimeoutCommandParameterValue);
+
+  auto write_page_timeout_cmd =
+      hci::CommandPacket::New(hci::kWritePageTimeout, sizeof(hci::WritePageTimeoutCommandParams));
+  auto& params = *write_page_timeout_cmd->mutable_payload<hci::WritePageTimeoutCommandParams>();
+  params.page_timeout = static_cast<uint16_t>(raw_page_timeout);
+
+  hci_->command_channel()->SendCommand(
+      std::move(write_page_timeout_cmd),
+      [cb = std::move(cb)](auto id, const hci::EventPacket& event) { cb(event.ToStatus()); });
 }
 
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t window,

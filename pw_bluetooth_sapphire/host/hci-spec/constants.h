@@ -1508,6 +1508,16 @@ constexpr float kFlushTimeoutMsToCommandParameterConversionFactor = 1.0f / kFlus
 constexpr uint16_t kMaxAutomaticFlushTimeoutCommandParameterValue = 0x07FF;
 constexpr zx::duration kMaxAutomaticFlushTimeoutDuration = zx::msec(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
 
+// Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
+// The default is 5.12 sec.
+constexpr uint16_t kMinPageTimeoutCommandParameterValue = 0x0001;
+constexpr uint16_t kDefaultPageTimeoutCommandParameterValue = 0x2000;
+constexpr uint16_t kMaxPageTimeoutCommandParameterValue = 0xFFFF;
+constexpr zx::duration kDurationPerPageTimeoutUnit = zx::usec(625);
+constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMinPageTimeoutCommandParameterValue;
+constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * kDefaultPageTimeoutCommandParameterValue;
+constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMaxPageTimeoutCommandParameterValue;
+
 }  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_CONSTANTS_H_

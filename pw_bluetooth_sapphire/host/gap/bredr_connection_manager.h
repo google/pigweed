@@ -193,6 +193,11 @@ class BrEdrConnectionManager final {
   // Is there a current incoming connection request in progress for the given address
   bool ExistsIncomingRequest(PeerId id);
 
+  // Writes page timeout duration to the controller.
+  // |page_timeout| must be in the range [kMinPageTimeoutDuration, kMaxPageTimeoutDuration]
+  // |cb| will be called with the resulting return parameter status.
+  void WritePageTimeout(zx::duration page_timeout, hci::StatusCallback cb);
+
   // Reads the controller page scan settings.
   void ReadPageScanSettings();
 
