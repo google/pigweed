@@ -51,7 +51,7 @@
 #define PW_THREAD_THREADX_CONFIG_MIN_PRIORITY TX_MAX_PRIORITIES - 1
 #endif  // PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
 
-// The default stack size in words. By default this uses the minimal ThreadX
+// The default priority level. By default this uses the minimal ThreadX
 // priority level, given that 0 is the highest priority.
 #ifndef PW_THREAD_THREADX_CONFIG_DEFAULT_PRIORITY
 #define PW_THREAD_THREADX_CONFIG_DEFAULT_PRIORITY \

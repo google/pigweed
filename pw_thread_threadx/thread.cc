@@ -121,7 +121,7 @@ Thread::Thread(const thread::Options& facade_options,
   PW_DCHECK(!native_type_->in_use());
 
   // Reset the state of the static context in case it was re-used.
-  native_type_->set_in_use(false);
+  native_type_->set_in_use(true);
   native_type_->set_detached(false);
   native_type_->set_thread_done(false);
 #if PW_THREAD_JOINING_ENABLED
