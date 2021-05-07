@@ -51,7 +51,10 @@ _target_config = {
       "$dir_pigweed/targets/arduino:system_rpc_server"
   pw_arduino_build_INIT_BACKEND = "$dir_pigweed/targets/arduino:pre_init"
 
-  pw_build_LINK_DEPS = [ "$dir_pw_assert:impl" ]
+  pw_build_LINK_DEPS = [
+    "$dir_pw_assert:impl",
+    "$dir_pw_log:impl",
+  ]
 
   current_cpu = "arm"
   current_os = ""

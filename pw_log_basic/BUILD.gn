@@ -25,7 +25,7 @@ declare_args() {
   pw_log_basic_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
 }
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
@@ -33,25 +33,25 @@ config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
 
+# pw_log_basic only provides the backend's interface. The implementation is
+# pulled in through pw_build_LINK_DEPS.
 pw_source_set("pw_log_basic") {
   public_configs = [
     ":backend_config",
-    ":default_config",
+    ":public_include_path",
   ]
-  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
-  public_deps = [ ":core" ]
-}
-
-pw_source_set("core") {
-  public_configs = [ ":default_config" ]
+  public = [
+    "public/pw_log_basic/log_basic.h",
+    "public_overrides/pw_log_backend/log_backend.h",
+  ]
   public_deps = [ dir_pw_preprocessor ]
+
   deps = [
     "$dir_pw_log:facade",
     dir_pw_string,
     dir_pw_sys_io,
     pw_log_basic_CONFIG,
   ]
-  public = [ "public/pw_log_basic/log_basic.h" ]
 
   # Use emoji log levels if they've been enabled.
   _use_emoji = getenv("PW_EMOJI")
@@ -64,6 +64,13 @@ pw_source_set("core") {
     "log_basic.cc",
     "pw_log_basic_private/config.h",
   ]
+}
+
+# TODO(ewout): Fill this out once all users are using link deps.
+# The log backend deps that might cause circular dependencies, since
+# pw_log is so ubiquitous. These deps are kept separate so they can be
+# depended on from elsewhere.
+pw_source_set("pw_log_basic.impl") {
 }
 
 pw_doc_group("docs") {

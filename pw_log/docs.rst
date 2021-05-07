@@ -269,6 +269,31 @@ Each backend may decide to capture different attributes to balance the tradeoff
 between call site code size, call site run time, wire format size, logging
 complexity, and more.
 
+.. _module-pw_log-circular-deps:
+
+Avoiding circular dependencies with ``PW_LOG``
+-------------------------------------------------
+Because logs are so widely used, including in low-level libraries, it is
+common for the ``pw_log`` backend to cause circular dependencies. Because of
+this, log backends may avoid declaring explicit dependencies, instead relying
+on include paths to access header files.
+
+In GN, the ``pw_log`` backend's full implementation with true dependencies is
+made available through the ``$dir_pw_log:impl`` group. When ``pw_log_BACKEND``
+is set, ``$dir_pw_log:impl`` must be listed in the ``pw_build_LINK_DEPS``
+variable. See :ref:`module-pw_build-link-deps`.
+
+In the ``pw_log``, the backend's full implementation is placed in the
+``$pw_log_BACKEND.impl`` target. ``$dir_pw_log:impl`` depends on this
+backend target. The ``$pw_log_BACKEND.impl`` target may be an empty group if
+the backend target can use its dependencies directly without causing circular
+dependencies.
+
+In order to break dependency cycles, the ``pw_log_BACKEND`` target may need
+to directly provide dependencies through include paths only, rather than GN
+``public_deps``. In this case, GN header checking can be disabled with
+``check_includes = false``.
+
 Design discussion
 -----------------
 

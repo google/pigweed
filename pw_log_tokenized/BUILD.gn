@@ -38,20 +38,12 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
-# This target provides the log_tokenized.h header, which implements the pw_log
-# backend.
-#
-# This target depends on the pw_tokenizer facade target
-# (dir_pw_tokenizer:global_handler_with_payload.facade) to avoid circular
-# dependencies. The dependency graph for pw_log_tokenized is the following:
-#
-#   pw_log:facade <---   :pw_log_tokenized
-#        ^            \      ^       ^
-#        |             \    /         \
-#   -> pw_log -> :log_backend --> pw_tokenizer:global_handler_with_payload
-#
+# This target provides the backend for pw_log.
 pw_source_set("pw_log_tokenized") {
-  public_configs = [ ":public_includes" ]
+  public_configs = [
+    ":public_includes",
+    ":backend_config",
+  ]
   public_deps = [
     "$dir_pw_log:facade",
     "$dir_pw_tokenizer:global_handler_with_payload.facade",
@@ -64,12 +56,26 @@ pw_source_set("pw_log_tokenized") {
   ]
 }
 
-# This target provides the backend for pw_log.
+# TODO(ewout): remove this once all users are migrated off this target, using
+# link deps for the log impl instead.
 pw_source_set("log_backend") {
   public_configs = [ ":backend_config" ]
   public_deps = [ ":pw_log_tokenized" ]
   public = [ "public_overrides/pw_log_backend/log_backend.h" ]
   deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
+}
+
+# TODO(ewout): remove this once all users are migrated off this target, using
+# pw_log_tokenized and its pw_log_tokenized.impl instead.
+pw_source_set("log_backend.impl") {
+}
+
+# TODO(ewout): Fill this out once all users are using link deps.
+# The log backend deps that might cause circular dependencies, since
+# pw_log is so ubiquitous. These deps are kept separate so they can be
+# depended on from elsewhere.
+pw_source_set("pw_log_tokenized.impl") {
+  public_deps = [ ":log_backend" ]
 }
 
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
