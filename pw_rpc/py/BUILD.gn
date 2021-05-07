@@ -46,6 +46,7 @@ pw_python_package("py") {
     "tests/client_test.py",
     "tests/console_tools/console_tools_test.py",
     "tests/console_tools/functions_test.py",
+    "tests/console_tools/watchdog_test.py",
     "tests/descriptors_test.py",
     "tests/ids_test.py",
     "tests/packets_test.py",

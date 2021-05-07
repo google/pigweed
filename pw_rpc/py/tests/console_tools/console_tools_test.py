@@ -12,72 +12,18 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Tests encoding HDLC frames."""
+"""Tests the pw_rpc.console_tools.console module."""
 
+import types
 import unittest
-from unittest import mock
 
 import pw_status
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc
 from pw_rpc import callback_client
-from pw_rpc.console_tools import CommandHelper, Context, ClientInfo, Watchdog
-
-
-class TestWatchdog(unittest.TestCase):
-    """Tests the Watchdog class."""
-    def setUp(self) -> None:
-        self._reset = mock.Mock()
-        self._expiration = mock.Mock()
-        self._while_expired = mock.Mock()
-
-        self._watchdog = Watchdog(self._reset, self._expiration,
-                                  self._while_expired, 99999)
-
-    def _trigger_timeout(self) -> None:
-        # Don't wait for the timeout -- that's too flaky. Call the internal
-        # timeout function instead.
-        self._watchdog._timeout_expired()  # pylint: disable=protected-access
-
-    def test_expiration_callbacks(self) -> None:
-        self._watchdog.start()
-
-        self._expiration.not_called()
-
-        self._trigger_timeout()
-
-        self._expiration.assert_called_once_with()
-        self._while_expired.assert_not_called()
-
-        self._trigger_timeout()
-
-        self._expiration.assert_called_once_with()
-        self._while_expired.assert_called_once_with()
-
-        self._trigger_timeout()
-
-        self._expiration.assert_called_once_with()
-        self._while_expired.assert_called()
-
-    def test_reset_not_called_unless_expires(self) -> None:
-        self._watchdog.start()
-        self._watchdog.reset()
-
-        self._reset.assert_not_called()
-        self._expiration.assert_not_called()
-        self._while_expired.assert_not_called()
-
-    def test_reset_called_if_expired(self) -> None:
-        self._watchdog.start()
-        self._trigger_timeout()
-
-        self._watchdog.reset()
-
-        self._trigger_timeout()
-
-        self._reset.assert_called_once_with()
-        self._expiration.assert_called()
+from pw_rpc.console_tools.console import (CommandHelper, Context, ClientInfo,
+                                          alias_deprecated_command)
 
 
 class TestCommandHelper(unittest.TestCase):
@@ -227,6 +173,32 @@ class TestConsoleContext(unittest.TestCase):
                                    protos=self._protos).variables()
         variables['set_target'](self._info.client)
         self.assertTrue(called_derived_set_target)
+
+
+class TestAliasDeprecatedCommand(unittest.TestCase):
+    def test_wraps_command_to_new_package(self) -> None:
+        variables = {'abc': types.SimpleNamespace(command=lambda: 123)}
+        alias_deprecated_command(variables, 'xyz.one.two.three', 'abc.command')
+
+        self.assertEqual(variables['xyz'].one.two.three(), 123)
+
+    def test_wraps_command_to_existing_package(self) -> None:
+        variables = {
+            'abc': types.SimpleNamespace(NewCmd=lambda: 456),
+            'one': types.SimpleNamespace(),
+        }
+        alias_deprecated_command(variables, 'one.two.OldCmd', 'abc.NewCmd')
+
+        self.assertEqual(variables['one'].two.OldCmd(), 456)
+
+    def test_error_if_new_command_does_not_exist(self) -> None:
+        variables = {
+            'abc': types.SimpleNamespace(),
+            'one': types.SimpleNamespace(),
+        }
+
+        with self.assertRaises(AttributeError):
+            alias_deprecated_command(variables, 'one.two.OldCmd', 'abc.NewCmd')
 
 
 if __name__ == '__main__':

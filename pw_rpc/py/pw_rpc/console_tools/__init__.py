@@ -13,6 +13,7 @@
 # the License.
 """Utilities for building tools that interact with pw_rpc."""
 
-from pw_rpc.console_tools.console import Context, CommandHelper, ClientInfo
+from pw_rpc.console_tools.console import (Context, CommandHelper, ClientInfo,
+                                          alias_deprecated_command)
 from pw_rpc.console_tools.functions import help_as_repr
 from pw_rpc.console_tools.watchdog import Watchdog

@@ -20,4 +20,4 @@ pw_rpc.callback_client
 pw_rpc.console_tools
 ====================
 .. automodule:: pw_rpc.console_tools
-  :members: Context, ClientInfo, Watchdog, help_as_repr
+  :members: Context, ClientInfo, Watchdog, alias_deprecated_command, help_as_repr

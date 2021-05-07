@@ -14,6 +14,7 @@
 """Utilities for creating an interactive console."""
 
 from collections import defaultdict
+import functools
 from itertools import chain
 import inspect
 import textwrap
@@ -217,3 +218,71 @@ class Context:
             self.protos.packages[package_name]._add_item(rpcs)  # pylint: disable=protected-access
 
         self.current_client = selected_client
+
+
+def _create_command_alias(command: Any, name: str, message: str) -> object:
+    """Wraps __call__, __getattr__, and __repr__ to print a message."""
+    @functools.wraps(command.__call__)
+    def print_message_and_call(_, *args, **kwargs):
+        print(message)
+        return command(*args, **kwargs)
+
+    def getattr_and_print_message(_, name: str) -> Any:
+        attr = getattr(command, name)
+        print(message)
+        return attr
+
+    return type(
+        name, (),
+        dict(__call__=print_message_and_call,
+             __getattr__=getattr_and_print_message,
+             __repr__=lambda _: message))()
+
+
+def _access_in_dict_or_namespace(item, name: str, create_if_missing: bool):
+    """Gets name as either a key or attribute on item."""
+    try:
+        return item[name]
+    except KeyError:
+        if create_if_missing:
+            try:
+                item[name] = types.SimpleNamespace()
+                return item[name]
+            except TypeError:
+                pass
+    except TypeError:
+        pass
+
+    if create_if_missing and not hasattr(item, name):
+        setattr(item, name, types.SimpleNamespace())
+
+    return getattr(item, name)
+
+
+def _access_names(item, names: Iterable[str], create_if_missing: bool):
+    for name in names:
+        item = _access_in_dict_or_namespace(item, name, create_if_missing)
+
+    return item
+
+
+def alias_deprecated_command(variables: Any, old_name: str,
+                             new_name: str) -> None:
+    """Adds an alias for an old command that redirects to the new command.
+
+    The deprecated command prints a message then invokes the new command.
+    """
+    # Get the new command.
+    item = _access_names(variables,
+                         new_name.split('.'),
+                         create_if_missing=False)
+
+    # Create a wrapper to the new comamnd with the old name.
+    wrapper = _create_command_alias(
+        item, old_name,
+        f'WARNING: {old_name} is DEPRECATED; use {new_name} instead')
+
+    # Add the wrapper to the variables with the old command's name.
+    name_parts = old_name.split('.')
+    item = _access_names(variables, name_parts[:-1], create_if_missing=True)
+    setattr(item, name_parts[-1], wrapper)
