@@ -29,18 +29,6 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
-# These assert backend deps that might cause circular dependencies, since
-# pw_assert is so ubiquitous. These deps are kept separate so they can be
-# depended on from elsewhere.
-# TODO(pwbug/372): Reorganize this.
-group("pw_assert_basic.impl") {
-  public_deps = [
-    dir_pw_result,
-    dir_pw_string,
-    dir_pw_sys_io,
-  ]
-}
-
 pw_facade("handler") {
   backend = pw_assert_basic_HANDLER_BACKEND
   public_configs = [ ":public_include_path" ]
@@ -48,20 +36,34 @@ pw_facade("handler") {
   public = [ "public/pw_assert_basic/handler.h" ]
 }
 
+# pw_assert_basic only provides the backend's interface. The implementation is
+# pulled in through pw_build_LINK_DEPS.
 pw_source_set("pw_assert_basic") {
   public_configs = [
     ":backend_config",
     ":public_include_path",
   ]
-  deps = [
-    "$dir_pw_assert:facade",
-    "$dir_pw_preprocessor",
-    pw_assert_basic_HANDLER_BACKEND,
-  ]
   public = [
     "public/pw_assert_basic/assert_basic.h",
     "public/pw_assert_basic/handler.h",
     "public_overrides/pw_assert_backend/assert_backend.h",
+  ]
+}
+
+# The assert backend deps that might cause circular dependencies, since
+# pw_assert is so ubiquitous. These deps are kept separate so they can be
+# depended on from elsewhere.
+pw_source_set("pw_assert_basic.impl") {
+  public_deps = [
+    dir_pw_result,
+    dir_pw_string,
+    dir_pw_sys_io,
+  ]
+  deps = [
+    ":pw_assert_basic",
+    "$dir_pw_assert:facade",
+    "$dir_pw_preprocessor",
+    pw_assert_basic_HANDLER_BACKEND,
   ]
   sources = [ "assert_basic.cc" ]
 }

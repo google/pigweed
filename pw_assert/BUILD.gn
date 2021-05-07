@@ -61,8 +61,7 @@ pw_facade("check") {
   ]
   public_deps = [ dir_pw_preprocessor ]
 
-  # TODO(pwbug/372): Update projects to properly list pw_assert:impl.
-  # require_link_deps = [ ":impl" ]
+  require_link_deps = [ ":impl" ]
 }
 
 # Provide "pw_assert/assert.h" in its own source set, so it can be used without
