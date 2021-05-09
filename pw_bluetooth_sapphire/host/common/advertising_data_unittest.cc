@@ -108,8 +108,8 @@ TEST(GAP_AdvertisingDataTest, ParseBlock) {
 
 TEST(GAP_AdvertisingDataTest, ParseBlockUnknownDataType) {
   AdvertisingData expected_ad;
-  uint8_t lower_byte = 0x12, upper_byte = 0x22;
-  uint16_t uuid_value = (upper_byte << 8) + lower_byte;
+  constexpr uint8_t lower_byte = 0x12, upper_byte = 0x22;
+  constexpr uint16_t uuid_value = (upper_byte << 8) + lower_byte;
   // The only field present in the expected AD is one complete 16-bit UUID.
   EXPECT_TRUE(expected_ad.AddServiceUuid(UUID(uuid_value)));
 

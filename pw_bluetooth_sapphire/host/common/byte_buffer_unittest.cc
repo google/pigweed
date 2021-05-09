@@ -327,7 +327,7 @@ TEST(ByteBufferTest, ByteBufferReadMember) {
   // Returned array elements are const just like in the original struct
   auto array = data.ReadMember<&Point::array>();
   static_assert(std::is_same_v<std::array<const uint8_t, 2>, decltype(array)>);
-  EXPECT_THAT(array, ::testing::ElementsAre(0x03, 0x37));
+  EXPECT_THAT(array, ::testing::ElementsAre(uint8_t{0x03}, uint8_t{0x37}));
 
   auto multi = data.ReadMember<&Point::multi>();
   static_assert(std::is_same_v<std::array<std::array<char, 1>, 2>, decltype(multi)>);
