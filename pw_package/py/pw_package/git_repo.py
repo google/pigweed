@@ -41,7 +41,13 @@ def git(*args: PathOrStr,
 
 class GitRepo(pw_package.package_manager.Package):
     """Install and check status of Git repository-based packages."""
-    def __init__(self, url, *args, commit='', tag='', **kwargs):
+    def __init__(self,
+                 url,
+                 *args,
+                 commit='',
+                 tag='',
+                 sparse_list=None,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         if not (commit or tag):
             raise ValueError('git repo must specify a commit or tag')
@@ -49,6 +55,7 @@ class GitRepo(pw_package.package_manager.Package):
         self._url = url
         self._commit = commit
         self._tag = tag
+        self._sparse_list = sparse_list
 
     def status(self, path: pathlib.Path) -> bool:
         if not os.path.isdir(path / '.git'):
@@ -74,6 +81,11 @@ class GitRepo(pw_package.package_manager.Package):
             if self._tag != tag:
                 return False
 
+        # If it is a sparse checkout, sparse list shall match.
+        if self._sparse_list:
+            if not self.check_sparse_list(path):
+                return False
+
         status = git_stdout('status', '--porcelain=v1', repo=path)
         return remote == self._url and not status
 
@@ -86,6 +98,12 @@ class GitRepo(pw_package.package_manager.Package):
         if os.path.isdir(path):
             shutil.rmtree(path)
 
+        if self._sparse_list:
+            self.checkout_sparse(path)
+        else:
+            self.checkout_full(path)
+
+    def checkout_full(self, path: pathlib.Path) -> None:
         # --filter=blob:none means we don't get history, just the current
         # revision. If we later run commands that need history it will be
         # retrieved on-demand. For small repositories the effect is negligible
@@ -96,3 +114,23 @@ class GitRepo(pw_package.package_manager.Package):
         elif self._tag:
             git('clone', '-b', self._tag, '--filter=blob:none', self._url,
                 path)
+
+    def checkout_sparse(self, path: pathlib.Path) -> None:
+        # sparse checkout
+        git('init', path)
+        git('remote', 'add', 'origin', self._url, repo=path)
+        git('config', 'core.sparseCheckout', 'true', repo=path)
+
+        # Add files to checkout by editing .git/info/sparse-checkout
+        with open(path / '.git' / 'info' / 'sparse-checkout', 'w') as sparse:
+            for source in self._sparse_list:
+                sparse.write(source + '\n')
+
+        # Either pull from a commit or a tag.
+        target = self._commit if self._commit else self._tag
+        git('pull', '--depth=1', 'origin', target, repo=path)
+
+    def check_sparse_list(self, path: pathlib.Path) -> bool:
+        sparse_list = git_stdout('sparse-checkout', 'list',
+                                 repo=path).strip('\n').splitlines()
+        return set(sparse_list) == set(self._sparse_list)
