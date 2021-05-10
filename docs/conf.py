@@ -13,7 +13,16 @@
 # the License.
 """Pigweed's Sphinx configuration."""
 
+import sphinx
 import sphinx_rtd_theme
+
+# TODO(pwbug/376): Remove this when this PR is merged:
+# https://github.com/mgaitan/sphinxcontrib-mermaid/pull/71
+# Needed for sphinxcontrib-mermaid compatibility with sphinx 4.0.0.
+if sphinx.version_info[0] >= 4:
+    import errno
+    import sphinx.util.osutil
+    sphinx.util.osutil.ENOENT = errno.ENOENT
 
 # The suffix of source filenames.
 source_suffix = ['.rst']
