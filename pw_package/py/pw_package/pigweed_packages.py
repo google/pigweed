@@ -20,6 +20,7 @@ from pw_package.packages import nanopb
 from pw_package.packages import arduino_core  # pylint: disable=unused-import
 from pw_package.packages import stm32cube  # pylint: disable=unused-import
 from pw_package.packages import mbedtls  # pylint: disable=unused-import
+from pw_package.packages import boringssl  # pylint: disable=unused-import
 
 
 def initialize():
