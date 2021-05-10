@@ -24,6 +24,7 @@ pw_python_package("py") {
     "pw_package/package_manager.py",
     "pw_package/packages/__init__.py",
     "pw_package/packages/arduino_core.py",
+    "pw_package/packages/mbedtls.py",
     "pw_package/packages/nanopb.py",
     "pw_package/packages/stm32cube.py",
     "pw_package/pigweed_packages.py",
