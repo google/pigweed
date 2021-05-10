@@ -144,6 +144,7 @@ std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement&
       return bt::sdp::DataElement(fidl.b());
     case fbredr::DataElement::Tag::kUuid:
       out.Set(fidl_helpers::UuidFromFidl(fidl.uuid()));
+      break;
     case fbredr::DataElement::Tag::kSequence: {
       std::vector<bt::sdp::DataElement> seq;
       for (const auto& fidl_elem : fidl.sequence()) {

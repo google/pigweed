@@ -220,8 +220,11 @@ std::optional<AdvertisingData> AdvertisingData::FromBytes(const ByteBuffer& data
         // If a name has been previously set (e.g. because the Complete Local
         // Name was included in the scan response) then break. Otherwise we fall
         // through.
-        if (out_ad.local_name())
+        if (out_ad.local_name()) {
           break;
+        } else {
+          __FALLTHROUGH;
+        }
       case DataType::kCompleteLocalName: {
         if (!out_ad.SetLocalName(field.ToString())) {
           bt_log(WARN, "gap-le",
