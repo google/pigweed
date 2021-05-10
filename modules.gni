@@ -105,6 +105,7 @@ declare_args() {
   dir_pw_thread_freertos = get_path_info("pw_thread_freertos", "abspath")
   dir_pw_thread_threadx = get_path_info("pw_thread_threadx", "abspath")
   dir_pw_third_party = get_path_info("third_party", "abspath")
+  dir_pw_tls_client = get_path_info("pw_tls_client", "abspath")
   dir_pw_tokenizer = get_path_info("pw_tokenizer", "abspath")
   dir_pw_tool = get_path_info("pw_tool", "abspath")
   dir_pw_toolchain = get_path_info("pw_toolchain", "abspath")
