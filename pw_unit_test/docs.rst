@@ -9,7 +9,7 @@ built on top of embedded-friendly primitives.
 .. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md
 
 ``pw_unit_test`` is a portable library which can run on almost any system from
-from bare metal to a full-fledged desktop OS. It does this by offloading the
+bare metal to a full-fledged desktop OS. It does this by offloading the
 responsibility of test reporting and output to the underlying system,
 communicating its results through a common interface. Unit tests can be written
 once and run under many different environments, empowering developers to write
@@ -138,7 +138,7 @@ section, and use the ``pw_test`` template to register your test code.
 
 The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
 
- - ``simple_printing_event_handler```: When running tests, output test results
+ - ``simple_printing_event_handler``: When running tests, output test results
    as plain text over ``pw_sys_io``.
  - ``simple_printing_main``: Implements a ``main()`` function that simply runs
    tests using the ``simple_printing_event_handler``.
