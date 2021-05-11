@@ -26,7 +26,7 @@ namespace bthost {
 // thread's event loop to be processed by the Host.
 class HostDevice;
 using HostDeviceType =
-    ddk::Device<HostDevice, ddk::Initializable, ddk::Messageable, ddk::Unbindable>;
+    ddk::Device<HostDevice, ddk::Initializable, ddk::MessageableOld, ddk::Unbindable>;
 class HostDevice final : public HostDeviceType {
  public:
   explicit HostDevice(zx_device_t* parent);
