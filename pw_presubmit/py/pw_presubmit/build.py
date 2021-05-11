@@ -14,12 +14,14 @@
 """Functions for building code during presubmit checks."""
 
 import collections
+import contextlib
 import itertools
 import json
 import logging
 import os
 from pathlib import Path
 import re
+import subprocess
 from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
                     Tuple, Union)
 
@@ -254,3 +256,26 @@ def check_builds_for_files(
                      '\n'.join(str(x) for x in paths))
 
     return missing
+
+
+@contextlib.contextmanager
+def test_server(executable: str, output_dir: Path):
+    """Context manager that runs a test server executable.
+
+    Args:
+        executable: name of the test server executable
+        output_dir: path to the output directory (for logs)
+    """
+
+    with open(output_dir / 'test_server.log', 'w') as outs:
+        try:
+            proc = subprocess.Popen(
+                [executable, '--verbose'],
+                stdout=outs,
+                stderr=subprocess.STDOUT,
+            )
+
+            yield
+
+        finally:
+            proc.terminate()

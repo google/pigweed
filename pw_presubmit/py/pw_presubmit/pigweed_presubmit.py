@@ -117,6 +117,13 @@ def gn_arm_build(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_BUILD_EXTENSIONS)
+def stm32f429i(ctx: PresubmitContext):
+    build.gn_gen(ctx.root, ctx.output_dir, pw_use_test_server=True)
+    with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
+        build.ninja(ctx.output_dir, *_at_all_optimization_levels('stm32f429i'))
+
+
+@filter_paths(endswith=_BUILD_EXTENSIONS)
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx.package_root, 'nanopb')
     build.gn_gen(ctx.root,
@@ -641,6 +648,7 @@ OTHER_CHECKS = (
     gn_gcc_build,
     renode_check,
     static_analysis,
+    stm32f429i,
 )
 
 LINTFORMAT = (
