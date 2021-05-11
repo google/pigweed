@@ -63,8 +63,8 @@ When writing you fuzz target function, you may want to consider:
 
 .. _build:
 
-Building fuzzers
-================
+Building fuzzers with GN
+========================
 
 To build a fuzzer, do the following:
 
@@ -98,6 +98,49 @@ To build a fuzzer, do the following:
 3. Build normally, e.g. using ``pw watch``.
 
 .. _run:
+
+Building and running fuzzers with Bazel
+=======================================
+To build a fuzzer, do the following:
+
+1. Add the Bazel target using ``pw_cc_fuzz_test`` macro.
+
+.. code:: py
+
+  load("@pigweed//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
+
+  pw_cc_fuzz_test(
+    name = "my_fuzz_test",
+    srcs = ["my_fuzzer.cc"],
+    deps = [
+      "@pigweed//pw_fuzzer",
+      ":my_lib",
+    ],
+  )
+
+2. Build and run the fuzzer.
+
+.. code:: sh
+
+  bazel test //my_module:my_fuzz_test
+
+3. Swap fuzzer backend to use ASAN fuzzing engine.
+
+.. code::
+
+  # .bazelrc
+  # Define the --config=asan-libfuzzer configuration.
+  build:asan-libfuzzer \
+    --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer
+  build:asan-libfuzzer \
+    --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
+  build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
+
+4. Re-run fuzz tests.
+
+.. code::
+
+  bazel test //my_module:my_fuzz_test --config asan-libfuzzer
 
 Running fuzzers locally
 =======================

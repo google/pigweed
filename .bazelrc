@@ -23,3 +23,10 @@ coverage --combined_report=lcov
 # address Protobuf's rebuild sensitivity on changes to the environment
 # variables.
 build --incompatible_strict_action_env
+
+# Define the --config=asan-libfuzzer configuration.
+build:asan-libfuzzer \
+    --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer
+build:asan-libfuzzer \
+    --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
+build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan

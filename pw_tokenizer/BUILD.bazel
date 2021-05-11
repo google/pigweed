@@ -19,6 +19,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -201,6 +202,16 @@ pw_cc_test(
     deps = [
         ":decoder",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "detokenize_fuzzer",
+    srcs = ["detokenize_fuzzer.cc"],
+    deps = [
+        ":decoder",
+        ":pw_tokenizer",
+        "//pw_fuzzer",
     ],
 )
 

@@ -20,6 +20,18 @@ workspace(
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
+# Setup python support.
+# Required by: rules_fuzzing.
+# Used in modules: None.
+http_archive(
+    name = "rules_python",
+    sha256 = "778197e26c5fbeb07ac2a2c5ae405b30f6cb7ad1f5510ea6fdac03bded96cc6f",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz",
+        "https://github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz",
+    ],
+)
+
 # Set up Starlark library
 # Required by: io_bazel_rules_go, com_google_protobuf.
 # Used in modules: None.
@@ -133,7 +145,7 @@ browser_repositories(
 # Used in modules: //pw_polyfill, //pw_build (all pw_cc* targets).
 git_repository(
     name = "bazel_embedded",
-    commit = "d4717a6e33b88cb9fe1b6663d78656728c49b5c8",
+    commit = "7dd51fc1ac7d7a9ecfe8ea8d1532c56a6ca836bc",
     remote = "https://github.com/silvergasp/bazel-embedded.git",
 )
 
@@ -252,3 +264,21 @@ pigweed_config(
     name = "pigweed_config",
     build_file = "//targets:default_config.BUILD",
 )
+
+# Setup rules_fuzzing for fuzz tests.
+# Required by: pigweed.
+# Used in modules: pw_protobuf, pw_tokenizer, pw_fuzzer.
+http_archive(
+    name = "rules_fuzzing",
+    sha256 = "94f25c7a18db0502ace26a3ef7d0a25fd7c195c4e9770ddd1b1ec718e8936091",
+    strip_prefix = "rules_fuzzing-0.1.3",
+    urls = ["https://github.com/bazelbuild/rules_fuzzing/archive/v0.1.3.zip"],
+)
+
+load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")
+
+rules_fuzzing_dependencies()
+
+load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
+
+rules_fuzzing_init()

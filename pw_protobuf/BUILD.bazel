@@ -18,6 +18,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
 load("@rules_proto_grpc//:plugin.bzl", "proto_plugin")
 load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
@@ -86,6 +87,16 @@ pw_cc_test(
     deps = [
         ":pw_protobuf",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "encoder_fuzz_test",
+    srcs = ["encoder_fuzzer.cc"],
+    deps = [
+        "//pw_fuzzer",
+        "//pw_protobuf",
+        "//pw_span",
     ],
 )
 

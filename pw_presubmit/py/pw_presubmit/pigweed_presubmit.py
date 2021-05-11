@@ -240,6 +240,7 @@ _MODULES_THAT_WORK_WITH_BAZEL = [
     '//pw_cpu_exception/...',
     '//pw_docgen/...',
     '//pw_doctor/...',
+    "//pw_fuzzer/...",
     '//pw_i2c/...',
     '//pw_interrupt/...',
     '//pw_log/...',
