@@ -24,7 +24,7 @@
         ]
     },
     {
-        "path": "infra/tools/luci/isolated/${platform}",
+        "path": "infra/tools/luci/cas/${platform}",
         "tags": [
             "latest"
         ]
