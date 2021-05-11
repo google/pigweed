@@ -154,12 +154,6 @@ class FakeFlashMemoryBuffer : public FakeFlashMemory {
   // Creates a flash memory with no data written.
   explicit FakeFlashMemoryBuffer(
       size_t alignment_bytes = kDefaultAlignmentBytes)
-      : FakeFlashMemoryBuffer(std::array<std::byte, 0>{}, alignment_bytes) {}
-
-  // Creates a flash memory initialized to the provided contents.
-  explicit FakeFlashMemoryBuffer(
-      std::span<const std::byte> contents,
-      size_t alignment_bytes = kDefaultAlignmentBytes)
       : FakeFlashMemory(buffer_,
                         kSectorSize,
                         kSectorCount,
@@ -167,6 +161,13 @@ class FakeFlashMemoryBuffer : public FakeFlashMemory {
                         read_errors_,
                         write_errors_) {
     std::memset(buffer_.data(), int(kErasedValue), buffer_.size());
+  }
+
+  // Creates a flash memory initialized to the provided contents.
+  explicit FakeFlashMemoryBuffer(
+      std::span<const std::byte> contents,
+      size_t alignment_bytes = kDefaultAlignmentBytes)
+      : FakeFlashMemoryBuffer(alignment_bytes) {
     std::memcpy(buffer_.data(),
                 contents.data(),
                 std::min(contents.size(), buffer_.size()));

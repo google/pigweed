@@ -50,19 +50,7 @@ _BUILD_EXTENSIONS = ('.py', '.rst', '.gn', '.gni',
 
 
 def _at_all_optimization_levels(target):
-    levels = ('debug', 'size_optimized', 'speed_optimized')
-
-    # Skip optimized host GCC builds for now, since GCC sometimes emits spurious
-    # warnings.
-    #
-    #   -02: GCC 9.3 emits spurious maybe-uninitialized warnings
-    #   -0s: GCC 8.1 (Mingw-w64) emits a spurious nonnull warning
-    #
-    # TODO(pwbug/255): Enable optimized GCC builds when this is fixed.
-    if target == 'host_gcc':
-        levels = ('debug', )
-
-    for level in levels:
+    for level in ('debug', 'size_optimized', 'speed_optimized'):
         yield f'{target}_{level}'
 
 
@@ -596,7 +584,6 @@ def static_analysis(ctx: PresubmitContext):
     build.gn_gen(ctx.root, ctx.output_dir,
                  '--export-compile-commands=host_clang_debug')
     build.ninja(ctx.output_dir, 'host_clang_debug')
-
     compile_commands = ctx.output_dir.joinpath('compile_commands.json')
     analyzer_output = ctx.output_dir.joinpath('analyze-build-output')
 
@@ -639,6 +626,7 @@ OTHER_CHECKS = (
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
     # failing.
     oss_fuzz_build,
+    # TODO(pwbug/346): Enable all Bazel tests when they're fixed.
     bazel_test,
     cmake_tests,
     gn_nanopb_build,
@@ -660,7 +648,6 @@ LINTFORMAT = (
 
 QUICK = (
     LINTFORMAT,
-    bazel_test,
     gn_quick_build_check,
     # TODO(pwbug/141): Re-enable CMake and Bazel for Mac after we have fixed the
     # the clang issues. The problem is that all clang++ invocations need the
@@ -675,7 +662,6 @@ FULL = (
     gn_docs_build,
     gn_host_tools,
     bazel_build,
-    bazel_test,
     # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
     # host builds on Mac for now. Skip it on Windows too, since gn_host_build
     # already uses 'gcc' on Windows.
