@@ -126,6 +126,10 @@ class CortexMExceptionAnalyzer:
         fields = []
         for field in self.active_cfsr_fields():
             fields.append(f'{field.name:<11} {field.description}')
+            if isinstance(field.long_description, tuple):
+                long_desc = '    {}'.format('\n    '.join(
+                    field.long_description))
+                fields.append(long_desc)
         return '\n'.join(fields)
 
     def __str__(self):

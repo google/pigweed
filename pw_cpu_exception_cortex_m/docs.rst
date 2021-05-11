@@ -134,8 +134,18 @@ For example:
     20210412 15:11:14 INF Exception caused by a usage fault, bus fault.
 
     Active Crash Fault Status Register (CFSR) fields:
-    IBUSERR     Bus fault on instruction fetch.
+    IBUSERR     Instruction bus error.
+        The processor attempted to issue an invalid instruction. It
+        detects the instruction bus error on prefecting, but this
+        flag is only set to 1 if it attempts to issue the faulting
+        instruction. When this bit is set, the processor has not
+        written a fault address to the BFAR.
     UNDEFINSTR  Encountered invalid instruction.
+        The processor has attempted to execute an undefined
+        instruction. When this bit is set to 1, the PC value stacked
+        for the exception return points to the undefined instruction.
+        An undefined instruction is an instruction that the processor
+        cannot decode.
 
     All registers:
     cfsr       0x00010100
