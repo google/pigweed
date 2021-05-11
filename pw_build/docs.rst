@@ -476,6 +476,18 @@ following ways:
 * Temporarily override a backend by setting it interactively with ``ccmake`` or
   ``cmake-gui``.
 
+If the backend is set to a build target that does not exist, there will be an
+error message like the following:
+
+.. code-block::
+
+  CMake Error at pw_build/pigweed.cmake:244 (add_custom_target):
+  Error evaluating generator expression:
+
+    $<TARGET_PROPERTY:my_backend_that_does_not_exist,TYPE>
+
+  Target "my_backend_that_does_not_exist" not found.
+
 Toolchain setup
 ---------------
 In CMake, the toolchain is configured by setting CMake variables, as described

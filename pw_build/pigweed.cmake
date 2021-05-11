@@ -238,6 +238,14 @@ function(pw_add_facade NAME)
   set("${NAME}_BACKEND" "${arg_DEFAULT_BACKEND}" CACHE STRING
       "Backend for ${NAME}")
 
+  # This target is never used; it simply tests that the specified backend
+  # actually exists in the build. The generator expression will fail to evaluate
+  # if the target is not defined.
+  add_custom_target(_pw_check_that_backend_for_${NAME}_is_defined
+    COMMAND
+      ${CMAKE_COMMAND} -E echo "$<TARGET_PROPERTY:${${NAME}_BACKEND},TYPE>"
+  )
+
   # Define the facade library, which is used by the backend to avoid circular
   # dependencies.
   add_library("${NAME}.facade" INTERFACE)
