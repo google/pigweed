@@ -223,12 +223,12 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
 
   if("${dir_pw_third_party_nanopb}" STREQUAL "")
     add_custom_target("${NAME}._generate.nanopb"
-        cmake -E echo
+        "${CMAKE_COMMAND}" -E echo
             ERROR: Attempting to use pw_proto_library, but
             dir_pw_third_party_nanopb is not set. Set dir_pw_third_party_nanopb
             to the path to the Nanopb repository.
       COMMAND
-        cmake -E false
+        "${CMAKE_COMMAND}" -E false
       DEPENDS
         ${DEPS}
       SOURCES

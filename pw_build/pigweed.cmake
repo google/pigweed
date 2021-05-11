@@ -219,7 +219,12 @@ function(pw_add_facade NAME)
   # instead. If the facade is used in the build, it fails with this error.
   add_custom_target("${NAME}._no_backend_set_message"
     COMMAND
-      python "$ENV{PW_ROOT}/pw_build/py/pw_build/null_backend.py" "${NAME}"
+      "${CMAKE_COMMAND}" -E echo
+        "ERROR: Attempted to build the ${NAME} facade with no backend."
+        "Configure the ${NAME} backend using pw_set_backend or remove all dependencies on it."
+        "See https://pigweed.dev/pw_build."
+    COMMAND
+      "${CMAKE_COMMAND}" -E false
   )
   add_library("${NAME}.NO_BACKEND_SET" INTERFACE)
   add_dependencies("${NAME}.NO_BACKEND_SET" "${NAME}._no_backend_set_message")

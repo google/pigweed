@@ -399,8 +399,8 @@ This will result in a ``.zip`` file called ``foo.zip`` stored in
   ├── file1.txt
   └── renamed.txt
 
-CMake / Ninja
-=============
+CMake
+=====
 Pigweed's `CMake`_ support is provided primarily for projects that have an
 existing CMake build and wish to integrate Pigweed without switching to a new
 build system.
