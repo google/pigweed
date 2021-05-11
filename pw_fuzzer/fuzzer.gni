@@ -46,10 +46,14 @@ template("pw_fuzzer") {
     pw_executable(target_name) {
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
+
+      if (!defined(deps)) {
+        deps += [ dir_pw_fuzzer ]
+      }
+
       if (!defined(configs)) {
         configs = []
       }
-      configs += [ "$dir_pw_fuzzer:default_config" ]
       if (pw_toolchain_OSS_FUZZ_ENABLED) {
         configs += [ "$dir_pw_fuzzer:oss_fuzz" ]
       } else {

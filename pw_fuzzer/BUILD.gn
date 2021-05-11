@@ -19,8 +19,9 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_fuzzer/oss_fuzz.gni")
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 # This is added automatically by the `pw_fuzzer` template.
@@ -45,7 +46,7 @@ config("oss_fuzz_extra") {
 }
 
 pw_source_set("pw_fuzzer") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_fuzzer/asan_interface.h",
     "public/pw_fuzzer/fuzzed_data_provider.h",
@@ -54,7 +55,7 @@ pw_source_set("pw_fuzzer") {
 }
 
 pw_source_set("run_as_unit_test") {
-  configs = [ ":default_config" ]
+  configs = [ ":public_include_path" ]
   sources = [ "pw_fuzzer_disabled.cc" ]
   deps = [
     dir_pw_log,

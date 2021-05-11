@@ -83,11 +83,18 @@ def gn_gen(gn_source_dir: Path,
          'gen',
          gn_output_dir,
          '--color=always',
-         *(['--check'] if gn_check else []),
          *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
          *args,
          *args_option,
          cwd=gn_source_dir)
+
+    if gn_check:
+        call('gn',
+             'check',
+             gn_output_dir,
+             '--check-generated',
+             '--check-system',
+             cwd=gn_source_dir)
 
 
 def ninja(directory: Path, *args, **kwargs) -> None:

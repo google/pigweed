@@ -12,15 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <pw_fuzzer/asan_interface.h>
-#include <pw_fuzzer/fuzzed_data_provider.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <span>
 #include <vector>
 
+#include "pw_fuzzer/asan_interface.h"
+#include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_protobuf/encoder.h"
 
 namespace {
