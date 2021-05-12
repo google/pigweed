@@ -196,6 +196,11 @@ template("pw_python_package") {
                  "use 'generate_setup' instead of 'setup'")
 
       _import_protos = [ invoker.proto_library ]
+
+      # Depend on the dependencies of the proto library.
+      _proto = get_label_info(invoker.proto_library, "label_no_toolchain")
+      _toolchain = get_label_info(invoker.proto_library, "toolchain")
+      _python_deps += [ "$_proto.python._deps($_toolchain)" ]
     } else if (defined(invoker.generate_setup)) {
       _import_protos = []
     }
@@ -323,29 +328,6 @@ template("pw_python_package") {
         public_deps = _python_deps + _other_deps
       }
 
-      # Depend on the proto's _gen targets (from the default toolchain).
-      _gen_protos = []
-      foreach(proto, _import_protos) {
-        _gen_protos += [ get_label_info(proto, "label_no_toolchain") +
-                         ".python._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
-      }
-
-      generated_file("$target_name._protos") {
-        deps = _gen_protos
-        data_keys = [ "protoc_outputs" ]
-        outputs = [ "$_setup_dir/protos.txt" ]
-      }
-
-      _protos_file = get_target_outputs(":${invoker.target_name}._protos")
-
-      generated_file("$target_name._protos_root") {
-        deps = _gen_protos
-        data_keys = [ "root" ]
-        outputs = [ "$_setup_dir/proto_root.txt" ]
-      }
-
-      _root_file = get_target_outputs(":${invoker.target_name}._protos_root")
-
       # Get generated_setup scope and write it to disk ask JSON.
       _gen_setup = invoker.generate_setup
       assert(defined(_gen_setup.name), "'name' is required in generate_package")
@@ -360,15 +342,23 @@ template("pw_python_package") {
         args = [
                  "--label",
                  get_label_info(":$target_name", "label_no_toolchain"),
-                 "--root",
+                 "--generated-root",
                  rebase_path(_setup_dir),
                  "--setup-json",
                  rebase_path("$_setup_dir/setup.json"),
-                 "--file-list",
-                 rebase_path(_protos_file[0]),
-                 "--file-list-root",
-                 rebase_path(_root_file[0]),
                ] + rebase_path(_sources)
+
+        # Pass in the .json information files for the imported proto libraries.
+        foreach(proto, _import_protos) {
+          _label = get_label_info(proto, "label_no_toolchain") +
+                   ".python($pw_protobuf_compiler_TOOLCHAIN)"
+          _file = get_label_info(_label, "target_gen_dir") + "/" +
+                  get_label_info(_label, "name") + ".json"
+          args += [
+            "--proto-library",
+            rebase_path(_file),
+          ]
+        }
 
         if (defined(invoker._pw_module_as_package) &&
             invoker._pw_module_as_package) {
@@ -377,29 +367,7 @@ template("pw_python_package") {
 
         inputs = [ "$_setup_dir/setup.json" ]
 
-        public_deps = [
-          ":$target_name._mirror_sources_to_out_dir",
-          ":$target_name._protos",
-          ":$target_name._protos_root",
-        ]
-
-        # Each pw_proto_library generates a file that indicates which Python
-        # package it is nested in, if any. Locate those files.
-        foreach(proto, _import_protos) {
-          _tgt = get_label_info(proto, "label_no_toolchain")
-          _path = get_label_info("$_tgt($pw_protobuf_compiler_TOOLCHAIN)",
-                                 "target_gen_dir")
-          _name = get_label_info(_tgt, "name")
-
-          args += [
-            "--proto-library=$_tgt",
-            "--proto-library-file",
-            rebase_path("$_path/$_name.proto_library/python_package.txt"),
-          ]
-
-          public_deps +=
-              [ "$_tgt.python._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
-        }
+        public_deps = [ ":$target_name._mirror_sources_to_out_dir" ]
 
         outputs = _setup_sources
       }
@@ -647,6 +615,10 @@ template("pw_python_group") {
 
   group(target_name) {
     deps = _python_deps
+
+    if (defined(invoker.other_deps)) {
+      deps += invoker.other_deps
+    }
   }
 
   foreach(subtarget, pw_python_package_subtargets) {

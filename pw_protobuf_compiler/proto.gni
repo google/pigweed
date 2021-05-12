@@ -98,13 +98,30 @@ template("_pw_invoke_protoc") {
 
       if (defined(invoker.metadata)) {
         metadata = invoker.metadata
-      } else {
-        metadata = {
-          protoc_outputs = rebase_path(outputs)
-          root = [ rebase_path(_out_dir) ]
-        }
       }
     }
+
+    # Output a .json file with information about this proto library.
+    _proto_info = {
+      label = get_label_info(":${invoker.target_name}", "label_no_toolchain")
+      protoc_outputs = rebase_path(get_target_outputs(":$target_name._gen"))
+      root = rebase_path(_out_dir)
+      package = invoker.package
+
+      nested_in_python_package = ""
+      if (defined(invoker.python_package)) {
+        nested_in_python_package =
+            get_label_info(invoker.python_package, "label_no_toolchain")
+      }
+
+      dependencies = []
+      foreach(dep, invoker.deps) {
+        dependencies +=
+            rebase_path([ get_label_info(dep, "target_gen_dir") + "/" +
+                              get_label_info(dep, "name") + ".json" ])
+      }
+    }
+    write_file("$target_gen_dir/$target_name.json", _proto_info, "json")
   } else {
     # protoc is only ever invoked from pw_protobuf_compiler_TOOLCHAIN.
     not_needed([ "target_name" ])
@@ -284,14 +301,13 @@ template("_pw_python_proto_library") {
     forward_variables_from(invoker, "*", _forwarded_vars + [ "python_package" ])
     language = "python"
     python_deps = [ "$dir_pw_protobuf_compiler:protobuf_requirements" ]
+
+    if (defined(invoker.python_package)) {
+      python_package = invoker.python_package
+    }
   }
 
   if (defined(invoker.python_package) && invoker.python_package != "") {
-    # If nested in a Python package, write the package's name to a file so
-    # pw_python_package can check that the dependencies are correct.
-    write_file("${invoker.base_out_dir}/python_package.txt",
-               get_label_info(invoker.python_package, "label_no_toolchain"))
-
     # If anyone attempts to depend on this Python package, print an error.
     pw_error(target_name) {
       _pkg = get_label_info(invoker.python_package, "label_no_toolchain")
@@ -305,9 +321,15 @@ template("_pw_python_proto_library") {
         deps = [ ":${invoker.target_name}" ]
       }
     }
-  } else {
-    write_file("${invoker.base_out_dir}/python_package.txt", "")
 
+    # This proto library is merged into another package, but create a target to
+    # collect its dependencies that the other package can depend on.
+    pw_python_group(target_name + "._deps") {
+      python_deps = invoker.deps
+      other_deps =
+          [ ":${invoker.target_name}._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
+    }
+  } else {
     # Create a Python package with the generated source files.
     pw_python_package(target_name) {
       forward_variables_from(invoker, _forwarded_vars)
@@ -386,25 +408,6 @@ template("pw_proto_library") {
     _prefix = ""
   }
 
-  _common = {
-    base_target = target_name
-
-    # This is the output directory for all files related to this proto library.
-    # Sources are mirrored to "$base_out_dir/sources" and protoc puts outputs in
-    # "$base_out_dir/$language" by default.
-    base_out_dir =
-        get_label_info(":$target_name($pw_protobuf_compiler_TOOLCHAIN)",
-                       "target_gen_dir") + "/$target_name.proto_library"
-
-    compile_dir = "$base_out_dir/sources"
-
-    # Refer to the source files as the are mirrored to the output directory.
-    sources = []
-    foreach(file, rebase_path(invoker.sources, _source_root)) {
-      sources += [ "$compile_dir/$_prefix/$file" ]
-    }
-  }
-
   _package_dir = ""
   _source_names = []
 
@@ -458,6 +461,27 @@ template("pw_proto_library") {
     _deps = invoker.deps
   } else {
     _deps = []
+  }
+
+  _common = {
+    base_target = target_name
+
+    # This is the output directory for all files related to this proto library.
+    # Sources are mirrored to "$base_out_dir/sources" and protoc puts outputs in
+    # "$base_out_dir/$language" by default.
+    base_out_dir =
+        get_label_info(":$target_name($pw_protobuf_compiler_TOOLCHAIN)",
+                       "target_gen_dir") + "/$target_name.proto_library"
+
+    compile_dir = "$base_out_dir/sources"
+
+    # Refer to the source files as the are mirrored to the output directory.
+    sources = []
+    foreach(file, rebase_path(invoker.sources, _source_root)) {
+      sources += [ "$compile_dir/$_prefix/$file" ]
+    }
+
+    package = _package_dir
   }
 
   # For each proto target, create a file which collects the base directories of
