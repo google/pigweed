@@ -12,7 +12,7 @@ a crash if the condition is not met. Consistent use of asserts is one aspect of
 defensive programming that can lead to more reliable and less buggy code.
 
 The assert API facilitates flexible crash handling through Pigweed's facade
-mechanism. The API is desigend to enable features like:
+mechanism. The API is designed to enable features like:
 
 - Optional ancillary printf-style messages along assertions
 - Capturing actual values of binary operator assertions like ``a < b``
@@ -649,12 +649,12 @@ Pigweed uses these conventions to decide between ``CHECK_*`` and ``DCHECK_*``:
 
 How should objects be asserted against or compared?
 ---------------------------------------------------
-Unfortunatly, there is no native mechanism for this, and instead the way to
+Unfortunately, there is no native mechanism for this, and instead the way to
 assert object states or comparisons is with the normal ``PW_CHECK_*`` macros
 that operate on booleans, ints, and floats.
 
 This is due to the requirement of supporting C and also tokenization. It may be
-possible support rich object comparions by defining a convention for
+possible support rich object comparisons by defining a convention for
 stringifying objects; however, this hasn't been added yet. Additionally, such a
 mechanism would not work well with tokenization. In particular, it would
 require runtime stringifying arguments and rendering them with ``%s``, which

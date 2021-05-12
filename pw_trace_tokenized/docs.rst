@@ -16,7 +16,7 @@ Status
 This module is currently in development, and is therefore still undergoing
 significant changes.
 
-Future work will add:
+Future work will:
 
 1. Add a more complete API for how to retrieve data from ring_buffer.
 2. Add a Python library to decode the trace data.
@@ -60,7 +60,7 @@ Dependencies
 ---------
 Macro API
 ---------
-All code should use the trace API facade directly, this backend fully
+All code should use the trace API facade directly. This backend fully
 implements all features of the tracing facade.
 
 
@@ -139,7 +139,7 @@ not have a group, use ``PW_TRACE_GROUP_LABEL_DEFAULT``.
 -----------
 Time source
 -----------
-Tracing rquires the platform to provide the time source for tracing, this can
+Tracing requires the platform to provide the time source for tracing, this can
 be done in one of a few ways.
 
 1. Create a file with the default time functions, and provide as build variable
@@ -159,7 +159,7 @@ Buffer
 ------
 The optional trace buffer adds a ring buffer which contains the encoded trace
 data. This is still a work in progress, in particular better methods for
-retireving the data still needs to be added. Currently there is an accessor for
+retrieving the data still need to be added. Currently there is an accessor for
 the underlying ring buffer object, but this is a short term solution.
 
 .. cpp:function:: void ClearBuffer()

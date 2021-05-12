@@ -51,7 +51,7 @@ module:
 
  - ``int main()``: This is where applications reside.
  - ``void pw_boot_PreStaticMemoryInit()``: This function executes just before
-   static memory has been zerod and static data is intialized. This function
+   static memory has been zeroed and static data is intialized. This function
    should set up any early initialization that should be done before static
    memory is initialized, such as:
 

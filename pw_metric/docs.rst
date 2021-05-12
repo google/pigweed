@@ -150,7 +150,7 @@ reasons:
   UART). In those cases, metrics provide a low-overhead approach to understand
   what is happening. During early boot, metrics can be incremented, then after
   boot dumping the metrics provides insights into what happened. While basic
-  counter variables can work in these contexts to, one still has to deal with
+  counter variables can work in these contexts too, one still has to deal with
   the offloading problem; which the library handles.
 
 ---------------------
@@ -308,7 +308,7 @@ tokenizing the metric and group names.
       }
 
   You can also put a metric into a group with the macro. Metrics can belong to
-  strictly one group, otherwise a assertion will fail. Example:
+  strictly one group, otherwise an assertion will fail. Example:
 
   .. code::
 
@@ -653,7 +653,7 @@ returned metrics (post detokenization and jsonified) might look something like:
     "/i2c1/gyro/resets": 24,
     "/i2c1/gyro/hangs": 1,
     "/spi1/thermocouple/reads": 242,
-    "/spi1/thermocouple/temp_celcius": 34.52,
+    "/spi1/thermocouple/temp_celsius": 34.52,
   }
 
 Note that there is no nesting of the groups; the nesting is implied from the
@@ -717,8 +717,8 @@ For example:
 
   Calls to is ``MetricService::Get`` are blocking and will send all metrics
   immediately, even though it is a server-streaming RPC. This will work fine if
-  the device doesn't have too many metics, or doesn't have concurrent RPCs like
-  logging, but could be a problem in some cases.
+  the device doesn't have too many metrics, or doesn't have concurrent RPCs
+  like logging, but could be a problem in some cases.
 
   We plan to offer an async version where the application is responsible for
   pumping the metrics into the streaming response. This gives flow control to
@@ -818,7 +818,7 @@ Roadmap & Status
   metrics are enabled or disabled at compile time. This may rely on of C++20's
   support for zero-sized members to fully remove the cost.
 
-- **Async RCPC** - The current RPC service exports the metrics by streaming
+- **Async RPC** - The current RPC service exports the metrics by streaming
   them to the client in batches. However, the current solution streams all the
   metrics to completion; this may block the RPC thread. In the future we will
   have an async solution where the user is in control of flow priority.

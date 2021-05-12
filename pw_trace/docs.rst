@@ -280,7 +280,7 @@ at the same time, the trace_id is used to separate these traces.
 ----------------------
 Python Trace Generator
 ----------------------
-The Python tool is still in early developments, but currently it supports
+The Python tool is still in early development, but currently it supports
 generating a list of json lines from a list of trace events.
 
 To view the trace, these lines can be saved to a file and loaded into

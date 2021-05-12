@@ -75,8 +75,8 @@ before the global static C++ constructors, but after the BSS and data sections
 are initialized in RAM.
 
 The preferred way to clear Persistent RAM is to simply zero entire persistent
-RAM sections and/or memory regions. Pigweed's persistents containers have picked
-integrity checks which work with zerod memory, meaning they do not hold a value
+RAM sections and/or memory regions. Pigweed's persistent containers have picked
+integrity checks which work with zeroed memory, meaning they do not hold a value
 after zeroing. Alternatively containers can be individually cleared.
 
 The boot sequence itself is tightly coupled to the number of persistent sections

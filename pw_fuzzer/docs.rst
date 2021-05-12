@@ -48,7 +48,7 @@ the `fuzz target function`__ guidelines given by libFuzzer:
 
 When writing you fuzz target function, you may want to consider:
 
-- It is acceptable to return early if the input doesn't mean some constraints,
+- It is acceptable to return early if the input doesn't meet some constraints,
   e.g. it is too short.
 - If your fuzzer accepts data with a well-defined format, you can bootstrap
   coverage by crafting examples and adding them to a `corpus`_.

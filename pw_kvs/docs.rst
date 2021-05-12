@@ -49,7 +49,7 @@ internal state is updated to reflect the new entry. The previously stored KV
 entries for that key are not modified or removed from flash storage, until
 garbage collection reclaims the “stale” entries.
 
-`Garbage collection`_ is done by coping any currently valid KV entries in the
+`Garbage collection`_ is done by copying any currently valid KV entries in the
 sector to be garbage collected to a different sector and then erasing the
 sector.
 
