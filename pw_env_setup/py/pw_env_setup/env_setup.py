@@ -178,7 +178,8 @@ class EnvSetup(object):
     def __init__(self, pw_root, cipd_cache_dir, shell_file, quiet, install_dir,
                  use_pigweed_defaults, cipd_package_file, virtualenv_root,
                  virtualenv_requirements, virtualenv_gn_target,
-                 virtualenv_gn_out_dir, json_file, project_root, config_file):
+                 virtualenv_gn_out_dir, json_file, project_root, config_file,
+                 use_existing_cipd):
         self._env = environment.Environment()
         self._project_root = project_root
         self._pw_root = pw_root
@@ -206,6 +207,8 @@ class EnvSetup(object):
             self._parse_config_file(config_file)
 
         self._json_file = json_file
+
+        self._use_existing_cipd = use_existing_cipd
 
         setup_root = os.path.join(pw_root, 'pw_env_setup', 'py',
                                   'pw_env_setup')
@@ -384,15 +387,24 @@ Then use `set +x` to go back to normal.
         return 0
 
     def cipd(self, spin):
+        """Set up cipd and install cipd packages."""
+
         install_dir = os.path.join(self._install_dir, 'cipd')
 
-        try:
-            cipd_client = cipd_wrapper.init(install_dir, silent=True)
-        except cipd_wrapper.UnsupportedPlatform as exc:
-            return result_func(('    {!r}'.format(exc), ))(
-                _Result.Status.SKIPPED,
-                '    abandoning CIPD setup',
-            )
+        # There's no way to get to the UnsupportedPlatform exception if this
+        # flag is set, but this flag should only be set in LUCI builds which
+        # will always have CIPD.
+        if self._use_existing_cipd:
+            cipd_client = 'cipd'
+
+        else:
+            try:
+                cipd_client = cipd_wrapper.init(install_dir, silent=True)
+            except cipd_wrapper.UnsupportedPlatform as exc:
+                return result_func(('    {!r}'.format(exc), ))(
+                    _Result.Status.SKIPPED,
+                    '    abandoning CIPD setup',
+                )
 
         package_files, glob_warnings = _process_globs(self._cipd_package_file)
         result = result_func(glob_warnings)
@@ -572,6 +584,12 @@ def parse(argv=None):
         '--json-file',
         help='Dump environment variable operations to a JSON file.',
         default=None,
+    )
+
+    parser.add_argument(
+        '--use-existing-cipd',
+        help='Use cipd executable from the environment instead of fetching it.',
+        action='store_true',
     )
 
     args = parser.parse_args(argv)
