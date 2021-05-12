@@ -34,6 +34,9 @@ declare_args() {
   #
   # If this list is empty, pw_toolchain_size_report targets become no-ops.
   pw_bloat_TOOLCHAINS = []
+
+  # Controls whether to display size reports in the build output.
+  pw_bloat_SHOW_SIZE_REPORTS = false
 }
 
 # Creates a target which runs a size report diff on a set of executables.
@@ -186,8 +189,8 @@ template("pw_size_report") {
         deps = _all_target_dependencies
         args = _bloat_script_args + _binary_paths
 
-        # Print size reports to stdout when they are generated.
-        capture_output = false
+        # Print size reports to stdout when they are generated, if requested.
+        capture_output = !pw_bloat_SHOW_SIZE_REPORTS
       }
     }
   } else {

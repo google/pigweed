@@ -63,9 +63,10 @@ base for the size diff can be specified either globally through the top-level
     ]
   }
 
-When the size report target runs, it will print its report card to stdout.
-Additionally, size report targets also generate ReST output, which is described
-below.
+Size reports are typically included in ReST documentation, as described in
+`Documentation integration`_. Size reports may also be printed in the build
+output if desired. To enable this in the GN build, set the
+``pw_bloat_SHOW_SIZE_REPORTS`` build arg to ``true``.
 
 Documentation integration
 =========================
