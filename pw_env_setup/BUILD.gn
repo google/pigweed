@@ -53,6 +53,9 @@ pw_python_group("python") {
     # Standalone scripts
     "$dir_pw_hdlc/rpc_example:example_script",
     "$dir_pw_third_party/nanopb:generate_nanopb_proto",
+
+    # Python requirements for CIPD packages that don't have dedicated modules.
+    ":renode_requirements",
   ]
 }
 
@@ -61,5 +64,13 @@ pw_python_group("target_support_packages") {
   python_deps = [
     "$dir_pigweed/targets/lm3s6965evb-qemu/py",
     "$dir_pigweed/targets/stm32f429i-disc1/py",
+  ]
+}
+
+pw_python_requirements("renode_requirements") {
+  requirements = [
+    "psutil",
+    "pyyaml",
+    "robotframework==3.1",
   ]
 }
