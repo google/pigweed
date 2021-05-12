@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2021 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -42,8 +42,10 @@ declare_args() {
       get_path_info("pw_cpu_exception_cortex_m", "abspath")
   dir_pw_docgen = get_path_info("pw_docgen", "abspath")
   dir_pw_doctor = get_path_info("pw_doctor", "abspath")
-  dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
   dir_pw_env_setup = get_path_info("pw_env_setup", "abspath")
+  dir_pw_function = get_path_info("pw_function", "abspath")
+  dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")
+  dir_pw_hex_dump = get_path_info("pw_hex_dump", "abspath")
   dir_pw_hdlc = get_path_info("pw_hdlc", "abspath")
   dir_pw_i2c = get_path_info("pw_i2c", "abspath")
   dir_pw_interrupt = get_path_info("pw_interrupt", "abspath")
@@ -63,7 +65,6 @@ declare_args() {
   dir_pw_minimal_cpp_stdlib = get_path_info("pw_minimal_cpp_stdlib", "abspath")
   dir_pw_module = get_path_info("pw_module", "abspath")
   dir_pw_multisink = get_path_info("pw_multisink", "abspath")
-  dir_pw_fuzzer = get_path_info("pw_fuzzer", "abspath")
   dir_pw_package = get_path_info("pw_package", "abspath")
   dir_pw_persistent_ram = get_path_info("pw_persistent_ram", "abspath")
   dir_pw_polyfill = get_path_info("pw_polyfill", "abspath")
