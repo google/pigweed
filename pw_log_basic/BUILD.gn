@@ -45,8 +45,14 @@ pw_source_set("pw_log_basic") {
     "public_overrides/pw_log_backend/log_backend.h",
   ]
   public_deps = [ dir_pw_preprocessor ]
+}
 
+# The log backend deps that might cause circular dependencies, since
+# pw_log is so ubiquitous. These deps are kept separate so they can be
+# depended on from elsewhere.
+pw_source_set("pw_log_basic.impl") {
   deps = [
+    ":pw_log_basic",
     "$dir_pw_log:facade",
     dir_pw_string,
     dir_pw_sys_io,
@@ -64,13 +70,6 @@ pw_source_set("pw_log_basic") {
     "log_basic.cc",
     "pw_log_basic_private/config.h",
   ]
-}
-
-# TODO(ewout): Fill this out once all users are using link deps.
-# The log backend deps that might cause circular dependencies, since
-# pw_log is so ubiquitous. These deps are kept separate so they can be
-# depended on from elsewhere.
-pw_source_set("pw_log_basic.impl") {
 }
 
 pw_doc_group("docs") {

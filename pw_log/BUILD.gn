@@ -35,8 +35,7 @@ pw_facade("pw_log") {
     "public/pw_log/shorter.h",
   ]
 
-  # TODO(pwbug/372): Update projects to properly list pw_log:impl.
-  # require_link_deps = [ ":impl" ]
+  require_link_deps = [ ":impl" ]
 }
 
 # pw_log is low-level and ubiquitous. Because of this, it can often cause

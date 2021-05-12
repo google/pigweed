@@ -28,7 +28,7 @@ declare_args() {
   pw_log_tokenized_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
 }
 
-config("public_includes") {
+config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
@@ -41,8 +41,8 @@ config("backend_config") {
 # This target provides the backend for pw_log.
 pw_source_set("pw_log_tokenized") {
   public_configs = [
-    ":public_includes",
     ":backend_config",
+    ":public_include_path",
   ]
   public_deps = [
     "$dir_pw_log:facade",
@@ -53,35 +53,24 @@ pw_source_set("pw_log_tokenized") {
   public = [
     "public/pw_log_tokenized/config.h",
     "public/pw_log_tokenized/log_tokenized.h",
+    "public_overrides/pw_log_backend/log_backend.h",
   ]
 }
 
-# TODO(ewout): remove this once all users are migrated off this target, using
-# link deps for the log impl instead.
-pw_source_set("log_backend") {
-  public_configs = [ ":backend_config" ]
-  public_deps = [ ":pw_log_tokenized" ]
-  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
-  deps = [ "$dir_pw_tokenizer:global_handler_with_payload" ]
-}
-
-# TODO(ewout): remove this once all users are migrated off this target, using
-# pw_log_tokenized and its pw_log_tokenized.impl instead.
-pw_source_set("log_backend.impl") {
-}
-
-# TODO(ewout): Fill this out once all users are using link deps.
 # The log backend deps that might cause circular dependencies, since
 # pw_log is so ubiquitous. These deps are kept separate so they can be
 # depended on from elsewhere.
 pw_source_set("pw_log_tokenized.impl") {
-  public_deps = [ ":log_backend" ]
+  deps = [
+    ":pw_log_tokenized",
+    "$dir_pw_tokenizer:global_handler_with_payload",
+  ]
 }
 
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
 # Base64, encodes them into HDLC frames, and writes them over sys_io.
 pw_source_set("base64_over_hdlc") {
-  public_configs = [ ":public_includes" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_log_tokenized/base64_over_hdlc.h" ]
   sources = [ "base64_over_hdlc.cc" ]
   deps = [
