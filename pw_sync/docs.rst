@@ -969,7 +969,7 @@ efficiently as possible for the platform that it is used on.
 
 This simpler but highly portable class of signaling primitives is intended to
 ensure that a portability efficiency tradeoff does not have to be made up front.
-For example we intend to provide a ``pw::sync::Notification`` facade which
+For example we intend to provide a ``pw::sync::ThreadNotification`` facade which
 permits a singler consumer to block until an event occurs. This should be
 backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
@@ -1043,12 +1043,23 @@ is NMI safe.
   * - CMSIS-RTOS API v2 & RTX5
     - Planned
 
+Conditional Variables
+=====================
+We've decided for now to skip on conditional variables. These are constructs,
+which are typically not natively available on RTOSes. CVs would have to be
+backed by a multiple hidden semaphore(s) in addition to the explicit public
+mutex. In other words a CV typically ends up as a a composition of
+synchronization primitives on RTOSes. That being said, one could implement them
+using our semaphore and mutex layers and we may consider providing this in the
+future. However for most of our resource constrained customers they will mostly
+likely be using semaphores more often than CVs.
+
 Coming Soon
 ===========
 We are intending to provide facades for:
 
-* ``pw::sync::Notification``: A portable abstraction to allow threads to receive
-  notification of a single occurrence of a single event.
+* ``pw::sync::ThreadNotification``: A portable abstraction to allow a single
+  thread to receive notification of a single occurrence of a single event.
 
 * ``pw::sync::EventGroup`` A facade for a common primitive on RTOSes like
   FreeRTOS, RTX5, ThreadX, and embOS which permit threads and interrupts to

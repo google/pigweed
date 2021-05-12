@@ -27,6 +27,13 @@ thread's context. Unlike ``std::thread``, the API requires
 ``pw::thread::ThreadCore`` objects and functions which match the
 ``pw::thread::Thread::ThreadRoutine`` signature.
 
+We recognize that the C++11's STL ``std::thread``` API has some drawbacks where
+it is easy to forget to join or detach the thread handle. Because of this, we
+offer helper wrappers like the ``pw::thread::DetachedThread``. Soon we will
+extend this by also adding a ``pw::thread::JoiningThread`` helper wrapper which
+will also have a lighter weight C++20 ``std::jthread`` like cooperative
+cancellation contract to make joining safer and easier.
+
 Threads may begin execution immediately upon construction of the associated
 thread object (pending any OS scheduling delays), starting at the top-level
 function provided as a constructor argument. The return value of the

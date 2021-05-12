@@ -7,9 +7,20 @@ Pigweed's chrono module provides facilities for applications to deal with time,
 leveraging many pieces of STL's the ``std::chrono`` library but with a focus
 on portability for constrained embedded devices and maintaining correctness.
 
+At a high level Pigweed's time primitives rely on C++'s
+`<chrono> <https://en.cppreference.com/w/cpp/header/chrono>`_ library to enable
+users to express intents with strongly typed real time units. In addition, it
+extends the C++ named
+`Clock <https://en.cppreference.com/w/cpp/named_req/Clock>`_ and
+`TrivialClock <https://en.cppreference.com/w/cpp/named_req/TrivialClock>`_
+requirements with additional attributes such as whether a clock is monotonic
+(not just steady), is always enabled (or requires enabling), is free running
+(works even if interrupts are masked), whether it is safe to use in a
+Non-Maskable Interrupts (NMI), what the epoch is, and more.
+
 .. warning::
-  This module is under construction, not ready for use, and the documentation
-  is incomplete.
+  This module is still under construction, the API is not yet stable. Also the
+  documentation is incomplete.
 
 SystemClock facade
 ------------------

@@ -15,6 +15,7 @@
   docs/code_of_conduct
   docs/embedded_cpp_guide
   Code Style <docs/style_guide>
+  docs/os_abstraction_layers
   targets
   Build System <build_system>
   FAQ <docs/faq>
