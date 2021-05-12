@@ -35,6 +35,7 @@ class MemoryWriter : public Writer {
 
   ConstByteSpan WrittenData() const { return dest_.first(bytes_written_); }
 
+  std::byte* data() { return dest_.data(); }
   const std::byte* data() const { return dest_.data(); }
 
  private:
