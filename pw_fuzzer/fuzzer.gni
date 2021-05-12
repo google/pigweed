@@ -48,8 +48,9 @@ template("pw_fuzzer") {
       forward_variables_from(invoker, [ "visibility" ])
 
       if (!defined(deps)) {
-        deps += [ dir_pw_fuzzer ]
+        deps = []
       }
+      deps += [ dir_pw_fuzzer ]
 
       if (!defined(configs)) {
         configs = []
