@@ -207,6 +207,8 @@ class EnvSetup(object):
             self._parse_config_file(config_file)
 
         self._json_file = json_file
+        if not self._json_file:
+            self._json_file = os.path.join(self._install_dir, 'actions.json')
 
         self._use_existing_cipd = use_existing_cipd
 
@@ -582,7 +584,8 @@ def parse(argv=None):
 
     parser.add_argument(
         '--json-file',
-        help='Dump environment variable operations to a JSON file.',
+        help=('Dump environment variable operations to a JSON file. Default: '
+              '<install_dir>/actions.json'),
         default=None,
     )
 

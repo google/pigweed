@@ -236,6 +236,48 @@ never need to set these.
 ``PW_ENVSETUP_QUIET``
   Disables all non-error output.
 
+Non-Shell Environments
+**********************
+If using this outside of bash—for example directly from an IDE or CI
+system—users can process the ``actions.json`` file that's generated in the
+environment directory. It lists variables to set, clear, and modify. An
+example ``actions.json`` is shown below. The "append" and "prepend" actions
+are listed in the order they should be applied, so the
+``<pigweed-root>/out/host/host_tools`` entry should be at the beginning of
+``PATH`` and not in the middle somewhere.
+
+.. code-block:: json
+
+  {
+      "modify": {
+          "PATH": {
+              "append": [],
+              "prepend": [
+                  "<pigweed-root>/.environment/cipd",
+                  "<pigweed-root>/.environment/cipd/pigweed",
+                  "<pigweed-root>/.environment/cipd/pigweed/bin",
+                  "<pigweed-root>/.environment/cipd/luci",
+                  "<pigweed-root>/.environment/cipd/luci/bin",
+                  "<pigweed-root>/.environment/pigweed-venv/bin",
+                  "<pigweed-root>/out/host/host_tools"
+              ],
+              "remove": []
+          }
+      },
+      "set": {
+          "PW_PROJECT_ROOT": "<pigweed-root>",
+          "PW_ROOT": "<pigweed-root>",
+          "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/.environment",
+          "PW_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd",
+          "CIPD_CACHE_DIR": "/usr/local/google/home/mohrr/.cipd-cache-dir",
+          "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/pigweed",
+          "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/.environment/cipd/luci",
+          "VIRTUAL_ENV": "<pigweed-root>/.environment/pigweed-venv",
+          "PYTHONHOME": null,
+          "__PYVENV_LAUNCHER__": null
+      }
+  }
+
 Implementation
 **************
 

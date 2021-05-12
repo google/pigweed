@@ -89,7 +89,7 @@ SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
 if [ "$(basename "$_PW_BOOTSTRAP_PATH")" = "bootstrap.sh" ] || \
   [ ! -f "$SETUP_SH" ] || \
   [ ! -s "$SETUP_SH" ]; then
-  pw_bootstrap --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" --json-file "$_PW_ACTUAL_ENVIRONMENT_ROOT/actions.json" --config-file "$PW_ROOT/pw_env_setup/config.json"
+  pw_bootstrap --shell-file "$SETUP_SH" --install-dir "$_PW_ACTUAL_ENVIRONMENT_ROOT" --config-file "$PW_ROOT/pw_env_setup/config.json"
   pw_finalize bootstrap "$SETUP_SH"
 else
   pw_activate
