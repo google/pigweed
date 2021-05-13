@@ -244,19 +244,6 @@ template("pw_python_package") {
     _static_analysis = invoker.static_analysis
   }
 
-  # TODO(hepler): Remove support for the lint option.
-  if (defined(invoker.lint)) {
-    assert(!defined(invoker.static_analysis),
-           "'lint' is deprecated; use 'static_analysis' instead")
-
-    # Only allow 'lint = false', for backwards compatibility.
-    assert(invoker.lint == false, "'lint' is deprecated; use 'static_analysis'")
-    print("WARNING:",
-          "The 'lint' option for pw_python_package is deprecated.",
-          "Instead, use 'static_analysis = []' to disable linting.")
-    _static_analysis = []
-  }
-
   foreach(_tool, _static_analysis) {
     assert(_supported_static_analysis_tools + [ _tool ] - [ _tool ] !=
                _supported_static_analysis_tools,
