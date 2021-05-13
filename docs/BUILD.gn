@@ -57,6 +57,7 @@ group("module_docs") {
   deps = [
     "$dir_docker:docs",
     "$dir_pw_allocator:docs",
+    "$dir_pw_analog:docs",
     "$dir_pw_arduino_build:docs",
     "$dir_pw_assert:docs",
     "$dir_pw_assert_basic:docs",
@@ -95,6 +96,8 @@ group("module_docs") {
     "$dir_pw_log_rpc:docs",
     "$dir_pw_log_sink:docs",
     "$dir_pw_log_tokenized:docs",
+    "$dir_pw_malloc:docs",
+    "$dir_pw_malloc_freelist:docs",
     "$dir_pw_metric:docs",
     "$dir_pw_minimal_cpp_stdlib:docs",
     "$dir_pw_module:docs",
