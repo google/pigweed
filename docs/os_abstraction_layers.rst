@@ -3,9 +3,9 @@
 =====================
 OS Abstraction Layers
 =====================
-Pigweed’s operating system abstraction layers are configurable building blocks.
-They are designed to be lightweight, portable, and easy to use while giving
-users full control and configurability.
+Pigweed’s operating system abstraction layers are portable and configurable
+building blocks, giving users full control while maintaining high performance
+and low overhead.
 
 Although we primarily target smaller-footprint MMU-less 32-bit microcontrollers,
 the OS abstraction layers are written to work on everything from single-core
@@ -14,43 +14,38 @@ symmetric multiprocessing (SMP) embedded systems using Real Time Operating
 Systems (RTOS). They even fully work on your developer workstation on Linux,
 Windows, or MacOS!
 
+Pigweed has ports for the following systems:
+
 .. list-table::
 
   * - **Environment**
     - **Status**
-  * - FreeRTOS
-    - Supported
-  * - ThreadX
-    - Supported
-  * - embOS
+  * - STL (Mac, Window, & Linux)
+    - **✔ Supported**
+  * - `FreeRTOS <https://www.freertos.org/>`_
+    - **✔ Supported**
+  * - `Azure RTOS (formerly ThreadX) <https://azure.microsoft.com/en-us/services/rtos/>`_
+    - **✔ Supported**
+  * - `SEGGER embOS <https://www.segger.com/products/rtos/embos/>`_
     - *In Progress*
-  * - STL
-    - Supported
-  * - Zephyr
-    - Planned
-  * - CMSIS-RTOS API v2 & RTX5
-    - Planned
   * - Baremetal
     - *In Progress*
+  * - `Zephyr <https://www.zephyrproject.org/>`_
+    - Planned
+  * - `CMSIS-RTOS API v2 & RTX5 <https://www.keil.com/pack/doc/CMSIS/RTOS2/html/index.html>`_
+    - Planned
 
-.. contents::
-   :local:
-   :depth: 1
+Pigweed's OS abstraction layers are divided by the **functional grouping of the
+primitives**. Many of our APIs are similar or **nearly identical to C++'s
+Standard Template Library (STL)** with the notable exception that we do not
+support exceptions. We opted to follow the STL's APIs partially because they
+are relatively well thought out and many developers are already familiar with
+them, but also because this means they are compatible with existing helpers in
+the STL; for example, ``std::lock_guard``.
 
--------------
-OS Primitives
--------------
-Pigweed's OS abstraction layers are divided by the functional grouping of the
-primitives. Many of our APIs are similar or nearly identical to C++'s Standard
-Template Library (STL) with the notable exception that we do not support
-exceptions. We opted to follow the STL's APIs partially because they are
-relatively well thought out and many developers are already familiar with them,
-but also because this means they are compatible with existing helpers in the STL
-which can then be further leveraged.
-
----------------------------
-pw_chrono - Time Primitives
----------------------------
+---------------
+Time Primitives
+---------------
 The :ref:`module-pw_chrono` module provides the building blocks for expressing
 durations, timestamps, and acquiring the current time. This in turn is used by
 other modules, including  :ref:`module-pw_sync` and :ref:`module-pw_thread` as
@@ -77,8 +72,8 @@ that this module is optional and bare metal targets may opt not to use this.
     - Planned
 
 
-SystemClock
-===========
+System Clock
+============
 For RTOS and HAL interactions, we provide a ``pw::chrono::SystemClock`` facade
 which provides 64 bit timestamps and duration support along with a C API. For
 C++ there is an optional virtual wrapper, ``pw::chrono::VirtualSystemClock``,
@@ -108,9 +103,9 @@ particular clock, Pigweed's time bound APIs are strongly typed to use the
     return SystemClock::now() > timestamp;
   }
 
-------------------------------------
-pw_sync - Synchronization Primitives
-------------------------------------
+--------------------------
+Synchronization Primitives
+--------------------------
 The :ref:`module-pw_sync` provides the building blocks for synchronizing between
 threads and/or interrupts through signaling primitives and critical section lock
 primitives.
@@ -306,9 +301,9 @@ with an arbitrary token limit of 1, meaning it's either full or empty.
     result_ready_semaphore.acquire();
   }
 
---------------------------------
-pw_thread - Threading Primitives
---------------------------------
+--------------------
+Threading Primitives
+--------------------
 The :ref:`module-pw_thread` module provides the building blocks for creating and
 using threads including yielding and sleeping.
 
@@ -379,17 +374,15 @@ yielding the current thread.
     }
   }
 
---------------------------------------------
-Execution Contexts & Thread-Safety API Model
---------------------------------------------
-The explosion of real contexts is too large for Pigweed to fully cover in a way
-that provides value. First there are many more contexts than just threads and
-IRQ handlers on microcontrollers, there are many more meta contexts like
-non-blocking thread callbacks which may have scheduling and/or interrupts masked
-to some degree. On top of this some environments like in userspace may not even
-have interrupts and instead deal with signals. Instead we use the following
-simplified execution thread-safety model which our APIs should be ported to
-support regardless of the real contexts they are executed in:
+------------------
+Execution Contexts
+------------------
+Code runs in *execution contexts*. Common examples of execution contexts on
+microcontrollers are **thread context** and **interrupt context**, though there
+are others. Since OS abstactions deal with concurrency, it's important to
+understand what API primitives are safe to call in what contexts.  Since the
+number of execution contexts is too large for Pigweed to cover exhaustively,
+Pigweed has the following classes of APIs:
 
 **Thread Safe APIs** - These APIs are safe to use in any execution context where
 one can use blocking or yielding APIs such as sleeping, blocking on a mutex
@@ -408,25 +401,35 @@ can be used in any execution context which cannot use blocking or yielding APIs.
 In addition, these may be used by interrupts which are not masked when for
 example holding a SpinLock like CPU exceptions or C++/POSIX signals. These tend
 to come with significant overhead and restrictions compared to regular interrupt
-safe APIs as they cannot rely on critical sections for implementations, instead
-only atomic signaling can be used. An interrupt safe API may always be safely
+safe APIs as they **cannot rely on critical sections**, instead
+only atomic signaling can be used. An interrupt safe API may always be
 used in a context which permits interrupt safe and thread safe APIs.
 
-Instead of going with context specific APIs, e.g. FreeRTOS's ``*FromISR()``
-APIs, Pigweed opted to go with the merged (context agnostic) API which validates
-the context requirements through ``DASSERT`` and ``DCHECK`` in the backends
-(user configurable). We did this primarily for two reasons. The explosion of
-real contexts is too large for Pigweed to fully cover as mentioned above,
-meaning there would likely have to be some context aware multiplexing with our
-simplified thread safety model split APIs. Second, we would recommend a
-``DHCECK`` to enforce context requirements regardless, so we've opted with a
-simplest API which also happens to match both the C++'s STL and Google's Abseil
-relatively closely.
+On naming
+=========
+Instead of having context specific APIs like FreeRTOS's ``...FromISR()``,
+Pigweed has a single API which validates the context requirements through
+``DASSERT`` and ``DCHECK`` in the backends (user configurable). We did this for
+a few reasons:
 
----------------------------------------------------
-Construction Requirements & Initialization Paradigm
----------------------------------------------------
+#. **Too many contexts** - Since there are contexts beyond just thread,
+   interrupt, and NMI, having context-specefic APIs would be a hard to
+   maintain. The proliferation of postfixed APIs (``...FromISR``,
+   ``...FromNMI``, ``...FromThreadCriticalSection``, and so on) would also be
+   confusing for users.
 
+#. **Must verify context anyway** - Backends are requried to enforce context
+   requirements with ``DHCECK`` or related calls, so we chose a simple API
+   which happens to match both the C++'s STL and Google's Abseil.
+
+#. **Multi-context code** - Code running in multiple contexts would need to be
+   duplicated for each context if the APIs were postfixed, or duplicated with
+   macros. The authors chose the duplication/macro route in previous projects
+   and found it clunky and hard to maintain.
+
+-----------------------------
+Construction & Initialization
+-----------------------------
 **TL;DR: Pigweed OS primitives are initialized through C++ construction.**
 
 We have chosen to go with a model which initializes the synchronization
