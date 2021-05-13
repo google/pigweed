@@ -124,7 +124,7 @@ def push_commit(requires_dir: Path, push=True) -> str:
     output = DEFAULT_OUTPUT
     if push:
         res = _run_command(
-            ['git', 'push', HELPER_REPO, '+HEAD:refs/for/master'],
+            ['git', 'push', HELPER_REPO, '+HEAD:refs/for/main'],
             cwd=requires_dir,
         )
         output = res.stderr.decode()
