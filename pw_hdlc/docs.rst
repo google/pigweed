@@ -134,7 +134,8 @@ Python
   from pw_hdlc import encode
 
   ser = serial.Serial()
-  ser.write(encode.ui_frame(b'your data here!'))
+  address = 123
+  ser.write(encode.ui_frame(address, b'your data here!'))
 
 Decoder
 -------
