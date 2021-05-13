@@ -120,3 +120,95 @@ Error Handling
 While individual write calls on a proto encoder return pw::Status objects, the
 encoder tracks all status returns and "latches" onto the first error
 encountered. This status can be accessed via ``StreamingEncoder::status()``.
+
+Codegen
+-------
+pw_protobuf encoder codegen integration is supported in GN, Bazel, and CMake.
+The codegen is just a light wrapper around the ``StreamEncoder`` and
+``MemoryEncoder`` objects, providing named helper functions to write proto
+fields rather than requiring that field numbers are directly passed to an
+encoder. Namespaced proto enums are also generated, and used as the arguments
+when writing enum fields of a proto message.
+
+All generated messages provide a ``Fields`` enum that can be used directly for
+out-of-band encoding, or with the ``pw::protobuf::Decoder``.
+
+This module's codegen is available through the ``*.pwpb`` sub-target of a
+``pw_proto_library`` in GN, CMake, and Bazel. See :ref:`pw_protobuf_compiler's
+documentation <module-pw_protobuf_compiler>` for more information on build
+system integration for pw_protobuf codegen.
+
+Example ``BUILD.gn``:
+
+.. Code:: none
+
+  import("//build_overrides/pigweed.gni")
+
+  import("$dir_pw_build/target_types.gni")
+  import("$dir_pw_protobuf_compiler/proto.gni")
+
+  # This target controls where the *.pwpb.h headers end up on the include path.
+  # In this example, it's at "pet_daycare_protos/client.pwpb.h".
+  pw_proto_library("pet_daycare_protos") {
+    sources = [
+      "pet_daycare_protos/client.proto",
+    ]
+  }
+
+  pw_source_set("example_client") {
+    sources = [ "example_client.cc" ]
+    deps = [
+      ":pet_daycare_protos.pwpb",
+      dir_pw_bytes,
+      dir_pw_stream,
+    ]
+  }
+
+Example ``pet_daycare_protos/client.proto``:
+
+.. Code:: none
+
+  syntax = "proto3";
+  // The proto package controls the namespacing of the codegen. If this package
+  // were fuzzy.friends, the namespace for codegen would be fuzzy::friends::*.
+  package fuzzy_friends;
+
+  message Pet {
+    string name = 1;
+    string pet_type = 2;
+  }
+
+  message Client {
+    repeated Pet pets = 1;
+  }
+
+Example ``example_client.cc``:
+
+.. Code:: cpp
+
+  #include "pet_daycare_protos/client.pwpb.h"
+  #include "pw_protobuf/streaming_encoder.h"
+  #include "pw_stream/sys_io_stream.h"
+  #include "pw_bytes/span.h"
+
+  pw::stream::SysIoWriter sys_io_writer;
+  std::byte submessage_scratch_buffer[64];
+  // The constructor is the same as a pw::protobuf::StreamingEncoder.
+  fuzzy_friends::Client::StreamEncoder client(sys_io_writer,
+                                              submessage_scratch_buffer);
+
+  fuzzy_friends::Pet::StreamEncoder pet1 = client.GetPetsEncoder();
+
+  pet1.WriteName("Spot");
+  pet1.WritePetType("dog");
+  PW_CHECK_OK(pet1.Finalize());
+
+  {  // Since pet2 is scoped, it will automatically Finalize() on destruction.
+    fuzzy_friends::Pet::StreamEncoder pet2 = client.GetPetsEncoder();
+    pet2.WriteName("Slippers");
+    pet2.WritePetType("rabbit");
+  }
+
+  if (!client.status().ok()) {
+    PW_LOG_INFO("Failed to encode proto; %s", client.status().str());
+  }

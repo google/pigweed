@@ -81,12 +81,11 @@ class StreamingEncoder {
   ~StreamingEncoder() { Finalize(); }
 
   // Disallow copy/assign to avoid confusion about who owns the buffer.
-  StreamingEncoder(const StreamingEncoder& other) = delete;
   StreamingEncoder& operator=(const StreamingEncoder& other) = delete;
+  StreamingEncoder(const StreamingEncoder& other) = delete;
 
   // It's not safe to move an encoder as it could cause another encoder's
   // parent_ pointer to become invalid.
-  StreamingEncoder(StreamingEncoder&& other) = delete;
   StreamingEncoder& operator=(StreamingEncoder&& other) = delete;
 
   // Forwards the conservative write limit of the underlying pw::stream::Writer.
@@ -362,6 +361,39 @@ class StreamingEncoder {
     return WriteBytes(field_number, std::as_bytes(std::span(value)));
   }
 
+  // Writes a proto string key-value pair.
+  //
+  // Precondition: Encoder has no active child encoder.
+  Status WriteString(uint32_t field_number, const char* value, size_t len) {
+    return WriteBytes(field_number, std::as_bytes(std::span(value, len)));
+  }
+
+  // Writes a proto string key-value pair.
+  // TODO(384): This function is not safe and will be removed as part of the
+  // transition away from the old protobuf encoder.
+  //
+  // Precondition: Encoder has no active child encoder.
+  Status WriteString(uint32_t field_number, const char* value) {
+    return WriteBytes(field_number,
+                      std::as_bytes(std::span(std::string_view(value))));
+  }
+
+ protected:
+  // We need this for codegen.
+  constexpr StreamingEncoder(StreamingEncoder&& other)
+      : writer_(&other.writer_ == &other.memory_writer_ ? memory_writer_
+                                                        : other.writer_),
+        status_(other.status_),
+        parent_(other.parent_),
+        nested_field_number_(other.nested_field_number_),
+        memory_writer_(std::move(other.memory_writer_)) {
+    PW_ASSERT(nested_field_number_ == 0);
+    // Make the nested encoder look like it has an open child to block writes
+    // for the remainder of the object's life.
+    other.nested_field_number_ = kFirstReservedNumber;
+    other.parent_ = nullptr;
+  }
+
  private:
   friend class MemoryEncoder;
 
@@ -518,11 +550,14 @@ class MemoryEncoder : public StreamingEncoder {
 
   // It's not safe to move an encoder as it could cause another encoder's
   // parent_ pointer to become invalid.
-  MemoryEncoder(MemoryEncoder&& other) = delete;
   MemoryEncoder& operator=(MemoryEncoder&& other) = delete;
 
   const std::byte* data() const { return memory_writer_.data(); }
   size_t size() const { return memory_writer_.bytes_written(); }
+
+ protected:
+  // This is needed by codegen.
+  MemoryEncoder(MemoryEncoder&& other) = default;
 };
 
 }  // namespace pw::protobuf
