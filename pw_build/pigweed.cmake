@@ -69,7 +69,8 @@ function(pw_auto_add_simple_module MODULE)
 
   # Create a library with all source files not ending in _test.
   set(sources "${all_sources}")
-  list(FILTER sources EXCLUDE REGEX "_test(\\.cc|(_c)?\\.c)$")
+  list(FILTER sources EXCLUDE REGEX "_test(\\.cc|(_c)?\\.c)$")  # *_test.cc
+  list(FILTER sources EXCLUDE REGEX "^test(\\.cc|(_c)?\\.c)$")  # test.cc
   list(FILTER sources EXCLUDE REGEX "_fuzzer\\.cc$")
 
   file(GLOB_RECURSE headers *.h)
