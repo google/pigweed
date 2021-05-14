@@ -30,9 +30,11 @@ constexpr ULONG kThreadDoneBit = 1;
 #endif  // PW_THREAD_JOINING_ENABLED
 }  // namespace
 
-void Context::RunThread(ULONG void_context_ptr) {
+void Context::ThreadEntryPoint(ULONG void_context_ptr) {
   Context& context = *reinterpret_cast<Context*>(void_context_ptr);
-  context.entry_(context.arg_);
+
+  // Invoke the user's thread function. This may never return.
+  context.user_thread_entry_function_(context.user_thread_entry_arg_);
 
   // Raise our preemption threshold as a thread only critical section to guard
   // against join() and detach().
@@ -50,8 +52,9 @@ void Context::RunThread(ULONG void_context_ptr) {
     context.set_in_use(false);
 
 #if PW_THREAD_JOINING_ENABLED
-    // Just in case someone abused our API, ensure their use of the event group
-    // is properly handled by the kernel regardless.
+    // If the thread handle was detached before the thread finished execution,
+    // i.e. got here, then we are responsible for cleaning up the join event
+    // group.
     const UINT event_group_result =
         tx_event_flags_delete(&context.join_event_group());
     PW_DCHECK_UINT_EQ(TX_SUCCESS,
@@ -144,7 +147,7 @@ Thread::Thread(const thread::Options& facade_options,
   const UINT thread_result =
       tx_thread_create(&options.context()->tcb(),
                        const_cast<char*>(native_type_->name()),
-                       Context::RunThread,
+                       Context::ThreadEntryPoint,
                        reinterpret_cast<ULONG>(native_type_),
                        options.context()->stack().data(),
                        options.context()->stack().size_bytes(),
@@ -164,12 +167,12 @@ void Thread::detach() {
   tx_thread_resume(&native_type_->tcb());
 
   if (thread_done) {
-    // The task finished (hit end of Context::RunThread) before we invoked
-    // detach, clean up the thread.
+    // The task finished (hit end of Context::ThreadEntryPoint) before we
+    // invoked detach, clean up the thread.
     Context::DeleteThread(*native_type_);
   } else {
     // We're detaching before the task finished, defer cleanup to the task at
-    // the end of Context::RunThread.
+    // the end of Context::ThreadEntryPoint.
   }
 
   // Update to no longer represent a thread of execution.

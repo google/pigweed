@@ -104,6 +104,7 @@ pw_source_set("thread") {
   public_deps = [
     ":config",
     "$dir_pw_assert",
+    "$dir_pw_string",
     "$dir_pw_third_party/threadx",
     "$dir_pw_thread:id",
     "$dir_pw_thread:thread.facade",

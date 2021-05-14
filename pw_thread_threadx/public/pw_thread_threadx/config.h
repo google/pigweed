@@ -17,8 +17,16 @@
 #include "tx_api.h"
 
 // Whether thread joining is enabled. By default this is disabled.
-// When enabled this adds a TX_EVENT_FLAGS_GROUP to every pw::thread::Thread's
-// context.
+//
+// We suggest only enabling this when thread joining is required to minimize
+// the RAM and ROM cost of threads.
+//
+// Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
+// a TX_EVENT_FLAGS_GROUP to every thread's pw::thread::threadx::Context. In
+// addition, there is a minute ROM cost to construct and destroy this added
+// object.
+//
+// PW_THREAD_JOINING_ENABLED gets set to this value.
 #ifndef PW_THREAD_THREADX_CONFIG_JOINING_ENABLED
 #define PW_THREAD_THREADX_CONFIG_JOINING_ENABLED 0
 #endif  // PW_THREAD_THREADX_CONFIG_JOINING_ENABLED
@@ -28,7 +36,7 @@
 // stack size.
 #ifndef PW_THREAD_THREADX_CONFIG_DEFAULT_STACK_SIZE_WORDS
 #define PW_THREAD_THREADX_CONFIG_DEFAULT_STACK_SIZE_WORDS \
-  TX_MINIMUM_STACK / sizeof(ULONG)
+  (TX_MINIMUM_STACK / sizeof(ULONG))
 #endif  // PW_THREAD_THREADX_CONFIG_DEFAULT_STACK_SIZE_WORDS
 
 // The maximum length of a thread's name, not including null termination. By
@@ -48,7 +56,7 @@
 // The minimum priority level, this is normally based on the number of priority
 // levels.
 #ifndef PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
-#define PW_THREAD_THREADX_CONFIG_MIN_PRIORITY TX_MAX_PRIORITIES - 1
+#define PW_THREAD_THREADX_CONFIG_MIN_PRIORITY (TX_MAX_PRIORITIES - 1)
 #endif  // PW_THREAD_THREADX_CONFIG_MIN_PRIORITY
 
 // The default priority level. By default this uses the minimal ThreadX
@@ -61,7 +69,7 @@
 namespace pw::thread::threadx::config {
 
 inline constexpr size_t kMaximumNameLength =
-    PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN + 1;
+    PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN;
 inline constexpr size_t kMinimumStackSizeWords =
     TX_MINIMUM_STACK / sizeof(ULONG);
 inline constexpr size_t kDefaultStackSizeWords =

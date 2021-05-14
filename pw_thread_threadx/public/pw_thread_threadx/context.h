@@ -17,6 +17,7 @@
 #include <cstring>
 #include <span>
 
+#include "pw_string/util.h"
 #include "pw_thread_threadx/config.h"
 #include "tx_api.h"
 #include "tx_thread.h"
@@ -63,17 +64,12 @@ class Context {
   void set_in_use(bool in_use = true) { in_use_ = in_use; }
 
   const char* name() const { return name_.data(); }
-  void set_name(const char* name) {
-    strncpy(name_.data(), name, name_.size() - 1);
-    // Forcefully NULL terminate as strncpy does not NULL terminate if the count
-    // limit is hit.
-    name_[name_.size() - 1] = '\0';
-  }
+  void set_name(const char* name) { string::Copy(name, name_); }
 
   using ThreadRoutine = void (*)(void* arg);
   void set_thread_routine(ThreadRoutine entry, void* arg) {
-    entry_ = entry;
-    arg_ = arg;
+    user_thread_entry_function_ = entry;
+    user_thread_entry_arg_ = arg;
   }
 
   bool detached() const { return detached_; }
@@ -86,14 +82,14 @@ class Context {
   TX_EVENT_FLAGS_GROUP& join_event_group() { return event_group_; }
 #endif  // PW_THREAD_JOINING_ENABLED
 
-  static void RunThread(ULONG void_context_ptr);
+  static void ThreadEntryPoint(ULONG void_context_ptr);
   static void DeleteThread(Context& context);
 
   TX_THREAD tcb_;
   std::span<ULONG> stack_span_;
 
-  ThreadRoutine entry_ = nullptr;
-  void* arg_ = nullptr;
+  ThreadRoutine user_thread_entry_function_ = nullptr;
+  void* user_thread_entry_arg_ = nullptr;
 #if PW_THREAD_JOINING_ENABLED
   // Note that the ThreadX life cycle of this event group is managed together
   // with the thread life cycle, not this object's life cycle.
@@ -104,8 +100,8 @@ class Context {
   bool thread_done_ = false;
 
   // The TCB does not have storage for the name, ergo we provide storage for
-  // the thread's name which can be truncated down to just a null delimeter.
-  std::array<char, config::kMaximumNameLength> name_;
+  // the thread's name which can be truncated down to just a null delimiter.
+  std::array<char, config::kMaximumNameLength + 1> name_;
 };
 
 // Static thread context allocation including the stack along with the Context.

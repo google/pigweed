@@ -65,6 +65,7 @@ pw_cc_library(
     deps = [
         ":id",
         "//pw_assert",
+        "//pw_string",
         "//pw_thread:thread_headers",
     ],
     # TODO(pwbug/317): This should depend on ThreadX but our third parties
