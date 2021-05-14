@@ -5,7 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_DEVICE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HOST_DEVICE_H_
 
-#include <fuchsia/hardware/bluetooth/c/fidl.h>
+#include <fuchsia/hardware/bluetooth/llcpp/fidl.h>
 #include <fuchsia/hardware/bt/vendor/c/banjo.h>
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
@@ -26,15 +26,16 @@ namespace bthost {
 // thread's event loop to be processed by the Host.
 class HostDevice;
 using HostDeviceType =
-    ddk::Device<HostDevice, ddk::Initializable, ddk::MessageableOld, ddk::Unbindable>;
-class HostDevice final : public HostDeviceType {
+    ddk::Device<HostDevice, ddk::Initializable,
+                ddk::Messageable<fuchsia_hardware_bluetooth::Host>::Mixin, ddk::Unbindable>;
+class HostDevice final : public HostDeviceType,
+                         public fidl::WireServer<fuchsia_hardware_bluetooth::Host> {
  public:
   explicit HostDevice(zx_device_t* parent);
   zx_status_t Bind();
 
   // DDK methods
   void DdkInit(ddk::InitTxn txn);
-  zx_status_t DdkMessage(fidl_incoming_msg_t* msg, fidl_txn_t* txn);
   void DdkUnbind(ddk::UnbindTxn txn);
   void DdkRelease();
 
@@ -42,7 +43,7 @@ class HostDevice final : public HostDeviceType {
   // Open a new channel to the host. Send that channel to the fidl client
   // or respond with an error if the channel could not be opened.
   // Returns the status of the fidl send operation.
-  zx_status_t OpenHostChannel(zx::channel channel);
+  void Open(OpenRequestView request, OpenCompleter::Sync& completer);
 
   // Called when a new remote GATT service has been found.
   void OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,

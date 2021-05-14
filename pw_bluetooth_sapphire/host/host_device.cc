@@ -156,20 +156,7 @@ void HostDevice::DdkRelease() {
   delete this;
 }
 
-// Route ddk fidl messages to the dispatcher function
-zx_status_t HostDevice::DdkMessage(fidl_incoming_msg_t* msg, fidl_txn_t* txn) {
-  // Struct containing function pointers for all fidl ops to be dispatched on
-  static constexpr fuchsia_hardware_bluetooth_Host_ops_t fidl_ops = {
-      .Open = [](void* ctx, zx_handle_t channel) {
-        return static_cast<HostDevice*>(ctx)->OpenHostChannel(zx::channel(channel));
-      }};
-
-  bt_log(DEBUG, "bt-host", "fidl message");
-  return fuchsia_hardware_bluetooth_Host_dispatch(this, txn, msg, &fidl_ops);
-}
-
-zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
-  ZX_DEBUG_ASSERT(channel);
+void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
   std::lock_guard<std::mutex> lock(mtx_);
 
   // This is called from the fidl operation OpenChannelOp.  No fidl calls will be delivered to the
@@ -178,11 +165,9 @@ zx_status_t HostDevice::OpenHostChannel(zx::channel channel) {
   ZX_DEBUG_ASSERT(host_);
 
   // Tell Host to start processing messages on this handle.
-  async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(channel)]() mutable {
+  async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(request->channel)]() mutable {
     host->BindHostInterface(std::move(chan));
   });
-
-  return ZX_OK;
 }
 
 void HostDevice::OnRemoteGattServiceAdded(bt::gatt::PeerId peer_id,
