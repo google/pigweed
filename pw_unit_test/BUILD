@@ -23,6 +23,12 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
+    name = "config",
+    hdrs = ["public/pw_unit_test/config.h"],
+    includes = ["public"],
+)
+
+pw_cc_library(
     name = "pw_unit_test",
     srcs = [
         "framework.cc",
@@ -37,6 +43,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
+        ":config",
         "//pw_polyfill",
         "//pw_preprocessor",
         "//pw_string",

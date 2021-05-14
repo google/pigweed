@@ -26,6 +26,7 @@
 #include "pw_polyfill/standard.h"
 #include "pw_preprocessor/concat.h"
 #include "pw_preprocessor/util.h"
+#include "pw_unit_test/config.h"
 #include "pw_unit_test/event_handler.h"
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -300,10 +301,7 @@ class Framework {
   std::span<std::string_view> test_suites_to_run_;
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-  // Memory region in which to construct test case classes as they are run.
-  // TODO(frolv): Make the memory pool size configurable.
-  static constexpr size_t kTestMemoryPoolSizeBytes = 16384;
-  std::aligned_storage_t<kTestMemoryPoolSizeBytes, alignof(std::max_align_t)>
+  std::aligned_storage_t<config::kMemoryPoolSize, alignof(std::max_align_t)>
       memory_pool_;
 };
 

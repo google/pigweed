@@ -288,3 +288,13 @@ pw_unit_test.rpc
 ^^^^^^^^^^^^^^^^
 .. automodule:: pw_unit_test.rpc
   :members: EventHandler, run_tests
+
+Module Configuration Options
+============================
+The following configurations can be adjusted via compile-time configuration of
+this module.
+
+.. c:macro:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
+
+  The size of the memory pool to use for test fixture instances. By default this
+  is set to 16K.
