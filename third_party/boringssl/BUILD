@@ -16,6 +16,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 pw_cc_library(
@@ -26,3 +27,17 @@ pw_cc_library(
 )
 
 # TODO(zyecheng): Add build recipes for BoringSSL
+
+# TODO(zyecheng): Add boringssl library dependency once its build recipe is ready.
+pw_cc_library(
+    name = "test_server",
+    hdrs = [ "public/boringssl/test/test_server.h" ],
+    srcs = [ "test_server.cc" ],
+    includes = [ "public" ],
+)
+
+pw_cc_test(
+    name = "test_server_test",
+    srcs = [ "test_server_test.cc" ],
+    deps = [ ":test_server" ],
+)

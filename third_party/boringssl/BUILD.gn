@@ -14,7 +14,8 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-import("boringssl.gni")
+import("$dir_pw_third_party/boringssl/boringssl.gni")
+import("$dir_pw_unit_test/test.gni")
 
 if (dir_pw_third_party_boringssl != "") {
   import("$dir_pw_third_party_boringssl/BUILD.generated.gni")
@@ -86,7 +87,55 @@ if (dir_pw_third_party_boringssl != "") {
 
     public_deps = [ "$dir_pw_tls_client:time" ]
   }
+
+  # A test server for unit testing.
+  config("public_includes") {
+    include_dirs = [ "public" ]
+  }
+
+  pw_source_set("test_server") {
+    sources = [ "test_server.cc" ]
+    public_configs = [ ":public_includes" ]
+    public = [ "public/boringssl/test/test_server.h" ]
+    public_deps = [
+      ":boringssl",
+      "$dir_pw_bytes",
+      "$dir_pw_log",
+      "$dir_pw_stream",
+    ]
+  }
+
+  pw_test("test_server_test") {
+    public_deps = [
+      ":test_data",
+      ":test_server",
+    ]
+    sources = [ "test_server_test.cc" ]
+  }
 } else {
   group("boringssl") {
   }
+}
+
+pw_test_group("tests") {
+  enable_if = dir_pw_third_party_boringssl != ""
+  tests = [ ":test_server_test" ]
+}
+
+pw_python_action("generate_test_data") {
+  header_output = "$target_gen_dir/$target_name/test_certs_and_keys.h"
+  script = "py/boringssl/generate_test_data.py"
+  python_deps = [ "py" ]
+  outputs = [ header_output ]
+  args = [ rebase_path(header_output) ]
+}
+
+config("test_data_includes") {
+  test_header_out = get_target_outputs(":generate_test_data")
+  include_dirs = [ get_path_info(test_header_out[0], "dir") ]
+}
+
+group("test_data") {
+  public_deps = [ ":generate_test_data" ]
+  public_configs = [ ":test_data_includes" ]
 }

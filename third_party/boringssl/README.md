@@ -8,3 +8,9 @@ used as the default certificate verifier for boringssl in pw_tls_client.
 For gn build, set `dir_pw_third_party_boringssl` to point to the
 path of the source code. For applications using BoringSSL, add
 `$dir_pw_third_party/boringssl` to the dependency list.
+
+# Test server
+
+A BoringSSL based test TLS server is implemented in this folder, as
+`//third_party/boringssl:test_server`. It is mainly used by `pw_tls_client` in
+unit testing. See `test_server_test.cc` for example usage.

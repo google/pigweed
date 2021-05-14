@@ -118,23 +118,6 @@ pw_source_set("crlset") {
   # TODO(pwbug/396): Add sources generated from a CRLSet file to build.
 }
 
-pw_python_action("generate_test_data") {
-  header_output = "$target_gen_dir/$target_name/test_certs_and_keys.h"
-  script = "py/pw_tls_client/generate_test_data.py"
-  outputs = [ header_output ]
-  args = [ rebase_path(header_output) ]
-}
-
-config("test_data_includes") {
-  test_header_out = get_target_outputs(":generate_test_data")
-  include_dirs = [ get_path_info(test_header_out[0], "dir") ]
-}
-
-group("test_data") {
-  public_deps = [ ":generate_test_data" ]
-  public_configs = [ ":test_data_includes" ]
-}
-
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
