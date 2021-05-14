@@ -18,8 +18,16 @@
 #include "task.h"
 
 // Whether thread joining is enabled. By default this is disabled.
-// When enabled this adds a StaticEventGroup_t & EventGroupHandle_t to
-// every pw::thread::Thread's context.
+//
+// We suggest only enabling this when thread joining is required to minimize
+// the RAM and ROM cost of threads.
+//
+// Enabling this grows the RAM footprint of every pw::thread::Thread as it adds
+// a StaticEventGroup_t to every thread's pw::thread::freertos::Context. In
+// addition, there is a minute ROM cost to construct and destroy this added
+// object.
+//
+// PW_THREAD_JOINING_ENABLED gets set to this value.
 #ifndef PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED
 #define PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED 0
 #endif  // PW_THREAD_FREERTOS_CONFIG_JOINING_ENABLED
@@ -47,7 +55,7 @@
 // The default stack size in words. By default this uses the minimal FreeRTOS
 // priority level above the idle priority.
 #ifndef PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
-#define PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY tskIDLE_PRIORITY + 1
+#define PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY (tskIDLE_PRIORITY + 1)
 #endif  // PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
 
 namespace pw::thread::freertos::config {

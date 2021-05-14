@@ -31,9 +31,11 @@ constexpr EventBits_t kThreadDoneBit = 1 << 0;
 #endif  // PW_THREAD_JOINING_ENABLED
 }  // namespace
 
-void Context::RunThread(void* void_context_ptr) {
+void Context::ThreadEntryPoint(void* void_context_ptr) {
   Context& context = *static_cast<Context*>(void_context_ptr);
-  context.entry_(context.arg_);
+
+  // Invoke the user's thread function. This may never return.
+  context.user_thread_entry_function_(context.user_thread_entry_arg_);
 
   // Use a task only critical section to guard against join() and detach().
   vTaskSuspendAll();
@@ -44,8 +46,9 @@ void Context::RunThread(void* void_context_ptr) {
     context.set_task_handle(nullptr);
 
 #if PW_THREAD_JOINING_ENABLED
-    // Just in case someone abused our API, ensure their use of the event group
-    // is properly handled by the kernel regardless.
+    // If the thread handle was detached before the thread finished execution,
+    // i.e. got here, then we are responsible for cleaning up the join event
+    // group.
     vEventGroupDelete(&context.join_event_group());
 #endif  // PW_THREAD_JOINING_ENABLED
 
@@ -133,7 +136,7 @@ Thread::Thread(const thread::Options& facade_options,
     // invoke the task with its arg.
     native_type_->set_thread_routine(entry, arg);
     const TaskHandle_t task_handle =
-        xTaskCreateStatic(Context::RunThread,
+        xTaskCreateStatic(Context::ThreadEntryPoint,
                           options.name(),
                           options.static_context()->stack().size(),
                           native_type_,
@@ -164,7 +167,7 @@ Thread::Thread(const thread::Options& facade_options,
     // invoke the task with its arg.
     native_type_->set_thread_routine(entry, arg);
     TaskHandle_t task_handle;
-    const BaseType_t result = xTaskCreate(Context::RunThread,
+    const BaseType_t result = xTaskCreate(Context::ThreadEntryPoint,
                                           options.name(),
                                           options.stack_size_words(),
                                           native_type_,
@@ -197,12 +200,12 @@ void Thread::detach() {
 #endif  // INCLUDE_vTaskSuspend == 1
 
   if (thread_done) {
-    // The task finished (hit end of Context::RunThread) before we invoked
-    // detach, clean up the thread.
+    // The task finished (hit end of Context::ThreadEntryPoint) before we
+    // invoked detach, clean up the thread.
     Context::TerminateThread(*native_type_);
   } else {
     // We're detaching before the task finished, defer cleanup to the task at
-    // the end of Context::RunThread.
+    // the end of Context::ThreadEntryPoint.
   }
 
   // Update to no longer represent a thread of execution.

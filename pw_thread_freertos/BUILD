@@ -96,6 +96,7 @@ pw_cc_library(
     deps = [
         ":id",
         "//pw_assert",
+        "//pw_string",
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread_headers",
     ],

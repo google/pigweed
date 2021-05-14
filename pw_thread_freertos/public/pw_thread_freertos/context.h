@@ -56,8 +56,8 @@ class Context {
 
   using ThreadRoutine = void (*)(void* arg);
   void set_thread_routine(ThreadRoutine entry, void* arg) {
-    entry_ = entry;
-    arg_ = arg;
+    user_thread_entry_function_ = entry;
+    user_thread_entry_arg_ = arg;
   }
 
   bool detached() const { return detached_; }
@@ -75,12 +75,12 @@ class Context {
   StaticEventGroup_t& join_event_group() { return event_group_; }
 #endif  // PW_THREAD_JOINING_ENABLED
 
-  static void RunThread(void* void_context_ptr);
+  static void ThreadEntryPoint(void* void_context_ptr);
   static void TerminateThread(Context& context);
 
   TaskHandle_t task_handle_ = nullptr;
-  ThreadRoutine entry_ = nullptr;
-  void* arg_ = nullptr;
+  ThreadRoutine user_thread_entry_function_ = nullptr;
+  void* user_thread_entry_arg_ = nullptr;
 #if PW_THREAD_JOINING_ENABLED
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.
