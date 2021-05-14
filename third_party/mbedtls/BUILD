@@ -24,17 +24,16 @@ mbedtls_configs = [
 
 # Config targets.
 [
-pw_cc_library(
-    name = "%s_config" % config_name,
-    copts = ["-DMBEDTLS_CONFIG_FILE=\"%s\"" % config_header],
-    hdrs = [
-        config_header,
-        "configs/config_pigweed_common.h",
-    ],
-    includes = [ "." ],
-)
-for config_name, config_header in mbedtls_configs
+    pw_cc_library(
+        name = "%s_config" % config_name,
+        hdrs = [
+            config_header,
+            "configs/config_pigweed_common.h",
+        ],
+        copts = ["-DMBEDTLS_CONFIG_FILE=\"%s\"" % config_header],
+        includes = ["."],
+    )
+    for config_name, config_header in mbedtls_configs
 ]
 
 # TODO(zyecheng): Add build recipe for the library.
-

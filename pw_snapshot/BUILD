@@ -29,7 +29,7 @@ proto_library(
         "pw_snapshot_protos/snapshot.proto",
     ],
     deps = [
-        ":metadata_proto"
+        ":metadata_proto",
     ],
 )
 

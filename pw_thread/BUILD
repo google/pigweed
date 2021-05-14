@@ -88,8 +88,8 @@ pw_cc_library(
 pw_cc_facade(
     name = "thread_facade",
     hdrs = [
-        "public/pw_thread/thread.h",
         "public/pw_thread/detached_thread.h",
+        "public/pw_thread/thread.h",
     ],
     includes = ["public"],
     deps = [

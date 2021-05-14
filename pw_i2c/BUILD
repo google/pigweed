@@ -66,11 +66,11 @@ pw_cc_library(
 
 pw_cc_library(
     name = "register_device",
+    srcs = ["register_device.cc"],
     hdrs = [
         "public/pw_i2c/register_device.h",
     ],
     includes = ["public"],
-    srcs = [ "register_device.cc" ],
     deps = [
         ":address",
         ":device",

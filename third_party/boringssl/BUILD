@@ -20,9 +20,9 @@ load(
 
 pw_cc_library(
     name = "sysdeps",
-    hdrs = [ "sysdeps/sys/socket.h" ],
-    includes = [ "sysdeps" ],
-    srcs = [ "crypto_sysrand.cc" ]
+    srcs = ["crypto_sysrand.cc"],
+    hdrs = ["sysdeps/sys/socket.h"],
+    includes = ["sysdeps"],
 )
 
 # TODO(zyecheng): Add build recipes for BoringSSL

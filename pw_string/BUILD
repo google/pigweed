@@ -39,11 +39,11 @@ pw_cc_library(
     ],
     includes = ["public"],
     deps = [
-        "//pw_preprocessor",
-        "//pw_span",
         "//pw_assert",
-        "//pw_status",
+        "//pw_preprocessor",
         "//pw_result",
+        "//pw_span",
+        "//pw_status",
     ],
 )
 
