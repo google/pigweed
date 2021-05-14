@@ -126,6 +126,14 @@ template("pw_go_executable") {
       "GO111MODULE=off",
       "GOPATH=$_default_gopath",
     ]
+
+    if (host_os == "mac") {
+      # TODO(frolv): Some versions of Go for MacOS have issues finding the C
+      # stdlib headers. Temporarily disable CGo on Mac. The root cause of this
+      # issue should be investigated and fixed.
+      env += [ "CGO_ENABLED=0" ]
+    }
+
     args_file = _deps_metadata_file
 
     # If the args file is empty, don't run the "go get" command.
@@ -152,6 +160,14 @@ template("pw_go_executable") {
       "GO111MODULE=off",
       "GOPATH+=$_default_gopath",
     ]
+
+    if (host_os == "mac") {
+      # TODO(frolv): Some versions of Go for MacOS have issues finding the C
+      # stdlib headers. Temporarily disable CGo on Mac. The root cause of this
+      # issue should be investigated and fixed.
+      env += [ "CGO_ENABLED=0" ]
+    }
+
     env_file = _metadata_file
 
     _binary_name = get_path_info(invoker.package, "name")
