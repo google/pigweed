@@ -33,7 +33,8 @@ config("backend_config") {
 # asserts if it is unavailable. It does not perform interrupt masking or disable
 # global interrupts, so this implementation does not support simultaneous
 # multi-threaded environments including IRQs, and is only meant to prevent
-# data corruption.
+# data corruption. This implementation is not yet set up to support hardware
+# multi-threading (SMP, SMT, etc).
 pw_source_set("interrupt_spin_lock") {
   public_configs = [
     ":public_include_path",
@@ -49,6 +50,27 @@ pw_source_set("interrupt_spin_lock") {
     "$dir_pw_assert",
     "$dir_pw_sync:interrupt_spin_lock.facade",
     "$dir_pw_sync:yield_core",
+  ]
+}
+
+# This target provides the backend for pw::sync::Mutex.
+# The provided implementation makes a single attempt to acquire the lock and
+# asserts if it is unavailable. This implementation is not yet set up to support
+# hardware multi-threading (SMP, SMT, etc).
+pw_source_set("mutex") {
+  public_configs = [
+    ":public_include_path",
+    ":backend_config",
+  ]
+  public = [
+    "public/pw_sync_baremetal/mutex_inline.h",
+    "public/pw_sync_baremetal/mutex_native.h",
+    "public_overrides/pw_sync_backend/mutex_inline.h",
+    "public_overrides/pw_sync_backend/mutex_native.h",
+  ]
+  public_deps = [
+    "$dir_pw_assert",
+    "$dir_pw_sync:mutex.facade",
   ]
 }
 

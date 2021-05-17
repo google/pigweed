@@ -46,3 +46,28 @@ pw_cc_library(
         "//pw_sync:yield_core",
     ],
 )
+
+pw_cc_library(
+    name = "mutex_headers",
+    hdrs = [
+        "public/pw_sync_baremetal/mutex_inline.h",
+        "public/pw_sync_baremetal/mutex_native.h",
+        "public_overrides/pw_sync_backend/mutex_inline.h",
+        "public_overrides/pw_sync_backend/mutex_native.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
+    target_compatible_with = ["@platforms//os:none"],
+)
+
+pw_cc_library(
+    name = "mutex",
+    target_compatible_with = ["@platforms//os:none"],
+    deps = [
+        ":mutex_headers",
+        "//pw_assert",
+        "//pw_sync:mutex_facade",
+    ],
+)
