@@ -26,6 +26,7 @@ config("default_config") {
 pw_source_set("pw_multisink") {
   public_configs = [ ":default_config" ]
   public = [
+    "public/pw_multisink/config.h",
     "public/pw_multisink/drain.h",
     "public/pw_multisink/multisink.h",
   ]
@@ -34,6 +35,9 @@ pw_source_set("pw_multisink") {
     "$dir_pw_result",
     "$dir_pw_ring_buffer",
     "$dir_pw_status",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
   ]
   deps = [
     "$dir_pw_assert",

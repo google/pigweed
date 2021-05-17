@@ -28,17 +28,15 @@ Result<ConstByteSpan> MultiSink::GetEntry(Drain& drain,
                                           uint32_t& sequence_id_out) {
   size_t bytes_read = 0;
 
-  // Exit immediately if there's no multisink attached to this drain.
-  if (drain.multisink_ == nullptr) {
-    return Status::FailedPrecondition();
-  }
+  std::lock_guard lock(lock_);
+  PW_DCHECK_PTR_EQ(drain.multisink_, this);
 
   const Status status =
       drain.reader_.PeekFrontWithPreamble(buffer, sequence_id_out, bytes_read);
   if (status.IsOutOfRange()) {
     // If the drain has caught up, report the last handled sequence ID so that
     // it can still process any dropped entries.
-    sequence_id_out = drain.multisink_->sequence_id_ - 1;
+    sequence_id_out = sequence_id_ - 1;
     return status;
   }
   PW_CHECK(drain.reader_.PopFront().ok());
@@ -46,14 +44,16 @@ Result<ConstByteSpan> MultiSink::GetEntry(Drain& drain,
 }
 
 Status MultiSink::AttachDrain(Drain& drain) {
-  PW_DCHECK(drain.multisink_ == nullptr);
+  std::lock_guard lock(lock_);
+  PW_DCHECK_PTR_EQ(drain.multisink_, nullptr);
   drain.multisink_ = this;
   drain.last_handled_sequence_id_ = sequence_id_ - 1;
   return ring_buffer_.AttachReader(drain.reader_);
 }
 
 Status MultiSink::DetachDrain(Drain& drain) {
-  PW_DCHECK(drain.multisink_ == this);
+  std::lock_guard lock(lock_);
+  PW_DCHECK_PTR_EQ(drain.multisink_, this);
   drain.multisink_ = nullptr;
   return ring_buffer_.DetachReader(drain.reader_);
 }

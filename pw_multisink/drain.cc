@@ -13,15 +13,19 @@
 // the License.
 #include "pw_multisink/drain.h"
 
+#include "pw_assert/check.h"
+
 namespace pw {
 namespace multisink {
 
 Result<ConstByteSpan> Drain::GetEntry(ByteSpan entry,
                                       uint32_t& drop_count_out) {
+  PW_DCHECK_NOTNULL(multisink_);
   uint32_t entry_sequence_id = 0;
   drop_count_out = 0;
+
   const Result<ConstByteSpan> result =
-      MultiSink::GetEntry(*this, entry, entry_sequence_id);
+      multisink_->GetEntry(*this, entry, entry_sequence_id);
 
   // Exit immediately if the result isn't OK or OUT_OF_RANGE, as the
   // entry_sequence_id cannot be used for computation. Later invocations to

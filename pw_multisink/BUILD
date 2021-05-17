@@ -29,6 +29,7 @@ pw_cc_library(
         "multisink.cc",
     ],
     hdrs = [
+        "public/pw_multisink/config.h",
         "public/pw_multisink/drain.h",
         "public/pw_multisink/multisink.h",
     ],
@@ -36,6 +37,9 @@ pw_cc_library(
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
         "//pw_result",
         "//pw_ring_buffer",
         "//pw_varint",

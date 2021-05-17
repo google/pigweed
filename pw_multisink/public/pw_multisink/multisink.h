@@ -13,10 +13,14 @@
 // the License.
 #pragma once
 
+#include <mutex>
+
 #include "pw_bytes/span.h"
+#include "pw_multisink/config.h"
 #include "pw_result/result.h"
 #include "pw_ring_buffer/prefixed_entry_ring_buffer.h"
 #include "pw_status/status.h"
+#include "pw_sync/lock_annotations.h"
 
 namespace pw {
 namespace multisink {
@@ -25,10 +29,12 @@ class Drain;
 // An asynchronous single-writer multi-reader queue that ensures readers can
 // poll for dropped message counts, which is useful for logging or similar
 // scenarios where readers need to be aware of the input message sequence.
+//
+// This class is thread-safe but NOT IRQ-safe when
+// PW_MULTISINK_LOCK_INTERRUPT_SAFE is disabled.
+//
 // TODO(pwbug/342): Support notifying readers when the queue is readable,
 // rather than requiring them to poll to check for new entries.
-// TODO(pwbug/343): Add thread-safety, separate from the thread-safety work
-// planned for the underlying ring buffer.
 class MultiSink {
  public:
   // Constructs a multisink using a ring buffer backed by the provided buffer.
@@ -42,12 +48,16 @@ class MultiSink {
   // The sequence ID of the multisink will always increment as a result of
   // calling HandleEntry, regardless of whether pushing the entry succeeds.
   //
+  // Precondition: If PW_MULTISINK_LOCK_INTERRUPT_SAFE is disabled, this
+  // function must not be called from an interrupt context.
+  //
   // Return values:
   // Ok - Entry was successfully pushed to the ring buffer.
   // InvalidArgument - Size of data to write is zero bytes.
   // OutOfRange - Size of data is greater than buffer size.
   // FailedPrecondition - Buffer was not initialized.
-  Status HandleEntry(ConstByteSpan entry) {
+  Status HandleEntry(ConstByteSpan entry) PW_LOCKS_EXCLUDED(lock_) {
+    std::lock_guard lock(lock_);
     return ring_buffer_.PushBack(entry, sequence_id_++);
   }
 
@@ -56,7 +66,10 @@ class MultiSink {
   // before being sent to the multisink (e.g. the writer failed to encode
   // the message). This API increments the sequence ID of the multisink by
   // the provided `drop_count`.
-  void HandleDropped(uint32_t drop_count = 1) { sequence_id_ += drop_count; }
+  void HandleDropped(uint32_t drop_count = 1) PW_LOCKS_EXCLUDED(lock_) {
+    std::lock_guard lock(lock_);
+    sequence_id_ += drop_count;
+  }
 
   // Attach a drain to the multisink. Drains may not be associated with more
   // than one multisink at a time. Entries pushed before the drain was attached
@@ -66,7 +79,7 @@ class MultiSink {
   // Return values:
   // Ok - Drain was successfully attached.
   // InvalidArgument - Drain is currently associated with another multisink.
-  Status AttachDrain(Drain& drain);
+  Status AttachDrain(Drain& drain) PW_LOCKS_EXCLUDED(lock_);
 
   // Detaches a drain from the multisink. Drains may only be detached if they
   // were previously attached to this multisink.
@@ -74,11 +87,14 @@ class MultiSink {
   // Return values:
   // Ok - Drain was successfully detached.
   // InvalidArgument - Drain is not currently associated with this multisink.
-  Status DetachDrain(Drain& drain);
+  Status DetachDrain(Drain& drain) PW_LOCKS_EXCLUDED(lock_);
 
   // Removes all data from the internal buffer. The multisink's sequence ID is
   // not modified, so readers may interpret this event as droppping entries.
-  void Clear() { ring_buffer_.Clear(); }
+  void Clear() PW_LOCKS_EXCLUDED(lock_) {
+    std::lock_guard lock(lock_);
+    ring_buffer_.Clear();
+  }
 
  protected:
   friend Drain;
@@ -94,13 +110,15 @@ class MultiSink {
   // the next available entry.
   // DataLoss - An entry was read from the multisink, but did not contains an
   // encoded sequence ID.
-  static Result<ConstByteSpan> GetEntry(Drain& drain,
-                                        ByteSpan buffer,
-                                        uint32_t& sequence_id_out);
+  Result<ConstByteSpan> GetEntry(Drain& drain,
+                                 ByteSpan buffer,
+                                 uint32_t& sequence_id_out)
+      PW_LOCKS_EXCLUDED(lock_);
 
  private:
-  ring_buffer::PrefixedEntryRingBufferMulti ring_buffer_;
-  uint32_t sequence_id_ = 0;
+  ring_buffer::PrefixedEntryRingBufferMulti ring_buffer_ PW_GUARDED_BY(lock_);
+  uint32_t sequence_id_ PW_GUARDED_BY(lock_);
+  LockType lock_;
 };
 
 }  // namespace multisink
