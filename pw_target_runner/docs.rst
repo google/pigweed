@@ -56,7 +56,7 @@ STM32F429I Discovery board with a specified serial number.
   runner {
     command: "stm32f429i_disc1_unit_test_runner"
     args: "--openocd-config"
-    args: "targets/stm32f429i-disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
+    args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
     args: "--serial"
     args: "066DFF575051717867013127"
   }
@@ -64,7 +64,7 @@ STM32F429I Discovery board with a specified serial number.
   runner {
     command: "stm32f429i_disc1_unit_test_runner"
     args: "--openocd-config"
-    args: "targets/stm32f429i-disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
+    args: "targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg"
     args: "--serial"
     args: "0667FF494849887767196023"
   }

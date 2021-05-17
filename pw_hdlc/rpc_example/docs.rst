@@ -41,7 +41,7 @@ you can flash the image with `OpenOCD <http://openocd.org>`_.
 
 .. code-block:: sh
 
- openocd -f targets/stm32f429i-disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
+ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
      -c "program out/stm32f429i_disc1_debug/obj/pw_hdlc/rpc_example/bin/rpc_example.elf"
 
 4. Invoke RPCs from in an interactive console

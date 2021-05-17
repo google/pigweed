@@ -115,7 +115,7 @@ OpenOCD requires a few steps. Summary version of the steps:
 
    .. code:: sh
 
-     $ openocd -f targets/stm32f429i-disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
+     $ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
 
 #. Connect GDB to the running OpenOCD instance in terminal B
 
@@ -143,7 +143,7 @@ GDB and the device. To run it for the Discovery board:
 
 .. code:: sh
 
-  $ openocd -f targets/stm32f429i-disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
+  $ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
 
 Typical output:
 

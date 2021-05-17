@@ -13,14 +13,21 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
+import("$dir_pw_malloc/backend.gni")
 
 # Executable wrapper that includes some baremetal startup code.
-template("lm3s6965evb_executable") {
+template("stm32f429i_executable") {
   target("executable", target_name) {
     forward_variables_from(invoker, "*")
     if (!defined(deps)) {
       deps = []
     }
-    deps += [ "$dir_pigweed/targets/lm3s6965evb-qemu:pre_init" ]
+    deps += [ "$dir_pigweed/targets/stm32f429i_disc1:pre_init" ]
+    if (pw_malloc_BACKEND != "") {
+      if (!defined(configs)) {
+        configs = []
+      }
+      configs += [ "$dir_pw_malloc:pw_malloc_wrapper_config" ]
+    }
   }
 }

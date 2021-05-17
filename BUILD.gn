@@ -102,7 +102,7 @@ _build_pigweed_default_at_all_optimization_levels("host_gcc") {
 }
 
 _build_pigweed_default_at_all_optimization_levels("stm32f429i") {
-  toolchain_prefix = "$dir_pigweed/targets/stm32f429i-disc1:stm32f429i_disc1_"
+  toolchain_prefix = "$dir_pigweed/targets/stm32f429i_disc1:stm32f429i_disc1_"
 }
 
 if (pw_arduino_build_CORE_PATH != "") {
@@ -113,12 +113,12 @@ if (pw_arduino_build_CORE_PATH != "") {
 
 _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
   toolchain_prefix =
-      "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_gcc_"
+      "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
 }
 
 _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
   toolchain_prefix =
-      "$dir_pigweed/targets/lm3s6965evb-qemu:lm3s6965evb_qemu_clang_"
+      "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
 }
 
 group("docs") {
