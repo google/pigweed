@@ -16,46 +16,112 @@
 #include <cstring>
 
 #include "pw_assert/check.h"
-#include "pw_multisink/drain.h"
 #include "pw_status/try.h"
 #include "pw_varint/varint.h"
 
 namespace pw {
 namespace multisink {
 
+void MultiSink::HandleEntry(ConstByteSpan entry) {
+  std::lock_guard lock(lock_);
+  PW_DCHECK_OK(ring_buffer_.PushBack(entry, sequence_id_++));
+  NotifyListeners();
+}
+
+void MultiSink::HandleDropped(uint32_t drop_count) {
+  std::lock_guard lock(lock_);
+  sequence_id_ += drop_count;
+  NotifyListeners();
+}
+
 Result<ConstByteSpan> MultiSink::GetEntry(Drain& drain,
                                           ByteSpan buffer,
-                                          uint32_t& sequence_id_out) {
+                                          uint32_t& drop_count_out) {
   size_t bytes_read = 0;
+  uint32_t entry_sequence_id = 0;
+  drop_count_out = 0;
 
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, this);
 
-  const Status status =
-      drain.reader_.PeekFrontWithPreamble(buffer, sequence_id_out, bytes_read);
-  if (status.IsOutOfRange()) {
+  const Status peek_status = drain.reader_.PeekFrontWithPreamble(
+      buffer, entry_sequence_id, bytes_read);
+  if (peek_status.IsOutOfRange()) {
     // If the drain has caught up, report the last handled sequence ID so that
     // it can still process any dropped entries.
-    sequence_id_out = sequence_id_ - 1;
-    return status;
+    entry_sequence_id = sequence_id_ - 1;
+  } else if (!peek_status.ok()) {
+    // Exit immediately if the result isn't OK or OUT_OF_RANGE, as the
+    // entry_entry_sequence_id cannot be used for computation. Later invocations
+    // to GetEntry will permit readers to determine how far the sequence ID
+    // moved forward.
+    return peek_status;
   }
+
+  // Compute the drop count delta by comparing this entry's sequence ID with the
+  // last sequence ID this drain successfully read.
+  //
+  // The drop count calculation simply computes the difference between the
+  // current and last sequence IDs. Consecutive successful reads will always
+  // differ by one at least, so it is subtracted out. If the read was not
+  // successful, the difference is not adjusted.
+  drop_count_out = entry_sequence_id - drain.last_handled_sequence_id_ -
+                   (peek_status.ok() ? 1 : 0);
+  drain.last_handled_sequence_id_ = entry_sequence_id;
+
+  // The Peek above may have failed due to OutOfRange, now that we've set the
+  // drop count see if we should return before attempting to pop.
+  if (peek_status.IsOutOfRange()) {
+    return peek_status;
+  }
+
+  // Success, pop the oldest entry!
   PW_CHECK(drain.reader_.PopFront().ok());
   return std::as_bytes(buffer.first(bytes_read));
 }
 
-Status MultiSink::AttachDrain(Drain& drain) {
+void MultiSink::AttachDrain(Drain& drain) {
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, nullptr);
   drain.multisink_ = this;
   drain.last_handled_sequence_id_ = sequence_id_ - 1;
-  return ring_buffer_.AttachReader(drain.reader_);
+  PW_CHECK_OK(ring_buffer_.AttachReader(drain.reader_));
 }
 
-Status MultiSink::DetachDrain(Drain& drain) {
+void MultiSink::DetachDrain(Drain& drain) {
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, this);
   drain.multisink_ = nullptr;
-  return ring_buffer_.DetachReader(drain.reader_);
+  PW_CHECK_OK(ring_buffer_.DetachReader(drain.reader_),
+              "The drain wasn't already attached.");
+}
+
+void MultiSink::AttachListener(Listener& listener) {
+  std::lock_guard lock(lock_);
+  listeners_.push_back(listener);
+}
+
+void MultiSink::DetachListener(Listener& listener) {
+  std::lock_guard lock(lock_);
+  [[maybe_unused]] bool was_detached = listeners_.remove(listener);
+  PW_DCHECK(was_detached, "The listener was already attached.");
+}
+
+void MultiSink::Clear() {
+  std::lock_guard lock(lock_);
+  ring_buffer_.Clear();
+}
+
+void MultiSink::NotifyListeners() {
+  for (auto& listener : listeners_) {
+    listener.OnNewEntryAvailable();
+  }
+}
+
+Result<ConstByteSpan> MultiSink::Drain::GetEntry(ByteSpan buffer,
+                                                 uint32_t& drop_count_out) {
+  PW_DCHECK_NOTNULL(multisink_);
+  return multisink_->GetEntry(*this, buffer, drop_count_out);
 }
 
 }  // namespace multisink

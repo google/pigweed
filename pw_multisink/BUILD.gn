@@ -27,11 +27,11 @@ pw_source_set("pw_multisink") {
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_multisink/config.h",
-    "public/pw_multisink/drain.h",
     "public/pw_multisink/multisink.h",
   ]
   public_deps = [
     "$dir_pw_bytes",
+    "$dir_pw_containers",
     "$dir_pw_result",
     "$dir_pw_ring_buffer",
     "$dir_pw_status",
@@ -43,10 +43,7 @@ pw_source_set("pw_multisink") {
     "$dir_pw_assert",
     "$dir_pw_varint",
   ]
-  sources = [
-    "drain.cc",
-    "multisink.cc",
-  ]
+  sources = [ "multisink.cc" ]
 }
 
 pw_doc_group("docs") {

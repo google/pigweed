@@ -25,18 +25,17 @@ licenses(["notice"])  # Apache License 2.0
 pw_cc_library(
     name = "pw_multisink",
     srcs = [
-        "drain.cc",
         "multisink.cc",
     ],
     hdrs = [
         "public/pw_multisink/config.h",
-        "public/pw_multisink/drain.h",
         "public/pw_multisink/multisink.h",
     ],
     includes = ["public"],
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_containers",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",

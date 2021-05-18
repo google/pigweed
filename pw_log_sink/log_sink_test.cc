@@ -20,7 +20,6 @@
 #include "pw_log/levels.h"
 #include "pw_log_proto/log.pwpb.h"
 #include "pw_log_sink/multisink_adapter.h"
-#include "pw_multisink/drain.h"
 #include "pw_multisink/multisink.h"
 #include "pw_protobuf/decoder.h"
 
@@ -138,7 +137,7 @@ TEST(LogSink, MultiSinkAdapter) {
   std::byte buffer[kMultiSinkBufferSize];
   std::byte entry_buffer[kMultiSinkBufferSize];
   pw::multisink::MultiSink multisink(buffer);
-  pw::multisink::Drain drain;
+  pw::multisink::MultiSink::Drain drain;
   MultiSinkAdapter multisink_adapter(multisink);
 
   multisink.AttachDrain(drain);
