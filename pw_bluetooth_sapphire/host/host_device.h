@@ -28,8 +28,7 @@ class HostDevice;
 using HostDeviceType =
     ddk::Device<HostDevice, ddk::Initializable,
                 ddk::Messageable<fuchsia_hardware_bluetooth::Host>::Mixin, ddk::Unbindable>;
-class HostDevice final : public HostDeviceType,
-                         public fidl::WireServer<fuchsia_hardware_bluetooth::Host> {
+class HostDevice final : public HostDeviceType {
  public:
   explicit HostDevice(zx_device_t* parent);
   zx_status_t Bind();
