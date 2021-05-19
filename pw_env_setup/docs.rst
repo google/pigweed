@@ -167,8 +167,23 @@ here.
 .. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/master
 
 ``cipd_package_files``
-  CIPD package file. JSON file consisting of a list of dictionaries with "path"
-  and "tags" keys, where "tags" is a list of strings.
+  CIPD package file. JSON file consisting of a list of dictionaries with "path",
+  "platforms", and "tags" keys. An example is below.
+
+.. code-block:: json
+
+  {
+    "path": "infra/3pp/tools/go/${platform}",
+    "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "windows-amd64"
+    ],
+    "tags": [
+      "version:2@1.16.3"
+    ]
+  },
 
 ``virtualenv.gn_targets``
   Target for installing Python packages. Downstream projects will need to

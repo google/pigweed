@@ -24,6 +24,7 @@ from __future__ import print_function
 import argparse
 import json
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -148,9 +149,28 @@ def check_auth(cipd, package_files, spin):
     return True
 
 
+def _platform():
+    osname = {
+        'darwin': 'mac',
+        'linux': 'linux',
+        'windows': 'windows',
+    }[platform.system().lower()]
+
+    if platform.machine().startswith(('aarch64', 'armv8')):
+        arch = 'arm64'
+    elif platform.machine() == 'x86_64':
+        arch = 'amd64'
+    elif platform.machine() == 'i686':
+        arch = 'i386'
+    else:
+        arch = platform.machine()
+
+    return '{}-{}'.format(osname, arch).lower()
+
+
 def write_ensure_file(package_file, ensure_file):
     with open(package_file, 'r') as ins:
-        data = json.load(ins)
+        packages = json.load(ins)
 
     # TODO(pwbug/103) Remove 30 days after bug fixed.
     if os.path.isdir(ensure_file):
@@ -161,10 +181,14 @@ def write_ensure_file(package_file, ensure_file):
                    '$VerifiedPlatform mac-amd64\n'
                    '$ParanoidMode CheckPresence\n')
 
-        for entry in data:
-            outs.write('@Subdir {}\n'.format(entry.get('subdir', '')))
-            outs.write('{} {}\n'.format(entry['path'],
-                                        ' '.join(entry['tags'])))
+        for pkg in packages:
+            # If this is a new-style package manifest platform handling must
+            # be done here instead of by the cipd executable.
+            if 'platforms' in pkg and _platform() not in pkg['platforms']:
+                continue
+
+            outs.write('@Subdir {}\n'.format(pkg.get('subdir', '')))
+            outs.write('{} {}\n'.format(pkg['path'], ' '.join(pkg['tags'])))
 
 
 def update(
