@@ -35,8 +35,24 @@ class FakeAdapter final : public Adapter {
 
   class FakeLowEnergy final : public LowEnergy {
    public:
+    struct RegisteredAdvertisement {
+      AdvertisingData data;
+      AdvertisingData scan_rsp;
+      ConnectionCallback connect_callback;
+      AdvertisingInterval interval;
+      bool anonymous;
+      bool include_tx_power_level;
+    };
+
     explicit FakeLowEnergy(FakeAdapter* adapter) : adapter_(adapter) {}
     ~FakeLowEnergy() override = default;
+
+    const std::unordered_map<AdvertisementId, RegisteredAdvertisement>&
+    registered_advertisements() {
+      return advertisements_;
+    }
+
+    // LowEnergy overrides:
 
     void Connect(PeerId peer_id, ConnectionResultCallback callback,
                  LowEnergyConnectionOptions connection_options) override {}
@@ -56,7 +72,7 @@ class FakeAdapter final : public Adapter {
     void StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
                           ConnectionCallback connect_callback, AdvertisingInterval interval,
                           bool anonymous, bool include_tx_power_level,
-                          AdvertisingStatusCallback status_callback) override {}
+                          AdvertisingStatusCallback status_callback) override;
 
     void StopAdvertising(AdvertisementId advertisement_id) override {}
 
@@ -74,9 +90,12 @@ class FakeAdapter final : public Adapter {
 
    private:
     FakeAdapter* adapter_;
+    AdvertisementId next_advertisement_id_ = AdvertisementId(1);
+    std::unordered_map<AdvertisementId, RegisteredAdvertisement> advertisements_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }
+  FakeLowEnergy* fake_le() const { return fake_le_.get(); }
 
   class FakeBrEdr final : public BrEdr {
    public:

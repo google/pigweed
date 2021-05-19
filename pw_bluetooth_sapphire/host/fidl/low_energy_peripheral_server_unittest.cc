@@ -9,6 +9,7 @@
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
@@ -21,6 +22,42 @@ const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 
 
 using bt::testing::FakePeer;
 using FidlAdvHandle = fidl::InterfaceHandle<fble::AdvertisingHandle>;
+
+class FIDL_LowEnergyPeripheralServerTest_FakeAdapter
+    : public bt::gap::testing::FakeAdapterTestFixture {
+ public:
+  FIDL_LowEnergyPeripheralServerTest_FakeAdapter() = default;
+  ~FIDL_LowEnergyPeripheralServerTest_FakeAdapter() override = default;
+
+  void SetUp() override {
+    bt::gap::testing::FakeAdapterTestFixture::SetUp();
+
+    // Create a LowEnergyPeripheralServer and bind it to a local client.
+    fidl::InterfaceHandle<fble::Peripheral> handle;
+    server_ =
+        std::make_unique<LowEnergyPeripheralServer>(adapter()->AsWeakPtr(), handle.NewRequest());
+    peripheral_client_.Bind(std::move(handle));
+  }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+
+    peripheral_client_ = nullptr;
+    server_ = nullptr;
+    bt::gap::testing::FakeAdapterTestFixture::TearDown();
+  }
+
+  LowEnergyPeripheralServer* server() const { return server_.get(); }
+
+  void SetOnPeerConnectedCallback(fble::Peripheral::OnPeerConnectedCallback cb) {
+    peripheral_client_.events().OnPeerConnected = std::move(cb);
+  }
+
+ private:
+  std::unique_ptr<LowEnergyPeripheralServer> server_;
+  fble::PeripheralPtr peripheral_client_;
+  DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FIDL_LowEnergyPeripheralServerTest_FakeAdapter);
+};
 
 class FIDL_LowEnergyPeripheralServerTest : public bthost::testing::AdapterTestFixture {
  public:
@@ -375,6 +412,23 @@ TEST_F(FIDL_LowEnergyPeripheralServerTest, RestartAdvDuringInboundConnKeepsNewAd
   EXPECT_TRUE(result->is_ok());
   // The second advertising handle should still be active.
   EXPECT_FALSE(bt::IsChannelPeerClosed(second_token.channel()));
+}
+
+TEST_F(FIDL_LowEnergyPeripheralServerTest_FakeAdapter, AdvertiseWithIncludeTxPowerSetToTrue) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  adv_data.set_include_tx_power_level(true);
+  params.set_data(std::move(adv_data));
+
+  FidlAdvHandle token;
+
+  std::optional<fit::result<void, fble::PeripheralError>> result;
+  server()->StartAdvertising(std::move(params), token.NewRequest(),
+                             [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  EXPECT_TRUE(
+      adapter()->fake_le()->registered_advertisements().begin()->second.include_tx_power_level);
 }
 
 }  // namespace

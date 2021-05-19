@@ -120,8 +120,10 @@ void LowEnergyPeripheralServer::StartAdvertising(
       return;
     }
     adv_data = std::move(*maybe_adv_data);
-    if (parameters.data().has_tx_power_level()) {
-      bt_log(TRACE, LOG_TAG, "Including TX Power level at HCI layer");
+    if (parameters.data().has_include_tx_power_level() &&
+        parameters.data().include_tx_power_level()) {
+      bt_log(TRACE, LOG_TAG, "%s: Including TX Power level in advertising data at HCI layer",
+             __FUNCTION__);
       include_tx_power_level = true;
     }
   }

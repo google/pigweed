@@ -10,6 +10,7 @@ namespace bt::gap::testing {
 
 FakeAdapter::FakeAdapter()
     : init_state_(InitState::kNotInitialized),
+      fake_le_(std::make_unique<FakeLowEnergy>(this)),
       fake_bredr_(std::make_unique<FakeBrEdr>()),
       weak_ptr_factory_(this) {}
 
@@ -40,6 +41,25 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     channel_cb_(channel);
   }
   cb(channel);
+}
+
+void FakeAdapter::FakeLowEnergy::StartAdvertising(AdvertisingData data, AdvertisingData scan_rsp,
+                                                  ConnectionCallback connect_callback,
+                                                  AdvertisingInterval interval, bool anonymous,
+                                                  bool include_tx_power_level,
+                                                  AdvertisingStatusCallback status_callback) {
+  // status_callback is currently not called because its parameters can only be constructed by
+  // LowEnergyAdvertisingManager.
+
+  RegisteredAdvertisement adv{.data = std::move(data),
+                              .scan_rsp = std::move(scan_rsp),
+                              .connect_callback = std::move(connect_callback),
+                              .interval = interval,
+                              .anonymous = anonymous,
+                              .include_tx_power_level = include_tx_power_level};
+  AdvertisementId adv_id = next_advertisement_id_;
+  next_advertisement_id_ = AdvertisementId(next_advertisement_id_.value() + 1);
+  advertisements_.emplace(adv_id, std::move(adv));
 }
 
 FakeAdapter::FakeBrEdr::RegistrationHandle FakeAdapter::FakeBrEdr::RegisterService(
