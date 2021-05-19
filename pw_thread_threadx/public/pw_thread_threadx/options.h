@@ -53,7 +53,7 @@ class Options : public thread::Options {
   // Sets the name for the ThreadX thread, note that this will be deep copied
   // into the context and may be truncated based on
   // PW_THREAD_THREADX_CONFIG_MAX_THREAD_NAME_LEN.
-  constexpr Options set_name(const char* name) {
+  constexpr Options& set_name(const char* name) {
     name_ = name;
     return *this;
   }
@@ -61,7 +61,7 @@ class Options : public thread::Options {
   // Sets the priority for the ThreadX thread from 0 through 31, where a value
   // of 0 represents the highest priority, see ThreadX tx_thread_create for
   // more detail.
-  constexpr Options set_priority(UINT priority) {
+  constexpr Options& set_priority(UINT priority) {
     PW_DASSERT(priority <= PW_THREAD_THREADX_CONFIG_MIN_PRIORITY);
     priority_ = priority;
     return *this;
@@ -86,7 +86,7 @@ class Options : public thread::Options {
   // initial threshold.
   //
   // Precondition: preemption_threshold <= priority
-  constexpr Options set_preemption_threshold(UINT preemption_threshold) {
+  constexpr Options& set_preemption_threshold(UINT preemption_threshold) {
     PW_DASSERT(preemption_threshold < PW_THREAD_THREADX_CONFIG_MIN_PRIORITY);
     possible_preemption_threshold_ = preemption_threshold;
     return *this;
@@ -103,14 +103,14 @@ class Options : public thread::Options {
   //
   // Using time slicing results in a slight amount of system overhead, threads
   // with a unique priority should consider TX_NO_TIME_SLICE.
-  constexpr Options set_time_slice_interval(ULONG time_slice_interval) {
+  constexpr Options& set_time_slice_interval(ULONG time_slice_interval) {
     time_slice_interval_ = time_slice_interval;
     return *this;
   }
 
   // Set the pre-allocated context (all memory needed to run a thread), see the
   // pw::thread::threadx::Context for more detail.
-  constexpr Options set_context(Context& context) {
+  constexpr Options& set_context(Context& context) {
     context_ = &context;
     return *this;
   }

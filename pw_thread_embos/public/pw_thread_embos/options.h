@@ -49,7 +49,7 @@ class Options : public thread::Options {
   // Sets the name for the embOS task, this is optional.
   // Note that this will be deep copied into the context and may be truncated
   // based on PW_THREAD_EMBOS_CONFIG_MAX_THREAD_NAME_LEN.
-  constexpr Options set_name(const char* name) {
+  constexpr Options& set_name(const char* name) {
     name_ = name;
     return *this;
   }
@@ -58,7 +58,7 @@ class Options : public thread::Options {
   // see embOS OS_CreateTaskEx for more detail.
   //
   // Precondition: This must be >= PW_THREAD_EMBOS_CONFIG_MIN_PRIORITY.
-  constexpr Options set_priority(OS_PRIO priority) {
+  constexpr Options& set_priority(OS_PRIO priority) {
     PW_DASSERT(priority >= config::kMinimumPriority);
     priority_ = priority;
     return *this;
@@ -70,7 +70,7 @@ class Options : public thread::Options {
   // A value of 0 disables time-slicing of this thread.
   //
   // Precondition: This must be <= 255 ticks.
-  constexpr Options set_time_slice_interval(OS_UINT time_slice_interval) {
+  constexpr Options& set_time_slice_interval(OS_UINT time_slice_interval) {
     PW_DASSERT(time_slice_interval <= 255);
     time_slice_interval_ = time_slice_interval;
     return *this;
@@ -78,7 +78,7 @@ class Options : public thread::Options {
 
   // Set the pre-allocated context (all memory needed to run a thread), see the
   // pw::thread::embos::Context for more detail.
-  constexpr Options set_context(Context& context) {
+  constexpr Options& set_context(Context& context) {
     context_ = &context;
     return *this;
   }

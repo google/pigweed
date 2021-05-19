@@ -49,7 +49,7 @@ class Options : public thread::Options {
   // Sets the name for the FreeRTOS task, note that this will be truncated
   // based on configMAX_TASK_NAME_LEN.
   // This is deep copied by FreeRTOS into the task's task control block (TCB).
-  constexpr Options set_name(const char* name) {
+  constexpr Options& set_name(const char* name) {
     name_ = name;
     return *this;
   }
@@ -57,7 +57,7 @@ class Options : public thread::Options {
   // Sets the priority for the FreeRTOS task. This must be a value between
   // tskIDLE_PRIORITY or 0 to configMAX_PRIORITIES - 1. Higher priority values
   // have a higher priority.
-  constexpr Options set_priority(UBaseType_t priority) {
+  constexpr Options& set_priority(UBaseType_t priority) {
     priority_ = priority;
     return *this;
   }
@@ -66,7 +66,7 @@ class Options : public thread::Options {
   // Set the stack size of dynamic thread allocations.
   //
   // Precondition: size_words must be >= configMINIMAL_STACK_SIZE
-  constexpr Options set_stack_size(size_t size_words) {
+  constexpr Options& set_stack_size(size_t size_words) {
     PW_DASSERT(size_words >= config::kMinimumStackSizeWords);
     stack_size_words_ = size_words;
     return *this;
@@ -75,7 +75,7 @@ class Options : public thread::Options {
 
   // Set the pre-allocated context (all memory needed to run a thread), see the
   // pw::thread::freertos::StaticContext for more detail.
-  constexpr Options set_static_context(StaticContext& context) {
+  constexpr Options& set_static_context(StaticContext& context) {
     context_ = &context;
     return *this;
   }
