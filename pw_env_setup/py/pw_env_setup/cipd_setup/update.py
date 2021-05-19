@@ -26,7 +26,6 @@ import json
 import os
 import platform
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -171,10 +170,6 @@ def _platform():
 def write_ensure_file(package_file, ensure_file):
     with open(package_file, 'r') as ins:
         packages = json.load(ins)
-
-    # TODO(pwbug/103) Remove 30 days after bug fixed.
-    if os.path.isdir(ensure_file):
-        shutil.rmtree(ensure_file)
 
     with open(ensure_file, 'w') as outs:
         outs.write('$VerifiedPlatform linux-amd64\n'
