@@ -66,7 +66,7 @@ def _process_banned_words(*words):
         _ = re.compile(word)
 
     return re.compile(
-        r"\b({})(\b|e?[sd]\b)".format('|'.join(all_words)),
+        r"(\b|_)({})(\b|_|e?[sd]_?\b)".format('|'.join(all_words)),
         re.IGNORECASE,
     )
 
