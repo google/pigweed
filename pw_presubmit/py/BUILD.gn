@@ -20,6 +20,7 @@ pw_python_package("py") {
   setup = [ "setup.py" ]
   sources = [
     "pw_presubmit/__init__.py",
+    "pw_presubmit/banned_words.py",
     "pw_presubmit/build.py",
     "pw_presubmit/cli.py",
     "pw_presubmit/environment.py",

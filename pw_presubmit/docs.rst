@@ -127,8 +127,9 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       sys.exit(2)
 
   import pw_presubmit
-  from pw_presubmit import build, cli, environment, format_code, git_repo
-  from pw_presubmit import python_checks, filter_paths, PresubmitContext
+  from pw_presubmit import banned_words, build, cli, environment, format_code
+  from pw_presubmit import git_repo, python_checks, filter_paths
+  from pw_presubmit import PresubmitContext
   from pw_presubmit.install_hook import install_hook
 
   # Set up variables for key project paths.
@@ -184,14 +185,13 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   # Presubmit check programs
   #
   QUICK = (
-      # Initialize an environment for running presubmit checks.
-      init_cipd,
-      init_virtualenv,
       # List some presubmit checks to run
       pragma_once,
       host_tests,
       # Use the upstream formatting checks, with custom path filters applied.
       format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
+      # Include the upstream inclusive language check.
+      banned_words.banned_words,
   )
 
   FULL = (

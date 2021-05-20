@@ -35,7 +35,7 @@ except ImportError:
 
 import pw_package.pigweed_packages
 
-from pw_presubmit import build, cli, format_code, git_repo
+from pw_presubmit import banned_words, build, cli, format_code, git_repo
 from pw_presubmit import call, filter_paths, plural, PresubmitContext
 from pw_presubmit import PresubmitFailure, Programs
 from pw_presubmit.install_hook import install_hook
@@ -621,6 +621,7 @@ def renode_check(ctx: PresubmitContext):
 #
 
 OTHER_CHECKS = (
+    banned_words.banned_words,
     # TODO(pwbug/45): Remove clang-tidy from OTHER_CHECKS when it passes.
     clang_tidy,
     # Build that attempts to duplicate the build OSS-Fuzz does. Currently
