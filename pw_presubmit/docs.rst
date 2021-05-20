@@ -93,6 +93,45 @@ such as a quick program for local use and a full program for automated use. The
 :ref:`example script <example-script>` uses ``pw_presubmit.Programs`` to define
 ``quick`` and ``full`` programs.
 
+Existing Presubmit Checks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+A small number of presubmit checks are made available through ``pw_presubmit``
+modules.
+
+Code Formatting
+===============
+Formatting checks for a variety of languages are available from
+``pw_presubmit.format_code``. These include C/C++, Java, Go, Python, GN, and
+others. All of these checks can be included by adding
+``pw_presubmit.format_code.presubmit_checks()`` to a presubmit program. These
+all use language-specific formatters like clang-format or yapf.
+
+These will suggest fixes using ``pw format --fix``.
+
+#pragma once
+============
+There's a ``pragma_once`` check that confirms the first non-comment line of
+C/C++ headers is ``#pragma once``. This is enabled by adding
+``pw_presubmit.pragma_once`` to a presubmit program.
+
+Banned Words
+============
+.. banned-words: disable
+
+The banned words check looks for words that are typical of non-inclusive code,
+like using "master" and "slave" in place of "primary" and "secondary" or
+"sanity check" in place of "consistency check".
+
+.. banned-words: enable
+
+These checks can be disabled for individual lines with "banned-words: ignore"
+on the line in question or the line above it, or for entire blocks by using
+"banned-words: disable" before the block and "banned-words: enable" after the
+block.
+
+.. In case things get moved around in the previous paragraphs the enable line
+.. is repeated here: banned-words: enable.
+
 pw_presubmit
 ~~~~~~~~~~~~
 .. automodule:: pw_presubmit
