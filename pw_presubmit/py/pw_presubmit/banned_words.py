@@ -115,7 +115,7 @@ def banned_words(
                     # Not using 'continue' so this line always executes.
                     prev = line
 
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, IsADirectoryError):
             # File is not text, like a gif.
             pass
 
