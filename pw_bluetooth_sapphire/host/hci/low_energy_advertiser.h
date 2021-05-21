@@ -8,15 +8,19 @@
 #include <lib/fit/function.h>
 
 #include <memory>
+#include <vector>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 
-namespace bt::hci {
+namespace bt {
+class AdvertisingData;
+
+namespace hci {
+class Transport;
 
 class AdvertisingIntervalRange final {
  public:
@@ -37,7 +41,7 @@ class AdvertisingIntervalRange final {
 
 class LowEnergyAdvertiser : public LocalAddressClient {
  public:
-  virtual ~LowEnergyAdvertiser() = default;
+  ~LowEnergyAdvertiser() override = default;
 
   // Get the current limit in bytes of the advertisement data supported.
   virtual size_t GetSizeLimit() = 0;
@@ -127,6 +131,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                     const LEConnectionParameters& conn_params) = 0;
 };
 
-}  // namespace bt::hci
+}  // namespace hci
+}  // namespace bt
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LOW_ENERGY_ADVERTISER_H_

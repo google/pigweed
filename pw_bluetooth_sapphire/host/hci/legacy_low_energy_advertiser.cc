@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
@@ -89,17 +90,11 @@ std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
 }  // namespace
 
 LegacyLowEnergyAdvertiser::LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
-    : hci_(std::move(hci)), starting_(false), connect_callback_(nullptr) {
+    : hci_(std::move(hci)) {
   hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(async_get_default_dispatcher(), hci_);
 }
 
 LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() { StopAdvertisingInternal(); }
-
-size_t LegacyLowEnergyAdvertiser::GetSizeLimit() { return kMaxLEAdvertisingDataLength; }
-
-bool LegacyLowEnergyAdvertiser::AllowsRandomAddressChange() const {
-  return !starting_ && !advertising();
-}
 
 void LegacyLowEnergyAdvertiser::StartAdvertisingInternal(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,
@@ -172,13 +167,15 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
       callback(Status(HostError::kNotSupported));
       return;
     }
+
     bt_log(DEBUG, "hci-le", "updating existing advertisement");
   }
 
   // If the TX Power Level is requested, ensure both buffers have enough space.
   size_t size_limit = GetSizeLimit();
-  if (adv_options.include_tx_power_level)
+  if (adv_options.include_tx_power_level) {
     size_limit -= kTxPowerLevelTLVSize;
+  }
 
   if (data.CalculateBlockSize(/*include_flags=*/true) > size_limit) {
     bt_log(DEBUG, "hci-le", "advertising data too large");
@@ -202,9 +199,12 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   // If there already is an outstanding TX Power Level read request, return early.
   // Advertising on the outstanding call will now use the updated |staged_params_|.
   if (adv_options.include_tx_power_level) {
-    AdvertisingData data_copy, scan_rsp_copy;
+    AdvertisingData data_copy;
     data.Copy(&data_copy);
+
+    AdvertisingData scan_rsp_copy;
     scan_rsp.Copy(&scan_rsp_copy);
+
     staged_params_ = StagedParams{address,
                                   adv_options.interval,
                                   adv_options.flags,

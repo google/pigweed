@@ -440,19 +440,22 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
       bt_log(WARN, "gap", "Unable to find peer %s when retrieving persisted GATT data.",
              peer_id.ToString().c_str());
       return std::optional<gatt::ServiceChangedCCCPersistedData>();
-    } else if (!peer->le()) {
+    }
+
+    if (!peer->le()) {
       bt_log(WARN, "gap", "Tried to retrieve persisted GATT data for non-LE peer %s.",
              peer_id.ToString().c_str());
       return std::optional<gatt::ServiceChangedCCCPersistedData>();
-    } else {
-      return std::optional(peer->le()->get_service_changed_gatt_data());
     }
+
+    return std::optional(peer->le()->get_service_changed_gatt_data());
   });
 }
 
 AdapterImpl::~AdapterImpl() {
-  if (IsInitialized())
+  if (IsInitialized()) {
     ShutDown();
+  }
 }
 
 bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {

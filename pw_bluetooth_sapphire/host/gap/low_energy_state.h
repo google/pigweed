@@ -37,10 +37,10 @@ class LowEnergyState final {
   hci::DataBufferInfo data_buffer_info_;
 
   // Local supported LE Features reported by the controller.
-  uint64_t supported_features_;
+  uint64_t supported_features_ = 0;
 
   // Local supported LE states reported by the controller.
-  uint64_t supported_states_;
+  uint64_t supported_states_ = 0;
 };
 
 }  // namespace bt::gap

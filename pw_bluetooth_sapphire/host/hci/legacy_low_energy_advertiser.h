@@ -5,24 +5,22 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_ADVERTISER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_LEGACY_LOW_ENERGY_ADVERTISER_H_
 
-#include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
-#include "src/lib/fxl/memory/ref_ptr.h"
 
 namespace bt::hci {
 
 class Transport;
+class SequentialCommandRunner;
 
 class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
+  explicit LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
   ~LegacyLowEnergyAdvertiser() override;
 
   // LowEnergyAdvertiser overrides:
-  size_t GetSizeLimit() override;
+  size_t GetSizeLimit() override { return kMaxLEAdvertisingDataLength; }
   size_t GetMaxAdvertisements() const override { return 1; }
-  bool AllowsRandomAddressChange() const override;
+  bool AllowsRandomAddressChange() const override { return !starting_ && !advertising(); }
 
   // LegacyLowEnergyAdvertiser supports only a single advertising instance,
   // hence it can report additional errors in the following conditions:
@@ -74,14 +72,14 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     StatusCallback callback;
   };
   std::optional<StagedParams> staged_params_;
-  bool starting_;
+  bool starting_ = false;
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
 
   // Non-zero if advertising has been enabled.
   DeviceAddress advertised_;
 
   // if not null, the callback for connectable advertising.
-  ConnectionCallback connect_callback_;
+  ConnectionCallback connect_callback_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LegacyLowEnergyAdvertiser);
 };
