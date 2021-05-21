@@ -14,7 +14,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
-#include "pw_protobuf/streaming_encoder.h"
+#include "pw_protobuf/encoder.h"
 
 namespace pw::protobuf {
 namespace {

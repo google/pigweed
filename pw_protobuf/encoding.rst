@@ -35,7 +35,7 @@ like pw::sys_io without needing to build the complete message in memory first.
 
 .. Code:: cpp
 
-  #include "pw_protobuf/streaming_encoder.h"
+  #include "pw_protobuf/encoder.h"
   #include "pw_stream/sys_io_stream.h"
   #include "pw_bytes/span.h"
 
@@ -72,7 +72,7 @@ space to allocate to account for nested submessage encoding overhead.
 
 .. Code:: cpp
 
-  #include "pw_protobuf/streaming_encoder.h"
+  #include "pw_protobuf/encoder.h"
   #include "pw_stream/sys_io_stream.h"
   #include "pw_bytes/span.h"
 
@@ -187,7 +187,7 @@ Example ``example_client.cc``:
 .. Code:: cpp
 
   #include "pet_daycare_protos/client.pwpb.h"
-  #include "pw_protobuf/streaming_encoder.h"
+  #include "pw_protobuf/encoder.h"
   #include "pw_stream/sys_io_stream.h"
   #include "pw_bytes/span.h"
 

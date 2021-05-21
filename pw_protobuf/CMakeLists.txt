@@ -20,7 +20,6 @@ pw_add_module_library(pw_protobuf
     decoder.cc
     encoder.cc
     find.cc
-    streaming_encoder.cc
   PUBLIC_DEPS
     pw_assert
     pw_bytes
@@ -53,16 +52,6 @@ pw_add_test(pw_protobuf.encoder_test
 pw_add_test(pw_protobuf.find_test
   SOURCES
     find_test.cc
-  DEPS
-    pw_protobuf
-  GROUPS
-    modules
-    pw_protobuf
-)
-
-pw_add_test(pw_protobuf.streaming_encoder_test
-  SOURCES
-    streaming_encoder_test.cc
   DEPS
     pw_protobuf
   GROUPS

@@ -40,12 +40,9 @@ PROTOBUF_NAMESPACE = 'pw::protobuf'
 class EncoderType(enum.Enum):
     MEMORY = 1
     STREAMING = 2
-    LEGACY = 3
 
     def base_class_name(self) -> str:
         """Returns the base class used by this encoder type."""
-        if self is self.LEGACY:
-            return 'ProtoMessageEncoder'
         if self is self.STREAMING:
             return 'StreamingEncoder'
         if self is self.MEMORY:
@@ -55,8 +52,6 @@ class EncoderType(enum.Enum):
 
     def codegen_class_name(self) -> str:
         """Returns the base class used by this encoder type."""
-        if self is self.LEGACY:
-            return 'Encoder'
         if self is self.STREAMING:
             return 'StreamEncoder'
         if self is self.MEMORY:
@@ -102,7 +97,7 @@ class ProtoMethod(abc.ABC):
         """
 
     @abc.abstractmethod
-    def body(self, encoder_type: EncoderType) -> List[str]:
+    def body(self) -> List[str]:
         """Returns the method body as a list of source code lines.
 
         e.g.
@@ -113,9 +108,7 @@ class ProtoMethod(abc.ABC):
         """
 
     @abc.abstractmethod
-    def return_type(self,
-                    encoder_type: EncoderType,
-                    from_root: bool = False) -> str:
+    def return_type(self, from_root: bool = False) -> str:
         """Returns the return type of the method, e.g. int.
 
         For non-primitive return types, the from_root argument determines
@@ -165,27 +158,16 @@ class SubMessageMethod(ProtoMethod):
     def name(self) -> str:
         return 'Get{}Encoder'.format(self._field.name())
 
-    def return_type(self,
-                    encoder_type: EncoderType,
-                    from_root: bool = False) -> str:
-        if encoder_type == EncoderType.LEGACY:
-            return '{}::Encoder'.format(
-                self._relative_type_namespace(from_root))
-
+    def return_type(self, from_root: bool = False) -> str:
         return '{}::StreamEncoder'.format(
             self._relative_type_namespace(from_root))
 
     def params(self) -> List[Tuple[str, str]]:
         return []
 
-    def body(self, encoder_type: EncoderType) -> List[str]:
-        line: str = ''
-        if encoder_type == EncoderType.LEGACY:
-            line = 'return {}::Encoder(encoder_, {});'.format(
-                self._relative_type_namespace(), self.field_cast())
-        else:
-            line = 'return {}::StreamEncoder(GetNestedEncoder({}));'.format(
-                self._relative_type_namespace(), self.field_cast())
+    def body(self) -> List[str]:
+        line = 'return {}::StreamEncoder(GetNestedEncoder({}));'.format(
+            self._relative_type_namespace(), self.field_cast())
         return [line]
 
     # Submessage methods are not defined within the class itself because the
@@ -207,19 +189,13 @@ class WriteMethod(ProtoMethod):
     def name(self) -> str:
         return 'Write{}'.format(self._field.name())
 
-    def return_type(self,
-                    encoder_type: EncoderType,
-                    from_root: bool = False) -> str:
+    def return_type(self, from_root: bool = False) -> str:
         return '::pw::Status'
 
-    def body(self, encoder_type: EncoderType) -> List[str]:
+    def body(self) -> List[str]:
         params = ', '.join([pair[1] for pair in self.params()])
-        if encoder_type == EncoderType.LEGACY:
-            line = 'return encoder_->{}({}, {});'.format(
-                self._encoder_fn(), self.field_cast(), params)
-        else:
-            line = 'return {}({}, {});'.format(self._encoder_fn(),
-                                               self.field_cast(), params)
+        line = 'return {}({}, {});'.format(self._encoder_fn(),
+                                           self.field_cast(), params)
         return [line]
 
     def params(self) -> List[Tuple[str, str]]:
@@ -503,7 +479,7 @@ class StringLenMethod(WriteMethod):
 class StringMethod(WriteMethod):
     """Method which writes a proto string value."""
     def params(self) -> List[Tuple[str, str]]:
-        return [('const char*', 'value')]
+        return [('std::string_view', 'value')]
 
     def _encoder_fn(self) -> str:
         return 'WriteString'
@@ -514,14 +490,9 @@ class EnumMethod(WriteMethod):
     def params(self) -> List[Tuple[str, str]]:
         return [(self._relative_type_namespace(), 'value')]
 
-    def body(self, encoder_type: EncoderType) -> List[str]:
-        line: str = ''
-        if encoder_type == EncoderType.LEGACY:
-            line = 'return encoder_->WriteUint32(' \
-                '{}, static_cast<uint32_t>(value));'.format(self.field_cast())
-        else:
-            line = 'return WriteUint32(' \
-                '{}, static_cast<uint32_t>(value));'.format(self.field_cast())
+    def body(self) -> List[str]:
+        line = 'return WriteUint32(' \
+            '{}, static_cast<uint32_t>(value));'.format(self.field_cast())
         return [line]
 
     def in_class_definition(self) -> bool:
@@ -590,11 +561,10 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
         output.write_line(f'using {base_class_name}::{base_class_name};')
 
         # Declare a move constructor that takes a base encoder.
-        if encoder_type != EncoderType.LEGACY:
-            output.write_line(
-                f'constexpr {encoder_name}({base_class_name}&& parent) '\
-                f': {base_class_name}(std::move(parent)) {{}}'
-            )
+        output.write_line(
+            f'constexpr {encoder_name}({base_class_name}&& parent) '\
+            f': {base_class_name}(std::move(parent)) {{}}'
+        )
 
         # Generate methods for each of the message's fields.
         for field in message.fields():
@@ -605,7 +575,7 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
 
                 output.write_line()
                 method_signature = (
-                    f'{method.return_type(encoder_type)} '
+                    f'{method.return_type()} '
                     f'{method.name()}({method.param_string()})')
 
                 if not method.in_class_definition():
@@ -616,7 +586,7 @@ def generate_code_for_message(message: ProtoMessage, root: ProtoNode,
 
                 output.write_line(f'{method_signature} {{')
                 with output.indent():
-                    for line in method.body(encoder_type):
+                    for line in method.body():
                         output.write_line(line)
                 output.write_line('}')
 
@@ -639,11 +609,11 @@ def define_not_in_class_methods(message: ProtoMessage, root: ProtoNode,
             class_name = (f'{message.cpp_namespace(root)}::'
                           f'{encoder_type.codegen_class_name()}')
             method_signature = (
-                f'inline {method.return_type(encoder_type, from_root=True)} '
+                f'inline {method.return_type(from_root=True)} '
                 f'{class_name}::{method.name()}({method.param_string()})')
             output.write_line(f'{method_signature} {{')
             with output.indent():
-                for line in method.body(encoder_type):
+                for line in method.body():
                     output.write_line(line)
             output.write_line('}')
 
@@ -676,7 +646,6 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
 
     # Declare the message's encoder class and all of its enums.
     output.write_line()
-    output.write_line('class Encoder;')
     output.write_line('class StreamEncoder;')
     output.write_line('class RamEncoder;')
 
@@ -722,9 +691,9 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     output.write_line('#pragma once\n')
     output.write_line('#include <cstddef>')
     output.write_line('#include <cstdint>')
-    output.write_line('#include <span>\n')
-    output.write_line('#include "pw_protobuf/codegen.h"')
-    output.write_line('#include "pw_protobuf/streaming_encoder.h"')
+    output.write_line('#include <span>')
+    output.write_line('#include <string_view>\n')
+    output.write_line('#include "pw_protobuf/encoder.h"')
 
     for imported_file in file_descriptor_proto.dependency:
         generated_header = _proto_filename_to_generated_header(imported_file)
@@ -747,7 +716,6 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
             output.write_line()
             generate_code_for_enum(cast(ProtoEnum, node), package, output)
 
-    generate_encoder_wrappers(package, EncoderType.LEGACY, output)
     generate_encoder_wrappers(package, EncoderType.STREAMING, output)
     generate_encoder_wrappers(package, EncoderType.MEMORY, output)
 

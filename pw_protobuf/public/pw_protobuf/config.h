@@ -41,16 +41,4 @@ namespace pw::protobuf::config {
 
 inline constexpr size_t kMaxVarintSize = PW_PROTOBUF_CFG_MAX_VARINT_SIZE;
 
-// TODO(pwbug/384): This converts the configured varint length to the legacy
-// encoder SizeType. Remove this with the encoder rewrite.
-#if PW_PROTOBUF_CFG_MAX_VARINT_SIZE == 1
-using SizeType = uint8_t;
-#elif PW_PROTOBUF_CFG_MAX_VARINT_SIZE == 2
-using SizeType = uint16_t;
-#elif PW_PROTOBUF_CFG_MAX_VARINT_SIZE <= 4
-using SizeType = uint32_t;
-#else
-using SizeType = uint64_t;
-#endif
-
 }  // namespace pw::protobuf::config
