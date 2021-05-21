@@ -130,7 +130,7 @@ Entry {
 // be added to this file.
 #error "Unsupported value for PW_TOKENIZER_CFG_C_HASH_LENGTH"
 
-// Define a dummy macro to give clearer compilation errors.
+// Define a placeholder macro to give clearer compilation errors.
 #define PW_TOKENIZER_STRING_TOKEN(unused) 0u
 
 #endif  // PW_TOKENIZER_CFG_C_HASH_LENGTH

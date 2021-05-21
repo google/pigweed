@@ -617,7 +617,7 @@ The binary database format is comprised of a 16-byte header followed by a series
 of 8-byte entries. Each entry stores the token and the removal date, which is
 0xFFFFFFFF if there is none. The string literals are stored next in the same
 order as the entries. Strings are stored with null terminators. See
-`token_database.h <https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/master/pw_tokenizer/public/pw_tokenizer/token_database.h>`_
+`token_database.h <https://pigweed.googlesource.com/pigweed/pigweed/+/HEAD/pw_tokenizer/public/pw_tokenizer/token_database.h>`_
 for full details.
 
 The binary form of the CSV database is shown below. It contains the same
