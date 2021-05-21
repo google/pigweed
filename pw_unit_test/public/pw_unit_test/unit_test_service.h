@@ -34,11 +34,12 @@ class UnitTestService final : public generated::UnitTest<UnitTestService> {
   // migrated to it.
   template <typename WriteFunction>
   void WriteEvent(WriteFunction event_writer) {
-    protobuf::NestedEncoder<2, 3> encoder(writer_.PayloadBuffer());
-    Event::Encoder event(&encoder);
-    event_writer(event);
-    if (Result<ConstByteSpan> result = encoder.Encode(); result.ok()) {
-      writer_.Write(result.value());
+    // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+    Event::RamEncoder event(writer_.PayloadBuffer());
+    event_writer(static_cast<Event::StreamEncoder&>(
+        *static_cast<pw::protobuf::StreamingEncoder*>(&event)));
+    if (event.status().ok()) {
+      writer_.Write(event);
     }
   }
 

@@ -85,12 +85,13 @@ void UnitTestService::Run(ServerContext&,
 
 void UnitTestService::WriteTestRunStart() {
   // Write out the key for the start field (even though the message is empty).
-  WriteEvent([&](Event::Encoder& event) { event.GetTestRunStartEncoder(); });
+  WriteEvent(
+      [&](Event::StreamEncoder& event) { event.GetTestRunStartEncoder(); });
 }
 
 void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
-  WriteEvent([&](Event::Encoder& event) {
-    TestRunEnd::Encoder test_run_end = event.GetTestRunEndEncoder();
+  WriteEvent([&](Event::StreamEncoder& event) {
+    TestRunEnd::StreamEncoder test_run_end = event.GetTestRunEndEncoder();
     test_run_end.WritePassed(summary.passed_tests);
     test_run_end.WriteFailed(summary.failed_tests);
     test_run_end.WriteSkipped(summary.skipped_tests);
@@ -99,8 +100,9 @@ void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
 }
 
 void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
-  WriteEvent([&](Event::Encoder& event) {
-    TestCaseDescriptor::Encoder descriptor = event.GetTestCaseStartEncoder();
+  WriteEvent([&](Event::StreamEncoder& event) {
+    TestCaseDescriptor::StreamEncoder descriptor =
+        event.GetTestCaseStartEncoder();
     descriptor.WriteSuiteName(test_case.suite_name);
     descriptor.WriteTestName(test_case.test_name);
     descriptor.WriteFileName(test_case.file_name);
@@ -108,14 +110,15 @@ void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
 }
 
 void UnitTestService::WriteTestCaseEnd(TestResult result) {
-  WriteEvent([&](Event::Encoder& event) {
+  WriteEvent([&](Event::StreamEncoder& event) {
     event.WriteTestCaseEnd(static_cast<TestCaseResult>(result));
   });
 }
 
 void UnitTestService::WriteTestCaseDisabled(const TestCase& test_case) {
-  WriteEvent([&](Event::Encoder& event) {
-    TestCaseDescriptor::Encoder descriptor = event.GetTestCaseDisabledEncoder();
+  WriteEvent([&](Event::StreamEncoder& event) {
+    TestCaseDescriptor::StreamEncoder descriptor =
+        event.GetTestCaseDisabledEncoder();
     descriptor.WriteSuiteName(test_case.suite_name);
     descriptor.WriteTestName(test_case.test_name);
     descriptor.WriteFileName(test_case.file_name);
@@ -128,8 +131,8 @@ void UnitTestService::WriteTestCaseExpectation(
     return;
   }
 
-  WriteEvent([&](Event::Encoder& event) {
-    TestCaseExpectation::Encoder test_case_expectation =
+  WriteEvent([&](Event::StreamEncoder& event) {
+    TestCaseExpectation::StreamEncoder test_case_expectation =
         event.GetTestCaseExpectationEncoder();
     test_case_expectation.WriteExpression(expectation.expression);
     test_case_expectation.WriteEvaluatedExpression(

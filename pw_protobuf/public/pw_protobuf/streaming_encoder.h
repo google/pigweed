@@ -369,8 +369,8 @@ class StreamingEncoder {
   }
 
   // Writes a proto string key-value pair.
-  // TODO(384): This function is not safe and will be removed as part of the
-  // transition away from the old protobuf encoder.
+  // TODO(pwbug/384): This function is not safe and will be removed as part of
+  // the transition away from the old protobuf encoder.
   //
   // Precondition: Encoder has no active child encoder.
   Status WriteString(uint32_t field_number, const char* value) {

@@ -21,17 +21,15 @@
 namespace pw::snapshot {
 namespace {
 
-constexpr size_t kMaxProtoSize = 256;
-constexpr size_t kMaxNestedProtoDepth = 4;
-
-std::byte encode_buffer[kMaxProtoSize];
-
 TEST(Status, CompileTest) {
-  pw::protobuf::NestedEncoder<kMaxNestedProtoDepth> proto_encoder(
-      encode_buffer);
-  pw::snapshot::Snapshot::Encoder snapshot_encoder(&proto_encoder);
+  constexpr size_t kMaxProtoSize = 256;
+  std::byte encode_buffer[kMaxProtoSize];
+  std::byte submessage_buffer[kMaxProtoSize];
+
+  stream::MemoryWriter writer(encode_buffer);
+  Snapshot::StreamEncoder snapshot_encoder(writer, submessage_buffer);
   {
-    pw::snapshot::Metadata::Encoder metadata_encoder =
+    Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
     metadata_encoder.WriteReason(
         std::as_bytes(std::span("It just died, I didn't do anything")));
@@ -39,7 +37,7 @@ TEST(Status, CompileTest) {
     metadata_encoder.WriteProjectName(std::as_bytes(std::span("smart-shoe")));
     metadata_encoder.WriteDeviceName(std::as_bytes(std::span("smart-shoe-p1")));
   }
-  ASSERT_TRUE(proto_encoder.Encode().ok());
+  ASSERT_TRUE(snapshot_encoder.status().ok());
 }
 
 }  // namespace

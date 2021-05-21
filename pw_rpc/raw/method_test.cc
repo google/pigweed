@@ -125,11 +125,10 @@ StatusWithSize AddFive(ServerContext&,
                        ByteSpan response) {
   DecodeRawTestRequest(request);
 
-  protobuf::NestedEncoder encoder(response);
-  TestResponse::Encoder test_response(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  TestResponse::RamEncoder test_response(response);
   test_response.WriteValue(last_request.integer + 5);
-  ConstByteSpan payload;
-  encoder.Encode(&payload);
+  ConstByteSpan payload(test_response);
 
   return StatusWithSize::Unauthenticated(payload.size());
 }
@@ -153,14 +152,15 @@ class FakeService : public Service {
 
 TEST(RawMethod, UnaryRpc_SendsResponse) {
   std::byte buffer[16];
-  protobuf::NestedEncoder encoder(buffer);
-  TestRequest::Encoder test_request(&encoder);
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  stream::MemoryWriter writer(buffer);
+  TestRequest::StreamEncoder test_request(writer, ByteSpan());
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
   const RawMethod& method = std::get<0>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
-  method.Invoke(context.get(), context.request(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(last_request.integer, 456);
   EXPECT_EQ(last_request.status_code, 7u);
@@ -177,15 +177,16 @@ TEST(RawMethod, UnaryRpc_SendsResponse) {
 
 TEST(RawMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
   std::byte buffer[16];
-  protobuf::NestedEncoder encoder(buffer);
-  TestRequest::Encoder test_request(&encoder);
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  stream::MemoryWriter writer(buffer);
+  TestRequest::StreamEncoder test_request(writer, ByteSpan());
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 
   const RawMethod& method = std::get<1>(FakeService::kMethods).raw_method();
   ServerContextForTest<FakeService> context(method);
 
-  method.Invoke(context.get(), context.request(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(writer.WrittenData()));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);

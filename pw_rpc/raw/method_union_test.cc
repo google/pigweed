@@ -64,11 +64,10 @@ class FakeGeneratedServiceImpl
                          ByteSpan response) {
     DecodeRawTestRequest(request);
 
-    protobuf::NestedEncoder encoder(response);
-    TestResponse::Encoder test_response(&encoder);
+    // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+    TestResponse::RamEncoder test_response(response);
     test_response.WriteValue(last_request.integer + 5);
-    ConstByteSpan payload;
-    encoder.Encode(&payload);
+    ConstByteSpan payload(test_response);
 
     return StatusWithSize::Unauthenticated(payload.size());
   }
@@ -102,15 +101,16 @@ class FakeGeneratedServiceImpl
 
 TEST(RawMethodUnion, InvokesUnary) {
   std::byte buffer[16];
-  protobuf::NestedEncoder encoder(buffer);
-  TestRequest::Encoder test_request(&encoder);
+
+  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+  TestRequest::RamEncoder test_request(buffer);
   test_request.WriteInteger(456);
   test_request.WriteStatusCode(7);
 
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
-  method.Invoke(context.get(), context.request(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(last_request.integer, 456);
   EXPECT_EQ(last_request.status_code, 7u);
@@ -127,8 +127,9 @@ TEST(RawMethodUnion, InvokesUnary) {
 
 TEST(RawMethodUnion, InvokesServerStreaming) {
   std::byte buffer[16];
-  protobuf::NestedEncoder encoder(buffer);
-  TestRequest::Encoder test_request(&encoder);
+
+  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+  TestRequest::RamEncoder test_request(buffer);
   test_request.WriteInteger(777);
   test_request.WriteStatusCode(2);
 
@@ -136,7 +137,7 @@ TEST(RawMethodUnion, InvokesServerStreaming) {
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
   ServerContextForTest<FakeGeneratedServiceImpl> context(method);
 
-  method.Invoke(context.get(), context.request(encoder.Encode().value()));
+  method.Invoke(context.get(), context.request(test_request));
 
   EXPECT_EQ(0u, context.output().packet_count());
   EXPECT_EQ(777, last_request.integer);

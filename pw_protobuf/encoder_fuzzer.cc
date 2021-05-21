@@ -27,8 +27,7 @@ namespace {
 // Encodable values. The fuzzer will iteratively choose different field types to
 // generate and encode.
 enum FieldType : uint8_t {
-  kEncodeAndClear = 0,
-  kUint32,
+  kUint32 = 0,
   kPackedUint32,
   kUint64,
   kPackedUint64,
@@ -131,7 +130,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   size_t poisoned_length = sizeof(buffer) - unpoisoned_length;
   ASAN_POISON_MEMORY_REGION(poisoned, poisoned_length);
 
-  pw::protobuf::NestedEncoder encoder(unpoisoned);
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  pw::protobuf::MemoryEncoder encoder(unpoisoned);
 
   // Storage for generated spans
   std::vector<uint32_t> u32s;
@@ -150,11 +150,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // set of inputs to the encoder to ensure it doesn't misbehave.
   while (provider.remaining_bytes() != 0) {
     switch (provider.ConsumeEnum<FieldType>()) {
-      case kEncodeAndClear:
-        // Special "field". Encode all the fields so far and reset the encoder.
-        encoder.Encode().IgnoreError();
-        encoder.Clear();
-        break;
       case kUint32:
         encoder.WriteUint32(provider.ConsumeIntegral<uint32_t>(),
                             provider.ConsumeIntegral<uint32_t>());
@@ -265,18 +260,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         break;
       case kPush:
         // Special "field". The marks the start of a nested message.
-        encoder.Push(provider.ConsumeIntegral<uint32_t>());
+        encoder.GetNestedEncoder(provider.ConsumeIntegral<uint32_t>());
         break;
       case kPop:
         // Special "field". this marks the end of a nested message. No attempt
         // is made to match pushes to pops, in order to test that the encoder
         // behaves correctly when they are mismatched.
-        encoder.Pop();
+        encoder.Finalize();
         break;
     }
   }
-  // Ensure we call `Encode` at least once.
-  encoder.Encode().IgnoreError();
 
   // Don't forget to unpoison for the next iteration!
   ASAN_UNPOISON_MEMORY_REGION(poisoned, poisoned_length);

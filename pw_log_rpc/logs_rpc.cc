@@ -24,10 +24,13 @@ namespace {
 // TODO(prashanthsw): Handle dropped messages.
 // Result<ConstByteSpan> GenerateDroppedEntryMessage(ByteSpan encode_buffer,
 //                                                   size_t dropped_entries) {
-//   pw::protobuf::NestedEncoder nested_encoder(encode_buffer);
-//   pw::log::LogEntry::Encoder encoder(&nested_encoder);
+//   // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+//   pw::log::LogEntry::RamEncoder encoder(encode_buffer);
 //   encoder.WriteDropped(dropped_entries);
-//   return nested_encoder.Encode();
+//   if (encoder.status().ok()) {
+//     return ConstByteSpan(encoder);
+//   }
+//   return encoder.status();
 // }
 
 }  // namespace

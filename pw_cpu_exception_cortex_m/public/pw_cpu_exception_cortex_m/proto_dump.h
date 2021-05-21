@@ -27,7 +27,12 @@ namespace pw::cpu_exception {
 //   OK - Entire proto was written to the encoder.
 //   RESOURCE_EXHAUSTED - Insufficient space to encode proto.
 //   UNKNOWN - Some other proto encoding error occurred.
-Status DumpCpuStateProto(protobuf::Encoder& dest,
+[[deprecated(
+    "Use the StreamingEncoder-based overload of this function")]] Status
+DumpCpuStateProto(protobuf::Encoder& dest,
+                  const pw_cpu_exception_State& cpu_state);
+
+Status DumpCpuStateProto(protobuf::StreamingEncoder& dest,
                          const pw_cpu_exception_State& cpu_state);
 
 }  // namespace pw::cpu_exception

@@ -70,8 +70,8 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
 }
 
 Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
-  pw::protobuf::NestedEncoder encoder(buffer);
-  RpcPacket::Encoder rpc_packet(&encoder);
+  // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+  RpcPacket::RamEncoder rpc_packet(buffer);
 
   // The payload is encoded first, as it may share the encode buffer.
   if (!payload_.empty()) {
@@ -89,7 +89,10 @@ Result<ConstByteSpan> Packet::Encode(ByteSpan buffer) const {
     rpc_packet.WriteStatus(status_.code());
   }
 
-  return encoder.Encode();
+  if (rpc_packet.status().ok()) {
+    return ConstByteSpan(rpc_packet);
+  }
+  return rpc_packet.status();
 }
 
 size_t Packet::MinEncodedSizeBytes() const {

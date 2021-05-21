@@ -183,20 +183,20 @@ TEST(Codegen, Codegen) {
 
 TEST(Codegen, RecursiveSubmessage) {
   std::byte encode_buffer[512];
-  NestedEncoder<20, 20> encoder(encode_buffer);
 
-  Crate::Encoder biggest_crate(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  Crate::RamEncoder biggest_crate(encode_buffer);
   biggest_crate.WriteName("Huge crate");
 
   {
-    Crate::Encoder medium_crate = biggest_crate.GetSmallerCratesEncoder();
+    Crate::StreamEncoder medium_crate = biggest_crate.GetSmallerCratesEncoder();
     medium_crate.WriteName("Medium crate");
     {
-      Crate::Encoder small_crate = medium_crate.GetSmallerCratesEncoder();
+      Crate::StreamEncoder small_crate = medium_crate.GetSmallerCratesEncoder();
       small_crate.WriteName("Small crate");
     }
     {
-      Crate::Encoder tiny_crate = medium_crate.GetSmallerCratesEncoder();
+      Crate::StreamEncoder tiny_crate = medium_crate.GetSmallerCratesEncoder();
       tiny_crate.WriteName("Tiny crate");
     }
   }
@@ -220,19 +220,19 @@ TEST(Codegen, RecursiveSubmessage) {
   };
   // clang-format on
 
-  Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), OkStatus());
-  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(
-                result.value().data(), expected_proto, sizeof(expected_proto)),
+  ConstByteSpan result(biggest_crate);
+  ASSERT_EQ(biggest_crate.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
 TEST(CodegenRepeated, NonPackedScalar) {
   std::byte encode_buffer[32];
-  NestedEncoder encoder(encode_buffer);
 
-  RepeatedTest::Encoder repeated_test(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   for (int i = 0; i < 4; ++i) {
     repeated_test.WriteUint32s(i * 16);
   }
@@ -240,34 +240,36 @@ TEST(CodegenRepeated, NonPackedScalar) {
   constexpr uint8_t expected_proto[] = {
       0x08, 0x00, 0x08, 0x10, 0x08, 0x20, 0x08, 0x30};
 
-  Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), OkStatus());
-  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(
-                result.value().data(), expected_proto, sizeof(expected_proto)),
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
 TEST(CodegenRepeated, PackedScalar) {
   std::byte encode_buffer[32];
-  NestedEncoder encoder(encode_buffer);
 
-  RepeatedTest::Encoder repeated_test(&encoder);
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr uint32_t values[] = {0, 16, 32, 48};
   repeated_test.WriteUint32s(values);
 
   constexpr uint8_t expected_proto[] = {0x0a, 0x04, 0x00, 0x10, 0x20, 0x30};
-  Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), OkStatus());
-  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(
-                result.value().data(), expected_proto, sizeof(expected_proto)),
+  ConstByteSpan result = writer.WrittenData();
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
 TEST(CodegenRepeated, NonScalar) {
   std::byte encode_buffer[32];
-  RepeatedTest::RamEncoder repeated_test(encode_buffer);
+
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  stream::MemoryWriter writer(encode_buffer);
+  RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
   constexpr const char* strings[] = {"the", "quick", "brown", "fox"};
   for (const char* s : strings) {
     repeated_test.WriteStrings(s);
@@ -276,7 +278,7 @@ TEST(CodegenRepeated, NonScalar) {
   constexpr uint8_t expected_proto[] = {
       0x1a, 0x03, 't', 'h', 'e', 0x1a, 0x5, 'q',  'u', 'i', 'c', 'k',
       0x1a, 0x5,  'b', 'r', 'o', 'w',  'n', 0x1a, 0x3, 'f', 'o', 'x'};
-  ConstByteSpan result(repeated_test);
+  ConstByteSpan result = writer.WrittenData();
   ASSERT_EQ(repeated_test.status(), OkStatus());
   EXPECT_EQ(result.size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
@@ -285,9 +287,9 @@ TEST(CodegenRepeated, NonScalar) {
 
 TEST(CodegenRepeated, Message) {
   std::byte encode_buffer[64];
-  NestedEncoder<1, 3> encoder(encode_buffer);
 
-  RepeatedTest::Encoder repeated_test(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  RepeatedTest::RamEncoder repeated_test(encode_buffer);
   for (int i = 0; i < 3; ++i) {
     auto structs = repeated_test.GetStructsEncoder();
     structs.WriteOne(i * 1);
@@ -300,69 +302,68 @@ TEST(CodegenRepeated, Message) {
     0x01, 0x10, 0x02, 0x2a, 0x04, 0x08, 0x02, 0x10, 0x04};
   // clang-format on
 
-  Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), OkStatus());
-  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(
-                result.value().data(), expected_proto, sizeof(expected_proto)),
+  ConstByteSpan result(repeated_test);
+  ASSERT_EQ(repeated_test.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
 TEST(Codegen, Proto2) {
   std::byte encode_buffer[64];
-  NestedEncoder<1, 3> encoder(encode_buffer);
 
-  Foo::Encoder foo(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  Foo::RamEncoder foo(encode_buffer);
   foo.WriteInt(3);
 
   {
     constexpr std::byte data[] = {
         std::byte(0xde), std::byte(0xad), std::byte(0xbe), std::byte(0xef)};
-    Bar::Encoder bar = foo.GetBarEncoder();
+    Bar::StreamEncoder bar = foo.GetBarEncoder();
     bar.WriteData(data);
   }
 
   constexpr uint8_t expected_proto[] = {
       0x08, 0x03, 0x1a, 0x06, 0x0a, 0x04, 0xde, 0xad, 0xbe, 0xef};
 
-  Result result = encoder.Encode();
-  ASSERT_EQ(result.status(), OkStatus());
-  EXPECT_EQ(result.value().size(), sizeof(expected_proto));
-  EXPECT_EQ(std::memcmp(
-                result.value().data(), expected_proto, sizeof(expected_proto)),
+  ConstByteSpan result(foo);
+  ASSERT_EQ(foo.status(), OkStatus());
+  EXPECT_EQ(result.size(), sizeof(expected_proto));
+  EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
 }
 
 TEST(Codegen, Import) {
   std::byte encode_buffer[64];
-  NestedEncoder<1, 3> encoder(encode_buffer);
 
-  Period::Encoder period(&encoder);
+  // TODO(pwbug/384): Use new MemoryEncoder when RamEncoder is renamed.
+  Period::RamEncoder period(encode_buffer);
   {
-    imported::Timestamp::Encoder start = period.GetStartEncoder();
+    imported::Timestamp::StreamEncoder start = period.GetStartEncoder();
     start.WriteSeconds(1589501793);
     start.WriteNanoseconds(511613110);
   }
 
   {
-    imported::Timestamp::Encoder end = period.GetEndEncoder();
+    imported::Timestamp::StreamEncoder end = period.GetEndEncoder();
     end.WriteSeconds(1589501841);
     end.WriteNanoseconds(490367432);
   }
 
-  EXPECT_EQ(encoder.Encode().status(), OkStatus());
+  EXPECT_EQ(period.status(), OkStatus());
 }
 
 TEST(Codegen, NonPigweedPackage) {
   using namespace non::pigweed::package::name;
   std::byte encode_buffer[64];
   std::array<const int64_t, 2> repeated = {0, 1};
-  NestedEncoder<1, 2> encoder(encode_buffer);
-  Packed::Encoder packed(&encoder);
+  // TODO(pwbug/384): Use new Encoder when MemoryEncoder is renamed.
+  stream::MemoryWriter writer(encode_buffer);
+  Packed::StreamEncoder packed(writer, ByteSpan());
   packed.WriteRep(std::span<const int64_t>(repeated));
   packed.WritePacked("packed");
 
-  EXPECT_EQ(encoder.Encode().status(), OkStatus());
+  EXPECT_EQ(packed.status(), OkStatus());
 }
 
 }  // namespace

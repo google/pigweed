@@ -61,11 +61,11 @@ class TestService final : public generated::TestService<TestService> {
       return StatusWithSize::DataLoss();
     }
 
-    protobuf::NestedEncoder encoder(response);
-    TestResponse::Encoder test_response(&encoder);
+    // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+    TestResponse::RamEncoder test_response(response);
     test_response.WriteValue(integer + 1);
 
-    return StatusWithSize(status, encoder.Encode().value().size());
+    return StatusWithSize(status, test_response.size());
   }
 
   void TestStreamRpc(ServerContext&,
@@ -77,10 +77,11 @@ class TestService final : public generated::TestService<TestService> {
     ASSERT_TRUE(DecodeRequest(request, integer, status));
     for (int i = 0; i < integer; ++i) {
       ByteSpan buffer = writer.PayloadBuffer();
-      protobuf::NestedEncoder encoder(buffer);
-      TestStreamResponse::Encoder test_stream_response(&encoder);
+
+      // TODO(pwbug/384): Use MemoryEncoder when RamEncoder is renamed.
+      TestStreamResponse::RamEncoder test_stream_response(buffer);
       test_stream_response.WriteNumber(i);
-      writer.Write(encoder.Encode().value());
+      writer.Write(test_stream_response);
     }
 
     writer.Finish(status);

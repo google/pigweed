@@ -19,6 +19,7 @@
 
 #include "pw_bytes/span.h"
 #include "pw_protobuf/config.h"
+#include "pw_protobuf/streaming_encoder.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_result/result.h"
 #include "pw_status/try.h"
@@ -28,7 +29,8 @@ namespace pw::protobuf {
 
 // A streaming protobuf encoder which encodes to a user-specified buffer.
 //
-// Warning: This encoder will soon be deprecated in favor of the MemoryEncoder.
+// Warning: This encoder is deprecated and will soon be replaced by the
+// MemoryEncoder.
 class Encoder {
  public:
   using SizeType = config::SizeType;

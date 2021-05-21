@@ -16,7 +16,6 @@
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
-#include "pw_protobuf/codegen.h"
 #include "pw_protobuf/wire_format.h"
 
 namespace pw::rpc::internal {
