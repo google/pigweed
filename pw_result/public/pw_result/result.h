@@ -29,7 +29,7 @@ namespace pw {
 // TODO(pwbug/363): Refactor pw::Result to properly support non-default move
 // and/or copy assignment operators and/or constructors.
 template <typename T>
-class Result {
+class [[nodiscard]] Result {
  public:
   constexpr Result(T&& value) : value_(std::move(value)), status_(OkStatus()) {}
   constexpr Result(const T& value) : value_(value), status_(OkStatus()) {}
@@ -51,8 +51,8 @@ class Result {
   constexpr Result(Result&&) = default;
   constexpr Result& operator=(Result&&) = default;
 
-  constexpr Status status() const { return status_; }
-  constexpr bool ok() const { return status_.ok(); }
+  [[nodiscard]] constexpr Status status() const { return status_; }
+  [[nodiscard]] constexpr bool ok() const { return status_.ok(); }
 
   constexpr T& value() & {
     PW_ASSERT(status_.ok());
@@ -88,6 +88,11 @@ class Result {
     }
     return std::forward<U>(default_value);
   }
+
+  // Ignores any errors. This method does nothing except potentially suppress
+  // complaints from any tools that are checking that errors are not dropped on
+  // the floor.
+  constexpr void IgnoreError() const {}
 
  private:
   struct Dummy {};

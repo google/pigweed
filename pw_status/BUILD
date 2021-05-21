@@ -24,7 +24,10 @@ licenses(["notice"])  # Apache License 2.0
 
 pw_cc_library(
     name = "pw_status",
-    srcs = ["status.cc"],
+    srcs = [
+        "public/pw_status/internal/config.h",
+        "status.cc",
+    ],
     hdrs = [
         "public/pw_status/status.h",
         "public/pw_status/status_with_size.h",

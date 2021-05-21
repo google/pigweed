@@ -152,7 +152,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     switch (provider.ConsumeEnum<FieldType>()) {
       case kEncodeAndClear:
         // Special "field". Encode all the fields so far and reset the encoder.
-        encoder.Encode();
+        encoder.Encode().IgnoreError();
         encoder.Clear();
         break;
       case kUint32:
@@ -276,7 +276,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
   }
   // Ensure we call `Encode` at least once.
-  encoder.Encode();
+  encoder.Encode().IgnoreError();
 
   // Don't forget to unpoison for the next iteration!
   ASAN_UNPOISON_MEMORY_REGION(poisoned, poisoned_length);
