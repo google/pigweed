@@ -304,7 +304,7 @@ TEST(Block, CannotMergeWithFirstOrLastBlock) {
   constexpr size_t kN = 1024;
   alignas(Block*) byte bytes[kN];
 
-  // Do a split, just to sanity check that the checks on Next/Prev are
+  // Do a split, just to check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());
@@ -320,7 +320,7 @@ TEST(Block, CannotMergeUsedBlock) {
   constexpr size_t kN = 1024;
   alignas(Block*) byte bytes[kN];
 
-  // Do a split, just to sanity check that the checks on Next/Prev are
+  // Do a split, just to check that the checks on Next/Prev are
   // different...
   Block* block = nullptr;
   EXPECT_EQ(Block::Init(std::span(bytes, kN), &block), OkStatus());

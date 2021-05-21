@@ -98,7 +98,7 @@ class Block final {
   // reality, this method just subtracts the appropriate amount from
   // usable_space to point to the start of the owning block.
   //
-  // Be aware that this method does not do any sanity checking; passing a random
+  // Be aware that this method does not do any checking; passing a random
   // pointer will return a non-null pointer.
   static Block* FromUsableSpace(std::byte* usable_space) {
     return reinterpret_cast<Block*>(usable_space - sizeof(Block) -

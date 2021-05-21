@@ -14,12 +14,12 @@ for a dynamic allocator. This is composed of the following parts:
 
 Heap Integrity Check
 ====================
-The ``Block`` class provides two sanity check functions:
+The ``Block`` class provides two check functions:
 
   - ``bool Block::IsValid()``: Returns ``true`` is the given block is valid
     and ``false`` otherwise.
   - ``void Block::CrashIfInvalid()``: Crash the program and output the reason
-    why sanity check fails using ``PW_DCHECK``.
+    why the check fails using ``PW_DCHECK``.
 
 Heap Poisoning
 ==============
@@ -36,7 +36,7 @@ build arg.
 
 When heap poisoning is enabled, ``pw_allocator`` will add ``sizeof(void*)``
 bytes before and after the usable space of each ``Block``, and paint the space
-with a hard-coded randomized pattern. During each sanity check, ``pw_allocator``
+with a hard-coded randomized pattern. During each check, ``pw_allocator``
 will check if the painted space still remains the pattern, and return ``false``
 if the pattern is damaged.
 
