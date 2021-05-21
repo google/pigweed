@@ -96,7 +96,7 @@ static_assert(ConvertsToSpan<const std::span<bool>&>());
 static_assert(ConvertsToSpan<std::span<bool>&&>());
 
 // These tests for the make_span function were copied from Chromium:
-// https://chromium.googlesource.com/chromium/src/+/master/base/containers/span_unittest.cc
+// https://chromium.googlesource.com/chromium/src/+/main/base/containers/span_unittest.cc
 
 TEST(SpanTest, MakeSpanFromDataAndSize) {
   int* nullint = nullptr;

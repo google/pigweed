@@ -22,7 +22,7 @@ namespace internal {
 
 // This borrows the `make_span` function from Chromium and uses to see if a type
 // can be represented as a span. See:
-// https://chromium.googlesource.com/chromium/src/+/master/base/containers/span.h
+// https://chromium.googlesource.com/chromium/src/+/main/base/containers/span.h
 
 // Simplified implementation of C++20's std::iter_reference_t.
 // As opposed to std::iter_reference_t, this implementation does not restrict
