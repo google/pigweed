@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Banned words presubmit check."""
+"""Inclusive language presubmit check."""
 
 import collections
 from pathlib import Path
@@ -22,8 +22,8 @@ from . import presubmit
 
 # List borrowed from Android:
 # https://source.android.com/setup/contribute/respectful-code
-# banned-words: disable
-BANNED_WORDS = [
+# inclusive-language: disable
+NON_INCLUSIVE_WORDS = [
     r'master',
     r'slave',
     r'(white|gr[ae]y|black)\s*(list|hat)',
@@ -40,17 +40,17 @@ BANNED_WORDS = [
     r'm[ae]n[-\s]*in[-\s]*the[-\s]*middle',
     r'mitm',
 ]
-# banned-words: enable
+# inclusive-language: enable
 
-# Test: master  # banned-words: ignore
+# Test: master  # inclusive-language: ignore
 # Test: master
 
 
-def _process_banned_words(*words):
-    """Turn banned-words list into one big regex with common inflections."""
+def _process_inclusive_language(*words):
+    """Turn word list into one big regex with common inflections."""
 
     if not words:
-        words = tuple(BANNED_WORDS)
+        words = tuple(NON_INCLUSIVE_WORDS)
 
     all_words = []
     for entry in words:
@@ -71,7 +71,7 @@ def _process_banned_words(*words):
     )
 
 
-BANNED_WORDS_REGEX = _process_banned_words()
+NON_INCLUSIVE_WORDS_REGEX = _process_inclusive_language()
 
 # If seen, ignore this line and the next.
 _IGNORE = 'banned-words: ignore'
@@ -81,9 +81,9 @@ _DISABLE = 'banned-words: disable'
 _ENABLE = 'banned-words: enable'
 
 
-def banned_words(
+def inclusive_language(
     ctx: presubmit.PresubmitContext,
-    words_regex=BANNED_WORDS_REGEX,
+    words_regex=NON_INCLUSIVE_WORDS_REGEX,
 ):
     """Presubmit check that ensures files do not contain banned words."""
 
@@ -123,19 +123,29 @@ def banned_words(
         print('=' * 40)
         print(path)
         for match in matches:
-            print(f'Found banned word "{match.word}" on line {match.line}')
+            print(
+                f'Found non-inclusive word "{match.word}" on line {match.line}'
+            )
 
     if found_words:
+        print()
+        print("""
+Individual lines can be ignored with "inclusive-language: ignore". Blocks can be
+ignored with "inclusive-language: disable" and reenabled with
+"inclusive-language: enable".
+""".strip())
+        # Re-enable just in case: banned-words: enable.
+
         raise presubmit.PresubmitFailure
 
 
-def banned_words_checker(*words):
+def inclusive_language_checker(*words):
     """Create banned words checker for the given list of banned words."""
 
-    regex = _process_banned_words(*words)
+    regex = _process_inclusive_language(*words)
 
-    def banned_words(  # pylint: disable=redefined-outer-name
+    def inclusive_language(  # pylint: disable=redefined-outer-name
         ctx: presubmit.PresubmitContext):
-        globals()['banned_words'](ctx, regex)
+        globals()['inclusive_language'](ctx, regex)
 
-    return banned_words
+    return inclusive_language

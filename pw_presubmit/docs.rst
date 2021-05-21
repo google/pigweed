@@ -114,23 +114,23 @@ There's a ``pragma_once`` check that confirms the first non-comment line of
 C/C++ headers is ``#pragma once``. This is enabled by adding
 ``pw_presubmit.pragma_once`` to a presubmit program.
 
-Banned Words
-============
-.. banned-words: disable
+Inclusive Language
+==================
+.. inclusive-language: disable
 
-The banned words check looks for words that are typical of non-inclusive code,
-like using "master" and "slave" in place of "primary" and "secondary" or
+The inclusive language check looks for words that are typical of non-inclusive
+code, like using "master" and "slave" in place of "primary" and "secondary" or
 "sanity check" in place of "consistency check".
 
-.. banned-words: enable
+.. inclusive-language: enable
 
-These checks can be disabled for individual lines with "banned-words: ignore"
-on the line in question or the line above it, or for entire blocks by using
-"banned-words: disable" before the block and "banned-words: enable" after the
-block.
+These checks can be disabled for individual lines with
+"inclusive-language: ignore" on the line in question or the line above it, or
+for entire blocks by using "inclusive-language: disable" before the block and
+"inclusive-language: enable" after the block.
 
 .. In case things get moved around in the previous paragraphs the enable line
-.. is repeated here: banned-words: enable.
+.. is repeated here: inclusive-language: enable.
 
 pw_presubmit
 ~~~~~~~~~~~~
@@ -166,8 +166,8 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       sys.exit(2)
 
   import pw_presubmit
-  from pw_presubmit import banned_words, build, cli, environment, format_code
-  from pw_presubmit import git_repo, python_checks, filter_paths
+  from pw_presubmit import build, cli, environment, format_code, git_repo
+  from pw_presubmit import inclusive_language, python_checks, filter_paths
   from pw_presubmit import PresubmitContext
   from pw_presubmit.install_hook import install_hook
 
@@ -230,7 +230,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       # Use the upstream formatting checks, with custom path filters applied.
       format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
       # Include the upstream inclusive language check.
-      banned_words.banned_words,
+      inclusive_language.inclusive_language,
   )
 
   FULL = (
