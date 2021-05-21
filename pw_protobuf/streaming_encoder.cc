@@ -39,12 +39,17 @@ StreamingEncoder StreamingEncoder::GetNestedEncoder(uint32_t field_number) {
   size_t reserved_size = key_size + config::kMaxVarintSize;
   size_t max_size = std::min(memory_writer_.ConservativeWriteLimit(),
                              writer_.ConservativeWriteLimit());
+  // Account for reserved bytes.
+  max_size = max_size > reserved_size ? max_size - reserved_size : 0;
+  // Cap based on max varint size.
+  max_size = std::min(varint::MaxValueInBytes(config::kMaxVarintSize),
+                      static_cast<uint64_t>(max_size));
 
   ByteSpan nested_buffer;
-  if (reserved_size < max_size) {
+  if (max_size > 0) {
     nested_buffer = ByteSpan(
         memory_writer_.data() + reserved_size + memory_writer_.bytes_written(),
-        max_size - reserved_size);
+        max_size);
   } else {
     nested_buffer = ByteSpan();
   }
