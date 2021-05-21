@@ -172,7 +172,7 @@ template("pw_test") {
       # Create a run target for the .DISABLED version of the test.
       _test_to_run = _test_target_name + ".DISABLED"
 
-      # Create a dummy _run target for the regular version of the test.
+      # Create a placeholder _run target for the regular version of the test.
       group(_test_target_name + ".run") {
         deps = [ ":$_test_target_name" ]
       }

@@ -96,7 +96,7 @@ template("pw_facade_test") {
       }
     }
   } else {
-    # Dummy target for non-pigweed toolchains.
+    # No-op target for non-pigweed toolchains.
     not_needed(invoker, "*")
     pw_test_group(target_name) {
       enable_if = false

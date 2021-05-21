@@ -6,7 +6,7 @@ pw_unit_test
 ``pw_unit_test`` unit testing library with a `Google Test`_-compatible API,
 built on top of embedded-friendly primitives.
 
-.. _Google Test: https://github.com/google/googletest/blob/master/googletest/docs/primer.md
+.. _Google Test: https://github.com/google/googletest/blob/HEAD/docs/primer.md
 
 ``pw_unit_test`` is a portable library which can run on almost any system from
 bare metal to a full-fledged desktop OS. It does this by offloading the
