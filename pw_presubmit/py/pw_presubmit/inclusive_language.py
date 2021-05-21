@@ -74,11 +74,11 @@ def _process_inclusive_language(*words):
 NON_INCLUSIVE_WORDS_REGEX = _process_inclusive_language()
 
 # If seen, ignore this line and the next.
-_IGNORE = 'banned-words: ignore'
+_IGNORE = 'inclusive-language: ignore'
 
 # Ignore a whole section. Please do not change the order of these lines.
-_DISABLE = 'banned-words: disable'
-_ENABLE = 'banned-words: enable'
+_DISABLE = 'inclusive-language: disable'
+_ENABLE = 'inclusive-language: enable'
 
 
 def inclusive_language(
@@ -134,7 +134,7 @@ Individual lines can be ignored with "inclusive-language: ignore". Blocks can be
 ignored with "inclusive-language: disable" and reenabled with
 "inclusive-language: enable".
 """.strip())
-        # Re-enable just in case: banned-words: enable.
+        # Re-enable just in case: inclusive-language: enable.
 
         raise presubmit.PresubmitFailure
 
