@@ -183,7 +183,7 @@ here.
     "tags": [
       "version:2@1.16.3"
     ]
-  },
+  }
 
 ``virtualenv.gn_targets``
   Target for installing Python packages. Downstream projects will need to
