@@ -146,7 +146,7 @@ Another convenience provided by the template is to allow running scripts without
 any outputs. Sometimes scripts run in a build do not directly produce output
 files, but GN requires that all actions have an output. ``pw_python_action``
 solves this by accepting a boolean ``stamp`` argument which tells it to create a
-dummy output file for the action.
+placeholder output file for the action.
 
 **Arguments**
 
@@ -158,7 +158,7 @@ target. Additionally, it has some of its own arguments:
 * ``capture_output``: Optional boolean. If true, script output is hidden unless
   the script fails with an error. Defaults to true.
 * ``stamp``: Optional variable indicating whether to automatically create a
-  dummy output file for the script. This allows running scripts without
+  placeholder output file for the script. This allows running scripts without
   specifying ``outputs``. If ``stamp`` is true, a generic output file is
   used. If ``stamp`` is a file path, that file is used as a stamp file. Like any
   output file, ``stamp`` must be in the build directory. Defaults to false.

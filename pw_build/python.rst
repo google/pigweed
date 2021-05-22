@@ -166,7 +166,7 @@ The ``.wheel`` subtarget of every ``pw_python_package`` generates a wheel
 (``.whl``) for the Python package. The ``pw_python_wheels`` template figures
 out which wheels to collect by traversing the ``pw_python_package_wheels``
 `GN metadata
-<https://gn.googlesource.com/gn/+/master/docs/reference.md#var_metadata>`_ key,
+<https://gn.googlesource.com/gn/+/HEAD/docs/reference.md#var_metadata>`_ key,
 which lists the output directory for each wheel.
 
 The ``pw_mirror_tree`` template is then used to collect wheels in an output

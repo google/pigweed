@@ -29,8 +29,8 @@ import("//build_overrides/pigweed.gni")
 #
 #   stamp           File to touch if the script is successful. Actions that
 #                   don't create output files can use this stamp file instead of
-#                   creating their own dummy file. If true, a generic file is
-#                   used. If false or not set, no file is touched.
+#                   creating their own placeholder file. If true, a generic file
+#                   is used. If false or not set, no file is touched.
 #
 #   directory       The directory from which to execute the Python script. Paths
 #                   in args may need to be adjusted to be relative to this
