@@ -703,9 +703,11 @@ def run(install: bool, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
+        # TODO(pwbug/209, pwbug/386) inclusive-language: disable
         install_hook(__file__, 'pre-push',
                      ['--base', 'origin/master..HEAD', '--program', 'quick'],
                      Path.cwd())
+        # TODO(pwbug/209, pwbug/386) inclusive-language: enable
         return 0
 
     return cli.run(**presubmit_args)

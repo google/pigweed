@@ -38,10 +38,10 @@ class [[nodiscard]] Result {
   constexpr Result(std::in_place_t, Args&&... args)
       : value_(std::forward<Args>(args)...), status_(OkStatus()) {}
 
-  constexpr Result(Status status) : dummy_({}), status_(status) {
+  constexpr Result(Status status) : unused_({}), status_(status) {
     PW_ASSERT(!status_.ok());
   }
-  constexpr Result(Status::Code code) : dummy_({}), status_(code) {
+  constexpr Result(Status::Code code) : unused_({}), status_(code) {
     PW_ASSERT(!status_.ok());
   }
 
@@ -95,13 +95,13 @@ class [[nodiscard]] Result {
   constexpr void IgnoreError() const {}
 
  private:
-  struct Dummy {};
+  struct Unused {};
 
   union {
     T value_;
 
     // Ensure that there is always a trivial constructor for the union.
-    Dummy dummy_;
+    Unused unused_;
   };
   Status status_;
 };
